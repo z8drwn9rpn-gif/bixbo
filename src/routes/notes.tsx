@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { useBixbo, EMPTY, type Note } from "@/lib/storage";
@@ -12,10 +11,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 export const Route = createFileRoute("/notes")({
   head: () => ({
     meta: [
-      { title: "Poznámky — BIXBO" },
-      { name: "description", content: "Voľné poznámky mimo kalendára." },
-      { property: "og:title", content: "Poznámky — BIXBO" },
-      { property: "og:description", content: "Voľné poznámky mimo kalendára." },
+      { title: "Notes — BIXBO" },
+      { name: "description", content: "Free-form notes, separate from the calendar." },
+      { property: "og:title", content: "Notes — BIXBO" },
+      { property: "og:description", content: "Free-form notes, separate from the calendar." },
     ],
   }),
   component: NotesPage,
@@ -35,10 +34,10 @@ function NotesPage() {
   const removeNote = (id: string) => update((d) => ({ ...d, notebook: d.notebook.filter((n) => n.id !== id) }));
 
   return (
-    <AppShell title="Poznámky" right={<NewNoteButton onAdd={addNote} />}>
-      <div className="space-y-3 px-5 pt-4">
+    <AppShell title="Notes" right={<NewNoteButton onAdd={addNote} />}>
+      <div className="space-y-3 px-5 pt-4 pb-24">
         {view.notebook.length === 0 && (
-          <p className="text-sm text-muted-foreground">Zatiaľ žiadne poznámky. Klikni na „Pridať".</p>
+          <p className="text-sm text-muted-foreground">No notes yet. Tap “Add”.</p>
         )}
         {view.notebook.map((n) => (
           <button
@@ -48,10 +47,10 @@ function NotesPage() {
           >
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1">
-                <p className="font-serif text-lg">{n.title || "Bez názvu"}</p>
-                <p className="mt-1 line-clamp-3 text-sm text-muted-foreground whitespace-pre-wrap">{n.content}</p>
+                <p className="font-serif text-lg">{n.title || "Untitled"}</p>
+                <p className="mt-1 line-clamp-3 whitespace-pre-wrap text-sm text-muted-foreground">{n.content}</p>
                 <p className="mt-2 text-[10px] uppercase tracking-wider text-muted-foreground">
-                  {new Date(n.createdAt).toLocaleDateString("sk-SK")}
+                  {new Date(n.createdAt).toLocaleDateString("en-GB")}
                 </p>
               </div>
               <span
@@ -67,7 +66,11 @@ function NotesPage() {
         ))}
       </div>
 
-      <EditNoteDialog note={editing} onClose={() => setEditing(null)} onSave={(t, c) => { if (editing) updateNote(editing.id, t, c); setEditing(null); }} />
+      <EditNoteDialog
+        note={editing}
+        onClose={() => setEditing(null)}
+        onSave={(t, c) => { if (editing) updateNote(editing.id, t, c); setEditing(null); }}
+      />
     </AppShell>
   );
 }
@@ -79,41 +82,40 @@ function NewNoteButton({ onAdd }: { onAdd: (t: string, c: string) => void }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="rounded-full"><Plus className="h-4 w-4" /> Pridať</Button>
+        <Button size="sm" className="rounded-full"><Plus className="h-4 w-4" /> Add</Button>
       </DialogTrigger>
       <DialogContent>
-        <DialogHeader><DialogTitle>Nová poznámka</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>New note</DialogTitle></DialogHeader>
         <div className="space-y-3">
-          <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Názov" />
-          <Textarea rows={8} value={content} onChange={(e) => setContent(e.target.value)} placeholder="Text poznámky…" />
+          <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" />
+          <Textarea rows={8} value={content} onChange={(e) => setContent(e.target.value)} placeholder="Write anything…" />
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Zrušiť</Button>
-          <Button onClick={() => { onAdd(title, content); setTitle(""); setContent(""); setOpen(false); }}>Uložiť</Button>
+          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button onClick={() => { onAdd(title, content); setTitle(""); setContent(""); setOpen(false); }}>Save</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
 
-function EditNoteDialog({ note, onClose, onSave }: { note: Note | null; onClose: () => void; onSave: (t: string, c: string) => void }) {
+function EditNoteDialog({ note, onClose, onSave }:
+  { note: Note | null; onClose: () => void; onSave: (t: string, c: string) => void }) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const open = note !== null;
-  useEffect(() => {
-    if (note) { setTitle(note.title); setContent(note.content); }
-  }, [note]);
+  useEffect(() => { if (note) { setTitle(note.title); setContent(note.content); } }, [note]);
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent>
-        <DialogHeader><DialogTitle>Upraviť poznámku</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>Edit note</DialogTitle></DialogHeader>
         <div className="space-y-3">
-          <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Názov" />
+          <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" />
           <Textarea rows={10} value={content} onChange={(e) => setContent(e.target.value)} />
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Zavrieť</Button>
-          <Button onClick={() => onSave(title, content)}>Uložiť</Button>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={() => onSave(title, content)}>Save</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
