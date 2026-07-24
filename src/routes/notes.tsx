@@ -100,15 +100,11 @@ function EditNoteDialog({ note, onClose, onSave }: { note: Note | null; onClose:
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const open = note !== null;
-  // Sync on open
-  useState(() => {}); // noop
-  if (open && title === "" && content === "" && note) {
-    // populate once on open
-    setTitle(note.title);
-    setContent(note.content);
-  }
+  useEffect(() => {
+    if (note) { setTitle(note.title); setContent(note.content); }
+  }, [note]);
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) { onClose(); setTitle(""); setContent(""); } }}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent>
         <DialogHeader><DialogTitle>Upraviť poznámku</DialogTitle></DialogHeader>
         <div className="space-y-3">
@@ -116,8 +112,8 @@ function EditNoteDialog({ note, onClose, onSave }: { note: Note | null; onClose:
           <Textarea rows={10} value={content} onChange={(e) => setContent(e.target.value)} />
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => { onClose(); setTitle(""); setContent(""); }}>Zavrieť</Button>
-          <Button onClick={() => { onSave(title, content); setTitle(""); setContent(""); }}>Uložiť</Button>
+          <Button variant="outline" onClick={onClose}>Zavrieť</Button>
+          <Button onClick={() => onSave(title, content)}>Uložiť</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
