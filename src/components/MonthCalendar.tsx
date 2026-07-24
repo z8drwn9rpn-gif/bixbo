@@ -1,10 +1,10 @@
 import { Link } from "@tanstack/react-router";
-import { toKey, type BixboData } from "@/lib/storage";
+import { toKey, hasAnyLog, type BixboData, type DayLog } from "@/lib/storage";
 
-const WEEKDAYS = ["Ne", "Po", "Ut", "St", "Št", "Pi", "So"];
+const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 const MONTHS = [
-  "Január", "Február", "Marec", "Apríl", "Máj", "Jún",
-  "Júl", "August", "September", "Október", "November", "December",
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
 ];
 
 function periodColorVar(level?: string) {
@@ -24,6 +24,21 @@ function painRingColor(pain?: number) {
   return "var(--pain-high)";
 }
 
+function maxPain(log?: DayLog): number | undefined {
+  if (!log?.pain?.length) return undefined;
+  return log.pain.reduce((m, p) => Math.max(m, p.score), 0);
+}
+
+function iconsFor(log: DayLog | undefined, hasMed: boolean): string[] {
+  const out: string[] = [];
+  if (hasMed) out.push("💊");
+  if (log?.bowel?.length) out.push("💩");
+  if (log?.sex && log.sex.type !== "none") out.push("❤️");
+  if (log?.heat?.length) out.push("🔥");
+  if (log?.temperature != null || log?.weight != null) out.push("🌡️");
+  return out;
+}
+
 export function MonthCalendar({
   month,
   data,
@@ -36,7 +51,7 @@ export function MonthCalendar({
   const y = month.getFullYear();
   const m = month.getMonth();
   const first = new Date(y, m, 1);
-  const startWeekday = first.getDay(); // 0=Sun
+  const startWeekday = first.getDay();
   const daysInMonth = new Date(y, m + 1, 0).getDate();
   const prevDays = new Date(y, m, 0).getDate();
   const totalCells = Math.ceil((startWeekday + daysInMonth) / 7) * 7;
@@ -66,31 +81,47 @@ export function MonthCalendar({
           const log = data.dayLogs[key];
           const hasNote = (data.dayNotes[key]?.length ?? 0) > 0;
           const hasTodo = (data.todos[key]?.length ?? 0) > 0;
+          const takenToday = data.medLog[key] ?? {};
+          const hasMed = Object.values(takenToday).some(Boolean) || !!(log?.extraMeds?.length);
           const periodColor = periodColorVar(log?.period);
-          const ringColor = painRingColor(log?.pain);
+          const pMax = maxPain(log);
+          const ringColor = painRingColor(pMax);
           const isToday = key === todayK;
+          const icons = iconsFor(log, hasMed);
+          const marked = hasAnyLog(log) || hasNote || hasTodo || hasMed;
 
           const inner = (
             <div className={`flex aspect-square items-center justify-center ${inMonth ? "" : "opacity-30"}`}>
-              <div
-                className="relative flex h-10 w-10 items-center justify-center rounded-full"
-                style={{
-                  background: periodColor ?? "transparent",
-                  boxShadow: log?.pain != null ? `0 0 0 2.5px ${ringColor}` : undefined,
-                  border: isToday && !periodColor ? "1.5px dashed var(--primary)" : undefined,
-                }}
-              >
-                <span
-                  className={`text-sm ${periodColor ? "font-semibold text-white" : "text-foreground"}`}
+              <div className="relative flex h-11 w-11 items-center justify-center">
+                {/* Outer pain ring — thick, sits OUTSIDE the period fill so it stays visible */}
+                {pMax != null && (
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0 rounded-full"
+                    style={{ boxShadow: `0 0 0 3.5px ${ringColor}` }}
+                  />
+                )}
+                <div
+                  className="relative flex h-9 w-9 items-center justify-center rounded-full"
+                  style={{
+                    background: periodColor ?? "transparent",
+                    border: isToday && !periodColor ? "1.5px dashed var(--primary)" : undefined,
+                  }}
                 >
-                  {date.getDate()}
-                </span>
-                {(hasNote || hasTodo) && (
+                  <span className={`text-sm ${periodColor ? "font-semibold text-white" : "text-foreground"}`}>
+                    {date.getDate()}
+                  </span>
+                </div>
+                {icons.length > 0 ? (
+                  <span className="absolute -bottom-2 flex gap-0.5 text-[9px] leading-none">
+                    {icons.slice(0, 3).map((ic, idx) => <span key={idx}>{ic}</span>)}
+                  </span>
+                ) : marked ? (
                   <span className="absolute -bottom-1 flex gap-0.5">
                     {hasNote && <span className="h-1 w-1 rounded-full bg-primary" />}
                     {hasTodo && <span className="h-1 w-1 rounded-full bg-foreground/60" />}
                   </span>
-                )}
+                ) : null}
               </div>
             </div>
           );
