@@ -9,18 +9,11 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TodoRouteImport } from './routes/todo'
 import { Route as NotesRouteImport } from './routes/notes'
 import { Route as MedsRouteImport } from './routes/meds'
-import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DayDateRouteImport } from './routes/day.$date'
 
-const TodoRoute = TodoRouteImport.update({
-  id: '/todo',
-  path: '/todo',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const NotesRoute = NotesRouteImport.update({
   id: '/notes',
   path: '/notes',
@@ -29,11 +22,6 @@ const NotesRoute = NotesRouteImport.update({
 const MedsRoute = MedsRouteImport.update({
   id: '/meds',
   path: '/meds',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CalendarRoute = CalendarRouteImport.update({
-  id: '/calendar',
-  path: '/calendar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -49,62 +37,40 @@ const DayDateRoute = DayDateRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/calendar': typeof CalendarRoute
   '/meds': typeof MedsRoute
   '/notes': typeof NotesRoute
-  '/todo': typeof TodoRoute
   '/day/$date': typeof DayDateRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/calendar': typeof CalendarRoute
   '/meds': typeof MedsRoute
   '/notes': typeof NotesRoute
-  '/todo': typeof TodoRoute
   '/day/$date': typeof DayDateRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/calendar': typeof CalendarRoute
   '/meds': typeof MedsRoute
   '/notes': typeof NotesRoute
-  '/todo': typeof TodoRoute
   '/day/$date': typeof DayDateRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/calendar' | '/meds' | '/notes' | '/todo' | '/day/$date'
+  fullPaths: '/' | '/meds' | '/notes' | '/day/$date'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/calendar' | '/meds' | '/notes' | '/todo' | '/day/$date'
-  id:
-    | '__root__'
-    | '/'
-    | '/calendar'
-    | '/meds'
-    | '/notes'
-    | '/todo'
-    | '/day/$date'
+  to: '/' | '/meds' | '/notes' | '/day/$date'
+  id: '__root__' | '/' | '/meds' | '/notes' | '/day/$date'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  CalendarRoute: typeof CalendarRoute
   MedsRoute: typeof MedsRoute
   NotesRoute: typeof NotesRoute
-  TodoRoute: typeof TodoRoute
   DayDateRoute: typeof DayDateRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/todo': {
-      id: '/todo'
-      path: '/todo'
-      fullPath: '/todo'
-      preLoaderRoute: typeof TodoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/notes': {
       id: '/notes'
       path: '/notes'
@@ -117,13 +83,6 @@ declare module '@tanstack/react-router' {
       path: '/meds'
       fullPath: '/meds'
       preLoaderRoute: typeof MedsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/calendar': {
-      id: '/calendar'
-      path: '/calendar'
-      fullPath: '/calendar'
-      preLoaderRoute: typeof CalendarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -145,22 +104,10 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  CalendarRoute: CalendarRoute,
   MedsRoute: MedsRoute,
   NotesRoute: NotesRoute,
-  TodoRoute: TodoRoute,
   DayDateRoute: DayDateRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

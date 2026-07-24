@@ -1,12 +1,9 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Calendar, Home, Pill, NotebookPen, StickyNote } from "lucide-react";
+import { Home, StickyNote } from "lucide-react";
 
 const items = [
-  { to: "/", label: "Dnes", icon: Home },
-  { to: "/calendar", label: "Kalendár", icon: Calendar },
-  { to: "/meds", label: "Lieky", icon: Pill },
-  { to: "/todo", label: "Úlohy", icon: NotebookPen },
-  { to: "/notes", label: "Poznámky", icon: StickyNote },
+  { to: "/", label: "Home", icon: Home },
+  { to: "/notes", label: "Notes", icon: StickyNote },
 ] as const;
 
 export function BottomNav() {
@@ -20,7 +17,7 @@ export function BottomNav() {
             <li key={to} className="flex-1">
               <Link
                 to={to}
-                className={`flex flex-col items-center gap-1 rounded-xl px-2 py-1.5 text-[10px] font-medium transition-colors ${
+                className={`flex flex-col items-center gap-1 rounded-xl px-2 py-1.5 text-[11px] font-medium transition-colors ${
                   active ? "text-primary" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
