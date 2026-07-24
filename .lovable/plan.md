@@ -1,56 +1,61 @@
+# BIXBO redesign
 
-# BIXBO — plán aplikácie
+Big restructure. Reading it before I start — one important note about cloud sync at the bottom.
 
-Mobilná apka na sledovanie zdravia (endometrióza + celkové wellness) inšpirovaná dizajnom Endolog. Krásny farebný kalendár s dennými kruhmi, čistá typografia, jemné pastelové ružové/broskyňové tóny.
+## 1. Language
+Switch the whole UI to English. Rename tabs, buttons, dialogs, headings, months, weekdays.
 
-## Dizajn
-- **Vibe:** čisto, mäkko, ženský ale nie infantilný — biele pozadie, jemná ružová (`#fce4ec`-ish), tmavá čitateľná typografia, farebné akcenty pre stavy (červená = perioda, žltá = mierne, zelená = OK).
-- **Kalendár na hlavnej obrazovke** — mesačný pohľad, každý deň = kruh s farebným prstencom podľa intenzity bolesti/periódy, ikonka noty/lieku ak existuje záznam.
-- **Bottom nav:** Today · Calendar · Meds · Notes · Settings
-- **Font:** Instrument Serif (nadpisy) + Inter/Work Sans (body), alebo môžeš neskôr zmeniť.
-- Emoji/logo: 🍓 alebo vlastné BIXBO wordmark.
+## 2. Navigation (simpler)
+Bottom nav becomes just **two** items:
+- **Home** — calendar + today summary + medication schedule all in one screen (calendar, today, and meds merged as requested)
+- **Notes** — the free-form notebook
 
-## Funkcie (MVP, všetko lokálne v localStorage — bez backendu zatiaľ)
+A floating **`+`** button on Home opens the "Log" sheet (Endolog-style), which lists categories:
+Pain · Heat session · Period · Food · Bowel · Temperature & weight · Meds · Sexual activity · Note · Task
 
-### 1. Kalendár (hlavná obrazovka)
-- Mesačný grid, swipe medzi mesiacmi.
-- Klik na deň → detail dňa s tabmi: **Symptoms · Notes · To-do**.
-- Kruh dňa: farba prstenca = max bolesť (0-10), výplň = typ periódy.
+Tapping a category opens a focused, single-purpose sheet. Every sheet ends with an explicit **Save** button (nothing auto-saves silently).
 
-### 2. Denné logy (Symptoms tab)
-- **Pain** — slider 1–10
-- **Heat sensation** (návrh prekladu „Heat season") — toggle + intenzita
-- **Bowel movement** — yes/no
-- **Period** — light / medium / heavy / very heavy / spotting
-- **Food** — voľný text pre celý deň (raňajky/obed/večera/snack polia)
-- **Sexual activity** — none / with condom / without condom
-- **Temperature** — číslo (°C)
-- **Weight** — číslo (kg)
+## 3. Pain — multi-step wizard
+Endolog Mankosky-style. Four steps, one screen each, Back/Next:
+1. **Pain scale (0–10, with 0.5 steps)** — big number, description under it (Pain free, Very minor annoyance, … Unconscious). Slider with `step=0.5` OR tap a number chip; half-steps shown as 5.5, 6.5, etc.
+2. **Where does it hurt?** — body-part chips (Abdomen, Lower abdomen, Lower belly, Pelvis, Ovaries, Uterus, Vagina, Groin, Back, Head, Legs, Other). Multi-select.
+3. **How does it hurt?** — quality chips (Cramping, Stabbing, Burning, Dull, Sharp, Throbbing, Pressure, Shooting). Multi-select.
+4. **Other symptoms + note** — chips (Nausea, Dizziness, Fatigue, Bloating, Diarrhea, Constipation, …) + free-text "How I feel".
 
-### 3. Notes v kalendári (Notes tab v dni)
-- Krátke poznámky viazané na dátum (napr. „27.7 idem k lekárovi"). Zobrazujú sa v kalendári ako bodka.
+## 4. Other logging sheets
+- **Heat session** — start time, duration (minutes), free-text note.
+- **Period** — 5 intensity chips (unchanged).
+- **Food** — time picker + what I ate + "How I feel after" note (histamine tracking).
+- **Bowel** — Bristol stool scale 1–7 with color per type + optional note. Records timestamp.
+- **Temperature & weight** — two inputs.
+- **Meds** — quick "taken" toggles for today's scheduled meds + "Add extra dose" (free-text one-off, saved into medLog as an ad-hoc entry).
+- **Sexual activity** — with/without condom/none + optional note.
+- **Note** — free text for the day.
+- **Task** — todo item for the day.
 
-### 4. To-do (To-do tab v dni)
-- Checklist na daný deň, možno presúvať nesplnené na ďalší deň.
+## 5. Calendar rings (fix pain visibility)
+Each day cell shows:
+- Fill color = period intensity
+- **Thicker outer ring** = pain logged (currently 2.5px; bump to 4px and place it *outside* the period fill so it's visible over red)
+- Small icon row under the number for what was logged that day: 💊 (meds), 💩 (bowel), ❤️ (sex), 🌡️ (temp/weight), 🔥 (heat session)
 
-### 5. Meds (samostatná záložka)
-- Zoznam liekov (názov, dávka, čas — 9:00/15:00/21:00…, denne/podľa potreby).
-- Denný check-off: „Vzala som" pre každý slot.
-- **Notifikácie:** browser Notification API + `setTimeout` keď je apka otvorená. (Skutočné push notifikácie potrebujú PWA/service worker — pridám ako bonus, ale spoľahlivé len keď je apka otvorená v prehliadači. Pre pravé mobilné push by bola potrebná natívna apka — poviem ti to úprimne.)
+## 6. Medications
+Keep 3× daily default schedule + as-needed. Add "extras" (unplanned doses) that get logged with timestamp. Med icon 💊 appears on the calendar for any day with at least one taken/extra dose.
 
-### 6. Notebook (samostatná záložka)
-- Voľné poznámky **nezobrazené v kalendári** — zoznam s názvom, obsahom, dátumom vytvorenia.
+## 7. Data storage — important tradeoff
+You asked for **permanent cloud storage that doesn't cost credits to maintain**. That combination isn't possible on Lovable — any cloud backend (Lovable Cloud / Supabase) uses credits for storage and requests. Options:
 
-## Technické detaily
-- TanStack Start + React + Tailwind v4 + shadcn.
-- Routes: `/` (today), `/calendar`, `/meds`, `/notes`, `/settings`, `/day/$date`.
-- Perzistencia: `localStorage` cez custom hook `useLocalStorage`. Žiadny backend v prvom kole (rýchle, offline, súkromné). Ak neskôr budeš chcieť sync medzi zariadeniami, zapneme Lovable Cloud.
-- Design tokens v `src/styles.css` (semantické oklch farby pre perioda-light/medium/heavy, pain-low/mid/high atď.).
-- Mobilný viewport (390×844).
+- **A. Keep localStorage only** (current) — free forever, but data lives in one browser only; switching phones/browsers loses it. Export/Import JSON button for manual backup.
+- **B. Enable Lovable Cloud** — real cross-device sync with sign-in. Uses credits (small monthly free allowance included in your plan, then usage-based).
+- **C. Hybrid** — local-first + optional Cloud sync when you're ready.
 
-## Otvorené otázky (drobnosti — spravím rozumné rozhodnutia ak neodpovieš)
-1. **Jazyk UI:** slovenčina alebo angličtina? (Predvolene urobím **slovenčina**, keďže píšeš po slovensky.)
-2. **Sync medzi zariadeniami / login?** Zatiaľ **nie**, všetko lokálne. Neskôr vieme pridať.
-3. **Notifikácie na lieky:** in-app upozornenia (spoľahlivé len keď máš apku otvorenú). OK?
+**I'll build option A now** (with an Export/Import backup button) so the redesign ships. When you want cross-device sync, say the word and I'll add Cloud.
 
-Poviem po dokončení.
+## Technical notes
+- New `LogSheet` component (bottom sheet with category grid) triggered from a floating `+`.
+- New per-category sheet components with a shared `<Sheet>` wrapper and a mandatory Save action.
+- Extend `DayLog` type: `pain` → `{ score:number; parts:string[]; quality:string[]; symptoms:string[]; note:string }`; add `heatSessions[]`, `bowel` → `{ bristol:1..7; note? }`, `food` → array of `{ time, what, after }`, `sex` → `{ type; note? }`.
+- Migration: read old flat fields once on load and lift them into the new shape so nothing is lost.
+- Calendar cell: outer ring rendered as a separate absolutely-positioned div so it sits above the period fill.
+
+Confirm and I'll build it.
