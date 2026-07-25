@@ -7,7 +7,7 @@ import { MonthCalendar, monthLabel } from "@/components/MonthCalendar";
 import { LogSheet } from "@/components/LogSheet";
 import {
   useBixbo, EMPTY, toKey, fromKey, todayKey, PAIN_DESCRIPTIONS, painColor, BRISTOL, nextPredictedPeriod, daysBetween,
-  type BixboData, type DayLog, type PeriodLevel, type BowelEntry, type SexEntry,
+  type BixboData, type PeriodLevel, type BowelEntry, type SexEntry,
 } from "@/lib/storage";
 
 export const Route = createFileRoute("/")({
