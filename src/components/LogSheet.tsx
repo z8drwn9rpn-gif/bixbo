@@ -375,7 +375,9 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
     }
     if (panic) {
       const pk: PanicAttack = {
-        id: crypto.randomUUID(), time: panicTime, minutes: panicMinutes, intensity: panicIntensity,
+        id: crypto.randomUUID(), time: panicTime,
+        minutes: panicOngoing ? undefined : (panicMinutes === "" ? undefined : Number(panicMinutes)),
+        intensity: panicIntensity,
         physical: panicPhysical, cognitive: panicCognitive, trigger: panicTrigger.trim(),
         place: panicPlace.trim() || undefined,
         hyperventilation: panicHyper, tetanyPresent: panicTetany, helped: panicHelped,
