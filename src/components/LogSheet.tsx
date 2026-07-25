@@ -36,7 +36,6 @@ const CATEGORIES: { id: Category; label: string; emoji: string; hint: string }[]
   { id: "workout", label: "Workout",          emoji: "🧘🏼‍♀️", hint: "Type · duration · weight" },
   { id: "temp",    label: "Temp & Sleep",     emoji: "🌡️", hint: "°C · kg · hours" },
   { id: "meds",    label: "Meds",             emoji: "💊", hint: "Taken · extra dose" },
-  { id: "panic",   label: "Panic attack",     emoji: "⚡", hint: "Trigger & symptoms" },
   { id: "event",   label: "Event",            emoji: "📅", hint: "Multi-day · time · note" },
   { id: "task",    label: "Task",             emoji: "✅", hint: "To-do with date & time" },
   { id: "note",    label: "Note",             emoji: "📝", hint: "Any thought for today" },
