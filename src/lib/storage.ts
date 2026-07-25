@@ -25,7 +25,7 @@ export interface TetanyEpisode {
   types: string[];
   location: string[];
   intensity: number;
-  minutes: number;
+  minutes?: number;
   triggers: string[];
   timeSinceMagnerotMin?: number;
   helped: string[];
