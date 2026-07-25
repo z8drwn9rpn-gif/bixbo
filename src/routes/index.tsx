@@ -288,7 +288,7 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
         </Card>
       ) : null}
 
-      {(log?.period || log?.periodInfo?.level) && (
+      {!isMale && (log?.period || log?.periodInfo?.level) && (
         <Card title="Blueberry 🫐" icon="🫐">
           <button onClick={() => onEdit?.("period", undefined)} className="w-full text-left">
             <p className="text-sm">Flow: {periodLabel(log?.periodInfo?.level ?? log?.period)}</p>
