@@ -407,7 +407,7 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
             {events.map((e) => (
               <li key={e.id} className="flex items-start gap-2">
                 <span className="mt-1 h-2 w-2 rounded-full" style={{ background: e.color ?? "var(--primary)" }} />
-                <span className="flex-1">{e.title}{e.time ? ` · ${e.time}${e.timeEnd ? `–${e.timeEnd}` : ""}` : ""}{e.startDate !== e.endDate ? ` (${e.startDate}→${e.endDate})` : ""}{e.note ? ` — ${e.note}` : ""}</span>
+                <button onClick={() => onEdit?.("event", e)} className="flex-1 text-left">{e.title}{e.time ? ` · ${e.time}${e.timeEnd ? `–${e.timeEnd}` : ""}` : ""}{e.startDate !== e.endDate ? ` (${e.startDate}→${e.endDate})` : ""}{e.note ? ` — ${e.note}` : ""}</button>
                 <DeleteBtn onClick={() => update((d) => ({ ...d, events: d.events.filter((x) => x.id !== e.id) }))} />
               </li>
             ))}
