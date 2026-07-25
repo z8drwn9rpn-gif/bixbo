@@ -263,7 +263,10 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
           <ul className="space-y-1 text-sm">
             {log.tetany.map((t) => (
               <li key={t.id} className="flex items-start gap-2">
-                <span className="flex-1">{t.time} · {t.types.join(", ")} · {t.intensity}/5 · {t.minutes}min{t.triggers.length ? ` — ${t.triggers.join(", ")}` : ""}</span>
+                <button onClick={() => onEdit?.("tetany", t)} className="flex-1 text-left">
+                  {t.time} · {t.types.join(", ")} · {t.intensity}/5 · {t.minutes == null ? "ongoing" : `${t.minutes}min`}{t.triggers.length ? ` — ${t.triggers.join(", ")}` : ""}
+                  <span className="ml-2 text-[10px] text-primary">Tap to edit</span>
+                </button>
                 <DeleteBtn onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], tetany: (d.dayLogs[date]?.tetany ?? []).filter((x) => x.id !== t.id) } } }))} />
               </li>
             ))}
