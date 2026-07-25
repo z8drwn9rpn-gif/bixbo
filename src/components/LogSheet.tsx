@@ -576,14 +576,18 @@ function PanicForm({ date, data, update, onDone, initialEntry }:
         <Slider value={[intensity]} min={1} max={10} step={1} onValueChange={([v]) => setIntensity(v)} />
       </Field>
       <Field label="Physical symptoms">
-        <div className="mt-2 flex flex-wrap gap-2">
-          {PANIC_PHYSICAL.map((v) => <Chip key={v} active={physical.includes(v)} onClick={() => setPhysical((a) => toggleIn(a, v))}>{v}</Chip>)}
-        </div>
+        <CustomChipList base={PANIC_PHYSICAL} custom={data.custom.panicPhysical}
+          onAddCustom={(v) => update((d) => ({ ...d, custom: { ...d.custom, panicPhysical: [...d.custom.panicPhysical, v] } }))}
+          onRemoveCustom={(v) => { update((d) => ({ ...d, custom: { ...d.custom, panicPhysical: d.custom.panicPhysical.filter((x) => x !== v) } })); setPhysical((a) => a.filter((x) => x !== v)); }}
+          onRenameCustom={(o, n) => { update((d) => ({ ...d, custom: { ...d.custom, panicPhysical: d.custom.panicPhysical.map((x) => x === o ? n : x) } })); setPhysical((a) => a.map((x) => x === o ? n : x)); }}
+          selected={physical} onToggle={(v) => setPhysical((a) => toggleIn(a, v))} />
       </Field>
       <Field label="Cognitive symptoms">
-        <div className="mt-2 flex flex-wrap gap-2">
-          {PANIC_COGNITIVE.map((v) => <Chip key={v} active={cognitive.includes(v)} onClick={() => setCognitive((a) => toggleIn(a, v))}>{v}</Chip>)}
-        </div>
+        <CustomChipList base={PANIC_COGNITIVE} custom={data.custom.panicCognitive}
+          onAddCustom={(v) => update((d) => ({ ...d, custom: { ...d.custom, panicCognitive: [...d.custom.panicCognitive, v] } }))}
+          onRemoveCustom={(v) => { update((d) => ({ ...d, custom: { ...d.custom, panicCognitive: d.custom.panicCognitive.filter((x) => x !== v) } })); setCognitive((a) => a.filter((x) => x !== v)); }}
+          onRenameCustom={(o, n) => { update((d) => ({ ...d, custom: { ...d.custom, panicCognitive: d.custom.panicCognitive.map((x) => x === o ? n : x) } })); setCognitive((a) => a.map((x) => x === o ? n : x)); }}
+          selected={cognitive} onToggle={(v) => setCognitive((a) => toggleIn(a, v))} />
       </Field>
       <Field label="Trigger (or 'no obvious trigger')">
         <Textarea rows={2} value={trigger} onChange={(e) => setTrigger(e.target.value)} />
