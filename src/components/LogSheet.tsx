@@ -306,6 +306,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
         <Field label="Where does it hurt?">
           <CustomChipList base={BODY_PARTS_DEFAULT} custom={data.custom.bodyParts}
             onAddCustom={(v) => addCustom("bodyParts", v)}
+            onRemoveCustom={(v) => { removeCustom("bodyParts", v); setParts((a) => a.filter((x) => x !== v)); }}
             selected={parts} onToggle={(v) => setParts((a) => toggleIn(a, v))} />
         </Field>
       )}
@@ -313,6 +314,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
         <Field label="How does it hurt?">
           <CustomChipList base={PAIN_QUALITY_DEFAULT} custom={data.custom.quality}
             onAddCustom={(v) => addCustom("quality", v)}
+            onRemoveCustom={(v) => { removeCustom("quality", v); setQuality((a) => a.filter((x) => x !== v)); }}
             selected={quality} onToggle={(v) => setQuality((a) => toggleIn(a, v))} />
         </Field>
       )}
@@ -321,6 +323,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
           <Field label="Other symptoms">
             <CustomChipList base={OTHER_SYMPTOMS_DEFAULT} custom={data.custom.symptoms}
               onAddCustom={(v) => addCustom("symptoms", v)}
+              onRemoveCustom={(v) => { removeCustom("symptoms", v); setSymptoms((a) => a.filter((x) => x !== v)); }}
               selected={symptoms} onToggle={(v) => setSymptoms((a) => toggleIn(a, v))} />
           </Field>
           <Field label="Tetany episode?">
@@ -339,6 +342,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
               <Field label="Location">
                 <CustomChipList base={TETANY_LOCATIONS_DEFAULT} custom={data.custom.tetanyLocations}
                   onAddCustom={(v) => addCustom("tetanyLocations", v)}
+                  onRemoveCustom={(v) => { removeCustom("tetanyLocations", v); setTetanyLoc((a) => a.filter((x) => x !== v)); }}
                   selected={tetanyLoc} onToggle={(v) => setTetanyLoc((a) => toggleIn(a, v))} />
               </Field>
               <div className="grid grid-cols-2 gap-2">
@@ -357,6 +361,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
               <Field label="What helped">
                 <CustomChipList base={TETANY_HELPED_DEFAULT} custom={data.custom.tetanyHelped}
                   onAddCustom={(v) => addCustom("tetanyHelped", v)}
+                  onRemoveCustom={(v) => { removeCustom("tetanyHelped", v); setTetanyHelped((a) => a.filter((x) => x !== v)); }}
                   selected={tetanyHelped} onToggle={(v) => setTetanyHelped((a) => toggleIn(a, v))} />
               </Field>
               <Field label="Note (optional)">
@@ -370,7 +375,22 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
       {step === 4 && (
         <div className="space-y-4">
           <Field label={`Stress ${stress ?? "-"} / 10`}>
-            <Slider value={[stress ?? 0]} min={0} max={10} step={1} onValueChange={([v]) => setStress(v)} />
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {Array.from({ length: 11 }, (_, n) => {
+                const hue = 130 - n * 13; // green (130) -> red (0)
+                const bg = `hsl(${hue} 70% 50%)`;
+                const active = stress === n;
+                return (
+                  <button key={n} onClick={() => setStress(stress === n ? undefined : n)}
+                    className={`h-9 w-9 rounded-full text-xs font-bold transition ${
+                      active ? "text-white ring-2 ring-foreground scale-110" : "text-white/90"
+                    }`}
+                    style={{ background: bg, opacity: active || stress == null ? 1 : 0.55 }}>
+                    {n}
+                  </button>
+                );
+              })}
+            </div>
           </Field>
           <Field label="Body battery">
             <div className="mt-2 flex justify-between gap-2">
@@ -388,7 +408,11 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
           <Field label="Mood">
             <CustomChipList base={MOODS_DEFAULT} custom={data.custom.moods}
               onAddCustom={(v) => addCustom("moods", v)}
+              onRemoveCustom={(v) => { removeCustom("moods", v); setMood((a) => a.filter((x) => x !== v)); }}
               selected={mood} onToggle={(v) => setMood((a) => toggleIn(a, v))} />
+          </Field>
+          <Field label="Note (optional)">
+            <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Anything else…" />
           </Field>
           <Field label="Note (optional)">
             <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Anything else…" />
