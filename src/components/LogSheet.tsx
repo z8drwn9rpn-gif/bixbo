@@ -29,7 +29,7 @@ type Category =
 const CATEGORIES: { id: Category; label: string; emoji: string; hint: string }[] = [
   { id: "pain",    label: "Pain",             emoji: "🔥", hint: "0–10, body, quality" },
   { id: "period",  label: "Blueberry 🫐",     emoji: "🫐", hint: "Flow · discharge · notes" },
-  { id: "heat",    label: "Heat / Cold",      emoji: "♨️", hint: "Heating or ice session" },
+  { id: "heat",    label: "Heat / Cold / TENS session",      emoji: "♨️", hint: "Heating, ice or TENS session" },
   { id: "food",    label: "Food",             emoji: "🍽️", hint: "What & how you feel" },
   { id: "bowel",   label: "Bowel",            emoji: "💩", hint: "Bristol type" },
   { id: "sex",     label: "ŠukŠuk! ❤️",       emoji: "❤️", hint: "All kinds of activity" },
