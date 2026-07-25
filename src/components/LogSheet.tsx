@@ -267,6 +267,42 @@ function CustomChipList({
 }
 const toggleIn = (arr: string[], v: string) => arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v];
 
+function IntensityScale({ value, onChange, max }: { value: number; onChange: (n: number) => void; max: number }) {
+  return (
+    <div className="mt-2 flex flex-wrap gap-1.5">
+      {Array.from({ length: max }, (_, i) => i + 1).map((n) => {
+        const hue = 130 - ((n - 1) * 130) / Math.max(1, max - 1);
+        const bg = `hsl(${hue} 70% 50%)`;
+        const active = value === n;
+        return (
+          <button key={n} type="button" onClick={() => onChange(n)}
+            className={`h-9 w-9 rounded-full text-xs font-bold transition text-white ${active ? "ring-2 ring-foreground scale-110" : ""}`}
+            style={{ background: bg, opacity: active ? 1 : 0.55 }}>
+            {n}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+function DurationField({ minutes, setMinutes, ongoing, setOngoing }:
+  { minutes: string; setMinutes: (s: string) => void; ongoing: boolean; setOngoing: (b: boolean) => void }) {
+  return (
+    <div className="space-y-1">
+      <span className="text-xs font-medium text-muted-foreground">Duration (min)</span>
+      <div className="flex items-center gap-2">
+        <Input type="number" inputMode="numeric" min={0} value={ongoing ? "" : minutes}
+          disabled={ongoing}
+          onChange={(e) => setMinutes(e.target.value)} className="flex-1" placeholder="—" />
+        <button type="button" onClick={() => setOngoing(!ongoing)}
+          className={`rounded-full px-3 py-1.5 text-xs font-semibold ring-1 ring-border ${ongoing ? "bg-primary text-white" : "bg-tint text-foreground"}`}>
+          Ongoing
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ------------------- PAIN wizard ------------------- */
 function PainWizard({ date, data, update, onDone, initialEntry }:
   { date: string; data: BixboData; update: UpdateFn; onDone: () => void; initialEntry?: PainEntry }) {
