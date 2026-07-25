@@ -36,6 +36,7 @@ function HomePage() {
   const [selected, setSelected] = useState<string>(todayKey());
   const [logOpen, setLogOpen] = useState(false);
   const [quickCat, setQuickCat] = useState<string | undefined>();
+  const [editPain, setEditPain] = useState<import("@/lib/storage").PainEntry | undefined>();
 
   // Meds reminders + period notification
   useEffect(() => {
@@ -117,19 +118,20 @@ function HomePage() {
       {/* Category badges */}
       <TodayBadges log={view.dayLogs[selected]} onQuick={openQuick} />
 
-      <DayPreview date={selected} data={view} update={update} />
+      <DayPreview date={selected} data={view} update={update}
+        onEditPain={(p) => { setEditPain(p); setQuickCat("pain"); setLogOpen(true); }} />
 
-      <div className="fixed bottom-24 left-1/2 z-30 -translate-x-1/2">
+      <div className="fixed bottom-24 right-5 z-30">
         <Button
-          onClick={() => { setQuickCat(undefined); setLogOpen(true); }}
+          onClick={() => { setQuickCat(undefined); setEditPain(undefined); setLogOpen(true); }}
           className="h-14 rounded-full px-6 shadow-lg"
         >
           <Plus className="h-5 w-5" /> Log
         </Button>
       </div>
 
-      <LogSheet open={logOpen} onOpenChange={(b) => { setLogOpen(b); if (!b) setQuickCat(undefined); }}
-        date={selected} data={view} update={update} initial={quickCat as never} />
+      <LogSheet open={logOpen} onOpenChange={(b) => { setLogOpen(b); if (!b) { setQuickCat(undefined); setEditPain(undefined); } }}
+        date={selected} data={view} update={update} initial={quickCat as never} initialPain={editPain} />
     </AppShell>
   );
 }
@@ -182,8 +184,8 @@ function TodayBadges({ log, onQuick }: { log?: DayLog; onQuick: (cat: string) =>
 }
 
 /* ------------------- Day preview ------------------- */
-function DayPreview({ date, data, update }:
-  { date: string; data: BixboData; update: (u: (d: BixboData) => BixboData) => void }) {
+function DayPreview({ date, data, update, onEditPain }:
+  { date: string; data: BixboData; update: (u: (d: BixboData) => BixboData) => void; onEditPain?: (p: import("@/lib/storage").PainEntry) => void }) {
   const log = data.dayLogs[date];
   const rawNotes = data.dayNotes[date] ?? [];
   const notes: { text: string; time?: string }[] = (rawNotes as (string | { text: string; time?: string })[])
@@ -234,14 +236,16 @@ function DayPreview({ date, data, update }:
       )}
 
       {log?.pain?.length && (
-        <Card title="Pain" icon="🩹">
+        <Card title="Pain" icon="🔥">
           <ul className="space-y-2">
             {log.pain.map((p) => (
               <li key={p.id} className="flex items-start gap-3">
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-sm font-bold text-white" style={{ background: painColor(p.score) }}>
+                <button onClick={() => onEditPain?.(p)}
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-sm font-bold text-white"
+                  style={{ background: painColor(p.score) }} aria-label="Edit pain entry">
                   {Number.isInteger(p.score) ? p.score : p.score.toFixed(1)}
-                </span>
-                <div className="min-w-0 flex-1">
+                </button>
+                <button onClick={() => onEditPain?.(p)} className="min-w-0 flex-1 text-left">
                   <p className="text-xs text-muted-foreground">{p.time} · {PAIN_DESCRIPTIONS[Math.round(p.score)]}</p>
                   {p.parts.length > 0 && <p className="text-sm">{p.parts.join(", ")}</p>}
                   {p.quality.length > 0 && <p className="text-xs text-muted-foreground">{p.quality.join(", ")}</p>}
@@ -250,7 +254,8 @@ function DayPreview({ date, data, update }:
                   {p.stress != null && <p className="text-xs text-muted-foreground">Stress {p.stress}/10</p>}
                   {p.bodyBattery != null && <p className="text-xs text-muted-foreground">Battery {p.bodyBattery}/5</p>}
                   {p.note && <p className="mt-1 text-sm">"{p.note}"</p>}
-                </div>
+                  <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
+                </button>
                 <DeleteBtn onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], pain: (d.dayLogs[date]?.pain ?? []).filter((x) => x.id !== p.id) } } }))} />
               </li>
             ))}
@@ -450,23 +455,41 @@ function Card({ title, icon, children }: { title: string; icon: string; children
 function ShareDayButton({ date, view }: { date: string; view: BixboData }) {
   const share = async () => {
     const log = view.dayLogs[date] ?? {};
-    const lines: string[] = [
-      `BIXBO — ${fromKey(date).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}`,
-    ];
+    const dateLabel = fromKey(date).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+    const lines: string[] = [`🥑 BIXBO — ${dateLabel}`, ""];
+
     if (log.pain?.length) {
+      const avg = log.pain.reduce((s, p) => s + p.score, 0) / log.pain.length;
+      lines.push(`🔥 Pain — avg ${avg.toFixed(1)}/10 · ${log.pain.length} entr${log.pain.length === 1 ? "y" : "ies"}`);
+      for (const p of log.pain) {
+        const bits = [`${p.time}`, `${p.score}/10 (${PAIN_DESCRIPTIONS[Math.round(p.score)]})`];
+        if (p.parts.length) bits.push(p.parts.join(", "));
+        if (p.quality.length) bits.push(`[${p.quality.join(", ")}]`);
+        lines.push(`  • ${bits.join(" · ")}`);
+        if (p.note) lines.push(`    "${p.note}"`);
+      }
       lines.push("");
-      lines.push("Pain:");
-      for (const p of log.pain) lines.push(`  • ${p.time} · ${p.score}/10 (${PAIN_DESCRIPTIONS[Math.round(p.score)]})${p.parts.length ? ` — ${p.parts.join(", ")}` : ""}${p.quality.length ? ` [${p.quality.join(", ")}]` : ""}`);
     }
     if (log.panic?.length) {
-      lines.push("");
-      lines.push("Panic attacks:");
+      lines.push(`⚡ Panic attacks — ${log.panic.length}`);
       for (const p of log.panic) lines.push(`  • ${p.time} · ${p.intensity}/10 · ${p.minutes}min${p.trigger ? ` — ${p.trigger}` : ""}`);
+      lines.push("");
     }
-    if (log.periodInfo?.level || log.period) lines.push("", `Period: ${periodLabel(log.periodInfo?.level ?? log.period!)}`);
-    if (log.sleepHours != null) lines.push(`Sleep: ${log.sleepHours}h ${log.sleepQuality ?? ""}`);
+    if (log.tetany?.length) {
+      lines.push(`💥 Tetany — ${log.tetany.length}`);
+      for (const t of log.tetany) lines.push(`  • ${t.time} · ${t.types.join(", ")} · ${t.intensity}/5 · ${t.minutes}min`);
+      lines.push("");
+    }
+    if (log.periodInfo?.level || log.period) lines.push(`🫐 Period: ${periodLabel(log.periodInfo?.level ?? log.period!)}`);
+    if (log.sleepHours != null) lines.push(`😴 Sleep: ${log.sleepHours}h ${log.sleepQuality ?? ""}`);
+    if (log.temperature != null) lines.push(`🌡️ Temp: ${log.temperature}°C`);
+    if (log.weight != null) lines.push(`⚖️ Weight: ${log.weight}kg`);
+    if (log.food?.length) lines.push(`🍽️ Food: ${log.food.length} entries`);
+    if (log.workout?.length) lines.push(`🧘 Workout: ${log.workout.map((w) => `${w.kind} ${w.minutes}min`).join(", ")}`);
+
+    lines.push("", "— sent from BIXBO 🥑");
     const text = lines.join("\n");
-    if (navigator.share) { try { await navigator.share({ title: "How I feel today", text }); return; } catch {} }
+    if (navigator.share) { try { await navigator.share({ title: `How I feel · ${dateLabel}`, text }); return; } catch {} }
     try { await navigator.clipboard.writeText(text); alert("Copied to clipboard"); } catch { alert(text); }
   };
   return (
