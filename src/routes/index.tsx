@@ -37,6 +37,8 @@ function HomePage() {
   const [logOpen, setLogOpen] = useState(false);
   const [quickCat, setQuickCat] = useState<string | undefined>();
   const [editPain, setEditPain] = useState<import("@/lib/storage").PainEntry | undefined>();
+  const [editEntry, setEditEntry] = useState<unknown>(undefined);
+  const openEdit = (cat: string, entry: unknown) => { setQuickCat(cat); setEditEntry(entry); setEditPain(undefined); setLogOpen(true); };
 
   // Meds reminders + period notification
   useEffect(() => {
