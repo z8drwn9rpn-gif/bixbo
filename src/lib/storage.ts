@@ -1,10 +1,11 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 
 /* ------------------- Types ------------------- */
 export type PeriodLevel = "" | "spotting" | "light" | "medium" | "heavy" | "veryheavy";
 export type SexKind = "sex" | "fingering" | "suck_dick" | "oral" | "other" | "sex_with_condom" | "sex_without_condom" | "oral_giving" | "oral_receiving";
 export type ThermoKind = "heat" | "cold" | "tens";
 export type PainfulWhen = "no" | "before" | "during" | "after";
+export type Gender = "female" | "male";
 
 export interface PainEntry {
   id: string;
@@ -14,19 +15,19 @@ export interface PainEntry {
   quality: string[];
   symptoms: string[];
   note: string;
-  bodyBattery?: number;   // 1..5
-  stress?: number;         // 1..10
+  bodyBattery?: number;
+  stress?: number;
   mood?: string[];
 }
 export interface TetanyEpisode {
   id: string;
   time: string;
-  types: string[];         // Karpopedal spasm, Calf cramps, ...
-  location: string[];      // lips, fingers, toes, calves, face, ...
-  intensity: number;       // 1..5
+  types: string[];
+  location: string[];
+  intensity: number;
   minutes: number;
-  triggers: string[];      // Hyperventilation/stress, Exercise, Cold, Cycle phase, Other
-  timeSinceMagnerotMin?: number; // computed
+  triggers: string[];
+  timeSinceMagnerotMin?: number;
   helped: string[];
   note?: string;
 }
@@ -34,7 +35,7 @@ export interface PanicAttack {
   id: string;
   time: string;
   minutes: number;
-  intensity: number;             // 1..10
+  intensity: number;
   physical: string[];
   cognitive: string[];
   trigger: string;
@@ -44,68 +45,18 @@ export interface PanicAttack {
   helped: string[];
   note?: string;
 }
-export interface ThermoSession {
-  id: string;
-  kind: ThermoKind;
-  start: string;
-  minutes: number;
-  note?: string;
-}
+export interface ThermoSession { id: string; kind: ThermoKind; start: string; minutes: number; note?: string }
 export interface FoodEntry {
-  id: string;
-  time: string;
-  what: string;
-  feelings: string[];
-  after?: string;
-  hydrationMl?: number;
-  caffeineMg?: number;
-  alcoholDrinks?: number;
+  id: string; time: string; what: string; feelings: string[]; after?: string;
+  hydrationMl?: number; caffeineMg?: number; alcoholDrinks?: number;
 }
-export interface BowelEntry { id: string; time: string; bristol: number; note?: string; feelings?: string[]; symptoms?: string[] } // bristol 0 = no bowel movement
-export interface SexEntry {
-  id: string;
-  time: string;
-  kind: SexKind;
-  feelingAfter?: string;
-  painful?: PainfulWhen;
-  note?: string;
-}
+export interface BowelEntry { id: string; time: string; bristol: number; note?: string; feelings?: string[]; symptoms?: string[] }
+export interface SexEntry { id: string; time: string; kind: SexKind; feelingAfter?: string; painful?: PainfulWhen; note?: string }
 export interface ExtraMed { id: string; time: string; name: string; dose?: string; note?: string }
-export interface WorkoutEntry {
-  id: string;
-  time: string;
-  kind: string;
-  minutes: number;
-  weightKg?: number;
-  feeling?: string;
-  note?: string;
-}
-export interface EventEntry {
-  id: string;
-  title: string;
-  startDate: string;
-  endDate: string;
-  time?: string;
-  timeEnd?: string;
-  note?: string;
-  color?: string;
-}
-export interface TaskEntry {
-  id: string;
-  title: string;
-  startDate: string;
-  endDate: string;
-  time?: string;
-  timeEnd?: string;
-  done: boolean;
-  note?: string;
-}
-export interface PeriodEntry {
-  level: PeriodLevel;
-  discharge?: string;
-  dischargeNote?: string;
-  note?: string;
-}
+export interface WorkoutEntry { id: string; time: string; kind: string; minutes: number; weightKg?: number; feeling?: string; note?: string }
+export interface EventEntry { id: string; title: string; startDate: string; endDate: string; time?: string; timeEnd?: string; note?: string; color?: string }
+export interface TaskEntry { id: string; title: string; startDate: string; endDate: string; time?: string; timeEnd?: string; done: boolean; note?: string }
+export interface PeriodEntry { level: PeriodLevel; discharge?: string; dischargeNote?: string; note?: string }
 export interface DayNote { text: string; time?: string }
 
 export interface DayLog {
@@ -131,13 +82,8 @@ export interface Med { id: string; name: string; dose?: string; times: string[];
 export interface NoteFolder { id: string; name: string; icon?: string }
 export interface NoteChecklistItem { id: string; text: string; done: boolean }
 export interface Note {
-  id: string;
-  folderId: string;
-  title: string;
-  content: string;                 // rich HTML (bold/highlight)
-  checklist?: NoteChecklistItem[];
-  createdAt: number;
-  updatedAt?: number;
+  id: string; folderId: string; title: string; content: string;
+  checklist?: NoteChecklistItem[]; createdAt: number; updatedAt?: number;
 }
 
 export interface CyclePrefs {
@@ -168,6 +114,7 @@ export interface Settings {
   pairingCode?: string;
   partnerName?: string;
   logOrder?: string[];
+  gender?: Gender;
 }
 
 export interface PartnerData {
@@ -208,36 +155,17 @@ export const EMPTY: BixboData = {
   medLog: {},
   folders: DEFAULT_FOLDERS,
   notebook: [],
-  cycle: {
-    lastPeriodStart: "2026-07-15",
-    lastPeriodEnd:   "2026-07-19",
-    cycleLength: 28,
-    periodLength: 5,
-  },
+  cycle: { lastPeriodStart: "2026-07-15", lastPeriodEnd: "2026-07-19", cycleLength: 28, periodLength: 5 },
   custom: {
-    bodyParts: [],
-    quality: [],
-    symptoms: [],
-    foodFeelings: [],
-    workoutKinds: [],
-    moods: [],
-    tetanyLocations: [],
-    tetanyHelped: [],
-    panicHelped: [],
-    sexTypes: [],
-    bowelFeelings: [],
-    bowelSymptoms: [],
+    bodyParts: [], quality: [], symptoms: [], foodFeelings: [], workoutKinds: [], moods: [],
+    tetanyLocations: [], tetanyHelped: [], panicHelped: [], sexTypes: [], bowelFeelings: [], bowelSymptoms: [],
   },
-  settings: {
-    textSize: "md",
-    notifications: true,
-  },
+  settings: { textSize: "md", notifications: true, gender: "female" },
 };
 
 const KEY = "bixbo:v2";
 const LEGACY_KEY = "bixbo:v1";
 
-/* ------------------- Migration (additive only) ------------------- */
 function migrate(raw: unknown): BixboData {
   const parsed = (raw ?? {}) as Partial<BixboData> & Record<string, unknown>;
   const src = (parsed.dayLogs ?? {}) as Record<string, Record<string, unknown>>;
@@ -252,9 +180,7 @@ function migrate(raw: unknown): BixboData {
       if (s.type && s.type !== "none") {
         const map: Record<string, SexKind> = { with_condom: "sex", without_condom: "sex" };
         out.sex = [{ id: `${k}-legacy-sex`, time: "00:00", kind: (map[s.type] ?? "other") as SexKind, note: s.note }];
-      } else {
-        out.sex = [];
-      }
+      } else { out.sex = []; }
     }
     dayLogs[k] = out;
   }
@@ -269,43 +195,69 @@ function migrate(raw: unknown): BixboData {
     settings: { ...EMPTY.settings, ...(parsed.settings as Partial<Settings> | undefined) },
     tasks: (parsed.tasks as TaskEntry[] | undefined) ?? [],
     events: (parsed.events as EventEntry[] | undefined) ?? [],
-    notebook: ((parsed.notebook as Note[] | undefined) ?? []).map((n) => ({
-      ...n, folderId: n.folderId ?? "general",
-    })),
+    notebook: ((parsed.notebook as Note[] | undefined) ?? []).map((n) => ({ ...n, folderId: n.folderId ?? "general" })),
   } as BixboData;
 }
 
-/* ------------------- Hook ------------------- */
+/* ------------------- Shared store ------------------- */
+let _state: BixboData = EMPTY;
+let _hydrated = false;
+const listeners = new Set<() => void>();
+const changeListeners = new Set<(d: BixboData, reason: "local" | "remote") => void>();
+
+function emit() { listeners.forEach((l) => l()); }
+
+function hydrate() {
+  if (_hydrated || typeof window === "undefined") return;
+  try {
+    const raw = localStorage.getItem(KEY) ?? localStorage.getItem(LEGACY_KEY);
+    if (raw) _state = migrate(JSON.parse(raw));
+  } catch {}
+  _hydrated = true;
+  emit();
+}
+
+function persist() {
+  if (typeof window === "undefined") return;
+  try { localStorage.setItem(KEY, JSON.stringify(_state)); } catch {}
+}
+
+export function setBixbo(updater: (d: BixboData) => BixboData) {
+  _state = updater(_state);
+  persist();
+  emit();
+  changeListeners.forEach((l) => l(_state, "local"));
+}
+export function replaceBixbo(d: BixboData, reason: "local" | "remote" = "local") {
+  _state = migrate(d);
+  persist();
+  emit();
+  changeListeners.forEach((l) => l(_state, reason));
+}
+export function setPartner(partner: PartnerData | undefined) {
+  _state = { ..._state, partner };
+  persist();
+  emit();
+}
+export function getBixbo(): BixboData { return _state; }
+export function subscribeBixboChanges(fn: (d: BixboData, reason: "local" | "remote") => void) {
+  changeListeners.add(fn);
+  return () => { changeListeners.delete(fn); };
+}
+
 export function useBixbo() {
-  const [data, setData] = useState<BixboData>(EMPTY);
-  const [hydrated, setHydrated] = useState(false);
-
+  useEffect(() => { hydrate(); }, []);
+  const data = useSyncExternalStore(
+    (cb) => { listeners.add(cb); return () => { listeners.delete(cb); }; },
+    () => _state,
+    () => EMPTY,
+  );
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(KEY) ?? localStorage.getItem(LEGACY_KEY);
-      if (raw) setData(migrate(JSON.parse(raw)));
-    } catch {}
-    setHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated) return;
-    try { localStorage.setItem(KEY, JSON.stringify(data)); } catch {}
-  }, [data, hydrated]);
-
-  // Apply text size
-  useEffect(() => {
-    if (!hydrated) return;
+    if (!_hydrated) return;
     const map = { sm: "14px", md: "16px", lg: "18px", xl: "20px" } as const;
     document.documentElement.style.fontSize = map[data.settings.textSize] ?? "16px";
-  }, [data.settings.textSize, hydrated]);
-
-  const update = useCallback((updater: (d: BixboData) => BixboData) => {
-    setData((prev) => updater(prev));
-  }, []);
-  const replace = useCallback((d: BixboData) => setData(migrate(d)), []);
-
-  return { data, update, replace, hydrated };
+  }, [data.settings.textSize]);
+  return { data, update: setBixbo, replace: (d: BixboData) => replaceBixbo(d, "local"), hydrated: _hydrated };
 }
 
 /* ------------------- Day helpers ------------------- */
@@ -382,16 +334,9 @@ export function nextPredictedPeriod(cycle: CyclePrefs): { start: string; end: st
 
 /* ------------------- Constants ------------------- */
 export const PAIN_DESCRIPTIONS: Record<number, string> = {
-  0: "Pain free",
-  1: "Very minor annoyance",
-  2: "Minor annoyance",
-  3: "Annoying, distracting",
-  4: "Bearable if involved in work",
-  5: "Can't be ignored > 30 min",
-  6: "Can't be ignored for long",
-  7: "Hard to concentrate",
-  8: "Physical activity limited",
-  9: "Unable to speak, crying out",
+  0: "Pain free", 1: "Very minor annoyance", 2: "Minor annoyance", 3: "Annoying, distracting",
+  4: "Bearable if involved in work", 5: "Can't be ignored > 30 min", 6: "Can't be ignored for long",
+  7: "Hard to concentrate", 8: "Physical activity limited", 9: "Unable to speak, crying out",
   10: "Unconscious — passes out",
 };
 export function painColor(score: number): string {
@@ -404,57 +349,25 @@ export function avgDayPain(log?: DayLog): number | undefined {
   return sum / log.pain.length;
 }
 
-export const BODY_PARTS_DEFAULT = [
-  "Abdomen","Lower abdomen","Lower belly","Pelvis","Ovaries",
-  "Uterus","Vagina","Groin","Back","Head","Legs","Chest",
-];
-export const PAIN_QUALITY_DEFAULT = [
-  "Cramping","Stabbing","Burning","Dull","Sharp","Throbbing","Pressure","Shooting","Aching",
-];
-export const OTHER_SYMPTOMS_DEFAULT = [
-  "Nausea","Dizziness","Fatigue","Bloating","Diarrhea","Constipation","Headache","Cold sweats","Fainting","Mood swings",
-];
-export const FOOD_FEELINGS_DEFAULT = [
-  "😊 Great","🙂 Fine","😐 Neutral","😕 Off","😖 Bloated","🤢 Nauseous","🤕 Stomach pain","😴 Sleepy","🥵 Flushed","⚡ Energy up",
-];
-export const WORKOUT_KINDS_DEFAULT = [
-  "🧘🏼‍♀️ Yoga","🚶🏼‍♀️ Walk","🏃🏼‍♀️ Run","🚴 Cycling","💪 Strength","🤸 Stretching","🏊 Swim","🧘 Meditation",
-];
-export const MOODS_DEFAULT = [
-  "All over the place","Angry","Annoyed","Anxious","Apathetic","Bored","Busy","Calm",
-  "Clingy","Cranky","Depressed","Excited","Fatigued","Grateful","Happy","In love",
-  "In pain","Indifferent","Irritated","Just chillin","Lonely","Meh","PMDD","Productive",
-  "Restful","Sad","Self-deprecating","Sleepy","Stressed","Tired",
-];
-export const TETANY_TYPES = [
-  "Carpopedal spasm","Calf cramps","Twitches around mouth/face",
-  "Tingling / numbness","Fasciculations",
-];
-export const TETANY_LOCATIONS_DEFAULT = [
-  "Lips","Fingers","Toes","Hands","Calves","Face","Around mouth",
-];
-export const TETANY_TRIGGERS = [
-  "Hyperventilation / stress","Exercise","Cold","Cycle phase","Other",
-];
-export const TETANY_HELPED_DEFAULT = [
-  "Slow breathing","Breathe into bag/hands","Warmth","Extra magnesium","Rest",
-];
-export const PANIC_PHYSICAL = [
-  "Racing heart","Shortness of breath","Chest pressure","Dizziness",
-  "Tingling / numbness","Trembling","Nausea","Hot flashes / chills",
-];
-export const PANIC_COGNITIVE = [
-  "Loss of control","Derealization","Fear of dying","Fear of collapse",
-];
-export const PANIC_HELPED_DEFAULT = [
-  "Slow exhale","Frontin","Grounding","Someone with me","Fresh air",
-];
+export const BODY_PARTS_DEFAULT = ["Abdomen","Lower abdomen","Lower belly","Pelvis","Ovaries","Uterus","Vagina","Groin","Back","Head","Legs","Chest"];
+export const PAIN_QUALITY_DEFAULT = ["Cramping","Stabbing","Burning","Dull","Sharp","Throbbing","Pressure","Shooting","Aching"];
+export const OTHER_SYMPTOMS_DEFAULT = ["Nausea","Dizziness","Fatigue","Bloating","Diarrhea","Constipation","Headache","Cold sweats","Fainting","Mood swings"];
+export const FOOD_FEELINGS_DEFAULT = ["😊 Great","🙂 Fine","😐 Neutral","😕 Off","😖 Bloated","🤢 Nauseous","🤕 Stomach pain","😴 Sleepy","🥵 Flushed","⚡ Energy up"];
+export const WORKOUT_KINDS_DEFAULT = ["🧘🏼‍♀️ Yoga","🚶🏼‍♀️ Walk","🏃🏼‍♀️ Run","🚴 Cycling","💪 Strength","🤸 Stretching","🏊 Swim","🧘 Meditation"];
+export const MOODS_DEFAULT = ["All over the place","Angry","Annoyed","Anxious","Apathetic","Bored","Busy","Calm","Clingy","Cranky","Depressed","Excited","Fatigued","Grateful","Happy","In love","In pain","Indifferent","Irritated","Just chillin","Lonely","Meh","PMDD","Productive","Restful","Sad","Self-deprecating","Sleepy","Stressed","Tired"];
+export const TETANY_TYPES = ["Carpopedal spasm","Calf cramps","Twitches around mouth/face","Tingling / numbness","Fasciculations"];
+export const TETANY_LOCATIONS_DEFAULT = ["Lips","Fingers","Toes","Hands","Calves","Face","Around mouth"];
+export const TETANY_TRIGGERS = ["Hyperventilation / stress","Exercise","Cold","Cycle phase","Other"];
+export const TETANY_HELPED_DEFAULT = ["Slow breathing","Breathe into bag/hands","Warmth","Extra magnesium","Rest"];
+export const PANIC_PHYSICAL = ["Racing heart","Shortness of breath","Chest pressure","Dizziness","Tingling / numbness","Trembling","Nausea","Hot flashes / chills"];
+export const PANIC_COGNITIVE = ["Loss of control","Derealization","Fear of dying","Fear of collapse"];
+export const PANIC_HELPED_DEFAULT = ["Slow exhale","Frontin","Grounding","Someone with me","Fresh air"];
 
 export const SEX_TYPES_DEFAULT: { value: SexKind; label: string }[] = [
-  { value: "sex",        label: "Sex" },
-  { value: "fingering",  label: "Fingering" },
-  { value: "suck_dick",  label: "Suck dick" },
-  { value: "oral",       label: "Oral (receiving)" },
+  { value: "sex", label: "Sex" },
+  { value: "fingering", label: "Fingering" },
+  { value: "suck_dick", label: "Suck dick" },
+  { value: "oral", label: "Oral (receiving)" },
 ];
 
 export const DISCHARGE_OPTS: { value: string; label: string; color: string }[] = [
@@ -465,7 +378,6 @@ export const DISCHARGE_OPTS: { value: string; label: string; color: string }[] =
   { value: "other",  label: "Other",             color: "#c084fc" },
 ];
 
-/* Bristol chart (official K Health colors approximated). Index 0 = "No bowel". */
 export const BRISTOL: { n: number; label: string; sub: string; color: string; shape: string }[] = [
   { n: 1, label: "Type 1 — Constipation",  sub: "Separate hard lumps",                    color: "#7c3aed", shape: "lumps" },
   { n: 2, label: "Type 2 — Constipation",  sub: "Sausage-shaped but firm and lumpy",      color: "#2563eb", shape: "lumpy" },
@@ -476,16 +388,10 @@ export const BRISTOL: { n: number; label: string; sub: string; color: string; sh
   { n: 7, label: "Type 7 — Diarrhea",      sub: "Watery, no solid pieces",                color: "#dc2626", shape: "liquid" },
 ];
 
-export const BOWEL_FEELINGS_DEFAULT = [
-  "😌 Relief","🙂 Normal","😐 Neutral","😖 Painful","🤕 Cramping","😰 Urgent","💨 Gassy","😞 Incomplete",
-];
-export const BOWEL_SYMPTOMS_DEFAULT = [
-  "Bloating","Cramps","Straining","Blood","Mucus","Burning","Nausea","Urgency",
-];
+export const BOWEL_FEELINGS_DEFAULT = ["😌 Relief","🙂 Normal","😐 Neutral","😖 Painful","🤕 Cramping","😰 Urgent","💨 Gassy","😞 Incomplete"];
+export const BOWEL_SYMPTOMS_DEFAULT = ["Bloating","Cramps","Straining","Blood","Mucus","Burning","Nausea","Urgency"];
 
-export const EVENT_COLORS = [
-  "#22c55e","#3b82f6","#f97316","#eab308","#ec4899","#a855f7","#06b6d4","#ef4444",
-];
+export const EVENT_COLORS = ["#22c55e","#3b82f6","#f97316","#eab308","#ec4899","#a855f7","#06b6d4","#ef4444"];
 
 export const BODY_BATTERY: { n: number; label: string; color: string; emoji: string }[] = [
   { n: 1, label: "Drained",      color: "#ef4444", emoji: "😴" },
@@ -495,6 +401,4 @@ export const BODY_BATTERY: { n: number; label: string; color: string; emoji: str
   { n: 5, label: "Fully charged",color: "#16a34a", emoji: "⚡" },
 ];
 
-export const SLEEP_QUALITY = [
-  "😴 Terrible","🙁 Poor","😐 Ok","🙂 Good","😀 Great",
-];
+export const SLEEP_QUALITY = ["😴 Terrible","🙁 Poor","😐 Ok","🙂 Good","😀 Great"];
