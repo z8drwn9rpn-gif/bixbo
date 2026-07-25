@@ -2,8 +2,9 @@ import { useEffect, useState, useCallback } from "react";
 
 /* ------------------- Types ------------------- */
 export type PeriodLevel = "" | "spotting" | "light" | "medium" | "heavy" | "veryheavy";
-export type SexKind = "none" | "sex_with_condom" | "sex_without_condom" | "fingering" | "oral_giving" | "oral_receiving" | "other";
-export type ThermoKind = "heat" | "cold";
+export type SexKind = "sex" | "fingering" | "suck_dick" | "oral" | "other" | "sex_with_condom" | "sex_without_condom" | "oral_giving" | "oral_receiving";
+export type ThermoKind = "heat" | "cold" | "tens";
+export type PainfulWhen = "no" | "before" | "during" | "after";
 
 export interface PainEntry {
   id: string;
@@ -13,6 +14,35 @@ export interface PainEntry {
   quality: string[];
   symptoms: string[];
   note: string;
+  bodyBattery?: number;   // 1..5
+  stress?: number;         // 1..10
+  mood?: string[];
+}
+export interface TetanyEpisode {
+  id: string;
+  time: string;
+  types: string[];         // Karpopedal spasm, Calf cramps, ...
+  location: string[];      // lips, fingers, toes, calves, face, ...
+  intensity: number;       // 1..5
+  minutes: number;
+  triggers: string[];      // Hyperventilation/stress, Exercise, Cold, Cycle phase, Other
+  timeSinceMagnerotMin?: number; // computed
+  helped: string[];
+  note?: string;
+}
+export interface PanicAttack {
+  id: string;
+  time: string;
+  minutes: number;
+  intensity: number;             // 1..10
+  physical: string[];
+  cognitive: string[];
+  trigger: string;
+  place?: string;
+  hyperventilation: "no" | "before" | "during" | "unknown";
+  tetanyPresent: boolean;
+  helped: string[];
+  note?: string;
 }
 export interface ThermoSession {
   id: string;
@@ -25,16 +55,26 @@ export interface FoodEntry {
   id: string;
   time: string;
   what: string;
-  feelings: string[];    // e.g. ["Bloated","😐"]
+  feelings: string[];
   after?: string;
+  hydrationMl?: number;
+  caffeineMg?: number;
+  alcoholDrinks?: number;
 }
-export interface BowelEntry { id: string; time: string; bristol: number; note?: string }
-export interface SexEntry { id: string; time: string; kind: SexKind; note?: string }
-export interface ExtraMed { id: string; time: string; name: string; dose?: string }
+export interface BowelEntry { id: string; time: string; bristol: number; note?: string } // bristol 0 = no bowel movement
+export interface SexEntry {
+  id: string;
+  time: string;
+  kind: SexKind;
+  feelingAfter?: string;
+  painful?: PainfulWhen;
+  note?: string;
+}
+export interface ExtraMed { id: string; time: string; name: string; dose?: string; note?: string }
 export interface WorkoutEntry {
   id: string;
   time: string;
-  kind: string;          // "Yoga", "Walk", …
+  kind: string;
   minutes: number;
   weightKg?: number;
   feeling?: string;
@@ -43,9 +83,10 @@ export interface WorkoutEntry {
 export interface EventEntry {
   id: string;
   title: string;
-  startDate: string;      // yyyy-mm-dd
+  startDate: string;
   endDate: string;
   time?: string;
+  timeEnd?: string;
   note?: string;
   color?: string;
 }
@@ -55,48 +96,55 @@ export interface TaskEntry {
   startDate: string;
   endDate: string;
   time?: string;
+  timeEnd?: string;
   done: boolean;
   note?: string;
 }
 export interface PeriodEntry {
   level: PeriodLevel;
-  discharge?: string;      // "clear","white","yellow","brown","other"
+  discharge?: string;
   dischargeNote?: string;
   note?: string;
 }
+export interface DayNote { text: string; time?: string }
 
 export interface DayLog {
   pain?: PainEntry[];
-  heat?: ThermoSession[];       // heat + cold combined
-  period?: PeriodLevel;         // legacy simple
-  periodInfo?: PeriodEntry;     // richer
+  tetany?: TetanyEpisode[];
+  panic?: PanicAttack[];
+  heat?: ThermoSession[];
+  period?: PeriodLevel;
+  periodInfo?: PeriodEntry;
   food?: FoodEntry[];
   bowel?: BowelEntry[];
-  sex?: SexEntry[];             // array now
+  sex?: SexEntry[];
   temperature?: number;
   weight?: number;
   sleepHours?: number;
+  sleepQuality?: string;
   extraMeds?: ExtraMed[];
   workout?: WorkoutEntry[];
 }
 
 export interface Todo { id: string; text: string; done: boolean }
-export interface Med { id: string; name: string; dose?: string; times: string[]; asNeeded?: boolean; color?: string }
+export interface Med { id: string; name: string; dose?: string; times: string[]; asNeeded?: boolean; color?: string; note?: string }
 export interface NoteFolder { id: string; name: string; icon?: string }
+export interface NoteChecklistItem { id: string; text: string; done: boolean }
 export interface Note {
   id: string;
   folderId: string;
   title: string;
-  content: string;
+  content: string;                 // rich HTML (bold/highlight)
+  checklist?: NoteChecklistItem[];
   createdAt: number;
   updatedAt?: number;
 }
 
 export interface CyclePrefs {
-  lastPeriodStart?: string;   // yyyy-mm-dd
+  lastPeriodStart?: string;
   lastPeriodEnd?: string;
-  cycleLength: number;        // days
-  periodLength: number;       // days
+  cycleLength: number;
+  periodLength: number;
 }
 
 export interface CustomLists {
@@ -105,13 +153,31 @@ export interface CustomLists {
   symptoms: string[];
   foodFeelings: string[];
   workoutKinds: string[];
+  moods: string[];
+  tetanyLocations: string[];
+  tetanyHelped: string[];
+  panicHelped: string[];
+  sexTypes: string[];
+}
+
+export interface Settings {
+  textSize: "sm" | "md" | "lg" | "xl";
+  notifications: boolean;
+  pairingCode?: string;
+  partnerName?: string;
+}
+
+export interface PartnerData {
+  name?: string;
+  dayLogs: Record<string, { pain?: PainEntry[]; panic?: PanicAttack[] }>;
+  importedAt: number;
 }
 
 export interface BixboData {
   dayLogs: Record<string, DayLog>;
-  dayNotes: Record<string, string[]>;
-  todos: Record<string, Todo[]>;            // legacy per-day
-  tasks: TaskEntry[];                        // new global with date range
+  dayNotes: Record<string, DayNote[] | string[]>;
+  todos: Record<string, Todo[]>;
+  tasks: TaskEntry[];
   events: EventEntry[];
   meds: Med[];
   medLog: Record<string, Record<string, boolean>>;
@@ -119,6 +185,8 @@ export interface BixboData {
   notebook: Note[];
   cycle: CyclePrefs;
   custom: CustomLists;
+  settings: Settings;
+  partner?: PartnerData;
 }
 
 export const DEFAULT_FOLDERS: NoteFolder[] = [
@@ -149,60 +217,51 @@ export const EMPTY: BixboData = {
     symptoms: [],
     foodFeelings: [],
     workoutKinds: [],
+    moods: [],
+    tetanyLocations: [],
+    tetanyHelped: [],
+    panicHelped: [],
+    sexTypes: [],
+  },
+  settings: {
+    textSize: "md",
+    notifications: true,
   },
 };
 
 const KEY = "bixbo:v2";
 const LEGACY_KEY = "bixbo:v1";
 
-/* ------------------- Migration ------------------- */
+/* ------------------- Migration (additive only) ------------------- */
 function migrate(raw: unknown): BixboData {
   const parsed = (raw ?? {}) as Partial<BixboData> & Record<string, unknown>;
   const src = (parsed.dayLogs ?? {}) as Record<string, Record<string, unknown>>;
   const dayLogs: Record<string, DayLog> = {};
   for (const [k, l] of Object.entries(src)) {
-    const out: DayLog = {};
+    const out: DayLog = { ...(l as DayLog) };
     if (typeof l.pain === "number") {
       out.pain = [{ id: `${k}-legacy`, time: "00:00", score: l.pain, parts: [], quality: [], symptoms: [], note: "" }];
-    } else if (Array.isArray(l.pain)) out.pain = l.pain as PainEntry[];
-
-    if (typeof l.period === "string") out.period = l.period as PeriodLevel;
-    if (l.periodInfo && typeof l.periodInfo === "object") out.periodInfo = l.periodInfo as PeriodEntry;
-
-    if (Array.isArray(l.food)) {
-      out.food = (l.food as unknown[]).map((f) => {
-        const fx = f as Partial<FoodEntry>;
-        return { id: fx.id ?? crypto.randomUUID(), time: fx.time ?? "00:00", what: fx.what ?? "", feelings: fx.feelings ?? [], after: fx.after };
-      });
     }
-    if (Array.isArray(l.bowel)) out.bowel = l.bowel as BowelEntry[];
-    if (Array.isArray(l.heat)) out.heat = (l.heat as unknown[]).map((h) => {
-      const hx = h as Partial<ThermoSession>;
-      return { id: hx.id ?? crypto.randomUUID(), kind: hx.kind ?? "heat", start: hx.start ?? "00:00", minutes: hx.minutes ?? 20, note: hx.note };
-    });
-    if (Array.isArray(l.sex)) out.sex = l.sex as SexEntry[];
-    else if (l.sex && typeof l.sex === "object" && !Array.isArray(l.sex)) {
+    if (l.sex && typeof l.sex === "object" && !Array.isArray(l.sex)) {
       const s = l.sex as { type?: string; note?: string };
       if (s.type && s.type !== "none") {
-        const map: Record<string, SexKind> = { with_condom: "sex_with_condom", without_condom: "sex_without_condom" };
+        const map: Record<string, SexKind> = { with_condom: "sex", without_condom: "sex" };
         out.sex = [{ id: `${k}-legacy-sex`, time: "00:00", kind: (map[s.type] ?? "other") as SexKind, note: s.note }];
+      } else {
+        out.sex = [];
       }
     }
-    if (Array.isArray(l.extraMeds)) out.extraMeds = l.extraMeds as ExtraMed[];
-    if (Array.isArray(l.workout)) out.workout = l.workout as WorkoutEntry[];
-    if (typeof l.temperature === "number") out.temperature = l.temperature;
-    if (typeof l.weight === "number") out.weight = l.weight;
-    if (typeof l.sleepHours === "number") out.sleepHours = l.sleepHours;
     dayLogs[k] = out;
   }
-
+  const c = { ...EMPTY.custom, ...(parsed.custom as Partial<CustomLists> | undefined) };
   return {
     ...EMPTY,
     ...parsed,
     dayLogs,
     folders: (parsed.folders as NoteFolder[] | undefined)?.length ? parsed.folders as NoteFolder[] : DEFAULT_FOLDERS,
     cycle: { ...EMPTY.cycle, ...(parsed.cycle as Partial<CyclePrefs> | undefined) },
-    custom: { ...EMPTY.custom, ...(parsed.custom as Partial<CustomLists> | undefined) },
+    custom: c,
+    settings: { ...EMPTY.settings, ...(parsed.settings as Partial<Settings> | undefined) },
     tasks: (parsed.tasks as TaskEntry[] | undefined) ?? [],
     events: (parsed.events as EventEntry[] | undefined) ?? [],
     notebook: ((parsed.notebook as Note[] | undefined) ?? []).map((n) => ({
@@ -229,6 +288,13 @@ export function useBixbo() {
     try { localStorage.setItem(KEY, JSON.stringify(data)); } catch {}
   }, [data, hydrated]);
 
+  // Apply text size
+  useEffect(() => {
+    if (!hydrated) return;
+    const map = { sm: "14px", md: "16px", lg: "18px", xl: "20px" } as const;
+    document.documentElement.style.fontSize = map[data.settings.textSize] ?? "16px";
+  }, [data.settings.textSize, hydrated]);
+
   const update = useCallback((updater: (d: BixboData) => BixboData) => {
     setData((prev) => updater(prev));
   }, []);
@@ -249,7 +315,8 @@ export function updateDayLog(
 export function hasAnyLog(l?: DayLog): boolean {
   if (!l) return false;
   return !!(
-    l.pain?.length || l.heat?.length || l.period || l.periodInfo?.level ||
+    l.pain?.length || l.tetany?.length || l.panic?.length ||
+    l.heat?.length || l.period || l.periodInfo?.level ||
     l.food?.length || l.bowel?.length || l.sex?.length ||
     l.temperature != null || l.weight != null || l.sleepHours != null ||
     l.extraMeds?.length || l.workout?.length
@@ -288,14 +355,12 @@ export function predictPeriods(cycle: CyclePrefs, from: Date, to: Date): { start
   const out: { start: string; end: string }[] = [];
   const fromK = toKey(from), toK = toKey(to);
   let curStart = cycle.lastPeriodStart;
-  // Move forward
   while (curStart <= toK) {
     const end = addDays(curStart, Math.max(0, cycle.periodLength - 1));
     if (end >= fromK) out.push({ start: curStart, end });
     curStart = addDays(curStart, cycle.cycleLength);
     if (out.length > 24) break;
   }
-  // Also include current stored one even if in past
   if (cycle.lastPeriodStart && cycle.lastPeriodEnd) {
     const s = cycle.lastPeriodStart, e = cycle.lastPeriodEnd;
     if (s <= toK && e >= fromK && !out.some((o) => o.start === s)) out.unshift({ start: s, end: e });
@@ -328,6 +393,12 @@ export function painColor(score: number): string {
   const n = Math.max(0, Math.min(10, Math.round(score)));
   return `var(--pain-${n})`;
 }
+export function avgDayPain(log?: DayLog): number | undefined {
+  if (!log?.pain?.length) return undefined;
+  const sum = log.pain.reduce((s, p) => s + p.score, 0);
+  return sum / log.pain.length;
+}
+
 export const BODY_PARTS_DEFAULT = [
   "Abdomen","Lower abdomen","Lower belly","Pelvis","Ovaries",
   "Uterus","Vagina","Groin","Back","Head","Legs","Chest",
@@ -339,11 +410,48 @@ export const OTHER_SYMPTOMS_DEFAULT = [
   "Nausea","Dizziness","Fatigue","Bloating","Diarrhea","Constipation","Headache","Cold sweats","Fainting","Mood swings",
 ];
 export const FOOD_FEELINGS_DEFAULT = [
-  "😊 Great","🙂 Fine","😐 Neutral","😕 Off","😖 Bloated","🤢 Nauseous","🤕 Stomach pain","😴 Sleepy","🥵 Flushed",
+  "😊 Great","🙂 Fine","😐 Neutral","😕 Off","😖 Bloated","🤢 Nauseous","🤕 Stomach pain","😴 Sleepy","🥵 Flushed","⚡ Energy up",
 ];
 export const WORKOUT_KINDS_DEFAULT = [
   "🧘🏼‍♀️ Yoga","🚶🏼‍♀️ Walk","🏃🏼‍♀️ Run","🚴 Cycling","💪 Strength","🤸 Stretching","🏊 Swim","🧘 Meditation",
 ];
+export const MOODS_DEFAULT = [
+  "All over the place","Angry","Annoyed","Anxious","Apathetic","Bored","Busy","Calm",
+  "Clingy","Cranky","Depressed","Excited","Fatigued","Grateful","Happy","In love",
+  "In pain","Indifferent","Irritated","Just chillin","Lonely","Meh","PMDD","Productive",
+  "Restful","Sad","Self-deprecating","Sleepy","Stressed","Tired",
+];
+export const TETANY_TYPES = [
+  "Carpopedal spasm","Calf cramps","Twitches around mouth/face",
+  "Tingling / numbness","Fasciculations",
+];
+export const TETANY_LOCATIONS_DEFAULT = [
+  "Lips","Fingers","Toes","Hands","Calves","Face","Around mouth",
+];
+export const TETANY_TRIGGERS = [
+  "Hyperventilation / stress","Exercise","Cold","Cycle phase","Other",
+];
+export const TETANY_HELPED_DEFAULT = [
+  "Slow breathing","Breathe into bag/hands","Warmth","Extra magnesium","Rest",
+];
+export const PANIC_PHYSICAL = [
+  "Racing heart","Shortness of breath","Chest pressure","Dizziness",
+  "Tingling / numbness","Trembling","Nausea","Hot flashes / chills",
+];
+export const PANIC_COGNITIVE = [
+  "Loss of control","Derealization","Fear of dying","Fear of collapse",
+];
+export const PANIC_HELPED_DEFAULT = [
+  "Slow exhale","Frontin","Grounding","Someone with me","Fresh air",
+];
+
+export const SEX_TYPES_DEFAULT: { value: SexKind; label: string }[] = [
+  { value: "sex",        label: "Sex" },
+  { value: "fingering",  label: "Fingering" },
+  { value: "suck_dick",  label: "Suck dick" },
+  { value: "oral",       label: "Oral (receiving)" },
+];
+
 export const DISCHARGE_OPTS: { value: string; label: string; color: string }[] = [
   { value: "clear",  label: "Clear / egg-white", color: "#dbeafe" },
   { value: "white",  label: "White / creamy",    color: "#f5f5f4" },
@@ -352,12 +460,29 @@ export const DISCHARGE_OPTS: { value: string; label: string; color: string }[] =
   { value: "other",  label: "Other",             color: "#c084fc" },
 ];
 
-export const BRISTOL: { n: number; label: string; color: string; shape: string }[] = [
-  { n: 1, label: "Separate hard lumps", color: "#6b3f1a", shape: "lumps" },
-  { n: 2, label: "Lumpy sausage",       color: "#8a5a2b", shape: "lumpy" },
-  { n: 3, label: "Cracked sausage",     color: "#a97142", shape: "cracked" },
-  { n: 4, label: "Smooth sausage",      color: "#c58a5b", shape: "smooth" },
-  { n: 5, label: "Soft blobs",          color: "#d9a273", shape: "blobs" },
-  { n: 6, label: "Mushy",               color: "#c9b48b", shape: "mushy" },
-  { n: 7, label: "Liquid",              color: "#a6b57a", shape: "liquid" },
+/* Bristol chart (official K Health colors approximated). Index 0 = "No bowel". */
+export const BRISTOL: { n: number; label: string; sub: string; color: string; shape: string }[] = [
+  { n: 1, label: "Type 1 — Constipation",  sub: "Separate hard lumps",                    color: "#7c3aed", shape: "lumps" },
+  { n: 2, label: "Type 2 — Constipation",  sub: "Sausage-shaped but firm and lumpy",      color: "#2563eb", shape: "lumpy" },
+  { n: 3, label: "Type 3 — Normal",        sub: "Thicker but soft, with cracks",          color: "#16a34a", shape: "cracked" },
+  { n: 4, label: "Type 4 — Normal",        sub: "Smooth, soft, uniform",                  color: "#eab308", shape: "smooth" },
+  { n: 5, label: "Type 5 — Lacks fiber",   sub: "Soft blobs with clear-cut edges",        color: "#f97316", shape: "blobs" },
+  { n: 6, label: "Type 6 — Diarrhea",      sub: "Fluffy, mushy, ragged edges",            color: "#ec4899", shape: "mushy" },
+  { n: 7, label: "Type 7 — Diarrhea",      sub: "Watery, no solid pieces",                color: "#dc2626", shape: "liquid" },
+];
+
+export const EVENT_COLORS = [
+  "#22c55e","#3b82f6","#f97316","#eab308","#ec4899","#a855f7","#06b6d4","#ef4444",
+];
+
+export const BODY_BATTERY: { n: number; label: string; color: string; emoji: string }[] = [
+  { n: 1, label: "Drained",      color: "#ef4444", emoji: "😴" },
+  { n: 2, label: "Low",          color: "#f97316", emoji: "🙁" },
+  { n: 3, label: "Ok",           color: "#eab308", emoji: "😐" },
+  { n: 4, label: "Good",         color: "#22c55e", emoji: "🙂" },
+  { n: 5, label: "Fully charged",color: "#16a34a", emoji: "⚡" },
+];
+
+export const SLEEP_QUALITY = [
+  "😴 Terrible","🙁 Poor","😐 Ok","🙂 Good","😀 Great",
 ];

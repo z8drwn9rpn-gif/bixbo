@@ -9,11 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as NotesRouteImport } from './routes/notes'
 import { Route as MedsRouteImport } from './routes/meds'
 import { Route as InsightsRouteImport } from './routes/insights'
+import { Route as CoupleRouteImport } from './routes/couple'
 import { Route as IndexRouteImport } from './routes/index'
 
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const NotesRoute = NotesRouteImport.update({
   id: '/notes',
   path: '/notes',
@@ -29,6 +36,11 @@ const InsightsRoute = InsightsRouteImport.update({
   path: '/insights',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CoupleRoute = CoupleRouteImport.update({
+  id: '/couple',
+  path: '/couple',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -37,40 +49,62 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/couple': typeof CoupleRoute
   '/insights': typeof InsightsRoute
   '/meds': typeof MedsRoute
   '/notes': typeof NotesRoute
+  '/settings': typeof SettingsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/couple': typeof CoupleRoute
   '/insights': typeof InsightsRoute
   '/meds': typeof MedsRoute
   '/notes': typeof NotesRoute
+  '/settings': typeof SettingsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/couple': typeof CoupleRoute
   '/insights': typeof InsightsRoute
   '/meds': typeof MedsRoute
   '/notes': typeof NotesRoute
+  '/settings': typeof SettingsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/insights' | '/meds' | '/notes'
+  fullPaths: '/' | '/couple' | '/insights' | '/meds' | '/notes' | '/settings'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/insights' | '/meds' | '/notes'
-  id: '__root__' | '/' | '/insights' | '/meds' | '/notes'
+  to: '/' | '/couple' | '/insights' | '/meds' | '/notes' | '/settings'
+  id:
+    | '__root__'
+    | '/'
+    | '/couple'
+    | '/insights'
+    | '/meds'
+    | '/notes'
+    | '/settings'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CoupleRoute: typeof CoupleRoute
   InsightsRoute: typeof InsightsRoute
   MedsRoute: typeof MedsRoute
   NotesRoute: typeof NotesRoute
+  SettingsRoute: typeof SettingsRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/notes': {
       id: '/notes'
       path: '/notes'
@@ -92,6 +126,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InsightsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/couple': {
+      id: '/couple'
+      path: '/couple'
+      fullPath: '/couple'
+      preLoaderRoute: typeof CoupleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -104,9 +145,11 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CoupleRoute: CoupleRoute,
   InsightsRoute: InsightsRoute,
   MedsRoute: MedsRoute,
   NotesRoute: NotesRoute,
+  SettingsRoute: SettingsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
