@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { useBixbo, EMPTY, addDays, toKey, painColor, BRISTOL, avgDayPain, type BixboData } from "@/lib/storage";
+import { useBixbo, EMPTY, addDays, toKey, painColor, BRISTOL, avgDayPain } from "@/lib/storage";
 
 export const Route = createFileRoute("/insights")({
   head: () => ({
@@ -129,32 +129,57 @@ function InsightsPage() {
           <button onClick={goNext} className="rounded-full p-2 hover:bg-tint"><ChevronRight className="h-4 w-4" /></button>
         </div>
 
-        <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">Pain</p>
-          <p className="mt-1 text-sm">
-            {painAvg != null ? `Avg ${painAvg.toFixed(1)}/10` : "No data"}
-          </p>
-          <div className="mt-3 grid gap-1" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}>
+        <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">Pain scale</p>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="font-serif text-5xl leading-none">{painAvg != null ? painAvg.toFixed(1) : "–"}</span>
+            <span className="text-sm text-muted-foreground">
+              avg · {painSeries.filter((n) => n != null).length} {painSeries.filter((n) => n != null).length === 1 ? "entry" : "entries"}
+            </span>
+          </div>
+          <div className="mt-5 grid items-end gap-1" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))`, height: 80 }}>
             {painSeries.map((n, i) => (
-              <div key={i} className="flex flex-col items-center gap-1">
-                <div className="flex h-16 w-full items-end">
-                  {n != null ? <div className="w-full rounded-t" style={{ height: `${(n / 10) * 100}%`, background: painColor(n) }} /> : <div className="h-1 w-full rounded bg-tint" />}
-                </div>
-              </div>
+              n != null
+                ? <div key={i} className="w-full rounded-t" style={{ height: `${Math.max(6, (n / 10) * 100)}%`, background: painColor(n) }} />
+                : <div key={i} className="h-1 w-full self-end rounded bg-tint" />
             ))}
           </div>
         </section>
 
-        <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">ŠukŠuk ❤️</p>
-          <p className="mt-1 text-sm">{sexCount} time{sexCount === 1 ? "" : "s"} this period</p>
+        <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">ŠukŠuk! ❤️</p>
+          <p className="mt-2 font-serif text-5xl leading-none">{sexCount}</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {sexCount === 1 ? "entry" : "entries"} in this {period === "W" ? "week" : period === "M" ? "month" : "year"}
+          </p>
         </section>
 
-        <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">Blueberry (cycle)</p>
-          <p className="mt-1 text-sm">Avg cycle: {cycleSummary.avg} days · Period length: {cycleSummary.periodLen} days</p>
-          <p className="text-xs text-muted-foreground">{cycleSummary.count >= 2 ? "Based on your logs" : "Add more periods for better prediction"}</p>
+        <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">Blueberry 🫐 cycle</p>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <div className="rounded-2xl bg-tint p-3">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Cycle length</p>
+              <p className="mt-1 font-serif text-xl">{cycleSummary.avg} days</p>
+            </div>
+            <div className="rounded-2xl bg-tint p-3">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Period length</p>
+              <p className="mt-1 font-serif text-xl">{cycleSummary.periodLen} days</p>
+            </div>
+            <div className="rounded-2xl bg-tint p-3">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Regularity</p>
+              <p className="mt-1 font-serif text-lg">
+                {cycleSummary.count >= 2 ? `Regular (${cycleSummary.avg}-day)` : "Not enough data"}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-tint p-3">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Last period</p>
+              <p className="mt-1 font-serif text-base">
+                {view.cycle.lastPeriodStart ?? "—"}{view.cycle.lastPeriodEnd ? ` → ${view.cycle.lastPeriodEnd}` : ""}
+              </p>
+            </div>
+          </div>
         </section>
+
 
         <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">Bowel — Bristol distribution</p>

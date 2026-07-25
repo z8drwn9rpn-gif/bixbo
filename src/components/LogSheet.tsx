@@ -26,18 +26,18 @@ type Category =
   | "food" | "bowel" | "workout" | "temp" | "task" | "event" | "note";
 
 const CATEGORIES: { id: Category; label: string; emoji: string; hint: string }[] = [
-  { id: "meds",    label: "Meds",             emoji: "💊", hint: "Take dose / extra" },
-  { id: "pain",    label: "Pain",             emoji: "🩹", hint: "Wizard: scale → body → quality → symptoms" },
+  { id: "pain",    label: "Pain",             emoji: "🔥", hint: "0–10, body, quality" },
+  { id: "period",  label: "Blueberry 🫐",     emoji: "🫐", hint: "Flow · discharge · notes" },
+  { id: "heat",    label: "Heat / Cold",      emoji: "♨️", hint: "Heating or ice session" },
+  { id: "food",    label: "Food",             emoji: "🍽️", hint: "What & how you feel" },
+  { id: "bowel",   label: "Bowel",            emoji: "💩", hint: "Bristol type" },
+  { id: "sex",     label: "ŠukŠuk! ❤️",       emoji: "❤️", hint: "All kinds of activity" },
+  { id: "workout", label: "Workout",          emoji: "🧘🏼‍♀️", hint: "Type · duration · weight" },
+  { id: "temp",    label: "Temp & Sleep",     emoji: "🌡️", hint: "°C · kg · hours" },
+  { id: "meds",    label: "Meds",             emoji: "💊", hint: "Taken · extra dose" },
   { id: "panic",   label: "Panic attack",     emoji: "⚡", hint: "Trigger & symptoms" },
-  { id: "period",  label: "Blueberry",        emoji: "🫐", hint: "Flow, discharge, notes" },
-  { id: "sex",     label: "ŠukŠuk!",          emoji: "❤️", hint: "Sex / oral / fingering" },
-  { id: "heat",    label: "Heat / Cold / TENS", emoji: "🔥", hint: "Session type & duration" },
-  { id: "food",    label: "Food",             emoji: "🍽️", hint: "What & how you feel + drinks" },
-  { id: "bowel",   label: "Bowel",            emoji: "💩", hint: "Bristol scale" },
-  { id: "workout", label: "Workout",          emoji: "🧘🏼‍♀️", hint: "Type & duration" },
-  { id: "temp",    label: "Temp / Sleep / Weight", emoji: "🌡️", hint: "Body metrics" },
+  { id: "event",   label: "Event",            emoji: "📅", hint: "Multi-day · time · note" },
   { id: "task",    label: "Task",             emoji: "✅", hint: "To-do with date & time" },
-  { id: "event",   label: "Event",            emoji: "📅", hint: "Multi-day event bar" },
   { id: "note",    label: "Note",             emoji: "📝", hint: "Any thought for today" },
 ];
 
@@ -60,38 +60,43 @@ export function LogSheet({
     <Sheet open={open} onOpenChange={(b) => { if (!b) close(); }}>
       <SheetContent
         side="bottom"
-        className={active ? "h-[100dvh] max-h-[100dvh] rounded-t-none bg-background" : "h-[62vh] rounded-t-3xl bg-background"}
+        className={
+          active
+            ? "flex h-[100dvh] max-h-[100dvh] flex-col rounded-t-none bg-background p-0"
+            : "flex h-[88vh] max-h-[88vh] flex-col rounded-t-3xl bg-background p-0"
+        }
       >
         {!active ? (
           <>
-            <SheetHeader>
-              <SheetTitle className="font-serif text-xl">Log</SheetTitle>
+            <SheetHeader className="shrink-0 px-5 pt-5 pb-2">
+              <SheetTitle className="text-center font-serif text-2xl">Log</SheetTitle>
             </SheetHeader>
-            <ul className="mt-2 space-y-1 overflow-y-auto">
+            <ul className="min-h-0 flex-1 overflow-y-auto divide-y divide-border border-t border-border">
               {CATEGORIES.map((c) => (
                 <li key={c.id}>
                   <button onClick={() => setCat(c.id)}
-                    className="flex w-full items-center gap-3 rounded-2xl bg-surface px-3 py-2.5 text-left ring-1 ring-border transition hover:bg-tint">
-                    <span className="grid h-9 w-9 place-items-center rounded-full bg-tint text-lg">{c.emoji}</span>
+                    className="flex w-full items-center gap-3 bg-surface px-5 py-3 text-left transition hover:bg-tint">
+                    <span className="grid h-10 w-10 place-items-center rounded-full bg-tint text-xl">{c.emoji}</span>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium">{c.label}</p>
-                      <p className="truncate text-[11px] text-muted-foreground">{c.hint}</p>
+                      <p className="text-base font-semibold">{c.label}</p>
+                      <p className="truncate text-xs text-muted-foreground">{c.hint}</p>
                     </div>
+                    <span className="text-muted-foreground">›</span>
                   </button>
                 </li>
               ))}
             </ul>
           </>
         ) : (
-          <div className="flex h-full flex-col">
-            <SheetHeader className="flex-row items-center justify-between border-b border-border pb-2">
+          <div className="flex h-full min-h-0 flex-col">
+            <SheetHeader className="shrink-0 flex-row items-center justify-between border-b border-border px-5 py-3">
               <button onClick={back} className="flex items-center gap-1 text-sm text-muted-foreground">
-                <ChevronLeft className="h-4 w-4" /> Back
+                <ChevronLeft className="h-4 w-4" /> Back to Log
               </button>
               <SheetTitle className="font-serif text-lg">{CATEGORIES.find((c) => c.id === active)?.label}</SheetTitle>
               <button onClick={close} aria-label="Close"><X className="h-5 w-5" /></button>
             </SheetHeader>
-            <div className="flex-1 overflow-y-auto py-4">
+            <div className={`min-h-0 flex-1 overflow-y-auto ${active === "pain" ? "" : "px-5 py-4"}`}>
               {active === "pain"    && <PainWizard    date={date} data={data} update={update} onDone={close} />}
               {active === "panic"   && <PanicForm     date={date} data={data} update={update} onDone={close} />}
               {active === "period"  && <PeriodForm    date={date} data={data} update={update} onDone={close} />}
@@ -127,8 +132,10 @@ function Chip({
 }: { active: boolean; onClick: () => void; children: ReactNode; color?: string }) {
   return (
     <button onClick={onClick}
-      className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
-        active ? "text-white shadow-sm" : "bg-tint text-foreground"
+      className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+        active
+          ? "text-white shadow-md ring-2 ring-foreground/70 ring-offset-2 ring-offset-background scale-[1.03]"
+          : "bg-tint text-foreground ring-1 ring-border"
       }`}
       style={active && color ? { background: color } : active ? { background: "var(--primary)" } : undefined}
     >
@@ -219,10 +226,11 @@ function PainWizard({ date, data, update, onDone }:
   };
 
   const bg = painColor(score);
-  const bgLight = `color-mix(in oklab, ${bg} 15%, transparent)`;
+  const bgFill = `color-mix(in oklab, ${bg} 35%, white)`;
 
   return (
-    <div className="flex h-full flex-col" style={{ background: bgLight }}>
+    <div className="flex min-h-full flex-col px-5 py-4 transition-colors" style={{ background: bgFill }}>
+
       <div className="flex items-center justify-between px-1 pb-2">
         <div className="flex gap-1">
           {[0, 1, 2, 3, 4].map((i) => (
