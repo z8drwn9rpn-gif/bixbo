@@ -200,7 +200,7 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
             {takenList.map((x) => <li key={x.key}>✓ {x.time} — {x.med.name}{x.med.dose ? ` (${x.med.dose})` : ""}</li>)}
             {extraMeds.map((e) => (
               <li key={e.id} className="flex items-start gap-2">
-                <span className="flex-1">• {e.time} — {e.name}{e.dose ? ` (${e.dose})` : ""}{e.note ? ` — ${e.note}` : ""}</span>
+                <button onClick={() => onEdit?.("meds", e)} className="flex-1 text-left">• {e.time} — {e.name}{e.dose ? ` (${e.dose})` : ""}{e.note ? ` — ${e.note}` : ""}</button>
                 <button onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], extraMeds: (d.dayLogs[date]?.extraMeds ?? []).filter((x) => x.id !== e.id) } } }))} aria-label="Delete" className="text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
               </li>
             ))}
@@ -352,10 +352,13 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
 
       {(log?.temperature != null || log?.weight != null || log?.sleepHours != null || log?.sleepQuality) && (
         <Card title="Temp / Sleep / Weight" icon="🌡️">
-          {log?.temperature != null && <p className="text-sm">Temperature: {log.temperature}°C</p>}
-          {log?.weight != null && <p className="text-sm">Weight: {log.weight} kg</p>}
-          {log?.sleepHours != null && <p className="text-sm">Sleep: {log.sleepHours} h {log.sleepQuality ?? ""}</p>}
-          {log?.sleepQuality && log?.sleepHours == null && <p className="text-sm">Sleep quality: {log.sleepQuality}</p>}
+          <button onClick={() => onEdit?.("temp", undefined)} className="w-full text-left">
+            {log?.temperature != null && <p className="text-sm">Temperature: {log.temperature}°C</p>}
+            {log?.weight != null && <p className="text-sm">Weight: {log.weight} kg</p>}
+            {log?.sleepHours != null && <p className="text-sm">Sleep: {log.sleepHours} h {log.sleepQuality ?? ""}</p>}
+            {log?.sleepQuality && log?.sleepHours == null && <p className="text-sm">Sleep quality: {log.sleepQuality}</p>}
+            <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
+          </button>
         </Card>
       )}
 
