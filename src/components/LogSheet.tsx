@@ -476,14 +476,10 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
                   onRenameCustom={(o, n) => { renameCustom("tetanyLocations", o, n); setTetanyLoc((a) => a.map((x) => x === o ? n : x)); }}
                   selected={tetanyLoc} onToggle={(v) => setTetanyLoc((a) => toggleIn(a, v))} />
               </Field>
-              <div className="grid grid-cols-2 gap-2">
-                <Field label={`Intensity ${tetanyIntensity}/5`}>
-                  <Slider value={[tetanyIntensity]} min={1} max={5} step={1} onValueChange={([v]) => setTetanyIntensity(v)} />
-                </Field>
-                <Field label="Duration (min)">
-                  <Input type="number" min={1} value={tetanyMin} onChange={(e) => setTetanyMin(Number(e.target.value))} />
-                </Field>
-              </div>
+              <Field label={`Intensity ${tetanyIntensity}/5`}>
+                <IntensityScale value={tetanyIntensity} onChange={setTetanyIntensity} max={5} />
+              </Field>
+              <DurationField minutes={tetanyMin} setMinutes={setTetanyMin} ongoing={tetanyOngoing} setOngoing={setTetanyOngoing} />
               <Field label="Triggers">
                 <CustomChipList base={TETANY_TRIGGERS} custom={data.custom.tetanyTriggers}
                   onAddCustom={(v) => addCustom("tetanyTriggers", v)}
