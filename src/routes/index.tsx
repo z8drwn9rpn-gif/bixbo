@@ -45,6 +45,7 @@ function HomePage() {
     if (!hydrated || !view.settings.notifications) return;
     if (typeof window === "undefined" || !("Notification" in window)) return;
     if (Notification.permission !== "granted") return;
+    const isMale = view.settings.gender === "male";
     const int = setInterval(() => {
       const now = new Date();
       const hhmm = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
@@ -55,8 +56,8 @@ function HomePage() {
           if (!taken) new Notification(`💊 ${m.name}`, { body: `Time for your ${hhmm} dose${m.dose ? ` (${m.dose})` : ""}` });
         }
       });
-      // Period predict: 1 day before at 09:00
-      if (hhmm === "09:00") {
+      // Period predict: 1 day before at 09:00 (skip in male mode)
+      if (!isMale && hhmm === "09:00") {
         const p = nextPredictedPeriod(view.cycle);
         if (p && daysBetween(todayKey(), p.start) === 1) {
           new Notification("🫐 Period starts tomorrow", { body: "Get your supplies ready 💚" });
@@ -64,7 +65,7 @@ function HomePage() {
       }
     }, 60000);
     return () => clearInterval(int);
-  }, [hydrated, view.meds, view.medLog, view.cycle, view.settings.notifications]);
+  }, [hydrated, view.meds, view.medLog, view.cycle, view.settings.notifications, view.settings.gender]);
 
   const goToPrevMonth = () => setMonthAnchor((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1));
   const goToNextMonth = () => setMonthAnchor((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1));
