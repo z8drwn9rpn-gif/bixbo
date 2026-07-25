@@ -43,7 +43,7 @@ const CATEGORIES: { id: Category; label: string; emoji: string; hint: string }[]
 ];
 
 export function LogSheet({
-  open, onOpenChange, date, data, update, initial, initialPain,
+  open, onOpenChange, date, data, update, initial, initialPain, editEntry,
 }: {
   open: boolean;
   onOpenChange: (b: boolean) => void;
@@ -52,12 +52,14 @@ export function LogSheet({
   update: UpdateFn;
   initial?: Category;
   initialPain?: PainEntry;
+  editEntry?: unknown;
 }) {
   const [cat, setCat] = useState<Category | null>(initial ?? null);
   const [editingOrder, setEditingOrder] = useState(false);
   const close = () => { setCat(null); setEditingOrder(false); onOpenChange(false); };
   const back = () => setCat(null);
   const active = cat ?? initial;
+  const edit = editEntry;
 
   const orderedCats = useMemo(() => {
     const saved = data.settings.logOrder ?? [];
@@ -149,18 +151,18 @@ export function LogSheet({
               </button>
             </SheetHeader>
             <div className={`min-h-0 flex-1 overflow-y-auto ${active === "pain" ? "" : "px-5 py-4"}`}>
-              {active === "pain"    && <PainWizard    date={date} data={data} update={update} onDone={close} initialEntry={initialPain} />}
-              {active === "panic"   && <PanicForm     date={date} data={data} update={update} onDone={close} />}
+              {active === "pain"    && <PainWizard    date={date} data={data} update={update} onDone={close} initialEntry={initialPain ?? (edit as PainEntry | undefined)} />}
+              {active === "panic"   && <PanicForm     date={date} data={data} update={update} onDone={close} initialEntry={edit as PanicAttack | undefined} />}
               {active === "period"  && <PeriodForm    date={date} data={data} update={update} onDone={close} />}
-              {active === "sex"     && <SexForm       date={date} data={data} update={update} onDone={close} />}
-              {active === "heat"    && <ThermoForm    date={date} update={update} onDone={close} />}
-              {active === "food"    && <FoodForm      date={date} data={data} update={update} onDone={close} />}
-              {active === "bowel"   && <BowelForm     date={date} update={update} onDone={close} />}
-              {active === "workout" && <WorkoutForm   date={date} data={data} update={update} onDone={close} />}
+              {active === "sex"     && <SexForm       date={date} data={data} update={update} onDone={close} initialEntry={edit as SexEntry | undefined} />}
+              {active === "heat"    && <ThermoForm    date={date} update={update} onDone={close} initialEntry={edit as ThermoSession | undefined} />}
+              {active === "food"    && <FoodForm      date={date} data={data} update={update} onDone={close} initialEntry={edit as FoodEntry | undefined} />}
+              {active === "bowel"   && <BowelForm     date={date} data={data} update={update} onDone={close} initialEntry={edit as BowelEntry | undefined} />}
+              {active === "workout" && <WorkoutForm   date={date} data={data} update={update} onDone={close} initialEntry={edit as WorkoutEntry | undefined} />}
               {active === "temp"    && <TempForm      date={date} data={data} update={update} onDone={close} />}
               {active === "meds"    && <MedsForm      date={date} data={data} update={update} onDone={close} />}
-              {active === "task"    && <TaskForm      date={date} update={update} onDone={close} />}
-              {active === "event"   && <EventForm     date={date} update={update} onDone={close} />}
+              {active === "task"    && <TaskForm      date={date} update={update} onDone={close} initialEntry={edit as TaskEntry | undefined} />}
+              {active === "event"   && <EventForm     date={date} update={update} onDone={close} initialEntry={edit as EventEntry | undefined} />}
               {active === "note"    && <NoteForm     date={date} update={update} onDone={close} />}
             </div>
           </div>
