@@ -965,14 +965,14 @@ function TempForm({ date, data, update, onDone }:
   const [temperature, setTemperature] = useState<string>(cur.temperature != null ? String(cur.temperature) : "");
   const [weight, setWeight] = useState<string>(cur.weight != null ? String(cur.weight) : "");
   const [sleep, setSleep] = useState<string>(cur.sleepHours != null ? String(cur.sleepHours) : "");
-  const [quality, setQuality] = useState<string>(cur.sleepQuality ?? "");
+  const [quality, setQuality] = useState<string[]>(asArr(cur.sleepQuality));
   const save = () => {
     updateDayLog(update, date, (l) => ({
       ...l,
       temperature: temperature === "" ? undefined : Number(temperature),
       weight: weight === "" ? undefined : Number(weight),
       sleepHours: sleep === "" ? undefined : Number(sleep),
-      sleepQuality: quality || undefined,
+      sleepQuality: quality.length ? quality : undefined,
     }));
     onDone();
   };
@@ -983,7 +983,7 @@ function TempForm({ date, data, update, onDone }:
       <Field label="Sleep (hours)"><Input type="number" step="0.5" value={sleep} onChange={(e) => setSleep(e.target.value)} placeholder="8" /></Field>
       <Field label="How I slept">
         <div className="mt-2 flex flex-wrap gap-2">
-          {SLEEP_QUALITY.map((q) => <Chip key={q} active={quality === q} onClick={() => setQuality(quality === q ? "" : q)}>{q}</Chip>)}
+          {SLEEP_QUALITY.map((q) => <Chip key={q} active={quality.includes(q)} onClick={() => setQuality((a) => toggleIn(a, q))}>{q}</Chip>)}
         </div>
       </Field>
       <SaveBar onCancel={onDone} onSave={save} />
