@@ -242,7 +242,7 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
             {log.panic.map((p) => (
               <li key={p.id} className="flex items-start gap-2">
                 <button onClick={() => onEdit?.("panic", p)} className="flex-1 text-left">
-                  <p className="text-sm font-medium">{p.time} · intensity {p.intensity}/10 · {p.minutes} min</p>
+                  <p className="text-sm font-medium">{p.time} · intensity {p.intensity}/10 · {p.minutes == null ? "ongoing" : `${p.minutes} min`}</p>
                   {p.trigger && <p className="text-xs text-muted-foreground">Trigger: {p.trigger}</p>}
                   {p.physical.length > 0 && <p className="text-xs">Physical: {p.physical.join(", ")}</p>}
                   {p.cognitive.length > 0 && <p className="text-xs">Cognitive: {p.cognitive.join(", ")}</p>}
