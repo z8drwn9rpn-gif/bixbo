@@ -97,7 +97,6 @@ export function MonthCalendar({
           const periodLevel = log?.periodInfo?.level ?? log?.period;
           const periodColor = periodColorVar(periodLevel) ?? (isActualPeriod(key) ? "var(--period-medium)" : null);
           const pAvg = avgDayPain(log);
-          const isToday = key === todayK;
           const isSel = key === selected;
           const predictedOrange = isPredicted(key);
           const icons = iconsFor(log, hasMed);
