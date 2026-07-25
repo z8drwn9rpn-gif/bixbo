@@ -36,7 +36,6 @@ const CATEGORIES: { id: Category; label: string; emoji: string; hint: string }[]
   { id: "workout", label: "Workout",          emoji: "🧘🏼‍♀️", hint: "Type · duration · weight" },
   { id: "temp",    label: "Temp & Sleep",     emoji: "🌡️", hint: "°C · kg · hours" },
   { id: "meds",    label: "Meds",             emoji: "💊", hint: "Taken · extra dose" },
-  { id: "panic",   label: "Panic attack",     emoji: "⚡", hint: "Trigger & symptoms" },
   { id: "event",   label: "Event",            emoji: "📅", hint: "Multi-day · time · note" },
   { id: "task",    label: "Task",             emoji: "✅", hint: "To-do with date & time" },
   { id: "note",    label: "Note",             emoji: "📝", hint: "Any thought for today" },
@@ -285,11 +284,19 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
   const [tetanyTriggers, setTetanyTriggers] = useState<string[]>([]);
   const [tetanyHelped, setTetanyHelped] = useState<string[]>([]);
   const [tetanyNote, setTetanyNote] = useState("");
-  // Panic (inline mini-log)
+  // Panic (full inline log — under Tetany)
   const [panic, setPanic] = useState(false);
+  const [panicTime, setPanicTime] = useState(nowHHMM());
   const [panicIntensity, setPanicIntensity] = useState(5);
   const [panicMinutes, setPanicMinutes] = useState(10);
+  const [panicPhysical, setPanicPhysical] = useState<string[]>([]);
+  const [panicCognitive, setPanicCognitive] = useState<string[]>([]);
   const [panicTrigger, setPanicTrigger] = useState("");
+  const [panicPlace, setPanicPlace] = useState("");
+  const [panicHyper, setPanicHyper] = useState<"no" | "before" | "during" | "unknown">("unknown");
+  const [panicTetany, setPanicTetany] = useState(false);
+  const [panicHelped, setPanicHelped] = useState<string[]>([]);
+  const [panicNote, setPanicNote] = useState("");
   const [bodyBattery, setBodyBattery] = useState<number | undefined>(initialEntry?.bodyBattery);
   const [stress, setStress] = useState<number | undefined>(initialEntry?.stress);
   const [mood, setMood] = useState<string[]>(initialEntry?.mood ?? []);
@@ -328,9 +335,11 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
     }
     if (panic) {
       const pk: PanicAttack = {
-        id: crypto.randomUUID(), time: nowHHMM(), minutes: panicMinutes, intensity: panicIntensity,
-        physical: [], cognitive: [], trigger: panicTrigger.trim(),
-        hyperventilation: "unknown", tetanyPresent: false, helped: [],
+        id: crypto.randomUUID(), time: panicTime, minutes: panicMinutes, intensity: panicIntensity,
+        physical: panicPhysical, cognitive: panicCognitive, trigger: panicTrigger.trim(),
+        place: panicPlace.trim() || undefined,
+        hyperventilation: panicHyper, tetanyPresent: panicTetany, helped: panicHelped,
+        note: panicNote.trim() || undefined,
       };
       updateDayLog(update, date, (l) => ({ ...l, panic: [...(l.panic ?? []), pk] }));
     }
@@ -461,17 +470,54 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
           {panic && (
             <div className="rounded-2xl border border-border p-3 space-y-3">
               <div className="grid grid-cols-2 gap-2">
-                <Field label={`Intensity ${panicIntensity}/10`}>
-                  <Slider value={[panicIntensity]} min={1} max={10} step={1} onValueChange={([v]) => setPanicIntensity(v)} />
-                </Field>
-                <Field label="Duration (min)">
-                  <Input type="number" min={1} value={panicMinutes} onChange={(e) => setPanicMinutes(Number(e.target.value))} />
-                </Field>
+                <Field label="Time"><Input type="time" value={panicTime} onChange={(e) => setPanicTime(e.target.value)} /></Field>
+                <Field label="Duration (min)"><Input type="number" min={1} value={panicMinutes} onChange={(e) => setPanicMinutes(Number(e.target.value))} /></Field>
               </div>
-              <Field label="Trigger (optional)">
-                <Input value={panicTrigger} onChange={(e) => setPanicTrigger(e.target.value)} placeholder="What set it off?" />
+              <Field label={`Intensity ${panicIntensity}/10`}>
+                <Slider value={[panicIntensity]} min={1} max={10} step={1} onValueChange={([v]) => setPanicIntensity(v)} />
               </Field>
-              <p className="text-[11px] text-muted-foreground">For full details use the Panic attack log entry.</p>
+              <Field label="Physical symptoms">
+                <CustomChipList base={PANIC_PHYSICAL} custom={data.custom.panicPhysical}
+                  onAddCustom={(v) => update((d) => ({ ...d, custom: { ...d.custom, panicPhysical: [...d.custom.panicPhysical, v] } }))}
+                  onRemoveCustom={(v) => { update((d) => ({ ...d, custom: { ...d.custom, panicPhysical: d.custom.panicPhysical.filter((x) => x !== v) } })); setPanicPhysical((a) => a.filter((x) => x !== v)); }}
+                  onRenameCustom={(o, n) => { update((d) => ({ ...d, custom: { ...d.custom, panicPhysical: d.custom.panicPhysical.map((x) => x === o ? n : x) } })); setPanicPhysical((a) => a.map((x) => x === o ? n : x)); }}
+                  selected={panicPhysical} onToggle={(v) => setPanicPhysical((a) => toggleIn(a, v))} />
+              </Field>
+              <Field label="Cognitive symptoms">
+                <CustomChipList base={PANIC_COGNITIVE} custom={data.custom.panicCognitive}
+                  onAddCustom={(v) => update((d) => ({ ...d, custom: { ...d.custom, panicCognitive: [...d.custom.panicCognitive, v] } }))}
+                  onRemoveCustom={(v) => { update((d) => ({ ...d, custom: { ...d.custom, panicCognitive: d.custom.panicCognitive.filter((x) => x !== v) } })); setPanicCognitive((a) => a.filter((x) => x !== v)); }}
+                  onRenameCustom={(o, n) => { update((d) => ({ ...d, custom: { ...d.custom, panicCognitive: d.custom.panicCognitive.map((x) => x === o ? n : x) } })); setPanicCognitive((a) => a.map((x) => x === o ? n : x)); }}
+                  selected={panicCognitive} onToggle={(v) => setPanicCognitive((a) => toggleIn(a, v))} />
+              </Field>
+              <Field label="Trigger (or 'no obvious trigger')">
+                <Textarea rows={2} value={panicTrigger} onChange={(e) => setPanicTrigger(e.target.value)} />
+              </Field>
+              <Field label="Place (optional)">
+                <Input value={panicPlace} onChange={(e) => setPanicPlace(e.target.value)} />
+              </Field>
+              <Field label="Hyperventilation">
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {(["no", "before", "during", "unknown"] as const).map((v) =>
+                    <Chip key={v} active={panicHyper === v} onClick={() => setPanicHyper(v)}>{v}</Chip>)}
+                </div>
+              </Field>
+              <Field label="Tetany present?">
+                <div className="mt-2 flex gap-2">
+                  <Chip active={!panicTetany} onClick={() => setPanicTetany(false)}>No</Chip>
+                  <Chip active={panicTetany} onClick={() => setPanicTetany(true)}>Yes</Chip>
+                </div>
+              </Field>
+              <Field label="What helped">
+                <CustomChipList base={PANIC_HELPED_DEFAULT} custom={data.custom.panicHelped}
+                  onAddCustom={(v) => update((d) => ({ ...d, custom: { ...d.custom, panicHelped: [...d.custom.panicHelped, v] } }))}
+                  onRemoveCustom={(v) => { update((d) => ({ ...d, custom: { ...d.custom, panicHelped: d.custom.panicHelped.filter((x) => x !== v) } })); setPanicHelped((a) => a.filter((x) => x !== v)); }}
+                  onRenameCustom={(o, n) => { update((d) => ({ ...d, custom: { ...d.custom, panicHelped: d.custom.panicHelped.map((x) => x === o ? n : x) } })); setPanicHelped((a) => a.map((x) => x === o ? n : x)); }}
+                  selected={panicHelped} onToggle={(v) => setPanicHelped((a) => toggleIn(a, v))} />
+              </Field>
+              <Field label="Note (optional)">
+                <Textarea rows={2} value={panicNote} onChange={(e) => setPanicNote(e.target.value)} />
+              </Field>
             </div>
           )}
         </div>
