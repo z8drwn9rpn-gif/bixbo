@@ -1,356 +1,480 @@
-import { useState } from "react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter } from "@/components/ui/sheet";
+import { useState, type ReactNode } from "react";
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter,
+} from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Plus } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+import { X, Plus, ChevronLeft } from "lucide-react";
 import {
-  updateDayLog, nowHHMM, PAIN_DESCRIPTIONS, painColor,
-  BODY_PARTS_DEFAULT, PAIN_QUALITY_DEFAULT, OTHER_SYMPTOMS_DEFAULT,
-  FOOD_FEELINGS_DEFAULT, WORKOUT_KINDS_DEFAULT, DISCHARGE_OPTS, BRISTOL,
-  todayKey,
-  type BixboData, type PainEntry, type ThermoSession, type ThermoKind,
-  type FoodEntry, type BowelEntry, type SexKind, type SexEntry, type ExtraMed,
-  type PeriodLevel, type WorkoutEntry, type EventEntry, type TaskEntry,
+  PAIN_DESCRIPTIONS, painColor, BODY_PARTS_DEFAULT, PAIN_QUALITY_DEFAULT, OTHER_SYMPTOMS_DEFAULT,
+  FOOD_FEELINGS_DEFAULT, WORKOUT_KINDS_DEFAULT, BRISTOL, DISCHARGE_OPTS, MOODS_DEFAULT,
+  TETANY_TYPES, TETANY_LOCATIONS_DEFAULT, TETANY_TRIGGERS, TETANY_HELPED_DEFAULT,
+  PANIC_PHYSICAL, PANIC_COGNITIVE, PANIC_HELPED_DEFAULT, SEX_TYPES_DEFAULT,
+  BODY_BATTERY, SLEEP_QUALITY, EVENT_COLORS,
+  todayKey, nowHHMM, updateDayLog,
+  type BixboData, type DayLog, type PainEntry, type PeriodLevel, type FoodEntry,
+  type BowelEntry, type ThermoSession, type ThermoKind, type SexEntry, type SexKind,
+  type ExtraMed, type WorkoutEntry, type EventEntry, type TaskEntry,
+  type TetanyEpisode, type PanicAttack, type PainfulWhen,
 } from "@/lib/storage";
 
 type UpdateFn = (u: (d: BixboData) => BixboData) => void;
-
 type Category =
-  | "menu" | "pain" | "period" | "heat" | "food" | "bowel"
-  | "sex" | "temp" | "meds" | "workout" | "event" | "task" | "note";
+  | "meds" | "pain" | "panic" | "period" | "sex" | "heat"
+  | "food" | "bowel" | "workout" | "temp" | "task" | "event" | "note";
 
-const CATEGORIES: { key: Category; label: string; icon: string; desc: string }[] = [
-  { key: "pain",    label: "Pain",             icon: "🔥",  desc: "0–10, body, quality" },
-  { key: "period",  label: "Blueberry 🫐",     icon: "🫐",  desc: "Flow · discharge · notes" },
-  { key: "heat",    label: "Heat / Cold",      icon: "♨️",  desc: "Heating or ice session" },
-  { key: "food",    label: "Food",             icon: "🍽️",  desc: "What & how you feel" },
-  { key: "bowel",   label: "Bowel",            icon: "💩",  desc: "Bristol type" },
-  { key: "sex",     label: "ŠukŠuk! ❤️",       icon: "❤️",  desc: "All kinds of activity" },
-  { key: "workout", label: "Workout",          icon: "🧘🏼‍♀️", desc: "Type · duration · weight" },
-  { key: "temp",    label: "Temp & Sleep",     icon: "🌡️", desc: "°C · kg · hours" },
-  { key: "meds",    label: "Meds",             icon: "💊",  desc: "Taken · extra dose" },
-  { key: "event",   label: "Event",            icon: "📅",  desc: "Multi-day, time, note" },
-  { key: "task",    label: "To-do",            icon: "✅",  desc: "Task with date & time" },
-  { key: "note",    label: "Note",             icon: "📝",  desc: "Anything about today" },
+const CATEGORIES: { id: Category; label: string; emoji: string; hint: string }[] = [
+  { id: "meds",    label: "Meds",             emoji: "💊", hint: "Take dose / extra" },
+  { id: "pain",    label: "Pain",             emoji: "🩹", hint: "Wizard: scale → body → quality → symptoms" },
+  { id: "panic",   label: "Panic attack",     emoji: "⚡", hint: "Trigger & symptoms" },
+  { id: "period",  label: "Blueberry",        emoji: "🫐", hint: "Flow, discharge, notes" },
+  { id: "sex",     label: "ŠukŠuk!",          emoji: "❤️", hint: "Sex / oral / fingering" },
+  { id: "heat",    label: "Heat / Cold / TENS", emoji: "🔥", hint: "Session type & duration" },
+  { id: "food",    label: "Food",             emoji: "🍽️", hint: "What & how you feel + drinks" },
+  { id: "bowel",   label: "Bowel",            emoji: "💩", hint: "Bristol scale" },
+  { id: "workout", label: "Workout",          emoji: "🧘🏼‍♀️", hint: "Type & duration" },
+  { id: "temp",    label: "Temp / Sleep / Weight", emoji: "🌡️", hint: "Body metrics" },
+  { id: "task",    label: "Task",             emoji: "✅", hint: "To-do with date & time" },
+  { id: "event",   label: "Event",            emoji: "📅", hint: "Multi-day event bar" },
+  { id: "note",    label: "Note",             emoji: "📝", hint: "Any thought for today" },
 ];
 
 export function LogSheet({
-  date, data, update,
-}: { date: string; data: BixboData; update: UpdateFn }) {
-  const [open, setOpen] = useState(false);
-  const [cat, setCat] = useState<Category>("menu");
-
-  const close = () => { setOpen(false); setTimeout(() => setCat("menu"), 200); };
+  open, onOpenChange, date, data, update, initial,
+}: {
+  open: boolean;
+  onOpenChange: (b: boolean) => void;
+  date: string;
+  data: BixboData;
+  update: UpdateFn;
+  initial?: Category;
+}) {
+  const [cat, setCat] = useState<Category | null>(initial ?? null);
+  const close = () => { setCat(null); onOpenChange(false); };
+  const back = () => setCat(null);
+  const active = cat ?? initial;
 
   return (
-    <Sheet open={open} onOpenChange={(o) => { setOpen(o); if (!o) setTimeout(() => setCat("menu"), 200); }}>
-      <SheetTrigger asChild>
-        <Button size="lg" className="rounded-full shadow-lg">
-          <Plus className="h-5 w-5" /> Log
-        </Button>
-      </SheetTrigger>
+    <Sheet open={open} onOpenChange={(b) => { if (!b) close(); }}>
       <SheetContent
         side="bottom"
-        className={`overflow-y-auto border-none p-0 ${
-          cat === "menu" ? "max-h-[80dvh] rounded-t-3xl" : "h-[100dvh] max-h-[100dvh] rounded-none"
-        }`}
+        className={active ? "h-[100dvh] max-h-[100dvh] rounded-t-none bg-background" : "h-[62vh] rounded-t-3xl bg-background"}
       >
-        <div className="mx-auto w-full max-w-[430px]">
-          <SheetHeader className="sticky top-0 z-10 border-b border-border/60 bg-background/95 px-5 py-4 backdrop-blur">
-            {cat !== "menu" && (
-              <button
-                onClick={() => setCat("menu")}
-                className="mb-1 inline-flex items-center gap-1 text-xs text-muted-foreground"
-              >
-                <ArrowLeft className="h-3 w-3" /> Back to Log
+        {!active ? (
+          <>
+            <SheetHeader>
+              <SheetTitle className="font-serif text-xl">Log</SheetTitle>
+            </SheetHeader>
+            <ul className="mt-2 space-y-1 overflow-y-auto">
+              {CATEGORIES.map((c) => (
+                <li key={c.id}>
+                  <button onClick={() => setCat(c.id)}
+                    className="flex w-full items-center gap-3 rounded-2xl bg-surface px-3 py-2.5 text-left ring-1 ring-border transition hover:bg-tint">
+                    <span className="grid h-9 w-9 place-items-center rounded-full bg-tint text-lg">{c.emoji}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium">{c.label}</p>
+                      <p className="truncate text-[11px] text-muted-foreground">{c.hint}</p>
+                    </div>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <div className="flex h-full flex-col">
+            <SheetHeader className="flex-row items-center justify-between border-b border-border pb-2">
+              <button onClick={back} className="flex items-center gap-1 text-sm text-muted-foreground">
+                <ChevronLeft className="h-4 w-4" /> Back
               </button>
-            )}
-            <SheetTitle className="font-serif text-2xl">
-              {cat === "menu" ? "Log" : titleFor(cat)}
-            </SheetTitle>
-          </SheetHeader>
-          <div className="px-5 pt-4 pb-16">
-            {cat === "menu"    && <CategoryList onPick={setCat} />}
-            {cat === "pain"    && <PainWizard date={date} data={data} update={update} onDone={close} />}
-            {cat === "period"  && <PeriodForm date={date} data={data} update={update} onDone={close} />}
-            {cat === "heat"    && <HeatForm date={date} update={update} onDone={close} />}
-            {cat === "food"    && <FoodForm date={date} data={data} update={update} onDone={close} />}
-            {cat === "bowel"   && <BowelForm date={date} update={update} onDone={close} />}
-            {cat === "sex"     && <SexForm date={date} update={update} onDone={close} />}
-            {cat === "temp"    && <TempForm date={date} data={data} update={update} onDone={close} />}
-            {cat === "meds"    && <MedsForm date={date} data={data} update={update} onDone={close} />}
-            {cat === "workout" && <WorkoutForm date={date} data={data} update={update} onDone={close} />}
-            {cat === "event"   && <EventForm date={date} update={update} onDone={close} />}
-            {cat === "task"    && <TaskForm date={date} update={update} onDone={close} />}
-            {cat === "note"    && <NoteForm date={date} update={update} onDone={close} />}
+              <SheetTitle className="font-serif text-lg">{CATEGORIES.find((c) => c.id === active)?.label}</SheetTitle>
+              <button onClick={close} aria-label="Close"><X className="h-5 w-5" /></button>
+            </SheetHeader>
+            <div className="flex-1 overflow-y-auto py-4">
+              {active === "pain"    && <PainWizard    date={date} data={data} update={update} onDone={close} />}
+              {active === "panic"   && <PanicForm     date={date} data={data} update={update} onDone={close} />}
+              {active === "period"  && <PeriodForm    date={date} data={data} update={update} onDone={close} />}
+              {active === "sex"     && <SexForm       date={date} data={data} update={update} onDone={close} />}
+              {active === "heat"    && <ThermoForm    date={date} update={update} onDone={close} />}
+              {active === "food"    && <FoodForm      date={date} data={data} update={update} onDone={close} />}
+              {active === "bowel"   && <BowelForm     date={date} update={update} onDone={close} />}
+              {active === "workout" && <WorkoutForm   date={date} data={data} update={update} onDone={close} />}
+              {active === "temp"    && <TempForm      date={date} data={data} update={update} onDone={close} />}
+              {active === "meds"    && <MedsForm      date={date} data={data} update={update} onDone={close} />}
+              {active === "task"    && <TaskForm      date={date} update={update} onDone={close} />}
+              {active === "event"   && <EventForm     date={date} update={update} onDone={close} />}
+              {active === "note"    && <NoteForm     date={date} update={update} onDone={close} />}
+            </div>
           </div>
-        </div>
+        )}
       </SheetContent>
     </Sheet>
   );
 }
 
-function titleFor(c: Category) {
-  return CATEGORIES.find((x) => x.key === c)?.label ?? "";
-}
-
-function CategoryList({ onPick }: { onPick: (c: Category) => void }) {
+/* ------------------- Primitives ------------------- */
+function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="divide-y divide-border/60 overflow-hidden rounded-2xl bg-surface ring-1 ring-border">
-      {CATEGORIES.map((c) => (
-        <button
-          key={c.key}
-          onClick={() => onPick(c.key)}
-          className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-tint"
-        >
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-tint text-lg">{c.icon}</span>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium">{c.label}</p>
-            <p className="truncate text-[11px] text-muted-foreground">{c.desc}</p>
-          </div>
-          <span className="text-muted-foreground">›</span>
-        </button>
-      ))}
-    </div>
+    <label className="block">
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      <div className="mt-1">{children}</div>
+    </label>
   );
 }
-
-/* ------------------- Shared UI ------------------- */
-function Chip({ active, onClick, children, color }:
-  { active: boolean; onClick: () => void; children: React.ReactNode; color?: string }) {
+function Chip({
+  active, onClick, children, color,
+}: { active: boolean; onClick: () => void; children: ReactNode; color?: string }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-full border px-3 py-1.5 text-xs transition ${
-        active ? "border-primary bg-primary/10 text-primary" : "border-border bg-surface"
+    <button onClick={onClick}
+      className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+        active ? "text-white shadow-sm" : "bg-tint text-foreground"
       }`}
+      style={active && color ? { background: color } : active ? { background: "var(--primary)" } : undefined}
     >
-      {color && <span className="mr-1.5 inline-block h-2.5 w-2.5 -translate-y-[1px] rounded-full align-middle" style={{ background: color }} />}
       {children}
     </button>
   );
 }
-
-function CustomChipList({
-  base, custom, onAddCustom, selected, onToggle,
-}: {
-  base: string[]; custom: string[];
-  onAddCustom: (s: string) => void;
-  selected: string[];
-  onToggle: (s: string) => void;
-}) {
-  const [adding, setAdding] = useState(false);
-  const [txt, setTxt] = useState("");
-  const all = [...base, ...custom];
+function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave: () => void; disabled?: boolean }) {
   return (
-    <div className="mt-2 flex flex-wrap gap-2">
-      {all.map((p) => (
-        <Chip key={p} active={selected.includes(p)} onClick={() => onToggle(p)}>{p}</Chip>
-      ))}
-      {!adding ? (
-        <button
-          type="button"
-          onClick={() => setAdding(true)}
-          className="rounded-full border border-dashed border-primary/60 px-3 py-1.5 text-xs text-primary"
-        >
-          <Plus className="mr-1 inline h-3 w-3" /> Add
-        </button>
-      ) : (
-        <div className="flex gap-1">
-          <Input
-            autoFocus value={txt}
-            onChange={(e) => setTxt(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") { if (txt.trim()) { onAddCustom(txt.trim()); onToggle(txt.trim()); } setTxt(""); setAdding(false); } }}
-            placeholder="Add your own…"
-            className="h-8 w-40 text-xs"
-          />
-          <Button size="sm" className="h-8" onClick={() => { if (txt.trim()) { onAddCustom(txt.trim()); onToggle(txt.trim()); } setTxt(""); setAdding(false); }}>Add</Button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function StepDots({ step, total }: { step: number; total: number }) {
-  return (
-    <div className="mb-4 flex items-center gap-1.5">
-      {Array.from({ length: total }).map((_, i) => (
-        <span key={i} className={`h-1.5 rounded-full transition-all ${i === step ? "w-6 bg-primary" : "w-3 bg-border"}`} />
-      ))}
-    </div>
-  );
-}
-function SaveBar({ onCancel, onSave, disabled, label = "Save" }:
-  { onCancel: () => void; onSave: () => void; disabled?: boolean; label?: string }) {
-  return (
-    <SheetFooter className="mt-6 flex-row gap-2">
-      <Button variant="outline" className="flex-1" onClick={onCancel}>Cancel</Button>
-      <Button className="flex-1" onClick={onSave} disabled={disabled}>{label}</Button>
+    <SheetFooter className="mt-4 gap-2 sm:flex-row">
+      <Button variant="outline" onClick={onCancel} className="flex-1">Cancel</Button>
+      <Button onClick={onSave} disabled={disabled} className="flex-1">Save</Button>
     </SheetFooter>
   );
 }
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function CustomChipList({
+  base, custom, onAddCustom, selected, onToggle,
+}: {
+  base: string[]; custom: string[]; onAddCustom: (v: string) => void;
+  selected: string[]; onToggle: (v: string) => void;
+}) {
+  const [adding, setAdding] = useState(false);
+  const [text, setText] = useState("");
+  const all = [...base, ...custom];
   return (
-    <div>
-      <p className="mb-1 text-xs font-medium text-muted-foreground">{label}</p>
-      {children}
+    <div className="mt-2 flex flex-wrap gap-2">
+      {all.map((v) => (
+        <Chip key={v} active={selected.includes(v)} onClick={() => onToggle(v)}>{v}</Chip>
+      ))}
+      {adding ? (
+        <div className="flex items-center gap-1">
+          <Input value={text} onChange={(e) => setText(e.target.value)} className="h-8 w-32" placeholder="Custom…" />
+          <Button size="sm" onClick={() => { if (text.trim()) { onAddCustom(text.trim()); setText(""); setAdding(false); } }}>Add</Button>
+        </div>
+      ) : (
+        <button onClick={() => setAdding(true)}
+          className="flex items-center gap-1 rounded-full bg-tint px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground">
+          <Plus className="h-3 w-3" /> Add
+        </button>
+      )}
     </div>
   );
 }
 const toggleIn = (arr: string[], v: string) => arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v];
 
-/* ------------------- PAIN (4-step wizard, colored) ------------------- */
+/* ------------------- PAIN wizard ------------------- */
 function PainWizard({ date, data, update, onDone }:
   { date: string; data: BixboData; update: UpdateFn; onDone: () => void }) {
   const [step, setStep] = useState(0);
-  const [score, setScore] = useState<number>(5);
+  const [score, setScore] = useState(0);
   const [parts, setParts] = useState<string[]>([]);
   const [quality, setQuality] = useState<string[]>([]);
   const [symptoms, setSymptoms] = useState<string[]>([]);
   const [note, setNote] = useState("");
+  // Extended
+  const [tetany, setTetany] = useState(false);
+  const [tetanyTypes, setTetanyTypes] = useState<string[]>([]);
+  const [tetanyLoc, setTetanyLoc] = useState<string[]>([]);
+  const [tetanyIntensity, setTetanyIntensity] = useState(1);
+  const [tetanyMin, setTetanyMin] = useState(5);
+  const [tetanyTriggers, setTetanyTriggers] = useState<string[]>([]);
+  const [tetanyHelped, setTetanyHelped] = useState<string[]>([]);
+  const [tetanyNote, setTetanyNote] = useState("");
+  const [bodyBattery, setBodyBattery] = useState<number | undefined>();
+  const [stress, setStress] = useState<number | undefined>();
+  const [mood, setMood] = useState<string[]>([]);
 
-  const addCustom = (kind: "bodyParts" | "quality" | "symptoms") => (v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [kind]: [...d.custom[kind], v] } }));
+  const addCustom = (key: "bodyParts" | "quality" | "symptoms" | "moods" | "tetanyLocations" | "tetanyHelped", v: string) =>
+    update((d) => ({ ...d, custom: { ...d.custom, [key]: [...d.custom[key], v] } }));
 
   const save = () => {
-    const entry: PainEntry = {
+    const p: PainEntry = {
       id: crypto.randomUUID(), time: nowHHMM(),
       score, parts, quality, symptoms, note: note.trim(),
+      bodyBattery, stress, mood: mood.length ? mood : undefined,
     };
-    updateDayLog(update, date, (l) => ({ ...l, pain: [...(l.pain ?? []), entry] }));
+    updateDayLog(update, date, (l) => ({ ...l, pain: [...(l.pain ?? []), p] }));
+    if (tetany) {
+      const t: TetanyEpisode = {
+        id: crypto.randomUUID(), time: nowHHMM(),
+        types: tetanyTypes, location: tetanyLoc, intensity: tetanyIntensity,
+        minutes: tetanyMin, triggers: tetanyTriggers, helped: tetanyHelped,
+        note: tetanyNote.trim() || undefined,
+      };
+      updateDayLog(update, date, (l) => ({ ...l, tetany: [...(l.tetany ?? []), t] }));
+    }
     onDone();
   };
 
-  const color = painColor(score);
+  const bg = painColor(score);
+  const bgLight = `color-mix(in oklab, ${bg} 15%, transparent)`;
 
   return (
-    <div>
-      <StepDots step={step} total={4} />
+    <div className="flex h-full flex-col" style={{ background: bgLight }}>
+      <div className="flex items-center justify-between px-1 pb-2">
+        <div className="flex gap-1">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <span key={i} className={`h-1.5 w-6 rounded-full ${i <= step ? "bg-primary" : "bg-tint"}`} />
+          ))}
+        </div>
+        <span className="text-xs text-muted-foreground">{step + 1}/5</span>
+      </div>
+
       {step === 0 && (
-        <div>
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">Pain scale</p>
-          <div className="mt-6 flex flex-col items-center">
-            <div
-              className="grid h-40 w-40 place-items-center rounded-full text-6xl font-bold text-white shadow-lg"
-              style={{ background: color }}
-            >
-              {score}
-            </div>
-            <p className="mt-4 max-w-xs text-center text-sm font-medium">{PAIN_DESCRIPTIONS[Math.round(score)]}</p>
+        <div className="flex flex-col items-center gap-4 py-6">
+          <div className="grid h-32 w-32 place-items-center rounded-full text-5xl font-bold text-white"
+               style={{ background: bg }}>
+            {Number.isInteger(score) ? score : score.toFixed(1)}
           </div>
-          <div className="mt-6">
-            <input
-              type="range" min={0} max={10} step={0.5}
-              value={score}
-              onChange={(e) => setScore(Number(e.target.value))}
-              className="w-full"
-              style={{ accentColor: "var(--primary)" }}
-            />
-            <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
-              <span>0 Normal</span><span>5</span><span>10 Extreme</span>
-            </div>
+          <p className="text-center font-medium">{PAIN_DESCRIPTIONS[Math.round(score)]}</p>
+          <div className="w-full px-4">
+            <Slider value={[score * 2]} min={0} max={20} step={1} onValueChange={([v]) => setScore(v / 2)} />
           </div>
-          <div className="mt-3 flex flex-wrap justify-center gap-1.5">
+          <div className="flex flex-wrap justify-center gap-1.5 px-4">
             {Array.from({ length: 21 }, (_, i) => i / 2).map((n) => (
-              <button
-                key={n}
-                onClick={() => setScore(n)}
-                className={`h-9 min-w-9 rounded-full px-2 text-xs font-semibold text-white ${score === n ? "ring-2 ring-foreground" : ""}`}
-                style={{ background: painColor(n) }}
-              >{n}</button>
+              <button key={n} onClick={() => setScore(n)}
+                className={`h-8 w-8 rounded-full text-[11px] font-semibold ${
+                  score === n ? "text-white ring-2 ring-foreground" : "bg-tint text-foreground"
+                }`}
+                style={score === n ? { background: painColor(n) } : undefined}>
+                {Number.isInteger(n) ? n : n.toFixed(1)}
+              </button>
             ))}
           </div>
         </div>
       )}
+
       {step === 1 && (
-        <div>
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">Where does it hurt?</p>
-          <CustomChipList
-            base={BODY_PARTS_DEFAULT}
-            custom={data.custom.bodyParts}
-            onAddCustom={addCustom("bodyParts")}
-            selected={parts}
-            onToggle={(v) => setParts((a) => toggleIn(a, v))}
-          />
-        </div>
+        <Field label="Where does it hurt?">
+          <CustomChipList base={BODY_PARTS_DEFAULT} custom={data.custom.bodyParts}
+            onAddCustom={(v) => addCustom("bodyParts", v)}
+            selected={parts} onToggle={(v) => setParts((a) => toggleIn(a, v))} />
+        </Field>
       )}
       {step === 2 && (
-        <div>
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">How does it hurt?</p>
-          <CustomChipList
-            base={PAIN_QUALITY_DEFAULT}
-            custom={data.custom.quality}
-            onAddCustom={addCustom("quality")}
-            selected={quality}
-            onToggle={(v) => setQuality((a) => toggleIn(a, v))}
-          />
-        </div>
+        <Field label="How does it hurt?">
+          <CustomChipList base={PAIN_QUALITY_DEFAULT} custom={data.custom.quality}
+            onAddCustom={(v) => addCustom("quality", v)}
+            selected={quality} onToggle={(v) => setQuality((a) => toggleIn(a, v))} />
+        </Field>
       )}
       {step === 3 && (
         <div className="space-y-4">
-          <div>
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">Other symptoms</p>
-            <CustomChipList
-              base={OTHER_SYMPTOMS_DEFAULT}
-              custom={data.custom.symptoms}
-              onAddCustom={addCustom("symptoms")}
-              selected={symptoms}
-              onToggle={(v) => setSymptoms((a) => toggleIn(a, v))}
-            />
-          </div>
-          <div>
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">How do you feel?</p>
-            <Textarea rows={4} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Any details…" className="mt-2" />
-          </div>
+          <Field label="Other symptoms">
+            <CustomChipList base={OTHER_SYMPTOMS_DEFAULT} custom={data.custom.symptoms}
+              onAddCustom={(v) => addCustom("symptoms", v)}
+              selected={symptoms} onToggle={(v) => setSymptoms((a) => toggleIn(a, v))} />
+          </Field>
+          <Field label="Tetany episode?">
+            <div className="mt-1 flex gap-2">
+              <Chip active={!tetany} onClick={() => setTetany(false)}>No</Chip>
+              <Chip active={tetany} onClick={() => setTetany(true)}>Yes — log it</Chip>
+            </div>
+          </Field>
+          {tetany && (
+            <div className="rounded-2xl border border-border p-3 space-y-3">
+              <Field label="Type">
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {TETANY_TYPES.map((v) => <Chip key={v} active={tetanyTypes.includes(v)} onClick={() => setTetanyTypes((a) => toggleIn(a, v))}>{v}</Chip>)}
+                </div>
+              </Field>
+              <Field label="Location">
+                <CustomChipList base={TETANY_LOCATIONS_DEFAULT} custom={data.custom.tetanyLocations}
+                  onAddCustom={(v) => addCustom("tetanyLocations", v)}
+                  selected={tetanyLoc} onToggle={(v) => setTetanyLoc((a) => toggleIn(a, v))} />
+              </Field>
+              <div className="grid grid-cols-2 gap-2">
+                <Field label={`Intensity ${tetanyIntensity}/5`}>
+                  <Slider value={[tetanyIntensity]} min={1} max={5} step={1} onValueChange={([v]) => setTetanyIntensity(v)} />
+                </Field>
+                <Field label="Duration (min)">
+                  <Input type="number" min={1} value={tetanyMin} onChange={(e) => setTetanyMin(Number(e.target.value))} />
+                </Field>
+              </div>
+              <Field label="Triggers">
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {TETANY_TRIGGERS.map((v) => <Chip key={v} active={tetanyTriggers.includes(v)} onClick={() => setTetanyTriggers((a) => toggleIn(a, v))}>{v}</Chip>)}
+                </div>
+              </Field>
+              <Field label="What helped">
+                <CustomChipList base={TETANY_HELPED_DEFAULT} custom={data.custom.tetanyHelped}
+                  onAddCustom={(v) => addCustom("tetanyHelped", v)}
+                  selected={tetanyHelped} onToggle={(v) => setTetanyHelped((a) => toggleIn(a, v))} />
+              </Field>
+              <Field label="Note (optional)">
+                <Textarea rows={2} value={tetanyNote} onChange={(e) => setTetanyNote(e.target.value)} />
+              </Field>
+            </div>
+          )}
         </div>
       )}
-      <SheetFooter className="mt-6 flex-row gap-2">
-        {step > 0 && <Button variant="outline" className="flex-1" onClick={() => setStep(step - 1)}>Back</Button>}
-        {step < 3 && <Button className="flex-1" onClick={() => setStep(step + 1)}>Next</Button>}
-        {step === 3 && <Button className="flex-1" onClick={save}>Save</Button>}
+
+      {step === 4 && (
+        <div className="space-y-4">
+          <Field label={`Stress ${stress ?? "-"} / 10`}>
+            <Slider value={[stress ?? 0]} min={0} max={10} step={1} onValueChange={([v]) => setStress(v)} />
+          </Field>
+          <Field label="Body battery">
+            <div className="mt-2 flex justify-between gap-2">
+              {BODY_BATTERY.map((b) => (
+                <button key={b.n} onClick={() => setBodyBattery(bodyBattery === b.n ? undefined : b.n)}
+                  className={`flex flex-1 flex-col items-center gap-1 rounded-2xl border p-2 transition ${bodyBattery === b.n ? "border-primary bg-primary/10" : "border-border bg-surface"}`}>
+                  <div className="grid h-10 w-6 place-items-end rounded-md border-2 border-foreground/60 p-0.5">
+                    <div className="w-full rounded" style={{ height: `${b.n * 18}%`, background: b.color }} />
+                  </div>
+                  <span className="text-[10px]">{b.emoji}</span>
+                </button>
+              ))}
+            </div>
+          </Field>
+          <Field label="Mood">
+            <CustomChipList base={MOODS_DEFAULT} custom={data.custom.moods}
+              onAddCustom={(v) => addCustom("moods", v)}
+              selected={mood} onToggle={(v) => setMood((a) => toggleIn(a, v))} />
+          </Field>
+          <Field label="Note (optional)">
+            <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Anything else…" />
+          </Field>
+        </div>
+      )}
+
+      <SheetFooter className="mt-4 flex-row gap-2">
+        {step > 0 && <Button variant="outline" onClick={() => setStep(step - 1)} className="flex-1">Back</Button>}
+        {step < 4 ? (
+          <Button onClick={() => setStep(step + 1)} className="flex-1">Next</Button>
+        ) : (
+          <Button onClick={save} className="flex-1">Save</Button>
+        )}
       </SheetFooter>
     </div>
   );
 }
 
+/* ------------------- PANIC attack ------------------- */
+function PanicForm({ date, data, update, onDone }:
+  { date: string; data: BixboData; update: UpdateFn; onDone: () => void }) {
+  const [time, setTime] = useState(nowHHMM());
+  const [minutes, setMinutes] = useState(10);
+  const [intensity, setIntensity] = useState(5);
+  const [physical, setPhysical] = useState<string[]>([]);
+  const [cognitive, setCognitive] = useState<string[]>([]);
+  const [trigger, setTrigger] = useState("");
+  const [place, setPlace] = useState("");
+  const [hyper, setHyper] = useState<"no" | "before" | "during" | "unknown">("unknown");
+  const [tetanyPresent, setTetanyPresent] = useState(false);
+  const [helped, setHelped] = useState<string[]>([]);
+  const [note, setNote] = useState("");
+  const addHelped = (v: string) => update((d) => ({ ...d, custom: { ...d.custom, panicHelped: [...d.custom.panicHelped, v] } }));
+
+  const save = () => {
+    const p: PanicAttack = {
+      id: crypto.randomUUID(), time, minutes, intensity,
+      physical, cognitive, trigger: trigger.trim(), place: place.trim() || undefined,
+      hyperventilation: hyper, tetanyPresent, helped, note: note.trim() || undefined,
+    };
+    updateDayLog(update, date, (l) => ({ ...l, panic: [...(l.panic ?? []), p] }));
+    onDone();
+  };
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-2">
+        <Field label="Time"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></Field>
+        <Field label="Duration (min)"><Input type="number" min={1} value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} /></Field>
+      </div>
+      <Field label={`Intensity ${intensity}/10`}>
+        <Slider value={[intensity]} min={1} max={10} step={1} onValueChange={([v]) => setIntensity(v)} />
+      </Field>
+      <Field label="Physical symptoms">
+        <div className="mt-2 flex flex-wrap gap-2">
+          {PANIC_PHYSICAL.map((v) => <Chip key={v} active={physical.includes(v)} onClick={() => setPhysical((a) => toggleIn(a, v))}>{v}</Chip>)}
+        </div>
+      </Field>
+      <Field label="Cognitive symptoms">
+        <div className="mt-2 flex flex-wrap gap-2">
+          {PANIC_COGNITIVE.map((v) => <Chip key={v} active={cognitive.includes(v)} onClick={() => setCognitive((a) => toggleIn(a, v))}>{v}</Chip>)}
+        </div>
+      </Field>
+      <Field label="Trigger (or 'no obvious trigger')">
+        <Textarea rows={2} value={trigger} onChange={(e) => setTrigger(e.target.value)} />
+      </Field>
+      <Field label="Place (optional)">
+        <Input value={place} onChange={(e) => setPlace(e.target.value)} />
+      </Field>
+      <Field label="Hyperventilation">
+        <div className="mt-2 flex flex-wrap gap-2">
+          {(["no", "before", "during", "unknown"] as const).map((v) =>
+            <Chip key={v} active={hyper === v} onClick={() => setHyper(v)}>{v}</Chip>)}
+        </div>
+      </Field>
+      <Field label="Tetany present?">
+        <div className="mt-2 flex gap-2">
+          <Chip active={!tetanyPresent} onClick={() => setTetanyPresent(false)}>No</Chip>
+          <Chip active={tetanyPresent} onClick={() => setTetanyPresent(true)}>Yes</Chip>
+        </div>
+      </Field>
+      <Field label="What helped">
+        <CustomChipList base={PANIC_HELPED_DEFAULT} custom={data.custom.panicHelped}
+          onAddCustom={addHelped}
+          selected={helped} onToggle={(v) => setHelped((a) => toggleIn(a, v))} />
+      </Field>
+      <Field label="Note (optional)">
+        <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
+      </Field>
+      <SaveBar onCancel={onDone} onSave={save} />
+    </div>
+  );
+}
+
 /* ------------------- PERIOD (Blueberry) ------------------- */
-const PERIOD_OPTS: { value: PeriodLevel; label: string; color: string }[] = [
-  { value: "spotting",  label: "Spotting",   color: "var(--period-spotting)" },
-  { value: "light",     label: "Light",      color: "var(--period-light)" },
-  { value: "medium",    label: "Medium",     color: "var(--period-medium)" },
-  { value: "heavy",     label: "Heavy",      color: "var(--period-heavy)" },
-  { value: "veryheavy", label: "Very heavy", color: "var(--period-veryheavy)" },
-];
 function PeriodForm({ date, data, update, onDone }:
   { date: string; data: BixboData; update: UpdateFn; onDone: () => void }) {
   const cur = data.dayLogs[date]?.periodInfo;
-  const [value, setValue] = useState<PeriodLevel>(cur?.level ?? data.dayLogs[date]?.period ?? "");
+  const [level, setLevel] = useState<PeriodLevel>(cur?.level ?? "");
   const [discharge, setDischarge] = useState<string>(cur?.discharge ?? "");
-  const [dischargeNote, setDischargeNote] = useState<string>(cur?.dischargeNote ?? "");
+  const [dNote, setDNote] = useState<string>(cur?.dischargeNote ?? "");
   const [note, setNote] = useState<string>(cur?.note ?? "");
 
   const save = () => {
     updateDayLog(update, date, (l) => ({
       ...l,
-      period: value || undefined,
-      periodInfo: value ? { level: value, discharge: discharge || undefined, dischargeNote: dischargeNote.trim() || undefined, note: note.trim() || undefined } : undefined,
+      period: level || undefined,
+      periodInfo: { level, discharge: discharge || undefined, dischargeNote: dNote.trim() || undefined, note: note.trim() || undefined },
     }));
     onDone();
   };
+  const LEVELS: { v: PeriodLevel; label: string; color: string }[] = [
+    { v: "spotting",  label: "Spotting",  color: "var(--period-spotting)" },
+    { v: "light",     label: "Light",     color: "var(--period-light)" },
+    { v: "medium",    label: "Medium",    color: "var(--period-medium)" },
+    { v: "heavy",     label: "Heavy",     color: "var(--period-heavy)" },
+    { v: "veryheavy", label: "Very heavy",color: "var(--period-veryheavy)" },
+  ];
   return (
-    <div className="space-y-4">
-      <Field label="Flow intensity">
-        <div className="mt-2 flex flex-wrap gap-2">
-          {PERIOD_OPTS.map((o) => (
-            <Chip key={o.value} active={value === o.value} onClick={() => setValue(value === o.value ? "" : o.value)} color={o.color}>
-              {o.label}
-            </Chip>
+    <div className="space-y-3">
+      <Field label="Flow">
+        <div className="mt-2 grid grid-cols-5 gap-1.5">
+          {LEVELS.map((L) => (
+            <button key={L.v} onClick={() => setLevel(L.v)}
+              className={`rounded-2xl p-2 text-[11px] font-medium ${level === L.v ? "text-white ring-2 ring-foreground" : "bg-tint text-foreground"}`}
+              style={level === L.v ? { background: L.color } : undefined}>
+              {L.label}
+            </button>
           ))}
         </div>
       </Field>
-      <Field label="Discharge type">
+      <Field label="Discharge (optional)">
         <div className="mt-2 flex flex-wrap gap-2">
           {DISCHARGE_OPTS.map((d) => (
             <Chip key={d.value} active={discharge === d.value} onClick={() => setDischarge(discharge === d.value ? "" : d.value)} color={d.color}>
@@ -360,26 +484,88 @@ function PeriodForm({ date, data, update, onDone }:
         </div>
       </Field>
       <Field label="Discharge note (optional)">
-        <Input value={dischargeNote} onChange={(e) => setDischargeNote(e.target.value)} placeholder="Consistency, smell, amount…" />
+        <Input value={dNote} onChange={(e) => setDNote(e.target.value)} />
       </Field>
-      <Field label="Note about the day (optional)">
+      <Field label="Day note (optional)">
         <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
+      <div className="rounded-xl bg-tint p-3 text-xs text-muted-foreground">
+        Cycle prediction is based on your last period and cycle length (edit in Settings later).
+      </div>
       <SaveBar onCancel={onDone} onSave={save} />
     </div>
   );
 }
 
-/* ------------------- HEAT / COLD ------------------- */
-function HeatForm({ date, update, onDone }:
+/* ------------------- ŠukŠuk (Sex) ------------------- */
+function SexForm({ date, data, update, onDone }:
+  { date: string; data: BixboData; update: UpdateFn; onDone: () => void }) {
+  const [kind, setKind] = useState<SexKind>("sex");
+  const [time, setTime] = useState(nowHHMM());
+  const [feelingAfter, setFeelingAfter] = useState("");
+  const [painful, setPainful] = useState<PainfulWhen>("no");
+  const [note, setNote] = useState("");
+  const addCustom = (v: string) => update((d) => ({ ...d, custom: { ...d.custom, sexTypes: [...d.custom.sexTypes, v] } }));
+  const custom = data.custom.sexTypes;
+  const save = () => {
+    const e: SexEntry = { id: crypto.randomUUID(), time, kind,
+      feelingAfter: feelingAfter || undefined, painful, note: note.trim() || undefined };
+    updateDayLog(update, date, (l) => ({ ...l, sex: [...(l.sex ?? []), e] }));
+    onDone();
+  };
+  return (
+    <div className="space-y-3">
+      <Field label="Time"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></Field>
+      <Field label="Type">
+        <div className="mt-2 flex flex-wrap gap-2">
+          {SEX_TYPES_DEFAULT.map((o) => <Chip key={o.value} active={kind === o.value} onClick={() => setKind(o.value)}>{o.label}</Chip>)}
+          {custom.map((c) => <Chip key={c} active={kind === (`other:${c}` as SexKind)} onClick={() => setKind(`other:${c}` as SexKind)}>{c}</Chip>)}
+          <AddCustomInline onAdd={addCustom} />
+        </div>
+      </Field>
+      <Field label="How I feel after">
+        <div className="mt-2 flex flex-wrap gap-2">
+          {["😊 Great","🙂 Good","😐 Meh","😞 Down","🤕 Sore","😴 Sleepy"].map((f) =>
+            <Chip key={f} active={feelingAfter === f} onClick={() => setFeelingAfter(feelingAfter === f ? "" : f)}>{f}</Chip>)}
+        </div>
+      </Field>
+      <Field label="Painful?">
+        <div className="mt-2 flex gap-2">
+          {(["no","before","during","after"] as const).map((v) =>
+            <Chip key={v} active={painful === v} onClick={() => setPainful(v)}>{v}</Chip>)}
+        </div>
+      </Field>
+      <Field label="Note (optional)"><Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} /></Field>
+      <SaveBar onCancel={onDone} onSave={save} />
+    </div>
+  );
+}
+function AddCustomInline({ onAdd }: { onAdd: (v: string) => void }) {
+  const [adding, setAdding] = useState(false);
+  const [text, setText] = useState("");
+  if (!adding) return (
+    <button onClick={() => setAdding(true)} className="flex items-center gap-1 rounded-full bg-tint px-3 py-1.5 text-xs font-medium text-muted-foreground">
+      <Plus className="h-3 w-3" /> Add
+    </button>
+  );
+  return (
+    <div className="flex items-center gap-1">
+      <Input value={text} onChange={(e) => setText(e.target.value)} className="h-8 w-32" placeholder="Custom…" />
+      <Button size="sm" onClick={() => { if (text.trim()) { onAdd(text.trim()); setText(""); setAdding(false); } }}>Add</Button>
+    </div>
+  );
+}
+
+/* ------------------- Heat / Cold / TENS ------------------- */
+function ThermoForm({ date, update, onDone }:
   { date: string; update: UpdateFn; onDone: () => void }) {
   const [kind, setKind] = useState<ThermoKind>("heat");
   const [start, setStart] = useState(nowHHMM());
-  const [minutes, setMinutes] = useState<number>(20);
+  const [minutes, setMinutes] = useState(20);
   const [note, setNote] = useState("");
   const save = () => {
-    const entry: ThermoSession = { id: crypto.randomUUID(), kind, start, minutes, note: note.trim() || undefined };
-    updateDayLog(update, date, (l) => ({ ...l, heat: [...(l.heat ?? []), entry] }));
+    const e: ThermoSession = { id: crypto.randomUUID(), kind, start, minutes, note: note.trim() || undefined };
+    updateDayLog(update, date, (l) => ({ ...l, heat: [...(l.heat ?? []), e] }));
     onDone();
   };
   return (
@@ -387,16 +573,15 @@ function HeatForm({ date, update, onDone }:
       <Field label="Type">
         <div className="mt-2 flex gap-2">
           <Chip active={kind === "heat"} onClick={() => setKind("heat")}>🔥 Heat</Chip>
-          <Chip active={kind === "cold"} onClick={() => setKind("cold")}>❄️ Cold</Chip>
+          <Chip active={kind === "cold"} onClick={() => setKind("cold")}>🧊 Cold</Chip>
+          <Chip active={kind === "tens"} onClick={() => setKind("tens")}>⚡ TENS</Chip>
         </div>
       </Field>
-      <Field label="Start time"><Input type="time" value={start} onChange={(e) => setStart(e.target.value)} /></Field>
-      <Field label="Duration (minutes)">
-        <Input type="number" min={1} value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} />
-      </Field>
-      <Field label="Note (optional)">
-        <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
-      </Field>
+      <div className="grid grid-cols-2 gap-2">
+        <Field label="Start"><Input type="time" value={start} onChange={(e) => setStart(e.target.value)} /></Field>
+        <Field label="Duration (min)"><Input type="number" min={1} value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} /></Field>
+      </div>
+      <Field label="Note (optional)"><Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} /></Field>
       <SaveBar onCancel={onDone} onSave={save} />
     </div>
   );
@@ -409,11 +594,19 @@ function FoodForm({ date, data, update, onDone }:
   const [what, setWhat] = useState("");
   const [feelings, setFeelings] = useState<string[]>([]);
   const [after, setAfter] = useState("");
+  const [hydration, setHydration] = useState<string>("");
+  const [caffeine, setCaffeine] = useState<string>("");
+  const [alcohol, setAlcohol] = useState<string>("");
   const addCustom = (v: string) =>
     update((d) => ({ ...d, custom: { ...d.custom, foodFeelings: [...d.custom.foodFeelings, v] } }));
   const save = () => {
-    if (!what.trim()) return;
-    const entry: FoodEntry = { id: crypto.randomUUID(), time, what: what.trim(), feelings, after: after.trim() || undefined };
+    if (!what.trim() && !hydration && !caffeine && !alcohol) return;
+    const entry: FoodEntry = {
+      id: crypto.randomUUID(), time, what: what.trim(), feelings, after: after.trim() || undefined,
+      hydrationMl: hydration === "" ? undefined : Number(hydration),
+      caffeineMg:  caffeine  === "" ? undefined : Number(caffeine),
+      alcoholDrinks: alcohol === "" ? undefined : Number(alcohol),
+    };
     updateDayLog(update, date, (l) => ({ ...l, food: [...(l.food ?? []), entry] }));
     onDone();
   };
@@ -424,18 +617,18 @@ function FoodForm({ date, data, update, onDone }:
         <Textarea rows={2} value={what} onChange={(e) => setWhat(e.target.value)} placeholder="e.g. chicken, rice, tomato" />
       </Field>
       <Field label="How do you feel?">
-        <CustomChipList
-          base={FOOD_FEELINGS_DEFAULT}
-          custom={data.custom.foodFeelings}
-          onAddCustom={addCustom}
-          selected={feelings}
-          onToggle={(v) => setFeelings((a) => toggleIn(a, v))}
-        />
+        <CustomChipList base={FOOD_FEELINGS_DEFAULT} custom={data.custom.foodFeelings}
+          onAddCustom={addCustom} selected={feelings} onToggle={(v) => setFeelings((a) => toggleIn(a, v))} />
       </Field>
+      <div className="grid grid-cols-3 gap-2">
+        <Field label="Water (ml)"><Input type="number" value={hydration} onChange={(e) => setHydration(e.target.value)} placeholder="300" /></Field>
+        <Field label="Caffeine (mg)"><Input type="number" value={caffeine} onChange={(e) => setCaffeine(e.target.value)} placeholder="80" /></Field>
+        <Field label="Alcohol (drinks)"><Input type="number" value={alcohol} onChange={(e) => setAlcohol(e.target.value)} placeholder="0" /></Field>
+      </div>
       <Field label="Additional note (optional)">
-        <Textarea rows={2} value={after} onChange={(e) => setAfter(e.target.value)} placeholder="Reaction, bloating, itching…" />
+        <Textarea rows={2} value={after} onChange={(e) => setAfter(e.target.value)} />
       </Field>
-      <SaveBar onCancel={onDone} onSave={save} disabled={!what.trim()} />
+      <SaveBar onCancel={onDone} onSave={save} />
     </div>
   );
 }
@@ -482,26 +675,28 @@ function BowelForm({ date, update, onDone }:
       <Field label="Time"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></Field>
       <Field label="Bristol stool scale">
         <div className="mt-1 space-y-1.5">
+          <button onClick={() => setBristol(0)}
+            className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-2 text-left text-sm transition ${
+              bristol === 0 ? "border-primary bg-primary/10" : "border-border bg-surface"}`}>
+            <span className="grid h-8 w-8 place-items-center rounded-full text-xs font-semibold text-white bg-muted-foreground">–</span>
+            <span className="flex-1">No bowel movement</span>
+          </button>
           {BRISTOL.map((b) => (
-            <button
-              key={b.n}
-              onClick={() => setBristol(b.n)}
+            <button key={b.n} onClick={() => setBristol(b.n)}
               className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-2 text-left text-sm transition ${
                 bristol === b.n ? "border-primary bg-primary/10" : "border-border bg-surface"
-              }`}
-            >
-              <span className="grid h-8 w-8 place-items-center rounded-full text-xs font-semibold text-white" style={{ background: b.color }}>
-                {b.n}
-              </span>
+              }`}>
+              <span className="grid h-8 w-8 place-items-center rounded-full text-xs font-semibold text-white" style={{ background: b.color }}>{b.n}</span>
               <BristolIcon shape={b.shape} color={b.color} />
-              <span className="flex-1">{b.label}</span>
+              <div className="flex-1">
+                <p className="font-medium">{b.label}</p>
+                <p className="text-[11px] text-muted-foreground">{b.sub}</p>
+              </div>
             </button>
           ))}
         </div>
       </Field>
-      <Field label="Note (optional)">
-        <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
-      </Field>
+      <Field label="Note (optional)"><Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} /></Field>
       <SaveBar onCancel={onDone} onSave={save} />
     </div>
   );
@@ -514,60 +709,26 @@ function TempForm({ date, data, update, onDone }:
   const [temperature, setTemperature] = useState<string>(cur.temperature != null ? String(cur.temperature) : "");
   const [weight, setWeight] = useState<string>(cur.weight != null ? String(cur.weight) : "");
   const [sleep, setSleep] = useState<string>(cur.sleepHours != null ? String(cur.sleepHours) : "");
+  const [quality, setQuality] = useState<string>(cur.sleepQuality ?? "");
   const save = () => {
     updateDayLog(update, date, (l) => ({
       ...l,
       temperature: temperature === "" ? undefined : Number(temperature),
       weight: weight === "" ? undefined : Number(weight),
       sleepHours: sleep === "" ? undefined : Number(sleep),
+      sleepQuality: quality || undefined,
     }));
     onDone();
   };
   return (
     <div className="space-y-3">
-      <Field label="Temperature (°C)">
-        <Input type="number" step="0.1" value={temperature} onChange={(e) => setTemperature(e.target.value)} placeholder="36.6" />
-      </Field>
-      <Field label="Weight (kg)">
-        <Input type="number" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="65.0" />
-      </Field>
-      <Field label="Sleep (hours)">
-        <Input type="number" step="0.5" value={sleep} onChange={(e) => setSleep(e.target.value)} placeholder="8" />
-      </Field>
-      <SaveBar onCancel={onDone} onSave={save} />
-    </div>
-  );
-}
-
-/* ------------------- SEX (ŠukŠuk!) ------------------- */
-const SEX_OPTS: { value: SexKind; label: string }[] = [
-  { value: "sex_with_condom",    label: "Sex — with condom" },
-  { value: "sex_without_condom", label: "Sex — without condom" },
-  { value: "fingering",          label: "Fingering" },
-  { value: "oral_giving",        label: "Oral — giving" },
-  { value: "oral_receiving",     label: "Oral — receiving" },
-  { value: "other",              label: "Other" },
-];
-function SexForm({ date, update, onDone }:
-  { date: string; update: UpdateFn; onDone: () => void }) {
-  const [kind, setKind] = useState<SexKind>("sex_with_condom");
-  const [note, setNote] = useState("");
-  const save = () => {
-    const e: SexEntry = { id: crypto.randomUUID(), time: nowHHMM(), kind, note: note.trim() || undefined };
-    updateDayLog(update, date, (l) => ({ ...l, sex: [...(l.sex ?? []), e] }));
-    onDone();
-  };
-  return (
-    <div className="space-y-3">
-      <Field label="Type">
+      <Field label="Temperature (°C)"><Input type="number" step="0.1" value={temperature} onChange={(e) => setTemperature(e.target.value)} placeholder="36.6" /></Field>
+      <Field label="Weight (kg)"><Input type="number" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="65.0" /></Field>
+      <Field label="Sleep (hours)"><Input type="number" step="0.5" value={sleep} onChange={(e) => setSleep(e.target.value)} placeholder="8" /></Field>
+      <Field label="How I slept">
         <div className="mt-2 flex flex-wrap gap-2">
-          {SEX_OPTS.map((o) => (
-            <Chip key={o.value} active={kind === o.value} onClick={() => setKind(o.value)}>{o.label}</Chip>
-          ))}
+          {SLEEP_QUALITY.map((q) => <Chip key={q} active={quality === q} onClick={() => setQuality(quality === q ? "" : q)}>{q}</Chip>)}
         </div>
-      </Field>
-      <Field label="Note (optional)">
-        <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
       <SaveBar onCancel={onDone} onSave={save} />
     </div>
@@ -588,11 +749,12 @@ function MedsForm({ date, data, update, onDone }:
   const [extraName, setExtraName] = useState("");
   const [extraDose, setExtraDose] = useState("");
   const [extraTime, setExtraTime] = useState(nowHHMM());
+  const [extraNote, setExtraNote] = useState("");
   const addExtra = () => {
     if (!extraName.trim()) return;
-    const e: ExtraMed = { id: crypto.randomUUID(), time: extraTime, name: extraName.trim(), dose: extraDose.trim() || undefined };
+    const e: ExtraMed = { id: crypto.randomUUID(), time: extraTime, name: extraName.trim(), dose: extraDose.trim() || undefined, note: extraNote.trim() || undefined };
     updateDayLog(update, date, (l) => ({ ...l, extraMeds: [...(l.extraMeds ?? []), e] }));
-    setExtraName(""); setExtraDose(""); setExtraTime(nowHHMM());
+    setExtraName(""); setExtraDose(""); setExtraNote(""); setExtraTime(nowHHMM());
   };
   const today = date === todayKey();
   const extras = data.dayLogs[date]?.extraMeds ?? [];
@@ -600,9 +762,7 @@ function MedsForm({ date, data, update, onDone }:
   return (
     <div className="space-y-4">
       {meds.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No medications set up yet. Add your regimen in Medications settings.
-        </p>
+        <p className="text-sm text-muted-foreground">No medications yet. Add them from Meds settings.</p>
       ) : (
         <div>
           <p className="text-xs uppercase tracking-wider text-muted-foreground">{today ? "Today" : date}</p>
@@ -613,6 +773,7 @@ function MedsForm({ date, data, update, onDone }:
                 <div className="flex-1">
                   <p className="text-sm font-medium">{m.name}</p>
                   <p className="text-xs text-muted-foreground">As needed{m.dose ? ` · ${m.dose}` : ""}</p>
+                  {m.note && <p className="text-[11px] text-muted-foreground">📝 {m.note}</p>}
                 </div>
               </label>
             ) : (
@@ -624,6 +785,7 @@ function MedsForm({ date, data, update, onDone }:
                     <div className="flex-1">
                       <p className="text-sm font-medium">{m.name} <span className="text-xs text-muted-foreground">· {t}</span></p>
                       {m.dose && <p className="text-xs text-muted-foreground">{m.dose}</p>}
+                      {m.note && <p className="text-[11px] text-muted-foreground">📝 {m.note}</p>}
                     </div>
                   </label>
                 );
@@ -638,13 +800,14 @@ function MedsForm({ date, data, update, onDone }:
           <Input placeholder="Name" value={extraName} onChange={(e) => setExtraName(e.target.value)} className="col-span-2" />
           <Input type="time" value={extraTime} onChange={(e) => setExtraTime(e.target.value)} />
         </div>
-        <div className="mt-2 flex gap-2">
+        <div className="mt-2 grid grid-cols-2 gap-2">
           <Input placeholder="Dose (optional)" value={extraDose} onChange={(e) => setExtraDose(e.target.value)} />
-          <Button onClick={addExtra} disabled={!extraName.trim()}>Add</Button>
+          <Input placeholder="Note (optional)" value={extraNote} onChange={(e) => setExtraNote(e.target.value)} />
         </div>
+        <Button className="mt-2 w-full" onClick={addExtra} disabled={!extraName.trim()}>Add extra dose</Button>
         {extras.length > 0 && (
           <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
-            {extras.map((e) => <li key={e.id}>• {e.time} — {e.name}{e.dose ? ` (${e.dose})` : ""}</li>)}
+            {extras.map((e) => <li key={e.id}>• {e.time} — {e.name}{e.dose ? ` (${e.dose})` : ""}{e.note ? ` — ${e.note}` : ""}</li>)}
           </ul>
         )}
       </div>
@@ -678,30 +841,18 @@ function WorkoutForm({ date, data, update, onDone }:
   return (
     <div className="space-y-3">
       <Field label="Type">
-        <CustomChipList
-          base={WORKOUT_KINDS_DEFAULT}
-          custom={data.custom.workoutKinds}
-          onAddCustom={addKind}
-          selected={[kind]}
-          onToggle={(v) => setKind(v)}
-        />
+        <CustomChipList base={WORKOUT_KINDS_DEFAULT} custom={data.custom.workoutKinds}
+          onAddCustom={addKind} selected={[kind]} onToggle={(v) => setKind(v)} />
       </Field>
-      <Field label="Duration (minutes)">
-        <Input type="number" min={1} value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} />
-      </Field>
-      <Field label="Weight after (kg, optional)">
-        <Input type="number" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="65.0" />
-      </Field>
+      <Field label="Duration (minutes)"><Input type="number" min={1} value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} /></Field>
+      <Field label="Weight after (kg, optional)"><Input type="number" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} /></Field>
       <Field label="How you feel">
         <div className="mt-2 flex flex-wrap gap-2">
-          {["😊 Great","🙂 Good","😐 Ok","😩 Tired","🤕 Sore"].map((f) => (
-            <Chip key={f} active={feeling === f} onClick={() => setFeeling(feeling === f ? "" : f)}>{f}</Chip>
-          ))}
+          {["😊 Great","🙂 Good","😐 Ok","😩 Tired","🤕 Sore"].map((f) =>
+            <Chip key={f} active={feeling === f} onClick={() => setFeeling(feeling === f ? "" : f)}>{f}</Chip>)}
         </div>
       </Field>
-      <Field label="Note (optional)">
-        <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
-      </Field>
+      <Field label="Note (optional)"><Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} /></Field>
       <SaveBar onCancel={onDone} onSave={save} />
     </div>
   );
@@ -714,15 +865,15 @@ function EventForm({ date, update, onDone }:
   const [startDate, setStartDate] = useState(date);
   const [endDate, setEndDate] = useState(date);
   const [time, setTime] = useState("");
+  const [timeEnd, setTimeEnd] = useState("");
   const [note, setNote] = useState("");
-  const [color, setColor] = useState("var(--primary)");
-  const COLORS = ["var(--primary)", "var(--pain-4)", "var(--pain-8)", "var(--period-medium)", "var(--predicted)"];
+  const [color, setColor] = useState(EVENT_COLORS[0]);
   const save = () => {
     if (!title.trim()) return;
     const e: EventEntry = {
       id: crypto.randomUUID(), title: title.trim(),
       startDate, endDate: endDate < startDate ? startDate : endDate,
-      time: time || undefined, note: note.trim() || undefined, color,
+      time: time || undefined, timeEnd: timeEnd || undefined, note: note.trim() || undefined, color,
     };
     update((d) => ({ ...d, events: [...d.events, e] }));
     onDone();
@@ -734,21 +885,20 @@ function EventForm({ date, update, onDone }:
         <Field label="From"><Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} /></Field>
         <Field label="To"><Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} /></Field>
       </div>
-      <Field label="Time (optional)"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></Field>
+      <div className="grid grid-cols-2 gap-2">
+        <Field label="Time from"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></Field>
+        <Field label="Time to"><Input type="time" value={timeEnd} onChange={(e) => setTimeEnd(e.target.value)} /></Field>
+      </div>
       <Field label="Color">
-        <div className="mt-2 flex gap-2">
-          {COLORS.map((c) => (
-            <button
-              key={c} onClick={() => setColor(c)}
+        <div className="mt-2 flex gap-2 flex-wrap">
+          {EVENT_COLORS.map((c) => (
+            <button key={c} onClick={() => setColor(c)}
               className={`h-8 w-8 rounded-full ${color === c ? "ring-2 ring-foreground" : ""}`}
-              style={{ background: c }}
-            />
+              style={{ background: c }} />
           ))}
         </div>
       </Field>
-      <Field label="Note (optional)">
-        <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
-      </Field>
+      <Field label="Note (optional)"><Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} /></Field>
       <SaveBar onCancel={onDone} onSave={save} disabled={!title.trim()} />
     </div>
   );
@@ -761,13 +911,15 @@ function TaskForm({ date, update, onDone }:
   const [startDate, setStartDate] = useState(date);
   const [endDate, setEndDate] = useState(date);
   const [time, setTime] = useState("");
+  const [timeEnd, setTimeEnd] = useState("");
   const [note, setNote] = useState("");
   const save = () => {
     if (!title.trim()) return;
     const t: TaskEntry = {
       id: crypto.randomUUID(), title: title.trim(),
       startDate, endDate: endDate < startDate ? startDate : endDate,
-      time: time || undefined, done: false, note: note.trim() || undefined,
+      time: time || undefined, timeEnd: timeEnd || undefined,
+      done: false, note: note.trim() || undefined,
     };
     update((d) => ({ ...d, tasks: [...d.tasks, t] }));
     onDone();
@@ -779,7 +931,10 @@ function TaskForm({ date, update, onDone }:
         <Field label="From"><Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} /></Field>
         <Field label="To"><Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} /></Field>
       </div>
-      <Field label="Time (optional)"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></Field>
+      <div className="grid grid-cols-2 gap-2">
+        <Field label="Time from"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></Field>
+        <Field label="Time to"><Input type="time" value={timeEnd} onChange={(e) => setTimeEnd(e.target.value)} /></Field>
+      </div>
       <Field label="Note (optional)"><Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} /></Field>
       <SaveBar onCancel={onDone} onSave={save} disabled={!title.trim()} />
     </div>
@@ -790,13 +945,20 @@ function TaskForm({ date, update, onDone }:
 function NoteForm({ date, update, onDone }:
   { date: string; update: UpdateFn; onDone: () => void }) {
   const [t, setT] = useState("");
+  const [time, setTime] = useState("");
   const save = () => {
     if (!t.trim()) return;
-    update((d) => ({ ...d, dayNotes: { ...d.dayNotes, [date]: [...(d.dayNotes[date] ?? []), t.trim()] } }));
+    update((d) => {
+      const list = (d.dayNotes[date] ?? []) as (string | { text: string; time?: string })[];
+      const next: { text: string; time?: string }[] = list.map((x) => typeof x === "string" ? { text: x } : x);
+      next.push({ text: t.trim(), time: time || undefined });
+      return { ...d, dayNotes: { ...d.dayNotes, [date]: next } };
+    });
     onDone();
   };
   return (
     <div className="space-y-3">
+      <Field label="Time (optional)"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></Field>
       <Textarea rows={6} value={t} onChange={(e) => setT(e.target.value)} placeholder="Anything about today…" />
       <SaveBar onCancel={onDone} onSave={save} disabled={!t.trim()} />
     </div>

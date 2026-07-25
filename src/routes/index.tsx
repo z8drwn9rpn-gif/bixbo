@@ -1,335 +1,422 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Pill, Bell, Download, Upload, Share2, Trash2, X, Check } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useMemo, useState, useEffect } from "react";
+import { ChevronLeft, ChevronRight, Plus, Settings as SettingsIcon, Share2, Trash2, Pill, Heart, Droplets, Utensils, Zap } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { Button } from "@/components/ui/button";
 import { MonthCalendar, monthLabel } from "@/components/MonthCalendar";
 import { LogSheet } from "@/components/LogSheet";
 import {
-  useBixbo, todayKey, fromKey, EMPTY, BRISTOL, PAIN_DESCRIPTIONS,
-  isDateInRange, nextPredictedPeriod,
-  type BixboData,
+  useBixbo, EMPTY, toKey, fromKey, todayKey, PAIN_DESCRIPTIONS, painColor, BRISTOL, nextPredictedPeriod, daysBetween,
+  type BixboData, type DayLog, type PeriodLevel, type BowelEntry, type SexEntry,
 } from "@/lib/storage";
-import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "BIXBO — Health diary" },
-      { name: "description", content: "Track your cycle, pain, meds and notes in one calm place." },
-      { property: "og:title", content: "BIXBO — Health diary" },
-      { property: "og:description", content: "Track your cycle, pain, meds and notes in one calm place." },
+      { title: "BIXBO — Calendar & daily overview" },
+      { name: "description", content: "Track pain, panic attacks, cycle, meds, food and more — all on one calm calendar." },
+      { property: "og:title", content: "BIXBO — Calendar & daily overview" },
+      { property: "og:description", content: "Track pain, panic attacks, cycle, meds, food and more." },
     ],
   }),
   component: HomePage,
 });
 
+function periodLabel(p?: PeriodLevel) {
+  if (!p) return null;
+  return { spotting: "Spotting", light: "Light", medium: "Medium", heavy: "Heavy", veryheavy: "Very heavy" }[p];
+}
+
 function HomePage() {
-  const { data, update, replace, hydrated } = useBixbo();
-  const [month, setMonth] = useState(() => {
-    const n = new Date();
-    return new Date(n.getFullYear(), n.getMonth(), 1);
-  });
-  const [selected, setSelected] = useState<string>(() => todayKey());
-
+  const navigate = useNavigate();
+  const { data, update, hydrated } = useBixbo();
   const view = hydrated ? data : EMPTY;
-  const tKey = todayKey();
-  const meds = view.meds;
-  const takenToday = view.medLog[tKey] ?? {};
-  const totalSlots = useMemo(
-    () => meds.reduce((n, m) => n + (m.asNeeded ? 0 : m.times.length), 0),
-    [meds],
-  );
-  const takenCount = useMemo(
-    () => meds.reduce((n, m) => n + (m.asNeeded ? 0 : m.times.filter((t) => takenToday[`${m.id}@${t}`]).length), 0),
-    [meds, takenToday],
-  );
 
-  const [notifPerm, setNotifPerm] = useState<NotificationPermission | "unsupported">("default");
+  const [monthAnchor, setMonthAnchor] = useState<Date>(() => new Date());
+  const [selected, setSelected] = useState<string>(todayKey());
+  const [logOpen, setLogOpen] = useState(false);
+  const [quickCat, setQuickCat] = useState<string | undefined>();
+
+  // Meds reminders + period notification
   useEffect(() => {
-    if (typeof window === "undefined" || !("Notification" in window)) { setNotifPerm("unsupported"); return; }
-    setNotifPerm(Notification.permission);
-  }, []);
-  useEffect(() => {
+    if (!hydrated || !view.settings.notifications) return;
     if (typeof window === "undefined" || !("Notification" in window)) return;
     if (Notification.permission !== "granted") return;
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    const now = new Date();
-    for (const m of meds) {
-      if (m.asNeeded) continue;
-      for (const t of m.times) {
-        const [h, mi] = t.split(":").map(Number);
-        const when = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, mi, 0);
-        const delta = when.getTime() - now.getTime();
-        if (delta > 0 && delta < 24 * 60 * 60 * 1000) {
-          timers.push(setTimeout(() => {
-            try { new Notification(`Time for ${m.name}`, { body: `${t}${m.dose ? ` · ${m.dose}` : ""}` }); } catch {}
-          }, delta));
+    const int = setInterval(() => {
+      const now = new Date();
+      const hhmm = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+      view.meds.forEach((m) => {
+        if (m.asNeeded) return;
+        if (m.times.includes(hhmm)) {
+          const taken = view.medLog[todayKey()]?.[`${m.id}@${hhmm}`];
+          if (!taken) new Notification(`💊 ${m.name}`, { body: `Time for your ${hhmm} dose${m.dose ? ` (${m.dose})` : ""}` });
+        }
+      });
+      // Period predict: 1 day before at 09:00
+      if (hhmm === "09:00") {
+        const p = nextPredictedPeriod(view.cycle);
+        if (p && daysBetween(todayKey(), p.start) === 1) {
+          new Notification("🫐 Period starts tomorrow", { body: "Get your supplies ready 💚" });
         }
       }
-    }
-    return () => timers.forEach(clearTimeout);
-  }, [meds]);
+    }, 60000);
+    return () => clearInterval(int);
+  }, [hydrated, view.meds, view.medLog, view.cycle, view.settings.notifications]);
 
-  const exportJson = () => {
-    const blob = new Blob([JSON.stringify(view, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = `bixbo-backup-${tKey}.json`; a.click();
-    URL.revokeObjectURL(url);
-  };
-  const importJson = async (file: File) => {
-    try { replace({ ...EMPTY, ...JSON.parse(await file.text()) }); } catch { alert("Could not read that file."); }
-  };
+  const goToPrevMonth = () => setMonthAnchor((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1));
+  const goToNextMonth = () => setMonthAnchor((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1));
 
-  const nextP = nextPredictedPeriod(view.cycle);
+  const openQuick = (cat: string) => { setQuickCat(cat); setLogOpen(true); };
 
   return (
-    <AppShell title="BIXBO" big>
-      <div className="px-5 pt-4">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-serif text-2xl font-bold">{monthLabel(month)}</h2>
-          <div className="flex items-center gap-1">
-            <button className="rounded-full p-2 hover:bg-tint" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} aria-label="Previous month">
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <button className="rounded-full p-2 hover:bg-tint" onClick={() => { const n = new Date(); setMonth(new Date(n.getFullYear(), n.getMonth(), 1)); setSelected(todayKey()); }}>
-              <span className="text-xs font-medium">Today</span>
-            </button>
-            <button className="rounded-full p-2 hover:bg-tint" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))} aria-label="Next month">
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <MonthCalendar month={month} data={view} selected={selected} onSelect={setSelected} />
-
-      {nextP && (
-        <div className="mt-3 px-5">
-          <p className="rounded-2xl bg-tint p-2 text-center text-[11px] text-muted-foreground">
-            Next period predicted: <span className="font-semibold text-foreground">{fromKey(nextP.start).toLocaleDateString("en-GB", { day: "numeric", month: "short" })} – {fromKey(nextP.end).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span>
-          </p>
-        </div>
-      )}
-
-      <div className="mt-4 space-y-3 px-5">
+    <AppShell
+      title="BIXBO"
+      big
+      right={
+        <Link to="/settings" className="rounded-full p-2 hover:bg-tint" aria-label="Settings">
+          <SettingsIcon className="h-5 w-5" />
+        </Link>
+      }
+    >
+      <div className="px-5 pt-1">
         <div className="flex items-center justify-between">
-          <p className="font-serif text-xl font-semibold">
-            {fromKey(selected).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}
-          </p>
-          <ShareDayButton date={selected} view={view} />
-        </div>
-
-        <DayPreview date={selected} view={view} update={update} />
-
-        <div className="grid grid-cols-3 gap-2 text-center">
-          <MiniStat label="Meds today" value={`${takenCount}/${totalSlots || 0}`} />
-          <MiniStat label="Notifications" value={notifPerm === "granted" ? "On" : "Off"} />
-          <MiniStat label="Backup" value="Local" />
-        </div>
-
-        <div className="flex items-center justify-between rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border">
-          <div className="flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center rounded-full bg-primary/10 text-lg">💊</span>
-            <div>
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">Medications</p>
-              <p className="text-sm">Manage your regimen</p>
-            </div>
-          </div>
-          <Link to="/meds"><Button size="sm" variant="outline" className="rounded-full"><Pill className="h-3.5 w-3.5" /> Manage</Button></Link>
-        </div>
-
-        {notifPerm === "default" && (
-          <button
-            onClick={() => Notification.requestPermission().then(setNotifPerm)}
-            className="flex w-full items-center gap-2 rounded-2xl bg-primary/10 p-3 text-left text-sm text-primary"
-          >
-            <Bell className="h-4 w-4" /> Turn on medication reminders
+          <button onClick={goToPrevMonth} aria-label="Previous month" className="rounded-full p-2 hover:bg-tint">
+            <ChevronLeft className="h-5 w-5" />
           </button>
-        )}
-
-        <div className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">Backup</p>
-          <p className="mt-1 text-xs text-muted-foreground">Data lives on this device. Export JSON to move it.</p>
-          <div className="mt-3 flex gap-2">
-            <Button size="sm" variant="outline" onClick={exportJson}><Download className="h-3.5 w-3.5" /> Export</Button>
-            <label className="inline-flex">
-              <input type="file" accept="application/json" className="hidden"
-                onChange={(e) => { const f = e.target.files?.[0]; if (f) importJson(f); e.currentTarget.value = ""; }} />
-              <span className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-md border border-input bg-background px-3 text-sm font-medium hover:bg-accent">
-                <Upload className="h-3.5 w-3.5" /> Import
-              </span>
-            </label>
-          </div>
+          <h2 className="font-serif text-2xl font-bold">{monthLabel(monthAnchor)}</h2>
+          <button onClick={goToNextMonth} aria-label="Next month" className="rounded-full p-2 hover:bg-tint">
+            <ChevronRight className="h-5 w-5" />
+          </button>
         </div>
       </div>
 
-      <div className="pointer-events-none fixed bottom-24 left-1/2 z-30 w-full max-w-[430px] -translate-x-1/2 px-5">
-        <div className="pointer-events-auto flex justify-end">
-          <LogSheet date={selected} data={view} update={update} />
-        </div>
+      <div className="mt-1">
+        <MonthCalendar
+          month={monthAnchor} data={view} selected={selected} onSelect={setSelected}
+          onSwipeMonth={(delta) => setMonthAnchor((d) => new Date(d.getFullYear(), d.getMonth() + delta, 1))}
+        />
       </div>
+
+      {/* Top meds row */}
+      <div className="mt-4 grid grid-cols-2 gap-2 px-5">
+        <MedsProgress data={view} />
+        <Link to="/meds" className="flex items-center justify-center gap-2 rounded-2xl bg-surface p-3 text-sm font-medium ring-1 ring-border hover:bg-tint">
+          <Pill className="h-4 w-4" /> Manage meds
+        </Link>
+      </div>
+
+      <div className="mt-4 flex items-center justify-between px-5">
+        <h2 className="font-serif text-xl font-bold">
+          {selected === todayKey()
+            ? "Today"
+            : fromKey(selected).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}
+        </h2>
+        <ShareDayButton date={selected} view={view} />
+      </div>
+
+      {/* Category badges */}
+      <TodayBadges log={view.dayLogs[selected]} onQuick={openQuick} />
+
+      <DayPreview date={selected} data={view} update={update} />
+
+      <div className="fixed bottom-24 left-1/2 z-30 -translate-x-1/2">
+        <Button
+          onClick={() => { setQuickCat(undefined); setLogOpen(true); }}
+          className="h-14 rounded-full px-6 shadow-lg"
+        >
+          <Plus className="h-5 w-5" /> Log
+        </Button>
+      </div>
+
+      <LogSheet open={logOpen} onOpenChange={(b) => { setLogOpen(b); if (!b) setQuickCat(undefined); }}
+        date={selected} data={view} update={update} initial={quickCat as never} />
     </AppShell>
   );
 }
 
-function MiniStat({ label, value }: { label: string; value: string }) {
+function MedsProgress({ data }: { data: BixboData }) {
+  const k = todayKey();
+  const scheduled = data.meds.filter((m) => !m.asNeeded);
+  const total = scheduled.reduce((s, m) => s + m.times.length, 0);
+  const taken = scheduled.reduce((s, m) => s + m.times.filter((t) => data.medLog[k]?.[`${m.id}@${t}`]).length, 0);
   return (
-    <div className="rounded-2xl bg-tint px-2 py-3">
-      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className="mt-1 font-serif text-lg leading-tight">{value}</p>
+    <div className="flex items-center justify-between rounded-2xl bg-surface p-3 ring-1 ring-border">
+      <div>
+        <p className="text-xs text-muted-foreground">Meds today</p>
+        <p className="font-serif text-lg font-bold">{taken}/{total || 0}</p>
+      </div>
+      <div className="grid h-10 w-10 place-items-center rounded-full bg-primary/15 text-primary">
+        💊
+      </div>
     </div>
   );
 }
 
-function periodLabel(p: string) {
-  return { spotting: "Spotting", light: "Light", medium: "Medium", heavy: "Heavy", veryheavy: "Very heavy" }[p] ?? "—";
-}
-function sexLabel(k: string) {
-  return {
-    sex_with_condom: "Sex — with condom",
-    sex_without_condom: "Sex — without condom",
-    fingering: "Fingering",
-    oral_giving: "Oral — giving",
-    oral_receiving: "Oral — receiving",
-    other: "Other",
-    none: "None",
-  }[k] ?? k;
-}
-
-function DayPreview({
-  date, view, update,
-}: { date: string; view: BixboData; update: (u: (d: BixboData) => BixboData) => void }) {
-  const log = view.dayLogs[date] ?? {};
-  const notes = view.dayNotes[date] ?? [];
-  const events = view.events.filter((e) => isDateInRange(date, e.startDate, e.endDate));
-  const tasks = view.tasks.filter((t) => isDateInRange(date, t.startDate, t.endDate));
-  const dayMed = view.medLog[date] ?? {};
-  const medsTaken = view.meds.flatMap((m) => (m.asNeeded ? [] : m.times).filter((t) => dayMed[`${m.id}@${t}`]).map((t) => ({ id: `${m.id}@${t}`, name: m.name, dose: m.dose, time: t })));
-
-  const removePain = (id: string) => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...(d.dayLogs[date] ?? {}), pain: (d.dayLogs[date]?.pain ?? []).filter((p) => p.id !== id) } } }));
-  const removeHeat = (id: string) => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...(d.dayLogs[date] ?? {}), heat: (d.dayLogs[date]?.heat ?? []).filter((p) => p.id !== id) } } }));
-  const removeFood = (id: string) => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...(d.dayLogs[date] ?? {}), food: (d.dayLogs[date]?.food ?? []).filter((p) => p.id !== id) } } }));
-  const removeBowel = (id: string) => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...(d.dayLogs[date] ?? {}), bowel: (d.dayLogs[date]?.bowel ?? []).filter((p) => p.id !== id) } } }));
-  const removeSex = (id: string) => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...(d.dayLogs[date] ?? {}), sex: (d.dayLogs[date]?.sex ?? []).filter((p) => p.id !== id) } } }));
-  const removeExtra = (id: string) => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...(d.dayLogs[date] ?? {}), extraMeds: (d.dayLogs[date]?.extraMeds ?? []).filter((p) => p.id !== id) } } }));
-  const removeWorkout = (id: string) => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...(d.dayLogs[date] ?? {}), workout: (d.dayLogs[date]?.workout ?? []).filter((p) => p.id !== id) } } }));
-  const clearPeriod = () => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...(d.dayLogs[date] ?? {}), period: undefined, periodInfo: undefined } } }));
-  const clearTempWeight = () => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...(d.dayLogs[date] ?? {}), temperature: undefined, weight: undefined, sleepHours: undefined } } }));
-  const removeNote = (i: number) => update((d) => ({ ...d, dayNotes: { ...d.dayNotes, [date]: (d.dayNotes[date] ?? []).filter((_, idx) => idx !== i) } }));
-  const removeEvent = (id: string) => update((d) => ({ ...d, events: d.events.filter((e) => e.id !== id) }));
-  const removeTask = (id: string) => update((d) => ({ ...d, tasks: d.tasks.filter((t) => t.id !== id) }));
-  const toggleTask = (id: string) => update((d) => ({ ...d, tasks: d.tasks.map((t) => t.id === id ? { ...t, done: !t.done } : t) }));
-
-  const empty =
-    !(log.pain?.length) && !(log.heat?.length) && !(log.food?.length) && !(log.bowel?.length) &&
-    !(log.sex?.length) && !(log.workout?.length) && !(log.extraMeds?.length) &&
-    !log.period && !log.periodInfo?.level && log.temperature == null && log.weight == null && log.sleepHours == null &&
-    notes.length === 0 && events.length === 0 && tasks.length === 0 && medsTaken.length === 0;
-
-  if (empty) {
-    return (
-      <div className="rounded-3xl bg-surface p-6 text-center ring-1 ring-border">
-        <p className="text-sm text-muted-foreground">Nothing logged for this day yet.</p>
-        <p className="mt-1 text-xs text-muted-foreground">Tap the Log button.</p>
-      </div>
-    );
-  }
-
-  const periodLevel = log.periodInfo?.level ?? log.period;
+function TodayBadges({ log, onQuick }: { log?: DayLog; onQuick: (cat: string) => void }) {
+  const items: { key: string; cat: string; label: string; icon: React.ReactNode; color: string; count: number }[] = [
+    { key: "meds",   cat: "meds",   label: "Meds",    icon: <Pill className="h-4 w-4" />,      color: "#3b82f6", count: (log?.extraMeds?.length ?? 0) },
+    { key: "pain",   cat: "pain",   label: "Symptoms",icon: <Heart className="h-4 w-4" />,     color: "#ef4444", count: (log?.pain?.length ?? 0) },
+    { key: "cycle",  cat: "period", label: "Cycle",   icon: <Droplets className="h-4 w-4" />,  color: "#ec4899", count: (log?.period || log?.periodInfo?.level) ? 1 : 0 },
+    { key: "food",   cat: "food",   label: "Food",    icon: <Utensils className="h-4 w-4" />,  color: "#f97316", count: (log?.food?.length ?? 0) },
+    { key: "panic",  cat: "panic",  label: "Panic",   icon: <Zap className="h-4 w-4" />,       color: "#a855f7", count: (log?.panic?.length ?? 0) },
+  ];
   return (
-    <div className="space-y-2">
-      {periodLevel && (
-        <Card icon="🫐" title={`Period · ${periodLabel(periodLevel)}`} onRemove={clearPeriod}>
-          {log.periodInfo?.discharge && <p className="mt-1 text-xs text-muted-foreground">Discharge: {log.periodInfo.discharge}</p>}
-          {log.periodInfo?.note && <p className="mt-1 text-sm">{log.periodInfo.note}</p>}
-        </Card>
-      )}
-      {events.map((e) => (
-        <Card key={e.id} icon="📅" title={e.title}
-          subtitle={`${e.startDate}${e.endDate !== e.startDate ? ` → ${e.endDate}` : ""}${e.time ? ` · ${e.time}` : ""}`}
-          onRemove={() => removeEvent(e.id)} accent={e.color}>
-          {e.note && <p className="mt-1 text-sm">{e.note}</p>}
-        </Card>
+    <div className="mt-3 -mx-1 flex gap-2 overflow-x-auto px-5 pb-1">
+      {items.map((it) => (
+        <button key={it.key} onClick={() => onQuick(it.cat)}
+          className="relative flex shrink-0 flex-col items-center gap-1">
+          <span className="relative grid h-11 w-11 place-items-center rounded-full text-white shadow-sm"
+                style={{ background: it.color, opacity: it.count > 0 ? 1 : 0.55 }}>
+            {it.icon}
+            {it.count > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 grid h-4 w-4 place-items-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
+                {it.count}
+              </span>
+            )}
+          </span>
+          <span className="text-[10px] text-muted-foreground">{it.label}</span>
+        </button>
       ))}
-      {tasks.map((t) => (
-        <Card key={t.id} icon={t.done ? "✅" : "◻️"} title={t.title}
-          subtitle={t.time ? `${t.time}` : undefined} onRemove={() => removeTask(t.id)}
-          action={
-            <button onClick={() => toggleTask(t.id)} aria-label="Toggle" className={`grid h-6 w-6 place-items-center rounded-full border-2 ${t.done ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground"}`}>
-              {t.done && <Check className="h-3 w-3" />}
-            </button>
-          }
-        />
-      ))}
-      {(log.pain ?? []).map((p) => (
-        <Card key={p.id} icon="🔥" title={`Pain ${p.score}/10`}
-          subtitle={`${p.time} · ${PAIN_DESCRIPTIONS[Math.round(p.score)]}`} onRemove={() => removePain(p.id)}>
-          {p.parts.length > 0 && <TagRow label="Where" items={p.parts} />}
-          {p.quality.length > 0 && <TagRow label="How" items={p.quality} />}
-          {p.symptoms.length > 0 && <TagRow label="Other" items={p.symptoms} />}
-          {p.note && <p className="mt-2 whitespace-pre-wrap text-sm">{p.note}</p>}
-        </Card>
-      ))}
-      {(log.heat ?? []).map((h) => (
-        <Card key={h.id} icon={h.kind === "cold" ? "❄️" : "🔥"} title={`${h.kind === "cold" ? "Cold" : "Heat"} · ${h.minutes} min`}
-          subtitle={`Started ${h.start}`} onRemove={() => removeHeat(h.id)}>
-          {h.note && <p className="mt-1 text-sm">{h.note}</p>}
-        </Card>
-      ))}
-      {(log.food ?? []).map((f) => (
-        <Card key={f.id} icon="🍽️" title={f.what} subtitle={f.time} onRemove={() => removeFood(f.id)}>
-          {f.feelings.length > 0 && <TagRow label="Feel" items={f.feelings} />}
-          {f.after && <p className="mt-1 text-sm">{f.after}</p>}
-        </Card>
-      ))}
-      {(log.bowel ?? []).map((b) => {
-        const info = BRISTOL[b.bristol - 1];
-        return (
-          <Card key={b.id} icon="💩" title={`Type ${b.bristol} — ${info?.label ?? ""}`} subtitle={b.time} onRemove={() => removeBowel(b.id)}>
-            {b.note && <p className="mt-1 text-sm">{b.note}</p>}
-          </Card>
-        );
-      })}
-      {(log.sex ?? []).map((s) => (
-        <Card key={s.id} icon="❤️" title="ŠukŠuk!" subtitle={`${s.time} · ${sexLabel(s.kind)}`} onRemove={() => removeSex(s.id)}>
-          {s.note && <p className="mt-1 text-sm">{s.note}</p>}
-        </Card>
-      ))}
-      {(log.workout ?? []).map((w) => (
-        <Card key={w.id} icon="🧘🏼‍♀️" title={`${w.kind} · ${w.minutes} min`}
-          subtitle={[w.time, w.weightKg != null ? `${w.weightKg} kg` : null, w.feeling].filter(Boolean).join(" · ")}
-          onRemove={() => removeWorkout(w.id)}>
-          {w.note && <p className="mt-1 text-sm">{w.note}</p>}
-        </Card>
-      ))}
-      {medsTaken.length > 0 && (
-        <Card icon="💊" title="Meds taken today">
-          <ul className="mt-1 space-y-1 text-sm">
-            {medsTaken.map((m) => <li key={m.id}>• {m.time} — {m.name}{m.dose ? ` (${m.dose})` : ""}</li>)}
+    </div>
+  );
+}
+
+/* ------------------- Day preview ------------------- */
+function DayPreview({ date, data, update }:
+  { date: string; data: BixboData; update: (u: (d: BixboData) => BixboData) => void }) {
+  const log = data.dayLogs[date];
+  const rawNotes = data.dayNotes[date] ?? [];
+  const notes: { text: string; time?: string }[] = (rawNotes as (string | { text: string; time?: string })[])
+    .map((n) => typeof n === "string" ? { text: n } : n);
+  const todos = data.todos[date] ?? [];
+  const events = data.events.filter((e) => date >= e.startDate && date <= e.endDate);
+  const tasks = data.tasks.filter((t) => date >= t.startDate && date <= t.endDate);
+
+  const k = todayKey();
+  const isToday = date === k;
+  const meds = data.meds;
+  const takenList = data.meds
+    .filter((m) => !m.asNeeded)
+    .flatMap((m) => m.times.map((t) => ({ key: `${m.id}@${t}`, med: m, time: t, taken: !!data.medLog[date]?.[`${m.id}@${t}`] })))
+    .filter((x) => x.taken);
+  const extraMeds = log?.extraMeds ?? [];
+
+  const anything = !!(
+    log && (
+      log.pain?.length || log.tetany?.length || log.panic?.length ||
+      log.period || log.periodInfo?.level || log.food?.length ||
+      log.bowel?.length || log.sex?.length || log.heat?.length || log.workout?.length ||
+      log.temperature != null || log.weight != null || log.sleepHours != null || extraMeds.length
+    )
+  ) || notes.length || todos.length || events.length || tasks.length || takenList.length;
+
+  if (!anything) return (
+    <div className="mx-5 mt-4 rounded-3xl bg-surface p-6 text-center ring-1 ring-border">
+      <p className="text-sm text-muted-foreground">Nothing logged {isToday ? "today" : "this day"} yet.</p>
+      <p className="mt-1 text-xs text-muted-foreground">Tap the <span className="font-bold">+ Log</span> button below.</p>
+    </div>
+  );
+
+  return (
+    <div className="space-y-3 px-5 pt-3 pb-32">
+      {(takenList.length > 0 || extraMeds.length > 0) && (
+        <Card title="Meds" icon="💊">
+          <ul className="space-y-1 text-sm">
+            {takenList.map((x) => <li key={x.key}>✓ {x.time} — {x.med.name}{x.med.dose ? ` (${x.med.dose})` : ""}</li>)}
+            {extraMeds.map((e) => (
+              <li key={e.id} className="flex items-start gap-2">
+                <span className="flex-1">• {e.time} — {e.name}{e.dose ? ` (${e.dose})` : ""}{e.note ? ` — ${e.note}` : ""}</span>
+                <button onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], extraMeds: (d.dayLogs[date]?.extraMeds ?? []).filter((x) => x.id !== e.id) } } }))} aria-label="Delete" className="text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
+              </li>
+            ))}
           </ul>
         </Card>
       )}
-      {(log.extraMeds ?? []).map((e) => (
-        <Card key={e.id} icon="💊" title={`Extra: ${e.name}`} subtitle={`${e.time}${e.dose ? ` · ${e.dose}` : ""}`} onRemove={() => removeExtra(e.id)} />
-      ))}
-      {(log.temperature != null || log.weight != null || log.sleepHours != null) && (
-        <Card icon="🌡️" title="Body metrics"
-          subtitle={[
-            log.temperature != null ? `${log.temperature}°C` : null,
-            log.weight != null ? `${log.weight} kg` : null,
-            log.sleepHours != null ? `${log.sleepHours} h sleep` : null,
-          ].filter(Boolean).join(" · ")}
-          onRemove={clearTempWeight}
-        />
+
+      {log?.pain?.length && (
+        <Card title="Pain" icon="🩹">
+          <ul className="space-y-2">
+            {log.pain.map((p) => (
+              <li key={p.id} className="flex items-start gap-3">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-sm font-bold text-white" style={{ background: painColor(p.score) }}>
+                  {Number.isInteger(p.score) ? p.score : p.score.toFixed(1)}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-muted-foreground">{p.time} · {PAIN_DESCRIPTIONS[Math.round(p.score)]}</p>
+                  {p.parts.length > 0 && <p className="text-sm">{p.parts.join(", ")}</p>}
+                  {p.quality.length > 0 && <p className="text-xs text-muted-foreground">{p.quality.join(", ")}</p>}
+                  {p.symptoms.length > 0 && <p className="text-xs text-muted-foreground">+ {p.symptoms.join(", ")}</p>}
+                  {p.mood?.length ? <p className="text-xs text-muted-foreground">Mood: {p.mood.join(", ")}</p> : null}
+                  {p.stress != null && <p className="text-xs text-muted-foreground">Stress {p.stress}/10</p>}
+                  {p.bodyBattery != null && <p className="text-xs text-muted-foreground">Battery {p.bodyBattery}/5</p>}
+                  {p.note && <p className="mt-1 text-sm">"{p.note}"</p>}
+                </div>
+                <DeleteBtn onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], pain: (d.dayLogs[date]?.pain ?? []).filter((x) => x.id !== p.id) } } }))} />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) || null}
+
+      {log?.panic?.length ? (
+        <Card title="Panic attacks" icon="⚡">
+          <ul className="space-y-2">
+            {log.panic.map((p) => (
+              <li key={p.id} className="flex items-start gap-2">
+                <div className="flex-1">
+                  <p className="text-sm font-medium">{p.time} · intensity {p.intensity}/10 · {p.minutes} min</p>
+                  {p.trigger && <p className="text-xs text-muted-foreground">Trigger: {p.trigger}</p>}
+                  {p.physical.length > 0 && <p className="text-xs">Physical: {p.physical.join(", ")}</p>}
+                  {p.cognitive.length > 0 && <p className="text-xs">Cognitive: {p.cognitive.join(", ")}</p>}
+                  <p className="text-[11px] text-muted-foreground">Hyperventilation: {p.hyperventilation}{p.tetanyPresent ? " · tetany present" : ""}</p>
+                  {p.helped.length > 0 && <p className="text-[11px] text-muted-foreground">Helped: {p.helped.join(", ")}</p>}
+                  {p.note && <p className="mt-1 text-sm">"{p.note}"</p>}
+                </div>
+                <DeleteBtn onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], panic: (d.dayLogs[date]?.panic ?? []).filter((x) => x.id !== p.id) } } }))} />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+
+      {log?.tetany?.length ? (
+        <Card title="Tetany" icon="⚡">
+          <ul className="space-y-1 text-sm">
+            {log.tetany.map((t) => (
+              <li key={t.id} className="flex items-start gap-2">
+                <span className="flex-1">{t.time} · {t.types.join(", ")} · {t.intensity}/5 · {t.minutes}min{t.triggers.length ? ` — ${t.triggers.join(", ")}` : ""}</span>
+                <DeleteBtn onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], tetany: (d.dayLogs[date]?.tetany ?? []).filter((x) => x.id !== t.id) } } }))} />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+
+      {(log?.period || log?.periodInfo?.level) && (
+        <Card title="Blueberry 🫐" icon="🫐">
+          <p className="text-sm">Flow: {periodLabel(log?.periodInfo?.level ?? log?.period)}</p>
+          {log?.periodInfo?.discharge && <p className="text-xs text-muted-foreground">Discharge: {log.periodInfo.discharge}{log.periodInfo.dischargeNote ? ` — ${log.periodInfo.dischargeNote}` : ""}</p>}
+          {log?.periodInfo?.note && <p className="mt-1 text-sm">"{log.periodInfo.note}"</p>}
+        </Card>
       )}
+
+      {log?.sex?.length ? (
+        <Card title="ŠukŠuk! ❤️" icon="❤️">
+          <ul className="space-y-1 text-sm">
+            {log.sex.map((s: SexEntry) => (
+              <li key={s.id} className="flex items-start gap-2">
+                <span className="flex-1">{s.time} · {String(s.kind).replace(/_/g, " ")}{s.feelingAfter ? ` · ${s.feelingAfter}` : ""}{s.painful && s.painful !== "no" ? ` · painful ${s.painful}` : ""}{s.note ? ` — ${s.note}` : ""}</span>
+                <DeleteBtn onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], sex: (d.dayLogs[date]?.sex ?? []).filter((x) => x.id !== s.id) } } }))} />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+
+      {log?.heat?.length ? (
+        <Card title="Heat / Cold / TENS" icon="🔥">
+          <ul className="space-y-1 text-sm">
+            {log.heat.map((h) => (
+              <li key={h.id} className="flex items-start gap-2">
+                <span className="flex-1">{h.kind === "heat" ? "🔥" : h.kind === "cold" ? "🧊" : "⚡"} {h.start} · {h.minutes} min{h.note ? ` — ${h.note}` : ""}</span>
+                <DeleteBtn onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], heat: (d.dayLogs[date]?.heat ?? []).filter((x) => x.id !== h.id) } } }))} />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+
+      {log?.food?.length ? (
+        <Card title="Food" icon="🍽️">
+          <ul className="space-y-1 text-sm">
+            {log.food.map((f) => (
+              <li key={f.id} className="flex items-start gap-2">
+                <span className="flex-1">{f.time} · {f.what}{f.feelings.length ? ` — ${f.feelings.join(", ")}` : ""}{f.hydrationMl != null ? ` · 💧 ${f.hydrationMl}ml` : ""}{f.caffeineMg != null ? ` · ☕ ${f.caffeineMg}mg` : ""}{f.alcoholDrinks != null ? ` · 🍷 ${f.alcoholDrinks}` : ""}</span>
+                <DeleteBtn onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], food: (d.dayLogs[date]?.food ?? []).filter((x) => x.id !== f.id) } } }))} />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+
+      {log?.bowel?.length ? (
+        <Card title="Bowel" icon="💩">
+          <ul className="space-y-1 text-sm">
+            {log.bowel.map((b: BowelEntry) => {
+              const bristol = b.bristol === 0 ? null : BRISTOL.find((x) => x.n === b.bristol);
+              return (
+                <li key={b.id} className="flex items-start gap-2">
+                  <span className="flex-1">{b.time} · {bristol ? `Type ${bristol.n} — ${bristol.sub}` : "No bowel movement"}{b.note ? ` — ${b.note}` : ""}</span>
+                  <DeleteBtn onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], bowel: (d.dayLogs[date]?.bowel ?? []).filter((x) => x.id !== b.id) } } }))} />
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+      ) : null}
+
+      {log?.workout?.length ? (
+        <Card title="Workout" icon="🧘🏼‍♀️">
+          <ul className="space-y-1 text-sm">
+            {log.workout.map((w) => (
+              <li key={w.id} className="flex items-start gap-2">
+                <span className="flex-1">{w.time} · {w.kind} · {w.minutes} min{w.feeling ? ` — ${w.feeling}` : ""}{w.note ? ` — ${w.note}` : ""}</span>
+                <DeleteBtn onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], workout: (d.dayLogs[date]?.workout ?? []).filter((x) => x.id !== w.id) } } }))} />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+
+      {(log?.temperature != null || log?.weight != null || log?.sleepHours != null || log?.sleepQuality) && (
+        <Card title="Temp / Sleep / Weight" icon="🌡️">
+          {log?.temperature != null && <p className="text-sm">Temperature: {log.temperature}°C</p>}
+          {log?.weight != null && <p className="text-sm">Weight: {log.weight} kg</p>}
+          {log?.sleepHours != null && <p className="text-sm">Sleep: {log.sleepHours} h {log.sleepQuality ?? ""}</p>}
+          {log?.sleepQuality && log?.sleepHours == null && <p className="text-sm">Sleep quality: {log.sleepQuality}</p>}
+        </Card>
+      )}
+
+      {tasks.length > 0 && (
+        <Card title="Tasks" icon="✅">
+          <ul className="space-y-1 text-sm">
+            {tasks.map((t) => (
+              <li key={t.id} className="flex items-center gap-2">
+                <input type="checkbox" checked={t.done} onChange={() => update((d) => ({ ...d, tasks: d.tasks.map((x) => x.id === t.id ? { ...x, done: !x.done } : x) }))} />
+                <span className={`flex-1 ${t.done ? "line-through text-muted-foreground" : ""}`}>{t.title}{t.time ? ` · ${t.time}${t.timeEnd ? `–${t.timeEnd}` : ""}` : ""}{t.note ? ` — ${t.note}` : ""}</span>
+                <DeleteBtn onClick={() => update((d) => ({ ...d, tasks: d.tasks.filter((x) => x.id !== t.id) }))} />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
+      {events.length > 0 && (
+        <Card title="Events" icon="📅">
+          <ul className="space-y-1 text-sm">
+            {events.map((e) => (
+              <li key={e.id} className="flex items-start gap-2">
+                <span className="mt-1 h-2 w-2 rounded-full" style={{ background: e.color ?? "var(--primary)" }} />
+                <span className="flex-1">{e.title}{e.time ? ` · ${e.time}${e.timeEnd ? `–${e.timeEnd}` : ""}` : ""}{e.startDate !== e.endDate ? ` (${e.startDate}→${e.endDate})` : ""}{e.note ? ` — ${e.note}` : ""}</span>
+                <DeleteBtn onClick={() => update((d) => ({ ...d, events: d.events.filter((x) => x.id !== e.id) }))} />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
       {notes.length > 0 && (
-        <Card icon="📝" title="Notes">
-          <ul className="mt-2 space-y-2">
+        <Card title="Notes" icon="📝">
+          <ul className="space-y-1 text-sm">
             {notes.map((n, i) => (
-              <li key={i} className="flex items-start justify-between gap-2 text-sm">
-                <span className="whitespace-pre-wrap">{n}</span>
-                <button onClick={() => removeNote(i)} className="text-muted-foreground hover:text-destructive" aria-label="Remove">
-                  <X className="h-4 w-4" />
+              <li key={i} className="flex items-start gap-2">
+                <span className="flex-1">{n.time ? `${n.time} · ` : ""}{n.text}</span>
+                <button onClick={() => update((d) => {
+                  const list = (d.dayNotes[date] ?? []) as (string | { text: string; time?: string })[];
+                  const next = list.filter((_, j) => j !== i);
+                  return { ...d, dayNotes: { ...d.dayNotes, [date]: next as { text: string; time?: string }[] } };
+                })} className="text-muted-foreground hover:text-destructive" aria-label="Delete">
+                  <Trash2 className="h-3.5 w-3.5" />
                 </button>
               </li>
             ))}
@@ -340,33 +427,22 @@ function DayPreview({
   );
 }
 
-function Card({ icon, title, subtitle, children, onRemove, accent, action }:
-  { icon: string; title: string; subtitle?: string; children?: React.ReactNode; onRemove?: () => void; accent?: string; action?: React.ReactNode }) {
+function DeleteBtn({ onClick }: { onClick: () => void }) {
   return (
-    <div className="rounded-3xl bg-surface p-4 ring-1 ring-border" style={accent ? { borderLeft: `4px solid ${accent}` } : undefined}>
-      <div className="flex items-start gap-3">
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-tint text-lg">{icon}</span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-serif text-lg leading-tight">{title}</p>
-          {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
-        </div>
-        {action}
-        {onRemove && (
-          <button onClick={onRemove} className="text-muted-foreground hover:text-destructive" aria-label="Remove">
-            <Trash2 className="h-4 w-4" />
-          </button>
-        )}
-      </div>
-      {children && <div className="mt-2">{children}</div>}
-    </div>
+    <button onClick={onClick} className="text-muted-foreground hover:text-destructive" aria-label="Delete">
+      <Trash2 className="h-3.5 w-3.5" />
+    </button>
   );
 }
 
-function TagRow({ label, items }: { label: string; items: string[] }) {
+function Card({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) {
   return (
-    <div className="mt-1.5">
-      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}: </span>
-      <span className="text-sm">{items.join(", ")}</span>
+    <div className="rounded-3xl bg-surface p-4 ring-1 ring-border">
+      <div className="mb-2 flex items-center gap-2">
+        <span className="text-lg" aria-hidden>{icon}</span>
+        <h3 className="font-serif text-lg font-semibold">{title}</h3>
+      </div>
+      {children}
     </div>
   );
 }
@@ -374,17 +450,23 @@ function TagRow({ label, items }: { label: string; items: string[] }) {
 function ShareDayButton({ date, view }: { date: string; view: BixboData }) {
   const share = async () => {
     const log = view.dayLogs[date] ?? {};
-    const painMax = log.pain?.reduce((m, p) => Math.max(m, p.score), 0);
-    const parts = [
+    const lines: string[] = [
       `BIXBO — ${fromKey(date).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}`,
-      painMax != null ? `Pain: ${painMax}/10 (${PAIN_DESCRIPTIONS[Math.round(painMax)]})` : "Pain: none",
-      log.periodInfo?.level || log.period ? `Period: ${periodLabel(log.periodInfo?.level ?? log.period!)}` : null,
-      log.sleepHours != null ? `Sleep: ${log.sleepHours}h` : null,
-    ].filter(Boolean);
-    const text = parts.join("\n");
-    if (navigator.share) {
-      try { await navigator.share({ title: "How I feel today", text }); return; } catch {}
+    ];
+    if (log.pain?.length) {
+      lines.push("");
+      lines.push("Pain:");
+      for (const p of log.pain) lines.push(`  • ${p.time} · ${p.score}/10 (${PAIN_DESCRIPTIONS[Math.round(p.score)]})${p.parts.length ? ` — ${p.parts.join(", ")}` : ""}${p.quality.length ? ` [${p.quality.join(", ")}]` : ""}`);
     }
+    if (log.panic?.length) {
+      lines.push("");
+      lines.push("Panic attacks:");
+      for (const p of log.panic) lines.push(`  • ${p.time} · ${p.intensity}/10 · ${p.minutes}min${p.trigger ? ` — ${p.trigger}` : ""}`);
+    }
+    if (log.periodInfo?.level || log.period) lines.push("", `Period: ${periodLabel(log.periodInfo?.level ?? log.period!)}`);
+    if (log.sleepHours != null) lines.push(`Sleep: ${log.sleepHours}h ${log.sleepQuality ?? ""}`);
+    const text = lines.join("\n");
+    if (navigator.share) { try { await navigator.share({ title: "How I feel today", text }); return; } catch {} }
     try { await navigator.clipboard.writeText(text); alert("Copied to clipboard"); } catch { alert(text); }
   };
   return (
