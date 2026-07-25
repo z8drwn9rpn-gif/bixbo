@@ -476,6 +476,13 @@ export const BRISTOL: { n: number; label: string; sub: string; color: string; sh
   { n: 7, label: "Type 7 — Diarrhea",      sub: "Watery, no solid pieces",                color: "#dc2626", shape: "liquid" },
 ];
 
+export const BOWEL_FEELINGS_DEFAULT = [
+  "😌 Relief","🙂 Normal","😐 Neutral","😖 Painful","🤕 Cramping","😰 Urgent","💨 Gassy","😞 Incomplete",
+];
+export const BOWEL_SYMPTOMS_DEFAULT = [
+  "Bloating","Cramps","Straining","Blood","Mucus","Burning","Nausea","Urgency",
+];
+
 export const EVENT_COLORS = [
   "#22c55e","#3b82f6","#f97316","#eab308","#ec4899","#a855f7","#06b6d4","#ef4444",
 ];
