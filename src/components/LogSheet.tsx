@@ -622,7 +622,8 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
 function PanicForm({ date, data, update, onDone, initialEntry }:
   { date: string; data: BixboData; update: UpdateFn; onDone: () => void; initialEntry?: PanicAttack }) {
   const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
-  const [minutes, setMinutes] = useState(initialEntry?.minutes ?? 10);
+  const [minutes, setMinutes] = useState(initialEntry?.minutes != null ? String(initialEntry.minutes) : "10");
+  const [ongoing, setOngoing] = useState(initialEntry?.minutes == null && !!initialEntry);
   const [intensity, setIntensity] = useState(initialEntry?.intensity ?? 5);
   const [physical, setPhysical] = useState<string[]>(initialEntry?.physical ?? []);
   const [cognitive, setCognitive] = useState<string[]>(initialEntry?.cognitive ?? []);
@@ -638,7 +639,9 @@ function PanicForm({ date, data, update, onDone, initialEntry }:
   const save = () => {
     const editing = !!initialEntry;
     const p: PanicAttack = {
-      id: initialEntry?.id ?? crypto.randomUUID(), time, minutes, intensity,
+      id: initialEntry?.id ?? crypto.randomUUID(), time,
+      minutes: ongoing ? undefined : (minutes === "" ? undefined : Number(minutes)),
+      intensity,
       physical, cognitive, trigger: trigger.trim(), place: place.trim() || undefined,
       hyperventilation: hyper, tetanyPresent, helped, note: note.trim() || undefined,
     };
@@ -650,12 +653,10 @@ function PanicForm({ date, data, update, onDone, initialEntry }:
   };
   return (
     <div className="space-y-3">
-      <div className="flex gap-2">
-        <Field label="Time"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="w-full" /></Field>
-        <Field label="Duration (min)"><Input type="number" min={1} value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} className="w-full" /></Field>
-      </div>
+      <Field label="Time"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="w-full" /></Field>
+      <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} />
       <Field label={`Intensity ${intensity}/10`}>
-        <Slider value={[intensity]} min={1} max={10} step={1} onValueChange={([v]) => setIntensity(v)} />
+        <IntensityScale value={intensity} onChange={setIntensity} max={10} />
       </Field>
       <Field label="Physical symptoms">
         <CustomChipList base={PANIC_PHYSICAL} custom={data.custom.panicPhysical}
