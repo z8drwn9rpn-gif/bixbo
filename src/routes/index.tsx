@@ -455,12 +455,12 @@ function ShareDayButton({ date, view }: { date: string; view: BixboData }) {
     }
     if (log.panic?.length) {
       lines.push(`⚡ Panic attacks — ${log.panic.length}`);
-      for (const p of log.panic) lines.push(`  • ${p.time} · ${p.intensity}/10 · ${p.minutes}min${p.trigger ? ` — ${p.trigger}` : ""}`);
+      for (const p of log.panic) lines.push(`  • ${p.time} · ${p.intensity}/10 · ${p.minutes == null ? "ongoing" : `${p.minutes}min`}${p.trigger ? ` — ${p.trigger}` : ""}`);
       lines.push("");
     }
     if (log.tetany?.length) {
       lines.push(`💥 Tetany — ${log.tetany.length}`);
-      for (const t of log.tetany) lines.push(`  • ${t.time} · ${t.types.join(", ")} · ${t.intensity}/5 · ${t.minutes}min`);
+      for (const t of log.tetany) lines.push(`  • ${t.time} · ${t.types.join(", ")} · ${t.intensity}/5 · ${t.minutes == null ? "ongoing" : `${t.minutes}min`}`);
       lines.push("");
     }
     if (log.periodInfo?.level || log.period) lines.push(`🫐 Period: ${periodLabel(log.periodInfo?.level ?? log.period!)}`);
