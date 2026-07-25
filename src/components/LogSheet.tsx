@@ -335,9 +335,11 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
     }
     if (panic) {
       const pk: PanicAttack = {
-        id: crypto.randomUUID(), time: nowHHMM(), minutes: panicMinutes, intensity: panicIntensity,
-        physical: [], cognitive: [], trigger: panicTrigger.trim(),
-        hyperventilation: "unknown", tetanyPresent: false, helped: [],
+        id: crypto.randomUUID(), time: panicTime, minutes: panicMinutes, intensity: panicIntensity,
+        physical: panicPhysical, cognitive: panicCognitive, trigger: panicTrigger.trim(),
+        place: panicPlace.trim() || undefined,
+        hyperventilation: panicHyper, tetanyPresent: panicTetany, helped: panicHelped,
+        note: panicNote.trim() || undefined,
       };
       updateDayLog(update, date, (l) => ({ ...l, panic: [...(l.panic ?? []), pk] }));
     }
