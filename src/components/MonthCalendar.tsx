@@ -58,7 +58,6 @@ export function MonthCalendar({
     else cells.push({ date: new Date(y, m, dayNum), inMonth: true });
   }
 
-  const todayK = toKey(new Date());
   const predicted = predictPeriods(data.cycle, cells[0].date, cells[cells.length - 1].date);
   const isPredicted = (k: string) =>
     predicted.some((p) => isDateInRange(k, p.start, p.end)) &&
@@ -98,7 +97,6 @@ export function MonthCalendar({
           const periodLevel = log?.periodInfo?.level ?? log?.period;
           const periodColor = periodColorVar(periodLevel) ?? (isActualPeriod(key) ? "var(--period-medium)" : null);
           const pAvg = avgDayPain(log);
-          const isToday = key === todayK;
           const isSel = key === selected;
           const predictedOrange = isPredicted(key);
           const icons = iconsFor(log, hasMed);
@@ -124,8 +122,8 @@ export function MonthCalendar({
                 {pAvg != null && (
                   <span
                     aria-hidden
-                    className="pointer-events-none absolute inset-1.5 rounded-full"
-                    style={{ boxShadow: `0 0 0 4px ${painColor(pAvg)}` }}
+                    className="pointer-events-none absolute inset-1 rounded-full"
+                    style={{ boxShadow: `0 0 0 6px ${painColor(pAvg)}` }}
                   />
                 )}
                 {predictedOrange && (
@@ -136,14 +134,13 @@ export function MonthCalendar({
                   />
                 )}
                 <div
-                  className={`relative flex h-9 w-9 items-center justify-center rounded-full ${isToday ? "ring-2 ring-primary" : ""}`}
+                  className="relative flex h-9 w-9 items-center justify-center rounded-full"
                   style={{
                     background: periodColor ?? "transparent",
                   }}
                 >
                   <span className={`text-sm ${
-                    periodColor ? "font-semibold text-white" :
-                    isToday ? "font-bold text-primary" : "text-foreground"
+                    periodColor ? "font-semibold text-white" : "text-foreground"
                   }`}>
                     {date.getDate()}
                   </span>
