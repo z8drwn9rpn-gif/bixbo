@@ -317,7 +317,8 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
   const [tetanyTypes, setTetanyTypes] = useState<string[]>([]);
   const [tetanyLoc, setTetanyLoc] = useState<string[]>([]);
   const [tetanyIntensity, setTetanyIntensity] = useState(1);
-  const [tetanyMin, setTetanyMin] = useState(5);
+  const [tetanyMin, setTetanyMin] = useState("5");
+  const [tetanyOngoing, setTetanyOngoing] = useState(false);
   const [tetanyTriggers, setTetanyTriggers] = useState<string[]>([]);
   const [tetanyHelped, setTetanyHelped] = useState<string[]>([]);
   const [tetanyNote, setTetanyNote] = useState("");
