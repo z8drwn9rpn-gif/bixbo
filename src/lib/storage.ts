@@ -25,7 +25,7 @@ export interface TetanyEpisode {
   types: string[];
   location: string[];
   intensity: number;
-  minutes: number;
+  minutes?: number;
   triggers: string[];
   timeSinceMagnerotMin?: number;
   helped: string[];
@@ -34,7 +34,7 @@ export interface TetanyEpisode {
 export interface PanicAttack {
   id: string;
   time: string;
-  minutes: number;
+  minutes?: number;
   intensity: number;
   physical: string[];
   cognitive: string[];

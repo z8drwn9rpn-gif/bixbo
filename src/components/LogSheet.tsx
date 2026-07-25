@@ -23,7 +23,7 @@ import {
 
 type UpdateFn = (u: (d: BixboData) => BixboData) => void;
 type Category =
-  | "meds" | "pain" | "panic" | "period" | "sex" | "heat"
+  | "meds" | "pain" | "panic" | "tetany" | "period" | "sex" | "heat"
   | "food" | "bowel" | "workout" | "temp" | "task" | "event" | "note";
 
 const CATEGORIES: { id: Category; label: string; emoji: string; hint: string }[] = [
@@ -152,6 +152,7 @@ export function LogSheet({
             <div className={`min-h-0 flex-1 overflow-y-auto ${active === "pain" ? "" : "px-5 py-4"}`}>
               {active === "pain"    && <PainWizard    date={date} data={data} update={update} onDone={close} initialEntry={initialPain ?? (edit as PainEntry | undefined)} />}
               {active === "panic"   && <PanicForm     date={date} data={data} update={update} onDone={close} initialEntry={edit as PanicAttack | undefined} />}
+              {active === "tetany"  && <TetanyForm    date={date} data={data} update={update} onDone={close} initialEntry={edit as TetanyEpisode | undefined} />}
               {active === "period"  && <PeriodForm    date={date} data={data} update={update} onDone={close} />}
               {active === "sex"     && <SexForm       date={date} data={data} update={update} onDone={close} initialEntry={edit as SexEntry | undefined} />}
               {active === "heat"    && <ThermoForm    date={date} update={update} onDone={close} initialEntry={edit as ThermoSession | undefined} />}
@@ -266,6 +267,42 @@ function CustomChipList({
 }
 const toggleIn = (arr: string[], v: string) => arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v];
 
+function IntensityScale({ value, onChange, max }: { value: number; onChange: (n: number) => void; max: number }) {
+  return (
+    <div className="mt-2 flex flex-wrap gap-1.5">
+      {Array.from({ length: max }, (_, i) => i + 1).map((n) => {
+        const hue = 130 - ((n - 1) * 130) / Math.max(1, max - 1);
+        const bg = `hsl(${hue} 70% 50%)`;
+        const active = value === n;
+        return (
+          <button key={n} type="button" onClick={() => onChange(n)}
+            className={`h-9 w-9 rounded-full text-xs font-bold transition text-white ${active ? "ring-2 ring-foreground scale-110" : ""}`}
+            style={{ background: bg, opacity: active ? 1 : 0.55 }}>
+            {n}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+function DurationField({ minutes, setMinutes, ongoing, setOngoing }:
+  { minutes: string; setMinutes: (s: string) => void; ongoing: boolean; setOngoing: (b: boolean) => void }) {
+  return (
+    <div className="space-y-1">
+      <span className="text-xs font-medium text-muted-foreground">Duration (min)</span>
+      <div className="flex items-center gap-2">
+        <Input type="number" inputMode="numeric" min={0} value={ongoing ? "" : minutes}
+          disabled={ongoing}
+          onChange={(e) => setMinutes(e.target.value)} className="flex-1" placeholder="—" />
+        <button type="button" onClick={() => setOngoing(!ongoing)}
+          className={`rounded-full px-3 py-1.5 text-xs font-semibold ring-1 ring-border ${ongoing ? "bg-primary text-white" : "bg-tint text-foreground"}`}>
+          Ongoing
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ------------------- PAIN wizard ------------------- */
 function PainWizard({ date, data, update, onDone, initialEntry }:
   { date: string; data: BixboData; update: UpdateFn; onDone: () => void; initialEntry?: PainEntry }) {
@@ -280,7 +317,8 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
   const [tetanyTypes, setTetanyTypes] = useState<string[]>([]);
   const [tetanyLoc, setTetanyLoc] = useState<string[]>([]);
   const [tetanyIntensity, setTetanyIntensity] = useState(1);
-  const [tetanyMin, setTetanyMin] = useState(5);
+  const [tetanyMin, setTetanyMin] = useState("5");
+  const [tetanyOngoing, setTetanyOngoing] = useState(false);
   const [tetanyTriggers, setTetanyTriggers] = useState<string[]>([]);
   const [tetanyHelped, setTetanyHelped] = useState<string[]>([]);
   const [tetanyNote, setTetanyNote] = useState("");
@@ -288,7 +326,8 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
   const [panic, setPanic] = useState(false);
   const [panicTime, setPanicTime] = useState(nowHHMM());
   const [panicIntensity, setPanicIntensity] = useState(5);
-  const [panicMinutes, setPanicMinutes] = useState(10);
+  const [panicMinutes, setPanicMinutes] = useState("10");
+  const [panicOngoing, setPanicOngoing] = useState(false);
   const [panicPhysical, setPanicPhysical] = useState<string[]>([]);
   const [panicCognitive, setPanicCognitive] = useState<string[]>([]);
   const [panicTrigger, setPanicTrigger] = useState("");
@@ -328,14 +367,17 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
       const t: TetanyEpisode = {
         id: crypto.randomUUID(), time: nowHHMM(),
         types: tetanyTypes, location: tetanyLoc, intensity: tetanyIntensity,
-        minutes: tetanyMin, triggers: tetanyTriggers, helped: tetanyHelped,
+        minutes: tetanyOngoing ? undefined : (tetanyMin === "" ? undefined : Number(tetanyMin)),
+        triggers: tetanyTriggers, helped: tetanyHelped,
         note: tetanyNote.trim() || undefined,
       };
       updateDayLog(update, date, (l) => ({ ...l, tetany: [...(l.tetany ?? []), t] }));
     }
     if (panic) {
       const pk: PanicAttack = {
-        id: crypto.randomUUID(), time: panicTime, minutes: panicMinutes, intensity: panicIntensity,
+        id: crypto.randomUUID(), time: panicTime,
+        minutes: panicOngoing ? undefined : (panicMinutes === "" ? undefined : Number(panicMinutes)),
+        intensity: panicIntensity,
         physical: panicPhysical, cognitive: panicCognitive, trigger: panicTrigger.trim(),
         place: panicPlace.trim() || undefined,
         hyperventilation: panicHyper, tetanyPresent: panicTetany, helped: panicHelped,
@@ -434,14 +476,10 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
                   onRenameCustom={(o, n) => { renameCustom("tetanyLocations", o, n); setTetanyLoc((a) => a.map((x) => x === o ? n : x)); }}
                   selected={tetanyLoc} onToggle={(v) => setTetanyLoc((a) => toggleIn(a, v))} />
               </Field>
-              <div className="grid grid-cols-2 gap-2">
-                <Field label={`Intensity ${tetanyIntensity}/5`}>
-                  <Slider value={[tetanyIntensity]} min={1} max={5} step={1} onValueChange={([v]) => setTetanyIntensity(v)} />
-                </Field>
-                <Field label="Duration (min)">
-                  <Input type="number" min={1} value={tetanyMin} onChange={(e) => setTetanyMin(Number(e.target.value))} />
-                </Field>
-              </div>
+              <Field label={`Intensity ${tetanyIntensity}/5`}>
+                <IntensityScale value={tetanyIntensity} onChange={setTetanyIntensity} max={5} />
+              </Field>
+              <DurationField minutes={tetanyMin} setMinutes={setTetanyMin} ongoing={tetanyOngoing} setOngoing={setTetanyOngoing} />
               <Field label="Triggers">
                 <CustomChipList base={TETANY_TRIGGERS} custom={data.custom.tetanyTriggers}
                   onAddCustom={(v) => addCustom("tetanyTriggers", v)}
@@ -469,12 +507,10 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
           </Field>
           {panic && (
             <div className="rounded-2xl border border-border p-3 space-y-3">
-              <div className="grid grid-cols-2 gap-2">
-                <Field label="Time"><Input type="time" value={panicTime} onChange={(e) => setPanicTime(e.target.value)} /></Field>
-                <Field label="Duration (min)"><Input type="number" min={1} value={panicMinutes} onChange={(e) => setPanicMinutes(Number(e.target.value))} /></Field>
-              </div>
+              <Field label="Time"><Input type="time" value={panicTime} onChange={(e) => setPanicTime(e.target.value)} /></Field>
+              <DurationField minutes={panicMinutes} setMinutes={setPanicMinutes} ongoing={panicOngoing} setOngoing={setPanicOngoing} />
               <Field label={`Intensity ${panicIntensity}/10`}>
-                <Slider value={[panicIntensity]} min={1} max={10} step={1} onValueChange={([v]) => setPanicIntensity(v)} />
+                <IntensityScale value={panicIntensity} onChange={setPanicIntensity} max={10} />
               </Field>
               <Field label="Physical symptoms">
                 <CustomChipList base={PANIC_PHYSICAL} custom={data.custom.panicPhysical}
@@ -586,7 +622,8 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
 function PanicForm({ date, data, update, onDone, initialEntry }:
   { date: string; data: BixboData; update: UpdateFn; onDone: () => void; initialEntry?: PanicAttack }) {
   const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
-  const [minutes, setMinutes] = useState(initialEntry?.minutes ?? 10);
+  const [minutes, setMinutes] = useState(initialEntry?.minutes != null ? String(initialEntry.minutes) : "10");
+  const [ongoing, setOngoing] = useState(initialEntry?.minutes == null && !!initialEntry);
   const [intensity, setIntensity] = useState(initialEntry?.intensity ?? 5);
   const [physical, setPhysical] = useState<string[]>(initialEntry?.physical ?? []);
   const [cognitive, setCognitive] = useState<string[]>(initialEntry?.cognitive ?? []);
@@ -602,7 +639,9 @@ function PanicForm({ date, data, update, onDone, initialEntry }:
   const save = () => {
     const editing = !!initialEntry;
     const p: PanicAttack = {
-      id: initialEntry?.id ?? crypto.randomUUID(), time, minutes, intensity,
+      id: initialEntry?.id ?? crypto.randomUUID(), time,
+      minutes: ongoing ? undefined : (minutes === "" ? undefined : Number(minutes)),
+      intensity,
       physical, cognitive, trigger: trigger.trim(), place: place.trim() || undefined,
       hyperventilation: hyper, tetanyPresent, helped, note: note.trim() || undefined,
     };
@@ -614,12 +653,10 @@ function PanicForm({ date, data, update, onDone, initialEntry }:
   };
   return (
     <div className="space-y-3">
-      <div className="flex gap-2">
-        <Field label="Time"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="w-full" /></Field>
-        <Field label="Duration (min)"><Input type="number" min={1} value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} className="w-full" /></Field>
-      </div>
+      <Field label="Time"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="w-full" /></Field>
+      <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} />
       <Field label={`Intensity ${intensity}/10`}>
-        <Slider value={[intensity]} min={1} max={10} step={1} onValueChange={([v]) => setIntensity(v)} />
+        <IntensityScale value={intensity} onChange={setIntensity} max={10} />
       </Field>
       <Field label="Physical symptoms">
         <CustomChipList base={PANIC_PHYSICAL} custom={data.custom.panicPhysical}
@@ -665,6 +702,83 @@ function PanicForm({ date, data, update, onDone, initialEntry }:
     </div>
   );
 }
+
+/* ------------------- TETANY episode ------------------- */
+function TetanyForm({ date, data, update, onDone, initialEntry }:
+  { date: string; data: BixboData; update: UpdateFn; onDone: () => void; initialEntry?: TetanyEpisode }) {
+  const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
+  const [types, setTypes] = useState<string[]>(initialEntry?.types ?? []);
+  const [loc, setLoc] = useState<string[]>(initialEntry?.location ?? []);
+  const [intensity, setIntensity] = useState(initialEntry?.intensity ?? 1);
+  const [minutes, setMinutes] = useState(initialEntry?.minutes != null ? String(initialEntry.minutes) : "5");
+  const [ongoing, setOngoing] = useState(initialEntry?.minutes == null && !!initialEntry);
+  const [triggers, setTriggers] = useState<string[]>(initialEntry?.triggers ?? []);
+  const [helped, setHelped] = useState<string[]>(initialEntry?.helped ?? []);
+  const [note, setNote] = useState(initialEntry?.note ?? "");
+
+  type CK = "tetanyTypes" | "tetanyLocations" | "tetanyTriggers" | "tetanyHelped";
+  const addC = (k: CK, v: string) => update((d) => ({ ...d, custom: { ...d.custom, [k]: [...d.custom[k], v] } }));
+  const rmC  = (k: CK, v: string) => update((d) => ({ ...d, custom: { ...d.custom, [k]: d.custom[k].filter((x) => x !== v) } }));
+  const rnC  = (k: CK, o: string, n: string) => update((d) => ({ ...d, custom: { ...d.custom, [k]: d.custom[k].map((x) => x === o ? n : x) } }));
+
+  const save = () => {
+    const editing = !!initialEntry;
+    const t: TetanyEpisode = {
+      id: initialEntry?.id ?? crypto.randomUUID(), time,
+      types, location: loc, intensity,
+      minutes: ongoing ? undefined : (minutes === "" ? undefined : Number(minutes)),
+      triggers, helped, note: note.trim() || undefined,
+    };
+    updateDayLog(update, date, (l) => ({
+      ...l,
+      tetany: editing ? (l.tetany ?? []).map((x) => x.id === t.id ? t : x) : [...(l.tetany ?? []), t],
+    }));
+    onDone();
+  };
+
+  return (
+    <div className="space-y-3">
+      <Field label="Time"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></Field>
+      <Field label="Type">
+        <CustomChipList base={TETANY_TYPES} custom={data.custom.tetanyTypes}
+          onAddCustom={(v) => addC("tetanyTypes", v)}
+          onRemoveCustom={(v) => { rmC("tetanyTypes", v); setTypes((a) => a.filter((x) => x !== v)); }}
+          onRenameCustom={(o, n) => { rnC("tetanyTypes", o, n); setTypes((a) => a.map((x) => x === o ? n : x)); }}
+          selected={types} onToggle={(v) => setTypes((a) => toggleIn(a, v))} />
+      </Field>
+      <Field label="Location">
+        <CustomChipList base={TETANY_LOCATIONS_DEFAULT} custom={data.custom.tetanyLocations}
+          onAddCustom={(v) => addC("tetanyLocations", v)}
+          onRemoveCustom={(v) => { rmC("tetanyLocations", v); setLoc((a) => a.filter((x) => x !== v)); }}
+          onRenameCustom={(o, n) => { rnC("tetanyLocations", o, n); setLoc((a) => a.map((x) => x === o ? n : x)); }}
+          selected={loc} onToggle={(v) => setLoc((a) => toggleIn(a, v))} />
+      </Field>
+      <Field label={`Intensity ${intensity}/5`}>
+        <IntensityScale value={intensity} onChange={setIntensity} max={5} />
+      </Field>
+      <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} />
+      <Field label="Triggers">
+        <CustomChipList base={TETANY_TRIGGERS} custom={data.custom.tetanyTriggers}
+          onAddCustom={(v) => addC("tetanyTriggers", v)}
+          onRemoveCustom={(v) => { rmC("tetanyTriggers", v); setTriggers((a) => a.filter((x) => x !== v)); }}
+          onRenameCustom={(o, n) => { rnC("tetanyTriggers", o, n); setTriggers((a) => a.map((x) => x === o ? n : x)); }}
+          selected={triggers} onToggle={(v) => setTriggers((a) => toggleIn(a, v))} />
+      </Field>
+      <Field label="What helped">
+        <CustomChipList base={TETANY_HELPED_DEFAULT} custom={data.custom.tetanyHelped}
+          onAddCustom={(v) => addC("tetanyHelped", v)}
+          onRemoveCustom={(v) => { rmC("tetanyHelped", v); setHelped((a) => a.filter((x) => x !== v)); }}
+          onRenameCustom={(o, n) => { rnC("tetanyHelped", o, n); setHelped((a) => a.map((x) => x === o ? n : x)); }}
+          selected={helped} onToggle={(v) => setHelped((a) => toggleIn(a, v))} />
+      </Field>
+      <Field label="Note (optional)">
+        <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
+      </Field>
+      <SaveBar onCancel={onDone} onSave={save} />
+    </div>
+  );
+}
+
 
 /* ------------------- PERIOD (Blueberry) ------------------- */
 function PeriodForm({ date, data, update, onDone }:
