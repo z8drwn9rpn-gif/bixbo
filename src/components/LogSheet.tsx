@@ -226,10 +226,11 @@ function PainWizard({ date, data, update, onDone }:
   };
 
   const bg = painColor(score);
-  const bgLight = `color-mix(in oklab, ${bg} 15%, transparent)`;
+  const bgFill = `color-mix(in oklab, ${bg} 35%, white)`;
 
   return (
-    <div className="flex h-full flex-col" style={{ background: bgLight }}>
+    <div className="flex min-h-full flex-col px-5 py-4 transition-colors" style={{ background: bgFill }}>
+
       <div className="flex items-center justify-between px-1 pb-2">
         <div className="flex gap-1">
           {[0, 1, 2, 3, 4].map((i) => (
