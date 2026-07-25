@@ -1,8 +1,9 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, StickyNote } from "lucide-react";
+import { Home, StickyNote, Activity } from "lucide-react";
 
 const items = [
   { to: "/", label: "Home", icon: Home },
+  { to: "/insights", label: "Insights", icon: Activity },
   { to: "/notes", label: "Notes", icon: StickyNote },
 ] as const;
 
@@ -21,7 +22,7 @@ export function BottomNav() {
                   active ? "text-primary" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                <Icon className={`h-5 w-5 ${active ? "stroke-[2.2]" : ""}`} />
+                <Icon className={`h-5 w-5 ${active ? "stroke-[2.4]" : ""}`} />
                 <span>{label}</span>
               </Link>
             </li>

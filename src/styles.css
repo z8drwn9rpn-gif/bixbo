@@ -36,15 +36,24 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  /* Semantic period / pain / status tokens */
   --color-period-spotting: var(--period-spotting);
   --color-period-light: var(--period-light);
   --color-period-medium: var(--period-medium);
   --color-period-heavy: var(--period-heavy);
   --color-period-veryheavy: var(--period-veryheavy);
-  --color-pain-low: var(--pain-low);
-  --color-pain-mid: var(--pain-mid);
-  --color-pain-high: var(--pain-high);
+  --color-pain-0: var(--pain-0);
+  --color-pain-1: var(--pain-1);
+  --color-pain-2: var(--pain-2);
+  --color-pain-3: var(--pain-3);
+  --color-pain-4: var(--pain-4);
+  --color-pain-5: var(--pain-5);
+  --color-pain-6: var(--pain-6);
+  --color-pain-7: var(--pain-7);
+  --color-pain-8: var(--pain-8);
+  --color-pain-9: var(--pain-9);
+  --color-pain-10: var(--pain-10);
+  --color-today: var(--today);
+  --color-predicted: var(--predicted);
   --color-surface: var(--surface);
   --color-surface-elevated: var(--surface-elevated);
   --color-tint: var(--tint);
@@ -53,74 +62,83 @@
 :root {
   --radius: 1rem;
 
-  /* Warm soft rose base */
-  --background: oklch(0.985 0.008 15);
-  --foreground: oklch(0.22 0.02 15);
+  /* Green — multiple shades */
+  --background: oklch(0.985 0.012 145);
+  --foreground: oklch(0.22 0.03 155);
   --surface: oklch(1 0 0);
-  --surface-elevated: oklch(0.98 0.012 15);
-  --tint: oklch(0.955 0.02 15);
+  --surface-elevated: oklch(0.975 0.02 145);
+  --tint: oklch(0.945 0.035 145);
 
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.22 0.02 15);
+  --card-foreground: oklch(0.22 0.03 155);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.22 0.02 15);
+  --popover-foreground: oklch(0.22 0.03 155);
 
-  --primary: oklch(0.62 0.19 15);
+  --primary: oklch(0.55 0.14 155);
   --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.95 0.025 15);
-  --secondary-foreground: oklch(0.28 0.04 15);
-  --muted: oklch(0.96 0.012 15);
-  --muted-foreground: oklch(0.52 0.03 15);
-  --accent: oklch(0.93 0.045 15);
-  --accent-foreground: oklch(0.28 0.05 15);
+  --secondary: oklch(0.93 0.05 145);
+  --secondary-foreground: oklch(0.28 0.06 155);
+  --muted: oklch(0.955 0.02 145);
+  --muted-foreground: oklch(0.5 0.03 155);
+  --accent: oklch(0.9 0.08 145);
+  --accent-foreground: oklch(0.28 0.06 155);
   --destructive: oklch(0.58 0.22 25);
   --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.92 0.015 15);
-  --input: oklch(0.92 0.015 15);
-  --ring: oklch(0.62 0.19 15);
+  --border: oklch(0.9 0.03 145);
+  --input: oklch(0.9 0.03 145);
+  --ring: oklch(0.55 0.14 155);
 
-  /* Period intensity */
-  --period-spotting: oklch(0.78 0.08 15);
-  --period-light: oklch(0.72 0.14 20);
-  --period-medium: oklch(0.63 0.19 20);
-  --period-heavy: oklch(0.55 0.22 22);
-  --period-veryheavy: oklch(0.42 0.20 25);
+  /* Period intensity — blueberry blues to deep */
+  --period-spotting: oklch(0.78 0.06 275);
+  --period-light: oklch(0.68 0.14 275);
+  --period-medium: oklch(0.55 0.19 275);
+  --period-heavy: oklch(0.45 0.21 280);
+  --period-veryheavy: oklch(0.35 0.20 285);
 
-  /* Pain level */
-  --pain-low: oklch(0.78 0.15 145);
-  --pain-mid: oklch(0.82 0.16 85);
-  --pain-high: oklch(0.60 0.22 25);
+  /* Pain 0..10 — green -> lime -> yellow -> orange -> red */
+  --pain-0: oklch(0.78 0.16 150);
+  --pain-1: oklch(0.80 0.17 140);
+  --pain-2: oklch(0.82 0.17 130);
+  --pain-3: oklch(0.84 0.17 115);
+  --pain-4: oklch(0.85 0.17 95);
+  --pain-5: oklch(0.83 0.18 80);
+  --pain-6: oklch(0.78 0.18 65);
+  --pain-7: oklch(0.72 0.19 50);
+  --pain-8: oklch(0.65 0.21 35);
+  --pain-9: oklch(0.58 0.22 25);
+  --pain-10: oklch(0.50 0.24 20);
+
+  --today: oklch(0.88 0.16 95);           /* yellow */
+  --predicted: oklch(0.72 0.18 55);        /* orange */
 }
 
 .dark {
-  --background: oklch(0.18 0.02 15);
-  --foreground: oklch(0.98 0.005 15);
-  --surface: oklch(0.22 0.02 15);
-  --surface-elevated: oklch(0.26 0.025 15);
-  --tint: oklch(0.24 0.03 15);
-  --card: oklch(0.22 0.02 15);
-  --card-foreground: oklch(0.98 0.005 15);
-  --popover: oklch(0.22 0.02 15);
-  --popover-foreground: oklch(0.98 0.005 15);
-  --primary: oklch(0.72 0.18 15);
-  --primary-foreground: oklch(0.18 0.02 15);
-  --secondary: oklch(0.28 0.03 15);
-  --secondary-foreground: oklch(0.98 0.005 15);
-  --muted: oklch(0.28 0.02 15);
-  --muted-foreground: oklch(0.72 0.02 15);
-  --accent: oklch(0.32 0.05 15);
-  --accent-foreground: oklch(0.98 0.005 15);
+  --background: oklch(0.18 0.02 155);
+  --foreground: oklch(0.98 0.008 145);
+  --surface: oklch(0.22 0.025 155);
+  --surface-elevated: oklch(0.26 0.03 155);
+  --tint: oklch(0.24 0.035 155);
+  --card: oklch(0.22 0.025 155);
+  --card-foreground: oklch(0.98 0.008 145);
+  --popover: oklch(0.22 0.025 155);
+  --popover-foreground: oklch(0.98 0.008 145);
+  --primary: oklch(0.72 0.16 150);
+  --primary-foreground: oklch(0.18 0.02 155);
+  --secondary: oklch(0.28 0.04 155);
+  --secondary-foreground: oklch(0.98 0.008 145);
+  --muted: oklch(0.28 0.03 155);
+  --muted-foreground: oklch(0.72 0.02 155);
+  --accent: oklch(0.32 0.06 155);
+  --accent-foreground: oklch(0.98 0.008 145);
   --destructive: oklch(0.65 0.22 25);
   --destructive-foreground: oklch(1 0 0);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.72 0.18 15);
+  --ring: oklch(0.72 0.16 150);
 }
 
 @layer base {
-  * {
-    border-color: var(--color-border);
-  }
+  * { border-color: var(--color-border); }
   html, body {
     background-color: var(--color-background);
     color: var(--color-foreground);
