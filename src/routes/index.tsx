@@ -393,7 +393,7 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
             {tasks.map((t) => (
               <li key={t.id} className="flex items-center gap-2">
                 <input type="checkbox" checked={t.done} onChange={() => update((d) => ({ ...d, tasks: d.tasks.map((x) => x.id === t.id ? { ...x, done: !x.done } : x) }))} />
-                <span className={`flex-1 ${t.done ? "line-through text-muted-foreground" : ""}`}>{t.title}{t.time ? ` · ${t.time}${t.timeEnd ? `–${t.timeEnd}` : ""}` : ""}{t.note ? ` — ${t.note}` : ""}</span>
+                <button onClick={() => onEdit?.("task", t)} className={`flex-1 text-left ${t.done ? "line-through text-muted-foreground" : ""}`}>{t.title}{t.time ? ` · ${t.time}${t.timeEnd ? `–${t.timeEnd}` : ""}` : ""}{t.note ? ` — ${t.note}` : ""}</button>
                 <DeleteBtn onClick={() => update((d) => ({ ...d, tasks: d.tasks.filter((x) => x.id !== t.id) }))} />
               </li>
             ))}
