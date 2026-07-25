@@ -132,8 +132,10 @@ function Chip({
 }: { active: boolean; onClick: () => void; children: ReactNode; color?: string }) {
   return (
     <button onClick={onClick}
-      className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
-        active ? "text-white shadow-sm" : "bg-tint text-foreground"
+      className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+        active
+          ? "text-white shadow-md ring-2 ring-foreground/70 ring-offset-2 ring-offset-background scale-[1.03]"
+          : "bg-tint text-foreground ring-1 ring-border"
       }`}
       style={active && color ? { background: color } : active ? { background: "var(--primary)" } : undefined}
     >
