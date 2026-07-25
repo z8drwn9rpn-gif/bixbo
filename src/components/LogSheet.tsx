@@ -470,17 +470,54 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
           {panic && (
             <div className="rounded-2xl border border-border p-3 space-y-3">
               <div className="grid grid-cols-2 gap-2">
-                <Field label={`Intensity ${panicIntensity}/10`}>
-                  <Slider value={[panicIntensity]} min={1} max={10} step={1} onValueChange={([v]) => setPanicIntensity(v)} />
-                </Field>
-                <Field label="Duration (min)">
-                  <Input type="number" min={1} value={panicMinutes} onChange={(e) => setPanicMinutes(Number(e.target.value))} />
-                </Field>
+                <Field label="Time"><Input type="time" value={panicTime} onChange={(e) => setPanicTime(e.target.value)} /></Field>
+                <Field label="Duration (min)"><Input type="number" min={1} value={panicMinutes} onChange={(e) => setPanicMinutes(Number(e.target.value))} /></Field>
               </div>
-              <Field label="Trigger (optional)">
-                <Input value={panicTrigger} onChange={(e) => setPanicTrigger(e.target.value)} placeholder="What set it off?" />
+              <Field label={`Intensity ${panicIntensity}/10`}>
+                <Slider value={[panicIntensity]} min={1} max={10} step={1} onValueChange={([v]) => setPanicIntensity(v)} />
               </Field>
-              <p className="text-[11px] text-muted-foreground">For full details use the Panic attack log entry.</p>
+              <Field label="Physical symptoms">
+                <CustomChipList base={PANIC_PHYSICAL} custom={data.custom.panicPhysical}
+                  onAddCustom={(v) => update((d) => ({ ...d, custom: { ...d.custom, panicPhysical: [...d.custom.panicPhysical, v] } }))}
+                  onRemoveCustom={(v) => { update((d) => ({ ...d, custom: { ...d.custom, panicPhysical: d.custom.panicPhysical.filter((x) => x !== v) } })); setPanicPhysical((a) => a.filter((x) => x !== v)); }}
+                  onRenameCustom={(o, n) => { update((d) => ({ ...d, custom: { ...d.custom, panicPhysical: d.custom.panicPhysical.map((x) => x === o ? n : x) } })); setPanicPhysical((a) => a.map((x) => x === o ? n : x)); }}
+                  selected={panicPhysical} onToggle={(v) => setPanicPhysical((a) => toggleIn(a, v))} />
+              </Field>
+              <Field label="Cognitive symptoms">
+                <CustomChipList base={PANIC_COGNITIVE} custom={data.custom.panicCognitive}
+                  onAddCustom={(v) => update((d) => ({ ...d, custom: { ...d.custom, panicCognitive: [...d.custom.panicCognitive, v] } }))}
+                  onRemoveCustom={(v) => { update((d) => ({ ...d, custom: { ...d.custom, panicCognitive: d.custom.panicCognitive.filter((x) => x !== v) } })); setPanicCognitive((a) => a.filter((x) => x !== v)); }}
+                  onRenameCustom={(o, n) => { update((d) => ({ ...d, custom: { ...d.custom, panicCognitive: d.custom.panicCognitive.map((x) => x === o ? n : x) } })); setPanicCognitive((a) => a.map((x) => x === o ? n : x)); }}
+                  selected={panicCognitive} onToggle={(v) => setPanicCognitive((a) => toggleIn(a, v))} />
+              </Field>
+              <Field label="Trigger (or 'no obvious trigger')">
+                <Textarea rows={2} value={panicTrigger} onChange={(e) => setPanicTrigger(e.target.value)} />
+              </Field>
+              <Field label="Place (optional)">
+                <Input value={panicPlace} onChange={(e) => setPanicPlace(e.target.value)} />
+              </Field>
+              <Field label="Hyperventilation">
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {(["no", "before", "during", "unknown"] as const).map((v) =>
+                    <Chip key={v} active={panicHyper === v} onClick={() => setPanicHyper(v)}>{v}</Chip>)}
+                </div>
+              </Field>
+              <Field label="Tetany present?">
+                <div className="mt-2 flex gap-2">
+                  <Chip active={!panicTetany} onClick={() => setPanicTetany(false)}>No</Chip>
+                  <Chip active={panicTetany} onClick={() => setPanicTetany(true)}>Yes</Chip>
+                </div>
+              </Field>
+              <Field label="What helped">
+                <CustomChipList base={PANIC_HELPED_DEFAULT} custom={data.custom.panicHelped}
+                  onAddCustom={(v) => update((d) => ({ ...d, custom: { ...d.custom, panicHelped: [...d.custom.panicHelped, v] } }))}
+                  onRemoveCustom={(v) => { update((d) => ({ ...d, custom: { ...d.custom, panicHelped: d.custom.panicHelped.filter((x) => x !== v) } })); setPanicHelped((a) => a.filter((x) => x !== v)); }}
+                  onRenameCustom={(o, n) => { update((d) => ({ ...d, custom: { ...d.custom, panicHelped: d.custom.panicHelped.map((x) => x === o ? n : x) } })); setPanicHelped((a) => a.map((x) => x === o ? n : x)); }}
+                  selected={panicHelped} onToggle={(v) => setPanicHelped((a) => toggleIn(a, v))} />
+              </Field>
+              <Field label="Note (optional)">
+                <Textarea rows={2} value={panicNote} onChange={(e) => setPanicNote(e.target.value)} />
+              </Field>
             </div>
           )}
         </div>
