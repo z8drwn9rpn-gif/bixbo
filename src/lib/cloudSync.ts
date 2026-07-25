@@ -14,7 +14,7 @@ export interface CloudProfile {
 }
 
 export async function ensureProfile(displayName?: string): Promise<CloudProfile | null> {
-  const { data, error } = await supabase.rpc("ensure_profile", { _display_name: displayName ?? null });
+  const { data, error } = await supabase.rpc("ensure_profile", { _display_name: displayName ?? undefined });
   if (error) { console.error("ensureProfile", error); return null; }
   return data as unknown as CloudProfile;
 }
@@ -52,13 +52,13 @@ export async function pullMyData(): Promise<BixboData | null> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
   const { data } = await supabase.from("user_data").select("data").eq("user_id", user.id).maybeSingle();
-  return (data?.data as BixboData) ?? null;
+  return (data?.data as unknown as BixboData) ?? null;
 }
 export async function pushMyData(payload: BixboData): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
-  const stripped: BixboData = { ...payload, partner: undefined };
-  await supabase.from("user_data").upsert({ user_id: user.id, data: stripped as unknown as Record<string, unknown> });
+  const stripped = { ...payload, partner: undefined };
+  await supabase.from("user_data").upsert({ user_id: user.id, data: stripped as never });
 }
 
 /* ------------------- Session hook ------------------- */
