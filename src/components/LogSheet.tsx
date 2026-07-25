@@ -269,19 +269,26 @@ const toggleIn = (arr: string[], v: string) => arr.includes(v) ? arr.filter((x) 
 
 function IntensityScale({ value, onChange, max }: { value: number; onChange: (n: number) => void; max: number }) {
   return (
-    <div className="mt-2 flex flex-wrap gap-1.5">
-      {Array.from({ length: max }, (_, i) => i + 1).map((n) => {
-        const hue = 130 - ((n - 1) * 130) / Math.max(1, max - 1);
-        const bg = `hsl(${hue} 70% 50%)`;
-        const active = value === n;
-        return (
-          <button key={n} type="button" onClick={() => onChange(n)}
-            className={`h-9 w-9 rounded-full text-xs font-bold transition text-white ${active ? "ring-2 ring-foreground scale-110" : ""}`}
-            style={{ background: bg, opacity: active ? 1 : 0.55 }}>
-            {n}
-          </button>
-        );
-      })}
+    <div className="mt-2 space-y-1.5">
+      <div className="flex flex-wrap gap-1.5">
+        {Array.from({ length: max }, (_, i) => i + 1).map((n) => {
+          const hue = 130 - ((n - 1) * 130) / Math.max(1, max - 1);
+          const bg = `hsl(${hue} 70% 50%)`;
+          const active = value === n;
+          return (
+            <button key={n} type="button" onClick={() => onChange(n)}
+              className={`h-9 w-9 rounded-full text-xs font-bold transition text-white ${active ? "ring-2 ring-foreground scale-110" : ""}`}
+              style={{ background: bg, opacity: active ? 1 : 0.55 }}>
+              {n}
+            </button>
+          );
+        })}
+      </div>
+      <div className="flex items-center justify-between text-[10px] text-muted-foreground px-0.5">
+        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ background: "hsl(130 70% 50%)" }} />Mild</span>
+        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ background: "hsl(65 70% 50%)" }} />Moderate</span>
+        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ background: "hsl(0 70% 50%)" }} />Severe</span>
+      </div>
     </div>
   );
 }
