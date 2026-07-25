@@ -152,6 +152,7 @@ export function LogSheet({
             <div className={`min-h-0 flex-1 overflow-y-auto ${active === "pain" ? "" : "px-5 py-4"}`}>
               {active === "pain"    && <PainWizard    date={date} data={data} update={update} onDone={close} initialEntry={initialPain ?? (edit as PainEntry | undefined)} />}
               {active === "panic"   && <PanicForm     date={date} data={data} update={update} onDone={close} initialEntry={edit as PanicAttack | undefined} />}
+              {active === "tetany"  && <TetanyForm    date={date} data={data} update={update} onDone={close} initialEntry={edit as TetanyEpisode | undefined} />}
               {active === "period"  && <PeriodForm    date={date} data={data} update={update} onDone={close} />}
               {active === "sex"     && <SexForm       date={date} data={data} update={update} onDone={close} initialEntry={edit as SexEntry | undefined} />}
               {active === "heat"    && <ThermoForm    date={date} update={update} onDone={close} initialEntry={edit as ThermoSession | undefined} />}
