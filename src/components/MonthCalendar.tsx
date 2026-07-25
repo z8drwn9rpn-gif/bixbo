@@ -136,14 +136,13 @@ export function MonthCalendar({
                   />
                 )}
                 <div
-                  className={`relative flex h-9 w-9 items-center justify-center rounded-full ${isToday ? "ring-2 ring-primary" : ""}`}
+                  className="relative flex h-9 w-9 items-center justify-center rounded-full"
                   style={{
                     background: periodColor ?? "transparent",
                   }}
                 >
                   <span className={`text-sm ${
-                    periodColor ? "font-semibold text-white" :
-                    isToday ? "font-bold text-primary" : "text-foreground"
+                    periodColor ? "font-semibold text-white" : "text-foreground"
                   }`}>
                     {date.getDate()}
                   </span>
