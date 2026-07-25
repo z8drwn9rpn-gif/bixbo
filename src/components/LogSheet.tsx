@@ -13,6 +13,7 @@ import {
   TETANY_TYPES, TETANY_LOCATIONS_DEFAULT, TETANY_TRIGGERS, TETANY_HELPED_DEFAULT,
   PANIC_PHYSICAL, PANIC_COGNITIVE, PANIC_HELPED_DEFAULT, SEX_TYPES_DEFAULT,
   BODY_BATTERY, SLEEP_QUALITY, EVENT_COLORS,
+  BOWEL_FEELINGS_DEFAULT, BOWEL_SYMPTOMS_DEFAULT,
   todayKey, nowHHMM, updateDayLog,
   type BixboData, type DayLog, type PainEntry, type PeriodLevel, type FoodEntry,
   type BowelEntry, type ThermoSession, type ThermoKind, type SexEntry, type SexKind,
@@ -42,7 +43,7 @@ const CATEGORIES: { id: Category; label: string; emoji: string; hint: string }[]
 ];
 
 export function LogSheet({
-  open, onOpenChange, date, data, update, initial, initialPain,
+  open, onOpenChange, date, data, update, initial, initialPain, editEntry,
 }: {
   open: boolean;
   onOpenChange: (b: boolean) => void;
@@ -51,12 +52,14 @@ export function LogSheet({
   update: UpdateFn;
   initial?: Category;
   initialPain?: PainEntry;
+  editEntry?: unknown;
 }) {
   const [cat, setCat] = useState<Category | null>(initial ?? null);
   const [editingOrder, setEditingOrder] = useState(false);
   const close = () => { setCat(null); setEditingOrder(false); onOpenChange(false); };
   const back = () => setCat(null);
   const active = cat ?? initial;
+  const edit = editEntry;
 
   const orderedCats = useMemo(() => {
     const saved = data.settings.logOrder ?? [];
@@ -148,18 +151,18 @@ export function LogSheet({
               </button>
             </SheetHeader>
             <div className={`min-h-0 flex-1 overflow-y-auto ${active === "pain" ? "" : "px-5 py-4"}`}>
-              {active === "pain"    && <PainWizard    date={date} data={data} update={update} onDone={close} initialEntry={initialPain} />}
-              {active === "panic"   && <PanicForm     date={date} data={data} update={update} onDone={close} />}
+              {active === "pain"    && <PainWizard    date={date} data={data} update={update} onDone={close} initialEntry={initialPain ?? (edit as PainEntry | undefined)} />}
+              {active === "panic"   && <PanicForm     date={date} data={data} update={update} onDone={close} initialEntry={edit as PanicAttack | undefined} />}
               {active === "period"  && <PeriodForm    date={date} data={data} update={update} onDone={close} />}
-              {active === "sex"     && <SexForm       date={date} data={data} update={update} onDone={close} />}
-              {active === "heat"    && <ThermoForm    date={date} update={update} onDone={close} />}
-              {active === "food"    && <FoodForm      date={date} data={data} update={update} onDone={close} />}
-              {active === "bowel"   && <BowelForm     date={date} update={update} onDone={close} />}
-              {active === "workout" && <WorkoutForm   date={date} data={data} update={update} onDone={close} />}
+              {active === "sex"     && <SexForm       date={date} data={data} update={update} onDone={close} initialEntry={edit as SexEntry | undefined} />}
+              {active === "heat"    && <ThermoForm    date={date} update={update} onDone={close} initialEntry={edit as ThermoSession | undefined} />}
+              {active === "food"    && <FoodForm      date={date} data={data} update={update} onDone={close} initialEntry={edit as FoodEntry | undefined} />}
+              {active === "bowel"   && <BowelForm     date={date} data={data} update={update} onDone={close} initialEntry={edit as BowelEntry | undefined} />}
+              {active === "workout" && <WorkoutForm   date={date} data={data} update={update} onDone={close} initialEntry={edit as WorkoutEntry | undefined} />}
               {active === "temp"    && <TempForm      date={date} data={data} update={update} onDone={close} />}
               {active === "meds"    && <MedsForm      date={date} data={data} update={update} onDone={close} />}
-              {active === "task"    && <TaskForm      date={date} update={update} onDone={close} />}
-              {active === "event"   && <EventForm     date={date} update={update} onDone={close} />}
+              {active === "task"    && <TaskForm      date={date} update={update} onDone={close} initialEntry={edit as TaskEntry | undefined} />}
+              {active === "event"   && <EventForm     date={date} update={update} onDone={close} initialEntry={edit as EventEntry | undefined} />}
               {active === "note"    && <NoteForm     date={date} update={update} onDone={close} />}
             </div>
           </div>
@@ -457,9 +460,6 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
           <Field label="Note (optional)">
             <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Anything else…" />
           </Field>
-          <Field label="Note (optional)">
-            <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Anything else…" />
-          </Field>
         </div>
       )}
 
@@ -476,35 +476,40 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
 }
 
 /* ------------------- PANIC attack ------------------- */
-function PanicForm({ date, data, update, onDone }:
-  { date: string; data: BixboData; update: UpdateFn; onDone: () => void }) {
-  const [time, setTime] = useState(nowHHMM());
-  const [minutes, setMinutes] = useState(10);
-  const [intensity, setIntensity] = useState(5);
-  const [physical, setPhysical] = useState<string[]>([]);
-  const [cognitive, setCognitive] = useState<string[]>([]);
-  const [trigger, setTrigger] = useState("");
-  const [place, setPlace] = useState("");
-  const [hyper, setHyper] = useState<"no" | "before" | "during" | "unknown">("unknown");
-  const [tetanyPresent, setTetanyPresent] = useState(false);
-  const [helped, setHelped] = useState<string[]>([]);
-  const [note, setNote] = useState("");
+function PanicForm({ date, data, update, onDone, initialEntry }:
+  { date: string; data: BixboData; update: UpdateFn; onDone: () => void; initialEntry?: PanicAttack }) {
+  const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
+  const [minutes, setMinutes] = useState(initialEntry?.minutes ?? 10);
+  const [intensity, setIntensity] = useState(initialEntry?.intensity ?? 5);
+  const [physical, setPhysical] = useState<string[]>(initialEntry?.physical ?? []);
+  const [cognitive, setCognitive] = useState<string[]>(initialEntry?.cognitive ?? []);
+  const [trigger, setTrigger] = useState(initialEntry?.trigger ?? "");
+  const [place, setPlace] = useState(initialEntry?.place ?? "");
+  const [hyper, setHyper] = useState<"no" | "before" | "during" | "unknown">(initialEntry?.hyperventilation ?? "unknown");
+  const [tetanyPresent, setTetanyPresent] = useState(initialEntry?.tetanyPresent ?? false);
+  const [helped, setHelped] = useState<string[]>(initialEntry?.helped ?? []);
+  const [note, setNote] = useState(initialEntry?.note ?? "");
   const addHelped = (v: string) => update((d) => ({ ...d, custom: { ...d.custom, panicHelped: [...d.custom.panicHelped, v] } }));
+  const rmHelped = (v: string) => { update((d) => ({ ...d, custom: { ...d.custom, panicHelped: d.custom.panicHelped.filter((x) => x !== v) } })); setHelped((a) => a.filter((x) => x !== v)); };
 
   const save = () => {
+    const editing = !!initialEntry;
     const p: PanicAttack = {
-      id: crypto.randomUUID(), time, minutes, intensity,
+      id: initialEntry?.id ?? crypto.randomUUID(), time, minutes, intensity,
       physical, cognitive, trigger: trigger.trim(), place: place.trim() || undefined,
       hyperventilation: hyper, tetanyPresent, helped, note: note.trim() || undefined,
     };
-    updateDayLog(update, date, (l) => ({ ...l, panic: [...(l.panic ?? []), p] }));
+    updateDayLog(update, date, (l) => ({
+      ...l,
+      panic: editing ? (l.panic ?? []).map((x) => x.id === p.id ? p : x) : [...(l.panic ?? []), p],
+    }));
     onDone();
   };
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-2">
-        <Field label="Time"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></Field>
-        <Field label="Duration (min)"><Input type="number" min={1} value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} /></Field>
+      <div className="flex gap-2">
+        <Field label="Time"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="w-full" /></Field>
+        <Field label="Duration (min)"><Input type="number" min={1} value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} className="w-full" /></Field>
       </div>
       <Field label={`Intensity ${intensity}/10`}>
         <Slider value={[intensity]} min={1} max={10} step={1} onValueChange={([v]) => setIntensity(v)} />
@@ -539,7 +544,7 @@ function PanicForm({ date, data, update, onDone }:
       </Field>
       <Field label="What helped">
         <CustomChipList base={PANIC_HELPED_DEFAULT} custom={data.custom.panicHelped}
-          onAddCustom={addHelped}
+          onAddCustom={addHelped} onRemoveCustom={rmHelped}
           selected={helped} onToggle={(v) => setHelped((a) => toggleIn(a, v))} />
       </Field>
       <Field label="Note (optional)">
@@ -611,19 +616,28 @@ function PeriodForm({ date, data, update, onDone }:
 }
 
 /* ------------------- ŠukŠuk (Sex) ------------------- */
-function SexForm({ date, data, update, onDone }:
-  { date: string; data: BixboData; update: UpdateFn; onDone: () => void }) {
-  const [kind, setKind] = useState<SexKind>("sex");
-  const [time, setTime] = useState(nowHHMM());
-  const [feelingAfter, setFeelingAfter] = useState("");
-  const [painful, setPainful] = useState<PainfulWhen>("no");
-  const [note, setNote] = useState("");
+function SexForm({ date, data, update, onDone, initialEntry }:
+  { date: string; data: BixboData; update: UpdateFn; onDone: () => void; initialEntry?: SexEntry }) {
+  const [kind, setKind] = useState<SexKind>(initialEntry?.kind ?? "sex");
+  const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
+  const [feelingAfter, setFeelingAfter] = useState(initialEntry?.feelingAfter ?? "");
+  const [painful, setPainful] = useState<PainfulWhen>(initialEntry?.painful ?? "no");
+  const [note, setNote] = useState(initialEntry?.note ?? "");
   const addCustom = (v: string) => update((d) => ({ ...d, custom: { ...d.custom, sexTypes: [...d.custom.sexTypes, v] } }));
+  const rmCustom = (v: string) => {
+    if (!confirm(`Remove "${v}" from your list?`)) return;
+    update((d) => ({ ...d, custom: { ...d.custom, sexTypes: d.custom.sexTypes.filter((x) => x !== v) } }));
+    if (kind === (`other:${v}` as SexKind)) setKind("sex");
+  };
   const custom = data.custom.sexTypes;
   const save = () => {
-    const e: SexEntry = { id: crypto.randomUUID(), time, kind,
+    const editing = !!initialEntry;
+    const e: SexEntry = { id: initialEntry?.id ?? crypto.randomUUID(), time, kind,
       feelingAfter: feelingAfter || undefined, painful, note: note.trim() || undefined };
-    updateDayLog(update, date, (l) => ({ ...l, sex: [...(l.sex ?? []), e] }));
+    updateDayLog(update, date, (l) => ({
+      ...l,
+      sex: editing ? (l.sex ?? []).map((x) => x.id === e.id ? e : x) : [...(l.sex ?? []), e],
+    }));
     onDone();
   };
   return (
@@ -632,7 +646,15 @@ function SexForm({ date, data, update, onDone }:
       <Field label="Type">
         <div className="mt-2 flex flex-wrap gap-2">
           {SEX_TYPES_DEFAULT.map((o) => <Chip key={o.value} active={kind === o.value} onClick={() => setKind(o.value)}>{o.label}</Chip>)}
-          {custom.map((c) => <Chip key={c} active={kind === (`other:${c}` as SexKind)} onClick={() => setKind(`other:${c}` as SexKind)}>{c}</Chip>)}
+          {custom.map((c) => (
+            <span key={c} className="relative inline-flex items-center">
+              <Chip active={kind === (`other:${c}` as SexKind)} onClick={() => setKind(`other:${c}` as SexKind)}>{c}</Chip>
+              <button onClick={(e) => { e.stopPropagation(); rmCustom(c); }} aria-label={`Remove ${c}`}
+                className="ml-1 grid h-5 w-5 place-items-center rounded-full bg-tint text-muted-foreground hover:bg-destructive/15 hover:text-destructive">
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
           <AddCustomInline onAdd={addCustom} />
         </div>
       </Field>
@@ -670,15 +692,19 @@ function AddCustomInline({ onAdd }: { onAdd: (v: string) => void }) {
 }
 
 /* ------------------- Heat / Cold / TENS ------------------- */
-function ThermoForm({ date, update, onDone }:
-  { date: string; update: UpdateFn; onDone: () => void }) {
-  const [kind, setKind] = useState<ThermoKind>("heat");
-  const [start, setStart] = useState(nowHHMM());
-  const [minutes, setMinutes] = useState(20);
-  const [note, setNote] = useState("");
+function ThermoForm({ date, update, onDone, initialEntry }:
+  { date: string; update: UpdateFn; onDone: () => void; initialEntry?: ThermoSession }) {
+  const [kind, setKind] = useState<ThermoKind>(initialEntry?.kind ?? "heat");
+  const [start, setStart] = useState(initialEntry?.start ?? nowHHMM());
+  const [minutes, setMinutes] = useState(initialEntry?.minutes ?? 20);
+  const [note, setNote] = useState(initialEntry?.note ?? "");
   const save = () => {
-    const e: ThermoSession = { id: crypto.randomUUID(), kind, start, minutes, note: note.trim() || undefined };
-    updateDayLog(update, date, (l) => ({ ...l, heat: [...(l.heat ?? []), e] }));
+    const editing = !!initialEntry;
+    const e: ThermoSession = { id: initialEntry?.id ?? crypto.randomUUID(), kind, start, minutes, note: note.trim() || undefined };
+    updateDayLog(update, date, (l) => ({
+      ...l,
+      heat: editing ? (l.heat ?? []).map((x) => x.id === e.id ? e : x) : [...(l.heat ?? []), e],
+    }));
     onDone();
   };
   return (
@@ -690,9 +716,9 @@ function ThermoForm({ date, update, onDone }:
           <Chip active={kind === "tens"} onClick={() => setKind("tens")}>⚡ TENS</Chip>
         </div>
       </Field>
-      <div className="grid grid-cols-2 gap-2">
-        <Field label="Start"><Input type="time" value={start} onChange={(e) => setStart(e.target.value)} /></Field>
-        <Field label="Duration (min)"><Input type="number" min={1} value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} /></Field>
+      <div className="flex gap-2">
+        <Field label="Start"><Input type="time" value={start} onChange={(e) => setStart(e.target.value)} className="w-full" /></Field>
+        <Field label="Duration (min)"><Input type="number" min={1} value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} className="w-full" /></Field>
       </div>
       <Field label="Note (optional)"><Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} /></Field>
       <SaveBar onCancel={onDone} onSave={save} />
@@ -701,26 +727,30 @@ function ThermoForm({ date, update, onDone }:
 }
 
 /* ------------------- FOOD ------------------- */
-function FoodForm({ date, data, update, onDone }:
-  { date: string; data: BixboData; update: UpdateFn; onDone: () => void }) {
-  const [time, setTime] = useState(nowHHMM());
-  const [what, setWhat] = useState("");
-  const [feelings, setFeelings] = useState<string[]>([]);
-  const [after, setAfter] = useState("");
-  const [hydration, setHydration] = useState<string>("");
-  const [caffeine, setCaffeine] = useState<string>("");
-  const [alcohol, setAlcohol] = useState<string>("");
+function FoodForm({ date, data, update, onDone, initialEntry }:
+  { date: string; data: BixboData; update: UpdateFn; onDone: () => void; initialEntry?: FoodEntry }) {
+  const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
+  const [what, setWhat] = useState(initialEntry?.what ?? "");
+  const [feelings, setFeelings] = useState<string[]>(initialEntry?.feelings ?? []);
+  const [after, setAfter] = useState(initialEntry?.after ?? "");
+  const [hydration, setHydration] = useState<string>(initialEntry?.hydrationMl != null ? String(initialEntry.hydrationMl) : "");
+  const [caffeine, setCaffeine] = useState<string>(initialEntry?.caffeineMg != null ? String(initialEntry.caffeineMg) : "");
+  const [alcohol, setAlcohol] = useState<string>(initialEntry?.alcoholDrinks != null ? String(initialEntry.alcoholDrinks) : "");
   const addCustom = (v: string) =>
     update((d) => ({ ...d, custom: { ...d.custom, foodFeelings: [...d.custom.foodFeelings, v] } }));
   const save = () => {
     if (!what.trim() && !hydration && !caffeine && !alcohol) return;
+    const editing = !!initialEntry;
     const entry: FoodEntry = {
-      id: crypto.randomUUID(), time, what: what.trim(), feelings, after: after.trim() || undefined,
+      id: initialEntry?.id ?? crypto.randomUUID(), time, what: what.trim(), feelings, after: after.trim() || undefined,
       hydrationMl: hydration === "" ? undefined : Number(hydration),
       caffeineMg:  caffeine  === "" ? undefined : Number(caffeine),
       alcoholDrinks: alcohol === "" ? undefined : Number(alcohol),
     };
-    updateDayLog(update, date, (l) => ({ ...l, food: [...(l.food ?? []), entry] }));
+    updateDayLog(update, date, (l) => ({
+      ...l,
+      food: editing ? (l.food ?? []).map((x) => x.id === entry.id ? entry : x) : [...(l.food ?? []), entry],
+    }));
     onDone();
   };
   return (
@@ -796,14 +826,29 @@ function BristolIcon({ shape, color }: { shape: string; color: string }) {
     </svg>
   );
 }
-function BowelForm({ date, update, onDone }:
-  { date: string; update: UpdateFn; onDone: () => void }) {
-  const [time, setTime] = useState(nowHHMM());
-  const [bristol, setBristol] = useState<number>(4);
-  const [note, setNote] = useState("");
+function BowelForm({ date, data, update, onDone, initialEntry }:
+  { date: string; data: BixboData; update: UpdateFn; onDone: () => void; initialEntry?: BowelEntry }) {
+  const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
+  const [bristol, setBristol] = useState<number>(initialEntry?.bristol ?? 4);
+  const [feelings, setFeelings] = useState<string[]>(initialEntry?.feelings ?? []);
+  const [symptoms, setSymptoms] = useState<string[]>(initialEntry?.symptoms ?? []);
+  const [note, setNote] = useState(initialEntry?.note ?? "");
+  const addFeel = (v: string) => update((d) => ({ ...d, custom: { ...d.custom, bowelFeelings: [...d.custom.bowelFeelings, v] } }));
+  const rmFeel = (v: string) => { update((d) => ({ ...d, custom: { ...d.custom, bowelFeelings: d.custom.bowelFeelings.filter((x) => x !== v) } })); setFeelings((a) => a.filter((x) => x !== v)); };
+  const addSym = (v: string) => update((d) => ({ ...d, custom: { ...d.custom, bowelSymptoms: [...d.custom.bowelSymptoms, v] } }));
+  const rmSym = (v: string) => { update((d) => ({ ...d, custom: { ...d.custom, bowelSymptoms: d.custom.bowelSymptoms.filter((x) => x !== v) } })); setSymptoms((a) => a.filter((x) => x !== v)); };
   const save = () => {
-    const entry: BowelEntry = { id: crypto.randomUUID(), time, bristol, note: note.trim() || undefined };
-    updateDayLog(update, date, (l) => ({ ...l, bowel: [...(l.bowel ?? []), entry] }));
+    const editing = !!initialEntry;
+    const entry: BowelEntry = {
+      id: initialEntry?.id ?? crypto.randomUUID(), time, bristol,
+      feelings: feelings.length ? feelings : undefined,
+      symptoms: symptoms.length ? symptoms : undefined,
+      note: note.trim() || undefined,
+    };
+    updateDayLog(update, date, (l) => ({
+      ...l,
+      bowel: editing ? (l.bowel ?? []).map((x) => x.id === entry.id ? entry : x) : [...(l.bowel ?? []), entry],
+    }));
     onDone();
   };
   return (
@@ -831,6 +876,16 @@ function BowelForm({ date, update, onDone }:
             </button>
           ))}
         </div>
+      </Field>
+      <Field label="How do you feel?">
+        <CustomChipList base={BOWEL_FEELINGS_DEFAULT} custom={data.custom.bowelFeelings}
+          onAddCustom={addFeel} onRemoveCustom={rmFeel}
+          selected={feelings} onToggle={(v) => setFeelings((a) => toggleIn(a, v))} />
+      </Field>
+      <Field label="Symptoms">
+        <CustomChipList base={BOWEL_SYMPTOMS_DEFAULT} custom={data.custom.bowelSymptoms}
+          onAddCustom={addSym} onRemoveCustom={rmSym}
+          selected={symptoms} onToggle={(v) => setSymptoms((a) => toggleIn(a, v))} />
       </Field>
       <Field label="Note (optional)"><Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} /></Field>
       <SaveBar onCancel={onDone} onSave={save} />
@@ -955,22 +1010,27 @@ function MedsForm({ date, data, update, onDone }:
 }
 
 /* ------------------- WORKOUT ------------------- */
-function WorkoutForm({ date, data, update, onDone }:
-  { date: string; data: BixboData; update: UpdateFn; onDone: () => void }) {
-  const [kind, setKind] = useState<string>(WORKOUT_KINDS_DEFAULT[0]);
-  const [minutes, setMinutes] = useState<number>(30);
-  const [weight, setWeight] = useState<string>("");
-  const [feeling, setFeeling] = useState<string>("");
-  const [note, setNote] = useState<string>("");
+function WorkoutForm({ date, data, update, onDone, initialEntry }:
+  { date: string; data: BixboData; update: UpdateFn; onDone: () => void; initialEntry?: WorkoutEntry }) {
+  const [kind, setKind] = useState<string>(initialEntry?.kind ?? WORKOUT_KINDS_DEFAULT[0]);
+  const [minutes, setMinutes] = useState<number>(initialEntry?.minutes ?? 30);
+  const [weight, setWeight] = useState<string>(initialEntry?.weightKg != null ? String(initialEntry.weightKg) : "");
+  const [feeling, setFeeling] = useState<string>(initialEntry?.feeling ?? "");
+  const [note, setNote] = useState<string>(initialEntry?.note ?? "");
   const addKind = (v: string) => update((d) => ({ ...d, custom: { ...d.custom, workoutKinds: [...d.custom.workoutKinds, v] } }));
+  const rmKind = (v: string) => { update((d) => ({ ...d, custom: { ...d.custom, workoutKinds: d.custom.workoutKinds.filter((x) => x !== v) } })); if (kind === v) setKind(WORKOUT_KINDS_DEFAULT[0]); };
 
   const save = () => {
+    const editing = !!initialEntry;
     const e: WorkoutEntry = {
-      id: crypto.randomUUID(), time: nowHHMM(), kind, minutes,
+      id: initialEntry?.id ?? crypto.randomUUID(), time: initialEntry?.time ?? nowHHMM(), kind, minutes,
       weightKg: weight === "" ? undefined : Number(weight),
       feeling: feeling || undefined, note: note.trim() || undefined,
     };
-    updateDayLog(update, date, (l) => ({ ...l, workout: [...(l.workout ?? []), e] }));
+    updateDayLog(update, date, (l) => ({
+      ...l,
+      workout: editing ? (l.workout ?? []).map((x) => x.id === e.id ? e : x) : [...(l.workout ?? []), e],
+    }));
     if (weight !== "") updateDayLog(update, date, (l) => ({ ...l, weight: Number(weight) }));
     onDone();
   };
@@ -978,7 +1038,7 @@ function WorkoutForm({ date, data, update, onDone }:
     <div className="space-y-3">
       <Field label="Type">
         <CustomChipList base={WORKOUT_KINDS_DEFAULT} custom={data.custom.workoutKinds}
-          onAddCustom={addKind} selected={[kind]} onToggle={(v) => setKind(v)} />
+          onAddCustom={addKind} onRemoveCustom={rmKind} selected={[kind]} onToggle={(v) => setKind(v)} />
       </Field>
       <Field label="Duration (minutes)"><Input type="number" min={1} value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} /></Field>
       <Field label="Weight after (kg, optional)"><Input type="number" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} /></Field>
@@ -995,23 +1055,24 @@ function WorkoutForm({ date, data, update, onDone }:
 }
 
 /* ------------------- EVENT ------------------- */
-function EventForm({ date, update, onDone }:
-  { date: string; update: UpdateFn; onDone: () => void }) {
-  const [title, setTitle] = useState("");
-  const [startDate, setStartDate] = useState(date);
-  const [endDate, setEndDate] = useState(date);
-  const [time, setTime] = useState("");
-  const [timeEnd, setTimeEnd] = useState("");
-  const [note, setNote] = useState("");
-  const [color, setColor] = useState(EVENT_COLORS[0]);
+function EventForm({ date, update, onDone, initialEntry }:
+  { date: string; update: UpdateFn; onDone: () => void; initialEntry?: EventEntry }) {
+  const [title, setTitle] = useState(initialEntry?.title ?? "");
+  const [startDate, setStartDate] = useState(initialEntry?.startDate ?? date);
+  const [endDate, setEndDate] = useState(initialEntry?.endDate ?? date);
+  const [time, setTime] = useState(initialEntry?.time ?? "");
+  const [timeEnd, setTimeEnd] = useState(initialEntry?.timeEnd ?? "");
+  const [note, setNote] = useState(initialEntry?.note ?? "");
+  const [color, setColor] = useState(initialEntry?.color ?? EVENT_COLORS[0]);
   const save = () => {
     if (!title.trim()) return;
+    const editing = !!initialEntry;
     const e: EventEntry = {
-      id: crypto.randomUUID(), title: title.trim(),
+      id: initialEntry?.id ?? crypto.randomUUID(), title: title.trim(),
       startDate, endDate: endDate < startDate ? startDate : endDate,
       time: time || undefined, timeEnd: timeEnd || undefined, note: note.trim() || undefined, color,
     };
-    update((d) => ({ ...d, events: [...d.events, e] }));
+    update((d) => ({ ...d, events: editing ? d.events.map((x) => x.id === e.id ? e : x) : [...d.events, e] }));
     onDone();
   };
   return (
@@ -1041,23 +1102,24 @@ function EventForm({ date, update, onDone }:
 }
 
 /* ------------------- TASK ------------------- */
-function TaskForm({ date, update, onDone }:
-  { date: string; update: UpdateFn; onDone: () => void }) {
-  const [title, setTitle] = useState("");
-  const [startDate, setStartDate] = useState(date);
-  const [endDate, setEndDate] = useState(date);
-  const [time, setTime] = useState("");
-  const [timeEnd, setTimeEnd] = useState("");
-  const [note, setNote] = useState("");
+function TaskForm({ date, update, onDone, initialEntry }:
+  { date: string; update: UpdateFn; onDone: () => void; initialEntry?: TaskEntry }) {
+  const [title, setTitle] = useState(initialEntry?.title ?? "");
+  const [startDate, setStartDate] = useState(initialEntry?.startDate ?? date);
+  const [endDate, setEndDate] = useState(initialEntry?.endDate ?? date);
+  const [time, setTime] = useState(initialEntry?.time ?? "");
+  const [timeEnd, setTimeEnd] = useState(initialEntry?.timeEnd ?? "");
+  const [note, setNote] = useState(initialEntry?.note ?? "");
   const save = () => {
     if (!title.trim()) return;
+    const editing = !!initialEntry;
     const t: TaskEntry = {
-      id: crypto.randomUUID(), title: title.trim(),
+      id: initialEntry?.id ?? crypto.randomUUID(), title: title.trim(),
       startDate, endDate: endDate < startDate ? startDate : endDate,
       time: time || undefined, timeEnd: timeEnd || undefined,
-      done: false, note: note.trim() || undefined,
+      done: initialEntry?.done ?? false, note: note.trim() || undefined,
     };
-    update((d) => ({ ...d, tasks: [...d.tasks, t] }));
+    update((d) => ({ ...d, tasks: editing ? d.tasks.map((x) => x.id === t.id ? t : x) : [...d.tasks, t] }));
     onDone();
   };
   return (

@@ -1,13 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Plus, Settings as SettingsIcon, Share2, Trash2, Pill, Heart, Droplets, Utensils, Zap } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Settings as SettingsIcon, Share2, Trash2, Pill } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { MonthCalendar, monthLabel } from "@/components/MonthCalendar";
 import { LogSheet } from "@/components/LogSheet";
 import {
   useBixbo, EMPTY, toKey, fromKey, todayKey, PAIN_DESCRIPTIONS, painColor, BRISTOL, nextPredictedPeriod, daysBetween,
-  type BixboData, type DayLog, type PeriodLevel, type BowelEntry, type SexEntry,
+  type BixboData, type PeriodLevel, type BowelEntry, type SexEntry,
 } from "@/lib/storage";
 
 export const Route = createFileRoute("/")({
@@ -37,6 +37,8 @@ function HomePage() {
   const [logOpen, setLogOpen] = useState(false);
   const [quickCat, setQuickCat] = useState<string | undefined>();
   const [editPain, setEditPain] = useState<import("@/lib/storage").PainEntry | undefined>();
+  const [editEntry, setEditEntry] = useState<unknown>(undefined);
+  const openEdit = (cat: string, entry: unknown) => { setQuickCat(cat); setEditEntry(entry); setEditPain(undefined); setLogOpen(true); };
 
   // Meds reminders + period notification
   useEffect(() => {
@@ -67,7 +69,7 @@ function HomePage() {
   const goToPrevMonth = () => setMonthAnchor((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1));
   const goToNextMonth = () => setMonthAnchor((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1));
 
-  const openQuick = (cat: string) => { setQuickCat(cat); setLogOpen(true); };
+  
 
   return (
     <AppShell
@@ -115,23 +117,22 @@ function HomePage() {
         <ShareDayButton date={selected} view={view} />
       </div>
 
-      {/* Category badges */}
-      <TodayBadges log={view.dayLogs[selected]} onQuick={openQuick} />
 
       <DayPreview date={selected} data={view} update={update}
-        onEditPain={(p) => { setEditPain(p); setQuickCat("pain"); setLogOpen(true); }} />
+        onEditPain={(p) => { setEditPain(p); setEditEntry(undefined); setQuickCat("pain"); setLogOpen(true); }}
+        onEdit={openEdit} />
 
       <div className="fixed bottom-24 right-5 z-30">
         <Button
-          onClick={() => { setQuickCat(undefined); setEditPain(undefined); setLogOpen(true); }}
+          onClick={() => { setQuickCat(undefined); setEditPain(undefined); setEditEntry(undefined); setLogOpen(true); }}
           className="h-14 rounded-full px-6 shadow-lg"
         >
           <Plus className="h-5 w-5" /> Log
         </Button>
       </div>
 
-      <LogSheet open={logOpen} onOpenChange={(b) => { setLogOpen(b); if (!b) { setQuickCat(undefined); setEditPain(undefined); } }}
-        date={selected} data={view} update={update} initial={quickCat as never} initialPain={editPain} />
+      <LogSheet open={logOpen} onOpenChange={(b) => { setLogOpen(b); if (!b) { setQuickCat(undefined); setEditPain(undefined); setEditEntry(undefined); } }}
+        date={selected} data={view} update={update} initial={quickCat as never} initialPain={editPain} editEntry={editEntry} />
     </AppShell>
   );
 }
@@ -154,38 +155,10 @@ function MedsProgress({ data }: { data: BixboData }) {
   );
 }
 
-function TodayBadges({ log, onQuick }: { log?: DayLog; onQuick: (cat: string) => void }) {
-  const items: { key: string; cat: string; label: string; icon: React.ReactNode; color: string; count: number }[] = [
-    { key: "meds",   cat: "meds",   label: "Meds",    icon: <Pill className="h-4 w-4" />,      color: "#3b82f6", count: (log?.extraMeds?.length ?? 0) },
-    { key: "pain",   cat: "pain",   label: "Symptoms",icon: <Heart className="h-4 w-4" />,     color: "#ef4444", count: (log?.pain?.length ?? 0) },
-    { key: "cycle",  cat: "period", label: "Cycle",   icon: <Droplets className="h-4 w-4" />,  color: "#ec4899", count: (log?.period || log?.periodInfo?.level) ? 1 : 0 },
-    { key: "food",   cat: "food",   label: "Food",    icon: <Utensils className="h-4 w-4" />,  color: "#f97316", count: (log?.food?.length ?? 0) },
-    { key: "panic",  cat: "panic",  label: "Panic",   icon: <Zap className="h-4 w-4" />,       color: "#a855f7", count: (log?.panic?.length ?? 0) },
-  ];
-  return (
-    <div className="mt-3 -mx-1 flex gap-2 overflow-x-auto px-5 pb-1">
-      {items.map((it) => (
-        <button key={it.key} onClick={() => onQuick(it.cat)}
-          className="relative flex shrink-0 flex-col items-center gap-1">
-          <span className="relative grid h-11 w-11 place-items-center rounded-full text-white shadow-sm"
-                style={{ background: it.color, opacity: it.count > 0 ? 1 : 0.55 }}>
-            {it.icon}
-            {it.count > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 grid h-4 w-4 place-items-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
-                {it.count}
-              </span>
-            )}
-          </span>
-          <span className="text-[10px] text-muted-foreground">{it.label}</span>
-        </button>
-      ))}
-    </div>
-  );
-}
 
 /* ------------------- Day preview ------------------- */
-function DayPreview({ date, data, update, onEditPain }:
-  { date: string; data: BixboData; update: (u: (d: BixboData) => BixboData) => void; onEditPain?: (p: import("@/lib/storage").PainEntry) => void }) {
+function DayPreview({ date, data, update, onEditPain, onEdit }:
+  { date: string; data: BixboData; update: (u: (d: BixboData) => BixboData) => void; onEditPain?: (p: import("@/lib/storage").PainEntry) => void; onEdit?: (cat: string, entry: unknown) => void }) {
   const log = data.dayLogs[date];
   const rawNotes = data.dayNotes[date] ?? [];
   const notes: { text: string; time?: string }[] = (rawNotes as (string | { text: string; time?: string })[])
@@ -268,7 +241,7 @@ function DayPreview({ date, data, update, onEditPain }:
           <ul className="space-y-2">
             {log.panic.map((p) => (
               <li key={p.id} className="flex items-start gap-2">
-                <div className="flex-1">
+                <button onClick={() => onEdit?.("panic", p)} className="flex-1 text-left">
                   <p className="text-sm font-medium">{p.time} · intensity {p.intensity}/10 · {p.minutes} min</p>
                   {p.trigger && <p className="text-xs text-muted-foreground">Trigger: {p.trigger}</p>}
                   {p.physical.length > 0 && <p className="text-xs">Physical: {p.physical.join(", ")}</p>}
@@ -276,7 +249,8 @@ function DayPreview({ date, data, update, onEditPain }:
                   <p className="text-[11px] text-muted-foreground">Hyperventilation: {p.hyperventilation}{p.tetanyPresent ? " · tetany present" : ""}</p>
                   {p.helped.length > 0 && <p className="text-[11px] text-muted-foreground">Helped: {p.helped.join(", ")}</p>}
                   {p.note && <p className="mt-1 text-sm">"{p.note}"</p>}
-                </div>
+                  <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
+                </button>
                 <DeleteBtn onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], panic: (d.dayLogs[date]?.panic ?? []).filter((x) => x.id !== p.id) } } }))} />
               </li>
             ))}
@@ -299,9 +273,12 @@ function DayPreview({ date, data, update, onEditPain }:
 
       {(log?.period || log?.periodInfo?.level) && (
         <Card title="Blueberry 🫐" icon="🫐">
-          <p className="text-sm">Flow: {periodLabel(log?.periodInfo?.level ?? log?.period)}</p>
-          {log?.periodInfo?.discharge && <p className="text-xs text-muted-foreground">Discharge: {log.periodInfo.discharge}{log.periodInfo.dischargeNote ? ` — ${log.periodInfo.dischargeNote}` : ""}</p>}
-          {log?.periodInfo?.note && <p className="mt-1 text-sm">"{log.periodInfo.note}"</p>}
+          <button onClick={() => onEdit?.("period", undefined)} className="w-full text-left">
+            <p className="text-sm">Flow: {periodLabel(log?.periodInfo?.level ?? log?.period)}</p>
+            {log?.periodInfo?.discharge && <p className="text-xs text-muted-foreground">Discharge: {log.periodInfo.discharge}{log.periodInfo.dischargeNote ? ` — ${log.periodInfo.dischargeNote}` : ""}</p>}
+            {log?.periodInfo?.note && <p className="mt-1 text-sm">"{log.periodInfo.note}"</p>}
+            <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
+          </button>
         </Card>
       )}
 
@@ -310,7 +287,7 @@ function DayPreview({ date, data, update, onEditPain }:
           <ul className="space-y-1 text-sm">
             {log.sex.map((s: SexEntry) => (
               <li key={s.id} className="flex items-start gap-2">
-                <span className="flex-1">{s.time} · {String(s.kind).replace(/_/g, " ")}{s.feelingAfter ? ` · ${s.feelingAfter}` : ""}{s.painful && s.painful !== "no" ? ` · painful ${s.painful}` : ""}{s.note ? ` — ${s.note}` : ""}</span>
+                <button onClick={() => onEdit?.("sex", s)} className="flex-1 text-left">{s.time} · {String(s.kind).replace(/_/g, " ")}{s.feelingAfter ? ` · ${s.feelingAfter}` : ""}{s.painful && s.painful !== "no" ? ` · painful ${s.painful}` : ""}{s.note ? ` — ${s.note}` : ""}</button>
                 <DeleteBtn onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], sex: (d.dayLogs[date]?.sex ?? []).filter((x) => x.id !== s.id) } } }))} />
               </li>
             ))}
@@ -323,7 +300,7 @@ function DayPreview({ date, data, update, onEditPain }:
           <ul className="space-y-1 text-sm">
             {log.heat.map((h) => (
               <li key={h.id} className="flex items-start gap-2">
-                <span className="flex-1">{h.kind === "heat" ? "🔥" : h.kind === "cold" ? "🧊" : "⚡"} {h.start} · {h.minutes} min{h.note ? ` — ${h.note}` : ""}</span>
+                <button onClick={() => onEdit?.("heat", h)} className="flex-1 text-left">{h.kind === "heat" ? "🔥" : h.kind === "cold" ? "🧊" : "⚡"} {h.start} · {h.minutes} min{h.note ? ` — ${h.note}` : ""}</button>
                 <DeleteBtn onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], heat: (d.dayLogs[date]?.heat ?? []).filter((x) => x.id !== h.id) } } }))} />
               </li>
             ))}
@@ -336,7 +313,7 @@ function DayPreview({ date, data, update, onEditPain }:
           <ul className="space-y-1 text-sm">
             {log.food.map((f) => (
               <li key={f.id} className="flex items-start gap-2">
-                <span className="flex-1">{f.time} · {f.what}{f.feelings.length ? ` — ${f.feelings.join(", ")}` : ""}{f.hydrationMl != null ? ` · 💧 ${f.hydrationMl}ml` : ""}{f.caffeineMg != null ? ` · ☕ ${f.caffeineMg}mg` : ""}{f.alcoholDrinks != null ? ` · 🍷 ${f.alcoholDrinks}` : ""}</span>
+                <button onClick={() => onEdit?.("food", f)} className="flex-1 text-left">{f.time} · {f.what}{f.feelings.length ? ` — ${f.feelings.join(", ")}` : ""}{f.hydrationMl != null ? ` · 💧 ${f.hydrationMl}ml` : ""}{f.caffeineMg != null ? ` · ☕ ${f.caffeineMg}mg` : ""}{f.alcoholDrinks != null ? ` · 🍷 ${f.alcoholDrinks}` : ""}</button>
                 <DeleteBtn onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], food: (d.dayLogs[date]?.food ?? []).filter((x) => x.id !== f.id) } } }))} />
               </li>
             ))}
@@ -351,7 +328,7 @@ function DayPreview({ date, data, update, onEditPain }:
               const bristol = b.bristol === 0 ? null : BRISTOL.find((x) => x.n === b.bristol);
               return (
                 <li key={b.id} className="flex items-start gap-2">
-                  <span className="flex-1">{b.time} · {bristol ? `Type ${bristol.n} — ${bristol.sub}` : "No bowel movement"}{b.note ? ` — ${b.note}` : ""}</span>
+                  <button onClick={() => onEdit?.("bowel", b)} className="flex-1 text-left">{b.time} · {bristol ? `Type ${bristol.n} — ${bristol.sub}` : "No bowel movement"}{b.feelings?.length ? ` · ${b.feelings.join(", ")}` : ""}{b.symptoms?.length ? ` · ${b.symptoms.join(", ")}` : ""}{b.note ? ` — ${b.note}` : ""}</button>
                   <DeleteBtn onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], bowel: (d.dayLogs[date]?.bowel ?? []).filter((x) => x.id !== b.id) } } }))} />
                 </li>
               );
@@ -365,7 +342,7 @@ function DayPreview({ date, data, update, onEditPain }:
           <ul className="space-y-1 text-sm">
             {log.workout.map((w) => (
               <li key={w.id} className="flex items-start gap-2">
-                <span className="flex-1">{w.time} · {w.kind} · {w.minutes} min{w.feeling ? ` — ${w.feeling}` : ""}{w.note ? ` — ${w.note}` : ""}</span>
+                <button onClick={() => onEdit?.("workout", w)} className="flex-1 text-left">{w.time} · {w.kind} · {w.minutes} min{w.feeling ? ` — ${w.feeling}` : ""}{w.note ? ` — ${w.note}` : ""}</button>
                 <DeleteBtn onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], workout: (d.dayLogs[date]?.workout ?? []).filter((x) => x.id !== w.id) } } }))} />
               </li>
             ))}
@@ -388,7 +365,7 @@ function DayPreview({ date, data, update, onEditPain }:
             {tasks.map((t) => (
               <li key={t.id} className="flex items-center gap-2">
                 <input type="checkbox" checked={t.done} onChange={() => update((d) => ({ ...d, tasks: d.tasks.map((x) => x.id === t.id ? { ...x, done: !x.done } : x) }))} />
-                <span className={`flex-1 ${t.done ? "line-through text-muted-foreground" : ""}`}>{t.title}{t.time ? ` · ${t.time}${t.timeEnd ? `–${t.timeEnd}` : ""}` : ""}{t.note ? ` — ${t.note}` : ""}</span>
+                <button onClick={() => onEdit?.("task", t)} className={`flex-1 text-left ${t.done ? "line-through text-muted-foreground" : ""}`}>{t.title}{t.time ? ` · ${t.time}${t.timeEnd ? `–${t.timeEnd}` : ""}` : ""}{t.note ? ` — ${t.note}` : ""}</button>
                 <DeleteBtn onClick={() => update((d) => ({ ...d, tasks: d.tasks.filter((x) => x.id !== t.id) }))} />
               </li>
             ))}
@@ -402,7 +379,7 @@ function DayPreview({ date, data, update, onEditPain }:
             {events.map((e) => (
               <li key={e.id} className="flex items-start gap-2">
                 <span className="mt-1 h-2 w-2 rounded-full" style={{ background: e.color ?? "var(--primary)" }} />
-                <span className="flex-1">{e.title}{e.time ? ` · ${e.time}${e.timeEnd ? `–${e.timeEnd}` : ""}` : ""}{e.startDate !== e.endDate ? ` (${e.startDate}→${e.endDate})` : ""}{e.note ? ` — ${e.note}` : ""}</span>
+                <button onClick={() => onEdit?.("event", e)} className="flex-1 text-left">{e.title}{e.time ? ` · ${e.time}${e.timeEnd ? `–${e.timeEnd}` : ""}` : ""}{e.startDate !== e.endDate ? ` (${e.startDate}→${e.endDate})` : ""}{e.note ? ` — ${e.note}` : ""}</button>
                 <DeleteBtn onClick={() => update((d) => ({ ...d, events: d.events.filter((x) => x.id !== e.id) }))} />
               </li>
             ))}

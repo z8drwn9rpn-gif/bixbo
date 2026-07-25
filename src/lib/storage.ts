@@ -61,7 +61,7 @@ export interface FoodEntry {
   caffeineMg?: number;
   alcoholDrinks?: number;
 }
-export interface BowelEntry { id: string; time: string; bristol: number; note?: string } // bristol 0 = no bowel movement
+export interface BowelEntry { id: string; time: string; bristol: number; note?: string; feelings?: string[]; symptoms?: string[] } // bristol 0 = no bowel movement
 export interface SexEntry {
   id: string;
   time: string;
@@ -158,6 +158,8 @@ export interface CustomLists {
   tetanyHelped: string[];
   panicHelped: string[];
   sexTypes: string[];
+  bowelFeelings: string[];
+  bowelSymptoms: string[];
 }
 
 export interface Settings {
@@ -223,6 +225,8 @@ export const EMPTY: BixboData = {
     tetanyHelped: [],
     panicHelped: [],
     sexTypes: [],
+    bowelFeelings: [],
+    bowelSymptoms: [],
   },
   settings: {
     textSize: "md",
@@ -470,6 +474,13 @@ export const BRISTOL: { n: number; label: string; sub: string; color: string; sh
   { n: 5, label: "Type 5 — Lacks fiber",   sub: "Soft blobs with clear-cut edges",        color: "#f97316", shape: "blobs" },
   { n: 6, label: "Type 6 — Diarrhea",      sub: "Fluffy, mushy, ragged edges",            color: "#ec4899", shape: "mushy" },
   { n: 7, label: "Type 7 — Diarrhea",      sub: "Watery, no solid pieces",                color: "#dc2626", shape: "liquid" },
+];
+
+export const BOWEL_FEELINGS_DEFAULT = [
+  "😌 Relief","🙂 Normal","😐 Neutral","😖 Painful","🤕 Cramping","😰 Urgent","💨 Gassy","😞 Incomplete",
+];
+export const BOWEL_SYMPTOMS_DEFAULT = [
+  "Bloating","Cramps","Straining","Blood","Mucus","Burning","Nausea","Urgency",
 ];
 
 export const EVENT_COLORS = [
