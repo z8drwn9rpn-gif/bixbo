@@ -41,6 +41,7 @@ export function MonthCalendar({
   onSelect: (k: string) => void;
   onSwipeMonth?: (delta: -1 | 1) => void;
 }) {
+  const isMale = data.settings.gender === "male";
   const y = month.getFullYear();
   const m = month.getMonth();
   const first = new Date(y, m, 1);
@@ -58,11 +59,13 @@ export function MonthCalendar({
     else cells.push({ date: new Date(y, m, dayNum), inMonth: true });
   }
 
-  const predicted = predictPeriods(data.cycle, cells[0].date, cells[cells.length - 1].date);
+  const predicted = isMale ? [] : predictPeriods(data.cycle, cells[0].date, cells[cells.length - 1].date);
   const isPredicted = (k: string) =>
+    !isMale &&
     predicted.some((p) => isDateInRange(k, p.start, p.end)) &&
     !(data.dayLogs[k]?.period || data.dayLogs[k]?.periodInfo?.level);
   const isActualPeriod = (k: string) => {
+    if (isMale) return false;
     const c = data.cycle;
     if (!c.lastPeriodStart || !c.lastPeriodEnd) return false;
     return isDateInRange(k, c.lastPeriodStart, c.lastPeriodEnd);
@@ -94,8 +97,8 @@ export function MonthCalendar({
           const log = data.dayLogs[key];
           const takenToday = data.medLog[key] ?? {};
           const hasMed = Object.values(takenToday).some(Boolean) || !!log?.extraMeds?.length;
-          const periodLevel = log?.periodInfo?.level ?? log?.period;
-          const periodColor = periodColorVar(periodLevel) ?? (isActualPeriod(key) ? "var(--period-medium)" : null);
+          const periodLevel = isMale ? undefined : (log?.periodInfo?.level ?? log?.period);
+          const periodColor = isMale ? null : (periodColorVar(periodLevel) ?? (isActualPeriod(key) ? "var(--period-medium)" : null));
           const pAvg = avgDayPain(log);
           const isSel = key === selected;
           const predictedOrange = isPredicted(key);

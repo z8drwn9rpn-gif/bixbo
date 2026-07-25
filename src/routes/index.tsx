@@ -45,6 +45,7 @@ function HomePage() {
     if (!hydrated || !view.settings.notifications) return;
     if (typeof window === "undefined" || !("Notification" in window)) return;
     if (Notification.permission !== "granted") return;
+    const isMale = view.settings.gender === "male";
     const int = setInterval(() => {
       const now = new Date();
       const hhmm = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
@@ -55,8 +56,8 @@ function HomePage() {
           if (!taken) new Notification(`💊 ${m.name}`, { body: `Time for your ${hhmm} dose${m.dose ? ` (${m.dose})` : ""}` });
         }
       });
-      // Period predict: 1 day before at 09:00
-      if (hhmm === "09:00") {
+      // Period predict: 1 day before at 09:00 (skip in male mode)
+      if (!isMale && hhmm === "09:00") {
         const p = nextPredictedPeriod(view.cycle);
         if (p && daysBetween(todayKey(), p.start) === 1) {
           new Notification("🫐 Period starts tomorrow", { body: "Get your supplies ready 💚" });
@@ -64,7 +65,7 @@ function HomePage() {
       }
     }, 60000);
     return () => clearInterval(int);
-  }, [hydrated, view.meds, view.medLog, view.cycle, view.settings.notifications]);
+  }, [hydrated, view.meds, view.medLog, view.cycle, view.settings.notifications, view.settings.gender]);
 
   const goToPrevMonth = () => setMonthAnchor((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1));
   const goToNextMonth = () => setMonthAnchor((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1));
@@ -169,12 +170,15 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
 
   const k = todayKey();
   const isToday = date === k;
+  const nowHHMM = new Date().toTimeString().slice(0, 5);
   const meds = data.meds;
-  const takenList = data.meds
+  const scheduled = data.meds
     .filter((m) => !m.asNeeded)
-    .flatMap((m) => m.times.map((t) => ({ key: `${m.id}@${t}`, med: m, time: t, taken: !!data.medLog[date]?.[`${m.id}@${t}`] })))
-    .filter((x) => x.taken);
+    .flatMap((m) => m.times.map((t) => ({ key: `${m.id}@${t}`, med: m, time: t, taken: !!data.medLog[date]?.[`${m.id}@${t}`] })));
+  const takenList = scheduled.filter((x) => x.taken);
+  const missedList = scheduled.filter((x) => !x.taken && (date < k || (date === k && x.time < nowHHMM)));
   const extraMeds = log?.extraMeds ?? [];
+  const isMale = data.settings.gender === "male";
 
   const anything = !!(
     log && (
@@ -183,7 +187,7 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
       log.bowel?.length || log.sex?.length || log.heat?.length || log.workout?.length ||
       log.temperature != null || log.weight != null || log.sleepHours != null || extraMeds.length
     )
-  ) || notes.length || todos.length || events.length || tasks.length || takenList.length;
+  ) || notes.length || todos.length || events.length || tasks.length || takenList.length || missedList.length;
 
   if (!anything) return (
     <div className="mx-5 mt-4 rounded-3xl bg-surface p-6 text-center ring-1 ring-border">
@@ -192,12 +196,22 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
     </div>
   );
 
+  const markMissedTaken = (medKey: string) =>
+    update((d) => ({ ...d, medLog: { ...d.medLog, [date]: { ...(d.medLog[date] ?? {}), [medKey]: true } } }));
+
   return (
     <div className="space-y-3 px-5 pt-3 pb-32">
-      {(takenList.length > 0 || extraMeds.length > 0) && (
+      {(takenList.length > 0 || extraMeds.length > 0 || missedList.length > 0) && (
         <Card title="Meds" icon="💊">
           <ul className="space-y-1 text-sm">
             {takenList.map((x) => <li key={x.key}>✓ {x.time} — {x.med.name}{x.med.dose ? ` (${x.med.dose})` : ""}</li>)}
+            {missedList.map((x) => (
+              <li key={x.key} className="flex items-start gap-2">
+                <button onClick={() => markMissedTaken(x.key)} className="flex-1 text-left text-destructive/90" title="Tap to mark taken">
+                  ✗ {x.time} — {x.med.name}{x.med.dose ? ` (${x.med.dose})` : ""} <span className="text-[10px] text-muted-foreground">· missed (tap if taken)</span>
+                </button>
+              </li>
+            ))}
             {extraMeds.map((e) => (
               <li key={e.id} className="flex items-start gap-2">
                 <button onClick={() => onEdit?.("meds", e)} className="flex-1 text-left">• {e.time} — {e.name}{e.dose ? ` (${e.dose})` : ""}{e.note ? ` — ${e.note}` : ""}</button>
@@ -274,7 +288,7 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
         </Card>
       ) : null}
 
-      {(log?.period || log?.periodInfo?.level) && (
+      {!isMale && (log?.period || log?.periodInfo?.level) && (
         <Card title="Blueberry 🫐" icon="🫐">
           <button onClick={() => onEdit?.("period", undefined)} className="w-full text-left">
             <p className="text-sm">Flow: {periodLabel(log?.periodInfo?.level ?? log?.period)}</p>
