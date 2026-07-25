@@ -325,8 +325,8 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
   // Panic (full inline log — under Tetany)
   const [panic, setPanic] = useState(false);
   const [panicTime, setPanicTime] = useState(nowHHMM());
-  const [panicIntensity, setPanicIntensity] = useState(5);
-  const [panicMinutes, setPanicMinutes] = useState(10);
+  const [panicMinutes, setPanicMinutes] = useState("10");
+  const [panicOngoing, setPanicOngoing] = useState(false);
   const [panicPhysical, setPanicPhysical] = useState<string[]>([]);
   const [panicCognitive, setPanicCognitive] = useState<string[]>([]);
   const [panicTrigger, setPanicTrigger] = useState("");
