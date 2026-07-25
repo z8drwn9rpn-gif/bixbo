@@ -42,7 +42,7 @@ const CATEGORIES: { id: Category; label: string; emoji: string; hint: string }[]
 ];
 
 export function LogSheet({
-  open, onOpenChange, date, data, update, initial,
+  open, onOpenChange, date, data, update, initial, initialPain,
 }: {
   open: boolean;
   onOpenChange: (b: boolean) => void;
@@ -50,6 +50,7 @@ export function LogSheet({
   data: BixboData;
   update: UpdateFn;
   initial?: Category;
+  initialPain?: PainEntry;
 }) {
   const [cat, setCat] = useState<Category | null>(initial ?? null);
   const close = () => { setCat(null); onOpenChange(false); };
@@ -61,15 +62,20 @@ export function LogSheet({
       <SheetContent
         side="bottom"
         className={
-          active
+          (active
             ? "flex h-[100dvh] max-h-[100dvh] flex-col rounded-t-none bg-background p-0"
-            : "flex h-[88vh] max-h-[88vh] flex-col rounded-t-3xl bg-background p-0"
+            : "flex h-[88vh] max-h-[88vh] flex-col rounded-t-3xl bg-background p-0") +
+          " [&>button.absolute]:hidden"
         }
       >
         {!active ? (
           <>
-            <SheetHeader className="shrink-0 px-5 pt-5 pb-2">
+            <SheetHeader className="shrink-0 relative px-5 pt-5 pb-2">
               <SheetTitle className="text-center font-serif text-2xl">Log</SheetTitle>
+              <button onClick={close} aria-label="Close"
+                className="absolute right-4 top-4 rounded-full p-1 hover:bg-tint">
+                <X className="h-5 w-5" />
+              </button>
             </SheetHeader>
             <ul className="min-h-0 flex-1 overflow-y-auto divide-y divide-border border-t border-border">
               {CATEGORIES.map((c) => (
@@ -94,10 +100,12 @@ export function LogSheet({
                 <ChevronLeft className="h-4 w-4" /> Back to Log
               </button>
               <SheetTitle className="font-serif text-lg">{CATEGORIES.find((c) => c.id === active)?.label}</SheetTitle>
-              <button onClick={close} aria-label="Close"><X className="h-5 w-5" /></button>
+              <button onClick={close} aria-label="Close" className="rounded-full p-1 hover:bg-tint">
+                <X className="h-5 w-5" />
+              </button>
             </SheetHeader>
             <div className={`min-h-0 flex-1 overflow-y-auto ${active === "pain" ? "" : "px-5 py-4"}`}>
-              {active === "pain"    && <PainWizard    date={date} data={data} update={update} onDone={close} />}
+              {active === "pain"    && <PainWizard    date={date} data={data} update={update} onDone={close} initialEntry={initialPain} />}
               {active === "panic"   && <PanicForm     date={date} data={data} update={update} onDone={close} />}
               {active === "period"  && <PeriodForm    date={date} data={data} update={update} onDone={close} />}
               {active === "sex"     && <SexForm       date={date} data={data} update={update} onDone={close} />}
