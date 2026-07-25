@@ -269,7 +269,7 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
           <ul className="space-y-2">
             {log.panic.map((p) => (
               <li key={p.id} className="flex items-start gap-2">
-                <div className="flex-1">
+                <button onClick={() => onEdit?.("panic", p)} className="flex-1 text-left">
                   <p className="text-sm font-medium">{p.time} · intensity {p.intensity}/10 · {p.minutes} min</p>
                   {p.trigger && <p className="text-xs text-muted-foreground">Trigger: {p.trigger}</p>}
                   {p.physical.length > 0 && <p className="text-xs">Physical: {p.physical.join(", ")}</p>}
@@ -277,7 +277,8 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
                   <p className="text-[11px] text-muted-foreground">Hyperventilation: {p.hyperventilation}{p.tetanyPresent ? " · tetany present" : ""}</p>
                   {p.helped.length > 0 && <p className="text-[11px] text-muted-foreground">Helped: {p.helped.join(", ")}</p>}
                   {p.note && <p className="mt-1 text-sm">"{p.note}"</p>}
-                </div>
+                  <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
+                </button>
                 <DeleteBtn onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], panic: (d.dayLogs[date]?.panic ?? []).filter((x) => x.id !== p.id) } } }))} />
               </li>
             ))}
@@ -300,9 +301,12 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
 
       {(log?.period || log?.periodInfo?.level) && (
         <Card title="Blueberry 🫐" icon="🫐">
-          <p className="text-sm">Flow: {periodLabel(log?.periodInfo?.level ?? log?.period)}</p>
-          {log?.periodInfo?.discharge && <p className="text-xs text-muted-foreground">Discharge: {log.periodInfo.discharge}{log.periodInfo.dischargeNote ? ` — ${log.periodInfo.dischargeNote}` : ""}</p>}
-          {log?.periodInfo?.note && <p className="mt-1 text-sm">"{log.periodInfo.note}"</p>}
+          <button onClick={() => onEdit?.("period", undefined)} className="w-full text-left">
+            <p className="text-sm">Flow: {periodLabel(log?.periodInfo?.level ?? log?.period)}</p>
+            {log?.periodInfo?.discharge && <p className="text-xs text-muted-foreground">Discharge: {log.periodInfo.discharge}{log.periodInfo.dischargeNote ? ` — ${log.periodInfo.dischargeNote}` : ""}</p>}
+            {log?.periodInfo?.note && <p className="mt-1 text-sm">"{log.periodInfo.note}"</p>}
+            <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
+          </button>
         </Card>
       )}
 
@@ -311,7 +315,7 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
           <ul className="space-y-1 text-sm">
             {log.sex.map((s: SexEntry) => (
               <li key={s.id} className="flex items-start gap-2">
-                <span className="flex-1">{s.time} · {String(s.kind).replace(/_/g, " ")}{s.feelingAfter ? ` · ${s.feelingAfter}` : ""}{s.painful && s.painful !== "no" ? ` · painful ${s.painful}` : ""}{s.note ? ` — ${s.note}` : ""}</span>
+                <button onClick={() => onEdit?.("sex", s)} className="flex-1 text-left">{s.time} · {String(s.kind).replace(/_/g, " ")}{s.feelingAfter ? ` · ${s.feelingAfter}` : ""}{s.painful && s.painful !== "no" ? ` · painful ${s.painful}` : ""}{s.note ? ` — ${s.note}` : ""}</button>
                 <DeleteBtn onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], sex: (d.dayLogs[date]?.sex ?? []).filter((x) => x.id !== s.id) } } }))} />
               </li>
             ))}
@@ -324,7 +328,7 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
           <ul className="space-y-1 text-sm">
             {log.heat.map((h) => (
               <li key={h.id} className="flex items-start gap-2">
-                <span className="flex-1">{h.kind === "heat" ? "🔥" : h.kind === "cold" ? "🧊" : "⚡"} {h.start} · {h.minutes} min{h.note ? ` — ${h.note}` : ""}</span>
+                <button onClick={() => onEdit?.("heat", h)} className="flex-1 text-left">{h.kind === "heat" ? "🔥" : h.kind === "cold" ? "🧊" : "⚡"} {h.start} · {h.minutes} min{h.note ? ` — ${h.note}` : ""}</button>
                 <DeleteBtn onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], heat: (d.dayLogs[date]?.heat ?? []).filter((x) => x.id !== h.id) } } }))} />
               </li>
             ))}
@@ -337,7 +341,7 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
           <ul className="space-y-1 text-sm">
             {log.food.map((f) => (
               <li key={f.id} className="flex items-start gap-2">
-                <span className="flex-1">{f.time} · {f.what}{f.feelings.length ? ` — ${f.feelings.join(", ")}` : ""}{f.hydrationMl != null ? ` · 💧 ${f.hydrationMl}ml` : ""}{f.caffeineMg != null ? ` · ☕ ${f.caffeineMg}mg` : ""}{f.alcoholDrinks != null ? ` · 🍷 ${f.alcoholDrinks}` : ""}</span>
+                <button onClick={() => onEdit?.("food", f)} className="flex-1 text-left">{f.time} · {f.what}{f.feelings.length ? ` — ${f.feelings.join(", ")}` : ""}{f.hydrationMl != null ? ` · 💧 ${f.hydrationMl}ml` : ""}{f.caffeineMg != null ? ` · ☕ ${f.caffeineMg}mg` : ""}{f.alcoholDrinks != null ? ` · 🍷 ${f.alcoholDrinks}` : ""}</button>
                 <DeleteBtn onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], food: (d.dayLogs[date]?.food ?? []).filter((x) => x.id !== f.id) } } }))} />
               </li>
             ))}
@@ -352,7 +356,7 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
               const bristol = b.bristol === 0 ? null : BRISTOL.find((x) => x.n === b.bristol);
               return (
                 <li key={b.id} className="flex items-start gap-2">
-                  <span className="flex-1">{b.time} · {bristol ? `Type ${bristol.n} — ${bristol.sub}` : "No bowel movement"}{b.note ? ` — ${b.note}` : ""}</span>
+                  <button onClick={() => onEdit?.("bowel", b)} className="flex-1 text-left">{b.time} · {bristol ? `Type ${bristol.n} — ${bristol.sub}` : "No bowel movement"}{b.feelings?.length ? ` · ${b.feelings.join(", ")}` : ""}{b.symptoms?.length ? ` · ${b.symptoms.join(", ")}` : ""}{b.note ? ` — ${b.note}` : ""}</button>
                   <DeleteBtn onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], bowel: (d.dayLogs[date]?.bowel ?? []).filter((x) => x.id !== b.id) } } }))} />
                 </li>
               );
@@ -366,7 +370,7 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
           <ul className="space-y-1 text-sm">
             {log.workout.map((w) => (
               <li key={w.id} className="flex items-start gap-2">
-                <span className="flex-1">{w.time} · {w.kind} · {w.minutes} min{w.feeling ? ` — ${w.feeling}` : ""}{w.note ? ` — ${w.note}` : ""}</span>
+                <button onClick={() => onEdit?.("workout", w)} className="flex-1 text-left">{w.time} · {w.kind} · {w.minutes} min{w.feeling ? ` — ${w.feeling}` : ""}{w.note ? ` — ${w.note}` : ""}</button>
                 <DeleteBtn onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], workout: (d.dayLogs[date]?.workout ?? []).filter((x) => x.id !== w.id) } } }))} />
               </li>
             ))}
