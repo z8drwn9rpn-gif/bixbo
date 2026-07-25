@@ -185,8 +185,8 @@ function TodayBadges({ log, onQuick }: { log?: DayLog; onQuick: (cat: string) =>
 }
 
 /* ------------------- Day preview ------------------- */
-function DayPreview({ date, data, update, onEditPain }:
-  { date: string; data: BixboData; update: (u: (d: BixboData) => BixboData) => void; onEditPain?: (p: import("@/lib/storage").PainEntry) => void }) {
+function DayPreview({ date, data, update, onEditPain, onEdit }:
+  { date: string; data: BixboData; update: (u: (d: BixboData) => BixboData) => void; onEditPain?: (p: import("@/lib/storage").PainEntry) => void; onEdit?: (cat: string, entry: unknown) => void }) {
   const log = data.dayLogs[date];
   const rawNotes = data.dayNotes[date] ?? [];
   const notes: { text: string; time?: string }[] = (rawNotes as (string | { text: string; time?: string })[])
