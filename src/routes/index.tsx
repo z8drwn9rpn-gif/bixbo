@@ -36,6 +36,7 @@ function HomePage() {
   const [selected, setSelected] = useState<string>(todayKey());
   const [logOpen, setLogOpen] = useState(false);
   const [quickCat, setQuickCat] = useState<string | undefined>();
+  const [editPain, setEditPain] = useState<import("@/lib/storage").PainEntry | undefined>();
 
   // Meds reminders + period notification
   useEffect(() => {
