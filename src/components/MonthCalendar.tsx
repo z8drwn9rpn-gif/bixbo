@@ -1,5 +1,6 @@
+import { useRef } from "react";
 import {
-  toKey, hasAnyLog, painColor, isDateInRange, predictPeriods,
+  toKey, hasAnyLog, painColor, isDateInRange, predictPeriods, avgDayPain,
   type BixboData, type DayLog,
 } from "@/lib/storage";
 
@@ -19,27 +20,26 @@ function periodColorVar(level?: string) {
     default: return null;
   }
 }
-function maxPain(log?: DayLog): number | undefined {
-  if (!log?.pain?.length) return undefined;
-  return log.pain.reduce((m, p) => Math.max(m, p.score), 0);
-}
 function iconsFor(log: DayLog | undefined, hasMed: boolean): string[] {
   const out: string[] = [];
   if (hasMed) out.push("💊");
-  if (log?.bowel?.length) out.push("💩");
-  if (log?.sex?.length) out.push("❤️");
+  if (log?.bowel?.some((b) => b.bristol > 0)) out.push("💩");
+  // ❤️ only for actual sex (not fingering/oral/suck_dick)
+  if (log?.sex?.some((s) => s.kind === "sex")) out.push("❤️");
   if (log?.heat?.length) out.push("🔥");
   if (log?.workout?.length) out.push("🧘🏼‍♀️");
+  if (log?.panic?.length) out.push("⚡");
   return out;
 }
 
 export function MonthCalendar({
-  month, data, selected, onSelect,
+  month, data, selected, onSelect, onSwipeMonth,
 }: {
   month: Date;
   data: BixboData;
   selected: string;
   onSelect: (k: string) => void;
+  onSwipeMonth?: (delta: -1 | 1) => void;
 }) {
   const y = month.getFullYear();
   const m = month.getMonth();
@@ -68,8 +68,18 @@ export function MonthCalendar({
     return isDateInRange(k, c.lastPeriodStart, c.lastPeriodEnd);
   };
 
+  // Swipe
+  const touchStartX = useRef<number | null>(null);
+  const onTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current == null || !onSwipeMonth) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(dx) > 60) onSwipeMonth(dx > 0 ? -1 : 1);
+    touchStartX.current = null;
+  };
+
   return (
-    <div className="px-3">
+    <div className="px-3" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       <div className="grid grid-cols-7 gap-1 pb-2 text-center text-[11px] font-semibold text-muted-foreground">
         {WEEKDAYS.map((d) => <div key={d}>{d}</div>)}
       </div>
@@ -81,7 +91,7 @@ export function MonthCalendar({
           const hasMed = Object.values(takenToday).some(Boolean) || !!log?.extraMeds?.length;
           const periodLevel = log?.periodInfo?.level ?? log?.period;
           const periodColor = periodColorVar(periodLevel) ?? (isActualPeriod(key) ? "var(--period-medium)" : null);
-          const pMax = maxPain(log);
+          const pAvg = avgDayPain(log);
           const isToday = key === todayK;
           const isSel = key === selected;
           const predictedOrange = isPredicted(key);
@@ -91,7 +101,7 @@ export function MonthCalendar({
           const dayTasks = data.tasks.filter((t) => isDateInRange(key, t.startDate, t.endDate));
           const bars = [
             ...dayEvents.map((e) => ({ title: e.title, color: e.color ?? "var(--primary)", done: false })),
-            ...dayTasks.map((t) => ({ title: t.title, color: "var(--pain-4)", done: t.done })),
+            ...dayTasks.map((t) => ({ title: t.title, color: "#f472b6", done: t.done })),
           ].slice(0, 2);
           const extraBars = dayEvents.length + dayTasks.length - bars.length;
           const marked = hasAnyLog(log);
@@ -105,11 +115,11 @@ export function MonthCalendar({
               } ${isSel ? "ring-2 ring-primary" : ""}`}
             >
               <div className="relative flex aspect-square items-center justify-center pt-0.5">
-                {pMax != null && (
+                {pAvg != null && (
                   <span
                     aria-hidden
                     className="pointer-events-none absolute inset-1.5 rounded-full"
-                    style={{ boxShadow: `0 0 0 4px ${painColor(pMax)}` }}
+                    style={{ boxShadow: `0 0 0 4px ${painColor(pAvg)}` }}
                   />
                 )}
                 {predictedOrange && (
