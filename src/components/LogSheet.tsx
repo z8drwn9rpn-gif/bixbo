@@ -894,7 +894,7 @@ function SexForm({ date, data, update, onDone, initialEntry }:
       </Field>
       <Field label="How I feel after">
         <div className="mt-2 flex flex-wrap gap-2">
-          {["😊 Great","🙂 Good","😐 Meh","😞 Down","🤕 Sore","😴 Sleepy"].map((f) =>
+          {["😊 Great","🥰 Loved","🤩 Amazing","😌 Relaxed","🙂 Good","😐 Meh","😞 Down","😢 Sad","😤 Frustrated","🤕 Sore","😴 Sleepy","💦 Sweaty","🥵 Hot","🥶 Cold","😵‍💫 Dizzy","🤢 Nauseous","💪 Energized","🫠 Drained"].map((f) =>
             <Chip key={f} active={feelingAfter.includes(f)} onClick={() => setFeelingAfter((a) => toggleIn(a, f))}>{f}</Chip>)}
         </div>
       </Field>
