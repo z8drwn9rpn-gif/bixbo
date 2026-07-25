@@ -62,12 +62,12 @@
 :root {
   --radius: 1rem;
 
-  /* Green — multiple shades */
-  --background: oklch(0.985 0.02 115);
-  --foreground: oklch(0.22 0.04 115);
-  --surface: oklch(1 0 0);
-  --surface-elevated: oklch(0.97 0.03 115);
-  --tint: oklch(0.94 0.05 115);
+  /* Olive — richer green-tan shades */
+  --background: oklch(0.955 0.055 110);
+  --foreground: oklch(0.22 0.05 115);
+  --surface: oklch(0.985 0.03 110);
+  --surface-elevated: oklch(0.94 0.07 110);
+  --tint: oklch(0.88 0.09 110);
 
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.22 0.04 115);
