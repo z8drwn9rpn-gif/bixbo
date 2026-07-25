@@ -155,34 +155,6 @@ function MedsProgress({ data }: { data: BixboData }) {
   );
 }
 
-function TodayBadges({ log, onQuick }: { log?: DayLog; onQuick: (cat: string) => void }) {
-  const items: { key: string; cat: string; label: string; icon: React.ReactNode; color: string; count: number }[] = [
-    { key: "meds",   cat: "meds",   label: "Meds",    icon: <Pill className="h-4 w-4" />,      color: "#3b82f6", count: (log?.extraMeds?.length ?? 0) },
-    { key: "pain",   cat: "pain",   label: "Symptoms",icon: <Heart className="h-4 w-4" />,     color: "#ef4444", count: (log?.pain?.length ?? 0) },
-    { key: "cycle",  cat: "period", label: "Cycle",   icon: <Droplets className="h-4 w-4" />,  color: "#ec4899", count: (log?.period || log?.periodInfo?.level) ? 1 : 0 },
-    { key: "food",   cat: "food",   label: "Food",    icon: <Utensils className="h-4 w-4" />,  color: "#f97316", count: (log?.food?.length ?? 0) },
-    { key: "panic",  cat: "panic",  label: "Panic",   icon: <Zap className="h-4 w-4" />,       color: "#a855f7", count: (log?.panic?.length ?? 0) },
-  ];
-  return (
-    <div className="mt-3 -mx-1 flex gap-2 overflow-x-auto px-5 pb-1">
-      {items.map((it) => (
-        <button key={it.key} onClick={() => onQuick(it.cat)}
-          className="relative flex shrink-0 flex-col items-center gap-1">
-          <span className="relative grid h-11 w-11 place-items-center rounded-full text-white shadow-sm"
-                style={{ background: it.color, opacity: it.count > 0 ? 1 : 0.55 }}>
-            {it.icon}
-            {it.count > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 grid h-4 w-4 place-items-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
-                {it.count}
-              </span>
-            )}
-          </span>
-          <span className="text-[10px] text-muted-foreground">{it.label}</span>
-        </button>
-      ))}
-    </div>
-  );
-}
 
 /* ------------------- Day preview ------------------- */
 function DayPreview({ date, data, update, onEditPain, onEdit }:
