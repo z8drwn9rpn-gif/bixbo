@@ -160,18 +160,36 @@ function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave:
   );
 }
 function CustomChipList({
-  base, custom, onAddCustom, selected, onToggle,
+  base, custom, onAddCustom, onRemoveCustom, selected, onToggle,
 }: {
-  base: string[]; custom: string[]; onAddCustom: (v: string) => void;
+  base: string[]; custom: string[];
+  onAddCustom: (v: string) => void;
+  onRemoveCustom?: (v: string) => void;
   selected: string[]; onToggle: (v: string) => void;
 }) {
   const [adding, setAdding] = useState(false);
   const [text, setText] = useState("");
-  const all = [...base, ...custom];
   return (
     <div className="mt-2 flex flex-wrap gap-2">
-      {all.map((v) => (
+      {base.map((v) => (
         <Chip key={v} active={selected.includes(v)} onClick={() => onToggle(v)}>{v}</Chip>
+      ))}
+      {custom.map((v) => (
+        <span key={v} className="relative inline-flex items-center">
+          <Chip active={selected.includes(v)} onClick={() => onToggle(v)}>{v}</Chip>
+          {onRemoveCustom && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (confirm(`Remove "${v}" from your custom list?`)) onRemoveCustom(v);
+              }}
+              aria-label={`Remove ${v}`}
+              className="ml-1 grid h-5 w-5 place-items-center rounded-full bg-tint text-muted-foreground hover:bg-destructive/15 hover:text-destructive"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )}
+        </span>
       ))}
       {adding ? (
         <div className="flex items-center gap-1">
