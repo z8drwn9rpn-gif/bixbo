@@ -284,11 +284,19 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
   const [tetanyTriggers, setTetanyTriggers] = useState<string[]>([]);
   const [tetanyHelped, setTetanyHelped] = useState<string[]>([]);
   const [tetanyNote, setTetanyNote] = useState("");
-  // Panic (inline mini-log)
+  // Panic (full inline log — under Tetany)
   const [panic, setPanic] = useState(false);
+  const [panicTime, setPanicTime] = useState(nowHHMM());
   const [panicIntensity, setPanicIntensity] = useState(5);
   const [panicMinutes, setPanicMinutes] = useState(10);
+  const [panicPhysical, setPanicPhysical] = useState<string[]>([]);
+  const [panicCognitive, setPanicCognitive] = useState<string[]>([]);
   const [panicTrigger, setPanicTrigger] = useState("");
+  const [panicPlace, setPanicPlace] = useState("");
+  const [panicHyper, setPanicHyper] = useState<"no" | "before" | "during" | "unknown">("unknown");
+  const [panicTetany, setPanicTetany] = useState(false);
+  const [panicHelped, setPanicHelped] = useState<string[]>([]);
+  const [panicNote, setPanicNote] = useState("");
   const [bodyBattery, setBodyBattery] = useState<number | undefined>(initialEntry?.bodyBattery);
   const [stress, setStress] = useState<number | undefined>(initialEntry?.stress);
   const [mood, setMood] = useState<string[]>(initialEntry?.mood ?? []);
