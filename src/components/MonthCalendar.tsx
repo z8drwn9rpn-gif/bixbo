@@ -122,8 +122,8 @@ export function MonthCalendar({
                 {pAvg != null && (
                   <span
                     aria-hidden
-                    className="pointer-events-none absolute inset-1.5 rounded-full"
-                    style={{ boxShadow: `0 0 0 4px ${painColor(pAvg)}` }}
+                    className="pointer-events-none absolute inset-1 rounded-full"
+                    style={{ boxShadow: `0 0 0 6px ${painColor(pAvg)}` }}
                   />
                 )}
                 {predictedOrange && (
