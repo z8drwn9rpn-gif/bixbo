@@ -840,6 +840,24 @@ function FoodForm({ date, data, update, onDone, initialEntry }:
               {q.l}
             </button>
           ))}
+          {data.custom.foodQuickAdd.map((c) => (
+            <span key={c} className="relative inline-flex items-center">
+              <button type="button"
+                onClick={() => setWhat((w) => w ? `${w}, ${c}` : c)}
+                className="rounded-full bg-tint px-3 py-1.5 text-xs font-semibold ring-1 ring-border hover:bg-primary/10">
+                {c}
+              </button>
+              <button onClick={(e) => {
+                e.stopPropagation();
+                if (confirm(`Remove "${c}" from quick add?`))
+                  update((d) => ({ ...d, custom: { ...d.custom, foodQuickAdd: d.custom.foodQuickAdd.filter((x) => x !== c) } }));
+              }} aria-label={`Remove ${c}`}
+                className="ml-1 grid h-5 w-5 place-items-center rounded-full bg-tint text-muted-foreground hover:bg-destructive/15 hover:text-destructive">
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+          <AddCustomInline onAdd={(v) => update((d) => ({ ...d, custom: { ...d.custom, foodQuickAdd: [...d.custom.foodQuickAdd, v] } }))} />
         </div>
       </Field>
       <Field label="What did you eat?">
