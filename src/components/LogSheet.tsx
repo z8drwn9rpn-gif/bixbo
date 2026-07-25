@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
-import { X, Plus, ChevronLeft, ChevronUp, ChevronDown, GripVertical, Check } from "lucide-react";
+import { X, Plus, ChevronLeft, ChevronUp, ChevronDown, GripVertical, Check, Pencil } from "lucide-react";
 import {
   PAIN_DESCRIPTIONS, painColor, BODY_PARTS_DEFAULT, PAIN_QUALITY_DEFAULT, OTHER_SYMPTOMS_DEFAULT,
   FOOD_FEELINGS_DEFAULT, WORKOUT_KINDS_DEFAULT, BRISTOL, DISCHARGE_OPTS, MOODS_DEFAULT,
@@ -206,11 +206,12 @@ function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave:
   );
 }
 function CustomChipList({
-  base, custom, onAddCustom, onRemoveCustom, selected, onToggle,
+  base, custom, onAddCustom, onRemoveCustom, onRenameCustom, selected, onToggle,
 }: {
   base: string[]; custom: string[];
   onAddCustom: (v: string) => void;
   onRemoveCustom?: (v: string) => void;
+  onRenameCustom?: (oldV: string, newV: string) => void;
   selected: string[]; onToggle: (v: string) => void;
 }) {
   const [adding, setAdding] = useState(false);
@@ -223,6 +224,19 @@ function CustomChipList({
       {custom.map((v) => (
         <span key={v} className="relative inline-flex items-center">
           <Chip active={selected.includes(v)} onClick={() => onToggle(v)}>{v}</Chip>
+          {onRenameCustom && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                const next = prompt(`Rename "${v}" to:`, v);
+                if (next && next.trim() && next.trim() !== v) onRenameCustom(v, next.trim());
+              }}
+              aria-label={`Rename ${v}`}
+              className="ml-1 grid h-5 w-5 place-items-center rounded-full bg-tint text-muted-foreground hover:bg-primary/15 hover:text-primary"
+            >
+              <Pencil className="h-3 w-3" />
+            </button>
+          )}
           {onRemoveCustom && (
             <button
               onClick={(e) => {
