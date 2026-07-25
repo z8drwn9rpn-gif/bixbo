@@ -26,18 +26,18 @@ type Category =
   | "food" | "bowel" | "workout" | "temp" | "task" | "event" | "note";
 
 const CATEGORIES: { id: Category; label: string; emoji: string; hint: string }[] = [
-  { id: "meds",    label: "Meds",             emoji: "💊", hint: "Take dose / extra" },
-  { id: "pain",    label: "Pain",             emoji: "🩹", hint: "Wizard: scale → body → quality → symptoms" },
+  { id: "pain",    label: "Pain",             emoji: "🔥", hint: "0–10, body, quality" },
+  { id: "period",  label: "Blueberry 🫐",     emoji: "🫐", hint: "Flow · discharge · notes" },
+  { id: "heat",    label: "Heat / Cold",      emoji: "♨️", hint: "Heating or ice session" },
+  { id: "food",    label: "Food",             emoji: "🍽️", hint: "What & how you feel" },
+  { id: "bowel",   label: "Bowel",            emoji: "💩", hint: "Bristol type" },
+  { id: "sex",     label: "ŠukŠuk! ❤️",       emoji: "❤️", hint: "All kinds of activity" },
+  { id: "workout", label: "Workout",          emoji: "🧘🏼‍♀️", hint: "Type · duration · weight" },
+  { id: "temp",    label: "Temp & Sleep",     emoji: "🌡️", hint: "°C · kg · hours" },
+  { id: "meds",    label: "Meds",             emoji: "💊", hint: "Taken · extra dose" },
   { id: "panic",   label: "Panic attack",     emoji: "⚡", hint: "Trigger & symptoms" },
-  { id: "period",  label: "Blueberry",        emoji: "🫐", hint: "Flow, discharge, notes" },
-  { id: "sex",     label: "ŠukŠuk!",          emoji: "❤️", hint: "Sex / oral / fingering" },
-  { id: "heat",    label: "Heat / Cold / TENS", emoji: "🔥", hint: "Session type & duration" },
-  { id: "food",    label: "Food",             emoji: "🍽️", hint: "What & how you feel + drinks" },
-  { id: "bowel",   label: "Bowel",            emoji: "💩", hint: "Bristol scale" },
-  { id: "workout", label: "Workout",          emoji: "🧘🏼‍♀️", hint: "Type & duration" },
-  { id: "temp",    label: "Temp / Sleep / Weight", emoji: "🌡️", hint: "Body metrics" },
+  { id: "event",   label: "Event",            emoji: "📅", hint: "Multi-day · time · note" },
   { id: "task",    label: "Task",             emoji: "✅", hint: "To-do with date & time" },
-  { id: "event",   label: "Event",            emoji: "📅", hint: "Multi-day event bar" },
   { id: "note",    label: "Note",             emoji: "📝", hint: "Any thought for today" },
 ];
 
