@@ -226,7 +226,7 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
                   {p.mood?.length ? <p className="text-xs text-muted-foreground">Mood: {p.mood.join(", ")}</p> : null}
                   {p.stress != null && <p className="text-xs text-muted-foreground">Stress {p.stress}/10</p>}
                   {p.bodyBattery != null && <p className="text-xs text-muted-foreground">Battery {p.bodyBattery}/5</p>}
-                  {p.note && <p className="mt-1 text-sm">"{p.note}"</p>}
+                  {p.note && <p className="mt-1 text-sm whitespace-pre-line">"{p.note}"</p>}
                   <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
                 </button>
                 <DeleteBtn onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], pain: (d.dayLogs[date]?.pain ?? []).filter((x) => x.id !== p.id) } } }))} />
