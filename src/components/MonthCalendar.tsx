@@ -1,5 +1,7 @@
-import { Link } from "@tanstack/react-router";
-import { toKey, hasAnyLog, type BixboData, type DayLog } from "@/lib/storage";
+import {
+  toKey, hasAnyLog, painColor, isDateInRange, predictPeriods,
+  type BixboData, type DayLog,
+} from "@/lib/storage";
 
 const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 const MONTHS = [
@@ -9,44 +11,35 @@ const MONTHS = [
 
 function periodColorVar(level?: string) {
   switch (level) {
-    case "spotting": return "var(--period-spotting)";
-    case "light": return "var(--period-light)";
-    case "medium": return "var(--period-medium)";
-    case "heavy": return "var(--period-heavy)";
+    case "spotting":  return "var(--period-spotting)";
+    case "light":     return "var(--period-light)";
+    case "medium":    return "var(--period-medium)";
+    case "heavy":     return "var(--period-heavy)";
     case "veryheavy": return "var(--period-veryheavy)";
     default: return null;
   }
 }
-function painRingColor(pain?: number) {
-  if (pain == null) return "transparent";
-  if (pain <= 3) return "var(--pain-low)";
-  if (pain <= 6) return "var(--pain-mid)";
-  return "var(--pain-high)";
-}
-
 function maxPain(log?: DayLog): number | undefined {
   if (!log?.pain?.length) return undefined;
   return log.pain.reduce((m, p) => Math.max(m, p.score), 0);
 }
-
 function iconsFor(log: DayLog | undefined, hasMed: boolean): string[] {
   const out: string[] = [];
   if (hasMed) out.push("💊");
   if (log?.bowel?.length) out.push("💩");
-  if (log?.sex && log.sex.type !== "none") out.push("❤️");
+  if (log?.sex?.length) out.push("❤️");
   if (log?.heat?.length) out.push("🔥");
-  if (log?.temperature != null || log?.weight != null) out.push("🌡️");
+  if (log?.workout?.length) out.push("🧘🏼‍♀️");
   return out;
 }
 
 export function MonthCalendar({
-  month,
-  data,
-  interactive = true,
+  month, data, selected, onSelect,
 }: {
   month: Date;
   data: BixboData;
-  interactive?: boolean;
+  selected: string;
+  onSelect: (k: string) => void;
 }) {
   const y = month.getFullYear();
   const m = month.getMonth();
@@ -59,78 +52,112 @@ export function MonthCalendar({
   const cells: { date: Date; inMonth: boolean }[] = [];
   for (let i = 0; i < totalCells; i++) {
     const dayNum = i - startWeekday + 1;
-    if (dayNum < 1) {
-      cells.push({ date: new Date(y, m - 1, prevDays + dayNum), inMonth: false });
-    } else if (dayNum > daysInMonth) {
-      cells.push({ date: new Date(y, m + 1, dayNum - daysInMonth), inMonth: false });
-    } else {
-      cells.push({ date: new Date(y, m, dayNum), inMonth: true });
-    }
+    if (dayNum < 1) cells.push({ date: new Date(y, m - 1, prevDays + dayNum), inMonth: false });
+    else if (dayNum > daysInMonth) cells.push({ date: new Date(y, m + 1, dayNum - daysInMonth), inMonth: false });
+    else cells.push({ date: new Date(y, m, dayNum), inMonth: true });
   }
 
   const todayK = toKey(new Date());
+  const predicted = predictPeriods(data.cycle, cells[0].date, cells[cells.length - 1].date);
+  const isPredicted = (k: string) =>
+    predicted.some((p) => isDateInRange(k, p.start, p.end)) &&
+    !(data.dayLogs[k]?.period || data.dayLogs[k]?.periodInfo?.level);
+  const isActualPeriod = (k: string) => {
+    const c = data.cycle;
+    if (!c.lastPeriodStart || !c.lastPeriodEnd) return false;
+    return isDateInRange(k, c.lastPeriodStart, c.lastPeriodEnd);
+  };
 
   return (
     <div className="px-3">
-      <div className="grid grid-cols-7 gap-1 pb-2 text-center text-[11px] font-medium text-muted-foreground">
+      <div className="grid grid-cols-7 gap-1 pb-2 text-center text-[11px] font-semibold text-muted-foreground">
         {WEEKDAYS.map((d) => <div key={d}>{d}</div>)}
       </div>
       <div className="grid grid-cols-7 gap-1">
         {cells.map(({ date, inMonth }, i) => {
           const key = toKey(date);
           const log = data.dayLogs[key];
-          const hasNote = (data.dayNotes[key]?.length ?? 0) > 0;
-          const hasTodo = (data.todos[key]?.length ?? 0) > 0;
           const takenToday = data.medLog[key] ?? {};
-          const hasMed = Object.values(takenToday).some(Boolean) || !!(log?.extraMeds?.length);
-          const periodColor = periodColorVar(log?.period);
+          const hasMed = Object.values(takenToday).some(Boolean) || !!log?.extraMeds?.length;
+          const periodLevel = log?.periodInfo?.level ?? log?.period;
+          const periodColor = periodColorVar(periodLevel) ?? (isActualPeriod(key) ? "var(--period-medium)" : null);
           const pMax = maxPain(log);
-          const ringColor = painRingColor(pMax);
           const isToday = key === todayK;
+          const isSel = key === selected;
+          const predictedOrange = isPredicted(key);
           const icons = iconsFor(log, hasMed);
-          const marked = hasAnyLog(log) || hasNote || hasTodo || hasMed;
 
-          const inner = (
-            <div className={`flex aspect-square items-center justify-center ${inMonth ? "" : "opacity-30"}`}>
-              <div className="relative flex h-11 w-11 items-center justify-center">
-                {/* Outer pain ring — thick, sits OUTSIDE the period fill so it stays visible */}
+          const dayEvents = data.events.filter((e) => isDateInRange(key, e.startDate, e.endDate));
+          const dayTasks = data.tasks.filter((t) => isDateInRange(key, t.startDate, t.endDate));
+          const bars = [
+            ...dayEvents.map((e) => ({ title: e.title, color: e.color ?? "var(--primary)", done: false })),
+            ...dayTasks.map((t) => ({ title: t.title, color: "var(--pain-4)", done: t.done })),
+          ].slice(0, 2);
+          const extraBars = dayEvents.length + dayTasks.length - bars.length;
+          const marked = hasAnyLog(log);
+
+          return (
+            <button
+              key={i}
+              onClick={() => onSelect(key)}
+              className={`flex flex-col items-stretch overflow-hidden rounded-xl text-left transition ${
+                inMonth ? "" : "opacity-30"
+              } ${isSel ? "ring-2 ring-primary" : ""}`}
+            >
+              <div className="relative flex aspect-square items-center justify-center pt-0.5">
                 {pMax != null && (
                   <span
                     aria-hidden
-                    className="pointer-events-none absolute inset-0 rounded-full"
-                    style={{ boxShadow: `0 0 0 3.5px ${ringColor}` }}
+                    className="pointer-events-none absolute inset-1.5 rounded-full"
+                    style={{ boxShadow: `0 0 0 4px ${painColor(pMax)}` }}
+                  />
+                )}
+                {predictedOrange && (
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute inset-2 rounded-full"
+                    style={{ boxShadow: `0 0 0 2.5px var(--predicted)` }}
                   />
                 )}
                 <div
                   className="relative flex h-9 w-9 items-center justify-center rounded-full"
                   style={{
-                    background: periodColor ?? "transparent",
-                    border: isToday && !periodColor ? "1.5px dashed var(--primary)" : undefined,
+                    background: isToday ? "var(--today)" : (periodColor ?? "transparent"),
                   }}
                 >
-                  <span className={`text-sm ${periodColor ? "font-semibold text-white" : "text-foreground"}`}>
+                  <span className={`text-sm ${
+                    isToday ? "font-bold text-foreground" :
+                    periodColor ? "font-semibold text-white" : "text-foreground"
+                  }`}>
                     {date.getDate()}
                   </span>
                 </div>
-                {icons.length > 0 ? (
-                  <span className="absolute -bottom-2 flex gap-0.5 text-[9px] leading-none">
+                {icons.length > 0 && (
+                  <span className="absolute bottom-0 flex gap-0.5 text-[9px] leading-none">
                     {icons.slice(0, 3).map((ic, idx) => <span key={idx}>{ic}</span>)}
                   </span>
-                ) : marked ? (
-                  <span className="absolute -bottom-1 flex gap-0.5">
-                    {hasNote && <span className="h-1 w-1 rounded-full bg-primary" />}
-                    {hasTodo && <span className="h-1 w-1 rounded-full bg-foreground/60" />}
-                  </span>
-                ) : null}
+                )}
+                {icons.length === 0 && marked && (
+                  <span className="absolute bottom-1 h-1 w-1 rounded-full bg-primary/70" />
+                )}
               </div>
-            </div>
-          );
-
-          if (!interactive) return <div key={i}>{inner}</div>;
-          return (
-            <Link key={i} to="/day/$date" params={{ date: key }} className="block">
-              {inner}
-            </Link>
+              {bars.length > 0 && (
+                <div className="flex flex-col gap-0.5 px-0.5 pb-0.5">
+                  {bars.map((b, bi) => (
+                    <span
+                      key={bi}
+                      className={`truncate rounded-sm px-1 text-[8px] leading-tight text-white ${b.done ? "opacity-50 line-through" : ""}`}
+                      style={{ background: b.color }}
+                    >
+                      {b.title}
+                    </span>
+                  ))}
+                  {extraBars > 0 && (
+                    <span className="text-[8px] text-muted-foreground">+{extraBars}</span>
+                  )}
+                </div>
+              )}
+            </button>
           );
         })}
       </div>
