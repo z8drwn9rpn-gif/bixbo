@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { MonthCalendar, monthLabel } from "@/components/MonthCalendar";
 import { LogSheet } from "@/components/LogSheet";
 import {
-  useBixbo, EMPTY, toKey, fromKey, todayKey, PAIN_DESCRIPTIONS, painColor, BRISTOL, nextPredictedPeriod, daysBetween,
+  useBixbo, EMPTY, toKey, fromKey, todayKey, PAIN_DESCRIPTIONS, painColor, BRISTOL, nextPredictedPeriod, daysBetween, asArr,
   type BixboData, type PeriodLevel, type BowelEntry, type SexEntry,
 } from "@/lib/storage";
 
@@ -287,7 +287,7 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
           <ul className="space-y-1 text-sm">
             {log.sex.map((s: SexEntry) => (
               <li key={s.id} className="flex items-start gap-2">
-                <button onClick={() => onEdit?.("sex", s)} className="flex-1 text-left">{s.time} · {String(s.kind).replace(/_/g, " ")}{s.feelingAfter ? ` · ${s.feelingAfter}` : ""}{s.painful && s.painful !== "no" ? ` · painful ${s.painful}` : ""}{s.note ? ` — ${s.note}` : ""}</button>
+                <button onClick={() => onEdit?.("sex", s)} className="flex-1 text-left">{s.time} · {String(s.kind).replace(/_/g, " ")}{asArr(s.feelingAfter).length ? ` · ${asArr(s.feelingAfter).join(", ")}` : ""}{s.painful && s.painful !== "no" ? ` · painful ${s.painful}` : ""}{s.note ? ` — ${s.note}` : ""}</button>
                 <DeleteBtn onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], sex: (d.dayLogs[date]?.sex ?? []).filter((x) => x.id !== s.id) } } }))} />
               </li>
             ))}
@@ -342,7 +342,7 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
           <ul className="space-y-1 text-sm">
             {log.workout.map((w) => (
               <li key={w.id} className="flex items-start gap-2">
-                <button onClick={() => onEdit?.("workout", w)} className="flex-1 text-left">{w.time} · {w.kind} · {w.minutes} min{w.feeling ? ` — ${w.feeling}` : ""}{w.note ? ` — ${w.note}` : ""}</button>
+                <button onClick={() => onEdit?.("workout", w)} className="flex-1 text-left">{w.time} · {w.kind} · {w.minutes} min{asArr(w.feeling).length ? ` — ${asArr(w.feeling).join(", ")}` : ""}{w.note ? ` — ${w.note}` : ""}</button>
                 <DeleteBtn onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], workout: (d.dayLogs[date]?.workout ?? []).filter((x) => x.id !== w.id) } } }))} />
               </li>
             ))}
@@ -355,8 +355,8 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
           <button onClick={() => onEdit?.("temp", undefined)} className="w-full text-left">
             {log?.temperature != null && <p className="text-sm">Temperature: {log.temperature}°C</p>}
             {log?.weight != null && <p className="text-sm">Weight: {log.weight} kg</p>}
-            {log?.sleepHours != null && <p className="text-sm">Sleep: {log.sleepHours} h {log.sleepQuality ?? ""}</p>}
-            {log?.sleepQuality && log?.sleepHours == null && <p className="text-sm">Sleep quality: {log.sleepQuality}</p>}
+            {log?.sleepHours != null && <p className="text-sm">Sleep: {log.sleepHours} h {asArr(log.sleepQuality).join(", ")}</p>}
+            {asArr(log?.sleepQuality).length > 0 && log?.sleepHours == null && <p className="text-sm">Sleep quality: {asArr(log.sleepQuality).join(", ")}</p>}
             <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
           </button>
         </Card>
@@ -461,7 +461,7 @@ function ShareDayButton({ date, view }: { date: string; view: BixboData }) {
       lines.push("");
     }
     if (log.periodInfo?.level || log.period) lines.push(`🫐 Period: ${periodLabel(log.periodInfo?.level ?? log.period!)}`);
-    if (log.sleepHours != null) lines.push(`😴 Sleep: ${log.sleepHours}h ${log.sleepQuality ?? ""}`);
+    if (log.sleepHours != null) lines.push(`😴 Sleep: ${log.sleepHours}h ${asArr(log.sleepQuality).join(", ")}`);
     if (log.temperature != null) lines.push(`🌡️ Temp: ${log.temperature}°C`);
     if (log.weight != null) lines.push(`⚖️ Weight: ${log.weight}kg`);
     if (log.food?.length) lines.push(`🍽️ Food: ${log.food.length} entries`);

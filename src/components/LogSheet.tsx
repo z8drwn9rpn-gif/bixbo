@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
-import { X, Plus, ChevronLeft, ChevronUp, ChevronDown, GripVertical, Check } from "lucide-react";
+import { X, Plus, ChevronLeft, ChevronUp, ChevronDown, GripVertical, Check, Pencil } from "lucide-react";
 import {
   PAIN_DESCRIPTIONS, painColor, BODY_PARTS_DEFAULT, PAIN_QUALITY_DEFAULT, OTHER_SYMPTOMS_DEFAULT,
   FOOD_FEELINGS_DEFAULT, WORKOUT_KINDS_DEFAULT, BRISTOL, DISCHARGE_OPTS, MOODS_DEFAULT,
@@ -14,7 +14,7 @@ import {
   PANIC_PHYSICAL, PANIC_COGNITIVE, PANIC_HELPED_DEFAULT, SEX_TYPES_DEFAULT,
   BODY_BATTERY, SLEEP_QUALITY, EVENT_COLORS,
   BOWEL_FEELINGS_DEFAULT, BOWEL_SYMPTOMS_DEFAULT,
-  todayKey, nowHHMM, updateDayLog,
+  todayKey, nowHHMM, updateDayLog, asArr,
   type BixboData, type DayLog, type PainEntry, type PeriodLevel, type FoodEntry,
   type BowelEntry, type ThermoSession, type ThermoKind, type SexEntry, type SexKind,
   type ExtraMed, type WorkoutEntry, type EventEntry, type TaskEntry,
@@ -206,11 +206,12 @@ function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave:
   );
 }
 function CustomChipList({
-  base, custom, onAddCustom, onRemoveCustom, selected, onToggle,
+  base, custom, onAddCustom, onRemoveCustom, onRenameCustom, selected, onToggle,
 }: {
   base: string[]; custom: string[];
   onAddCustom: (v: string) => void;
   onRemoveCustom?: (v: string) => void;
+  onRenameCustom?: (oldV: string, newV: string) => void;
   selected: string[]; onToggle: (v: string) => void;
 }) {
   const [adding, setAdding] = useState(false);
@@ -223,6 +224,19 @@ function CustomChipList({
       {custom.map((v) => (
         <span key={v} className="relative inline-flex items-center">
           <Chip active={selected.includes(v)} onClick={() => onToggle(v)}>{v}</Chip>
+          {onRenameCustom && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                const next = prompt(`Rename "${v}" to:`, v);
+                if (next && next.trim() && next.trim() !== v) onRenameCustom(v, next.trim());
+              }}
+              aria-label={`Rename ${v}`}
+              className="ml-1 grid h-5 w-5 place-items-center rounded-full bg-tint text-muted-foreground hover:bg-primary/15 hover:text-primary"
+            >
+              <Pencil className="h-3 w-3" />
+            </button>
+          )}
           {onRemoveCustom && (
             <button
               onClick={(e) => {
@@ -271,17 +285,23 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
   const [tetanyTriggers, setTetanyTriggers] = useState<string[]>([]);
   const [tetanyHelped, setTetanyHelped] = useState<string[]>([]);
   const [tetanyNote, setTetanyNote] = useState("");
+  // Panic (inline mini-log)
+  const [panic, setPanic] = useState(false);
+  const [panicIntensity, setPanicIntensity] = useState(5);
+  const [panicMinutes, setPanicMinutes] = useState(10);
+  const [panicTrigger, setPanicTrigger] = useState("");
   const [bodyBattery, setBodyBattery] = useState<number | undefined>(initialEntry?.bodyBattery);
   const [stress, setStress] = useState<number | undefined>(initialEntry?.stress);
   const [mood, setMood] = useState<string[]>(initialEntry?.mood ?? []);
 
-  const addCustom = (key: "bodyParts" | "quality" | "symptoms" | "moods" | "tetanyLocations" | "tetanyHelped", v: string) =>
+  type CKey = "bodyParts" | "quality" | "symptoms" | "moods"
+    | "tetanyTypes" | "tetanyLocations" | "tetanyTriggers" | "tetanyHelped";
+  const addCustom = (key: CKey, v: string) =>
     update((d) => ({ ...d, custom: { ...d.custom, [key]: [...d.custom[key], v] } }));
-  const removeCustom = (key: "bodyParts" | "quality" | "symptoms" | "moods" | "tetanyLocations" | "tetanyHelped", v: string) =>
-    update((d) => ({
-      ...d,
-      custom: { ...d.custom, [key]: d.custom[key].filter((x) => x !== v) },
-    }));
+  const removeCustom = (key: CKey, v: string) =>
+    update((d) => ({ ...d, custom: { ...d.custom, [key]: d.custom[key].filter((x) => x !== v) } }));
+  const renameCustom = (key: CKey, oldV: string, newV: string) =>
+    update((d) => ({ ...d, custom: { ...d.custom, [key]: d.custom[key].map((x) => x === oldV ? newV : x) } }));
 
   const save = () => {
     const editing = !!initialEntry;
@@ -305,6 +325,14 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
         note: tetanyNote.trim() || undefined,
       };
       updateDayLog(update, date, (l) => ({ ...l, tetany: [...(l.tetany ?? []), t] }));
+    }
+    if (panic) {
+      const pk: PanicAttack = {
+        id: crypto.randomUUID(), time: nowHHMM(), minutes: panicMinutes, intensity: panicIntensity,
+        physical: [], cognitive: [], trigger: panicTrigger.trim(),
+        hyperventilation: "unknown", tetanyPresent: false, helped: [],
+      };
+      updateDayLog(update, date, (l) => ({ ...l, panic: [...(l.panic ?? []), pk] }));
     }
     onDone();
   };
@@ -353,6 +381,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
           <CustomChipList base={BODY_PARTS_DEFAULT} custom={data.custom.bodyParts}
             onAddCustom={(v) => addCustom("bodyParts", v)}
             onRemoveCustom={(v) => { removeCustom("bodyParts", v); setParts((a) => a.filter((x) => x !== v)); }}
+            onRenameCustom={(o, n) => { renameCustom("bodyParts", o, n); setParts((a) => a.map((x) => x === o ? n : x)); }}
             selected={parts} onToggle={(v) => setParts((a) => toggleIn(a, v))} />
         </Field>
       )}
@@ -361,6 +390,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
           <CustomChipList base={PAIN_QUALITY_DEFAULT} custom={data.custom.quality}
             onAddCustom={(v) => addCustom("quality", v)}
             onRemoveCustom={(v) => { removeCustom("quality", v); setQuality((a) => a.filter((x) => x !== v)); }}
+            onRenameCustom={(o, n) => { renameCustom("quality", o, n); setQuality((a) => a.map((x) => x === o ? n : x)); }}
             selected={quality} onToggle={(v) => setQuality((a) => toggleIn(a, v))} />
         </Field>
       )}
@@ -370,6 +400,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
             <CustomChipList base={OTHER_SYMPTOMS_DEFAULT} custom={data.custom.symptoms}
               onAddCustom={(v) => addCustom("symptoms", v)}
               onRemoveCustom={(v) => { removeCustom("symptoms", v); setSymptoms((a) => a.filter((x) => x !== v)); }}
+              onRenameCustom={(o, n) => { renameCustom("symptoms", o, n); setSymptoms((a) => a.map((x) => x === o ? n : x)); }}
               selected={symptoms} onToggle={(v) => setSymptoms((a) => toggleIn(a, v))} />
           </Field>
           <Field label="Tetany episode?">
@@ -381,14 +412,17 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
           {tetany && (
             <div className="rounded-2xl border border-border p-3 space-y-3">
               <Field label="Type">
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {TETANY_TYPES.map((v) => <Chip key={v} active={tetanyTypes.includes(v)} onClick={() => setTetanyTypes((a) => toggleIn(a, v))}>{v}</Chip>)}
-                </div>
+                <CustomChipList base={TETANY_TYPES} custom={data.custom.tetanyTypes}
+                  onAddCustom={(v) => addCustom("tetanyTypes", v)}
+                  onRemoveCustom={(v) => { removeCustom("tetanyTypes", v); setTetanyTypes((a) => a.filter((x) => x !== v)); }}
+                  onRenameCustom={(o, n) => { renameCustom("tetanyTypes", o, n); setTetanyTypes((a) => a.map((x) => x === o ? n : x)); }}
+                  selected={tetanyTypes} onToggle={(v) => setTetanyTypes((a) => toggleIn(a, v))} />
               </Field>
               <Field label="Location">
                 <CustomChipList base={TETANY_LOCATIONS_DEFAULT} custom={data.custom.tetanyLocations}
                   onAddCustom={(v) => addCustom("tetanyLocations", v)}
                   onRemoveCustom={(v) => { removeCustom("tetanyLocations", v); setTetanyLoc((a) => a.filter((x) => x !== v)); }}
+                  onRenameCustom={(o, n) => { renameCustom("tetanyLocations", o, n); setTetanyLoc((a) => a.map((x) => x === o ? n : x)); }}
                   selected={tetanyLoc} onToggle={(v) => setTetanyLoc((a) => toggleIn(a, v))} />
               </Field>
               <div className="grid grid-cols-2 gap-2">
@@ -400,19 +434,44 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
                 </Field>
               </div>
               <Field label="Triggers">
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {TETANY_TRIGGERS.map((v) => <Chip key={v} active={tetanyTriggers.includes(v)} onClick={() => setTetanyTriggers((a) => toggleIn(a, v))}>{v}</Chip>)}
-                </div>
+                <CustomChipList base={TETANY_TRIGGERS} custom={data.custom.tetanyTriggers}
+                  onAddCustom={(v) => addCustom("tetanyTriggers", v)}
+                  onRemoveCustom={(v) => { removeCustom("tetanyTriggers", v); setTetanyTriggers((a) => a.filter((x) => x !== v)); }}
+                  onRenameCustom={(o, n) => { renameCustom("tetanyTriggers", o, n); setTetanyTriggers((a) => a.map((x) => x === o ? n : x)); }}
+                  selected={tetanyTriggers} onToggle={(v) => setTetanyTriggers((a) => toggleIn(a, v))} />
               </Field>
               <Field label="What helped">
                 <CustomChipList base={TETANY_HELPED_DEFAULT} custom={data.custom.tetanyHelped}
                   onAddCustom={(v) => addCustom("tetanyHelped", v)}
                   onRemoveCustom={(v) => { removeCustom("tetanyHelped", v); setTetanyHelped((a) => a.filter((x) => x !== v)); }}
+                  onRenameCustom={(o, n) => { renameCustom("tetanyHelped", o, n); setTetanyHelped((a) => a.map((x) => x === o ? n : x)); }}
                   selected={tetanyHelped} onToggle={(v) => setTetanyHelped((a) => toggleIn(a, v))} />
               </Field>
               <Field label="Note (optional)">
                 <Textarea rows={2} value={tetanyNote} onChange={(e) => setTetanyNote(e.target.value)} />
               </Field>
+            </div>
+          )}
+          <Field label="Panic attack?">
+            <div className="mt-1 flex gap-2">
+              <Chip active={!panic} onClick={() => setPanic(false)}>No</Chip>
+              <Chip active={panic} onClick={() => setPanic(true)}>Yes — log it</Chip>
+            </div>
+          </Field>
+          {panic && (
+            <div className="rounded-2xl border border-border p-3 space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <Field label={`Intensity ${panicIntensity}/10`}>
+                  <Slider value={[panicIntensity]} min={1} max={10} step={1} onValueChange={([v]) => setPanicIntensity(v)} />
+                </Field>
+                <Field label="Duration (min)">
+                  <Input type="number" min={1} value={panicMinutes} onChange={(e) => setPanicMinutes(Number(e.target.value))} />
+                </Field>
+              </div>
+              <Field label="Trigger (optional)">
+                <Input value={panicTrigger} onChange={(e) => setPanicTrigger(e.target.value)} placeholder="What set it off?" />
+              </Field>
+              <p className="text-[11px] text-muted-foreground">For full details use the Panic attack log entry.</p>
             </div>
           )}
         </div>
@@ -423,7 +482,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
           <Field label={`Stress ${stress ?? "-"} / 10`}>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {Array.from({ length: 11 }, (_, n) => {
-                const hue = 130 - n * 13; // green (130) -> red (0)
+                const hue = 130 - n * 13;
                 const bg = `hsl(${hue} 70% 50%)`;
                 const active = stress === n;
                 return (
@@ -455,6 +514,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
             <CustomChipList base={MOODS_DEFAULT} custom={data.custom.moods}
               onAddCustom={(v) => addCustom("moods", v)}
               onRemoveCustom={(v) => { removeCustom("moods", v); setMood((a) => a.filter((x) => x !== v)); }}
+              onRenameCustom={(o, n) => { renameCustom("moods", o, n); setMood((a) => a.map((x) => x === o ? n : x)); }}
               selected={mood} onToggle={(v) => setMood((a) => toggleIn(a, v))} />
           </Field>
           <Field label="Note (optional)">
@@ -462,6 +522,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
           </Field>
         </div>
       )}
+
 
       <SheetFooter className="mt-4 flex-row gap-2">
         {step > 0 && <Button variant="outline" onClick={() => setStep(step - 1)} className="flex-1">Back</Button>}
@@ -515,14 +576,18 @@ function PanicForm({ date, data, update, onDone, initialEntry }:
         <Slider value={[intensity]} min={1} max={10} step={1} onValueChange={([v]) => setIntensity(v)} />
       </Field>
       <Field label="Physical symptoms">
-        <div className="mt-2 flex flex-wrap gap-2">
-          {PANIC_PHYSICAL.map((v) => <Chip key={v} active={physical.includes(v)} onClick={() => setPhysical((a) => toggleIn(a, v))}>{v}</Chip>)}
-        </div>
+        <CustomChipList base={PANIC_PHYSICAL} custom={data.custom.panicPhysical}
+          onAddCustom={(v) => update((d) => ({ ...d, custom: { ...d.custom, panicPhysical: [...d.custom.panicPhysical, v] } }))}
+          onRemoveCustom={(v) => { update((d) => ({ ...d, custom: { ...d.custom, panicPhysical: d.custom.panicPhysical.filter((x) => x !== v) } })); setPhysical((a) => a.filter((x) => x !== v)); }}
+          onRenameCustom={(o, n) => { update((d) => ({ ...d, custom: { ...d.custom, panicPhysical: d.custom.panicPhysical.map((x) => x === o ? n : x) } })); setPhysical((a) => a.map((x) => x === o ? n : x)); }}
+          selected={physical} onToggle={(v) => setPhysical((a) => toggleIn(a, v))} />
       </Field>
       <Field label="Cognitive symptoms">
-        <div className="mt-2 flex flex-wrap gap-2">
-          {PANIC_COGNITIVE.map((v) => <Chip key={v} active={cognitive.includes(v)} onClick={() => setCognitive((a) => toggleIn(a, v))}>{v}</Chip>)}
-        </div>
+        <CustomChipList base={PANIC_COGNITIVE} custom={data.custom.panicCognitive}
+          onAddCustom={(v) => update((d) => ({ ...d, custom: { ...d.custom, panicCognitive: [...d.custom.panicCognitive, v] } }))}
+          onRemoveCustom={(v) => { update((d) => ({ ...d, custom: { ...d.custom, panicCognitive: d.custom.panicCognitive.filter((x) => x !== v) } })); setCognitive((a) => a.filter((x) => x !== v)); }}
+          onRenameCustom={(o, n) => { update((d) => ({ ...d, custom: { ...d.custom, panicCognitive: d.custom.panicCognitive.map((x) => x === o ? n : x) } })); setCognitive((a) => a.map((x) => x === o ? n : x)); }}
+          selected={cognitive} onToggle={(v) => setCognitive((a) => toggleIn(a, v))} />
       </Field>
       <Field label="Trigger (or 'no obvious trigger')">
         <Textarea rows={2} value={trigger} onChange={(e) => setTrigger(e.target.value)} />
@@ -620,7 +685,7 @@ function SexForm({ date, data, update, onDone, initialEntry }:
   { date: string; data: BixboData; update: UpdateFn; onDone: () => void; initialEntry?: SexEntry }) {
   const [kind, setKind] = useState<SexKind>(initialEntry?.kind ?? "sex");
   const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
-  const [feelingAfter, setFeelingAfter] = useState(initialEntry?.feelingAfter ?? "");
+  const [feelingAfter, setFeelingAfter] = useState<string[]>(asArr(initialEntry?.feelingAfter));
   const [painful, setPainful] = useState<PainfulWhen>(initialEntry?.painful ?? "no");
   const [note, setNote] = useState(initialEntry?.note ?? "");
   const addCustom = (v: string) => update((d) => ({ ...d, custom: { ...d.custom, sexTypes: [...d.custom.sexTypes, v] } }));
@@ -633,7 +698,7 @@ function SexForm({ date, data, update, onDone, initialEntry }:
   const save = () => {
     const editing = !!initialEntry;
     const e: SexEntry = { id: initialEntry?.id ?? crypto.randomUUID(), time, kind,
-      feelingAfter: feelingAfter || undefined, painful, note: note.trim() || undefined };
+      feelingAfter: feelingAfter.length ? feelingAfter : undefined, painful, note: note.trim() || undefined };
     updateDayLog(update, date, (l) => ({
       ...l,
       sex: editing ? (l.sex ?? []).map((x) => x.id === e.id ? e : x) : [...(l.sex ?? []), e],
@@ -661,7 +726,7 @@ function SexForm({ date, data, update, onDone, initialEntry }:
       <Field label="How I feel after">
         <div className="mt-2 flex flex-wrap gap-2">
           {["😊 Great","🙂 Good","😐 Meh","😞 Down","🤕 Sore","😴 Sleepy"].map((f) =>
-            <Chip key={f} active={feelingAfter === f} onClick={() => setFeelingAfter(feelingAfter === f ? "" : f)}>{f}</Chip>)}
+            <Chip key={f} active={feelingAfter.includes(f)} onClick={() => setFeelingAfter((a) => toggleIn(a, f))}>{f}</Chip>)}
         </div>
       </Field>
       <Field label="Painful?">
@@ -775,6 +840,24 @@ function FoodForm({ date, data, update, onDone, initialEntry }:
               {q.l}
             </button>
           ))}
+          {data.custom.foodQuickAdd.map((c) => (
+            <span key={c} className="relative inline-flex items-center">
+              <button type="button"
+                onClick={() => setWhat((w) => w ? `${w}, ${c}` : c)}
+                className="rounded-full bg-tint px-3 py-1.5 text-xs font-semibold ring-1 ring-border hover:bg-primary/10">
+                {c}
+              </button>
+              <button onClick={(e) => {
+                e.stopPropagation();
+                if (confirm(`Remove "${c}" from quick add?`))
+                  update((d) => ({ ...d, custom: { ...d.custom, foodQuickAdd: d.custom.foodQuickAdd.filter((x) => x !== c) } }));
+              }} aria-label={`Remove ${c}`}
+                className="ml-1 grid h-5 w-5 place-items-center rounded-full bg-tint text-muted-foreground hover:bg-destructive/15 hover:text-destructive">
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+          <AddCustomInline onAdd={(v) => update((d) => ({ ...d, custom: { ...d.custom, foodQuickAdd: [...d.custom.foodQuickAdd, v] } }))} />
         </div>
       </Field>
       <Field label="What did you eat?">
@@ -900,14 +983,14 @@ function TempForm({ date, data, update, onDone }:
   const [temperature, setTemperature] = useState<string>(cur.temperature != null ? String(cur.temperature) : "");
   const [weight, setWeight] = useState<string>(cur.weight != null ? String(cur.weight) : "");
   const [sleep, setSleep] = useState<string>(cur.sleepHours != null ? String(cur.sleepHours) : "");
-  const [quality, setQuality] = useState<string>(cur.sleepQuality ?? "");
+  const [quality, setQuality] = useState<string[]>(asArr(cur.sleepQuality));
   const save = () => {
     updateDayLog(update, date, (l) => ({
       ...l,
       temperature: temperature === "" ? undefined : Number(temperature),
       weight: weight === "" ? undefined : Number(weight),
       sleepHours: sleep === "" ? undefined : Number(sleep),
-      sleepQuality: quality || undefined,
+      sleepQuality: quality.length ? quality : undefined,
     }));
     onDone();
   };
@@ -918,7 +1001,7 @@ function TempForm({ date, data, update, onDone }:
       <Field label="Sleep (hours)"><Input type="number" step="0.5" value={sleep} onChange={(e) => setSleep(e.target.value)} placeholder="8" /></Field>
       <Field label="How I slept">
         <div className="mt-2 flex flex-wrap gap-2">
-          {SLEEP_QUALITY.map((q) => <Chip key={q} active={quality === q} onClick={() => setQuality(quality === q ? "" : q)}>{q}</Chip>)}
+          {SLEEP_QUALITY.map((q) => <Chip key={q} active={quality.includes(q)} onClick={() => setQuality((a) => toggleIn(a, q))}>{q}</Chip>)}
         </div>
       </Field>
       <SaveBar onCancel={onDone} onSave={save} />
@@ -931,10 +1014,20 @@ function MedsForm({ date, data, update, onDone }:
   { date: string; data: BixboData; update: UpdateFn; onDone: () => void }) {
   const meds = data.meds;
   const taken = data.medLog[date] ?? {};
-  const toggle = (key: string) => update((d) => {
+  const takenTimes = data.medLogTimes?.[date] ?? {};
+  const toggle = (key: string, defaultTime?: string) => update((d) => {
     const day = { ...(d.medLog[date] ?? {}) };
-    day[key] = !day[key];
-    return { ...d, medLog: { ...d.medLog, [date]: day } };
+    const times = { ...(d.medLogTimes?.[date] ?? {}) };
+    const nextOn = !day[key];
+    day[key] = nextOn;
+    if (nextOn && defaultTime && !times[key]) times[key] = defaultTime;
+    if (!nextOn) delete times[key];
+    return { ...d, medLog: { ...d.medLog, [date]: day }, medLogTimes: { ...(d.medLogTimes ?? {}), [date]: times } };
+  });
+  const setTakenTime = (key: string, time: string) => update((d) => {
+    const times = { ...(d.medLogTimes?.[date] ?? {}) };
+    times[key] = time;
+    return { ...d, medLogTimes: { ...(d.medLogTimes ?? {}), [date]: times } };
   });
 
   const [extraName, setExtraName] = useState("");
@@ -960,24 +1053,34 @@ function MedsForm({ date, data, update, onDone }:
           <div className="mt-2 space-y-2">
             {meds.map((m) => m.asNeeded ? (
               <label key={m.id} className="flex items-center gap-3 rounded-2xl bg-surface p-3 ring-1 ring-border">
-                <input type="checkbox" checked={!!taken[`${m.id}@asneeded`]} onChange={() => toggle(`${m.id}@asneeded`)} className="h-4 w-4" />
+                <input type="checkbox" checked={!!taken[`${m.id}@asneeded`]} onChange={() => toggle(`${m.id}@asneeded`, nowHHMM())} className="h-4 w-4" />
                 <div className="flex-1">
                   <p className="text-sm font-medium">{m.name}</p>
                   <p className="text-xs text-muted-foreground">As needed{m.dose ? ` · ${m.dose}` : ""}</p>
                   {m.note && <p className="text-[11px] text-muted-foreground">📝 {m.note}</p>}
                 </div>
+                {taken[`${m.id}@asneeded`] && (
+                  <Input type="time" value={takenTimes[`${m.id}@asneeded`] ?? nowHHMM()}
+                    onChange={(e) => setTakenTime(`${m.id}@asneeded`, e.target.value)} className="h-8 w-24" />
+                )}
               </label>
             ) : (
               m.times.map((t) => {
                 const k = `${m.id}@${t}`;
+                const isTaken = !!taken[k];
                 return (
                   <label key={k} className="flex items-center gap-3 rounded-2xl bg-surface p-3 ring-1 ring-border">
-                    <input type="checkbox" checked={!!taken[k]} onChange={() => toggle(k)} className="h-4 w-4" />
+                    <input type="checkbox" checked={isTaken} onChange={() => toggle(k, t)} className="h-4 w-4" />
                     <div className="flex-1">
-                      <p className="text-sm font-medium">{m.name} <span className="text-xs text-muted-foreground">· {t}</span></p>
+                      <p className="text-sm font-medium">{m.name} <span className="text-xs text-muted-foreground">· scheduled {t}</span></p>
                       {m.dose && <p className="text-xs text-muted-foreground">{m.dose}</p>}
                       {m.note && <p className="text-[11px] text-muted-foreground">📝 {m.note}</p>}
                     </div>
+                    {isTaken && (
+                      <Input type="time" value={takenTimes[k] ?? t}
+                        onChange={(e) => setTakenTime(k, e.target.value)} className="h-8 w-24"
+                        title="Actual time taken" />
+                    )}
                   </label>
                 );
               })
@@ -1015,7 +1118,7 @@ function WorkoutForm({ date, data, update, onDone, initialEntry }:
   const [kind, setKind] = useState<string>(initialEntry?.kind ?? WORKOUT_KINDS_DEFAULT[0]);
   const [minutes, setMinutes] = useState<number>(initialEntry?.minutes ?? 30);
   const [weight, setWeight] = useState<string>(initialEntry?.weightKg != null ? String(initialEntry.weightKg) : "");
-  const [feeling, setFeeling] = useState<string>(initialEntry?.feeling ?? "");
+  const [feeling, setFeeling] = useState<string[]>(asArr(initialEntry?.feeling));
   const [note, setNote] = useState<string>(initialEntry?.note ?? "");
   const addKind = (v: string) => update((d) => ({ ...d, custom: { ...d.custom, workoutKinds: [...d.custom.workoutKinds, v] } }));
   const rmKind = (v: string) => { update((d) => ({ ...d, custom: { ...d.custom, workoutKinds: d.custom.workoutKinds.filter((x) => x !== v) } })); if (kind === v) setKind(WORKOUT_KINDS_DEFAULT[0]); };
@@ -1025,7 +1128,7 @@ function WorkoutForm({ date, data, update, onDone, initialEntry }:
     const e: WorkoutEntry = {
       id: initialEntry?.id ?? crypto.randomUUID(), time: initialEntry?.time ?? nowHHMM(), kind, minutes,
       weightKg: weight === "" ? undefined : Number(weight),
-      feeling: feeling || undefined, note: note.trim() || undefined,
+      feeling: feeling.length ? feeling : undefined, note: note.trim() || undefined,
     };
     updateDayLog(update, date, (l) => ({
       ...l,
@@ -1045,7 +1148,7 @@ function WorkoutForm({ date, data, update, onDone, initialEntry }:
       <Field label="How you feel">
         <div className="mt-2 flex flex-wrap gap-2">
           {["😊 Great","🙂 Good","😐 Ok","😩 Tired","🤕 Sore"].map((f) =>
-            <Chip key={f} active={feeling === f} onClick={() => setFeeling(feeling === f ? "" : f)}>{f}</Chip>)}
+            <Chip key={f} active={feeling.includes(f)} onClick={() => setFeeling((a) => toggleIn(a, f))}>{f}</Chip>)}
         </div>
       </Field>
       <Field label="Note (optional)"><Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} /></Field>

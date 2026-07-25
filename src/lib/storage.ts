@@ -51,9 +51,9 @@ export interface FoodEntry {
   hydrationMl?: number; caffeineMg?: number; alcoholDrinks?: number;
 }
 export interface BowelEntry { id: string; time: string; bristol: number; note?: string; feelings?: string[]; symptoms?: string[] }
-export interface SexEntry { id: string; time: string; kind: SexKind; feelingAfter?: string; painful?: PainfulWhen; note?: string }
+export interface SexEntry { id: string; time: string; kind: SexKind; feelingAfter?: string | string[]; painful?: PainfulWhen; note?: string }
 export interface ExtraMed { id: string; time: string; name: string; dose?: string; note?: string }
-export interface WorkoutEntry { id: string; time: string; kind: string; minutes: number; weightKg?: number; feeling?: string; note?: string }
+export interface WorkoutEntry { id: string; time: string; kind: string; minutes: number; weightKg?: number; feeling?: string | string[]; note?: string }
 export interface EventEntry { id: string; title: string; startDate: string; endDate: string; time?: string; timeEnd?: string; note?: string; color?: string }
 export interface TaskEntry { id: string; title: string; startDate: string; endDate: string; time?: string; timeEnd?: string; done: boolean; note?: string }
 export interface PeriodEntry { level: PeriodLevel; discharge?: string; dischargeNote?: string; note?: string }
@@ -72,9 +72,14 @@ export interface DayLog {
   temperature?: number;
   weight?: number;
   sleepHours?: number;
-  sleepQuality?: string;
+  sleepQuality?: string | string[];
   extraMeds?: ExtraMed[];
   workout?: WorkoutEntry[];
+}
+
+export function asArr(v: string | string[] | undefined | null): string[] {
+  if (v == null || v === "") return [];
+  return Array.isArray(v) ? v : [v];
 }
 
 export interface Todo { id: string; text: string; done: boolean }
@@ -98,10 +103,15 @@ export interface CustomLists {
   quality: string[];
   symptoms: string[];
   foodFeelings: string[];
+  foodQuickAdd: string[];
   workoutKinds: string[];
   moods: string[];
+  tetanyTypes: string[];
   tetanyLocations: string[];
+  tetanyTriggers: string[];
   tetanyHelped: string[];
+  panicPhysical: string[];
+  panicCognitive: string[];
   panicHelped: string[];
   sexTypes: string[];
   bowelFeelings: string[];
@@ -131,6 +141,7 @@ export interface BixboData {
   events: EventEntry[];
   meds: Med[];
   medLog: Record<string, Record<string, boolean>>;
+  medLogTimes: Record<string, Record<string, string>>;
   folders: NoteFolder[];
   notebook: Note[];
   cycle: CyclePrefs;
@@ -153,12 +164,15 @@ export const EMPTY: BixboData = {
   events: [],
   meds: [],
   medLog: {},
+  medLogTimes: {},
   folders: DEFAULT_FOLDERS,
   notebook: [],
   cycle: { lastPeriodStart: "2026-07-15", lastPeriodEnd: "2026-07-19", cycleLength: 28, periodLength: 5 },
   custom: {
-    bodyParts: [], quality: [], symptoms: [], foodFeelings: [], workoutKinds: [], moods: [],
-    tetanyLocations: [], tetanyHelped: [], panicHelped: [], sexTypes: [], bowelFeelings: [], bowelSymptoms: [],
+    bodyParts: [], quality: [], symptoms: [], foodFeelings: [], foodQuickAdd: [], workoutKinds: [], moods: [],
+    tetanyTypes: [], tetanyLocations: [], tetanyTriggers: [], tetanyHelped: [],
+    panicPhysical: [], panicCognitive: [], panicHelped: [],
+    sexTypes: [], bowelFeelings: [], bowelSymptoms: [],
   },
   settings: { textSize: "md", notifications: true, gender: "female" },
 };
