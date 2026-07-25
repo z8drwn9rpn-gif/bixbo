@@ -73,23 +73,27 @@ function NotesPage() {
 
   return (
     <AppShell title="Notes" right={<Button size="sm" variant="outline" onClick={addFolder}><Plus className="h-4 w-4" /> Folder</Button>}>
-      <div className="px-5 pt-3 pb-24 space-y-2">
-        {view.folders.map((f) => {
-          const count = view.notebook.filter((n) => n.folderId === f.id).length;
-          return (
-            <div key={f.id} className="flex items-center gap-2">
-              <button onClick={() => setOpenFolder(f.id)}
-                className="flex flex-1 items-center gap-3 rounded-2xl bg-surface p-3 ring-1 ring-border hover:bg-tint">
-                <span className="text-xl">{f.icon}</span>
-                <span className="flex-1 text-left text-sm font-medium">{f.name}</span>
-                <span className="text-xs text-muted-foreground">{count}</span>
-              </button>
-              <button onClick={() => delFolder(f.id)} className="text-muted-foreground hover:text-destructive" aria-label="Delete folder">
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
-          );
-        })}
+      <div className="px-5 pt-3 pb-24">
+        <div className="grid grid-cols-2 gap-3">
+          {view.folders.map((f) => {
+            const count = view.notebook.filter((n) => n.folderId === f.id).length;
+            return (
+              <div key={f.id} className="relative">
+                <button onClick={() => setOpenFolder(f.id)}
+                  className="flex aspect-square w-full flex-col items-center justify-center gap-2 rounded-3xl bg-surface p-4 ring-1 ring-border hover:bg-tint">
+                  <span className="text-4xl">{f.icon}</span>
+                  <span className="text-center text-sm font-semibold">{f.name}</span>
+                  <span className="text-xs text-muted-foreground">{count} {count === 1 ? "note" : "notes"}</span>
+                </button>
+                <button onClick={() => delFolder(f.id)}
+                  className="absolute right-2 top-2 rounded-full bg-background/80 p-1.5 text-muted-foreground hover:text-destructive"
+                  aria-label="Delete folder">
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </AppShell>
   );
