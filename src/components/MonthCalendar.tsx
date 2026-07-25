@@ -58,7 +58,6 @@ export function MonthCalendar({
     else cells.push({ date: new Date(y, m, dayNum), inMonth: true });
   }
 
-  const todayK = toKey(new Date());
   const predicted = predictPeriods(data.cycle, cells[0].date, cells[cells.length - 1].date);
   const isPredicted = (k: string) =>
     predicted.some((p) => isDateInRange(k, p.start, p.end)) &&
