@@ -208,14 +208,14 @@ function CustomChipList({
 const toggleIn = (arr: string[], v: string) => arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v];
 
 /* ------------------- PAIN wizard ------------------- */
-function PainWizard({ date, data, update, onDone }:
-  { date: string; data: BixboData; update: UpdateFn; onDone: () => void }) {
+function PainWizard({ date, data, update, onDone, initialEntry }:
+  { date: string; data: BixboData; update: UpdateFn; onDone: () => void; initialEntry?: PainEntry }) {
   const [step, setStep] = useState(0);
-  const [score, setScore] = useState(0);
-  const [parts, setParts] = useState<string[]>([]);
-  const [quality, setQuality] = useState<string[]>([]);
-  const [symptoms, setSymptoms] = useState<string[]>([]);
-  const [note, setNote] = useState("");
+  const [score, setScore] = useState(initialEntry?.score ?? 0);
+  const [parts, setParts] = useState<string[]>(initialEntry?.parts ?? []);
+  const [quality, setQuality] = useState<string[]>(initialEntry?.quality ?? []);
+  const [symptoms, setSymptoms] = useState<string[]>(initialEntry?.symptoms ?? []);
+  const [note, setNote] = useState(initialEntry?.note ?? "");
   // Extended
   const [tetany, setTetany] = useState(false);
   const [tetanyTypes, setTetanyTypes] = useState<string[]>([]);
@@ -225,20 +225,32 @@ function PainWizard({ date, data, update, onDone }:
   const [tetanyTriggers, setTetanyTriggers] = useState<string[]>([]);
   const [tetanyHelped, setTetanyHelped] = useState<string[]>([]);
   const [tetanyNote, setTetanyNote] = useState("");
-  const [bodyBattery, setBodyBattery] = useState<number | undefined>();
-  const [stress, setStress] = useState<number | undefined>();
-  const [mood, setMood] = useState<string[]>([]);
+  const [bodyBattery, setBodyBattery] = useState<number | undefined>(initialEntry?.bodyBattery);
+  const [stress, setStress] = useState<number | undefined>(initialEntry?.stress);
+  const [mood, setMood] = useState<string[]>(initialEntry?.mood ?? []);
 
   const addCustom = (key: "bodyParts" | "quality" | "symptoms" | "moods" | "tetanyLocations" | "tetanyHelped", v: string) =>
     update((d) => ({ ...d, custom: { ...d.custom, [key]: [...d.custom[key], v] } }));
+  const removeCustom = (key: "bodyParts" | "quality" | "symptoms" | "moods" | "tetanyLocations" | "tetanyHelped", v: string) =>
+    update((d) => ({
+      ...d,
+      custom: { ...d.custom, [key]: d.custom[key].filter((x) => x !== v) },
+    }));
 
   const save = () => {
+    const editing = !!initialEntry;
     const p: PainEntry = {
-      id: crypto.randomUUID(), time: nowHHMM(),
+      id: initialEntry?.id ?? crypto.randomUUID(),
+      time: initialEntry?.time ?? nowHHMM(),
       score, parts, quality, symptoms, note: note.trim(),
       bodyBattery, stress, mood: mood.length ? mood : undefined,
     };
-    updateDayLog(update, date, (l) => ({ ...l, pain: [...(l.pain ?? []), p] }));
+    updateDayLog(update, date, (l) => ({
+      ...l,
+      pain: editing
+        ? (l.pain ?? []).map((x) => x.id === p.id ? p : x)
+        : [...(l.pain ?? []), p],
+    }));
     if (tetany) {
       const t: TetanyEpisode = {
         id: crypto.randomUUID(), time: nowHHMM(),
