@@ -34,7 +34,7 @@ export interface TetanyEpisode {
 export interface PanicAttack {
   id: string;
   time: string;
-  minutes: number;
+  minutes?: number;
   intensity: number;
   physical: string[];
   cognitive: string[];
