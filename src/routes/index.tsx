@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Plus, Settings as SettingsIcon, Share2, Trash2, Pill, Heart, Droplets, Utensils, Zap } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Settings as SettingsIcon, Share2, Trash2, Pill } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { MonthCalendar, monthLabel } from "@/components/MonthCalendar";
