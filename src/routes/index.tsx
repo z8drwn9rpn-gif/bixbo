@@ -119,19 +119,20 @@ function HomePage() {
 
 
       <DayPreview date={selected} data={view} update={update}
-        onEditPain={(p) => { setEditPain(p); setQuickCat("pain"); setLogOpen(true); }} />
+        onEditPain={(p) => { setEditPain(p); setEditEntry(undefined); setQuickCat("pain"); setLogOpen(true); }}
+        onEdit={openEdit} />
 
       <div className="fixed bottom-24 right-5 z-30">
         <Button
-          onClick={() => { setQuickCat(undefined); setEditPain(undefined); setLogOpen(true); }}
+          onClick={() => { setQuickCat(undefined); setEditPain(undefined); setEditEntry(undefined); setLogOpen(true); }}
           className="h-14 rounded-full px-6 shadow-lg"
         >
           <Plus className="h-5 w-5" /> Log
         </Button>
       </div>
 
-      <LogSheet open={logOpen} onOpenChange={(b) => { setLogOpen(b); if (!b) { setQuickCat(undefined); setEditPain(undefined); } }}
-        date={selected} data={view} update={update} initial={quickCat as never} initialPain={editPain} />
+      <LogSheet open={logOpen} onOpenChange={(b) => { setLogOpen(b); if (!b) { setQuickCat(undefined); setEditPain(undefined); setEditEntry(undefined); } }}
+        date={selected} data={view} update={update} initial={quickCat as never} initialPain={editPain} editEntry={editEntry} />
     </AppShell>
   );
 }
