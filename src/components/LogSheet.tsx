@@ -1080,7 +1080,7 @@ function WorkoutForm({ date, data, update, onDone, initialEntry }:
   const [kind, setKind] = useState<string>(initialEntry?.kind ?? WORKOUT_KINDS_DEFAULT[0]);
   const [minutes, setMinutes] = useState<number>(initialEntry?.minutes ?? 30);
   const [weight, setWeight] = useState<string>(initialEntry?.weightKg != null ? String(initialEntry.weightKg) : "");
-  const [feeling, setFeeling] = useState<string>(initialEntry?.feeling ?? "");
+  const [feeling, setFeeling] = useState<string[]>(asArr(initialEntry?.feeling));
   const [note, setNote] = useState<string>(initialEntry?.note ?? "");
   const addKind = (v: string) => update((d) => ({ ...d, custom: { ...d.custom, workoutKinds: [...d.custom.workoutKinds, v] } }));
   const rmKind = (v: string) => { update((d) => ({ ...d, custom: { ...d.custom, workoutKinds: d.custom.workoutKinds.filter((x) => x !== v) } })); if (kind === v) setKind(WORKOUT_KINDS_DEFAULT[0]); };
@@ -1090,7 +1090,7 @@ function WorkoutForm({ date, data, update, onDone, initialEntry }:
     const e: WorkoutEntry = {
       id: initialEntry?.id ?? crypto.randomUUID(), time: initialEntry?.time ?? nowHHMM(), kind, minutes,
       weightKg: weight === "" ? undefined : Number(weight),
-      feeling: feeling || undefined, note: note.trim() || undefined,
+      feeling: feeling.length ? feeling : undefined, note: note.trim() || undefined,
     };
     updateDayLog(update, date, (l) => ({
       ...l,
@@ -1110,7 +1110,7 @@ function WorkoutForm({ date, data, update, onDone, initialEntry }:
       <Field label="How you feel">
         <div className="mt-2 flex flex-wrap gap-2">
           {["😊 Great","🙂 Good","😐 Ok","😩 Tired","🤕 Sore"].map((f) =>
-            <Chip key={f} active={feeling === f} onClick={() => setFeeling(feeling === f ? "" : f)}>{f}</Chip>)}
+            <Chip key={f} active={feeling.includes(f)} onClick={() => setFeeling((a) => toggleIn(a, f))}>{f}</Chip>)}
         </div>
       </Field>
       <Field label="Note (optional)"><Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} /></Field>
