@@ -381,6 +381,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
           <CustomChipList base={BODY_PARTS_DEFAULT} custom={data.custom.bodyParts}
             onAddCustom={(v) => addCustom("bodyParts", v)}
             onRemoveCustom={(v) => { removeCustom("bodyParts", v); setParts((a) => a.filter((x) => x !== v)); }}
+            onRenameCustom={(o, n) => { renameCustom("bodyParts", o, n); setParts((a) => a.map((x) => x === o ? n : x)); }}
             selected={parts} onToggle={(v) => setParts((a) => toggleIn(a, v))} />
         </Field>
       )}
@@ -389,6 +390,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
           <CustomChipList base={PAIN_QUALITY_DEFAULT} custom={data.custom.quality}
             onAddCustom={(v) => addCustom("quality", v)}
             onRemoveCustom={(v) => { removeCustom("quality", v); setQuality((a) => a.filter((x) => x !== v)); }}
+            onRenameCustom={(o, n) => { renameCustom("quality", o, n); setQuality((a) => a.map((x) => x === o ? n : x)); }}
             selected={quality} onToggle={(v) => setQuality((a) => toggleIn(a, v))} />
         </Field>
       )}
@@ -398,6 +400,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
             <CustomChipList base={OTHER_SYMPTOMS_DEFAULT} custom={data.custom.symptoms}
               onAddCustom={(v) => addCustom("symptoms", v)}
               onRemoveCustom={(v) => { removeCustom("symptoms", v); setSymptoms((a) => a.filter((x) => x !== v)); }}
+              onRenameCustom={(o, n) => { renameCustom("symptoms", o, n); setSymptoms((a) => a.map((x) => x === o ? n : x)); }}
               selected={symptoms} onToggle={(v) => setSymptoms((a) => toggleIn(a, v))} />
           </Field>
           <Field label="Tetany episode?">
@@ -409,14 +412,17 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
           {tetany && (
             <div className="rounded-2xl border border-border p-3 space-y-3">
               <Field label="Type">
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {TETANY_TYPES.map((v) => <Chip key={v} active={tetanyTypes.includes(v)} onClick={() => setTetanyTypes((a) => toggleIn(a, v))}>{v}</Chip>)}
-                </div>
+                <CustomChipList base={TETANY_TYPES} custom={data.custom.tetanyTypes}
+                  onAddCustom={(v) => addCustom("tetanyTypes", v)}
+                  onRemoveCustom={(v) => { removeCustom("tetanyTypes", v); setTetanyTypes((a) => a.filter((x) => x !== v)); }}
+                  onRenameCustom={(o, n) => { renameCustom("tetanyTypes", o, n); setTetanyTypes((a) => a.map((x) => x === o ? n : x)); }}
+                  selected={tetanyTypes} onToggle={(v) => setTetanyTypes((a) => toggleIn(a, v))} />
               </Field>
               <Field label="Location">
                 <CustomChipList base={TETANY_LOCATIONS_DEFAULT} custom={data.custom.tetanyLocations}
                   onAddCustom={(v) => addCustom("tetanyLocations", v)}
                   onRemoveCustom={(v) => { removeCustom("tetanyLocations", v); setTetanyLoc((a) => a.filter((x) => x !== v)); }}
+                  onRenameCustom={(o, n) => { renameCustom("tetanyLocations", o, n); setTetanyLoc((a) => a.map((x) => x === o ? n : x)); }}
                   selected={tetanyLoc} onToggle={(v) => setTetanyLoc((a) => toggleIn(a, v))} />
               </Field>
               <div className="grid grid-cols-2 gap-2">
@@ -428,19 +434,44 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
                 </Field>
               </div>
               <Field label="Triggers">
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {TETANY_TRIGGERS.map((v) => <Chip key={v} active={tetanyTriggers.includes(v)} onClick={() => setTetanyTriggers((a) => toggleIn(a, v))}>{v}</Chip>)}
-                </div>
+                <CustomChipList base={TETANY_TRIGGERS} custom={data.custom.tetanyTriggers}
+                  onAddCustom={(v) => addCustom("tetanyTriggers", v)}
+                  onRemoveCustom={(v) => { removeCustom("tetanyTriggers", v); setTetanyTriggers((a) => a.filter((x) => x !== v)); }}
+                  onRenameCustom={(o, n) => { renameCustom("tetanyTriggers", o, n); setTetanyTriggers((a) => a.map((x) => x === o ? n : x)); }}
+                  selected={tetanyTriggers} onToggle={(v) => setTetanyTriggers((a) => toggleIn(a, v))} />
               </Field>
               <Field label="What helped">
                 <CustomChipList base={TETANY_HELPED_DEFAULT} custom={data.custom.tetanyHelped}
                   onAddCustom={(v) => addCustom("tetanyHelped", v)}
                   onRemoveCustom={(v) => { removeCustom("tetanyHelped", v); setTetanyHelped((a) => a.filter((x) => x !== v)); }}
+                  onRenameCustom={(o, n) => { renameCustom("tetanyHelped", o, n); setTetanyHelped((a) => a.map((x) => x === o ? n : x)); }}
                   selected={tetanyHelped} onToggle={(v) => setTetanyHelped((a) => toggleIn(a, v))} />
               </Field>
               <Field label="Note (optional)">
                 <Textarea rows={2} value={tetanyNote} onChange={(e) => setTetanyNote(e.target.value)} />
               </Field>
+            </div>
+          )}
+          <Field label="Panic attack?">
+            <div className="mt-1 flex gap-2">
+              <Chip active={!panic} onClick={() => setPanic(false)}>No</Chip>
+              <Chip active={panic} onClick={() => setPanic(true)}>Yes — log it</Chip>
+            </div>
+          </Field>
+          {panic && (
+            <div className="rounded-2xl border border-border p-3 space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <Field label={`Intensity ${panicIntensity}/10`}>
+                  <Slider value={[panicIntensity]} min={1} max={10} step={1} onValueChange={([v]) => setPanicIntensity(v)} />
+                </Field>
+                <Field label="Duration (min)">
+                  <Input type="number" min={1} value={panicMinutes} onChange={(e) => setPanicMinutes(Number(e.target.value))} />
+                </Field>
+              </div>
+              <Field label="Trigger (optional)">
+                <Input value={panicTrigger} onChange={(e) => setPanicTrigger(e.target.value)} placeholder="What set it off?" />
+              </Field>
+              <p className="text-[11px] text-muted-foreground">For full details use the Panic attack log entry.</p>
             </div>
           )}
         </div>
@@ -451,7 +482,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
           <Field label={`Stress ${stress ?? "-"} / 10`}>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {Array.from({ length: 11 }, (_, n) => {
-                const hue = 130 - n * 13; // green (130) -> red (0)
+                const hue = 130 - n * 13;
                 const bg = `hsl(${hue} 70% 50%)`;
                 const active = stress === n;
                 return (
@@ -483,6 +514,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
             <CustomChipList base={MOODS_DEFAULT} custom={data.custom.moods}
               onAddCustom={(v) => addCustom("moods", v)}
               onRemoveCustom={(v) => { removeCustom("moods", v); setMood((a) => a.filter((x) => x !== v)); }}
+              onRenameCustom={(o, n) => { renameCustom("moods", o, n); setMood((a) => a.map((x) => x === o ? n : x)); }}
               selected={mood} onToggle={(v) => setMood((a) => toggleIn(a, v))} />
           </Field>
           <Field label="Note (optional)">
@@ -490,6 +522,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
           </Field>
         </div>
       )}
+
 
       <SheetFooter className="mt-4 flex-row gap-2">
         {step > 0 && <Button variant="outline" onClick={() => setStep(step - 1)} className="flex-1">Back</Button>}
