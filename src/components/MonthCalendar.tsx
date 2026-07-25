@@ -97,8 +97,8 @@ export function MonthCalendar({
           const log = data.dayLogs[key];
           const takenToday = data.medLog[key] ?? {};
           const hasMed = Object.values(takenToday).some(Boolean) || !!log?.extraMeds?.length;
-          const periodLevel = log?.periodInfo?.level ?? log?.period;
-          const periodColor = periodColorVar(periodLevel) ?? (isActualPeriod(key) ? "var(--period-medium)" : null);
+          const periodLevel = isMale ? undefined : (log?.periodInfo?.level ?? log?.period);
+          const periodColor = isMale ? null : (periodColorVar(periodLevel) ?? (isActualPeriod(key) ? "var(--period-medium)" : null));
           const pAvg = avgDayPain(log);
           const isSel = key === selected;
           const predictedOrange = isPredicted(key);
