@@ -685,7 +685,7 @@ function SexForm({ date, data, update, onDone, initialEntry }:
   { date: string; data: BixboData; update: UpdateFn; onDone: () => void; initialEntry?: SexEntry }) {
   const [kind, setKind] = useState<SexKind>(initialEntry?.kind ?? "sex");
   const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
-  const [feelingAfter, setFeelingAfter] = useState(initialEntry?.feelingAfter ?? "");
+  const [feelingAfter, setFeelingAfter] = useState<string[]>(asArr(initialEntry?.feelingAfter));
   const [painful, setPainful] = useState<PainfulWhen>(initialEntry?.painful ?? "no");
   const [note, setNote] = useState(initialEntry?.note ?? "");
   const addCustom = (v: string) => update((d) => ({ ...d, custom: { ...d.custom, sexTypes: [...d.custom.sexTypes, v] } }));
@@ -698,7 +698,7 @@ function SexForm({ date, data, update, onDone, initialEntry }:
   const save = () => {
     const editing = !!initialEntry;
     const e: SexEntry = { id: initialEntry?.id ?? crypto.randomUUID(), time, kind,
-      feelingAfter: feelingAfter || undefined, painful, note: note.trim() || undefined };
+      feelingAfter: feelingAfter.length ? feelingAfter : undefined, painful, note: note.trim() || undefined };
     updateDayLog(update, date, (l) => ({
       ...l,
       sex: editing ? (l.sex ?? []).map((x) => x.id === e.id ? e : x) : [...(l.sex ?? []), e],
@@ -726,7 +726,7 @@ function SexForm({ date, data, update, onDone, initialEntry }:
       <Field label="How I feel after">
         <div className="mt-2 flex flex-wrap gap-2">
           {["😊 Great","🙂 Good","😐 Meh","😞 Down","🤕 Sore","😴 Sleepy"].map((f) =>
-            <Chip key={f} active={feelingAfter === f} onClick={() => setFeelingAfter(feelingAfter === f ? "" : f)}>{f}</Chip>)}
+            <Chip key={f} active={feelingAfter.includes(f)} onClick={() => setFeelingAfter((a) => toggleIn(a, f))}>{f}</Chip>)}
         </div>
       </Field>
       <Field label="Painful?">
