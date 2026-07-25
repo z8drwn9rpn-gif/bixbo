@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState, useMemo, type ReactNode } from "react";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter,
 } from "@/components/ui/sheet";
@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
-import { X, Plus, ChevronLeft } from "lucide-react";
+import { X, Plus, ChevronLeft, ChevronUp, ChevronDown, GripVertical, Check } from "lucide-react";
 import {
   PAIN_DESCRIPTIONS, painColor, BODY_PARTS_DEFAULT, PAIN_QUALITY_DEFAULT, OTHER_SYMPTOMS_DEFAULT,
   FOOD_FEELINGS_DEFAULT, WORKOUT_KINDS_DEFAULT, BRISTOL, DISCHARGE_OPTS, MOODS_DEFAULT,
@@ -53,9 +53,31 @@ export function LogSheet({
   initialPain?: PainEntry;
 }) {
   const [cat, setCat] = useState<Category | null>(initial ?? null);
-  const close = () => { setCat(null); onOpenChange(false); };
+  const [editingOrder, setEditingOrder] = useState(false);
+  const close = () => { setCat(null); setEditingOrder(false); onOpenChange(false); };
   const back = () => setCat(null);
   const active = cat ?? initial;
+
+  const orderedCats = useMemo(() => {
+    const saved = data.settings.logOrder ?? [];
+    const byId = new Map(CATEGORIES.map((c) => [c.id, c]));
+    const seen = new Set<string>();
+    const out: typeof CATEGORIES = [];
+    for (const id of saved) {
+      const c = byId.get(id as Category);
+      if (c && !seen.has(id)) { out.push(c); seen.add(id); }
+    }
+    for (const c of CATEGORIES) if (!seen.has(c.id)) out.push(c);
+    return out;
+  }, [data.settings.logOrder]);
+
+  const moveCat = (idx: number, dir: -1 | 1) => {
+    const j = idx + dir;
+    if (j < 0 || j >= orderedCats.length) return;
+    const next = orderedCats.slice();
+    [next[idx], next[j]] = [next[j], next[idx]];
+    update((d) => ({ ...d, settings: { ...d.settings, logOrder: next.map((c) => c.id) } }));
+  };
 
   return (
     <Sheet open={open} onOpenChange={(b) => { if (!b) close(); }}>
@@ -72,23 +94,44 @@ export function LogSheet({
           <>
             <SheetHeader className="shrink-0 relative px-5 pt-5 pb-2">
               <SheetTitle className="text-center font-serif text-2xl">Log</SheetTitle>
+              <button onClick={() => setEditingOrder((v) => !v)}
+                className="absolute left-4 top-4 flex items-center gap-1 rounded-full px-2 py-1 text-xs text-muted-foreground hover:bg-tint">
+                {editingOrder ? <><Check className="h-4 w-4" /> Done</> : <><GripVertical className="h-4 w-4" /> Reorder</>}
+              </button>
               <button onClick={close} aria-label="Close"
                 className="absolute right-4 top-4 rounded-full p-1 hover:bg-tint">
                 <X className="h-5 w-5" />
               </button>
             </SheetHeader>
             <ul className="min-h-0 flex-1 overflow-y-auto divide-y divide-border border-t border-border">
-              {CATEGORIES.map((c) => (
+              {orderedCats.map((c, i) => (
                 <li key={c.id}>
-                  <button onClick={() => setCat(c.id)}
-                    className="flex w-full items-center gap-3 bg-surface px-5 py-3 text-left transition hover:bg-tint">
-                    <span className="grid h-10 w-10 place-items-center rounded-full bg-tint text-xl">{c.emoji}</span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-base font-semibold">{c.label}</p>
-                      <p className="truncate text-xs text-muted-foreground">{c.hint}</p>
+                  {editingOrder ? (
+                    <div className="flex w-full items-center gap-3 bg-surface px-5 py-3">
+                      <span className="grid h-10 w-10 place-items-center rounded-full bg-tint text-xl">{c.emoji}</span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-base font-semibold">{c.label}</p>
+                      </div>
+                      <button onClick={() => moveCat(i, -1)} disabled={i === 0}
+                        className="rounded-full p-2 hover:bg-tint disabled:opacity-30" aria-label="Move up">
+                        <ChevronUp className="h-5 w-5" />
+                      </button>
+                      <button onClick={() => moveCat(i, 1)} disabled={i === orderedCats.length - 1}
+                        className="rounded-full p-2 hover:bg-tint disabled:opacity-30" aria-label="Move down">
+                        <ChevronDown className="h-5 w-5" />
+                      </button>
                     </div>
-                    <span className="text-muted-foreground">›</span>
-                  </button>
+                  ) : (
+                    <button onClick={() => setCat(c.id)}
+                      className="flex w-full items-center gap-3 bg-surface px-5 py-3 text-left transition hover:bg-tint">
+                      <span className="grid h-10 w-10 place-items-center rounded-full bg-tint text-xl">{c.emoji}</span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-base font-semibold">{c.label}</p>
+                        <p className="truncate text-xs text-muted-foreground">{c.hint}</p>
+                      </div>
+                      <span className="text-muted-foreground">›</span>
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>

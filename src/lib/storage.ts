@@ -165,6 +165,7 @@ export interface Settings {
   notifications: boolean;
   pairingCode?: string;
   partnerName?: string;
+  logOrder?: string[];
 }
 
 export interface PartnerData {
