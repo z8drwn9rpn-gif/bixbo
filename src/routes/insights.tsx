@@ -156,6 +156,7 @@ function InsightsPage() {
           </p>
         </section>
 
+        {view.settings.gender !== "male" && (
         <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">Blueberry 🫐 cycle</p>
           <div className="mt-3 grid grid-cols-2 gap-2">
@@ -181,6 +182,7 @@ function InsightsPage() {
             </div>
           </div>
         </section>
+        )}
 
 
         <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
