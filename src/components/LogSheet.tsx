@@ -460,9 +460,6 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
           <Field label="Note (optional)">
             <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Anything else…" />
           </Field>
-          <Field label="Note (optional)">
-            <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Anything else…" />
-          </Field>
         </div>
       )}
 
@@ -479,35 +476,40 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
 }
 
 /* ------------------- PANIC attack ------------------- */
-function PanicForm({ date, data, update, onDone }:
-  { date: string; data: BixboData; update: UpdateFn; onDone: () => void }) {
-  const [time, setTime] = useState(nowHHMM());
-  const [minutes, setMinutes] = useState(10);
-  const [intensity, setIntensity] = useState(5);
-  const [physical, setPhysical] = useState<string[]>([]);
-  const [cognitive, setCognitive] = useState<string[]>([]);
-  const [trigger, setTrigger] = useState("");
-  const [place, setPlace] = useState("");
-  const [hyper, setHyper] = useState<"no" | "before" | "during" | "unknown">("unknown");
-  const [tetanyPresent, setTetanyPresent] = useState(false);
-  const [helped, setHelped] = useState<string[]>([]);
-  const [note, setNote] = useState("");
+function PanicForm({ date, data, update, onDone, initialEntry }:
+  { date: string; data: BixboData; update: UpdateFn; onDone: () => void; initialEntry?: PanicAttack }) {
+  const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
+  const [minutes, setMinutes] = useState(initialEntry?.minutes ?? 10);
+  const [intensity, setIntensity] = useState(initialEntry?.intensity ?? 5);
+  const [physical, setPhysical] = useState<string[]>(initialEntry?.physical ?? []);
+  const [cognitive, setCognitive] = useState<string[]>(initialEntry?.cognitive ?? []);
+  const [trigger, setTrigger] = useState(initialEntry?.trigger ?? "");
+  const [place, setPlace] = useState(initialEntry?.place ?? "");
+  const [hyper, setHyper] = useState<"no" | "before" | "during" | "unknown">(initialEntry?.hyperventilation ?? "unknown");
+  const [tetanyPresent, setTetanyPresent] = useState(initialEntry?.tetanyPresent ?? false);
+  const [helped, setHelped] = useState<string[]>(initialEntry?.helped ?? []);
+  const [note, setNote] = useState(initialEntry?.note ?? "");
   const addHelped = (v: string) => update((d) => ({ ...d, custom: { ...d.custom, panicHelped: [...d.custom.panicHelped, v] } }));
+  const rmHelped = (v: string) => { update((d) => ({ ...d, custom: { ...d.custom, panicHelped: d.custom.panicHelped.filter((x) => x !== v) } })); setHelped((a) => a.filter((x) => x !== v)); };
 
   const save = () => {
+    const editing = !!initialEntry;
     const p: PanicAttack = {
-      id: crypto.randomUUID(), time, minutes, intensity,
+      id: initialEntry?.id ?? crypto.randomUUID(), time, minutes, intensity,
       physical, cognitive, trigger: trigger.trim(), place: place.trim() || undefined,
       hyperventilation: hyper, tetanyPresent, helped, note: note.trim() || undefined,
     };
-    updateDayLog(update, date, (l) => ({ ...l, panic: [...(l.panic ?? []), p] }));
+    updateDayLog(update, date, (l) => ({
+      ...l,
+      panic: editing ? (l.panic ?? []).map((x) => x.id === p.id ? p : x) : [...(l.panic ?? []), p],
+    }));
     onDone();
   };
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-2">
-        <Field label="Time"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></Field>
-        <Field label="Duration (min)"><Input type="number" min={1} value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} /></Field>
+      <div className="flex gap-2">
+        <Field label="Time"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="w-full" /></Field>
+        <Field label="Duration (min)"><Input type="number" min={1} value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} className="w-full" /></Field>
       </div>
       <Field label={`Intensity ${intensity}/10`}>
         <Slider value={[intensity]} min={1} max={10} step={1} onValueChange={([v]) => setIntensity(v)} />
@@ -542,7 +544,7 @@ function PanicForm({ date, data, update, onDone }:
       </Field>
       <Field label="What helped">
         <CustomChipList base={PANIC_HELPED_DEFAULT} custom={data.custom.panicHelped}
-          onAddCustom={addHelped}
+          onAddCustom={addHelped} onRemoveCustom={rmHelped}
           selected={helped} onToggle={(v) => setHelped((a) => toggleIn(a, v))} />
       </Field>
       <Field label="Note (optional)">
