@@ -69,7 +69,7 @@ function HomePage() {
   const goToPrevMonth = () => setMonthAnchor((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1));
   const goToNextMonth = () => setMonthAnchor((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1));
 
-  const openQuick = (cat: string) => { setQuickCat(cat); setLogOpen(true); };
+  
 
   return (
     <AppShell
