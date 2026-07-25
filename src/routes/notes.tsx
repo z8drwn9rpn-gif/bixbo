@@ -153,12 +153,6 @@ function NoteEditor({ note, onBack, update }: {
 
         <Textarea id="note-content" rows={12} value={content} onChange={(e) => setContent(e.target.value)}
           placeholder="Write anything… (use <strong> for bold and <mark> for highlight)" />
-        {content && (
-          <div className="rounded-2xl bg-tint p-3 text-sm">
-            <p className="mb-1 text-[10px] uppercase text-muted-foreground">Preview</p>
-            <div className="whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: content }} />
-          </div>
-        )}
 
         {showChecklist && (
           <div className="rounded-2xl bg-surface p-3 ring-1 ring-border space-y-2">
