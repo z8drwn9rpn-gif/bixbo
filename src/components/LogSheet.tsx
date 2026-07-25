@@ -23,7 +23,7 @@ import {
 
 type UpdateFn = (u: (d: BixboData) => BixboData) => void;
 type Category =
-  | "meds" | "pain" | "panic" | "period" | "sex" | "heat"
+  | "meds" | "pain" | "panic" | "tetany" | "period" | "sex" | "heat"
   | "food" | "bowel" | "workout" | "temp" | "task" | "event" | "note";
 
 const CATEGORIES: { id: Category; label: string; emoji: string; hint: string }[] = [
