@@ -1010,22 +1010,27 @@ function MedsForm({ date, data, update, onDone }:
 }
 
 /* ------------------- WORKOUT ------------------- */
-function WorkoutForm({ date, data, update, onDone }:
-  { date: string; data: BixboData; update: UpdateFn; onDone: () => void }) {
-  const [kind, setKind] = useState<string>(WORKOUT_KINDS_DEFAULT[0]);
-  const [minutes, setMinutes] = useState<number>(30);
-  const [weight, setWeight] = useState<string>("");
-  const [feeling, setFeeling] = useState<string>("");
-  const [note, setNote] = useState<string>("");
+function WorkoutForm({ date, data, update, onDone, initialEntry }:
+  { date: string; data: BixboData; update: UpdateFn; onDone: () => void; initialEntry?: WorkoutEntry }) {
+  const [kind, setKind] = useState<string>(initialEntry?.kind ?? WORKOUT_KINDS_DEFAULT[0]);
+  const [minutes, setMinutes] = useState<number>(initialEntry?.minutes ?? 30);
+  const [weight, setWeight] = useState<string>(initialEntry?.weightKg != null ? String(initialEntry.weightKg) : "");
+  const [feeling, setFeeling] = useState<string>(initialEntry?.feeling ?? "");
+  const [note, setNote] = useState<string>(initialEntry?.note ?? "");
   const addKind = (v: string) => update((d) => ({ ...d, custom: { ...d.custom, workoutKinds: [...d.custom.workoutKinds, v] } }));
+  const rmKind = (v: string) => { update((d) => ({ ...d, custom: { ...d.custom, workoutKinds: d.custom.workoutKinds.filter((x) => x !== v) } })); if (kind === v) setKind(WORKOUT_KINDS_DEFAULT[0]); };
 
   const save = () => {
+    const editing = !!initialEntry;
     const e: WorkoutEntry = {
-      id: crypto.randomUUID(), time: nowHHMM(), kind, minutes,
+      id: initialEntry?.id ?? crypto.randomUUID(), time: initialEntry?.time ?? nowHHMM(), kind, minutes,
       weightKg: weight === "" ? undefined : Number(weight),
       feeling: feeling || undefined, note: note.trim() || undefined,
     };
-    updateDayLog(update, date, (l) => ({ ...l, workout: [...(l.workout ?? []), e] }));
+    updateDayLog(update, date, (l) => ({
+      ...l,
+      workout: editing ? (l.workout ?? []).map((x) => x.id === e.id ? e : x) : [...(l.workout ?? []), e],
+    }));
     if (weight !== "") updateDayLog(update, date, (l) => ({ ...l, weight: Number(weight) }));
     onDone();
   };
