@@ -14,6 +14,7 @@ import { Route as NotesRouteImport } from './routes/notes'
 import { Route as MedsRouteImport } from './routes/meds'
 import { Route as InsightsRouteImport } from './routes/insights'
 import { Route as CoupleRouteImport } from './routes/couple'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 
 const SettingsRoute = SettingsRouteImport.update({
@@ -41,6 +42,11 @@ const CoupleRoute = CoupleRouteImport.update({
   path: '/couple',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -49,6 +55,7 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/couple': typeof CoupleRoute
   '/insights': typeof InsightsRoute
   '/meds': typeof MedsRoute
@@ -57,6 +64,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/couple': typeof CoupleRoute
   '/insights': typeof InsightsRoute
   '/meds': typeof MedsRoute
@@ -66,6 +74,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/couple': typeof CoupleRoute
   '/insights': typeof InsightsRoute
   '/meds': typeof MedsRoute
@@ -74,12 +83,20 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/couple' | '/insights' | '/meds' | '/notes' | '/settings'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/couple'
+    | '/insights'
+    | '/meds'
+    | '/notes'
+    | '/settings'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/couple' | '/insights' | '/meds' | '/notes' | '/settings'
+  to: '/' | '/auth' | '/couple' | '/insights' | '/meds' | '/notes' | '/settings'
   id:
     | '__root__'
     | '/'
+    | '/auth'
     | '/couple'
     | '/insights'
     | '/meds'
@@ -89,6 +106,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthRoute: typeof AuthRoute
   CoupleRoute: typeof CoupleRoute
   InsightsRoute: typeof InsightsRoute
   MedsRoute: typeof MedsRoute
@@ -133,6 +151,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CoupleRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -145,6 +170,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthRoute: AuthRoute,
   CoupleRoute: CoupleRoute,
   InsightsRoute: InsightsRoute,
   MedsRoute: MedsRoute,
@@ -154,13 +180,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
