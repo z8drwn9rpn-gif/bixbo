@@ -683,12 +683,35 @@ function FoodForm({ date, data, update, onDone }:
   return (
     <div className="space-y-3">
       <Field label="Time"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></Field>
+      <Field label="Quick add">
+        <div className="mt-2 flex flex-wrap gap-2">
+          {[
+            { l: "🍵 Matcha", w: "Matcha", caf: 70 },
+            { l: "☕ Coffee", w: "Coffee", caf: 95 },
+            { l: "🫖 Tea",    w: "Tea",    caf: 40 },
+            { l: "💧 Water",  w: "Water",  hyd: 250 },
+            { l: "🥑 Avocado",w: "Avocado" },
+          ].map((q) => (
+            <button key={q.l} type="button"
+              onClick={() => {
+                setWhat((w) => w ? `${w}, ${q.w}` : q.w);
+                if (q.caf) setCaffeine(String((Number(caffeine) || 0) + q.caf));
+                if (q.hyd) setHydration(String((Number(hydration) || 0) + q.hyd));
+              }}
+              className="rounded-full bg-tint px-3 py-1.5 text-xs font-semibold ring-1 ring-border hover:bg-primary/10">
+              {q.l}
+            </button>
+          ))}
+        </div>
+      </Field>
       <Field label="What did you eat?">
         <Textarea rows={2} value={what} onChange={(e) => setWhat(e.target.value)} placeholder="e.g. chicken, rice, tomato" />
       </Field>
       <Field label="How do you feel?">
         <CustomChipList base={FOOD_FEELINGS_DEFAULT} custom={data.custom.foodFeelings}
-          onAddCustom={addCustom} selected={feelings} onToggle={(v) => setFeelings((a) => toggleIn(a, v))} />
+          onAddCustom={addCustom}
+          onRemoveCustom={(v) => { update((d) => ({ ...d, custom: { ...d.custom, foodFeelings: d.custom.foodFeelings.filter((x) => x !== v) } })); setFeelings((a) => a.filter((x) => x !== v)); }}
+          selected={feelings} onToggle={(v) => setFeelings((a) => toggleIn(a, v))} />
       </Field>
       <div className="grid grid-cols-3 gap-2">
         <Field label="Water (ml)"><Input type="number" value={hydration} onChange={(e) => setHydration(e.target.value)} placeholder="300" /></Field>
