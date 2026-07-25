@@ -115,8 +115,6 @@ function HomePage() {
         <ShareDayButton date={selected} view={view} />
       </div>
 
-      {/* Category badges */}
-      <TodayBadges log={view.dayLogs[selected]} onQuick={openQuick} />
 
       <DayPreview date={selected} data={view} update={update}
         onEditPain={(p) => { setEditPain(p); setQuickCat("pain"); setLogOpen(true); }} />
