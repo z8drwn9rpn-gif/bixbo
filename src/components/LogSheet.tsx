@@ -1014,10 +1014,20 @@ function MedsForm({ date, data, update, onDone }:
   { date: string; data: BixboData; update: UpdateFn; onDone: () => void }) {
   const meds = data.meds;
   const taken = data.medLog[date] ?? {};
-  const toggle = (key: string) => update((d) => {
+  const takenTimes = data.medLogTimes?.[date] ?? {};
+  const toggle = (key: string, defaultTime?: string) => update((d) => {
     const day = { ...(d.medLog[date] ?? {}) };
-    day[key] = !day[key];
-    return { ...d, medLog: { ...d.medLog, [date]: day } };
+    const times = { ...(d.medLogTimes?.[date] ?? {}) };
+    const nextOn = !day[key];
+    day[key] = nextOn;
+    if (nextOn && defaultTime && !times[key]) times[key] = defaultTime;
+    if (!nextOn) delete times[key];
+    return { ...d, medLog: { ...d.medLog, [date]: day }, medLogTimes: { ...(d.medLogTimes ?? {}), [date]: times } };
+  });
+  const setTakenTime = (key: string, time: string) => update((d) => {
+    const times = { ...(d.medLogTimes?.[date] ?? {}) };
+    times[key] = time;
+    return { ...d, medLogTimes: { ...(d.medLogTimes ?? {}), [date]: times } };
   });
 
   const [extraName, setExtraName] = useState("");
@@ -1043,24 +1053,34 @@ function MedsForm({ date, data, update, onDone }:
           <div className="mt-2 space-y-2">
             {meds.map((m) => m.asNeeded ? (
               <label key={m.id} className="flex items-center gap-3 rounded-2xl bg-surface p-3 ring-1 ring-border">
-                <input type="checkbox" checked={!!taken[`${m.id}@asneeded`]} onChange={() => toggle(`${m.id}@asneeded`)} className="h-4 w-4" />
+                <input type="checkbox" checked={!!taken[`${m.id}@asneeded`]} onChange={() => toggle(`${m.id}@asneeded`, nowHHMM())} className="h-4 w-4" />
                 <div className="flex-1">
                   <p className="text-sm font-medium">{m.name}</p>
                   <p className="text-xs text-muted-foreground">As needed{m.dose ? ` · ${m.dose}` : ""}</p>
                   {m.note && <p className="text-[11px] text-muted-foreground">📝 {m.note}</p>}
                 </div>
+                {taken[`${m.id}@asneeded`] && (
+                  <Input type="time" value={takenTimes[`${m.id}@asneeded`] ?? nowHHMM()}
+                    onChange={(e) => setTakenTime(`${m.id}@asneeded`, e.target.value)} className="h-8 w-24" />
+                )}
               </label>
             ) : (
               m.times.map((t) => {
                 const k = `${m.id}@${t}`;
+                const isTaken = !!taken[k];
                 return (
                   <label key={k} className="flex items-center gap-3 rounded-2xl bg-surface p-3 ring-1 ring-border">
-                    <input type="checkbox" checked={!!taken[k]} onChange={() => toggle(k)} className="h-4 w-4" />
+                    <input type="checkbox" checked={isTaken} onChange={() => toggle(k, t)} className="h-4 w-4" />
                     <div className="flex-1">
-                      <p className="text-sm font-medium">{m.name} <span className="text-xs text-muted-foreground">· {t}</span></p>
+                      <p className="text-sm font-medium">{m.name} <span className="text-xs text-muted-foreground">· scheduled {t}</span></p>
                       {m.dose && <p className="text-xs text-muted-foreground">{m.dose}</p>}
                       {m.note && <p className="text-[11px] text-muted-foreground">📝 {m.note}</p>}
                     </div>
+                    {isTaken && (
+                      <Input type="time" value={takenTimes[k] ?? t}
+                        onChange={(e) => setTakenTime(k, e.target.value)} className="h-8 w-24"
+                        title="Actual time taken" />
+                    )}
                   </label>
                 );
               })
