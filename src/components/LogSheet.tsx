@@ -285,17 +285,23 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
   const [tetanyTriggers, setTetanyTriggers] = useState<string[]>([]);
   const [tetanyHelped, setTetanyHelped] = useState<string[]>([]);
   const [tetanyNote, setTetanyNote] = useState("");
+  // Panic (inline mini-log)
+  const [panic, setPanic] = useState(false);
+  const [panicIntensity, setPanicIntensity] = useState(5);
+  const [panicMinutes, setPanicMinutes] = useState(10);
+  const [panicTrigger, setPanicTrigger] = useState("");
   const [bodyBattery, setBodyBattery] = useState<number | undefined>(initialEntry?.bodyBattery);
   const [stress, setStress] = useState<number | undefined>(initialEntry?.stress);
   const [mood, setMood] = useState<string[]>(initialEntry?.mood ?? []);
 
-  const addCustom = (key: "bodyParts" | "quality" | "symptoms" | "moods" | "tetanyLocations" | "tetanyHelped", v: string) =>
+  type CKey = "bodyParts" | "quality" | "symptoms" | "moods"
+    | "tetanyTypes" | "tetanyLocations" | "tetanyTriggers" | "tetanyHelped";
+  const addCustom = (key: CKey, v: string) =>
     update((d) => ({ ...d, custom: { ...d.custom, [key]: [...d.custom[key], v] } }));
-  const removeCustom = (key: "bodyParts" | "quality" | "symptoms" | "moods" | "tetanyLocations" | "tetanyHelped", v: string) =>
-    update((d) => ({
-      ...d,
-      custom: { ...d.custom, [key]: d.custom[key].filter((x) => x !== v) },
-    }));
+  const removeCustom = (key: CKey, v: string) =>
+    update((d) => ({ ...d, custom: { ...d.custom, [key]: d.custom[key].filter((x) => x !== v) } }));
+  const renameCustom = (key: CKey, oldV: string, newV: string) =>
+    update((d) => ({ ...d, custom: { ...d.custom, [key]: d.custom[key].map((x) => x === oldV ? newV : x) } }));
 
   const save = () => {
     const editing = !!initialEntry;
@@ -319,6 +325,14 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
         note: tetanyNote.trim() || undefined,
       };
       updateDayLog(update, date, (l) => ({ ...l, tetany: [...(l.tetany ?? []), t] }));
+    }
+    if (panic) {
+      const pk: PanicAttack = {
+        id: crypto.randomUUID(), time: nowHHMM(), minutes: panicMinutes, intensity: panicIntensity,
+        physical: [], cognitive: [], trigger: panicTrigger.trim(),
+        hyperventilation: "unknown", tetanyPresent: false, helped: [],
+      };
+      updateDayLog(update, date, (l) => ({ ...l, panic: [...(l.panic ?? []), pk] }));
     }
     onDone();
   };
