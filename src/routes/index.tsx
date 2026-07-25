@@ -248,7 +248,7 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
                   {p.cognitive.length > 0 && <p className="text-xs">Cognitive: {p.cognitive.join(", ")}</p>}
                   <p className="text-[11px] text-muted-foreground">Hyperventilation: {p.hyperventilation}{p.tetanyPresent ? " · tetany present" : ""}</p>
                   {p.helped.length > 0 && <p className="text-[11px] text-muted-foreground">Helped: {p.helped.join(", ")}</p>}
-                  {p.note && <p className="mt-1 text-sm">"{p.note}"</p>}
+                  {p.note && <p className="mt-1 text-sm whitespace-pre-line">"{p.note}"</p>}
                   <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
                 </button>
                 <DeleteBtn onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], panic: (d.dayLogs[date]?.panic ?? []).filter((x) => x.id !== p.id) } } }))} />
@@ -279,7 +279,7 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
           <button onClick={() => onEdit?.("period", undefined)} className="w-full text-left">
             <p className="text-sm">Flow: {periodLabel(log?.periodInfo?.level ?? log?.period)}</p>
             {log?.periodInfo?.discharge && <p className="text-xs text-muted-foreground">Discharge: {log.periodInfo.discharge}{log.periodInfo.dischargeNote ? ` — ${log.periodInfo.dischargeNote}` : ""}</p>}
-            {log?.periodInfo?.note && <p className="mt-1 text-sm">"{log.periodInfo.note}"</p>}
+            {log?.periodInfo?.note && <p className="mt-1 text-sm whitespace-pre-line">"{log.periodInfo.note}"</p>}
             <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
           </button>
         </Card>

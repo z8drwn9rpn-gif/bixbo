@@ -63,30 +63,30 @@
   --radius: 1rem;
 
   /* Green — multiple shades */
-  --background: oklch(0.985 0.012 145);
-  --foreground: oklch(0.22 0.03 155);
+  --background: oklch(0.985 0.02 115);
+  --foreground: oklch(0.22 0.04 115);
   --surface: oklch(1 0 0);
-  --surface-elevated: oklch(0.975 0.02 145);
-  --tint: oklch(0.945 0.035 145);
+  --surface-elevated: oklch(0.97 0.03 115);
+  --tint: oklch(0.94 0.05 115);
 
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.22 0.03 155);
+  --card-foreground: oklch(0.22 0.04 115);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.22 0.03 155);
+  --popover-foreground: oklch(0.22 0.04 115);
 
-  --primary: oklch(0.55 0.14 155);
+  --primary: oklch(0.52 0.11 115);
   --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.93 0.05 145);
-  --secondary-foreground: oklch(0.28 0.06 155);
-  --muted: oklch(0.955 0.02 145);
-  --muted-foreground: oklch(0.5 0.03 155);
-  --accent: oklch(0.9 0.08 145);
-  --accent-foreground: oklch(0.28 0.06 155);
+  --secondary: oklch(0.92 0.06 115);
+  --secondary-foreground: oklch(0.28 0.07 115);
+  --muted: oklch(0.955 0.03 115);
+  --muted-foreground: oklch(0.5 0.04 115);
+  --accent: oklch(0.88 0.08 115);
+  --accent-foreground: oklch(0.28 0.07 115);
   --destructive: oklch(0.58 0.22 25);
   --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.9 0.03 145);
-  --input: oklch(0.9 0.03 145);
-  --ring: oklch(0.55 0.14 155);
+  --border: oklch(0.88 0.04 115);
+  --input: oklch(0.88 0.04 115);
+  --ring: oklch(0.52 0.11 115);
 
   /* Period intensity — blueberry blues to deep */
   --period-spotting: oklch(0.78 0.06 275);
@@ -122,7 +122,7 @@
   --card-foreground: oklch(0.98 0.008 145);
   --popover: oklch(0.22 0.025 155);
   --popover-foreground: oklch(0.98 0.008 145);
-  --primary: oklch(0.72 0.16 150);
+  --primary: oklch(0.72 0.13 115);
   --primary-foreground: oklch(0.18 0.02 155);
   --secondary: oklch(0.28 0.04 155);
   --secondary-foreground: oklch(0.98 0.008 145);
