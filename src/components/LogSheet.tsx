@@ -703,6 +703,83 @@ function PanicForm({ date, data, update, onDone, initialEntry }:
   );
 }
 
+/* ------------------- TETANY episode ------------------- */
+function TetanyForm({ date, data, update, onDone, initialEntry }:
+  { date: string; data: BixboData; update: UpdateFn; onDone: () => void; initialEntry?: TetanyEpisode }) {
+  const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
+  const [types, setTypes] = useState<string[]>(initialEntry?.types ?? []);
+  const [loc, setLoc] = useState<string[]>(initialEntry?.location ?? []);
+  const [intensity, setIntensity] = useState(initialEntry?.intensity ?? 1);
+  const [minutes, setMinutes] = useState(initialEntry?.minutes != null ? String(initialEntry.minutes) : "5");
+  const [ongoing, setOngoing] = useState(initialEntry?.minutes == null && !!initialEntry);
+  const [triggers, setTriggers] = useState<string[]>(initialEntry?.triggers ?? []);
+  const [helped, setHelped] = useState<string[]>(initialEntry?.helped ?? []);
+  const [note, setNote] = useState(initialEntry?.note ?? "");
+
+  type CK = "tetanyTypes" | "tetanyLocations" | "tetanyTriggers" | "tetanyHelped";
+  const addC = (k: CK, v: string) => update((d) => ({ ...d, custom: { ...d.custom, [k]: [...d.custom[k], v] } }));
+  const rmC  = (k: CK, v: string) => update((d) => ({ ...d, custom: { ...d.custom, [k]: d.custom[k].filter((x) => x !== v) } }));
+  const rnC  = (k: CK, o: string, n: string) => update((d) => ({ ...d, custom: { ...d.custom, [k]: d.custom[k].map((x) => x === o ? n : x) } }));
+
+  const save = () => {
+    const editing = !!initialEntry;
+    const t: TetanyEpisode = {
+      id: initialEntry?.id ?? crypto.randomUUID(), time,
+      types, location: loc, intensity,
+      minutes: ongoing ? undefined : (minutes === "" ? undefined : Number(minutes)),
+      triggers, helped, note: note.trim() || undefined,
+    };
+    updateDayLog(update, date, (l) => ({
+      ...l,
+      tetany: editing ? (l.tetany ?? []).map((x) => x.id === t.id ? t : x) : [...(l.tetany ?? []), t],
+    }));
+    onDone();
+  };
+
+  return (
+    <div className="space-y-3">
+      <Field label="Time"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></Field>
+      <Field label="Type">
+        <CustomChipList base={TETANY_TYPES} custom={data.custom.tetanyTypes}
+          onAddCustom={(v) => addC("tetanyTypes", v)}
+          onRemoveCustom={(v) => { rmC("tetanyTypes", v); setTypes((a) => a.filter((x) => x !== v)); }}
+          onRenameCustom={(o, n) => { rnC("tetanyTypes", o, n); setTypes((a) => a.map((x) => x === o ? n : x)); }}
+          selected={types} onToggle={(v) => setTypes((a) => toggleIn(a, v))} />
+      </Field>
+      <Field label="Location">
+        <CustomChipList base={TETANY_LOCATIONS_DEFAULT} custom={data.custom.tetanyLocations}
+          onAddCustom={(v) => addC("tetanyLocations", v)}
+          onRemoveCustom={(v) => { rmC("tetanyLocations", v); setLoc((a) => a.filter((x) => x !== v)); }}
+          onRenameCustom={(o, n) => { rnC("tetanyLocations", o, n); setLoc((a) => a.map((x) => x === o ? n : x)); }}
+          selected={loc} onToggle={(v) => setLoc((a) => toggleIn(a, v))} />
+      </Field>
+      <Field label={`Intensity ${intensity}/5`}>
+        <IntensityScale value={intensity} onChange={setIntensity} max={5} />
+      </Field>
+      <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} />
+      <Field label="Triggers">
+        <CustomChipList base={TETANY_TRIGGERS} custom={data.custom.tetanyTriggers}
+          onAddCustom={(v) => addC("tetanyTriggers", v)}
+          onRemoveCustom={(v) => { rmC("tetanyTriggers", v); setTriggers((a) => a.filter((x) => x !== v)); }}
+          onRenameCustom={(o, n) => { rnC("tetanyTriggers", o, n); setTriggers((a) => a.map((x) => x === o ? n : x)); }}
+          selected={triggers} onToggle={(v) => setTriggers((a) => toggleIn(a, v))} />
+      </Field>
+      <Field label="What helped">
+        <CustomChipList base={TETANY_HELPED_DEFAULT} custom={data.custom.tetanyHelped}
+          onAddCustom={(v) => addC("tetanyHelped", v)}
+          onRemoveCustom={(v) => { rmC("tetanyHelped", v); setHelped((a) => a.filter((x) => x !== v)); }}
+          onRenameCustom={(o, n) => { rnC("tetanyHelped", o, n); setHelped((a) => a.map((x) => x === o ? n : x)); }}
+          selected={helped} onToggle={(v) => setHelped((a) => toggleIn(a, v))} />
+      </Field>
+      <Field label="Note (optional)">
+        <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
+      </Field>
+      <SaveBar onCancel={onDone} onSave={save} />
+    </div>
+  );
+}
+
+
 /* ------------------- PERIOD (Blueberry) ------------------- */
 function PeriodForm({ date, data, update, onDone }:
   { date: string; data: BixboData; update: UpdateFn; onDone: () => void }) {
