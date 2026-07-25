@@ -507,12 +507,10 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
           </Field>
           {panic && (
             <div className="rounded-2xl border border-border p-3 space-y-3">
-              <div className="grid grid-cols-2 gap-2">
-                <Field label="Time"><Input type="time" value={panicTime} onChange={(e) => setPanicTime(e.target.value)} /></Field>
-                <Field label="Duration (min)"><Input type="number" min={1} value={panicMinutes} onChange={(e) => setPanicMinutes(Number(e.target.value))} /></Field>
-              </div>
+              <Field label="Time"><Input type="time" value={panicTime} onChange={(e) => setPanicTime(e.target.value)} /></Field>
+              <DurationField minutes={panicMinutes} setMinutes={setPanicMinutes} ongoing={panicOngoing} setOngoing={setPanicOngoing} />
               <Field label={`Intensity ${panicIntensity}/10`}>
-                <Slider value={[panicIntensity]} min={1} max={10} step={1} onValueChange={([v]) => setPanicIntensity(v)} />
+                <IntensityScale value={panicIntensity} onChange={setPanicIntensity} max={10} />
               </Field>
               <Field label="Physical symptoms">
                 <CustomChipList base={PANIC_PHYSICAL} custom={data.custom.panicPhysical}
