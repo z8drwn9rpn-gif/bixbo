@@ -1102,23 +1102,24 @@ function EventForm({ date, update, onDone, initialEntry }:
 }
 
 /* ------------------- TASK ------------------- */
-function TaskForm({ date, update, onDone }:
-  { date: string; update: UpdateFn; onDone: () => void }) {
-  const [title, setTitle] = useState("");
-  const [startDate, setStartDate] = useState(date);
-  const [endDate, setEndDate] = useState(date);
-  const [time, setTime] = useState("");
-  const [timeEnd, setTimeEnd] = useState("");
-  const [note, setNote] = useState("");
+function TaskForm({ date, update, onDone, initialEntry }:
+  { date: string; update: UpdateFn; onDone: () => void; initialEntry?: TaskEntry }) {
+  const [title, setTitle] = useState(initialEntry?.title ?? "");
+  const [startDate, setStartDate] = useState(initialEntry?.startDate ?? date);
+  const [endDate, setEndDate] = useState(initialEntry?.endDate ?? date);
+  const [time, setTime] = useState(initialEntry?.time ?? "");
+  const [timeEnd, setTimeEnd] = useState(initialEntry?.timeEnd ?? "");
+  const [note, setNote] = useState(initialEntry?.note ?? "");
   const save = () => {
     if (!title.trim()) return;
+    const editing = !!initialEntry;
     const t: TaskEntry = {
-      id: crypto.randomUUID(), title: title.trim(),
+      id: initialEntry?.id ?? crypto.randomUUID(), title: title.trim(),
       startDate, endDate: endDate < startDate ? startDate : endDate,
       time: time || undefined, timeEnd: timeEnd || undefined,
-      done: false, note: note.trim() || undefined,
+      done: initialEntry?.done ?? false, note: note.trim() || undefined,
     };
-    update((d) => ({ ...d, tasks: [...d.tasks, t] }));
+    update((d) => ({ ...d, tasks: editing ? d.tasks.map((x) => x.id === t.id ? t : x) : [...d.tasks, t] }));
     onDone();
   };
   return (
