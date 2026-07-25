@@ -1038,7 +1038,7 @@ function WorkoutForm({ date, data, update, onDone, initialEntry }:
     <div className="space-y-3">
       <Field label="Type">
         <CustomChipList base={WORKOUT_KINDS_DEFAULT} custom={data.custom.workoutKinds}
-          onAddCustom={addKind} selected={[kind]} onToggle={(v) => setKind(v)} />
+          onAddCustom={addKind} onRemoveCustom={rmKind} selected={[kind]} onToggle={(v) => setKind(v)} />
       </Field>
       <Field label="Duration (minutes)"><Input type="number" min={1} value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} /></Field>
       <Field label="Weight after (kg, optional)"><Input type="number" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} /></Field>
