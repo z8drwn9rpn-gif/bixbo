@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { useBixbo, EMPTY, addDays, toKey, painColor, BRISTOL, avgDayPain, type BixboData } from "@/lib/storage";
+import { useBixbo, EMPTY, addDays, toKey, painColor, BRISTOL, avgDayPain } from "@/lib/storage";
 
 export const Route = createFileRoute("/insights")({
   head: () => ({
