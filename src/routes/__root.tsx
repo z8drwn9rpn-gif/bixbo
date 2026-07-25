@@ -11,6 +11,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { useCloudSync } from "../lib/cloudSync";
 
 function NotFoundComponent() {
   return (
@@ -115,7 +116,6 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
-import { useCloudSync } from "../lib/cloudSync";
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
