@@ -14,13 +14,121 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      partner_links: {
+        Row: {
+          a: string
+          b: string
+          created_at: string
+        }
+        Insert: {
+          a: string
+          b: string
+          created_at?: string
+        }
+        Update: {
+          a?: string
+          b?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          gender: string | null
+          id: string
+          pairing_code: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          gender?: string | null
+          id: string
+          pairing_code?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          gender?: string | null
+          id?: string
+          pairing_code?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_data: {
+        Row: {
+          data: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          data?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          data?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      ensure_profile: {
+        Args: { _display_name?: string }
+        Returns: {
+          created_at: string
+          display_name: string | null
+          gender: string | null
+          id: string
+          pairing_code: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      gen_pairing_code: { Args: never; Returns: string }
+      get_partner: {
+        Args: never
+        Returns: {
+          data: Json
+          display_name: string
+          gender: string
+          id: string
+          updated_at: string
+        }[]
+      }
+      is_partner_of: { Args: { _owner: string }; Returns: boolean }
+      link_partner_by_code: {
+        Args: { _code: string }
+        Returns: {
+          created_at: string
+          display_name: string | null
+          gender: string | null
+          id: string
+          pairing_code: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      unlink_partner: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
