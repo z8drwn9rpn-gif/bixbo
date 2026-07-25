@@ -61,7 +61,7 @@ export interface FoodEntry {
   caffeineMg?: number;
   alcoholDrinks?: number;
 }
-export interface BowelEntry { id: string; time: string; bristol: number; note?: string } // bristol 0 = no bowel movement
+export interface BowelEntry { id: string; time: string; bristol: number; note?: string; feelings?: string[]; symptoms?: string[] } // bristol 0 = no bowel movement
 export interface SexEntry {
   id: string;
   time: string;
@@ -158,6 +158,8 @@ export interface CustomLists {
   tetanyHelped: string[];
   panicHelped: string[];
   sexTypes: string[];
+  bowelFeelings: string[];
+  bowelSymptoms: string[];
 }
 
 export interface Settings {
@@ -223,6 +225,8 @@ export const EMPTY: BixboData = {
     tetanyHelped: [],
     panicHelped: [],
     sexTypes: [],
+    bowelFeelings: [],
+    bowelSymptoms: [],
   },
   settings: {
     textSize: "md",
