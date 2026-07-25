@@ -4,7 +4,7 @@ import {
   type BixboData, type DayLog,
 } from "@/lib/storage";
 
-const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+const WEEKDAYS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
@@ -24,8 +24,8 @@ function iconsFor(log: DayLog | undefined, hasMed: boolean): string[] {
   const out: string[] = [];
   if (hasMed) out.push("💊");
   if (log?.bowel?.some((b) => b.bristol > 0)) out.push("💩");
-  // ❤️ only for actual sex (not fingering/oral/suck_dick)
-  if (log?.sex?.some((s) => s.kind === "sex")) out.push("❤️");
+  // ❤️ for any ŠukŠuk entry
+  if (log?.sex?.length) out.push("❤️");
   if (log?.heat?.length) out.push("🔥");
   if (log?.workout?.length) out.push("🧘🏼‍♀️");
   if (log?.panic?.length) out.push("⚡");
@@ -44,7 +44,8 @@ export function MonthCalendar({
   const y = month.getFullYear();
   const m = month.getMonth();
   const first = new Date(y, m, 1);
-  const startWeekday = first.getDay();
+  // Week starts on Monday
+  const startWeekday = (first.getDay() + 6) % 7;
   const daysInMonth = new Date(y, m + 1, 0).getDate();
   const prevDays = new Date(y, m, 0).getDate();
   const totalCells = Math.ceil((startWeekday + daysInMonth) / 7) * 7;
@@ -68,14 +69,19 @@ export function MonthCalendar({
     return isDateInRange(k, c.lastPeriodStart, c.lastPeriodEnd);
   };
 
-  // Swipe
-  const touchStartX = useRef<number | null>(null);
-  const onTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
+  // Swipe — horizontal only, ignore vertical scroll
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  };
   const onTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX.current == null || !onSwipeMonth) return;
-    const dx = e.changedTouches[0].clientX - touchStartX.current;
-    if (Math.abs(dx) > 60) onSwipeMonth(dx > 0 ? -1 : 1);
-    touchStartX.current = null;
+    if (!touchStart.current || !onSwipeMonth) return;
+    const dx = e.changedTouches[0].clientX - touchStart.current.x;
+    const dy = e.changedTouches[0].clientY - touchStart.current.y;
+    if (Math.abs(dx) > 80 && Math.abs(dx) > Math.abs(dy) * 1.8) {
+      onSwipeMonth(dx > 0 ? -1 : 1);
+    }
+    touchStart.current = null;
   };
 
   return (

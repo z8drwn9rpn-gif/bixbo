@@ -51,8 +51,8 @@ function InsightsPage() {
     return nums.reduce((a, b) => a + b, 0) / nums.length;
   })();
 
-  // Sex count (only actual sex)
-  const sexCount = days.reduce((s, k) => s + (view.dayLogs[k]?.sex?.filter((x) => x.kind === "sex").length ?? 0), 0);
+  // ŠukŠuk! count — all entries of any kind
+  const sexCount = days.reduce((s, k) => s + (view.dayLogs[k]?.sex?.length ?? 0), 0);
 
   // Bowel by type
   const bowelCounts = new Array(8).fill(0) as number[];
