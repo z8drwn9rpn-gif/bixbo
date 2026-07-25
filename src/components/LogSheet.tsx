@@ -367,7 +367,8 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
       const t: TetanyEpisode = {
         id: crypto.randomUUID(), time: nowHHMM(),
         types: tetanyTypes, location: tetanyLoc, intensity: tetanyIntensity,
-        minutes: tetanyMin, triggers: tetanyTriggers, helped: tetanyHelped,
+        minutes: tetanyOngoing ? undefined : (tetanyMin === "" ? undefined : Number(tetanyMin)),
+        triggers: tetanyTriggers, helped: tetanyHelped,
         note: tetanyNote.trim() || undefined,
       };
       updateDayLog(update, date, (l) => ({ ...l, tetany: [...(l.tetany ?? []), t] }));
