@@ -60,18 +60,20 @@ export function LogSheet({
   const active = cat ?? initial;
   const edit = editEntry;
 
+  const isMale = data.settings.gender === "male";
   const orderedCats = useMemo(() => {
     const saved = data.settings.logOrder ?? [];
-    const byId = new Map(CATEGORIES.map((c) => [c.id, c]));
+    const source = CATEGORIES.filter((c) => !(isMale && c.id === "period"));
+    const byId = new Map(source.map((c) => [c.id, c]));
     const seen = new Set<string>();
     const out: typeof CATEGORIES = [];
     for (const id of saved) {
       const c = byId.get(id as Category);
       if (c && !seen.has(id)) { out.push(c); seen.add(id); }
     }
-    for (const c of CATEGORIES) if (!seen.has(c.id)) out.push(c);
+    for (const c of source) if (!seen.has(c.id)) out.push(c);
     return out;
-  }, [data.settings.logOrder]);
+  }, [data.settings.logOrder, isMale]);
 
   const moveCat = (idx: number, dir: -1 | 1) => {
     const j = idx + dir;
