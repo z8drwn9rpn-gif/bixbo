@@ -137,7 +137,7 @@ function HomePage() {
 
       <QuickTags
         update={update}
-        onLongPress={(cat) => {
+        onLongPress={(cat: string) => {
           const map: Record<string, string | undefined> = {
             pain: "pain", tetany: "tetany", panic: "panic",
             mood: "pain", energy: "pain", histamine: "pain",
