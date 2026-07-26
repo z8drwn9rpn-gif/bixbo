@@ -57,7 +57,7 @@ export interface ExtraMed { id: string; time: string; name: string; dose?: strin
 export interface WorkoutEntry { id: string; time: string; kind: string; minutes: number; weightKg?: number; feeling?: string | string[]; note?: string }
 export interface EventEntry { id: string; title: string; startDate: string; endDate: string; time?: string; timeEnd?: string; note?: string; color?: string }
 export interface TaskEntry { id: string; title: string; startDate: string; endDate: string; time?: string; timeEnd?: string; done: boolean; note?: string }
-export interface PeriodEntry { level: PeriodLevel; discharge?: string; dischargeNote?: string; note?: string }
+export interface PeriodEntry { level: PeriodLevel; discharge?: string; dischargeNote?: string; note?: string; cramps?: number }
 export interface DayNote { text: string; time?: string }
 
 export interface DayLog {
