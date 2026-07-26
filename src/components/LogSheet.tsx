@@ -572,7 +572,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
                   selected={tetanyLoc} onToggle={(v) => setTetanyLoc((a) => toggleIn(a, v))} />
               </Field>
               <Field label={`Intensity ${tetanyIntensity}/5`}>
-                <IntensityScale value={tetanyIntensity} onChange={setTetanyIntensity} max={5} />
+                <IntensityScale value={tetanyIntensity} onChange={setTetanyIntensity} max={5} descriptions={TETANY_INTENSITY_DESC} legendTitle="Tetany intensity scale" />
               </Field>
               <DurationField minutes={tetanyMin} setMinutes={setTetanyMin} ongoing={tetanyOngoing} setOngoing={setTetanyOngoing} />
               <Field label="Triggers">
@@ -605,7 +605,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
               <Field label="Time"><Input type="time" value={panicTime} onChange={(e) => setPanicTime(e.target.value)} /></Field>
               <DurationField minutes={panicMinutes} setMinutes={setPanicMinutes} ongoing={panicOngoing} setOngoing={setPanicOngoing} />
               <Field label={`Intensity ${panicIntensity}/10`}>
-                <IntensityScale value={panicIntensity} onChange={setPanicIntensity} max={10} />
+                <IntensityScale value={panicIntensity} onChange={setPanicIntensity} max={10} descriptions={PANIC_INTENSITY_DESC} legendTitle="Panic intensity scale" />
               </Field>
               <Field label="Physical symptoms">
                 <CustomChipList base={PANIC_PHYSICAL} custom={data.custom.panicPhysical}
@@ -751,7 +751,7 @@ function PanicForm({ date, data, update, onDone, initialEntry }:
       <Field label="Time"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="w-full" /></Field>
       <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} />
       <Field label={`Intensity ${intensity}/10`}>
-        <IntensityScale value={intensity} onChange={setIntensity} max={10} />
+        <IntensityScale value={intensity} onChange={setIntensity} max={10} descriptions={PANIC_INTENSITY_DESC} legendTitle="Panic intensity scale" />
       </Field>
       <Field label="Physical symptoms">
         <CustomChipList base={PANIC_PHYSICAL} custom={data.custom.panicPhysical}
@@ -849,7 +849,7 @@ function TetanyForm({ date, data, update, onDone, initialEntry }:
           selected={loc} onToggle={(v) => setLoc((a) => toggleIn(a, v))} />
       </Field>
       <Field label={`Intensity ${intensity}/5`}>
-        <IntensityScale value={intensity} onChange={setIntensity} max={5} />
+        <IntensityScale value={intensity} onChange={setIntensity} max={5} descriptions={TETANY_INTENSITY_DESC} legendTitle="Tetany intensity scale" />
       </Field>
       <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} />
       <Field label="Triggers">
