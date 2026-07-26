@@ -134,6 +134,18 @@ function HomePage() {
         onEditPain={(p) => { setEditPain(p); setEditEntry(undefined); setQuickCat("pain"); setLogOpen(true); }}
         onEdit={openEdit} />
 
+      <QuickTags
+        update={update}
+        onLongPress={(cat) => {
+          const map: Record<string, string | undefined> = {
+            pain: "pain", tetany: "tetany", panic: "panic",
+            mood: "pain", energy: "pain", histamine: "pain",
+          };
+          const target = map[cat];
+          if (target) { setQuickCat(target); setEditPain(undefined); setEditEntry(undefined); setLogOpen(true); }
+        }}
+      />
+
       <div className="fixed bottom-24 right-5 z-30">
         <Button
           onClick={() => { setQuickCat(undefined); setEditPain(undefined); setEditEntry(undefined); setLogOpen(true); }}
