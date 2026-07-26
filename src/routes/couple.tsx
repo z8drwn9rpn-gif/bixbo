@@ -287,6 +287,10 @@ function CouplePage() {
               <MedsList title="Recent days" days={partnerMeds} />
             </section>
 
+            {partner.gender !== "male" && <BlueberrySection partner={partner} />}
+
+
+
             <section className="rounded-3xl bg-surface p-4 ring-1 ring-border space-y-3">
               <h3 className="font-serif text-lg font-semibold">🔥 My pain</h3>
               <PainList title="Recent" entries={myPain} />
