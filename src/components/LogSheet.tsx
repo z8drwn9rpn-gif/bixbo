@@ -269,45 +269,7 @@ function CustomChipList({
 }
 const toggleIn = (arr: string[], v: string) => arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v];
 
-const TETANY_INTENSITY_DESC: Record<number, string> = {
-  1: "Mild — occasional twitches or tingling, barely disruptive",
-  2: "Noticeable — clear tingling or small cramps, still functional",
-  3: "Moderate — cramps hurt, hard to relax the muscles",
-  4: "Strong — painful spasms, hands/feet lock up, hard to move",
-  5: "Severe — full-body cramps, unable to function, may need help",
-};
-const PANIC_INTENSITY_DESC: Record<number, string> = {
-  1: "Slight unease, easy to ignore",
-  2: "Mild anxiety, aware of heartbeat",
-  3: "Noticeable worry, faster breathing",
-  4: "Uncomfortable, restless, want to leave",
-  5: "Strong fear, racing heart, dizziness",
-  6: "Hard to think clearly, trembling",
-  7: "Overwhelming fear, chest pressure",
-  8: "Loss of control feeling, tingling / numbness",
-  9: "Terror — fear of dying or collapsing",
-  10: "Total panic — unable to function",
-};
-const STRESS_DESC: Record<number, string> = {
-  0: "None — completely calm and relaxed",
-  1: "Very low — barely any tension",
-  2: "Low — slight background pressure",
-  3: "Mild — a little on edge",
-  4: "Moderate low — noticeable but manageable",
-  5: "Moderate — clearly stressed, still coping",
-  6: "Moderate high — tense, harder to focus",
-  7: "High — irritable, body feels tight",
-  8: "Very high — overwhelmed, hard to relax",
-  9: "Severe — near breaking point",
-  10: "Extreme — cannot cope, shutdown / panic",
-};
-const HOT_FLASHES_DESC: Record<number, string> = {
-  1: "Mild warmth — barely noticeable, no sweat",
-  2: "Warm flush — face/neck feels hot, no visible sweat",
-  3: "Sweating — visible perspiration, need air/fan",
-  4: "Strong wave — soaking sweat, heart racing",
-  5: "Drenching — clothes/bedding wet, need to change",
-};
+import { getScaleDesc } from "@/lib/scaleDescriptions";
 
 function ScaleLegend({ max, descriptions, value, title, from = 1 }:
   { max: number; descriptions: Record<number, string>; value?: number; title: string; from?: number }) {
@@ -498,7 +460,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
                style={{ background: bg }}>
             {Number.isInteger(score) ? score : score.toFixed(1)}
           </div>
-          <p className="text-center font-medium">{PAIN_DESCRIPTIONS[Math.round(score)]}</p>
+          <p className="text-center font-medium">{getScaleDesc(data,"pain")[Math.round(score)]}</p>
           <div className="w-full px-4">
             <Slider value={[score * 2]} min={0} max={20} step={1} onValueChange={([v]) => setScore(v / 2)} />
           </div>
@@ -546,7 +508,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
           {symptoms.includes("Hot flashes") && (
             <Field label={`Hot flashes intensity ${hotFlashes ?? "-"}/5`}>
               <IntensityScale value={hotFlashes ?? 0} onChange={(n) => setHotFlashes(hotFlashes === n ? undefined : n)} max={5}
-                descriptions={HOT_FLASHES_DESC} legendTitle="Hot flashes scale" />
+                descriptions={getScaleDesc(data,"hotFlashes")} legendTitle="Hot flashes scale" />
             </Field>
           )}
           <Field label="Tetany episode?">
@@ -572,7 +534,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
                   selected={tetanyLoc} onToggle={(v) => setTetanyLoc((a) => toggleIn(a, v))} />
               </Field>
               <Field label={`Intensity ${tetanyIntensity}/5`}>
-                <IntensityScale value={tetanyIntensity} onChange={setTetanyIntensity} max={5} descriptions={TETANY_INTENSITY_DESC} legendTitle="Tetany intensity scale" />
+                <IntensityScale value={tetanyIntensity} onChange={setTetanyIntensity} max={5} descriptions={getScaleDesc(data,"tetany")} legendTitle="Tetany intensity scale" />
               </Field>
               <DurationField minutes={tetanyMin} setMinutes={setTetanyMin} ongoing={tetanyOngoing} setOngoing={setTetanyOngoing} />
               <Field label="Triggers">
@@ -605,7 +567,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
               <Field label="Time"><Input type="time" value={panicTime} onChange={(e) => setPanicTime(e.target.value)} /></Field>
               <DurationField minutes={panicMinutes} setMinutes={setPanicMinutes} ongoing={panicOngoing} setOngoing={setPanicOngoing} />
               <Field label={`Intensity ${panicIntensity}/10`}>
-                <IntensityScale value={panicIntensity} onChange={setPanicIntensity} max={10} descriptions={PANIC_INTENSITY_DESC} legendTitle="Panic intensity scale" />
+                <IntensityScale value={panicIntensity} onChange={setPanicIntensity} max={10} descriptions={getScaleDesc(data,"panic")} legendTitle="Panic intensity scale" />
               </Field>
               <Field label="Physical symptoms">
                 <CustomChipList base={PANIC_PHYSICAL} custom={data.custom.panicPhysical}
@@ -656,6 +618,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
 
       {step === 4 && (
         <div className="space-y-4">
+          {(() => { const STRESS_DESC = getScaleDesc(data, "stress"); return (
           <Field label={`Stress ${stress ?? "-"} / 10`}>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {Array.from({ length: 11 }, (_, n) => {
@@ -682,6 +645,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
             )}
             <ScaleLegend max={10} from={0} descriptions={STRESS_DESC} value={stress} title="Stress scale" />
           </Field>
+          ); })()}
           <Field label="Body battery">
             <div className="mt-2 flex justify-between gap-2">
               {BODY_BATTERY.map((b) => (
@@ -759,7 +723,7 @@ function PanicForm({ date, data, update, onDone, initialEntry }:
       <Field label="Time"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="w-full" /></Field>
       <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} />
       <Field label={`Intensity ${intensity}/10`}>
-        <IntensityScale value={intensity} onChange={setIntensity} max={10} descriptions={PANIC_INTENSITY_DESC} legendTitle="Panic intensity scale" />
+        <IntensityScale value={intensity} onChange={setIntensity} max={10} descriptions={getScaleDesc(data,"panic")} legendTitle="Panic intensity scale" />
       </Field>
       <Field label="Physical symptoms">
         <CustomChipList base={PANIC_PHYSICAL} custom={data.custom.panicPhysical}
@@ -857,7 +821,7 @@ function TetanyForm({ date, data, update, onDone, initialEntry }:
           selected={loc} onToggle={(v) => setLoc((a) => toggleIn(a, v))} />
       </Field>
       <Field label={`Intensity ${intensity}/5`}>
-        <IntensityScale value={intensity} onChange={setIntensity} max={5} descriptions={TETANY_INTENSITY_DESC} legendTitle="Tetany intensity scale" />
+        <IntensityScale value={intensity} onChange={setIntensity} max={5} descriptions={getScaleDesc(data,"tetany")} legendTitle="Tetany intensity scale" />
       </Field>
       <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} />
       <Field label="Triggers">
@@ -891,12 +855,14 @@ function PeriodForm({ date, data, update, onDone }:
   const [discharge, setDischarge] = useState<string>(cur?.discharge ?? "");
   const [dNote, setDNote] = useState<string>(cur?.dischargeNote ?? "");
   const [note, setNote] = useState<string>(cur?.note ?? "");
+  const [cramps, setCramps] = useState<number | undefined>(cur?.cramps);
+  const painDesc = getScaleDesc(data, "pain");
 
   const save = () => {
     updateDayLog(update, date, (l) => ({
       ...l,
       period: level || undefined,
-      periodInfo: { level, discharge: discharge || undefined, dischargeNote: dNote.trim() || undefined, note: note.trim() || undefined },
+      periodInfo: { level, discharge: discharge || undefined, dischargeNote: dNote.trim() || undefined, note: note.trim() || undefined, cramps },
     }));
     onDone();
   };
@@ -919,6 +885,36 @@ function PeriodForm({ date, data, update, onDone }:
             </button>
           ))}
         </div>
+      </Field>
+      <Field label={`Cramp pain ${cramps == null ? "—" : (Number.isInteger(cramps) ? cramps : cramps.toFixed(1))} / 10`}>
+        <div className="mt-2 flex items-center gap-3">
+          <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full text-lg font-bold text-white"
+               style={{ background: cramps == null ? "hsl(var(--muted-foreground))" : painColor(cramps) }}>
+            {cramps == null ? "—" : (Number.isInteger(cramps) ? cramps : cramps.toFixed(1))}
+          </div>
+          <div className="flex-1">
+            <Slider value={[(cramps ?? 0) * 2]} min={0} max={20} step={1}
+              onValueChange={([v]) => setCramps(v / 2)} />
+          </div>
+        </div>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {Array.from({ length: 21 }, (_, i) => i / 2).map((n) => (
+            <button key={n} type="button" onClick={() => setCramps(cramps === n ? undefined : n)}
+              title={`${n} — ${painDesc[Math.round(n)]}`}
+              className={`h-7 w-7 rounded-full text-[10px] font-semibold ${
+                cramps === n ? "text-white ring-2 ring-foreground" : "bg-tint text-foreground"
+              }`}
+              style={cramps === n ? { background: painColor(n) } : undefined}>
+              {Number.isInteger(n) ? n : n.toFixed(1)}
+            </button>
+          ))}
+        </div>
+        {cramps != null && (
+          <div className="mt-2 rounded-lg bg-tint px-2.5 py-1.5 text-[11px] leading-snug text-foreground">
+            <span className="font-semibold">Level {Math.round(cramps)}:</span> {painDesc[Math.round(cramps)]}
+          </div>
+        )}
+        <ScaleLegend max={10} from={0} descriptions={painDesc} value={cramps == null ? undefined : Math.round(cramps)} title="Pain scale (Mankosky)" />
       </Field>
       <Field label="Discharge (optional)">
         <div className="mt-2 flex flex-wrap gap-2">
