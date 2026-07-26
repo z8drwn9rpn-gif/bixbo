@@ -269,12 +269,79 @@ function CustomChipList({
 }
 const toggleIn = (arr: string[], v: string) => arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v];
 
-function IntensityScale({ value, onChange, max, descriptions }: { value: number; onChange: (n: number) => void; max: number; descriptions?: Record<number, string> }) {
+const TETANY_INTENSITY_DESC: Record<number, string> = {
+  1: "Mild — occasional twitches or tingling, barely disruptive",
+  2: "Noticeable — clear tingling or small cramps, still functional",
+  3: "Moderate — cramps hurt, hard to relax the muscles",
+  4: "Strong — painful spasms, hands/feet lock up, hard to move",
+  5: "Severe — full-body cramps, unable to function, may need help",
+};
+const PANIC_INTENSITY_DESC: Record<number, string> = {
+  1: "Slight unease, easy to ignore",
+  2: "Mild anxiety, aware of heartbeat",
+  3: "Noticeable worry, faster breathing",
+  4: "Uncomfortable, restless, want to leave",
+  5: "Strong fear, racing heart, dizziness",
+  6: "Hard to think clearly, trembling",
+  7: "Overwhelming fear, chest pressure",
+  8: "Loss of control feeling, tingling / numbness",
+  9: "Terror — fear of dying or collapsing",
+  10: "Total panic — unable to function",
+};
+const STRESS_DESC: Record<number, string> = {
+  0: "None — completely calm and relaxed",
+  1: "Very low — barely any tension",
+  2: "Low — slight background pressure",
+  3: "Mild — a little on edge",
+  4: "Moderate low — noticeable but manageable",
+  5: "Moderate — clearly stressed, still coping",
+  6: "Moderate high — tense, harder to focus",
+  7: "High — irritable, body feels tight",
+  8: "Very high — overwhelmed, hard to relax",
+  9: "Severe — near breaking point",
+  10: "Extreme — cannot cope, shutdown / panic",
+};
+const HOT_FLASHES_DESC: Record<number, string> = {
+  1: "Mild warmth — barely noticeable, no sweat",
+  2: "Warm flush — face/neck feels hot, no visible sweat",
+  3: "Sweating — visible perspiration, need air/fan",
+  4: "Strong wave — soaking sweat, heart racing",
+  5: "Drenching — clothes/bedding wet, need to change",
+};
+
+function ScaleLegend({ max, descriptions, value, title, from = 1 }:
+  { max: number; descriptions: Record<number, string>; value?: number; title: string; from?: number }) {
+  const items: number[] = [];
+  for (let i = from; i <= max; i++) items.push(i);
+  return (
+    <div className="mt-2 rounded-xl border border-border/60 bg-surface/50 p-2.5">
+      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>
+      <div className="space-y-1 text-[11px] leading-tight">
+        {items.map((n) => {
+          const span = Math.max(1, max - from);
+          const hue = 130 - ((n - from) * 130) / span;
+          return (
+            <div key={n} className="flex items-start gap-2">
+              <span className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full text-[9px] font-bold text-white" style={{ background: `hsl(${hue} 70% 50%)` }}>{n}</span>
+              <span className={value === n ? "font-semibold text-foreground" : "text-muted-foreground"}>{descriptions[n]}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function IntensityScale({ value, onChange, max, descriptions, legendTitle, from = 1 }:
+  { value: number; onChange: (n: number) => void; max: number; descriptions?: Record<number, string>; legendTitle?: string; from?: number }) {
+  const nums: number[] = [];
+  for (let i = from; i <= max; i++) nums.push(i);
   return (
     <div className="mt-2 space-y-1.5">
       <div className="flex flex-wrap gap-1.5">
-        {Array.from({ length: max }, (_, i) => i + 1).map((n) => {
-          const hue = 130 - ((n - 1) * 130) / Math.max(1, max - 1);
+        {nums.map((n) => {
+          const span = Math.max(1, max - from);
+          const hue = 130 - ((n - from) * 130) / span;
           const bg = `hsl(${hue} 70% 50%)`;
           const active = value === n;
           return (
@@ -293,14 +360,18 @@ function IntensityScale({ value, onChange, max, descriptions }: { value: number;
         <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ background: "hsl(65 70% 50%)" }} />Moderate</span>
         <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ background: "hsl(0 70% 50%)" }} />Severe</span>
       </div>
-      {descriptions && value > 0 && descriptions[value] && (
+      {descriptions && value >= from && descriptions[value] && (
         <div className="mt-1 rounded-lg bg-tint px-2.5 py-1.5 text-[11px] leading-snug text-foreground">
           <span className="font-semibold">Level {value}:</span> {descriptions[value]}
         </div>
       )}
+      {descriptions && legendTitle && (
+        <ScaleLegend max={max} from={from} descriptions={descriptions} value={value} title={legendTitle} />
+      )}
     </div>
   );
 }
+
 function DurationField({ minutes, setMinutes, ongoing, setOngoing }:
   { minutes: string; setMinutes: (s: string) => void; ongoing: boolean; setOngoing: (b: boolean) => void }) {
   return (
@@ -475,33 +546,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
           {symptoms.includes("Hot flashes") && (
             <Field label={`Hot flashes intensity ${hotFlashes ?? "-"}/5`}>
               <IntensityScale value={hotFlashes ?? 0} onChange={(n) => setHotFlashes(hotFlashes === n ? undefined : n)} max={5}
-                descriptions={{
-                  1: "Mild warmth — barely noticeable, no sweat",
-                  2: "Warm flush — face/neck feels hot, no visible sweat",
-                  3: "Sweating — visible perspiration, need air/fan",
-                  4: "Strong wave — soaking sweat, heart racing",
-                  5: "Drenching — clothes/bedding wet, need to change",
-                }} />
-              <div className="mt-2 rounded-xl border border-border/60 bg-surface/50 p-2.5">
-                <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Hot flashes scale</p>
-                <div className="space-y-1 text-[11px] leading-tight">
-                  {[
-                    { n: 1, text: "Mild warmth — barely noticeable, no sweat" },
-                    { n: 2, text: "Warm flush — face/neck feels hot, no visible sweat" },
-                    { n: 3, text: "Sweating — visible perspiration, need air/fan" },
-                    { n: 4, text: "Strong wave — soaking sweat, heart racing" },
-                    { n: 5, text: "Drenching — clothes/bedding wet, need to change" },
-                  ].map(({ n, text }) => {
-                    const hue = 130 - ((n - 1) * 130) / 4;
-                    return (
-                      <div key={n} className="flex items-center gap-2">
-                        <span className="grid h-4 w-4 place-items-center rounded-full text-[9px] font-bold text-white" style={{ background: `hsl(${hue} 70% 50%)` }}>{n}</span>
-                        <span className={hotFlashes === n ? "font-semibold text-foreground" : "text-muted-foreground"}>{text}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+                descriptions={HOT_FLASHES_DESC} legendTitle="Hot flashes scale" />
             </Field>
           )}
           <Field label="Tetany episode?">
@@ -527,7 +572,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
                   selected={tetanyLoc} onToggle={(v) => setTetanyLoc((a) => toggleIn(a, v))} />
               </Field>
               <Field label={`Intensity ${tetanyIntensity}/5`}>
-                <IntensityScale value={tetanyIntensity} onChange={setTetanyIntensity} max={5} />
+                <IntensityScale value={tetanyIntensity} onChange={setTetanyIntensity} max={5} descriptions={TETANY_INTENSITY_DESC} legendTitle="Tetany intensity scale" />
               </Field>
               <DurationField minutes={tetanyMin} setMinutes={setTetanyMin} ongoing={tetanyOngoing} setOngoing={setTetanyOngoing} />
               <Field label="Triggers">
@@ -560,7 +605,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
               <Field label="Time"><Input type="time" value={panicTime} onChange={(e) => setPanicTime(e.target.value)} /></Field>
               <DurationField minutes={panicMinutes} setMinutes={setPanicMinutes} ongoing={panicOngoing} setOngoing={setPanicOngoing} />
               <Field label={`Intensity ${panicIntensity}/10`}>
-                <IntensityScale value={panicIntensity} onChange={setPanicIntensity} max={10} />
+                <IntensityScale value={panicIntensity} onChange={setPanicIntensity} max={10} descriptions={PANIC_INTENSITY_DESC} legendTitle="Panic intensity scale" />
               </Field>
               <Field label="Physical symptoms">
                 <CustomChipList base={PANIC_PHYSICAL} custom={data.custom.panicPhysical}
@@ -618,7 +663,9 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
                 const bg = `hsl(${hue} 70% 50%)`;
                 const active = stress === n;
                 return (
-                  <button key={n} onClick={() => setStress(stress === n ? undefined : n)}
+                  <button key={n} type="button" onClick={() => setStress(stress === n ? undefined : n)}
+                    title={`${n} — ${STRESS_DESC[n]}`}
+                    aria-label={`Stress ${n} — ${STRESS_DESC[n]}`}
                     className={`h-9 w-9 rounded-full text-xs font-bold transition ${
                       active ? "text-white ring-2 ring-foreground scale-110" : "text-white/90"
                     }`}
@@ -628,6 +675,12 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
                 );
               })}
             </div>
+            {stress != null && (
+              <div className="mt-2 rounded-lg bg-tint px-2.5 py-1.5 text-[11px] leading-snug text-foreground">
+                <span className="font-semibold">Level {stress}:</span> {STRESS_DESC[stress]}
+              </div>
+            )}
+            <ScaleLegend max={10} from={0} descriptions={STRESS_DESC} value={stress} title="Stress scale" />
           </Field>
           <Field label="Body battery">
             <div className="mt-2 flex justify-between gap-2">
@@ -706,7 +759,7 @@ function PanicForm({ date, data, update, onDone, initialEntry }:
       <Field label="Time"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="w-full" /></Field>
       <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} />
       <Field label={`Intensity ${intensity}/10`}>
-        <IntensityScale value={intensity} onChange={setIntensity} max={10} />
+        <IntensityScale value={intensity} onChange={setIntensity} max={10} descriptions={PANIC_INTENSITY_DESC} legendTitle="Panic intensity scale" />
       </Field>
       <Field label="Physical symptoms">
         <CustomChipList base={PANIC_PHYSICAL} custom={data.custom.panicPhysical}
@@ -804,7 +857,7 @@ function TetanyForm({ date, data, update, onDone, initialEntry }:
           selected={loc} onToggle={(v) => setLoc((a) => toggleIn(a, v))} />
       </Field>
       <Field label={`Intensity ${intensity}/5`}>
-        <IntensityScale value={intensity} onChange={setIntensity} max={5} />
+        <IntensityScale value={intensity} onChange={setIntensity} max={5} descriptions={TETANY_INTENSITY_DESC} legendTitle="Tetany intensity scale" />
       </Field>
       <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} />
       <Field label="Triggers">
