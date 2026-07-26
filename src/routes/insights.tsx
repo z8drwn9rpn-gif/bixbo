@@ -307,7 +307,163 @@ function InsightsPage() {
             <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-green-500" /> &gt;8h</span>
           </div>
         </section>
+
+        <MedsAdherence data={view} />
       </div>
     </AppShell>
+  );
+}
+
+function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) {
+  const [range, setRange] = useState<7 | 30>(7);
+  const [open, setOpen] = useState(true);
+  const [expandedDay, setExpandedDay] = useState<string | null>(null);
+
+  const end = new Date(); end.setHours(0, 0, 0, 0);
+  const start = new Date(end); start.setDate(end.getDate() - (range - 1));
+  const days: string[] = [];
+  for (let i = 0; i < range; i++) { const d = new Date(start); d.setDate(start.getDate() + i); days.push(toKey(d)); }
+
+  const scheduled = data.meds.filter((m) => !m.asNeeded);
+  const asNeeded = data.meds.filter((m) => m.asNeeded);
+
+  const perDay = days.map((k) => {
+    const expected = scheduled.reduce((s, m) => s + m.times.length, 0);
+    const missed: { medName: string; time: string }[] = [];
+    let taken = 0;
+    scheduled.forEach((m) => m.times.forEach((t) => {
+      if (data.medLog[k]?.[`${m.id}@${t}`]) taken++;
+      else missed.push({ medName: m.name, time: t });
+    }));
+    return { date: k, expected, taken, missed };
+  });
+  const totalExpected = perDay.reduce((s, d) => s + d.expected, 0);
+  const totalTaken = perDay.reduce((s, d) => s + d.taken, 0);
+  const overallPct = totalExpected ? Math.round((totalTaken / totalExpected) * 100) : null;
+
+  const perMed = scheduled.flatMap((m) => m.times.map((t) => {
+    let taken = 0;
+    days.forEach((k) => { if (data.medLog[k]?.[`${m.id}@${t}`]) taken++; });
+    const expected = days.length;
+    return { id: `${m.id}@${t}`, name: m.name, dose: m.dose, time: t, taken, expected, pct: expected ? Math.round((taken / expected) * 100) : 0 };
+  })).sort((a, b) => a.pct - b.pct);
+
+  const asNeededCounts = asNeeded.map((m) => {
+    let count = 0;
+    days.forEach((k) => {
+      const log = data.medLog[k] ?? {};
+      Object.keys(log).forEach((key) => { if (log[key] && (key === `${m.id}@asNeeded` || key.startsWith(`${m.id}@`))) count++; });
+    });
+    return { id: m.id, name: m.name, count };
+  });
+
+  const cellColor = (d: typeof perDay[number]) => {
+    if (d.expected === 0) return "var(--tint)";
+    const r = d.taken / d.expected;
+    if (r >= 1) return "#22c55e";
+    if (r > 0) return "#eab308";
+    return "#ef4444";
+  };
+
+  const fmt = (k: string) => fromKey(k).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+
+  if (data.meds.length === 0) return null;
+
+  return (
+    <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
+      <button onClick={() => setOpen((o) => !o)} className="flex w-full items-center justify-between">
+        <p className="text-xs uppercase tracking-wider text-muted-foreground">💊 Meds adherence</p>
+        <span className="text-xs text-muted-foreground">{open ? "▾" : "▸"}</span>
+      </button>
+      {open && (
+        <>
+          <div className="mt-3 flex gap-2">
+            {([7, 30] as const).map((r) => (
+              <button key={r} onClick={() => setRange(r)}
+                className={`flex-1 rounded-xl px-3 py-1.5 text-xs font-medium ${range === r ? "bg-primary text-primary-foreground" : "bg-tint text-foreground"}`}>
+                {r}-day
+              </button>
+            ))}
+          </div>
+
+          {totalExpected > 0 ? (
+            <div className="mt-4 flex items-baseline gap-2">
+              <span className="font-serif text-5xl leading-none">{overallPct}%</span>
+              <span className="text-sm text-muted-foreground">{totalTaken}/{totalExpected} doses</span>
+            </div>
+          ) : (
+            <p className="mt-4 text-sm text-muted-foreground">No scheduled meds in this range.</p>
+          )}
+
+          {perDay.length > 0 && (
+            <div className="mt-4">
+              <p className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">Daily heatmap</p>
+              <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${Math.min(range, 15)}, minmax(0, 1fr))` }}>
+                {perDay.map((d) => (
+                  <button key={d.date} onClick={() => setExpandedDay(expandedDay === d.date ? null : d.date)}
+                    title={`${fmt(d.date)} — ${d.taken}/${d.expected}`}
+                    className={`aspect-square rounded ${expandedDay === d.date ? "ring-2 ring-primary" : ""}`}
+                    style={{ background: cellColor(d) }} />
+                ))}
+              </div>
+              <div className="mt-2 flex gap-3 text-[10px] text-muted-foreground">
+                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded" style={{ background: "#22c55e" }} /> full</span>
+                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded" style={{ background: "#eab308" }} /> partial</span>
+                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded" style={{ background: "#ef4444" }} /> none</span>
+                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded bg-tint" /> n/a</span>
+              </div>
+              {expandedDay && (() => {
+                const d = perDay.find((x) => x.date === expandedDay);
+                if (!d) return null;
+                return (
+                  <div className="mt-3 rounded-2xl bg-tint p-3 text-xs">
+                    <p className="font-medium">{fmt(d.date)} — {d.taken}/{d.expected} taken</p>
+                    {d.missed.length > 0 ? (
+                      <ul className="mt-1 space-y-0.5 text-muted-foreground">
+                        {d.missed.map((m, i) => <li key={i}>✗ {m.time} — {m.medName}</li>)}
+                      </ul>
+                    ) : <p className="mt-1 text-muted-foreground">All doses taken 💚</p>}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          {perMed.length > 0 && (
+            <div className="mt-4">
+              <p className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">Per medication</p>
+              <ul className="space-y-2">
+                {perMed.map((m) => {
+                  const color = m.pct >= 90 ? "#22c55e" : m.pct >= 60 ? "#eab308" : "#ef4444";
+                  return (
+                    <li key={m.id} className="flex items-center gap-2 text-xs">
+                      <span className="w-32 shrink-0 truncate">{m.name} <span className="text-muted-foreground">{m.time}</span></span>
+                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-tint">
+                        <div className="h-full rounded-full" style={{ width: `${m.pct}%`, background: color }} />
+                      </div>
+                      <span className="w-14 shrink-0 text-right tabular-nums">{m.pct}% <span className="text-muted-foreground">({m.taken}/{m.expected})</span></span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+
+          {asNeededCounts.length > 0 && (
+            <div className="mt-4">
+              <p className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">As-needed (frequency)</p>
+              <ul className="space-y-1 text-xs">
+                {asNeededCounts.map((m) => (
+                  <li key={m.id} className="flex justify-between">
+                    <span>{m.name}</span>
+                    <span className="text-muted-foreground">{m.count}× in {range} days</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </>
+      )}
+    </section>
   );
 }
