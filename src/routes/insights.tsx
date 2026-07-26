@@ -70,6 +70,34 @@ function InsightsPage() {
   const sleepSeries = days.map((k) => view.dayLogs[k]?.sleepHours);
   const sleepColor = (h?: number) => h == null ? "var(--tint)" : h < 8 ? "#ef4444" : h === 8 ? "#eab308" : "#22c55e";
 
+  // Hot flashes — collect per-day max intensity + distribution across levels 1–5
+  const hfDescriptions: Record<number, string> = {
+    1: "Mild warmth",
+    2: "Warm flush",
+    3: "Sweating",
+    4: "Strong wave",
+    5: "Drenching",
+  };
+  const hfSeries = days.map((k) => {
+    const vals = (view.dayLogs[k]?.pain ?? []).map((p) => p.hotFlashes).filter((n): n is number => n != null);
+    return vals.length ? Math.max(...vals) : undefined;
+  });
+  const hfCounts = [0, 0, 0, 0, 0, 0] as number[];
+  days.forEach((k) => (view.dayLogs[k]?.pain ?? []).forEach((p) => {
+    if (p.hotFlashes && p.hotFlashes >= 1 && p.hotFlashes <= 5) hfCounts[p.hotFlashes]++;
+  }));
+  const hfTotal = hfCounts.reduce((a, b) => a + b, 0);
+  const hfAvg = (() => {
+    const s = hfCounts.reduce((sum, c, i) => sum + c * i, 0);
+    return hfTotal ? s / hfTotal : null;
+  })();
+  const hfTop = (() => {
+    let bestN = 0, bestC = 0;
+    for (let i = 1; i <= 5; i++) if (hfCounts[i] > bestC) { bestC = hfCounts[i]; bestN = i; }
+    return bestN;
+  })();
+
+
   // Cycle summary (last 6 months)
   const cycleSummary = (() => {
     const starts: string[] = [];
