@@ -1,6 +1,7 @@
+import { useEffect } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
-import { useBixbo, EMPTY, addDays, todayKey, painColor, PAIN_DESCRIPTIONS, predictPeriods, nextPredictedPeriod, type PainEntry, type PanicAttack, type TetanyEpisode, type ExtraMed, type Med, type PartnerData } from "@/lib/storage";
+import { useBixbo, EMPTY, addDays, todayKey, daysBetween, painColor, PAIN_DESCRIPTIONS, predictPeriods, nextPredictedPeriod, type PainEntry, type PanicAttack, type TetanyEpisode, type ExtraMed, type Med, type PartnerData } from "@/lib/storage";
 
 export const Route = createFileRoute("/couple")({
   head: () => ({
