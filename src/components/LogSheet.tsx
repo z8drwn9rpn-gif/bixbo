@@ -875,6 +875,9 @@ function PeriodForm({ date, data, update, onDone }:
           <p className="mt-1 text-[11px] text-muted-foreground">Taking birth control since {data.settings.birthControlSince}</p>
         )}
       </Field>
+      <div className="rounded-2xl bg-tint p-3 text-[11px] leading-relaxed text-muted-foreground">
+        Cycle prediction is based on your last period and cycle length (edit in Settings later).
+      </div>
       <SaveBar onCancel={onDone} onSave={save} />
     </div>
   );
