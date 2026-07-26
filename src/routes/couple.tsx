@@ -1,6 +1,7 @@
+import { useEffect } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
-import { useBixbo, EMPTY, addDays, todayKey, painColor, PAIN_DESCRIPTIONS, predictPeriods, nextPredictedPeriod, type PainEntry, type PanicAttack, type TetanyEpisode, type ExtraMed, type Med, type PartnerData } from "@/lib/storage";
+import { useBixbo, EMPTY, addDays, todayKey, daysBetween, painColor, PAIN_DESCRIPTIONS, predictPeriods, nextPredictedPeriod, type PainEntry, type PanicAttack, type TetanyEpisode, type ExtraMed, type Med, type PartnerData } from "@/lib/storage";
 
 export const Route = createFileRoute("/couple")({
   head: () => ({
@@ -150,14 +151,52 @@ function BlueberrySection({ partner }: { partner: PartnerData }) {
   };
   const monthName = today.toLocaleString("en-US", { month: "long", year: "numeric" });
 
+  // Local notification when partner's period is approaching (3 days or less)
+  useEffect(() => {
+    if (!next || typeof window === "undefined") return;
+    if (!("Notification" in window)) return;
+    const daysUntil = daysBetween(todayKey(), next.start);
+    if (daysUntil < 0 || daysUntil > 3) return;
+    const notifyKey = `bixbo:partner-period-notified:${next.start}`;
+    if (localStorage.getItem(notifyKey)) return;
+    const fire = () => {
+      const body =
+        daysUntil === 0 ? `${partner.name || "Your partner"}'s period is predicted to start today.` :
+        daysUntil === 1 ? `${partner.name || "Your partner"}'s period is predicted to start tomorrow.` :
+        `${partner.name || "Your partner"}'s period is predicted in ${daysUntil} days (${next.start}).`;
+      try {
+        new Notification("🫐 Blueberry reminder", { body, icon: "/favicon.svg" });
+        localStorage.setItem(notifyKey, "1");
+      } catch { /* ignore */ }
+    };
+    if (Notification.permission === "granted") fire();
+    else if (Notification.permission !== "denied") {
+      Notification.requestPermission().then((p) => { if (p === "granted") fire(); });
+    }
+  }, [next?.start, partner.name]);
+
+
   return (
     <section className="rounded-3xl bg-surface p-4 ring-1 ring-border space-y-3">
       <h3 className="font-serif text-lg font-semibold">🫐 {partner.name || "Partner"} — Blueberry</h3>
-      {next && (
-        <p className="text-sm">
-          Next period predicted: <span className="font-semibold">{next.start}</span> → {next.end}
-        </p>
-      )}
+      {next && (() => {
+        const daysUntil = daysBetween(todayKey(), next.start);
+        const label =
+          daysUntil < 0 ? `${Math.abs(daysUntil)} day${Math.abs(daysUntil) === 1 ? "" : "s"} late` :
+          daysUntil === 0 ? "today" :
+          daysUntil === 1 ? "tomorrow" :
+          `in ${daysUntil} days`;
+        return (
+          <div className="rounded-2xl bg-tint p-3 text-sm space-y-1">
+            <p>
+              🩸 Next period: <span className="font-semibold">{next.start}</span> ({label})
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Predicted window: {next.start} → {next.end}
+            </p>
+          </div>
+        );
+      })()}
       {cycle && (
         <p className="text-xs text-muted-foreground">Cycle {cycle.cycleLength}d · period {cycle.periodLength}d</p>
       )}

@@ -945,6 +945,22 @@ function PeriodForm({ date, data, update, onDone }:
       <div className="rounded-2xl bg-tint p-3 text-[11px] leading-relaxed text-muted-foreground">
         Cycle prediction is based on your last period and cycle length (edit in Settings later).
       </div>
+      {cur && (
+        <button
+          type="button"
+          onClick={() => {
+            updateDayLog(update, date, (l) => {
+              const { period: _p, periodInfo: _pi, ...rest } = l;
+              void _p; void _pi;
+              return rest;
+            });
+            onDone();
+          }}
+          className="w-full rounded-2xl bg-destructive/10 py-2.5 text-sm font-medium text-destructive ring-1 ring-destructive/30"
+        >
+          Delete Blueberry entry
+        </button>
+      )}
       <SaveBar onCancel={onDone} onSave={save} />
     </div>
   );
