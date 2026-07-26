@@ -460,7 +460,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
                style={{ background: bg }}>
             {Number.isInteger(score) ? score : score.toFixed(1)}
           </div>
-          <p className="text-center font-medium">{PAIN_DESCRIPTIONS[Math.round(score)]}</p>
+          <p className="text-center font-medium">{getScaleDesc(data,"pain")[Math.round(score)]}</p>
           <div className="w-full px-4">
             <Slider value={[score * 2]} min={0} max={20} step={1} onValueChange={([v]) => setScore(v / 2)} />
           </div>
