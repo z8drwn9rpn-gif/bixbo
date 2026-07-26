@@ -237,6 +237,7 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
                   {p.parts.length > 0 && <p className="text-sm">{p.parts.join(", ")}</p>}
                   {p.quality.length > 0 && <p className="text-xs text-muted-foreground">{p.quality.join(", ")}</p>}
                   {p.symptoms.length > 0 && <p className="text-xs text-muted-foreground">+ {p.symptoms.join(", ")}</p>}
+                  {p.hotFlashes != null && <p className="text-xs text-muted-foreground">🥵 Hot flashes intensity {p.hotFlashes}/5</p>}
                   {p.mood?.length ? <p className="text-xs text-muted-foreground">Mood: {p.mood.join(", ")}</p> : null}
                   {p.stress != null && <p className="text-xs text-muted-foreground">Stress {p.stress}/10</p>}
                   {p.bodyBattery != null && <p className="text-xs text-muted-foreground">Battery {p.bodyBattery}/5</p>}
@@ -274,12 +275,15 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
 
       {log?.tetany?.length ? (
         <Card title="Tetany" icon="⚡">
-          <ul className="space-y-1 text-sm">
+          <ul className="space-y-2 text-sm">
             {log.tetany.map((t) => (
               <li key={t.id} className="flex items-start gap-2">
                 <button onClick={() => onEdit?.("tetany", t)} className="flex-1 text-left">
-                  {t.time} · {t.types.join(", ")} · {t.intensity}/5 · {t.minutes == null ? "ongoing" : `${t.minutes}min`}{t.triggers.length ? ` — ${t.triggers.join(", ")}` : ""}
-                  <span className="ml-2 text-[10px] text-primary">Tap to edit</span>
+                  <p>{t.time} · {t.types.join(", ") || "Tetany"} · {t.intensity}/5 · {t.minutes == null ? "ongoing" : `${t.minutes}min`}{t.triggers.length ? ` — ${t.triggers.join(", ")}` : ""}</p>
+                  {t.location?.length ? <p className="text-xs text-muted-foreground">Location: {t.location.join(", ")}</p> : null}
+                  {t.helped?.length ? <p className="text-xs text-muted-foreground">Helped: {t.helped.join(", ")}</p> : null}
+                  {t.note && <p className="mt-1 text-sm whitespace-pre-line">"{t.note}"</p>}
+                  <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
                 </button>
                 <DeleteBtn onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], tetany: (d.dayLogs[date]?.tetany ?? []).filter((x) => x.id !== t.id) } } }))} />
               </li>

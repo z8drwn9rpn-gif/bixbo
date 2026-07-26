@@ -18,6 +18,7 @@ export interface PainEntry {
   bodyBattery?: number;
   stress?: number;
   mood?: string[];
+  hotFlashes?: number;
 }
 export interface TetanyEpisode {
   id: string;
@@ -125,11 +126,14 @@ export interface Settings {
   partnerName?: string;
   logOrder?: string[];
   gender?: Gender;
+  birthControlSince?: string;
 }
 
 export interface PartnerData {
   name?: string;
-  dayLogs: Record<string, { pain?: PainEntry[]; panic?: PanicAttack[] }>;
+  dayLogs: Record<string, { pain?: PainEntry[]; panic?: PanicAttack[]; tetany?: TetanyEpisode[]; extraMeds?: ExtraMed[] }>;
+  meds?: Med[];
+  medLog?: Record<string, Record<string, boolean>>;
   importedAt: number;
 }
 

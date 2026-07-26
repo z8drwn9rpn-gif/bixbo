@@ -348,6 +348,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
   const [bodyBattery, setBodyBattery] = useState<number | undefined>(initialEntry?.bodyBattery);
   const [stress, setStress] = useState<number | undefined>(initialEntry?.stress);
   const [mood, setMood] = useState<string[]>(initialEntry?.mood ?? []);
+  const [hotFlashes, setHotFlashes] = useState<number | undefined>(initialEntry?.hotFlashes);
 
   type CKey = "bodyParts" | "quality" | "symptoms" | "moods"
     | "tetanyTypes" | "tetanyLocations" | "tetanyTriggers" | "tetanyHelped";
@@ -365,6 +366,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
       time: initialEntry?.time ?? nowHHMM(),
       score, parts, quality, symptoms, note: note.trim(),
       bodyBattery, stress, mood: mood.length ? mood : undefined,
+      hotFlashes: symptoms.includes("Hot flashes") ? hotFlashes : undefined,
     };
     updateDayLog(update, date, (l) => ({
       ...l,
@@ -463,6 +465,12 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
               onRenameCustom={(o, n) => { renameCustom("symptoms", o, n); setSymptoms((a) => a.map((x) => x === o ? n : x)); }}
               selected={symptoms} onToggle={(v) => setSymptoms((a) => toggleIn(a, v))} />
           </Field>
+          {symptoms.includes("Hot flashes") && (
+            <Field label={`Hot flashes intensity ${hotFlashes ?? "-"}/5`}>
+              <IntensityScale value={hotFlashes ?? 0} onChange={(n) => setHotFlashes(hotFlashes === n ? undefined : n)} max={5} />
+              <p className="mt-1 text-[10px] text-muted-foreground">1 = mild warmth · 3 = sweating · 5 = drenching, need to change clothes</p>
+            </Field>
+          )}
           <Field label="Tetany episode?">
             <div className="mt-1 flex gap-2">
               <Chip active={!tetany} onClick={() => setTetany(false)}>No</Chip>
@@ -841,9 +849,13 @@ function PeriodForm({ date, data, update, onDone }:
       <Field label="Day note (optional)">
         <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
-      <div className="rounded-xl bg-tint p-3 text-xs text-muted-foreground">
-        Cycle prediction is based on your last period and cycle length (edit in Settings later).
-      </div>
+      <Field label="Birth control since (optional)">
+        <Input type="date" value={data.settings.birthControlSince ?? ""}
+          onChange={(e) => update((d) => ({ ...d, settings: { ...d.settings, birthControlSince: e.target.value || undefined } }))} />
+        {data.settings.birthControlSince && (
+          <p className="mt-1 text-[11px] text-muted-foreground">Taking birth control since {data.settings.birthControlSince}</p>
+        )}
+      </Field>
       <SaveBar onCancel={onDone} onSave={save} />
     </div>
   );

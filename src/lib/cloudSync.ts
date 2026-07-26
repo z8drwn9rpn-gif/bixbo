@@ -35,9 +35,11 @@ export async function unlinkPartner(): Promise<void> {
 function toPartnerView(bx: BixboData | null, name: string): PartnerData {
   const dayLogs: PartnerData["dayLogs"] = {};
   for (const [k, l] of Object.entries(bx?.dayLogs ?? {})) {
-    if (l?.pain?.length || l?.panic?.length) dayLogs[k] = { pain: l.pain, panic: l.panic };
+    if (l?.pain?.length || l?.panic?.length || l?.tetany?.length || l?.extraMeds?.length) {
+      dayLogs[k] = { pain: l.pain, panic: l.panic, tetany: l.tetany, extraMeds: l.extraMeds };
+    }
   }
-  return { name, dayLogs, importedAt: Date.now() };
+  return { name, dayLogs, meds: bx?.meds ?? [], medLog: bx?.medLog ?? {}, importedAt: Date.now() };
 }
 
 export async function fetchPartner(): Promise<PartnerData | null> {

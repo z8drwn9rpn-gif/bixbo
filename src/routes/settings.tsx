@@ -1,14 +1,14 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Bell, Download, Upload, Users, Type, LogOut, Cloud, Copy } from "lucide-react";
+import { ArrowLeft, Bell, Download, Upload, Users, Type, LogOut, Cloud, Copy, RefreshCw } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { useBixbo, EMPTY, todayKey, type BixboData, type PartnerData, type Gender } from "@/lib/storage";
+import { useBixbo, EMPTY, todayKey, replaceBixbo, getBixbo, type BixboData, type PartnerData, type Gender } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  useSession, ensureProfile, updateProfile, linkPartnerByCode, unlinkPartner, fetchPartner,
+  useSession, ensureProfile, updateProfile, linkPartnerByCode, unlinkPartner, fetchPartner, pullMyData,
   type CloudProfile,
 } from "@/lib/cloudSync";
 
@@ -34,6 +34,22 @@ function SettingsPage() {
   const [partnerCode, setPartnerCode] = useState("");
   const [partnerBusy, setPartnerBusy] = useState(false);
   const [partnerMsg, setPartnerMsg] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshMsg, setRefreshMsg] = useState<string | null>(null);
+
+  const doRefresh = async () => {
+    setRefreshing(true); setRefreshMsg(null);
+    try {
+      const remote = await pullMyData();
+      if (remote) replaceBixbo({ ...getBixbo(), ...remote, partner: getBixbo().partner }, "remote");
+      const p = await fetchPartner();
+      if (p) update((d) => ({ ...d, partner: p }));
+      else if (session) update((d) => ({ ...d, partner: undefined }));
+      setRefreshMsg(`Synced ✓ ${new Date().toLocaleTimeString()}`);
+    } catch (e) {
+      setRefreshMsg(e instanceof Error ? e.message : String(e));
+    } finally { setRefreshing(false); }
+  };
 
   useEffect(() => {
     if (typeof window === "undefined" || !("Notification" in window)) { setNotifPerm("unsupported"); return; }
@@ -152,7 +168,13 @@ function SettingsPage() {
                 <Button size="sm" variant="outline" onClick={copyCode}><Copy className="h-3.5 w-3.5" /></Button>
               </div>
               <p className="mt-1 text-[11px] text-muted-foreground">Share this pairing code with your partner. They enter it below to link accounts.</p>
-              <Button size="sm" variant="outline" className="mt-3" onClick={signOut}><LogOut className="h-3.5 w-3.5" /> Sign out</Button>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <Button size="sm" onClick={doRefresh} disabled={refreshing}>
+                  <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} /> Refresh sync
+                </Button>
+                <Button size="sm" variant="outline" onClick={signOut}><LogOut className="h-3.5 w-3.5" /> Sign out</Button>
+              </div>
+              {refreshMsg && <p className="mt-2 text-[11px] text-muted-foreground">{refreshMsg}</p>}
             </>
           )}
         </section>
