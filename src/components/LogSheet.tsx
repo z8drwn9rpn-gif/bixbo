@@ -618,6 +618,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
 
       {step === 4 && (
         <div className="space-y-4">
+          {(() => { const STRESS_DESC = getScaleDesc(data, "stress"); return (
           <Field label={`Stress ${stress ?? "-"} / 10`}>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {Array.from({ length: 11 }, (_, n) => {
@@ -644,6 +645,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
             )}
             <ScaleLegend max={10} from={0} descriptions={STRESS_DESC} value={stress} title="Stress scale" />
           </Field>
+          ); })()}
           <Field label="Body battery">
             <div className="mt-2 flex justify-between gap-2">
               {BODY_BATTERY.map((b) => (
