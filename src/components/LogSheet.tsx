@@ -468,7 +468,26 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
           {symptoms.includes("Hot flashes") && (
             <Field label={`Hot flashes intensity ${hotFlashes ?? "-"}/5`}>
               <IntensityScale value={hotFlashes ?? 0} onChange={(n) => setHotFlashes(hotFlashes === n ? undefined : n)} max={5} />
-              <p className="mt-1 text-[10px] text-muted-foreground">1 = mild warmth · 3 = sweating · 5 = drenching, need to change clothes</p>
+              <div className="mt-2 rounded-xl border border-border/60 bg-surface/50 p-2.5">
+                <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Hot flashes scale</p>
+                <div className="space-y-1 text-[11px] leading-tight">
+                  {[
+                    { n: 1, text: "Mild warmth — barely noticeable, no sweat" },
+                    { n: 2, text: "Warm flush — face/neck feels hot, no visible sweat" },
+                    { n: 3, text: "Sweating — visible perspiration, need air/fan" },
+                    { n: 4, text: "Strong wave — soaking sweat, heart racing" },
+                    { n: 5, text: "Drenching — clothes/bedding wet, need to change" },
+                  ].map(({ n, text }) => {
+                    const hue = 130 - ((n - 1) * 130) / 4;
+                    return (
+                      <div key={n} className="flex items-center gap-2">
+                        <span className="grid h-4 w-4 place-items-center rounded-full text-[9px] font-bold text-white" style={{ background: `hsl(${hue} 70% 50%)` }}>{n}</span>
+                        <span className={hotFlashes === n ? "font-semibold text-foreground" : "text-muted-foreground"}>{text}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </Field>
           )}
           <Field label="Tetany episode?">
