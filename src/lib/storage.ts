@@ -60,6 +60,10 @@ export interface TaskEntry { id: string; title: string; startDate: string; endDa
 export interface PeriodEntry { level: PeriodLevel; discharge?: string; dischargeNote?: string; note?: string; cramps?: number }
 export interface DayNote { text: string; time?: string }
 
+export interface MoodEntry { id: string; time: string; value: "happy" | "neutral" | "sad" | "angry" }
+export interface EnergyEntry { id: string; time: string; value: "good" | "exhausted" }
+export interface HistamineEntry { id: string; time: string; flare: boolean; note?: string }
+
 export interface DayLog {
   pain?: PainEntry[];
   tetany?: TetanyEpisode[];
@@ -76,6 +80,9 @@ export interface DayLog {
   sleepQuality?: string | string[];
   extraMeds?: ExtraMed[];
   workout?: WorkoutEntry[];
+  mood?: MoodEntry[];
+  energy?: EnergyEntry[];
+  histamine?: HistamineEntry[];
 }
 
 export function asArr(v: string | string[] | undefined | null): string[] {

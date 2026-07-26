@@ -5,6 +5,7 @@ import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { MonthCalendar, monthLabel } from "@/components/MonthCalendar";
 import { LogSheet } from "@/components/LogSheet";
+import { QuickTags } from "@/components/QuickTags";
 import {
   useBixbo, EMPTY, toKey, fromKey, todayKey, PAIN_DESCRIPTIONS, painColor, BRISTOL, nextPredictedPeriod, daysBetween, asArr,
   type BixboData, type PeriodLevel, type BowelEntry, type SexEntry,
@@ -133,6 +134,18 @@ function HomePage() {
       <DayPreview date={selected} data={view} update={update}
         onEditPain={(p) => { setEditPain(p); setEditEntry(undefined); setQuickCat("pain"); setLogOpen(true); }}
         onEdit={openEdit} />
+
+      <QuickTags
+        update={update}
+        onLongPress={(cat: string) => {
+          const map: Record<string, string | undefined> = {
+            pain: "pain", tetany: "tetany", panic: "panic",
+            mood: "pain", energy: "pain", histamine: "pain",
+          };
+          const target = map[cat];
+          if (target) { setQuickCat(target); setEditPain(undefined); setEditEntry(undefined); setLogOpen(true); }
+        }}
+      />
 
       <div className="fixed bottom-24 right-5 z-30">
         <Button
