@@ -168,7 +168,13 @@ function SettingsPage() {
                 <Button size="sm" variant="outline" onClick={copyCode}><Copy className="h-3.5 w-3.5" /></Button>
               </div>
               <p className="mt-1 text-[11px] text-muted-foreground">Share this pairing code with your partner. They enter it below to link accounts.</p>
-              <Button size="sm" variant="outline" className="mt-3" onClick={signOut}><LogOut className="h-3.5 w-3.5" /> Sign out</Button>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <Button size="sm" onClick={doRefresh} disabled={refreshing}>
+                  <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} /> Refresh sync
+                </Button>
+                <Button size="sm" variant="outline" onClick={signOut}><LogOut className="h-3.5 w-3.5" /> Sign out</Button>
+              </div>
+              {refreshMsg && <p className="mt-2 text-[11px] text-muted-foreground">{refreshMsg}</p>}
             </>
           )}
         </section>
