@@ -18,6 +18,7 @@ export interface PainEntry {
   bodyBattery?: number;
   stress?: number;
   mood?: string[];
+  hotFlashes?: number;
 }
 export interface TetanyEpisode {
   id: string;
