@@ -154,11 +154,24 @@ function BlueberrySection({ partner }: { partner: PartnerData }) {
   return (
     <section className="rounded-3xl bg-surface p-4 ring-1 ring-border space-y-3">
       <h3 className="font-serif text-lg font-semibold">🫐 {partner.name || "Partner"} — Blueberry</h3>
-      {next && (
-        <p className="text-sm">
-          Next period predicted: <span className="font-semibold">{next.start}</span> → {next.end}
-        </p>
-      )}
+      {next && (() => {
+        const daysUntil = daysBetween(todayKey(), next.start);
+        const label =
+          daysUntil < 0 ? `${Math.abs(daysUntil)} day${Math.abs(daysUntil) === 1 ? "" : "s"} late` :
+          daysUntil === 0 ? "today" :
+          daysUntil === 1 ? "tomorrow" :
+          `in ${daysUntil} days`;
+        return (
+          <div className="rounded-2xl bg-tint p-3 text-sm space-y-1">
+            <p>
+              🩸 Next period: <span className="font-semibold">{next.start}</span> ({label})
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Predicted window: {next.start} → {next.end}
+            </p>
+          </div>
+        );
+      })()}
       {cycle && (
         <p className="text-xs text-muted-foreground">Cycle {cycle.cycleLength}d · period {cycle.periodLength}d</p>
       )}
