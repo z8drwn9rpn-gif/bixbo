@@ -132,9 +132,11 @@ export interface Settings {
 
 export interface PartnerData {
   name?: string;
-  dayLogs: Record<string, { pain?: PainEntry[]; panic?: PanicAttack[]; tetany?: TetanyEpisode[]; extraMeds?: ExtraMed[] }>;
+  dayLogs: Record<string, { pain?: PainEntry[]; panic?: PanicAttack[]; tetany?: TetanyEpisode[]; extraMeds?: ExtraMed[]; period?: PeriodLevel; periodInfo?: PeriodEntry }>;
   meds?: Med[];
   medLog?: Record<string, Record<string, boolean>>;
+  cycle?: CyclePrefs;
+  gender?: Gender;
   importedAt: number;
 }
 
