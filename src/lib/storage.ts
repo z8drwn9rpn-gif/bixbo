@@ -127,6 +127,7 @@ export interface Settings {
   logOrder?: string[];
   gender?: Gender;
   birthControlSince?: string;
+  scaleDescriptions?: Partial<Record<"pain" | "stress" | "tetany" | "panic" | "hotFlashes", Record<number, string>>>;
 }
 
 export interface PartnerData {
