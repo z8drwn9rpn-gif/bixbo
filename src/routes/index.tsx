@@ -101,6 +101,17 @@ function HomePage() {
         />
       </div>
 
+      {view.settings.gender !== "male" && (() => {
+        const p = nextPredictedPeriod(view.cycle);
+        if (!p) return null;
+        const fmt = (k: string) => fromKey(k).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+        return (
+          <div className="mx-5 mt-3 rounded-full bg-tint px-4 py-2 text-center text-xs text-muted-foreground ring-1 ring-border">
+            Next period predicted: <span className="font-semibold text-foreground">{fmt(p.start)} – {fmt(p.end)}</span>
+          </div>
+        );
+      })()}
+
       {/* Top meds row */}
       <div className="mt-4 grid grid-cols-2 gap-2 px-5">
         <MedsProgress data={view} />
