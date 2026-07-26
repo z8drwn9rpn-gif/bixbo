@@ -1,16 +1,18 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Bell, Download, Upload, Users, Type, LogOut, Cloud, Copy, RefreshCw } from "lucide-react";
+import { ArrowLeft, Bell, Download, Upload, Users, Type, LogOut, Cloud, Copy, RefreshCw, Sliders, RotateCcw } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { useBixbo, EMPTY, todayKey, replaceBixbo, getBixbo, type BixboData, type PartnerData, type Gender } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import {
   useSession, ensureProfile, updateProfile, linkPartnerByCode, unlinkPartner, fetchPartner, pullMyData,
   type CloudProfile,
 } from "@/lib/cloudSync";
+import { SCALE_META, type ScaleKey } from "@/lib/scaleDescriptions";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
