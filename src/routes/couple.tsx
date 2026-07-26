@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
-import { useBixbo, EMPTY, addDays, todayKey, painColor, PAIN_DESCRIPTIONS, type PainEntry, type PanicAttack, type TetanyEpisode, type ExtraMed, type Med } from "@/lib/storage";
+import { useBixbo, EMPTY, addDays, todayKey, painColor, PAIN_DESCRIPTIONS, predictPeriods, nextPredictedPeriod, type PainEntry, type PanicAttack, type TetanyEpisode, type ExtraMed, type Med, type PartnerData } from "@/lib/storage";
 
 export const Route = createFileRoute("/couple")({
   head: () => ({
@@ -112,6 +112,88 @@ function MedsList({ title, days }: {
   );
 }
 
+const PERIOD_COLORS: Record<string, string> = {
+  spotting: "#F9C6D7", light: "#F19FBB", medium: "#D96B94", heavy: "#B33B6C", veryheavy: "#7A1F45",
+};
+
+function BlueberrySection({ partner }: { partner: PartnerData }) {
+  const cycle = partner.cycle;
+  if (!cycle?.lastPeriodStart) {
+    // still show logged period days if any
+    const anyPeriod = Object.entries(partner.dayLogs).some(([, l]) => l.period || l.periodInfo?.level);
+    if (!anyPeriod) return null;
+  }
+  const today = new Date();
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const rangeStart = new Date(monthStart); rangeStart.setDate(rangeStart.getDate() - 14);
+  const rangeEnd = new Date(monthStart); rangeEnd.setMonth(rangeEnd.getMonth() + 2); rangeEnd.setDate(0);
+  const predicted = cycle ? predictPeriods(cycle, rangeStart, rangeEnd) : [];
+  const next = cycle ? nextPredictedPeriod(cycle) : null;
+
+  // Build 6-week grid starting Monday, covering current month
+  const first = new Date(today.getFullYear(), today.getMonth(), 1);
+  const dow = (first.getDay() + 6) % 7; // Mon=0
+  const gridStart = new Date(first); gridStart.setDate(first.getDate() - dow);
+  const cells: { key: string; inMonth: boolean; date: Date }[] = [];
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(gridStart); d.setDate(gridStart.getDate() + i);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    cells.push({ key, inMonth: d.getMonth() === today.getMonth(), date: d });
+  }
+  const todayK = todayKey();
+  const isPredicted = (k: string) => predicted.some((p) => k >= p.start && k <= p.end);
+  const isLogged = (k: string) => {
+    const l = partner.dayLogs[k]; return !!(l?.period || l?.periodInfo?.level);
+  };
+  const loggedLevel = (k: string): string | null => {
+    const l = partner.dayLogs[k]; const lvl = l?.periodInfo?.level || l?.period; return lvl || null;
+  };
+  const monthName = today.toLocaleString("en-US", { month: "long", year: "numeric" });
+
+  return (
+    <section className="rounded-3xl bg-surface p-4 ring-1 ring-border space-y-3">
+      <h3 className="font-serif text-lg font-semibold">🫐 {partner.name || "Partner"} — Blueberry</h3>
+      {next && (
+        <p className="text-sm">
+          Next period predicted: <span className="font-semibold">{next.start}</span> → {next.end}
+        </p>
+      )}
+      {cycle && (
+        <p className="text-xs text-muted-foreground">Cycle {cycle.cycleLength}d · period {cycle.periodLength}d</p>
+      )}
+      <div className="rounded-2xl bg-tint p-3">
+        <p className="text-center text-xs font-medium mb-2">{monthName}</p>
+        <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-muted-foreground mb-1">
+          {["M","T","W","T","F","S","S"].map((d,i) => <span key={i}>{d}</span>)}
+        </div>
+        <div className="grid grid-cols-7 gap-1">
+          {cells.map((c) => {
+            const logged = loggedLevel(c.key);
+            const pred = isPredicted(c.key) && !logged;
+            const bg = logged ? PERIOD_COLORS[logged] || "#D96B94" : undefined;
+            return (
+              <div key={c.key}
+                className={`aspect-square grid place-items-center rounded-full text-[10px] ${c.inMonth ? "" : "opacity-30"} ${c.key === todayK ? "ring-2 ring-primary" : ""}`}
+                style={{
+                  background: bg,
+                  color: logged ? "white" : undefined,
+                  border: pred ? "1.5px dashed #D96B94" : undefined,
+                }}
+                title={logged ? `Period: ${logged}` : pred ? "Predicted period" : ""}>
+                {c.date.getDate()}
+              </div>
+            );
+          })}
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2 text-[10px] text-muted-foreground">
+          <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full" style={{ background: "#D96B94" }} /> Logged</span>
+          <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full border border-dashed" style={{ borderColor: "#D96B94" }} /> Predicted</span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function CouplePage() {
   const { data, hydrated } = useBixbo();
   const view = hydrated ? data : EMPTY;
@@ -204,6 +286,10 @@ function CouplePage() {
               <h3 className="font-serif text-lg font-semibold">💊 {partner.name || "Partner"} — meds</h3>
               <MedsList title="Recent days" days={partnerMeds} />
             </section>
+
+            {partner.gender !== "male" && <BlueberrySection partner={partner} />}
+
+
 
             <section className="rounded-3xl bg-surface p-4 ring-1 ring-border space-y-3">
               <h3 className="font-serif text-lg font-semibold">🔥 My pain</h3>
