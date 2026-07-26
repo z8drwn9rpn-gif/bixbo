@@ -151,8 +151,9 @@ function NoteEditor({ note, onBack, update }: {
           <Button size="sm" variant="outline" onClick={() => setShowChecklist((v) => !v)}><ListChecks className="h-3.5 w-3.5" /> Checklist</Button>
         </div>
 
-        <Textarea id="note-content" rows={12} value={content} onChange={(e) => setContent(e.target.value)}
-          placeholder="Write anything… (use <strong> for bold and <mark> for highlight)" />
+        <Textarea id="note-content" value={content} onChange={(e) => setContent(e.target.value)}
+          placeholder="Write anything… (use <strong> for bold and <mark> for highlight)"
+          className="min-h-[calc(100dvh-260px)] text-base leading-relaxed" />
 
         {showChecklist && (
           <div className="rounded-2xl bg-surface p-3 ring-1 ring-border space-y-2">
