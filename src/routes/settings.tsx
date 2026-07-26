@@ -34,6 +34,22 @@ function SettingsPage() {
   const [partnerCode, setPartnerCode] = useState("");
   const [partnerBusy, setPartnerBusy] = useState(false);
   const [partnerMsg, setPartnerMsg] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshMsg, setRefreshMsg] = useState<string | null>(null);
+
+  const doRefresh = async () => {
+    setRefreshing(true); setRefreshMsg(null);
+    try {
+      const remote = await pullMyData();
+      if (remote) replaceBixbo({ ...getBixbo(), ...remote, partner: getBixbo().partner }, "remote");
+      const p = await fetchPartner();
+      if (p) update((d) => ({ ...d, partner: p }));
+      else if (session) update((d) => ({ ...d, partner: undefined }));
+      setRefreshMsg(`Synced ✓ ${new Date().toLocaleTimeString()}`);
+    } catch (e) {
+      setRefreshMsg(e instanceof Error ? e.message : String(e));
+    } finally { setRefreshing(false); }
+  };
 
   useEffect(() => {
     if (typeof window === "undefined" || !("Notification" in window)) { setNotifPerm("unsupported"); return; }
