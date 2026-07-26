@@ -289,3 +289,87 @@ function SettingsPage() {
     </AppShell>
   );
 }
+
+function ScaleEditor({ view, update }: {
+  view: BixboData;
+  update: (u: (d: BixboData) => BixboData) => void;
+}) {
+  const [openKey, setOpenKey] = useState<ScaleKey | null>(null);
+  const overrides = view.settings.scaleDescriptions ?? {};
+
+  const setLevel = (key: ScaleKey, level: number, text: string) => {
+    update((d) => {
+      const cur = d.settings.scaleDescriptions ?? {};
+      const scale = { ...(cur[key] ?? {}) };
+      const def = SCALE_META[key].defaults[level];
+      if (text === def || text.trim() === "") delete scale[level];
+      else scale[level] = text;
+      const next = { ...cur, [key]: scale };
+      if (Object.keys(scale).length === 0) delete next[key];
+      return { ...d, settings: { ...d.settings, scaleDescriptions: next } };
+    });
+  };
+  const resetScale = (key: ScaleKey) => {
+    update((d) => {
+      const next = { ...(d.settings.scaleDescriptions ?? {}) };
+      delete next[key];
+      return { ...d, settings: { ...d.settings, scaleDescriptions: next } };
+    });
+  };
+
+  const keys: ScaleKey[] = ["pain", "stress", "tetany", "panic", "hotFlashes"];
+
+  return (
+    <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
+      <p className="text-sm font-medium"><Sliders className="mr-1 inline h-4 w-4" /> Scale descriptions</p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Personalize the wording for each level of each scale. Empty a field to restore the default.
+      </p>
+      <div className="mt-3 space-y-2">
+        {keys.map((k) => {
+          const meta = SCALE_META[k];
+          const isOpen = openKey === k;
+          const customCount = Object.keys(overrides[k] ?? {}).length;
+          return (
+            <div key={k} className="rounded-2xl border border-border bg-tint/40">
+              <button onClick={() => setOpenKey(isOpen ? null : k)}
+                className="flex w-full items-center justify-between px-3 py-2.5 text-left">
+                <span className="text-sm font-medium">{meta.label}</span>
+                <span className="text-[10px] text-muted-foreground">
+                  {customCount > 0 ? `${customCount} customized` : "defaults"} · {isOpen ? "▲" : "▼"}
+                </span>
+              </button>
+              {isOpen && (
+                <div className="space-y-2 border-t border-border/60 p-3">
+                  {Array.from({ length: meta.to - meta.from + 1 }, (_, i) => i + meta.from).map((n) => {
+                    const value = overrides[k]?.[n] ?? meta.defaults[n] ?? "";
+                    const isCustom = overrides[k]?.[n] != null;
+                    const span = Math.max(1, meta.to - meta.from);
+                    const hue = 130 - ((n - meta.from) * 130) / span;
+                    return (
+                      <div key={n} className="flex gap-2">
+                        <span className="mt-1 grid h-6 w-6 shrink-0 place-items-center rounded-full text-[10px] font-bold text-white"
+                              style={{ background: `hsl(${hue} 70% 50%)` }}>
+                          {n}
+                        </span>
+                        <Textarea rows={2} value={value}
+                          onChange={(e) => setLevel(k, n, e.target.value)}
+                          className={`min-h-0 text-xs ${isCustom ? "ring-1 ring-primary/40" : ""}`} />
+                      </div>
+                    );
+                  })}
+                  {customCount > 0 && (
+                    <Button size="sm" variant="outline" onClick={() => resetScale(k)}>
+                      <RotateCcw className="h-3.5 w-3.5" /> Reset {meta.label} to defaults
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
