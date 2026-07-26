@@ -269,7 +269,7 @@ function CustomChipList({
 }
 const toggleIn = (arr: string[], v: string) => arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v];
 
-function IntensityScale({ value, onChange, max }: { value: number; onChange: (n: number) => void; max: number }) {
+function IntensityScale({ value, onChange, max, descriptions }: { value: number; onChange: (n: number) => void; max: number; descriptions?: Record<number, string> }) {
   return (
     <div className="mt-2 space-y-1.5">
       <div className="flex flex-wrap gap-1.5">
@@ -279,6 +279,8 @@ function IntensityScale({ value, onChange, max }: { value: number; onChange: (n:
           const active = value === n;
           return (
             <button key={n} type="button" onClick={() => onChange(n)}
+              title={descriptions?.[n] ? `${n} — ${descriptions[n]}` : String(n)}
+              aria-label={descriptions?.[n] ? `${n} — ${descriptions[n]}` : `Intensity ${n}`}
               className={`h-9 w-9 rounded-full text-xs font-bold transition text-white ${active ? "ring-2 ring-foreground scale-110" : ""}`}
               style={{ background: bg, opacity: active ? 1 : 0.55 }}>
               {n}
@@ -291,6 +293,11 @@ function IntensityScale({ value, onChange, max }: { value: number; onChange: (n:
         <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ background: "hsl(65 70% 50%)" }} />Moderate</span>
         <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ background: "hsl(0 70% 50%)" }} />Severe</span>
       </div>
+      {descriptions && value > 0 && descriptions[value] && (
+        <div className="mt-1 rounded-lg bg-tint px-2.5 py-1.5 text-[11px] leading-snug text-foreground">
+          <span className="font-semibold">Level {value}:</span> {descriptions[value]}
+        </div>
+      )}
     </div>
   );
 }
@@ -467,7 +474,14 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
           </Field>
           {symptoms.includes("Hot flashes") && (
             <Field label={`Hot flashes intensity ${hotFlashes ?? "-"}/5`}>
-              <IntensityScale value={hotFlashes ?? 0} onChange={(n) => setHotFlashes(hotFlashes === n ? undefined : n)} max={5} />
+              <IntensityScale value={hotFlashes ?? 0} onChange={(n) => setHotFlashes(hotFlashes === n ? undefined : n)} max={5}
+                descriptions={{
+                  1: "Mild warmth — barely noticeable, no sweat",
+                  2: "Warm flush — face/neck feels hot, no visible sweat",
+                  3: "Sweating — visible perspiration, need air/fan",
+                  4: "Strong wave — soaking sweat, heart racing",
+                  5: "Drenching — clothes/bedding wet, need to change",
+                }} />
               <div className="mt-2 rounded-xl border border-border/60 bg-surface/50 p-2.5">
                 <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Hot flashes scale</p>
                 <div className="space-y-1 text-[11px] leading-tight">

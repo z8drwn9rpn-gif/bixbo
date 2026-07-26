@@ -70,6 +70,34 @@ function InsightsPage() {
   const sleepSeries = days.map((k) => view.dayLogs[k]?.sleepHours);
   const sleepColor = (h?: number) => h == null ? "var(--tint)" : h < 8 ? "#ef4444" : h === 8 ? "#eab308" : "#22c55e";
 
+  // Hot flashes — collect per-day max intensity + distribution across levels 1–5
+  const hfDescriptions: Record<number, string> = {
+    1: "Mild warmth",
+    2: "Warm flush",
+    3: "Sweating",
+    4: "Strong wave",
+    5: "Drenching",
+  };
+  const hfSeries = days.map((k) => {
+    const vals = (view.dayLogs[k]?.pain ?? []).map((p) => p.hotFlashes).filter((n): n is number => n != null);
+    return vals.length ? Math.max(...vals) : undefined;
+  });
+  const hfCounts = [0, 0, 0, 0, 0, 0] as number[];
+  days.forEach((k) => (view.dayLogs[k]?.pain ?? []).forEach((p) => {
+    if (p.hotFlashes && p.hotFlashes >= 1 && p.hotFlashes <= 5) hfCounts[p.hotFlashes]++;
+  }));
+  const hfTotal = hfCounts.reduce((a, b) => a + b, 0);
+  const hfAvg = (() => {
+    const s = hfCounts.reduce((sum, c, i) => sum + c * i, 0);
+    return hfTotal ? s / hfTotal : null;
+  })();
+  const hfTop = (() => {
+    let bestN = 0, bestC = 0;
+    for (let i = 1; i <= 5; i++) if (hfCounts[i] > bestC) { bestC = hfCounts[i]; bestN = i; }
+    return bestN;
+  })();
+
+
   // Cycle summary (last 6 months)
   const cycleSummary = (() => {
     const starts: string[] = [];
@@ -204,6 +232,46 @@ function InsightsPage() {
           </div>
           {bowelCounts[0] > 0 && <p className="mt-2 text-xs text-muted-foreground">No movement: {bowelCounts[0]}</p>}
         </section>
+
+        <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">Hot flashes 🥵</p>
+          {hfTotal ? (
+            <>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="font-serif text-4xl leading-none">{hfTotal}</span>
+                <span className="text-sm text-muted-foreground">
+                  {hfTotal === 1 ? "episode" : "episodes"} · avg {hfAvg!.toFixed(1)}/5 · most often L{hfTop}
+                </span>
+              </div>
+              <div className="mt-4 grid items-end gap-1" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))`, height: 60 }}>
+                {hfSeries.map((n, i) => (
+                  n != null
+                    ? <div key={i} className="w-full rounded-t" style={{ height: `${Math.max(10, (n / 5) * 100)}%`, background: `hsl(${130 - ((n - 1) * 130) / 4} 70% 50%)` }} />
+                    : <div key={i} className="h-1 w-full self-end rounded bg-tint" />
+                ))}
+              </div>
+              <div className="mt-3 space-y-1">
+                {[1, 2, 3, 4, 5].map((n) => {
+                  const c = hfCounts[n];
+                  const pct = hfTotal ? (c / hfTotal) * 100 : 0;
+                  const hue = 130 - ((n - 1) * 130) / 4;
+                  return (
+                    <div key={n} className="flex items-center gap-2 text-[11px]">
+                      <span className="grid h-4 w-4 place-items-center rounded-full text-[9px] font-bold text-white shrink-0" style={{ background: `hsl(${hue} 70% 50%)` }}>{n}</span>
+                      <span className="w-16 shrink-0 text-muted-foreground">{hfDescriptions[n]}</span>
+                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-tint">
+                        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: `hsl(${hue} 70% 50%)` }} />
+                      </div>
+                      <span className="w-6 text-right tabular-nums text-muted-foreground">{c}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          ) : <p className="mt-1 text-sm text-muted-foreground">No hot flashes logged</p>}
+        </section>
+
+
 
         <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">Weight</p>
