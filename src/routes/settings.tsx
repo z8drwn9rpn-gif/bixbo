@@ -264,6 +264,11 @@ function SettingsPage() {
           </details>
         </section>
 
+        {/* ---- Scale descriptions editor ---- */}
+        <ScaleEditor view={view} update={update} />
+
+
+
         <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
           <p className="text-sm font-medium">Backup</p>
           <p className="mt-1 text-xs text-muted-foreground">
