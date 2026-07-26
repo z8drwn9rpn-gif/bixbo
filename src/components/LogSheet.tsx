@@ -663,7 +663,9 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
                 const bg = `hsl(${hue} 70% 50%)`;
                 const active = stress === n;
                 return (
-                  <button key={n} onClick={() => setStress(stress === n ? undefined : n)}
+                  <button key={n} type="button" onClick={() => setStress(stress === n ? undefined : n)}
+                    title={`${n} — ${STRESS_DESC[n]}`}
+                    aria-label={`Stress ${n} — ${STRESS_DESC[n]}`}
                     className={`h-9 w-9 rounded-full text-xs font-bold transition ${
                       active ? "text-white ring-2 ring-foreground scale-110" : "text-white/90"
                     }`}
@@ -673,6 +675,12 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
                 );
               })}
             </div>
+            {stress != null && (
+              <div className="mt-2 rounded-lg bg-tint px-2.5 py-1.5 text-[11px] leading-snug text-foreground">
+                <span className="font-semibold">Level {stress}:</span> {STRESS_DESC[stress]}
+              </div>
+            )}
+            <ScaleLegend max={10} from={0} descriptions={STRESS_DESC} value={stress} title="Stress scale" />
           </Field>
           <Field label="Body battery">
             <div className="mt-2 flex justify-between gap-2">
