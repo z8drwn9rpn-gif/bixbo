@@ -474,7 +474,14 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
           </Field>
           {symptoms.includes("Hot flashes") && (
             <Field label={`Hot flashes intensity ${hotFlashes ?? "-"}/5`}>
-              <IntensityScale value={hotFlashes ?? 0} onChange={(n) => setHotFlashes(hotFlashes === n ? undefined : n)} max={5} />
+              <IntensityScale value={hotFlashes ?? 0} onChange={(n) => setHotFlashes(hotFlashes === n ? undefined : n)} max={5}
+                descriptions={{
+                  1: "Mild warmth — barely noticeable, no sweat",
+                  2: "Warm flush — face/neck feels hot, no visible sweat",
+                  3: "Sweating — visible perspiration, need air/fan",
+                  4: "Strong wave — soaking sweat, heart racing",
+                  5: "Drenching — clothes/bedding wet, need to change",
+                }} />
               <div className="mt-2 rounded-xl border border-border/60 bg-surface/50 p-2.5">
                 <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Hot flashes scale</p>
                 <div className="space-y-1 text-[11px] leading-tight">
