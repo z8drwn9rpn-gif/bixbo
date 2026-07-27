@@ -483,8 +483,8 @@ function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) 
   );
 }
 
-function WeightLineChart({ period, days, series }:
-  { period: Period; days: string[]; series: (number | undefined)[] }) {
+function WeightLineChart({ period, days, series, label = "Weight", unit = "kg" }:
+  { period: Period; days: string[]; series: (number | undefined)[]; label?: string; unit?: string }) {
   const points = series
     .map((value, index) => value == null ? null : { value, index, date: days[index] })
     .filter((p): p is { value: number; index: number; date: string } => p != null);
@@ -494,7 +494,7 @@ function WeightLineChart({ period, days, series }:
   if (!nums.length) {
     return (
       <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
-        <p className="text-xs uppercase tracking-wider text-muted-foreground">Weight</p>
+        <p className="text-xs uppercase tracking-wider text-muted-foreground">{label}</p>
         <p className="mt-1 text-sm text-muted-foreground">No data</p>
       </section>
     );
@@ -532,10 +532,10 @@ function WeightLineChart({ period, days, series }:
 
   return (
     <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
-      <p className="text-xs uppercase tracking-wider text-muted-foreground">Weight</p>
+      <p className="text-xs uppercase tracking-wider text-muted-foreground">{label}</p>
       <div className="mt-2 flex items-end gap-2">
         <span className="font-serif text-5xl leading-none">{avg.toFixed(1)}</span>
-        <span className="pb-1 text-sm font-semibold text-muted-foreground">kg</span>
+        <span className="pb-1 text-sm font-semibold text-muted-foreground">{unit}</span>
       </div>
       <p className="mt-1 text-sm text-muted-foreground">{dateLabel}</p>
       <div className="mt-3 overflow-hidden">
