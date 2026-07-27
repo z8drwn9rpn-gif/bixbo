@@ -482,8 +482,28 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
   const bg = painColor(score);
   const bgFill = `color-mix(in oklab, ${bg} 35%, white)`;
 
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const onTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    touchStartRef.current = { x: t.clientX, y: t.clientY };
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    const s = touchStartRef.current;
+    if (!s) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - s.x;
+    const dy = t.clientY - s.y;
+    touchStartRef.current = null;
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy)) return;
+    const target = e.target as HTMLElement;
+    if (target.closest('input,textarea,select,button,[role="slider"],.no-swipe')) return;
+    if (dx < 0 && step < 4) setStep(step + 1);
+    else if (dx > 0 && step > 0) setStep(step - 1);
+  };
+
   return (
-    <div className="flex min-h-full flex-col px-5 py-4 transition-colors" style={{ background: bgFill }}>
+    <div className="flex min-h-full flex-col px-5 py-4 transition-colors touch-pan-y" style={{ background: bgFill }}
+         onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
 
       <div className="flex items-center justify-between px-1 pb-2">
         <div className="flex gap-1">
