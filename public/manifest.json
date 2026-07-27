@@ -1,0 +1,30 @@
+{
+  "name": "BIXBO 🌶️",
+  "short_name": "BIXBO 🌶️",
+  "description": "A calm diary for cycle, pain, meds and notes.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F4F7DB",
+  "theme_color": "#6B7A2F",
+  "icons": [
+    {
+      "src": "/chilli-home-icon-v5.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
