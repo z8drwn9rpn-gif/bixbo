@@ -170,13 +170,7 @@ function InsightsPage() {
               avg · {painSeries.filter((n) => n != null).length} {painSeries.filter((n) => n != null).length === 1 ? "entry" : "entries"}
             </span>
           </div>
-          <div className="mt-5 grid items-end gap-1" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))`, height: 80 }}>
-            {painSeries.map((n, i) => (
-              n != null
-                ? <div key={i} className="w-full rounded-t" style={{ height: `${Math.max(6, (n / 10) * 100)}%`, background: painColor(n) }} />
-                : <div key={i} className="h-1 w-full self-end rounded bg-tint" />
-            ))}
-          </div>
+          <PainChart period={period} days={days} series={painSeries} anchor={anchor} />
         </section>
 
         <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
