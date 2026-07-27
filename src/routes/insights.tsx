@@ -72,6 +72,7 @@ function InsightsPage() {
     return eachDay(toKey(start), toKey(end));
   }, [period, anchor]);
   const weightSeries = weightDays.map((k) => view.dayLogs[k]?.weight);
+  const tempSeries = weightDays.map((k) => view.dayLogs[k]?.temperature);
 
   // Sleep
   const sleepSeries = days.map((k) => view.dayLogs[k]?.sleepHours);
