@@ -62,6 +62,7 @@ export const SCALE_META: Record<ScaleKey, { label: string; from: number; to: num
   tetany:     { label: "Tetany intensity (1–5)", from: 1, to: 5, defaults: DEFAULT_TETANY_INTENSITY_DESC },
   panic:      { label: "Panic intensity (1–10)", from: 1, to: 10, defaults: DEFAULT_PANIC_INTENSITY_DESC },
   hotFlashes: { label: "Hot flashes (1–5)",   from: 1, to: 5, defaults: DEFAULT_HOT_FLASHES_DESC },
+  headache:   { label: "Headache (1–10)",     from: 1, to: 10, defaults: DEFAULT_HEADACHE_DESC },
 };
 
 export function getScaleDesc(data: BixboData | undefined, key: ScaleKey): Record<number, string> {
