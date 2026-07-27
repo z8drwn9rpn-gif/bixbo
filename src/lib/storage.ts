@@ -399,16 +399,16 @@ export const TETANY_TYPES = [
   "Whole body tremor",
 ];
 export const TETANY_TYPE_DESC: Record<string, string> = {
-  "Carpopedal spasm": "Kŕč rúk/nôh — prsty stiahnuté do „pôrodníckej ruky“ alebo chodidlá do luku.",
-  "Calf cramps": "Bolestivé kŕče v lýtkach, často v noci alebo po námahe.",
-  "Twitches around mouth/face": "Drobné zášklby okolo úst alebo tváre.",
-  "Tingling / numbness": "Mravčenie alebo znecitlivenie (perí, prstov, končatín).",
-  "Fasciculations": "Jemné vlnenie svalov pod kožou bez pohybu končatiny.",
-  "Eyelid twitching": "Cukanie viečka — často pri únave alebo nedostatku horčíka.",
-  "Jaw clenching": "Zatínanie čeľuste, škrípanie zubami.",
-  "Chvostek sign": "Zášklb tváre pri poklepe na tvárový nerv (pred uchom).",
-  "Trousseau sign": "Kŕč ruky po nafúknutí manžety tlakomera nad systolický tlak.",
-  "Whole body tremor": "Celotelový tras alebo chvenie z vnútra.",
+  "Carpopedal spasm": "Cramp of hands/feet — fingers pulled into an “obstetrician's hand” or feet arched like a bow.",
+  "Calf cramps": "Painful cramps in the calves, often at night or after exertion.",
+  "Twitches around mouth/face": "Small twitches around the mouth or face.",
+  "Tingling / numbness": "Pins and needles or numbness (lips, fingers, limbs).",
+  "Fasciculations": "Fine muscle rippling under the skin without limb movement.",
+  "Eyelid twitching": "Eyelid twitch — often with fatigue or low magnesium.",
+  "Jaw clenching": "Jaw clenching, teeth grinding.",
+  "Chvostek sign": "Facial twitch when tapping the facial nerve (in front of the ear).",
+  "Trousseau sign": "Hand cramp after inflating a BP cuff above systolic pressure.",
+  "Whole body tremor": "Whole-body tremor or shaking from within.",
 };
 export const TETANY_LOCATIONS_DEFAULT = ["Lips","Fingers","Toes","Hands","Calves","Face","Around mouth"];
 export const TETANY_TRIGGERS = ["Hyperventilation / stress","Exercise","Cold","Cycle phase","Other"];
@@ -432,18 +432,18 @@ export const HEADACHE_TYPES = [
   "Thunderclap",
 ];
 export const HEADACHE_TYPE_DESC: Record<string, string> = {
-  "Tension": "Tenzná bolesť — tupý, tlakový pocit obojstranne, ako obruč okolo hlavy. Často zo stresu, únavy či zlého držania tela.",
-  "Migraine": "Migréna — pulzujúca bolesť (často jednostranná), citlivosť na svetlo/zvuk, nevoľnosť. Môže mať auru (blikanie, tŕpnutie).",
-  "Cluster": "Klastrová — extrémne silná bolesť za/okolo jedného oka, v sériách; slziace oko, upchatý nos na tej strane.",
-  "Sinus": "Sínusová — tlak v tvári/za očami/čele, horšia pri predklone; typicky pri nádche alebo zápale prínosových dutín.",
-  "Cervicogenic": "Cervikogénna — vychádza z krčnej chrbtice; bolesť od šije stúpa hore do hlavy, horšia pri pohybe krku.",
-  "Hormonal": "Hormonálna — súvisí s cyklom (pred/počas menštruácie), ovuláciou alebo antikoncepciou.",
-  "Dehydration": "Z dehydratácie — tupá, celohlavová bolesť pri malom príjme tekutín, horšia pri pohybe.",
-  "Hangover": "Po alkohole — pulzujúca bolesť s nevoľnosťou po požití alkoholu.",
-  "Eye strain": "Z očí — po dlhom pozeraní do obrazovky; tlak za očami, rozmazané videnie.",
-  "Caffeine withdrawal": "Z odvyknutia kofeínu — tupá bolesť s únavou, ak si vynechala/vynechal kávu.",
-  "Ice-pick": "„Ľadové bodnutie“ — krátke, ostré bodavé záblesky bolesti trvajúce sekundy.",
-  "Thunderclap": "„Hromobitie“ — náhla, extrémne silná bolesť do 1 minúty. POZOR: vyhľadaj lekára, môže byť vážne.",
+  "Tension": "Tension headache — dull, pressing pain on both sides, like a band around the head. Often from stress, fatigue, or poor posture.",
+  "Migraine": "Migraine — throbbing pain (often one-sided), sensitivity to light/sound, nausea. May include aura (flashes, tingling).",
+  "Cluster": "Cluster — extremely severe pain behind/around one eye, in bouts; watery eye, blocked nose on that side.",
+  "Sinus": "Sinus — pressure in the face/behind the eyes/forehead, worse when bending forward; typically with a cold or sinusitis.",
+  "Cervicogenic": "Cervicogenic — originates in the neck; pain rises from the nape up into the head, worse with neck movement.",
+  "Hormonal": "Hormonal — linked to the cycle (before/during period), ovulation, or contraception.",
+  "Dehydration": "Dehydration — dull, whole-head pain from low fluid intake, worse with movement.",
+  "Hangover": "Hangover — throbbing pain with nausea after drinking alcohol.",
+  "Eye strain": "Eye strain — after long screen time; pressure behind the eyes, blurred vision.",
+  "Caffeine withdrawal": "Caffeine withdrawal — dull pain with fatigue after skipping coffee.",
+  "Ice-pick": "“Ice-pick” — brief, sharp stabbing jabs of pain lasting seconds.",
+  "Thunderclap": "“Thunderclap” — sudden, extremely severe pain peaking within 1 minute. WARNING: seek medical help, can be serious.",
 };
 
 

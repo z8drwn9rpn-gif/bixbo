@@ -335,7 +335,7 @@ function IntensityScale({ value, onChange, max, descriptions, legendTitle, from 
   for (let i = from; i <= max; i++) nums.push(i);
   return (
     <div className="mt-2 space-y-1.5">
-      <div className="flex flex-wrap gap-1.5">
+      <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${nums.length}, minmax(0, 1fr))` }}>
         {nums.map((n) => {
           const span = Math.max(1, max - from);
           const hue = 130 - ((n - from) * 130) / span;
@@ -345,7 +345,7 @@ function IntensityScale({ value, onChange, max, descriptions, legendTitle, from 
             <button key={n} type="button" onClick={() => onChange(n)}
               title={descriptions?.[n] ? `${n} — ${descriptions[n]}` : String(n)}
               aria-label={descriptions?.[n] ? `${n} — ${descriptions[n]}` : `Intensity ${n}`}
-              className={`h-9 w-9 rounded-full text-xs font-bold transition text-white ${active ? "ring-2 ring-foreground scale-110" : ""}`}
+              className={`aspect-square w-full rounded-full text-[11px] font-bold transition text-white ${active ? "ring-2 ring-foreground scale-110" : ""}`}
               style={{ background: bg, opacity: active ? 1 : 0.55 }}>
               {n}
             </button>
@@ -701,7 +701,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
         <div className="space-y-4">
           {(() => { const STRESS_DESC = getScaleDesc(data, "stress"); return (
           <Field label={`Stress ${stress ?? "-"} / 10`}>
-            <div className="mt-2 flex flex-wrap gap-1.5">
+            <div className="mt-2 grid gap-1" style={{ gridTemplateColumns: "repeat(11, minmax(0, 1fr))" }}>
               {Array.from({ length: 11 }, (_, n) => {
                 const hue = 130 - n * 13;
                 const bg = `hsl(${hue} 70% 50%)`;
@@ -710,7 +710,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
                   <button key={n} type="button" onClick={() => setStress(stress === n ? undefined : n)}
                     title={`${n} — ${STRESS_DESC[n]}`}
                     aria-label={`Stress ${n} — ${STRESS_DESC[n]}`}
-                    className={`h-9 w-9 rounded-full text-xs font-bold transition ${
+                    className={`aspect-square w-full rounded-full text-[11px] font-bold transition ${
                       active ? "text-white ring-2 ring-foreground scale-110" : "text-white/90"
                     }`}
                     style={{ background: bg, opacity: active || stress == null ? 1 : 0.55 }}>
