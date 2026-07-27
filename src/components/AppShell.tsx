@@ -11,11 +11,12 @@ export function AppShell({
 }) {
   return (
     <div className="min-h-screen bg-background">
-      <div className="relative mx-auto min-h-screen w-full max-w-[430px] bg-background pb-24">
+      {/* Landscape: fill full width; portrait: capped at 430px */}
+      <div className="relative mx-auto min-h-screen w-full bg-background pb-24 portrait:max-w-[430px] landscape:max-w-none">
         {title !== undefined && (
           <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border/60 bg-background/90 px-5 py-4 backdrop-blur">
             <div className="flex items-center gap-2.5">
-              <span className={big ? "text-4xl" : "text-2xl"} aria-hidden>🥑</span>
+              <span className={big ? "text-4xl" : "text-2xl"} aria-hidden>🫒</span>
               <h1 className={`font-serif font-bold leading-none ${big ? "text-4xl" : "text-2xl"}`}>
                 {title}
               </h1>
