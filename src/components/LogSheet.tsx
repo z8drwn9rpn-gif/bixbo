@@ -184,10 +184,10 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 function Chip({
-  active, onClick, children, color,
-}: { active: boolean; onClick: () => void; children: ReactNode; color?: string }) {
+  active, onClick, children, color, title,
+}: { active: boolean; onClick: () => void; children: ReactNode; color?: string; title?: string }) {
   return (
-    <button onClick={onClick}
+    <button type="button" onClick={onClick} title={title}
       className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
         active
           ? "text-white shadow-md ring-2 ring-foreground/70 ring-offset-2 ring-offset-background scale-[1.03]"
