@@ -406,9 +406,7 @@ export function isIntercourseKind(kind: unknown): boolean {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/^other:/, "");
-  if (!raw) return false;
-  if (/oral|finger|fingering|suck|blow|hand|kiss|cuddle/.test(raw)) return false;
-  return /(^|[_\s-])sex($|[_\s-])|intercourse|condom|suk\s*suk|suksuk|šuk/.test(raw);
+  return ["sex", "sex_with_condom", "sex_without_condom", "with_condom", "without_condom"].includes(raw);
 }
 
 export const DISCHARGE_OPTS: { value: string; label: string; color: string }[] = [
