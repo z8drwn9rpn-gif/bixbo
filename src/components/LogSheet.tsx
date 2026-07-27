@@ -501,7 +501,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
           </div>
           <div className="flex flex-wrap justify-center gap-1.5 px-4">
             {Array.from({ length: 21 }, (_, i) => i / 2).map((n) => (
-              <button key={n} onClick={() => setScore(n)}
+              <button key={n} type="button" onClick={() => setScore(n)}
                 title={`${n} — ${getScaleDesc(data,"pain")[Math.round(n)]}`}
                 className={`h-8 w-8 rounded-full text-[11px] font-semibold ${
                   score === n ? "text-white ring-2 ring-foreground" : "bg-tint text-foreground"
