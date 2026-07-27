@@ -435,7 +435,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
     const editing = !!initialEntry;
     const p: PainEntry = {
       id: initialEntry?.id ?? crypto.randomUUID(),
-      time: initialEntry?.time ?? nowHHMM(),
+      time,
       score, parts, quality, symptoms, note: note.trim(),
       bodyBattery, stress, mood: mood.length ? mood : undefined,
       hotFlashes: symptoms.includes("Hot flashes") ? hotFlashes : undefined,
