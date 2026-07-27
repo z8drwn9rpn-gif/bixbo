@@ -129,6 +129,19 @@ function HomePage() {
         </Link>
       </div>
 
+      {/* Quick log — placed above Today */}
+      <QuickTags
+        update={update}
+        onLongPress={(cat: string) => {
+          const map: Record<string, string | undefined> = {
+            pain: "pain", tetany: "tetany", panic: "panic",
+            sex: "sex", food: "food",
+          };
+          const target = map[cat];
+          if (target) { setQuickCat(target); setEditPain(undefined); setEditEntry(undefined); setLogOpen(true); }
+        }}
+      />
+
       <div className="mt-4 flex items-center justify-between px-5">
         <h2 className="font-serif text-xl font-bold">
           {selected === todayKey()
@@ -143,32 +156,12 @@ function HomePage() {
         onEditPain={(p) => { setEditPain(p); setEditEntry(undefined); setQuickCat("pain"); setLogOpen(true); }}
         onEdit={openEdit} />
 
-      <QuickTags
-        update={update}
-        onLongPress={(cat: string) => {
-          const map: Record<string, string | undefined> = {
-            pain: "pain", tetany: "tetany", panic: "panic",
-            mood: "pain", energy: "pain", histamine: "pain",
-          };
-          const target = map[cat];
-          if (target) { setQuickCat(target); setEditPain(undefined); setEditEntry(undefined); setLogOpen(true); }
-        }}
-      />
-
-      <div className="fixed bottom-24 right-5 z-30">
-        <Button
-          onClick={() => { setQuickCat(undefined); setEditPain(undefined); setEditEntry(undefined); setLogOpen(true); }}
-          className="h-14 rounded-full px-6 shadow-lg"
-        >
-          <Plus className="h-5 w-5" /> Log
-        </Button>
-      </div>
-
       <LogSheet open={logOpen} onOpenChange={(b) => { setLogOpen(b); if (!b) { setQuickCat(undefined); setEditPain(undefined); setEditEntry(undefined); } }}
         date={selected} data={view} update={update} initial={quickCat as never} initialPain={editPain} editEntry={editEntry} />
     </AppShell>
   );
 }
+
 
 function MedsProgress({ data }: { data: BixboData }) {
   const k = todayKey();
