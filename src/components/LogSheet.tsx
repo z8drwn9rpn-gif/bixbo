@@ -208,17 +208,19 @@ function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave:
   );
 }
 function CustomChipList({
-  base, custom, onAddCustom, onRemoveCustom, onRenameCustom, selected, onToggle,
+  base, custom, onAddCustom, onRemoveCustom, onRenameCustom, selected, onToggle, descriptions,
 }: {
   base: string[]; custom: string[];
   onAddCustom: (v: string) => void;
   onRemoveCustom?: (v: string) => void;
   onRenameCustom?: (oldV: string, newV: string) => void;
   selected: string[]; onToggle: (v: string) => void;
+  descriptions?: Record<string, string>;
 }) {
   const [adding, setAdding] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [text, setText] = useState("");
+  const [infoFor, setInfoFor] = useState<string | null>(null);
   const canEdit = !!(onRenameCustom || onRemoveCustom) && custom.length > 0;
   return (
     <div className="mt-2">
@@ -227,17 +229,17 @@ function CustomChipList({
           {adding ? (
             <div className="flex flex-1 items-center gap-1">
               <Input value={text} onChange={(e) => setText(e.target.value)} className="h-8 flex-1" placeholder="Custom…" autoFocus />
-              <Button size="sm" onClick={() => { if (text.trim()) { onAddCustom(text.trim()); setText(""); setAdding(false); } }}>Add</Button>
-              <Button size="sm" variant="ghost" onClick={() => { setText(""); setAdding(false); }}>Cancel</Button>
+              <Button type="button" size="sm" onClick={() => { if (text.trim()) { onAddCustom(text.trim()); setText(""); setAdding(false); } }}>Add</Button>
+              <Button type="button" size="sm" variant="ghost" onClick={() => { setText(""); setAdding(false); }}>Cancel</Button>
             </div>
           ) : (
-            <button onClick={() => setAdding(true)}
+            <button type="button" onClick={() => setAdding(true)}
               className="flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary hover:bg-primary/20">
               <Plus className="h-3 w-3" /> Add custom
             </button>
           )}
           {canEdit && !adding && (
-            <button onClick={() => setEditMode((v) => !v)}
+            <button type="button" onClick={() => setEditMode((v) => !v)}
               className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${editMode ? "bg-primary text-primary-foreground" : "bg-tint text-muted-foreground hover:text-foreground"}`}>
               <Pencil className="h-3 w-3" /> {editMode ? "Done" : "Edit"}
             </button>
@@ -246,7 +248,16 @@ function CustomChipList({
       )}
       <div className="flex flex-wrap gap-2">
         {base.map((v) => (
-          <Chip key={v} active={selected.includes(v)} onClick={() => onToggle(v)}>{v}</Chip>
+          <span key={v} className="inline-flex items-center gap-0.5">
+            <Chip active={selected.includes(v)} onClick={() => onToggle(v)} title={descriptions?.[v]}>{v}</Chip>
+            {descriptions?.[v] && (
+              <button type="button" onClick={(e) => { e.stopPropagation(); setInfoFor(infoFor === v ? null : v); }}
+                aria-label={`Info ${v}`}
+                className="grid h-4 w-4 place-items-center rounded-full bg-tint text-[10px] font-bold text-muted-foreground hover:bg-primary/15 hover:text-primary">
+                i
+              </button>
+            )}
+          </span>
         ))}
         {custom.map((v) => (
           <span key={v} className="relative inline-flex items-center">
