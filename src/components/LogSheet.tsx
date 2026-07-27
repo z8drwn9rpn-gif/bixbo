@@ -703,6 +703,9 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
               onRenameCustom={(o, n) => { renameCustom("moods", o, n); setMood((a) => a.map((x) => x === o ? n : x)); }}
               selected={mood} onToggle={(v) => setMood((a) => toggleIn(a, v))} />
           </Field>
+          <Field label="Time of entry">
+            <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+          </Field>
           <Field label="Note (optional)">
             <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Anything else…" />
           </Field>
