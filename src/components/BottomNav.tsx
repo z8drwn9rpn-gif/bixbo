@@ -21,7 +21,10 @@ export function BottomNav() {
   };
 
   return (
-    <nav className="fixed bottom-0 left-1/2 z-40 w-full max-w-[560px] -translate-x-1/2 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur landscape:max-w-none">
+    <nav
+      className="fixed bottom-0 left-1/2 z-40 w-full max-w-[560px] -translate-x-1/2 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] landscape:max-w-none"
+      style={{ willChange: "transform", transform: "translate3d(-50%, 0, 0)" }}
+    >
       <ul className="flex items-stretch justify-around px-2 pt-2 pb-2">
         {items.map(({ to, label, icon: Icon }) => {
           const active = to === "/" ? pathname === "/" : pathname.startsWith(to);
