@@ -136,49 +136,80 @@ function CouplePainChart({ days, mine, theirs, partnerName }: {
   theirs: Record<string, { pain?: PainEntry[] }>;
   partnerName: string;
 }) {
-  const yLabels = [10, 8, 6, 4, 2, 0];
-  const height = 118;
+  const width = 320;
+  const height = 170;
+  const left = 22;
+  const right = 12;
+  const top = 12;
+  const bottom = 30;
+  const chartW = width - left - right;
+  const chartH = height - top - bottom;
+  const denom = Math.max(1, days.length - 1);
+  const xFor = (i: number) => left + (i / denom) * chartW;
+  const yFor = (v: number) => top + ((10 - v) / 10) * chartH;
+
+  const mineSeries = days.map((k) => avgDayPain(mine[k]));
+  const theirSeries = days.map((k) => avgDayPain(theirs[k]));
+
+  const buildPath = (series: (number | null | undefined)[]) => {
+    let d = ""; let started = false;
+    series.forEach((v, i) => {
+      if (v == null) { started = false; return; }
+      d += `${started ? "L" : "M"}${xFor(i).toFixed(1)},${yFor(v).toFixed(1)} `;
+      started = true;
+    });
+    return d.trim();
+  };
+  const minePath = buildPath(mineSeries);
+  const theirPath = buildPath(theirSeries);
+  const yTicks = [10, 8, 6, 4, 2, 0];
+
   return (
     <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
       <p className="text-xs uppercase tracking-wider text-muted-foreground">Pain — last 14 days</p>
-      <div className="mt-4 flex gap-1.5">
-        <div className="flex flex-col justify-between pr-1 text-[9px] text-muted-foreground" style={{ height }}>
-          {yLabels.map((y) => <span key={y} className="leading-none">{y}</span>)}
-        </div>
-        <div className="relative flex-1">
-          <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
-            {yLabels.map((y) => <div key={y} className="border-t border-dashed border-border/50" />)}
-          </div>
-          <div className="relative grid items-end gap-[2px]" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))`, height }}>
-            {days.map((k) => {
-              const myAvg = avgDayPain(mine[k]);
-              const theirAvg = avgDayPain(theirs[k]);
-              return (
-                <div key={k} className="flex h-full items-end justify-center gap-[1px]">
-                  {myAvg != null ? (
-                    <div className="w-[45%] rounded-t" style={{ height: `${Math.max(4, (myAvg / 10) * 100)}%`, background: painColor(myAvg) }} title={`Me ${k}: ${myAvg.toFixed(1)}`} />
-                  ) : <div className="w-[45%]" />}
-                  {theirAvg != null ? (
-                    <div className="w-[45%] rounded-t opacity-70 ring-1 ring-foreground/30" style={{ height: `${Math.max(4, (theirAvg / 10) * 100)}%`, background: painColor(theirAvg) }} title={`${partnerName} ${k}: ${theirAvg.toFixed(1)}`} />
-                  ) : <div className="w-[45%]" />}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-      <div className="mt-1 flex pl-4">
-        <div className="grid flex-1 gap-[2px] text-center text-[8px] text-muted-foreground" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}>
-          {days.map((k) => {
+      <div className="mt-3 overflow-hidden">
+        <svg viewBox={`0 0 ${width} ${height}`} className="h-44 w-full" role="img" aria-label="Couple pain comparison">
+          {yTicks.map((y) => (
+            <g key={y}>
+              <line x1={left} x2={width - right} y1={yFor(y)} y2={yFor(y)} stroke="var(--border)" strokeDasharray="3 3" strokeWidth="1" />
+              <text x={left - 4} y={yFor(y) + 3} textAnchor="end" fontSize="9" fill="var(--muted-foreground)">{y}</text>
+            </g>
+          ))}
+          {days.map((k, i) => {
             const d = fromKey(k);
-            const wd = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"][d.getDay()];
-            return <div key={k} className="leading-tight"><div>{wd}</div><div className="text-[7px] opacity-70">{d.getDate()}</div></div>;
+            const show = i === 0 || i === days.length - 1 || i % 2 === 0;
+            if (!show) return null;
+            return (
+              <text key={k} x={xFor(i)} y={height - 10} textAnchor="middle" fontSize="8" fill="var(--muted-foreground)">
+                {d.getDate()}
+              </text>
+            );
           })}
-        </div>
+          {/* Partner — dashed */}
+          {theirPath && (
+            <path d={theirPath} fill="none" stroke="var(--primary)" strokeWidth="2" strokeDasharray="4 3" strokeLinecap="round" strokeLinejoin="round" opacity="0.85" />
+          )}
+          {theirSeries.map((v, i) => v == null ? null : (
+            <circle key={`t-${i}`} cx={xFor(i)} cy={yFor(v)} r="2.5" fill="var(--surface)" stroke="var(--primary)" strokeWidth="1.5" strokeDasharray="2 2" />
+          ))}
+          {/* Me — solid */}
+          {minePath && (
+            <path d={minePath} fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          )}
+          {mineSeries.map((v, i) => v == null ? null : (
+            <circle key={`m-${i}`} cx={xFor(i)} cy={yFor(v)} r="3" fill="var(--primary)" />
+          ))}
+        </svg>
       </div>
-      <div className="mt-3 flex gap-3 text-xs text-muted-foreground">
-        <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-primary" /> Me</span>
-        <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-primary opacity-70 ring-1 ring-foreground/30" /> {partnerName}</span>
+      <div className="mt-3 flex flex-wrap gap-4 text-xs text-muted-foreground">
+        <span className="flex items-center gap-1.5">
+          <svg width="22" height="6"><line x1="0" y1="3" x2="22" y2="3" stroke="currentColor" strokeWidth="2.5" className="text-primary" /></svg>
+          Me
+        </span>
+        <span className="flex items-center gap-1.5">
+          <svg width="22" height="6"><line x1="0" y1="3" x2="22" y2="3" stroke="currentColor" strokeWidth="2" strokeDasharray="4 3" className="text-primary" /></svg>
+          {partnerName}
+        </span>
       </div>
     </section>
   );
