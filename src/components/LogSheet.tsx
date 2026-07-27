@@ -10,7 +10,7 @@ import { X, Plus, ChevronLeft, ChevronUp, ChevronDown, GripVertical, Check, Penc
 import {
   PAIN_DESCRIPTIONS, painColor, BODY_PARTS_DEFAULT, PAIN_QUALITY_DEFAULT, OTHER_SYMPTOMS_DEFAULT,
   FOOD_FEELINGS_DEFAULT, WORKOUT_KINDS_DEFAULT, BRISTOL, DISCHARGE_OPTS, MOODS_DEFAULT,
-  TETANY_TYPES, TETANY_LOCATIONS_DEFAULT, TETANY_TRIGGERS, TETANY_HELPED_DEFAULT,
+  TETANY_TYPES, TETANY_TYPE_DESC, TETANY_LOCATIONS_DEFAULT, TETANY_TRIGGERS, TETANY_HELPED_DEFAULT,
   PANIC_PHYSICAL, PANIC_COGNITIVE, PANIC_HELPED_DEFAULT, SEX_TYPES_DEFAULT,
   BODY_BATTERY, SLEEP_QUALITY, EVENT_COLORS,
   BOWEL_FEELINGS_DEFAULT, BOWEL_SYMPTOMS_DEFAULT,
@@ -184,10 +184,10 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 function Chip({
-  active, onClick, children, color,
-}: { active: boolean; onClick: () => void; children: ReactNode; color?: string }) {
+  active, onClick, children, color, title,
+}: { active: boolean; onClick: () => void; children: ReactNode; color?: string; title?: string }) {
   return (
-    <button onClick={onClick}
+    <button type="button" onClick={onClick} title={title}
       className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
         active
           ? "text-white shadow-md ring-2 ring-foreground/70 ring-offset-2 ring-offset-background scale-[1.03]"
@@ -208,17 +208,19 @@ function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave:
   );
 }
 function CustomChipList({
-  base, custom, onAddCustom, onRemoveCustom, onRenameCustom, selected, onToggle,
+  base, custom, onAddCustom, onRemoveCustom, onRenameCustom, selected, onToggle, descriptions,
 }: {
   base: string[]; custom: string[];
   onAddCustom: (v: string) => void;
   onRemoveCustom?: (v: string) => void;
   onRenameCustom?: (oldV: string, newV: string) => void;
   selected: string[]; onToggle: (v: string) => void;
+  descriptions?: Record<string, string>;
 }) {
   const [adding, setAdding] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [text, setText] = useState("");
+  const [infoFor, setInfoFor] = useState<string | null>(null);
   const canEdit = !!(onRenameCustom || onRemoveCustom) && custom.length > 0;
   return (
     <div className="mt-2">
@@ -227,17 +229,17 @@ function CustomChipList({
           {adding ? (
             <div className="flex flex-1 items-center gap-1">
               <Input value={text} onChange={(e) => setText(e.target.value)} className="h-8 flex-1" placeholder="Custom…" autoFocus />
-              <Button size="sm" onClick={() => { if (text.trim()) { onAddCustom(text.trim()); setText(""); setAdding(false); } }}>Add</Button>
-              <Button size="sm" variant="ghost" onClick={() => { setText(""); setAdding(false); }}>Cancel</Button>
+              <Button type="button" size="sm" onClick={() => { if (text.trim()) { onAddCustom(text.trim()); setText(""); setAdding(false); } }}>Add</Button>
+              <Button type="button" size="sm" variant="ghost" onClick={() => { setText(""); setAdding(false); }}>Cancel</Button>
             </div>
           ) : (
-            <button onClick={() => setAdding(true)}
+            <button type="button" onClick={() => setAdding(true)}
               className="flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary hover:bg-primary/20">
               <Plus className="h-3 w-3" /> Add custom
             </button>
           )}
           {canEdit && !adding && (
-            <button onClick={() => setEditMode((v) => !v)}
+            <button type="button" onClick={() => setEditMode((v) => !v)}
               className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${editMode ? "bg-primary text-primary-foreground" : "bg-tint text-muted-foreground hover:text-foreground"}`}>
               <Pencil className="h-3 w-3" /> {editMode ? "Done" : "Edit"}
             </button>
@@ -246,7 +248,16 @@ function CustomChipList({
       )}
       <div className="flex flex-wrap gap-2">
         {base.map((v) => (
-          <Chip key={v} active={selected.includes(v)} onClick={() => onToggle(v)}>{v}</Chip>
+          <span key={v} className="inline-flex items-center gap-0.5">
+            <Chip active={selected.includes(v)} onClick={() => onToggle(v)} title={descriptions?.[v]}>{v}</Chip>
+            {descriptions?.[v] && (
+              <button type="button" onClick={(e) => { e.stopPropagation(); setInfoFor(infoFor === v ? null : v); }}
+                aria-label={`Info ${v}`}
+                className="grid h-4 w-4 place-items-center rounded-full bg-tint text-[10px] font-bold text-muted-foreground hover:bg-primary/15 hover:text-primary">
+                i
+              </button>
+            )}
+          </span>
         ))}
         {custom.map((v) => (
           <span key={v} className="relative inline-flex items-center">
@@ -279,6 +290,11 @@ function CustomChipList({
           </span>
         ))}
       </div>
+      {infoFor && descriptions?.[infoFor] && (
+        <div className="mt-2 rounded-lg bg-tint px-2.5 py-1.5 text-[11px] leading-snug text-foreground">
+          <span className="font-semibold">{infoFor}:</span> {descriptions[infoFor]}
+        </div>
+      )}
     </div>
   );
 }
@@ -372,6 +388,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
   { date: string; data: BixboData; update: UpdateFn; onDone: () => void; initialEntry?: PainEntry }) {
   const [step, setStep] = useState(0);
   const [score, setScore] = useState(initialEntry?.score ?? 0);
+  const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
   const [parts, setParts] = useState<string[]>(initialEntry?.parts ?? []);
   const [quality, setQuality] = useState<string[]>(initialEntry?.quality ?? []);
   const [symptoms, setSymptoms] = useState<string[]>(initialEntry?.symptoms ?? []);
@@ -418,7 +435,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
     const editing = !!initialEntry;
     const p: PainEntry = {
       id: initialEntry?.id ?? crypto.randomUUID(),
-      time: initialEntry?.time ?? nowHHMM(),
+      time,
       score, parts, quality, symptoms, note: note.trim(),
       bodyBattery, stress, mood: mood.length ? mood : undefined,
       hotFlashes: symptoms.includes("Hot flashes") ? hotFlashes : undefined,
@@ -540,6 +557,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
             <div className="rounded-2xl border border-border p-3 space-y-3">
               <Field label="Type">
                 <CustomChipList base={TETANY_TYPES} custom={data.custom.tetanyTypes}
+                  descriptions={TETANY_TYPE_DESC}
                   onAddCustom={(v) => addCustom("tetanyTypes", v)}
                   onRemoveCustom={(v) => { removeCustom("tetanyTypes", v); setTetanyTypes((a) => a.filter((x) => x !== v)); }}
                   onRenameCustom={(o, n) => { renameCustom("tetanyTypes", o, n); setTetanyTypes((a) => a.map((x) => x === o ? n : x)); }}
@@ -685,6 +703,9 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
               onRenameCustom={(o, n) => { renameCustom("moods", o, n); setMood((a) => a.map((x) => x === o ? n : x)); }}
               selected={mood} onToggle={(v) => setMood((a) => toggleIn(a, v))} />
           </Field>
+          <Field label="Time of entry">
+            <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+          </Field>
           <Field label="Note (optional)">
             <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Anything else…" />
           </Field>
@@ -827,6 +848,7 @@ function TetanyForm({ date, data, update, onDone, initialEntry }:
       <Field label="Time"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></Field>
       <Field label="Type">
         <CustomChipList base={TETANY_TYPES} custom={data.custom.tetanyTypes}
+          descriptions={TETANY_TYPE_DESC}
           onAddCustom={(v) => addC("tetanyTypes", v)}
           onRemoveCustom={(v) => { rmC("tetanyTypes", v); setTypes((a) => a.filter((x) => x !== v)); }}
           onRenameCustom={(o, n) => { rnC("tetanyTypes", o, n); setTypes((a) => a.map((x) => x === o ? n : x)); }}
@@ -1045,14 +1067,17 @@ function AddCustomInline({ onAdd }: { onAdd: (v: string) => void }) {
   const [adding, setAdding] = useState(false);
   const [text, setText] = useState("");
   if (!adding) return (
-    <button onClick={() => setAdding(true)} className="flex items-center gap-1 rounded-full bg-tint px-3 py-1.5 text-xs font-medium text-muted-foreground">
+    <button type="button" onClick={() => setAdding(true)} className="flex items-center gap-1 rounded-full bg-tint px-3 py-1.5 text-xs font-medium text-muted-foreground">
       <Plus className="h-3 w-3" /> Add
     </button>
   );
+  const commit = () => { if (text.trim()) { onAdd(text.trim()); setText(""); setAdding(false); } };
   return (
     <div className="flex items-center gap-1">
-      <Input value={text} onChange={(e) => setText(e.target.value)} className="h-8 w-32" placeholder="Custom…" />
-      <Button size="sm" onClick={() => { if (text.trim()) { onAdd(text.trim()); setText(""); setAdding(false); } }}>Add</Button>
+      <Input value={text} onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commit(); } }}
+        className="h-8 w-32" placeholder="Custom…" autoFocus />
+      <Button type="button" size="sm" onClick={commit}>Add</Button>
     </div>
   );
 }
