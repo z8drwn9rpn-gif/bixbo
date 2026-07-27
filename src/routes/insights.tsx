@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { useBixbo, EMPTY, addDays, toKey, fromKey, painColor, BRISTOL, avgDayPain } from "@/lib/storage";
+import { useBixbo, EMPTY, addDays, toKey, fromKey, painColor, BRISTOL, avgDayPain, isIntercourseKind } from "@/lib/storage";
 
 export const Route = createFileRoute("/insights")({
   head: () => ({
@@ -51,10 +51,9 @@ function InsightsPage() {
     return nums.reduce((a, b) => a + b, 0) / nums.length;
   })();
 
-  // ŠukŠuk! — count only actual sex (not fingering / oral / other)
-  const SEX_KINDS = new Set(["sex", "sex_with_condom", "sex_without_condom"]);
+  // ŠukŠuk! — count only actual sex/intercourse entries, not oral/fingering/other touch entries.
   const sexCount = days.reduce(
-    (s, k) => s + (view.dayLogs[k]?.sex?.filter((e) => SEX_KINDS.has(String(e.kind))).length ?? 0),
+    (s, k) => s + (view.dayLogs[k]?.sex?.filter((e) => isIntercourseKind(e.kind)).length ?? 0),
     0,
   );
 
@@ -63,11 +62,16 @@ function InsightsPage() {
   const bowelCounts = new Array(8).fill(0) as number[];
   days.forEach((k) => view.dayLogs[k]?.bowel?.forEach((b) => { bowelCounts[b.bristol] = (bowelCounts[b.bristol] ?? 0) + 1; }));
 
-  // Weight
-  const weightSeries = days.map((k) => view.dayLogs[k]?.weight);
-  const wNums = weightSeries.filter((n): n is number => n != null);
-  const wMin = wNums.length ? Math.min(...wNums) : 0;
-  const wMax = wNums.length ? Math.max(...wNums) : 0;
+  // Weight uses an Apple-style rolling range so previous logged days are visible in Month view.
+  const weightDays = useMemo(() => {
+    const end = new Date(anchor); end.setHours(0, 0, 0, 0);
+    const start = new Date(end);
+    if (period === "W") start.setDate(end.getDate() - 6);
+    else if (period === "M") start.setDate(end.getDate() - 30);
+    else start.setFullYear(end.getFullYear() - 1);
+    return eachDay(toKey(start), toKey(end));
+  }, [period, anchor]);
+  const weightSeries = weightDays.map((k) => view.dayLogs[k]?.weight);
 
   // Sleep
   const sleepSeries = days.map((k) => view.dayLogs[k]?.sleepHours);
@@ -270,24 +274,7 @@ function InsightsPage() {
 
 
 
-        <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">Weight</p>
-          {wNums.length ? (
-            <>
-              <p className="mt-1 text-sm">Min {wMin} · Max {wMax} kg</p>
-              <div className="mt-3 flex h-16 items-end gap-1">
-                {weightSeries.map((w, i) => (
-                  <div key={i} className="flex-1 h-full flex items-end">
-                    {w != null && (
-                      <div className="w-full rounded-t bg-primary/70"
-                        style={{ height: `${((w - wMin) / Math.max(1, wMax - wMin)) * 100}%` }} />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : <p className="mt-1 text-sm text-muted-foreground">No data</p>}
-        </section>
+        <WeightLineChart period={period} days={weightDays} series={weightSeries} />
 
         <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">Sleep</p>
