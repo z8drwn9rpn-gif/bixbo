@@ -20,6 +20,7 @@ export interface PainEntry {
   mood?: string[];
   hotFlashes?: number;
   headacheTypes?: string[];
+  headacheIntensity?: number;
 }
 export interface TetanyEpisode {
   id: string;
