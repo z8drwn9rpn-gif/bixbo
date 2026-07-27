@@ -63,6 +63,29 @@ export async function pushMyData(payload: BixboData): Promise<void> {
   await supabase.from("user_data").upsert({ user_id: user.id, data: stripped as never });
 }
 
+/* ------------------- Immediate-flush queue -------------------
+ * Wizards call flushMyDataPush() after Save so cloud write happens
+ * synchronously (awaited) instead of after a debounce. We also flush on
+ * pagehide / visibilitychange:hidden so a quick app close doesn't drop data.
+ */
+let _flushingPromise: Promise<void> | null = null;
+export async function flushMyDataPush(): Promise<void> {
+  if (_flushingPromise) return _flushingPromise;
+  _flushingPromise = (async () => {
+    try { await pushMyData(getBixbo()); }
+    catch (e) { console.error("flushMyDataPush", e); }
+    finally { _flushingPromise = null; }
+  })();
+  return _flushingPromise;
+}
+if (typeof window !== "undefined") {
+  const flush = () => { void flushMyDataPush(); };
+  window.addEventListener("pagehide", flush);
+  window.addEventListener("beforeunload", flush);
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flush(); });
+}
+
+
 /* ------------------- Session hook ------------------- */
 export function useSession() {
   const [session, setSession] = useState<Session | null>(null);
