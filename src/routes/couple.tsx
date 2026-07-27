@@ -294,23 +294,28 @@ function CouplePage() {
         ) : (
           <>
             <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">Pain — last 14 days</p>
-              <div className="mt-2 grid grid-cols-14 gap-1">
-                {Array.from({ length: days }, (_, i) => {
-                  const k = addDays(start, i);
-                  const mine = view.dayLogs[k]?.pain?.reduce((s, p, _, a) => s + p.score / a.length, 0);
-                  const theirs = partner.dayLogs[k]?.pain?.reduce((s, p, _, a) => s + p.score / a.length, 0);
-                  return (
-                    <div key={i} className="flex flex-col items-center gap-1">
-                      <div className="h-16 flex flex-col justify-end items-center gap-0.5">
-                        {mine != null && <div className="w-3 rounded-t" style={{ height: `${mine * 7}px`, background: painColor(mine) }} />}
-                        {theirs != null && <div className="w-3 rounded-t opacity-60" style={{ height: `${theirs * 7}px`, background: painColor(theirs), border: "1.5px dashed #000" }} />}
-                      </div>
-                      <span className="text-[8px] text-muted-foreground">{k.slice(-2)}</span>
-                    </div>
-                  );
-                })}
-              </div>
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">Pain — {now.toLocaleDateString("en-GB", { month: "long", year: "numeric" })}</p>
+              {(() => {
+                const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+                const monthDays = Array.from({ length: daysInMonth }, (_, i) => `${monthPrefix}-${String(i + 1).padStart(2, "0")}`);
+                return (
+                  <div className="mt-2 flex gap-[2px]">
+                    {monthDays.map((k, i) => {
+                      const mine = view.dayLogs[k]?.pain?.reduce((s, p, _, a) => s + p.score / a.length, 0);
+                      const theirs = partner.dayLogs[k]?.pain?.reduce((s, p, _, a) => s + p.score / a.length, 0);
+                      return (
+                        <div key={i} className="flex flex-1 flex-col items-center gap-1">
+                          <div className="flex h-16 flex-col items-center justify-end gap-0.5">
+                            {mine != null && <div className="w-1.5 rounded-t" style={{ height: `${mine * 6}px`, background: painColor(mine) }} />}
+                            {theirs != null && <div className="w-1.5 rounded-t opacity-60" style={{ height: `${theirs * 6}px`, background: painColor(theirs), border: "1px dashed #000" }} />}
+                          </div>
+                          {(i + 1) % 5 === 0 || i === 0 ? <span className="text-[8px] text-muted-foreground">{i + 1}</span> : <span className="text-[8px]">&nbsp;</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
               <div className="mt-3 flex gap-3 text-xs">
                 <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-primary" /> Me</span>
                 <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded border border-dashed bg-primary opacity-60" /> {partner.name}</span>
