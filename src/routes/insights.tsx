@@ -314,6 +314,7 @@ function InsightsPage() {
 }
 
 function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) {
+  const { update } = useBixbo();
   const [range, setRange] = useState<7 | 30>(7);
   const [open, setOpen] = useState(true);
   const [expandedDay, setExpandedDay] = useState<string | null>(null);
@@ -326,19 +327,29 @@ function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) 
   const scheduled = data.meds.filter((m) => !m.asNeeded);
   const asNeeded = data.meds.filter((m) => m.asNeeded);
 
+  const toggleDose = (dayKey: string, medKey: string) => update((d) => {
+    const day = { ...(d.medLog[dayKey] ?? {}) };
+    if (day[medKey]) delete day[medKey]; else day[medKey] = true;
+    return { ...d, medLog: { ...d.medLog, [dayKey]: day } };
+  });
+
   const perDay = days.map((k) => {
     const expected = scheduled.reduce((s, m) => s + m.times.length, 0);
-    const missed: { medName: string; time: string }[] = [];
+    const missed: { medName: string; time: string; key: string }[] = [];
+    const takenList: { medName: string; time: string; key: string }[] = [];
     let taken = 0;
     scheduled.forEach((m) => m.times.forEach((t) => {
-      if (data.medLog[k]?.[`${m.id}@${t}`]) taken++;
-      else missed.push({ medName: m.name, time: t });
+      const key = `${m.id}@${t}`;
+      if (data.medLog[k]?.[key]) { taken++; takenList.push({ medName: m.name, time: t, key }); }
+      else missed.push({ medName: m.name, time: t, key });
     }));
-    return { date: k, expected, taken, missed };
+    return { date: k, expected, taken, missed, takenList };
   });
   const totalExpected = perDay.reduce((s, d) => s + d.expected, 0);
   const totalTaken = perDay.reduce((s, d) => s + d.taken, 0);
   const overallPct = totalExpected ? Math.round((totalTaken / totalExpected) * 100) : null;
+
+
 
   const perMed = scheduled.flatMap((m) => m.times.map((t) => {
     let taken = 0;
@@ -417,14 +428,32 @@ function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) 
                 return (
                   <div className="mt-3 rounded-2xl bg-tint p-3 text-xs">
                     <p className="font-medium">{fmt(d.date)} — {d.taken}/{d.expected} taken</p>
+                    {d.takenList.length > 0 && (
+                      <ul className="mt-1 space-y-0.5">
+                        {d.takenList.map((m) => (
+                          <li key={m.key}>
+                            <button onClick={() => toggleDose(d.date, m.key)} className="text-left text-green-700 hover:underline" title="Tap to uncheck">
+                              ✓ {m.time} — {m.medName} <span className="text-[10px] text-muted-foreground">· tap to uncheck</span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                     {d.missed.length > 0 ? (
                       <ul className="mt-1 space-y-0.5 text-muted-foreground">
-                        {d.missed.map((m, i) => <li key={i}>✗ {m.time} — {m.medName}</li>)}
+                        {d.missed.map((m) => (
+                          <li key={m.key}>
+                            <button onClick={() => toggleDose(d.date, m.key)} className="text-left hover:underline" title="Tap to mark taken">
+                              ✗ {m.time} — {m.medName} <span className="text-[10px]">· tap to mark taken</span>
+                            </button>
+                          </li>
+                        ))}
                       </ul>
-                    ) : <p className="mt-1 text-muted-foreground">All doses taken 💚</p>}
+                    ) : d.expected > 0 ? <p className="mt-1 text-muted-foreground">All doses taken 💚</p> : null}
                   </div>
                 );
               })()}
+
             </div>
           )}
 
