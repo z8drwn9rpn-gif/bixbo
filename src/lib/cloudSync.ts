@@ -127,7 +127,7 @@ export function useCloudSync() {
     const unsubStore = subscribeBixboChanges((d, reason) => {
       if (reason !== "local") return;
       if (pushTimer) clearTimeout(pushTimer);
-      pushTimer = setTimeout(() => { pushMyData(d).catch(console.error); }, 900);
+      pushTimer = setTimeout(() => { pushMyData(d).catch(console.error); }, 200);
     });
 
     // Realtime: refresh partner when their user_data changes or link changes
