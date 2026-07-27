@@ -275,7 +275,8 @@ function InsightsPage() {
 
 
 
-        <WeightLineChart period={period} days={weightDays} series={weightSeries} />
+        <WeightLineChart period={period} days={weightDays} series={weightSeries} label="Weight" unit="kg" />
+        <WeightLineChart period={period} days={weightDays} series={tempSeries} label="Body temperature" unit="°C" />
 
         <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">Sleep</p>
