@@ -388,6 +388,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
   { date: string; data: BixboData; update: UpdateFn; onDone: () => void; initialEntry?: PainEntry }) {
   const [step, setStep] = useState(0);
   const [score, setScore] = useState(initialEntry?.score ?? 0);
+  const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
   const [parts, setParts] = useState<string[]>(initialEntry?.parts ?? []);
   const [quality, setQuality] = useState<string[]>(initialEntry?.quality ?? []);
   const [symptoms, setSymptoms] = useState<string[]>(initialEntry?.symptoms ?? []);
