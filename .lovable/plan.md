@@ -1,70 +1,50 @@
-# BIXBO — big batch update
+Rozsah je veľký a niektoré požiadavky treba upresniť. Navrhujem toto poradie a rozsah, potvrď / uprav:
 
-Big list of changes. I'll group by area so nothing gets lost. Confirm and I ship it all in one pass.
+## Priorita 1 — Kritický bug: strata dát pri zavretí (#7)
+Diagnóza: `useBixbo` ukladá do `localStorage` cez debounced write, a cloud push v `cloudSync` má 900 ms `setTimeout`. Ak sa app zavrie hneď po Save, ani jedno neuloží.
+Oprava:
+- Save vo wizardoch → synchrónny `localStorage.setItem` okamžite (flush pending debounce pred návratom).
+- Cloud push: pri každom lokálnom `update` naplánuj push, ale **flushni okamžite** aj cez `navigator.sendBeacon` / `visibilitychange` / `pagehide` listener, a Save tlačidlo zavolá `await pushMyData(...)` pred zatvorením sheetu (s krátkym timeoutom, aby UX neblokovalo pri offline).
+- Fallback: pri offline zapíš do `localStorage` „pending sync queue" a flushni pri obnovení siete.
 
-## 1. Quick Log row (move ABOVE "Today", simplify)
+## Priorita 2 — Poradie tlačidiel v wizarde (#8)
+Aktuálne: `[Back] [Next/Save]`. Potvrď preferované poradie — navrhujem: `[Cancel] [Back] [Next/Save]` s Save vždy vpravo (primárna akcia).
 
-- Keep first 5 tiles (pain 0/1/5/10 + tetany episode and panic attack) as-is.
-- **Tetany**: single tile "Tetany episode" — logs entry with no preset type, user fills details later.
-- **Panic**: single tile "Panic attack" — same, no preset, user fills details later.
-- **Histamine flare**: move into Food category — quick tap logs a food entry named "Histamine flare".
-- **Add ŠukŠuk quick tile** — logs a sex entry ("Sex"), details filled later.
-- Remove all mood smileys + battery tiles from quick row.
-- Move whole Quick Log strip **above** the "Today" heading.
+## Priorita 3 — Notes fixes (#1)
+- Bold / highlight tlačidlá momentálne vkladajú HTML tagy do `<textarea>`, čo nefunguje ako WYSIWYG. Prepnem na `contentEditable` div s `document.execCommand("bold")` / vlastný highlight wrap, alebo pridám živý HTML preview pod editor. Potvrď preferenciu (execCommand je najjednoduchšie).
+- Checklist: prejdem interakcie, opravím pridanie/toggle.
+- Autosave: debounced save (500 ms) pri každej zmene titulu / obsahu / checklistu — nevyžaduje „Save".
 
-## 2. Pain wizard additions
+## Priorita 4 — Weight ročný graf (#2)
+- Zredukujem X labely na 12 mesiacov (Jan, Feb, …) s väčším spacing a jemnými gridlines; ak dát je málo, spriemerujem na mesiac.
 
-- **Symptoms/quality lists**: add all missing tags from the screenshots (digestive, urinary, menstrual & reproductive, physical, mental & cognitive, PCOS-specific, other, alternative treatments) and put them under correct sections. Fix typos where safe.
-- **Tetany types**: add (i) info icon next to each type with SK explanation tooltip:
-  - Carpopedal spasm, Calf cramps, Twitches around mouth/face, Tingling / numbness, Fasciculations (texts as provided).
-  - Add more type options (Laryngospasm, Jaw clenching, Eyelid twitch, Back spasm, Whole-body cramp).
-- **Headache type** in Pain wizard, with (i) explanations (tension, migraine, cluster, sinus, hormonal, cervicogenic).
-- **Mood chips**: add emoji next to each mood word.
-- **Time editor**: allow changing the recorded time of a pain entry. 
-- **Blueberry cramp pain** → show in DayPreview.
+## Priorita 5 — Tetany: liek na zmiernenie (#3)
+- Do `TetanyWizard` pridám textové pole „Rescue med" (voľný text + rýchle chipy `meds` zo store). Uložím do `tetany[i].rescueMed`. Zobrazím v prehľade dňa a v Couple view.
 
-## 3. Bowel
+## Priorita 6 — Export PDF/CSV (#4)
+- Nové tlačidlo v Settings → „Export for doctor". Range picker (posledný mesiac / 3 / 6 / vlastný).
+- CSV: samostatné súbory pain.csv, cycle.csv, meds.csv, tetany.csv (ZIP-ované cez `jszip`) alebo jeden zlúčený.
+- PDF: cez `jspdf` + `jspdf-autotable` — súhrn + tabuľky. Otázka: chceš tam aj grafy (weight, pain) ako obrázky? (Áno = pridám `html2canvas`.)
 
-- Add **Type 0 — Mystery 🌈** (rainbow color).
+## Priorita 7 — História / verziovanie (#5)
+Návrh (potvrď rozsah):
+- Nová Supabase tabuľka `user_data_history` (user_id, snapshot jsonb, created_at). Trigger na `user_data` UPDATE ukladá starú verziu.
+- Retencia: posledných 30 snapshotov.
+- V Settings: „Restore previous version" so zoznamom časových značiek + náhľad + restore.
+- Alternatíva (jednoduchšie): iba lokálne snapshoty v `localStorage` (posledných 10). Potvrď, ktorú chceš.
 
-## 4. Bugs
-
-- Food custom quick-add always writes "Matcha" — fix so it uses the typed value.
-- Pain form auto-checks tags the user didn't tap — fix state bleed.
-- ŠukŠuk insights count wrong again — recount only true sex entries.
-- Weight graph broken — rebuild as Apple-Health-style line chart (year view, smooth line, min/max markers). Apply same style to Body temperature.
-- Meds notifications don't fire — fix scheduling + permission request; also enable adherence-drop notifications for me + partner (threshold: ≥2 missed doses in 7 days).
-- When a med is taken later than scheduled, overview shows the actual time, not the planned one.
-- Meds heatmap: allow **un-checking** a dose (toggle, not one-way).
-
-## 5. Calendar
-
-- Replace the horizontal event row under the date with small colored squares (one per event, using each event's color), so more fit side-by-side.
-- Shrink the outer ring slightly (smaller circle, same stroke) so it isn't clipped on the sides.
-- Do-dos: hide from calendar cells, keep only in DayPreview.
-- Fit **4 mood emojis per row** in the mood picker (currently 3).
-
-## 6. Insights
-
-- Pain bar chart: add X-axis (day-of-month labels) and Y-axis (0–10 pain level labels). Apply to Week / Month / Year views.
-- Weight + Temperature: new line-chart component (see §4).
-
-## 7. Couple
-
-- Show only entries from the **current month**.
-
-## 8. Layout
-
-- Move the "+ Log" button to the bottom nav (next to Notes), replacing/reorganising the current nav slot as marked in screenshot. Keep it olive color. 
-- Landscape mode: make the app fill the full screen width (remove the 430px max-width clamp when orientation is landscape).
-- Ako je napisane BIXBO so smajlikom 🥑 tak to vsade zmen na tohto smajlika 🫒
+## Priorita 8 — SK/EN prepínač (#6)
+- Zavediem `i18n` s `react-i18next` (alebo ľahký vlastný context — appka je momentálne v angličtine s pár SK stringami).
+- Otázka: máš existujúce SK preklady, alebo mám iba dodať SK verziu core stringov a nechať tooltipy/copy postupne? (Kompletné preklady všetkých ~500 stringov je samostatná veľká úloha.)
 
 ---
 
-### Technical notes (skip if not interested)
+## Otázky pred implementáciou
+1. **Bug (#7)**: OK, ak Save krátko blokuje UI (spinner) kým prebehne cloud push? Alebo optimistic + offline queue?
+2. **Notes bold/highlight**: `contentEditable` (WYSIWYG) alebo markdown-style s live preview?
+3. **PDF**: pribaliť grafy ako obrázky?
+4. **Verziovanie**: cloud (Supabase tabuľka) alebo iba lokálne snapshoty?
+5. **i18n**: iba UI chrome (menu, tlačidlá) alebo kompletné preklady vrátane tooltipov?
+6. **Poradie tlačidiel (#8)**: potvrď `[Cancel] [Back] [Next/Save]` alebo iné.
 
-- Files touched: `QuickTags.tsx`, `LogSheet.tsx`, `MonthCalendar.tsx`, `BottomNav.tsx`, `AppShell.tsx`, `routes/index.tsx`, `routes/insights.tsx`, `routes/couple.tsx`, `lib/storage.ts` (add `Bristol 0`, headache type, notification prefs), new `lib/notifications.ts` for scheduling + adherence checks, new `components/LineChart.tsx` for Apple-Health-style graphs.
-- Meds notifications: use `Notification` API + `setTimeout` scheduler re-armed on visibility change (no service worker yet); adherence check runs on app load and on med-log change.
-- Storage additions are backward-compatible (optional fields, migration on read).
-
-This is a large batch — shall I proceed with all of it, or want me to split into phases (e.g. bugs first, then features)? Proceed with all of it. 
+Napíš odpovede (stačí číslami) a pustím sa do implementácie — začnem prioritou 1 a 2, ktoré nasadím okamžite.
