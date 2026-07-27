@@ -11,6 +11,7 @@ import {
   PAIN_DESCRIPTIONS, painColor, BODY_PARTS_DEFAULT, PAIN_QUALITY_DEFAULT, OTHER_SYMPTOMS_DEFAULT,
   FOOD_FEELINGS_DEFAULT, WORKOUT_KINDS_DEFAULT, BRISTOL, DISCHARGE_OPTS, MOODS_DEFAULT,
   TETANY_TYPES, TETANY_TYPE_DESC, TETANY_LOCATIONS_DEFAULT, TETANY_TRIGGERS, TETANY_HELPED_DEFAULT,
+  HEADACHE_TYPES, HEADACHE_TYPE_DESC,
   PANIC_PHYSICAL, PANIC_COGNITIVE, PANIC_HELPED_DEFAULT, SEX_TYPES_DEFAULT,
   BODY_BATTERY, SLEEP_QUALITY, EVENT_COLORS,
   BOWEL_FEELINGS_DEFAULT, BOWEL_SYMPTOMS_DEFAULT,
@@ -424,6 +425,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
   const [stress, setStress] = useState<number | undefined>(initialEntry?.stress);
   const [mood, setMood] = useState<string[]>(initialEntry?.mood ?? []);
   const [hotFlashes, setHotFlashes] = useState<number | undefined>(initialEntry?.hotFlashes);
+  const [headacheTypes, setHeadacheTypes] = useState<string[]>(initialEntry?.headacheTypes ?? []);
 
   type CKey = "bodyParts" | "quality" | "symptoms" | "moods"
     | "tetanyTypes" | "tetanyLocations" | "tetanyTriggers" | "tetanyHelped";
@@ -442,6 +444,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
       score, parts, quality, symptoms, note: note.trim(),
       bodyBattery, stress, mood: mood.length ? mood : undefined,
       hotFlashes: symptoms.includes("Hot flashes") ? hotFlashes : undefined,
+      headacheTypes: symptoms.includes("Headache") && headacheTypes.length ? headacheTypes : undefined,
     };
     updateDayLog(update, date, (l) => ({
       ...l,
@@ -548,6 +551,16 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
             <Field label={`Hot flashes intensity ${hotFlashes ?? "-"}/5`}>
               <IntensityScale value={hotFlashes ?? 0} onChange={(n) => setHotFlashes(hotFlashes === n ? undefined : n)} max={5}
                 descriptions={getScaleDesc(data,"hotFlashes")} legendTitle="Hot flashes scale" />
+            </Field>
+          )}
+          {symptoms.includes("Headache") && (
+            <Field label="Headache type">
+              <CustomChipList base={HEADACHE_TYPES} custom={[]}
+                descriptions={HEADACHE_TYPE_DESC}
+                onAddCustom={() => {}}
+                onRemoveCustom={() => {}}
+                onRenameCustom={() => {}}
+                selected={headacheTypes} onToggle={(v) => setHeadacheTypes((a) => toggleIn(a, v))} />
             </Field>
           )}
           <Field label="Tetany episode?">
