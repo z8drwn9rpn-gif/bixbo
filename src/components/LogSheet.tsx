@@ -176,11 +176,14 @@ export function LogSheet({
 
 /* ------------------- Primitives ------------------- */
 function Field({ label, children }: { label: string; children: ReactNode }) {
+  // Intentionally a <div>, not <label>. Wrapping chip/button groups in <label>
+  // caused stray click activations on the first focusable descendant, which
+  // manifested as chips getting "auto-selected" in the Pain wizard.
   return (
-    <label className="block">
+    <div className="block">
       <span className="text-xs font-medium text-muted-foreground">{label}</span>
       <div className="mt-1">{children}</div>
-    </label>
+    </div>
   );
 }
 function Chip({
