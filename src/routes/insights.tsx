@@ -521,13 +521,19 @@ function WeightLineChart({ period, days, series, label = "Weight", unit = "kg" }
   const yFor = (value: number) => top + ((yMax - value) / Math.max(0.1, yMax - yMin)) * chartH;
   const path = points.map((p, i) => `${i === 0 ? "M" : "L"}${xFor(p.index).toFixed(1)},${yFor(p.value).toFixed(1)}`).join(" ");
 
+  const MON_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const ticks = days
     .map((k, i) => ({ k, i, d: fromKey(k) }))
     .filter(({ i, d }) => {
       if (period === "W") return true;
       if (period === "M") return i === 0 || i === days.length - 1 || i % 7 === 0;
+      // Year: first of every other month
       return d.getDate() === 1 && d.getMonth() % 2 === 0;
     });
+  const tickLabel = (k: string) => {
+    const d = fromKey(k);
+    return period === "Y" ? MON_SHORT[d.getMonth()] : String(d.getDate());
+  };
   const dateLabel = `${fmtDate(days[0])} – ${fmtDate(days[days.length - 1])}`;
 
   return (
@@ -539,7 +545,7 @@ function WeightLineChart({ period, days, series, label = "Weight", unit = "kg" }
       </div>
       <p className="mt-1 text-sm text-muted-foreground">{dateLabel}</p>
       <div className="mt-3 overflow-hidden">
-        <svg viewBox={`0 0 ${width} ${height}`} className="h-48 w-full" role="img" aria-label="Weight line chart">
+        <svg viewBox={`0 0 ${width} ${height}`} className="h-48 w-full" role="img" aria-label={`${label} line chart`}>
           {[yMax, yMid, yMin].map((y) => (
             <g key={y}>
               <line x1={left} x2={width - right} y1={yFor(y)} y2={yFor(y)} stroke="var(--border)" strokeWidth="1" />
@@ -549,7 +555,7 @@ function WeightLineChart({ period, days, series, label = "Weight", unit = "kg" }
           {ticks.map(({ k, i }) => (
             <g key={k}>
               <line x1={xFor(i)} x2={xFor(i)} y1={top} y2={height - bottom} stroke="var(--border)" strokeDasharray="3 3" strokeWidth="1" />
-              <text x={xFor(i)} y={height - 8} textAnchor="middle" fontSize="9" fill="var(--muted-foreground)">{fromKey(k).getDate()}</text>
+              <text x={xFor(i)} y={height - 8} textAnchor="middle" fontSize="9" fill="var(--muted-foreground)">{tickLabel(k)}</text>
             </g>
           ))}
           <path d={path} fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
