@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import {
   toKey, hasAnyLog, painColor, isDateInRange, predictPeriods, avgDayPain,
-  type BixboData, type DayLog,
+  type BixboData, type DayLog, type EventEntry,
 } from "@/lib/storage";
 
 const WEEKDAYS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
@@ -24,7 +24,6 @@ function iconsFor(log: DayLog | undefined, hasMed: boolean): string[] {
   const out: string[] = [];
   if (hasMed) out.push("💊");
   if (log?.bowel?.some((b) => b.bristol > 0)) out.push("💩");
-  // ❤️ for any ŠukŠuk entry
   if (log?.sex?.length) out.push("❤️");
   if (log?.heat?.length) out.push("🔥");
   if (log?.workout?.length) out.push("🧘🏼‍♀️");
@@ -45,18 +44,20 @@ export function MonthCalendar({
   const y = month.getFullYear();
   const m = month.getMonth();
   const first = new Date(y, m, 1);
-  // Week starts on Monday
   const startWeekday = (first.getDay() + 6) % 7;
   const daysInMonth = new Date(y, m + 1, 0).getDate();
   const prevDays = new Date(y, m, 0).getDate();
   const totalCells = Math.ceil((startWeekday + daysInMonth) / 7) * 7;
 
-  const cells: { date: Date; inMonth: boolean }[] = [];
+  const cells: { date: Date; inMonth: boolean; key: string }[] = [];
   for (let i = 0; i < totalCells; i++) {
     const dayNum = i - startWeekday + 1;
-    if (dayNum < 1) cells.push({ date: new Date(y, m - 1, prevDays + dayNum), inMonth: false });
-    else if (dayNum > daysInMonth) cells.push({ date: new Date(y, m + 1, dayNum - daysInMonth), inMonth: false });
-    else cells.push({ date: new Date(y, m, dayNum), inMonth: true });
+    let d: Date;
+    let inMonth = true;
+    if (dayNum < 1) { d = new Date(y, m - 1, prevDays + dayNum); inMonth = false; }
+    else if (dayNum > daysInMonth) { d = new Date(y, m + 1, dayNum - daysInMonth); inMonth = false; }
+    else { d = new Date(y, m, dayNum); }
+    cells.push({ date: d, inMonth, key: toKey(d) });
   }
 
   const predicted = isMale ? [] : predictPeriods(data.cycle, cells[0].date, cells[cells.length - 1].date);
@@ -71,7 +72,7 @@ export function MonthCalendar({
     return isDateInRange(k, c.lastPeriodStart, c.lastPeriodEnd);
   };
 
-  // Swipe — horizontal only, ignore vertical scroll
+  // Swipe
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const onTouchStart = (e: React.TouchEvent) => {
     touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -86,86 +87,156 @@ export function MonthCalendar({
     touchStart.current = null;
   };
 
+  // Build week rows for Apple-style event bars
+  const weeks: typeof cells[] = [];
+  for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
+
+  // For each week compute event segments (Apple-style)
+  const eventSegmentsForWeek = (week: typeof cells): {
+    event: EventEntry; startIdx: number; endIdx: number; showTitle: boolean;
+  }[] => {
+    const weekStart = week[0].key;
+    const weekEnd = week[6].key;
+    const evs = data.events.filter((e) => e.startDate <= weekEnd && e.endDate >= weekStart);
+    return evs.map((e) => {
+      const startIdx = Math.max(0, week.findIndex((c) => c.key >= e.startDate && c.key <= e.endDate));
+      let endIdx = startIdx;
+      for (let i = week.length - 1; i >= 0; i--) {
+        if (week[i].key >= e.startDate && week[i].key <= e.endDate) { endIdx = i; break; }
+      }
+      return { event: e, startIdx, endIdx, showTitle: e.startDate >= weekStart || startIdx === 0 };
+    });
+  };
+
   return (
-    <div className="px-3" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-      <div className="grid grid-cols-7 gap-1 pb-2 text-center text-[11px] font-semibold text-muted-foreground">
+    <div className="px-2" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      <div className="grid grid-cols-7 gap-0.5 pb-1 text-center text-[11px] font-semibold text-muted-foreground">
         {WEEKDAYS.map((d) => <div key={d}>{d}</div>)}
       </div>
-      <div className="grid grid-cols-7 gap-1">
-        {cells.map(({ date, inMonth }, i) => {
-          const key = toKey(date);
-          const log = data.dayLogs[key];
-          const takenToday = data.medLog[key] ?? {};
-          const hasMed = Object.values(takenToday).some(Boolean) || !!log?.extraMeds?.length;
-          const periodLevel = isMale ? undefined : (log?.periodInfo?.level ?? log?.period);
-          const periodColor = isMale ? null : (periodColorVar(periodLevel) ?? (isActualPeriod(key) ? "var(--period-medium)" : null));
-          const pAvg = avgDayPain(log);
-          const isSel = key === selected;
-          const predictedOrange = isPredicted(key);
-          const icons = iconsFor(log, hasMed);
-
-          const dayEvents = data.events.filter((e) => isDateInRange(key, e.startDate, e.endDate));
-          // Tasks intentionally hidden from calendar cells (shown only in day preview)
-          const eventDots = dayEvents.slice(0, 4).map((e) => e.color ?? "var(--primary)");
-          const extraDots = Math.max(0, dayEvents.length - eventDots.length);
-          const marked = hasAnyLog(log);
+      <div className="space-y-0.5">
+        {weeks.map((week, wi) => {
+          const segments = eventSegmentsForWeek(week);
+          // stack up to 2 event rows
+          const rows: (typeof segments)[] = [[], []];
+          const usedByCell: (boolean[])[] = [new Array(7).fill(false), new Array(7).fill(false)];
+          for (const seg of segments) {
+            for (let r = 0; r < 2; r++) {
+              let ok = true;
+              for (let i = seg.startIdx; i <= seg.endIdx; i++) if (usedByCell[r][i]) { ok = false; break; }
+              if (ok) {
+                rows[r].push(seg);
+                for (let i = seg.startIdx; i <= seg.endIdx; i++) usedByCell[r][i] = true;
+                break;
+              }
+            }
+          }
+          const overflowByCell = new Array(7).fill(0);
+          for (const seg of segments) {
+            if (rows[0].includes(seg) || rows[1].includes(seg)) continue;
+            for (let i = seg.startIdx; i <= seg.endIdx; i++) overflowByCell[i]++;
+          }
 
           return (
-            <button
-              key={i}
-              onClick={() => onSelect(key)}
-              className={`flex flex-col items-stretch overflow-hidden rounded-xl text-left transition ${
-                inMonth ? "" : "opacity-30"
-              } ${isSel ? "ring-2 ring-primary" : ""}`}
-            >
-              <div className="relative flex aspect-square items-center justify-center pt-0.5">
-                {pAvg != null && (
-                  <span
-                    aria-hidden
-                    className="pointer-events-none absolute inset-1.5 rounded-full"
-                    style={{ boxShadow: `0 0 0 3.5px ${painColor(pAvg)}` }}
-                  />
-                )}
-                {predictedOrange && (
-                  <span
-                    aria-hidden
-                    className="pointer-events-none absolute inset-2 rounded-full"
-                    style={{ boxShadow: `0 0 0 2px var(--predicted)` }}
-                  />
-                )}
-                <div
-                  className="relative flex h-8 w-8 items-center justify-center rounded-full"
-                  style={{
-                    background: periodColor ?? "transparent",
-                  }}
-                >
-                  <span className={`text-sm ${
-                    periodColor ? "font-semibold text-white" : "text-foreground"
-                  }`}>
-                    {date.getDate()}
-                  </span>
-                </div>
-                {icons.length > 0 && (
-                  <span className="absolute bottom-0 flex gap-0.5 text-[9px] leading-none">
-                    {icons.slice(0, 4).map((ic, idx) => <span key={idx}>{ic}</span>)}
-                  </span>
-                )}
-                {icons.length === 0 && marked && (
-                  <span className="absolute bottom-1 h-1 w-1 rounded-full bg-primary/70" />
-                )}
-              </div>
-              {eventDots.length > 0 && (
-                <div className="flex items-center justify-center gap-0.5 pb-0.5">
-                  {eventDots.map((c, di) => (
-                    <span key={di} className="h-1.5 w-1.5 rounded-sm" style={{ background: c }} />
+            <div key={wi} className="grid grid-cols-7 gap-0.5">
+              {week.map(({ date, inMonth, key }, ci) => {
+                const log = data.dayLogs[key];
+                const takenToday = data.medLog[key] ?? {};
+                const hasMed = Object.values(takenToday).some(Boolean) || !!log?.extraMeds?.length;
+                const periodLevel = isMale ? undefined : (log?.periodInfo?.level ?? log?.period);
+                const periodColor = isMale ? null : (periodColorVar(periodLevel) ?? (isActualPeriod(key) ? "var(--period-medium)" : null));
+                const pAvg = avgDayPain(log);
+                const isSel = key === selected;
+                const predictedOrange = isPredicted(key);
+                const icons = iconsFor(log, hasMed);
+                const marked = hasAnyLog(log);
+
+                return (
+                  <button
+                    key={ci}
+                    onClick={() => onSelect(key)}
+                    className={`flex flex-col items-stretch overflow-hidden rounded-lg text-left transition ${
+                      inMonth ? "" : "opacity-30"
+                    } ${isSel ? "ring-2 ring-primary" : ""}`}
+                  >
+                    <div className="relative flex aspect-square landscape:aspect-auto landscape:h-14 items-center justify-center pt-0.5">
+                      {pAvg != null && (
+                        <span
+                          aria-hidden
+                          className="pointer-events-none absolute inset-1 rounded-full"
+                          style={{ boxShadow: `0 0 0 4.5px ${painColor(pAvg)}` }}
+                        />
+                      )}
+                      {predictedOrange && (
+                        <span
+                          aria-hidden
+                          className="pointer-events-none absolute inset-2 rounded-full"
+                          style={{ boxShadow: `0 0 0 2px var(--predicted)` }}
+                        />
+                      )}
+                      <div
+                        className="relative flex h-8 w-8 items-center justify-center rounded-full"
+                        style={{ background: periodColor ?? "transparent" }}
+                      >
+                        <span className={`text-sm ${periodColor ? "font-semibold text-white" : "text-foreground"}`}>
+                          {date.getDate()}
+                        </span>
+                      </div>
+                      {icons.length > 0 && (
+                        <span className="pointer-events-none absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-[1px] text-[10px] leading-none drop-shadow-sm">
+                          {icons.slice(0, 4).map((ic, idx) => <span key={idx}>{ic}</span>)}
+                        </span>
+                      )}
+                      {icons.length === 0 && marked && (
+                        <span className="absolute bottom-0.5 h-1 w-1 rounded-full bg-primary/70" />
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+
+              {/* Event bar rows */}
+              {rows.map((row, ri) => (
+                row.length ? (
+                  <div key={`r-${ri}`} className="grid grid-cols-7 gap-0.5 -mt-0.5">
+                    {new Array(7).fill(null).map((_, ci) => {
+                      const seg = row.find((s) => s.startIdx === ci);
+                      if (seg) {
+                        const span = seg.endIdx - seg.startIdx + 1;
+                        const isStart = week[seg.startIdx].key === seg.event.startDate;
+                        const isEnd = week[seg.endIdx].key === seg.event.endDate;
+                        return (
+                          <div
+                            key={ci}
+                            className={`h-[13px] truncate px-1 text-[9px] font-medium leading-[13px] text-white ${
+                              isStart ? "rounded-l" : ""
+                            } ${isEnd ? "rounded-r" : ""}`}
+                            style={{
+                              gridColumn: `span ${span} / span ${span}`,
+                              background: seg.event.color ?? "var(--primary)",
+                            }}
+                          >
+                            {isStart ? seg.event.title : "\u00A0"}
+                          </div>
+                        );
+                      }
+                      // if this cell is covered by a segment (mid), skip (it's part of prior span)
+                      const covered = row.some((s) => ci > s.startIdx && ci <= s.endIdx);
+                      if (covered) return null;
+                      return <div key={ci} className="h-[13px]" />;
+                    })}
+                  </div>
+                ) : null
+              ))}
+              {overflowByCell.some((n) => n > 0) && (
+                <div className="grid grid-cols-7 gap-0.5">
+                  {overflowByCell.map((n, ci) => (
+                    <div key={ci} className="h-[10px] text-center text-[8px] leading-[10px] text-muted-foreground">
+                      {n > 0 ? `+${n}` : ""}
+                    </div>
                   ))}
-                  {extraDots > 0 && (
-                    <span className="text-[8px] leading-none text-muted-foreground">+{extraDots}</span>
-                  )}
                 </div>
               )}
-
-            </button>
+            </div>
           );
         })}
       </div>
