@@ -425,6 +425,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
   const [stress, setStress] = useState<number | undefined>(initialEntry?.stress);
   const [mood, setMood] = useState<string[]>(initialEntry?.mood ?? []);
   const [hotFlashes, setHotFlashes] = useState<number | undefined>(initialEntry?.hotFlashes);
+  const [headacheTypes, setHeadacheTypes] = useState<string[]>(initialEntry?.headacheTypes ?? []);
 
   type CKey = "bodyParts" | "quality" | "symptoms" | "moods"
     | "tetanyTypes" | "tetanyLocations" | "tetanyTriggers" | "tetanyHelped";
