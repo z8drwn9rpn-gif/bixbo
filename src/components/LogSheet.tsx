@@ -446,6 +446,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
       bodyBattery, stress, mood: mood.length ? mood : undefined,
       hotFlashes: symptoms.includes("Hot flashes") ? hotFlashes : undefined,
       headacheTypes: symptoms.includes("Headache") && headacheTypes.length ? headacheTypes : undefined,
+      headacheIntensity: symptoms.includes("Headache") ? headacheIntensity : undefined,
     };
     updateDayLog(update, date, (l) => ({
       ...l,
