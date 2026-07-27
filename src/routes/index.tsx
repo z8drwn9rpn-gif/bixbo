@@ -230,16 +230,23 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
       {(takenList.length > 0 || extraMeds.length > 0 || missedList.length > 0) && (
         <Card title="Meds" icon="💊">
           <ul className="space-y-1 text-sm">
-            {takenList.map((x) => (
-              <li key={x.key}>
-                <button onClick={() => update((d) => {
-                  const day = { ...(d.medLog[date] ?? {}) }; delete day[x.key];
-                  return { ...d, medLog: { ...d.medLog, [date]: day } };
-                })} className="text-left text-green-700 hover:underline" title="Tap to uncheck">
-                  ✓ {x.time} — {x.med.name}{x.med.dose ? ` (${x.med.dose})` : ""} <span className="text-[10px] text-muted-foreground">· tap to uncheck</span>
-                </button>
-              </li>
-            ))}
+            {takenList.map((x) => {
+              const actual = data.medLogTimes?.[date]?.[x.key];
+              const shifted = actual && actual !== x.time;
+              return (
+                <li key={x.key}>
+                  <button onClick={() => update((d) => {
+                    const day = { ...(d.medLog[date] ?? {}) }; delete day[x.key];
+                    const times = { ...(d.medLogTimes?.[date] ?? {}) }; delete times[x.key];
+                    return { ...d, medLog: { ...d.medLog, [date]: day }, medLogTimes: { ...(d.medLogTimes ?? {}), [date]: times } };
+                  })} className="text-left text-green-700 hover:underline" title="Tap to uncheck">
+                    ✓ {actual ?? x.time} — {x.med.name}{x.med.dose ? ` (${x.med.dose})` : ""}
+                    {shifted && <span className="text-[10px] text-muted-foreground"> · scheduled {x.time}</span>}
+                    <span className="text-[10px] text-muted-foreground"> · tap to uncheck</span>
+                  </button>
+                </li>
+              );
+            })}
             {missedList.map((x) => (
               <li key={x.key} className="flex items-start gap-2">
                 <button onClick={() => markMissedTaken(x.key)} className="flex-1 text-left text-destructive/90" title="Tap to mark taken">
