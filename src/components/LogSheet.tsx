@@ -1,4 +1,4 @@
-import { useState, useMemo, type ReactNode } from "react";
+import { useState, useMemo, useRef, type ReactNode } from "react";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter,
 } from "@/components/ui/sheet";
@@ -426,6 +426,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
   const [mood, setMood] = useState<string[]>(initialEntry?.mood ?? []);
   const [hotFlashes, setHotFlashes] = useState<number | undefined>(initialEntry?.hotFlashes);
   const [headacheTypes, setHeadacheTypes] = useState<string[]>(initialEntry?.headacheTypes ?? []);
+  const [headacheIntensity, setHeadacheIntensity] = useState<number | undefined>(initialEntry?.headacheIntensity);
 
   type CKey = "bodyParts" | "quality" | "symptoms" | "moods"
     | "tetanyTypes" | "tetanyLocations" | "tetanyTriggers" | "tetanyHelped";
@@ -445,6 +446,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
       bodyBattery, stress, mood: mood.length ? mood : undefined,
       hotFlashes: symptoms.includes("Hot flashes") ? hotFlashes : undefined,
       headacheTypes: symptoms.includes("Headache") && headacheTypes.length ? headacheTypes : undefined,
+      headacheIntensity: symptoms.includes("Headache") ? headacheIntensity : undefined,
     };
     updateDayLog(update, date, (l) => ({
       ...l,
@@ -480,8 +482,28 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
   const bg = painColor(score);
   const bgFill = `color-mix(in oklab, ${bg} 35%, white)`;
 
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const onTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    touchStartRef.current = { x: t.clientX, y: t.clientY };
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    const s = touchStartRef.current;
+    if (!s) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - s.x;
+    const dy = t.clientY - s.y;
+    touchStartRef.current = null;
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy)) return;
+    const target = e.target as HTMLElement;
+    if (target.closest('input,textarea,select,button,[role="slider"],.no-swipe')) return;
+    if (dx < 0 && step < 4) setStep(step + 1);
+    else if (dx > 0 && step > 0) setStep(step - 1);
+  };
+
   return (
-    <div className="flex min-h-full flex-col px-5 py-4 transition-colors" style={{ background: bgFill }}>
+    <div className="flex min-h-full flex-col px-5 py-4 transition-colors touch-pan-y" style={{ background: bgFill }}
+         onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
 
       <div className="flex items-center justify-between px-1 pb-2">
         <div className="flex gap-1">
@@ -554,14 +576,20 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
             </Field>
           )}
           {symptoms.includes("Headache") && (
-            <Field label="Headache type">
-              <CustomChipList base={HEADACHE_TYPES} custom={[]}
-                descriptions={HEADACHE_TYPE_DESC}
-                onAddCustom={() => {}}
-                onRemoveCustom={() => {}}
-                onRenameCustom={() => {}}
-                selected={headacheTypes} onToggle={(v) => setHeadacheTypes((a) => toggleIn(a, v))} />
-            </Field>
+            <>
+              <Field label="Headache type">
+                <CustomChipList base={HEADACHE_TYPES} custom={[]}
+                  descriptions={HEADACHE_TYPE_DESC}
+                  onAddCustom={() => {}}
+                  onRemoveCustom={() => {}}
+                  onRenameCustom={() => {}}
+                  selected={headacheTypes} onToggle={(v) => setHeadacheTypes((a) => toggleIn(a, v))} />
+              </Field>
+              <Field label={`Headache intensity ${headacheIntensity ?? "-"}/10`}>
+                <IntensityScale value={headacheIntensity ?? 0} onChange={(n) => setHeadacheIntensity(headacheIntensity === n ? undefined : n)} max={10}
+                  descriptions={getScaleDesc(data,"headache")} legendTitle="Headache scale" />
+              </Field>
+            </>
           )}
           <Field label="Tetany episode?">
             <div className="mt-1 flex gap-2">

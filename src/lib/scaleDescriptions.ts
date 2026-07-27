@@ -1,7 +1,20 @@
 import type { BixboData } from "./storage";
 import { PAIN_DESCRIPTIONS } from "./storage";
 
-export type ScaleKey = "pain" | "stress" | "tetany" | "panic" | "hotFlashes";
+export type ScaleKey = "pain" | "stress" | "tetany" | "panic" | "hotFlashes" | "headache";
+
+export const DEFAULT_HEADACHE_DESC: Record<number, string> = {
+  1: "Mild — barely noticeable, no need for meds",
+  2: "Light — slight pressure, easy to ignore",
+  3: "Noticeable — distracting but functional",
+  4: "Moderate low — annoying, hard to focus",
+  5: "Moderate — clearly hurts, may take a pill",
+  6: "Moderate high — throbbing, want to lie down",
+  7: "Strong — sensitive to light/sound, hard to work",
+  8: "Very strong — nauseous, need dark quiet room",
+  9: "Severe — cannot function, crying / vomiting",
+  10: "Worst ever — unbearable, emergency-level",
+};
 
 export const DEFAULT_TETANY_INTENSITY_DESC: Record<number, string> = {
   1: "Mild — occasional twitches or tingling, barely disruptive",
@@ -49,6 +62,7 @@ export const SCALE_META: Record<ScaleKey, { label: string; from: number; to: num
   tetany:     { label: "Tetany intensity (1–5)", from: 1, to: 5, defaults: DEFAULT_TETANY_INTENSITY_DESC },
   panic:      { label: "Panic intensity (1–10)", from: 1, to: 10, defaults: DEFAULT_PANIC_INTENSITY_DESC },
   hotFlashes: { label: "Hot flashes (1–5)",   from: 1, to: 5, defaults: DEFAULT_HOT_FLASHES_DESC },
+  headache:   { label: "Headache (1–10)",     from: 1, to: 10, defaults: DEFAULT_HEADACHE_DESC },
 };
 
 export function getScaleDesc(data: BixboData | undefined, key: ScaleKey): Record<number, string> {

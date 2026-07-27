@@ -20,6 +20,7 @@ export interface PainEntry {
   mood?: string[];
   hotFlashes?: number;
   headacheTypes?: string[];
+  headacheIntensity?: number;
 }
 export interface TetanyEpisode {
   id: string;
@@ -135,7 +136,7 @@ export interface Settings {
   logOrder?: string[];
   gender?: Gender;
   birthControlSince?: string;
-  scaleDescriptions?: Partial<Record<"pain" | "stress" | "tetany" | "panic" | "hotFlashes", Record<number, string>>>;
+  scaleDescriptions?: Partial<Record<"pain" | "stress" | "tetany" | "panic" | "hotFlashes" | "headache", Record<number, string>>>;
 }
 
 export interface PartnerData {
