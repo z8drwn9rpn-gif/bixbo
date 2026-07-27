@@ -583,7 +583,8 @@ function PainChart({ period, days, series, anchor }:
   } else if (period === "M") {
     bars = days.map((k, i) => {
       const d = fromKey(k).getDate();
-      return { value: series[i], label: d % 5 === 0 || d === 1 ? String(d) : "" };
+      // Show every other day so labels never collide but daily rating is readable.
+      return { value: series[i], label: d % 2 === 1 ? String(d) : "" };
     });
   } else {
     bars = days.map((k, i) => {
@@ -594,13 +595,15 @@ function PainChart({ period, days, series, anchor }:
   }
 
   const yLabels = [10, 8, 6, 4, 2, 0];
-  const height = 120;
+  const height = 140;
 
   return (
     <div className="mt-4">
       <div className="flex gap-1.5">
-        <div className="flex flex-col justify-between text-[9px] text-muted-foreground pr-1" style={{ height }}>
-          {yLabels.map((y) => <span key={y} className="leading-none">{y}</span>)}
+        <div className="flex flex-col items-end pr-1" style={{ height }}>
+          <div className="flex h-full flex-col justify-between text-[10px] font-medium text-muted-foreground">
+            {yLabels.map((y) => <span key={y} className="leading-none tabular-nums">{y}</span>)}
+          </div>
         </div>
         <div className="relative flex-1">
           <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
@@ -611,21 +614,25 @@ function PainChart({ period, days, series, anchor }:
           <div className="relative grid items-end gap-[2px]" style={{ gridTemplateColumns: `repeat(${bars.length}, minmax(0, 1fr))`, height }}>
             {bars.map((b, i) => (
               b.value != null
-                ? <div key={i} className="w-full rounded-t" style={{ height: `${Math.max(4, (b.value / 10) * 100)}%`, background: painColor(b.value) }} title={`${b.label}: ${b.value.toFixed(1)}`} />
-                : <div key={i} className="h-[2px] w-full self-end rounded bg-tint/60" />
+                ? <div key={i} className="w-full rounded-t" style={{ height: `${Math.max(4, (b.value / 10) * 100)}%`, background: painColor(b.value) }} title={`${b.label || days[i]}: ${b.value.toFixed(1)} / 10`} />
+                : <div key={i} className="h-[2px] w-full self-end rounded bg-tint/60" title={`${days[i]}: no entry`} />
             ))}
           </div>
         </div>
       </div>
-      <div className="mt-1 flex pl-4">
-        <div className="grid flex-1 gap-[2px] text-center text-[8px] text-muted-foreground" style={{ gridTemplateColumns: `repeat(${bars.length}, minmax(0, 1fr))` }}>
+      <div className="mt-1 flex pl-5">
+        <div className="grid flex-1 gap-[2px] text-center text-[9px] text-muted-foreground" style={{ gridTemplateColumns: `repeat(${bars.length}, minmax(0, 1fr))` }}>
           {bars.map((b, i) => (
             <div key={i} className="leading-tight">
-              <div>{b.label}</div>
-              {b.sub && <div className="text-[7px] opacity-70">{b.sub}</div>}
+              <div className="tabular-nums">{b.label}</div>
+              {b.sub && <div className="text-[8px] opacity-70 tabular-nums">{b.sub}</div>}
             </div>
           ))}
         </div>
+      </div>
+      <div className="mt-1 flex items-center justify-between text-[10px] text-muted-foreground">
+        <span>Pain (0–10)</span>
+        <span>{period === "Y" ? "Month" : period === "M" ? "Day of month" : "Day"}</span>
       </div>
       {period === "Y" && bars.every((b) => b.value == null) && (
         <p className="mt-2 text-center text-xs text-muted-foreground">No pain entries in {anchor.getFullYear()}</p>

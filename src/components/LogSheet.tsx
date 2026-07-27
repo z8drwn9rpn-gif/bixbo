@@ -176,11 +176,14 @@ export function LogSheet({
 
 /* ------------------- Primitives ------------------- */
 function Field({ label, children }: { label: string; children: ReactNode }) {
+  // Intentionally a <div>, not <label>. Wrapping chip/button groups in <label>
+  // caused stray click activations on the first focusable descendant, which
+  // manifested as chips getting "auto-selected" in the Pain wizard.
   return (
-    <label className="block">
+    <div className="block">
       <span className="text-xs font-medium text-muted-foreground">{label}</span>
       <div className="mt-1">{children}</div>
-    </label>
+    </div>
   );
 }
 function Chip({
@@ -498,7 +501,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
           </div>
           <div className="flex flex-wrap justify-center gap-1.5 px-4">
             {Array.from({ length: 21 }, (_, i) => i / 2).map((n) => (
-              <button key={n} onClick={() => setScore(n)}
+              <button key={n} type="button" onClick={() => setScore(n)}
                 title={`${n} — ${getScaleDesc(data,"pain")[Math.round(n)]}`}
                 className={`h-8 w-8 rounded-full text-[11px] font-semibold ${
                   score === n ? "text-white ring-2 ring-foreground" : "bg-tint text-foreground"
@@ -686,7 +689,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
           <Field label="Body battery">
             <div className="mt-2 flex justify-between gap-2">
               {BODY_BATTERY.map((b) => (
-                <button key={b.n} onClick={() => setBodyBattery(bodyBattery === b.n ? undefined : b.n)}
+                <button key={b.n} type="button" onClick={() => setBodyBattery(bodyBattery === b.n ? undefined : b.n)}
                   className={`flex flex-1 flex-col items-center gap-1 rounded-2xl border p-2 transition ${bodyBattery === b.n ? "border-primary bg-primary/10" : "border-border bg-surface"}`}>
                   <div className="grid h-10 w-6 place-items-end rounded-md border-2 border-foreground/60 p-0.5">
                     <div className="w-full rounded" style={{ height: `${b.n * 18}%`, background: b.color }} />
