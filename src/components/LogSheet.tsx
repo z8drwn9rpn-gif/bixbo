@@ -556,6 +556,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
             <div className="rounded-2xl border border-border p-3 space-y-3">
               <Field label="Type">
                 <CustomChipList base={TETANY_TYPES} custom={data.custom.tetanyTypes}
+                  descriptions={TETANY_TYPE_DESC}
                   onAddCustom={(v) => addCustom("tetanyTypes", v)}
                   onRemoveCustom={(v) => { removeCustom("tetanyTypes", v); setTetanyTypes((a) => a.filter((x) => x !== v)); }}
                   onRenameCustom={(o, n) => { renameCustom("tetanyTypes", o, n); setTetanyTypes((a) => a.map((x) => x === o ? n : x)); }}
