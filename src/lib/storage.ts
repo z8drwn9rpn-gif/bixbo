@@ -399,16 +399,16 @@ export const TETANY_TYPES = [
   "Whole body tremor",
 ];
 export const TETANY_TYPE_DESC: Record<string, string> = {
-  "Carpopedal spasm": "Kŕč rúk/nôh — prsty stiahnuté do „pôrodníckej ruky“ alebo chodidlá do luku.",
-  "Calf cramps": "Bolestivé kŕče v lýtkach, často v noci alebo po námahe.",
-  "Twitches around mouth/face": "Drobné zášklby okolo úst alebo tváre.",
-  "Tingling / numbness": "Mravčenie alebo znecitlivenie (perí, prstov, končatín).",
-  "Fasciculations": "Jemné vlnenie svalov pod kožou bez pohybu končatiny.",
-  "Eyelid twitching": "Cukanie viečka — často pri únave alebo nedostatku horčíka.",
-  "Jaw clenching": "Zatínanie čeľuste, škrípanie zubami.",
-  "Chvostek sign": "Zášklb tváre pri poklepe na tvárový nerv (pred uchom).",
-  "Trousseau sign": "Kŕč ruky po nafúknutí manžety tlakomera nad systolický tlak.",
-  "Whole body tremor": "Celotelový tras alebo chvenie z vnútra.",
+  "Carpopedal spasm": "Cramp of hands/feet — fingers pulled into an “obstetrician's hand” or feet arched like a bow.",
+  "Calf cramps": "Painful cramps in the calves, often at night or after exertion.",
+  "Twitches around mouth/face": "Small twitches around the mouth or face.",
+  "Tingling / numbness": "Pins and needles or numbness (lips, fingers, limbs).",
+  "Fasciculations": "Fine muscle rippling under the skin without limb movement.",
+  "Eyelid twitching": "Eyelid twitch — often with fatigue or low magnesium.",
+  "Jaw clenching": "Jaw clenching, teeth grinding.",
+  "Chvostek sign": "Facial twitch when tapping the facial nerve (in front of the ear).",
+  "Trousseau sign": "Hand cramp after inflating a BP cuff above systolic pressure.",
+  "Whole body tremor": "Whole-body tremor or shaking from within.",
 };
 export const TETANY_LOCATIONS_DEFAULT = ["Lips","Fingers","Toes","Hands","Calves","Face","Around mouth"];
 export const TETANY_TRIGGERS = ["Hyperventilation / stress","Exercise","Cold","Cycle phase","Other"];
