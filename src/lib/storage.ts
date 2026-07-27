@@ -398,6 +398,18 @@ export const SEX_TYPES_DEFAULT: { value: SexKind; label: string }[] = [
   { value: "oral", label: "Oral (receiving)" },
 ];
 
+export function isIntercourseKind(kind: unknown): boolean {
+  const raw = String(kind ?? "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/^other:/, "");
+  if (!raw) return false;
+  if (/oral|finger|fingering|suck|blow|hand|kiss|cuddle/.test(raw)) return false;
+  return /(^|[_\s-])sex($|[_\s-])|intercourse|condom|suk\s*suk|suksuk|šuk/.test(raw);
+}
+
 export const DISCHARGE_OPTS: { value: string; label: string; color: string }[] = [
   { value: "clear",  label: "Clear / egg-white", color: "#dbeafe" },
   { value: "white",  label: "White / creamy",    color: "#f5f5f4" },
