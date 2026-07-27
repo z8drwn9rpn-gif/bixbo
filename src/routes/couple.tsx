@@ -58,6 +58,7 @@ function TetanyList({ title, entries }: { title: string; entries: (TetanyEpisode
             {t.location?.length ? <p className="text-xs text-muted-foreground">Location: {t.location.join(", ")}</p> : null}
             {t.triggers?.length ? <p className="text-xs text-muted-foreground">Triggers: {t.triggers.join(", ")}</p> : null}
             {t.helped?.length ? <p className="text-xs text-muted-foreground">Helped: {t.helped.join(", ")}</p> : null}
+            {t.rescueMed ? <p className="text-xs text-muted-foreground">Rescue med: {t.rescueMed}</p> : null}
             {t.note && <p className="mt-1 whitespace-pre-line">"{t.note}"</p>}
           </li>
         ))}

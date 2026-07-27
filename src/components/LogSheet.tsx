@@ -206,8 +206,8 @@ function Chip({
 function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave: () => void; disabled?: boolean }) {
   return (
     <SheetFooter className="mt-4 gap-2 sm:flex-row">
-      <Button variant="outline" onClick={onCancel} className="flex-1">Cancel</Button>
       <Button onClick={onSave} disabled={disabled} className="flex-1">Save</Button>
+      <Button variant="outline" onClick={onCancel} className="flex-1">Cancel</Button>
     </SheetFooter>
   );
 }
@@ -758,12 +758,12 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
 
 
       <SheetFooter className="mt-4 flex-row gap-2">
-        {step > 0 && <Button variant="outline" onClick={() => setStep(step - 1)} className="flex-1">Back</Button>}
         {step < 4 ? (
           <Button onClick={() => setStep(step + 1)} className="flex-1">Next</Button>
         ) : (
           <Button onClick={save} className="flex-1">Save</Button>
         )}
+        {step > 0 && <Button variant="outline" onClick={() => setStep(step - 1)} className="flex-1">Back</Button>}
       </SheetFooter>
     </div>
   );
@@ -865,6 +865,7 @@ function TetanyForm({ date, data, update, onDone, initialEntry }:
   const [ongoing, setOngoing] = useState(initialEntry?.minutes == null && !!initialEntry);
   const [triggers, setTriggers] = useState<string[]>(initialEntry?.triggers ?? []);
   const [helped, setHelped] = useState<string[]>(initialEntry?.helped ?? []);
+  const [rescueMed, setRescueMed] = useState<string>(initialEntry?.rescueMed ?? "");
   const [note, setNote] = useState(initialEntry?.note ?? "");
 
   type CK = "tetanyTypes" | "tetanyLocations" | "tetanyTriggers" | "tetanyHelped";
@@ -878,7 +879,7 @@ function TetanyForm({ date, data, update, onDone, initialEntry }:
       id: initialEntry?.id ?? crypto.randomUUID(), time,
       types, location: loc, intensity,
       minutes: ongoing ? undefined : (minutes === "" ? undefined : Number(minutes)),
-      triggers, helped, note: note.trim() || undefined,
+      triggers, helped, rescueMed: rescueMed.trim() || undefined, note: note.trim() || undefined,
     };
     updateDayLog(update, date, (l) => ({
       ...l,
@@ -923,10 +924,24 @@ function TetanyForm({ date, data, update, onDone, initialEntry }:
           onRenameCustom={(o, n) => { rnC("tetanyHelped", o, n); setHelped((a) => a.map((x) => x === o ? n : x)); }}
           selected={helped} onToggle={(v) => setHelped((a) => toggleIn(a, v))} />
       </Field>
+      <Field label="Rescue med (what you took)">
+        <Input value={rescueMed} onChange={(e) => setRescueMed(e.target.value)} placeholder="e.g. Magnesium 400 mg" />
+        {data.meds.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {data.meds.map((m) => (
+              <button key={m.id} type="button" onClick={() => setRescueMed(m.dose ? `${m.name} ${m.dose}` : m.name)}
+                className="rounded-full bg-tint px-3 py-1 text-xs font-medium text-foreground ring-1 ring-border">
+                {m.name}{m.dose ? ` ${m.dose}` : ""}
+              </button>
+            ))}
+          </div>
+        )}
+      </Field>
       <Field label="Note (optional)">
         <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
       <SaveBar onCancel={onDone} onSave={save} />
+
     </div>
   );
 }

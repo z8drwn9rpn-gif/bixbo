@@ -485,8 +485,29 @@ function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) 
 
 function WeightLineChart({ period, days, series, label = "Weight", unit = "kg" }:
   { period: Period; days: string[]; series: (number | undefined)[]; label?: string; unit?: string }) {
-  const points = series
-    .map((value, index) => value == null ? null : { value, index, date: days[index] })
+  // For yearly view, collapse 365 daily samples into 12 monthly averages so labels are readable.
+  const aggregated = (() => {
+    if (period !== "Y") {
+      return days.map((k, i) => ({ value: series[i], date: k }));
+    }
+    const monthly: { sum: number; n: number; anyDate: string }[] = Array.from({ length: 12 }, () => ({ sum: 0, n: 0, anyDate: "" }));
+    days.forEach((k, i) => {
+      const v = series[i];
+      if (v == null) return;
+      const m = fromKey(k).getMonth();
+      monthly[m].sum += v;
+      monthly[m].n += 1;
+      monthly[m].anyDate = k;
+    });
+    const now = new Date();
+    return monthly.map((mm, i) => ({
+      value: mm.n ? mm.sum / mm.n : undefined,
+      date: mm.anyDate || toKey(new Date(now.getFullYear(), i, 15)),
+    }));
+  })();
+
+  const points = aggregated
+    .map((p, index) => p.value == null ? null : { value: p.value, index, date: p.date })
     .filter((p): p is { value: number; index: number; date: string } => p != null);
   const nums = points.map((p) => p.value);
   const fmtDate = (k: string) => fromKey(k).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
@@ -516,25 +537,28 @@ function WeightLineChart({ period, days, series, label = "Weight", unit = "kg" }
   const bottom = 30;
   const chartW = width - left - right;
   const chartH = height - top - bottom;
-  const denom = Math.max(1, days.length - 1);
+  const denom = Math.max(1, aggregated.length - 1);
   const xFor = (index: number) => left + (index / denom) * chartW;
   const yFor = (value: number) => top + ((yMax - value) / Math.max(0.1, yMax - yMin)) * chartH;
   const path = points.map((p, i) => `${i === 0 ? "M" : "L"}${xFor(p.index).toFixed(1)},${yFor(p.value).toFixed(1)}`).join(" ");
 
   const MON_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const ticks = days
-    .map((k, i) => ({ k, i, d: fromKey(k) }))
+  const ticks = aggregated
+    .map((p, i) => ({ k: p.date, i, d: fromKey(p.date) }))
     .filter(({ i, d }) => {
       if (period === "W") return true;
-      if (period === "M") return i === 0 || i === days.length - 1 || i % 7 === 0;
-      // Year: first of every other month
-      return d.getDate() === 1 && d.getMonth() % 2 === 0;
+      if (period === "M") return i === 0 || i === aggregated.length - 1 || i % 7 === 0;
+      // Year: every month (aggregated already has 12 points)
+      return true;
     });
   const tickLabel = (k: string) => {
     const d = fromKey(k);
     return period === "Y" ? MON_SHORT[d.getMonth()] : String(d.getDate());
   };
-  const dateLabel = `${fmtDate(days[0])} – ${fmtDate(days[days.length - 1])}`;
+  const dateLabel = period === "Y"
+    ? `${new Date().getFullYear()} — monthly average`
+    : `${fmtDate(days[0])} – ${fmtDate(days[days.length - 1])}`;
+
 
   return (
     <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">

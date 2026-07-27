@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AppShell } from "@/components/AppShell";
 import { useBixbo, EMPTY, type Note, type NoteChecklistItem, type NoteFolder } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
@@ -113,14 +113,23 @@ function NoteEditor({ note, onBack, update }: {
   const [checklist, setChecklist] = useState<NoteChecklistItem[]>(note.checklist ?? []);
   const [showChecklist, setShowChecklist] = useState(!!note.checklist?.length);
   const [newItem, setNewItem] = useState("");
+  const [showPreview, setShowPreview] = useState(true);
+  const firstRender = useRef(true);
 
-  const save = () => {
-    update((d) => ({
-      ...d,
-      notebook: d.notebook.map((n) => n.id === note.id ? { ...n, title, content, checklist: showChecklist ? checklist : undefined, updatedAt: Date.now() } : n),
-    }));
-    onBack();
-  };
+  // Autosave: debounce writes so each keystroke doesn't hit storage but nothing is ever lost.
+  useEffect(() => {
+    if (firstRender.current) { firstRender.current = false; return; }
+    const t = setTimeout(() => {
+      update((d) => ({
+        ...d,
+        notebook: d.notebook.map((n) => n.id === note.id
+          ? { ...n, title, content, checklist: showChecklist ? checklist : undefined, updatedAt: Date.now() }
+          : n),
+      }));
+    }, 400);
+    return () => clearTimeout(t);
+  }, [title, content, checklist, showChecklist, note.id, update]);
+
   const del = () => {
     if (!confirm("Delete this note?")) return;
     update((d) => ({ ...d, notebook: d.notebook.filter((n) => n.id !== note.id) }));
@@ -139,21 +148,31 @@ function NoteEditor({ note, onBack, update }: {
 
   return (
     <AppShell
-      title={<button onClick={save} className="flex items-center gap-1 text-sm"><ChevronLeft className="h-5 w-5" /> Save</button>}
+      title={<button onClick={onBack} className="flex items-center gap-1 text-sm"><ChevronLeft className="h-5 w-5" /> Done</button>}
       right={<button onClick={del} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-5 w-5" /></button>}
     >
       <div className="px-5 pt-3 pb-24 space-y-3">
         <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="text-lg font-semibold" />
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button size="sm" variant="outline" onClick={() => wrapSel("<strong>", "</strong>")}><Bold className="h-3.5 w-3.5" /></Button>
           <Button size="sm" variant="outline" onClick={() => wrapSel('<mark style="background:#fef3c7">', "</mark>")}><Highlighter className="h-3.5 w-3.5" /></Button>
           <Button size="sm" variant="outline" onClick={() => setShowChecklist((v) => !v)}><ListChecks className="h-3.5 w-3.5" /> Checklist</Button>
+          <Button size="sm" variant="ghost" onClick={() => setShowPreview((v) => !v)}>{showPreview ? "Hide preview" : "Show preview"}</Button>
+          <span className="ml-auto self-center text-xs text-muted-foreground">Saved automatically</span>
         </div>
 
         <Textarea id="note-content" value={content} onChange={(e) => setContent(e.target.value)}
-          placeholder="Write anything… (use <strong> for bold and <mark> for highlight)"
-          className="min-h-[calc(100dvh-260px)] text-base leading-relaxed" />
+          placeholder="Write anything… use the B / highlight buttons to wrap the selection"
+          className="min-h-[35dvh] text-base leading-relaxed" />
+
+        {showPreview && content.trim() && (
+          <div className="rounded-2xl bg-surface p-3 ring-1 ring-border">
+            <p className="mb-1 text-xs font-medium text-muted-foreground">Preview</p>
+            <div className="whitespace-pre-wrap text-sm leading-relaxed"
+              dangerouslySetInnerHTML={{ __html: content }} />
+          </div>
+        )}
 
         {showChecklist && (
           <div className="rounded-2xl bg-surface p-3 ring-1 ring-border space-y-2">
@@ -165,13 +184,17 @@ function NoteEditor({ note, onBack, update }: {
                 <button onClick={() => setChecklist((a) => a.filter((x) => x.id !== c.id))} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
               </div>
             ))}
-            <div className="flex gap-2">
+            <form className="flex gap-2" onSubmit={(e) => {
+              e.preventDefault();
+              if (newItem.trim()) { setChecklist((a) => [...a, { id: crypto.randomUUID(), text: newItem.trim(), done: false }]); setNewItem(""); }
+            }}>
               <Input value={newItem} onChange={(e) => setNewItem(e.target.value)} placeholder="Add item" />
-              <Button onClick={() => { if (newItem.trim()) { setChecklist((a) => [...a, { id: crypto.randomUUID(), text: newItem.trim(), done: false }]); setNewItem(""); } }}>Add</Button>
-            </div>
+              <Button type="submit">Add</Button>
+            </form>
           </div>
         )}
       </div>
     </AppShell>
   );
 }
+

@@ -32,6 +32,7 @@ export interface TetanyEpisode {
   triggers: string[];
   timeSinceMagnerotMin?: number;
   helped: string[];
+  rescueMed?: string;
   note?: string;
 }
 export interface PanicAttack {
