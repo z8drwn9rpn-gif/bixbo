@@ -41,6 +41,13 @@ function HomePage() {
   const [editEntry, setEditEntry] = useState<unknown>(undefined);
   const openEdit = (cat: string, entry: unknown) => { setQuickCat(cat); setEditEntry(entry); setEditPain(undefined); setLogOpen(true); };
 
+  // Listen for "open log" from bottom nav
+  useEffect(() => {
+    const h = () => { setQuickCat(undefined); setEditPain(undefined); setEditEntry(undefined); setLogOpen(true); };
+    window.addEventListener("bixbo:open-log", h);
+    return () => window.removeEventListener("bixbo:open-log", h);
+  }, []);
+
   // Meds reminders + period notification
   useEffect(() => {
     if (!hydrated || !view.settings.notifications) return;
@@ -67,6 +74,7 @@ function HomePage() {
     }, 60000);
     return () => clearInterval(int);
   }, [hydrated, view.meds, view.medLog, view.cycle, view.settings.notifications, view.settings.gender]);
+
 
   const goToPrevMonth = () => setMonthAnchor((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1));
   const goToNextMonth = () => setMonthAnchor((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1));
