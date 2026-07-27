@@ -137,7 +137,7 @@ export function MonthCalendar({
           }
 
           return (
-            <div key={wi} className="grid grid-cols-7 gap-x-0.5 gap-y-0">
+            <div key={wi} className="grid grid-cols-7 gap-x-0.5 gap-y-0.5">
               {week.map(({ date, inMonth, key }, ci) => {
                 const log = data.dayLogs[key];
                 const takenToday = data.medLog[key] ?? {};
@@ -158,12 +158,12 @@ export function MonthCalendar({
                       inMonth ? "" : "opacity-30"
                     } ${isSel ? "ring-2 ring-primary" : ""}`}
                   >
-                    <div className="relative flex aspect-[1/1.08] min-h-[50px] items-center justify-center pt-0.5 landscape:aspect-auto landscape:h-16">
+                    <div className="relative flex h-[58px] items-center justify-center pt-0.5 landscape:h-12">
                       {pAvg != null && (
                         <span
                           aria-hidden
-                          className="pointer-events-none absolute inset-[7px] rounded-full"
-                          style={{ boxShadow: `0 0 0 5px ${painColor(pAvg)}` }}
+                          className="pointer-events-none absolute h-10 w-10 rounded-full"
+                          style={{ boxShadow: `0 0 0 4.75px ${painColor(pAvg)}` }}
                         />
                       )}
                       {predictedOrange && (
@@ -182,7 +182,7 @@ export function MonthCalendar({
                         </span>
                       </div>
                       {icons.length > 0 && (
-                        <span className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 flex gap-[1px] text-[11px] leading-none drop-shadow-sm">
+                        <span className="pointer-events-none absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-[1px] text-[11px] leading-none drop-shadow-sm">
                           {icons.slice(0, 4).map((ic, idx) => <span key={idx}>{ic}</span>)}
                         </span>
                       )}
@@ -197,7 +197,7 @@ export function MonthCalendar({
               {/* Event bar rows */}
               {rows.map((row, ri) => (
                 row.length ? (
-                  <div key={`r-${ri}`} className="col-span-7 grid grid-cols-7 gap-0.5 -mt-0.5">
+                  <div key={`r-${ri}`} className="col-span-7 grid grid-cols-7 gap-0.5">
                     {new Array(7).fill(null).map((_, ci) => {
                       const seg = row.find((s) => s.startIdx === ci);
                       if (seg) {
@@ -207,7 +207,7 @@ export function MonthCalendar({
                         return (
                           <div
                             key={ci}
-                             className={`h-[15px] truncate px-1 text-[9px] font-medium leading-[15px] text-primary-foreground ${
+                             className={`h-4 truncate px-1 text-[9px] font-medium leading-4 text-primary-foreground ${
                               isStart ? "rounded-l" : ""
                             } ${isEnd ? "rounded-r" : ""}`}
                             style={{
