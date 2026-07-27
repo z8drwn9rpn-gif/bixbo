@@ -51,8 +51,12 @@ function InsightsPage() {
     return nums.reduce((a, b) => a + b, 0) / nums.length;
   })();
 
-  // ŠukŠuk! count — every logged entry counts (including custom types)
-  const sexCount = days.reduce((s, k) => s + (view.dayLogs[k]?.sex?.length ?? 0), 0);
+  // ŠukŠuk! — count only actual sex (not fingering / oral / other)
+  const SEX_KINDS = new Set(["sex", "sex_with_condom", "sex_without_condom"]);
+  const sexCount = days.reduce(
+    (s, k) => s + (view.dayLogs[k]?.sex?.filter((e) => SEX_KINDS.has(String(e.kind))).length ?? 0),
+    0,
+  );
 
 
   // Bowel by type

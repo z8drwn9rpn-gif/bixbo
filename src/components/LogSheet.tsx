@@ -1225,12 +1225,18 @@ function BowelForm({ date, data, update, onDone, initialEntry }:
       <Field label="Time"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></Field>
       <Field label="Bristol stool scale">
         <div className="mt-1 space-y-1.5">
+          <button onClick={() => setBristol(-1)}
+            className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-2 text-left text-sm transition ${
+              bristol === -1 ? "border-primary bg-primary/10" : "border-border bg-surface"}`}>
+            <span className="grid h-8 w-8 place-items-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">∅</span>
+            <span className="flex-1"><span className="font-medium">No bowel movement</span><br /><span className="text-[11px] text-muted-foreground">Didn't go today</span></span>
+          </button>
           <button onClick={() => setBristol(0)}
             className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-2 text-left text-sm transition ${
               bristol === 0 ? "border-primary bg-primary/10" : "border-border bg-surface"}`}>
             <span className="grid h-8 w-8 place-items-center rounded-full text-xs font-semibold text-white"
               style={{ background: "linear-gradient(135deg,#ef4444,#f59e0b,#eab308,#22c55e,#3b82f6,#8b5cf6)" }}>0</span>
-            <span className="flex-1"><span className="font-medium">Type 0 — Mystery</span> <span aria-hidden>🌈</span><br /><span className="text-[11px] text-muted-foreground">Unknown / mixed / no bowel movement</span></span>
+            <span className="flex-1"><span className="font-medium">Type 0 — Mystery</span> <span aria-hidden>🌈</span><br /><span className="text-[11px] text-muted-foreground">Unknown / mixed</span></span>
           </button>
 
           {BRISTOL.map((b) => (
