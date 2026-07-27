@@ -105,12 +105,9 @@ export function MonthCalendar({
           const icons = iconsFor(log, hasMed);
 
           const dayEvents = data.events.filter((e) => isDateInRange(key, e.startDate, e.endDate));
-          const dayTasks = data.tasks.filter((t) => isDateInRange(key, t.startDate, t.endDate));
-          const bars = [
-            ...dayEvents.map((e) => ({ title: e.title, color: e.color ?? "var(--primary)", done: false })),
-            ...dayTasks.map((t) => ({ title: t.title, color: "#f472b6", done: t.done })),
-          ].slice(0, 2);
-          const extraBars = dayEvents.length + dayTasks.length - bars.length;
+          // Tasks intentionally hidden from calendar cells (shown only in day preview)
+          const eventDots = dayEvents.slice(0, 4).map((e) => e.color ?? "var(--primary)");
+          const extraDots = Math.max(0, dayEvents.length - eventDots.length);
           const marked = hasAnyLog(log);
 
           return (
@@ -125,19 +122,19 @@ export function MonthCalendar({
                 {pAvg != null && (
                   <span
                     aria-hidden
-                    className="pointer-events-none absolute inset-1 rounded-full"
-                    style={{ boxShadow: `0 0 0 6px ${painColor(pAvg)}` }}
+                    className="pointer-events-none absolute inset-1.5 rounded-full"
+                    style={{ boxShadow: `0 0 0 3.5px ${painColor(pAvg)}` }}
                   />
                 )}
                 {predictedOrange && (
                   <span
                     aria-hidden
                     className="pointer-events-none absolute inset-2 rounded-full"
-                    style={{ boxShadow: `0 0 0 2.5px var(--predicted)` }}
+                    style={{ boxShadow: `0 0 0 2px var(--predicted)` }}
                   />
                 )}
                 <div
-                  className="relative flex h-9 w-9 items-center justify-center rounded-full"
+                  className="relative flex h-8 w-8 items-center justify-center rounded-full"
                   style={{
                     background: periodColor ?? "transparent",
                   }}
@@ -150,29 +147,24 @@ export function MonthCalendar({
                 </div>
                 {icons.length > 0 && (
                   <span className="absolute bottom-0 flex gap-0.5 text-[9px] leading-none">
-                    {icons.slice(0, 3).map((ic, idx) => <span key={idx}>{ic}</span>)}
+                    {icons.slice(0, 4).map((ic, idx) => <span key={idx}>{ic}</span>)}
                   </span>
                 )}
                 {icons.length === 0 && marked && (
                   <span className="absolute bottom-1 h-1 w-1 rounded-full bg-primary/70" />
                 )}
               </div>
-              {bars.length > 0 && (
-                <div className="flex flex-col gap-0.5 px-0.5 pb-0.5">
-                  {bars.map((b, bi) => (
-                    <span
-                      key={bi}
-                      className={`truncate rounded-sm px-1 text-[8px] leading-tight text-white ${b.done ? "opacity-50 line-through" : ""}`}
-                      style={{ background: b.color }}
-                    >
-                      {b.title}
-                    </span>
+              {eventDots.length > 0 && (
+                <div className="flex items-center justify-center gap-0.5 pb-0.5">
+                  {eventDots.map((c, di) => (
+                    <span key={di} className="h-1.5 w-1.5 rounded-sm" style={{ background: c }} />
                   ))}
-                  {extraBars > 0 && (
-                    <span className="text-[8px] text-muted-foreground">+{extraBars}</span>
+                  {extraDots > 0 && (
+                    <span className="text-[8px] leading-none text-muted-foreground">+{extraDots}</span>
                   )}
                 </div>
               )}
+
             </button>
           );
         })}
