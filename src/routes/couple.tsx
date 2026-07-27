@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
-import { useBixbo, EMPTY, todayKey, daysBetween, painColor, PAIN_DESCRIPTIONS, predictPeriods, nextPredictedPeriod, type PainEntry, type PanicAttack, type TetanyEpisode, type ExtraMed, type Med, type PartnerData } from "@/lib/storage";
+import { useBixbo, EMPTY, todayKey, daysBetween, addDays, fromKey, painColor, PAIN_DESCRIPTIONS, predictPeriods, nextPredictedPeriod, avgDayPain, type PainEntry, type PanicAttack, type TetanyEpisode, type ExtraMed, type Med, type PartnerData, type DayNote } from "@/lib/storage";
 
 export const Route = createFileRoute("/couple")({
   head: () => ({
@@ -110,6 +110,77 @@ function MedsList({ title, days }: {
         ))}
       </ul>
     </div>
+  );
+}
+
+function DayNotesList({ title, notes }: { title: string; notes: { dateKey: string; text: string; time?: string }[] }) {
+  if (!notes.length) return null;
+  return (
+    <div className="space-y-2">
+      <p className="text-xs uppercase tracking-wider text-muted-foreground">{title}</p>
+      <ul className="space-y-2">
+        {notes.map((n, i) => (
+          <li key={`${n.dateKey}-${n.time ?? i}-${i}`} className="rounded-2xl bg-tint p-3 text-sm">
+            <p className="text-xs text-muted-foreground">{n.dateKey}{n.time ? ` · ${n.time}` : ""}</p>
+            <p className="mt-1 whitespace-pre-line">{n.text}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function CouplePainChart({ days, mine, theirs, partnerName }: {
+  days: string[];
+  mine: Record<string, { pain?: PainEntry[] }>;
+  theirs: Record<string, { pain?: PainEntry[] }>;
+  partnerName: string;
+}) {
+  const yLabels = [10, 8, 6, 4, 2, 0];
+  const height = 118;
+  return (
+    <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
+      <p className="text-xs uppercase tracking-wider text-muted-foreground">Pain — last 14 days</p>
+      <div className="mt-4 flex gap-1.5">
+        <div className="flex flex-col justify-between pr-1 text-[9px] text-muted-foreground" style={{ height }}>
+          {yLabels.map((y) => <span key={y} className="leading-none">{y}</span>)}
+        </div>
+        <div className="relative flex-1">
+          <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
+            {yLabels.map((y) => <div key={y} className="border-t border-dashed border-border/50" />)}
+          </div>
+          <div className="relative grid items-end gap-[2px]" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))`, height }}>
+            {days.map((k) => {
+              const myAvg = avgDayPain(mine[k]);
+              const theirAvg = avgDayPain(theirs[k]);
+              return (
+                <div key={k} className="flex h-full items-end justify-center gap-[1px]">
+                  {myAvg != null ? (
+                    <div className="w-[45%] rounded-t" style={{ height: `${Math.max(4, (myAvg / 10) * 100)}%`, background: painColor(myAvg) }} title={`Me ${k}: ${myAvg.toFixed(1)}`} />
+                  ) : <div className="w-[45%]" />}
+                  {theirAvg != null ? (
+                    <div className="w-[45%] rounded-t opacity-70 ring-1 ring-foreground/30" style={{ height: `${Math.max(4, (theirAvg / 10) * 100)}%`, background: painColor(theirAvg) }} title={`${partnerName} ${k}: ${theirAvg.toFixed(1)}`} />
+                  ) : <div className="w-[45%]" />}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+      <div className="mt-1 flex pl-4">
+        <div className="grid flex-1 gap-[2px] text-center text-[8px] text-muted-foreground" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}>
+          {days.map((k) => {
+            const d = fromKey(k);
+            const wd = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"][d.getDay()];
+            return <div key={k} className="leading-tight"><div>{wd}</div><div className="text-[7px] opacity-70">{d.getDate()}</div></div>;
+          })}
+        </div>
+      </div>
+      <div className="mt-3 flex gap-3 text-xs text-muted-foreground">
+        <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-primary" /> Me</span>
+        <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-primary opacity-70 ring-1 ring-foreground/30" /> {partnerName}</span>
+      </div>
+    </section>
   );
 }
 
@@ -268,17 +339,31 @@ function CouplePage() {
       dateKey: k, meds, medLog: medLog[k] ?? {}, extra: dayLogs[k]?.extraMeds ?? [],
     }));
   };
+  const collectNotes = (dayNotes: Record<string, DayNote[] | string[] | undefined>) => {
+    const out: { dateKey: string; text: string; time?: string }[] = [];
+    for (const [k, raw] of Object.entries(dayNotes ?? {})) {
+      if (!inThisMonth(k)) continue;
+      for (const n of raw ?? []) {
+        if (typeof n === "string") out.push({ dateKey: k, text: n });
+        else if (n.text?.trim()) out.push({ dateKey: k, text: n.text, time: n.time });
+      }
+    }
+    return out.sort((a, b) => b.dateKey.localeCompare(a.dateKey));
+  };
 
 
   const myPain = collectPain(view.dayLogs);
   const myTetany = collectTetany(view.dayLogs);
   const myPanic = collectPanic(view.dayLogs);
   const myMeds = collectMedDays(view.meds, view.medLog, view.dayLogs);
+  const myNotes = collectNotes(view.dayNotes);
 
   const partnerPain = partner ? collectPain(partner.dayLogs) : [];
   const partnerTetany = partner ? collectTetany(partner.dayLogs) : [];
   const partnerPanic = partner ? collectPanic(partner.dayLogs) : [];
   const partnerMeds = partner ? collectMedDays(partner.meds ?? [], partner.medLog ?? {}, partner.dayLogs) : [];
+  const partnerNotes = partner ? collectNotes(partner.dayNotes ?? {}) : [];
+  const chartDays = Array.from({ length: 14 }, (_, i) => addDays(todayKey(), i - 13)).filter(inThisMonth);
 
   return (
     <AppShell title="Couple">
@@ -291,38 +376,12 @@ function CouplePage() {
           </div>
         ) : (
           <>
-            <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">Pain — {now.toLocaleDateString("en-GB", { month: "long", year: "numeric" })}</p>
-              {(() => {
-                const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-                const monthDays = Array.from({ length: daysInMonth }, (_, i) => `${monthPrefix}-${String(i + 1).padStart(2, "0")}`);
-                return (
-                  <div className="mt-2 flex gap-[2px]">
-                    {monthDays.map((k, i) => {
-                      const mine = view.dayLogs[k]?.pain?.reduce((s, p, _, a) => s + p.score / a.length, 0);
-                      const theirs = partner.dayLogs[k]?.pain?.reduce((s, p, _, a) => s + p.score / a.length, 0);
-                      return (
-                        <div key={i} className="flex flex-1 flex-col items-center gap-1">
-                          <div className="flex h-16 flex-col items-center justify-end gap-0.5">
-                            {mine != null && <div className="w-1.5 rounded-t" style={{ height: `${mine * 6}px`, background: painColor(mine) }} />}
-                            {theirs != null && <div className="w-1.5 rounded-t opacity-60" style={{ height: `${theirs * 6}px`, background: painColor(theirs), border: "1px dashed #000" }} />}
-                          </div>
-                          {(i + 1) % 5 === 0 || i === 0 ? <span className="text-[8px] text-muted-foreground">{i + 1}</span> : <span className="text-[8px]">&nbsp;</span>}
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })()}
-              <div className="mt-3 flex gap-3 text-xs">
-                <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded bg-primary" /> Me</span>
-                <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded border border-dashed bg-primary opacity-60" /> {partner.name}</span>
-              </div>
-            </section>
+            <CouplePainChart days={chartDays} mine={view.dayLogs} theirs={partner.dayLogs} partnerName={partner.name || "Partner"} />
 
             <section className="rounded-3xl bg-surface p-4 ring-1 ring-border space-y-3">
               <h3 className="font-serif text-lg font-semibold">🔥 {partner.name || "Partner"} — pain</h3>
               <PainList title="Recent" entries={partnerPain} />
+              <DayNotesList title="Day notes" notes={partnerNotes} />
             </section>
 
             {(partnerTetany.length > 0 || partnerPanic.length > 0) && (
@@ -345,6 +404,7 @@ function CouplePage() {
             <section className="rounded-3xl bg-surface p-4 ring-1 ring-border space-y-3">
               <h3 className="font-serif text-lg font-semibold">🔥 My pain</h3>
               <PainList title="Recent" entries={myPain} />
+              <DayNotesList title="Day notes" notes={myNotes} />
             </section>
 
             {(myTetany.length > 0 || myPanic.length > 0) && (
