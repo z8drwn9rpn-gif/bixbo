@@ -1228,9 +1228,11 @@ function BowelForm({ date, data, update, onDone, initialEntry }:
           <button onClick={() => setBristol(0)}
             className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-2 text-left text-sm transition ${
               bristol === 0 ? "border-primary bg-primary/10" : "border-border bg-surface"}`}>
-            <span className="grid h-8 w-8 place-items-center rounded-full text-xs font-semibold text-white bg-muted-foreground">–</span>
-            <span className="flex-1">No bowel movement</span>
+            <span className="grid h-8 w-8 place-items-center rounded-full text-xs font-semibold text-white"
+              style={{ background: "linear-gradient(135deg,#ef4444,#f59e0b,#eab308,#22c55e,#3b82f6,#8b5cf6)" }}>0</span>
+            <span className="flex-1"><span className="font-medium">Type 0 — Mystery</span> <span aria-hidden>🌈</span><br /><span className="text-[11px] text-muted-foreground">Unknown / mixed / no bowel movement</span></span>
           </button>
+
           {BRISTOL.map((b) => (
             <button key={b.n} onClick={() => setBristol(b.n)}
               className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-2 text-left text-sm transition ${

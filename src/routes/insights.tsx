@@ -51,10 +51,9 @@ function InsightsPage() {
     return nums.reduce((a, b) => a + b, 0) / nums.length;
   })();
 
-  // ŠukŠuk! count — only real sex acts (excludes fingering / suck dick / oral)
-  const SEX_EXCLUDE = new Set(["fingering", "suck_dick", "oral", "oral_giving", "oral_receiving"]);
-  const sexCount = days.reduce((s, k) => s + ((view.dayLogs[k]?.sex ?? [])
-    .filter((x) => !SEX_EXCLUDE.has(String(x.kind))).length), 0);
+  // ŠukŠuk! count — every logged entry counts (including custom types)
+  const sexCount = days.reduce((s, k) => s + (view.dayLogs[k]?.sex?.length ?? 0), 0);
+
 
   // Bowel by type
   const bowelCounts = new Array(8).fill(0) as number[];

@@ -241,27 +241,36 @@ function CouplePage() {
   const end = todayKey();
   const start = addDays(end, -(days - 1));
 
+  // Only show entries from the current month
+  const now = new Date();
+  const monthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const inThisMonth = (k: string) => k.startsWith(monthPrefix);
+
   const collectPain = (dayLogs: Record<string, { pain?: PainEntry[] }>) => {
     const out: (PainEntry & { dateKey: string })[] = [];
-    for (const [k, l] of Object.entries(dayLogs)) for (const p of l?.pain ?? []) out.push({ ...p, dateKey: k });
+    for (const [k, l] of Object.entries(dayLogs)) { if (!inThisMonth(k)) continue; for (const p of l?.pain ?? []) out.push({ ...p, dateKey: k }); }
     return out.sort((a, b) => (b.dateKey === a.dateKey ? b.time.localeCompare(a.time) : b.dateKey.localeCompare(a.dateKey))).slice(0, 30);
   };
   const collectTetany = (dayLogs: Record<string, { tetany?: TetanyEpisode[] }>) => {
     const out: (TetanyEpisode & { dateKey: string })[] = [];
-    for (const [k, l] of Object.entries(dayLogs)) for (const t of l?.tetany ?? []) out.push({ ...t, dateKey: k });
+    for (const [k, l] of Object.entries(dayLogs)) { if (!inThisMonth(k)) continue; for (const t of l?.tetany ?? []) out.push({ ...t, dateKey: k }); }
     return out.sort((a, b) => b.dateKey.localeCompare(a.dateKey)).slice(0, 20);
   };
   const collectPanic = (dayLogs: Record<string, { panic?: PanicAttack[] }>) => {
     const out: (PanicAttack & { dateKey: string })[] = [];
-    for (const [k, l] of Object.entries(dayLogs)) for (const p of l?.panic ?? []) out.push({ ...p, dateKey: k });
+    for (const [k, l] of Object.entries(dayLogs)) { if (!inThisMonth(k)) continue; for (const p of l?.panic ?? []) out.push({ ...p, dateKey: k }); }
     return out.sort((a, b) => b.dateKey.localeCompare(a.dateKey)).slice(0, 20);
   };
   const collectMedDays = (meds: Med[], medLog: Record<string, Record<string, boolean>>, dayLogs: Record<string, { extraMeds?: ExtraMed[] }>) => {
-    const keys = new Set<string>([...Object.keys(medLog ?? {}), ...Object.keys(dayLogs ?? {})]);
+    const keys = new Set<string>([
+      ...Object.keys(medLog ?? {}).filter(inThisMonth),
+      ...Object.keys(dayLogs ?? {}).filter(inThisMonth),
+    ]);
     return Array.from(keys).sort((a, b) => b.localeCompare(a)).map((k) => ({
       dateKey: k, meds, medLog: medLog[k] ?? {}, extra: dayLogs[k]?.extraMeds ?? [],
     }));
   };
+
 
   const myPain = collectPain(view.dayLogs);
   const myTetany = collectTetany(view.dayLogs);
