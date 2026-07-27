@@ -865,6 +865,7 @@ function TetanyForm({ date, data, update, onDone, initialEntry }:
   const [ongoing, setOngoing] = useState(initialEntry?.minutes == null && !!initialEntry);
   const [triggers, setTriggers] = useState<string[]>(initialEntry?.triggers ?? []);
   const [helped, setHelped] = useState<string[]>(initialEntry?.helped ?? []);
+  const [rescueMed, setRescueMed] = useState<string>(initialEntry?.rescueMed ?? "");
   const [note, setNote] = useState(initialEntry?.note ?? "");
 
   type CK = "tetanyTypes" | "tetanyLocations" | "tetanyTriggers" | "tetanyHelped";
