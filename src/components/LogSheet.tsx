@@ -1063,14 +1063,17 @@ function AddCustomInline({ onAdd }: { onAdd: (v: string) => void }) {
   const [adding, setAdding] = useState(false);
   const [text, setText] = useState("");
   if (!adding) return (
-    <button onClick={() => setAdding(true)} className="flex items-center gap-1 rounded-full bg-tint px-3 py-1.5 text-xs font-medium text-muted-foreground">
+    <button type="button" onClick={() => setAdding(true)} className="flex items-center gap-1 rounded-full bg-tint px-3 py-1.5 text-xs font-medium text-muted-foreground">
       <Plus className="h-3 w-3" /> Add
     </button>
   );
+  const commit = () => { if (text.trim()) { onAdd(text.trim()); setText(""); setAdding(false); } };
   return (
     <div className="flex items-center gap-1">
-      <Input value={text} onChange={(e) => setText(e.target.value)} className="h-8 w-32" placeholder="Custom…" />
-      <Button size="sm" onClick={() => { if (text.trim()) { onAdd(text.trim()); setText(""); setAdding(false); } }}>Add</Button>
+      <Input value={text} onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commit(); } }}
+        className="h-8 w-32" placeholder="Custom…" autoFocus />
+      <Button type="button" size="sm" onClick={commit}>Add</Button>
     </div>
   );
 }
