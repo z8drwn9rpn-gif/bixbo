@@ -383,8 +383,31 @@ export const PAIN_QUALITY_DEFAULT = ["Cramping","Stabbing","Burning","Dull","Sha
 export const OTHER_SYMPTOMS_DEFAULT = ["Nausea","Dizziness","Fatigue","Bloating","Diarrhea","Constipation","Headache","Cold sweats","Fainting","Mood swings"];
 export const FOOD_FEELINGS_DEFAULT = ["😊 Great","🙂 Fine","😐 Neutral","😕 Off","😖 Bloated","🤢 Nauseous","🤕 Stomach pain","😴 Sleepy","🥵 Flushed","⚡ Energy up"];
 export const WORKOUT_KINDS_DEFAULT = ["🧘🏼‍♀️ Yoga","🚶🏼‍♀️ Walk","🏃🏼‍♀️ Run","🚴 Cycling","💪 Strength","🤸 Stretching","🏊 Swim","🧘 Meditation"];
-export const MOODS_DEFAULT = ["All over the place","Angry","Annoyed","Anxious","Apathetic","Bored","Busy","Calm","Clingy","Cranky","Depressed","Excited","Fatigued","Grateful","Happy","In love","In pain","Indifferent","Irritated","Just chillin","Lonely","Meh","PMDD","Productive","Restful","Sad","Self-deprecating","Sleepy","Stressed","Tired"];
-export const TETANY_TYPES = ["Carpopedal spasm","Calf cramps","Twitches around mouth/face","Tingling / numbness","Fasciculations"];
+export const MOODS_DEFAULT = ["🌀 All over the place","😠 Angry","😤 Annoyed","😰 Anxious","😑 Apathetic","🥱 Bored","🏃 Busy","😌 Calm","🥺 Clingy","😾 Cranky","😔 Depressed","🤩 Excited","😪 Fatigued","🙏 Grateful","😊 Happy","🥰 In love","🤕 In pain","😐 Indifferent","😒 Irritated","😎 Just chillin","🥲 Lonely","😕 Meh","🌩️ PMDD","💪 Productive","😴 Restful","😢 Sad","🫥 Self-deprecating","😴 Sleepy","😖 Stressed","🥱 Tired"];
+export const TETANY_TYPES = [
+  "Carpopedal spasm",
+  "Calf cramps",
+  "Twitches around mouth/face",
+  "Tingling / numbness",
+  "Fasciculations",
+  "Eyelid twitching",
+  "Jaw clenching",
+  "Chvostek sign",
+  "Trousseau sign",
+  "Whole body tremor",
+];
+export const TETANY_TYPE_DESC: Record<string, string> = {
+  "Carpopedal spasm": "Kŕč rúk/nôh — prsty stiahnuté do „pôrodníckej ruky“ alebo chodidlá do luku.",
+  "Calf cramps": "Bolestivé kŕče v lýtkach, často v noci alebo po námahe.",
+  "Twitches around mouth/face": "Drobné zášklby okolo úst alebo tváre.",
+  "Tingling / numbness": "Mravčenie alebo znecitlivenie (perí, prstov, končatín).",
+  "Fasciculations": "Jemné vlnenie svalov pod kožou bez pohybu končatiny.",
+  "Eyelid twitching": "Cukanie viečka — často pri únave alebo nedostatku horčíka.",
+  "Jaw clenching": "Zatínanie čeľuste, škrípanie zubami.",
+  "Chvostek sign": "Zášklb tváre pri poklepe na tvárový nerv (pred uchom).",
+  "Trousseau sign": "Kŕč ruky po nafúknutí manžety tlakomera nad systolický tlak.",
+  "Whole body tremor": "Celotelový tras alebo chvenie z vnútra.",
+};
 export const TETANY_LOCATIONS_DEFAULT = ["Lips","Fingers","Toes","Hands","Calves","Face","Around mouth"];
 export const TETANY_TRIGGERS = ["Hyperventilation / stress","Exercise","Cold","Cycle phase","Other"];
 export const TETANY_HELPED_DEFAULT = ["Slow breathing","Breathe into bag/hands","Warmth","Extra magnesium","Rest"];
