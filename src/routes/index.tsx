@@ -92,19 +92,19 @@ function HomePage() {
         </Link>
       }
     >
-      <div className="px-5 pt-1">
+      <div className="px-5 pt-0.5">
         <div className="flex items-center justify-between">
-          <button onClick={goToPrevMonth} aria-label="Previous month" className="rounded-full p-2 hover:bg-tint">
+          <button onClick={goToPrevMonth} aria-label="Previous month" className="rounded-full p-1.5 hover:bg-tint">
             <ChevronLeft className="h-5 w-5" />
           </button>
-          <h2 className="font-serif text-2xl font-bold">{monthLabel(monthAnchor)}</h2>
-          <button onClick={goToNextMonth} aria-label="Next month" className="rounded-full p-2 hover:bg-tint">
+          <h2 className="font-serif text-xl font-bold">{monthLabel(monthAnchor)}</h2>
+          <button onClick={goToNextMonth} aria-label="Next month" className="rounded-full p-1.5 hover:bg-tint">
             <ChevronRight className="h-5 w-5" />
           </button>
         </div>
       </div>
 
-      <div className="mt-1">
+      <div className="mt-0.5">
         <MonthCalendar
           month={monthAnchor} data={view} selected={selected} onSelect={setSelected}
           onSwipeMonth={(delta) => setMonthAnchor((d) => new Date(d.getFullYear(), d.getMonth() + delta, 1))}
@@ -230,7 +230,16 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
       {(takenList.length > 0 || extraMeds.length > 0 || missedList.length > 0) && (
         <Card title="Meds" icon="💊">
           <ul className="space-y-1 text-sm">
-            {takenList.map((x) => <li key={x.key}>✓ {x.time} — {x.med.name}{x.med.dose ? ` (${x.med.dose})` : ""}</li>)}
+            {takenList.map((x) => (
+              <li key={x.key}>
+                <button onClick={() => update((d) => {
+                  const day = { ...(d.medLog[date] ?? {}) }; delete day[x.key];
+                  return { ...d, medLog: { ...d.medLog, [date]: day } };
+                })} className="text-left text-green-700 hover:underline" title="Tap to uncheck">
+                  ✓ {x.time} — {x.med.name}{x.med.dose ? ` (${x.med.dose})` : ""} <span className="text-[10px] text-muted-foreground">· tap to uncheck</span>
+                </button>
+              </li>
+            ))}
             {missedList.map((x) => (
               <li key={x.key} className="flex items-start gap-2">
                 <button onClick={() => markMissedTaken(x.key)} className="flex-1 text-left text-destructive/90" title="Tap to mark taken">
@@ -378,10 +387,15 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
         <Card title="Bowel" icon="💩">
           <ul className="space-y-1 text-sm">
             {log.bowel.map((b: BowelEntry) => {
-              const bristol = b.bristol === 0 ? null : BRISTOL.find((x) => x.n === b.bristol);
+              const bristol = b.bristol > 0 ? BRISTOL.find((x) => x.n === b.bristol) : null;
+              const label = bristol
+                ? `Type ${bristol.n} — ${bristol.sub}`
+                : b.bristol === 0
+                  ? "Type 0 — Mystery 🌈"
+                  : "No bowel movement";
               return (
                 <li key={b.id} className="flex items-start gap-2">
-                  <button onClick={() => onEdit?.("bowel", b)} className="flex-1 text-left">{b.time} · {bristol ? `Type ${bristol.n} — ${bristol.sub}` : "No bowel movement"}{b.feelings?.length ? ` · ${b.feelings.join(", ")}` : ""}{b.symptoms?.length ? ` · ${b.symptoms.join(", ")}` : ""}{b.note ? ` — ${b.note}` : ""}</button>
+                  <button onClick={() => onEdit?.("bowel", b)} className="flex-1 text-left">{b.time} · {label}{b.feelings?.length ? ` · ${b.feelings.join(", ")}` : ""}{b.symptoms?.length ? ` · ${b.symptoms.join(", ")}` : ""}{b.note ? ` — ${b.note}` : ""}</button>
                   <DeleteBtn onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], bowel: (d.dayLogs[date]?.bowel ?? []).filter((x) => x.id !== b.id) } } }))} />
                 </li>
               );

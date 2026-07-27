@@ -217,53 +217,68 @@ function CustomChipList({
   selected: string[]; onToggle: (v: string) => void;
 }) {
   const [adding, setAdding] = useState(false);
+  const [editMode, setEditMode] = useState(false);
   const [text, setText] = useState("");
+  const canEdit = !!(onRenameCustom || onRemoveCustom) && custom.length > 0;
   return (
-    <div className="mt-2 flex flex-wrap gap-2">
-      {base.map((v) => (
-        <Chip key={v} active={selected.includes(v)} onClick={() => onToggle(v)}>{v}</Chip>
-      ))}
-      {custom.map((v) => (
-        <span key={v} className="relative inline-flex items-center">
-          <Chip active={selected.includes(v)} onClick={() => onToggle(v)}>{v}</Chip>
-          {onRenameCustom && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                const next = prompt(`Rename "${v}" to:`, v);
-                if (next && next.trim() && next.trim() !== v) onRenameCustom(v, next.trim());
-              }}
-              aria-label={`Rename ${v}`}
-              className="ml-1 grid h-5 w-5 place-items-center rounded-full bg-tint text-muted-foreground hover:bg-primary/15 hover:text-primary"
-            >
-              <Pencil className="h-3 w-3" />
+    <div className="mt-2">
+      {(canEdit || true) && (
+        <div className="mb-2 flex items-center gap-2">
+          {adding ? (
+            <div className="flex flex-1 items-center gap-1">
+              <Input value={text} onChange={(e) => setText(e.target.value)} className="h-8 flex-1" placeholder="Custom…" autoFocus />
+              <Button size="sm" onClick={() => { if (text.trim()) { onAddCustom(text.trim()); setText(""); setAdding(false); } }}>Add</Button>
+              <Button size="sm" variant="ghost" onClick={() => { setText(""); setAdding(false); }}>Cancel</Button>
+            </div>
+          ) : (
+            <button onClick={() => setAdding(true)}
+              className="flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary hover:bg-primary/20">
+              <Plus className="h-3 w-3" /> Add custom
             </button>
           )}
-          {onRemoveCustom && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                if (confirm(`Remove "${v}" from your custom list?`)) onRemoveCustom(v);
-              }}
-              aria-label={`Remove ${v}`}
-              className="ml-1 grid h-5 w-5 place-items-center rounded-full bg-tint text-muted-foreground hover:bg-destructive/15 hover:text-destructive"
-            >
-              <X className="h-3 w-3" />
+          {canEdit && !adding && (
+            <button onClick={() => setEditMode((v) => !v)}
+              className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${editMode ? "bg-primary text-primary-foreground" : "bg-tint text-muted-foreground hover:text-foreground"}`}>
+              <Pencil className="h-3 w-3" /> {editMode ? "Done" : "Edit"}
             </button>
           )}
-        </span>
-      ))}
-      {adding ? (
-        <div className="flex items-center gap-1">
-          <Input value={text} onChange={(e) => setText(e.target.value)} className="h-8 w-32" placeholder="Custom…" />
-          <Button size="sm" onClick={() => { if (text.trim()) { onAddCustom(text.trim()); setText(""); setAdding(false); } }}>Add</Button>
         </div>
-      ) : (
-        <button onClick={() => setAdding(true)}
-          className="flex items-center gap-1 rounded-full bg-tint px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground">
-          <Plus className="h-3 w-3" /> Add
-        </button>
       )}
+      <div className="flex flex-wrap gap-2">
+        {base.map((v) => (
+          <Chip key={v} active={selected.includes(v)} onClick={() => onToggle(v)}>{v}</Chip>
+        ))}
+        {custom.map((v) => (
+          <span key={v} className="relative inline-flex items-center">
+            <Chip active={selected.includes(v)} onClick={() => onToggle(v)}>{v}</Chip>
+            {editMode && onRenameCustom && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const next = prompt(`Rename "${v}" to:`, v);
+                  if (next && next.trim() && next.trim() !== v) onRenameCustom(v, next.trim());
+                }}
+                aria-label={`Rename ${v}`}
+                className="ml-1 grid h-5 w-5 place-items-center rounded-full bg-tint text-muted-foreground hover:bg-primary/15 hover:text-primary"
+              >
+                <Pencil className="h-3 w-3" />
+              </button>
+            )}
+            {editMode && onRemoveCustom && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (confirm(`Remove "${v}" from your custom list?`)) onRemoveCustom(v);
+                }}
+                aria-label={`Remove ${v}`}
+                className="ml-1 grid h-5 w-5 place-items-center rounded-full bg-tint text-muted-foreground hover:bg-destructive/15 hover:text-destructive"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
@@ -1225,12 +1240,18 @@ function BowelForm({ date, data, update, onDone, initialEntry }:
       <Field label="Time"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></Field>
       <Field label="Bristol stool scale">
         <div className="mt-1 space-y-1.5">
+          <button onClick={() => setBristol(-1)}
+            className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-2 text-left text-sm transition ${
+              bristol === -1 ? "border-primary bg-primary/10" : "border-border bg-surface"}`}>
+            <span className="grid h-8 w-8 place-items-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">∅</span>
+            <span className="flex-1"><span className="font-medium">No bowel movement</span><br /><span className="text-[11px] text-muted-foreground">Didn't go today</span></span>
+          </button>
           <button onClick={() => setBristol(0)}
             className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-2 text-left text-sm transition ${
               bristol === 0 ? "border-primary bg-primary/10" : "border-border bg-surface"}`}>
             <span className="grid h-8 w-8 place-items-center rounded-full text-xs font-semibold text-white"
               style={{ background: "linear-gradient(135deg,#ef4444,#f59e0b,#eab308,#22c55e,#3b82f6,#8b5cf6)" }}>0</span>
-            <span className="flex-1"><span className="font-medium">Type 0 — Mystery</span> <span aria-hidden>🌈</span><br /><span className="text-[11px] text-muted-foreground">Unknown / mixed / no bowel movement</span></span>
+            <span className="flex-1"><span className="font-medium">Type 0 — Mystery</span> <span aria-hidden>🌈</span><br /><span className="text-[11px] text-muted-foreground">Unknown / mixed</span></span>
           </button>
 
           {BRISTOL.map((b) => (

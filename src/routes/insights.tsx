@@ -51,8 +51,12 @@ function InsightsPage() {
     return nums.reduce((a, b) => a + b, 0) / nums.length;
   })();
 
-  // ŠukŠuk! count — every logged entry counts (including custom types)
-  const sexCount = days.reduce((s, k) => s + (view.dayLogs[k]?.sex?.length ?? 0), 0);
+  // ŠukŠuk! — count only actual sex (not fingering / oral / other)
+  const SEX_KINDS = new Set(["sex", "sex_with_condom", "sex_without_condom"]);
+  const sexCount = days.reduce(
+    (s, k) => s + (view.dayLogs[k]?.sex?.filter((e) => SEX_KINDS.has(String(e.kind))).length ?? 0),
+    0,
+  );
 
 
   // Bowel by type
@@ -166,13 +170,7 @@ function InsightsPage() {
               avg · {painSeries.filter((n) => n != null).length} {painSeries.filter((n) => n != null).length === 1 ? "entry" : "entries"}
             </span>
           </div>
-          <div className="mt-5 grid items-end gap-1" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))`, height: 80 }}>
-            {painSeries.map((n, i) => (
-              n != null
-                ? <div key={i} className="w-full rounded-t" style={{ height: `${Math.max(6, (n / 10) * 100)}%`, background: painColor(n) }} />
-                : <div key={i} className="h-1 w-full self-end rounded bg-tint" />
-            ))}
-          </div>
+          <PainChart period={period} days={days} series={painSeries} anchor={anchor} />
         </section>
 
         <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
@@ -493,5 +491,77 @@ function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) 
         </>
       )}
     </section>
+  );
+}
+
+function PainChart({ period, days, series, anchor }:
+  { period: Period; days: string[]; series: (number | undefined)[]; anchor: Date }) {
+  // Aggregate for year view: 12 monthly averages
+  type Bar = { value?: number; label: string; sub?: string };
+  let bars: Bar[] = [];
+  if (period === "Y") {
+    const monthly: { sum: number; n: number }[] = Array.from({ length: 12 }, () => ({ sum: 0, n: 0 }));
+    days.forEach((k, i) => {
+      const v = series[i];
+      if (v == null) return;
+      const m = fromKey(k).getMonth();
+      monthly[m].sum += v; monthly[m].n += 1;
+    });
+    const MON = ["J","F","M","A","M","J","J","A","S","O","N","D"];
+    bars = monthly.map((mm, i) => ({
+      value: mm.n ? mm.sum / mm.n : undefined,
+      label: MON[i],
+    }));
+  } else if (period === "M") {
+    bars = days.map((k, i) => {
+      const d = fromKey(k).getDate();
+      return { value: series[i], label: d % 5 === 0 || d === 1 ? String(d) : "" };
+    });
+  } else {
+    bars = days.map((k, i) => {
+      const d = fromKey(k);
+      const wd = ["Su","Mo","Tu","We","Th","Fr","Sa"][d.getDay()];
+      return { value: series[i], label: wd, sub: String(d.getDate()) };
+    });
+  }
+
+  const yLabels = [10, 8, 6, 4, 2, 0];
+  const height = 120;
+
+  return (
+    <div className="mt-4">
+      <div className="flex gap-1.5">
+        <div className="flex flex-col justify-between text-[9px] text-muted-foreground pr-1" style={{ height }}>
+          {yLabels.map((y) => <span key={y} className="leading-none">{y}</span>)}
+        </div>
+        <div className="relative flex-1">
+          <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
+            {yLabels.map((y) => (
+              <div key={y} className="border-t border-dashed border-border/40" />
+            ))}
+          </div>
+          <div className="relative grid items-end gap-[2px]" style={{ gridTemplateColumns: `repeat(${bars.length}, minmax(0, 1fr))`, height }}>
+            {bars.map((b, i) => (
+              b.value != null
+                ? <div key={i} className="w-full rounded-t" style={{ height: `${Math.max(4, (b.value / 10) * 100)}%`, background: painColor(b.value) }} title={`${b.label}: ${b.value.toFixed(1)}`} />
+                : <div key={i} className="h-[2px] w-full self-end rounded bg-tint/60" />
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="mt-1 flex pl-4">
+        <div className="grid flex-1 gap-[2px] text-center text-[8px] text-muted-foreground" style={{ gridTemplateColumns: `repeat(${bars.length}, minmax(0, 1fr))` }}>
+          {bars.map((b, i) => (
+            <div key={i} className="leading-tight">
+              <div>{b.label}</div>
+              {b.sub && <div className="text-[7px] opacity-70">{b.sub}</div>}
+            </div>
+          ))}
+        </div>
+      </div>
+      {period === "Y" && bars.every((b) => b.value == null) && (
+        <p className="mt-2 text-center text-xs text-muted-foreground">No pain entries in {anchor.getFullYear()}</p>
+      )}
+    </div>
   );
 }

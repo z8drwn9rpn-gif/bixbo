@@ -73,7 +73,9 @@ export function QuickTags({
   return (
     <div className="mt-3 px-5">
       <p className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">Quick log · tap to log now, long-press for details</p>
-      <div className="-mx-5 overflow-x-auto px-5 pb-2">
+      <div
+        className="-mx-5 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+      >
         <div className="flex gap-2">
           {tags.map((tag) => {
             const isFlash = flash === tag.key;
