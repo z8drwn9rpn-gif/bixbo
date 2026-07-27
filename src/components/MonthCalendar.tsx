@@ -207,7 +207,7 @@ export function MonthCalendar({
                         return (
                           <div
                             key={ci}
-                             className={`h-4 truncate px-1 text-[9px] font-medium leading-4 text-primary-foreground ${
+                             className={`h-3 truncate px-1 text-[8px] font-medium leading-3 text-primary-foreground ${
                               isStart ? "rounded-l" : ""
                             } ${isEnd ? "rounded-r" : ""}`}
                             style={{
@@ -215,14 +215,14 @@ export function MonthCalendar({
                               background: seg.event.color ?? "var(--primary)",
                             }}
                           >
-                            {isStart ? seg.event.title : "\u00A0"}
+                            {seg.event.title}
                           </div>
                         );
                       }
                       // if this cell is covered by a segment (mid), skip (it's part of prior span)
                       const covered = row.some((s) => ci > s.startIdx && ci <= s.endIdx);
                       if (covered) return null;
-                      return <div key={ci} className="h-[13px]" />;
+                      return <div key={ci} className="h-3" />;
                     })}
                   </div>
                 ) : null
