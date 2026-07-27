@@ -924,10 +924,24 @@ function TetanyForm({ date, data, update, onDone, initialEntry }:
           onRenameCustom={(o, n) => { rnC("tetanyHelped", o, n); setHelped((a) => a.map((x) => x === o ? n : x)); }}
           selected={helped} onToggle={(v) => setHelped((a) => toggleIn(a, v))} />
       </Field>
+      <Field label="Rescue med (what you took)">
+        <Input value={rescueMed} onChange={(e) => setRescueMed(e.target.value)} placeholder="e.g. Magnesium 400 mg" />
+        {data.meds.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {data.meds.map((m) => (
+              <button key={m.id} type="button" onClick={() => setRescueMed(m.dose ? `${m.name} ${m.dose}` : m.name)}
+                className="rounded-full bg-tint px-3 py-1 text-xs font-medium text-foreground ring-1 ring-border">
+                {m.name}{m.dose ? ` ${m.dose}` : ""}
+              </button>
+            ))}
+          </div>
+        )}
+      </Field>
       <Field label="Note (optional)">
         <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
       <SaveBar onCancel={onDone} onSave={save} />
+
     </div>
   );
 }
