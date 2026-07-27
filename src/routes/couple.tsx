@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
-import { useBixbo, EMPTY, addDays, todayKey, daysBetween, painColor, PAIN_DESCRIPTIONS, predictPeriods, nextPredictedPeriod, type PainEntry, type PanicAttack, type TetanyEpisode, type ExtraMed, type Med, type PartnerData } from "@/lib/storage";
+import { useBixbo, EMPTY, todayKey, daysBetween, painColor, PAIN_DESCRIPTIONS, predictPeriods, nextPredictedPeriod, type PainEntry, type PanicAttack, type TetanyEpisode, type ExtraMed, type Med, type PartnerData } from "@/lib/storage";
 
 export const Route = createFileRoute("/couple")({
   head: () => ({
@@ -237,9 +237,7 @@ function CouplePage() {
   const { data, hydrated } = useBixbo();
   const view = hydrated ? data : EMPTY;
   const partner = view.partner;
-  const days = 14;
-  const end = todayKey();
-  const start = addDays(end, -(days - 1));
+  // (previous 14-day window removed — everything now filters to current month)
 
   // Only show entries from the current month
   const now = new Date();
