@@ -689,7 +689,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
           <Field label="Body battery">
             <div className="mt-2 flex justify-between gap-2">
               {BODY_BATTERY.map((b) => (
-                <button key={b.n} onClick={() => setBodyBattery(bodyBattery === b.n ? undefined : b.n)}
+                <button key={b.n} type="button" onClick={() => setBodyBattery(bodyBattery === b.n ? undefined : b.n)}
                   className={`flex flex-1 flex-col items-center gap-1 rounded-2xl border p-2 transition ${bodyBattery === b.n ? "border-primary bg-primary/10" : "border-border bg-surface"}`}>
                   <div className="grid h-10 w-6 place-items-end rounded-md border-2 border-foreground/60 p-0.5">
                     <div className="w-full rounded" style={{ height: `${b.n * 18}%`, background: b.color }} />
