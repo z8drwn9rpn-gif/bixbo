@@ -416,6 +416,36 @@ export const PANIC_PHYSICAL = ["Racing heart","Shortness of breath","Chest press
 export const PANIC_COGNITIVE = ["Loss of control","Derealization","Fear of dying","Fear of collapse"];
 export const PANIC_HELPED_DEFAULT = ["Slow exhale","Frontin","Grounding","Someone with me","Fresh air"];
 
+export const HEADACHE_TYPES = [
+  "Tension",
+  "Migraine",
+  "Cluster",
+  "Sinus",
+  "Cervicogenic",
+  "Hormonal",
+  "Dehydration",
+  "Hangover",
+  "Eye strain",
+  "Caffeine withdrawal",
+  "Ice-pick",
+  "Thunderclap",
+];
+export const HEADACHE_TYPE_DESC: Record<string, string> = {
+  "Tension": "Tenzná bolesť — tupý, tlakový pocit obojstranne, ako obruč okolo hlavy. Často zo stresu, únavy či zlého držania tela.",
+  "Migraine": "Migréna — pulzujúca bolesť (často jednostranná), citlivosť na svetlo/zvuk, nevoľnosť. Môže mať auru (blikanie, tŕpnutie).",
+  "Cluster": "Klastrová — extrémne silná bolesť za/okolo jedného oka, v sériách; slziace oko, upchatý nos na tej strane.",
+  "Sinus": "Sínusová — tlak v tvári/za očami/čele, horšia pri predklone; typicky pri nádche alebo zápale prínosových dutín.",
+  "Cervicogenic": "Cervikogénna — vychádza z krčnej chrbtice; bolesť od šije stúpa hore do hlavy, horšia pri pohybe krku.",
+  "Hormonal": "Hormonálna — súvisí s cyklom (pred/počas menštruácie), ovuláciou alebo antikoncepciou.",
+  "Dehydration": "Z dehydratácie — tupá, celohlavová bolesť pri malom príjme tekutín, horšia pri pohybe.",
+  "Hangover": "Po alkohole — pulzujúca bolesť s nevoľnosťou po požití alkoholu.",
+  "Eye strain": "Z očí — po dlhom pozeraní do obrazovky; tlak za očami, rozmazané videnie.",
+  "Caffeine withdrawal": "Z odvyknutia kofeínu — tupá bolesť s únavou, ak si vynechala/vynechal kávu.",
+  "Ice-pick": "„Ľadové bodnutie“ — krátke, ostré bodavé záblesky bolesti trvajúce sekundy.",
+  "Thunderclap": "„Hromobitie“ — náhla, extrémne silná bolesť do 1 minúty. POZOR: vyhľadaj lekára, môže byť vážne.",
+};
+
+
 export const SEX_TYPES_DEFAULT: { value: SexKind; label: string }[] = [
   { value: "sex", label: "Sex" },
   { value: "fingering", label: "Fingering" },
