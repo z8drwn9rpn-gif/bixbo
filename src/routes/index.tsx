@@ -1,6 +1,7 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Plus, Settings as SettingsIcon, Share2, Trash2, Pill } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
+import { ChevronLeft, ChevronRight, Settings as SettingsIcon, Share2, Trash2, Pill } from "lucide-react";
+
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { MonthCalendar, monthLabel } from "@/components/MonthCalendar";
@@ -29,7 +30,7 @@ function periodLabel(p?: PeriodLevel) {
 }
 
 function HomePage() {
-  const navigate = useNavigate();
+  // no navigate needed
   const { data, update, hydrated } = useBixbo();
   const view = hydrated ? data : EMPTY;
 
