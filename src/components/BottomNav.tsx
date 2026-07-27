@@ -22,8 +22,7 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-1/2 z-40 w-full max-w-[560px] -translate-x-1/2 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] landscape:max-w-none"
-      style={{ willChange: "transform", transform: "translate3d(-50%, 0, 0)" }}
+      className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[560px] border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_16px_-8px_rgba(0,0,0,0.15)] landscape:max-w-none"
     >
       <ul className="flex items-stretch justify-around px-2 pt-2 pb-2">
         {items.map(({ to, label, icon: Icon }) => {

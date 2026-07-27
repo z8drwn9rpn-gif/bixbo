@@ -136,39 +136,35 @@ function CouplePainChart({ days, mine, theirs, partnerName }: {
   theirs: Record<string, { pain?: PainEntry[] }>;
   partnerName: string;
 }) {
-  const width = 320;
-  const height = 170;
-  const left = 22;
-  const right = 12;
+  const width = 340;
+  const height = 190;
+  const left = 24;
+  const right = 10;
   const top = 12;
-  const bottom = 30;
+  const bottom = 40;
   const chartW = width - left - right;
   const chartH = height - top - bottom;
-  const denom = Math.max(1, days.length - 1);
-  const xFor = (i: number) => left + (i / denom) * chartW;
+  const n = Math.max(1, days.length);
+  const slot = chartW / n;
+  const barW = Math.max(4, (slot - 4) / 2);
   const yFor = (v: number) => top + ((10 - v) / 10) * chartH;
+  const baseY = yFor(0);
+  const yTicks = [10, 8, 6, 4, 2, 0];
 
   const mineSeries = days.map((k) => avgDayPain(mine[k]));
   const theirSeries = days.map((k) => avgDayPain(theirs[k]));
-
-  const buildPath = (series: (number | null | undefined)[]) => {
-    let d = ""; let started = false;
-    series.forEach((v, i) => {
-      if (v == null) { started = false; return; }
-      d += `${started ? "L" : "M"}${xFor(i).toFixed(1)},${yFor(v).toFixed(1)} `;
-      started = true;
-    });
-    return d.trim();
-  };
-  const minePath = buildPath(mineSeries);
-  const theirPath = buildPath(theirSeries);
-  const yTicks = [10, 8, 6, 4, 2, 0];
 
   return (
     <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
       <p className="text-xs uppercase tracking-wider text-muted-foreground">Pain — last 14 days</p>
       <div className="mt-3 overflow-hidden">
-        <svg viewBox={`0 0 ${width} ${height}`} className="h-44 w-full" role="img" aria-label="Couple pain comparison">
+        <svg viewBox={`0 0 ${width} ${height}`} className="h-48 w-full" role="img" aria-label="Couple pain comparison">
+          <defs>
+            <pattern id="stripes" patternUnits="userSpaceOnUse" width="4" height="4" patternTransform="rotate(45)">
+              <rect width="4" height="4" fill="currentColor" opacity="0.35" />
+              <line x1="0" y1="0" x2="0" y2="4" stroke="currentColor" strokeWidth="2" />
+            </pattern>
+          </defs>
           {yTicks.map((y) => (
             <g key={y}>
               <line x1={left} x2={width - right} y1={yFor(y)} y2={yFor(y)} stroke="var(--border)" strokeDasharray="3 3" strokeWidth="1" />
@@ -177,38 +173,51 @@ function CouplePainChart({ days, mine, theirs, partnerName }: {
           ))}
           {days.map((k, i) => {
             const d = fromKey(k);
-            const show = i === 0 || i === days.length - 1 || i % 2 === 0;
-            if (!show) return null;
+            const cx = left + slot * i + slot / 2;
+            const mv = mineSeries[i];
+            const tv = theirSeries[i];
+            const mineColor = mv != null ? painColor(mv) : "transparent";
+            const theirColor = tv != null ? painColor(tv) : "transparent";
+            const dow = d.toLocaleDateString("en-US", { weekday: "short" }).slice(0, 2);
             return (
-              <text key={k} x={xFor(i)} y={height - 10} textAnchor="middle" fontSize="8" fill="var(--muted-foreground)">
-                {d.getDate()}
-              </text>
+              <g key={k}>
+                {mv != null && (
+                  <rect
+                    x={cx - barW - 1} y={yFor(mv)} width={barW} height={baseY - yFor(mv)}
+                    fill={mineColor} rx="2"
+                  />
+                )}
+                {tv != null && (
+                  <g style={{ color: theirColor }}>
+                    <rect
+                      x={cx + 1} y={yFor(tv)} width={barW} height={baseY - yFor(tv)}
+                      fill={theirColor} rx="2" opacity="0.35"
+                    />
+                    <rect
+                      x={cx + 1} y={yFor(tv)} width={barW} height={baseY - yFor(tv)}
+                      fill="url(#stripes)" rx="2"
+                    />
+                    <rect
+                      x={cx + 1} y={yFor(tv)} width={barW} height={baseY - yFor(tv)}
+                      fill="none" stroke={theirColor} strokeWidth="1" rx="2"
+                    />
+                  </g>
+                )}
+                <text x={cx} y={height - 22} textAnchor="middle" fontSize="8" fill="var(--muted-foreground)">{dow}</text>
+                <text x={cx} y={height - 12} textAnchor="middle" fontSize="8" fill="var(--muted-foreground)">{d.getDate()}</text>
+              </g>
             );
           })}
-          {/* Partner — dashed */}
-          {theirPath && (
-            <path d={theirPath} fill="none" stroke="var(--primary)" strokeWidth="2" strokeDasharray="4 3" strokeLinecap="round" strokeLinejoin="round" opacity="0.85" />
-          )}
-          {theirSeries.map((v, i) => v == null ? null : (
-            <circle key={`t-${i}`} cx={xFor(i)} cy={yFor(v)} r="2.5" fill="var(--surface)" stroke="var(--primary)" strokeWidth="1.5" strokeDasharray="2 2" />
-          ))}
-          {/* Me — solid */}
-          {minePath && (
-            <path d={minePath} fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-          )}
-          {mineSeries.map((v, i) => v == null ? null : (
-            <circle key={`m-${i}`} cx={xFor(i)} cy={yFor(v)} r="3" fill="var(--primary)" />
-          ))}
         </svg>
       </div>
-      <div className="mt-3 flex flex-wrap gap-4 text-xs text-muted-foreground">
+      <div className="mt-2 flex flex-wrap gap-4 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
-          <svg width="22" height="6"><line x1="0" y1="3" x2="22" y2="3" stroke="currentColor" strokeWidth="2.5" className="text-primary" /></svg>
-          Me
+          <span className="inline-block h-3 w-3 rounded-sm" style={{ background: "hsl(var(--primary))" }} />
+          Me — solid
         </span>
-        <span className="flex items-center gap-1.5">
-          <svg width="22" height="6"><line x1="0" y1="3" x2="22" y2="3" stroke="currentColor" strokeWidth="2" strokeDasharray="4 3" className="text-primary" /></svg>
-          {partnerName}
+        <span className="flex items-center gap-1.5" style={{ color: "hsl(var(--primary))" }}>
+          <svg width="12" height="12"><rect width="12" height="12" rx="2" fill="currentColor" opacity="0.35" /><rect width="12" height="12" rx="2" fill="url(#stripes)" /></svg>
+          <span className="text-muted-foreground">{partnerName} — striped</span>
         </span>
       </div>
     </section>
