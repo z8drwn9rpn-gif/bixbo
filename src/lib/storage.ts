@@ -140,6 +140,7 @@ export interface Settings {
 export interface PartnerData {
   name?: string;
   dayLogs: Record<string, { pain?: PainEntry[]; panic?: PanicAttack[]; tetany?: TetanyEpisode[]; extraMeds?: ExtraMed[]; period?: PeriodLevel; periodInfo?: PeriodEntry }>;
+  dayNotes?: Record<string, DayNote[] | string[]>;
   meds?: Med[];
   medLog?: Record<string, Record<string, boolean>>;
   cycle?: CyclePrefs;
@@ -397,6 +398,16 @@ export const SEX_TYPES_DEFAULT: { value: SexKind; label: string }[] = [
   { value: "suck_dick", label: "Suck dick" },
   { value: "oral", label: "Oral (receiving)" },
 ];
+
+export function isIntercourseKind(kind: unknown): boolean {
+  const raw = String(kind ?? "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/^other:/, "");
+  return ["sex", "sex_with_condom", "sex_without_condom", "with_condom", "without_condom"].includes(raw);
+}
 
 export const DISCHARGE_OPTS: { value: string; label: string; color: string }[] = [
   { value: "clear",  label: "Clear / egg-white", color: "#dbeafe" },

@@ -39,7 +39,7 @@ function toPartnerView(bx: BixboData | null, name: string): PartnerData {
       dayLogs[k] = { pain: l.pain, panic: l.panic, tetany: l.tetany, extraMeds: l.extraMeds, period: l.period, periodInfo: l.periodInfo };
     }
   }
-  return { name, dayLogs, meds: bx?.meds ?? [], medLog: bx?.medLog ?? {}, cycle: bx?.cycle, gender: bx?.settings?.gender, importedAt: Date.now() };
+  return { name, dayLogs, dayNotes: bx?.dayNotes ?? {}, meds: bx?.meds ?? [], medLog: bx?.medLog ?? {}, cycle: bx?.cycle, gender: bx?.settings?.gender, importedAt: Date.now() };
 }
 
 export async function fetchPartner(): Promise<PartnerData | null> {
