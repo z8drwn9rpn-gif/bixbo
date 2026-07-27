@@ -543,19 +543,22 @@ function WeightLineChart({ period, days, series, label = "Weight", unit = "kg" }
   const path = points.map((p, i) => `${i === 0 ? "M" : "L"}${xFor(p.index).toFixed(1)},${yFor(p.value).toFixed(1)}`).join(" ");
 
   const MON_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const ticks = days
-    .map((k, i) => ({ k, i, d: fromKey(k) }))
+  const ticks = aggregated
+    .map((p, i) => ({ k: p.date, i, d: fromKey(p.date) }))
     .filter(({ i, d }) => {
       if (period === "W") return true;
-      if (period === "M") return i === 0 || i === days.length - 1 || i % 7 === 0;
-      // Year: first of every other month
-      return d.getDate() === 1 && d.getMonth() % 2 === 0;
+      if (period === "M") return i === 0 || i === aggregated.length - 1 || i % 7 === 0;
+      // Year: every month (aggregated already has 12 points)
+      return true;
     });
   const tickLabel = (k: string) => {
     const d = fromKey(k);
     return period === "Y" ? MON_SHORT[d.getMonth()] : String(d.getDate());
   };
-  const dateLabel = `${fmtDate(days[0])} – ${fmtDate(days[days.length - 1])}`;
+  const dateLabel = period === "Y"
+    ? `${new Date().getFullYear()} — monthly average`
+    : `${fmtDate(days[0])} – ${fmtDate(days[days.length - 1])}`;
+
 
   return (
     <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
