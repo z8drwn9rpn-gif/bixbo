@@ -879,7 +879,7 @@ function TetanyForm({ date, data, update, onDone, initialEntry }:
       id: initialEntry?.id ?? crypto.randomUUID(), time,
       types, location: loc, intensity,
       minutes: ongoing ? undefined : (minutes === "" ? undefined : Number(minutes)),
-      triggers, helped, note: note.trim() || undefined,
+      triggers, helped, rescueMed: rescueMed.trim() || undefined, note: note.trim() || undefined,
     };
     updateDayLog(update, date, (l) => ({
       ...l,
