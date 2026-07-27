@@ -322,12 +322,18 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
         <Card title="Blueberry 🫐" icon="🫐">
           <button onClick={() => onEdit?.("period", undefined)} className="w-full text-left">
             <p className="text-sm">Flow: {periodLabel(log?.periodInfo?.level ?? log?.period)}</p>
+            {log?.periodInfo?.cramps != null && (
+              <p className="text-xs" style={{ color: painColor(log.periodInfo.cramps) }}>
+                Cramp pain: <span className="font-semibold">{Number.isInteger(log.periodInfo.cramps) ? log.periodInfo.cramps : log.periodInfo.cramps.toFixed(1)}/10</span> — {PAIN_DESCRIPTIONS[Math.round(log.periodInfo.cramps)]}
+              </p>
+            )}
             {log?.periodInfo?.discharge && <p className="text-xs text-muted-foreground">Discharge: {log.periodInfo.discharge}{log.periodInfo.dischargeNote ? ` — ${log.periodInfo.dischargeNote}` : ""}</p>}
             {log?.periodInfo?.note && <p className="mt-1 text-sm whitespace-pre-line">"{log.periodInfo.note}"</p>}
             <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
           </button>
         </Card>
       )}
+
 
       {log?.sex?.length ? (
         <Card title="ŠukŠuk! ❤️" icon="❤️">
