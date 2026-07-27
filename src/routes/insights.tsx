@@ -481,6 +481,85 @@ function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) 
   );
 }
 
+function WeightLineChart({ period, days, series }:
+  { period: Period; days: string[]; series: (number | undefined)[] }) {
+  const points = series
+    .map((value, index) => value == null ? null : { value, index, date: days[index] })
+    .filter((p): p is { value: number; index: number; date: string } => p != null);
+  const nums = points.map((p) => p.value);
+  const fmtDate = (k: string) => fromKey(k).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+
+  if (!nums.length) {
+    return (
+      <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
+        <p className="text-xs uppercase tracking-wider text-muted-foreground">Weight</p>
+        <p className="mt-1 text-sm text-muted-foreground">No data</p>
+      </section>
+    );
+  }
+
+  const avg = nums.reduce((a, b) => a + b, 0) / nums.length;
+  const rawMin = Math.min(...nums);
+  const rawMax = Math.max(...nums);
+  const span = Math.max(0.6, rawMax - rawMin);
+  const yMin = Math.floor((rawMin - span * 0.25) * 2) / 2;
+  const yMax = Math.ceil((rawMax + span * 0.25) * 2) / 2;
+  const yMid = (yMin + yMax) / 2;
+
+  const width = 320;
+  const height = 170;
+  const left = 10;
+  const right = 38;
+  const top = 12;
+  const bottom = 30;
+  const chartW = width - left - right;
+  const chartH = height - top - bottom;
+  const denom = Math.max(1, days.length - 1);
+  const xFor = (index: number) => left + (index / denom) * chartW;
+  const yFor = (value: number) => top + ((yMax - value) / Math.max(0.1, yMax - yMin)) * chartH;
+  const path = points.map((p, i) => `${i === 0 ? "M" : "L"}${xFor(p.index).toFixed(1)},${yFor(p.value).toFixed(1)}`).join(" ");
+
+  const ticks = days
+    .map((k, i) => ({ k, i, d: fromKey(k) }))
+    .filter(({ i, d }) => {
+      if (period === "W") return true;
+      if (period === "M") return i === 0 || i === days.length - 1 || i % 7 === 0;
+      return d.getDate() === 1 && d.getMonth() % 2 === 0;
+    });
+  const dateLabel = `${fmtDate(days[0])} – ${fmtDate(days[days.length - 1])}`;
+
+  return (
+    <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
+      <p className="text-xs uppercase tracking-wider text-muted-foreground">Weight</p>
+      <div className="mt-2 flex items-end gap-2">
+        <span className="font-serif text-5xl leading-none">{avg.toFixed(1)}</span>
+        <span className="pb-1 text-sm font-semibold text-muted-foreground">kg</span>
+      </div>
+      <p className="mt-1 text-sm text-muted-foreground">{dateLabel}</p>
+      <div className="mt-3 overflow-hidden">
+        <svg viewBox={`0 0 ${width} ${height}`} className="h-48 w-full" role="img" aria-label="Weight line chart">
+          {[yMax, yMid, yMin].map((y) => (
+            <g key={y}>
+              <line x1={left} x2={width - right} y1={yFor(y)} y2={yFor(y)} stroke="var(--border)" strokeWidth="1" />
+              <text x={width - right + 8} y={yFor(y) + 4} fontSize="10" fill="var(--muted-foreground)">{y.toFixed(y % 1 ? 1 : 0)}</text>
+            </g>
+          ))}
+          {ticks.map(({ k, i }) => (
+            <g key={k}>
+              <line x1={xFor(i)} x2={xFor(i)} y1={top} y2={height - bottom} stroke="var(--border)" strokeDasharray="3 3" strokeWidth="1" />
+              <text x={xFor(i)} y={height - 8} textAnchor="middle" fontSize="9" fill="var(--muted-foreground)">{fromKey(k).getDate()}</text>
+            </g>
+          ))}
+          <path d={path} fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          {points.map((p) => (
+            <circle key={p.date} cx={xFor(p.index)} cy={yFor(p.value)} r="3" fill="var(--surface)" stroke="var(--primary)" strokeWidth="2" />
+          ))}
+        </svg>
+      </div>
+    </section>
+  );
+}
+
 function PainChart({ period, days, series, anchor }:
   { period: Period; days: string[]; series: (number | undefined)[]; anchor: Date }) {
   // Aggregate for year view: 12 monthly averages
