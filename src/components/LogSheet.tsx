@@ -844,6 +844,7 @@ function TetanyForm({ date, data, update, onDone, initialEntry }:
       <Field label="Time"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></Field>
       <Field label="Type">
         <CustomChipList base={TETANY_TYPES} custom={data.custom.tetanyTypes}
+          descriptions={TETANY_TYPE_DESC}
           onAddCustom={(v) => addC("tetanyTypes", v)}
           onRemoveCustom={(v) => { rmC("tetanyTypes", v); setTypes((a) => a.filter((x) => x !== v)); }}
           onRenameCustom={(o, n) => { rnC("tetanyTypes", o, n); setTypes((a) => a.map((x) => x === o ? n : x)); }}
