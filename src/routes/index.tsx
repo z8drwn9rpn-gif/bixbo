@@ -92,19 +92,19 @@ function HomePage() {
         </Link>
       }
     >
-      <div className="px-5 pt-1">
+      <div className="px-5 pt-0.5">
         <div className="flex items-center justify-between">
-          <button onClick={goToPrevMonth} aria-label="Previous month" className="rounded-full p-2 hover:bg-tint">
+          <button onClick={goToPrevMonth} aria-label="Previous month" className="rounded-full p-1.5 hover:bg-tint">
             <ChevronLeft className="h-5 w-5" />
           </button>
-          <h2 className="font-serif text-2xl font-bold">{monthLabel(monthAnchor)}</h2>
-          <button onClick={goToNextMonth} aria-label="Next month" className="rounded-full p-2 hover:bg-tint">
+          <h2 className="font-serif text-xl font-bold">{monthLabel(monthAnchor)}</h2>
+          <button onClick={goToNextMonth} aria-label="Next month" className="rounded-full p-1.5 hover:bg-tint">
             <ChevronRight className="h-5 w-5" />
           </button>
         </div>
       </div>
 
-      <div className="mt-1">
+      <div className="mt-0.5">
         <MonthCalendar
           month={monthAnchor} data={view} selected={selected} onSelect={setSelected}
           onSwipeMonth={(delta) => setMonthAnchor((d) => new Date(d.getFullYear(), d.getMonth() + delta, 1))}
