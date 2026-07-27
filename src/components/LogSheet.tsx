@@ -556,14 +556,20 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
             </Field>
           )}
           {symptoms.includes("Headache") && (
-            <Field label="Headache type">
-              <CustomChipList base={HEADACHE_TYPES} custom={[]}
-                descriptions={HEADACHE_TYPE_DESC}
-                onAddCustom={() => {}}
-                onRemoveCustom={() => {}}
-                onRenameCustom={() => {}}
-                selected={headacheTypes} onToggle={(v) => setHeadacheTypes((a) => toggleIn(a, v))} />
-            </Field>
+            <>
+              <Field label="Headache type">
+                <CustomChipList base={HEADACHE_TYPES} custom={[]}
+                  descriptions={HEADACHE_TYPE_DESC}
+                  onAddCustom={() => {}}
+                  onRemoveCustom={() => {}}
+                  onRenameCustom={() => {}}
+                  selected={headacheTypes} onToggle={(v) => setHeadacheTypes((a) => toggleIn(a, v))} />
+              </Field>
+              <Field label={`Headache intensity ${headacheIntensity ?? "-"}/10`}>
+                <IntensityScale value={headacheIntensity ?? 0} onChange={(n) => setHeadacheIntensity(headacheIntensity === n ? undefined : n)} max={10}
+                  descriptions={getScaleDesc(data,"headache")} legendTitle="Headache scale" />
+              </Field>
+            </>
           )}
           <Field label="Tetany episode?">
             <div className="mt-1 flex gap-2">
