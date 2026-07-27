@@ -701,7 +701,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
         <div className="space-y-4">
           {(() => { const STRESS_DESC = getScaleDesc(data, "stress"); return (
           <Field label={`Stress ${stress ?? "-"} / 10`}>
-            <div className="mt-2 flex flex-wrap gap-1.5">
+            <div className="mt-2 grid gap-1" style={{ gridTemplateColumns: "repeat(11, minmax(0, 1fr))" }}>
               {Array.from({ length: 11 }, (_, n) => {
                 const hue = 130 - n * 13;
                 const bg = `hsl(${hue} 70% 50%)`;
@@ -710,7 +710,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
                   <button key={n} type="button" onClick={() => setStress(stress === n ? undefined : n)}
                     title={`${n} — ${STRESS_DESC[n]}`}
                     aria-label={`Stress ${n} — ${STRESS_DESC[n]}`}
-                    className={`h-9 w-9 rounded-full text-xs font-bold transition ${
+                    className={`aspect-square w-full rounded-full text-[11px] font-bold transition ${
                       active ? "text-white ring-2 ring-foreground scale-110" : "text-white/90"
                     }`}
                     style={{ background: bg, opacity: active || stress == null ? 1 : 0.55 }}>
