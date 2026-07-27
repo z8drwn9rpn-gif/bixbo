@@ -290,6 +290,11 @@ function CustomChipList({
           </span>
         ))}
       </div>
+      {infoFor && descriptions?.[infoFor] && (
+        <div className="mt-2 rounded-lg bg-tint px-2.5 py-1.5 text-[11px] leading-snug text-foreground">
+          <span className="font-semibold">{infoFor}:</span> {descriptions[infoFor]}
+        </div>
+      )}
     </div>
   );
 }
