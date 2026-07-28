@@ -758,12 +758,12 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
 
 
       <SheetFooter className="mt-4 flex-row gap-2">
+        {step > 0 && <Button variant="outline" onClick={() => setStep(step - 1)} className="flex-1">Back</Button>}
         {step < 4 ? (
           <Button onClick={() => setStep(step + 1)} className="flex-1">Next</Button>
         ) : (
           <Button onClick={save} className="flex-1">Save</Button>
         )}
-        {step > 0 && <Button variant="outline" onClick={() => setStep(step - 1)} className="flex-1">Back</Button>}
       </SheetFooter>
     </div>
   );
