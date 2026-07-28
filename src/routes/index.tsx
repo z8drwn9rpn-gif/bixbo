@@ -324,6 +324,7 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
                   <p>{t.time} · {t.types.join(", ") || "Tetany"} · {t.intensity}/5 · {t.minutes == null ? "ongoing" : `${t.minutes}min`}{t.triggers.length ? ` — ${t.triggers.join(", ")}` : ""}</p>
                   {t.location?.length ? <p className="text-xs text-muted-foreground">Location: {t.location.join(", ")}</p> : null}
                   {t.helped?.length ? <p className="text-xs text-muted-foreground">Helped: {t.helped.join(", ")}</p> : null}
+                  {t.rescueMed ? <p className="text-xs text-muted-foreground">💊 Rescue: {t.rescueMed}</p> : null}
                   {t.note && <p className="mt-1 text-sm whitespace-pre-line">"{t.note}"</p>}
                   <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
                 </button>
