@@ -206,8 +206,8 @@ function Chip({
 function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave: () => void; disabled?: boolean }) {
   return (
     <SheetFooter className="mt-4 gap-2 sm:flex-row">
-      <Button onClick={onSave} disabled={disabled} className="flex-1">Save</Button>
       <Button variant="outline" onClick={onCancel} className="flex-1">Cancel</Button>
+      <Button onClick={onSave} disabled={disabled} className="flex-1">Save</Button>
     </SheetFooter>
   );
 }
