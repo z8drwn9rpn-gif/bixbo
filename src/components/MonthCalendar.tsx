@@ -159,7 +159,7 @@ export function MonthCalendar({
                       inMonth ? "" : "opacity-30"
                     } ${isSel ? "ring-2 ring-primary" : ""}`}
                   >
-                    <div className="relative flex h-[58px] items-center justify-center pt-0.5 landscape:h-12">
+                    <div className="relative flex h-[58px] items-center justify-center pt-0.5 landscape:h-8 landscape:pt-0">
                       {pAvg != null && (
                         <span
                           aria-hidden
