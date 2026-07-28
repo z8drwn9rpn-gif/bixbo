@@ -4,7 +4,6 @@ import { AppShell } from "@/components/AppShell";
 import { useBixbo, EMPTY, type Note, type NoteChecklistItem, type NoteFolder } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2, ChevronLeft, Bold, Highlighter, ListChecks } from "lucide-react";
 
 export const Route = createFileRoute("/notes")({
@@ -109,26 +108,34 @@ function NoteEditor({ note, onBack, update }: {
   update: (u: (d: import("@/lib/storage").BixboData) => import("@/lib/storage").BixboData) => void;
 }) {
   const [title, setTitle] = useState(note.title);
-  const [content, setContent] = useState(note.content);
+  const editorRef = useRef<HTMLDivElement | null>(null);
+  const contentRef = useRef<string>(note.content);
   const [checklist, setChecklist] = useState<NoteChecklistItem[]>(note.checklist ?? []);
   const [showChecklist, setShowChecklist] = useState(!!note.checklist?.length);
   const [newItem, setNewItem] = useState("");
-  const [showPreview, setShowPreview] = useState(true);
+  const [tick, setTick] = useState(0);
   const firstRender = useRef(true);
 
-  // Autosave: debounce writes so each keystroke doesn't hit storage but nothing is ever lost.
+  // Initialize contentEditable once
+  useEffect(() => {
+    if (editorRef.current && editorRef.current.innerHTML !== note.content) {
+      editorRef.current.innerHTML = note.content || "";
+    }
+  }, [note.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Autosave: debounce so keystrokes don't hit storage each time, but nothing is lost.
   useEffect(() => {
     if (firstRender.current) { firstRender.current = false; return; }
     const t = setTimeout(() => {
       update((d) => ({
         ...d,
         notebook: d.notebook.map((n) => n.id === note.id
-          ? { ...n, title, content, checklist: showChecklist ? checklist : undefined, updatedAt: Date.now() }
+          ? { ...n, title, content: contentRef.current, checklist: showChecklist ? checklist : undefined, updatedAt: Date.now() }
           : n),
       }));
     }, 400);
     return () => clearTimeout(t);
-  }, [title, content, checklist, showChecklist, note.id, update]);
+  }, [title, tick, checklist, showChecklist, note.id, update]);
 
   const del = () => {
     if (!confirm("Delete this note?")) return;
@@ -136,14 +143,40 @@ function NoteEditor({ note, onBack, update }: {
     onBack();
   };
 
-  const wrapSel = (before: string, after: string) => {
-    const el = document.getElementById("note-content") as HTMLTextAreaElement | null;
-    if (!el) return;
-    const start = el.selectionStart, end = el.selectionEnd;
-    const val = el.value;
-    const next = val.slice(0, start) + before + val.slice(start, end) + after + val.slice(end);
-    setContent(next);
-    setTimeout(() => { el.focus(); el.selectionStart = start + before.length; el.selectionEnd = end + before.length; }, 0);
+  const exec = (cmd: "bold" | "highlight") => {
+    editorRef.current?.focus();
+    if (cmd === "bold") {
+      document.execCommand("bold");
+    } else {
+      // Wrap selection in a highlighted span
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+      const range = sel.getRangeAt(0);
+      const span = document.createElement("mark");
+      span.style.background = "#fef3c7";
+      span.style.padding = "0 2px";
+      span.style.borderRadius = "2px";
+      try {
+        range.surroundContents(span);
+      } catch {
+        // Fallback for cross-node selections
+        const frag = range.extractContents();
+        span.appendChild(frag);
+        range.insertNode(span);
+      }
+      sel.removeAllRanges();
+    }
+    if (editorRef.current) {
+      contentRef.current = editorRef.current.innerHTML;
+      setTick((n) => n + 1);
+    }
+  };
+
+  const onInput = () => {
+    if (editorRef.current) {
+      contentRef.current = editorRef.current.innerHTML;
+      setTick((n) => n + 1);
+    }
   };
 
   return (
@@ -155,24 +188,21 @@ function NoteEditor({ note, onBack, update }: {
         <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="text-lg font-semibold" />
 
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" variant="outline" onClick={() => wrapSel("<strong>", "</strong>")}><Bold className="h-3.5 w-3.5" /></Button>
-          <Button size="sm" variant="outline" onClick={() => wrapSel('<mark style="background:#fef3c7">', "</mark>")}><Highlighter className="h-3.5 w-3.5" /></Button>
+          <Button size="sm" variant="outline" onMouseDown={(e) => e.preventDefault()} onClick={() => exec("bold")}><Bold className="h-3.5 w-3.5" /></Button>
+          <Button size="sm" variant="outline" onMouseDown={(e) => e.preventDefault()} onClick={() => exec("highlight")}><Highlighter className="h-3.5 w-3.5" /></Button>
           <Button size="sm" variant="outline" onClick={() => setShowChecklist((v) => !v)}><ListChecks className="h-3.5 w-3.5" /> Checklist</Button>
-          <Button size="sm" variant="ghost" onClick={() => setShowPreview((v) => !v)}>{showPreview ? "Hide preview" : "Show preview"}</Button>
           <span className="ml-auto self-center text-xs text-muted-foreground">Saved automatically</span>
         </div>
 
-        <Textarea id="note-content" value={content} onChange={(e) => setContent(e.target.value)}
-          placeholder="Write anything… use the B / highlight buttons to wrap the selection"
-          className="min-h-[35dvh] text-base leading-relaxed" />
-
-        {showPreview && content.trim() && (
-          <div className="rounded-2xl bg-surface p-3 ring-1 ring-border">
-            <p className="mb-1 text-xs font-medium text-muted-foreground">Preview</p>
-            <div className="whitespace-pre-wrap text-sm leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: content }} />
-          </div>
-        )}
+        <div
+          ref={editorRef}
+          contentEditable
+          suppressContentEditableWarning
+          onInput={onInput}
+          onBlur={onInput}
+          className="min-h-[35dvh] rounded-md border border-input bg-transparent px-3 py-2 text-base leading-relaxed whitespace-pre-wrap outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          data-placeholder="Write anything… select text then tap B or highlight"
+        />
 
         {showChecklist && (
           <div className="rounded-2xl bg-surface p-3 ring-1 ring-border space-y-2">
@@ -197,4 +227,3 @@ function NoteEditor({ note, onBack, update }: {
     </AppShell>
   );
 }
-
