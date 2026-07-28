@@ -109,11 +109,12 @@ export function MonthCalendar({
   };
 
   return (
-    <div className="px-1" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-      <div className="grid grid-cols-7 gap-0.5 pb-1 text-center text-[11px] font-semibold text-muted-foreground">
+    <div className="px-1 landscape:px-2" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      <div className="grid grid-cols-7 gap-0.5 pb-1 text-center text-[11px] font-semibold text-muted-foreground landscape:pb-0 landscape:text-[10px]">
         {WEEKDAYS.map((d) => <div key={d}>{d}</div>)}
       </div>
       <div className="space-y-0.5">
+
         {weeks.map((week, wi) => {
           const segments = eventSegmentsForWeek(week);
           // stack up to 2 event rows
