@@ -15,6 +15,7 @@ import {
   PANIC_PHYSICAL, PANIC_COGNITIVE, PANIC_HELPED_DEFAULT, SEX_TYPES_DEFAULT,
   BODY_BATTERY, SLEEP_QUALITY, EVENT_COLORS,
   BOWEL_FEELINGS_DEFAULT, BOWEL_SYMPTOMS_DEFAULT,
+  PCOS_SYMPTOMS, HISTAMINE_SYMPTOMS, FOOD_SYMPTOMS_AFTER,
   todayKey, nowHHMM, updateDayLog, asArr,
   type BixboData, type DayLog, type PainEntry, type PeriodLevel, type FoodEntry,
   type BowelEntry, type ThermoSession, type ThermoKind, type SexEntry, type SexKind,
