@@ -428,6 +428,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
   const [hotFlashes, setHotFlashes] = useState<number | undefined>(initialEntry?.hotFlashes);
   const [headacheTypes, setHeadacheTypes] = useState<string[]>(initialEntry?.headacheTypes ?? []);
   const [headacheIntensity, setHeadacheIntensity] = useState<number | undefined>(initialEntry?.headacheIntensity);
+  const [pcosSymptoms, setPcosSymptoms] = useState<string[]>(initialEntry?.pcosSymptoms ?? []);
 
   type CKey = "bodyParts" | "quality" | "symptoms" | "moods"
     | "tetanyTypes" | "tetanyLocations" | "tetanyTriggers" | "tetanyHelped";
@@ -448,6 +449,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
       hotFlashes: symptoms.includes("Hot flashes") ? hotFlashes : undefined,
       headacheTypes: symptoms.includes("Headache") && headacheTypes.length ? headacheTypes : undefined,
       headacheIntensity: symptoms.includes("Headache") ? headacheIntensity : undefined,
+      pcosSymptoms: pcosSymptoms.length ? pcosSymptoms : undefined,
     };
     updateDayLog(update, date, (l) => ({
       ...l,
@@ -592,6 +594,11 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
               </Field>
             </>
           )}
+          <Field label="PCOS symptoms">
+            <CustomChipList base={PCOS_SYMPTOMS} custom={[]}
+              onAddCustom={() => {}}
+              selected={pcosSymptoms} onToggle={(v) => setPcosSymptoms((a) => toggleIn(a, v))} />
+          </Field>
           <Field label="Tetany episode?">
             <div className="mt-1 flex gap-2">
               <Chip active={!tetany} onClick={() => setTetany(false)}>No</Chip>
@@ -1147,11 +1154,13 @@ function ThermoForm({ date, update, onDone, initialEntry }:
   { date: string; update: UpdateFn; onDone: () => void; initialEntry?: ThermoSession }) {
   const [kind, setKind] = useState<ThermoKind>(initialEntry?.kind ?? "heat");
   const [start, setStart] = useState(initialEntry?.start ?? nowHHMM());
-  const [minutes, setMinutes] = useState(initialEntry?.minutes ?? 20);
+  const [minutes, setMinutes] = useState<string>(initialEntry?.minutes != null && initialEntry.minutes > 0 ? String(initialEntry.minutes) : "20");
+  const [ongoing, setOngoing] = useState(initialEntry?.minutes === 0);
   const [note, setNote] = useState(initialEntry?.note ?? "");
   const save = () => {
     const editing = !!initialEntry;
-    const e: ThermoSession = { id: initialEntry?.id ?? crypto.randomUUID(), kind, start, minutes, note: note.trim() || undefined };
+    const mins = ongoing ? 0 : (minutes === "" ? 0 : Number(minutes));
+    const e: ThermoSession = { id: initialEntry?.id ?? crypto.randomUUID(), kind, start, minutes: mins, note: note.trim() || undefined };
     updateDayLog(update, date, (l) => ({
       ...l,
       heat: editing ? (l.heat ?? []).map((x) => x.id === e.id ? e : x) : [...(l.heat ?? []), e],
@@ -1164,13 +1173,11 @@ function ThermoForm({ date, update, onDone, initialEntry }:
         <div className="mt-2 flex gap-2">
           <Chip active={kind === "heat"} onClick={() => setKind("heat")}>🔥 Heat</Chip>
           <Chip active={kind === "cold"} onClick={() => setKind("cold")}>🧊 Cold</Chip>
-          <Chip active={kind === "tens"} onClick={() => setKind("tens")}>⚡ TENS</Chip>
+          <Chip active={kind === "tens"} onClick={() => setKind("tens")}>✨ TENS</Chip>
         </div>
       </Field>
-      <div className="flex gap-2">
-        <Field label="Start"><Input type="time" value={start} onChange={(e) => setStart(e.target.value)} className="w-full" /></Field>
-        <Field label="Duration (min)"><Input type="number" min={1} value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} className="w-full" /></Field>
-      </div>
+      <Field label="Start"><Input type="time" value={start} onChange={(e) => setStart(e.target.value)} className="w-full" /></Field>
+      <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} />
       <Field label="Note (optional)"><Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} /></Field>
       <SaveBar onCancel={onDone} onSave={save} />
     </div>
@@ -1187,16 +1194,24 @@ function FoodForm({ date, data, update, onDone, initialEntry }:
   const [hydration, setHydration] = useState<string>(initialEntry?.hydrationMl != null ? String(initialEntry.hydrationMl) : "");
   const [caffeine, setCaffeine] = useState<string>(initialEntry?.caffeineMg != null ? String(initialEntry.caffeineMg) : "");
   const [alcohol, setAlcohol] = useState<string>(initialEntry?.alcoholDrinks != null ? String(initialEntry.alcoholDrinks) : "");
+  const [symptomsAfter, setSymptomsAfter] = useState<string[]>(initialEntry?.symptomsAfter ?? []);
+  const [histFlare, setHistFlare] = useState<boolean>(!!initialEntry?.histamineFlare);
+  const [histSymptoms, setHistSymptoms] = useState<string[]>(initialEntry?.histamineSymptoms ?? []);
+  const [highHist, setHighHist] = useState<boolean>(!!initialEntry?.highHistamine);
   const addCustom = (v: string) =>
     update((d) => ({ ...d, custom: { ...d.custom, foodFeelings: [...d.custom.foodFeelings, v] } }));
   const save = () => {
-    if (!what.trim() && !hydration && !caffeine && !alcohol) return;
+    if (!what.trim() && !hydration && !caffeine && !alcohol && !histFlare && symptomsAfter.length === 0) return;
     const editing = !!initialEntry;
     const entry: FoodEntry = {
       id: initialEntry?.id ?? crypto.randomUUID(), time, what: what.trim(), feelings, after: after.trim() || undefined,
       hydrationMl: hydration === "" ? undefined : Number(hydration),
       caffeineMg:  caffeine  === "" ? undefined : Number(caffeine),
       alcoholDrinks: alcohol === "" ? undefined : Number(alcohol),
+      symptomsAfter: symptomsAfter.length ? symptomsAfter : undefined,
+      histamineFlare: histFlare || undefined,
+      histamineSymptoms: histFlare && histSymptoms.length ? histSymptoms : undefined,
+      highHistamine: highHist || undefined,
     };
     updateDayLog(update, date, (l) => ({
       ...l,
@@ -1249,12 +1264,38 @@ function FoodForm({ date, data, update, onDone, initialEntry }:
       <Field label="What did you eat?">
         <Textarea rows={2} value={what} onChange={(e) => setWhat(e.target.value)} placeholder="e.g. chicken, rice, tomato" />
       </Field>
-      <Field label="How do you feel?">
+      <Field label="How do I feel after food?">
         <CustomChipList base={FOOD_FEELINGS_DEFAULT} custom={data.custom.foodFeelings}
           onAddCustom={addCustom}
           onRemoveCustom={(v) => { update((d) => ({ ...d, custom: { ...d.custom, foodFeelings: d.custom.foodFeelings.filter((x) => x !== v) } })); setFeelings((a) => a.filter((x) => x !== v)); }}
           selected={feelings} onToggle={(v) => setFeelings((a) => toggleIn(a, v))} />
       </Field>
+      <Field label="Symptoms after food">
+        <CustomChipList base={FOOD_SYMPTOMS_AFTER} custom={[]}
+          onAddCustom={() => {}}
+          selected={symptomsAfter} onToggle={(v) => setSymptomsAfter((a) => toggleIn(a, v))} />
+      </Field>
+      <Field label="High histamine food?">
+        <div className="mt-1 flex gap-2">
+          <Chip active={!highHist} onClick={() => setHighHist(false)}>No</Chip>
+          <Chip active={highHist} onClick={() => setHighHist(true)}>Yes</Chip>
+        </div>
+      </Field>
+      <Field label="Histamine flare?">
+        <div className="mt-1 flex gap-2">
+          <Chip active={!histFlare} onClick={() => setHistFlare(false)}>No</Chip>
+          <Chip active={histFlare} onClick={() => setHistFlare(true)}>Yes — log it</Chip>
+        </div>
+      </Field>
+      {histFlare && (
+        <div className="rounded-2xl border border-border p-3">
+          <Field label="Histamine flare symptoms">
+            <CustomChipList base={HISTAMINE_SYMPTOMS} custom={[]}
+              onAddCustom={() => {}}
+              selected={histSymptoms} onToggle={(v) => setHistSymptoms((a) => toggleIn(a, v))} />
+          </Field>
+        </div>
+      )}
       <div className="grid grid-cols-3 gap-2">
         <Field label="Water (ml)"><Input type="number" value={hydration} onChange={(e) => setHydration(e.target.value)} placeholder="300" /></Field>
         <Field label="Caffeine (mg)"><Input type="number" value={caffeine} onChange={(e) => setCaffeine(e.target.value)} placeholder="80" /></Field>

@@ -36,16 +36,16 @@ function tagList(): Tag[] {
       apply: (l) => ({ ...l, tetany: mk(l.tetany, { id: uid(), time: t(), types: [], location: [], intensity: 1, triggers: [], helped: [] }) }) },
 
     // Panic attack — no preset
-    { key: "panic", emoji: "😰", label: "Panic attack", cat: "panic",
+    { key: "panic", emoji: "🫯", label: "Panic attack", cat: "panic",
       apply: (l) => ({ ...l, panic: mk(l.panic, { id: uid(), time: t(), intensity: 1, physical: [], cognitive: [], trigger: "", hyperventilation: "unknown", tetanyPresent: false, helped: [] }) }) },
 
     // ŠukŠuk — always logs sex, user can complete later
     { key: "sex", emoji: "❤️", label: "ŠukŠuk", cat: "sex",
       apply: (l) => ({ ...l, sex: mk(l.sex, { id: uid(), time: t(), kind: "sex" }) }) },
 
-    // Histamine flare → Food entry named "Histamine flare"
+    // Histamine flare → Food entry flagged as histamine flare (user fills what/symptoms later)
     { key: "hist-flare", emoji: "🔥", label: "Histamine flare", cat: "food",
-      apply: (l) => ({ ...l, food: mk(l.food, { id: uid(), time: t(), what: "Histamine flare", feelings: [] }) }) },
+      apply: (l) => ({ ...l, food: mk(l.food, { id: uid(), time: t(), what: "", feelings: [], histamineFlare: true }) }) },
   ];
 }
 
