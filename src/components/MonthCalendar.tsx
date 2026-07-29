@@ -25,9 +25,11 @@ function iconsFor(log: DayLog | undefined, hasMed: boolean): string[] {
   if (hasMed) out.push("💊");
   if (log?.bowel?.some((b) => b.bristol > 0)) out.push("💩");
   if (log?.sex?.length) out.push("❤️");
-  if (log?.heat?.length) out.push("🔥");
+  if (log?.heat?.some((h) => h.kind === "heat")) out.push("🔥");
+  if (log?.heat?.some((h) => h.kind === "cold")) out.push("🧊");
+  if (log?.heat?.some((h) => h.kind === "tens")) out.push("✨");
   if (log?.workout?.length) out.push("🧘🏼‍♀️");
-  if (log?.panic?.length) out.push("⚡");
+  if (log?.panic?.length) out.push("🫯");
   return out;
 }
 
