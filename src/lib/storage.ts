@@ -502,3 +502,45 @@ export const BODY_BATTERY: { n: number; label: string; color: string; emoji: str
 ];
 
 export const SLEEP_QUALITY = ["😴 Terrible","🙁 Poor","😐 Ok","🙂 Good","😀 Great"];
+
+export const PCOS_SYMPTOMS = [
+  "Acne",
+  "Hirsutism (excess hair)",
+  "Hair thinning / crown loss",
+  "Sugar cravings / energy swings after meals",
+  "Oily skin",
+  "Dark skin patches (acanthosis nigricans)",
+  "Skin tags",
+  "Weight gain / hard to lose",
+  "Heavy sweating",
+  "Fatigue / low energy",
+  "Hunger soon after eating",
+];
+
+export const HISTAMINE_SYMPTOMS = [
+  "Flushing / redness",
+  "Hives / rash",
+  "Itching",
+  "Stuffy nose",
+  "Headache",
+  "GI issues",
+  "Rapid heart rate",
+  "Swelling",
+  "Fatigue after food",
+];
+
+export const FOOD_SYMPTOMS_AFTER = [
+  "Bloating",
+  "Gas",
+  "Abdominal pain / cramps",
+  "Nausea",
+  "Diarrhea",
+  "Constipation",
+  "Heartburn / reflux",
+  "Burping",
+  "Fatigue after food",
+  "Headache",
+  "Flushing / redness",
+  "Itching / hives",
+  "Rapid heart rate",
+];
