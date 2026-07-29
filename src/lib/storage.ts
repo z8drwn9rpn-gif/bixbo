@@ -54,6 +54,10 @@ export interface ThermoSession { id: string; kind: ThermoKind; start: string; mi
 export interface FoodEntry {
   id: string; time: string; what: string; feelings: string[]; after?: string;
   hydrationMl?: number; caffeineMg?: number; alcoholDrinks?: number;
+  symptomsAfter?: string[];
+  histamineFlare?: boolean;
+  histamineSymptoms?: string[];
+  highHistamine?: boolean;
 }
 export interface BowelEntry { id: string; time: string; bristol: number; note?: string; feelings?: string[]; symptoms?: string[] }
 export interface SexEntry { id: string; time: string; kind: SexKind; feelingAfter?: string | string[]; painful?: PainfulWhen; note?: string }
