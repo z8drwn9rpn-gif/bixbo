@@ -21,6 +21,7 @@ export interface PainEntry {
   hotFlashes?: number;
   headacheTypes?: string[];
   headacheIntensity?: number;
+  pcosSymptoms?: string[];
 }
 export interface TetanyEpisode {
   id: string;
