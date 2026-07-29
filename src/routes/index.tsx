@@ -280,6 +280,8 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
                   {p.quality.length > 0 && <p className="text-xs text-muted-foreground">{p.quality.join(", ")}</p>}
                   {p.symptoms.length > 0 && <p className="text-xs text-muted-foreground">+ {p.symptoms.join(", ")}</p>}
                   {p.hotFlashes != null && <p className="text-xs text-muted-foreground">🥵 Hot flashes intensity {p.hotFlashes}/5</p>}
+                  {p.headacheTypes?.length ? <p className="text-xs text-muted-foreground">🤕 Headache: {p.headacheTypes.join(", ")}{p.headacheIntensity != null ? ` · ${p.headacheIntensity}/10` : ""}</p> : (p.headacheIntensity != null ? <p className="text-xs text-muted-foreground">🤕 Headache intensity {p.headacheIntensity}/10</p> : null)}
+                  {p.pcosSymptoms?.length ? <p className="text-xs text-muted-foreground">PCOS: {p.pcosSymptoms.join(", ")}</p> : null}
                   {p.mood?.length ? <p className="text-xs text-muted-foreground">Mood: {p.mood.join(", ")}</p> : null}
                   {p.stress != null && <p className="text-xs text-muted-foreground">Stress {p.stress}/10</p>}
                   {p.bodyBattery != null && <p className="text-xs text-muted-foreground">Battery {p.bodyBattery}/5</p>}
@@ -370,7 +372,7 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
           <ul className="space-y-1 text-sm">
             {log.heat.map((h) => (
               <li key={h.id} className="flex items-start gap-2">
-                <button onClick={() => onEdit?.("heat", h)} className="flex-1 text-left">{h.kind === "heat" ? "🔥" : h.kind === "cold" ? "🧊" : "⚡"} {h.start} · {h.minutes} min{h.note ? ` — ${h.note}` : ""}</button>
+                <button onClick={() => onEdit?.("heat", h)} className="flex-1 text-left">{h.kind === "heat" ? "🔥" : h.kind === "cold" ? "🧊" : "✨"} {h.start} · {h.minutes === 0 ? "ongoing" : `${h.minutes} min`}{h.note ? ` — ${h.note}` : ""}</button>
                 <DeleteBtn onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], heat: (d.dayLogs[date]?.heat ?? []).filter((x) => x.id !== h.id) } } }))} />
               </li>
             ))}
@@ -383,7 +385,12 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
           <ul className="space-y-1 text-sm">
             {log.food.map((f) => (
               <li key={f.id} className="flex items-start gap-2">
-                <button onClick={() => onEdit?.("food", f)} className="flex-1 text-left">{f.time} · {f.what}{f.feelings.length ? ` — ${f.feelings.join(", ")}` : ""}{f.hydrationMl != null ? ` · 💧 ${f.hydrationMl}ml` : ""}{f.caffeineMg != null ? ` · ☕ ${f.caffeineMg}mg` : ""}{f.alcoholDrinks != null ? ` · 🍷 ${f.alcoholDrinks}` : ""}</button>
+                <button onClick={() => onEdit?.("food", f)} className="flex-1 text-left">
+                  <div>{f.time} · {f.what || (f.histamineFlare ? "(histamine flare)" : "—")}{f.highHistamine ? " · ⚠️ high histamine" : ""}{f.hydrationMl != null ? ` · 💧 ${f.hydrationMl}ml` : ""}{f.caffeineMg != null ? ` · ☕ ${f.caffeineMg}mg` : ""}{f.alcoholDrinks != null ? ` · 🍷 ${f.alcoholDrinks}` : ""}</div>
+                  {f.feelings.length ? <div className="text-xs text-muted-foreground">Feel: {f.feelings.join(", ")}</div> : null}
+                  {f.symptomsAfter?.length ? <div className="text-xs text-muted-foreground">After: {f.symptomsAfter.join(", ")}</div> : null}
+                  {f.histamineFlare ? <div className="text-xs text-destructive">🔥 Histamine flare{f.histamineSymptoms?.length ? `: ${f.histamineSymptoms.join(", ")}` : ""}</div> : null}
+                </button>
                 <DeleteBtn onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], food: (d.dayLogs[date]?.food ?? []).filter((x) => x.id !== f.id) } } }))} />
               </li>
             ))}
