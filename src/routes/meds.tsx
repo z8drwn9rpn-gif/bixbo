@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Pencil } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { useBixbo, EMPTY, type Med } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
@@ -26,8 +26,25 @@ function MedsPage() {
   const { data, update, hydrated } = useBixbo();
   const view = hydrated ? data : EMPTY;
 
-  const addMed = (m: Med) => update((d) => ({ ...d, meds: [...d.meds, m] }));
-  const removeMed = (id: string) => update((d) => ({ ...d, meds: d.meds.filter((m) => m.id !== id) }));
+  const addMed = (m: Med) => update((d) => ({
+    ...d,
+    meds: [...d.meds, m],
+    medNames: { ...(d.medNames ?? {}), [m.id]: m.dose ? `${m.name} ${m.dose}` : m.name },
+  }));
+  const saveMed = (m: Med) => update((d) => ({
+    ...d,
+    meds: d.meds.map((x) => (x.id === m.id ? m : x)),
+    medNames: { ...(d.medNames ?? {}), [m.id]: m.dose ? `${m.name} ${m.dose}` : m.name },
+  }));
+  // Keep a name snapshot so historical adherence stays readable after deletion.
+  const removeMed = (id: string) => update((d) => {
+    const gone = d.meds.find((m) => m.id === id);
+    return {
+      ...d,
+      meds: d.meds.filter((m) => m.id !== id),
+      medNames: gone ? { ...(d.medNames ?? {}), [id]: gone.dose ? `${gone.name} ${gone.dose}` : gone.name } : d.medNames,
+    };
+  });
 
   return (
     <AppShell
@@ -56,15 +73,97 @@ function MedsPage() {
                   </p>
                   {m.note && <p className="mt-1 text-xs whitespace-pre-wrap text-muted-foreground">📝 {m.note}</p>}
                 </div>
-                <button onClick={() => removeMed(m.id)} className="text-muted-foreground hover:text-destructive" aria-label="Remove">
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <EditMedButton med={m} onSave={saveMed} />
+                  <button onClick={() => removeMed(m.id)} className="text-muted-foreground hover:text-destructive" aria-label="Remove">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
         </section>
       </div>
     </AppShell>
+  );
+}
+
+function EditMedButton({ med, onSave }: { med: Med; onSave: (m: Med) => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button onClick={() => setOpen(true)} className="text-muted-foreground hover:text-primary" aria-label="Edit">
+        <Pencil className="h-4 w-4" />
+      </button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit medication</DialogTitle></DialogHeader>
+          {open && <MedFields key={med.id} initial={med} onCancel={() => setOpen(false)}
+            onSave={(m) => { onSave({ ...m, id: med.id }); setOpen(false); }} />}
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+function MedFields({ initial, onSave, onCancel }: { initial?: Med; onSave: (m: Med) => void; onCancel: () => void }) {
+  const [name, setName] = useState(initial?.name ?? "");
+  const [dose, setDose] = useState(initial?.dose ?? "");
+  const [note, setNote] = useState(initial?.note ?? "");
+  const [times, setTimes] = useState<string[]>(initial?.times?.length ? initial.times : ["09:00", "15:00", "21:00"]);
+  const [asNeeded, setAsNeeded] = useState(!!initial?.asNeeded);
+
+  const save = () => {
+    if (!name.trim()) return;
+    onSave({
+      id: initial?.id ?? crypto.randomUUID(),
+      name: name.trim(),
+      dose: dose.trim() || undefined,
+      times: asNeeded ? [] : times.filter(Boolean),
+      asNeeded,
+      note: note.trim() || undefined,
+    });
+  };
+
+  return (
+    <>
+      <div className="space-y-3">
+        <div>
+          <label className="text-xs font-medium">Name</label>
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Magnerot" />
+        </div>
+        <div>
+          <label className="text-xs font-medium">Dose (optional)</label>
+          <Input value={dose} onChange={(e) => setDose(e.target.value)} placeholder="500 mg" />
+        </div>
+        <div>
+          <label className="text-xs font-medium">Note (optional)</label>
+          <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Take with food, side effects…" />
+        </div>
+        <div className="flex items-center justify-between rounded-xl bg-tint p-3">
+          <span className="text-sm">As needed</span>
+          <Switch checked={asNeeded} onCheckedChange={setAsNeeded} />
+        </div>
+        {!asNeeded && (
+          <div>
+            <label className="text-xs font-medium">Times</label>
+            <div className="mt-2 space-y-2">
+              {times.map((t, i) => (
+                <div key={i} className="flex gap-2">
+                  <Input type="time" value={t} onChange={(e) => setTimes(times.map((x, j) => j === i ? e.target.value : x))} />
+                  <Button variant="outline" size="icon" onClick={() => setTimes(times.filter((_, j) => j !== i))}>−</Button>
+                </div>
+              ))}
+              <Button variant="outline" size="sm" onClick={() => setTimes([...times, "12:00"])}><Plus className="h-3 w-3" /> Add time</Button>
+            </div>
+          </div>
+        )}
+      </div>
+      <DialogFooter>
+        <Button variant="outline" onClick={onCancel}>Cancel</Button>
+        <Button onClick={save}>Save</Button>
+      </DialogFooter>
+    </>
   );
 }
 
