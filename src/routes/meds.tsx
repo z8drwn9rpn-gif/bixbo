@@ -169,26 +169,6 @@ function MedFields({ initial, onSave, onCancel }: { initial?: Med; onSave: (m: M
 
 function AddMedButton({ onAdd }: { onAdd: (m: Med) => void }) {
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [dose, setDose] = useState("");
-  const [note, setNote] = useState("");
-  const [times, setTimes] = useState<string[]>(["09:00", "15:00", "21:00"]);
-  const [asNeeded, setAsNeeded] = useState(false);
-
-  const save = () => {
-    if (!name.trim()) return;
-    onAdd({
-      id: crypto.randomUUID(),
-      name: name.trim(),
-      dose: dose.trim() || undefined,
-      times: asNeeded ? [] : times.filter(Boolean),
-      asNeeded,
-      note: note.trim() || undefined,
-    });
-    setName(""); setDose(""); setNote(""); setTimes(["09:00", "15:00", "21:00"]); setAsNeeded(false);
-    setOpen(false);
-  };
-
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -196,42 +176,7 @@ function AddMedButton({ onAdd }: { onAdd: (m: Med) => void }) {
       </DialogTrigger>
       <DialogContent>
         <DialogHeader><DialogTitle>New medication</DialogTitle></DialogHeader>
-        <div className="space-y-3">
-          <div>
-            <label className="text-xs font-medium">Name</label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Magnerot" />
-          </div>
-          <div>
-            <label className="text-xs font-medium">Dose (optional)</label>
-            <Input value={dose} onChange={(e) => setDose(e.target.value)} placeholder="500 mg" />
-          </div>
-          <div>
-            <label className="text-xs font-medium">Note (optional)</label>
-            <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Take with food, side effects…" />
-          </div>
-          <div className="flex items-center justify-between rounded-xl bg-tint p-3">
-            <span className="text-sm">As needed</span>
-            <Switch checked={asNeeded} onCheckedChange={setAsNeeded} />
-          </div>
-          {!asNeeded && (
-            <div>
-              <label className="text-xs font-medium">Times</label>
-              <div className="mt-2 space-y-2">
-                {times.map((t, i) => (
-                  <div key={i} className="flex gap-2">
-                    <Input type="time" value={t} onChange={(e) => setTimes(times.map((x, j) => j === i ? e.target.value : x))} />
-                    <Button variant="outline" size="icon" onClick={() => setTimes(times.filter((_, j) => j !== i))}>−</Button>
-                  </div>
-                ))}
-                <Button variant="outline" size="sm" onClick={() => setTimes([...times, "12:00"])}><Plus className="h-3 w-3" /> Add time</Button>
-              </div>
-            </div>
-          )}
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button onClick={save}>Save</Button>
-        </DialogFooter>
+        {open && <MedFields onCancel={() => setOpen(false)} onSave={(m) => { onAdd(m); setOpen(false); }} />}
       </DialogContent>
     </Dialog>
   );
