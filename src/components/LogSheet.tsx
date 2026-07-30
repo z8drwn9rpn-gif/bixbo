@@ -434,13 +434,14 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
   const [pcosSymptoms, setPcosSymptoms] = useState<string[]>(initialEntry?.pcosSymptoms ?? []);
 
   type CKey = "bodyParts" | "quality" | "symptoms" | "moods"
-    | "tetanyTypes" | "tetanyLocations" | "tetanyTriggers" | "tetanyHelped";
+    | "tetanyTypes" | "tetanyLocations" | "tetanyTriggers" | "tetanyHelped"
+    | "pcosSymptoms" | "headacheTypes";
   const addCustom = (key: CKey, v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [key]: [...d.custom[key], v] } }));
+    update((d) => ({ ...d, custom: { ...d.custom, [key]: [...(d.custom[key] ?? []), v] } }));
   const removeCustom = (key: CKey, v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [key]: d.custom[key].filter((x) => x !== v) } }));
+    update((d) => ({ ...d, custom: { ...d.custom, [key]: (d.custom[key] ?? []).filter((x) => x !== v) } }));
   const renameCustom = (key: CKey, oldV: string, newV: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [key]: d.custom[key].map((x) => x === oldV ? newV : x) } }));
+    update((d) => ({ ...d, custom: { ...d.custom, [key]: (d.custom[key] ?? []).map((x) => x === oldV ? newV : x) } }));
 
   const save = () => {
     const editing = !!initialEntry;
