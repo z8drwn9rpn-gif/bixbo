@@ -307,6 +307,7 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
                   {p.cognitive.length > 0 && <p className="text-xs">Cognitive: {p.cognitive.join(", ")}</p>}
                   <p className="text-[11px] text-muted-foreground">Hyperventilation: {p.hyperventilation}{p.tetanyPresent ? " · tetany present" : ""}</p>
                   {p.helped.length > 0 && <p className="text-[11px] text-muted-foreground">Helped: {p.helped.join(", ")}</p>}
+                  {p.rescueMed ? <p className="text-xs text-muted-foreground">💊 Rescue: {p.rescueMed}</p> : null}
                   {p.note && <p className="mt-1 text-sm whitespace-pre-line">"{p.note}"</p>}
                   <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
                 </button>
@@ -372,7 +373,7 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
           <ul className="space-y-1 text-sm">
             {log.heat.map((h) => (
               <li key={h.id} className="flex items-start gap-2">
-                <button onClick={() => onEdit?.("heat", h)} className="flex-1 text-left">{h.kind === "heat" ? "🔥" : h.kind === "cold" ? "🧊" : "✨"} {h.start} · {h.minutes === 0 ? "ongoing" : `${h.minutes} min`}{h.note ? ` — ${h.note}` : ""}</button>
+                <button onClick={() => onEdit?.("heat", h)} className="flex-1 text-left">{h.kind === "heat" ? "🔥" : h.kind === "cold" ? "🧊" : "✨"} {h.start} · {h.ongoing ? "ongoing" : `${h.minutes ?? 0} min`}{h.note ? ` — ${h.note}` : ""}</button>
                 <DeleteBtn onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], heat: (d.dayLogs[date]?.heat ?? []).filter((x) => x.id !== h.id) } } }))} />
               </li>
             ))}

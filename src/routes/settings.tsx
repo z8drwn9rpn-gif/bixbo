@@ -86,7 +86,40 @@ function SettingsPage() {
     URL.revokeObjectURL(url);
   };
   const importJson = async (file: File) => {
-    try { replace({ ...EMPTY, ...JSON.parse(await file.text()) }); alert("Imported."); }
+    try {
+      const incoming = { ...EMPTY, ...JSON.parse(await file.text()) } as BixboData;
+      const mode = window.prompt(
+        "Import backup:\n\nType MERGE to keep your current data and add anything missing from the file.\nType REPLACE to overwrite ALL your current data with the file.\n\n(Leave empty or press Cancel to abort.)",
+        "MERGE",
+      );
+      const choice = (mode ?? "").trim().toUpperCase();
+      if (choice === "REPLACE") {
+        if (!window.confirm("This will overwrite ALL your current data. Continue?")) return;
+        replace(incoming);
+        alert("Imported (replaced).");
+      } else if (choice === "MERGE") {
+        const cur = getBixbo();
+        const mergeMap = <T,>(a: Record<string, T>, b: Record<string, T>) => ({ ...b, ...a });
+        const mergeById = <T extends { id: string }>(a: T[], b: T[]) => {
+          const seen = new Set(a.map((x) => x.id));
+          return [...a, ...b.filter((x) => !seen.has(x.id))];
+        };
+        replace({
+          ...incoming,
+          ...cur,
+          dayLogs: mergeMap(cur.dayLogs, incoming.dayLogs ?? {}),
+          dayNotes: mergeMap(cur.dayNotes, incoming.dayNotes ?? {}),
+          todos: mergeMap(cur.todos, incoming.todos ?? {}),
+          medLog: mergeMap(cur.medLog, incoming.medLog ?? {}),
+          medLogTimes: mergeMap(cur.medLogTimes, incoming.medLogTimes ?? {}),
+          tasks: mergeById(cur.tasks, incoming.tasks ?? []),
+          events: mergeById(cur.events, incoming.events ?? []),
+          meds: mergeById(cur.meds, incoming.meds ?? []),
+          notebook: mergeById(cur.notebook, incoming.notebook ?? []),
+        });
+        alert("Imported (merged).");
+      }
+    }
     catch { alert("Could not read that file."); }
   };
 
@@ -317,7 +350,7 @@ function ScaleEditor({ view, update }: {
     });
   };
 
-  const keys: ScaleKey[] = ["pain", "stress", "tetany", "panic", "hotFlashes"];
+  const keys: ScaleKey[] = ["pain", "stress", "tetany", "panic", "hotFlashes", "headache"];
 
   return (
     <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">

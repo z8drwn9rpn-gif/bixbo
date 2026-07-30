@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, type ReactNode } from "react";
+import { useState, useMemo, useRef, useEffect, type ReactNode } from "react";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter,
 } from "@/components/ui/sheet";
@@ -13,7 +13,7 @@ import {
   TETANY_TYPES, TETANY_TYPE_DESC, TETANY_LOCATIONS_DEFAULT, TETANY_TRIGGERS, TETANY_HELPED_DEFAULT,
   HEADACHE_TYPES, HEADACHE_TYPE_DESC,
   PANIC_PHYSICAL, PANIC_COGNITIVE, PANIC_HELPED_DEFAULT, SEX_TYPES_DEFAULT,
-  BODY_BATTERY, SLEEP_QUALITY, EVENT_COLORS,
+  BODY_BATTERY, SLEEP_QUALITY, SEX_FEELINGS_DEFAULT, EVENT_COLORS,
   BOWEL_FEELINGS_DEFAULT, BOWEL_SYMPTOMS_DEFAULT,
   PCOS_SYMPTOMS, HISTAMINE_SYMPTOMS, FOOD_SYMPTOMS_AFTER,
   todayKey, nowHHMM, updateDayLog, asArr,
@@ -36,7 +36,7 @@ const CATEGORIES: { id: Category; label: string; emoji: string; hint: string }[]
   { id: "bowel",   label: "Bowel",            emoji: "💩", hint: "Bristol type" },
   { id: "sex",     label: "ŠukŠuk! ❤️",       emoji: "❤️", hint: "All kinds of activity" },
   { id: "workout", label: "Workout",          emoji: "🧘🏼‍♀️", hint: "Type · duration · weight" },
-  { id: "temp",    label: "Temp & Sleep",     emoji: "🌡️", hint: "°C · kg · hours" },
+  { id: "temp",    label: "Temp / Sleep / Weight", emoji: "🌡️", hint: "°C · kg · hours" },
   { id: "meds",    label: "Meds",             emoji: "💊", hint: "Taken · extra dose" },
   { id: "event",   label: "Event",            emoji: "📅", hint: "Multi-day · time · note" },
   { id: "task",    label: "Task",             emoji: "✅", hint: "To-do with date & time" },
@@ -56,6 +56,8 @@ export function LogSheet({
   editEntry?: unknown;
 }) {
   const [cat, setCat] = useState<Category | null>(initial ?? null);
+  const [openToken, setOpenToken] = useState(0);
+  useEffect(() => { if (open) setOpenToken((t) => t + 1); }, [open]);
   const [editingOrder, setEditingOrder] = useState(false);
   const close = () => { setCat(null); setEditingOrder(false); onOpenChange(false); };
   const back = () => setCat(null);
@@ -153,7 +155,8 @@ export function LogSheet({
                 <X className="h-5 w-5" />
               </button>
             </SheetHeader>
-            <div className={`min-h-0 flex-1 overflow-y-auto ${active === "pain" ? "" : "px-5 py-4"}`}>
+            <div key={`${active}-${openToken}-${(edit as { id?: string } | undefined)?.id ?? initialPain?.id ?? "new"}`}
+              className={`min-h-0 flex-1 overflow-y-auto ${active === "pain" ? "" : "px-5 py-4"}`}>
               {active === "pain"    && <PainWizard    date={date} data={data} update={update} onDone={close} initialEntry={initialPain ?? (edit as PainEntry | undefined)} />}
               {active === "panic"   && <PanicForm     date={date} data={data} update={update} onDone={close} initialEntry={edit as PanicAttack | undefined} />}
               {active === "tetany"  && <TetanyForm    date={date} data={data} update={update} onDone={close} initialEntry={edit as TetanyEpisode | undefined} />}
@@ -431,13 +434,14 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
   const [pcosSymptoms, setPcosSymptoms] = useState<string[]>(initialEntry?.pcosSymptoms ?? []);
 
   type CKey = "bodyParts" | "quality" | "symptoms" | "moods"
-    | "tetanyTypes" | "tetanyLocations" | "tetanyTriggers" | "tetanyHelped";
+    | "tetanyTypes" | "tetanyLocations" | "tetanyTriggers" | "tetanyHelped"
+    | "pcosSymptoms" | "headacheTypes";
   const addCustom = (key: CKey, v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [key]: [...d.custom[key], v] } }));
+    update((d) => ({ ...d, custom: { ...d.custom, [key]: [...(d.custom[key] ?? []), v] } }));
   const removeCustom = (key: CKey, v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [key]: d.custom[key].filter((x) => x !== v) } }));
+    update((d) => ({ ...d, custom: { ...d.custom, [key]: (d.custom[key] ?? []).filter((x) => x !== v) } }));
   const renameCustom = (key: CKey, oldV: string, newV: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [key]: d.custom[key].map((x) => x === oldV ? newV : x) } }));
+    update((d) => ({ ...d, custom: { ...d.custom, [key]: (d.custom[key] ?? []).map((x) => x === oldV ? newV : x) } }));
 
   const save = () => {
     const editing = !!initialEntry;
@@ -581,11 +585,11 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
           {symptoms.includes("Headache") && (
             <>
               <Field label="Headache type">
-                <CustomChipList base={HEADACHE_TYPES} custom={[]}
+                <CustomChipList base={HEADACHE_TYPES} custom={data.custom.headacheTypes ?? []}
                   descriptions={HEADACHE_TYPE_DESC}
-                  onAddCustom={() => {}}
-                  onRemoveCustom={() => {}}
-                  onRenameCustom={() => {}}
+                  onAddCustom={(v) => addCustom("headacheTypes", v)}
+                  onRemoveCustom={(v) => { removeCustom("headacheTypes", v); setHeadacheTypes((a) => a.filter((x) => x !== v)); }}
+                  onRenameCustom={(o, n) => { renameCustom("headacheTypes", o, n); setHeadacheTypes((a) => a.map((x) => x === o ? n : x)); }}
                   selected={headacheTypes} onToggle={(v) => setHeadacheTypes((a) => toggleIn(a, v))} />
               </Field>
               <Field label={`Headache intensity ${headacheIntensity ?? "-"}/10`}>
@@ -595,8 +599,10 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
             </>
           )}
           <Field label="PCOS symptoms">
-            <CustomChipList base={PCOS_SYMPTOMS} custom={[]}
-              onAddCustom={() => {}}
+            <CustomChipList base={PCOS_SYMPTOMS} custom={data.custom.pcosSymptoms ?? []}
+              onAddCustom={(v) => addCustom("pcosSymptoms", v)}
+              onRemoveCustom={(v) => { removeCustom("pcosSymptoms", v); setPcosSymptoms((a) => a.filter((x) => x !== v)); }}
+              onRenameCustom={(o, n) => { renameCustom("pcosSymptoms", o, n); setPcosSymptoms((a) => a.map((x) => x === o ? n : x)); }}
               selected={pcosSymptoms} onToggle={(v) => setPcosSymptoms((a) => toggleIn(a, v))} />
           </Field>
           <Field label="Tetany episode?">
@@ -791,6 +797,7 @@ function PanicForm({ date, data, update, onDone, initialEntry }:
   const [hyper, setHyper] = useState<"no" | "before" | "during" | "unknown">(initialEntry?.hyperventilation ?? "unknown");
   const [tetanyPresent, setTetanyPresent] = useState(initialEntry?.tetanyPresent ?? false);
   const [helped, setHelped] = useState<string[]>(initialEntry?.helped ?? []);
+  const [rescueMed, setRescueMed] = useState<string>(initialEntry?.rescueMed ?? "");
   const [note, setNote] = useState(initialEntry?.note ?? "");
   const addHelped = (v: string) => update((d) => ({ ...d, custom: { ...d.custom, panicHelped: [...d.custom.panicHelped, v] } }));
   const rmHelped = (v: string) => { update((d) => ({ ...d, custom: { ...d.custom, panicHelped: d.custom.panicHelped.filter((x) => x !== v) } })); setHelped((a) => a.filter((x) => x !== v)); };
@@ -802,7 +809,9 @@ function PanicForm({ date, data, update, onDone, initialEntry }:
       minutes: ongoing ? undefined : (minutes === "" ? undefined : Number(minutes)),
       intensity,
       physical, cognitive, trigger: trigger.trim(), place: place.trim() || undefined,
-      hyperventilation: hyper, tetanyPresent, helped, note: note.trim() || undefined,
+      hyperventilation: hyper, tetanyPresent, helped,
+      rescueMed: rescueMed.trim() || undefined,
+      note: note.trim() || undefined,
     };
     updateDayLog(update, date, (l) => ({
       ...l,
@@ -853,6 +862,19 @@ function PanicForm({ date, data, update, onDone, initialEntry }:
         <CustomChipList base={PANIC_HELPED_DEFAULT} custom={data.custom.panicHelped}
           onAddCustom={addHelped} onRemoveCustom={rmHelped}
           selected={helped} onToggle={(v) => setHelped((a) => toggleIn(a, v))} />
+      </Field>
+      <Field label="Rescue med (what you took)">
+        <Input value={rescueMed} onChange={(e) => setRescueMed(e.target.value)} placeholder="e.g. Frontin 0.25 mg" />
+        {data.meds.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {data.meds.map((m) => (
+              <button key={m.id} type="button" onClick={() => setRescueMed(m.dose ? `${m.name} ${m.dose}` : m.name)}
+                className="rounded-full bg-tint px-3 py-1 text-xs font-medium text-foreground ring-1 ring-border">
+                {m.name}{m.dose ? ` ${m.dose}` : ""}
+              </button>
+            ))}
+          </div>
+        )}
       </Field>
       <Field label="Note (optional)">
         <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
@@ -1114,10 +1136,11 @@ function SexForm({ date, data, update, onDone, initialEntry }:
         </div>
       </Field>
       <Field label="How I feel after">
-        <div className="mt-2 flex flex-wrap gap-2">
-          {["😊 Great","🥰 Loved","🤩 Amazing","😌 Relaxed","🙂 Good","😐 Meh","😞 Down","😢 Sad","😤 Frustrated","🤕 Sore","😴 Sleepy","💦 Sweaty","🥵 Hot","🥶 Cold","😵‍💫 Dizzy","🤢 Nauseous","💪 Energized","🫠 Drained"].map((f) =>
-            <Chip key={f} active={feelingAfter.includes(f)} onClick={() => setFeelingAfter((a) => toggleIn(a, f))}>{f}</Chip>)}
-        </div>
+        <CustomChipList base={SEX_FEELINGS_DEFAULT} custom={data.custom.sexFeelings ?? []}
+          onAddCustom={(v) => update((d) => ({ ...d, custom: { ...d.custom, sexFeelings: [...(d.custom.sexFeelings ?? []), v] } }))}
+          onRemoveCustom={(v) => { update((d) => ({ ...d, custom: { ...d.custom, sexFeelings: (d.custom.sexFeelings ?? []).filter((x) => x !== v) } })); setFeelingAfter((a) => a.filter((x) => x !== v)); }}
+          onRenameCustom={(o, n) => { update((d) => ({ ...d, custom: { ...d.custom, sexFeelings: (d.custom.sexFeelings ?? []).map((x) => x === o ? n : x) } })); setFeelingAfter((a) => a.map((x) => x === o ? n : x)); }}
+          selected={feelingAfter} onToggle={(v) => setFeelingAfter((a) => toggleIn(a, v))} />
       </Field>
       <Field label="Painful?">
         <div className="mt-2 flex gap-2">
@@ -1154,13 +1177,13 @@ function ThermoForm({ date, update, onDone, initialEntry }:
   { date: string; update: UpdateFn; onDone: () => void; initialEntry?: ThermoSession }) {
   const [kind, setKind] = useState<ThermoKind>(initialEntry?.kind ?? "heat");
   const [start, setStart] = useState(initialEntry?.start ?? nowHHMM());
-  const [minutes, setMinutes] = useState<string>(initialEntry?.minutes != null && initialEntry.minutes > 0 ? String(initialEntry.minutes) : "20");
-  const [ongoing, setOngoing] = useState(initialEntry?.minutes === 0);
+  const [minutes, setMinutes] = useState<string>(initialEntry ? (initialEntry.minutes != null ? String(initialEntry.minutes) : "") : "20");
+  const [ongoing, setOngoing] = useState(!!initialEntry?.ongoing);
   const [note, setNote] = useState(initialEntry?.note ?? "");
   const save = () => {
     const editing = !!initialEntry;
     const mins = ongoing ? 0 : (minutes === "" ? 0 : Number(minutes));
-    const e: ThermoSession = { id: initialEntry?.id ?? crypto.randomUUID(), kind, start, minutes: mins, note: note.trim() || undefined };
+    const e: ThermoSession = { id: initialEntry?.id ?? crypto.randomUUID(), kind, start, minutes: mins, ongoing: ongoing || undefined, note: note.trim() || undefined };
     updateDayLog(update, date, (l) => ({
       ...l,
       heat: editing ? (l.heat ?? []).map((x) => x.id === e.id ? e : x) : [...(l.heat ?? []), e],
@@ -1200,6 +1223,12 @@ function FoodForm({ date, data, update, onDone, initialEntry }:
   const [highHist, setHighHist] = useState<boolean>(!!initialEntry?.highHistamine);
   const addCustom = (v: string) =>
     update((d) => ({ ...d, custom: { ...d.custom, foodFeelings: [...d.custom.foodFeelings, v] } }));
+  const addCustomList = (k: "histamineSymptoms" | "foodSymptomsAfter", v: string) =>
+    update((d) => ({ ...d, custom: { ...d.custom, [k]: [...(d.custom[k] ?? []), v] } }));
+  const removeCustomList = (k: "histamineSymptoms" | "foodSymptomsAfter", v: string) =>
+    update((d) => ({ ...d, custom: { ...d.custom, [k]: (d.custom[k] ?? []).filter((x) => x !== v) } }));
+  const renameCustomList = (k: "histamineSymptoms" | "foodSymptomsAfter", o: string, n: string) =>
+    update((d) => ({ ...d, custom: { ...d.custom, [k]: (d.custom[k] ?? []).map((x) => x === o ? n : x) } }));
   const save = () => {
     if (!what.trim() && !hydration && !caffeine && !alcohol && !histFlare && symptomsAfter.length === 0) return;
     const editing = !!initialEntry;
@@ -1271,8 +1300,10 @@ function FoodForm({ date, data, update, onDone, initialEntry }:
           selected={feelings} onToggle={(v) => setFeelings((a) => toggleIn(a, v))} />
       </Field>
       <Field label="Symptoms after food">
-        <CustomChipList base={FOOD_SYMPTOMS_AFTER} custom={[]}
-          onAddCustom={() => {}}
+        <CustomChipList base={FOOD_SYMPTOMS_AFTER} custom={data.custom.foodSymptomsAfter ?? []}
+          onAddCustom={(v) => addCustomList("foodSymptomsAfter", v)}
+          onRemoveCustom={(v) => { removeCustomList("foodSymptomsAfter", v); setSymptomsAfter((a) => a.filter((x) => x !== v)); }}
+          onRenameCustom={(o, n) => { renameCustomList("foodSymptomsAfter", o, n); setSymptomsAfter((a) => a.map((x) => x === o ? n : x)); }}
           selected={symptomsAfter} onToggle={(v) => setSymptomsAfter((a) => toggleIn(a, v))} />
       </Field>
       <Field label="High histamine food?">
@@ -1290,8 +1321,10 @@ function FoodForm({ date, data, update, onDone, initialEntry }:
       {histFlare && (
         <div className="rounded-2xl border border-border p-3">
           <Field label="Histamine flare symptoms">
-            <CustomChipList base={HISTAMINE_SYMPTOMS} custom={[]}
-              onAddCustom={() => {}}
+            <CustomChipList base={HISTAMINE_SYMPTOMS} custom={data.custom.histamineSymptoms ?? []}
+              onAddCustom={(v) => addCustomList("histamineSymptoms", v)}
+              onRemoveCustom={(v) => { removeCustomList("histamineSymptoms", v); setHistSymptoms((a) => a.filter((x) => x !== v)); }}
+              onRenameCustom={(o, n) => { renameCustomList("histamineSymptoms", o, n); setHistSymptoms((a) => a.map((x) => x === o ? n : x)); }}
               selected={histSymptoms} onToggle={(v) => setHistSymptoms((a) => toggleIn(a, v))} />
           </Field>
         </div>

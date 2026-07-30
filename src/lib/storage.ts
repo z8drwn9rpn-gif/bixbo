@@ -48,9 +48,10 @@ export interface PanicAttack {
   hyperventilation: "no" | "before" | "during" | "unknown";
   tetanyPresent: boolean;
   helped: string[];
+  rescueMed?: string;
   note?: string;
 }
-export interface ThermoSession { id: string; kind: ThermoKind; start: string; minutes: number; note?: string }
+export interface ThermoSession { id: string; kind: ThermoKind; start: string; minutes: number; ongoing?: boolean; note?: string }
 export interface FoodEntry {
   id: string; time: string; what: string; feelings: string[]; after?: string;
   hydrationMl?: number; caffeineMg?: number; alcoholDrinks?: number;
@@ -132,6 +133,11 @@ export interface CustomLists {
   sexTypes: string[];
   bowelFeelings: string[];
   bowelSymptoms: string[];
+  pcosSymptoms: string[];
+  headacheTypes: string[];
+  histamineSymptoms: string[];
+  foodSymptomsAfter: string[];
+  sexFeelings: string[];
 }
 
 export interface Settings {
@@ -165,6 +171,7 @@ export interface BixboData {
   meds: Med[];
   medLog: Record<string, Record<string, boolean>>;
   medLogTimes: Record<string, Record<string, string>>;
+  medNames?: Record<string, string>;
   folders: NoteFolder[];
   notebook: Note[];
   cycle: CyclePrefs;
@@ -188,6 +195,7 @@ export const EMPTY: BixboData = {
   meds: [],
   medLog: {},
   medLogTimes: {},
+  medNames: {},
   folders: DEFAULT_FOLDERS,
   notebook: [],
   cycle: { lastPeriodStart: "2026-07-15", lastPeriodEnd: "2026-07-19", cycleLength: 28, periodLength: 5 },
@@ -196,6 +204,7 @@ export const EMPTY: BixboData = {
     tetanyTypes: [], tetanyLocations: [], tetanyTriggers: [], tetanyHelped: [],
     panicPhysical: [], panicCognitive: [], panicHelped: [],
     sexTypes: [], bowelFeelings: [], bowelSymptoms: [],
+    pcosSymptoms: [], headacheTypes: [], histamineSymptoms: [], foodSymptomsAfter: [], sexFeelings: [],
   },
   settings: { textSize: "md", notifications: true, gender: "female" },
 };
@@ -501,7 +510,12 @@ export const BODY_BATTERY: { n: number; label: string; color: string; emoji: str
   { n: 5, label: "Fully charged",color: "#16a34a", emoji: "⚡" },
 ];
 
-export const SLEEP_QUALITY = ["😴 Terrible","🙁 Poor","😐 Ok","🙂 Good","😀 Great"];
+export const SLEEP_QUALITY = [
+  "😩 Awful","😴 Terrible","🥱 Restless","🙁 Poor","😐 Ok","🌙 Broken sleep","😪 Woke up a lot",
+  "🙂 Good","😌 Refreshed","😀 Great","🤩 Perfect","💤 Slept in","⏰ Too short","🛌 Too long",
+];
+
+export const SEX_FEELINGS_DEFAULT = ["😊 Great","🥰 Loved","🤩 Amazing","😌 Relaxed","🙂 Good","😐 Meh","😞 Down","😢 Sad","😤 Frustrated","🤕 Sore","😴 Sleepy","💦 Sweaty","🥵 Hot","🥶 Cold","😵‍💫 Dizzy","🤢 Nauseous","💪 Energized","🫠 Drained"];
 
 export const PCOS_SYMPTOMS = [
   "Acne",

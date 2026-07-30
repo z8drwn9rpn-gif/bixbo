@@ -354,6 +354,22 @@ function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) 
     return { id: m.id, name: m.name, count };
   });
 
+  // Doses logged for meds that no longer exist in the list — keep history visible.
+  const knownIds = new Set(data.meds.map((m) => m.id));
+  const removedCounts = (() => {
+    const acc: Record<string, number> = {};
+    days.forEach((k) => {
+      const log = data.medLog[k] ?? {};
+      Object.entries(log).forEach(([key, val]) => {
+        if (!val) return;
+        const id = key.split("@")[0];
+        if (knownIds.has(id)) return;
+        acc[id] = (acc[id] ?? 0) + 1;
+      });
+    });
+    return Object.entries(acc).map(([id, count]) => ({ id, count, name: data.medNames?.[id] ?? "Removed medication" }));
+  })();
+
   const cellColor = (d: typeof perDay[number]) => {
     if (d.expected === 0) return "var(--tint)";
     const r = d.taken / d.expected;
@@ -364,7 +380,7 @@ function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) 
 
   const fmt = (k: string) => fromKey(k).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 
-  if (data.meds.length === 0) return null;
+  if (data.meds.length === 0 && removedCounts.length === 0) return null;
 
   return (
     <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
@@ -472,6 +488,19 @@ function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) 
                   <li key={m.id} className="flex justify-between">
                     <span>{m.name}</span>
                     <span className="text-muted-foreground">{m.count}× in {range} days</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {removedCounts.length > 0 && (
+            <div className="mt-4">
+              <p className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">Discontinued meds (history)</p>
+              <ul className="space-y-1 text-xs">
+                {removedCounts.map((m) => (
+                  <li key={m.id} className="flex justify-between">
+                    <span>{m.name}</span>
+                    <span className="text-muted-foreground">{m.count} doses in {range} days</span>
                   </li>
                 ))}
               </ul>
