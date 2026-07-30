@@ -36,7 +36,7 @@ const CATEGORIES: { id: Category; label: string; emoji: string; hint: string }[]
   { id: "bowel",   label: "Bowel",            emoji: "💩", hint: "Bristol type" },
   { id: "sex",     label: "ŠukŠuk! ❤️",       emoji: "❤️", hint: "All kinds of activity" },
   { id: "workout", label: "Workout",          emoji: "🧘🏼‍♀️", hint: "Type · duration · weight" },
-  { id: "temp",    label: "Temp & Sleep",     emoji: "🌡️", hint: "°C · kg · hours" },
+  { id: "temp",    label: "Temp / Sleep / Weight", emoji: "🌡️", hint: "°C · kg · hours" },
   { id: "meds",    label: "Meds",             emoji: "💊", hint: "Taken · extra dose" },
   { id: "event",   label: "Event",            emoji: "📅", hint: "Multi-day · time · note" },
   { id: "task",    label: "Task",             emoji: "✅", hint: "To-do with date & time" },
