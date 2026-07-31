@@ -94,6 +94,22 @@ function InsightsPage() {
   days.forEach((k) => (view.dayLogs[k]?.pain ?? []).forEach((p) => {
     if (p.hotFlashes && p.hotFlashes >= 1 && p.hotFlashes <= 5) hfCounts[p.hotFlashes]++;
   }));
+  // Year view aggregates to 12 monthly buckets so the bars stay readable,
+  // matching the weight/temperature charts.
+  const monthLabels = ["J","F","M","A","M","J","J","A","S","O","N","D"];
+  const aggregateMonthly = (keys: string[], series: (number | undefined)[]) => {
+    const sums = new Array(12).fill(0) as number[];
+    const counts = new Array(12).fill(0) as number[];
+    keys.forEach((k, i) => {
+      const v = series[i];
+      if (v == null) return;
+      const mi = Number(k.slice(5, 7)) - 1;
+      sums[mi] += v; counts[mi]++;
+    });
+    return sums.map((s, i) => (counts[i] ? s / counts[i] : undefined));
+  };
+  const hfBars = period === "Y" ? aggregateMonthly(days, hfSeries) : hfSeries;
+  const sleepBars = period === "Y" ? aggregateMonthly(days, sleepSeries) : sleepSeries;
   const hfTotal = hfCounts.reduce((a, b) => a + b, 0);
   const hfAvg = (() => {
     const s = hfCounts.reduce((sum, c, i) => sum + c * i, 0);
