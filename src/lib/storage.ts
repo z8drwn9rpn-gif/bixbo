@@ -63,7 +63,19 @@ export interface FoodEntry {
 export interface BowelEntry { id: string; time: string; bristol: number; note?: string; feelings?: string[]; symptoms?: string[] }
 export interface SexEntry { id: string; time: string; kind: SexKind; feelingAfter?: string | string[]; painful?: PainfulWhen; note?: string }
 export interface ExtraMed { id: string; time: string; name: string; dose?: string; note?: string }
-export interface WorkoutEntry { id: string; time: string; kind: string; minutes: number; weightKg?: number; feeling?: string | string[]; note?: string }
+export interface WorkoutExercise { id: string; name: string; sets?: number; reps?: number; weightKg?: number }
+export interface WorkoutEntry {
+  id: string; time: string; kind: string; minutes: number;
+  /** Body weight measured after the workout — kept separate from the day's weight metric. */
+  weightKg?: number;
+  distanceKm?: number;
+  elevationM?: number;
+  exercises?: WorkoutExercise[];
+  rpe?: number;
+  magnesiumBefore?: boolean;
+  triggeredSymptom?: { type: "tetany" | "pain"; id: string; label?: string };
+  feeling?: string | string[]; note?: string;
+}
 export interface EventEntry { id: string; title: string; startDate: string; endDate: string; time?: string; timeEnd?: string; note?: string; color?: string }
 export interface TaskEntry { id: string; title: string; startDate: string; endDate: string; time?: string; timeEnd?: string; done: boolean; note?: string }
 export interface PeriodEntry { level: PeriodLevel; discharge?: string; dischargeNote?: string; note?: string; cramps?: number }
