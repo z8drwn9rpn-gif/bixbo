@@ -289,6 +289,27 @@ export function MonthCalendar({
           );
         })}
       </div>
+
+      {peek && (() => {
+        const lines = daySummaryLines(data.dayLogs[peek], isMale);
+        const d = new Date(`${peek}T00:00:00`);
+        return (
+          <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-6" onClick={() => setPeek(null)}>
+            <div className="max-h-[70dvh] w-full max-w-sm overflow-y-auto rounded-3xl bg-background p-4 ring-1 ring-border" onClick={(e) => e.stopPropagation()}>
+              <p className="mb-2 font-serif text-lg">{d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}</p>
+              {lines.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nothing logged on this day.</p>
+              ) : (
+                <ul className="space-y-1 text-sm">{lines.map((l, i) => <li key={i} className="whitespace-pre-line">{l}</li>)}</ul>
+              )}
+              <div className="mt-4 flex gap-2">
+                <button onClick={() => setPeek(null)} className="flex-1 rounded-2xl bg-tint py-2 text-sm">Close</button>
+                <button onClick={() => { onSelect(peek); setPeek(null); }} className="flex-1 rounded-2xl bg-primary py-2 text-sm text-primary-foreground">Open day</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
