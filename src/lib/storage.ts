@@ -152,6 +152,22 @@ export interface CustomLists {
   sexFeelings: string[];
 }
 
+export type QuickTagCategory = "pain" | "tetany" | "panic" | "sex" | "food" | "meds" | "workout";
+export interface CustomQuickTag {
+  id: string;
+  emoji: string;
+  label: string;
+  cat: QuickTagCategory;
+  preset?: {
+    score?: number;        // pain
+    intensity?: number;    // tetany / panic
+    what?: string;         // food
+    medId?: string;        // meds
+    kind?: string;         // workout / sex
+    minutes?: number;      // workout
+  };
+}
+
 export interface Settings {
   textSize: "sm" | "md" | "lg" | "xl";
   notifications: boolean;
@@ -160,6 +176,8 @@ export interface Settings {
   logOrder?: string[];
   gender?: Gender;
   birthControlSince?: string;
+  pregnantSince?: string;
+  customQuickTags?: CustomQuickTag[];
   scaleDescriptions?: Partial<Record<"pain" | "stress" | "tetany" | "panic" | "hotFlashes" | "headache", Record<number, string>>>;
 }
 
