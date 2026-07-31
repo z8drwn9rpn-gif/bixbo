@@ -111,7 +111,17 @@ function HomePage() {
         />
       </div>
 
-      {view.settings.gender !== "male" && (() => {
+      {(() => {
+        const preg = pregnancyInfo(view.settings.pregnantSince);
+        if (!preg) return null;
+        return (
+          <div className="mx-5 mt-3 rounded-full bg-tint px-4 py-2 text-center text-xs text-muted-foreground ring-1 ring-border">
+            🤰 Pregnancy · <span className="font-semibold text-foreground">Week {preg.week}</span> · Trimester {preg.trimester}
+          </div>
+        );
+      })()}
+
+      {view.settings.gender !== "male" && !view.settings.pregnantSince && (() => {
         const p = nextPredictedPeriod(view.cycle);
         if (!p) return null;
         const fmt = (k: string) => fromKey(k).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
