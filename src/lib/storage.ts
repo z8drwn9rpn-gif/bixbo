@@ -550,7 +550,20 @@ export const BODY_BATTERY: { n: number; label: string; color: string; emoji: str
 export const SLEEP_QUALITY = [
   "😩 Awful","😴 Terrible","🥱 Restless","🙁 Poor","😐 Ok","🌙 Broken sleep","😪 Woke up a lot",
   "🙂 Good","😌 Refreshed","😀 Great","🤩 Perfect","💤 Slept in","⏰ Too short","🛌 Too long",
+  "🥴 Groggy","😵‍💫 Foggy head","😰 Nightmares","💭 Vivid dreams","🌡️ Sweaty night","🥶 Cold night",
+  "🤕 Woke with headache","🦵 Cramps at night","🚽 Up to the toilet","📱 Fell asleep late",
+  "☀️ Woke up early","🐢 Hard to get up","🧘 Deep & calm","😻 Best sleep ever",
 ];
+
+/* ------------------- Pregnancy ------------------- */
+export function pregnancyInfo(since?: string): { week: number; trimester: 1 | 2 | 3 } | null {
+  if (!since) return null;
+  const days = daysBetween(since, todayKey());
+  if (days < 0) return null;
+  const week = Math.floor(days / 7) + 1;
+  const trimester: 1 | 2 | 3 = week <= 13 ? 1 : week <= 27 ? 2 : 3;
+  return { week, trimester };
+}
 
 export const SEX_FEELINGS_DEFAULT = ["😊 Great","🥰 Loved","🤩 Amazing","😌 Relaxed","🙂 Good","😐 Meh","😞 Down","😢 Sad","😤 Frustrated","🤕 Sore","😴 Sleepy","💦 Sweaty","🥵 Hot","🥶 Cold","😵‍💫 Dizzy","🤢 Nauseous","💪 Energized","🫠 Drained"];
 
