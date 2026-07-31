@@ -66,7 +66,7 @@ function HomePage() {
         }
       });
       // Period predict: 1 day before at 09:00 (skip in male mode)
-      if (!isMale && hhmm === "09:00") {
+      if (!isMale && !view.settings.pregnantSince && hhmm === "09:00") {
         const p = nextPredictedPeriod(view.cycle);
         if (p && daysBetween(todayKey(), p.start) === 1) {
           new Notification("🫐 Period starts tomorrow", { body: "Get your supplies ready 💚" });
