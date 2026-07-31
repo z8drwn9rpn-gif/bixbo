@@ -432,6 +432,9 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
   const [hotFlashes, setHotFlashes] = useState<number | undefined>(initialEntry?.hotFlashes);
   const [headacheTypes, setHeadacheTypes] = useState<string[]>(initialEntry?.headacheTypes ?? []);
   const [headacheIntensity, setHeadacheIntensity] = useState<number | undefined>(initialEntry?.headacheIntensity);
+  const [headacheMedOn, setHeadacheMedOn] = useState<boolean>(!!initialEntry?.headacheMed);
+  const [headacheMed, setHeadacheMed] = useState<string>(initialEntry?.headacheMed ?? "");
+  const [headacheMedTime, setHeadacheMedTime] = useState<string>(initialEntry?.headacheMedTime ?? nowHHMM());
   const [pcosSymptoms, setPcosSymptoms] = useState<string[]>(initialEntry?.pcosSymptoms ?? []);
 
   type CKey = "bodyParts" | "quality" | "symptoms" | "moods"
