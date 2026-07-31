@@ -640,8 +640,24 @@ function WeightLineChart({ period, days, series, label = "Weight", unit = "kg" }
           ))}
           <path d={path} fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
           {points.map((p) => (
-            <circle key={p.date} cx={xFor(p.index)} cy={yFor(p.value)} r="3" fill="var(--surface)" stroke="var(--primary)" strokeWidth="2" />
+            <g key={p.date}>
+              <circle cx={xFor(p.index)} cy={yFor(p.value)} r="3" fill="var(--surface)" stroke="var(--primary)" strokeWidth="2" />
+              <circle cx={xFor(p.index)} cy={yFor(p.value)} r="12" fill="transparent" style={{ cursor: "pointer" }}
+                onClick={() => setActive(active?.date === p.date ? null : p)}>
+                <title>{`${period === "Y" ? MON_SHORT[fromKey(p.date).getMonth()] : fmtDate(p.date)}: ${p.value.toFixed(1)} ${unit}`}</title>
+              </circle>
+            </g>
           ))}
+          {active && (
+            <g pointerEvents="none">
+              <rect x={Math.min(Math.max(xFor(active.index) - 38, 2), width - right - 40)} y={Math.max(yFor(active.value) - 32, 2)}
+                width="78" height="24" rx="6" fill="var(--foreground)" opacity="0.9" />
+              <text x={Math.min(Math.max(xFor(active.index) - 38, 2), width - right - 40) + 39} y={Math.max(yFor(active.value) - 32, 2) + 16}
+                textAnchor="middle" fontSize="10" fill="var(--background)">
+                {`${period === "Y" ? MON_SHORT[fromKey(active.date).getMonth()] : fmtDate(active.date)} · ${active.value.toFixed(1)}${unit}`}
+              </text>
+            </g>
+          )}
         </svg>
       </div>
     </section>
