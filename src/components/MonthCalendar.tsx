@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import {
   toKey, hasAnyLog, painColor, isDateInRange, predictPeriods, avgDayPain,
   type BixboData, type DayLog, type EventEntry,
