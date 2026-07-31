@@ -72,6 +72,10 @@ export function MonthCalendar({
   onSwipeMonth?: (delta: -1 | 1) => void;
 }) {
   const isMale = data.settings.gender === "male";
+  const [peek, setPeek] = useState<string | null>(null);
+  const longTimer = useRef<number | null>(null);
+  const longFired = useRef(false);
+  const clearLong = () => { if (longTimer.current) { window.clearTimeout(longTimer.current); longTimer.current = null; } };
   const y = month.getFullYear();
   const m = month.getMonth();
   const first = new Date(y, m, 1);
