@@ -17,9 +17,10 @@ import {
   BOWEL_FEELINGS_DEFAULT, BOWEL_SYMPTOMS_DEFAULT,
   PCOS_SYMPTOMS, HISTAMINE_SYMPTOMS, FOOD_SYMPTOMS_AFTER,
   todayKey, nowHHMM, updateDayLog, asArr,
+  workoutHasDistance, workoutIsHike, workoutIsStrength, pregnancyInfo,
   type BixboData, type DayLog, type PainEntry, type PeriodLevel, type FoodEntry,
   type BowelEntry, type ThermoSession, type ThermoKind, type SexEntry, type SexKind,
-  type ExtraMed, type WorkoutEntry, type EventEntry, type TaskEntry,
+  type ExtraMed, type WorkoutEntry, type WorkoutExercise, type EventEntry, type TaskEntry,
   type TetanyEpisode, type PanicAttack, type PainfulWhen,
 } from "@/lib/storage";
 
