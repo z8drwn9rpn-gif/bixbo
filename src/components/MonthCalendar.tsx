@@ -57,9 +57,8 @@ function daySummaryLines(log: DayLog | undefined, isMale: boolean): string[] {
   if (log.heat?.length) out.push(`♨️ Heat/Cold/TENS: ${log.heat.map((h) => h.kind).join(", ")}`);
   if (log.workout?.length) out.push(`🧘🏼‍♀️ Workout: ${log.workout.map((w) => `${w.kind} ${w.minutes}min`).join(", ")}`);
   if (log.weight != null) out.push(`⚖️ Weight: ${log.weight} kg`);
-  if (log.tempC != null) out.push(`🌡️ Temp: ${log.tempC} °C`);
+  if (log.temperature != null) out.push(`🌡️ Temp: ${log.temperature} °C`);
   if (log.sleepHours != null) out.push(`😴 Sleep: ${log.sleepHours} h`);
-  if (log.notes) out.push(`📝 ${log.notes}`);
   return out;
 }
 
