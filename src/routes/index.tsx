@@ -132,11 +132,12 @@ function HomePage() {
 
       {/* Quick log — placed above Today */}
       <QuickTags
+        data={view}
         update={update}
         onLongPress={(cat: string) => {
           const map: Record<string, string | undefined> = {
             pain: "pain", tetany: "tetany", panic: "panic",
-            sex: "sex", food: "food",
+            sex: "sex", food: "food", period: "period", meds: "meds", workout: "workout",
           };
           const target = map[cat];
           if (target) { setQuickCat(target); setEditPain(undefined); setEditEntry(undefined); setLogOpen(true); }
