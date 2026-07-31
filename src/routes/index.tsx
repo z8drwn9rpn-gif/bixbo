@@ -436,7 +436,28 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
           <ul className="space-y-1 text-sm">
             {log.workout.map((w) => (
               <li key={w.id} className="flex items-start gap-2">
-                <button onClick={() => onEdit?.("workout", w)} className="flex-1 text-left">{w.time} · {w.kind} · {w.minutes} min{asArr(w.feeling).length ? ` — ${asArr(w.feeling).join(", ")}` : ""}{w.note ? ` — ${w.note}` : ""}</button>
+                <button onClick={() => onEdit?.("workout", w)} className="flex-1 text-left">
+                  <span className="font-medium">{w.time} · {w.kind} · {w.minutes} min</span>
+                  {(w.distanceKm != null || w.elevationM != null || w.rpe != null || w.magnesiumBefore) && (
+                    <span className="block text-xs text-muted-foreground">
+                      {[
+                        w.distanceKm != null ? `${w.distanceKm} km` : null,
+                        w.elevationM != null ? `↑ ${w.elevationM} m` : null,
+                        w.rpe != null ? `RPE ${w.rpe}/10` : null,
+                        w.magnesiumBefore ? "Mg before" : null,
+                      ].filter(Boolean).join(" · ")}
+                    </span>
+                  )}
+                  {w.exercises?.length ? (
+                    <span className="block text-xs text-muted-foreground">
+                      {w.exercises.map((ex) => `${ex.name || "Exercise"}${ex.sets ? ` ${ex.sets}×${ex.reps ?? "?"}` : ""}${ex.weightKg ? ` @ ${ex.weightKg} kg` : ""}`).join(" · ")}
+                    </span>
+                  ) : null}
+                  {w.weightKg != null && <span className="block text-xs text-muted-foreground">Weight after: {w.weightKg} kg</span>}
+                  {w.triggeredSymptom && <span className="block text-xs text-muted-foreground">⚠️ Triggered: {w.triggeredSymptom.label ?? w.triggeredSymptom.type}</span>}
+                  {asArr(w.feeling).length ? <span className="block text-xs text-muted-foreground">{asArr(w.feeling).join(", ")}</span> : null}
+                  {w.note ? <span className="block whitespace-pre-line text-xs text-muted-foreground">{w.note}</span> : null}
+                </button>
                 <DeleteBtn onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], workout: (d.dayLogs[date]?.workout ?? []).filter((x) => x.id !== w.id) } } }))} />
               </li>
             ))}
