@@ -179,14 +179,26 @@ export function MonthCalendar({
                 const pAvg = avgDayPain(log);
                 const isSel = key === selected;
                 const predictedOrange = isPredicted(key);
-                const icons = iconsFor(log, hasMed);
+                const icons = iconsFor(log, hasMed, isMale);
                 const marked = hasAnyLog(log);
 
                 return (
                   <button
                     key={ci}
-                    onClick={() => onSelect(key)}
-                    className={`flex flex-col items-stretch rounded-lg text-left transition ${
+                    onPointerDown={() => {
+                      longFired.current = false;
+                      clearLong();
+                      longTimer.current = window.setTimeout(() => {
+                        longFired.current = true;
+                        if (navigator.vibrate) { try { navigator.vibrate(15); } catch { /* noop */ } }
+                        setPeek(key);
+                      }, 500);
+                    }}
+                    onPointerUp={() => { clearLong(); if (!longFired.current) onSelect(key); }}
+                    onPointerLeave={clearLong}
+                    onPointerCancel={clearLong}
+                    onContextMenu={(e) => e.preventDefault()}
+                    className={`flex select-none flex-col items-stretch rounded-lg text-left transition ${
                       inMonth ? "" : "opacity-30"
                     } ${isSel ? "ring-2 ring-primary" : ""}`}
                   >
@@ -214,8 +226,9 @@ export function MonthCalendar({
                         </span>
                       </div>
                       {icons.length > 0 && (
-                        <span className="pointer-events-none absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-[1px] text-[11px] leading-none drop-shadow-sm">
-                          {icons.slice(0, 4).map((ic, idx) => <span key={idx}>{ic}</span>)}
+                        <span className="pointer-events-none absolute bottom-0.5 left-1/2 flex -translate-x-1/2 gap-[1px] text-[7px] leading-none drop-shadow-sm landscape:text-[6px]">
+                          {icons.slice(0, 5).map((ic, idx) => <span key={idx}>{ic}</span>)}
+                          {icons.length > 5 && <span className="text-muted-foreground">+</span>}
                         </span>
                       )}
                       {icons.length === 0 && marked && (
