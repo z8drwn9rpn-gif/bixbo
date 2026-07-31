@@ -20,16 +20,46 @@ function periodColorVar(level?: string) {
     default: return null;
   }
 }
-function iconsFor(log: DayLog | undefined, hasMed: boolean): string[] {
+function iconsFor(log: DayLog | undefined, hasMed: boolean, isMale: boolean): string[] {
   const out: string[] = [];
+  if (log?.pain?.length) out.push("🔥");
+  if (log?.tetany?.length) out.push("⚡");
+  if (log?.panic?.length) out.push("🫯");
+  if (log?.pain?.some((p) => (p.hotFlashes ?? 0) > 0)) out.push("🥵");
+  if (log?.pain?.some((p) => p.headacheIntensity != null || (p.headacheTypes?.length ?? 0) > 0)) out.push("🤕");
   if (hasMed) out.push("💊");
-  if (log?.bowel?.some((b) => b.bristol > 0)) out.push("💩");
   if (log?.sex?.length) out.push("❤️");
-  if (log?.heat?.some((h) => h.kind === "heat")) out.push("🔥");
+  if (log?.food?.length) out.push("🍽️");
+  if (!isMale && (log?.periodInfo?.level ?? log?.period)) out.push("🫐");
+  if (log?.bowel?.some((b) => b.bristol > 0)) out.push("💩");
+  if (log?.heat?.some((h) => h.kind === "heat")) out.push("♨️");
   if (log?.heat?.some((h) => h.kind === "cold")) out.push("🧊");
   if (log?.heat?.some((h) => h.kind === "tens")) out.push("✨");
   if (log?.workout?.length) out.push("🧘🏼‍♀️");
-  if (log?.panic?.length) out.push("🫯");
+  return out;
+}
+
+function daySummaryLines(log: DayLog | undefined, isMale: boolean): string[] {
+  if (!log) return [];
+  const out: string[] = [];
+  if (log.pain?.length) out.push(`🔥 Pain: ${log.pain.map((p) => `${p.time} ${p.score}/10`).join(", ")}`);
+  if (log.tetany?.length) out.push(`⚡ Tetany: ${log.tetany.map((t) => `${t.time} ${t.intensity}/5`).join(", ")}`);
+  if (log.panic?.length) out.push(`🫯 Panic: ${log.panic.map((p) => `${p.time} ${p.intensity}/10`).join(", ")}`);
+  const hf = log.pain?.filter((p) => (p.hotFlashes ?? 0) > 0) ?? [];
+  if (hf.length) out.push(`🥵 Hot flashes: ${hf.map((p) => `${p.hotFlashes}/5`).join(", ")}`);
+  const ha = log.pain?.filter((p) => p.headacheIntensity != null || (p.headacheTypes?.length ?? 0) > 0) ?? [];
+  if (ha.length) out.push(`🤕 Headache: ${ha.map((p) => `${p.headacheTypes?.join("/") ?? "yes"}${p.headacheIntensity != null ? ` ${p.headacheIntensity}/10` : ""}`).join(", ")}`);
+  if (log.extraMeds?.length) out.push(`💊 Extra meds: ${log.extraMeds.map((m) => m.name).join(", ")}`);
+  if (log.sex?.length) out.push(`❤️ ŠukŠuk: ${log.sex.length}×`);
+  if (log.food?.length) out.push(`🍽️ Food: ${log.food.map((f) => f.what).filter(Boolean).join(", ") || `${log.food.length} entries`}`);
+  if (!isMale && (log.periodInfo?.level ?? log.period)) out.push(`🫐 Period: ${log.periodInfo?.level ?? log.period}`);
+  if (log.bowel?.length) out.push(`💩 Bowel: ${log.bowel.map((b) => `type ${b.bristol}`).join(", ")}`);
+  if (log.heat?.length) out.push(`♨️ Heat/Cold/TENS: ${log.heat.map((h) => h.kind).join(", ")}`);
+  if (log.workout?.length) out.push(`🧘🏼‍♀️ Workout: ${log.workout.map((w) => `${w.kind} ${w.minutes}min`).join(", ")}`);
+  if (log.weight != null) out.push(`⚖️ Weight: ${log.weight} kg`);
+  if (log.tempC != null) out.push(`🌡️ Temp: ${log.tempC} °C`);
+  if (log.sleepHours != null) out.push(`😴 Sleep: ${log.sleepHours} h`);
+  if (log.notes) out.push(`📝 ${log.notes}`);
   return out;
 }
 
