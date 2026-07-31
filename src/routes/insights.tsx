@@ -541,6 +541,7 @@ function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) 
 
 function WeightLineChart({ period, days, series, label = "Weight", unit = "kg" }:
   { period: Period; days: string[]; series: (number | undefined)[]; label?: string; unit?: string }) {
+  const [active, setActive] = useState<{ value: number; index: number; date: string } | null>(null);
   // For yearly view, collapse 365 daily samples into 12 monthly averages so labels are readable.
   const aggregated = (() => {
     if (period !== "Y") {
