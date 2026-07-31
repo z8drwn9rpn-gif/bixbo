@@ -292,6 +292,7 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
                   {p.symptoms.length > 0 && <p className="text-xs text-muted-foreground">+ {p.symptoms.join(", ")}</p>}
                   {p.hotFlashes != null && <p className="text-xs text-muted-foreground">🥵 Hot flashes intensity {p.hotFlashes}/5</p>}
                   {p.headacheTypes?.length ? <p className="text-xs text-muted-foreground">🤕 Headache: {p.headacheTypes.join(", ")}{p.headacheIntensity != null ? ` · ${p.headacheIntensity}/10` : ""}</p> : (p.headacheIntensity != null ? <p className="text-xs text-muted-foreground">🤕 Headache intensity {p.headacheIntensity}/10</p> : null)}
+                  {p.headacheMed ? <p className="text-xs text-muted-foreground">💊 Headache med: {p.headacheMed}{p.headacheMedTime ? ` at ${p.headacheMedTime}` : ""}</p> : null}
                   {p.pcosSymptoms?.length ? <p className="text-xs text-muted-foreground">PCOS: {p.pcosSymptoms.join(", ")}</p> : null}
                   {p.mood?.length ? <p className="text-xs text-muted-foreground">Mood: {p.mood.join(", ")}</p> : null}
                   {p.stress != null && <p className="text-xs text-muted-foreground">Stress {p.stress}/10</p>}
