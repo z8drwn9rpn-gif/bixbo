@@ -602,6 +602,26 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
                 <IntensityScale value={headacheIntensity ?? 0} onChange={(n) => setHeadacheIntensity(headacheIntensity === n ? undefined : n)} max={10}
                   descriptions={getScaleDesc(data,"headache")} legendTitle="Headache scale" />
               </Field>
+              <Field label="Medication taken">
+                <div className="mt-1 flex gap-2">
+                  <Chip active={!headacheMedOn} onClick={() => setHeadacheMedOn(false)}>No</Chip>
+                  <Chip active={headacheMedOn} onClick={() => setHeadacheMedOn(true)}>Yes</Chip>
+                </div>
+                {headacheMedOn && (
+                  <div className="mt-2 space-y-2">
+                    {data.meds.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {data.meds.map((m) => {
+                          const label = `${m.name}${m.dose ? ` ${m.dose}` : ""}`;
+                          return <Chip key={m.id} active={headacheMed === label} onClick={() => setHeadacheMed(headacheMed === label ? "" : label)}>{label}</Chip>;
+                        })}
+                      </div>
+                    )}
+                    <Input value={headacheMed} onChange={(e) => setHeadacheMed(e.target.value)} placeholder="Medication + dose" />
+                    <Input type="time" value={headacheMedTime} onChange={(e) => setHeadacheMedTime(e.target.value)} />
+                  </div>
+                )}
+              </Field>
             </>
           )}
           <Field label="PCOS symptoms">
