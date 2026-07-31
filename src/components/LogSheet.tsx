@@ -1094,6 +1094,25 @@ function PeriodForm({ date, data, update, onDone }:
           <p className="mt-1 text-[11px] text-muted-foreground">Taking birth control since {data.settings.birthControlSince}</p>
         )}
       </Field>
+      <Field label="Pregnant?">
+        <div className="mt-1 flex gap-2">
+          <Chip active={!data.settings.pregnantSince}
+            onClick={() => update((d) => ({ ...d, settings: { ...d.settings, pregnantSince: undefined } }))}>No</Chip>
+          <Chip active={!!data.settings.pregnantSince}
+            onClick={() => update((d) => ({ ...d, settings: { ...d.settings, pregnantSince: d.settings.pregnantSince ?? todayKey() } }))}>Yes</Chip>
+        </div>
+        {data.settings.pregnantSince && (
+          <div className="mt-2">
+            <span className="text-xs font-medium text-muted-foreground">Since when</span>
+            <Input type="date" className="mt-1" value={data.settings.pregnantSince}
+              onChange={(e) => update((d) => ({ ...d, settings: { ...d.settings, pregnantSince: e.target.value || undefined } }))} />
+            {(() => {
+              const p = pregnancyInfo(data.settings.pregnantSince);
+              return p ? <p className="mt-1 text-[11px] text-muted-foreground">Week {p.week} · Trimester {p.trimester} — cycle predictions are paused.</p> : null;
+            })()}
+          </div>
+        )}
+      </Field>
       <div className="rounded-2xl bg-tint p-3 text-[11px] leading-relaxed text-muted-foreground">
         Cycle prediction is based on your last period and cycle length (edit in Settings later).
       </div>
