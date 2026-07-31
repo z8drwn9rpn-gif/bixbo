@@ -302,12 +302,18 @@ function InsightsPage() {
         <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">Sleep</p>
           <div className="mt-3 flex h-20 items-end gap-1">
-            {sleepSeries.map((h, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center h-full justify-end">
+            {sleepBars.map((h, i) => (
+              <div key={i} className="flex-1 flex flex-col items-center h-full justify-end"
+                title={h == null ? undefined : (period === "Y" ? `${monthLabels[i]}: avg ${h.toFixed(1)} h` : `${days[i]}: ${h} h`)}>
                 {h != null && <div className="w-full rounded-t" style={{ height: `${Math.min(100, (h / 12) * 100)}%`, background: sleepColor(h) }} />}
               </div>
             ))}
           </div>
+          {period === "Y" && (
+            <div className="mt-1 grid gap-1 text-center text-[9px] text-muted-foreground" style={{ gridTemplateColumns: "repeat(12, minmax(0, 1fr))" }}>
+              {monthLabels.map((l, i) => <span key={i}>{l}</span>)}
+            </div>
+          )}
           <div className="mt-2 flex gap-3 text-[11px] text-muted-foreground">
             <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-500" /> &lt;8h</span>
             <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-yellow-500" /> 8h</span>
