@@ -261,13 +261,18 @@ function InsightsPage() {
                   {hfTotal === 1 ? "episode" : "episodes"} · avg {hfAvg!.toFixed(1)}/5 · most often L{hfTop}
                 </span>
               </div>
-              <div className="mt-4 grid items-end gap-1" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))`, height: 60 }}>
-                {hfSeries.map((n, i) => (
+              <div className="mt-4 grid items-end gap-1" style={{ gridTemplateColumns: `repeat(${hfBars.length}, minmax(0, 1fr))`, height: 60 }}>
+                {hfBars.map((n, i) => (
                   n != null
-                    ? <div key={i} className="w-full rounded-t" style={{ height: `${Math.max(10, (n / 5) * 100)}%`, background: `hsl(${130 - ((n - 1) * 130) / 4} 70% 50%)` }} />
+                    ? <div key={i} className="w-full rounded-t" title={period === "Y" ? `${monthLabels[i]}: avg ${n.toFixed(1)}/5` : `${days[i]}: ${n}/5`} style={{ height: `${Math.max(10, (n / 5) * 100)}%`, background: `hsl(${130 - ((n - 1) * 130) / 4} 70% 50%)` }} />
                     : <div key={i} className="h-1 w-full self-end rounded bg-tint" />
                 ))}
               </div>
+              {period === "Y" && (
+                <div className="mt-1 grid gap-1 text-center text-[9px] text-muted-foreground" style={{ gridTemplateColumns: "repeat(12, minmax(0, 1fr))" }}>
+                  {monthLabels.map((l, i) => <span key={i}>{l}</span>)}
+                </div>
+              )}
               <div className="mt-3 space-y-1">
                 {[1, 2, 3, 4, 5].map((n) => {
                   const c = hfCounts[n];
