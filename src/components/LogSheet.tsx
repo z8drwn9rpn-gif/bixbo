@@ -1586,23 +1586,42 @@ function WorkoutForm({ date, data, update, onDone, initialEntry }:
   const [kind, setKind] = useState<string>(initialEntry?.kind ?? WORKOUT_KINDS_DEFAULT[0]);
   const [minutes, setMinutes] = useState<number>(initialEntry?.minutes ?? 30);
   const [weight, setWeight] = useState<string>(initialEntry?.weightKg != null ? String(initialEntry.weightKg) : "");
+  const [distance, setDistance] = useState<string>(initialEntry?.distanceKm != null ? String(initialEntry.distanceKm) : "");
+  const [elevation, setElevation] = useState<string>(initialEntry?.elevationM != null ? String(initialEntry.elevationM) : "");
+  const [exercises, setExercises] = useState<WorkoutExercise[]>(initialEntry?.exercises ?? []);
+  const [rpe, setRpe] = useState<number | undefined>(initialEntry?.rpe);
+  const [magnesium, setMagnesium] = useState<boolean>(initialEntry?.magnesiumBefore ?? false);
+  const [trigger, setTrigger] = useState<WorkoutEntry["triggeredSymptom"]>(initialEntry?.triggeredSymptom);
   const [feeling, setFeeling] = useState<string[]>(asArr(initialEntry?.feeling));
   const [note, setNote] = useState<string>(initialEntry?.note ?? "");
   const addKind = (v: string) => update((d) => ({ ...d, custom: { ...d.custom, workoutKinds: [...d.custom.workoutKinds, v] } }));
   const rmKind = (v: string) => { update((d) => ({ ...d, custom: { ...d.custom, workoutKinds: d.custom.workoutKinds.filter((x) => x !== v) } })); if (kind === v) setKind(WORKOUT_KINDS_DEFAULT[0]); };
+
+  const log = data.dayLogs[date];
+  const symptomOptions = [
+    ...(log?.tetany ?? []).map((t) => ({ type: "tetany" as const, id: t.id, label: `⚡ ${t.time} tetany ${t.intensity}/5` })),
+    ...(log?.pain ?? []).map((p) => ({ type: "pain" as const, id: p.id, label: `🔥 ${p.time} pain ${p.score}/10` })),
+  ];
 
   const save = () => {
     const editing = !!initialEntry;
     const e: WorkoutEntry = {
       id: initialEntry?.id ?? crypto.randomUUID(), time: initialEntry?.time ?? nowHHMM(), kind, minutes,
       weightKg: weight === "" ? undefined : Number(weight),
+      distanceKm: workoutHasDistance(kind) && distance !== "" ? Number(distance) : undefined,
+      elevationM: workoutIsHike(kind) && elevation !== "" ? Number(elevation) : undefined,
+      exercises: workoutIsStrength(kind) && exercises.length ? exercises : undefined,
+      rpe,
+      magnesiumBefore: magnesium || undefined,
+      triggeredSymptom: trigger,
       feeling: feeling.length ? feeling : undefined, note: note.trim() || undefined,
     };
     updateDayLog(update, date, (l) => ({
       ...l,
       workout: editing ? (l.workout ?? []).map((x) => x.id === e.id ? e : x) : [...(l.workout ?? []), e],
     }));
-    if (weight !== "") updateDayLog(update, date, (l) => ({ ...l, weight: Number(weight) }));
+    // NOTE: workout "weight after" is stored on the workout entry only — it must not
+    // overwrite the day's body-weight metric used by the Weight chart.
     onDone();
   };
   return (
@@ -1612,7 +1631,94 @@ function WorkoutForm({ date, data, update, onDone, initialEntry }:
           onAddCustom={addKind} onRemoveCustom={rmKind} selected={[kind]} onToggle={(v) => setKind(v)} />
       </Field>
       <Field label="Duration (minutes)"><Input type="number" min={1} value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} /></Field>
-      <Field label="Weight after (kg, optional)"><Input type="number" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} /></Field>
+
+      {workoutHasDistance(kind) && (
+        <div className="grid grid-cols-2 gap-2">
+          <Field label="Distance (km)">
+            <Input type="number" step="0.1" min={0} value={distance} onChange={(e) => setDistance(e.target.value)} />
+          </Field>
+          {workoutIsHike(kind) && (
+            <Field label="Elevation gain (m)">
+              <Input type="number" step="1" min={0} value={elevation} onChange={(e) => setElevation(e.target.value)} />
+            </Field>
+          )}
+        </div>
+      )}
+
+      {workoutIsStrength(kind) && (
+        <Field label="Exercises">
+          <div className="space-y-2">
+            {exercises.map((ex, i) => (
+              <div key={ex.id} className="rounded-2xl border border-border p-2 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Input value={ex.name} placeholder="Exercise name"
+                    onChange={(e) => setExercises((a) => a.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} />
+                  <button type="button" aria-label="Remove exercise"
+                    onClick={() => setExercises((a) => a.filter((_, j) => j !== i))}
+                    className="rounded-full p-2 text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></button>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <Input type="number" min={0} placeholder="Sets" value={ex.sets ?? ""}
+                    onChange={(e) => setExercises((a) => a.map((x, j) => j === i ? { ...x, sets: e.target.value === "" ? undefined : Number(e.target.value) } : x))} />
+                  <Input type="number" min={0} placeholder="Reps" value={ex.reps ?? ""}
+                    onChange={(e) => setExercises((a) => a.map((x, j) => j === i ? { ...x, reps: e.target.value === "" ? undefined : Number(e.target.value) } : x))} />
+                  <Input type="number" min={0} step="0.5" placeholder="kg" value={ex.weightKg ?? ""}
+                    onChange={(e) => setExercises((a) => a.map((x, j) => j === i ? { ...x, weightKg: e.target.value === "" ? undefined : Number(e.target.value) } : x))} />
+                </div>
+              </div>
+            ))}
+            <Button type="button" variant="outline" size="sm"
+              onClick={() => setExercises((a) => [...a, { id: crypto.randomUUID(), name: "" }])}>
+              <Plus className="h-4 w-4" /> Add exercise
+            </Button>
+          </div>
+        </Field>
+      )}
+
+      <Field label={`Intensity (RPE) ${rpe ?? "-"} / 10`}>
+        <div className="mt-2 grid gap-1" style={{ gridTemplateColumns: "repeat(10, minmax(0, 1fr))" }}>
+          {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => {
+            const hue = 130 - (n - 1) * 13;
+            const active = rpe === n;
+            return (
+              <button key={n} type="button" onClick={() => setRpe(rpe === n ? undefined : n)}
+                aria-label={`RPE ${n}`}
+                className={`aspect-square w-full rounded-full text-[11px] font-bold transition ${active ? "text-white ring-2 ring-foreground scale-110" : "text-white/90"}`}
+                style={{ background: `hsl(${hue} 70% 50%)`, opacity: active || rpe == null ? 1 : 0.55 }}>
+                {n}
+              </button>
+            );
+          })}
+        </div>
+      </Field>
+
+      <Field label="Magnesium before workout?">
+        <div className="mt-1 flex gap-2">
+          <Chip active={!magnesium} onClick={() => setMagnesium(false)}>No</Chip>
+          <Chip active={magnesium} onClick={() => setMagnesium(true)}>Yes</Chip>
+        </div>
+      </Field>
+
+      <Field label="Triggered a symptom? (optional)">
+        {symptomOptions.length === 0 ? (
+          <p className="text-[11px] text-muted-foreground">No tetany or pain entries logged for this day yet.</p>
+        ) : (
+          <div className="mt-1 flex flex-wrap gap-2">
+            <Chip active={!trigger} onClick={() => setTrigger(undefined)}>No</Chip>
+            {symptomOptions.map((o) => (
+              <Chip key={o.id} active={trigger?.id === o.id}
+                onClick={() => setTrigger(trigger?.id === o.id ? undefined : { type: o.type, id: o.id, label: o.label })}>
+                {o.label}
+              </Chip>
+            ))}
+          </div>
+        )}
+      </Field>
+
+      <Field label="Weight after (kg, optional)">
+        <Input type="number" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} />
+        <p className="mt-1 text-[11px] text-muted-foreground">Saved with this workout only — it doesn't change your daily weight.</p>
+      </Field>
       <Field label="How you feel">
         <div className="mt-2 flex flex-wrap gap-2">
           {["😊 Great","🙂 Good","😐 Ok","😩 Tired","🤕 Sore"].map((f) =>
