@@ -94,6 +94,22 @@ function InsightsPage() {
   days.forEach((k) => (view.dayLogs[k]?.pain ?? []).forEach((p) => {
     if (p.hotFlashes && p.hotFlashes >= 1 && p.hotFlashes <= 5) hfCounts[p.hotFlashes]++;
   }));
+  // Year view aggregates to 12 monthly buckets so the bars stay readable,
+  // matching the weight/temperature charts.
+  const monthLabels = ["J","F","M","A","M","J","J","A","S","O","N","D"];
+  const aggregateMonthly = (keys: string[], series: (number | undefined)[]) => {
+    const sums = new Array(12).fill(0) as number[];
+    const counts = new Array(12).fill(0) as number[];
+    keys.forEach((k, i) => {
+      const v = series[i];
+      if (v == null) return;
+      const mi = Number(k.slice(5, 7)) - 1;
+      sums[mi] += v; counts[mi]++;
+    });
+    return sums.map((s, i) => (counts[i] ? s / counts[i] : undefined));
+  };
+  const hfBars = period === "Y" ? aggregateMonthly(days, hfSeries) : hfSeries;
+  const sleepBars = period === "Y" ? aggregateMonthly(days, sleepSeries) : sleepSeries;
   const hfTotal = hfCounts.reduce((a, b) => a + b, 0);
   const hfAvg = (() => {
     const s = hfCounts.reduce((sum, c, i) => sum + c * i, 0);
@@ -245,13 +261,18 @@ function InsightsPage() {
                   {hfTotal === 1 ? "episode" : "episodes"} · avg {hfAvg!.toFixed(1)}/5 · most often L{hfTop}
                 </span>
               </div>
-              <div className="mt-4 grid items-end gap-1" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))`, height: 60 }}>
-                {hfSeries.map((n, i) => (
+              <div className="mt-4 grid items-end gap-1" style={{ gridTemplateColumns: `repeat(${hfBars.length}, minmax(0, 1fr))`, height: 60 }}>
+                {hfBars.map((n, i) => (
                   n != null
-                    ? <div key={i} className="w-full rounded-t" style={{ height: `${Math.max(10, (n / 5) * 100)}%`, background: `hsl(${130 - ((n - 1) * 130) / 4} 70% 50%)` }} />
+                    ? <div key={i} className="w-full rounded-t" title={period === "Y" ? `${monthLabels[i]}: avg ${n.toFixed(1)}/5` : `${days[i]}: ${n}/5`} style={{ height: `${Math.max(10, (n / 5) * 100)}%`, background: `hsl(${130 - ((n - 1) * 130) / 4} 70% 50%)` }} />
                     : <div key={i} className="h-1 w-full self-end rounded bg-tint" />
                 ))}
               </div>
+              {period === "Y" && (
+                <div className="mt-1 grid gap-1 text-center text-[9px] text-muted-foreground" style={{ gridTemplateColumns: "repeat(12, minmax(0, 1fr))" }}>
+                  {monthLabels.map((l, i) => <span key={i}>{l}</span>)}
+                </div>
+              )}
               <div className="mt-3 space-y-1">
                 {[1, 2, 3, 4, 5].map((n) => {
                   const c = hfCounts[n];
@@ -281,12 +302,18 @@ function InsightsPage() {
         <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">Sleep</p>
           <div className="mt-3 flex h-20 items-end gap-1">
-            {sleepSeries.map((h, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center h-full justify-end">
+            {sleepBars.map((h, i) => (
+              <div key={i} className="flex-1 flex flex-col items-center h-full justify-end"
+                title={h == null ? undefined : (period === "Y" ? `${monthLabels[i]}: avg ${h.toFixed(1)} h` : `${days[i]}: ${h} h`)}>
                 {h != null && <div className="w-full rounded-t" style={{ height: `${Math.min(100, (h / 12) * 100)}%`, background: sleepColor(h) }} />}
               </div>
             ))}
           </div>
+          {period === "Y" && (
+            <div className="mt-1 grid gap-1 text-center text-[9px] text-muted-foreground" style={{ gridTemplateColumns: "repeat(12, minmax(0, 1fr))" }}>
+              {monthLabels.map((l, i) => <span key={i}>{l}</span>)}
+            </div>
+          )}
           <div className="mt-2 flex gap-3 text-[11px] text-muted-foreground">
             <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-500" /> &lt;8h</span>
             <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-yellow-500" /> 8h</span>
@@ -514,6 +541,7 @@ function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) 
 
 function WeightLineChart({ period, days, series, label = "Weight", unit = "kg" }:
   { period: Period; days: string[]; series: (number | undefined)[]; label?: string; unit?: string }) {
+  const [active, setActive] = useState<{ value: number; index: number; date: string } | null>(null);
   // For yearly view, collapse 365 daily samples into 12 monthly averages so labels are readable.
   const aggregated = (() => {
     if (period !== "Y") {
@@ -613,8 +641,24 @@ function WeightLineChart({ period, days, series, label = "Weight", unit = "kg" }
           ))}
           <path d={path} fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
           {points.map((p) => (
-            <circle key={p.date} cx={xFor(p.index)} cy={yFor(p.value)} r="3" fill="var(--surface)" stroke="var(--primary)" strokeWidth="2" />
+            <g key={p.date}>
+              <circle cx={xFor(p.index)} cy={yFor(p.value)} r="3" fill="var(--surface)" stroke="var(--primary)" strokeWidth="2" />
+              <circle cx={xFor(p.index)} cy={yFor(p.value)} r="12" fill="transparent" style={{ cursor: "pointer" }}
+                onClick={() => setActive(active?.date === p.date ? null : p)}>
+                <title>{`${period === "Y" ? MON_SHORT[fromKey(p.date).getMonth()] : fmtDate(p.date)}: ${p.value.toFixed(1)} ${unit}`}</title>
+              </circle>
+            </g>
           ))}
+          {active && (
+            <g pointerEvents="none">
+              <rect x={Math.min(Math.max(xFor(active.index) - 38, 2), width - right - 40)} y={Math.max(yFor(active.value) - 32, 2)}
+                width="78" height="24" rx="6" fill="var(--foreground)" opacity="0.9" />
+              <text x={Math.min(Math.max(xFor(active.index) - 38, 2), width - right - 40) + 39} y={Math.max(yFor(active.value) - 32, 2) + 16}
+                textAnchor="middle" fontSize="10" fill="var(--background)">
+                {`${period === "Y" ? MON_SHORT[fromKey(active.date).getMonth()] : fmtDate(active.date)} · ${active.value.toFixed(1)}${unit}`}
+              </text>
+            </g>
+          )}
         </svg>
       </div>
     </section>

@@ -21,6 +21,8 @@ export interface PainEntry {
   hotFlashes?: number;
   headacheTypes?: string[];
   headacheIntensity?: number;
+  headacheMed?: string;
+  headacheMedTime?: string;
   pcosSymptoms?: string[];
 }
 export interface TetanyEpisode {
@@ -63,7 +65,19 @@ export interface FoodEntry {
 export interface BowelEntry { id: string; time: string; bristol: number; note?: string; feelings?: string[]; symptoms?: string[] }
 export interface SexEntry { id: string; time: string; kind: SexKind; feelingAfter?: string | string[]; painful?: PainfulWhen; note?: string }
 export interface ExtraMed { id: string; time: string; name: string; dose?: string; note?: string }
-export interface WorkoutEntry { id: string; time: string; kind: string; minutes: number; weightKg?: number; feeling?: string | string[]; note?: string }
+export interface WorkoutExercise { id: string; name: string; sets?: number; reps?: number; weightKg?: number }
+export interface WorkoutEntry {
+  id: string; time: string; kind: string; minutes: number;
+  /** Body weight measured after the workout — kept separate from the day's weight metric. */
+  weightKg?: number;
+  distanceKm?: number;
+  elevationM?: number;
+  exercises?: WorkoutExercise[];
+  rpe?: number;
+  magnesiumBefore?: boolean;
+  triggeredSymptom?: { type: "tetany" | "pain"; id: string; label?: string };
+  feeling?: string | string[]; note?: string;
+}
 export interface EventEntry { id: string; title: string; startDate: string; endDate: string; time?: string; timeEnd?: string; note?: string; color?: string }
 export interface TaskEntry { id: string; title: string; startDate: string; endDate: string; time?: string; timeEnd?: string; done: boolean; note?: string }
 export interface PeriodEntry { level: PeriodLevel; discharge?: string; dischargeNote?: string; note?: string; cramps?: number }
@@ -140,6 +154,22 @@ export interface CustomLists {
   sexFeelings: string[];
 }
 
+export type QuickTagCategory = "pain" | "tetany" | "panic" | "sex" | "food" | "meds" | "workout";
+export interface CustomQuickTag {
+  id: string;
+  emoji: string;
+  label: string;
+  cat: QuickTagCategory;
+  preset?: {
+    score?: number;        // pain
+    intensity?: number;    // tetany / panic
+    what?: string;         // food
+    medId?: string;        // meds
+    kind?: string;         // workout / sex
+    minutes?: number;      // workout
+  };
+}
+
 export interface Settings {
   textSize: "sm" | "md" | "lg" | "xl";
   notifications: boolean;
@@ -148,6 +178,8 @@ export interface Settings {
   logOrder?: string[];
   gender?: Gender;
   birthControlSince?: string;
+  pregnantSince?: string;
+  customQuickTags?: CustomQuickTag[];
   scaleDescriptions?: Partial<Record<"pain" | "stress" | "tetany" | "panic" | "hotFlashes" | "headache", Record<number, string>>>;
 }
 
@@ -399,7 +431,12 @@ export const BODY_PARTS_DEFAULT = ["Abdomen","Lower abdomen","Lower belly","Pelv
 export const PAIN_QUALITY_DEFAULT = ["Cramping","Stabbing","Burning","Dull","Sharp","Throbbing","Pressure","Shooting","Aching"];
 export const OTHER_SYMPTOMS_DEFAULT = ["Nausea","Dizziness","Fatigue","Bloating","Diarrhea","Constipation","Headache","Cold sweats","Fainting","Mood swings"];
 export const FOOD_FEELINGS_DEFAULT = ["😊 Great","🙂 Fine","😐 Neutral","😕 Off","😖 Bloated","🤢 Nauseous","🤕 Stomach pain","😴 Sleepy","🥵 Flushed","⚡ Energy up"];
-export const WORKOUT_KINDS_DEFAULT = ["🧘🏼‍♀️ Yoga","🚶🏼‍♀️ Walk","🏃🏼‍♀️ Run","🚴 Cycling","💪 Strength","🤸 Stretching","🏊 Swim","🧘 Meditation"];
+export const WORKOUT_KINDS_DEFAULT = ["🧘🏼‍♀️ Yoga","🚶🏼‍♀️ Walk","🏃🏼‍♀️ Run","⛰️ Hike","🚴 Cycling","💪 Strength","🤸 Stretching","🏊 Swim","🧘 Meditation"];
+export function workoutHasDistance(kind: string) {
+  return /walk|run|hike/i.test(kind);
+}
+export function workoutIsHike(kind: string) { return /hike/i.test(kind); }
+export function workoutIsStrength(kind: string) { return /strength/i.test(kind); }
 export const MOODS_DEFAULT = ["🌀 All over the place","😠 Angry","😤 Annoyed","😰 Anxious","😑 Apathetic","🥱 Bored","🏃 Busy","😌 Calm","🥺 Clingy","😾 Cranky","😔 Depressed","🤩 Excited","😪 Fatigued","🙏 Grateful","😊 Happy","🥰 In love","🤕 In pain","😐 Indifferent","😒 Irritated","😎 Just chillin","🥲 Lonely","😕 Meh","🌩️ PMDD","💪 Productive","😴 Restful","😢 Sad","🫥 Self-deprecating","😴 Sleepy","😖 Stressed","🥱 Tired"];
 export const TETANY_TYPES = [
   "Carpopedal spasm",
@@ -513,7 +550,20 @@ export const BODY_BATTERY: { n: number; label: string; color: string; emoji: str
 export const SLEEP_QUALITY = [
   "😩 Awful","😴 Terrible","🥱 Restless","🙁 Poor","😐 Ok","🌙 Broken sleep","😪 Woke up a lot",
   "🙂 Good","😌 Refreshed","😀 Great","🤩 Perfect","💤 Slept in","⏰ Too short","🛌 Too long",
+  "🥴 Groggy","😵‍💫 Foggy head","😰 Nightmares","💭 Vivid dreams","🌡️ Sweaty night","🥶 Cold night",
+  "🤕 Woke with headache","🦵 Cramps at night","🚽 Up to the toilet","📱 Fell asleep late",
+  "☀️ Woke up early","🐢 Hard to get up","🧘 Deep & calm","😻 Best sleep ever",
 ];
+
+/* ------------------- Pregnancy ------------------- */
+export function pregnancyInfo(since?: string): { week: number; trimester: 1 | 2 | 3 } | null {
+  if (!since) return null;
+  const days = daysBetween(since, todayKey());
+  if (days < 0) return null;
+  const week = Math.floor(days / 7) + 1;
+  const trimester: 1 | 2 | 3 = week <= 13 ? 1 : week <= 27 ? 2 : 3;
+  return { week, trimester };
+}
 
 export const SEX_FEELINGS_DEFAULT = ["😊 Great","🥰 Loved","🤩 Amazing","😌 Relaxed","🙂 Good","😐 Meh","😞 Down","😢 Sad","😤 Frustrated","🤕 Sore","😴 Sleepy","💦 Sweaty","🥵 Hot","🥶 Cold","😵‍💫 Dizzy","🤢 Nauseous","💪 Energized","🫠 Drained"];
 

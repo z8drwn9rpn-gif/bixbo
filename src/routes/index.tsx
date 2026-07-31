@@ -8,7 +8,7 @@ import { MonthCalendar, monthLabel } from "@/components/MonthCalendar";
 import { LogSheet } from "@/components/LogSheet";
 import { QuickTags } from "@/components/QuickTags";
 import {
-  useBixbo, EMPTY, toKey, fromKey, todayKey, PAIN_DESCRIPTIONS, painColor, BRISTOL, nextPredictedPeriod, daysBetween, asArr,
+  useBixbo, EMPTY, toKey, fromKey, todayKey, PAIN_DESCRIPTIONS, painColor, BRISTOL, nextPredictedPeriod, pregnancyInfo, daysBetween, asArr,
   type BixboData, type PeriodLevel, type BowelEntry, type SexEntry,
 } from "@/lib/storage";
 
@@ -66,7 +66,7 @@ function HomePage() {
         }
       });
       // Period predict: 1 day before at 09:00 (skip in male mode)
-      if (!isMale && hhmm === "09:00") {
+      if (!isMale && !view.settings.pregnantSince && hhmm === "09:00") {
         const p = nextPredictedPeriod(view.cycle);
         if (p && daysBetween(todayKey(), p.start) === 1) {
           new Notification("🫐 Period starts tomorrow", { body: "Get your supplies ready 💚" });
@@ -111,7 +111,17 @@ function HomePage() {
         />
       </div>
 
-      {view.settings.gender !== "male" && (() => {
+      {(() => {
+        const preg = pregnancyInfo(view.settings.pregnantSince);
+        if (!preg) return null;
+        return (
+          <div className="mx-5 mt-3 rounded-full bg-tint px-4 py-2 text-center text-xs text-muted-foreground ring-1 ring-border">
+            🤰 Pregnancy · <span className="font-semibold text-foreground">Week {preg.week}</span> · Trimester {preg.trimester}
+          </div>
+        );
+      })()}
+
+      {view.settings.gender !== "male" && !view.settings.pregnantSince && (() => {
         const p = nextPredictedPeriod(view.cycle);
         if (!p) return null;
         const fmt = (k: string) => fromKey(k).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
@@ -132,11 +142,12 @@ function HomePage() {
 
       {/* Quick log — placed above Today */}
       <QuickTags
+        data={view}
         update={update}
         onLongPress={(cat: string) => {
           const map: Record<string, string | undefined> = {
             pain: "pain", tetany: "tetany", panic: "panic",
-            sex: "sex", food: "food",
+            sex: "sex", food: "food", period: "period", meds: "meds", workout: "workout",
           };
           const target = map[cat];
           if (target) { setQuickCat(target); setEditPain(undefined); setEditEntry(undefined); setLogOpen(true); }
@@ -281,6 +292,7 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
                   {p.symptoms.length > 0 && <p className="text-xs text-muted-foreground">+ {p.symptoms.join(", ")}</p>}
                   {p.hotFlashes != null && <p className="text-xs text-muted-foreground">🥵 Hot flashes intensity {p.hotFlashes}/5</p>}
                   {p.headacheTypes?.length ? <p className="text-xs text-muted-foreground">🤕 Headache: {p.headacheTypes.join(", ")}{p.headacheIntensity != null ? ` · ${p.headacheIntensity}/10` : ""}</p> : (p.headacheIntensity != null ? <p className="text-xs text-muted-foreground">🤕 Headache intensity {p.headacheIntensity}/10</p> : null)}
+                  {p.headacheMed ? <p className="text-xs text-muted-foreground">💊 Headache med: {p.headacheMed}{p.headacheMedTime ? ` at ${p.headacheMedTime}` : ""}</p> : null}
                   {p.pcosSymptoms?.length ? <p className="text-xs text-muted-foreground">PCOS: {p.pcosSymptoms.join(", ")}</p> : null}
                   {p.mood?.length ? <p className="text-xs text-muted-foreground">Mood: {p.mood.join(", ")}</p> : null}
                   {p.stress != null && <p className="text-xs text-muted-foreground">Stress {p.stress}/10</p>}
@@ -425,7 +437,28 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
           <ul className="space-y-1 text-sm">
             {log.workout.map((w) => (
               <li key={w.id} className="flex items-start gap-2">
-                <button onClick={() => onEdit?.("workout", w)} className="flex-1 text-left">{w.time} · {w.kind} · {w.minutes} min{asArr(w.feeling).length ? ` — ${asArr(w.feeling).join(", ")}` : ""}{w.note ? ` — ${w.note}` : ""}</button>
+                <button onClick={() => onEdit?.("workout", w)} className="flex-1 text-left">
+                  <span className="font-medium">{w.time} · {w.kind} · {w.minutes} min</span>
+                  {(w.distanceKm != null || w.elevationM != null || w.rpe != null || w.magnesiumBefore) && (
+                    <span className="block text-xs text-muted-foreground">
+                      {[
+                        w.distanceKm != null ? `${w.distanceKm} km` : null,
+                        w.elevationM != null ? `↑ ${w.elevationM} m` : null,
+                        w.rpe != null ? `RPE ${w.rpe}/10` : null,
+                        w.magnesiumBefore ? "Mg before" : null,
+                      ].filter(Boolean).join(" · ")}
+                    </span>
+                  )}
+                  {w.exercises?.length ? (
+                    <span className="block text-xs text-muted-foreground">
+                      {w.exercises.map((ex) => `${ex.name || "Exercise"}${ex.sets ? ` ${ex.sets}×${ex.reps ?? "?"}` : ""}${ex.weightKg ? ` @ ${ex.weightKg} kg` : ""}`).join(" · ")}
+                    </span>
+                  ) : null}
+                  {w.weightKg != null && <span className="block text-xs text-muted-foreground">Weight after: {w.weightKg} kg</span>}
+                  {w.triggeredSymptom && <span className="block text-xs text-muted-foreground">⚠️ Triggered: {w.triggeredSymptom.label ?? w.triggeredSymptom.type}</span>}
+                  {asArr(w.feeling).length ? <span className="block text-xs text-muted-foreground">{asArr(w.feeling).join(", ")}</span> : null}
+                  {w.note ? <span className="block whitespace-pre-line text-xs text-muted-foreground">{w.note}</span> : null}
+                </button>
                 <DeleteBtn onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], workout: (d.dayLogs[date]?.workout ?? []).filter((x) => x.id !== w.id) } } }))} />
               </li>
             ))}

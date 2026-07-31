@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import {
   toKey, hasAnyLog, painColor, isDateInRange, predictPeriods, avgDayPain,
   type BixboData, type DayLog, type EventEntry,
@@ -20,16 +20,45 @@ function periodColorVar(level?: string) {
     default: return null;
   }
 }
-function iconsFor(log: DayLog | undefined, hasMed: boolean): string[] {
+function iconsFor(log: DayLog | undefined, hasMed: boolean, isMale: boolean): string[] {
   const out: string[] = [];
+  if (log?.pain?.length) out.push("🔥");
+  if (log?.tetany?.length) out.push("⚡");
+  if (log?.panic?.length) out.push("🫯");
+  if (log?.pain?.some((p) => (p.hotFlashes ?? 0) > 0)) out.push("🥵");
+  if (log?.pain?.some((p) => p.headacheIntensity != null || (p.headacheTypes?.length ?? 0) > 0)) out.push("🤕");
   if (hasMed) out.push("💊");
-  if (log?.bowel?.some((b) => b.bristol > 0)) out.push("💩");
   if (log?.sex?.length) out.push("❤️");
-  if (log?.heat?.some((h) => h.kind === "heat")) out.push("🔥");
+  if (log?.food?.length) out.push("🍽️");
+  if (!isMale && (log?.periodInfo?.level ?? log?.period)) out.push("🫐");
+  if (log?.bowel?.some((b) => b.bristol > 0)) out.push("💩");
+  if (log?.heat?.some((h) => h.kind === "heat")) out.push("♨️");
   if (log?.heat?.some((h) => h.kind === "cold")) out.push("🧊");
   if (log?.heat?.some((h) => h.kind === "tens")) out.push("✨");
   if (log?.workout?.length) out.push("🧘🏼‍♀️");
-  if (log?.panic?.length) out.push("🫯");
+  return out;
+}
+
+function daySummaryLines(log: DayLog | undefined, isMale: boolean): string[] {
+  if (!log) return [];
+  const out: string[] = [];
+  if (log.pain?.length) out.push(`🔥 Pain: ${log.pain.map((p) => `${p.time} ${p.score}/10`).join(", ")}`);
+  if (log.tetany?.length) out.push(`⚡ Tetany: ${log.tetany.map((t) => `${t.time} ${t.intensity}/5`).join(", ")}`);
+  if (log.panic?.length) out.push(`🫯 Panic: ${log.panic.map((p) => `${p.time} ${p.intensity}/10`).join(", ")}`);
+  const hf = log.pain?.filter((p) => (p.hotFlashes ?? 0) > 0) ?? [];
+  if (hf.length) out.push(`🥵 Hot flashes: ${hf.map((p) => `${p.hotFlashes}/5`).join(", ")}`);
+  const ha = log.pain?.filter((p) => p.headacheIntensity != null || (p.headacheTypes?.length ?? 0) > 0) ?? [];
+  if (ha.length) out.push(`🤕 Headache: ${ha.map((p) => `${p.headacheTypes?.join("/") ?? "yes"}${p.headacheIntensity != null ? ` ${p.headacheIntensity}/10` : ""}`).join(", ")}`);
+  if (log.extraMeds?.length) out.push(`💊 Extra meds: ${log.extraMeds.map((m) => m.name).join(", ")}`);
+  if (log.sex?.length) out.push(`❤️ ŠukŠuk: ${log.sex.length}×`);
+  if (log.food?.length) out.push(`🍽️ Food: ${log.food.map((f) => f.what).filter(Boolean).join(", ") || `${log.food.length} entries`}`);
+  if (!isMale && (log.periodInfo?.level ?? log.period)) out.push(`🫐 Period: ${log.periodInfo?.level ?? log.period}`);
+  if (log.bowel?.length) out.push(`💩 Bowel: ${log.bowel.map((b) => `type ${b.bristol}`).join(", ")}`);
+  if (log.heat?.length) out.push(`♨️ Heat/Cold/TENS: ${log.heat.map((h) => h.kind).join(", ")}`);
+  if (log.workout?.length) out.push(`🧘🏼‍♀️ Workout: ${log.workout.map((w) => `${w.kind} ${w.minutes}min`).join(", ")}`);
+  if (log.weight != null) out.push(`⚖️ Weight: ${log.weight} kg`);
+  if (log.temperature != null) out.push(`🌡️ Temp: ${log.temperature} °C`);
+  if (log.sleepHours != null) out.push(`😴 Sleep: ${log.sleepHours} h`);
   return out;
 }
 
@@ -43,6 +72,10 @@ export function MonthCalendar({
   onSwipeMonth?: (delta: -1 | 1) => void;
 }) {
   const isMale = data.settings.gender === "male";
+  const [peek, setPeek] = useState<string | null>(null);
+  const longTimer = useRef<number | null>(null);
+  const longFired = useRef(false);
+  const clearLong = () => { if (longTimer.current) { window.clearTimeout(longTimer.current); longTimer.current = null; } };
   const y = month.getFullYear();
   const m = month.getMonth();
   const first = new Date(y, m, 1);
@@ -150,14 +183,26 @@ export function MonthCalendar({
                 const pAvg = avgDayPain(log);
                 const isSel = key === selected;
                 const predictedOrange = isPredicted(key);
-                const icons = iconsFor(log, hasMed);
+                const icons = iconsFor(log, hasMed, isMale);
                 const marked = hasAnyLog(log);
 
                 return (
                   <button
                     key={ci}
-                    onClick={() => onSelect(key)}
-                    className={`flex flex-col items-stretch rounded-lg text-left transition ${
+                    onPointerDown={() => {
+                      longFired.current = false;
+                      clearLong();
+                      longTimer.current = window.setTimeout(() => {
+                        longFired.current = true;
+                        if (navigator.vibrate) { try { navigator.vibrate(15); } catch { /* noop */ } }
+                        setPeek(key);
+                      }, 500);
+                    }}
+                    onPointerUp={() => { clearLong(); if (!longFired.current) onSelect(key); }}
+                    onPointerLeave={clearLong}
+                    onPointerCancel={clearLong}
+                    onContextMenu={(e) => e.preventDefault()}
+                    className={`flex select-none flex-col items-stretch rounded-lg text-left transition ${
                       inMonth ? "" : "opacity-30"
                     } ${isSel ? "ring-2 ring-primary" : ""}`}
                   >
@@ -185,8 +230,9 @@ export function MonthCalendar({
                         </span>
                       </div>
                       {icons.length > 0 && (
-                        <span className="pointer-events-none absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-[1px] text-[11px] leading-none drop-shadow-sm">
-                          {icons.slice(0, 4).map((ic, idx) => <span key={idx}>{ic}</span>)}
+                        <span className="pointer-events-none absolute bottom-0.5 left-1/2 flex -translate-x-1/2 gap-[1px] text-[7px] leading-none drop-shadow-sm landscape:text-[6px]">
+                          {icons.slice(0, 5).map((ic, idx) => <span key={idx}>{ic}</span>)}
+                          {icons.length > 5 && <span className="text-muted-foreground">+</span>}
                         </span>
                       )}
                       {icons.length === 0 && marked && (
@@ -243,6 +289,27 @@ export function MonthCalendar({
           );
         })}
       </div>
+
+      {peek && (() => {
+        const lines = daySummaryLines(data.dayLogs[peek], isMale);
+        const d = new Date(`${peek}T00:00:00`);
+        return (
+          <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-6" onClick={() => setPeek(null)}>
+            <div className="max-h-[70dvh] w-full max-w-sm overflow-y-auto rounded-3xl bg-background p-4 ring-1 ring-border" onClick={(e) => e.stopPropagation()}>
+              <p className="mb-2 font-serif text-lg">{d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}</p>
+              {lines.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nothing logged on this day.</p>
+              ) : (
+                <ul className="space-y-1 text-sm">{lines.map((l, i) => <li key={i} className="whitespace-pre-line">{l}</li>)}</ul>
+              )}
+              <div className="mt-4 flex gap-2">
+                <button onClick={() => setPeek(null)} className="flex-1 rounded-2xl bg-tint py-2 text-sm">Close</button>
+                <button onClick={() => { onSelect(peek); setPeek(null); }} className="flex-1 rounded-2xl bg-primary py-2 text-sm text-primary-foreground">Open day</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
