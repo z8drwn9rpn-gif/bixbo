@@ -457,6 +457,8 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
       hotFlashes: symptoms.includes("Hot flashes") ? hotFlashes : undefined,
       headacheTypes: symptoms.includes("Headache") && headacheTypes.length ? headacheTypes : undefined,
       headacheIntensity: symptoms.includes("Headache") ? headacheIntensity : undefined,
+      headacheMed: symptoms.includes("Headache") && headacheMedOn && headacheMed.trim() ? headacheMed.trim() : undefined,
+      headacheMedTime: symptoms.includes("Headache") && headacheMedOn && headacheMed.trim() ? headacheMedTime : undefined,
       pcosSymptoms: pcosSymptoms.length ? pcosSymptoms : undefined,
     };
     updateDayLog(update, date, (l) => ({
