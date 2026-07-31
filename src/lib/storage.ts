@@ -431,7 +431,12 @@ export const BODY_PARTS_DEFAULT = ["Abdomen","Lower abdomen","Lower belly","Pelv
 export const PAIN_QUALITY_DEFAULT = ["Cramping","Stabbing","Burning","Dull","Sharp","Throbbing","Pressure","Shooting","Aching"];
 export const OTHER_SYMPTOMS_DEFAULT = ["Nausea","Dizziness","Fatigue","Bloating","Diarrhea","Constipation","Headache","Cold sweats","Fainting","Mood swings"];
 export const FOOD_FEELINGS_DEFAULT = ["😊 Great","🙂 Fine","😐 Neutral","😕 Off","😖 Bloated","🤢 Nauseous","🤕 Stomach pain","😴 Sleepy","🥵 Flushed","⚡ Energy up"];
-export const WORKOUT_KINDS_DEFAULT = ["🧘🏼‍♀️ Yoga","🚶🏼‍♀️ Walk","🏃🏼‍♀️ Run","🚴 Cycling","💪 Strength","🤸 Stretching","🏊 Swim","🧘 Meditation"];
+export const WORKOUT_KINDS_DEFAULT = ["🧘🏼‍♀️ Yoga","🚶🏼‍♀️ Walk","🏃🏼‍♀️ Run","⛰️ Hike","🚴 Cycling","💪 Strength","🤸 Stretching","🏊 Swim","🧘 Meditation"];
+export function workoutHasDistance(kind: string) {
+  return /walk|run|hike/i.test(kind);
+}
+export function workoutIsHike(kind: string) { return /hike/i.test(kind); }
+export function workoutIsStrength(kind: string) { return /strength/i.test(kind); }
 export const MOODS_DEFAULT = ["🌀 All over the place","😠 Angry","😤 Annoyed","😰 Anxious","😑 Apathetic","🥱 Bored","🏃 Busy","😌 Calm","🥺 Clingy","😾 Cranky","😔 Depressed","🤩 Excited","😪 Fatigued","🙏 Grateful","😊 Happy","🥰 In love","🤕 In pain","😐 Indifferent","😒 Irritated","😎 Just chillin","🥲 Lonely","😕 Meh","🌩️ PMDD","💪 Productive","😴 Restful","😢 Sad","🫥 Self-deprecating","😴 Sleepy","😖 Stressed","🥱 Tired"];
 export const TETANY_TYPES = [
   "Carpopedal spasm",
