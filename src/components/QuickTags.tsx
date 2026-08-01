@@ -1,3 +1,4 @@
+import { Ico } from "@/components/icons/BixboIcons";
 import { useRef, useState } from "react";
 import { Check, Plus, X } from "lucide-react";
 import {
@@ -163,7 +164,7 @@ export function QuickTags({
                 aria-label={tag.label}
                 className={`relative flex shrink-0 select-none flex-col items-center gap-0.5 rounded-2xl bg-surface px-3 py-2 ring-1 ring-border transition-transform active:scale-95 ${isFlash ? "scale-110 ring-primary" : ""}`}
               >
-                <span className="text-xl leading-none">{tag.emoji}</span>
+                <Ico e={tag.emoji} size={24} />
                 <span className="text-[10px] text-muted-foreground">{tag.label}</span>
                 {isFlash && (
                   <span className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full bg-primary text-primary-foreground shadow">
@@ -189,7 +190,7 @@ export function QuickTags({
       {periodOpen && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-6" onClick={() => setPeriodOpen(false)}>
           <div className="w-full max-w-xs rounded-3xl bg-background p-4 ring-1 ring-border" onClick={(e) => e.stopPropagation()}>
-            <p className="mb-3 text-center font-serif text-lg">🫐 Flow today</p>
+            <p className="mb-3 flex items-center justify-center gap-2 text-center font-serif text-lg"><Ico e="🫐" size={20} /> Flow today</p>
             <div className="space-y-2">
               {PERIOD_LEVELS.map((L) => (
                 <button key={L.v} onClick={() => logPeriod(L.v)}
@@ -214,7 +215,7 @@ export function QuickTags({
             <button key={c.id}
               onClick={() => update((d) => ({ ...d, settings: { ...d.settings, customQuickTags: (d.settings.customQuickTags ?? []).filter((x) => x.id !== c.id) } }))}
               className="flex items-center gap-1 rounded-full bg-tint px-2 py-0.5 text-[10px] text-muted-foreground">
-              {c.emoji} {c.label} <X className="h-3 w-3" />
+              <Ico e={c.emoji} size={14} /> {c.label} <X className="h-3 w-3" />
             </button>
           ))}
         </div>
@@ -224,13 +225,13 @@ export function QuickTags({
 }
 
 const CATS: { id: QuickTagCategory; label: string }[] = [
-  { id: "pain", label: "🔥 Pain" },
-  { id: "tetany", label: "⚡ Tetany" },
-  { id: "panic", label: "🫯 Panic" },
-  { id: "sex", label: "❤️ ŠukŠuk" },
-  { id: "food", label: "🍽️ Food" },
-  { id: "meds", label: "💊 Meds" },
-  { id: "workout", label: "🧘🏼‍♀️ Workout" },
+  { id: "pain", label: "Pain" },
+  { id: "tetany", label: "Tetany" },
+  { id: "panic", label: "Panic" },
+  { id: "sex", label: "ŠukŠuk" },
+  { id: "food", label: "Food" },
+  { id: "meds", label: "Meds" },
+  { id: "workout", label: "Workout" },
 ];
 
 function QuickTagBuilder({ data, update, onClose }: {
