@@ -4,12 +4,14 @@
  * Shared language: 64x64 viewBox, rounded volumes, top-left key light,
  * soft contact shadow, gentle gradients.
  */
-import type { SVGProps } from "react";
+import { useId, type SVGProps } from "react";
 
 export type IconProps = SVGProps<SVGSVGElement> & { size?: number };
 
-let uid = 0;
-const nextId = () => `bx${++uid}`;
+/** Stable, SSR-safe gradient ids (no colons so url(#id) stays valid). */
+function useSvgId() {
+  return `bx${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
+}
 
 function Svg({ size = 24, children, ...rest }: IconProps) {
   return (
@@ -37,7 +39,7 @@ function Shadow({ cy = 56, rx = 17, ry = 4 }: { cy?: number; rx?: number; ry?: n
 
 /** BIXBO logo — soft 3D chili. Brand only, never a symptom icon. */
 export function ChiliIcon(p: IconProps) {
-  const a = nextId(), b = nextId(), c = nextId();
+  const a = useSvgId(), b = useSvgId(), c = useSvgId();
   return (
     <Svg {...p}>
       <defs>
@@ -67,7 +69,7 @@ export function ChiliIcon(p: IconProps) {
 
 /** Cycle / period / flow / discharge — three blueberries + two leaves. */
 export function BlueberryIcon(p: IconProps) {
-  const a = nextId(), b = nextId(), l = nextId();
+  const a = useSvgId(), b = useSvgId(), l = useSvgId();
   return (
     <Svg {...p}>
       <defs>
@@ -103,7 +105,7 @@ export function BlueberryIcon(p: IconProps) {
 
 /** Pain — soft 3D flame (never the chili). */
 export function FlameIcon(p: IconProps) {
-  const a = nextId(), b = nextId();
+  const a = useSvgId(), b = useSvgId();
   return (
     <Svg {...p}>
       <defs>
@@ -128,7 +130,7 @@ export function FlameIcon(p: IconProps) {
 
 /** Bowel — friendly soft 3D poop with small eyes. */
 export function PoopIcon(p: IconProps) {
-  const a = nextId();
+  const a = useSvgId();
   return (
     <Svg {...p}>
       <defs>
@@ -155,7 +157,7 @@ export function PoopIcon(p: IconProps) {
 /* ---------------------------------------------------------------- MEDS */
 
 export function PillIcon(p: IconProps) {
-  const a = nextId(), b = nextId();
+  const a = useSvgId(), b = useSvgId();
   return (
     <Svg {...p}>
       <defs>
@@ -180,7 +182,7 @@ export function PillIcon(p: IconProps) {
 /* ---------------------------------------------------------------- LOVE */
 
 export function HeartIcon(p: IconProps) {
-  const a = nextId();
+  const a = useSvgId();
   return (
     <Svg {...p}>
       <defs>
@@ -198,7 +200,7 @@ export function HeartIcon(p: IconProps) {
 /* ---------------------------------------------------------------- FOOD */
 
 export function FoodIcon(p: IconProps) {
-  const a = nextId();
+  const a = useSvgId();
   return (
     <Svg {...p}>
       <defs>
@@ -221,7 +223,7 @@ export function FoodIcon(p: IconProps) {
 
 /** Tetany — energy bolt. */
 export function BoltIcon(p: IconProps) {
-  const a = nextId();
+  const a = useSvgId();
   return (
     <Svg {...p}>
       <defs>
@@ -238,7 +240,7 @@ export function BoltIcon(p: IconProps) {
 
 /** Panic attack — head with spiral of anxiety. */
 export function PanicIcon(p: IconProps) {
-  const a = nextId();
+  const a = useSvgId();
   return (
     <Svg {...p}>
       <defs>
@@ -261,7 +263,7 @@ export function PanicIcon(p: IconProps) {
 
 /** Hot flashes — flushed face with heat waves. */
 export function HotFlashIcon(p: IconProps) {
-  const a = nextId();
+  const a = useSvgId();
   return (
     <Svg {...p}>
       <defs>
@@ -286,7 +288,7 @@ export function HotFlashIcon(p: IconProps) {
 
 /** Headache. */
 export function HeadacheIcon(p: IconProps) {
-  const a = nextId();
+  const a = useSvgId();
   return (
     <Svg {...p}>
       <defs>
@@ -308,7 +310,7 @@ export function HeadacheIcon(p: IconProps) {
 /* ------------------------------------------------------------ THERAPIES */
 
 export function HeatIcon(p: IconProps) {
-  const a = nextId();
+  const a = useSvgId();
   return (
     <Svg {...p}>
       <defs>
@@ -327,7 +329,7 @@ export function HeatIcon(p: IconProps) {
 }
 
 export function ColdIcon(p: IconProps) {
-  const a = nextId();
+  const a = useSvgId();
   return (
     <Svg {...p}>
       <defs>
@@ -347,7 +349,7 @@ export function ColdIcon(p: IconProps) {
 }
 
 export function TensIcon(p: IconProps) {
-  const a = nextId();
+  const a = useSvgId();
   return (
     <Svg {...p}>
       <defs>
@@ -365,7 +367,7 @@ export function TensIcon(p: IconProps) {
 /* ------------------------------------------------------------- ACTIVITY */
 
 export function WorkoutIcon(p: IconProps) {
-  const a = nextId();
+  const a = useSvgId();
   return (
     <Svg {...p}>
       <defs>
@@ -382,7 +384,7 @@ export function WorkoutIcon(p: IconProps) {
 }
 
 export function SleepIcon(p: IconProps) {
-  const a = nextId();
+  const a = useSvgId();
   return (
     <Svg {...p}>
       <defs>
@@ -401,7 +403,7 @@ export function SleepIcon(p: IconProps) {
 }
 
 export function ThermometerIcon(p: IconProps) {
-  const a = nextId();
+  const a = useSvgId();
   return (
     <Svg {...p}>
       <defs>
@@ -420,7 +422,7 @@ export function ThermometerIcon(p: IconProps) {
 }
 
 export function WeightIcon(p: IconProps) {
-  const a = nextId();
+  const a = useSvgId();
   return (
     <Svg {...p}>
       <defs>
@@ -439,7 +441,7 @@ export function WeightIcon(p: IconProps) {
 }
 
 export function NoteIcon(p: IconProps) {
-  const a = nextId();
+  const a = useSvgId();
   return (
     <Svg {...p}>
       <defs>
@@ -458,7 +460,7 @@ export function NoteIcon(p: IconProps) {
 }
 
 export function WarningIcon(p: IconProps) {
-  const a = nextId();
+  const a = useSvgId();
   return (
     <Svg {...p}>
       <defs>
@@ -475,7 +477,7 @@ export function WarningIcon(p: IconProps) {
 }
 
 export function LeafIcon(p: IconProps) {
-  const a = nextId();
+  const a = useSvgId();
   return (
     <Svg {...p}>
       <defs>
@@ -490,7 +492,7 @@ export function LeafIcon(p: IconProps) {
 }
 
 export function TaskIcon(p: IconProps) {
-  const a = nextId();
+  const a = useSvgId();
   return (
     <Svg {...p}>
       <defs>
@@ -507,7 +509,7 @@ export function TaskIcon(p: IconProps) {
 }
 
 export function CalendarIcon(p: IconProps) {
-  const a = nextId();
+  const a = useSvgId();
   return (
     <Svg {...p}>
       <defs>
@@ -530,7 +532,7 @@ export function CalendarIcon(p: IconProps) {
 }
 
 export function StarIcon(p: IconProps) {
-  const a = nextId();
+  const a = useSvgId();
   return (
     <Svg {...p}>
       <defs>
@@ -546,7 +548,7 @@ export function StarIcon(p: IconProps) {
 
 function makeDot(from: string, to: string) {
   return function DotIcon(p: IconProps) {
-    const a = nextId();
+    const a = useSvgId();
     return (
       <Svg {...p}>
         <defs>
@@ -567,7 +569,7 @@ export const DotOrangeIcon = makeDot("#ffc07a", "#e8752a");
 export const DotRedIcon = makeDot("#ff9b95", "#d32a2a");
 
 export function WaterIcon(p: IconProps) {
-  const a = nextId();
+  const a = useSvgId();
   return (
     <Svg {...p}>
       <defs>
@@ -583,7 +585,7 @@ export function WaterIcon(p: IconProps) {
 }
 
 export function CoffeeIcon(p: IconProps) {
-  const a = nextId();
+  const a = useSvgId();
   return (
     <Svg {...p}>
       <defs>
@@ -600,7 +602,7 @@ export function CoffeeIcon(p: IconProps) {
 }
 
 export function WineIcon(p: IconProps) {
-  const a = nextId();
+  const a = useSvgId();
   return (
     <Svg {...p}>
       <Shadow />
