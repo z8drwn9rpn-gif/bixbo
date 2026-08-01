@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { BottomNav } from "./BottomNav";
+import { ChiliIcon } from "./icons/BixboIcons";
 
 export function AppShell({
   children, title, right, big = false,
@@ -16,7 +17,8 @@ export function AppShell({
         {title !== undefined && (
           <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border/60 bg-background/90 px-5 pt-2 pb-1.5 backdrop-blur">
             <div className="flex items-center gap-2">
-              <span className={big ? "text-3xl" : "text-2xl"} aria-hidden>🌶️</span>
+              <ChiliIcon size={big ? 34 : 28} />
+
               <h1 className={`font-serif font-bold leading-none ${big ? "text-3xl" : "text-2xl"}`}>
                 {title}
               </h1>
