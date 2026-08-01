@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { Ico } from "@/components/icons/BixboIcons";
 import { useBixbo, EMPTY, addDays, toKey, fromKey, painColor, BRISTOL, avgDayPain, isIntercourseKind } from "@/lib/storage";
 
 export const Route = createFileRoute("/insights")({
@@ -183,6 +184,50 @@ function InsightsPage() {
           <button onClick={goNext} className="rounded-full p-2 hover:bg-tint"><ChevronRight className="h-4 w-4" /></button>
         </div>
 
+
+        {period === "P" && (
+          <>
+            <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
+              <p className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
+                <Ico e="🫐" size={16} /> Blueberry cycle
+              </p>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <div className="rounded-2xl bg-tint p-3">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Cycle length</p>
+                  <p className="mt-1 font-serif text-xl">{cycleSummary.avg} days</p>
+                </div>
+                <div className="rounded-2xl bg-tint p-3">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Period length</p>
+                  <p className="mt-1 font-serif text-xl">{cycleSummary.periodLen} days</p>
+                </div>
+                <div className="rounded-2xl bg-tint p-3">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Regularity</p>
+                  <p className="mt-1 font-serif text-lg">{cycleSummary.count >= 2 ? `Regular (${cycleSummary.avg}-day)` : "Not enough data"}</p>
+                </div>
+                <div className="rounded-2xl bg-tint p-3">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Last period</p>
+                  <p className="mt-1 font-serif text-base">
+                    {view.cycle.lastPeriodStart ?? "—"}{view.cycle.lastPeriodEnd ? ` → ${view.cycle.lastPeriodEnd}` : ""}
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <BirthControlCalendar data={view} anchor={anchor} />
+
+            <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
+              <p className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
+                <Ico e="❤️" size={16} /> ŠukŠuk!
+              </p>
+              <p className="mt-2 font-serif text-5xl leading-none">{sexCount}</p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {sexCount === 1 ? "entry" : "entries"} this month
+              </p>
+            </section>
+          </>
+        )}
+
+        {period !== "P" && (<>
         <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">Pain scale</p>
           <div className="mt-2 flex items-baseline gap-2">
@@ -321,9 +366,112 @@ function InsightsPage() {
           </div>
         </section>
 
+        {period === "M" && <BirthControlCalendar data={view} anchor={anchor} />}
+
         <MedsAdherence data={view} />
+        </>)}
       </div>
     </AppShell>
+  );
+}
+
+/**
+ * Birth-control (HAK) monthly calendar.
+ * 28-day pack: pills #1–#24 active, #25–#28 inactive placebo.
+ * Pill number counts continuously from settings.birthControlSince.
+ */
+function BirthControlCalendar({ data, anchor }: { data: ReturnType<typeof useBixbo>["data"]; anchor: Date }) {
+  const [sel, setSel] = useState<string | null>(null);
+  const since = data.settings.birthControlSince;
+  if (!since || data.settings.gender === "male") return null;
+
+  const bcMed = data.meds.find((m) => /antikonc|birth\s*control|contracept|hak|pill/i.test(`${m.name} ${m.dose ?? ""}`));
+
+  const y = anchor.getFullYear(), mo = anchor.getMonth();
+  const first = new Date(y, mo, 1);
+  const startWeekday = (first.getDay() + 6) % 7;
+  const daysInMonth = new Date(y, mo + 1, 0).getDate();
+  const todayK = toKey(new Date());
+
+  const pillNumber = (k: string) => {
+    const diff = Math.round((fromKey(k).getTime() - fromKey(since).getTime()) / 86400000);
+    if (diff < 0) return null;
+    return (diff % 28) + 1;
+  };
+  const takenAt = (k: string): string | null => {
+    const log = data.medLog[k] ?? {};
+    const times = data.medLogTimes?.[k] ?? {};
+    const keys = Object.keys(log).filter((key) => log[key] && (!bcMed || key.startsWith(`${bcMed.id}@`)));
+    if (!keys.length) return null;
+    return times[keys[0]] ?? keys[0].split("@")[1] ?? "";
+  };
+
+  const cells: (string | null)[] = [
+    ...new Array(startWeekday).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => toKey(new Date(y, mo, i + 1))),
+  ];
+
+  const detail = (() => {
+    if (!sel) return null;
+    const n = pillNumber(sel);
+    if (n == null) return `${sel} · before you started`;
+    const t = takenAt(sel);
+    const inactive = n > 24;
+    return `Pill #${n}${inactive ? " (inactive white)" : ""} · ${t ? `taken${t ? ` at ${t}` : ""}` : "not recorded"}`;
+  })();
+
+  return (
+    <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
+      <p className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
+        <Ico e="💊" size={16} /> Birth control
+      </p>
+      <p className="mt-3 text-center font-serif text-lg">
+        {anchor.toLocaleDateString("en-GB", { month: "long", year: "numeric" })}
+      </p>
+      <div className="mt-2 grid grid-cols-7 gap-1 text-center text-[10px] text-muted-foreground">
+        {["Mo","Tu","We","Th","Fr","Sa","Su"].map((d) => <span key={d}>{d}</span>)}
+      </div>
+      <div className="mt-1 grid grid-cols-7 gap-1">
+        {cells.map((k, i) => {
+          if (!k) return <span key={i} />;
+          const n = pillNumber(k);
+          const t = n == null ? null : takenAt(k);
+          const inactive = n != null && n > 24;
+          const future = k > todayK;
+          const isToday = k === todayK;
+          const missed = n != null && !inactive && !t && !future;
+
+          let bg = "transparent", color = "var(--foreground)", ring = "1px solid var(--border)";
+          if (n == null || future) { bg = "transparent"; color = "var(--muted-foreground)"; }
+          else if (inactive) { bg = "var(--tint)"; color = "var(--muted-foreground)"; ring = "1px solid var(--border)"; }
+          else if (t != null) { bg = "var(--primary)"; color = "var(--primary-foreground)"; ring = "none"; }
+          else if (missed) { ring = "2px solid #d94545"; color = "#d94545"; }
+
+          return (
+            <button key={k} onClick={() => setSel(sel === k ? null : k)}
+              className={`flex aspect-square flex-col items-center justify-center rounded-full text-[13px] leading-none ${sel === k ? "ring-2 ring-primary" : ""}`}
+              style={{ background: bg, color, border: sel === k ? undefined : ring, outline: isToday ? "2.5px solid var(--foreground)" : undefined }}>
+              <span className="text-[8px] opacity-70">{n != null ? `#${n}` : ""}</span>
+              <span className="font-semibold">{Number(k.slice(8, 10))}</span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="mt-3 flex flex-wrap gap-3 text-[10px] text-muted-foreground">
+        <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-primary" /> taken</span>
+        <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full border-2" style={{ borderColor: "#d94545" }} /> missed</span>
+        <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-tint ring-1 ring-border" /> inactive (white)</span>
+        <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full ring-2 ring-foreground" /> today</span>
+      </div>
+      <p className="mt-3 rounded-2xl bg-tint p-3 text-xs">
+        {detail ?? "Tap a day for details."}
+      </p>
+      {!bcMed && (
+        <p className="mt-2 text-[11px] text-muted-foreground">
+          Tip: add your pill in Medications (name it e.g. “Birth control”) so taken doses are detected precisely.
+        </p>
+      )}
+    </section>
   );
 }
 
