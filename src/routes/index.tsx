@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Settings as SettingsIcon, Share2, Trash2, Pill } from "lucide-react";
 
+import { Ico } from "@/components/icons/BixboIcons";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { MonthCalendar, monthLabel } from "@/components/MonthCalendar";
@@ -97,7 +98,7 @@ function HomePage() {
           <button onClick={goToPrevMonth} aria-label="Previous month" className="rounded-full p-1.5 hover:bg-tint">
             <ChevronLeft className="h-5 w-5" />
           </button>
-          <h2 className="font-serif text-xl font-bold">{monthLabel(monthAnchor)}</h2>
+          <h2 className="font-serif text-xl font-bold" suppressHydrationWarning>{hydrated ? monthLabel(monthAnchor) : ""}</h2>
           <button onClick={goToNextMonth} aria-label="Next month" className="rounded-full p-1.5 hover:bg-tint">
             <ChevronRight className="h-5 w-5" />
           </button>
@@ -105,11 +106,16 @@ function HomePage() {
       </div>
 
       <div className="mt-0.5">
-        <MonthCalendar
-          month={monthAnchor} data={view} selected={selected} onSelect={setSelected}
-          onSwipeMonth={(delta) => setMonthAnchor((d) => new Date(d.getFullYear(), d.getMonth() + delta, 1))}
-        />
+        {hydrated ? (
+          <MonthCalendar
+            month={monthAnchor} data={view} selected={selected} onSelect={setSelected}
+            onSwipeMonth={(delta) => setMonthAnchor((d) => new Date(d.getFullYear(), d.getMonth() + delta, 1))}
+          />
+        ) : (
+          <div className="h-[360px]" />
+        )}
       </div>
+
 
       {(() => {
         const preg = pregnancyInfo(view.settings.pregnantSince);
@@ -290,9 +296,9 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
                   {p.parts.length > 0 && <p className="text-sm">{p.parts.join(", ")}</p>}
                   {p.quality.length > 0 && <p className="text-xs text-muted-foreground">{p.quality.join(", ")}</p>}
                   {p.symptoms.length > 0 && <p className="text-xs text-muted-foreground">+ {p.symptoms.join(", ")}</p>}
-                  {p.hotFlashes != null && <p className="text-xs text-muted-foreground">🥵 Hot flashes intensity {p.hotFlashes}/5</p>}
-                  {p.headacheTypes?.length ? <p className="text-xs text-muted-foreground">🤕 Headache: {p.headacheTypes.join(", ")}{p.headacheIntensity != null ? ` · ${p.headacheIntensity}/10` : ""}</p> : (p.headacheIntensity != null ? <p className="text-xs text-muted-foreground">🤕 Headache intensity {p.headacheIntensity}/10</p> : null)}
-                  {p.headacheMed ? <p className="text-xs text-muted-foreground">💊 Headache med: {p.headacheMed}{p.headacheMedTime ? ` at ${p.headacheMedTime}` : ""}</p> : null}
+                  {p.hotFlashes != null && <p className="text-xs text-muted-foreground"><Ico e="🥵" size={13} /> Hot flashes intensity {p.hotFlashes}/5</p>}
+                  {p.headacheTypes?.length ? <p className="text-xs text-muted-foreground"><Ico e="🤕" size={13} /> Headache: {p.headacheTypes.join(", ")}{p.headacheIntensity != null ? ` · ${p.headacheIntensity}/10` : ""}</p> : (p.headacheIntensity != null ? <p className="text-xs text-muted-foreground"><Ico e="🤕" size={13} /> Headache intensity {p.headacheIntensity}/10</p> : null)}
+                  {p.headacheMed ? <p className="text-xs text-muted-foreground"><Ico e="💊" size={13} /> Headache med: {p.headacheMed}{p.headacheMedTime ? ` at ${p.headacheMedTime}` : ""}</p> : null}
                   {p.pcosSymptoms?.length ? <p className="text-xs text-muted-foreground">PCOS: {p.pcosSymptoms.join(", ")}</p> : null}
                   {p.mood?.length ? <p className="text-xs text-muted-foreground">Mood: {p.mood.join(", ")}</p> : null}
                   {p.stress != null && <p className="text-xs text-muted-foreground">Stress {p.stress}/10</p>}
@@ -308,7 +314,7 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
       ) || null}
 
       {log?.panic?.length ? (
-        <Card title="Panic attacks" icon="⚡">
+        <Card title="Panic attacks" icon="🫯">
           <ul className="space-y-2">
             {log.panic.map((p) => (
               <li key={p.id} className="flex items-start gap-2">
@@ -319,7 +325,7 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
                   {p.cognitive.length > 0 && <p className="text-xs">Cognitive: {p.cognitive.join(", ")}</p>}
                   <p className="text-[11px] text-muted-foreground">Hyperventilation: {p.hyperventilation}{p.tetanyPresent ? " · tetany present" : ""}</p>
                   {p.helped.length > 0 && <p className="text-[11px] text-muted-foreground">Helped: {p.helped.join(", ")}</p>}
-                  {p.rescueMed ? <p className="text-xs text-muted-foreground">💊 Rescue: {p.rescueMed}</p> : null}
+                  {p.rescueMed ? <p className="text-xs text-muted-foreground"><Ico e="💊" size={13} /> Rescue: {p.rescueMed}</p> : null}
                   {p.note && <p className="mt-1 text-sm whitespace-pre-line">"{p.note}"</p>}
                   <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
                 </button>
@@ -339,7 +345,7 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
                   <p>{t.time} · {t.types.join(", ") || "Tetany"} · {t.intensity}/5 · {t.minutes == null ? "ongoing" : `${t.minutes}min`}{t.triggers.length ? ` — ${t.triggers.join(", ")}` : ""}</p>
                   {t.location?.length ? <p className="text-xs text-muted-foreground">Location: {t.location.join(", ")}</p> : null}
                   {t.helped?.length ? <p className="text-xs text-muted-foreground">Helped: {t.helped.join(", ")}</p> : null}
-                  {t.rescueMed ? <p className="text-xs text-muted-foreground">💊 Rescue: {t.rescueMed}</p> : null}
+                  {t.rescueMed ? <p className="text-xs text-muted-foreground"><Ico e="💊" size={13} /> Rescue: {t.rescueMed}</p> : null}
                   {t.note && <p className="mt-1 text-sm whitespace-pre-line">"{t.note}"</p>}
                   <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
                 </button>
@@ -351,7 +357,7 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
       ) : null}
 
       {!isMale && (log?.period || log?.periodInfo?.level) && (
-        <Card title="Blueberry 🫐" icon="🫐">
+        <Card title="Blueberry" icon="🫐">
           <button onClick={() => onEdit?.("period", undefined)} className="w-full text-left">
             <p className="text-sm">Flow: {periodLabel(log?.periodInfo?.level ?? log?.period)}</p>
             {log?.periodInfo?.cramps != null && (
@@ -368,7 +374,7 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
 
 
       {log?.sex?.length ? (
-        <Card title="ŠukŠuk! ❤️" icon="❤️">
+        <Card title="ŠukŠuk!" icon="❤️">
           <ul className="space-y-1 text-sm">
             {log.sex.map((s: SexEntry) => (
               <li key={s.id} className="flex items-start gap-2">
@@ -381,11 +387,11 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
       ) : null}
 
       {log?.heat?.length ? (
-        <Card title="Heat / Cold / TENS" icon="🔥">
+        <Card title="Heat / Cold / TENS" icon="♨️">
           <ul className="space-y-1 text-sm">
             {log.heat.map((h) => (
               <li key={h.id} className="flex items-start gap-2">
-                <button onClick={() => onEdit?.("heat", h)} className="flex-1 text-left">{h.kind === "heat" ? "🔥" : h.kind === "cold" ? "🧊" : "✨"} {h.start} · {h.ongoing ? "ongoing" : `${h.minutes ?? 0} min`}{h.note ? ` — ${h.note}` : ""}</button>
+                <button onClick={() => onEdit?.("heat", h)} className="flex-1 text-left"><Ico e={h.kind === "heat" ? "♨️" : h.kind === "cold" ? "🧊" : "✨"} size={14} /> {h.start} · {h.ongoing ? "ongoing" : `${h.minutes ?? 0} min`}{h.note ? ` — ${h.note}` : ""}</button>
                 <DeleteBtn onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], heat: (d.dayLogs[date]?.heat ?? []).filter((x) => x.id !== h.id) } } }))} />
               </li>
             ))}
@@ -399,10 +405,10 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
             {log.food.map((f) => (
               <li key={f.id} className="flex items-start gap-2">
                 <button onClick={() => onEdit?.("food", f)} className="flex-1 text-left">
-                  <div>{f.time} · {f.what || (f.histamineFlare ? "(histamine flare)" : "—")}{f.highHistamine ? " · ⚠️ high histamine" : ""}{f.hydrationMl != null ? ` · 💧 ${f.hydrationMl}ml` : ""}{f.caffeineMg != null ? ` · ☕ ${f.caffeineMg}mg` : ""}{f.alcoholDrinks != null ? ` · 🍷 ${f.alcoholDrinks}` : ""}</div>
+                  <div>{f.time} · {f.what || (f.histamineFlare ? "(histamine flare)" : "—")}{f.highHistamine ? " · high histamine" : ""}{f.hydrationMl != null ? ` · ${f.hydrationMl}ml` : ""}{f.caffeineMg != null ? ` · ${f.caffeineMg}mg` : ""}{f.alcoholDrinks != null ? ` · ${f.alcoholDrinks}` : ""}</div>
                   {f.feelings.length ? <div className="text-xs text-muted-foreground">Feel: {f.feelings.join(", ")}</div> : null}
                   {f.symptomsAfter?.length ? <div className="text-xs text-muted-foreground">After: {f.symptomsAfter.join(", ")}</div> : null}
-                  {f.histamineFlare ? <div className="text-xs text-destructive">🔥 Histamine flare{f.histamineSymptoms?.length ? `: ${f.histamineSymptoms.join(", ")}` : ""}</div> : null}
+                  {f.histamineFlare ? <div className="text-xs text-destructive"><Ico e="🔥" size={13} /> Histamine flare{f.histamineSymptoms?.length ? `: ${f.histamineSymptoms.join(", ")}` : ""}</div> : null}
                 </button>
                 <DeleteBtn onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], food: (d.dayLogs[date]?.food ?? []).filter((x) => x.id !== f.id) } } }))} />
               </li>
@@ -433,7 +439,7 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
       ) : null}
 
       {log?.workout?.length ? (
-        <Card title="Workout" icon="🧘🏼‍♀️">
+        <Card title="Workout" icon="👟">
           <ul className="space-y-1 text-sm">
             {log.workout.map((w) => (
               <li key={w.id} className="flex items-start gap-2">
@@ -455,7 +461,7 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
                     </span>
                   ) : null}
                   {w.weightKg != null && <span className="block text-xs text-muted-foreground">Weight after: {w.weightKg} kg</span>}
-                  {w.triggeredSymptom && <span className="block text-xs text-muted-foreground">⚠️ Triggered: {w.triggeredSymptom.label ?? w.triggeredSymptom.type}</span>}
+                  {w.triggeredSymptom && <span className="block text-xs text-muted-foreground"><Ico e="⚠️" size={13} /> Triggered: {w.triggeredSymptom.label ?? w.triggeredSymptom.type}</span>}
                   {asArr(w.feeling).length ? <span className="block text-xs text-muted-foreground">{asArr(w.feeling).join(", ")}</span> : null}
                   {w.note ? <span className="block whitespace-pre-line text-xs text-muted-foreground">{w.note}</span> : null}
                 </button>
@@ -540,7 +546,7 @@ function Card({ title, icon, children }: { title: string; icon: string; children
   return (
     <div className="rounded-3xl bg-surface p-4 ring-1 ring-border">
       <div className="mb-2 flex items-center gap-2">
-        <span className="text-lg" aria-hidden>{icon}</span>
+        <Ico e={icon} size={22} />
         <h3 className="font-serif text-lg font-semibold">{title}</h3>
       </div>
       {children}

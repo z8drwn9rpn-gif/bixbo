@@ -1,3 +1,4 @@
+import { Ico, IcoText } from "@/components/icons/BixboIcons";
 import { useRef, useState } from "react";
 import {
   toKey, hasAnyLog, painColor, isDateInRange, predictPeriods, avgDayPain,
@@ -231,7 +232,7 @@ export function MonthCalendar({
                       </div>
                       {icons.length > 0 && (
                         <span className="pointer-events-none absolute bottom-0.5 left-1/2 flex -translate-x-1/2 gap-[1px] text-[7px] leading-none drop-shadow-sm landscape:text-[6px]">
-                          {icons.slice(0, 5).map((ic, idx) => <span key={idx}>{ic}</span>)}
+                          {icons.slice(0, 5).map((ic, idx) => <Ico key={idx} e={ic} size={9} />)}
                           {icons.length > 5 && <span className="text-muted-foreground">+</span>}
                         </span>
                       )}
@@ -300,7 +301,7 @@ export function MonthCalendar({
               {lines.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Nothing logged on this day.</p>
               ) : (
-                <ul className="space-y-1 text-sm">{lines.map((l, i) => <li key={i} className="whitespace-pre-line">{l}</li>)}</ul>
+                <ul className="space-y-1 text-sm">{lines.map((l, i) => <li key={i} className="whitespace-pre-line"><IcoText text={l} size={15} /></li>)}</ul>
               )}
               <div className="mt-4 flex gap-2">
                 <button onClick={() => setPeek(null)} className="flex-1 rounded-2xl bg-tint py-2 text-sm">Close</button>

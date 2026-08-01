@@ -297,10 +297,15 @@ function hydrate() {
 
 function persist() {
   if (typeof window === "undefined") return;
+  // Never write before we've loaded what's already stored, otherwise an early
+  // write (e.g. cloud sync clearing partner) would wipe saved data.
+  if (!_hydrated) hydrate();
   try { localStorage.setItem(KEY, JSON.stringify(_state)); } catch {}
 }
 
+
 export function setBixbo(updater: (d: BixboData) => BixboData) {
+  hydrate();
   _state = updater(_state);
   persist();
   emit();
@@ -313,11 +318,12 @@ export function replaceBixbo(d: BixboData, reason: "local" | "remote" = "local")
   changeListeners.forEach((l) => l(_state, reason));
 }
 export function setPartner(partner: PartnerData | undefined) {
+  hydrate();
   _state = { ..._state, partner };
   persist();
   emit();
 }
-export function getBixbo(): BixboData { return _state; }
+export function getBixbo(): BixboData { hydrate(); return _state; }
 export function subscribeBixboChanges(fn: (d: BixboData, reason: "local" | "remote") => void) {
   changeListeners.add(fn);
   return () => { changeListeners.delete(fn); };

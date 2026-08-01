@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect, type ReactNode } from "react";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter,
 } from "@/components/ui/sheet";
+import { Ico } from "@/components/icons/BixboIcons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,11 +32,11 @@ type Category =
 
 const CATEGORIES: { id: Category; label: string; emoji: string; hint: string }[] = [
   { id: "pain",    label: "Pain",             emoji: "🔥", hint: "0–10, body, quality" },
-  { id: "period",  label: "Blueberry 🫐",     emoji: "🫐", hint: "Flow · discharge · notes" },
+  { id: "period",  label: "Blueberry",     emoji: "🫐", hint: "Flow · discharge · notes" },
   { id: "heat",    label: "Heat / Cold / TENS session",      emoji: "♨️", hint: "Heating, ice or TENS session" },
   { id: "food",    label: "Food",             emoji: "🍽️", hint: "What & how you feel" },
   { id: "bowel",   label: "Bowel",            emoji: "💩", hint: "Bristol type" },
-  { id: "sex",     label: "ŠukŠuk! ❤️",       emoji: "❤️", hint: "All kinds of activity" },
+  { id: "sex",     label: "ŠukŠuk!",       emoji: "❤️", hint: "All kinds of activity" },
   { id: "workout", label: "Workout",          emoji: "🧘🏼‍♀️", hint: "Type · duration · weight" },
   { id: "temp",    label: "Temp / Sleep / Weight", emoji: "🌡️", hint: "°C · kg · hours" },
   { id: "meds",    label: "Meds",             emoji: "💊", hint: "Taken · extra dose" },
@@ -117,7 +118,7 @@ export function LogSheet({
                 <li key={c.id}>
                   {editingOrder ? (
                     <div className="flex w-full items-center gap-3 bg-surface px-5 py-3">
-                      <span className="grid h-10 w-10 place-items-center rounded-full bg-tint text-xl">{c.emoji}</span>
+                      <span className="grid h-10 w-10 place-items-center rounded-full bg-tint"><Ico e={c.emoji} size={26} /></span>
                       <div className="min-w-0 flex-1">
                         <p className="text-base font-semibold">{c.label}</p>
                       </div>
@@ -133,7 +134,7 @@ export function LogSheet({
                   ) : (
                     <button onClick={() => setCat(c.id)}
                       className="flex w-full items-center gap-3 bg-surface px-5 py-3 text-left transition hover:bg-tint">
-                      <span className="grid h-10 w-10 place-items-center rounded-full bg-tint text-xl">{c.emoji}</span>
+                      <span className="grid h-10 w-10 place-items-center rounded-full bg-tint"><Ico e={c.emoji} size={26} /></span>
                       <div className="min-w-0 flex-1">
                         <p className="text-base font-semibold">{c.label}</p>
                         <p className="truncate text-xs text-muted-foreground">{c.hint}</p>
@@ -1239,9 +1240,9 @@ function ThermoForm({ date, update, onDone, initialEntry }:
     <div className="space-y-3">
       <Field label="Type">
         <div className="mt-2 flex gap-2">
-          <Chip active={kind === "heat"} onClick={() => setKind("heat")}>🔥 Heat</Chip>
-          <Chip active={kind === "cold"} onClick={() => setKind("cold")}>🧊 Cold</Chip>
-          <Chip active={kind === "tens"} onClick={() => setKind("tens")}>✨ TENS</Chip>
+          <Chip active={kind === "heat"} onClick={() => setKind("heat")}><Ico e="♨️" size={16} /> Heat</Chip>
+          <Chip active={kind === "cold"} onClick={() => setKind("cold")}><Ico e="🧊" size={16} /> Cold</Chip>
+          <Chip active={kind === "tens"} onClick={() => setKind("tens")}><Ico e="✨" size={16} /> TENS</Chip>
         </div>
       </Field>
       <Field label="Start"><Input type="time" value={start} onChange={(e) => setStart(e.target.value)} className="w-full" /></Field>
@@ -1570,7 +1571,7 @@ function MedsForm({ date, data, update, onDone }:
                 <div className="flex-1">
                   <p className="text-sm font-medium">{m.name}</p>
                   <p className="text-xs text-muted-foreground">As needed{m.dose ? ` · ${m.dose}` : ""}</p>
-                  {m.note && <p className="text-[11px] text-muted-foreground">📝 {m.note}</p>}
+                  {m.note && <p className="text-[11px] text-muted-foreground"><Ico e="📝" size={13} /> {m.note}</p>}
                 </div>
                 {taken[`${m.id}@asneeded`] && (
                   <Input type="time" value={takenTimes[`${m.id}@asneeded`] ?? nowHHMM()}
@@ -1587,7 +1588,7 @@ function MedsForm({ date, data, update, onDone }:
                     <div className="flex-1">
                       <p className="text-sm font-medium">{m.name} <span className="text-xs text-muted-foreground">· scheduled {t}</span></p>
                       {m.dose && <p className="text-xs text-muted-foreground">{m.dose}</p>}
-                      {m.note && <p className="text-[11px] text-muted-foreground">📝 {m.note}</p>}
+                      {m.note && <p className="text-[11px] text-muted-foreground"><Ico e="📝" size={13} /> {m.note}</p>}
                     </div>
                     {isTaken && (
                       <Input type="time" value={takenTimes[k] ?? t}
@@ -1644,8 +1645,8 @@ function WorkoutForm({ date, data, update, onDone, initialEntry }:
 
   const log = data.dayLogs[date];
   const symptomOptions = [
-    ...(log?.tetany ?? []).map((t) => ({ type: "tetany" as const, id: t.id, label: `⚡ ${t.time} tetany ${t.intensity}/5` })),
-    ...(log?.pain ?? []).map((p) => ({ type: "pain" as const, id: p.id, label: `🔥 ${p.time} pain ${p.score}/10` })),
+    ...(log?.tetany ?? []).map((t) => ({ type: "tetany" as const, id: t.id, label: `${t.time} tetany ${t.intensity}/5` })),
+    ...(log?.pain ?? []).map((p) => ({ type: "pain" as const, id: p.id, label: `${p.time} pain ${p.score}/10` })),
   ];
 
   const save = () => {
