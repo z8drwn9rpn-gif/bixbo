@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { Ico } from "@/components/icons/BixboIcons";
 import { AppShell } from "@/components/AppShell";
 import { useBixbo, EMPTY, todayKey, daysBetween, addDays, fromKey, painColor, PAIN_DESCRIPTIONS, predictPeriods, nextPredictedPeriod, avgDayPain, type PainEntry, type PanicAttack, type TetanyEpisode, type ExtraMed, type Med, type PartnerData, type DayNote } from "@/lib/storage";
 
@@ -32,7 +33,7 @@ function PainList({ title, entries }: { title: string; entries: (PainEntry & { d
               {p.parts?.length ? <p className="text-sm">{p.parts.join(", ")}</p> : null}
               {p.quality?.length ? <p className="text-xs text-muted-foreground">{p.quality.join(", ")}</p> : null}
               {p.symptoms?.length ? <p className="text-xs text-muted-foreground">+ {p.symptoms.join(", ")}</p> : null}
-              {p.hotFlashes != null ? <p className="text-xs text-muted-foreground">🥵 Hot flashes {p.hotFlashes}/5</p> : null}
+              {p.hotFlashes != null ? <p className="text-xs text-muted-foreground"><Ico e="🥵" size={16} /> Hot flashes {p.hotFlashes}/5</p> : null}
               {p.mood?.length ? <p className="text-xs text-muted-foreground">Mood: {p.mood.join(", ")}</p> : null}
               {p.stress != null && <p className="text-xs text-muted-foreground">Stress {p.stress}/10</p>}
               {p.bodyBattery != null && <p className="text-xs text-muted-foreground">Battery {p.bodyBattery}/5</p>}
@@ -290,7 +291,7 @@ function BlueberrySection({ partner }: { partner: PartnerData }) {
 
   return (
     <section className="rounded-3xl bg-surface p-4 ring-1 ring-border space-y-3">
-      <h3 className="font-serif text-lg font-semibold">🫐 {partner.name || "Partner"} — Blueberry</h3>
+      <h3 className="font-serif text-lg font-semibold"><Ico e="🫐" size={16} /> {partner.name || "Partner"} — Blueberry</h3>
       {next && (() => {
         const daysUntil = daysBetween(todayKey(), next.start);
         const label =
@@ -420,21 +421,21 @@ function CouplePage() {
             <CouplePainChart days={chartDays} mine={view.dayLogs} theirs={partner.dayLogs} partnerName={partner.name || "Partner"} />
 
             <section className="rounded-3xl bg-surface p-4 ring-1 ring-border space-y-3">
-              <h3 className="font-serif text-lg font-semibold">🔥 {partner.name || "Partner"} — pain</h3>
+              <h3 className="font-serif text-lg font-semibold"><Ico e="🔥" size={16} /> {partner.name || "Partner"} — pain</h3>
               <PainList title="Recent" entries={partnerPain} />
               <DayNotesList title="Day notes" notes={partnerNotes} />
             </section>
 
             {(partnerTetany.length > 0 || partnerPanic.length > 0) && (
               <section className="rounded-3xl bg-surface p-4 ring-1 ring-border space-y-3">
-                <h3 className="font-serif text-lg font-semibold">⚡ {partner.name || "Partner"} — episodes</h3>
+                <h3 className="font-serif text-lg font-semibold"><Ico e="⚡" size={16} /> {partner.name || "Partner"} — episodes</h3>
                 <TetanyList title="Tetany" entries={partnerTetany} />
                 <PanicList title="Panic attacks" entries={partnerPanic} />
               </section>
             )}
 
             <section className="rounded-3xl bg-surface p-4 ring-1 ring-border space-y-3">
-              <h3 className="font-serif text-lg font-semibold">💊 {partner.name || "Partner"} — meds</h3>
+              <h3 className="font-serif text-lg font-semibold"><Ico e="💊" size={16} /> {partner.name || "Partner"} — meds</h3>
               <MedsList title="Recent days" days={partnerMeds} />
             </section>
 
@@ -443,21 +444,21 @@ function CouplePage() {
 
 
             <section className="rounded-3xl bg-surface p-4 ring-1 ring-border space-y-3">
-              <h3 className="font-serif text-lg font-semibold">🔥 My pain</h3>
+              <h3 className="font-serif text-lg font-semibold"><Ico e="🔥" size={16} /> My pain</h3>
               <PainList title="Recent" entries={myPain} />
               <DayNotesList title="Day notes" notes={myNotes} />
             </section>
 
             {(myTetany.length > 0 || myPanic.length > 0) && (
               <section className="rounded-3xl bg-surface p-4 ring-1 ring-border space-y-3">
-                <h3 className="font-serif text-lg font-semibold">⚡ My episodes</h3>
+                <h3 className="font-serif text-lg font-semibold"><Ico e="⚡" size={16} /> My episodes</h3>
                 <TetanyList title="Tetany" entries={myTetany} />
                 <PanicList title="Panic attacks" entries={myPanic} />
               </section>
             )}
 
             <section className="rounded-3xl bg-surface p-4 ring-1 ring-border space-y-3">
-              <h3 className="font-serif text-lg font-semibold">💊 My meds</h3>
+              <h3 className="font-serif text-lg font-semibold"><Ico e="💊" size={16} /> My meds</h3>
               <MedsList title="Recent days" days={myMeds} />
             </section>
           </>

@@ -195,7 +195,7 @@ function InsightsPage() {
         </section>
 
         <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">ŠukŠuk! ❤️</p>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">ŠukŠuk!</p>
           <p className="mt-2 font-serif text-5xl leading-none">{sexCount}</p>
           <p className="mt-2 text-sm text-muted-foreground">
             {sexCount === 1 ? "entry" : "entries"} in this {period === "W" ? "week" : period === "M" ? "month" : "year"}
@@ -204,7 +204,7 @@ function InsightsPage() {
 
         {view.settings.gender !== "male" && (
         <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">Blueberry 🫐 cycle</p>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">Blueberry cycle</p>
           <div className="mt-3 grid grid-cols-2 gap-2">
             <div className="rounded-2xl bg-tint p-3">
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Cycle length</p>
@@ -252,7 +252,7 @@ function InsightsPage() {
         </section>
 
         <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">Hot flashes 🥵</p>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">Hot flashes</p>
           {hfTotal ? (
             <>
               <div className="mt-2 flex items-baseline gap-2">
@@ -412,7 +412,7 @@ function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) 
   return (
     <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
       <button onClick={() => setOpen((o) => !o)} className="flex w-full items-center justify-between">
-        <p className="text-xs uppercase tracking-wider text-muted-foreground">💊 Meds adherence</p>
+        <p className="text-xs uppercase tracking-wider text-muted-foreground">Meds adherence</p>
         <span className="text-xs text-muted-foreground">{open ? "▾" : "▸"}</span>
       </button>
       {open && (
