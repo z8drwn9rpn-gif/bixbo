@@ -98,7 +98,7 @@ function HomePage() {
           <button onClick={goToPrevMonth} aria-label="Previous month" className="rounded-full p-1.5 hover:bg-tint">
             <ChevronLeft className="h-5 w-5" />
           </button>
-          <h2 className="font-serif text-xl font-bold">{monthLabel(monthAnchor)}</h2>
+          <h2 className="font-serif text-xl font-bold" suppressHydrationWarning>{hydrated ? monthLabel(monthAnchor) : ""}</h2>
           <button onClick={goToNextMonth} aria-label="Next month" className="rounded-full p-1.5 hover:bg-tint">
             <ChevronRight className="h-5 w-5" />
           </button>
