@@ -81,7 +81,7 @@ export function BlueberryIcon(p: IconProps) {
           <stop stopColor="#95dd6e" /><stop offset="1" stopColor="#46943a" />
         </linearGradient>
       </defs>
-      <Shadow cy="57" rx="18" ry="3.5" />
+      <Shadow cy={57} rx={18} ry={3.5} />
       <path d="M31 20c-4-7-11-10-17-9-1.4.2-1.8 1.8-.7 2.7 4.6 3.6 7.4 7.6 8.8 12.2.5 1.7 2.7 2 3.8.7l4.6-5.2c.6-.6.8-1.5.5-2.2z" fill={`url(#${l})`} />
       <path d="M33 20c3-7 9.6-11 16-10.6 1.4.1 2 1.7.9 2.7-4.2 3.8-6.8 8-8 12.7-.4 1.7-2.6 2.2-3.8.9l-4.6-4.8c-.6-.6-.8-1.4-.5-2z" fill="#5fb046" />
       <circle cx="21" cy="38" r="12" fill={`url(#${b})`} />
@@ -188,7 +188,7 @@ export function HeartIcon(p: IconProps) {
           <stop stopColor="#ff8fa8" /><stop offset="0.5" stopColor="#f0325c" /><stop offset="1" stopColor="#b4102f" />
         </linearGradient>
       </defs>
-      <Shadow cy="57" rx="15" ry="3.5" />
+      <Shadow cy={57} rx={15} ry={3.5} />
       <path d="M32 53C16 42 8 34 8 24.5 8 16.5 14.2 11 21.4 11c4.6 0 8.4 2.3 10.6 5.8C34.2 13.3 38 11 42.6 11 49.8 11 56 16.5 56 24.5 56 34 48 42 32 53z" fill={`url(#${a})`} />
       <ellipse cx="21" cy="22" rx="5.5" ry="3.6" transform="rotate(-32 21 22)" fill="#fff" opacity="0.45" />
     </Svg>
