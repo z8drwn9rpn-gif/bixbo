@@ -305,6 +305,7 @@ function persist() {
 
 
 export function setBixbo(updater: (d: BixboData) => BixboData) {
+  hydrate();
   _state = updater(_state);
   persist();
   emit();
@@ -317,11 +318,12 @@ export function replaceBixbo(d: BixboData, reason: "local" | "remote" = "local")
   changeListeners.forEach((l) => l(_state, reason));
 }
 export function setPartner(partner: PartnerData | undefined) {
+  hydrate();
   _state = { ..._state, partner };
   persist();
   emit();
 }
-export function getBixbo(): BixboData { return _state; }
+export function getBixbo(): BixboData { hydrate(); return _state; }
 export function subscribeBixboChanges(fn: (d: BixboData, reason: "local" | "remote") => void) {
   changeListeners.add(fn);
   return () => { changeListeners.delete(fn); };
