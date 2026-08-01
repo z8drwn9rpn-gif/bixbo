@@ -297,8 +297,12 @@ function hydrate() {
 
 function persist() {
   if (typeof window === "undefined") return;
+  // Never write before we've loaded what's already stored, otherwise an early
+  // write (e.g. cloud sync clearing partner) would wipe saved data.
+  if (!_hydrated) hydrate();
   try { localStorage.setItem(KEY, JSON.stringify(_state)); } catch {}
 }
+
 
 export function setBixbo(updater: (d: BixboData) => BixboData) {
   _state = updater(_state);
