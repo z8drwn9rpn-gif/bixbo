@@ -489,6 +489,128 @@ export function LeafIcon(p: IconProps) {
   );
 }
 
+export function TaskIcon(p: IconProps) {
+  const a = nextId();
+  return (
+    <Svg {...p}>
+      <defs>
+        <linearGradient id={a} x1="12" y1="12" x2="52" y2="52" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#a3e07d" /><stop offset="1" stopColor="#3f8f3c" />
+        </linearGradient>
+      </defs>
+      <Shadow />
+      <circle cx="32" cy="32" r="24" fill={`url(#${a})`} />
+      <path d="M21 33l8 8 15-17" stroke="#fff" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <ellipse cx="22" cy="20" rx="6" ry="3.6" transform="rotate(-30 22 20)" fill="#fff" opacity="0.3" />
+    </Svg>
+  );
+}
+
+export function CalendarIcon(p: IconProps) {
+  const a = nextId();
+  return (
+    <Svg {...p}>
+      <defs>
+        <linearGradient id={a} x1="10" y1="14" x2="54" y2="56" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#fdfcf7" /><stop offset="1" stopColor="#d9d6c4" />
+        </linearGradient>
+      </defs>
+      <Shadow />
+      <rect x="8" y="12" width="48" height="44" rx="10" fill={`url(#${a})`} />
+      <path d="M8 22a10 10 0 0 1 10-10h28a10 10 0 0 1 10 10v4H8v-4z" fill="#e0574f" />
+      <g fill="#8a6a4a">
+        <rect x="18" y="4" width="6" height="14" rx="3" /><rect x="40" y="4" width="6" height="14" rx="3" />
+      </g>
+      <g fill="#a8b08f">
+        <circle cx="21" cy="36" r="3.4" /><circle cx="32" cy="36" r="3.4" /><circle cx="43" cy="36" r="3.4" />
+        <circle cx="21" cy="46" r="3.4" /><circle cx="32" cy="46" r="3.4" />
+      </g>
+    </Svg>
+  );
+}
+
+export function StarIcon(p: IconProps) {
+  const a = nextId();
+  return (
+    <Svg {...p}>
+      <defs>
+        <linearGradient id={a} x1="14" y1="10" x2="48" y2="54" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#ffe486" /><stop offset="1" stopColor="#f0a326" />
+        </linearGradient>
+      </defs>
+      <Shadow />
+      <path d="M32 6l7.6 15.6L57 24l-12.6 12.3L47.4 54 32 45.8 16.6 54l3-17.7L7 24l17.4-2.4z" fill={`url(#${a})`} />
+    </Svg>
+  );
+}
+
+function makeDot(from: string, to: string) {
+  return function DotIcon(p: IconProps) {
+    const a = nextId();
+    return (
+      <Svg {...p}>
+        <defs>
+          <radialGradient id={a} cx="0.35" cy="0.3" r="0.85">
+            <stop stopColor={from} /><stop offset="1" stopColor={to} />
+          </radialGradient>
+        </defs>
+        <Shadow cy={54} rx={14} ry={3} />
+        <circle cx="32" cy="30" r="22" fill={`url(#${a})`} />
+        <ellipse cx="24" cy="20" rx="7" ry="4.4" transform="rotate(-30 24 20)" fill="#fff" opacity="0.4" />
+      </Svg>
+    );
+  };
+}
+export const DotGreenIcon = makeDot("#a9ea86", "#3f9a3c");
+export const DotYellowIcon = makeDot("#ffe888", "#e8b62a");
+export const DotOrangeIcon = makeDot("#ffc07a", "#e8752a");
+export const DotRedIcon = makeDot("#ff9b95", "#d32a2a");
+
+export function WaterIcon(p: IconProps) {
+  const a = nextId();
+  return (
+    <Svg {...p}>
+      <defs>
+        <linearGradient id={a} x1="20" y1="8" x2="44" y2="54" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#b8ecff" /><stop offset="1" stopColor="#2f8fd6" />
+        </linearGradient>
+      </defs>
+      <Shadow />
+      <path d="M32 6c9 12 16 20 16 28 0 9-7 16-16 16s-16-7-16-16c0-8 7-16 16-28z" fill={`url(#${a})`} />
+      <ellipse cx="24" cy="36" rx="4" ry="6" fill="#fff" opacity="0.4" />
+    </Svg>
+  );
+}
+
+export function CoffeeIcon(p: IconProps) {
+  const a = nextId();
+  return (
+    <Svg {...p}>
+      <defs>
+        <linearGradient id={a} x1="12" y1="20" x2="44" y2="52" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#fffdf8" /><stop offset="1" stopColor="#ddd6c8" />
+        </linearGradient>
+      </defs>
+      <Shadow />
+      <path d="M10 22h34v16c0 8-7 14-17 14s-17-6-17-14V22z" fill={`url(#${a})`} />
+      <path d="M44 26h5a7 7 0 0 1 0 14h-5" stroke="#c8c0b0" strokeWidth="5" fill="none" strokeLinecap="round" />
+      <ellipse cx="27" cy="25" rx="15" ry="4" fill="#7a4a28" />
+    </Svg>
+  );
+}
+
+export function WineIcon(p: IconProps) {
+  const a = nextId();
+  return (
+    <Svg {...p}>
+      <Shadow />
+      <path d="M20 8h24l-2 16c-.8 6-5 10-10 10s-9.2-4-10-10z" fill="#c22a4a" />
+      <path d="M30 34h4v16h-4z" fill="#dcd6c2" />
+      <rect x="20" y="50" width="24" height="5" rx="2.5" fill="#dcd6c2" />
+    </Svg>
+  );
+}
+
 /* ------------------------------------------------------------ REGISTRY */
 
 export const BIXBO_ICONS = {
@@ -513,6 +635,16 @@ export const BIXBO_ICONS = {
   note: NoteIcon,
   warning: WarningIcon,
   leaf: LeafIcon,
+  task: TaskIcon,
+  calendar: CalendarIcon,
+  star: StarIcon,
+  dotGreen: DotGreenIcon,
+  dotYellow: DotYellowIcon,
+  dotOrange: DotOrangeIcon,
+  dotRed: DotRedIcon,
+  water: WaterIcon,
+  coffee: CoffeeIcon,
+  wine: WineIcon,
 } as const;
 
 export type BixboIconName = keyof typeof BIXBO_ICONS;
@@ -540,20 +672,26 @@ export const EMOJI_ICON: Record<string, BixboIconName> = {
   "📝": "note", "📄": "note",
   "⚠️": "warning", "⚠": "warning",
   "🥑": "leaf", "🌿": "leaf",
+  "✅": "task", "☑️": "task", "✔️": "task",
+  "📅": "calendar", "🗓️": "calendar",
+  "⭐": "star", "🌟": "star",
+  "🟢": "dotGreen", "🟡": "dotYellow", "🟠": "dotOrange", "🔴": "dotRed",
+  "💧": "water", "☕": "coffee", "🍷": "wine",
 };
 
 /**
  * Render a branded icon by name or by the legacy emoji it replaces.
- * Unknown symbols render nothing rather than falling back to emoji.
+ * Unmapped symbols fall back to their original text so nothing disappears.
  */
 export function Ico({
   name, e, size = 20, className,
 }: { name?: BixboIconName; e?: string; size?: number; className?: string }) {
   const key = name ?? (e ? EMOJI_ICON[e] : undefined);
-  if (!key) return null;
+  if (!key) return e ? <span className={className}>{e}</span> : null;
   const C = BIXBO_ICONS[key];
   return <C size={size} className={`inline-block shrink-0 align-[-0.15em] ${className ?? ""}`} />;
 }
+
 
 const EMOJI_RE = new RegExp(
   `(${Object.keys(EMOJI_ICON).sort((a, b) => b.length - a.length).map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`,
