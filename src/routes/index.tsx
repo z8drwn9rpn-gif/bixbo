@@ -106,11 +106,16 @@ function HomePage() {
       </div>
 
       <div className="mt-0.5">
-        <MonthCalendar
-          month={monthAnchor} data={view} selected={selected} onSelect={setSelected}
-          onSwipeMonth={(delta) => setMonthAnchor((d) => new Date(d.getFullYear(), d.getMonth() + delta, 1))}
-        />
+        {hydrated ? (
+          <MonthCalendar
+            month={monthAnchor} data={view} selected={selected} onSelect={setSelected}
+            onSwipeMonth={(delta) => setMonthAnchor((d) => new Date(d.getFullYear(), d.getMonth() + delta, 1))}
+          />
+        ) : (
+          <div className="h-[360px]" />
+        )}
       </div>
+
 
       {(() => {
         const preg = pregnancyInfo(view.settings.pregnantSince);
