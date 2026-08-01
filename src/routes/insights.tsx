@@ -16,13 +16,13 @@ export const Route = createFileRoute("/insights")({
   component: InsightsPage,
 });
 
-type Period = "W" | "M" | "Y";
+type Period = "W" | "M" | "Y" | "P";
 
 function rangeFor(period: Period, anchor: Date) {
   const end = new Date(anchor); end.setHours(0, 0, 0, 0);
   const start = new Date(end);
   if (period === "W") start.setDate(end.getDate() - 6);
-  else if (period === "M") start.setDate(1);
+  else if (period === "M" || period === "P") start.setDate(1);
   else start.setMonth(0, 1);
   const endK = toKey(end);
   const startK = toKey(start);
@@ -148,21 +148,21 @@ function InsightsPage() {
   const goPrev = () => setAnchor((d) => {
     const n = new Date(d);
     if (period === "W") n.setDate(n.getDate() - 7);
-    else if (period === "M") n.setMonth(n.getMonth() - 1);
+    else if (period === "M" || period === "P") n.setMonth(n.getMonth() - 1);
     else n.setFullYear(n.getFullYear() - 1);
     return n;
   });
   const goNext = () => setAnchor((d) => {
     const n = new Date(d);
     if (period === "W") n.setDate(n.getDate() + 7);
-    else if (period === "M") n.setMonth(n.getMonth() + 1);
+    else if (period === "M" || period === "P") n.setMonth(n.getMonth() + 1);
     else n.setFullYear(n.getFullYear() + 1);
     return n;
   });
 
   const label = period === "Y"
     ? String(anchor.getFullYear())
-    : period === "M"
+    : period === "M" || period === "P"
       ? anchor.toLocaleDateString("en-GB", { month: "long", year: "numeric" })
       : `${startK} → ${endK}`;
 
@@ -170,10 +170,10 @@ function InsightsPage() {
     <AppShell title="Health of Bixbo">
       <div className="px-5 pt-2 pb-24 space-y-4">
         <div className="flex gap-2">
-          {(["W","M","Y"] as Period[]).map((p) => (
+          {((view.settings.gender === "male" ? ["W","M","Y"] : ["W","M","Y","P"]) as Period[]).map((p) => (
             <button key={p} onClick={() => setPeriod(p)}
               className={`flex-1 rounded-2xl px-3 py-2 text-sm font-medium ${period === p ? "bg-primary text-primary-foreground" : "bg-surface text-foreground ring-1 ring-border"}`}>
-              {p === "W" ? "Week" : p === "M" ? "Month" : "Year"}
+              {p === "W" ? "Week" : p === "M" ? "Month" : p === "Y" ? "Year" : "Period"}
             </button>
           ))}
         </div>
