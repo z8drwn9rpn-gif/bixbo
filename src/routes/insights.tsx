@@ -381,11 +381,16 @@ function InsightsPage() {
  * Pill number counts continuously from settings.birthControlSince.
  */
 function BirthControlCalendar({ data, anchor }: { data: ReturnType<typeof useBixbo>["data"]; anchor: Date }) {
+  const { update } = useBixbo();
   const [sel, setSel] = useState<string | null>(null);
+  const [pickTime, setPickTime] = useState<string>("");
   const since = data.settings.birthControlSince;
   if (!since || data.settings.gender === "male") return null;
 
   const bcMed = data.meds.find((m) => /antikonc|birth\s*control|contracept|hak|pill/i.test(`${m.name} ${m.dose ?? ""}`));
+  // Fall back to a synthetic id (like the "removed medication" history pattern)
+  // so taken/missed can still be recorded even without a matching med entry.
+  const bcId = bcMed?.id ?? "hak-default";
 
   const y = anchor.getFullYear(), mo = anchor.getMonth();
   const first = new Date(y, mo, 1);
@@ -401,23 +406,65 @@ function BirthControlCalendar({ data, anchor }: { data: ReturnType<typeof useBix
   const takenAt = (k: string): string | null => {
     const log = data.medLog[k] ?? {};
     const times = data.medLogTimes?.[k] ?? {};
-    const keys = Object.keys(log).filter((key) => log[key] && (!bcMed || key.startsWith(`${bcMed.id}@`)));
+    const keys = Object.keys(log).filter((key) => log[key] && key !== `${bcId}@missed` && key.startsWith(`${bcId}@`));
     if (!keys.length) return null;
     return times[keys[0]] ?? keys[0].split("@")[1] ?? "";
   };
+  const missedAt = (k: string): boolean => !!data.medLog[k]?.[`${bcId}@missed`];
 
   const cells: (string | null)[] = [
     ...new Array(startWeekday).fill(null),
     ...Array.from({ length: daysInMonth }, (_, i) => toKey(new Date(y, mo, i + 1))),
   ];
 
+  const markTaken = (k: string, time: string) => update((d) => {
+    const t = time || new Date().toTimeString().slice(0, 5);
+    const day = { ...(d.medLog[k] ?? {}) };
+    // Clear any prior taken/missed markers for this pill on this day, then record the new dose.
+    Object.keys(day).forEach((key) => { if (key.startsWith(`${bcId}@`)) delete day[key]; });
+    day[`${bcId}@${t}`] = true;
+    const dayTimes = { ...(d.medLogTimes[k] ?? {}) };
+    Object.keys(dayTimes).forEach((key) => { if (key.startsWith(`${bcId}@`)) delete dayTimes[key]; });
+    dayTimes[`${bcId}@${t}`] = t;
+    return {
+      ...d,
+      medLog: { ...d.medLog, [k]: day },
+      medLogTimes: { ...d.medLogTimes, [k]: dayTimes },
+      medNames: bcMed ? d.medNames : { ...d.medNames, [bcId]: "Birth control" },
+    };
+  });
+
+  const markMissed = (k: string) => update((d) => {
+    const day = { ...(d.medLog[k] ?? {}) };
+    Object.keys(day).forEach((key) => { if (key.startsWith(`${bcId}@`)) delete day[key]; });
+    day[`${bcId}@missed`] = true;
+    const dayTimes = { ...(d.medLogTimes[k] ?? {}) };
+    Object.keys(dayTimes).forEach((key) => { if (key.startsWith(`${bcId}@`)) delete dayTimes[key]; });
+    return {
+      ...d,
+      medLog: { ...d.medLog, [k]: day },
+      medLogTimes: { ...d.medLogTimes, [k]: dayTimes },
+      medNames: bcMed ? d.medNames : { ...d.medNames, [bcId]: "Birth control" },
+    };
+  });
+
+  const clearRecord = (k: string) => update((d) => {
+    const day = { ...(d.medLog[k] ?? {}) };
+    Object.keys(day).forEach((key) => { if (key.startsWith(`${bcId}@`)) delete day[key]; });
+    const dayTimes = { ...(d.medLogTimes[k] ?? {}) };
+    Object.keys(dayTimes).forEach((key) => { if (key.startsWith(`${bcId}@`)) delete dayTimes[key]; });
+    return { ...d, medLog: { ...d.medLog, [k]: day }, medLogTimes: { ...d.medLogTimes, [k]: dayTimes } };
+  });
+
   const detail = (() => {
     if (!sel) return null;
     const n = pillNumber(sel);
     if (n == null) return `${sel} · before you started`;
     const t = takenAt(sel);
+    const missed = missedAt(sel);
     const inactive = n > 24;
-    return `Pill #${n}${inactive ? " (inactive white)" : ""} · ${t ? `taken${t ? ` at ${t}` : ""}` : "not recorded"}`;
+    const status = t != null ? `taken at ${t}` : missed ? "marked missed" : "not recorded";
+    return `Pill #${n}${inactive ? " (inactive white)" : ""} · ${status}`;
   })();
 
   return (
@@ -436,19 +483,20 @@ function BirthControlCalendar({ data, anchor }: { data: ReturnType<typeof useBix
           if (!k) return <span key={i} />;
           const n = pillNumber(k);
           const t = n == null ? null : takenAt(k);
+          const explicitMissed = n != null && missedAt(k);
           const inactive = n != null && n > 24;
           const future = k > todayK;
           const isToday = k === todayK;
-          const missed = n != null && !inactive && !t && !future;
+          const missed = n != null && !inactive && !t && (explicitMissed || !future);
 
           let bg = "transparent", color = "var(--foreground)", ring = "1px solid var(--border)";
-          if (n == null || future) { bg = "transparent"; color = "var(--muted-foreground)"; }
+          if (n == null || (future && !t && !explicitMissed)) { bg = "transparent"; color = "var(--muted-foreground)"; }
           else if (inactive) { bg = "var(--tint)"; color = "var(--muted-foreground)"; ring = "1px solid var(--border)"; }
           else if (t != null) { bg = "var(--primary)"; color = "var(--primary-foreground)"; ring = "none"; }
           else if (missed) { ring = "2px solid #d94545"; color = "#d94545"; }
 
           return (
-            <button key={k} onClick={() => setSel(sel === k ? null : k)}
+            <button key={k} onClick={() => { setSel(sel === k ? null : k); setPickTime(""); }}
               className={`flex aspect-square flex-col items-center justify-center rounded-full text-[13px] leading-none ${sel === k ? "ring-2 ring-primary" : ""}`}
               style={{ background: bg, color, border: sel === k ? undefined : ring, outline: isToday ? "2.5px solid var(--foreground)" : undefined }}>
               <span className="text-[8px] opacity-70">{n != null ? `#${n}` : ""}</span>
@@ -466,6 +514,29 @@ function BirthControlCalendar({ data, anchor }: { data: ReturnType<typeof useBix
       <p className="mt-3 rounded-2xl bg-tint p-3 text-xs">
         {detail ?? "Tap a day for details."}
       </p>
+      {sel && pillNumber(sel) != null && pillNumber(sel)! <= 24 && (
+        <div className="mt-2 rounded-2xl bg-tint p-3 space-y-2">
+          <div className="flex items-center gap-2">
+            <input type="time" value={pickTime} onChange={(e) => setPickTime(e.target.value)}
+              className="rounded-lg bg-surface px-2 py-1 text-xs ring-1 ring-border" />
+            <button onClick={() => markTaken(sel, pickTime)}
+              className="flex-1 rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground">
+              Mark taken
+            </button>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => markMissed(sel)}
+              className="flex-1 rounded-xl px-3 py-1.5 text-xs font-medium" style={{ background: "transparent", border: "1.5px solid #d94545", color: "#d94545" }}>
+              Mark missed
+            </button>
+            {(takenAt(sel) != null || missedAt(sel)) && (
+              <button onClick={() => clearRecord(sel)} className="rounded-xl bg-surface px-3 py-1.5 text-xs text-muted-foreground ring-1 ring-border">
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
+      )}
       {!bcMed && (
         <p className="mt-2 text-[11px] text-muted-foreground">
           Tip: add your pill in Medications (name it e.g. “Birth control”) so taken doses are detected precisely.

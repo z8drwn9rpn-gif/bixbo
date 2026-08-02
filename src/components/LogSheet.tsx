@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useEffect, type ReactNode } from "react";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter,
 } from "@/components/ui/sheet";
-import { Ico } from "@/components/icons/BixboIcons";
+import { Ico, IcoText } from "@/components/icons/BixboIcons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,6 +19,7 @@ import {
   PCOS_SYMPTOMS, HISTAMINE_SYMPTOMS, FOOD_SYMPTOMS_AFTER,
   todayKey, nowHHMM, updateDayLog, asArr,
   workoutHasDistance, workoutIsHike, workoutIsStrength, pregnancyInfo,
+  URINARY_DEFAULT, ALLERGENS_DEFAULT,
   type BixboData, type DayLog, type PainEntry, type PeriodLevel, type FoodEntry,
   type BowelEntry, type ThermoSession, type ThermoKind, type SexEntry, type SexKind,
   type ExtraMed, type WorkoutEntry, type WorkoutExercise, type EventEntry, type TaskEntry,
@@ -205,7 +206,7 @@ function Chip({
       }`}
       style={active && color ? { background: color } : active ? { background: "var(--primary)" } : undefined}
     >
-      {children}
+      {typeof children === "string" ? <IcoText text={children} size={14} /> : children}
     </button>
   );
 }
@@ -1313,7 +1314,7 @@ function FoodForm({ date, data, update, onDone, initialEntry }:
                 if (q.hyd) setHydration(String((Number(hydration) || 0) + q.hyd));
               }}
               className="rounded-full bg-tint px-3 py-1.5 text-xs font-semibold ring-1 ring-border hover:bg-primary/10">
-              {q.l}
+              <IcoText text={q.l} size={14} />
             </button>
           ))}
           {data.custom.foodQuickAdd.map((c) => (
@@ -1321,7 +1322,7 @@ function FoodForm({ date, data, update, onDone, initialEntry }:
               <button type="button"
                 onClick={() => setWhat((w) => w ? `${w}, ${c}` : c)}
                 className="rounded-full bg-tint px-3 py-1.5 text-xs font-semibold ring-1 ring-border hover:bg-primary/10">
-                {c}
+                <IcoText text={c} size={14} />
               </button>
               <button onClick={(e) => {
                 e.stopPropagation();
@@ -1456,7 +1457,7 @@ function BowelForm({ date, data, update, onDone, initialEntry }:
               bristol === 0 ? "border-primary bg-primary/10" : "border-border bg-surface"}`}>
             <span className="grid h-8 w-8 place-items-center rounded-full text-xs font-semibold text-white"
               style={{ background: "linear-gradient(135deg,#ef4444,#f59e0b,#eab308,#22c55e,#3b82f6,#8b5cf6)" }}>0</span>
-            <span className="flex-1"><span className="font-medium">Type 0 — Mystery</span> <span aria-hidden>🌈</span><br /><span className="text-[11px] text-muted-foreground">Unknown / mixed</span></span>
+            <span className="flex-1"><span className="font-medium">Type 0 — Mystery</span> <Ico e="🌈" size={14} /><br /><span className="text-[11px] text-muted-foreground">Unknown / mixed</span></span>
           </button>
 
           {BRISTOL.map((b) => (
@@ -1467,8 +1468,8 @@ function BowelForm({ date, data, update, onDone, initialEntry }:
               <span className="grid h-8 w-8 place-items-center rounded-full text-xs font-semibold text-white" style={{ background: b.color }}>{b.n}</span>
               <BristolIcon shape={b.shape} color={b.color} />
               <div className="flex-1">
-                <p className="font-medium">{b.label}</p>
-                <p className="text-[11px] text-muted-foreground">{b.sub}</p>
+                <p className="font-medium"><IcoText text={b.label} size={14} /></p>
+                <p className="text-[11px] text-muted-foreground"><IcoText text={b.sub} size={12} /></p>
               </div>
             </button>
           ))}
@@ -1571,7 +1572,7 @@ function MedsForm({ date, data, update, onDone }:
                 <div className="flex-1">
                   <p className="text-sm font-medium">{m.name}</p>
                   <p className="text-xs text-muted-foreground">As needed{m.dose ? ` · ${m.dose}` : ""}</p>
-                  {m.note && <p className="text-[11px] text-muted-foreground"><Ico e="📝" size={13} /> {m.note}</p>}
+                  {m.note && <p className="text-[11px] text-muted-foreground"><Ico e="📝" size={13} /> <IcoText text={m.note} size={12} /></p>}
                 </div>
                 {taken[`${m.id}@asneeded`] && (
                   <Input type="time" value={takenTimes[`${m.id}@asneeded`] ?? nowHHMM()}
@@ -1588,7 +1589,7 @@ function MedsForm({ date, data, update, onDone }:
                     <div className="flex-1">
                       <p className="text-sm font-medium">{m.name} <span className="text-xs text-muted-foreground">· scheduled {t}</span></p>
                       {m.dose && <p className="text-xs text-muted-foreground">{m.dose}</p>}
-                      {m.note && <p className="text-[11px] text-muted-foreground"><Ico e="📝" size={13} /> {m.note}</p>}
+                      {m.note && <p className="text-[11px] text-muted-foreground"><Ico e="📝" size={13} /> <IcoText text={m.note} size={12} /></p>}
                     </div>
                     {isTaken && (
                       <Input type="time" value={takenTimes[k] ?? t}
