@@ -8,9 +8,9 @@ import { fetchPartner } from "@/lib/cloudSync";
 export const Route = createFileRoute("/couple")({
   head: () => ({
     meta: [
-      { title: "Couple — BIXBO" },
+      { title: "Bixbo couple" },
       { name: "description", content: "Compare pain, tetany, panic and meds with your partner." },
-      { property: "og:title", content: "Couple — BIXBO" },
+      { property: "og:title", content: "Bixbo couple" },
       { property: "og:description", content: "Compare pain, tetany, panic and meds with your partner." },
     ],
   }),
@@ -417,7 +417,7 @@ function CouplePage() {
   const chartDays = Array.from({ length: 14 }, (_, i) => addDays(todayKey(), i - 13)).filter(inThisMonth);
 
   return (
-    <AppShell title="Couple">
+    <AppShell title="Bixbo couple">
       <div className="space-y-4 px-5 pt-4 pb-24">
         {!partner ? (
           <div className="rounded-3xl bg-surface p-6 text-center ring-1 ring-border">
