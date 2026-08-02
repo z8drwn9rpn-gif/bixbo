@@ -40,6 +40,15 @@ function Shadow({ cy = 56, rx = 17, ry = 4 }: { cy?: number; rx?: number; ry?: n
 /** BIXBO logo — soft 3D chili. Brand only, never a symptom icon. */
 export function ChiliIcon(p: IconProps) {
   const a = useSvgId(), b = useSvgId(), c = useSvgId();
+  const mini = (p.size ?? 24) <= 16;
+  if (mini) {
+    return (
+      <Svg {...p}>
+        <path d="M41 17c6 3 10 10 10 18 0 13-10 21-22 21-9 0-16-4-19-9-1-2 1-4 3-3 4 2 8 2 12 0 7-3 11-9 12-17 .4-4 1.4-8 4-10z" fill="#e0342c" />
+        <path d="M38 18c-1-5 1-10 5-12 1.6-.8 3 1 2.2 2.5-1.3 2.4-1.4 4.6-.4 6.6.9 1.8-.6 3.6-2.4 3.9l-2 .3c-1.2.2-2.2-.2-2.4-1.3z" fill="#3f8f36" />
+      </Svg>
+    );
+  }
   return (
     <Svg {...p}>
       <defs>
@@ -70,6 +79,18 @@ export function ChiliIcon(p: IconProps) {
 /** Cycle / period / flow / discharge — three blueberries + two leaves. */
 export function BlueberryIcon(p: IconProps) {
   const a = useSvgId(), b = useSvgId(), l = useSvgId();
+  const mini = (p.size ?? 24) <= 16;
+  if (mini) {
+    return (
+      <Svg {...p}>
+        <path d="M31 20c-4-7-11-10-17-9-1.4.2-1.8 1.8-.7 2.7 4.6 3.6 7.4 7.6 8.8 12.2.5 1.7 2.7 2 3.8.7l4.6-5.2c.6-.6.8-1.5.5-2.2z" fill="#46943a" />
+        <path d="M33 20c3-7 9.6-11 16-10.6 1.4.1 2 1.7.9 2.7-4.2 3.8-6.8 8-8 12.7-.4 1.7-2.6 2.2-3.8.9l-4.6-4.8c-.6-.6-.8-1.4-.5-2z" fill="#46943a" />
+        <circle cx="21" cy="38" r="12" fill="#3646b8" />
+        <circle cx="43" cy="38" r="12" fill="#3646b8" />
+        <circle cx="32" cy="31" r="12.5" fill="#4a5fd6" />
+      </Svg>
+    );
+  }
   return (
     <Svg {...p}>
       <defs>
@@ -106,6 +127,15 @@ export function BlueberryIcon(p: IconProps) {
 /** Pain — soft 3D flame (never the chili). */
 export function FlameIcon(p: IconProps) {
   const a = useSvgId(), b = useSvgId();
+  const mini = (p.size ?? 24) <= 16;
+  if (mini) {
+    return (
+      <Svg {...p}>
+        <path d="M33 5c1 8-3 11-8 16-6 6-9 11-9 18 0 9 7.5 15 16 15s16-6 16-15c0-7-3.5-12-8-16.5-.6 3-2.4 5-4.6 5.6-2 .6-3.4-1-3-3C33 20 35 13 33 5z" fill="#ff6a2e" />
+        <path d="M32.5 33c1 4 5 6 5 11 0 4.4-3.3 7.4-7 7.4S23 48.4 23 44c0-5 5.4-6.6 6.6-11 .5-1.8 2.4-1.8 2.9 0z" fill="#ffd85a" />
+      </Svg>
+    );
+  }
   return (
     <Svg {...p}>
       <defs>
@@ -131,6 +161,15 @@ export function FlameIcon(p: IconProps) {
 /** Bowel — friendly soft 3D poop with small eyes. */
 export function PoopIcon(p: IconProps) {
   const a = useSvgId();
+  const mini = (p.size ?? 24) <= 16;
+  if (mini) {
+    return (
+      <Svg {...p}>
+        <path fill="#7a4a24" d="M32 8c5 0 8 3.4 8 7.4 0 1.6-.5 3-1.3 4.2h.8c5 0 8.5 3.4 8.5 7.6 0 2-.8 3.8-2.2 5.2 5 .6 8.4 4 8.4 8.2 0 2.2-1 4.2-2.6 5.6 2.6 1.2 4.4 3.6 4.4 6.4 0 4-3.6 7.4-8 7.4H16c-4.4 0-8-3.4-8-7.4 0-2.8 1.8-5.2 4.4-6.4A7.4 7.4 0 0 1 9.8 40.6c0-4.2 3.4-7.6 8.4-8.2A6.8 6.8 0 0 1 16 27.2c0-4.2 3.5-7.6 8.5-7.6h.8A7 7 0 0 1 24 15.4C24 11.4 27 8 32 8z" />
+        <g fill="#fff"><circle cx="25.5" cy="40" r="3" /><circle cx="39" cy="40" r="3" /></g>
+      </Svg>
+    );
+  }
   return (
     <Svg {...p}>
       <defs>
@@ -158,6 +197,17 @@ export function PoopIcon(p: IconProps) {
 
 export function PillIcon(p: IconProps) {
   const a = useSvgId(), b = useSvgId();
+  const mini = (p.size ?? 24) <= 16;
+  if (mini) {
+    return (
+      <Svg {...p}>
+        <g transform="rotate(-40 32 32)">
+          <rect x="10" y="21" width="44" height="22" rx="11" fill="#f0cf6a" />
+          <rect x="10" y="21" width="22" height="22" rx="11" fill="#e0342c" />
+        </g>
+      </Svg>
+    );
+  }
   return (
     <Svg {...p}>
       <defs>
@@ -183,6 +233,14 @@ export function PillIcon(p: IconProps) {
 
 export function HeartIcon(p: IconProps) {
   const a = useSvgId();
+  const mini = (p.size ?? 24) <= 16;
+  if (mini) {
+    return (
+      <Svg {...p}>
+        <path d="M32 53C16 42 8 34 8 24.5 8 16.5 14.2 11 21.4 11c4.6 0 8.4 2.3 10.6 5.8C34.2 13.3 38 11 42.6 11 49.8 11 56 16.5 56 24.5 56 34 48 42 32 53z" fill="#f0325c" />
+      </Svg>
+    );
+  }
   return (
     <Svg {...p}>
       <defs>
@@ -201,6 +259,15 @@ export function HeartIcon(p: IconProps) {
 
 export function FoodIcon(p: IconProps) {
   const a = useSvgId();
+  const mini = (p.size ?? 24) <= 16;
+  if (mini) {
+    return (
+      <Svg {...p}>
+        <path d="M8 32h48c0 11-10.8 18-24 18S8 43 8 32z" fill="#c8cdd4" />
+        <g><circle cx="22" cy="28" r="7" fill="#5a9e3f" /><circle cx="34" cy="24" r="6.5" fill="#e8674f" /><circle cx="44" cy="29" r="6" fill="#f2b13c" /></g>
+      </Svg>
+    );
+  }
   return (
     <Svg {...p}>
       <defs>
@@ -224,6 +291,14 @@ export function FoodIcon(p: IconProps) {
 /** Tetany — energy bolt. */
 export function BoltIcon(p: IconProps) {
   const a = useSvgId();
+  const mini = (p.size ?? 24) <= 16;
+  if (mini) {
+    return (
+      <Svg {...p}>
+        <path d="M37 4 18 33c-.8 1.2 0 2.8 1.5 2.8h9.6L25 58c-.3 1.8 2 2.9 3.2 1.5L47 30c1-1.2.1-3-1.5-3h-9.8L40 6.4C40.4 4.5 38.2 3.4 37 4z" fill="#ffb524" />
+      </Svg>
+    );
+  }
   return (
     <Svg {...p}>
       <defs>
@@ -241,6 +316,15 @@ export function BoltIcon(p: IconProps) {
 /** Panic attack — head with spiral of anxiety. */
 export function PanicIcon(p: IconProps) {
   const a = useSvgId();
+  const mini = (p.size ?? 24) <= 16;
+  if (mini) {
+    return (
+      <Svg {...p}>
+        <circle cx="32" cy="34" r="19" fill="#8a6ce0" />
+        <g fill="#fff"><circle cx="25" cy="40" r="2.6" /><circle cx="39" cy="40" r="2.6" /></g>
+      </Svg>
+    );
+  }
   return (
     <Svg {...p}>
       <defs>
@@ -264,6 +348,15 @@ export function PanicIcon(p: IconProps) {
 /** Hot flashes — flushed face with heat waves. */
 export function HotFlashIcon(p: IconProps) {
   const a = useSvgId();
+  const mini = (p.size ?? 24) <= 16;
+  if (mini) {
+    return (
+      <Svg {...p}>
+        <circle cx="32" cy="35" r="18" fill="#e8542f" />
+        <path d="M20 12c2-2 2-4 0-6M32 11c2-2 2-4.5 0-6.5M44 12c2-2 2-4 0-6" stroke="#e8542f" strokeWidth="3.5" strokeLinecap="round" fill="none" />
+      </Svg>
+    );
+  }
   return (
     <Svg {...p}>
       <defs>
@@ -289,6 +382,15 @@ export function HotFlashIcon(p: IconProps) {
 /** Headache. */
 export function HeadacheIcon(p: IconProps) {
   const a = useSvgId();
+  const mini = (p.size ?? 24) <= 16;
+  if (mini) {
+    return (
+      <Svg {...p}>
+        <path d="M32 12c11 0 18 8 18 18 0 6-3 9-3 13 0 3-2 5-6 5H26c-9 0-14-7-14-16 0-11 8-20 20-20z" fill="#4a8fc4" />
+        <circle cx="34" cy="27" r="5.5" fill="#e2413f" />
+      </Svg>
+    );
+  }
   return (
     <Svg {...p}>
       <defs>
@@ -311,6 +413,18 @@ export function HeadacheIcon(p: IconProps) {
 
 export function HeatIcon(p: IconProps) {
   const a = useSvgId();
+  const mini = (p.size ?? 24) <= 16;
+  if (mini) {
+    return (
+      <Svg {...p}>
+        <g stroke="#e0402f" strokeWidth="7" strokeLinecap="round" fill="none">
+          <path d="M20 52c-4-6-4-11 0-16s4-10 0-16" />
+          <path d="M32 54c-4-7-4-13 0-19s4-12 0-19" />
+          <path d="M44 52c-4-6-4-11 0-16s4-10 0-16" />
+        </g>
+      </Svg>
+    );
+  }
   return (
     <Svg {...p}>
       <defs>
@@ -330,6 +444,16 @@ export function HeatIcon(p: IconProps) {
 
 export function ColdIcon(p: IconProps) {
   const a = useSvgId();
+  const mini = (p.size ?? 24) <= 16;
+  if (mini) {
+    return (
+      <Svg {...p}>
+        <g stroke="#3f9fd6" strokeWidth="6.5" strokeLinecap="round">
+          <path d="M32 8v48" /><path d="M11 20l42 24" /><path d="M53 20L11 44" />
+        </g>
+      </Svg>
+    );
+  }
   return (
     <Svg {...p}>
       <defs>
@@ -350,6 +474,15 @@ export function ColdIcon(p: IconProps) {
 
 export function TensIcon(p: IconProps) {
   const a = useSvgId();
+  const mini = (p.size ?? 24) <= 16;
+  if (mini) {
+    return (
+      <Svg {...p}>
+        <path d="M32 6c2 12 6.5 16.5 18.5 18.5C38.5 26.5 34 31 32 43c-2-12-6.5-16.5-18.5-18.5C25.5 22.5 30 18 32 6z" fill="#3fa9d6" />
+        <path d="M47 40c1 6 3.2 8.2 9 9-5.8.8-8 3-9 9-1-6-3.2-8.2-9-9 5.8-.8 8-3 9-9z" fill="#3fa9d6" />
+      </Svg>
+    );
+  }
   return (
     <Svg {...p}>
       <defs>
