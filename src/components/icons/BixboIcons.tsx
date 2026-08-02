@@ -501,6 +501,14 @@ export function TensIcon(p: IconProps) {
 
 export function WorkoutIcon(p: IconProps) {
   const a = useSvgId();
+  const mini = (p.size ?? 24) <= 16;
+  if (mini) {
+    return (
+      <Svg {...p}>
+        <path d="M9 42c0-6 3-9 6-13l4-6c1-1.6 3.4-1.6 4.4 0l2 3.4c2.4 4 6 6.6 10.4 8.6l14 6.4c2.6 1.2 4.2 3.6 4.2 6.2v1.4c0 1.6-1.4 3-3 3H12c-1.6 0-3-1.4-3-3v-7z" fill="#2f5fc0" />
+      </Svg>
+    );
+  }
   return (
     <Svg {...p}>
       <defs>
@@ -518,6 +526,14 @@ export function WorkoutIcon(p: IconProps) {
 
 export function SleepIcon(p: IconProps) {
   const a = useSvgId();
+  const mini = (p.size ?? 24) <= 16;
+  if (mini) {
+    return (
+      <Svg {...p}>
+        <path d="M44 40c-12 0-21-8.6-21-20 0-4 1.2-7.6 3-10.4C16 12.2 9 20.6 9 31c0 12.2 9.8 21 22 21 8.4 0 15.6-4.4 19-11.6-1.8.4-3.8.6-6 .6z" fill="#6a5bc4" />
+      </Svg>
+    );
+  }
   return (
     <Svg {...p}>
       <defs>
@@ -537,6 +553,17 @@ export function SleepIcon(p: IconProps) {
 
 export function ThermometerIcon(p: IconProps) {
   const a = useSvgId();
+  const mini = (p.size ?? 24) <= 16;
+  if (mini) {
+    return (
+      <Svg {...p}>
+        <rect x="25" y="6" width="14" height="38" rx="7" fill="#e8ecef" />
+        <circle cx="32" cy="46" r="11" fill="#e8ecef" />
+        <circle cx="32" cy="46" r="7.5" fill="#d8324a" />
+        <rect x="29" y="18" width="6" height="24" rx="3" fill="#d8324a" />
+      </Svg>
+    );
+  }
   return (
     <Svg {...p}>
       <defs>
@@ -556,6 +583,16 @@ export function ThermometerIcon(p: IconProps) {
 
 export function WeightIcon(p: IconProps) {
   const a = useSvgId();
+  const mini = (p.size ?? 24) <= 16;
+  if (mini) {
+    return (
+      <Svg {...p}>
+        <rect x="8" y="14" width="48" height="38" rx="12" fill="#b9c2cc" />
+        <circle cx="32" cy="33" r="12" fill="#eef2f6" />
+        <path d="M32 33l7-7" stroke="#e0526a" strokeWidth="4" strokeLinecap="round" />
+      </Svg>
+    );
+  }
   return (
     <Svg {...p}>
       <defs>
@@ -575,6 +612,17 @@ export function WeightIcon(p: IconProps) {
 
 export function NoteIcon(p: IconProps) {
   const a = useSvgId();
+  const mini = (p.size ?? 24) <= 16;
+  if (mini) {
+    return (
+      <Svg {...p}>
+        <rect x="12" y="8" width="36" height="48" rx="8" fill="#dcd6c2" />
+        <g stroke="#7a8064" strokeWidth="4" strokeLinecap="round">
+          <path d="M20 22h20M20 31h20M20 40h12" />
+        </g>
+      </Svg>
+    );
+  }
   return (
     <Svg {...p}>
       <defs>
@@ -594,6 +642,16 @@ export function NoteIcon(p: IconProps) {
 
 export function WarningIcon(p: IconProps) {
   const a = useSvgId();
+  const mini = (p.size ?? 24) <= 16;
+  if (mini) {
+    return (
+      <Svg {...p}>
+        <path d="M28.5 9.5 7.6 47c-1.9 3.4.6 7.5 4.5 7.5h39.8c3.9 0 6.4-4.1 4.5-7.5L35.5 9.5c-1.9-3.4-5.1-3.4-7 0z" fill="#e88a1a" />
+        <rect x="29" y="21" width="6" height="17" rx="3" fill="#fff" />
+        <circle cx="32" cy="45" r="3.4" fill="#fff" />
+      </Svg>
+    );
+  }
   return (
     <Svg {...p}>
       <defs>
@@ -611,6 +669,14 @@ export function WarningIcon(p: IconProps) {
 
 export function LeafIcon(p: IconProps) {
   const a = useSvgId();
+  const mini = (p.size ?? 24) <= 16;
+  if (mini) {
+    return (
+      <Svg {...p}>
+        <path d="M52 10C28 10 12 21 12 39c0 5 1.6 9 4 12C22 34 32 26 46 22 34 29 24 39 20 54c22 4 32-14 32-44z" fill="#4a8f3a" />
+      </Svg>
+    );
+  }
   return (
     <Svg {...p}>
       <defs>
@@ -626,6 +692,15 @@ export function LeafIcon(p: IconProps) {
 
 export function TaskIcon(p: IconProps) {
   const a = useSvgId();
+  const mini = (p.size ?? 24) <= 16;
+  if (mini) {
+    return (
+      <Svg {...p}>
+        <circle cx="32" cy="32" r="24" fill="#3f8f3c" />
+        <path d="M21 33l8 8 15-17" stroke="#fff" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      </Svg>
+    );
+  }
   return (
     <Svg {...p}>
       <defs>
@@ -643,6 +718,15 @@ export function TaskIcon(p: IconProps) {
 
 export function CalendarIcon(p: IconProps) {
   const a = useSvgId();
+  const mini = (p.size ?? 24) <= 16;
+  if (mini) {
+    return (
+      <Svg {...p}>
+        <rect x="8" y="12" width="48" height="44" rx="10" fill="#d9d6c4" />
+        <path d="M8 22a10 10 0 0 1 10-10h28a10 10 0 0 1 10 10v4H8v-4z" fill="#e0574f" />
+      </Svg>
+    );
+  }
   return (
     <Svg {...p}>
       <defs>
@@ -666,6 +750,14 @@ export function CalendarIcon(p: IconProps) {
 
 export function StarIcon(p: IconProps) {
   const a = useSvgId();
+  const mini = (p.size ?? 24) <= 16;
+  if (mini) {
+    return (
+      <Svg {...p}>
+        <path d="M32 6l7.6 15.6L57 24l-12.6 12.3L47.4 54 32 45.8 16.6 54l3-17.7L7 24l17.4-2.4z" fill="#f0a326" />
+      </Svg>
+    );
+  }
   return (
     <Svg {...p}>
       <defs>
@@ -682,6 +774,14 @@ export function StarIcon(p: IconProps) {
 function makeDot(from: string, to: string) {
   return function DotIcon(p: IconProps) {
     const a = useSvgId();
+    const mini = (p.size ?? 24) <= 16;
+    if (mini) {
+      return (
+        <Svg {...p}>
+          <circle cx="32" cy="30" r="22" fill={to} />
+        </Svg>
+      );
+    }
     return (
       <Svg {...p}>
         <defs>
@@ -703,6 +803,14 @@ export const DotRedIcon = makeDot("#ff9b95", "#d32a2a");
 
 export function WaterIcon(p: IconProps) {
   const a = useSvgId();
+  const mini = (p.size ?? 24) <= 16;
+  if (mini) {
+    return (
+      <Svg {...p}>
+        <path d="M32 6c9 12 16 20 16 28 0 9-7 16-16 16s-16-7-16-16c0-8 7-16 16-28z" fill="#2f8fd6" />
+      </Svg>
+    );
+  }
   return (
     <Svg {...p}>
       <defs>
@@ -719,6 +827,16 @@ export function WaterIcon(p: IconProps) {
 
 export function CoffeeIcon(p: IconProps) {
   const a = useSvgId();
+  const mini = (p.size ?? 24) <= 16;
+  if (mini) {
+    return (
+      <Svg {...p}>
+        <path d="M10 22h34v16c0 8-7 14-17 14s-17-6-17-14V22z" fill="#ddd6c8" />
+        <path d="M44 26h5a7 7 0 0 1 0 14h-5" stroke="#c8c0b0" strokeWidth="5" fill="none" strokeLinecap="round" />
+        <ellipse cx="27" cy="25" rx="15" ry="4" fill="#7a4a28" />
+      </Svg>
+    );
+  }
   return (
     <Svg {...p}>
       <defs>
@@ -736,9 +854,10 @@ export function CoffeeIcon(p: IconProps) {
 
 export function WineIcon(p: IconProps) {
   const a = useSvgId();
+  const mini = (p.size ?? 24) <= 16;
   return (
     <Svg {...p}>
-      <Shadow />
+      {!mini && <Shadow />}
       <path d="M20 8h24l-2 16c-.8 6-5 10-10 10s-9.2-4-10-10z" fill="#c22a4a" />
       <path d="M30 34h4v16h-4z" fill="#dcd6c2" />
       <rect x="20" y="50" width="24" height="5" rx="2.5" fill="#dcd6c2" />
