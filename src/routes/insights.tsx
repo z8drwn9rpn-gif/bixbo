@@ -20,14 +20,29 @@ export const Route = createFileRoute("/insights")({
 type Period = "W" | "M" | "Y" | "P";
 
 function rangeFor(period: Period, anchor: Date) {
-  const end = new Date(anchor); end.setHours(0, 0, 0, 0);
-  const start = new Date(end);
-  if (period === "W") start.setDate(end.getDate() - 6);
-  else if (period === "M" || period === "P") start.setDate(1);
-  else start.setMonth(0, 1);
-  const endK = toKey(end);
-  const startK = toKey(start);
-  return { startK, endK };
+  // Always derive purely from `period` + `anchor` (no mutation of shared objects,
+  // no reliance on the previous render's day-of-month). Root cause of the stale
+  // month bug: `end` used to be a clone of `anchor` keeping its original
+  // day-of-month, so a month view only ever covered days 1..anchor-day-of-month
+  // instead of the full month (e.g. viewing July while anchor's date was "1"
+  // showed just a single day). Now start/end are computed as true calendar
+  // boundaries for the given period.
+  const base = new Date(anchor); base.setHours(0, 0, 0, 0);
+  if (period === "W") {
+    // Monday → Sunday of the week containing `anchor`.
+    const dow = (base.getDay() + 6) % 7; // Mon=0 ... Sun=6
+    const start = new Date(base); start.setDate(base.getDate() - dow);
+    const end = new Date(start); end.setDate(start.getDate() + 6);
+    return { startK: toKey(start), endK: toKey(end) };
+  }
+  if (period === "M" || period === "P") {
+    const start = new Date(base.getFullYear(), base.getMonth(), 1);
+    const end = new Date(base.getFullYear(), base.getMonth() + 1, 0);
+    return { startK: toKey(start), endK: toKey(end) };
+  }
+  const start = new Date(base.getFullYear(), 0, 1);
+  const end = new Date(base.getFullYear(), 11, 31);
+  return { startK: toKey(start), endK: toKey(end) };
 }
 
 function eachDay(startK: string, endK: string): string[] {
@@ -149,14 +164,14 @@ function InsightsPage() {
   const goPrev = () => setAnchor((d) => {
     const n = new Date(d);
     if (period === "W") n.setDate(n.getDate() - 7);
-    else if (period === "M" || period === "P") n.setMonth(n.getMonth() - 1);
+    else if (period === "M" || period === "P") { n.setDate(1); n.setMonth(n.getMonth() - 1); }
     else n.setFullYear(n.getFullYear() - 1);
     return n;
   });
   const goNext = () => setAnchor((d) => {
     const n = new Date(d);
     if (period === "W") n.setDate(n.getDate() + 7);
-    else if (period === "M" || period === "P") n.setMonth(n.getMonth() + 1);
+    else if (period === "M" || period === "P") { n.setDate(1); n.setMonth(n.getMonth() + 1); }
     else n.setFullYear(n.getFullYear() + 1);
     return n;
   });
