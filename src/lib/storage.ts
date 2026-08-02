@@ -156,7 +156,10 @@ export interface CustomLists {
   histamineSymptoms: string[];
   foodSymptomsAfter: string[];
   sexFeelings: string[];
+  urinary: string[];
+  allergens: string[];
 }
+
 
 export type QuickTagCategory = "pain" | "tetany" | "panic" | "sex" | "food" | "meds" | "workout";
 export interface CustomQuickTag {
