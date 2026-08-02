@@ -125,7 +125,6 @@ function InsightsPage() {
     return sums.map((s, i) => (counts[i] ? s / counts[i] : undefined));
   };
   const hfBars = period === "Y" ? aggregateMonthly(days, hfSeries) : hfSeries;
-  const sleepBars = period === "Y" ? aggregateMonthly(days, sleepSeries) : sleepSeries;
   const hfTotal = hfCounts.reduce((a, b) => a + b, 0);
   const hfAvg = (() => {
     const s = hfCounts.reduce((sum, c, i) => sum + c * i, 0);
