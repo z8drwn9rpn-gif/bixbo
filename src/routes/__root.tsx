@@ -100,8 +100,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
       { rel: "icon", type: "image/png", sizes: "180x180", href: "/chilli-home-icon-v5.png" },
       { rel: "apple-touch-icon", sizes: "180x180", href: "/chilli-home-icon-v5.png" },
-      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
-      { rel: "apple-touch-icon-precomposed", sizes: "180x180", href: "/apple-touch-icon-precomposed.png" },
       { rel: "icon", type: "image/png", sizes: "192x192", href: "/icon-192.png" },
       { rel: "icon", type: "image/png", sizes: "512x512", href: "/icon-512.png" },
     ],
