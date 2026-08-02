@@ -632,3 +632,23 @@ export const FOOD_SYMPTOMS_AFTER = [
   "Itching / hives",
   "Rapid heart rate",
 ];
+
+export const URINARY_DEFAULT = [
+  "Frequent urination",
+  "Painful urination",
+  "Urgency",
+  "Incomplete emptying",
+  "Night urination",
+  "Blood in urine",
+];
+
+export const ALLERGENS_DEFAULT = [
+  "Nuts",
+  "Casein / dairy",
+  "Gluten",
+  "Eggs",
+  "Fish",
+  "Soy",
+  "Shellfish",
+  "Peanuts",
+];
