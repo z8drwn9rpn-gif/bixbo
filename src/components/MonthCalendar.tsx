@@ -1,7 +1,7 @@
 import { Ico, IcoText } from "@/components/icons/BixboIcons";
 import { useRef, useState } from "react";
 import {
-  toKey, hasAnyLog, painColor, isDateInRange, predictPeriods, avgDayPain,
+  toKey, hasAnyLog, painColor, isDateInRange, predictPeriods, avgDayPain, isIntercourseKind,
   type BixboData, type DayLog, type EventEntry,
 } from "@/lib/storage";
 
@@ -21,22 +21,16 @@ function periodColorVar(level?: string) {
     default: return null;
   }
 }
-function iconsFor(log: DayLog | undefined, hasMed: boolean, isMale: boolean): string[] {
+function iconsFor(log: DayLog | undefined, hasMed: boolean, _isMale: boolean): string[] {
   const out: string[] = [];
-  if (log?.pain?.length) out.push("🔥");
-  if (log?.tetany?.length) out.push("⚡");
-  if (log?.panic?.length) out.push("🫯");
-  if (log?.pain?.some((p) => (p.hotFlashes ?? 0) > 0)) out.push("🥵");
-  if (log?.pain?.some((p) => p.headacheIntensity != null || (p.headacheTypes?.length ?? 0) > 0)) out.push("🤕");
+  if (log?.sex?.some((e) => isIntercourseKind(e.kind))) out.push("❤️");
   if (hasMed) out.push("💊");
-  if (log?.sex?.length) out.push("❤️");
-  if (log?.food?.length) out.push("🍽️");
-  if (!isMale && (log?.periodInfo?.level ?? log?.period)) out.push("🫐");
   if (log?.bowel?.some((b) => b.bristol > 0)) out.push("💩");
   if (log?.heat?.some((h) => h.kind === "heat")) out.push("♨️");
   if (log?.heat?.some((h) => h.kind === "cold")) out.push("🧊");
   if (log?.heat?.some((h) => h.kind === "tens")) out.push("✨");
-  if (log?.workout?.length) out.push("🧘🏼‍♀️");
+  if (log?.tetany?.length) out.push("⚡");
+  if (log?.panic?.length) out.push("🫯");
   return out;
 }
 
@@ -231,9 +225,11 @@ export function MonthCalendar({
                         </span>
                       </div>
                       {icons.length > 0 && (
-                        <span className="pointer-events-none absolute bottom-0.5 left-1/2 flex -translate-x-1/2 gap-[1px] text-[7px] leading-none drop-shadow-sm landscape:text-[6px]">
-                          {icons.slice(0, 5).map((ic, idx) => <Ico key={idx} e={ic} size={9} />)}
-                          {icons.length > 5 && <span className="text-muted-foreground">+</span>}
+                        <span className="pointer-events-none absolute bottom-0.5 left-1/2 flex -translate-x-1/2 items-center gap-[1px] text-[7px] leading-none drop-shadow-sm landscape:text-[6px]">
+                          {icons.slice(0, 3).map((ic, idx) => <Ico key={idx} e={ic} size={15} />)}
+                          {icons.length > 3 && (
+                            <span className="text-[9px] font-medium text-muted-foreground">+{icons.length - 3}</span>
+                          )}
                         </span>
                       )}
                       {icons.length === 0 && marked && (

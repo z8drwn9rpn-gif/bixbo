@@ -61,8 +61,12 @@ export interface FoodEntry {
   histamineFlare?: boolean;
   histamineSymptoms?: string[];
   highHistamine?: boolean;
+  allergensInMeal?: string[];
+  allergicReaction?: boolean;
+  reactionSeverity?: "mild" | "moderate" | "severe";
 }
-export interface BowelEntry { id: string; time: string; bristol: number; note?: string; feelings?: string[]; symptoms?: string[] }
+export interface BowelEntry { id: string; time: string; bristol: number; note?: string; feelings?: string[]; symptoms?: string[]; urinary?: string[] }
+
 export interface SexEntry { id: string; time: string; kind: SexKind; feelingAfter?: string | string[]; painful?: PainfulWhen; note?: string }
 export interface ExtraMed { id: string; time: string; name: string; dose?: string; note?: string }
 export interface WorkoutExercise { id: string; name: string; sets?: number; reps?: number; weightKg?: number }
