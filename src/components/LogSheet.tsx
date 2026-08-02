@@ -1268,6 +1268,10 @@ function FoodForm({ date, data, update, onDone, initialEntry }:
   const [histFlare, setHistFlare] = useState<boolean>(!!initialEntry?.histamineFlare);
   const [histSymptoms, setHistSymptoms] = useState<string[]>(initialEntry?.histamineSymptoms ?? []);
   const [highHist, setHighHist] = useState<boolean>(!!initialEntry?.highHistamine);
+  const [allergensInMeal, setAllergensInMeal] = useState<string[]>(initialEntry?.allergensInMeal ?? []);
+  const [allergicReaction, setAllergicReaction] = useState<boolean>(!!initialEntry?.allergicReaction);
+  const [reactionSeverity, setReactionSeverity] = useState<"mild" | "moderate" | "severe" | undefined>(initialEntry?.reactionSeverity);
+  const allergensBase = data.settings.allergens ?? ALLERGENS_DEFAULT;
   const addCustom = (v: string) =>
     update((d) => ({ ...d, custom: { ...d.custom, foodFeelings: [...d.custom.foodFeelings, v] } }));
   const addCustomList = (k: "histamineSymptoms" | "foodSymptomsAfter", v: string) =>
@@ -1288,6 +1292,9 @@ function FoodForm({ date, data, update, onDone, initialEntry }:
       histamineFlare: histFlare || undefined,
       histamineSymptoms: histFlare && histSymptoms.length ? histSymptoms : undefined,
       highHistamine: highHist || undefined,
+      allergensInMeal: allergensInMeal.length ? allergensInMeal : undefined,
+      allergicReaction: allergicReaction || undefined,
+      reactionSeverity: allergicReaction ? reactionSeverity : undefined,
     };
     updateDayLog(update, date, (l) => ({
       ...l,
@@ -1336,6 +1343,28 @@ function FoodForm({ date, data, update, onDone, initialEntry }:
           ))}
           <AddCustomInline onAdd={(v) => update((d) => ({ ...d, custom: { ...d.custom, foodQuickAdd: [...d.custom.foodQuickAdd, v] } }))} />
         </div>
+      </Field>
+      <Field label="Allergens in this meal">
+        <CustomChipList base={allergensBase} custom={data.custom.allergens}
+          onAddCustom={(v) => update((d) => ({ ...d, settings: { ...d.settings, allergens: [...(d.settings.allergens ?? ALLERGENS_DEFAULT), v] }, custom: { ...d.custom, allergens: [...d.custom.allergens, v] } }))}
+          onRemoveCustom={(v) => { update((d) => ({ ...d, custom: { ...d.custom, allergens: d.custom.allergens.filter((x) => x !== v) } })); setAllergensInMeal((a) => a.filter((x) => x !== v)); }}
+          onRenameCustom={(o, n) => { update((d) => ({ ...d, custom: { ...d.custom, allergens: d.custom.allergens.map((x) => x === o ? n : x) } })); setAllergensInMeal((a) => a.map((x) => x === o ? n : x)); }}
+          selected={allergensInMeal} onToggle={(v) => setAllergensInMeal((a) => toggleIn(a, v))} />
+      </Field>
+      <Field label="Reaction?">
+        <div className="mt-1 flex gap-2">
+          <Chip active={!allergicReaction} onClick={() => setAllergicReaction(false)}>No / not sure</Chip>
+          <Chip active={allergicReaction} onClick={() => setAllergicReaction(true)}>Yes — log it</Chip>
+        </div>
+        {allergicReaction && (
+          <div className="mt-2 flex gap-2">
+            {(["mild", "moderate", "severe"] as const).map((s2) => (
+              <Chip key={s2} active={reactionSeverity === s2} onClick={() => setReactionSeverity(s2)}>
+                {s2[0].toUpperCase() + s2.slice(1)}
+              </Chip>
+            ))}
+          </div>
+        )}
       </Field>
       <Field label="What did you eat?">
         <Textarea rows={2} value={what} onChange={(e) => setWhat(e.target.value)} placeholder="e.g. chicken, rice, tomato" />
@@ -1422,7 +1451,11 @@ function BowelForm({ date, data, update, onDone, initialEntry }:
   const [bristol, setBristol] = useState<number>(initialEntry?.bristol ?? 4);
   const [feelings, setFeelings] = useState<string[]>(initialEntry?.feelings ?? []);
   const [symptoms, setSymptoms] = useState<string[]>(initialEntry?.symptoms ?? []);
+  const [urinary, setUrinary] = useState<string[]>(initialEntry?.urinary ?? []);
   const [note, setNote] = useState(initialEntry?.note ?? "");
+  const addUrinary = (v: string) => update((d) => ({ ...d, custom: { ...d.custom, urinary: [...d.custom.urinary, v] } }));
+  const rmUrinary = (v: string) => { update((d) => ({ ...d, custom: { ...d.custom, urinary: d.custom.urinary.filter((x) => x !== v) } })); setUrinary((a) => a.filter((x) => x !== v)); };
+  const rnUrinary = (o: string, n: string) => { update((d) => ({ ...d, custom: { ...d.custom, urinary: d.custom.urinary.map((x) => x === o ? n : x) } })); setUrinary((a) => a.map((x) => x === o ? n : x)); };
   const addFeel = (v: string) => update((d) => ({ ...d, custom: { ...d.custom, bowelFeelings: [...d.custom.bowelFeelings, v] } }));
   const rmFeel = (v: string) => { update((d) => ({ ...d, custom: { ...d.custom, bowelFeelings: d.custom.bowelFeelings.filter((x) => x !== v) } })); setFeelings((a) => a.filter((x) => x !== v)); };
   const addSym = (v: string) => update((d) => ({ ...d, custom: { ...d.custom, bowelSymptoms: [...d.custom.bowelSymptoms, v] } }));
@@ -1433,6 +1466,7 @@ function BowelForm({ date, data, update, onDone, initialEntry }:
       id: initialEntry?.id ?? crypto.randomUUID(), time, bristol,
       feelings: feelings.length ? feelings : undefined,
       symptoms: symptoms.length ? symptoms : undefined,
+      urinary: urinary.length ? urinary : undefined,
       note: note.trim() || undefined,
     };
     updateDayLog(update, date, (l) => ({
@@ -1474,6 +1508,11 @@ function BowelForm({ date, data, update, onDone, initialEntry }:
             </button>
           ))}
         </div>
+      </Field>
+      <Field label="Urinary">
+        <CustomChipList base={URINARY_DEFAULT} custom={data.custom.urinary}
+          onAddCustom={addUrinary} onRemoveCustom={rmUrinary} onRenameCustom={rnUrinary}
+          selected={urinary} onToggle={(v) => setUrinary((a) => toggleIn(a, v))} />
       </Field>
       <Field label="How do you feel?">
         <CustomChipList base={BOWEL_FEELINGS_DEFAULT} custom={data.custom.bowelFeelings}

@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Bell, Download, Upload, Users, Type, LogOut, Cloud, Copy, RefreshCw, Sliders, RotateCcw } from "lucide-react";
+import { ArrowLeft, Bell, Download, Upload, Users, Type, LogOut, Cloud, Copy, RefreshCw, Sliders, RotateCcw, Pill, Plus, X, ListPlus } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { useBixbo, EMPTY, todayKey, replaceBixbo, getBixbo, type BixboData, type PartnerData, type Gender } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import {
   type CloudProfile,
 } from "@/lib/cloudSync";
 import { SCALE_META, type ScaleKey } from "@/lib/scaleDescriptions";
+import { Ico } from "@/components/icons/BixboIcons";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
@@ -297,6 +298,33 @@ function SettingsPage() {
           </details>
         </section>
 
+        {/* ---- Profile ---- */}
+        <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
+          <p className="text-sm font-medium">Your name</p>
+          <p className="mt-1 text-xs text-muted-foreground">Used for the "Hi, ..." greeting on Home.</p>
+          <Input
+            className="mt-3"
+            value={view.settings.userName ?? ""}
+            onChange={(e) => update((d) => ({ ...d, settings: { ...d.settings, userName: e.target.value } }))}
+            placeholder="there"
+          />
+        </section>
+
+        {/* ---- Medications shortcut ---- */}
+        <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
+          <p className="text-sm font-medium"><Pill className="mr-1 inline h-4 w-4" /> Medications</p>
+          <p className="mt-1 text-xs text-muted-foreground">Manage your medication list and daily schedule.</p>
+          <Link to="/meds" className="mt-3 inline-flex h-9 items-center gap-1.5 rounded-md border border-input bg-background px-3 text-sm font-medium hover:bg-accent">
+            <Pill className="h-3.5 w-3.5" /> Manage pills
+          </Link>
+        </section>
+
+        {/* ---- Allergens ---- */}
+        <AllergensEditor view={view} update={update} />
+
+        {/* ---- Quick log ---- */}
+        <QuickLogEditor view={view} update={update} />
+
         {/* ---- Scale descriptions editor ---- */}
         <ScaleEditor view={view} update={update} />
 
@@ -320,6 +348,80 @@ function SettingsPage() {
         </section>
       </div>
     </AppShell>
+  );
+}
+
+function AllergensEditor({ view, update }: {
+  view: BixboData;
+  update: (u: (d: BixboData) => BixboData) => void;
+}) {
+  const [text, setText] = useState("");
+  const allergens = view.settings.allergens ?? [];
+
+  const add = () => {
+    const v = text.trim();
+    if (!v || allergens.includes(v)) return;
+    update((d) => ({ ...d, settings: { ...d.settings, allergens: [...(d.settings.allergens ?? []), v] } }));
+    setText("");
+  };
+  const remove = (a: string) =>
+    update((d) => ({ ...d, settings: { ...d.settings, allergens: (d.settings.allergens ?? []).filter((x) => x !== a) } }));
+
+  return (
+    <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
+      <p className="text-sm font-medium">Allergens</p>
+      <p className="mt-1 text-xs text-muted-foreground">Your allergens, used to flag them in the Food log.</p>
+      <div className="mt-3 flex gap-2">
+        <Input value={text} onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }}
+          placeholder="e.g. Peanuts" />
+        <Button size="sm" onClick={add}><Plus className="h-3.5 w-3.5" /> Add</Button>
+      </div>
+      {allergens.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {allergens.map((a) => (
+            <span key={a} className="inline-flex items-center gap-1 rounded-full bg-tint px-2.5 py-1 text-xs">
+              {a}
+              <button onClick={() => remove(a)} aria-label={`Remove ${a}`} className="text-muted-foreground hover:text-destructive"><X className="h-3 w-3" /></button>
+            </span>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function QuickLogEditor({ view, update }: {
+  view: BixboData;
+  update: (u: (d: BixboData) => BixboData) => void;
+}) {
+  const custom = view.settings.customQuickTags ?? [];
+  const hidden = view.settings.hiddenQuickTags ?? [];
+
+  const unhide = (key: string) =>
+    update((d) => ({ ...d, settings: { ...d.settings, hiddenQuickTags: (d.settings.hiddenQuickTags ?? []).filter((x) => x !== key) } }));
+
+  return (
+    <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
+      <p className="text-sm font-medium"><ListPlus className="mr-1 inline h-4 w-4" /> Quick log</p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Add, reorder and hide quick-log buttons directly from the Home screen — tap "Edit" above the quick log bar.
+      </p>
+      <p className="mt-2 text-xs text-muted-foreground">{custom.length} custom button{custom.length === 1 ? "" : "s"}.</p>
+      {hidden.length > 0 && (
+        <div className="mt-3">
+          <p className="text-xs font-medium text-muted-foreground">Hidden buttons</p>
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {hidden.map((key) => (
+              <button key={key} onClick={() => unhide(key)}
+                className="inline-flex items-center gap-1 rounded-full bg-tint px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground">
+                <Plus className="h-3 w-3" /> {key}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </section>
   );
 }
 
