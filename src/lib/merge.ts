@@ -162,7 +162,7 @@ function mergeCustom(local: CustomLists | undefined, remote: CustomLists | undef
     const lv = local?.[k];
     const rv = remote?.[k];
     if (Array.isArray(lv) || Array.isArray(rv)) {
-      (merged as Record<string, unknown>)[k as string] = dedupArray([...(rv ?? []), ...(lv ?? [])] as unknown[]);
+      (merged as unknown as Record<string, unknown>)[k as string] = dedupArray([...(rv ?? []), ...(lv ?? [])] as unknown[]);
     }
   }
   return merged;

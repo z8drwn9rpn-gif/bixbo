@@ -244,6 +244,8 @@ export const EMPTY: BixboData = {
     panicPhysical: [], panicCognitive: [], panicHelped: [],
     sexTypes: [], bowelFeelings: [], bowelSymptoms: [],
     pcosSymptoms: [], headacheTypes: [], histamineSymptoms: [], foodSymptomsAfter: [], sexFeelings: [],
+    urinary: [], allergens: [],
+
   },
   settings: { textSize: "md", notifications: true, gender: "female" },
 };
