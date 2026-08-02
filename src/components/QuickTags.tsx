@@ -1,6 +1,6 @@
 import { Ico } from "@/components/icons/BixboIcons";
 import { useRef, useState } from "react";
-import { Check, Plus, X } from "lucide-react";
+import { Check, Plus, X, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   todayKey, nowHHMM, updateDayLog,
   type BixboData, type DayLog, type CustomQuickTag, type QuickTagCategory, type PeriodLevel,
@@ -98,15 +98,40 @@ export function QuickTags({
   const [flash, setFlash] = useState<string | null>(null);
   const [periodOpen, setPeriodOpen] = useState(false);
   const [builderOpen, setBuilderOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
   const timerRef = useRef<number | null>(null);
   const longFiredRef = useRef(false);
 
   const pregnant = !!data.settings.pregnantSince;
   const isMale = data.settings.gender === "male";
-  const tags = [
+  const allTags = [
     ...baseTags().filter((t) => !(t.cat === "period" && (pregnant || isMale))),
     ...(data.settings.customQuickTags ?? []).map((c) => customToTag(c, data)),
   ];
+
+  const order = data.settings.quickTagOrder ?? [];
+  const hidden = new Set(data.settings.hiddenQuickTags ?? []);
+  const sortedTags = [...allTags].sort((a, b) => {
+    const ia = order.indexOf(a.key), ib = order.indexOf(b.key);
+    if (ia === -1 && ib === -1) return 0;
+    if (ia === -1) return 1;
+    if (ib === -1) return -1;
+    return ia - ib;
+  });
+  const tags = sortedTags.filter((t) => !hidden.has(t.key));
+
+  const hideTag = (key: string) =>
+    update((d) => ({ ...d, settings: { ...d.settings, hiddenQuickTags: [...new Set([...(d.settings.hiddenQuickTags ?? []), key])] } }));
+
+  const moveTag = (key: string, dir: -1 | 1) => {
+    const visibleKeys = tags.map((t) => t.key);
+    const idx = visibleKeys.indexOf(key);
+    const swap = idx + dir;
+    if (swap < 0 || swap >= visibleKeys.length) return;
+    [visibleKeys[idx], visibleKeys[swap]] = [visibleKeys[swap], visibleKeys[idx]];
+    const hiddenKeysInOrder = sortedTags.filter((t) => hidden.has(t.key)).map((t) => t.key);
+    update((d) => ({ ...d, settings: { ...d.settings, quickTagOrder: [...visibleKeys, ...hiddenKeysInOrder] } }));
+  };
 
   const clear = () => { if (timerRef.current) { window.clearTimeout(timerRef.current); timerRef.current = null; } };
 
@@ -137,11 +162,44 @@ export function QuickTags({
 
   return (
     <div className="mt-3 px-5">
-      <p className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">Quick log · tap to log now, long-press for details</p>
+      <div className="mb-2 flex items-center justify-between">
+        <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+          {editMode ? "Reorder or remove buttons" : "Quick log · tap to log now, long-press for details"}
+        </p>
+        <button
+          type="button"
+          onClick={() => setEditMode((v) => !v)}
+          className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${editMode ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          <Pencil className="h-3 w-3" /> {editMode ? "Done" : "Edit"}
+        </button>
+      </div>
       <div className="-mx-5 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         <div className="flex gap-2">
-          {tags.map((tag) => {
+          {tags.map((tag, i) => {
             const isFlash = flash === tag.key;
+            if (editMode) {
+              return (
+                <div key={tag.key} className="relative flex shrink-0 select-none flex-col items-center gap-0.5 rounded-2xl bg-surface px-3 py-2 ring-1 ring-border">
+                  <button onClick={() => hideTag(tag.key)} aria-label={`Remove ${tag.label}`}
+                    className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full bg-destructive text-destructive-foreground shadow">
+                    <X className="h-3 w-3" strokeWidth={3} />
+                  </button>
+                  <Ico e={tag.emoji} size={22} />
+                  <span className="text-[10px] text-muted-foreground">{tag.label}</span>
+                  <div className="mt-1 flex gap-1">
+                    <button onClick={() => moveTag(tag.key, -1)} disabled={i === 0} aria-label="Move left"
+                      className="grid h-5 w-5 place-items-center rounded-full bg-tint text-muted-foreground disabled:opacity-30">
+                      <ChevronLeft className="h-3 w-3" />
+                    </button>
+                    <button onClick={() => moveTag(tag.key, 1)} disabled={i === tags.length - 1} aria-label="Move right"
+                      className="grid h-5 w-5 place-items-center rounded-full bg-tint text-muted-foreground disabled:opacity-30">
+                      <ChevronRight className="h-3 w-3" />
+                    </button>
+                  </div>
+                </div>
+              );
+            }
             return (
               <button
                 key={tag.key}
@@ -186,6 +244,21 @@ export function QuickTags({
           </button>
         </div>
       </div>
+
+      {editMode && hidden.size > 0 && (
+        <div className="mt-2">
+          <p className="text-[10px] text-muted-foreground">Hidden — tap to restore:</p>
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {sortedTags.filter((t) => hidden.has(t.key)).map((t) => (
+              <button key={t.key}
+                onClick={() => update((d) => ({ ...d, settings: { ...d.settings, hiddenQuickTags: (d.settings.hiddenQuickTags ?? []).filter((x) => x !== t.key) } }))}
+                className="flex items-center gap-1 rounded-full bg-tint px-2 py-0.5 text-[10px] text-muted-foreground">
+                <Ico e={t.emoji} size={12} /> {t.label} <Plus className="h-3 w-3" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {periodOpen && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-6" onClick={() => setPeriodOpen(false)}>

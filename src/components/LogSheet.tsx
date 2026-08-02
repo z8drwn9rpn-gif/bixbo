@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useEffect, type ReactNode } from "react";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter,
 } from "@/components/ui/sheet";
-import { Ico } from "@/components/icons/BixboIcons";
+import { Ico, IcoText } from "@/components/icons/BixboIcons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,6 +19,7 @@ import {
   PCOS_SYMPTOMS, HISTAMINE_SYMPTOMS, FOOD_SYMPTOMS_AFTER,
   todayKey, nowHHMM, updateDayLog, asArr,
   workoutHasDistance, workoutIsHike, workoutIsStrength, pregnancyInfo,
+  URINARY_DEFAULT, ALLERGENS_DEFAULT,
   type BixboData, type DayLog, type PainEntry, type PeriodLevel, type FoodEntry,
   type BowelEntry, type ThermoSession, type ThermoKind, type SexEntry, type SexKind,
   type ExtraMed, type WorkoutEntry, type WorkoutExercise, type EventEntry, type TaskEntry,
@@ -205,7 +206,7 @@ function Chip({
       }`}
       style={active && color ? { background: color } : active ? { background: "var(--primary)" } : undefined}
     >
-      {children}
+      {typeof children === "string" ? <IcoText text={children} size={14} /> : children}
     </button>
   );
 }
@@ -1267,6 +1268,10 @@ function FoodForm({ date, data, update, onDone, initialEntry }:
   const [histFlare, setHistFlare] = useState<boolean>(!!initialEntry?.histamineFlare);
   const [histSymptoms, setHistSymptoms] = useState<string[]>(initialEntry?.histamineSymptoms ?? []);
   const [highHist, setHighHist] = useState<boolean>(!!initialEntry?.highHistamine);
+  const [allergensInMeal, setAllergensInMeal] = useState<string[]>(initialEntry?.allergensInMeal ?? []);
+  const [allergicReaction, setAllergicReaction] = useState<boolean>(!!initialEntry?.allergicReaction);
+  const [reactionSeverity, setReactionSeverity] = useState<"mild" | "moderate" | "severe" | undefined>(initialEntry?.reactionSeverity);
+  const allergensBase = data.settings.allergens ?? ALLERGENS_DEFAULT;
   const addCustom = (v: string) =>
     update((d) => ({ ...d, custom: { ...d.custom, foodFeelings: [...d.custom.foodFeelings, v] } }));
   const addCustomList = (k: "histamineSymptoms" | "foodSymptomsAfter", v: string) =>
@@ -1287,6 +1292,9 @@ function FoodForm({ date, data, update, onDone, initialEntry }:
       histamineFlare: histFlare || undefined,
       histamineSymptoms: histFlare && histSymptoms.length ? histSymptoms : undefined,
       highHistamine: highHist || undefined,
+      allergensInMeal: allergensInMeal.length ? allergensInMeal : undefined,
+      allergicReaction: allergicReaction || undefined,
+      reactionSeverity: allergicReaction ? reactionSeverity : undefined,
     };
     updateDayLog(update, date, (l) => ({
       ...l,
@@ -1313,7 +1321,7 @@ function FoodForm({ date, data, update, onDone, initialEntry }:
                 if (q.hyd) setHydration(String((Number(hydration) || 0) + q.hyd));
               }}
               className="rounded-full bg-tint px-3 py-1.5 text-xs font-semibold ring-1 ring-border hover:bg-primary/10">
-              {q.l}
+              <IcoText text={q.l} size={14} />
             </button>
           ))}
           {data.custom.foodQuickAdd.map((c) => (
@@ -1321,7 +1329,7 @@ function FoodForm({ date, data, update, onDone, initialEntry }:
               <button type="button"
                 onClick={() => setWhat((w) => w ? `${w}, ${c}` : c)}
                 className="rounded-full bg-tint px-3 py-1.5 text-xs font-semibold ring-1 ring-border hover:bg-primary/10">
-                {c}
+                <IcoText text={c} size={14} />
               </button>
               <button onClick={(e) => {
                 e.stopPropagation();
@@ -1335,6 +1343,28 @@ function FoodForm({ date, data, update, onDone, initialEntry }:
           ))}
           <AddCustomInline onAdd={(v) => update((d) => ({ ...d, custom: { ...d.custom, foodQuickAdd: [...d.custom.foodQuickAdd, v] } }))} />
         </div>
+      </Field>
+      <Field label="Allergens in this meal">
+        <CustomChipList base={allergensBase} custom={data.custom.allergens}
+          onAddCustom={(v) => update((d) => ({ ...d, settings: { ...d.settings, allergens: [...(d.settings.allergens ?? ALLERGENS_DEFAULT), v] }, custom: { ...d.custom, allergens: [...d.custom.allergens, v] } }))}
+          onRemoveCustom={(v) => { update((d) => ({ ...d, custom: { ...d.custom, allergens: d.custom.allergens.filter((x) => x !== v) } })); setAllergensInMeal((a) => a.filter((x) => x !== v)); }}
+          onRenameCustom={(o, n) => { update((d) => ({ ...d, custom: { ...d.custom, allergens: d.custom.allergens.map((x) => x === o ? n : x) } })); setAllergensInMeal((a) => a.map((x) => x === o ? n : x)); }}
+          selected={allergensInMeal} onToggle={(v) => setAllergensInMeal((a) => toggleIn(a, v))} />
+      </Field>
+      <Field label="Reaction?">
+        <div className="mt-1 flex gap-2">
+          <Chip active={!allergicReaction} onClick={() => setAllergicReaction(false)}>No / not sure</Chip>
+          <Chip active={allergicReaction} onClick={() => setAllergicReaction(true)}>Yes — log it</Chip>
+        </div>
+        {allergicReaction && (
+          <div className="mt-2 flex gap-2">
+            {(["mild", "moderate", "severe"] as const).map((s2) => (
+              <Chip key={s2} active={reactionSeverity === s2} onClick={() => setReactionSeverity(s2)}>
+                {s2[0].toUpperCase() + s2.slice(1)}
+              </Chip>
+            ))}
+          </div>
+        )}
       </Field>
       <Field label="What did you eat?">
         <Textarea rows={2} value={what} onChange={(e) => setWhat(e.target.value)} placeholder="e.g. chicken, rice, tomato" />
@@ -1421,7 +1451,11 @@ function BowelForm({ date, data, update, onDone, initialEntry }:
   const [bristol, setBristol] = useState<number>(initialEntry?.bristol ?? 4);
   const [feelings, setFeelings] = useState<string[]>(initialEntry?.feelings ?? []);
   const [symptoms, setSymptoms] = useState<string[]>(initialEntry?.symptoms ?? []);
+  const [urinary, setUrinary] = useState<string[]>(initialEntry?.urinary ?? []);
   const [note, setNote] = useState(initialEntry?.note ?? "");
+  const addUrinary = (v: string) => update((d) => ({ ...d, custom: { ...d.custom, urinary: [...d.custom.urinary, v] } }));
+  const rmUrinary = (v: string) => { update((d) => ({ ...d, custom: { ...d.custom, urinary: d.custom.urinary.filter((x) => x !== v) } })); setUrinary((a) => a.filter((x) => x !== v)); };
+  const rnUrinary = (o: string, n: string) => { update((d) => ({ ...d, custom: { ...d.custom, urinary: d.custom.urinary.map((x) => x === o ? n : x) } })); setUrinary((a) => a.map((x) => x === o ? n : x)); };
   const addFeel = (v: string) => update((d) => ({ ...d, custom: { ...d.custom, bowelFeelings: [...d.custom.bowelFeelings, v] } }));
   const rmFeel = (v: string) => { update((d) => ({ ...d, custom: { ...d.custom, bowelFeelings: d.custom.bowelFeelings.filter((x) => x !== v) } })); setFeelings((a) => a.filter((x) => x !== v)); };
   const addSym = (v: string) => update((d) => ({ ...d, custom: { ...d.custom, bowelSymptoms: [...d.custom.bowelSymptoms, v] } }));
@@ -1432,6 +1466,7 @@ function BowelForm({ date, data, update, onDone, initialEntry }:
       id: initialEntry?.id ?? crypto.randomUUID(), time, bristol,
       feelings: feelings.length ? feelings : undefined,
       symptoms: symptoms.length ? symptoms : undefined,
+      urinary: urinary.length ? urinary : undefined,
       note: note.trim() || undefined,
     };
     updateDayLog(update, date, (l) => ({
@@ -1456,7 +1491,7 @@ function BowelForm({ date, data, update, onDone, initialEntry }:
               bristol === 0 ? "border-primary bg-primary/10" : "border-border bg-surface"}`}>
             <span className="grid h-8 w-8 place-items-center rounded-full text-xs font-semibold text-white"
               style={{ background: "linear-gradient(135deg,#ef4444,#f59e0b,#eab308,#22c55e,#3b82f6,#8b5cf6)" }}>0</span>
-            <span className="flex-1"><span className="font-medium">Type 0 — Mystery</span> <span aria-hidden>🌈</span><br /><span className="text-[11px] text-muted-foreground">Unknown / mixed</span></span>
+            <span className="flex-1"><span className="font-medium">Type 0 — Mystery</span> <Ico e="🌈" size={14} /><br /><span className="text-[11px] text-muted-foreground">Unknown / mixed</span></span>
           </button>
 
           {BRISTOL.map((b) => (
@@ -1467,12 +1502,17 @@ function BowelForm({ date, data, update, onDone, initialEntry }:
               <span className="grid h-8 w-8 place-items-center rounded-full text-xs font-semibold text-white" style={{ background: b.color }}>{b.n}</span>
               <BristolIcon shape={b.shape} color={b.color} />
               <div className="flex-1">
-                <p className="font-medium">{b.label}</p>
-                <p className="text-[11px] text-muted-foreground">{b.sub}</p>
+                <p className="font-medium"><IcoText text={b.label} size={14} /></p>
+                <p className="text-[11px] text-muted-foreground"><IcoText text={b.sub} size={12} /></p>
               </div>
             </button>
           ))}
         </div>
+      </Field>
+      <Field label="Urinary">
+        <CustomChipList base={URINARY_DEFAULT} custom={data.custom.urinary}
+          onAddCustom={addUrinary} onRemoveCustom={rmUrinary} onRenameCustom={rnUrinary}
+          selected={urinary} onToggle={(v) => setUrinary((a) => toggleIn(a, v))} />
       </Field>
       <Field label="How do you feel?">
         <CustomChipList base={BOWEL_FEELINGS_DEFAULT} custom={data.custom.bowelFeelings}
@@ -1571,7 +1611,7 @@ function MedsForm({ date, data, update, onDone }:
                 <div className="flex-1">
                   <p className="text-sm font-medium">{m.name}</p>
                   <p className="text-xs text-muted-foreground">As needed{m.dose ? ` · ${m.dose}` : ""}</p>
-                  {m.note && <p className="text-[11px] text-muted-foreground"><Ico e="📝" size={13} /> {m.note}</p>}
+                  {m.note && <p className="text-[11px] text-muted-foreground"><Ico e="📝" size={13} /> <IcoText text={m.note} size={12} /></p>}
                 </div>
                 {taken[`${m.id}@asneeded`] && (
                   <Input type="time" value={takenTimes[`${m.id}@asneeded`] ?? nowHHMM()}
@@ -1588,7 +1628,7 @@ function MedsForm({ date, data, update, onDone }:
                     <div className="flex-1">
                       <p className="text-sm font-medium">{m.name} <span className="text-xs text-muted-foreground">· scheduled {t}</span></p>
                       {m.dose && <p className="text-xs text-muted-foreground">{m.dose}</p>}
-                      {m.note && <p className="text-[11px] text-muted-foreground"><Ico e="📝" size={13} /> {m.note}</p>}
+                      {m.note && <p className="text-[11px] text-muted-foreground"><Ico e="📝" size={13} /> <IcoText text={m.note} size={12} /></p>}
                     </div>
                     {isTaken && (
                       <Input type="time" value={takenTimes[k] ?? t}

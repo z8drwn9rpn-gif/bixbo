@@ -20,14 +20,29 @@ export const Route = createFileRoute("/insights")({
 type Period = "W" | "M" | "Y" | "P";
 
 function rangeFor(period: Period, anchor: Date) {
-  const end = new Date(anchor); end.setHours(0, 0, 0, 0);
-  const start = new Date(end);
-  if (period === "W") start.setDate(end.getDate() - 6);
-  else if (period === "M" || period === "P") start.setDate(1);
-  else start.setMonth(0, 1);
-  const endK = toKey(end);
-  const startK = toKey(start);
-  return { startK, endK };
+  // Always derive purely from `period` + `anchor` (no mutation of shared objects,
+  // no reliance on the previous render's day-of-month). Root cause of the stale
+  // month bug: `end` used to be a clone of `anchor` keeping its original
+  // day-of-month, so a month view only ever covered days 1..anchor-day-of-month
+  // instead of the full month (e.g. viewing July while anchor's date was "1"
+  // showed just a single day). Now start/end are computed as true calendar
+  // boundaries for the given period.
+  const base = new Date(anchor); base.setHours(0, 0, 0, 0);
+  if (period === "W") {
+    // Monday → Sunday of the week containing `anchor`.
+    const dow = (base.getDay() + 6) % 7; // Mon=0 ... Sun=6
+    const start = new Date(base); start.setDate(base.getDate() - dow);
+    const end = new Date(start); end.setDate(start.getDate() + 6);
+    return { startK: toKey(start), endK: toKey(end) };
+  }
+  if (period === "M" || period === "P") {
+    const start = new Date(base.getFullYear(), base.getMonth(), 1);
+    const end = new Date(base.getFullYear(), base.getMonth() + 1, 0);
+    return { startK: toKey(start), endK: toKey(end) };
+  }
+  const start = new Date(base.getFullYear(), 0, 1);
+  const end = new Date(base.getFullYear(), 11, 31);
+  return { startK: toKey(start), endK: toKey(end) };
 }
 
 function eachDay(startK: string, endK: string): string[] {
@@ -110,7 +125,6 @@ function InsightsPage() {
     return sums.map((s, i) => (counts[i] ? s / counts[i] : undefined));
   };
   const hfBars = period === "Y" ? aggregateMonthly(days, hfSeries) : hfSeries;
-  const sleepBars = period === "Y" ? aggregateMonthly(days, sleepSeries) : sleepSeries;
   const hfTotal = hfCounts.reduce((a, b) => a + b, 0);
   const hfAvg = (() => {
     const s = hfCounts.reduce((sum, c, i) => sum + c * i, 0);
@@ -149,14 +163,14 @@ function InsightsPage() {
   const goPrev = () => setAnchor((d) => {
     const n = new Date(d);
     if (period === "W") n.setDate(n.getDate() - 7);
-    else if (period === "M" || period === "P") n.setMonth(n.getMonth() - 1);
+    else if (period === "M" || period === "P") { n.setDate(1); n.setMonth(n.getMonth() - 1); }
     else n.setFullYear(n.getFullYear() - 1);
     return n;
   });
   const goNext = () => setAnchor((d) => {
     const n = new Date(d);
     if (period === "W") n.setDate(n.getDate() + 7);
-    else if (period === "M" || period === "P") n.setMonth(n.getMonth() + 1);
+    else if (period === "M" || period === "P") { n.setDate(1); n.setMonth(n.getMonth() + 1); }
     else n.setFullYear(n.getFullYear() + 1);
     return n;
   });
@@ -346,27 +360,13 @@ function InsightsPage() {
 
         <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">Sleep</p>
-          <div className="mt-3 flex h-20 items-end gap-1">
-            {sleepBars.map((h, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center h-full justify-end"
-                title={h == null ? undefined : (period === "Y" ? `${monthLabels[i]}: avg ${h.toFixed(1)} h` : `${days[i]}: ${h} h`)}>
-                {h != null && <div className="w-full rounded-t" style={{ height: `${Math.min(100, (h / 12) * 100)}%`, background: sleepColor(h) }} />}
-              </div>
-            ))}
-          </div>
-          {period === "Y" && (
-            <div className="mt-1 grid gap-1 text-center text-[9px] text-muted-foreground" style={{ gridTemplateColumns: "repeat(12, minmax(0, 1fr))" }}>
-              {monthLabels.map((l, i) => <span key={i}>{l}</span>)}
-            </div>
-          )}
+          <SleepChart period={period} days={days} series={sleepSeries} anchor={anchor} />
           <div className="mt-2 flex gap-3 text-[11px] text-muted-foreground">
             <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-500" /> &lt;8h</span>
             <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-yellow-500" /> 8h</span>
             <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-green-500" /> &gt;8h</span>
           </div>
         </section>
-
-        {period === "M" && <BirthControlCalendar data={view} anchor={anchor} />}
 
         <MedsAdherence data={view} />
         </>)}
@@ -381,11 +381,16 @@ function InsightsPage() {
  * Pill number counts continuously from settings.birthControlSince.
  */
 function BirthControlCalendar({ data, anchor }: { data: ReturnType<typeof useBixbo>["data"]; anchor: Date }) {
+  const { update } = useBixbo();
   const [sel, setSel] = useState<string | null>(null);
+  const [pickTime, setPickTime] = useState<string>("");
   const since = data.settings.birthControlSince;
   if (!since || data.settings.gender === "male") return null;
 
   const bcMed = data.meds.find((m) => /antikonc|birth\s*control|contracept|hak|pill/i.test(`${m.name} ${m.dose ?? ""}`));
+  // Fall back to a synthetic id (like the "removed medication" history pattern)
+  // so taken/missed can still be recorded even without a matching med entry.
+  const bcId = bcMed?.id ?? "hak-default";
 
   const y = anchor.getFullYear(), mo = anchor.getMonth();
   const first = new Date(y, mo, 1);
@@ -401,23 +406,65 @@ function BirthControlCalendar({ data, anchor }: { data: ReturnType<typeof useBix
   const takenAt = (k: string): string | null => {
     const log = data.medLog[k] ?? {};
     const times = data.medLogTimes?.[k] ?? {};
-    const keys = Object.keys(log).filter((key) => log[key] && (!bcMed || key.startsWith(`${bcMed.id}@`)));
+    const keys = Object.keys(log).filter((key) => log[key] && key !== `${bcId}@missed` && key.startsWith(`${bcId}@`));
     if (!keys.length) return null;
     return times[keys[0]] ?? keys[0].split("@")[1] ?? "";
   };
+  const missedAt = (k: string): boolean => !!data.medLog[k]?.[`${bcId}@missed`];
 
   const cells: (string | null)[] = [
     ...new Array(startWeekday).fill(null),
     ...Array.from({ length: daysInMonth }, (_, i) => toKey(new Date(y, mo, i + 1))),
   ];
 
+  const markTaken = (k: string, time: string) => update((d) => {
+    const t = time || new Date().toTimeString().slice(0, 5);
+    const day = { ...(d.medLog[k] ?? {}) };
+    // Clear any prior taken/missed markers for this pill on this day, then record the new dose.
+    Object.keys(day).forEach((key) => { if (key.startsWith(`${bcId}@`)) delete day[key]; });
+    day[`${bcId}@${t}`] = true;
+    const dayTimes = { ...(d.medLogTimes[k] ?? {}) };
+    Object.keys(dayTimes).forEach((key) => { if (key.startsWith(`${bcId}@`)) delete dayTimes[key]; });
+    dayTimes[`${bcId}@${t}`] = t;
+    return {
+      ...d,
+      medLog: { ...d.medLog, [k]: day },
+      medLogTimes: { ...d.medLogTimes, [k]: dayTimes },
+      medNames: bcMed ? d.medNames : { ...d.medNames, [bcId]: "Birth control" },
+    };
+  });
+
+  const markMissed = (k: string) => update((d) => {
+    const day = { ...(d.medLog[k] ?? {}) };
+    Object.keys(day).forEach((key) => { if (key.startsWith(`${bcId}@`)) delete day[key]; });
+    day[`${bcId}@missed`] = true;
+    const dayTimes = { ...(d.medLogTimes[k] ?? {}) };
+    Object.keys(dayTimes).forEach((key) => { if (key.startsWith(`${bcId}@`)) delete dayTimes[key]; });
+    return {
+      ...d,
+      medLog: { ...d.medLog, [k]: day },
+      medLogTimes: { ...d.medLogTimes, [k]: dayTimes },
+      medNames: bcMed ? d.medNames : { ...d.medNames, [bcId]: "Birth control" },
+    };
+  });
+
+  const clearRecord = (k: string) => update((d) => {
+    const day = { ...(d.medLog[k] ?? {}) };
+    Object.keys(day).forEach((key) => { if (key.startsWith(`${bcId}@`)) delete day[key]; });
+    const dayTimes = { ...(d.medLogTimes[k] ?? {}) };
+    Object.keys(dayTimes).forEach((key) => { if (key.startsWith(`${bcId}@`)) delete dayTimes[key]; });
+    return { ...d, medLog: { ...d.medLog, [k]: day }, medLogTimes: { ...d.medLogTimes, [k]: dayTimes } };
+  });
+
   const detail = (() => {
     if (!sel) return null;
     const n = pillNumber(sel);
     if (n == null) return `${sel} · before you started`;
     const t = takenAt(sel);
+    const missed = missedAt(sel);
     const inactive = n > 24;
-    return `Pill #${n}${inactive ? " (inactive white)" : ""} · ${t ? `taken${t ? ` at ${t}` : ""}` : "not recorded"}`;
+    const status = t != null ? `taken at ${t}` : missed ? "marked missed" : "not recorded";
+    return `Pill #${n}${inactive ? " (inactive white)" : ""} · ${status}`;
   })();
 
   return (
@@ -436,19 +483,20 @@ function BirthControlCalendar({ data, anchor }: { data: ReturnType<typeof useBix
           if (!k) return <span key={i} />;
           const n = pillNumber(k);
           const t = n == null ? null : takenAt(k);
+          const explicitMissed = n != null && missedAt(k);
           const inactive = n != null && n > 24;
           const future = k > todayK;
           const isToday = k === todayK;
-          const missed = n != null && !inactive && !t && !future;
+          const missed = n != null && !inactive && !t && (explicitMissed || !future);
 
           let bg = "transparent", color = "var(--foreground)", ring = "1px solid var(--border)";
-          if (n == null || future) { bg = "transparent"; color = "var(--muted-foreground)"; }
+          if (n == null || (future && !t && !explicitMissed)) { bg = "transparent"; color = "var(--muted-foreground)"; }
           else if (inactive) { bg = "var(--tint)"; color = "var(--muted-foreground)"; ring = "1px solid var(--border)"; }
           else if (t != null) { bg = "var(--primary)"; color = "var(--primary-foreground)"; ring = "none"; }
           else if (missed) { ring = "2px solid #d94545"; color = "#d94545"; }
 
           return (
-            <button key={k} onClick={() => setSel(sel === k ? null : k)}
+            <button key={k} onClick={() => { setSel(sel === k ? null : k); setPickTime(""); }}
               className={`flex aspect-square flex-col items-center justify-center rounded-full text-[13px] leading-none ${sel === k ? "ring-2 ring-primary" : ""}`}
               style={{ background: bg, color, border: sel === k ? undefined : ring, outline: isToday ? "2.5px solid var(--foreground)" : undefined }}>
               <span className="text-[8px] opacity-70">{n != null ? `#${n}` : ""}</span>
@@ -466,6 +514,29 @@ function BirthControlCalendar({ data, anchor }: { data: ReturnType<typeof useBix
       <p className="mt-3 rounded-2xl bg-tint p-3 text-xs">
         {detail ?? "Tap a day for details."}
       </p>
+      {sel && pillNumber(sel) != null && pillNumber(sel)! <= 24 && (
+        <div className="mt-2 rounded-2xl bg-tint p-3 space-y-2">
+          <div className="flex items-center gap-2">
+            <input type="time" value={pickTime} onChange={(e) => setPickTime(e.target.value)}
+              className="rounded-lg bg-surface px-2 py-1 text-xs ring-1 ring-border" />
+            <button onClick={() => markTaken(sel, pickTime)}
+              className="flex-1 rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground">
+              Mark taken
+            </button>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => markMissed(sel)}
+              className="flex-1 rounded-xl px-3 py-1.5 text-xs font-medium" style={{ background: "transparent", border: "1.5px solid #d94545", color: "#d94545" }}>
+              Mark missed
+            </button>
+            {(takenAt(sel) != null || missedAt(sel)) && (
+              <button onClick={() => clearRecord(sel)} className="rounded-xl bg-surface px-3 py-1.5 text-xs text-muted-foreground ring-1 ring-border">
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
+      )}
       {!bcMed && (
         <p className="mt-2 text-[11px] text-muted-foreground">
           Tip: add your pill in Medications (name it e.g. “Birth control”) so taken doses are detected precisely.
@@ -810,6 +881,86 @@ function WeightLineChart({ period, days, series, label = "Weight", unit = "kg" }
         </svg>
       </div>
     </section>
+  );
+}
+
+function SleepChart({ period, days, series, anchor }:
+  { period: Period; days: string[]; series: (number | undefined)[]; anchor: Date }) {
+  // Mirrors PainChart's layout: labelled Y axis on the left, dotted gridlines,
+  // and X-axis labels that adapt to the active period.
+  type Bar = { value?: number; label: string; sub?: string };
+  let bars: Bar[] = [];
+  if (period === "Y") {
+    const monthly: { sum: number; n: number }[] = Array.from({ length: 12 }, () => ({ sum: 0, n: 0 }));
+    days.forEach((k, i) => {
+      const v = series[i];
+      if (v == null) return;
+      const m = fromKey(k).getMonth();
+      monthly[m].sum += v; monthly[m].n += 1;
+    });
+    const MON = ["J","F","M","A","M","J","J","A","S","O","N","D"];
+    bars = monthly.map((mm, i) => ({
+      value: mm.n ? mm.sum / mm.n : undefined,
+      label: MON[i],
+    }));
+  } else if (period === "M") {
+    bars = days.map((k, i) => {
+      const d = fromKey(k).getDate();
+      return { value: series[i], label: d % 2 === 1 ? String(d) : "" };
+    });
+  } else {
+    bars = days.map((k, i) => {
+      const d = fromKey(k);
+      const wd = ["Su","Mo","Tu","We","Th","Fr","Sa"][d.getDay()];
+      return { value: series[i], label: wd, sub: String(d.getDate()) };
+    });
+  }
+
+  const sleepColor = (h?: number) => h == null ? "var(--tint)" : h < 8 ? "#ef4444" : h === 8 ? "#eab308" : "#22c55e";
+  const yLabels = [12, 10, 8, 6, 4, 2, 0];
+  const height = 140;
+
+  return (
+    <div className="mt-4">
+      <div className="flex gap-1.5">
+        <div className="flex flex-col items-end pr-1" style={{ height }}>
+          <div className="flex h-full flex-col justify-between text-[10px] font-medium text-muted-foreground">
+            {yLabels.map((y) => <span key={y} className="leading-none tabular-nums">{y}</span>)}
+          </div>
+        </div>
+        <div className="relative flex-1">
+          <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
+            {yLabels.map((y) => (
+              <div key={y} className="border-t border-dashed border-border/40" />
+            ))}
+          </div>
+          <div className="relative grid items-end gap-[2px]" style={{ gridTemplateColumns: `repeat(${bars.length}, minmax(0, 1fr))`, height }}>
+            {bars.map((b, i) => (
+              b.value != null
+                ? <div key={i} className="w-full rounded-t" style={{ height: `${Math.max(4, (b.value / 12) * 100)}%`, background: sleepColor(b.value) }} title={`${b.label || days[i]}: ${b.value.toFixed(1)} h`} />
+                : <div key={i} className="h-[2px] w-full self-end rounded bg-tint/60" title={`${days[i]}: no entry`} />
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="mt-1 flex pl-5">
+        <div className="grid flex-1 gap-[2px] text-center text-[9px] text-muted-foreground" style={{ gridTemplateColumns: `repeat(${bars.length}, minmax(0, 1fr))` }}>
+          {bars.map((b, i) => (
+            <div key={i} className="leading-tight">
+              <div className="tabular-nums">{b.label}</div>
+              {b.sub && <div className="text-[8px] opacity-70 tabular-nums">{b.sub}</div>}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="mt-1 flex items-center justify-between text-[10px] text-muted-foreground">
+        <span>Sleep (hours)</span>
+        <span>{period === "Y" ? "Month" : period === "M" ? "Day of month" : "Day"}</span>
+      </div>
+      {period === "Y" && bars.every((b) => b.value == null) && (
+        <p className="mt-2 text-center text-xs text-muted-foreground">No sleep entries in {anchor.getFullYear()}</p>
+      )}
+    </div>
   );
 }
 

@@ -61,8 +61,12 @@ export interface FoodEntry {
   histamineFlare?: boolean;
   histamineSymptoms?: string[];
   highHistamine?: boolean;
+  allergensInMeal?: string[];
+  allergicReaction?: boolean;
+  reactionSeverity?: "mild" | "moderate" | "severe";
 }
-export interface BowelEntry { id: string; time: string; bristol: number; note?: string; feelings?: string[]; symptoms?: string[] }
+export interface BowelEntry { id: string; time: string; bristol: number; note?: string; feelings?: string[]; symptoms?: string[]; urinary?: string[] }
+
 export interface SexEntry { id: string; time: string; kind: SexKind; feelingAfter?: string | string[]; painful?: PainfulWhen; note?: string }
 export interface ExtraMed { id: string; time: string; name: string; dose?: string; note?: string }
 export interface WorkoutExercise { id: string; name: string; sets?: number; reps?: number; weightKg?: number }
@@ -152,7 +156,10 @@ export interface CustomLists {
   histamineSymptoms: string[];
   foodSymptomsAfter: string[];
   sexFeelings: string[];
+  urinary: string[];
+  allergens: string[];
 }
+
 
 export type QuickTagCategory = "pain" | "tetany" | "panic" | "sex" | "food" | "meds" | "workout";
 export interface CustomQuickTag {
@@ -179,6 +186,15 @@ export interface Settings {
   gender?: Gender;
   birthControlSince?: string;
   pregnantSince?: string;
+  /** Display name used for the "Hi, <name>" greeting on Home. */
+  userName?: string;
+  /** Per-user allergen list used by the Food form. */
+  allergens?: string[];
+  /** Custom order of quick-log tags (ids of built-in + custom tags). */
+  quickTagOrder?: string[];
+  /** Ids of quick-log tags the user removed from the quick bar. */
+  hiddenQuickTags?: string[];
+
   customQuickTags?: CustomQuickTag[];
   scaleDescriptions?: Partial<Record<"pain" | "stress" | "tetany" | "panic" | "hotFlashes" | "headache", Record<number, string>>>;
 }
@@ -237,6 +253,8 @@ export const EMPTY: BixboData = {
     panicPhysical: [], panicCognitive: [], panicHelped: [],
     sexTypes: [], bowelFeelings: [], bowelSymptoms: [],
     pcosSymptoms: [], headacheTypes: [], histamineSymptoms: [], foodSymptomsAfter: [], sexFeelings: [],
+    urinary: [], allergens: [],
+
   },
   settings: { textSize: "md", notifications: true, gender: "female" },
 };
@@ -613,4 +631,24 @@ export const FOOD_SYMPTOMS_AFTER = [
   "Flushing / redness",
   "Itching / hives",
   "Rapid heart rate",
+];
+
+export const URINARY_DEFAULT = [
+  "Frequent urination",
+  "Painful urination",
+  "Urgency",
+  "Incomplete emptying",
+  "Night urination",
+  "Blood in urine",
+];
+
+export const ALLERGENS_DEFAULT = [
+  "Nuts",
+  "Casein / dairy",
+  "Gluten",
+  "Eggs",
+  "Fish",
+  "Soy",
+  "Shellfish",
+  "Peanuts",
 ];

@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Settings as SettingsIcon, Share2, Trash2, Pill } from "lucide-react";
+import { ChevronLeft, ChevronRight, Settings as SettingsIcon, Share2, Trash2 } from "lucide-react";
 
 import { Ico } from "@/components/icons/BixboIcons";
 import { AppShell } from "@/components/AppShell";
@@ -85,8 +85,15 @@ function HomePage() {
 
   return (
     <AppShell
-      title="BIXBO"
       big
+      title={
+        <div className="flex flex-col leading-tight">
+          <span>BIXBO</span>
+          <span className="text-xs font-normal text-muted-foreground">
+            Hi, {view.settings.userName?.trim() || "there"} <Ico e="❤️" size={12} />
+          </span>
+        </div>
+      }
       right={
         <Link to="/settings" className="rounded-full p-2 hover:bg-tint" aria-label="Settings">
           <SettingsIcon className="h-5 w-5" />
@@ -138,12 +145,14 @@ function HomePage() {
         );
       })()}
 
-      {/* Top meds row */}
-      <div className="mt-4 grid grid-cols-2 gap-2 px-5">
-        <MedsProgress data={view} />
-        <Link to="/meds" className="flex items-center justify-center gap-2 rounded-2xl bg-surface p-3 text-sm font-medium ring-1 ring-border hover:bg-tint">
-          <Pill className="h-4 w-4" /> Manage meds
-        </Link>
+      {/* Top vitals row */}
+      <div className="mt-4 grid grid-cols-5 gap-2 px-5">
+        <div className="col-span-2">
+          <MedsProgress data={view} />
+        </div>
+        <VitalTile emoji="😴" label="Sleep" onClick={() => { setQuickCat("temp"); setEditEntry(undefined); setEditPain(undefined); setLogOpen(true); }} />
+        <VitalTile emoji="🌡️" label="Temp" onClick={() => { setQuickCat("temp"); setEditEntry(undefined); setEditPain(undefined); setLogOpen(true); }} />
+        <VitalTile emoji="⚖️" label="Weight" onClick={() => { setQuickCat("temp"); setEditEntry(undefined); setEditPain(undefined); setLogOpen(true); }} />
       </div>
 
       {/* Quick log — placed above Today */}
@@ -180,6 +189,15 @@ function HomePage() {
   );
 }
 
+
+function VitalTile({ emoji, label, onClick }: { emoji: string; label: string; onClick: () => void }) {
+  return (
+    <button onClick={onClick} className="flex flex-col items-center justify-center gap-1 rounded-2xl bg-surface p-2 ring-1 ring-border hover:bg-tint">
+      <Ico e={emoji} size={20} />
+      <span className="text-[11px] font-medium text-muted-foreground">{label}</span>
+    </button>
+  );
+}
 
 function MedsProgress({ data }: { data: BixboData }) {
   const k = todayKey();

@@ -5,6 +5,7 @@ import {
   getBixbo, replaceBixbo, setPartner, subscribeBixboChanges,
   type BixboData, type PartnerData,
 } from "./storage";
+import { mergeBixbo } from "./merge";
 
 export interface CloudProfile {
   id: string;
@@ -56,10 +57,16 @@ export async function pullMyData(): Promise<BixboData | null> {
   const { data } = await supabase.from("user_data").select("data").eq("user_id", user.id).maybeSingle();
   return (data?.data as unknown as BixboData) ?? null;
 }
+
+/* Track the last payload we pushed so we can ignore realtime echoes of our
+ * own writes and avoid a merge/push feedback loop. */
+let _lastPushedJson: string | null = null;
+
 export async function pushMyData(payload: BixboData): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
   const stripped = { ...payload, partner: undefined };
+  _lastPushedJson = JSON.stringify(stripped);
   await supabase.from("user_data").upsert({ user_id: user.id, data: stripped as never });
 }
 
@@ -113,9 +120,12 @@ export function useCloudSync() {
       await ensureProfile();
       const remote = await pullMyData();
       if (cancelled) return;
-      if (remote && Object.keys(remote.dayLogs ?? {}).length > 0) {
-        // Merge remote wins for map fields; keep any local partner state fresh below
-        replaceBixbo({ ...getBixbo(), ...remote, partner: getBixbo().partner }, "remote");
+      if (remote) {
+        // Never overwrite: union local + remote so neither side loses data.
+        const merged = mergeBixbo(getBixbo(), remote);
+        replaceBixbo({ ...merged, partner: getBixbo().partner }, "remote");
+        // Push the merged result back so the cloud converges to the union too.
+        await pushMyData(merged);
       } else {
         // First sync: push whatever we have locally so cloud has a copy
         await pushMyData(getBixbo());
@@ -130,9 +140,26 @@ export function useCloudSync() {
       pushTimer = setTimeout(() => { pushMyData(d).catch(console.error); }, 200);
     });
 
-    // Realtime: refresh partner when their user_data changes or link changes
+    // Realtime: merge in remote changes to our own row (from another device),
+    // and refresh partner when their data or the link changes.
     const channel = supabase
       .channel(`bixbo-sync-${session.user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "user_data", filter: `user_id=eq.${session.user.id}` },
+        (payload) => {
+          const incoming = (payload.new as { data?: BixboData } | undefined)?.data;
+          if (!incoming) return;
+          const incomingJson = JSON.stringify({ ...incoming, partner: undefined });
+          // Ignore echoes of our own just-pushed write.
+          if (incomingJson === _lastPushedJson) return;
+          const merged = mergeBixbo(getBixbo(), incoming);
+          const mergedJson = JSON.stringify({ ...merged, partner: undefined });
+          replaceBixbo({ ...merged, partner: getBixbo().partner }, "remote");
+          // Only push back if the merge actually changed something vs. what's remote.
+          if (mergedJson !== incomingJson) pushMyData(merged).catch(console.error);
+        },
+      )
       .on("postgres_changes", { event: "*", schema: "public", table: "user_data" }, async () => {
         const p = await fetchPartner();
         if (!cancelled) setPartner(p ?? undefined);

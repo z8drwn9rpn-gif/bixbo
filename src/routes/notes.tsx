@@ -9,7 +9,7 @@ import { Plus, Trash2, ChevronLeft, Bold, Highlighter, ListChecks } from "lucide
 export const Route = createFileRoute("/notes")({
   head: () => ({
     meta: [
-      { title: "Notes — BIXBO" },
+      { title: "Notes Bixbo" },
       { name: "description", content: "Folders and notes with checklists, bold and highlight." },
       { property: "og:title", content: "Notes — BIXBO" },
       { property: "og:description", content: "Folders and notes with checklists, bold and highlight." },
@@ -71,7 +71,7 @@ function NotesPage() {
   };
 
   return (
-    <AppShell title="Notes" right={<Button size="sm" variant="outline" onClick={addFolder}><Plus className="h-4 w-4" /> Folder</Button>}>
+    <AppShell title="Notes Bixbo" right={<Button size="sm" variant="outline" onClick={addFolder}><Plus className="h-4 w-4" /> Folder</Button>}>
       <div className="px-5 pt-3 pb-24">
         <div className="grid grid-cols-2 gap-3">
           {view.folders.map((f) => {
