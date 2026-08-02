@@ -186,6 +186,15 @@ export interface Settings {
   gender?: Gender;
   birthControlSince?: string;
   pregnantSince?: string;
+  /** Display name used for the "Hi, <name>" greeting on Home. */
+  userName?: string;
+  /** Per-user allergen list used by the Food form. */
+  allergens?: string[];
+  /** Custom order of quick-log tags (ids of built-in + custom tags). */
+  quickTagOrder?: string[];
+  /** Ids of quick-log tags the user removed from the quick bar. */
+  hiddenQuickTags?: string[];
+
   customQuickTags?: CustomQuickTag[];
   scaleDescriptions?: Partial<Record<"pain" | "stress" | "tetany" | "panic" | "hotFlashes" | "headache", Record<number, string>>>;
 }
