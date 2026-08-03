@@ -795,6 +795,7 @@ function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) 
 function WeightLineChart({ period, days, series, label = "Weight", unit = "kg" }:
   { period: Period; days: string[]; series: (number | undefined)[]; label?: string; unit?: string }) {
   const [active, setActive] = useState<{ value: number; index: number; date: string } | null>(null);
+  useDismissTapTooltip(() => setActive(null));
   // For yearly view, collapse 365 daily samples into 12 monthly averages so labels are readable.
   const aggregated = (() => {
     if (period !== "Y") {
@@ -897,21 +898,25 @@ function WeightLineChart({ period, days, series, label = "Weight", unit = "kg" }
             <g key={p.date}>
               <circle cx={xFor(p.index)} cy={yFor(p.value)} r="3" fill="var(--surface)" stroke="var(--primary)" strokeWidth="2" />
               <circle cx={xFor(p.index)} cy={yFor(p.value)} r="12" fill="transparent" style={{ cursor: "pointer" }}
-                onClick={() => setActive(active?.date === p.date ? null : p)}>
-                <title>{`${period === "Y" ? MON_SHORT[fromKey(p.date).getMonth()] : fmtDate(p.date)}: ${p.value.toFixed(1)} ${unit}`}</title>
-              </circle>
+                onClick={(e) => { e.stopPropagation(); setActive(active?.date === p.date ? null : p); }} />
             </g>
           ))}
-          {active && (
-            <g pointerEvents="none">
-              <rect x={Math.min(Math.max(xFor(active.index) - 38, 2), width - right - 40)} y={Math.max(yFor(active.value) - 32, 2)}
-                width="78" height="24" rx="6" fill="var(--foreground)" opacity="0.9" />
-              <text x={Math.min(Math.max(xFor(active.index) - 38, 2), width - right - 40) + 39} y={Math.max(yFor(active.value) - 32, 2) + 16}
-                textAnchor="middle" fontSize="10" fill="var(--background)">
-                {`${period === "Y" ? MON_SHORT[fromKey(active.date).getMonth()] : fmtDate(active.date)} · ${active.value.toFixed(1)}${unit}`}
-              </text>
-            </g>
-          )}
+          {active && (() => {
+            const text = period === "Y"
+              ? `${fmtTapMonth(fromKey(active.date).getMonth(), fromKey(active.date).getFullYear())} · ${label} ${active.value.toFixed(1)} ${unit}`
+              : `${fmtTapDay(active.date)} · ${label} ${active.value.toFixed(1)} ${unit}`;
+            const boxW = Math.max(60, text.length * 5.6);
+            const x = Math.min(Math.max(xFor(active.index) - boxW / 2, 2), width - right - boxW - 2);
+            const y = Math.max(yFor(active.value) - 32, 2);
+            return (
+              <g pointerEvents="none">
+                <rect x={x} y={y} width={boxW} height="22" rx="6" fill="var(--foreground)" opacity="0.9" />
+                <text x={x + boxW / 2} y={y + 15} textAnchor="middle" fontSize="9.5" fill="var(--background)">
+                  {text}
+                </text>
+              </g>
+            );
+          })()}
         </svg>
       </div>
     </section>

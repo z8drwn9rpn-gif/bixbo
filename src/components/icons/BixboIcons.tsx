@@ -884,6 +884,96 @@ export function WineIcon(p: IconProps) {
   );
 }
 
+/* --------------------------------------------------------- MOOD FACES */
+function faceBase(fill: string, mouth: string) {
+  return function FaceIcon(p: IconProps) {
+    const a = useSvgId();
+    const mini = (p.size ?? 24) <= 16;
+    if (mini) {
+      return (
+        <Svg {...p}>
+          <circle cx="32" cy="32" r="24" fill={fill} />
+          <g fill="#2c2033"><circle cx="24" cy="28" r="3" /><circle cx="40" cy="28" r="3" /></g>
+          <path d={mouth} stroke="#2c2033" strokeWidth="3" strokeLinecap="round" fill="none" />
+        </Svg>
+      );
+    }
+    return (
+      <Svg {...p}>
+        <defs>
+          <radialGradient id={a} cx="0.35" cy="0.3" r="0.85">
+            <stop stopColor="#fff" stopOpacity="0.5" /><stop offset="1" stopColor={fill} />
+          </radialGradient>
+        </defs>
+        <Shadow />
+        <circle cx="32" cy="32" r="22" fill={fill} />
+        <circle cx="32" cy="32" r="22" fill={`url(#${a})`} opacity="0.5" />
+        <g fill="#2c2033"><circle cx="24" cy="28" r="3.2" /><circle cx="40" cy="28" r="3.2" /></g>
+        <path d={mouth} stroke="#2c2033" strokeWidth="3" strokeLinecap="round" fill="none" />
+        <ellipse cx="23" cy="21" rx="5" ry="3" transform="rotate(-30 23 21)" fill="#fff" opacity="0.35" />
+      </Svg>
+    );
+  };
+}
+export const FaceHappyIcon = faceBase("#ffcf4a", "M22 38c3 4 17 4 20 0");
+export const FaceNeutralIcon = faceBase("#e8c874", "M23 40h18");
+export const FaceSadIcon = faceBase("#8fb0e8", "M22 42c3-4 17-4 20 0");
+export const FaceAngryIcon = faceBase("#e8674f", "M22 41c3-3 17-3 20 0");
+export const FaceAnxiousIcon = faceBase("#b494e8", "M23 40c2-3 4-3 5 0s3 3 4 0 4-3 5 0 3 3 5 0");
+export const FaceSickIcon = faceBase("#8fc46a", "M23 40c4 3 14 3 18 0");
+
+export function ClockIcon(p: IconProps) {
+  const a = useSvgId();
+  const mini = (p.size ?? 24) <= 16;
+  if (mini) {
+    return (
+      <Svg {...p}>
+        <circle cx="32" cy="32" r="24" fill="#e8ecef" />
+        <path d="M32 16v16l11 7" stroke="#3f6fc4" strokeWidth="5" strokeLinecap="round" fill="none" />
+      </Svg>
+    );
+  }
+  return (
+    <Svg {...p}>
+      <defs>
+        <linearGradient id={a} x1="10" y1="10" x2="54" y2="54" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#fdfdfd" /><stop offset="1" stopColor="#c8cdd4" />
+        </linearGradient>
+      </defs>
+      <Shadow />
+      <circle cx="32" cy="32" r="24" fill={`url(#${a})`} />
+      <circle cx="32" cy="32" r="19" fill="#f4f6f8" />
+      <path d="M32 20v12l9 6" stroke="#3f6fc4" strokeWidth="4.5" strokeLinecap="round" fill="none" />
+    </Svg>
+  );
+}
+
+/** Sparkles — used for panic-attack markers (never TENS). */
+export function SparkleIcon(p: IconProps) {
+  const a = useSvgId();
+  const mini = (p.size ?? 24) <= 16;
+  if (mini) {
+    return (
+      <Svg {...p}>
+        <path d="M24 6c1.4 8 5 11.6 13 13-8 1.4-11.6 5-13 13-1.4-8-5-11.6-13-13 8-1.4 11.6-5 13-13z" fill="#c78bf0" />
+        <path d="M46 30c.8 4.6 2.9 6.7 7.5 7.5-4.6.8-6.7 2.9-7.5 7.5-.8-4.6-2.9-6.7-7.5-7.5 4.6-.8 6.7-2.9 7.5-7.5z" fill="#8a6ce0" />
+      </Svg>
+    );
+  }
+  return (
+    <Svg {...p}>
+      <defs>
+        <linearGradient id={a} x1="14" y1="8" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#e6cbff" /><stop offset="1" stopColor="#8a6ce0" />
+        </linearGradient>
+      </defs>
+      <Shadow />
+      <path d="M24 6c1.4 8 5 11.6 13 13-8 1.4-11.6 5-13 13-1.4-8-5-11.6-13-13 8-1.4 11.6-5 13-13z" fill={`url(#${a})`} />
+      <path d="M46 30c.8 4.6 2.9 6.7 7.5 7.5-4.6.8-6.7 2.9-7.5 7.5-.8-4.6-2.9-6.7-7.5-7.5 4.6-.8 6.7-2.9 7.5-7.5z" fill={`url(#${a})`} opacity="0.85" />
+    </Svg>
+  );
+}
+
 /* ------------------------------------------------------------ REGISTRY */
 
 export const BIXBO_ICONS = {
