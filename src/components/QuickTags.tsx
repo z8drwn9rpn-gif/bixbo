@@ -185,37 +185,37 @@ function customToTag(c: CustomQuickTag, data: BixboData): Tag {
         return { ...l, sex: mk(l.sex, { id: uid(), time: t(), kind: "sex" }) };
       case "food":
         return { ...l, food: mk(l.food, { id: uid(), time: t(), what: p.what ?? "", feelings: [] }) };
-     case "meds": {
-  const med = data.meds.find((m) => m.id === p.medId);
+      case "meds": {
+        const med = data.meds.find((m) => m.id === p.medId);
 
-  if (!med) return l;
+        if (!med) return l;
 
-  if (p.mode === "scheduled" && p.scheduleTime) {
-    return {
-      ...l,
-      medLog: {
-        ...(l.medLog ?? {}),
-        [med.id]: {
-          ...((l.medLog ?? {})[med.id] ?? {}),
-          [p.scheduleTime]: {
-            taken: !((l.medLog ?? {})[med.id]?.[p.scheduleTime]?.taken),
+        if (p.mode === "scheduled" && p.scheduleTime) {
+          return {
+            ...l,
+            medLog: {
+              ...(l.medLog ?? {}),
+              [med.id]: {
+                ...((l.medLog ?? {})[med.id] ?? {}),
+                [p.scheduleTime]: {
+                  taken: !(l.medLog ?? {})[med.id]?.[p.scheduleTime]?.taken,
+                  time: t(),
+                },
+              },
+            },
+          };
+        }
+
+        return {
+          ...l,
+          extraMeds: mk(l.extraMeds, {
+            id: uid(),
             time: t(),
-          },
-        },
-      },
-    };
-  }
-
-  return {
-    ...l,
-    extraMeds: mk(l.extraMeds, {
-      id: uid(),
-      time: t(),
-      name: med.name,
-      dose: med.dose,
-    }),
-  };
-}
+            name: med.name,
+            dose: med.dose,
+          }),
+        };
+      }
       case "workout":
         return {
           ...l,
@@ -531,10 +531,8 @@ function QuickTagBuilder({
   const [intensity, setIntensity] = useState(3);
   const [what, setWhat] = useState("");
   const [medId, setMedId] = useState<string>(data.meds[0]?.id ?? "");
-  const [medMode, setMedMode] =
-  useState<"scheduled" | "extra">("scheduled");
-const [scheduleTime, setScheduleTime] =
-  useState("");
+  const [medMode, setMedMode] = useState<"scheduled" | "extra">("scheduled");
+  const [scheduleTime, setScheduleTime] = useState("");
   const [kind, setKind] = useState("🚶🏼‍♀️ Walk");
   const [minutes, setMinutes] = useState(30);
   const [emoji, setEmoji] = useState("⭐");
@@ -552,10 +550,7 @@ const [scheduleTime, setScheduleTime] =
         what: cat === "food" ? what.trim() || undefined : undefined,
         medId: cat === "meds" ? medId || undefined : undefined,
         mode: cat === "meds" ? medMode : undefined,
-scheduleTime:
-  cat === "meds" && medMode === "scheduled"
-    ? scheduleTime || undefined
-    : undefined,
+        scheduleTime: cat === "meds" && medMode === "scheduled" ? scheduleTime || undefined : undefined,
         kind: cat === "workout" ? kind : undefined,
         minutes: cat === "workout" ? minutes : undefined,
       },
@@ -635,53 +630,56 @@ scheduleTime:
                 placeholder="e.g. Matcha"
               />
             )}
-            {cat === "meds" &&
-              (data.meds.length ? (
-                <select className={inputCls} value={medId} onChange={(e) => setMedId(e.target.value)}>
-                  {data.meds.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name}
-                      {m.dose ? ` (${m.dose})` : ""}
-                    </option>
-                  ))}
-                  <div className="mb-3 space-y-2">
-  <p className="text-xs">Logging mode</p>
+            {cat === "meds" && (
+              <div className="space-y-3">
+                {data.meds.length ? (
+                  <>
+                    <select className={inputCls} value={medId} onChange={(e) => setMedId(e.target.value)}>
+                      {data.meds.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name}
+                          {m.dose ? ` (${m.dose})` : ""}
+                        </option>
+                      ))}
+                    </select>
 
-  <label className="flex items-center gap-2 text-sm">
-    <input
-      type="radio"
-      checked={medMode === "scheduled"}
-      onChange={() => setMedMode("scheduled")}
-    />
-    Mark scheduled dose as taken
-  </label>
+                    <div className="space-y-2">
+                      <p className="text-xs">Logging mode</p>
 
-  <label className="flex items-center gap-2 text-sm">
-    <input
-      type="radio"
-      checked={medMode === "extra"}
-      onChange={() => setMedMode("extra")}
-    />
-    Log extra / PRN dose
-  </label>
-</div>
-                </select>
-              ) : (
-                <p className="text-xs text-muted-foreground">No medications saved yet.</p>
-                {medMode === "scheduled" && (
-  <select
-    className={inputCls}
-    value={scheduleTime}
-    onChange={(e) => setScheduleTime(e.target.value)}
-  >
-    {(data.meds.find((m) => m.id === medId)?.schedule ?? []).map((time) => (
-      <option key={time} value={time}>
-        {time}
-      </option>
-    ))}
-  </select>
-)}
-              ))}
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          checked={medMode === "scheduled"}
+                          onChange={() => setMedMode("scheduled")}
+                        />
+                        Mark scheduled dose as taken
+                      </label>
+
+                      <label className="flex items-center gap-2 text-sm">
+                        <input type="radio" checked={medMode === "extra"} onChange={() => setMedMode("extra")} />
+                        Log extra / PRN dose
+                      </label>
+                    </div>
+
+                    {medMode === "scheduled" && (
+                      <select
+                        className={inputCls}
+                        value={scheduleTime}
+                        onChange={(e) => setScheduleTime(e.target.value)}
+                      >
+                        {(data.meds.find((m) => m.id === medId)?.times ?? []).map((time) => (
+                          <option key={time} value={time}>
+                            {time}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-xs text-muted-foreground">No medications saved yet.</p>
+                )}
+              </div>
+            )}
             {cat === "workout" && (
               <div className="space-y-2">
                 <input
