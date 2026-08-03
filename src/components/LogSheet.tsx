@@ -597,13 +597,29 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
         </Field>
       )}
       {step === 2 && (
-        <Field label="How does it hurt?">
-          <CustomChipList base={PAIN_QUALITY_DEFAULT} custom={data.custom.quality}
-            onAddCustom={(v) => addCustom("quality", v)}
-            onRemoveCustom={(v) => { removeCustom("quality", v); setQuality((a) => a.filter((x) => x !== v)); }}
-            onRenameCustom={(o, n) => { renameCustom("quality", o, n); setQuality((a) => a.map((x) => x === o ? n : x)); }}
-            selected={quality} onToggle={(v) => setQuality((a) => toggleIn(a, v))} />
-        </Field>
+        <div className="space-y-4">
+          <Field label="How does it hurt?">
+            <CustomChipList base={PAIN_QUALITY_DEFAULT} custom={data.custom.quality}
+              onAddCustom={(v) => addCustom("quality", v)}
+              onRemoveCustom={(v) => { removeCustom("quality", v); setQuality((a) => a.filter((x) => x !== v)); }}
+              onRenameCustom={(o, n) => { renameCustom("quality", o, n); setQuality((a) => a.map((x) => x === o ? n : x)); }}
+              selected={quality} onToggle={(v) => setQuality((a) => toggleIn(a, v))} />
+          </Field>
+          {quality.includes("Pressure") && (
+            <div className="rounded-2xl border border-border p-3 space-y-3">
+              <Field label="Type of pressure">
+                <CustomChipList base={PRESSURE_TYPES} custom={data.custom.pressureTypes ?? []}
+                  onAddCustom={(v) => addCustom("pressureTypes", v)}
+                  onRemoveCustom={(v) => { removeCustom("pressureTypes", v); setPressureTypes((a) => a.filter((x) => x !== v)); }}
+                  onRenameCustom={(o, n) => { renameCustom("pressureTypes", o, n); setPressureTypes((a) => a.map((x) => x === o ? n : x)); }}
+                  selected={pressureTypes} onToggle={(v) => setPressureTypes((a) => toggleIn(a, v))} />
+              </Field>
+              <Field label={`Pressure intensity ${pressureIntensity ?? "-"}/10`}>
+                <IntensityScale value={pressureIntensity ?? 0} onChange={(n) => setPressureIntensity(pressureIntensity === n ? undefined : n)} max={10} from={0} />
+              </Field>
+            </div>
+          )}
+        </div>
       )}
       {step === 3 && (
         <div className="space-y-4">
