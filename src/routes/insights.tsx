@@ -1455,7 +1455,6 @@ function BristolChart({ bowelCounts }: { bowelCounts: number[] }) {
           );
         })}
       </div>
-      {bowelCounts[0] > 0 && <p className="mt-2 text-xs text-muted-foreground">No movement: {bowelCounts[0]}</p>}
     </section>
   );
 }
