@@ -1,9 +1,63 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Ico } from "@/components/icons/BixboIcons";
 import { useBixbo, EMPTY, addDays, toKey, fromKey, painColor, BRISTOL, avgDayPain, isIntercourseKind } from "@/lib/storage";
+
+const WD_SHORT = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const MON_SHORT3 = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+/** "Thu 30 Jul" style label used across every tap tooltip on this page. */
+function fmtTapDay(k: string): string {
+  const d = fromKey(k);
+  return `${WD_SHORT[d.getDay()]} ${d.getDate()} ${MON_SHORT3[d.getMonth()]}`;
+}
+function fmtTapMonth(monthIndex: number, year: number): string {
+  return `${MON_SHORT3[monthIndex]} ${year}`;
+}
+
+/** Dismiss any open tap-tooltip when the user taps anywhere else on the page. */
+function useDismissTapTooltip(clear: () => void) {
+  useEffect(() => {
+    const handler = () => clear();
+    document.addEventListener("click", handler);
+    document.addEventListener("touchstart", handler);
+    return () => {
+      document.removeEventListener("click", handler);
+      document.removeEventListener("touchstart", handler);
+    };
+  }, [clear]);
+}
+
+/** Small floating bubble used for every "tap a bar/point/day" tooltip on this page. */
+function TapTooltip({ leftPct, text }: { leftPct: number; text: string }) {
+  return (
+    <div
+      className="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-lg bg-foreground px-2 py-1 text-[11px] font-medium text-background shadow-lg"
+      style={{ left: `${Math.min(94, Math.max(6, leftPct))}%`, top: -6 }}
+    >
+      {text}
+    </div>
+  );
+}
+
+const TETANY_COLOR = "#8b5cf6";
+const PANIC_COLOR = "#f97316";
+
+function timeBlockOf(time?: string): number | null {
+  if (!time) return null;
+  const m = /^(\d{1,2}):(\d{2})/.exec(time);
+  if (!m) return null;
+  const h = Number(m[1]);
+  if (Number.isNaN(h)) return null;
+  if (h < 6) return 0;
+  if (h < 12) return 1;
+  if (h < 18) return 2;
+  return 3;
+}
+const TIME_BLOCK_LABELS = ["Night (0–6)", "Morning (6–12)", "Afternoon (12–18)", "Evening (18–24)"];
+const TIME_BLOCK_SHORT = ["Night", "Morning", "Afternoon", "Evening"];
 
 export const Route = createFileRoute("/insights")({
   head: () => ({
