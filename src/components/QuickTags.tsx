@@ -189,7 +189,7 @@ function customToTag(c: CustomQuickTag, data: BixboData): Tag {
         const med = data.meds.find((m) => m.id === p.medId);
         return {
           ...l,
-          scheduled: mk(l.scheduled, { id: uid(), time: t(), name: med?.name ?? c.label, dose: med?.dose }),
+          extraMeds: mk(l.extraMeds, { id: uid(), time: t(), name: med?.name ?? c.label, dose: med?.dose }),
         };
       }
       case "workout":
