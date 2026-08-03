@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, Bell, Download, Upload, Users, Type, LogOut, Cloud, Copy, RefreshCw, Sliders, RotateCcw, Pill, Plus, X, ListPlus, Sun, Moon, MonitorSmartphone } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { useBixbo, EMPTY, todayKey, replaceBixbo, getBixbo, type BixboData, type PartnerData, type Gender } from "@/lib/storage";
+import { mergeBixbo } from "@/lib/merge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";

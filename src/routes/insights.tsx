@@ -920,6 +920,8 @@ function WeightLineChart({ period, days, series, label = "Weight", unit = "kg" }
 
 function SleepChart({ period, days, series, anchor }:
   { period: Period; days: string[]; series: (number | undefined)[]; anchor: Date }) {
+  const [active, setActive] = useState<number | null>(null);
+  useDismissTapTooltip(() => setActive(null));
   // Mirrors PainChart's layout: labelled Y axis on the left, dotted gridlines,
   // and X-axis labels that adapt to the active period.
   type Bar = { value?: number; label: string; sub?: string };
@@ -971,9 +973,18 @@ function SleepChart({ period, days, series, anchor }:
           <div className="relative grid items-end gap-[2px]" style={{ gridTemplateColumns: `repeat(${bars.length}, minmax(0, 1fr))`, height }}>
             {bars.map((b, i) => (
               b.value != null
-                ? <div key={i} className="w-full rounded-t" style={{ height: `${Math.max(4, (b.value / 12) * 100)}%`, background: sleepColor(b.value) }} title={`${b.label || days[i]}: ${b.value.toFixed(1)} h`} />
-                : <div key={i} className="h-[2px] w-full self-end rounded bg-tint/60" title={`${days[i]}: no entry`} />
+                ? <button key={i} type="button" onClick={(e) => { e.stopPropagation(); setActive(active === i ? null : i); }}
+                    className="w-full rounded-t" style={{ height: `${Math.max(4, (b.value / 12) * 100)}%`, background: sleepColor(b.value) }} />
+                : <div key={i} className="h-[2px] w-full self-end rounded bg-tint/60" />
             ))}
+            {active != null && bars[active]?.value != null && (
+              <TapTooltip
+                leftPct={((active + 0.5) / bars.length) * 100}
+                text={period === "Y"
+                  ? `${fmtTapMonth(active, anchor.getFullYear())} · Sleep ${bars[active].value!.toFixed(1)}h`
+                  : `${fmtTapDay(days[active])} · Sleep ${bars[active].value!.toFixed(1)}h`}
+              />
+            )}
           </div>
         </div>
       </div>
