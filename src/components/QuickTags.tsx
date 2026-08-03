@@ -644,7 +644,6 @@ function QuickTagBuilder({
                       onChange={(e) => {
                         const id = e.target.value;
                         setMedId(id);
-
                         const firstTime = data.meds.find((m) => m.id === id)?.times?.[0] ?? "";
                         setScheduleTime(firstTime);
                       }}
@@ -656,7 +655,6 @@ function QuickTagBuilder({
                         </option>
                       ))}
                     </select>
-
                     <div className="space-y-2">
                       <p className="text-xs">Logging mode</p>
 
@@ -674,7 +672,6 @@ function QuickTagBuilder({
                         Log extra / PRN dose
                       </label>
                     </div>
-
                    {medMode === "scheduled" && (
   <>
     <p className="text-xs">Scheduled time</p>
