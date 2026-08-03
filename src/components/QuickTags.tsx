@@ -589,29 +589,6 @@ function QuickTagBuilder({
   const [scheduleTime, setScheduleTime] = useState("");
   const [kind, setKind] = useState("🚶🏼‍♀️ Walk");
   const [minutes, setMinutes] = useState(30);
-  bristol:
-  cat === "bowel" ? bristol : undefined,
-
-thermoKind:
-  cat === "thermo" ? thermoKind : undefined,
-
-thermoMinutes:
-  cat === "thermo" ? thermoMinutes : undefined,
-
-headacheType:
-  cat === "headache" ? headacheType : undefined,
-
-headacheIntensity:
-  cat === "headache" ? headacheIntensity : undefined,
-
-hotFlashesIntensity:
-  cat === "hotFlashes" ? hotFlashesIntensity : undefined,
-
-sleepHours:
-  cat === "sleep" ? sleepHours : undefined,
-
-sleepQuality:
-  cat === "sleep" ? sleepQuality : undefined,
   const [bristol, setBristol] = useState(4);
   const [thermoKind, setThermoKind] = useState<ThermoKind>("heat");
   const [thermoMinutes, setThermoMinutes] = useState(20);
