@@ -344,25 +344,7 @@ function InsightsPage() {
         )}
 
 
-        <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">Bowel — Bristol distribution</p>
-          <div className="mt-3 flex items-end gap-2">
-            {BRISTOL.map((b) => {
-              const c = bowelCounts[b.n] ?? 0;
-              const max = Math.max(1, ...bowelCounts.slice(1));
-              return (
-                <div key={b.n} className="flex flex-1 flex-col items-center gap-1">
-                  <div className="h-20 w-full flex items-end">
-                    <div className="w-full rounded-t" style={{ height: `${(c / max) * 100}%`, background: b.color }} />
-                  </div>
-                  <span className="text-[10px] text-muted-foreground">T{b.n}</span>
-                  <span className="text-[10px]">{c}</span>
-                </div>
-              );
-            })}
-          </div>
-          {bowelCounts[0] > 0 && <p className="mt-2 text-xs text-muted-foreground">No movement: {bowelCounts[0]}</p>}
-        </section>
+        <BristolChart bowelCounts={bowelCounts} />
 
         <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">Hot flashes</p>
@@ -374,13 +356,7 @@ function InsightsPage() {
                   {hfTotal === 1 ? "episode" : "episodes"} · avg {hfAvg!.toFixed(1)}/5 · most often L{hfTop}
                 </span>
               </div>
-              <div className="mt-4 grid items-end gap-1" style={{ gridTemplateColumns: `repeat(${hfBars.length}, minmax(0, 1fr))`, height: 60 }}>
-                {hfBars.map((n, i) => (
-                  n != null
-                    ? <div key={i} className="w-full rounded-t" title={period === "Y" ? `${monthLabels[i]}: avg ${n.toFixed(1)}/5` : `${days[i]}: ${n}/5`} style={{ height: `${Math.max(10, (n / 5) * 100)}%`, background: `hsl(${130 - ((n - 1) * 130) / 4} 70% 50%)` }} />
-                    : <div key={i} className="h-1 w-full self-end rounded bg-tint" />
-                ))}
-              </div>
+              <HfBars bars={hfBars} period={period} days={days} anchor={anchor} />
               {period === "Y" && (
                 <div className="mt-1 grid gap-1 text-center text-[9px] text-muted-foreground" style={{ gridTemplateColumns: "repeat(12, minmax(0, 1fr))" }}>
                   {monthLabels.map((l, i) => <span key={i}>{l}</span>)}
@@ -421,6 +397,10 @@ function InsightsPage() {
             <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-green-500" /> &gt;8h</span>
           </div>
         </section>
+
+        {period === "Y" && <SymptomLoadHeatmap data={view} anchor={anchor} />}
+
+        <TimeOfDayPatternChart data={view} days={days} period={period} />
 
         <MedsAdherence data={view} />
         </>)}
