@@ -691,6 +691,8 @@ function QuickTagBuilder({
     </select>
   </>
 )}
+                                  </div>
+            )}
             {cat === "workout" && (
               <div className="space-y-2">
                 <input
