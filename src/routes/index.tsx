@@ -266,7 +266,7 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
     update((d) => ({
       ...d,
       medLog: { ...d.medLog, [date]: { ...(d.medLog[date] ?? {}), [medKey]: true } },
-      medLogTimes: { ...(d.medLogTimes ?? {}), [date]: { ...(d.medLogTimes?.[date] ?? {}), [medKey]: nowHHMM() } },
+      medLogTimes: { ...(d.medLogTimes ?? {}), [date]: { ...(d.medLogTimes?.[date] ?? {}), [medKey]: (() => { const n = new Date(); return `${String(n.getHours()).padStart(2,"0")}:${String(n.getMinutes()).padStart(2,"0")}`; })() } },
     }));
 
   return (

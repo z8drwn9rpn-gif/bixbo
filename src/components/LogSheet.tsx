@@ -311,6 +311,8 @@ function CustomChipList({
   );
 }
 const toggleIn = (arr: string[], v: string) => arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v];
+/** Strips a leading emoji (+ following space) so legacy saved values with emoji prefixes still match emoji-free option lists. */
+const stripEmoji = (v: string) => v.replace(/^[\p{Extended_Pictographic}\u200d\ufe0f]+\s*/u, "").trim();
 
 import { getScaleDesc } from "@/lib/scaleDescriptions";
 
@@ -1412,6 +1414,9 @@ function FoodForm({ date, data, update, onDone, initialEntry }:
   return (
     <div className="space-y-3">
       <Field label="Time"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></Field>
+      <Field label="What did you eat?">
+        <Textarea rows={2} value={what} onChange={(e) => setWhat(e.target.value)} placeholder="e.g. chicken, rice, tomato" />
+      </Field>
       <Field label="Quick add">
         <div className="mt-2 flex flex-wrap gap-2">
           {[
@@ -1451,13 +1456,6 @@ function FoodForm({ date, data, update, onDone, initialEntry }:
           <AddCustomInline onAdd={(v) => update((d) => ({ ...d, custom: { ...d.custom, foodQuickAdd: [...d.custom.foodQuickAdd, v] } }))} />
         </div>
       </Field>
-      <Field label="Allergens in this meal">
-        <CustomChipList base={allergensBase} custom={data.custom.allergens}
-          onAddCustom={(v) => update((d) => ({ ...d, settings: { ...d.settings, allergens: [...(d.settings.allergens ?? ALLERGENS_DEFAULT), v] }, custom: { ...d.custom, allergens: [...d.custom.allergens, v] } }))}
-          onRemoveCustom={(v) => { update((d) => ({ ...d, custom: { ...d.custom, allergens: d.custom.allergens.filter((x) => x !== v) } })); setAllergensInMeal((a) => a.filter((x) => x !== v)); }}
-          onRenameCustom={(o, n) => { update((d) => ({ ...d, custom: { ...d.custom, allergens: d.custom.allergens.map((x) => x === o ? n : x) } })); setAllergensInMeal((a) => a.map((x) => x === o ? n : x)); }}
-          selected={allergensInMeal} onToggle={(v) => setAllergensInMeal((a) => toggleIn(a, v))} />
-      </Field>
       <Field label="Reaction?">
         <div className="mt-1 flex gap-2">
           <Chip active={!allergicReaction} onClick={() => setAllergicReaction(false)}>No / not sure</Chip>
@@ -1472,9 +1470,6 @@ function FoodForm({ date, data, update, onDone, initialEntry }:
             ))}
           </div>
         )}
-      </Field>
-      <Field label="What did you eat?">
-        <Textarea rows={2} value={what} onChange={(e) => setWhat(e.target.value)} placeholder="e.g. chicken, rice, tomato" />
       </Field>
       <Field label="How do I feel after food?">
         <CustomChipList base={FOOD_FEELINGS_DEFAULT} custom={data.custom.foodFeelings}
@@ -1512,6 +1507,13 @@ function FoodForm({ date, data, update, onDone, initialEntry }:
           </Field>
         </div>
       )}
+      <Field label="Allergens in this meal">
+        <CustomChipList base={allergensBase} custom={data.custom.allergens}
+          onAddCustom={(v) => update((d) => ({ ...d, settings: { ...d.settings, allergens: [...(d.settings.allergens ?? ALLERGENS_DEFAULT), v] }, custom: { ...d.custom, allergens: [...d.custom.allergens, v] } }))}
+          onRemoveCustom={(v) => { update((d) => ({ ...d, custom: { ...d.custom, allergens: d.custom.allergens.filter((x) => x !== v) } })); setAllergensInMeal((a) => a.filter((x) => x !== v)); }}
+          onRenameCustom={(o, n) => { update((d) => ({ ...d, custom: { ...d.custom, allergens: d.custom.allergens.map((x) => x === o ? n : x) } })); setAllergensInMeal((a) => a.map((x) => x === o ? n : x)); }}
+          selected={allergensInMeal} onToggle={(v) => setAllergensInMeal((a) => toggleIn(a, v))} />
+      </Field>
       <div className="grid grid-cols-3 gap-2">
         <Field label="Water (ml)"><Input type="number" value={hydration} onChange={(e) => setHydration(e.target.value)} placeholder="300" /></Field>
         <Field label="Caffeine (mg)"><Input type="number" value={caffeine} onChange={(e) => setCaffeine(e.target.value)} placeholder="80" /></Field>
@@ -1598,7 +1600,7 @@ function BowelForm({ date, data, update, onDone, initialEntry }:
               bristol === 0 ? "border-primary bg-primary/10" : "border-border bg-surface"}`}>
             <span className="grid h-8 w-8 place-items-center rounded-full text-xs font-semibold text-white"
               style={{ background: "linear-gradient(135deg,#ef4444,#f59e0b,#eab308,#22c55e,#3b82f6,#8b5cf6)" }}>0</span>
-            <span className="flex-1"><span className="font-medium">Type 0 — Mystery</span> <Ico e="🌈" size={14} /><br /><span className="text-[11px] text-muted-foreground">Unknown / mixed</span></span>
+            <span className="flex-1"><span className="font-medium">Type 0 — Mystery</span><br /><span className="text-[11px] text-muted-foreground">Unknown / mixed</span></span>
           </button>
 
           {BRISTOL.map((b) => (
