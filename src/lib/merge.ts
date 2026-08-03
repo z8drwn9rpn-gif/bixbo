@@ -28,17 +28,22 @@ function completeness(v: unknown): number {
   return n;
 }
 
+/** Ids the local side has tombstoned — never resurrect these during a union. */
+let _deleted: Set<string> = new Set();
+
 /** Union two arrays of id-keyed entries. On id collision, keep the more
- * complete one, preferring local when tied. */
+ * complete one, preferring local when tied. Tombstoned ids are dropped. */
 function unionById<T extends WithId>(local: T[] | undefined, remote: T[] | undefined): T[] | undefined {
-  if (!local?.length) return remote?.length ? remote.slice() : local;
-  if (!remote?.length) return local;
+  const drop = (arr: T[] | undefined) => arr?.filter((x) => !_deleted.has(x.id));
+  const l = drop(local), r = drop(remote);
+  if (!l?.length) return r?.length ? r.slice() : l;
+  if (!r?.length) return l;
   const out = new Map<string, T>();
-  for (const r of remote) out.set(r.id, r);
-  for (const l of local) {
-    const existing = out.get(l.id);
-    if (!existing) { out.set(l.id, l); continue; }
-    out.set(l.id, completeness(l) >= completeness(existing) ? l : existing);
+  for (const rr of r) out.set(rr.id, rr);
+  for (const ll of l) {
+    const existing = out.get(ll.id);
+    if (!existing) { out.set(ll.id, ll); continue; }
+    out.set(ll.id, completeness(ll) >= completeness(existing) ? ll : existing);
   }
   return Array.from(out.values());
 }
@@ -54,6 +59,10 @@ const SCALAR_FIELDS = [
 
 function mergeDayLog(local: DayLog | undefined, remote: DayLog | undefined): DayLog {
   const out: DayLog = {};
+  // Safety net: start from a union of every key present on either side so a
+  // future DayLog field is never silently lost if it's missing from the lists.
+  const allKeys = new Set([...Object.keys(local ?? {}), ...Object.keys(remote ?? {})]);
+  const handled = new Set<string>([...ARRAY_FIELDS, ...SCALAR_FIELDS]);
   for (const f of ARRAY_FIELDS) {
     const merged = unionById(local?.[f] as WithId[] | undefined, remote?.[f] as WithId[] | undefined);
     if (merged !== undefined) (out as Record<string, unknown>)[f] = merged;
@@ -63,15 +72,24 @@ function mergeDayLog(local: DayLog | undefined, remote: DayLog | undefined): Day
     const rv = remote?.[f];
     (out as Record<string, unknown>)[f] = lv !== undefined && lv !== null && lv !== "" ? lv : rv;
   }
+  for (const k of allKeys) {
+    if (handled.has(k)) continue;
+    const lv = (local as Record<string, unknown> | undefined)?.[k];
+    const rv = (remote as Record<string, unknown> | undefined)?.[k];
+    if (Array.isArray(lv) || Array.isArray(rv)) {
+      const la = lv as WithId[] | undefined, ra = rv as WithId[] | undefined;
+      const idLike = (la ?? ra ?? []).every((x) => x && typeof x === "object" && "id" in x);
+      (out as Record<string, unknown>)[k] = idLike
+        ? unionById(la, ra)
+        : (la?.length ? la : ra);
+      continue;
+    }
+    (out as Record<string, unknown>)[k] =
+      lv !== undefined && lv !== null && lv !== "" ? lv : rv;
+  }
   return out;
 }
 
-function mergeDayLogs(local: Record<string, DayLog> | undefined, remote: Record<string, DayLog> | undefined): Record<string, DayLog> {
-  const keys = new Set([...Object.keys(local ?? {}), ...Object.keys(remote ?? {})]);
-  const out: Record<string, DayLog> = {};
-  for (const k of keys) out[k] = mergeDayLog(local?.[k], remote?.[k]);
-  return out;
-}
 
 /** dayNotes: values are arrays of notes (string or object), union by identity/text+time. */
 function mergeDayNotes(

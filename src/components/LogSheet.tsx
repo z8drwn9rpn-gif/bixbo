@@ -432,17 +432,33 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
   const [bodyBattery, setBodyBattery] = useState<number | undefined>(initialEntry?.bodyBattery);
   const [stress, setStress] = useState<number | undefined>(initialEntry?.stress);
   const [mood, setMood] = useState<string[]>(initialEntry?.mood ?? []);
+  const [hotFlashesOn, setHotFlashesOn] = useState<boolean>(!!initialEntry?.hotFlashesOn);
   const [hotFlashes, setHotFlashes] = useState<number | undefined>(initialEntry?.hotFlashes);
+  const [headache, setHeadache] = useState<boolean>(!!initialEntry?.headache);
   const [headacheTypes, setHeadacheTypes] = useState<string[]>(initialEntry?.headacheTypes ?? []);
   const [headacheIntensity, setHeadacheIntensity] = useState<number | undefined>(initialEntry?.headacheIntensity);
   const [headacheMedOn, setHeadacheMedOn] = useState<boolean>(!!initialEntry?.headacheMed);
   const [headacheMed, setHeadacheMed] = useState<string>(initialEntry?.headacheMed ?? "");
   const [headacheMedTime, setHeadacheMedTime] = useState<string>(initialEntry?.headacheMedTime ?? nowHHMM());
   const [pcosSymptoms, setPcosSymptoms] = useState<string[]>(initialEntry?.pcosSymptoms ?? []);
+  const [fluNote, setFluNote] = useState<string>(initialEntry?.fluNote ?? "");
+  // Pressure detail (shown when "Pressure" quality is selected)
+  const [pressureTypes, setPressureTypes] = useState<string[]>(initialEntry?.pressureTypes ?? []);
+  const [pressureIntensity, setPressureIntensity] = useState<number | undefined>(initialEntry?.pressureIntensity);
+  // Nausea section
+  const [nausea, setNausea] = useState<boolean>(!!initialEntry?.nausea);
+  const [nauseaTypes, setNauseaTypes] = useState<string[]>(initialEntry?.nauseaTypes ?? []);
+  const [nauseaSeverity, setNauseaSeverity] = useState<number | undefined>(initialEntry?.nauseaSeverity);
+  const [nauseaMinutes, setNauseaMinutes] = useState<string>(initialEntry?.nauseaMinutes != null ? String(initialEntry.nauseaMinutes) : "");
+  const [nauseaOngoing, setNauseaOngoing] = useState<boolean>(!!initialEntry?.nauseaOngoing);
+  const [nauseaTriggers, setNauseaTriggers] = useState<string[]>(initialEntry?.nauseaTriggers ?? []);
+  const [nauseaSymptoms, setNauseaSymptoms] = useState<string[]>(initialEntry?.nauseaSymptoms ?? []);
+  const [nauseaHelped, setNauseaHelped] = useState<string[]>(initialEntry?.nauseaHelped ?? []);
 
   type CKey = "bodyParts" | "quality" | "symptoms" | "moods"
     | "tetanyTypes" | "tetanyLocations" | "tetanyTriggers" | "tetanyHelped"
-    | "pcosSymptoms" | "headacheTypes";
+    | "pcosSymptoms" | "headacheTypes"
+    | "pressureTypes" | "nauseaTypes" | "nauseaTriggers" | "nauseaSymptoms" | "nauseaHelped";
   const addCustom = (key: CKey, v: string) =>
     update((d) => ({ ...d, custom: { ...d.custom, [key]: [...(d.custom[key] ?? []), v] } }));
   const removeCustom = (key: CKey, v: string) =>
@@ -457,11 +473,24 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
       time,
       score, parts, quality, symptoms, note: note.trim(),
       bodyBattery, stress, mood: mood.length ? mood : undefined,
-      hotFlashes: symptoms.includes("Hot flashes") ? hotFlashes : undefined,
-      headacheTypes: symptoms.includes("Headache") && headacheTypes.length ? headacheTypes : undefined,
-      headacheIntensity: symptoms.includes("Headache") ? headacheIntensity : undefined,
-      headacheMed: symptoms.includes("Headache") && headacheMedOn && headacheMed.trim() ? headacheMed.trim() : undefined,
-      headacheMedTime: symptoms.includes("Headache") && headacheMedOn && headacheMed.trim() ? headacheMedTime : undefined,
+      hotFlashesOn: hotFlashesOn || undefined,
+      hotFlashes: hotFlashesOn ? hotFlashes : undefined,
+      headache: headache || undefined,
+      headacheTypes: headache && headacheTypes.length ? headacheTypes : undefined,
+      headacheIntensity: headache ? headacheIntensity : undefined,
+      headacheMed: headache && headacheMedOn && headacheMed.trim() ? headacheMed.trim() : undefined,
+      headacheMedTime: headache && headacheMedOn && headacheMed.trim() ? headacheMedTime : undefined,
+      pressureTypes: quality.includes("Pressure") && pressureTypes.length ? pressureTypes : undefined,
+      pressureIntensity: quality.includes("Pressure") ? pressureIntensity : undefined,
+      nausea: nausea || undefined,
+      nauseaTypes: nausea && nauseaTypes.length ? nauseaTypes : undefined,
+      nauseaSeverity: nausea ? nauseaSeverity : undefined,
+      nauseaMinutes: nausea && !nauseaOngoing && nauseaMinutes !== "" ? Number(nauseaMinutes) : undefined,
+      nauseaOngoing: nausea ? (nauseaOngoing || undefined) : undefined,
+      nauseaTriggers: nausea && nauseaTriggers.length ? nauseaTriggers : undefined,
+      nauseaSymptoms: nausea && nauseaSymptoms.length ? nauseaSymptoms : undefined,
+      nauseaHelped: nausea && nauseaHelped.length ? nauseaHelped : undefined,
+      fluNote: symptoms.includes("Flu") && fluNote.trim() ? fluNote.trim() : undefined,
       pcosSymptoms: pcosSymptoms.length ? pcosSymptoms : undefined,
     };
     updateDayLog(update, date, (l) => ({
