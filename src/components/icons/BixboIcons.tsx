@@ -37,39 +37,50 @@ function Shadow({ cy = 56, rx = 17, ry = 4 }: { cy?: number; rx?: number; ry?: n
 
 /* ---------------------------------------------------------------- BRAND */
 
-/** BIXBO logo — soft 3D chili. Brand only, never a symptom icon. */
+/** BIXBO logo — soft 3D glossy chili pepper. Brand only, never a symptom icon. */
 export function ChiliIcon(p: IconProps) {
-  const a = useSvgId(), b = useSvgId(), c = useSvgId();
+  const a = useSvgId(), b = useSvgId(), c = useSvgId(), d = useSvgId();
   const mini = (p.size ?? 24) <= 16;
   if (mini) {
     return (
       <Svg {...p}>
-        <path d="M41 17c6 3 10 10 10 18 0 13-10 21-22 21-9 0-16-4-19-9-1-2 1-4 3-3 4 2 8 2 12 0 7-3 11-9 12-17 .4-4 1.4-8 4-10z" fill="#e0342c" />
-        <path d="M38 18c-1-5 1-10 5-12 1.6-.8 3 1 2.2 2.5-1.3 2.4-1.4 4.6-.4 6.6.9 1.8-.6 3.6-2.4 3.9l-2 .3c-1.2.2-2.2-.2-2.4-1.3z" fill="#3f8f36" />
+        <path d="M40 16c7 2 12 9 12 18 0 15-11 24-24 24-10 0-18-4.6-21.5-11-1.2-2.3 1.3-4.6 3.5-3.3 4.6 2.7 9.6 2.9 14 .6 8-4.2 12-11.4 11.8-20.4-.1-3.6 1-6.9 4.2-7.9z" fill="#e0342c" />
+        <path d="M37 17c-1.4-5 .8-9.6 4.6-11.6 1.5-.8 3 .9 2.4 2.5-1 2.6-.8 4.8.4 6.7 1 1.6-.3 3.6-2.2 3.7l-2.6.2c-1.2.1-2.3-.4-2.6-1.5z" fill="#3f8f36" />
       </Svg>
     );
   }
   return (
     <Svg {...p}>
       <defs>
-        <linearGradient id={a} x1="14" y1="20" x2="52" y2="56" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#ff6b5e" /><stop offset="0.55" stopColor="#e8342c" /><stop offset="1" stopColor="#a81616" />
+        <linearGradient id={a} x1="10" y1="18" x2="50" y2="58" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#ff8f6a" /><stop offset="0.35" stopColor="#f2402c" /><stop offset="0.75" stopColor="#c81f1f" /><stop offset="1" stopColor="#8f1212" />
         </linearGradient>
-        <linearGradient id={b} x1="28" y1="6" x2="44" y2="22" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#8fd66a" /><stop offset="1" stopColor="#3f8f36" />
+        <linearGradient id={b} x1="30" y1="4" x2="46" y2="20" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#a3e881" /><stop offset="1" stopColor="#3f8f36" />
         </linearGradient>
-        <linearGradient id={c} x1="20" y1="26" x2="34" y2="46" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#fff" stopOpacity="0.85" /><stop offset="1" stopColor="#fff" stopOpacity="0" />
+        <linearGradient id={c} x1="16" y1="20" x2="30" y2="46" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#fff" stopOpacity="0.95" /><stop offset="1" stopColor="#fff" stopOpacity="0" />
         </linearGradient>
+        <radialGradient id={d} cx="0.3" cy="0.22" r="0.5">
+          <stop stopColor="#fff" stopOpacity="0.55" /><stop offset="1" stopColor="#fff" stopOpacity="0" />
+        </radialGradient>
       </defs>
-      <Shadow />
+      <Shadow cy={57} rx={16} ry={3.6} />
+      {/* curved glossy chili body */}
       <path
-        d="M41 17c6 3 10 10 10 18 0 13-10 21-22 21-9 0-16-4-19-9-1-2 1-4 3-3 4 2 8 2 12 0 7-3 11-9 12-17 .4-4 1.4-8 4-10z"
+        d="M39.5 15c8 1.6 14.5 9 14.5 19.4 0 16-13 26.6-27 26.6-11 0-20-5.4-24-13-1.4-2.6 1.6-5.2 4-3.6 5.4 3.6 11.6 3.9 17 1.1 9.4-4.8 14.4-13.6 14.7-24.6.1-3 .5-5.9 .8-3.9z"
         fill={`url(#${a})`}
       />
-      <path d="M38 18c-1-5 1-10 5-12 1.6-.8 3 1 2.2 2.5-1.3 2.4-1.4 4.6-.4 6.6.9 1.8-.6 3.6-2.4 3.9l-2 .3c-1.2.2-2.2-.2-2.4-1.3z" fill={`url(#${b})`} />
-      <path d="M43 6.4c2.6-2.3 6-3 8.6-1.7 1.3.7.9 2.6-.6 2.9-2.4.4-4.2 1.6-5.4 3.4-.9 1.4-3 .8-3.1-.9l-.1-2c0-.7.2-1.3.6-1.7z" fill="#5aa842" />
-      <path d="M26 27c3 4 2 12-4 17-2 1.6-4-.6-3-2.6 2.4-4.6 3.4-9 3-13.4-.2-2 2.8-2.6 4-1z" fill={`url(#${c})`} opacity="0.7" />
+      <path
+        d="M39.5 15c8 1.6 14.5 9 14.5 19.4 0 16-13 26.6-27 26.6-11 0-20-5.4-24-13-1.4-2.6 1.6-5.2 4-3.6 5.4 3.6 11.6 3.9 17 1.1 9.4-4.8 14.4-13.6 14.7-24.6.1-3 .5-5.9 .8-3.9z"
+        fill={`url(#${d})`}
+      />
+      {/* green curved stem + calyx */}
+      <path d="M38 16c-1.6-5.6.4-11.4 5.2-14.2 1.8-1 3.6 1 2.6 3-1.6 3.1-1.7 5.9-.4 8.5 1.1 2.1-.6 4.4-2.9 4.7l-2.6.4c-1.4.2-2.6-.7-2.9-2.4z" fill={`url(#${b})`} />
+      <path d="M35.6 5.6c2.3-2.6 5.4-4 8.4-3.6 1.6.2 2 2.3.6 3.1-2.6 1.5-4.3 3.4-5.1 5.8-.6 1.9-3.2 2-3.9.2l-.9-2.3c-.4-1.1-.1-2.3.9-3.2z" fill="#5aa842" />
+      {/* soft highlight streak */}
+      <path d="M22 24c4 5 3 14-4.5 20-2.4 2-5-.6-3.6-3.1 3.3-5.9 4.5-11.4 3.6-17.1-.4-2.6 3.1-2.7 4.5-.8z" fill={`url(#${c})`} opacity="0.85" />
+      <ellipse cx="18.5" cy="24" rx="3.4" ry="2" transform="rotate(-35 18.5 24)" fill="#fff" opacity="0.7" />
     </Svg>
   );
 }
@@ -158,15 +169,16 @@ export function FlameIcon(p: IconProps) {
 
 /* ---------------------------------------------------------------- BOWEL */
 
-/** Bowel — friendly soft 3D poop with small eyes. */
-export function PoopIcon(p: IconProps) {
+/** Bowel — friendly soft 3D poop with small eyes. `dots=false` renders the
+ * plain swirl used for calendar markers (no eyes). */
+function renderPoop(p: IconProps, dots: boolean) {
   const a = useSvgId();
   const mini = (p.size ?? 24) <= 16;
   if (mini) {
     return (
       <Svg {...p}>
         <path fill="#7a4a24" d="M32 8c5 0 8 3.4 8 7.4 0 1.6-.5 3-1.3 4.2h.8c5 0 8.5 3.4 8.5 7.6 0 2-.8 3.8-2.2 5.2 5 .6 8.4 4 8.4 8.2 0 2.2-1 4.2-2.6 5.6 2.6 1.2 4.4 3.6 4.4 6.4 0 4-3.6 7.4-8 7.4H16c-4.4 0-8-3.4-8-7.4 0-2.8 1.8-5.2 4.4-6.4A7.4 7.4 0 0 1 9.8 40.6c0-4.2 3.4-7.6 8.4-8.2A6.8 6.8 0 0 1 16 27.2c0-4.2 3.5-7.6 8.5-7.6h.8A7 7 0 0 1 24 15.4C24 11.4 27 8 32 8z" />
-        <g fill="#fff"><circle cx="25.5" cy="40" r="3" /><circle cx="39" cy="40" r="3" /></g>
+        {dots && <g fill="#fff"><circle cx="25.5" cy="40" r="3" /><circle cx="39" cy="40" r="3" /></g>}
       </Svg>
     );
   }
@@ -181,17 +193,24 @@ export function PoopIcon(p: IconProps) {
       <g fill={`url(#${a})`}>
         <path d="M32 8c5 0 8 3.4 8 7.4 0 1.6-.5 3-1.3 4.2h.8c5 0 8.5 3.4 8.5 7.6 0 2-.8 3.8-2.2 5.2 5 .6 8.4 4 8.4 8.2 0 2.2-1 4.2-2.6 5.6 2.6 1.2 4.4 3.6 4.4 6.4 0 4-3.6 7.4-8 7.4H16c-4.4 0-8-3.4-8-7.4 0-2.8 1.8-5.2 4.4-6.4A7.4 7.4 0 0 1 9.8 40.6c0-4.2 3.4-7.6 8.4-8.2A6.8 6.8 0 0 1 16 27.2c0-4.2 3.5-7.6 8.5-7.6h.8A7 7 0 0 1 24 15.4C24 11.4 27 8 32 8z" />
       </g>
-      <g fill="#fff">
-        <ellipse cx="25" cy="40" rx="4.2" ry="4.6" /><ellipse cx="39" cy="40" rx="4.2" ry="4.6" />
-      </g>
-      <g fill="#2c1a0d">
-        <ellipse cx="25.6" cy="40.6" rx="2.1" ry="2.4" /><ellipse cx="39.6" cy="40.6" rx="2.1" ry="2.4" />
-      </g>
-      <path d="M27 48c2.6 2.2 7.4 2.2 10 0" stroke="#3a2312" strokeWidth="2.4" strokeLinecap="round" fill="none" opacity="0.75" />
+      {dots && (
+        <>
+          <g fill="#fff">
+            <ellipse cx="25" cy="40" rx="4.2" ry="4.6" /><ellipse cx="39" cy="40" rx="4.2" ry="4.6" />
+          </g>
+          <g fill="#2c1a0d">
+            <ellipse cx="25.6" cy="40.6" rx="2.1" ry="2.4" /><ellipse cx="39.6" cy="40.6" rx="2.1" ry="2.4" />
+          </g>
+          <path d="M27 48c2.6 2.2 7.4 2.2 10 0" stroke="#3a2312" strokeWidth="2.4" strokeLinecap="round" fill="none" opacity="0.75" />
+        </>
+      )}
       <path d="M20 24c3-2 7-2.6 10-1.6" stroke="#fff" strokeOpacity="0.28" strokeWidth="2.6" strokeLinecap="round" fill="none" />
     </Svg>
   );
 }
+export function PoopIcon(p: IconProps) { return renderPoop(p, true); }
+/** Dot-free bowel swirl — use only for calendar day markers. */
+export function PoopIconPlain(p: IconProps) { return renderPoop(p, false); }
 
 /* ---------------------------------------------------------------- MEDS */
 
@@ -865,6 +884,96 @@ export function WineIcon(p: IconProps) {
   );
 }
 
+/* --------------------------------------------------------- MOOD FACES */
+function faceBase(fill: string, mouth: string) {
+  return function FaceIcon(p: IconProps) {
+    const a = useSvgId();
+    const mini = (p.size ?? 24) <= 16;
+    if (mini) {
+      return (
+        <Svg {...p}>
+          <circle cx="32" cy="32" r="24" fill={fill} />
+          <g fill="#2c2033"><circle cx="24" cy="28" r="3" /><circle cx="40" cy="28" r="3" /></g>
+          <path d={mouth} stroke="#2c2033" strokeWidth="3" strokeLinecap="round" fill="none" />
+        </Svg>
+      );
+    }
+    return (
+      <Svg {...p}>
+        <defs>
+          <radialGradient id={a} cx="0.35" cy="0.3" r="0.85">
+            <stop stopColor="#fff" stopOpacity="0.5" /><stop offset="1" stopColor={fill} />
+          </radialGradient>
+        </defs>
+        <Shadow />
+        <circle cx="32" cy="32" r="22" fill={fill} />
+        <circle cx="32" cy="32" r="22" fill={`url(#${a})`} opacity="0.5" />
+        <g fill="#2c2033"><circle cx="24" cy="28" r="3.2" /><circle cx="40" cy="28" r="3.2" /></g>
+        <path d={mouth} stroke="#2c2033" strokeWidth="3" strokeLinecap="round" fill="none" />
+        <ellipse cx="23" cy="21" rx="5" ry="3" transform="rotate(-30 23 21)" fill="#fff" opacity="0.35" />
+      </Svg>
+    );
+  };
+}
+export const FaceHappyIcon = faceBase("#ffcf4a", "M22 38c3 4 17 4 20 0");
+export const FaceNeutralIcon = faceBase("#e8c874", "M23 40h18");
+export const FaceSadIcon = faceBase("#8fb0e8", "M22 42c3-4 17-4 20 0");
+export const FaceAngryIcon = faceBase("#e8674f", "M22 41c3-3 17-3 20 0");
+export const FaceAnxiousIcon = faceBase("#b494e8", "M23 40c2-3 4-3 5 0s3 3 4 0 4-3 5 0 3 3 5 0");
+export const FaceSickIcon = faceBase("#8fc46a", "M23 40c4 3 14 3 18 0");
+
+export function ClockIcon(p: IconProps) {
+  const a = useSvgId();
+  const mini = (p.size ?? 24) <= 16;
+  if (mini) {
+    return (
+      <Svg {...p}>
+        <circle cx="32" cy="32" r="24" fill="#e8ecef" />
+        <path d="M32 16v16l11 7" stroke="#3f6fc4" strokeWidth="5" strokeLinecap="round" fill="none" />
+      </Svg>
+    );
+  }
+  return (
+    <Svg {...p}>
+      <defs>
+        <linearGradient id={a} x1="10" y1="10" x2="54" y2="54" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#fdfdfd" /><stop offset="1" stopColor="#c8cdd4" />
+        </linearGradient>
+      </defs>
+      <Shadow />
+      <circle cx="32" cy="32" r="24" fill={`url(#${a})`} />
+      <circle cx="32" cy="32" r="19" fill="#f4f6f8" />
+      <path d="M32 20v12l9 6" stroke="#3f6fc4" strokeWidth="4.5" strokeLinecap="round" fill="none" />
+    </Svg>
+  );
+}
+
+/** Sparkles — used for panic-attack markers (never TENS). */
+export function SparkleIcon(p: IconProps) {
+  const a = useSvgId();
+  const mini = (p.size ?? 24) <= 16;
+  if (mini) {
+    return (
+      <Svg {...p}>
+        <path d="M24 6c1.4 8 5 11.6 13 13-8 1.4-11.6 5-13 13-1.4-8-5-11.6-13-13 8-1.4 11.6-5 13-13z" fill="#c78bf0" />
+        <path d="M46 30c.8 4.6 2.9 6.7 7.5 7.5-4.6.8-6.7 2.9-7.5 7.5-.8-4.6-2.9-6.7-7.5-7.5 4.6-.8 6.7-2.9 7.5-7.5z" fill="#8a6ce0" />
+      </Svg>
+    );
+  }
+  return (
+    <Svg {...p}>
+      <defs>
+        <linearGradient id={a} x1="14" y1="8" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#e6cbff" /><stop offset="1" stopColor="#8a6ce0" />
+        </linearGradient>
+      </defs>
+      <Shadow />
+      <path d="M24 6c1.4 8 5 11.6 13 13-8 1.4-11.6 5-13 13-1.4-8-5-11.6-13-13 8-1.4 11.6-5 13-13z" fill={`url(#${a})`} />
+      <path d="M46 30c.8 4.6 2.9 6.7 7.5 7.5-4.6.8-6.7 2.9-7.5 7.5-.8-4.6-2.9-6.7-7.5-7.5 4.6-.8 6.7-2.9 7.5-7.5z" fill={`url(#${a})`} opacity="0.85" />
+    </Svg>
+  );
+}
+
 /* ------------------------------------------------------------ REGISTRY */
 
 export const BIXBO_ICONS = {
@@ -899,6 +1008,15 @@ export const BIXBO_ICONS = {
   water: WaterIcon,
   coffee: CoffeeIcon,
   wine: WineIcon,
+  poopPlain: PoopIconPlain,
+  happy: FaceHappyIcon,
+  neutral: FaceNeutralIcon,
+  sad: FaceSadIcon,
+  angry: FaceAngryIcon,
+  anxious: FaceAnxiousIcon,
+  sick: FaceSickIcon,
+  clock: ClockIcon,
+  sparkle: SparkleIcon,
 } as const;
 
 export type BixboIconName = keyof typeof BIXBO_ICONS;
@@ -918,7 +1036,8 @@ export const EMOJI_ICON: Record<string, BixboIconName> = {
   "🤕": "headache",
   "♨️": "heat", "♨": "heat",
   "🧊": "cold",
-  "✨": "tens",
+  "✨": "sparkle",
+  "💩⚪": "poopPlain",
   "🧘🏼‍♀️": "workout", "🧘": "workout", "👟": "workout", "🏃": "workout", "🚶🏼": "workout", "💪": "workout",
   "😴": "sleep", "🌙": "sleep",
   "🌡️": "thermometer", "🌡": "thermometer",
@@ -931,6 +1050,24 @@ export const EMOJI_ICON: Record<string, BixboIconName> = {
   "⭐": "star", "🌟": "star",
   "🟢": "dotGreen", "🟡": "dotYellow", "🟠": "dotOrange", "🔴": "dotRed",
   "💧": "water", "☕": "coffee", "🍷": "wine",
+
+  /* mood / feeling faces — reused across mood, sleep, food & sex feelings */
+  "😊": "happy", "🙂": "happy", "😀": "happy", "🥲": "happy", "😎": "happy",
+  "😐": "neutral", "😑": "neutral", "🫥": "neutral", "😕": "neutral",
+  "😢": "sad", "😔": "sad", "😞": "sad", "🙁": "sad", "😩": "sad", "🥺": "sad",
+  "😠": "angry", "😤": "angry", "😾": "angry", "😒": "angry",
+  "😰": "anxious", "🌀": "anxious", "😵‍💫": "anxious",
+  "🤢": "sick", "😖": "sick", "🥴": "sick",
+  "🥰": "heart", "🤩": "heart", "😻": "heart",
+  "🥶": "cold",
+  "💦": "water",
+  "🌩️": "bolt", "🦵": "bolt",
+  "🥱": "sleep", "😪": "sleep", "💤": "sleep", "🛌": "sleep", "💭": "sleep", "🫠": "sleep",
+  "😌": "leaf", "🙏": "leaf", "🐢": "leaf",
+  "🚽": "poop",
+  "📱": "note",
+  "☀️": "star",
+  "⏰": "clock",
 };
 
 /**
