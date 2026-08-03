@@ -190,27 +190,27 @@ function customToTag(c: CustomQuickTag, data: BixboData): Tag {
         return { ...l, sex: mk(l.sex, { id: uid(), time: t(), kind: "sex" }) };
       case "food":
         return { ...l, food: mk(l.food, { id: uid(), time: t(), what: p.what ?? "", feelings: [] }) };
-     case "meds": {
-  const med = data.meds.find((m) => m.id === p.medId);
+      case "meds": {
+        const med = data.meds.find((m) => m.id === p.medId);
 
-  if (!med) return l;
+        if (!med) return l;
 
-  // Scheduled dávka sa zapíše neskôr priamo do BixboData.medLog.
-  if (p.mode === "scheduled") {
-    return l;
-  }
+        // Scheduled dávka sa zapíše neskôr priamo do BixboData.medLog.
+        if (p.mode === "scheduled") {
+          return l;
+        }
 
-  // Extra / PRN dávka ostáva v dayLogs.extraMeds.
-  return {
-    ...l,
-    extraMeds: mk(l.extraMeds, {
-      id: uid(),
-      time: t(),
-      name: med.name,
-      dose: med.dose,
-    }),
-  };
-}
+        // Extra / PRN dávka ostáva v dayLogs.extraMeds.
+        return {
+          ...l,
+          extraMeds: mk(l.extraMeds, {
+            id: uid(),
+            time: t(),
+            name: med.name,
+            dose: med.dose,
+          }),
+        };
+      }
       case "workout":
         return {
           ...l,
@@ -221,22 +221,20 @@ function customToTag(c: CustomQuickTag, data: BixboData): Tag {
     }
   };
   return {
-  key: `custom-${c.id}`,
-  emoji: c.emoji,
-  label: c.label,
-  cat: c.cat,
-  apply,
-  scheduledMed:
-    c.cat === "meds" &&
-    p.mode === "scheduled" &&
-    p.medId &&
-    p.scheduleTime
-      ? {
-          medId: p.medId,
-          scheduleTime: p.scheduleTime,
-        }
-      : undefined,
-};
+    key: `custom-${c.id}`,
+    emoji: c.emoji,
+    label: c.label,
+    cat: c.cat,
+    apply,
+    scheduledMed:
+      c.cat === "meds" && p.mode === "scheduled" && p.medId && p.scheduleTime
+        ? {
+            medId: p.medId,
+            scheduleTime: p.scheduleTime,
+          }
+        : undefined,
+  };
+}
 
 export function QuickTags({
   data,
@@ -313,52 +311,52 @@ export function QuickTags({
   };
 
   const doTap = (tag: Tag) => {
-  if (tag.popup === "period") {
-    setPeriodOpen(true);
-    return;
-  }
+    if (tag.popup === "period") {
+      setPeriodOpen(true);
+      return;
+    }
 
-  if (tag.scheduledMed) {
-    const date = todayKey();
-    const actualTime = nowHHMM();
-    const { medId, scheduleTime } = tag.scheduledMed;
-    const slotKey = `${medId}@${scheduleTime}`;
+    if (tag.scheduledMed) {
+      const date = todayKey();
+      const actualTime = nowHHMM();
+      const { medId, scheduleTime } = tag.scheduledMed;
+      const slotKey = `${medId}@${scheduleTime}`;
 
-    update((d) => {
-      const dayLog = { ...(d.medLog[date] ?? {}) };
-      const dayTimes = { ...(d.medLogTimes[date] ?? {}) };
-      const currentlyTaken = !!dayLog[slotKey];
+      update((d) => {
+        const dayLog = { ...(d.medLog[date] ?? {}) };
+        const dayTimes = { ...(d.medLogTimes[date] ?? {}) };
+        const currentlyTaken = !!dayLog[slotKey];
 
-      if (currentlyTaken) {
-        delete dayLog[slotKey];
-        delete dayTimes[slotKey];
-      } else {
-        dayLog[slotKey] = true;
-        dayTimes[slotKey] = actualTime;
-      }
+        if (currentlyTaken) {
+          delete dayLog[slotKey];
+          delete dayTimes[slotKey];
+        } else {
+          dayLog[slotKey] = true;
+          dayTimes[slotKey] = actualTime;
+        }
 
-      return {
-        ...d,
-        medLog: {
-          ...d.medLog,
-          [date]: dayLog,
-        },
-        medLogTimes: {
-          ...d.medLogTimes,
-          [date]: dayTimes,
-        },
-      };
-    });
+        return {
+          ...d,
+          medLog: {
+            ...d.medLog,
+            [date]: dayLog,
+          },
+          medLogTimes: {
+            ...d.medLogTimes,
+            [date]: dayTimes,
+          },
+        };
+      });
 
+      flashKey(tag.key);
+      return;
+    }
+
+    if (!tag.apply) return;
+
+    updateDayLog(update, todayKey(), tag.apply);
     flashKey(tag.key);
-    return;
-  }
-
-  if (!tag.apply) return;
-
-  updateDayLog(update, todayKey(), tag.apply);
-  flashKey(tag.key);
-};
+  };
 
   const logPeriod = (level: PeriodLevel) => {
     updateDayLog(update, todayKey(), (l) => ({
