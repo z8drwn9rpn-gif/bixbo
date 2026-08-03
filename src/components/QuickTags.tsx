@@ -644,7 +644,9 @@ function QuickTagBuilder({
                       onChange={(e) => {
                         const id = e.target.value;
                         setMedId(id);
+
                         const firstTime = data.meds.find((m) => m.id === id)?.times?.[0] ?? "";
+
                         setScheduleTime(firstTime);
                       }}
                     >
@@ -655,12 +657,14 @@ function QuickTagBuilder({
                         </option>
                       ))}
                     </select>
+
                     <div className="space-y-2">
                       <p className="text-xs">Logging mode</p>
 
                       <label className="flex items-center gap-2 text-sm">
                         <input
                           type="radio"
+                          name="med-mode"
                           checked={medMode === "scheduled"}
                           onChange={() => setMedMode("scheduled")}
                         />
@@ -668,33 +672,42 @@ function QuickTagBuilder({
                       </label>
 
                       <label className="flex items-center gap-2 text-sm">
-                        <input type="radio" checked={medMode === "extra"} onChange={() => setMedMode("extra")} />
+                        <input
+                          type="radio"
+                          name="med-mode"
+                          checked={medMode === "extra"}
+                          onChange={() => setMedMode("extra")}
+                        />
                         Log extra / PRN dose
                       </label>
                     </div>
-                   {medMode === "scheduled" && (
-  <>
-    <p className="text-xs">Scheduled time</p>
-    {(data.meds.find((m) => m.id === medId)?.times ?? []).length > 0 ? (
-      <select
-        className={inputCls}
-        value={scheduleTime}
-        onChange={(e) => setScheduleTime(e.target.value)}
-      >
-        {(data.meds.find((m) => m.id === medId)?.times ?? []).map((time) => (
-          <option key={time} value={time}>
-            {time}
-          </option>
-        ))}
-      </select>
-    ) : (
-      <p className="text-xs text-muted-foreground">
-        No schedule time saved for this medication.
-      </p>
-    )}
-  </>
-)}
-                                  </div>
+
+                    {medMode === "scheduled" && (
+                      <>
+                        <p className="text-xs">Scheduled time</p>
+
+                        {(data.meds.find((m) => m.id === medId)?.times ?? []).length > 0 ? (
+                          <select
+                            className={inputCls}
+                            value={scheduleTime || data.meds.find((m) => m.id === medId)?.times?.[0] || ""}
+                            onChange={(e) => setScheduleTime(e.target.value)}
+                          >
+                            {(data.meds.find((m) => m.id === medId)?.times ?? []).map((time) => (
+                              <option key={time} value={time}>
+                                {time}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">No schedule time saved for this medication.</p>
+                        )}
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-xs text-muted-foreground">No medications saved yet.</p>
+                )}
+              </div>
             )}
             {cat === "workout" && (
               <div className="space-y-2">
