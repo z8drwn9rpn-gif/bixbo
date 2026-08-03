@@ -191,21 +191,22 @@ function customToTag(c: CustomQuickTag, data: BixboData): Tag {
         if (!med) return l;
 
         if (p.mode === "scheduled" && p.scheduleTime) {
+          const currentTaken = l.medLog?.[med.id]?.[p.scheduleTime]?.taken ?? false;
+
           return {
             ...l,
             medLog: {
               ...(l.medLog ?? {}),
               [med.id]: {
-                ...((l.medLog ?? {})[med.id] ?? {}),
+                ...(l.medLog?.[med.id] ?? {}),
                 [p.scheduleTime]: {
-                  taken: !(l.medLog ?? {})[med.id]?.[p.scheduleTime]?.taken,
+                  taken: !currentTaken,
                   time: t(),
                 },
               },
             },
           };
         }
-
         return {
           ...l,
           extraMeds: mk(l.extraMeds, {
