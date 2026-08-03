@@ -18,11 +18,29 @@ export interface PainEntry {
   bodyBattery?: number;
   stress?: number;
   mood?: string[];
+  /** Hot flashes section (own Yes/No trigger) */
+  hotFlashesOn?: boolean;
   hotFlashes?: number;
+  /** Headache section (own Yes/No trigger) */
+  headache?: boolean;
   headacheTypes?: string[];
   headacheIntensity?: number;
   headacheMed?: string;
   headacheMedTime?: string;
+  /** Pressure detail, shown when "Pressure" quality is selected */
+  pressureTypes?: string[];
+  pressureIntensity?: number;
+  /** Nausea section */
+  nausea?: boolean;
+  nauseaTypes?: string[];
+  nauseaSeverity?: number;
+  nauseaMinutes?: number;
+  nauseaOngoing?: boolean;
+  nauseaTriggers?: string[];
+  nauseaSymptoms?: string[];
+  nauseaHelped?: string[];
+  /** Flu-specific note (separate from the general note) */
+  fluNote?: string;
   pcosSymptoms?: string[];
 }
 export interface TetanyEpisode {
