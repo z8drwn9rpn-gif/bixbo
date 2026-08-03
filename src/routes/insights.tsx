@@ -1427,11 +1427,21 @@ function BristolChart({ bowelCounts }: { bowelCounts: number[] }) {
   const [active, setActive] = useState<number | null>(null);
   useDismissTapTooltip(() => setActive(null));
   const max = Math.max(1, ...bowelCounts);
+  const chartTypes = [
+    {
+      n: 0,
+      label: "Type 0 — Mystery",
+      sub: "Unknown / mixed",
+      color: "#64748b",
+      shape: "mystery",
+    },
+    ...BRISTOL,
+  ];
   return (
     <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
       <p className="text-xs uppercase tracking-wider text-muted-foreground">Bowel — Bristol distribution</p>
       <div className="relative mt-3 flex items-end gap-2">
-        {BRISTOL.map((b) => {
+        {chartTypes.map((b) => {
           const c = bowelCounts[b.n] ?? 0;
           return (
             <div key={b.n} className="relative flex flex-1 flex-col items-center gap-1">
