@@ -185,13 +185,37 @@ function customToTag(c: CustomQuickTag, data: BixboData): Tag {
         return { ...l, sex: mk(l.sex, { id: uid(), time: t(), kind: "sex" }) };
       case "food":
         return { ...l, food: mk(l.food, { id: uid(), time: t(), what: p.what ?? "", feelings: [] }) };
-      case "meds": {
-        const med = data.meds.find((m) => m.id === p.medId);
-        return {
-          ...l,
-          extraMeds: mk(l.extraMeds, { id: uid(), time: t(), name: med?.name ?? c.label, dose: med?.dose }),
-        };
-      }
+     case "meds": {
+  const med = data.meds.find((m) => m.id === p.medId);
+
+  if (!med) return l;
+
+  if (p.mode === "scheduled" && p.scheduleTime) {
+    return {
+      ...l,
+      medLog: {
+        ...(l.medLog ?? {}),
+        [med.id]: {
+          ...((l.medLog ?? {})[med.id] ?? {}),
+          [p.scheduleTime]: {
+            taken: !((l.medLog ?? {})[med.id]?.[p.scheduleTime]?.taken),
+            time: t(),
+          },
+        },
+      },
+    };
+  }
+
+  return {
+    ...l,
+    extraMeds: mk(l.extraMeds, {
+      id: uid(),
+      time: t(),
+      name: med.name,
+      dose: med.dose,
+    }),
+  };
+}
       case "workout":
         return {
           ...l,
@@ -527,6 +551,11 @@ const [scheduleTime, setScheduleTime] =
         intensity: cat === "tetany" || cat === "panic" ? intensity : undefined,
         what: cat === "food" ? what.trim() || undefined : undefined,
         medId: cat === "meds" ? medId || undefined : undefined,
+        mode: cat === "meds" ? medMode : undefined,
+scheduleTime:
+  cat === "meds" && medMode === "scheduled"
+    ? scheduleTime || undefined
+    : undefined,
         kind: cat === "workout" ? kind : undefined,
         minutes: cat === "workout" ? minutes : undefined,
       },
