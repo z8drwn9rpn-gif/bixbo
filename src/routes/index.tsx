@@ -322,7 +322,26 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
                   <p className="text-xs text-muted-foreground">{p.time} · {PAIN_DESCRIPTIONS[Math.round(p.score)]}</p>
                   {p.parts.length > 0 && <p className="text-sm">{p.parts.join(", ")}</p>}
                   {p.quality.length > 0 && <p className="text-xs text-muted-foreground">{p.quality.join(", ")}</p>}
-                  {p.symptoms.length > 0 && <p className="text-xs text-muted-foreground">+ {p.symptoms.join(", ")}</p>}
+                  {p.symptoms.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      + {p.symptoms.join(", ")}
+                      {p.symptoms.includes("Flu") && p.fluNote ? ` (Flu: ${p.fluNote})` : ""}
+                    </p>
+                  )}
+                  {p.pressureTypes?.length || p.pressureIntensity != null ? (
+                    <p className="text-xs text-muted-foreground">
+                      Pressure: {p.pressureTypes?.join(", ")}{p.pressureIntensity != null ? `${p.pressureTypes?.length ? " " : ""}${p.pressureIntensity}/10` : ""}
+                    </p>
+                  ) : null}
+                  {p.nausea || p.nauseaTypes?.length || p.nauseaSeverity != null ? (
+                    <p className="text-xs text-muted-foreground">
+                      Nausea: {p.nauseaTypes?.join(", ")}{p.nauseaSeverity != null ? `${p.nauseaTypes?.length ? " " : ""}${p.nauseaSeverity}/10` : ""}
+                      {p.nauseaOngoing ? " · ongoing" : (p.nauseaMinutes != null ? ` · ${p.nauseaMinutes} min` : "")}
+                      {p.nauseaTriggers?.length ? ` · triggers: ${p.nauseaTriggers.join(", ")}` : ""}
+                      {p.nauseaSymptoms?.length ? ` · symptoms: ${p.nauseaSymptoms.join(", ")}` : ""}
+                      {p.nauseaHelped?.length ? ` · relieved by: ${p.nauseaHelped.join(", ")}` : ""}
+                    </p>
+                  ) : null}
                   {p.hotFlashes != null && <p className="text-xs text-muted-foreground"><Ico e="🥵" size={13} /> Hot flashes intensity {p.hotFlashes}/5</p>}
                   {p.headacheTypes?.length ? <p className="text-xs text-muted-foreground"><Ico e="🤕" size={13} /> Headache: {p.headacheTypes.join(", ")}{p.headacheIntensity != null ? ` · ${p.headacheIntensity}/10` : ""}</p> : (p.headacheIntensity != null ? <p className="text-xs text-muted-foreground"><Ico e="🤕" size={13} /> Headache intensity {p.headacheIntensity}/10</p> : null)}
                   {p.headacheMed ? <p className="text-xs text-muted-foreground"><Ico e="💊" size={13} /> Headache med: {p.headacheMed}{p.headacheMedTime ? ` at ${p.headacheMedTime}` : ""}</p> : null}
