@@ -313,6 +313,8 @@ export type QuickTagCategory =
   | "period"
   | "bowel"
   | "thermo"
+  | "headache"
+  | "hotFlashes"
   | "mood"
   | "energy"
   | "histamine"
@@ -335,6 +337,16 @@ export interface CustomQuickTag {
     mode?: "scheduled" | "extra";
     /** meds: `${medId}@${time}` identifying the scheduled slot */
     scheduleKey?: string;
+    thermoKind?: ThermoKind;
+    thermoMinutes?: number;
+
+    headacheType?: string;
+    headacheIntensity?: number;
+
+    hotFlashesIntensity?: number;
+
+    sleepHours?: number;
+    sleepQuality?: string;
   };
 }
 
