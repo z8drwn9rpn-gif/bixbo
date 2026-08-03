@@ -563,6 +563,11 @@ const CATS: { id: QuickTagCategory; label: string }[] = [
   { id: "food", label: "Food" },
   { id: "meds", label: "Meds" },
   { id: "workout", label: "Workout" },
+  { id: "bowel", label: "Bowel" },
+  { id: "thermo", label: "Heat / Cold / TENS" },
+  { id: "headache", label: "Headache" },
+  { id: "hotFlashes", label: "Hot flashes" },
+  { id: "sleep", label: "Sleep" },
 ];
 
 function QuickTagBuilder({
