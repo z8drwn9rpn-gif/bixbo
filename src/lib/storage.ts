@@ -311,9 +311,14 @@ export const EMPTY: BixboData = {
     sexTypes: [], bowelFeelings: [], bowelSymptoms: [],
     pcosSymptoms: [], headacheTypes: [], histamineSymptoms: [], foodSymptomsAfter: [], sexFeelings: [],
     urinary: [], allergens: [],
-
+    pressureTypes: [], nauseaTypes: [], nauseaTriggers: [], nauseaSymptoms: [], nauseaHelped: [],
+    labTests: [],
   },
-  settings: { textSize: "md", notifications: true, gender: "female" },
+  settings: { textSize: "md", notifications: true, gender: "female", theme: "system" },
+  labs: [],
+  docs: [],
+  diagnoses: [],
+  deletedIds: [],
 };
 
 const KEY = "bixbo:v2";
