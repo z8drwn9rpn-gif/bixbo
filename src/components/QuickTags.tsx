@@ -678,17 +678,23 @@ function QuickTagBuilder({
                    {medMode === "scheduled" && (
   <>
     <p className="text-xs">Scheduled time</p>
-    <select
-      className={inputCls}
-      value={scheduleTime}
-      onChange={(e) => setScheduleTime(e.target.value)}
-    >
-      {(data.meds.find((m) => m.id === medId)?.times ?? []).map((time) => (
-        <option key={time} value={time}>
-          {time}
-        </option>
-      ))}
-    </select>
+    {(data.meds.find((m) => m.id === medId)?.times ?? []).length > 0 ? (
+      <select
+        className={inputCls}
+        value={scheduleTime}
+        onChange={(e) => setScheduleTime(e.target.value)}
+      >
+        {(data.meds.find((m) => m.id === medId)?.times ?? []).map((time) => (
+          <option key={time} value={time}>
+            {time}
+          </option>
+        ))}
+      </select>
+    ) : (
+      <p className="text-xs text-muted-foreground">
+        No schedule time saved for this medication.
+      </p>
+    )}
   </>
 )}
                                   </div>
