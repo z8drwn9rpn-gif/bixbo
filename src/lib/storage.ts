@@ -2,7 +2,16 @@ import { useEffect, useSyncExternalStore } from "react";
 
 /* ------------------- Types ------------------- */
 export type PeriodLevel = "" | "spotting" | "light" | "medium" | "heavy" | "veryheavy";
-export type SexKind = "sex" | "fingering" | "suck_dick" | "oral" | "other" | "sex_with_condom" | "sex_without_condom" | "oral_giving" | "oral_receiving";
+export type SexKind =
+  | "sex"
+  | "fingering"
+  | "suck_dick"
+  | "oral"
+  | "other"
+  | "sex_with_condom"
+  | "sex_without_condom"
+  | "oral_giving"
+  | "oral_receiving";
 export type ThermoKind = "heat" | "cold" | "tens";
 export type PainfulWhen = "no" | "before" | "during" | "after";
 export type Gender = "female" | "male";
@@ -71,10 +80,23 @@ export interface PanicAttack {
   rescueMed?: string;
   note?: string;
 }
-export interface ThermoSession { id: string; kind: ThermoKind; start: string; minutes: number; ongoing?: boolean; note?: string }
+export interface ThermoSession {
+  id: string;
+  kind: ThermoKind;
+  start: string;
+  minutes: number;
+  ongoing?: boolean;
+  note?: string;
+}
 export interface FoodEntry {
-  id: string; time: string; what: string; feelings: string[]; after?: string;
-  hydrationMl?: number; caffeineMg?: number; alcoholDrinks?: number;
+  id: string;
+  time: string;
+  what: string;
+  feelings: string[];
+  after?: string;
+  hydrationMl?: number;
+  caffeineMg?: number;
+  alcoholDrinks?: number;
   symptomsAfter?: string[];
   histamineFlare?: boolean;
   histamineSymptoms?: string[];
@@ -83,13 +105,43 @@ export interface FoodEntry {
   allergicReaction?: boolean;
   reactionSeverity?: "mild" | "moderate" | "severe";
 }
-export interface BowelEntry { id: string; time: string; bristol: number; note?: string; feelings?: string[]; symptoms?: string[]; urinary?: string[] }
+export interface BowelEntry {
+  id: string;
+  time: string;
+  bristol: number;
+  note?: string;
+  feelings?: string[];
+  symptoms?: string[];
+  urinary?: string[];
+}
 
-export interface SexEntry { id: string; time: string; kind: SexKind; feelingAfter?: string | string[]; painful?: PainfulWhen; note?: string }
-export interface ExtraMed { id: string; time: string; name: string; dose?: string; note?: string }
-export interface WorkoutExercise { id: string; name: string; sets?: number; reps?: number; weightKg?: number }
+export interface SexEntry {
+  id: string;
+  time: string;
+  kind: SexKind;
+  feelingAfter?: string | string[];
+  painful?: PainfulWhen;
+  note?: string;
+}
+export interface ExtraMed {
+  id: string;
+  time: string;
+  name: string;
+  dose?: string;
+  note?: string;
+}
+export interface WorkoutExercise {
+  id: string;
+  name: string;
+  sets?: number;
+  reps?: number;
+  weightKg?: number;
+}
 export interface WorkoutEntry {
-  id: string; time: string; kind: string; minutes: number;
+  id: string;
+  time: string;
+  kind: string;
+  minutes: number;
   /** Body weight measured after the workout — kept separate from the day's weight metric. */
   weightKg?: number;
   distanceKm?: number;
@@ -98,16 +150,57 @@ export interface WorkoutEntry {
   rpe?: number;
   magnesiumBefore?: boolean;
   triggeredSymptom?: { type: "tetany" | "pain"; id: string; label?: string };
-  feeling?: string | string[]; note?: string;
+  feeling?: string | string[];
+  note?: string;
 }
-export interface EventEntry { id: string; title: string; startDate: string; endDate: string; time?: string; timeEnd?: string; note?: string; color?: string }
-export interface TaskEntry { id: string; title: string; startDate: string; endDate: string; time?: string; timeEnd?: string; done: boolean; note?: string }
-export interface PeriodEntry { level: PeriodLevel; discharge?: string; dischargeNote?: string; note?: string; cramps?: number }
-export interface DayNote { text: string; time?: string }
+export interface EventEntry {
+  id: string;
+  title: string;
+  startDate: string;
+  endDate: string;
+  time?: string;
+  timeEnd?: string;
+  note?: string;
+  color?: string;
+}
+export interface TaskEntry {
+  id: string;
+  title: string;
+  startDate: string;
+  endDate: string;
+  time?: string;
+  timeEnd?: string;
+  done: boolean;
+  note?: string;
+}
+export interface PeriodEntry {
+  level: PeriodLevel;
+  discharge?: string;
+  dischargeNote?: string;
+  note?: string;
+  cramps?: number;
+}
+export interface DayNote {
+  text: string;
+  time?: string;
+}
 
-export interface MoodEntry { id: string; time: string; value: "happy" | "neutral" | "sad" | "angry" }
-export interface EnergyEntry { id: string; time: string; value: "good" | "exhausted" }
-export interface HistamineEntry { id: string; time: string; flare: boolean; note?: string }
+export interface MoodEntry {
+  id: string;
+  time: string;
+  value: "happy" | "neutral" | "sad" | "angry";
+}
+export interface EnergyEntry {
+  id: string;
+  time: string;
+  value: "good" | "exhausted";
+}
+export interface HistamineEntry {
+  id: string;
+  time: string;
+  flare: boolean;
+  note?: string;
+}
 
 export interface DayLog {
   pain?: PainEntry[];
@@ -135,13 +228,38 @@ export function asArr(v: string | string[] | undefined | null): string[] {
   return Array.isArray(v) ? v : [v];
 }
 
-export interface Todo { id: string; text: string; done: boolean }
-export interface Med { id: string; name: string; dose?: string; times: string[]; asNeeded?: boolean; color?: string; note?: string }
-export interface NoteFolder { id: string; name: string; icon?: string }
-export interface NoteChecklistItem { id: string; text: string; done: boolean }
+export interface Todo {
+  id: string;
+  text: string;
+  done: boolean;
+}
+export interface Med {
+  id: string;
+  name: string;
+  dose?: string;
+  times: string[];
+  asNeeded?: boolean;
+  color?: string;
+  note?: string;
+}
+export interface NoteFolder {
+  id: string;
+  name: string;
+  icon?: string;
+}
+export interface NoteChecklistItem {
+  id: string;
+  text: string;
+  done: boolean;
+}
 export interface Note {
-  id: string; folderId: string; title: string; content: string;
-  checklist?: NoteChecklistItem[]; createdAt: number; updatedAt?: number;
+  id: string;
+  folderId: string;
+  title: string;
+  content: string;
+  checklist?: NoteChecklistItem[];
+  createdAt: number;
+  updatedAt?: number;
 }
 
 export interface CyclePrefs {
@@ -184,24 +302,35 @@ export interface CustomLists {
   labTests: string[];
 }
 
-
 export type QuickTagCategory =
-  | "pain" | "tetany" | "panic" | "sex" | "food" | "meds" | "workout"
-  | "period" | "bowel" | "thermo" | "mood" | "energy" | "histamine" | "sleep";
+  | "pain"
+  | "tetany"
+  | "panic"
+  | "sex"
+  | "food"
+  | "meds"
+  | "workout"
+  | "period"
+  | "bowel"
+  | "thermo"
+  | "mood"
+  | "energy"
+  | "histamine"
+  | "sleep";
 export interface CustomQuickTag {
   id: string;
   emoji: string;
   label: string;
   cat: QuickTagCategory;
   preset?: {
-    score?: number;        // pain
-    intensity?: number;    // tetany / panic
-    what?: string;         // food
-    medId?: string;        // meds
-    kind?: string;         // workout / sex / thermo / bowel / period level
-    minutes?: number;      // workout / thermo
-    bristol?: number;      // bowel
-    level?: PeriodLevel;   // period
+    score?: number; // pain
+    intensity?: number; // tetany / panic
+    what?: string; // food
+    medId?: string; // meds
+    kind?: string; // workout / sex / thermo / bowel / period level
+    minutes?: number; // workout / thermo
+    bristol?: number; // bowel
+    level?: PeriodLevel; // period
     /** meds: mark a scheduled dose taken vs. log an extra/PRN dose */
     mode?: "scheduled" | "extra";
     /** meds: `${medId}@${time}` identifying the scheduled slot */
@@ -230,14 +359,29 @@ export interface Settings {
   hiddenQuickTags?: string[];
 
   customQuickTags?: CustomQuickTag[];
-  scaleDescriptions?: Partial<Record<"pain" | "stress" | "tetany" | "panic" | "hotFlashes" | "headache" | "nausea" | "pressure", Record<number, string>>>;
+  scaleDescriptions?: Partial<
+    Record<
+      "pain" | "stress" | "tetany" | "panic" | "hotFlashes" | "headache" | "nausea" | "pressure",
+      Record<number, string>
+    >
+  >;
   /** Saved Trigger Comparison combos on the Patterns tab. */
   savedTriggers?: { id: string; a: string; b: string }[];
 }
 
 export interface PartnerData {
   name?: string;
-  dayLogs: Record<string, { pain?: PainEntry[]; panic?: PanicAttack[]; tetany?: TetanyEpisode[]; extraMeds?: ExtraMed[]; period?: PeriodLevel; periodInfo?: PeriodEntry }>;
+  dayLogs: Record<
+    string,
+    {
+      pain?: PainEntry[];
+      panic?: PanicAttack[];
+      tetany?: TetanyEpisode[];
+      extraMeds?: ExtraMed[];
+      period?: PeriodLevel;
+      periodInfo?: PeriodEntry;
+    }
+  >;
   dayNotes?: Record<string, DayNote[] | string[]>;
   meds?: Med[];
   medLog?: Record<string, Record<string, boolean>>;
@@ -248,17 +392,31 @@ export interface PartnerData {
 
 /* ------------------- Lab results / documents / diagnoses ------------------- */
 export interface LabResult {
-  id: string; test: string; value: number; unit?: string;
-  refLow?: number; refHigh?: number; date: string; note?: string;
+  id: string;
+  test: string;
+  value: number;
+  unit?: string;
+  refLow?: number;
+  refHigh?: number;
+  date: string;
+  note?: string;
 }
 export interface DocEntry {
-  id: string; name: string; date: string; mime?: string;
+  id: string;
+  name: string;
+  date: string;
+  mime?: string;
   /** data URL of the uploaded file (stored locally + synced) */
   dataUrl?: string;
   labId?: string;
 }
 export interface Diagnosis {
-  id: string; name: string; date?: string; doctor?: string; note?: string; docId?: string;
+  id: string;
+  name: string;
+  date?: string;
+  doctor?: string;
+  note?: string;
+  docId?: string;
 }
 
 export interface BixboData {
@@ -287,8 +445,8 @@ export interface BixboData {
 
 export const DEFAULT_FOLDERS: NoteFolder[] = [
   { id: "general", name: "General", icon: "📓" },
-  { id: "health",  name: "Health",  icon: "💚" },
-  { id: "ideas",   name: "Ideas",   icon: "💡" },
+  { id: "health", name: "Health", icon: "💚" },
+  { id: "ideas", name: "Ideas", icon: "💡" },
 ];
 
 export const EMPTY: BixboData = {
@@ -305,13 +463,35 @@ export const EMPTY: BixboData = {
   notebook: [],
   cycle: { lastPeriodStart: "2026-07-15", lastPeriodEnd: "2026-07-19", cycleLength: 28, periodLength: 5 },
   custom: {
-    bodyParts: [], quality: [], symptoms: [], foodFeelings: [], foodQuickAdd: [], workoutKinds: [], moods: [],
-    tetanyTypes: [], tetanyLocations: [], tetanyTriggers: [], tetanyHelped: [],
-    panicPhysical: [], panicCognitive: [], panicHelped: [],
-    sexTypes: [], bowelFeelings: [], bowelSymptoms: [],
-    pcosSymptoms: [], headacheTypes: [], histamineSymptoms: [], foodSymptomsAfter: [], sexFeelings: [],
-    urinary: [], allergens: [],
-    pressureTypes: [], nauseaTypes: [], nauseaTriggers: [], nauseaSymptoms: [], nauseaHelped: [],
+    bodyParts: [],
+    quality: [],
+    symptoms: [],
+    foodFeelings: [],
+    foodQuickAdd: [],
+    workoutKinds: [],
+    moods: [],
+    tetanyTypes: [],
+    tetanyLocations: [],
+    tetanyTriggers: [],
+    tetanyHelped: [],
+    panicPhysical: [],
+    panicCognitive: [],
+    panicHelped: [],
+    sexTypes: [],
+    bowelFeelings: [],
+    bowelSymptoms: [],
+    pcosSymptoms: [],
+    headacheTypes: [],
+    histamineSymptoms: [],
+    foodSymptomsAfter: [],
+    sexFeelings: [],
+    urinary: [],
+    allergens: [],
+    pressureTypes: [],
+    nauseaTypes: [],
+    nauseaTriggers: [],
+    nauseaSymptoms: [],
+    nauseaHelped: [],
     labTests: [],
   },
   settings: { textSize: "md", notifications: true, gender: "female", theme: "system" },
@@ -338,7 +518,9 @@ function migrate(raw: unknown): BixboData {
       if (s.type && s.type !== "none") {
         const map: Record<string, SexKind> = { with_condom: "sex", without_condom: "sex" };
         out.sex = [{ id: `${k}-legacy-sex`, time: "00:00", kind: (map[s.type] ?? "other") as SexKind, note: s.note }];
-      } else { out.sex = []; }
+      } else {
+        out.sex = [];
+      }
     }
     dayLogs[k] = out;
   }
@@ -347,7 +529,7 @@ function migrate(raw: unknown): BixboData {
     ...EMPTY,
     ...parsed,
     dayLogs,
-    folders: (parsed.folders as NoteFolder[] | undefined)?.length ? parsed.folders as NoteFolder[] : DEFAULT_FOLDERS,
+    folders: (parsed.folders as NoteFolder[] | undefined)?.length ? (parsed.folders as NoteFolder[]) : DEFAULT_FOLDERS,
     cycle: { ...EMPTY.cycle, ...(parsed.cycle as Partial<CyclePrefs> | undefined) },
     custom: c,
     settings: { ...EMPTY.settings, ...(parsed.settings as Partial<Settings> | undefined) },
@@ -363,7 +545,9 @@ let _hydrated = false;
 const listeners = new Set<() => void>();
 const changeListeners = new Set<(d: BixboData, reason: "local" | "remote") => void>();
 
-function emit() { listeners.forEach((l) => l()); }
+function emit() {
+  listeners.forEach((l) => l());
+}
 
 function hydrate() {
   if (_hydrated || typeof window === "undefined") return;
@@ -380,9 +564,10 @@ function persist() {
   // Never write before we've loaded what's already stored, otherwise an early
   // write (e.g. cloud sync clearing partner) would wipe saved data.
   if (!_hydrated) hydrate();
-  try { localStorage.setItem(KEY, JSON.stringify(_state)); } catch {}
+  try {
+    localStorage.setItem(KEY, JSON.stringify(_state));
+  } catch {}
 }
-
 
 export function setBixbo(updater: (d: BixboData) => BixboData) {
   hydrate();
@@ -403,16 +588,28 @@ export function setPartner(partner: PartnerData | undefined) {
   persist();
   emit();
 }
-export function getBixbo(): BixboData { hydrate(); return _state; }
+export function getBixbo(): BixboData {
+  hydrate();
+  return _state;
+}
 export function subscribeBixboChanges(fn: (d: BixboData, reason: "local" | "remote") => void) {
   changeListeners.add(fn);
-  return () => { changeListeners.delete(fn); };
+  return () => {
+    changeListeners.delete(fn);
+  };
 }
 
 export function useBixbo() {
-  useEffect(() => { hydrate(); }, []);
+  useEffect(() => {
+    hydrate();
+  }, []);
   const data = useSyncExternalStore(
-    (cb) => { listeners.add(cb); return () => { listeners.delete(cb); }; },
+    (cb) => {
+      listeners.add(cb);
+      return () => {
+        listeners.delete(cb);
+      };
+    },
     () => _state,
     () => EMPTY,
   );
@@ -436,11 +633,20 @@ export function updateDayLog(
 export function hasAnyLog(l?: DayLog): boolean {
   if (!l) return false;
   return !!(
-    l.pain?.length || l.tetany?.length || l.panic?.length ||
-    l.heat?.length || l.period || l.periodInfo?.level ||
-    l.food?.length || l.bowel?.length || l.sex?.length ||
-    l.temperature != null || l.weight != null || l.sleepHours != null ||
-    l.extraMeds?.length || l.workout?.length
+    l.pain?.length ||
+    l.tetany?.length ||
+    l.panic?.length ||
+    l.heat?.length ||
+    l.period ||
+    l.periodInfo?.level ||
+    l.food?.length ||
+    l.bowel?.length ||
+    l.sex?.length ||
+    l.temperature != null ||
+    l.weight != null ||
+    l.sleepHours != null ||
+    l.extraMeds?.length ||
+    l.workout?.length
   );
 }
 
@@ -455,7 +661,9 @@ export function fromKey(k: string): Date {
   const [y, m, d] = k.split("-").map(Number);
   return new Date(y, m - 1, d);
 }
-export function todayKey() { return toKey(new Date()); }
+export function todayKey() {
+  return toKey(new Date());
+}
 export function nowHHMM(): string {
   const d = new Date();
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
@@ -464,7 +672,9 @@ export function daysBetween(a: string, b: string): number {
   return Math.round((fromKey(b).getTime() - fromKey(a).getTime()) / 86400000);
 }
 export function addDays(k: string, n: number): string {
-  const d = fromKey(k); d.setDate(d.getDate() + n); return toKey(d);
+  const d = fromKey(k);
+  d.setDate(d.getDate() + n);
+  return toKey(d);
 }
 export function isDateInRange(k: string, start: string, end: string): boolean {
   return k >= start && k <= end;
@@ -474,7 +684,8 @@ export function isDateInRange(k: string, start: string, end: string): boolean {
 export function predictPeriods(cycle: CyclePrefs, from: Date, to: Date): { start: string; end: string }[] {
   if (!cycle.lastPeriodStart) return [];
   const out: { start: string; end: string }[] = [];
-  const fromK = toKey(from), toK = toKey(to);
+  const fromK = toKey(from),
+    toK = toKey(to);
   let curStart = cycle.lastPeriodStart;
   while (curStart <= toK) {
     const end = addDays(curStart, Math.max(0, cycle.periodLength - 1));
@@ -483,7 +694,8 @@ export function predictPeriods(cycle: CyclePrefs, from: Date, to: Date): { start
     if (out.length > 24) break;
   }
   if (cycle.lastPeriodStart && cycle.lastPeriodEnd) {
-    const s = cycle.lastPeriodStart, e = cycle.lastPeriodEnd;
+    const s = cycle.lastPeriodStart,
+      e = cycle.lastPeriodEnd;
     if (s <= toK && e >= fromK && !out.some((o) => o.start === s)) out.unshift({ start: s, end: e });
   }
   return out;
@@ -498,9 +710,16 @@ export function nextPredictedPeriod(cycle: CyclePrefs): { start: string; end: st
 
 /* ------------------- Constants ------------------- */
 export const PAIN_DESCRIPTIONS: Record<number, string> = {
-  0: "Pain free", 1: "Very minor annoyance", 2: "Minor annoyance", 3: "Annoying, distracting",
-  4: "Bearable if involved in work", 5: "Can't be ignored > 30 min", 6: "Can't be ignored for long",
-  7: "Hard to concentrate", 8: "Physical activity limited", 9: "Unable to speak, crying out",
+  0: "Pain free",
+  1: "Very minor annoyance",
+  2: "Minor annoyance",
+  3: "Annoying, distracting",
+  4: "Bearable if involved in work",
+  5: "Can't be ignored > 30 min",
+  6: "Can't be ignored for long",
+  7: "Hard to concentrate",
+  8: "Physical activity limited",
+  9: "Unable to speak, crying out",
   10: "Unconscious — passes out",
 };
 export function painColor(score: number): string {
@@ -513,17 +732,106 @@ export function avgDayPain(log?: DayLog): number | undefined {
   return sum / log.pain.length;
 }
 
-export const BODY_PARTS_DEFAULT = ["Abdomen","Lower abdomen","Lower belly","Pelvis","Ovaries","Uterus","Vagina","Groin","Back","Head","Legs","Chest"];
-export const PAIN_QUALITY_DEFAULT = ["Cramping","Stabbing","Burning","Dull","Sharp","Throbbing","Pressure","Shooting","Aching"];
-export const OTHER_SYMPTOMS_DEFAULT = ["Dizziness","Fatigue","Bloating","Diarrhea","Constipation","Cold sweats","Fainting","Mood swings","Flu"];
-export const FOOD_FEELINGS_DEFAULT = ["😊 Great","🙂 Fine","😐 Neutral","😕 Off","😖 Bloated","🤢 Nauseous","🤕 Stomach pain","😴 Sleepy","🥵 Flushed","⚡ Energy up"];
-export const WORKOUT_KINDS_DEFAULT = ["Yoga","Walk","Run","Hike","Cycling","Strength","Stretching","Swim","Meditation"];
+export const BODY_PARTS_DEFAULT = [
+  "Abdomen",
+  "Lower abdomen",
+  "Lower belly",
+  "Pelvis",
+  "Ovaries",
+  "Uterus",
+  "Vagina",
+  "Groin",
+  "Back",
+  "Head",
+  "Legs",
+  "Chest",
+];
+export const PAIN_QUALITY_DEFAULT = [
+  "Cramping",
+  "Stabbing",
+  "Burning",
+  "Dull",
+  "Sharp",
+  "Throbbing",
+  "Pressure",
+  "Shooting",
+  "Aching",
+];
+export const OTHER_SYMPTOMS_DEFAULT = [
+  "Dizziness",
+  "Fatigue",
+  "Bloating",
+  "Diarrhea",
+  "Constipation",
+  "Cold sweats",
+  "Fainting",
+  "Mood swings",
+  "Flu",
+];
+export const FOOD_FEELINGS_DEFAULT = [
+  "😊 Great",
+  "🙂 Fine",
+  "😐 Neutral",
+  "😕 Off",
+  "😖 Bloated",
+  "🤢 Nauseous",
+  "🤕 Stomach pain",
+  "😴 Sleepy",
+  "🥵 Flushed",
+  "⚡ Energy up",
+];
+export const WORKOUT_KINDS_DEFAULT = [
+  "Yoga",
+  "Walk",
+  "Run",
+  "Hike",
+  "Cycling",
+  "Strength",
+  "Stretching",
+  "Swim",
+  "Meditation",
+];
 export function workoutHasDistance(kind: string) {
   return /walk|run|hike/i.test(kind);
 }
-export function workoutIsHike(kind: string) { return /hike/i.test(kind); }
-export function workoutIsStrength(kind: string) { return /strength/i.test(kind); }
-export const MOODS_DEFAULT = ["🌀 All over the place","😠 Angry","😤 Annoyed","😰 Anxious","😑 Apathetic","🥱 Bored","🏃 Busy","😌 Calm","🥺 Clingy","😾 Cranky","😔 Depressed","🤩 Excited","😪 Fatigued","🙏 Grateful","😊 Happy","🥰 In love","🤕 In pain","😐 Indifferent","😒 Irritated","😎 Just chillin","🥲 Lonely","😕 Meh","🌩️ PMDD","💪 Productive","😴 Restful","😢 Sad","🫥 Self-deprecating","😴 Sleepy","😖 Stressed","🥱 Tired"];
+export function workoutIsHike(kind: string) {
+  return /hike/i.test(kind);
+}
+export function workoutIsStrength(kind: string) {
+  return /strength/i.test(kind);
+}
+export const MOODS_DEFAULT = [
+  "🌀 All over the place",
+  "😠 Angry",
+  "😤 Annoyed",
+  "😰 Anxious",
+  "😑 Apathetic",
+  "🥱 Bored",
+  "🏃 Busy",
+  "😌 Calm",
+  "🥺 Clingy",
+  "😾 Cranky",
+  "😔 Depressed",
+  "🤩 Excited",
+  "😪 Fatigued",
+  "🙏 Grateful",
+  "😊 Happy",
+  "🥰 In love",
+  "🤕 In pain",
+  "😐 Indifferent",
+  "😒 Irritated",
+  "😎 Just chillin",
+  "🥲 Lonely",
+  "😕 Meh",
+  "🌩️ PMDD",
+  "💪 Productive",
+  "😴 Restful",
+  "😢 Sad",
+  "🫥 Self-deprecating",
+  "😴 Sleepy",
+  "😖 Stressed",
+  "🥱 Tired",
+];
 export const TETANY_TYPES = [
   "Carpopedal spasm",
   "Calf cramps",
@@ -541,19 +849,28 @@ export const TETANY_TYPE_DESC: Record<string, string> = {
   "Calf cramps": "Painful cramps in the calves, often at night or after exertion.",
   "Twitches around mouth/face": "Small twitches around the mouth or face.",
   "Tingling / numbness": "Pins and needles or numbness (lips, fingers, limbs).",
-  "Fasciculations": "Fine muscle rippling under the skin without limb movement.",
+  Fasciculations: "Fine muscle rippling under the skin without limb movement.",
   "Eyelid twitching": "Eyelid twitch — often with fatigue or low magnesium.",
   "Jaw clenching": "Jaw clenching, teeth grinding.",
   "Chvostek sign": "Facial twitch when tapping the facial nerve (in front of the ear).",
   "Trousseau sign": "Hand cramp after inflating a BP cuff above systolic pressure.",
   "Whole body tremor": "Whole-body tremor or shaking from within.",
 };
-export const TETANY_LOCATIONS_DEFAULT = ["Lips","Fingers","Toes","Hands","Calves","Face","Around mouth"];
-export const TETANY_TRIGGERS = ["Hyperventilation / stress","Exercise","Cold","Cycle phase","Other"];
-export const TETANY_HELPED_DEFAULT = ["Slow breathing","Breathe into bag/hands","Warmth","Extra magnesium","Rest"];
-export const PANIC_PHYSICAL = ["Racing heart","Shortness of breath","Chest pressure","Dizziness","Tingling / numbness","Trembling","Nausea","Hot flashes / chills"];
-export const PANIC_COGNITIVE = ["Loss of control","Derealization","Fear of dying","Fear of collapse"];
-export const PANIC_HELPED_DEFAULT = ["Slow exhale","Frontin","Grounding","Someone with me","Fresh air"];
+export const TETANY_LOCATIONS_DEFAULT = ["Lips", "Fingers", "Toes", "Hands", "Calves", "Face", "Around mouth"];
+export const TETANY_TRIGGERS = ["Hyperventilation / stress", "Exercise", "Cold", "Cycle phase", "Other"];
+export const TETANY_HELPED_DEFAULT = ["Slow breathing", "Breathe into bag/hands", "Warmth", "Extra magnesium", "Rest"];
+export const PANIC_PHYSICAL = [
+  "Racing heart",
+  "Shortness of breath",
+  "Chest pressure",
+  "Dizziness",
+  "Tingling / numbness",
+  "Trembling",
+  "Nausea",
+  "Hot flashes / chills",
+];
+export const PANIC_COGNITIVE = ["Loss of control", "Derealization", "Fear of dying", "Fear of collapse"];
+export const PANIC_HELPED_DEFAULT = ["Slow exhale", "Frontin", "Grounding", "Someone with me", "Fresh air"];
 
 export const HEADACHE_TYPES = [
   "Tension",
@@ -570,20 +887,24 @@ export const HEADACHE_TYPES = [
   "Thunderclap",
 ];
 export const HEADACHE_TYPE_DESC: Record<string, string> = {
-  "Tension": "Tension headache — dull, pressing pain on both sides, like a band around the head. Often from stress, fatigue, or poor posture.",
-  "Migraine": "Migraine — throbbing pain (often one-sided), sensitivity to light/sound, nausea. May include aura (flashes, tingling).",
-  "Cluster": "Cluster — extremely severe pain behind/around one eye, in bouts; watery eye, blocked nose on that side.",
-  "Sinus": "Sinus — pressure in the face/behind the eyes/forehead, worse when bending forward; typically with a cold or sinusitis.",
-  "Cervicogenic": "Cervicogenic — originates in the neck; pain rises from the nape up into the head, worse with neck movement.",
-  "Hormonal": "Hormonal — linked to the cycle (before/during period), ovulation, or contraception.",
-  "Dehydration": "Dehydration — dull, whole-head pain from low fluid intake, worse with movement.",
-  "Hangover": "Hangover — throbbing pain with nausea after drinking alcohol.",
+  Tension:
+    "Tension headache — dull, pressing pain on both sides, like a band around the head. Often from stress, fatigue, or poor posture.",
+  Migraine:
+    "Migraine — throbbing pain (often one-sided), sensitivity to light/sound, nausea. May include aura (flashes, tingling).",
+  Cluster: "Cluster — extremely severe pain behind/around one eye, in bouts; watery eye, blocked nose on that side.",
+  Sinus:
+    "Sinus — pressure in the face/behind the eyes/forehead, worse when bending forward; typically with a cold or sinusitis.",
+  Cervicogenic:
+    "Cervicogenic — originates in the neck; pain rises from the nape up into the head, worse with neck movement.",
+  Hormonal: "Hormonal — linked to the cycle (before/during period), ovulation, or contraception.",
+  Dehydration: "Dehydration — dull, whole-head pain from low fluid intake, worse with movement.",
+  Hangover: "Hangover — throbbing pain with nausea after drinking alcohol.",
   "Eye strain": "Eye strain — after long screen time; pressure behind the eyes, blurred vision.",
   "Caffeine withdrawal": "Caffeine withdrawal — dull pain with fatigue after skipping coffee.",
   "Ice-pick": "“Ice-pick” — brief, sharp stabbing jabs of pain lasting seconds.",
-  "Thunderclap": "“Thunderclap” — sudden, extremely severe pain peaking within 1 minute. WARNING: seek medical help, can be serious.",
+  Thunderclap:
+    "“Thunderclap” — sudden, extremely severe pain peaking within 1 minute. WARNING: seek medical help, can be serious.",
 };
-
 
 export const SEX_TYPES_DEFAULT: { value: SexKind; label: string }[] = [
   { value: "sex", label: "Sex" },
@@ -603,42 +924,90 @@ export function isIntercourseKind(kind: unknown): boolean {
 }
 
 export const DISCHARGE_OPTS: { value: string; label: string; color: string }[] = [
-  { value: "clear",  label: "Clear / egg-white", color: "#dbeafe" },
-  { value: "white",  label: "White / creamy",    color: "#f5f5f4" },
-  { value: "yellow", label: "Yellow",            color: "#fde68a" },
-  { value: "brown",  label: "Brown / spotting",  color: "#a16207" },
-  { value: "other",  label: "Other",             color: "#c084fc" },
+  { value: "clear", label: "Clear / egg-white", color: "#dbeafe" },
+  { value: "white", label: "White / creamy", color: "#f5f5f4" },
+  { value: "yellow", label: "Yellow", color: "#fde68a" },
+  { value: "brown", label: "Brown / spotting", color: "#a16207" },
+  { value: "other", label: "Other", color: "#c084fc" },
 ];
 
 export const BRISTOL: { n: number; label: string; sub: string; color: string; shape: string }[] = [
-  { n: 1, label: "Type 1 — Constipation",  sub: "Separate hard lumps",                    color: "#7c3aed", shape: "lumps" },
-  { n: 2, label: "Type 2 — Constipation",  sub: "Sausage-shaped but firm and lumpy",      color: "#2563eb", shape: "lumpy" },
-  { n: 3, label: "Type 3 — Normal",        sub: "Thicker but soft, with cracks",          color: "#16a34a", shape: "cracked" },
-  { n: 4, label: "Type 4 — Normal",        sub: "Smooth, soft, uniform",                  color: "#eab308", shape: "smooth" },
-  { n: 5, label: "Type 5 — Lacks fiber",   sub: "Soft blobs with clear-cut edges",        color: "#f97316", shape: "blobs" },
-  { n: 6, label: "Type 6 — Diarrhea",      sub: "Fluffy, mushy, ragged edges",            color: "#ec4899", shape: "mushy" },
-  { n: 7, label: "Type 7 — Diarrhea",      sub: "Watery, no solid pieces",                color: "#dc2626", shape: "liquid" },
+  {
+    n: 0,
+    label: "Type 0 — Mystery",
+    sub: "Bowel movement happened, but the type is unclear",
+    color: "#64748b",
+    shape: "mystery",
+  },
+  { n: 1, label: "Type 1 — Constipation", sub: "Separate hard lumps", color: "#7c3aed", shape: "lumps" },
+  { n: 2, label: "Type 2 — Constipation", sub: "Sausage-shaped but firm and lumpy", color: "#2563eb", shape: "lumpy" },
+  { n: 3, label: "Type 3 — Normal", sub: "Thicker but soft, with cracks", color: "#16a34a", shape: "cracked" },
+  { n: 4, label: "Type 4 — Normal", sub: "Smooth, soft, uniform", color: "#eab308", shape: "smooth" },
+  { n: 5, label: "Type 5 — Lacks fiber", sub: "Soft blobs with clear-cut edges", color: "#f97316", shape: "blobs" },
+  { n: 6, label: "Type 6 — Diarrhea", sub: "Fluffy, mushy, ragged edges", color: "#ec4899", shape: "mushy" },
+  { n: 7, label: "Type 7 — Diarrhea", sub: "Watery, no solid pieces", color: "#dc2626", shape: "liquid" },
 ];
 
-export const BOWEL_FEELINGS_DEFAULT = ["Relief","Normal","Neutral","Painful","Cramping","Urgent","Gassy","Incomplete"];
-export const BOWEL_SYMPTOMS_DEFAULT = ["Bloating","Cramps","Straining","Blood","Mucus","Burning","Nausea","Urgency"];
+export const BOWEL_FEELINGS_DEFAULT = [
+  "Relief",
+  "Normal",
+  "Neutral",
+  "Painful",
+  "Cramping",
+  "Urgent",
+  "Gassy",
+  "Incomplete",
+];
+export const BOWEL_SYMPTOMS_DEFAULT = [
+  "Bloating",
+  "Cramps",
+  "Straining",
+  "Blood",
+  "Mucus",
+  "Burning",
+  "Nausea",
+  "Urgency",
+];
 
-export const EVENT_COLORS = ["#22c55e","#3b82f6","#f97316","#eab308","#ec4899","#a855f7","#06b6d4","#ef4444"];
+export const EVENT_COLORS = ["#22c55e", "#3b82f6", "#f97316", "#eab308", "#ec4899", "#a855f7", "#06b6d4", "#ef4444"];
 
 export const BODY_BATTERY: { n: number; label: string; color: string; emoji: string }[] = [
-  { n: 1, label: "Drained",      color: "#ef4444", emoji: "😴" },
-  { n: 2, label: "Low",          color: "#f97316", emoji: "🙁" },
-  { n: 3, label: "Ok",           color: "#eab308", emoji: "😐" },
-  { n: 4, label: "Good",         color: "#22c55e", emoji: "🙂" },
-  { n: 5, label: "Fully charged",color: "#16a34a", emoji: "⚡" },
+  { n: 1, label: "Drained", color: "#ef4444", emoji: "😴" },
+  { n: 2, label: "Low", color: "#f97316", emoji: "🙁" },
+  { n: 3, label: "Ok", color: "#eab308", emoji: "😐" },
+  { n: 4, label: "Good", color: "#22c55e", emoji: "🙂" },
+  { n: 5, label: "Fully charged", color: "#16a34a", emoji: "⚡" },
 ];
 
 export const SLEEP_QUALITY = [
-  "😩 Awful","😴 Terrible","🥱 Restless","🙁 Poor","😐 Ok","🌙 Broken sleep","😪 Woke up a lot",
-  "🙂 Good","😌 Refreshed","😀 Great","🤩 Perfect","💤 Slept in","⏰ Too short","🛌 Too long",
-  "🥴 Groggy","😵‍💫 Foggy head","😰 Nightmares","💭 Vivid dreams","🌡️ Sweaty night","🥶 Cold night",
-  "🤕 Woke with headache","🦵 Cramps at night","🚽 Up to the toilet","📱 Fell asleep late",
-  "☀️ Woke up early","🐢 Hard to get up","🧘 Deep & calm","😻 Best sleep ever",
+  "😩 Awful",
+  "😴 Terrible",
+  "🥱 Restless",
+  "🙁 Poor",
+  "😐 Ok",
+  "🌙 Broken sleep",
+  "😪 Woke up a lot",
+  "🙂 Good",
+  "😌 Refreshed",
+  "😀 Great",
+  "🤩 Perfect",
+  "💤 Slept in",
+  "⏰ Too short",
+  "🛌 Too long",
+  "🥴 Groggy",
+  "😵‍💫 Foggy head",
+  "😰 Nightmares",
+  "💭 Vivid dreams",
+  "🌡️ Sweaty night",
+  "🥶 Cold night",
+  "🤕 Woke with headache",
+  "🦵 Cramps at night",
+  "🚽 Up to the toilet",
+  "📱 Fell asleep late",
+  "☀️ Woke up early",
+  "🐢 Hard to get up",
+  "🧘 Deep & calm",
+  "😻 Best sleep ever",
 ];
 
 /* ------------------- Pregnancy ------------------- */
@@ -651,7 +1020,26 @@ export function pregnancyInfo(since?: string): { week: number; trimester: 1 | 2 
   return { week, trimester };
 }
 
-export const SEX_FEELINGS_DEFAULT = ["😊 Great","🥰 Loved","🤩 Amazing","😌 Relaxed","🙂 Good","😐 Meh","😞 Down","😢 Sad","😤 Frustrated","🤕 Sore","😴 Sleepy","💦 Sweaty","🥵 Hot","🥶 Cold","😵‍💫 Dizzy","🤢 Nauseous","💪 Energized","🫠 Drained"];
+export const SEX_FEELINGS_DEFAULT = [
+  "😊 Great",
+  "🥰 Loved",
+  "🤩 Amazing",
+  "😌 Relaxed",
+  "🙂 Good",
+  "😐 Meh",
+  "😞 Down",
+  "😢 Sad",
+  "😤 Frustrated",
+  "🤕 Sore",
+  "😴 Sleepy",
+  "💦 Sweaty",
+  "🥵 Hot",
+  "🥶 Cold",
+  "😵‍💫 Dizzy",
+  "🤢 Nauseous",
+  "💪 Energized",
+  "🫠 Drained",
+];
 
 export const PCOS_SYMPTOMS = [
   "Acne",
@@ -704,26 +1092,21 @@ export const URINARY_DEFAULT = [
   "Blood in urine",
 ];
 
-export const ALLERGENS_DEFAULT = [
-  "Nuts",
-  "Casein / dairy",
-  "Gluten",
-  "Eggs",
-  "Fish",
-  "Soy",
-  "Shellfish",
-  "Peanuts",
-];
+export const ALLERGENS_DEFAULT = ["Nuts", "Casein / dairy", "Gluten", "Eggs", "Fish", "Soy", "Shellfish", "Peanuts"];
 
 /* ------------------- Pressure (pain quality expansion) ------------------- */
-export const PRESSURE_TYPES = [
-  "Pelvic","Abdominal","Chest","Head / sinus","Vaginal","Rectal","Lower back",
-];
+export const PRESSURE_TYPES = ["Pelvic", "Abdominal", "Chest", "Head / sinus", "Vaginal", "Rectal", "Lower back"];
 
 /* ------------------- Nausea ------------------- */
 export const NAUSEA_TYPES = [
-  "Mild nausea","Moderate nausea","Severe nausea","Constant nausea",
-  "Intermittent nausea","Morning nausea","Post-meal nausea","Motion-induced nausea",
+  "Mild nausea",
+  "Moderate nausea",
+  "Severe nausea",
+  "Constant nausea",
+  "Intermittent nausea",
+  "Morning nausea",
+  "Post-meal nausea",
+  "Motion-induced nausea",
 ];
 export const NAUSEA_TYPE_DESC: Record<string, string> = {
   "Mild nausea": "Slight queasiness you can easily ignore.",
@@ -748,9 +1131,18 @@ export const NAUSEA_SEVERITY_DESC: Record<number, string> = {
   9: "Very strong — almost unbearable, vomiting likely or already started",
   10: "Extreme — constant vomiting or the worst nausea imaginable",
 };
-export const NAUSEA_TRIGGERS = ["After food","Car ride","Smell","Medication","Hormonal","Stress","Hunger","Unknown"];
-export const NAUSEA_SYMPTOMS = ["Dizziness","Cold sweat","Bloating","Headache","Weakness","Vomiting"];
-export const NAUSEA_HELPED = ["Lying down","Ginger tea","Fresh air","Medication","Food","Nothing helped"];
+export const NAUSEA_TRIGGERS = [
+  "After food",
+  "Car ride",
+  "Smell",
+  "Medication",
+  "Hormonal",
+  "Stress",
+  "Hunger",
+  "Unknown",
+];
+export const NAUSEA_SYMPTOMS = ["Dizziness", "Cold sweat", "Bloating", "Headache", "Weakness", "Vomiting"];
+export const NAUSEA_HELPED = ["Lying down", "Ginger tea", "Fresh air", "Medication", "Food", "Nothing helped"];
 
 /* ------------------- Deletion tombstones ------------------- */
 export function markDeleted(update: (u: (d: BixboData) => BixboData) => void, ...ids: string[]) {
