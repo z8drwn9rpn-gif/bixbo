@@ -4,6 +4,7 @@ import { Home, StickyNote, Activity, Users, Plus } from "lucide-react";
 const items = [
   { to: "/", label: "Home", icon: Home },
   { to: "/insights", label: "Insights", icon: Activity },
+  { to: "/patterns", label: "Patterns", icon: Activity },
   { to: "/couple", label: "Couple", icon: Users },
   { to: "/notes", label: "Notes", icon: StickyNote },
 ] as const;
@@ -21,9 +22,7 @@ export function BottomNav() {
   };
 
   return (
-    <nav
-      className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[560px] border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_16px_-8px_rgba(0,0,0,0.15)] landscape:max-w-none"
-    >
+    <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[560px] border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_16px_-8px_rgba(0,0,0,0.15)] landscape:max-w-none">
       <ul className="flex items-stretch justify-around px-2 pt-2 pb-2">
         {items.map(({ to, label, icon: Icon }) => {
           const active = to === "/" ? pathname === "/" : pathname.startsWith(to);
