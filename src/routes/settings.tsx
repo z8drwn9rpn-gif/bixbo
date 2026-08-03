@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Bell, Download, Upload, Users, Type, LogOut, Cloud, Copy, RefreshCw, Sliders, RotateCcw, Pill, Plus, X, ListPlus } from "lucide-react";
+import { ArrowLeft, Bell, Download, Upload, Users, Type, LogOut, Cloud, Copy, RefreshCw, Sliders, RotateCcw, Pill, Plus, X, ListPlus, Sun, Moon, MonitorSmartphone } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { useBixbo, EMPTY, todayKey, replaceBixbo, getBixbo, type BixboData, type PartnerData, type Gender } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
@@ -72,6 +72,9 @@ function SettingsPage() {
     update((d) => ({ ...d, settings: { ...d.settings, gender: g } }));
     if (session) updateProfile({ gender: g });
   };
+
+  const setTheme = (t: "light" | "dark" | "system") =>
+    update((d) => ({ ...d, settings: { ...d.settings, theme: t } }));
 
   const toggleNotif = (on: boolean) => {
     update((d) => ({ ...d, settings: { ...d.settings, notifications: on } }));
@@ -215,7 +218,26 @@ function SettingsPage() {
           )}
         </section>
 
-        {/* ---- Gender / mode ---- */}
+        {/* ---- Appearance ---- */}
+        <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
+          <p className="text-sm font-medium">Appearance</p>
+          <p className="mt-1 text-xs text-muted-foreground">Choose how BIXBO looks on this device.</p>
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            {([
+              { v: "light", label: "Light", Icon: Sun },
+              { v: "dark", label: "Dark", Icon: Moon },
+              { v: "system", label: "System", Icon: MonitorSmartphone },
+            ] as { v: "light" | "dark" | "system"; label: string; Icon: typeof Sun }[]).map(({ v, label, Icon }) => (
+              <button key={v} onClick={() => setTheme(v)}
+                className={`flex flex-col items-center gap-1 rounded-xl border p-3 text-xs font-medium ${(view.settings.theme ?? "system") === v ? "border-primary bg-primary text-primary-foreground" : "border-border bg-tint"}`}>
+                <Icon className="h-4 w-4" />
+                {label}
+              </button>
+            ))}
+          </div>
+        </section>
+
+                {/* ---- Gender / mode ---- */}
         <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
           <p className="text-sm font-medium">Mode</p>
           <p className="mt-1 text-xs text-muted-foreground">Male mode hides Blueberry cycle tracking everywhere.</p>
