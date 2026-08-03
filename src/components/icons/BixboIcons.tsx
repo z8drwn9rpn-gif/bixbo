@@ -37,39 +37,50 @@ function Shadow({ cy = 56, rx = 17, ry = 4 }: { cy?: number; rx?: number; ry?: n
 
 /* ---------------------------------------------------------------- BRAND */
 
-/** BIXBO logo — soft 3D chili. Brand only, never a symptom icon. */
+/** BIXBO logo — soft 3D glossy chili pepper. Brand only, never a symptom icon. */
 export function ChiliIcon(p: IconProps) {
-  const a = useSvgId(), b = useSvgId(), c = useSvgId();
+  const a = useSvgId(), b = useSvgId(), c = useSvgId(), d = useSvgId();
   const mini = (p.size ?? 24) <= 16;
   if (mini) {
     return (
       <Svg {...p}>
-        <path d="M41 17c6 3 10 10 10 18 0 13-10 21-22 21-9 0-16-4-19-9-1-2 1-4 3-3 4 2 8 2 12 0 7-3 11-9 12-17 .4-4 1.4-8 4-10z" fill="#e0342c" />
-        <path d="M38 18c-1-5 1-10 5-12 1.6-.8 3 1 2.2 2.5-1.3 2.4-1.4 4.6-.4 6.6.9 1.8-.6 3.6-2.4 3.9l-2 .3c-1.2.2-2.2-.2-2.4-1.3z" fill="#3f8f36" />
+        <path d="M40 16c7 2 12 9 12 18 0 15-11 24-24 24-10 0-18-4.6-21.5-11-1.2-2.3 1.3-4.6 3.5-3.3 4.6 2.7 9.6 2.9 14 .6 8-4.2 12-11.4 11.8-20.4-.1-3.6 1-6.9 4.2-7.9z" fill="#e0342c" />
+        <path d="M37 17c-1.4-5 .8-9.6 4.6-11.6 1.5-.8 3 .9 2.4 2.5-1 2.6-.8 4.8.4 6.7 1 1.6-.3 3.6-2.2 3.7l-2.6.2c-1.2.1-2.3-.4-2.6-1.5z" fill="#3f8f36" />
       </Svg>
     );
   }
   return (
     <Svg {...p}>
       <defs>
-        <linearGradient id={a} x1="14" y1="20" x2="52" y2="56" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#ff6b5e" /><stop offset="0.55" stopColor="#e8342c" /><stop offset="1" stopColor="#a81616" />
+        <linearGradient id={a} x1="10" y1="18" x2="50" y2="58" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#ff8f6a" /><stop offset="0.35" stopColor="#f2402c" /><stop offset="0.75" stopColor="#c81f1f" /><stop offset="1" stopColor="#8f1212" />
         </linearGradient>
-        <linearGradient id={b} x1="28" y1="6" x2="44" y2="22" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#8fd66a" /><stop offset="1" stopColor="#3f8f36" />
+        <linearGradient id={b} x1="30" y1="4" x2="46" y2="20" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#a3e881" /><stop offset="1" stopColor="#3f8f36" />
         </linearGradient>
-        <linearGradient id={c} x1="20" y1="26" x2="34" y2="46" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#fff" stopOpacity="0.85" /><stop offset="1" stopColor="#fff" stopOpacity="0" />
+        <linearGradient id={c} x1="16" y1="20" x2="30" y2="46" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#fff" stopOpacity="0.95" /><stop offset="1" stopColor="#fff" stopOpacity="0" />
         </linearGradient>
+        <radialGradient id={d} cx="0.3" cy="0.22" r="0.5">
+          <stop stopColor="#fff" stopOpacity="0.55" /><stop offset="1" stopColor="#fff" stopOpacity="0" />
+        </radialGradient>
       </defs>
-      <Shadow />
+      <Shadow cy={57} rx={16} ry={3.6} />
+      {/* curved glossy chili body */}
       <path
-        d="M41 17c6 3 10 10 10 18 0 13-10 21-22 21-9 0-16-4-19-9-1-2 1-4 3-3 4 2 8 2 12 0 7-3 11-9 12-17 .4-4 1.4-8 4-10z"
+        d="M39.5 15c8 1.6 14.5 9 14.5 19.4 0 16-13 26.6-27 26.6-11 0-20-5.4-24-13-1.4-2.6 1.6-5.2 4-3.6 5.4 3.6 11.6 3.9 17 1.1 9.4-4.8 14.4-13.6 14.7-24.6.1-3 .5-5.9 .8-3.9z"
         fill={`url(#${a})`}
       />
-      <path d="M38 18c-1-5 1-10 5-12 1.6-.8 3 1 2.2 2.5-1.3 2.4-1.4 4.6-.4 6.6.9 1.8-.6 3.6-2.4 3.9l-2 .3c-1.2.2-2.2-.2-2.4-1.3z" fill={`url(#${b})`} />
-      <path d="M43 6.4c2.6-2.3 6-3 8.6-1.7 1.3.7.9 2.6-.6 2.9-2.4.4-4.2 1.6-5.4 3.4-.9 1.4-3 .8-3.1-.9l-.1-2c0-.7.2-1.3.6-1.7z" fill="#5aa842" />
-      <path d="M26 27c3 4 2 12-4 17-2 1.6-4-.6-3-2.6 2.4-4.6 3.4-9 3-13.4-.2-2 2.8-2.6 4-1z" fill={`url(#${c})`} opacity="0.7" />
+      <path
+        d="M39.5 15c8 1.6 14.5 9 14.5 19.4 0 16-13 26.6-27 26.6-11 0-20-5.4-24-13-1.4-2.6 1.6-5.2 4-3.6 5.4 3.6 11.6 3.9 17 1.1 9.4-4.8 14.4-13.6 14.7-24.6.1-3 .5-5.9 .8-3.9z"
+        fill={`url(#${d})`}
+      />
+      {/* green curved stem + calyx */}
+      <path d="M38 16c-1.6-5.6.4-11.4 5.2-14.2 1.8-1 3.6 1 2.6 3-1.6 3.1-1.7 5.9-.4 8.5 1.1 2.1-.6 4.4-2.9 4.7l-2.6.4c-1.4.2-2.6-.7-2.9-2.4z" fill={`url(#${b})`} />
+      <path d="M35.6 5.6c2.3-2.6 5.4-4 8.4-3.6 1.6.2 2 2.3.6 3.1-2.6 1.5-4.3 3.4-5.1 5.8-.6 1.9-3.2 2-3.9.2l-.9-2.3c-.4-1.1-.1-2.3.9-3.2z" fill="#5aa842" />
+      {/* soft highlight streak */}
+      <path d="M22 24c4 5 3 14-4.5 20-2.4 2-5-.6-3.6-3.1 3.3-5.9 4.5-11.4 3.6-17.1-.4-2.6 3.1-2.7 4.5-.8z" fill={`url(#${c})`} opacity="0.85" />
+      <ellipse cx="18.5" cy="24" rx="3.4" ry="2" transform="rotate(-35 18.5 24)" fill="#fff" opacity="0.7" />
     </Svg>
   );
 }

@@ -9,7 +9,7 @@ import { MonthCalendar, monthLabel } from "@/components/MonthCalendar";
 import { LogSheet } from "@/components/LogSheet";
 import { QuickTags } from "@/components/QuickTags";
 import {
-  useBixbo, EMPTY, toKey, fromKey, todayKey, nowHHMM, PAIN_DESCRIPTIONS, painColor, BRISTOL, nextPredictedPeriod, pregnancyInfo, daysBetween, asArr,
+  useBixbo, EMPTY, toKey, fromKey, todayKey, PAIN_DESCRIPTIONS, painColor, BRISTOL, nextPredictedPeriod, pregnancyInfo, daysBetween, asArr,
   type BixboData, type PeriodLevel, type BowelEntry, type SexEntry,
 } from "@/lib/storage";
 
