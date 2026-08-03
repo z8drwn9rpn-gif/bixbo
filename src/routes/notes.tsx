@@ -169,10 +169,17 @@ function NoteEditor({
 
   // Initialize contentEditable once
   useEffect(() => {
-    if (editorRef.current && editorRef.current.innerHTML !== note.content) {
-      editorRef.current.innerHTML = note.content || "";
+    if (!editorRef.current) return;
+
+    const migratedContent = (note.content || "")
+      .replaceAll("#fef3c7", "#dfe6b8")
+      .replaceAll("rgb(254, 243, 199)", "rgb(223, 230, 184)");
+
+    if (editorRef.current.innerHTML !== migratedContent) {
+      editorRef.current.innerHTML = migratedContent;
+      contentRef.current = migratedContent;
     }
-  }, [note.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [note.id, note.content]);
 
   // Autosave: debounce so keystrokes don't hit storage each time, but nothing is lost.
   useEffect(() => {
