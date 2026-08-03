@@ -618,6 +618,21 @@ function QuickTagBuilder({
             : undefined,
         kind: cat === "workout" ? kind : undefined,
         minutes: cat === "workout" ? minutes : undefined,
+        bristol: cat === "bowel" ? bristol : undefined,
+
+        thermoKind: cat === "thermo" ? thermoKind : undefined,
+
+        thermoMinutes: cat === "thermo" ? thermoMinutes : undefined,
+
+        headacheType: cat === "headache" ? headacheType : undefined,
+
+        headacheIntensity: cat === "headache" ? headacheIntensity : undefined,
+
+        hotFlashesIntensity: cat === "hotFlashes" ? hotFlashesIntensity : undefined,
+
+        sleepHours: cat === "sleep" ? sleepHours : undefined,
+
+        sleepQuality: cat === "sleep" ? sleepQuality : undefined,
       },
     };
     update((d) => ({
