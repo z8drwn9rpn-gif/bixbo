@@ -1472,42 +1472,48 @@ function HfBars({
   anchor: Date;
 }) {
   const [active, setActive] = useState<number | null>(null);
+
   useDismissTapTooltip(() => setActive(null));
-  const monthLabels = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
+
   return (
-    <div
-      className="relative mt-4 grid items-end gap-1"
-      style={{ gridTemplateColumns: `repeat(${bars.length}, minmax(0, 1fr))`, height: 60 }}
-    >
-      {bars.map((n, i) =>
-        n != null ? (
-          <button
-            key={i}
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setActive(active === i ? null : i);
-            }}
-            className="w-full rounded-t"
-            style={{
-              height: `${Math.max(10, (n / 5) * 100)}%`,
-              background: `hsl(${130 - ((n - 1) * 130) / 4} 70% 50%)`,
-            }}
-          />
-        ) : (
-          <div key={i} className="h-1 w-full self-end rounded bg-tint" />
-        ),
-      )}
-      {active != null && bars[active] != null && (
-        <TapTooltip
-          leftPct={((active + 0.5) / bars.length) * 100}
-          text={
-            period === "Y"
+    <div>
+      <div
+        className="grid items-end gap-1"
+        style={{
+          gridTemplateColumns: `repeat(${bars.length}, minmax(0, 1fr))`,
+          height: 60,
+        }}
+      >
+        {bars.map((n, i) =>
+          n != null ? (
+            <button
+              key={i}
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setActive(active === i ? null : i);
+              }}
+              className="w-full rounded-t"
+              style={{
+                height: `${Math.max(10, (n / 5) * 100)}%`,
+                background: `hsl(${130 - ((n - 1) * 130) / 4} 70% 50%)`,
+              }}
+            />
+          ) : (
+            <div key={i} className="h-1 w-full self-end rounded bg-tint" />
+          ),
+        )}
+      </div>
+
+      <div className="mt-2 min-h-8">
+        {active != null && bars[active] != null && (
+          <div className="mx-auto max-w-full rounded-xl bg-foreground px-3 py-2 text-center text-[11px] font-medium text-background">
+            {period === "Y"
               ? `${fmtTapMonth(active, anchor.getFullYear())} · Hot flash avg ${bars[active]!.toFixed(1)}/5`
-              : `${fmtTapDay(days[active])} · Hot flash ${bars[active]!.toFixed(1)}/5`
-          }
-        />
-      )}
+              : `${fmtTapDay(days[active])} · Hot flash ${bars[active]!.toFixed(1)}/5`}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
