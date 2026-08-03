@@ -219,6 +219,69 @@ function customToTag(c: CustomQuickTag, data: BixboData): Tag {
           ...l,
           workout: mk(l.workout, { id: uid(), time: t(), kind: p.kind ?? "🚶🏼‍♀️ Walk", minutes: p.minutes ?? 30 }),
         };
+      case "bowel":
+        return {
+          ...l,
+          bowel: mk(l.bowel, {
+            id: uid(),
+            time: t(),
+            bristol: p.bristol ?? 4,
+            feelings: [],
+            symptoms: [],
+            urinary: [],
+          }),
+        };
+
+      case "thermo":
+        return {
+          ...l,
+          heat: mk(l.heat, {
+            id: uid(),
+            kind: p.thermoKind ?? "heat",
+            start: t(),
+            minutes: p.thermoMinutes ?? 20,
+          }),
+        };
+
+      case "headache":
+        return {
+          ...l,
+          pain: mk(l.pain, {
+            id: uid(),
+            time: t(),
+            score: p.headacheIntensity ?? 3,
+            parts: ["Head"],
+            quality: [],
+            symptoms: [],
+            note: "",
+            headache: true,
+            headacheTypes: p.headacheType ? [p.headacheType] : [],
+            headacheIntensity: p.headacheIntensity ?? 3,
+          }),
+        };
+
+      case "hotFlashes":
+        return {
+          ...l,
+          pain: mk(l.pain, {
+            id: uid(),
+            time: t(),
+            score: 0,
+            parts: [],
+            quality: [],
+            symptoms: [],
+            note: "",
+            hotFlashesOn: true,
+            hotFlashes: p.hotFlashesIntensity ?? 3,
+          }),
+        };
+
+      case "sleep":
+        return {
+          ...l,
+          sleepHours: p.sleepHours ?? 8,
+          sleepQuality: p.sleepQuality ?? "🙂 Good",
+        };
       default:
         return l;
     }
