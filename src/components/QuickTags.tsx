@@ -675,25 +675,22 @@ function QuickTagBuilder({
                       </label>
                     </div>
 
-                    {medMode === "scheduled" && (
-                      <select
-                        className={inputCls}
-                        value={scheduleTime}
-                        onChange={(e) => setScheduleTime(e.target.value)}
-                      >
-                        {(data.meds.find((m) => m.id === medId)?.times ?? []).map((time) => (
-                          <option key={time} value={time}>
-                            {time}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                  </>
-                ) : (
-                  <p className="text-xs text-muted-foreground">No medications saved yet.</p>
-                )}
-              </div>
-            )}
+                   {medMode === "scheduled" && (
+  <>
+    <p className="text-xs">Scheduled time</p>
+    <select
+      className={inputCls}
+      value={scheduleTime}
+      onChange={(e) => setScheduleTime(e.target.value)}
+    >
+      {(data.meds.find((m) => m.id === medId)?.times ?? []).map((time) => (
+        <option key={time} value={time}>
+          {time}
+        </option>
+      ))}
+    </select>
+  </>
+)}
             {cat === "workout" && (
               <div className="space-y-2">
                 <input
