@@ -1558,7 +1558,7 @@ function BowelForm({ date, data, update, onDone, initialEntry }:
   { date: string; data: BixboData; update: UpdateFn; onDone: () => void; initialEntry?: BowelEntry }) {
   const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
   const [bristol, setBristol] = useState<number>(initialEntry?.bristol ?? 4);
-  const [feelings, setFeelings] = useState<string[]>(initialEntry?.feelings ?? []);
+  const [feelings, setFeelings] = useState<string[]>((initialEntry?.feelings ?? []).map(stripEmoji));
   const [symptoms, setSymptoms] = useState<string[]>(initialEntry?.symptoms ?? []);
   const [urinary, setUrinary] = useState<string[]>(initialEntry?.urinary ?? []);
   const [note, setNote] = useState(initialEntry?.note ?? "");
@@ -1778,7 +1778,7 @@ function MedsForm({ date, data, update, onDone }:
 /* ------------------- WORKOUT ------------------- */
 function WorkoutForm({ date, data, update, onDone, initialEntry }:
   { date: string; data: BixboData; update: UpdateFn; onDone: () => void; initialEntry?: WorkoutEntry }) {
-  const [kind, setKind] = useState<string>(initialEntry?.kind ?? WORKOUT_KINDS_DEFAULT[0]);
+  const [kind, setKind] = useState<string>(initialEntry?.kind ? stripEmoji(initialEntry.kind) : WORKOUT_KINDS_DEFAULT[0]);
   const [minutes, setMinutes] = useState<number>(initialEntry?.minutes ?? 30);
   const [weight, setWeight] = useState<string>(initialEntry?.weightKg != null ? String(initialEntry.weightKg) : "");
   const [distance, setDistance] = useState<string>(initialEntry?.distanceKm != null ? String(initialEntry.distanceKm) : "");
@@ -1787,7 +1787,7 @@ function WorkoutForm({ date, data, update, onDone, initialEntry }:
   const [rpe, setRpe] = useState<number | undefined>(initialEntry?.rpe);
   const [magnesium, setMagnesium] = useState<boolean>(initialEntry?.magnesiumBefore ?? false);
   const [trigger, setTrigger] = useState<WorkoutEntry["triggeredSymptom"]>(initialEntry?.triggeredSymptom);
-  const [feeling, setFeeling] = useState<string[]>(asArr(initialEntry?.feeling));
+  const [feeling, setFeeling] = useState<string[]>(asArr(initialEntry?.feeling).map(stripEmoji));
   const [note, setNote] = useState<string>(initialEntry?.note ?? "");
   const addKind = (v: string) => update((d) => ({ ...d, custom: { ...d.custom, workoutKinds: [...d.custom.workoutKinds, v] } }));
   const rmKind = (v: string) => { update((d) => ({ ...d, custom: { ...d.custom, workoutKinds: d.custom.workoutKinds.filter((x) => x !== v) } })); if (kind === v) setKind(WORKOUT_KINDS_DEFAULT[0]); };
@@ -1916,7 +1916,7 @@ function WorkoutForm({ date, data, update, onDone, initialEntry }:
       </Field>
       <Field label="How you feel">
         <div className="mt-2 flex flex-wrap gap-2">
-          {["😊 Great","🙂 Good","😐 Ok","😩 Tired","🤕 Sore"].map((f) =>
+          {["Great","Good","Ok","Tired","Sore"].map((f) =>
             <Chip key={f} active={feeling.includes(f)} onClick={() => setFeeling((a) => toggleIn(a, f))}>{f}</Chip>)}
         </div>
       </Field>

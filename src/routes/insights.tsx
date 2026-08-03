@@ -130,7 +130,7 @@ function InsightsPage() {
 
   // Bowel by type
   const bowelCounts = new Array(8).fill(0) as number[];
-  days.forEach((k) => view.dayLogs[k]?.bowel?.forEach((b) => { bowelCounts[b.bristol] = (bowelCounts[b.bristol] ?? 0) + 1; }));
+  days.forEach((k) => view.dayLogs[k]?.bowel?.forEach((b) => { if (b.bristol != null) bowelCounts[b.bristol] = (bowelCounts[b.bristol] ?? 0) + 1; }));
 
   // Weight uses an Apple-style rolling range so previous logged days are visible in Month view.
   const weightDays = useMemo(() => {
