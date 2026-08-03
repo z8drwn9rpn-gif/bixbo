@@ -222,7 +222,7 @@ function SettingsPage() {
           <div className="mt-3 grid grid-cols-2 gap-2">
             {(["female","male"] as Gender[]).map((g) => (
               <button key={g} onClick={() => setGender(g)}
-                className={`rounded-xl border p-3 text-sm font-medium capitalize ${(view.settings.gender ?? "female") === g ? "border-primary bg-primary/10 text-primary" : "border-border bg-tint"}`}>
+                className={`rounded-xl border p-3 text-sm font-medium capitalize ${(view.settings.gender ?? "female") === g ? "border-primary bg-primary/10 text-primary dark:bg-primary dark:text-primary-foreground" : "border-border bg-tint"}`}>
                 {g === "female" ? "👩 Female" : "👨 Male"}
               </button>
             ))}
@@ -234,7 +234,7 @@ function SettingsPage() {
           <div className="mt-3 grid grid-cols-4 gap-2">
             {TEXT_SIZES.map((s) => (
               <button key={s.v} onClick={() => setSize(s.v)}
-                className={`rounded-xl border p-2 text-center transition ${view.settings.textSize === s.v ? "border-primary bg-primary/10 text-primary" : "border-border bg-tint"}`}>
+                className={`rounded-xl border p-2 text-center transition ${view.settings.textSize === s.v ? "border-primary bg-primary/10 text-primary dark:bg-primary dark:text-primary-foreground" : "border-border bg-tint"}`}>
                 <span style={{ fontSize: `${s.px}px` }}>Aa</span>
                 <span className="mt-1 block text-[10px] text-muted-foreground">{s.label}</span>
               </button>
