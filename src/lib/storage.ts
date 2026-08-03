@@ -176,10 +176,18 @@ export interface CustomLists {
   sexFeelings: string[];
   urinary: string[];
   allergens: string[];
+  pressureTypes: string[];
+  nauseaTypes: string[];
+  nauseaTriggers: string[];
+  nauseaSymptoms: string[];
+  nauseaHelped: string[];
+  labTests: string[];
 }
 
 
-export type QuickTagCategory = "pain" | "tetany" | "panic" | "sex" | "food" | "meds" | "workout";
+export type QuickTagCategory =
+  | "pain" | "tetany" | "panic" | "sex" | "food" | "meds" | "workout"
+  | "period" | "bowel" | "thermo" | "mood" | "energy" | "histamine" | "sleep";
 export interface CustomQuickTag {
   id: string;
   emoji: string;
@@ -190,14 +198,22 @@ export interface CustomQuickTag {
     intensity?: number;    // tetany / panic
     what?: string;         // food
     medId?: string;        // meds
-    kind?: string;         // workout / sex
-    minutes?: number;      // workout
+    kind?: string;         // workout / sex / thermo / bowel / period level
+    minutes?: number;      // workout / thermo
+    bristol?: number;      // bowel
+    level?: PeriodLevel;   // period
+    /** meds: mark a scheduled dose taken vs. log an extra/PRN dose */
+    mode?: "scheduled" | "extra";
+    /** meds: `${medId}@${time}` identifying the scheduled slot */
+    scheduleKey?: string;
   };
 }
 
 export interface Settings {
   textSize: "sm" | "md" | "lg" | "xl";
   notifications: boolean;
+  /** Appearance preference; "system" follows the device. */
+  theme?: "light" | "dark" | "system";
   pairingCode?: string;
   partnerName?: string;
   logOrder?: string[];
@@ -214,7 +230,9 @@ export interface Settings {
   hiddenQuickTags?: string[];
 
   customQuickTags?: CustomQuickTag[];
-  scaleDescriptions?: Partial<Record<"pain" | "stress" | "tetany" | "panic" | "hotFlashes" | "headache", Record<number, string>>>;
+  scaleDescriptions?: Partial<Record<"pain" | "stress" | "tetany" | "panic" | "hotFlashes" | "headache" | "nausea" | "pressure", Record<number, string>>>;
+  /** Saved Trigger Comparison combos on the Patterns tab. */
+  savedTriggers?: { id: string; a: string; b: string }[];
 }
 
 export interface PartnerData {
@@ -226,6 +244,21 @@ export interface PartnerData {
   cycle?: CyclePrefs;
   gender?: Gender;
   importedAt: number;
+}
+
+/* ------------------- Lab results / documents / diagnoses ------------------- */
+export interface LabResult {
+  id: string; test: string; value: number; unit?: string;
+  refLow?: number; refHigh?: number; date: string; note?: string;
+}
+export interface DocEntry {
+  id: string; name: string; date: string; mime?: string;
+  /** data URL of the uploaded file (stored locally + synced) */
+  dataUrl?: string;
+  labId?: string;
+}
+export interface Diagnosis {
+  id: string; name: string; date?: string; doctor?: string; note?: string; docId?: string;
 }
 
 export interface BixboData {
@@ -244,6 +277,12 @@ export interface BixboData {
   custom: CustomLists;
   settings: Settings;
   partner?: PartnerData;
+  labs?: LabResult[];
+  docs?: DocEntry[];
+  diagnoses?: Diagnosis[];
+  /** Ids of entries the user deleted — used by cloud merge so a union merge
+   * doesn't resurrect them from another device. */
+  deletedIds?: string[];
 }
 
 export const DEFAULT_FOLDERS: NoteFolder[] = [
