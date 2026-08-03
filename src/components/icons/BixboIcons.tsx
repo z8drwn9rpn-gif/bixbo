@@ -169,15 +169,16 @@ export function FlameIcon(p: IconProps) {
 
 /* ---------------------------------------------------------------- BOWEL */
 
-/** Bowel — friendly soft 3D poop with small eyes. */
-export function PoopIcon(p: IconProps) {
+/** Bowel — friendly soft 3D poop with small eyes. `dots=false` renders the
+ * plain swirl used for calendar markers (no eyes). */
+function renderPoop(p: IconProps, dots: boolean) {
   const a = useSvgId();
   const mini = (p.size ?? 24) <= 16;
   if (mini) {
     return (
       <Svg {...p}>
         <path fill="#7a4a24" d="M32 8c5 0 8 3.4 8 7.4 0 1.6-.5 3-1.3 4.2h.8c5 0 8.5 3.4 8.5 7.6 0 2-.8 3.8-2.2 5.2 5 .6 8.4 4 8.4 8.2 0 2.2-1 4.2-2.6 5.6 2.6 1.2 4.4 3.6 4.4 6.4 0 4-3.6 7.4-8 7.4H16c-4.4 0-8-3.4-8-7.4 0-2.8 1.8-5.2 4.4-6.4A7.4 7.4 0 0 1 9.8 40.6c0-4.2 3.4-7.6 8.4-8.2A6.8 6.8 0 0 1 16 27.2c0-4.2 3.5-7.6 8.5-7.6h.8A7 7 0 0 1 24 15.4C24 11.4 27 8 32 8z" />
-        <g fill="#fff"><circle cx="25.5" cy="40" r="3" /><circle cx="39" cy="40" r="3" /></g>
+        {dots && <g fill="#fff"><circle cx="25.5" cy="40" r="3" /><circle cx="39" cy="40" r="3" /></g>}
       </Svg>
     );
   }
@@ -192,17 +193,24 @@ export function PoopIcon(p: IconProps) {
       <g fill={`url(#${a})`}>
         <path d="M32 8c5 0 8 3.4 8 7.4 0 1.6-.5 3-1.3 4.2h.8c5 0 8.5 3.4 8.5 7.6 0 2-.8 3.8-2.2 5.2 5 .6 8.4 4 8.4 8.2 0 2.2-1 4.2-2.6 5.6 2.6 1.2 4.4 3.6 4.4 6.4 0 4-3.6 7.4-8 7.4H16c-4.4 0-8-3.4-8-7.4 0-2.8 1.8-5.2 4.4-6.4A7.4 7.4 0 0 1 9.8 40.6c0-4.2 3.4-7.6 8.4-8.2A6.8 6.8 0 0 1 16 27.2c0-4.2 3.5-7.6 8.5-7.6h.8A7 7 0 0 1 24 15.4C24 11.4 27 8 32 8z" />
       </g>
-      <g fill="#fff">
-        <ellipse cx="25" cy="40" rx="4.2" ry="4.6" /><ellipse cx="39" cy="40" rx="4.2" ry="4.6" />
-      </g>
-      <g fill="#2c1a0d">
-        <ellipse cx="25.6" cy="40.6" rx="2.1" ry="2.4" /><ellipse cx="39.6" cy="40.6" rx="2.1" ry="2.4" />
-      </g>
-      <path d="M27 48c2.6 2.2 7.4 2.2 10 0" stroke="#3a2312" strokeWidth="2.4" strokeLinecap="round" fill="none" opacity="0.75" />
+      {dots && (
+        <>
+          <g fill="#fff">
+            <ellipse cx="25" cy="40" rx="4.2" ry="4.6" /><ellipse cx="39" cy="40" rx="4.2" ry="4.6" />
+          </g>
+          <g fill="#2c1a0d">
+            <ellipse cx="25.6" cy="40.6" rx="2.1" ry="2.4" /><ellipse cx="39.6" cy="40.6" rx="2.1" ry="2.4" />
+          </g>
+          <path d="M27 48c2.6 2.2 7.4 2.2 10 0" stroke="#3a2312" strokeWidth="2.4" strokeLinecap="round" fill="none" opacity="0.75" />
+        </>
+      )}
       <path d="M20 24c3-2 7-2.6 10-1.6" stroke="#fff" strokeOpacity="0.28" strokeWidth="2.6" strokeLinecap="round" fill="none" />
     </Svg>
   );
 }
+export function PoopIcon(p: IconProps) { return renderPoop(p, true); }
+/** Dot-free bowel swirl — use only for calendar day markers. */
+export function PoopIconPlain(p: IconProps) { return renderPoop(p, false); }
 
 /* ---------------------------------------------------------------- MEDS */
 

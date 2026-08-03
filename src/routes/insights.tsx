@@ -1000,6 +1000,8 @@ function SleepChart({ period, days, series, anchor }:
 
 function PainChart({ period, days, series, anchor }:
   { period: Period; days: string[]; series: (number | undefined)[]; anchor: Date }) {
+  const [active, setActive] = useState<number | null>(null);
+  useDismissTapTooltip(() => setActive(null));
   // Aggregate for year view: 12 monthly averages
   type Bar = { value?: number; label: string; sub?: string };
   let bars: Bar[] = [];
@@ -1050,9 +1052,18 @@ function PainChart({ period, days, series, anchor }:
           <div className="relative grid items-end gap-[2px]" style={{ gridTemplateColumns: `repeat(${bars.length}, minmax(0, 1fr))`, height }}>
             {bars.map((b, i) => (
               b.value != null
-                ? <div key={i} className="w-full rounded-t" style={{ height: `${Math.max(4, (b.value / 10) * 100)}%`, background: painColor(b.value) }} title={`${b.label || days[i]}: ${b.value.toFixed(1)} / 10`} />
-                : <div key={i} className="h-[2px] w-full self-end rounded bg-tint/60" title={`${days[i]}: no entry`} />
+                ? <button key={i} type="button" onClick={(e) => { e.stopPropagation(); setActive(active === i ? null : i); }}
+                    className="w-full rounded-t" style={{ height: `${Math.max(4, (b.value / 10) * 100)}%`, background: painColor(b.value) }} />
+                : <div key={i} className="h-[2px] w-full self-end rounded bg-tint/60" />
             ))}
+            {active != null && bars[active]?.value != null && (
+              <TapTooltip
+                leftPct={((active + 0.5) / bars.length) * 100}
+                text={period === "Y"
+                  ? `${fmtTapMonth(active, anchor.getFullYear())} · Pain ${bars[active].value!.toFixed(1)}`
+                  : `${fmtTapDay(days[active])} · Pain ${bars[active].value!.toFixed(1)}`}
+              />
+            )}
           </div>
         </div>
       </div>

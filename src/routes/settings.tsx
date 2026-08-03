@@ -92,40 +92,16 @@ function SettingsPage() {
   const importJson = async (file: File) => {
     try {
       const incoming = { ...EMPTY, ...JSON.parse(await file.text()) } as BixboData;
-      const mode = window.prompt(
-        "Import backup:\n\nType MERGE to keep your current data and add anything missing from the file.\nType REPLACE to overwrite ALL your current data with the file.\n\n(Leave empty or press Cancel to abort.)",
-        "MERGE",
-      );
-      const choice = (mode ?? "").trim().toUpperCase();
-      if (choice === "REPLACE") {
-        if (!window.confirm("This will overwrite ALL your current data. Continue?")) return;
-        replace(incoming);
-        alert("Imported (replaced).");
-      } else if (choice === "MERGE") {
-        const cur = getBixbo();
-        const mergeMap = <T,>(a: Record<string, T>, b: Record<string, T>) => ({ ...b, ...a });
-        const mergeById = <T extends { id: string }>(a: T[], b: T[]) => {
-          const seen = new Set(a.map((x) => x.id));
-          return [...a, ...b.filter((x) => !seen.has(x.id))];
-        };
-        replace({
-          ...incoming,
-          ...cur,
-          dayLogs: mergeMap(cur.dayLogs, incoming.dayLogs ?? {}),
-          dayNotes: mergeMap(cur.dayNotes, incoming.dayNotes ?? {}),
-          todos: mergeMap(cur.todos, incoming.todos ?? {}),
-          medLog: mergeMap(cur.medLog, incoming.medLog ?? {}),
-          medLogTimes: mergeMap(cur.medLogTimes, incoming.medLogTimes ?? {}),
-          tasks: mergeById(cur.tasks, incoming.tasks ?? []),
-          events: mergeById(cur.events, incoming.events ?? []),
-          meds: mergeById(cur.meds, incoming.meds ?? []),
-          notebook: mergeById(cur.notebook, incoming.notebook ?? []),
-        });
-        alert("Imported (merged).");
-      }
+      if (!window.confirm(
+        "Import backup?\n\nYour current data is kept — anything from the file that you don't already have is added. Nothing is deleted.",
+      )) return;
+      // Deep union merge (same logic as cloud sync) — never overwrites existing entries.
+      replace(mergeBixbo(getBixbo(), incoming));
+      alert("Imported — your data was merged, nothing was deleted.");
     }
     catch { alert("Could not read that file."); }
   };
+
 
   const importPartner = async (file: File) => {
     try {
