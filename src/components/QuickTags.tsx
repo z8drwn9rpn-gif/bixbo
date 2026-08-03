@@ -139,7 +139,7 @@ function baseTags(): Tag[] {
     { key: "period", emoji: "🫐", label: "Period", cat: "period", popup: "period" },
   ];
 }
-
+}
 function customToTag(c: CustomQuickTag, data: BixboData): Tag {
   const t = () => nowHHMM();
   const p = c.preset ?? {};
