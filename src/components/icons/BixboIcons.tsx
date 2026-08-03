@@ -1067,7 +1067,8 @@ export const EMOJI_ICON: Record<string, BixboIconName> = {
   "🚽": "poop",
   "📱": "note",
   "☀️": "star",
-  "🧘": "workout",
+  "⏰": "clock",
+
   "⏰": "clock",
 };
 
