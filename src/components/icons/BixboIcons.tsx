@@ -1068,8 +1068,6 @@ export const EMOJI_ICON: Record<string, BixboIconName> = {
   "📱": "note",
   "☀️": "star",
   "⏰": "clock",
-
-  "⏰": "clock",
 };
 
 /**
