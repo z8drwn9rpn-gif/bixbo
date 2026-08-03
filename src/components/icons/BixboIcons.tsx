@@ -448,7 +448,7 @@ export function BoltIcon(p: IconProps) {
 }
 
 /** Panic attack — sparkle. */
-export function StarIcon(p: IconProps) {
+export function PanicIcon(p: IconProps) {
   const a = useSvgId();
   const mini = (p.size ?? 24) <= 16;
   if (mini) {
