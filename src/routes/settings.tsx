@@ -1,9 +1,8 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Bell, Download, Upload, Users, Type, LogOut, Cloud, Copy, RefreshCw, Sliders, RotateCcw, Pill, Plus, X, ListPlus, Sun, Moon, MonitorSmartphone } from "lucide-react";
+import { ArrowLeft, Bell, Download, Upload, Users, Type, LogOut, Cloud, Copy, RefreshCw, Sliders, RotateCcw, Pill, Plus, X, ListPlus } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { useBixbo, EMPTY, todayKey, replaceBixbo, getBixbo, type BixboData, type PartnerData, type Gender } from "@/lib/storage";
-import { mergeBixbo } from "@/lib/merge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -74,9 +73,6 @@ function SettingsPage() {
     if (session) updateProfile({ gender: g });
   };
 
-  const setTheme = (t: "light" | "dark" | "system") =>
-    update((d) => ({ ...d, settings: { ...d.settings, theme: t } }));
-
   const toggleNotif = (on: boolean) => {
     update((d) => ({ ...d, settings: { ...d.settings, notifications: on } }));
     if (on && "Notification" in window && Notification.permission === "default") {
@@ -93,16 +89,40 @@ function SettingsPage() {
   const importJson = async (file: File) => {
     try {
       const incoming = { ...EMPTY, ...JSON.parse(await file.text()) } as BixboData;
-      if (!window.confirm(
-        "Import backup?\n\nYour current data is kept — anything from the file that you don't already have is added. Nothing is deleted.",
-      )) return;
-      // Deep union merge (same logic as cloud sync) — never overwrites existing entries.
-      replace(mergeBixbo(getBixbo(), incoming));
-      alert("Imported — your data was merged, nothing was deleted.");
+      const mode = window.prompt(
+        "Import backup:\n\nType MERGE to keep your current data and add anything missing from the file.\nType REPLACE to overwrite ALL your current data with the file.\n\n(Leave empty or press Cancel to abort.)",
+        "MERGE",
+      );
+      const choice = (mode ?? "").trim().toUpperCase();
+      if (choice === "REPLACE") {
+        if (!window.confirm("This will overwrite ALL your current data. Continue?")) return;
+        replace(incoming);
+        alert("Imported (replaced).");
+      } else if (choice === "MERGE") {
+        const cur = getBixbo();
+        const mergeMap = <T,>(a: Record<string, T>, b: Record<string, T>) => ({ ...b, ...a });
+        const mergeById = <T extends { id: string }>(a: T[], b: T[]) => {
+          const seen = new Set(a.map((x) => x.id));
+          return [...a, ...b.filter((x) => !seen.has(x.id))];
+        };
+        replace({
+          ...incoming,
+          ...cur,
+          dayLogs: mergeMap(cur.dayLogs, incoming.dayLogs ?? {}),
+          dayNotes: mergeMap(cur.dayNotes, incoming.dayNotes ?? {}),
+          todos: mergeMap(cur.todos, incoming.todos ?? {}),
+          medLog: mergeMap(cur.medLog, incoming.medLog ?? {}),
+          medLogTimes: mergeMap(cur.medLogTimes, incoming.medLogTimes ?? {}),
+          tasks: mergeById(cur.tasks, incoming.tasks ?? []),
+          events: mergeById(cur.events, incoming.events ?? []),
+          meds: mergeById(cur.meds, incoming.meds ?? []),
+          notebook: mergeById(cur.notebook, incoming.notebook ?? []),
+        });
+        alert("Imported (merged).");
+      }
     }
     catch { alert("Could not read that file."); }
   };
-
 
   const importPartner = async (file: File) => {
     try {
@@ -195,33 +215,14 @@ function SettingsPage() {
           )}
         </section>
 
-        {/* ---- Appearance ---- */}
-        <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
-          <p className="text-sm font-medium">Appearance</p>
-          <p className="mt-1 text-xs text-muted-foreground">Choose how BIXBO looks on this device.</p>
-          <div className="mt-3 grid grid-cols-3 gap-2">
-            {([
-              { v: "light", label: "Light", Icon: Sun },
-              { v: "dark", label: "Dark", Icon: Moon },
-              { v: "system", label: "System", Icon: MonitorSmartphone },
-            ] as { v: "light" | "dark" | "system"; label: string; Icon: typeof Sun }[]).map(({ v, label, Icon }) => (
-              <button key={v} onClick={() => setTheme(v)}
-                className={`flex flex-col items-center gap-1 rounded-xl border p-3 text-xs font-medium ${(view.settings.theme ?? "system") === v ? "border-primary bg-primary text-primary-foreground" : "border-border bg-tint"}`}>
-                <Icon className="h-4 w-4" />
-                {label}
-              </button>
-            ))}
-          </div>
-        </section>
-
-                {/* ---- Gender / mode ---- */}
+        {/* ---- Gender / mode ---- */}
         <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
           <p className="text-sm font-medium">Mode</p>
           <p className="mt-1 text-xs text-muted-foreground">Male mode hides Blueberry cycle tracking everywhere.</p>
           <div className="mt-3 grid grid-cols-2 gap-2">
             {(["female","male"] as Gender[]).map((g) => (
               <button key={g} onClick={() => setGender(g)}
-                className={`rounded-xl border p-3 text-sm font-medium capitalize ${(view.settings.gender ?? "female") === g ? "border-primary bg-primary/10 text-primary dark:bg-primary dark:text-primary-foreground" : "border-border bg-tint"}`}>
+                className={`rounded-xl border p-3 text-sm font-medium capitalize ${(view.settings.gender ?? "female") === g ? "border-primary bg-primary/10 text-primary" : "border-border bg-tint"}`}>
                 {g === "female" ? "👩 Female" : "👨 Male"}
               </button>
             ))}
@@ -233,7 +234,7 @@ function SettingsPage() {
           <div className="mt-3 grid grid-cols-4 gap-2">
             {TEXT_SIZES.map((s) => (
               <button key={s.v} onClick={() => setSize(s.v)}
-                className={`rounded-xl border p-2 text-center transition ${view.settings.textSize === s.v ? "border-primary bg-primary/10 text-primary dark:bg-primary dark:text-primary-foreground" : "border-border bg-tint"}`}>
+                className={`rounded-xl border p-2 text-center transition ${view.settings.textSize === s.v ? "border-primary bg-primary/10 text-primary" : "border-border bg-tint"}`}>
                 <span style={{ fontSize: `${s.px}px` }}>Aa</span>
                 <span className="mt-1 block text-[10px] text-muted-foreground">{s.label}</span>
               </button>

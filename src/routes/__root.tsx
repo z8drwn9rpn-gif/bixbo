@@ -12,7 +12,6 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { useCloudSync } from "../lib/cloudSync";
-import { useThemeSync } from "../lib/theme";
 
 function NotFoundComponent() {
   return (
@@ -80,7 +79,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { name: "theme-color", content: "#6B7A2F" },
-      { name: "color-scheme", content: "light dark" },
       { title: "BIXBO 🌶️ — Health diary" },
       { name: "description", content: "BIXBO — a calm diary for your cycle, pain, meds and notes." },
       { name: "author", content: "BIXBO" },
@@ -130,7 +128,6 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   useCloudSync();
-  useThemeSync();
 
   return (
     <QueryClientProvider client={queryClient}>

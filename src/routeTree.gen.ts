@@ -10,7 +10,6 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as PatternsRouteImport } from './routes/patterns'
 import { Route as NotesRouteImport } from './routes/notes'
 import { Route as MedsRouteImport } from './routes/meds'
 import { Route as InsightsRouteImport } from './routes/insights'
@@ -22,11 +21,6 @@ import { Route as ApiPublicHooksKeepaliveRouteImport } from './routes/api/public
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PatternsRoute = PatternsRouteImport.update({
-  id: '/patterns',
-  path: '/patterns',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NotesRoute = NotesRouteImport.update({
@@ -72,7 +66,6 @@ export interface FileRoutesByFullPath {
   '/insights': typeof InsightsRoute
   '/meds': typeof MedsRoute
   '/notes': typeof NotesRoute
-  '/patterns': typeof PatternsRoute
   '/settings': typeof SettingsRoute
   '/api/public/hooks/keepalive': typeof ApiPublicHooksKeepaliveRoute
 }
@@ -83,7 +76,6 @@ export interface FileRoutesByTo {
   '/insights': typeof InsightsRoute
   '/meds': typeof MedsRoute
   '/notes': typeof NotesRoute
-  '/patterns': typeof PatternsRoute
   '/settings': typeof SettingsRoute
   '/api/public/hooks/keepalive': typeof ApiPublicHooksKeepaliveRoute
 }
@@ -95,7 +87,6 @@ export interface FileRoutesById {
   '/insights': typeof InsightsRoute
   '/meds': typeof MedsRoute
   '/notes': typeof NotesRoute
-  '/patterns': typeof PatternsRoute
   '/settings': typeof SettingsRoute
   '/api/public/hooks/keepalive': typeof ApiPublicHooksKeepaliveRoute
 }
@@ -108,7 +99,6 @@ export interface FileRouteTypes {
     | '/insights'
     | '/meds'
     | '/notes'
-    | '/patterns'
     | '/settings'
     | '/api/public/hooks/keepalive'
   fileRoutesByTo: FileRoutesByTo
@@ -119,7 +109,6 @@ export interface FileRouteTypes {
     | '/insights'
     | '/meds'
     | '/notes'
-    | '/patterns'
     | '/settings'
     | '/api/public/hooks/keepalive'
   id:
@@ -130,7 +119,6 @@ export interface FileRouteTypes {
     | '/insights'
     | '/meds'
     | '/notes'
-    | '/patterns'
     | '/settings'
     | '/api/public/hooks/keepalive'
   fileRoutesById: FileRoutesById
@@ -142,7 +130,6 @@ export interface RootRouteChildren {
   InsightsRoute: typeof InsightsRoute
   MedsRoute: typeof MedsRoute
   NotesRoute: typeof NotesRoute
-  PatternsRoute: typeof PatternsRoute
   SettingsRoute: typeof SettingsRoute
   ApiPublicHooksKeepaliveRoute: typeof ApiPublicHooksKeepaliveRoute
 }
@@ -154,13 +141,6 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/patterns': {
-      id: '/patterns'
-      path: '/patterns'
-      fullPath: '/patterns'
-      preLoaderRoute: typeof PatternsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/notes': {
@@ -222,7 +202,6 @@ const rootRouteChildren: RootRouteChildren = {
   InsightsRoute: InsightsRoute,
   MedsRoute: MedsRoute,
   NotesRoute: NotesRoute,
-  PatternsRoute: PatternsRoute,
   SettingsRoute: SettingsRoute,
   ApiPublicHooksKeepaliveRoute: ApiPublicHooksKeepaliveRoute,
 }

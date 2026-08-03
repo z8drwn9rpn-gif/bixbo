@@ -18,29 +18,11 @@ export interface PainEntry {
   bodyBattery?: number;
   stress?: number;
   mood?: string[];
-  /** Hot flashes section (own Yes/No trigger) */
-  hotFlashesOn?: boolean;
   hotFlashes?: number;
-  /** Headache section (own Yes/No trigger) */
-  headache?: boolean;
   headacheTypes?: string[];
   headacheIntensity?: number;
   headacheMed?: string;
   headacheMedTime?: string;
-  /** Pressure detail, shown when "Pressure" quality is selected */
-  pressureTypes?: string[];
-  pressureIntensity?: number;
-  /** Nausea section */
-  nausea?: boolean;
-  nauseaTypes?: string[];
-  nauseaSeverity?: number;
-  nauseaMinutes?: number;
-  nauseaOngoing?: boolean;
-  nauseaTriggers?: string[];
-  nauseaSymptoms?: string[];
-  nauseaHelped?: string[];
-  /** Flu-specific note (separate from the general note) */
-  fluNote?: string;
   pcosSymptoms?: string[];
 }
 export interface TetanyEpisode {
@@ -176,18 +158,10 @@ export interface CustomLists {
   sexFeelings: string[];
   urinary: string[];
   allergens: string[];
-  pressureTypes: string[];
-  nauseaTypes: string[];
-  nauseaTriggers: string[];
-  nauseaSymptoms: string[];
-  nauseaHelped: string[];
-  labTests: string[];
 }
 
 
-export type QuickTagCategory =
-  | "pain" | "tetany" | "panic" | "sex" | "food" | "meds" | "workout"
-  | "period" | "bowel" | "thermo" | "mood" | "energy" | "histamine" | "sleep";
+export type QuickTagCategory = "pain" | "tetany" | "panic" | "sex" | "food" | "meds" | "workout";
 export interface CustomQuickTag {
   id: string;
   emoji: string;
@@ -198,22 +172,14 @@ export interface CustomQuickTag {
     intensity?: number;    // tetany / panic
     what?: string;         // food
     medId?: string;        // meds
-    kind?: string;         // workout / sex / thermo / bowel / period level
-    minutes?: number;      // workout / thermo
-    bristol?: number;      // bowel
-    level?: PeriodLevel;   // period
-    /** meds: mark a scheduled dose taken vs. log an extra/PRN dose */
-    mode?: "scheduled" | "extra";
-    /** meds: `${medId}@${time}` identifying the scheduled slot */
-    scheduleKey?: string;
+    kind?: string;         // workout / sex
+    minutes?: number;      // workout
   };
 }
 
 export interface Settings {
   textSize: "sm" | "md" | "lg" | "xl";
   notifications: boolean;
-  /** Appearance preference; "system" follows the device. */
-  theme?: "light" | "dark" | "system";
   pairingCode?: string;
   partnerName?: string;
   logOrder?: string[];
@@ -230,9 +196,7 @@ export interface Settings {
   hiddenQuickTags?: string[];
 
   customQuickTags?: CustomQuickTag[];
-  scaleDescriptions?: Partial<Record<"pain" | "stress" | "tetany" | "panic" | "hotFlashes" | "headache" | "nausea" | "pressure", Record<number, string>>>;
-  /** Saved Trigger Comparison combos on the Patterns tab. */
-  savedTriggers?: { id: string; a: string; b: string }[];
+  scaleDescriptions?: Partial<Record<"pain" | "stress" | "tetany" | "panic" | "hotFlashes" | "headache", Record<number, string>>>;
 }
 
 export interface PartnerData {
@@ -244,21 +208,6 @@ export interface PartnerData {
   cycle?: CyclePrefs;
   gender?: Gender;
   importedAt: number;
-}
-
-/* ------------------- Lab results / documents / diagnoses ------------------- */
-export interface LabResult {
-  id: string; test: string; value: number; unit?: string;
-  refLow?: number; refHigh?: number; date: string; note?: string;
-}
-export interface DocEntry {
-  id: string; name: string; date: string; mime?: string;
-  /** data URL of the uploaded file (stored locally + synced) */
-  dataUrl?: string;
-  labId?: string;
-}
-export interface Diagnosis {
-  id: string; name: string; date?: string; doctor?: string; note?: string; docId?: string;
 }
 
 export interface BixboData {
@@ -277,12 +226,6 @@ export interface BixboData {
   custom: CustomLists;
   settings: Settings;
   partner?: PartnerData;
-  labs?: LabResult[];
-  docs?: DocEntry[];
-  diagnoses?: Diagnosis[];
-  /** Ids of entries the user deleted — used by cloud merge so a union merge
-   * doesn't resurrect them from another device. */
-  deletedIds?: string[];
 }
 
 export const DEFAULT_FOLDERS: NoteFolder[] = [
@@ -311,14 +254,9 @@ export const EMPTY: BixboData = {
     sexTypes: [], bowelFeelings: [], bowelSymptoms: [],
     pcosSymptoms: [], headacheTypes: [], histamineSymptoms: [], foodSymptomsAfter: [], sexFeelings: [],
     urinary: [], allergens: [],
-    pressureTypes: [], nauseaTypes: [], nauseaTriggers: [], nauseaSymptoms: [], nauseaHelped: [],
-    labTests: [],
+
   },
-  settings: { textSize: "md", notifications: true, gender: "female", theme: "system" },
-  labs: [],
-  docs: [],
-  diagnoses: [],
-  deletedIds: [],
+  settings: { textSize: "md", notifications: true, gender: "female" },
 };
 
 const KEY = "bixbo:v2";
@@ -515,9 +453,9 @@ export function avgDayPain(log?: DayLog): number | undefined {
 
 export const BODY_PARTS_DEFAULT = ["Abdomen","Lower abdomen","Lower belly","Pelvis","Ovaries","Uterus","Vagina","Groin","Back","Head","Legs","Chest"];
 export const PAIN_QUALITY_DEFAULT = ["Cramping","Stabbing","Burning","Dull","Sharp","Throbbing","Pressure","Shooting","Aching"];
-export const OTHER_SYMPTOMS_DEFAULT = ["Dizziness","Fatigue","Bloating","Diarrhea","Constipation","Cold sweats","Fainting","Mood swings","Flu"];
+export const OTHER_SYMPTOMS_DEFAULT = ["Nausea","Dizziness","Fatigue","Bloating","Diarrhea","Constipation","Headache","Cold sweats","Fainting","Mood swings"];
 export const FOOD_FEELINGS_DEFAULT = ["😊 Great","🙂 Fine","😐 Neutral","😕 Off","😖 Bloated","🤢 Nauseous","🤕 Stomach pain","😴 Sleepy","🥵 Flushed","⚡ Energy up"];
-export const WORKOUT_KINDS_DEFAULT = ["Yoga","Walk","Run","Hike","Cycling","Strength","Stretching","Swim","Meditation"];
+export const WORKOUT_KINDS_DEFAULT = ["🧘🏼‍♀️ Yoga","🚶🏼‍♀️ Walk","🏃🏼‍♀️ Run","⛰️ Hike","🚴 Cycling","💪 Strength","🤸 Stretching","🏊 Swim","🧘 Meditation"];
 export function workoutHasDistance(kind: string) {
   return /walk|run|hike/i.test(kind);
 }
@@ -620,7 +558,7 @@ export const BRISTOL: { n: number; label: string; sub: string; color: string; sh
   { n: 7, label: "Type 7 — Diarrhea",      sub: "Watery, no solid pieces",                color: "#dc2626", shape: "liquid" },
 ];
 
-export const BOWEL_FEELINGS_DEFAULT = ["Relief","Normal","Neutral","Painful","Cramping","Urgent","Gassy","Incomplete"];
+export const BOWEL_FEELINGS_DEFAULT = ["😌 Relief","🙂 Normal","😐 Neutral","😖 Painful","🤕 Cramping","😰 Urgent","💨 Gassy","😞 Incomplete"];
 export const BOWEL_SYMPTOMS_DEFAULT = ["Bloating","Cramps","Straining","Blood","Mucus","Burning","Nausea","Urgency"];
 
 export const EVENT_COLORS = ["#22c55e","#3b82f6","#f97316","#eab308","#ec4899","#a855f7","#06b6d4","#ef4444"];
@@ -714,45 +652,3 @@ export const ALLERGENS_DEFAULT = [
   "Shellfish",
   "Peanuts",
 ];
-
-/* ------------------- Pressure (pain quality expansion) ------------------- */
-export const PRESSURE_TYPES = [
-  "Pelvic","Abdominal","Chest","Head / sinus","Vaginal","Rectal","Lower back",
-];
-
-/* ------------------- Nausea ------------------- */
-export const NAUSEA_TYPES = [
-  "Mild nausea","Moderate nausea","Severe nausea","Constant nausea",
-  "Intermittent nausea","Morning nausea","Post-meal nausea","Motion-induced nausea",
-];
-export const NAUSEA_TYPE_DESC: Record<string, string> = {
-  "Mild nausea": "Slight queasiness you can easily ignore.",
-  "Moderate nausea": "Clearly unpleasant, but you can still eat and function.",
-  "Severe nausea": "Hard to function; vomiting feels likely.",
-  "Constant nausea": "Present all day without letting up.",
-  "Intermittent nausea": "Comes and goes in waves through the day.",
-  "Morning nausea": "Worst right after waking, before eating.",
-  "Post-meal nausea": "Starts shortly after eating.",
-  "Motion-induced nausea": "Triggered by travel or movement (car, bus, boat).",
-};
-export const NAUSEA_SEVERITY_DESC: Record<number, string> = {
-  0: "No nausea — feeling completely normal",
-  1: "Very mild — occasionally noticeable, doesn't bother me",
-  2: "Very mild — occasionally noticeable, doesn't bother me",
-  3: "Mild — unpleasant, but I can function and eat normally",
-  4: "Mild — unpleasant, but I can function and eat normally",
-  5: "Moderate — need to sit or rest, food is very unappealing",
-  6: "Moderate — need to sit or rest, food is very unappealing",
-  7: "Strong — hard to concentrate, feel like I'll vomit",
-  8: "Strong — hard to concentrate, feel like I'll vomit",
-  9: "Very strong — almost unbearable, vomiting likely or already started",
-  10: "Extreme — constant vomiting or the worst nausea imaginable",
-};
-export const NAUSEA_TRIGGERS = ["After food","Car ride","Smell","Medication","Hormonal","Stress","Hunger","Unknown"];
-export const NAUSEA_SYMPTOMS = ["Dizziness","Cold sweat","Bloating","Headache","Weakness","Vomiting"];
-export const NAUSEA_HELPED = ["Lying down","Ginger tea","Fresh air","Medication","Food","Nothing helped"];
-
-/* ------------------- Deletion tombstones ------------------- */
-export function markDeleted(update: (u: (d: BixboData) => BixboData) => void, ...ids: string[]) {
-  update((d) => ({ ...d, deletedIds: Array.from(new Set([...(d.deletedIds ?? []), ...ids])).slice(-2000) }));
-}
