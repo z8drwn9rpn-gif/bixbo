@@ -1103,3 +1103,240 @@ function PainChart({ period, days, series, anchor }:
     </div>
   );
 }
+
+function BristolChart({ bowelCounts }: { bowelCounts: number[] }) {
+  const [active, setActive] = useState<number | null>(null);
+  useDismissTapTooltip(() => setActive(null));
+  const max = Math.max(1, ...bowelCounts.slice(1));
+  return (
+    <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
+      <p className="text-xs uppercase tracking-wider text-muted-foreground">Bowel — Bristol distribution</p>
+      <div className="relative mt-3 flex items-end gap-2">
+        {BRISTOL.map((b) => {
+          const c = bowelCounts[b.n] ?? 0;
+          return (
+            <div key={b.n} className="relative flex flex-1 flex-col items-center gap-1">
+              <div className="h-20 w-full flex items-end">
+                <button type="button" onClick={(e) => { e.stopPropagation(); setActive(active === b.n ? null : b.n); }}
+                  className="w-full rounded-t" style={{ height: `${(c / max) * 100}%`, background: b.color }} />
+              </div>
+              {active === b.n && (
+                <TapTooltip leftPct={50} text={`Type ${b.n} · ${c} ${c === 1 ? "entry" : "entries"}`} />
+              )}
+              <span className="text-[10px] text-muted-foreground">T{b.n}</span>
+              <span className="text-[10px]">{c}</span>
+            </div>
+          );
+        })}
+      </div>
+      {bowelCounts[0] > 0 && <p className="mt-2 text-xs text-muted-foreground">No movement: {bowelCounts[0]}</p>}
+    </section>
+  );
+}
+
+function HfBars({ bars, period, days, anchor }:
+  { bars: (number | undefined)[]; period: Period; days: string[]; anchor: Date }) {
+  const [active, setActive] = useState<number | null>(null);
+  useDismissTapTooltip(() => setActive(null));
+  const monthLabels = ["J","F","M","A","M","J","J","A","S","O","N","D"];
+  return (
+    <div className="relative mt-4 grid items-end gap-1" style={{ gridTemplateColumns: `repeat(${bars.length}, minmax(0, 1fr))`, height: 60 }}>
+      {bars.map((n, i) => (
+        n != null
+          ? <button key={i} type="button" onClick={(e) => { e.stopPropagation(); setActive(active === i ? null : i); }}
+              className="w-full rounded-t" style={{ height: `${Math.max(10, (n / 5) * 100)}%`, background: `hsl(${130 - ((n - 1) * 130) / 4} 70% 50%)` }} />
+          : <div key={i} className="h-1 w-full self-end rounded bg-tint" />
+      ))}
+      {active != null && bars[active] != null && (
+        <TapTooltip
+          leftPct={((active + 0.5) / bars.length) * 100}
+          text={period === "Y"
+            ? `${fmtTapMonth(active, anchor.getFullYear())} · Hot flash avg ${bars[active]!.toFixed(1)}/5`
+            : `${fmtTapDay(days[active])} · Hot flash ${bars[active]!.toFixed(1)}/5`}
+        />
+      )}
+    </div>
+  );
+}
+
+/** GitHub-contributions-style yearly heatmap of daily "symptom load" (avg pain + symptom entry counts). */
+function SymptomLoadHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>["data"]; anchor: Date }) {
+  const [active, setActive] = useState<string | null>(null);
+  useDismissTapTooltip(() => setActive(null));
+  const year = anchor.getFullYear();
+
+  const dayInfo = useMemo(() => {
+    const start = new Date(year, 0, 1);
+    const dow = (start.getDay() + 6) % 7; // Mon=0
+    const gridStart = new Date(start); gridStart.setDate(start.getDate() - dow);
+    const cells: { key: string | null; inYear: boolean }[] = [];
+    for (let i = 0; i < 53 * 7; i++) {
+      const d = new Date(gridStart); d.setDate(gridStart.getDate() + i);
+      const inYear = d.getFullYear() === year;
+      cells.push({ key: inYear ? toKey(d) : null, inYear });
+    }
+    return cells;
+  }, [year]);
+
+  const summaryFor = (k: string) => {
+    const log = data.dayLogs[k];
+    if (!log) return null;
+    const pain = avgDayPain(log);
+    const tetany = log.tetany?.length ?? 0;
+    const panic = log.panic?.length ?? 0;
+    const hf = log.pain?.filter((p) => p.hotFlashes != null).length ?? 0;
+    const headache = log.pain?.filter((p) => p.headache).length ?? 0;
+    const nausea = log.pain?.filter((p) => p.nausea).length ?? 0;
+    const bowel = log.bowel?.length ?? 0;
+    const symptomCount = tetany + panic + hf + headache + nausea + bowel;
+    const load = (pain ?? 0) + symptomCount * 1.5;
+    return { pain, tetany, panic, hf, headache, nausea, bowel, symptomCount, load };
+  };
+
+  const maxLoad = useMemo(() => {
+    let max = 0;
+    dayInfo.forEach((c) => {
+      if (!c.key) return;
+      const s = summaryFor(c.key);
+      if (s && s.load > max) max = s.load;
+    });
+    return Math.max(1, max);
+  }, [dayInfo, data.dayLogs]);
+
+  const colorFor = (load: number) => {
+    if (load <= 0) return "var(--tint)";
+    const t = Math.min(1, load / maxLoad);
+    // light neutral -> deep red
+    const l = 88 - t * 48;
+    const s = 20 + t * 60;
+    return `hsl(6 ${s}% ${l}%)`;
+  };
+
+  const active_ = active ? summaryFor(active) : null;
+
+  return (
+    <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
+      <p className="text-xs uppercase tracking-wider text-muted-foreground">Symptom Load — {year}</p>
+      <div className="relative mt-3 overflow-x-auto">
+        <div className="grid grid-flow-col gap-[3px]" style={{ gridTemplateRows: "repeat(7, minmax(0, 1fr))" }}>
+          {dayInfo.map((c, i) => {
+            if (!c.key) return <div key={i} className="h-[10px] w-[10px]" />;
+            const s = summaryFor(c.key);
+            const load = s?.load ?? 0;
+            return (
+              <button key={i} type="button" onClick={(e) => { e.stopPropagation(); setActive(active === c.key ? null : c.key); }}
+                className={`h-[10px] w-[10px] rounded-[2px] ${active === c.key ? "ring-2 ring-primary" : ""}`}
+                style={{ background: colorFor(load) }} />
+            );
+          })}
+        </div>
+        {active && active_ && (
+          <div className="pointer-events-none absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-lg bg-foreground px-2 py-1 text-[11px] font-medium text-background shadow-lg">
+            {`${fmtTapDay(active)} — Pain ${active_.pain != null ? active_.pain.toFixed(1) : "–"}` +
+              (active_.tetany ? `, Tetany ${active_.tetany}×` : "") +
+              (active_.panic ? `, Panic ${active_.panic}×` : "") +
+              (active_.hf ? `, Hot flashes ${active_.hf}×` : "") +
+              (active_.headache ? `, Headache ${active_.headache}×` : "") +
+              (active_.nausea ? `, Nausea ${active_.nausea}×` : "") +
+              (active_.bowel ? `, Bowel ${active_.bowel}×` : "")}
+          </div>
+        )}
+      </div>
+      <div className="mt-3 flex items-center gap-2 text-[10px] text-muted-foreground">
+        <span>No symptoms</span>
+        <span className="flex gap-[2px]">
+          {[0, 0.25, 0.5, 0.75, 1].map((t) => (
+            <span key={t} className="h-[10px] w-[10px] rounded-[2px]" style={{ background: t === 0 ? "var(--tint)" : `hsl(6 ${20 + t * 60}% ${88 - t * 48}%)` }} />
+          ))}
+        </span>
+        <span>High load</span>
+      </div>
+    </section>
+  );
+}
+
+/** Combined Tetany & Panic time-of-day pattern chart. */
+function TimeOfDayPatternChart({ data, days, period }:
+  { data: ReturnType<typeof useBixbo>["data"]; days: string[]; period: Period }) {
+  const [active, setActive] = useState<string | null>(null);
+  useDismissTapTooltip(() => setActive(null));
+
+  const tetanyBlocks = [0, 0, 0, 0];
+  const panicBlocks = [0, 0, 0, 0];
+  days.forEach((k) => {
+    data.dayLogs[k]?.tetany?.forEach((t) => {
+      const b = timeBlockOf(t.time);
+      if (b != null) tetanyBlocks[b]++;
+    });
+    data.dayLogs[k]?.panic?.forEach((p) => {
+      const b = timeBlockOf(p.time);
+      if (b != null) panicBlocks[b]++;
+    });
+  });
+  const tetanyTotal = tetanyBlocks.reduce((a, b) => a + b, 0);
+  const panicTotal = panicBlocks.reduce((a, b) => a + b, 0);
+  const max = Math.max(1, ...tetanyBlocks, ...panicBlocks);
+
+  const sentence = (() => {
+    if (!tetanyTotal && !panicTotal) return null;
+    const topOf = (blocks: number[], total: number) => {
+      if (!total) return null;
+      let best = 0;
+      for (let i = 1; i < 4; i++) if (blocks[i] > blocks[best]) best = i;
+      return { i: best, pct: Math.round((blocks[best] / total) * 100) };
+    };
+    const t = topOf(tetanyBlocks, tetanyTotal);
+    const p = topOf(panicBlocks, panicTotal);
+    if (t && p) {
+      return `Tetany occurs most often in the ${TIME_BLOCK_SHORT[t.i].toLowerCase()} (${TIME_BLOCK_LABELS[t.i].split(" ")[1]}, ${t.pct}% of cases), while panic attacks peak in the ${TIME_BLOCK_SHORT[p.i].toLowerCase()} (${TIME_BLOCK_LABELS[p.i].split(" ")[1]}, ${p.pct}% of cases).`;
+    }
+    if (t) return `Tetany occurs most often in the ${TIME_BLOCK_SHORT[t.i].toLowerCase()} (${TIME_BLOCK_LABELS[t.i].split(" ")[1]}, ${t.pct}% of cases).`;
+    if (p) return `Panic attacks occur most often in the ${TIME_BLOCK_SHORT[p.i].toLowerCase()} (${TIME_BLOCK_LABELS[p.i].split(" ")[1]}, ${p.pct}% of cases).`;
+    return null;
+  })();
+
+  return (
+    <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
+      <p className="text-xs uppercase tracking-wider text-muted-foreground">Time of Day Pattern</p>
+      {(!tetanyTotal && !panicTotal) ? (
+        <p className="mt-2 text-sm text-muted-foreground">Not enough data yet</p>
+      ) : (
+        <>
+          <div className="mt-2 flex gap-4 text-[11px]">
+            <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: TETANY_COLOR }} /> Tetany ({tetanyTotal})</span>
+            <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: PANIC_COLOR }} /> Panic ({panicTotal})</span>
+          </div>
+          <div className="relative mt-4 grid grid-cols-4 items-end gap-3" style={{ height: 110 }}>
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="flex h-full items-end justify-center gap-1">
+                <div className="flex flex-col items-center justify-end" style={{ height: "100%" }}>
+                  {tetanyBlocks[i] > 0 && <span className="mb-0.5 text-[10px] tabular-nums text-muted-foreground">{tetanyBlocks[i]}</span>}
+                  <button type="button" onClick={(e) => { e.stopPropagation(); setActive(active === `t${i}` ? null : `t${i}`); }}
+                    className="w-4 rounded-t" style={{ height: `${Math.max(4, (tetanyBlocks[i] / max) * 100)}%`, background: TETANY_COLOR }} />
+                </div>
+                <div className="flex flex-col items-center justify-end" style={{ height: "100%" }}>
+                  {panicBlocks[i] > 0 && <span className="mb-0.5 text-[10px] tabular-nums text-muted-foreground">{panicBlocks[i]}</span>}
+                  <button type="button" onClick={(e) => { e.stopPropagation(); setActive(active === `p${i}` ? null : `p${i}`); }}
+                    className="w-4 rounded-t" style={{ height: `${Math.max(4, (panicBlocks[i] / max) * 100)}%`, background: PANIC_COLOR }} />
+                </div>
+              </div>
+            ))}
+            {active && (() => {
+              const isTetany = active[0] === "t";
+              const i = Number(active.slice(1));
+              const count = isTetany ? tetanyBlocks[i] : panicBlocks[i];
+              const leftPct = (i + 0.5) * 25;
+              return (
+                <TapTooltip leftPct={leftPct} text={`${TIME_BLOCK_LABELS[i]} · ${isTetany ? "Tetany" : "Panic"} ${count}×`} />
+              );
+            })()}
+          </div>
+          <div className="mt-1 grid grid-cols-4 gap-3 text-center text-[9px] text-muted-foreground">
+            {TIME_BLOCK_SHORT.map((l) => <span key={l}>{l}</span>)}
+          </div>
+          {sentence && <p className="mt-3 text-sm text-muted-foreground">{sentence}</p>}
+        </>
+      )}
+    </section>
+  );
+}

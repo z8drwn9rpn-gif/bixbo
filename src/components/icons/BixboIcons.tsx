@@ -1008,6 +1008,15 @@ export const BIXBO_ICONS = {
   water: WaterIcon,
   coffee: CoffeeIcon,
   wine: WineIcon,
+  poopPlain: PoopIconPlain,
+  happy: FaceHappyIcon,
+  neutral: FaceNeutralIcon,
+  sad: FaceSadIcon,
+  angry: FaceAngryIcon,
+  anxious: FaceAnxiousIcon,
+  sick: FaceSickIcon,
+  clock: ClockIcon,
+  sparkle: SparkleIcon,
 } as const;
 
 export type BixboIconName = keyof typeof BIXBO_ICONS;
@@ -1027,7 +1036,8 @@ export const EMOJI_ICON: Record<string, BixboIconName> = {
   "🤕": "headache",
   "♨️": "heat", "♨": "heat",
   "🧊": "cold",
-  "✨": "tens",
+  "✨": "sparkle",
+  "💩⚪": "poopPlain",
   "🧘🏼‍♀️": "workout", "🧘": "workout", "👟": "workout", "🏃": "workout", "🚶🏼": "workout", "💪": "workout",
   "😴": "sleep", "🌙": "sleep",
   "🌡️": "thermometer", "🌡": "thermometer",
@@ -1040,6 +1050,25 @@ export const EMOJI_ICON: Record<string, BixboIconName> = {
   "⭐": "star", "🌟": "star",
   "🟢": "dotGreen", "🟡": "dotYellow", "🟠": "dotOrange", "🔴": "dotRed",
   "💧": "water", "☕": "coffee", "🍷": "wine",
+
+  /* mood / feeling faces — reused across mood, sleep, food & sex feelings */
+  "😊": "happy", "🙂": "happy", "😀": "happy", "🥲": "happy", "😎": "happy",
+  "😐": "neutral", "😑": "neutral", "🫥": "neutral", "😕": "neutral",
+  "😢": "sad", "😔": "sad", "😞": "sad", "🙁": "sad", "😩": "sad", "🥺": "sad",
+  "😠": "angry", "😤": "angry", "😾": "angry", "😒": "angry",
+  "😰": "anxious", "🌀": "anxious", "😵‍💫": "anxious",
+  "🤢": "sick", "😖": "sick", "🥴": "sick",
+  "🥰": "heart", "🤩": "heart", "😻": "heart",
+  "🥶": "cold",
+  "💦": "water",
+  "🌩️": "bolt", "🦵": "bolt",
+  "🥱": "sleep", "😪": "sleep", "💤": "sleep", "🛌": "sleep", "💭": "sleep", "🫠": "sleep",
+  "😌": "leaf", "🙏": "leaf", "🐢": "leaf",
+  "🚽": "poop",
+  "📱": "note",
+  "☀️": "star",
+  "🧘": "workout",
+  "⏰": "clock",
 };
 
 /**
