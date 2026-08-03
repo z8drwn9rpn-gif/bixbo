@@ -195,24 +195,36 @@ function mergeCustom(local: CustomLists | undefined, remote: CustomLists | undef
 
 export function mergeBixbo(local: BixboData, remote: BixboData | null | undefined): BixboData {
   if (!remote) return local;
-  return {
-    ...remote,
-    ...local,
-    dayLogs: mergeDayLogs(local.dayLogs, remote.dayLogs),
-    dayNotes: mergeDayNotes(local.dayNotes, remote.dayNotes),
-    todos: mergeTodos(local.todos, remote.todos),
-    tasks: unionById<TaskEntry>(local.tasks, remote.tasks) ?? [],
-    events: unionById<EventEntry>(local.events, remote.events) ?? [],
-    meds: unionById<Med>(local.meds, remote.meds) ?? [],
-    medLog: mergeMedLog(local.medLog, remote.medLog),
-    medLogTimes: mergeMedLogTimes(local.medLogTimes, remote.medLogTimes),
-    medNames: mergeStringMap(local.medNames, remote.medNames),
-    folders: unionById<NoteFolder>(local.folders, remote.folders) ?? [],
-    notebook: unionById<Note>(local.notebook, remote.notebook) ?? [],
-    cycle: { ...(remote.cycle ?? {}), ...(local.cycle ?? {}) },
-    custom: mergeCustom(local.custom, remote.custom),
-    settings: { ...(remote.settings ?? {}), ...(local.settings ?? {}) },
-    // partner is a local-only projection of the other user's data — always keep local's.
-    partner: local.partner ?? remote.partner,
-  };
+  // Union of both sides' tombstones; entries with these ids are dropped from
+  // the merge result so a delete on one device isn't undone by another.
+  const deletedIds = Array.from(new Set([...(local.deletedIds ?? []), ...(remote.deletedIds ?? [])])).slice(-2000);
+  _deleted = new Set(deletedIds);
+  try {
+    return {
+      ...remote,
+      ...local,
+      dayLogs: mergeDayLogs(local.dayLogs, remote.dayLogs),
+      dayNotes: mergeDayNotes(local.dayNotes, remote.dayNotes),
+      todos: mergeTodos(local.todos, remote.todos),
+      tasks: unionById<TaskEntry>(local.tasks, remote.tasks) ?? [],
+      events: unionById<EventEntry>(local.events, remote.events) ?? [],
+      meds: unionById<Med>(local.meds, remote.meds) ?? [],
+      medLog: mergeMedLog(local.medLog, remote.medLog),
+      medLogTimes: mergeMedLogTimes(local.medLogTimes, remote.medLogTimes),
+      medNames: mergeStringMap(local.medNames, remote.medNames),
+      folders: unionById<NoteFolder>(local.folders, remote.folders) ?? [],
+      notebook: unionById<Note>(local.notebook, remote.notebook) ?? [],
+      labs: unionById(local.labs, remote.labs) ?? [],
+      docs: unionById(local.docs, remote.docs) ?? [],
+      diagnoses: unionById(local.diagnoses, remote.diagnoses) ?? [],
+      deletedIds,
+      cycle: { ...(remote.cycle ?? {}), ...(local.cycle ?? {}) },
+      custom: mergeCustom(local.custom, remote.custom),
+      settings: { ...(remote.settings ?? {}), ...(local.settings ?? {}) },
+      // partner is a local-only projection of the other user's data — always keep local's.
+      partner: local.partner ?? remote.partner,
+    };
+  } finally {
+    _deleted = new Set();
+  }
 }
