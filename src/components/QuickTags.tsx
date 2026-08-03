@@ -551,7 +551,10 @@ function QuickTagBuilder({
         what: cat === "food" ? what.trim() || undefined : undefined,
         medId: cat === "meds" ? medId || undefined : undefined,
         mode: cat === "meds" ? medMode : undefined,
-        scheduleTime: cat === "meds" && medMode === "scheduled" ? scheduleTime || undefined : undefined,
+       scheduleTime:
+  cat === "meds" && medMode === "scheduled"
+    ? scheduleTime || data.meds.find(m => m.id === medId)?.times?.[0]
+    : undefined,
         kind: cat === "workout" ? kind : undefined,
         minutes: cat === "workout" ? minutes : undefined,
       },
@@ -663,17 +666,18 @@ function QuickTagBuilder({
                     </div>
 
                     {medMode === "scheduled" && (
-                      <select
-                        className={inputCls}
-                        value={scheduleTime}
-                        onChange={(e) => setScheduleTime(e.target.value)}
-                      >
-                        {(data.meds.find((m) => m.id === medId)?.times ?? []).map((time) => (
-                          <option key={time} value={time}>
-                            {time}
-                          </option>
-                        ))}
-                      </select>
+                    <p className="text-xs">Scheduled time</p>
+                     <select
+  className={inputCls}
+  value={medId}
+  onChange={(e) => {
+    const id = e.target.value;
+    setMedId(id);
+
+    const firstTime = data.meds.find(m => m.id === id)?.times?.[0] ?? "";
+    setScheduleTime(firstTime);
+  }}
+>
                     )}
                   </>
                 ) : (
