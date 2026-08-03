@@ -589,6 +589,14 @@ function QuickTagBuilder({
   const [scheduleTime, setScheduleTime] = useState("");
   const [kind, setKind] = useState("🚶🏼‍♀️ Walk");
   const [minutes, setMinutes] = useState(30);
+  const [bristol, setBristol] = useState(4);
+  const [thermoKind, setThermoKind] = useState<ThermoKind>("heat");
+  const [thermoMinutes, setThermoMinutes] = useState(20);
+  const [headacheType, setHeadacheType] = useState(HEADACHE_TYPES[0] ?? "Tension");
+  const [headacheIntensity, setHeadacheIntensity] = useState(3);
+  const [hotFlashesIntensity, setHotFlashesIntensity] = useState(3);
+  const [sleepHours, setSleepHours] = useState(8);
+  const [sleepQuality, setSleepQuality] = useState(SLEEP_QUALITY[7] ?? "🙂 Good");
   const [emoji, setEmoji] = useState("⭐");
   const [label, setLabel] = useState("");
 
