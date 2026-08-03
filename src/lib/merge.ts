@@ -90,6 +90,13 @@ function mergeDayLog(local: DayLog | undefined, remote: DayLog | undefined): Day
   return out;
 }
 
+function mergeDayLogs(local: Record<string, DayLog> | undefined, remote: Record<string, DayLog> | undefined): Record<string, DayLog> {
+  const keys = new Set([...Object.keys(local ?? {}), ...Object.keys(remote ?? {})]);
+  const out: Record<string, DayLog> = {};
+  for (const k of keys) out[k] = mergeDayLog(local?.[k], remote?.[k]);
+  return out;
+}
+
 
 /** dayNotes: values are arrays of notes (string or object), union by identity/text+time. */
 function mergeDayNotes(
