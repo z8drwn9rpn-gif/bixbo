@@ -1426,7 +1426,7 @@ function PainChart({
 function BristolChart({ bowelCounts }: { bowelCounts: number[] }) {
   const [active, setActive] = useState<number | null>(null);
   useDismissTapTooltip(() => setActive(null));
-  const max = Math.max(1, ...bowelCounts.slice(1));
+  const max = Math.max(1, ...bowelCounts);
   return (
     <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
       <p className="text-xs uppercase tracking-wider text-muted-foreground">Bowel — Bristol distribution</p>
