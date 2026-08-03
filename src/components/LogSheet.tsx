@@ -615,7 +615,7 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
                   selected={pressureTypes} onToggle={(v) => setPressureTypes((a) => toggleIn(a, v))} />
               </Field>
               <Field label={`Pressure intensity ${pressureIntensity ?? "-"}/10`}>
-                <IntensityScale value={pressureIntensity ?? 0} onChange={(n) => setPressureIntensity(pressureIntensity === n ? undefined : n)} max={10} from={0} />
+                <IntensityScale value={pressureIntensity ?? -1} onChange={(n) => setPressureIntensity(pressureIntensity === n ? undefined : n)} max={10} from={0} />
               </Field>
             </div>
           )}
@@ -630,14 +630,63 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
               onRenameCustom={(o, n) => { renameCustom("symptoms", o, n); setSymptoms((a) => a.map((x) => x === o ? n : x)); }}
               selected={symptoms} onToggle={(v) => setSymptoms((a) => toggleIn(a, v))} />
           </Field>
-          {symptoms.includes("Hot flashes") && (
-            <Field label={`Hot flashes intensity ${hotFlashes ?? "-"}/5`}>
-              <IntensityScale value={hotFlashes ?? 0} onChange={(n) => setHotFlashes(hotFlashes === n ? undefined : n)} max={5}
-                descriptions={getScaleDesc(data,"hotFlashes")} legendTitle="Hot flashes scale" />
+          {symptoms.includes("Flu") && (
+            <Field label="Flu symptoms note">
+              <Textarea rows={2} value={fluNote} onChange={(e) => setFluNote(e.target.value)} placeholder="e.g. stuffy nose, sore throat" />
             </Field>
           )}
-          {symptoms.includes("Headache") && (
-            <>
+          <Field label="Nausea?">
+            <div className="mt-1 flex gap-2">
+              <Chip active={!nausea} onClick={() => setNausea(false)}>No</Chip>
+              <Chip active={nausea} onClick={() => setNausea(true)}>Yes — log it</Chip>
+            </div>
+          </Field>
+          {nausea && (
+            <div className="rounded-2xl border border-border p-3 space-y-3">
+              <Field label="Type of nausea">
+                <CustomChipList base={NAUSEA_TYPES} custom={data.custom.nauseaTypes ?? []}
+                  descriptions={NAUSEA_TYPE_DESC}
+                  onAddCustom={(v) => addCustom("nauseaTypes", v)}
+                  onRemoveCustom={(v) => { removeCustom("nauseaTypes", v); setNauseaTypes((a) => a.filter((x) => x !== v)); }}
+                  onRenameCustom={(o, n) => { renameCustom("nauseaTypes", o, n); setNauseaTypes((a) => a.map((x) => x === o ? n : x)); }}
+                  selected={nauseaTypes} onToggle={(v) => setNauseaTypes((a) => toggleIn(a, v))} />
+              </Field>
+              <Field label={`Nausea severity ${nauseaSeverity ?? "-"}/10`}>
+                <IntensityScale value={nauseaSeverity ?? -1} onChange={(n) => setNauseaSeverity(nauseaSeverity === n ? undefined : n)} max={10} from={0}
+                  descriptions={NAUSEA_SEVERITY_DESC} legendTitle="Nausea severity scale" />
+              </Field>
+              <DurationField minutes={nauseaMinutes} setMinutes={setNauseaMinutes} ongoing={nauseaOngoing} setOngoing={setNauseaOngoing} />
+              <Field label="Triggers">
+                <CustomChipList base={NAUSEA_TRIGGERS} custom={data.custom.nauseaTriggers ?? []}
+                  onAddCustom={(v) => addCustom("nauseaTriggers", v)}
+                  onRemoveCustom={(v) => { removeCustom("nauseaTriggers", v); setNauseaTriggers((a) => a.filter((x) => x !== v)); }}
+                  onRenameCustom={(o, n) => { renameCustom("nauseaTriggers", o, n); setNauseaTriggers((a) => a.map((x) => x === o ? n : x)); }}
+                  selected={nauseaTriggers} onToggle={(v) => setNauseaTriggers((a) => toggleIn(a, v))} />
+              </Field>
+              <Field label="Associated symptoms">
+                <CustomChipList base={NAUSEA_SYMPTOMS} custom={data.custom.nauseaSymptoms ?? []}
+                  onAddCustom={(v) => addCustom("nauseaSymptoms", v)}
+                  onRemoveCustom={(v) => { removeCustom("nauseaSymptoms", v); setNauseaSymptoms((a) => a.filter((x) => x !== v)); }}
+                  onRenameCustom={(o, n) => { renameCustom("nauseaSymptoms", o, n); setNauseaSymptoms((a) => a.map((x) => x === o ? n : x)); }}
+                  selected={nauseaSymptoms} onToggle={(v) => setNauseaSymptoms((a) => toggleIn(a, v))} />
+              </Field>
+              <Field label="Relieved by">
+                <CustomChipList base={NAUSEA_HELPED} custom={data.custom.nauseaHelped ?? []}
+                  onAddCustom={(v) => addCustom("nauseaHelped", v)}
+                  onRemoveCustom={(v) => { removeCustom("nauseaHelped", v); setNauseaHelped((a) => a.filter((x) => x !== v)); }}
+                  onRenameCustom={(o, n) => { renameCustom("nauseaHelped", o, n); setNauseaHelped((a) => a.map((x) => x === o ? n : x)); }}
+                  selected={nauseaHelped} onToggle={(v) => setNauseaHelped((a) => toggleIn(a, v))} />
+              </Field>
+            </div>
+          )}
+          <Field label="Headache?">
+            <div className="mt-1 flex gap-2">
+              <Chip active={!headache} onClick={() => setHeadache(false)}>No</Chip>
+              <Chip active={headache} onClick={() => setHeadache(true)}>Yes — log it</Chip>
+            </div>
+          </Field>
+          {headache && (
+            <div className="rounded-2xl border border-border p-3 space-y-3">
               <Field label="Headache type">
                 <CustomChipList base={HEADACHE_TYPES} custom={data.custom.headacheTypes ?? []}
                   descriptions={HEADACHE_TYPE_DESC}
@@ -670,7 +719,19 @@ function PainWizard({ date, data, update, onDone, initialEntry }:
                   </div>
                 )}
               </Field>
-            </>
+            </div>
+          )}
+          <Field label="Hot flashes?">
+            <div className="mt-1 flex gap-2">
+              <Chip active={!hotFlashesOn} onClick={() => setHotFlashesOn(false)}>No</Chip>
+              <Chip active={hotFlashesOn} onClick={() => setHotFlashesOn(true)}>Yes — log it</Chip>
+            </div>
+          </Field>
+          {hotFlashesOn && (
+            <Field label={`Hot flashes intensity ${hotFlashes ?? "-"}/5`}>
+              <IntensityScale value={hotFlashes ?? 0} onChange={(n) => setHotFlashes(hotFlashes === n ? undefined : n)} max={5}
+                descriptions={getScaleDesc(data,"hotFlashes")} legendTitle="Hot flashes scale" />
+            </Field>
           )}
           <Field label="PCOS symptoms">
             <CustomChipList base={PCOS_SYMPTOMS} custom={data.custom.pcosSymptoms ?? []}

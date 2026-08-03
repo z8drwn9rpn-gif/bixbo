@@ -2,14 +2,14 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Settings as SettingsIcon, Share2, Trash2 } from "lucide-react";
 
-import { Ico } from "@/components/icons/BixboIcons";
+import { Ico, PillIcon } from "@/components/icons/BixboIcons";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { MonthCalendar, monthLabel } from "@/components/MonthCalendar";
 import { LogSheet } from "@/components/LogSheet";
 import { QuickTags } from "@/components/QuickTags";
 import {
-  useBixbo, EMPTY, toKey, fromKey, todayKey, PAIN_DESCRIPTIONS, painColor, BRISTOL, nextPredictedPeriod, pregnancyInfo, daysBetween, asArr,
+  useBixbo, EMPTY, toKey, fromKey, todayKey, nowHHMM, PAIN_DESCRIPTIONS, painColor, BRISTOL, nextPredictedPeriod, pregnancyInfo, daysBetween, asArr,
   type BixboData, type PeriodLevel, type BowelEntry, type SexEntry,
 } from "@/lib/storage";
 
@@ -150,24 +150,28 @@ function HomePage() {
         <div className="col-span-2">
           <MedsProgress data={view} />
         </div>
-        <VitalTile emoji="😴" label="Sleep" onClick={() => { setQuickCat("temp"); setEditEntry(undefined); setEditPain(undefined); setLogOpen(true); }} />
-        <VitalTile emoji="🌡️" label="Temp" onClick={() => { setQuickCat("temp"); setEditEntry(undefined); setEditPain(undefined); setLogOpen(true); }} />
-        <VitalTile emoji="⚖️" label="Weight" onClick={() => { setQuickCat("temp"); setEditEntry(undefined); setEditPain(undefined); setLogOpen(true); }} />
+        <VitalTile emoji="😴" label="Sleep" value={view.dayLogs[selected]?.sleepHours != null ? String(view.dayLogs[selected]!.sleepHours) : "—"} onClick={() => { setQuickCat("temp"); setEditEntry(undefined); setEditPain(undefined); setLogOpen(true); }} />
+        <VitalTile emoji="🌡️" label="Temp" value={view.dayLogs[selected]?.temperature != null ? String(view.dayLogs[selected]!.temperature) : "—"} onClick={() => { setQuickCat("temp"); setEditEntry(undefined); setEditPain(undefined); setLogOpen(true); }} />
+        <VitalTile emoji="⚖️" label="Weight" value={view.dayLogs[selected]?.weight != null ? String(view.dayLogs[selected]!.weight) : "—"} onClick={() => { setQuickCat("temp"); setEditEntry(undefined); setEditPain(undefined); setLogOpen(true); }} />
       </div>
 
-      {/* Quick log — placed above Today */}
-      <QuickTags
-        data={view}
-        update={update}
-        onLongPress={(cat: string) => {
-          const map: Record<string, string | undefined> = {
-            pain: "pain", tetany: "tetany", panic: "panic",
-            sex: "sex", food: "food", period: "period", meds: "meds", workout: "workout",
-          };
-          const target = map[cat];
-          if (target) { setQuickCat(target); setEditPain(undefined); setEditEntry(undefined); setLogOpen(true); }
-        }}
-      />
+      {/* Quick log — placed above Today.
+          Wrapper overrides fix the caption wrapping to one line and hide the
+          secondary removable-chip row without touching QuickTags.tsx. */}
+      <div className="[&_p.text-\[11px\].uppercase]:min-w-0 [&_p.text-\[11px\].uppercase]:flex-1 [&_p.text-\[11px\].uppercase]:truncate [&_p.text-\[11px\].uppercase]:text-[10px] [&_.mt-1.flex.flex-wrap.gap-1]:hidden">
+        <QuickTags
+          data={view}
+          update={update}
+          onLongPress={(cat: string) => {
+            const map: Record<string, string | undefined> = {
+              pain: "pain", tetany: "tetany", panic: "panic",
+              sex: "sex", food: "food", period: "period", meds: "meds", workout: "workout",
+            };
+            const target = map[cat];
+            if (target) { setQuickCat(target); setEditPain(undefined); setEditEntry(undefined); setLogOpen(true); }
+          }}
+        />
+      </div>
 
       <div className="mt-4 flex items-center justify-between px-5">
         <h2 className="font-serif text-xl font-bold">
@@ -190,11 +194,12 @@ function HomePage() {
 }
 
 
-function VitalTile({ emoji, label, onClick }: { emoji: string; label: string; onClick: () => void }) {
+function VitalTile({ emoji, label, value, onClick }: { emoji: string; label: string; value: string; onClick: () => void }) {
   return (
-    <button onClick={onClick} className="flex flex-col items-center justify-center gap-1 rounded-2xl bg-surface p-2 ring-1 ring-border hover:bg-tint">
-      <Ico e={emoji} size={20} />
-      <span className="text-[11px] font-medium text-muted-foreground">{label}</span>
+    <button onClick={onClick} className="flex flex-col items-center justify-center gap-0.5 rounded-2xl bg-surface p-2 ring-1 ring-border hover:bg-tint">
+      <Ico e={emoji} size={16} />
+      <span className="font-serif text-base font-bold leading-tight">{value}</span>
+      <span className="text-[10px] font-medium text-muted-foreground">{label}</span>
     </button>
   );
 }
@@ -211,7 +216,7 @@ function MedsProgress({ data }: { data: BixboData }) {
         <p className="font-serif text-lg font-bold">{taken}/{total || 0}</p>
       </div>
       <div className="grid h-10 w-10 place-items-center rounded-full bg-primary/15 text-primary">
-        💊
+        <PillIcon size={20} />
       </div>
     </div>
   );
@@ -258,7 +263,11 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
   );
 
   const markMissedTaken = (medKey: string) =>
-    update((d) => ({ ...d, medLog: { ...d.medLog, [date]: { ...(d.medLog[date] ?? {}), [medKey]: true } } }));
+    update((d) => ({
+      ...d,
+      medLog: { ...d.medLog, [date]: { ...(d.medLog[date] ?? {}), [medKey]: true } },
+      medLogTimes: { ...(d.medLogTimes ?? {}), [date]: { ...(d.medLogTimes?.[date] ?? {}), [medKey]: nowHHMM() } },
+    }));
 
   return (
     <div className="space-y-3 px-5 pt-3 pb-32">
@@ -374,10 +383,13 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
         </Card>
       ) : null}
 
-      {!isMale && (log?.period || log?.periodInfo?.level) && (
+      {!isMale && !!(
+        log?.period || log?.periodInfo?.level || log?.periodInfo?.discharge ||
+        log?.periodInfo?.dischargeNote || log?.periodInfo?.cramps != null || log?.periodInfo?.note
+      ) && (
         <Card title="Blueberry" icon="🫐">
           <button onClick={() => onEdit?.("period", undefined)} className="w-full text-left">
-            <p className="text-sm">Flow: {periodLabel(log?.periodInfo?.level ?? log?.period)}</p>
+            {(log?.periodInfo?.level || log?.period) && <p className="text-sm">Flow: {periodLabel(log?.periodInfo?.level ?? log?.period)}</p>}
             {log?.periodInfo?.cramps != null && (
               <p className="text-xs" style={{ color: painColor(log.periodInfo.cramps) }}>
                 Cramp pain: <span className="font-semibold">{Number.isInteger(log.periodInfo.cramps) ? log.periodInfo.cramps : log.periodInfo.cramps.toFixed(1)}/10</span> — {PAIN_DESCRIPTIONS[Math.round(log.periodInfo.cramps)]}
@@ -427,6 +439,7 @@ function DayPreview({ date, data, update, onEditPain, onEdit }:
                   {f.feelings.length ? <div className="text-xs text-muted-foreground">Feel: {f.feelings.join(", ")}</div> : null}
                   {f.symptomsAfter?.length ? <div className="text-xs text-muted-foreground">After: {f.symptomsAfter.join(", ")}</div> : null}
                   {f.histamineFlare ? <div className="text-xs text-destructive"><Ico e="🔥" size={13} /> Histamine flare{f.histamineSymptoms?.length ? `: ${f.histamineSymptoms.join(", ")}` : ""}</div> : null}
+                  {f.after ? <div className="mt-1 text-sm whitespace-pre-line">"{f.after}"</div> : null}
                 </button>
                 <DeleteBtn onClick={() => update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], food: (d.dayLogs[date]?.food ?? []).filter((x) => x.id !== f.id) } } }))} />
               </li>
