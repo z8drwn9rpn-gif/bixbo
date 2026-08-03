@@ -93,7 +93,7 @@ function baseTags(): Tag[] {
 
     {
       key: "panic",
-      emoji: "star",
+      emoji: "",
       label: "Panic attack",
       cat: "panic",
       apply: (l) => ({
