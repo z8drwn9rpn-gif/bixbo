@@ -932,13 +932,6 @@ export const DISCHARGE_OPTS: { value: string; label: string; color: string }[] =
 ];
 
 export const BRISTOL: { n: number; label: string; sub: string; color: string; shape: string }[] = [
-  {
-    n: 0,
-    label: "Type 0 — Mystery",
-    sub: "Bowel movement happened, but the type is unclear",
-    color: "#64748b",
-    shape: "mystery",
-  },
   { n: 1, label: "Type 1 — Constipation", sub: "Separate hard lumps", color: "#7c3aed", shape: "lumps" },
   { n: 2, label: "Type 2 — Constipation", sub: "Sausage-shaped but firm and lumpy", color: "#2563eb", shape: "lumpy" },
   { n: 3, label: "Type 3 — Normal", sub: "Thicker but soft, with cracks", color: "#16a34a", shape: "cracked" },
