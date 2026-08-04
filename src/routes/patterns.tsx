@@ -1358,7 +1358,7 @@ function PatternsPage() {
               decimals={1}
               unit="h"
               color="blue"
-              higherIsWorse={false}
+              neutralTrend
               icon={<Moon className="h-5 w-5" />}
             />
 
@@ -1370,7 +1370,7 @@ function PatternsPage() {
               decimals={1}
               unit="kg"
               color="slate"
-              higherIsWorse={false}
+              neutralTrend
               icon={<Scale className="h-5 w-5" />}
             />
 
