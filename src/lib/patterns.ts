@@ -9,8 +9,14 @@ export function mostCommon<T extends string>(arr: T[]): T | null {
   if (!arr.length) return null;
   const counts = new Map<T, number>();
   arr.forEach((v) => counts.set(v, (counts.get(v) ?? 0) + 1));
-  let best: T | null = null, bestC = 0;
-  counts.forEach((c, v) => { if (c > bestC) { bestC = c; best = v; } });
+  let best: T | null = null,
+    bestC = 0;
+  counts.forEach((c, v) => {
+    if (c > bestC) {
+      bestC = c;
+      best = v;
+    }
+  });
   return best;
 }
 
@@ -28,7 +34,10 @@ export function daysOfMonth(prefix: string): string[] {
   return Array.from({ length: last }, (_, i) => `${prefix}-${String(i + 1).padStart(2, "0")}`);
 }
 
-export interface HistoricCycle { start: string; end: string }
+export interface HistoricCycle {
+  start: string;
+  end: string;
+}
 
 /** All historic periods, derived from logged period days (+ cycle prefs fallback). */
 export function historicCycles(data: BixboData): HistoricCycle[] {
@@ -43,9 +52,15 @@ export function historicCycles(data: BixboData): HistoricCycle[] {
   for (const k of keys) {
     if (isPeriodDay(k)) {
       if (!curStart) curStart = k;
-      else if (addDays(prev, 1) !== k) { cycles.push({ start: curStart, end: prev }); curStart = k; }
+      else if (addDays(prev, 1) !== k) {
+        cycles.push({ start: curStart, end: prev });
+        curStart = k;
+      }
       prev = k;
-    } else if (curStart) { cycles.push({ start: curStart, end: prev }); curStart = null; }
+    } else if (curStart) {
+      cycles.push({ start: curStart, end: prev });
+      curStart = null;
+    }
   }
   if (curStart) cycles.push({ start: curStart, end: prev });
   if (!cycles.length && data.cycle.lastPeriodStart && data.cycle.lastPeriodEnd) {
@@ -54,21 +69,31 @@ export function historicCycles(data: BixboData): HistoricCycle[] {
   return cycles;
 }
 
-export interface PhaseBuckets { before: string[]; during: string[]; after: string[] }
+export interface PhaseBuckets {
+  before: string[];
+  during: string[];
+  after: string[];
+}
 
 export function phaseDays(cycles: HistoricCycle[]): PhaseBuckets {
-  const before: string[] = [], during: string[] = [], after: string[] = [];
+  const before: string[] = [],
+    during: string[] = [],
+    after: string[] = [];
   cycles.forEach((c) => {
     for (let i = 5; i >= 1; i--) before.push(addDays(c.start, -i));
     let k = c.start;
-    while (k <= c.end) { during.push(k); k = addDays(k, 1); }
+    while (k <= c.end) {
+      during.push(k);
+      k = addDays(k, 1);
+    }
     for (let i = 1; i <= 5; i++) after.push(addDays(c.end, i));
   });
   return { before, during, after };
 }
 
 export function phaseAvg(
-  days: string[], dayLogs: Record<string, DayLog>,
+  days: string[],
+  dayLogs: Record<string, DayLog>,
   valueFn: (l: DayLog) => number | null | undefined,
 ): number | null {
   const vals = days.map((k) => valueFn(dayLogs[k] ?? {})).filter((v): v is number => v != null);
@@ -82,7 +107,8 @@ export function phaseFlowMode(during: string[], dayLogs: Record<string, DayLog>)
   return mostCommon(levels);
 }
 
-const NEGATIVE_MOOD_RE = /angry|annoyed|anxious|apathetic|bored|cranky|depressed|fatigued|indifferent|irritated|lonely|meh|pmdd|sad|self-deprecating|stressed|tired|all over the place/i;
+const NEGATIVE_MOOD_RE =
+  /angry|annoyed|anxious|apathetic|bored|cranky|depressed|fatigued|indifferent|irritated|lonely|meh|pmdd|sad|self-deprecating|stressed|tired|all over the place/i;
 export function negativeMoodCount(l: DayLog): number {
   return (l.pain ?? []).reduce((s, p) => s + (p.mood ?? []).filter((m) => NEGATIVE_MOOD_RE.test(m)).length, 0);
 }
@@ -110,4 +136,11 @@ export function dayPanicIntensity(l: DayLog): number | null {
 export function dayHeadacheIntensity(l: DayLog): number | null {
   const vals = (l.pain ?? []).map((p) => p.headacheIntensity).filter((v): v is number => v != null);
   return vals.length ? avg(vals) : null;
+}
+export function dayPressureIntensity(l: DayLog): number | null {
+  const values = (l.pain ?? [])
+    .map((entry) => entry.pressureIntensity)
+    .filter((value): value is number => value != null && Number.isFinite(value));
+
+  return values.length ? avg(values) : null;
 }
