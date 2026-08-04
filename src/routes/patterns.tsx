@@ -1730,7 +1730,7 @@ function PatternsPage() {
                   name: event.target.value,
                 }))
               }
-              className="w-full rounded-2xl bg-tint px-4 py-3 text-sm text-foreground outline-none ring-1 ring-border placeholder:text-muted-foreground focus:ring-2 focus:ring-primary"
+              className="w-full rounded-2xl bg-tint px-4 py-3 text-base text-foreground outline-none ring-1 ring-border placeholder:text-muted-foreground focus:ring-2 focus:ring-primary"
             />
 
             <input
