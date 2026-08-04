@@ -789,17 +789,17 @@ function DayPreview({
               <li key={f.id} className="flex items-start gap-2">
                 <button onClick={() => onEdit?.("food", f)} className="flex-1 text-left">
                   <div>
-                    {f.time} · {f.what || (f.histamineFlare ? "(histamine flare)" : "—")}
+                    {f.time} · <IcoText text={f.what || (f.histamineFlare ? "(histamine flare)" : "—")} size={14} />
                     {f.highHistamine ? " · high histamine" : ""}
                     {f.hydrationMl != null ? ` · ${f.hydrationMl}ml` : ""}
                     {f.caffeineMg != null ? ` · ${f.caffeineMg}mg` : ""}
                     {f.alcoholDrinks != null ? ` · ${f.alcoholDrinks}` : ""}
                   </div>
                   {f.feelings.length ? (
-                    <div className="text-xs text-muted-foreground">Feel: {f.feelings.join(", ")}</div>
+                    <div className="text-xs text-muted-foreground">Feel: <IcoText text={f.feelings.join(", ")} size={13} /></div>
                   ) : null}
                   {f.symptomsAfter?.length ? (
-                    <div className="text-xs text-muted-foreground">After: {f.symptomsAfter.join(", ")}</div>
+                    <div className="text-xs text-muted-foreground">After: <IcoText text={f.symptomsAfter.join(", ")} size={13} /></div>
                   ) : null}
                   {f.histamineFlare ? (
                     <div className="text-xs text-destructive">
