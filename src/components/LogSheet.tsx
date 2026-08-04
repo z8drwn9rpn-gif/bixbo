@@ -3014,47 +3014,281 @@ function TempForm({
   update: UpdateFn;
   onDone: () => void;
 }) {
+  type VitalRow = {
+    id: string;
+    time: string;
+    value: number;
+  };
+
   const cur = data.dayLogs[date] ?? {};
-  const [temperature, setTemperature] = useState<string>(cur.temperature != null ? String(cur.temperature) : "");
-  const [weight, setWeight] = useState<string>(cur.weight != null ? String(cur.weight) : "");
-  const [sleep, setSleep] = useState<string>(cur.sleepHours != null ? String(cur.sleepHours) : "");
+
+  const [temperature, setTemperature] = useState("");
+  const [temperatureTime, setTemperatureTime] = useState(nowHHMM());
+
+  const [weight, setWeight] = useState("");
+  const [weightTime, setWeightTime] = useState(nowHHMM());
+
+  const [sleep, setSleep] = useState(cur.sleepHours != null ? String(cur.sleepHours) : "");
+
   const [quality, setQuality] = useState<string[]>(asArr(cur.sleepQuality));
+
+  const sortVitals = (entries: VitalRow[]): VitalRow[] =>
+    entries.slice().sort((a, b) => a.time.localeCompare(b.time) || a.id.localeCompare(b.id));
+
+  const latestVitalValue = (entries: VitalRow[]): number | undefined => {
+    const sorted = sortVitals(entries);
+
+    return sorted.length ? sorted[sorted.length - 1].value : undefined;
+  };
+
+  const existingVitals = (
+    entries: VitalRow[] | undefined,
+    legacyValue: number | undefined,
+    legacyId: string,
+  ): VitalRow[] => {
+    if (entries?.length) {
+      return sortVitals(entries);
+    }
+
+    if (legacyValue != null && Number.isFinite(legacyValue)) {
+      return [
+        {
+          id: legacyId,
+          time: "00:00",
+          value: legacyValue,
+        },
+      ];
+    }
+
+    return [];
+  };
+
+  const temperatureEntries = useMemo(
+    () => existingVitals(cur.temperatureEntries, cur.temperature, `${date}-legacy-temperature`),
+    [cur.temperatureEntries, cur.temperature, date],
+  );
+
+  const weightEntries = useMemo(
+    () => existingVitals(cur.weightEntries, cur.weight, `${date}-legacy-weight`),
+    [cur.weightEntries, cur.weight, date],
+  );
+
+  const deleteTemperature = (id: string) => {
+    updateDayLog(update, date, (log) => {
+      const current = existingVitals(log.temperatureEntries, log.temperature, `${date}-legacy-temperature`);
+
+      const next = sortVitals(current.filter((entry) => entry.id !== id));
+
+      return {
+        ...log,
+        temperatureEntries: next.length ? next : undefined,
+        temperature: latestVitalValue(next),
+      };
+    });
+  };
+
+  const deleteWeight = (id: string) => {
+    updateDayLog(update, date, (log) => {
+      const current = existingVitals(log.weightEntries, log.weight, `${date}-legacy-weight`);
+
+      const next = sortVitals(current.filter((entry) => entry.id !== id));
+
+      return {
+        ...log,
+        weightEntries: next.length ? next : undefined,
+        weight: latestVitalValue(next),
+      };
+    });
+  };
+
   const save = () => {
-    updateDayLog(update, date, (l) => ({
-      ...l,
-      temperature: temperature === "" ? undefined : Number(temperature),
-      weight: weight === "" ? undefined : Number(weight),
-      sleepHours: sleep === "" ? undefined : Number(sleep),
-      sleepQuality: quality.length ? quality : undefined,
-    }));
+    const temperatureValue = temperature.trim() === "" ? undefined : Number(temperature);
+
+    const weightValue = weight.trim() === "" ? undefined : Number(weight);
+
+    const sleepValue = sleep.trim() === "" ? undefined : Number(sleep);
+
+    updateDayLog(update, date, (log) => {
+      const currentTemperatures = existingVitals(log.temperatureEntries, log.temperature, `${date}-legacy-temperature`);
+
+      const currentWeights = existingVitals(log.weightEntries, log.weight, `${date}-legacy-weight`);
+
+      const nextTemperatures =
+        temperatureValue != null && Number.isFinite(temperatureValue)
+          ? sortVitals([
+              ...currentTemperatures,
+              {
+                id: crypto.randomUUID(),
+                time: temperatureTime || nowHHMM(),
+                value: temperatureValue,
+              },
+            ])
+          : currentTemperatures;
+
+      const nextWeights =
+        weightValue != null && Number.isFinite(weightValue)
+          ? sortVitals([
+              ...currentWeights,
+              {
+                id: crypto.randomUUID(),
+                time: weightTime || nowHHMM(),
+                value: weightValue,
+              },
+            ])
+          : currentWeights;
+
+      return {
+        ...log,
+
+        temperatureEntries: nextTemperatures.length ? nextTemperatures : undefined,
+
+        weightEntries: nextWeights.length ? nextWeights : undefined,
+
+        // Posledná hodnota zostáva aj v starom poli,
+        // aby fungoval Home, Calendar a staršie grafy.
+        temperature: latestVitalValue(nextTemperatures),
+
+        weight: latestVitalValue(nextWeights),
+
+        sleepHours: sleepValue != null && Number.isFinite(sleepValue) ? sleepValue : undefined,
+
+        sleepQuality: quality.length ? quality : undefined,
+      };
+    });
+
     onDone();
   };
+
   return (
-    <div className="space-y-3">
-      <Field label="Temperature (°C)">
+    <div className="space-y-5">
+      <Field label="New temperature measurement">
+        <div className="grid grid-cols-[1fr_120px] gap-2">
+          <Input
+            type="number"
+            inputMode="decimal"
+            min="30"
+            max="45"
+            step="0.1"
+            value={temperature}
+            onChange={(e) => setTemperature(e.target.value)}
+            placeholder="36.6 °C"
+          />
+
+          <Input type="time" value={temperatureTime} onChange={(e) => setTemperatureTime(e.target.value)} />
+        </div>
+
+        {temperatureEntries.length > 0 && (
+          <div className="mt-3 space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Saved temperature measurements
+            </p>
+
+            {temperatureEntries.map((entry) => (
+              <div
+                key={entry.id}
+                className="flex items-center gap-3 rounded-2xl bg-surface px-3 py-2 ring-1 ring-border"
+              >
+                <span className="grid h-8 w-8 place-items-center rounded-full bg-tint">
+                  <Ico e="🌡️" size={19} />
+                </span>
+
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold">{entry.value.toFixed(1)} °C</p>
+
+                  <p className="text-xs text-muted-foreground">{entry.time}</p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => deleteTemperature(entry.id)}
+                  aria-label={`Delete temperature ${entry.value}`}
+                  className="rounded-full p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </Field>
+
+      <Field label="New weight measurement">
+        <div className="grid grid-cols-[1fr_120px] gap-2">
+          <Input
+            type="number"
+            inputMode="decimal"
+            min="0"
+            step="0.1"
+            value={weight}
+            onChange={(e) => setWeight(e.target.value)}
+            placeholder="62.5 kg"
+          />
+
+          <Input type="time" value={weightTime} onChange={(e) => setWeightTime(e.target.value)} />
+        </div>
+
+        {weightEntries.length > 0 && (
+          <div className="mt-3 space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Saved weight measurements
+            </p>
+
+            {weightEntries.map((entry) => (
+              <div
+                key={entry.id}
+                className="flex items-center gap-3 rounded-2xl bg-surface px-3 py-2 ring-1 ring-border"
+              >
+                <span className="grid h-8 w-8 place-items-center rounded-full bg-tint">
+                  <Ico e="⚖️" size={19} />
+                </span>
+
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold">{entry.value.toFixed(1)} kg</p>
+
+                  <p className="text-xs text-muted-foreground">{entry.time}</p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => deleteWeight(entry.id)}
+                  aria-label={`Delete weight ${entry.value}`}
+                  className="rounded-full p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </Field>
+
+      <Field label="Sleep (hours)">
         <Input
           type="number"
-          step="0.1"
-          value={temperature}
-          onChange={(e) => setTemperature(e.target.value)}
-          placeholder="36.6"
+          inputMode="decimal"
+          min="0"
+          max="24"
+          step="0.5"
+          value={sleep}
+          onChange={(e) => setSleep(e.target.value)}
+          placeholder="8"
         />
       </Field>
-      <Field label="Weight (kg)">
-        <Input type="number" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="65.0" />
-      </Field>
-      <Field label="Sleep (hours)">
-        <Input type="number" step="0.5" value={sleep} onChange={(e) => setSleep(e.target.value)} placeholder="8" />
-      </Field>
+
       <Field label="How I slept">
         <div className="mt-2 flex flex-wrap gap-2">
-          {SLEEP_QUALITY.map((q) => (
-            <Chip key={q} active={quality.includes(q)} onClick={() => setQuality((a) => toggleIn(a, q))}>
-              {q}
+          {SLEEP_QUALITY.map((item) => (
+            <Chip
+              key={item}
+              active={quality.includes(item)}
+              onClick={() => setQuality((current) => toggleIn(current, item))}
+            >
+              {item}
             </Chip>
           ))}
         </div>
       </Field>
+
       <SaveBar onCancel={onDone} onSave={save} />
     </div>
   );
