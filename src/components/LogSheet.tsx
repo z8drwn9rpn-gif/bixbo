@@ -1,3632 +1,1336 @@
-import { useState, useMemo, useRef, useEffect, type ReactNode } from "react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
-import { Ico, IcoText } from "@/components/icons/BixboIcons";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Slider } from "@/components/ui/slider";
-import { X, Plus, ChevronLeft, ChevronUp, ChevronDown, GripVertical, Check, Pencil } from "lucide-react";
-import {
-  PAIN_DESCRIPTIONS,
-  painColor,
-  periodLabel,
-  BODY_PARTS_DEFAULT,
-  PAIN_QUALITY_DEFAULT,
-  OTHER_SYMPTOMS_DEFAULT,
-  FOOD_FEELINGS_DEFAULT,
-  WORKOUT_KINDS_DEFAULT,
-  BRISTOL,
-  DISCHARGE_OPTS,
-  MOODS_DEFAULT,
-  TETANY_TYPES,
-  TETANY_TYPE_DESC,
-  TETANY_LOCATIONS_DEFAULT,
-  TETANY_TRIGGERS,
-  TETANY_HELPED_DEFAULT,
-  HEADACHE_TYPES,
-  HEADACHE_TYPE_DESC,
-  PRESSURE_TYPES,
-  NAUSEA_TYPES,
-  NAUSEA_TYPE_DESC,
-  NAUSEA_SEVERITY_DESC,
-  NAUSEA_TRIGGERS,
-  NAUSEA_SYMPTOMS,
-  NAUSEA_HELPED,
-  PANIC_PHYSICAL,
-  PANIC_COGNITIVE,
-  PANIC_HELPED_DEFAULT,
-  SEX_TYPES_DEFAULT,
-  BODY_BATTERY,
-  SLEEP_QUALITY,
-  SEX_FEELINGS_DEFAULT,
-  EVENT_COLORS,
-  BOWEL_FEELINGS_DEFAULT,
-  BOWEL_SYMPTOMS_DEFAULT,
-  PCOS_SYMPTOMS,
-  HISTAMINE_SYMPTOMS,
-  FOOD_SYMPTOMS_AFTER,
-  todayKey,
-  nowHHMM,
-  updateDayLog,
-  asArr,
-  workoutHasDistance,
-  workoutIsHike,
-  workoutIsStrength,
-  pregnancyInfo,
-  URINARY_DEFAULT,
-  ALLERGENS_DEFAULT,
-  type BixboData,
-  type DayLog,
-  type PainEntry,
-  type PeriodLevel,
-  type FoodEntry,
-  type BowelEntry,
-  type ThermoSession,
-  type ThermoKind,
-  type SexEntry,
-  type SexKind,
-  type ExtraMed,
-  type WorkoutEntry,
-  type WorkoutExercise,
-  type EventEntry,
-  type TaskEntry,
-  type TetanyEpisode,
-  type PanicAttack,
-  type PainfulWhen,
-} from "@/lib/storage";
+import { useEffect, useSyncExternalStore } from "react";
 
-type UpdateFn = (u: (d: BixboData) => BixboData) => void;
-type Category =
-  | "meds"
-  | "pain"
-  | "panic"
-  | "tetany"
-  | "period"
+/* ------------------- Types ------------------- */
+export type PeriodLevel = "" | "spotting" | "light" | "medium" | "heavy" | "very-heavy";
+export type SexKind =
   | "sex"
-  | "heat"
-  | "food"
-  | "bowel"
-  | "workout"
-  | "temp"
-  | "task"
-  | "event"
-  | "note";
+  | "fingering"
+  | "suck_dick"
+  | "oral"
+  | "other"
+  | "sex_with_condom"
+  | "sex_without_condom"
+  | "oral_giving"
+  | "oral_receiving";
+export type ThermoKind = "heat" | "cold" | "tens";
+export type PainfulWhen = "no" | "before" | "during" | "after";
+export type Gender = "female" | "male";
 
-const CATEGORIES: { id: Category; label: string; emoji: string; hint: string }[] = [
-  { id: "pain", label: "Pain", emoji: "🔥", hint: "0–10, body, quality" },
-  { id: "period", label: "Blueberry", emoji: "🫐", hint: "Flow · discharge · notes" },
-  { id: "heat", label: "Heat / Cold / TENS session", emoji: "♨️", hint: "Heating, ice or TENS session" },
-  { id: "food", label: "Food", emoji: "🍽️", hint: "What & how you feel" },
-  { id: "bowel", label: "Bowel", emoji: "💩", hint: "Bristol type" },
-  { id: "sex", label: "ŠukŠuk!", emoji: "❤️", hint: "All kinds of activity" },
-  { id: "workout", label: "Workout", emoji: "🧘🏼‍♀️", hint: "Type · duration · weight" },
-  { id: "temp", label: "Temp / Sleep / Weight", emoji: "🌡️", hint: "°C · kg · hours" },
-  { id: "meds", label: "Meds", emoji: "💊", hint: "Taken · extra dose" },
-  { id: "event", label: "Event", emoji: "📅", hint: "Multi-day · time · note" },
-  { id: "task", label: "Task", emoji: "✅", hint: "To-do with date & time" },
-  { id: "note", label: "Note", emoji: "📝", hint: "Any thought for today" },
+export interface PainEntry {
+  id: string;
+  time: string;
+  score: number;
+  parts: string[];
+  quality: string[];
+  symptoms: string[];
+  note: string;
+  bodyBattery?: number;
+  stress?: number;
+  mood?: string[];
+  /** Hot flashes section (own Yes/No trigger) */
+  hotFlashesOn?: boolean;
+  hotFlashes?: number;
+  /** Headache section (own Yes/No trigger) */
+  headache?: boolean;
+  headacheTypes?: string[];
+  headacheIntensity?: number;
+  headacheMed?: string;
+  headacheMedTime?: string;
+  /** Pressure detail, shown when "Pressure" quality is selected */
+  pressureTypes?: string[];
+  pressureIntensity?: number;
+  /** Nausea section */
+  nausea?: boolean;
+  nauseaTypes?: string[];
+  nauseaSeverity?: number;
+  nauseaMinutes?: number;
+  nauseaOngoing?: boolean;
+  nauseaTriggers?: string[];
+  nauseaSymptoms?: string[];
+  nauseaHelped?: string[];
+  /** Flu-specific note (separate from the general note) */
+  fluNote?: string;
+  pcosSymptoms?: string[];
+}
+export interface TetanyEpisode {
+  id: string;
+  time: string;
+  types: string[];
+  location: string[];
+  intensity: number;
+  minutes?: number;
+  triggers: string[];
+  timeSinceMagnerotMin?: number;
+  helped: string[];
+  rescueMed?: string;
+  note?: string;
+}
+export interface PanicAttack {
+  id: string;
+  time: string;
+  minutes?: number;
+  intensity: number;
+  physical: string[];
+  cognitive: string[];
+  trigger: string;
+  place?: string;
+  hyperventilation: "no" | "before" | "during" | "unknown";
+  tetanyPresent: boolean;
+  helped: string[];
+  rescueMed?: string;
+  note?: string;
+}
+export interface ThermoSession {
+  id: string;
+  kind: ThermoKind;
+  start: string;
+  minutes: number;
+  ongoing?: boolean;
+  note?: string;
+}
+export interface FoodEntry {
+  id: string;
+  time: string;
+  what: string;
+  feelings: string[];
+  after?: string;
+  hydrationMl?: number;
+  caffeineMg?: number;
+  alcoholDrinks?: number;
+  symptomsAfter?: string[];
+  histamineFlare?: boolean;
+  histamineSymptoms?: string[];
+  highHistamine?: boolean;
+  allergensInMeal?: string[];
+  allergicReaction?: boolean;
+  reactionSeverity?: "mild" | "moderate" | "severe";
+}
+export interface BowelEntry {
+  id: string;
+  time: string;
+  bristol: number;
+  note?: string;
+  feelings?: string[];
+  symptoms?: string[];
+  urinary?: string[];
+}
+
+export interface SexEntry {
+  id: string;
+  time: string;
+  kind: SexKind;
+  feelingAfter?: string | string[];
+  painful?: PainfulWhen;
+  note?: string;
+}
+export interface ExtraMed {
+  id: string;
+  time: string;
+  name: string;
+  dose?: string;
+  note?: string;
+}
+export interface WorkoutExercise {
+  id: string;
+  name: string;
+  sets?: number;
+  reps?: number;
+  weightKg?: number;
+}
+export interface WorkoutEntry {
+  id: string;
+  time: string;
+  kind: string;
+  minutes: number;
+  /** Body weight measured after the workout — kept separate from the day's weight metric. */
+  weightKg?: number;
+  distanceKm?: number;
+  elevationM?: number;
+  exercises?: WorkoutExercise[];
+  rpe?: number;
+  magnesiumBefore?: boolean;
+  triggeredSymptom?: { type: "tetany" | "pain"; id: string; label?: string };
+  feeling?: string | string[];
+  note?: string;
+}
+export interface EventEntry {
+  id: string;
+  title: string;
+  startDate: string;
+  endDate: string;
+  time?: string;
+  timeEnd?: string;
+  note?: string;
+  color?: string;
+}
+export interface TaskEntry {
+  id: string;
+  title: string;
+  startDate: string;
+  endDate: string;
+  time?: string;
+  timeEnd?: string;
+  done: boolean;
+  note?: string;
+}
+export interface PeriodEntry {
+  level: PeriodLevel;
+  discharge?: string;
+  dischargeNote?: string;
+  note?: string;
+  cramps?: number;
+}
+export interface DayNote {
+  text: string;
+  time?: string;
+}
+
+export interface MoodEntry {
+  id: string;
+  time: string;
+  value: "happy" | "neutral" | "sad" | "angry";
+}
+export interface EnergyEntry {
+  id: string;
+  time: string;
+  value: "good" | "exhausted";
+}
+export interface HistamineEntry {
+  id: string;
+  time: string;
+  flare: boolean;
+  note?: string;
+}
+
+/** A single time-stamped weight or body-temperature measurement. */
+export interface VitalMeasurement {
+  id: string;
+  time: string;
+  value: number;
+}
+
+export interface DayLog {
+  pain?: PainEntry[];
+  tetany?: TetanyEpisode[];
+  panic?: PanicAttack[];
+  heat?: ThermoSession[];
+  period?: PeriodLevel;
+  periodInfo?: PeriodEntry;
+  food?: FoodEntry[];
+  bowel?: BowelEntry[];
+  sex?: SexEntry[];
+  /** Multiple time-stamped body-temperature measurements for this day. */
+  temperatureEntries?: VitalMeasurement[];
+  /** Multiple time-stamped weight measurements for this day. */
+  weightEntries?: VitalMeasurement[];
+  /** Legacy/current summary value kept for compatibility with older UI code. */
+  temperature?: number;
+  /** Legacy/current summary value kept for compatibility with older UI code. */
+  weight?: number;
+  sleepHours?: number;
+  sleepQuality?: string | string[];
+  extraMeds?: ExtraMed[];
+  workout?: WorkoutEntry[];
+  mood?: MoodEntry[];
+  energy?: EnergyEntry[];
+  histamine?: HistamineEntry[];
+}
+
+export function asArr(v: string | string[] | undefined | null): string[] {
+  if (v == null || v === "") return [];
+  return Array.isArray(v) ? v : [v];
+}
+
+export interface Todo {
+  id: string;
+  text: string;
+  done: boolean;
+}
+export interface Med {
+  id: string;
+  name: string;
+  dose?: string;
+  times: string[];
+  asNeeded?: boolean;
+  color?: string;
+  note?: string;
+}
+export interface NoteFolder {
+  id: string;
+  name: string;
+  icon?: string;
+}
+export interface NoteChecklistItem {
+  id: string;
+  text: string;
+  done: boolean;
+}
+export interface Note {
+  id: string;
+  folderId: string;
+  title: string;
+  content: string;
+  checklist?: NoteChecklistItem[];
+  createdAt: number;
+  updatedAt?: number;
+}
+
+export interface CyclePrefs {
+  lastPeriodStart?: string;
+  lastPeriodEnd?: string;
+  cycleLength: number;
+  periodLength: number;
+}
+
+export interface CustomLists {
+  bodyParts: string[];
+  quality: string[];
+  symptoms: string[];
+  foodFeelings: string[];
+  foodQuickAdd: string[];
+  workoutKinds: string[];
+  moods: string[];
+  tetanyTypes: string[];
+  tetanyLocations: string[];
+  tetanyTriggers: string[];
+  tetanyHelped: string[];
+  panicPhysical: string[];
+  panicCognitive: string[];
+  panicHelped: string[];
+  sexTypes: string[];
+  bowelFeelings: string[];
+  bowelSymptoms: string[];
+  pcosSymptoms: string[];
+  headacheTypes: string[];
+  histamineSymptoms: string[];
+  foodSymptomsAfter: string[];
+  sexFeelings: string[];
+  urinary: string[];
+  allergens: string[];
+  pressureTypes: string[];
+  nauseaTypes: string[];
+  nauseaTriggers: string[];
+  nauseaSymptoms: string[];
+  nauseaHelped: string[];
+  labTests: string[];
+}
+
+export type QuickTagCategory =
+  | "pain"
+  | "tetany"
+  | "panic"
+  | "sex"
+  | "food"
+  | "meds"
+  | "workout"
+  | "period"
+  | "bowel"
+  | "thermo"
+  | "headache"
+  | "hotFlashes"
+  | "mood"
+  | "energy"
+  | "histamine"
+  | "sleep";
+export interface CustomQuickTag {
+  id: string;
+  emoji: string;
+  label: string;
+  cat: QuickTagCategory;
+  preset?: {
+    score?: number; // pain
+    intensity?: number; // tetany / panic
+    what?: string; // food
+    medId?: string; // meds
+    kind?: string; // workout / sex / thermo / bowel / period level
+    minutes?: number; // workout / thermo
+    bristol?: number; // bowel
+    level?: PeriodLevel; // period
+    /** meds: mark a scheduled dose taken vs. log an extra/PRN dose */
+    mode?: "scheduled" | "extra";
+    /** meds: `${medId}@${time}` identifying the scheduled slot */
+    scheduleKey?: string;
+    /** meds: HH:MM of the scheduled slot to mark taken */
+    scheduleTime?: string;
+    thermoKind?: ThermoKind;
+    thermoMinutes?: number;
+
+    headacheType?: string;
+    headacheIntensity?: number;
+
+    hotFlashesIntensity?: number;
+
+    sleepHours?: number;
+    sleepQuality?: string;
+  };
+}
+
+export interface Settings {
+  textSize: "sm" | "md" | "lg" | "xl";
+  notifications: boolean;
+  /** Appearance preference; "system" follows the device. */
+  theme?: "light" | "dark" | "system";
+  pairingCode?: string;
+  partnerName?: string;
+  logOrder?: string[];
+  gender?: Gender;
+  birthControlSince?: string;
+  pregnantSince?: string;
+  /** Display name used for the "Hi, <name>" greeting on Home. */
+  userName?: string;
+  /** Per-user allergen list used by the Food form. */
+  allergens?: string[];
+  /** Custom order of quick-log tags (ids of built-in + custom tags). */
+  quickTagOrder?: string[];
+  /** Ids of quick-log tags the user removed from the quick bar. */
+  hiddenQuickTags?: string[];
+
+  customQuickTags?: CustomQuickTag[];
+  scaleDescriptions?: Partial<
+    Record<
+      "pain" | "stress" | "tetany" | "panic" | "hotFlashes" | "headache" | "nausea" | "pressure",
+      Record<number, string>
+    >
+  >;
+  /** Saved Trigger Comparison combos on the Patterns tab. */
+  savedTriggers?: { id: string; a: string; b: string }[];
+}
+
+export interface PartnerData {
+  name?: string;
+  dayLogs: Record<
+    string,
+    {
+      pain?: PainEntry[];
+      panic?: PanicAttack[];
+      tetany?: TetanyEpisode[];
+      extraMeds?: ExtraMed[];
+      period?: PeriodLevel;
+      periodInfo?: PeriodEntry;
+    }
+  >;
+  dayNotes?: Record<string, DayNote[] | string[]>;
+  meds?: Med[];
+  medLog?: Record<string, Record<string, boolean>>;
+  cycle?: CyclePrefs;
+  gender?: Gender;
+  importedAt: number;
+}
+
+/* ------------------- Lab results / documents / diagnoses ------------------- */
+export interface LabResult {
+  id: string;
+  test: string;
+  value: number;
+  unit?: string;
+  refLow?: number;
+  refHigh?: number;
+  date: string;
+  note?: string;
+}
+
+export interface DocEntry {
+  id: string;
+  name: string;
+  date: string;
+  mime?: string;
+  /** data URL of the uploaded file (stored locally + synced) */
+  dataUrl?: string;
+  labId?: string;
+}
+
+export interface Diagnosis {
+  id: string;
+  name: string;
+  date?: string;
+  doctor?: string;
+  note?: string;
+  docId?: string;
+}
+
+export interface BixboData {
+  dayLogs: Record<string, DayLog>;
+  dayNotes: Record<string, DayNote[] | string[]>;
+  todos: Record<string, Todo[]>;
+  tasks: TaskEntry[];
+  events: EventEntry[];
+  meds: Med[];
+  medLog: Record<string, Record<string, boolean>>;
+  medLogTimes: Record<string, Record<string, string>>;
+  medNames?: Record<string, string>;
+  folders: NoteFolder[];
+  notebook: Note[];
+  cycle: CyclePrefs;
+  custom: CustomLists;
+  settings: Settings;
+  partner?: PartnerData;
+  labs?: LabResult[];
+  docs?: DocEntry[];
+  diagnoses?: Diagnosis[];
+  /** Ids of entries the user deleted — used by cloud merge so a union merge
+   * doesn't resurrect them from another device. */
+  deletedIds?: string[];
+}
+
+export const DEFAULT_FOLDERS: NoteFolder[] = [
+  { id: "general", name: "General", icon: "📓" },
+  { id: "health", name: "Health", icon: "💚" },
+  { id: "ideas", name: "Ideas", icon: "💡" },
 ];
 
-export function LogSheet({
-  open,
-  onOpenChange,
-  date,
-  data,
-  update,
-  initial,
-  initialPain,
-  editEntry,
-}: {
-  open: boolean;
-  onOpenChange: (b: boolean) => void;
-  date: string;
-  data: BixboData;
-  update: UpdateFn;
-  initial?: Category;
-  initialPain?: PainEntry;
-  editEntry?: unknown;
-}) {
-  const [cat, setCat] = useState<Category | null>(initial ?? null);
-  const [openToken, setOpenToken] = useState(0);
-  useEffect(() => {
-    if (open) setOpenToken((t) => t + 1);
-  }, [open]);
-  const [editingOrder, setEditingOrder] = useState(false);
-  const close = () => {
-    setCat(null);
-    setEditingOrder(false);
-    onOpenChange(false);
-  };
-  const back = () => setCat(null);
-  const active = cat ?? initial;
-  const edit = editEntry;
+export const EMPTY: BixboData = {
+  dayLogs: {},
+  dayNotes: {},
+  todos: {},
+  tasks: [],
+  events: [],
+  meds: [],
+  medLog: {},
+  medLogTimes: {},
+  medNames: {},
+  folders: DEFAULT_FOLDERS,
+  notebook: [],
+  cycle: {
+    lastPeriodStart: "2026-07-15",
+    lastPeriodEnd: "2026-07-19",
+    cycleLength: 28,
+    periodLength: 5,
+  },
+  custom: {
+    bodyParts: [],
+    quality: [],
+    symptoms: [],
+    foodFeelings: [],
+    foodQuickAdd: [],
+    workoutKinds: [],
+    moods: [],
+    tetanyTypes: [],
+    tetanyLocations: [],
+    tetanyTriggers: [],
+    tetanyHelped: [],
+    panicPhysical: [],
+    panicCognitive: [],
+    panicHelped: [],
+    sexTypes: [],
+    bowelFeelings: [],
+    bowelSymptoms: [],
+    pcosSymptoms: [],
+    headacheTypes: [],
+    histamineSymptoms: [],
+    foodSymptomsAfter: [],
+    sexFeelings: [],
+    urinary: [],
+    allergens: [],
+    pressureTypes: [],
+    nauseaTypes: [],
+    nauseaTriggers: [],
+    nauseaSymptoms: [],
+    nauseaHelped: [],
+    labTests: [],
+  },
+  settings: {
+    textSize: "md",
+    notifications: true,
+    gender: "female",
+    theme: "system",
+    savedTriggers: [],
+  },
+  labs: [],
+  docs: [],
+  diagnoses: [],
+  deletedIds: [],
+};
 
-  const isMale = data.settings.gender === "male";
-  const orderedCats = useMemo(() => {
-    const saved = data.settings.logOrder ?? [];
-    const source = CATEGORIES.filter((c) => !(isMale && c.id === "period"));
-    const byId = new Map(source.map((c) => [c.id, c]));
-    const seen = new Set<string>();
-    const out: typeof CATEGORIES = [];
-    for (const id of saved) {
-      const c = byId.get(id as Category);
-      if (c && !seen.has(id)) {
-        out.push(c);
-        seen.add(id);
+const KEY = "bixbo:v2";
+const LEGACY_KEY = "bixbo:v1";
+
+type VitalField = "weightEntries" | "temperatureEntries";
+
+function normalizeVitalEntries(raw: unknown, dateKey: string, kind: "weight" | "temperature"): VitalMeasurement[] {
+  if (!Array.isArray(raw)) return [];
+
+  return raw
+    .map((item, index): VitalMeasurement | null => {
+      if (!item || typeof item !== "object") return null;
+
+      const source = item as Partial<VitalMeasurement>;
+      const value = Number(source.value);
+
+      if (!Number.isFinite(value)) return null;
+
+      return {
+        id: typeof source.id === "string" && source.id.trim() ? source.id : `${dateKey}-${kind}-${index}`,
+        time: typeof source.time === "string" && /^\d{2}:\d{2}$/.test(source.time) ? source.time : "00:00",
+        value,
+      };
+    })
+    .filter((entry): entry is VitalMeasurement => entry != null)
+    .sort((a, b) => a.time.localeCompare(b.time) || a.id.localeCompare(b.id));
+}
+
+function latestVitalValue(entries?: VitalMeasurement[]): number | undefined {
+  if (!entries?.length) return undefined;
+
+  const sorted = entries
+    .filter((entry) => Number.isFinite(entry.value))
+    .slice()
+    .sort((a, b) => a.time.localeCompare(b.time) || a.id.localeCompare(b.id));
+
+  return sorted.length ? sorted[sorted.length - 1].value : undefined;
+}
+
+function migrate(raw: unknown): BixboData {
+  const parsed = (raw ?? {}) as Partial<BixboData> & Record<string, unknown>;
+  const src = (parsed.dayLogs ?? {}) as Record<string, Record<string, unknown>>;
+  const dayLogs: Record<string, DayLog> = {};
+
+  for (const [key, value] of Object.entries(src)) {
+    const legacyLog = value as Record<string, unknown>;
+    const out: DayLog = { ...(value as DayLog) };
+
+    // Normalize the old period value so previously saved data keeps working.
+    if (out.period === ("veryheavy" as PeriodLevel)) {
+      out.period = "very-heavy";
+    }
+
+    if (out.periodInfo?.level === ("veryheavy" as PeriodLevel)) {
+      out.periodInfo = {
+        ...out.periodInfo,
+        level: "very-heavy",
+      };
+    }
+
+    const temperatureEntries = normalizeVitalEntries(legacyLog.temperatureEntries, key, "temperature");
+    const weightEntries = normalizeVitalEntries(legacyLog.weightEntries, key, "weight");
+
+    // Convert old one-value-per-day fields into time-stamped entries once.
+    if (!temperatureEntries.length && typeof legacyLog.temperature === "number") {
+      temperatureEntries.push({
+        id: `${key}-legacy-temperature`,
+        time: "00:00",
+        value: legacyLog.temperature,
+      });
+    }
+
+    if (!weightEntries.length && typeof legacyLog.weight === "number") {
+      weightEntries.push({
+        id: `${key}-legacy-weight`,
+        time: "00:00",
+        value: legacyLog.weight,
+      });
+    }
+
+    if (temperatureEntries.length) {
+      out.temperatureEntries = temperatureEntries;
+      out.temperature = latestVitalValue(temperatureEntries);
+    }
+
+    if (weightEntries.length) {
+      out.weightEntries = weightEntries;
+      out.weight = latestVitalValue(weightEntries);
+    }
+
+    if (typeof legacyLog.pain === "number") {
+      out.pain = [
+        {
+          id: `${key}-legacy`,
+          time: "00:00",
+          score: legacyLog.pain,
+          parts: [],
+          quality: [],
+          symptoms: [],
+          note: "",
+        },
+      ];
+    }
+
+    if (legacyLog.sex && typeof legacyLog.sex === "object" && !Array.isArray(legacyLog.sex)) {
+      const legacySex = legacyLog.sex as {
+        type?: string;
+        note?: string;
+      };
+
+      if (legacySex.type && legacySex.type !== "none") {
+        const map: Record<string, SexKind> = {
+          with_condom: "sex",
+          without_condom: "sex",
+        };
+
+        out.sex = [
+          {
+            id: `${key}-legacy-sex`,
+            time: "00:00",
+            kind: (map[legacySex.type] ?? "other") as SexKind,
+            note: legacySex.note,
+          },
+        ];
+      } else {
+        out.sex = [];
       }
     }
-    for (const c of source) if (!seen.has(c.id)) out.push(c);
-    return out;
-  }, [data.settings.logOrder, isMale]);
 
-  const moveCat = (idx: number, dir: -1 | 1) => {
-    const j = idx + dir;
-    if (j < 0 || j >= orderedCats.length) return;
-    const next = orderedCats.slice();
-    [next[idx], next[j]] = [next[j], next[idx]];
-    update((d) => ({ ...d, settings: { ...d.settings, logOrder: next.map((c) => c.id) } }));
+    dayLogs[key] = out;
+  }
+
+  const custom = {
+    ...EMPTY.custom,
+    ...(parsed.custom as Partial<CustomLists> | undefined),
   };
 
-  return (
-    <Sheet
-      open={open}
-      onOpenChange={(b) => {
-        if (!b) close();
-      }}
-    >
-      <SheetContent
-        side="bottom"
-        className={
-          (active
-            ? "flex h-[100dvh] max-h-[100dvh] flex-col rounded-t-none bg-background p-0"
-            : "flex h-[88vh] max-h-[88vh] flex-col rounded-t-3xl bg-background p-0") + " [&>button.absolute]:hidden"
-        }
-      >
-        {!active ? (
-          <>
-            <SheetHeader className="shrink-0 relative px-5 pt-5 pb-2">
-              <SheetTitle className="text-center font-serif text-2xl">Log</SheetTitle>
-              <button
-                onClick={() => setEditingOrder((v) => !v)}
-                className="absolute left-4 top-4 flex items-center gap-1 rounded-full px-2 py-1 text-xs text-muted-foreground hover:bg-tint"
-              >
-                {editingOrder ? (
-                  <>
-                    <Check className="h-4 w-4" /> Done
-                  </>
-                ) : (
-                  <>
-                    <GripVertical className="h-4 w-4" /> Reorder
-                  </>
-                )}
-              </button>
-              <button
-                onClick={close}
-                aria-label="Close"
-                className="absolute right-4 top-4 rounded-full p-1 hover:bg-tint"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </SheetHeader>
-            <ul className="min-h-0 flex-1 overflow-y-auto divide-y divide-border border-t border-border">
-              {orderedCats.map((c, i) => (
-                <li key={c.id}>
-                  {editingOrder ? (
-                    <div className="flex w-full items-center gap-3 bg-surface px-5 py-3">
-                      <span className="grid h-10 w-10 place-items-center rounded-full bg-tint">
-                        <Ico e={c.emoji} size={26} />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-base font-semibold">{c.label}</p>
-                      </div>
-                      <button
-                        onClick={() => moveCat(i, -1)}
-                        disabled={i === 0}
-                        className="rounded-full p-2 hover:bg-tint disabled:opacity-30"
-                        aria-label="Move up"
-                      >
-                        <ChevronUp className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={() => moveCat(i, 1)}
-                        disabled={i === orderedCats.length - 1}
-                        className="rounded-full p-2 hover:bg-tint disabled:opacity-30"
-                        aria-label="Move down"
-                      >
-                        <ChevronDown className="h-5 w-5" />
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setCat(c.id)}
-                      className="flex w-full items-center gap-3 bg-surface px-5 py-3 text-left transition hover:bg-tint"
-                    >
-                      <span className="grid h-10 w-10 place-items-center rounded-full bg-tint">
-                        <Ico e={c.emoji} size={26} />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-base font-semibold">{c.label}</p>
-                        <p className="truncate text-xs text-muted-foreground">{c.hint}</p>
-                      </div>
-                      <span className="text-muted-foreground">›</span>
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </>
-        ) : (
-          <div className="flex h-full min-h-0 flex-col">
-            <SheetHeader className="shrink-0 flex-row items-center justify-between border-b border-border px-5 py-3">
-              <button onClick={back} className="flex items-center gap-1 text-sm text-muted-foreground">
-                <ChevronLeft className="h-4 w-4" /> Back to Log
-              </button>
-              <SheetTitle className="font-serif text-lg">{CATEGORIES.find((c) => c.id === active)?.label}</SheetTitle>
-              <button onClick={close} aria-label="Close" className="rounded-full p-1 hover:bg-tint">
-                <X className="h-5 w-5" />
-              </button>
-            </SheetHeader>
-            <div
-              key={`${active}-${openToken}-${(edit as { id?: string } | undefined)?.id ?? initialPain?.id ?? "new"}`}
-              className={`min-h-0 flex-1 overflow-y-auto ${active === "pain" ? "" : "px-5 py-4"}`}
-            >
-              {active === "pain" && (
-                <PainWizard
-                  date={date}
-                  data={data}
-                  update={update}
-                  onDone={close}
-                  initialEntry={initialPain ?? (edit as PainEntry | undefined)}
-                />
-              )}
-              {active === "panic" && (
-                <PanicForm
-                  date={date}
-                  data={data}
-                  update={update}
-                  onDone={close}
-                  initialEntry={edit as PanicAttack | undefined}
-                />
-              )}
-              {active === "tetany" && (
-                <TetanyForm
-                  date={date}
-                  data={data}
-                  update={update}
-                  onDone={close}
-                  initialEntry={edit as TetanyEpisode | undefined}
-                />
-              )}
-              {active === "period" && <PeriodForm date={date} data={data} update={update} onDone={close} />}
-              {active === "sex" && (
-                <SexForm
-                  date={date}
-                  data={data}
-                  update={update}
-                  onDone={close}
-                  initialEntry={edit as SexEntry | undefined}
-                />
-              )}
-              {active === "heat" && (
-                <ThermoForm
-                  date={date}
-                  update={update}
-                  onDone={close}
-                  initialEntry={edit as ThermoSession | undefined}
-                />
-              )}
-              {active === "food" && (
-                <FoodForm
-                  date={date}
-                  data={data}
-                  update={update}
-                  onDone={close}
-                  initialEntry={edit as FoodEntry | undefined}
-                />
-              )}
-              {active === "bowel" && (
-                <BowelForm
-                  date={date}
-                  data={data}
-                  update={update}
-                  onDone={close}
-                  initialEntry={edit as BowelEntry | undefined}
-                />
-              )}
-              {active === "workout" && (
-                <WorkoutForm
-                  date={date}
-                  data={data}
-                  update={update}
-                  onDone={close}
-                  initialEntry={edit as WorkoutEntry | undefined}
-                />
-              )}
-              {active === "temp" && <TempForm date={date} data={data} update={update} onDone={close} />}
-              {active === "meds" && <MedsForm date={date} data={data} update={update} onDone={close} />}
-              {active === "task" && (
-                <TaskForm date={date} update={update} onDone={close} initialEntry={edit as TaskEntry | undefined} />
-              )}
-              {active === "event" && (
-                <EventForm date={date} update={update} onDone={close} initialEntry={edit as EventEntry | undefined} />
-              )}
-              {active === "note" && <NoteForm date={date} update={update} onDone={close} />}
-            </div>
-          </div>
-        )}
-      </SheetContent>
-    </Sheet>
-  );
-}
-
-/* ------------------- Primitives ------------------- */
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  // Intentionally a <div>, not <label>. Wrapping chip/button groups in <label>
-  // caused stray click activations on the first focusable descendant, which
-  // manifested as chips getting "auto-selected" in the Pain wizard.
-  return (
-    <div className="block">
-      <span className="text-xs font-medium text-muted-foreground">{label}</span>
-      <div className="mt-1">{children}</div>
-    </div>
-  );
-}
-function Chip({
-  active,
-  onClick,
-  children,
-  color,
-  title,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: ReactNode;
-  color?: string;
-  title?: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={title}
-      className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-        active
-          ? "text-white shadow-md ring-2 ring-foreground/70 ring-offset-2 ring-offset-background scale-[1.03]"
-          : "bg-tint text-foreground ring-1 ring-border"
-      }`}
-      style={active && color ? { background: color } : active ? { background: "var(--primary)" } : undefined}
-    >
-      {typeof children === "string" ? <IcoText text={children} size={14} /> : children}
-    </button>
-  );
-}
-function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave: () => void; disabled?: boolean }) {
-  return (
-    <SheetFooter className="mt-4 gap-2 sm:flex-row">
-      <Button variant="outline" onClick={onCancel} className="flex-1">
-        Cancel
-      </Button>
-      <Button onClick={onSave} disabled={disabled} className="flex-1">
-        Save
-      </Button>
-    </SheetFooter>
-  );
-}
-function CustomChipList({
-  base,
-  custom,
-  onAddCustom,
-  onRemoveCustom,
-  onRenameCustom,
-  selected,
-  onToggle,
-  descriptions,
-}: {
-  base: string[];
-  custom: string[];
-  onAddCustom: (v: string) => void;
-  onRemoveCustom?: (v: string) => void;
-  onRenameCustom?: (oldV: string, newV: string) => void;
-  selected: string[];
-  onToggle: (v: string) => void;
-  descriptions?: Record<string, string>;
-}) {
-  const [adding, setAdding] = useState(false);
-  const [editMode, setEditMode] = useState(false);
-  const [text, setText] = useState("");
-  const [infoFor, setInfoFor] = useState<string | null>(null);
-  const canEdit = !!(onRenameCustom || onRemoveCustom) && custom.length > 0;
-  return (
-    <div className="mt-2">
-      {(canEdit || true) && (
-        <div className="mb-2 flex items-center gap-2">
-          {adding ? (
-            <div className="flex flex-1 items-center gap-1">
-              <Input
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                className="h-8 flex-1"
-                placeholder="Custom…"
-                autoFocus
-              />
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => {
-                  if (text.trim()) {
-                    onAddCustom(text.trim());
-                    setText("");
-                    setAdding(false);
-                  }
-                }}
-              >
-                Add
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                onClick={() => {
-                  setText("");
-                  setAdding(false);
-                }}
-              >
-                Cancel
-              </Button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setAdding(true)}
-              className="flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary hover:bg-primary/20"
-            >
-              <Plus className="h-3 w-3" /> Add custom
-            </button>
-          )}
-          {canEdit && !adding && (
-            <button
-              type="button"
-              onClick={() => setEditMode((v) => !v)}
-              className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${editMode ? "bg-primary text-primary-foreground" : "bg-tint text-muted-foreground hover:text-foreground"}`}
-            >
-              <Pencil className="h-3 w-3" /> {editMode ? "Done" : "Edit"}
-            </button>
-          )}
-        </div>
-      )}
-      <div className="flex flex-wrap gap-2">
-        {base.map((v) => (
-          <span key={v} className="inline-flex items-center gap-0.5">
-            <Chip active={selected.includes(v)} onClick={() => onToggle(v)} title={descriptions?.[v]}>
-              {v}
-            </Chip>
-            {descriptions?.[v] && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setInfoFor(infoFor === v ? null : v);
-                }}
-                aria-label={`Info ${v}`}
-                className="grid h-4 w-4 place-items-center rounded-full bg-tint text-[10px] font-bold text-muted-foreground hover:bg-primary/15 hover:text-primary"
-              >
-                i
-              </button>
-            )}
-          </span>
-        ))}
-        {custom.map((v) => (
-          <span key={v} className="relative inline-flex items-center">
-            <Chip active={selected.includes(v)} onClick={() => onToggle(v)}>
-              {v}
-            </Chip>
-            {editMode && onRenameCustom && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const next = prompt(`Rename "${v}" to:`, v);
-                  if (next && next.trim() && next.trim() !== v) onRenameCustom(v, next.trim());
-                }}
-                aria-label={`Rename ${v}`}
-                className="ml-1 grid h-5 w-5 place-items-center rounded-full bg-tint text-muted-foreground hover:bg-primary/15 hover:text-primary"
-              >
-                <Pencil className="h-3 w-3" />
-              </button>
-            )}
-            {editMode && onRemoveCustom && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (confirm(`Remove "${v}" from your custom list?`)) onRemoveCustom(v);
-                }}
-                aria-label={`Remove ${v}`}
-                className="ml-1 grid h-5 w-5 place-items-center rounded-full bg-tint text-muted-foreground hover:bg-destructive/15 hover:text-destructive"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            )}
-          </span>
-        ))}
-      </div>
-      {infoFor && descriptions?.[infoFor] && (
-        <div className="mt-2 rounded-lg bg-tint px-2.5 py-1.5 text-[11px] leading-snug text-foreground">
-          <span className="font-semibold">{infoFor}:</span> {descriptions[infoFor]}
-        </div>
-      )}
-    </div>
-  );
-}
-const toggleIn = (arr: string[], v: string) => (arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
-/** Strips a leading emoji (+ following space) so legacy saved values with emoji prefixes still match emoji-free option lists. */
-const stripEmoji = (v: string) => v.replace(/^[\p{Extended_Pictographic}\u200d\ufe0f]+\s*/u, "").trim();
-
-import { getScaleDesc } from "@/lib/scaleDescriptions";
-
-function ScaleLegend({
-  max,
-  descriptions,
-  value,
-  title,
-  from = 1,
-}: {
-  max: number;
-  descriptions: Record<number, string>;
-  value?: number;
-  title: string;
-  from?: number;
-}) {
-  const items: number[] = [];
-  for (let i = from; i <= max; i++) items.push(i);
-  return (
-    <div className="mt-2 rounded-xl border border-border/60 bg-surface/50 p-2.5">
-      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>
-      <div className="space-y-1 text-[11px] leading-tight">
-        {items.map((n) => {
-          const span = Math.max(1, max - from);
-          const hue = 130 - ((n - from) * 130) / span;
-          return (
-            <div key={n} className="flex items-start gap-2">
-              <span
-                className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full text-[9px] font-bold text-white"
-                style={{ background: `hsl(${hue} 70% 50%)` }}
-              >
-                {n}
-              </span>
-              <span className={value === n ? "font-semibold text-foreground" : "text-muted-foreground"}>
-                {descriptions[n]}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function IntensityScale({
-  value,
-  onChange,
-  max,
-  descriptions,
-  legendTitle,
-  from = 1,
-}: {
-  value: number;
-  onChange: (n: number) => void;
-  max: number;
-  descriptions?: Record<number, string>;
-  legendTitle?: string;
-  from?: number;
-}) {
-  const nums: number[] = [];
-  for (let i = from; i <= max; i++) nums.push(i);
-  return (
-    <div className="mt-2 space-y-1.5">
-      <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${nums.length}, minmax(0, 1fr))` }}>
-        {nums.map((n) => {
-          const span = Math.max(1, max - from);
-          const hue = 130 - ((n - from) * 130) / span;
-          const bg = `hsl(${hue} 70% 50%)`;
-          const active = value === n;
-          return (
-            <button
-              key={n}
-              type="button"
-              onClick={() => onChange(n)}
-              title={descriptions?.[n] ? `${n} — ${descriptions[n]}` : String(n)}
-              aria-label={descriptions?.[n] ? `${n} — ${descriptions[n]}` : `Intensity ${n}`}
-              className={`aspect-square w-full rounded-full text-[11px] font-bold transition text-white ${active ? "ring-2 ring-foreground scale-110" : ""}`}
-              style={{ background: bg, opacity: active ? 1 : 0.55 }}
-            >
-              {n}
-            </button>
-          );
-        })}
-      </div>
-      <div className="flex items-center justify-between text-[10px] text-muted-foreground px-0.5">
-        <span className="flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full" style={{ background: "hsl(130 70% 50%)" }} />
-          Mild
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full" style={{ background: "hsl(65 70% 50%)" }} />
-          Moderate
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full" style={{ background: "hsl(0 70% 50%)" }} />
-          Severe
-        </span>
-      </div>
-      {descriptions && value >= from && descriptions[value] && (
-        <div className="mt-1 rounded-lg bg-tint px-2.5 py-1.5 text-[11px] leading-snug text-foreground">
-          <span className="font-semibold">Level {value}:</span> {descriptions[value]}
-        </div>
-      )}
-      {descriptions && legendTitle && (
-        <ScaleLegend max={max} from={from} descriptions={descriptions} value={value} title={legendTitle} />
-      )}
-    </div>
-  );
-}
-
-function DurationField({
-  minutes,
-  setMinutes,
-  ongoing,
-  setOngoing,
-}: {
-  minutes: string;
-  setMinutes: (s: string) => void;
-  ongoing: boolean;
-  setOngoing: (b: boolean) => void;
-}) {
-  return (
-    <div className="space-y-1">
-      <span className="text-xs font-medium text-muted-foreground">Duration (min)</span>
-      <div className="flex items-center gap-2">
-        <Input
-          type="number"
-          inputMode="numeric"
-          min={0}
-          value={ongoing ? "" : minutes}
-          disabled={ongoing}
-          onChange={(e) => setMinutes(e.target.value)}
-          className="flex-1"
-          placeholder="—"
-        />
-        <button
-          type="button"
-          onClick={() => setOngoing(!ongoing)}
-          className={`rounded-full px-3 py-1.5 text-xs font-semibold ring-1 ring-border ${ongoing ? "bg-primary text-white" : "bg-tint text-foreground"}`}
-        >
-          Ongoing
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/* ------------------- PAIN wizard ------------------- */
-function PainWizard({
-  date,
-  data,
-  update,
-  onDone,
-  initialEntry,
-}: {
-  date: string;
-  data: BixboData;
-  update: UpdateFn;
-  onDone: () => void;
-  initialEntry?: PainEntry;
-}) {
-  /**
-   * The newest pain entry for the selected day. A new entry can reuse this
-   * state and only add what changed (for example a headache several hours later).
-   * Editing an existing entry never uses this shortcut.
-   */
-  const latestPain = useMemo(() => {
-    if (initialEntry) return undefined;
-    const entries = data.dayLogs[date]?.pain ?? [];
-    if (!entries.length) return undefined;
-
-    return entries.reduce((latest, entry) =>
-      (entry.time ?? "").localeCompare(latest.time ?? "") >= 0 ? entry : latest,
-    );
-  }, [data.dayLogs, date, initialEntry]);
-
-  const [step, setStep] = useState(0);
-  const [score, setScore] = useState(initialEntry?.score ?? 0);
-  const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
-  const [parts, setParts] = useState<string[]>(initialEntry?.parts ?? []);
-  const [quality, setQuality] = useState<string[]>(initialEntry?.quality ?? []);
-  const [symptoms, setSymptoms] = useState<string[]>(initialEntry?.symptoms ?? []);
-  const [note, setNote] = useState(initialEntry?.note ?? "");
-  // Extended
-  const [tetany, setTetany] = useState(false);
-  const [tetanyTypes, setTetanyTypes] = useState<string[]>([]);
-  const [tetanyLoc, setTetanyLoc] = useState<string[]>([]);
-  const [tetanyIntensity, setTetanyIntensity] = useState(1);
-  const [tetanyMin, setTetanyMin] = useState("5");
-  const [tetanyOngoing, setTetanyOngoing] = useState(false);
-  const [tetanyTriggers, setTetanyTriggers] = useState<string[]>([]);
-  const [tetanyHelped, setTetanyHelped] = useState<string[]>([]);
-  const [tetanyNote, setTetanyNote] = useState("");
-  // Panic (full inline log — under Tetany)
-  const [panic, setPanic] = useState(false);
-  const [panicTime, setPanicTime] = useState(nowHHMM());
-  const [panicIntensity, setPanicIntensity] = useState(5);
-  const [panicMinutes, setPanicMinutes] = useState("10");
-  const [panicOngoing, setPanicOngoing] = useState(false);
-  const [panicPhysical, setPanicPhysical] = useState<string[]>([]);
-  const [panicCognitive, setPanicCognitive] = useState<string[]>([]);
-  const [panicTrigger, setPanicTrigger] = useState("");
-  const [panicPlace, setPanicPlace] = useState("");
-  const [panicHyper, setPanicHyper] = useState<"no" | "before" | "during" | "unknown">("unknown");
-  const [panicTetany, setPanicTetany] = useState(false);
-  const [panicHelped, setPanicHelped] = useState<string[]>([]);
-  const [panicNote, setPanicNote] = useState("");
-  const [bodyBattery, setBodyBattery] = useState<number | undefined>(initialEntry?.bodyBattery);
-  const [stress, setStress] = useState<number | undefined>(initialEntry?.stress);
-  const [mood, setMood] = useState<string[]>(initialEntry?.mood ?? []);
-  const [hotFlashesOn, setHotFlashesOn] = useState<boolean>(!!initialEntry?.hotFlashesOn);
-  const [hotFlashes, setHotFlashes] = useState<number | undefined>(initialEntry?.hotFlashes);
-  const [headache, setHeadache] = useState<boolean>(!!initialEntry?.headache);
-  const [headacheTypes, setHeadacheTypes] = useState<string[]>(initialEntry?.headacheTypes ?? []);
-  const [headacheIntensity, setHeadacheIntensity] = useState<number | undefined>(initialEntry?.headacheIntensity);
-  const [headacheMedOn, setHeadacheMedOn] = useState<boolean>(!!initialEntry?.headacheMed);
-  const [headacheMed, setHeadacheMed] = useState<string>(initialEntry?.headacheMed ?? "");
-  const [headacheMedTime, setHeadacheMedTime] = useState<string>(initialEntry?.headacheMedTime ?? nowHHMM());
-  const [pcosSymptoms, setPcosSymptoms] = useState<string[]>(initialEntry?.pcosSymptoms ?? []);
-  const [fluNote, setFluNote] = useState<string>(initialEntry?.fluNote ?? "");
-  // Pressure detail (shown when "Pressure" quality is selected)
-  const [pressureTypes, setPressureTypes] = useState<string[]>(initialEntry?.pressureTypes ?? []);
-  const [pressureIntensity, setPressureIntensity] = useState<number | undefined>(initialEntry?.pressureIntensity);
-  // Nausea section
-  const [nausea, setNausea] = useState<boolean>(!!initialEntry?.nausea);
-  const [nauseaTypes, setNauseaTypes] = useState<string[]>(initialEntry?.nauseaTypes ?? []);
-  const [nauseaSeverity, setNauseaSeverity] = useState<number | undefined>(initialEntry?.nauseaSeverity);
-  const [nauseaMinutes, setNauseaMinutes] = useState<string>(
-    initialEntry?.nauseaMinutes != null ? String(initialEntry.nauseaMinutes) : "",
-  );
-  const [nauseaOngoing, setNauseaOngoing] = useState<boolean>(!!initialEntry?.nauseaOngoing);
-  const [nauseaTriggers, setNauseaTriggers] = useState<string[]>(initialEntry?.nauseaTriggers ?? []);
-  const [nauseaSymptoms, setNauseaSymptoms] = useState<string[]>(initialEntry?.nauseaSymptoms ?? []);
-  const [nauseaHelped, setNauseaHelped] = useState<string[]>(initialEntry?.nauseaHelped ?? []);
-
-  // Quick update: copy the latest pain and symptom state,
-  // then let the user change only what is different now.
-  const [quickSymptomUpdate, setQuickSymptomUpdate] = useState(false);
-  const [copiedFromTime, setCopiedFromTime] = useState<string | undefined>();
-
-  const startSymptomUpdate = () => {
-    if (!latestPain) return;
-
-    // Keep only the pain context from the latest entry.
-    setScore(latestPain.score);
-    setParts([...(latestPain.parts ?? [])]);
-    setQuality([...(latestPain.quality ?? [])]);
-    setPressureTypes([...(latestPain.pressureTypes ?? [])]);
-    setPressureIntensity(latestPain.pressureIntensity);
-
-    // Start every symptom field empty so the new entry contains only
-    // symptoms that are added during this quick update.
-    setSymptoms([]);
-
-    setBodyBattery(undefined);
-    setStress(undefined);
-    setMood([]);
-
-    setHotFlashesOn(false);
-    setHotFlashes(undefined);
-
-    setPcosSymptoms([]);
-    setFluNote("");
-
-    setNausea(false);
-    setNauseaTypes([]);
-    setNauseaSeverity(undefined);
-    setNauseaMinutes("");
-    setNauseaOngoing(false);
-    setNauseaTriggers([]);
-    setNauseaSymptoms([]);
-    setNauseaHelped([]);
-
-    setHeadache(false);
-    setHeadacheTypes([]);
-    setHeadacheIntensity(undefined);
-    setHeadacheMedOn(false);
-    setHeadacheMed("");
-    setHeadacheMedTime(nowHHMM());
-
-    // Separate episodes are also empty until the user adds them now.
-    setTetany(false);
-    setPanic(false);
-
-    setNote("");
-    setTime(nowHHMM());
-
-    setCopiedFromTime(latestPain.time);
-    setQuickSymptomUpdate(true);
-    setStep(3);
-  };
-
-  type CKey =
-    | "bodyParts"
-    | "quality"
-    | "symptoms"
-    | "moods"
-    | "tetanyTypes"
-    | "tetanyLocations"
-    | "tetanyTriggers"
-    | "tetanyHelped"
-    | "pcosSymptoms"
-    | "headacheTypes"
-    | "pressureTypes"
-    | "nauseaTypes"
-    | "nauseaTriggers"
-    | "nauseaSymptoms"
-    | "nauseaHelped";
-  const addCustom = (key: CKey, v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [key]: [...(d.custom[key] ?? []), v] } }));
-  const removeCustom = (key: CKey, v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [key]: (d.custom[key] ?? []).filter((x) => x !== v) } }));
-  const renameCustom = (key: CKey, oldV: string, newV: string) =>
-    update((d) => ({
-      ...d,
-      custom: { ...d.custom, [key]: (d.custom[key] ?? []).map((x) => (x === oldV ? newV : x)) },
-    }));
-
-  const save = () => {
-    const editing = !!initialEntry;
-    const p: PainEntry = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
-      time,
-      score,
-      parts,
-      quality,
-      symptoms,
-      note: note.trim(),
-      bodyBattery,
-      stress,
-      mood: mood.length ? mood : undefined,
-      hotFlashesOn: hotFlashesOn || undefined,
-      hotFlashes: hotFlashesOn ? hotFlashes : undefined,
-      headache: headache || undefined,
-      headacheTypes: headache && headacheTypes.length ? headacheTypes : undefined,
-      headacheIntensity: headache ? headacheIntensity : undefined,
-      headacheMed: headache && headacheMedOn && headacheMed.trim() ? headacheMed.trim() : undefined,
-      headacheMedTime: headache && headacheMedOn && headacheMed.trim() ? headacheMedTime : undefined,
-      pressureTypes: quality.includes("Pressure") && pressureTypes.length ? pressureTypes : undefined,
-      pressureIntensity: quality.includes("Pressure") ? pressureIntensity : undefined,
-      nausea: nausea || undefined,
-      nauseaTypes: nausea && nauseaTypes.length ? nauseaTypes : undefined,
-      nauseaSeverity: nausea ? nauseaSeverity : undefined,
-      nauseaMinutes: nausea && !nauseaOngoing && nauseaMinutes !== "" ? Number(nauseaMinutes) : undefined,
-      nauseaOngoing: nausea ? nauseaOngoing || undefined : undefined,
-      nauseaTriggers: nausea && nauseaTriggers.length ? nauseaTriggers : undefined,
-      nauseaSymptoms: nausea && nauseaSymptoms.length ? nauseaSymptoms : undefined,
-      nauseaHelped: nausea && nauseaHelped.length ? nauseaHelped : undefined,
-      fluNote: symptoms.includes("Flu") && fluNote.trim() ? fluNote.trim() : undefined,
-      pcosSymptoms: pcosSymptoms.length ? pcosSymptoms : undefined,
-    };
-    updateDayLog(update, date, (l) => ({
-      ...l,
-      pain: editing ? (l.pain ?? []).map((x) => (x.id === p.id ? p : x)) : [...(l.pain ?? []), p],
-    }));
-    if (tetany) {
-      const t: TetanyEpisode = {
-        id: crypto.randomUUID(),
-        time: nowHHMM(),
-        types: tetanyTypes,
-        location: tetanyLoc,
-        intensity: tetanyIntensity,
-        minutes: tetanyOngoing ? undefined : tetanyMin === "" ? undefined : Number(tetanyMin),
-        triggers: tetanyTriggers,
-        helped: tetanyHelped,
-        note: tetanyNote.trim() || undefined,
-      };
-      updateDayLog(update, date, (l) => ({ ...l, tetany: [...(l.tetany ?? []), t] }));
-    }
-    if (panic) {
-      const pk: PanicAttack = {
-        id: crypto.randomUUID(),
-        time: panicTime,
-        minutes: panicOngoing ? undefined : panicMinutes === "" ? undefined : Number(panicMinutes),
-        intensity: panicIntensity,
-        physical: panicPhysical,
-        cognitive: panicCognitive,
-        trigger: panicTrigger.trim(),
-        place: panicPlace.trim() || undefined,
-        hyperventilation: panicHyper,
-        tetanyPresent: panicTetany,
-        helped: panicHelped,
-        note: panicNote.trim() || undefined,
-      };
-      updateDayLog(update, date, (l) => ({ ...l, panic: [...(l.panic ?? []), pk] }));
-    }
-    onDone();
-  };
-
-  const bg = painColor(score);
-  const bgFill = `color-mix(in oklab, ${bg} 35%, white)`;
-
-  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
-  const onTouchStart = (e: React.TouchEvent) => {
-    const t = e.touches[0];
-    touchStartRef.current = { x: t.clientX, y: t.clientY };
-  };
-  const onTouchEnd = (e: React.TouchEvent) => {
-    const s = touchStartRef.current;
-    if (!s) return;
-    const t = e.changedTouches[0];
-    const dx = t.clientX - s.x;
-    const dy = t.clientY - s.y;
-    touchStartRef.current = null;
-    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy)) return;
-    const target = e.target as HTMLElement;
-    if (target.closest('input,textarea,select,button,[role="slider"],.no-swipe')) return;
-    if (dx < 0 && step < 4) setStep(step + 1);
-    else if (dx > 0 && step > 0) setStep(step - 1);
-  };
-
-  return (
-    <div
-      className="flex min-h-full flex-col px-5 py-4 transition-colors touch-pan-y"
-      style={{ background: bgFill }}
-      onTouchStart={onTouchStart}
-      onTouchEnd={onTouchEnd}
-    >
-      <div className="flex items-center justify-between px-1 pb-2">
-        {quickSymptomUpdate ? (
-          <>
-            <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-              Quick symptom update
-            </span>
-            <span className="text-xs text-muted-foreground">New entry · {time}</span>
-          </>
-        ) : (
-          <>
-            <div className="flex gap-1">
-              {[0, 1, 2, 3, 4].map((i) => (
-                <span key={i} className={`h-1.5 w-6 rounded-full ${i <= step ? "bg-primary" : "bg-tint"}`} />
-              ))}
-            </div>
-            <span className="text-xs text-muted-foreground">{step + 1}/5</span>
-          </>
-        )}
-      </div>
-
-      {step === 0 && (
-        <div className="flex flex-col items-center gap-4 py-6">
-          {latestPain && !initialEntry && (
-            <div className="w-full rounded-2xl border border-primary/30 bg-surface/90 p-3 shadow-sm">
-              <div className="mb-3 flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold">Add a later symptom update?</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    Last log: {latestPain.time} · pain {latestPain.score}/10. Keep its pain context and add only the new
-                    symptoms you feel now.
-                  </p>
-                </div>
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10">
-                  <Ico e="📝" size={22} />
-                </span>
-              </div>
-              <Button type="button" onClick={startSymptomUpdate} className="w-full">
-                Add symptom update
-              </Button>
-            </div>
-          )}
-
-          <div
-            className="grid h-32 w-32 place-items-center rounded-full text-5xl font-bold text-white"
-            style={{ background: bg }}
-          >
-            {Number.isInteger(score) ? score : score.toFixed(1)}
-          </div>
-          <p className="text-center font-medium">{getScaleDesc(data, "pain")[Math.round(score)]}</p>
-          <div className="w-full px-4">
-            <Slider value={[score * 2]} min={0} max={20} step={1} onValueChange={([v]) => setScore(v / 2)} />
-          </div>
-          <div className="flex flex-wrap justify-center gap-1.5 px-4">
-            {Array.from({ length: 21 }, (_, i) => i / 2).map((n) => (
-              <button
-                key={n}
-                type="button"
-                onClick={() => setScore(n)}
-                title={`${n} — ${getScaleDesc(data, "pain")[Math.round(n)]}`}
-                className={`h-8 w-8 rounded-full text-[11px] font-semibold ${
-                  score === n ? "text-white ring-2 ring-foreground" : "bg-tint text-foreground"
-                }`}
-                style={score === n ? { background: painColor(n) } : undefined}
-              >
-                {Number.isInteger(n) ? n : n.toFixed(1)}
-              </button>
-            ))}
-          </div>
-          <div className="w-full px-2">
-            <ScaleLegend
-              max={10}
-              from={0}
-              descriptions={getScaleDesc(data, "pain")}
-              value={Math.round(score)}
-              title="Pain scale (Mankosky)"
-            />
-          </div>
-        </div>
-      )}
-
-      {step === 1 && (
-        <Field label="Where does it hurt?">
-          <CustomChipList
-            base={BODY_PARTS_DEFAULT}
-            custom={data.custom.bodyParts}
-            onAddCustom={(v) => addCustom("bodyParts", v)}
-            onRemoveCustom={(v) => {
-              removeCustom("bodyParts", v);
-              setParts((a) => a.filter((x) => x !== v));
-            }}
-            onRenameCustom={(o, n) => {
-              renameCustom("bodyParts", o, n);
-              setParts((a) => a.map((x) => (x === o ? n : x)));
-            }}
-            selected={parts}
-            onToggle={(v) => setParts((a) => toggleIn(a, v))}
-          />
-        </Field>
-      )}
-      {step === 2 && (
-        <div className="space-y-4">
-          <Field label="How does it hurt?">
-            <CustomChipList
-              base={PAIN_QUALITY_DEFAULT}
-              custom={data.custom.quality}
-              onAddCustom={(v) => addCustom("quality", v)}
-              onRemoveCustom={(v) => {
-                removeCustom("quality", v);
-                setQuality((a) => a.filter((x) => x !== v));
-              }}
-              onRenameCustom={(o, n) => {
-                renameCustom("quality", o, n);
-                setQuality((a) => a.map((x) => (x === o ? n : x)));
-              }}
-              selected={quality}
-              onToggle={(v) => setQuality((a) => toggleIn(a, v))}
-            />
-          </Field>
-          {quality.includes("Pressure") && (
-            <div className="rounded-2xl border border-border p-3 space-y-3">
-              <Field label="Type of pressure">
-                <CustomChipList
-                  base={PRESSURE_TYPES}
-                  custom={data.custom.pressureTypes ?? []}
-                  onAddCustom={(v) => addCustom("pressureTypes", v)}
-                  onRemoveCustom={(v) => {
-                    removeCustom("pressureTypes", v);
-                    setPressureTypes((a) => a.filter((x) => x !== v));
-                  }}
-                  onRenameCustom={(o, n) => {
-                    renameCustom("pressureTypes", o, n);
-                    setPressureTypes((a) => a.map((x) => (x === o ? n : x)));
-                  }}
-                  selected={pressureTypes}
-                  onToggle={(v) => setPressureTypes((a) => toggleIn(a, v))}
-                />
-              </Field>
-              <Field label={`Pressure intensity ${pressureIntensity ?? "-"}/10`}>
-                <IntensityScale
-                  value={pressureIntensity ?? -1}
-                  onChange={(n) => setPressureIntensity(pressureIntensity === n ? undefined : n)}
-                  max={10}
-                  from={0}
-                />
-              </Field>
-            </div>
-          )}
-        </div>
-      )}
-      {step === 3 && (
-        <div className="space-y-4">
-          {quickSymptomUpdate && (
-            <div className="rounded-2xl border border-primary/30 bg-primary/10 p-3 text-sm">
-              <p className="font-semibold">
-                Pain {score}/10 copied from {copiedFromTime ?? "the latest log"}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                This saves a new entry at {time}; the older log stays unchanged. Only symptoms selected below are
-                included in this update.
-              </p>
-            </div>
-          )}
-
-          <Field label="Other symptoms">
-            <CustomChipList
-              base={OTHER_SYMPTOMS_DEFAULT}
-              custom={data.custom.symptoms}
-              onAddCustom={(v) => addCustom("symptoms", v)}
-              onRemoveCustom={(v) => {
-                removeCustom("symptoms", v);
-                setSymptoms((a) => a.filter((x) => x !== v));
-              }}
-              onRenameCustom={(o, n) => {
-                renameCustom("symptoms", o, n);
-                setSymptoms((a) => a.map((x) => (x === o ? n : x)));
-              }}
-              selected={symptoms}
-              onToggle={(v) => setSymptoms((a) => toggleIn(a, v))}
-            />
-          </Field>
-          {symptoms.includes("Flu") && (
-            <Field label="Flu symptoms note">
-              <Textarea
-                rows={2}
-                value={fluNote}
-                onChange={(e) => setFluNote(e.target.value)}
-                placeholder="e.g. stuffy nose, sore throat"
-              />
-            </Field>
-          )}
-          <Field label="Nausea?">
-            <div className="mt-1 flex gap-2">
-              <Chip active={!nausea} onClick={() => setNausea(false)}>
-                No
-              </Chip>
-              <Chip active={nausea} onClick={() => setNausea(true)}>
-                Yes — log it
-              </Chip>
-            </div>
-          </Field>
-          {nausea && (
-            <div className="rounded-2xl border border-border p-3 space-y-3">
-              <Field label="Type of nausea">
-                <CustomChipList
-                  base={NAUSEA_TYPES}
-                  custom={data.custom.nauseaTypes ?? []}
-                  descriptions={NAUSEA_TYPE_DESC}
-                  onAddCustom={(v) => addCustom("nauseaTypes", v)}
-                  onRemoveCustom={(v) => {
-                    removeCustom("nauseaTypes", v);
-                    setNauseaTypes((a) => a.filter((x) => x !== v));
-                  }}
-                  onRenameCustom={(o, n) => {
-                    renameCustom("nauseaTypes", o, n);
-                    setNauseaTypes((a) => a.map((x) => (x === o ? n : x)));
-                  }}
-                  selected={nauseaTypes}
-                  onToggle={(v) => setNauseaTypes((a) => toggleIn(a, v))}
-                />
-              </Field>
-              <Field label={`Nausea severity ${nauseaSeverity ?? "-"}/10`}>
-                <IntensityScale
-                  value={nauseaSeverity ?? -1}
-                  onChange={(n) => setNauseaSeverity(nauseaSeverity === n ? undefined : n)}
-                  max={10}
-                  from={0}
-                  descriptions={NAUSEA_SEVERITY_DESC}
-                  legendTitle="Nausea severity scale"
-                />
-              </Field>
-              <DurationField
-                minutes={nauseaMinutes}
-                setMinutes={setNauseaMinutes}
-                ongoing={nauseaOngoing}
-                setOngoing={setNauseaOngoing}
-              />
-              <Field label="Triggers">
-                <CustomChipList
-                  base={NAUSEA_TRIGGERS}
-                  custom={data.custom.nauseaTriggers ?? []}
-                  onAddCustom={(v) => addCustom("nauseaTriggers", v)}
-                  onRemoveCustom={(v) => {
-                    removeCustom("nauseaTriggers", v);
-                    setNauseaTriggers((a) => a.filter((x) => x !== v));
-                  }}
-                  onRenameCustom={(o, n) => {
-                    renameCustom("nauseaTriggers", o, n);
-                    setNauseaTriggers((a) => a.map((x) => (x === o ? n : x)));
-                  }}
-                  selected={nauseaTriggers}
-                  onToggle={(v) => setNauseaTriggers((a) => toggleIn(a, v))}
-                />
-              </Field>
-              <Field label="Associated symptoms">
-                <CustomChipList
-                  base={NAUSEA_SYMPTOMS}
-                  custom={data.custom.nauseaSymptoms ?? []}
-                  onAddCustom={(v) => addCustom("nauseaSymptoms", v)}
-                  onRemoveCustom={(v) => {
-                    removeCustom("nauseaSymptoms", v);
-                    setNauseaSymptoms((a) => a.filter((x) => x !== v));
-                  }}
-                  onRenameCustom={(o, n) => {
-                    renameCustom("nauseaSymptoms", o, n);
-                    setNauseaSymptoms((a) => a.map((x) => (x === o ? n : x)));
-                  }}
-                  selected={nauseaSymptoms}
-                  onToggle={(v) => setNauseaSymptoms((a) => toggleIn(a, v))}
-                />
-              </Field>
-              <Field label="Relieved by">
-                <CustomChipList
-                  base={NAUSEA_HELPED}
-                  custom={data.custom.nauseaHelped ?? []}
-                  onAddCustom={(v) => addCustom("nauseaHelped", v)}
-                  onRemoveCustom={(v) => {
-                    removeCustom("nauseaHelped", v);
-                    setNauseaHelped((a) => a.filter((x) => x !== v));
-                  }}
-                  onRenameCustom={(o, n) => {
-                    renameCustom("nauseaHelped", o, n);
-                    setNauseaHelped((a) => a.map((x) => (x === o ? n : x)));
-                  }}
-                  selected={nauseaHelped}
-                  onToggle={(v) => setNauseaHelped((a) => toggleIn(a, v))}
-                />
-              </Field>
-            </div>
-          )}
-          <div>
-            <Field label="Headache?">
-              <div className="mt-1 flex gap-2">
-                <Chip active={!headache} onClick={() => setHeadache(false)}>
-                  No
-                </Chip>
-                <Chip active={headache} onClick={() => setHeadache(true)}>
-                  Yes — log it
-                </Chip>
-              </div>
-            </Field>
-            {headache && (
-              <div className="mt-3 rounded-2xl border border-border p-3 space-y-3">
-                <Field label="Headache type">
-                  <CustomChipList
-                    base={HEADACHE_TYPES}
-                    custom={data.custom.headacheTypes ?? []}
-                    descriptions={HEADACHE_TYPE_DESC}
-                    onAddCustom={(v) => addCustom("headacheTypes", v)}
-                    onRemoveCustom={(v) => {
-                      removeCustom("headacheTypes", v);
-                      setHeadacheTypes((a) => a.filter((x) => x !== v));
-                    }}
-                    onRenameCustom={(o, n) => {
-                      renameCustom("headacheTypes", o, n);
-                      setHeadacheTypes((a) => a.map((x) => (x === o ? n : x)));
-                    }}
-                    selected={headacheTypes}
-                    onToggle={(v) => setHeadacheTypes((a) => toggleIn(a, v))}
-                  />
-                </Field>
-                <Field label={`Headache intensity ${headacheIntensity ?? "-"}/10`}>
-                  <IntensityScale
-                    value={headacheIntensity ?? 0}
-                    onChange={(n) => setHeadacheIntensity(headacheIntensity === n ? undefined : n)}
-                    max={10}
-                    descriptions={getScaleDesc(data, "headache")}
-                    legendTitle="Headache scale"
-                  />
-                </Field>
-                <Field label="Medication taken">
-                  <div className="mt-1 flex gap-2">
-                    <Chip active={!headacheMedOn} onClick={() => setHeadacheMedOn(false)}>
-                      No
-                    </Chip>
-                    <Chip active={headacheMedOn} onClick={() => setHeadacheMedOn(true)}>
-                      Yes
-                    </Chip>
-                  </div>
-                  {headacheMedOn && (
-                    <div className="mt-2 space-y-2">
-                      {data.meds.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {data.meds.map((m) => {
-                            const label = `${m.name}${m.dose ? ` ${m.dose}` : ""}`;
-                            return (
-                              <Chip
-                                key={m.id}
-                                active={headacheMed === label}
-                                onClick={() => setHeadacheMed(headacheMed === label ? "" : label)}
-                              >
-                                {label}
-                              </Chip>
-                            );
-                          })}
-                        </div>
-                      )}
-                      <Input
-                        value={headacheMed}
-                        onChange={(e) => setHeadacheMed(e.target.value)}
-                        placeholder="Medication + dose"
-                      />
-                      <Input type="time" value={headacheMedTime} onChange={(e) => setHeadacheMedTime(e.target.value)} />
-                    </div>
-                  )}
-                </Field>
-              </div>
-            )}
-          </div>
-          <Field label="Hot flashes?">
-            <div className="mt-1 flex gap-2">
-              <Chip active={!hotFlashesOn} onClick={() => setHotFlashesOn(false)}>
-                No
-              </Chip>
-              <Chip active={hotFlashesOn} onClick={() => setHotFlashesOn(true)}>
-                Yes — log it
-              </Chip>
-            </div>
-          </Field>
-          {hotFlashesOn && (
-            <Field label={`Hot flashes intensity ${hotFlashes ?? "-"}/5`}>
-              <IntensityScale
-                value={hotFlashes ?? 0}
-                onChange={(n) => setHotFlashes(hotFlashes === n ? undefined : n)}
-                max={5}
-                descriptions={getScaleDesc(data, "hotFlashes")}
-                legendTitle="Hot flashes scale"
-              />
-            </Field>
-          )}
-          <Field label="PCOS symptoms">
-            <CustomChipList
-              base={PCOS_SYMPTOMS}
-              custom={data.custom.pcosSymptoms ?? []}
-              onAddCustom={(v) => addCustom("pcosSymptoms", v)}
-              onRemoveCustom={(v) => {
-                removeCustom("pcosSymptoms", v);
-                setPcosSymptoms((a) => a.filter((x) => x !== v));
-              }}
-              onRenameCustom={(o, n) => {
-                renameCustom("pcosSymptoms", o, n);
-                setPcosSymptoms((a) => a.map((x) => (x === o ? n : x)));
-              }}
-              selected={pcosSymptoms}
-              onToggle={(v) => setPcosSymptoms((a) => toggleIn(a, v))}
-            />
-          </Field>
-          <Field label="Tetany episode?">
-            <div className="mt-1 flex gap-2">
-              <Chip active={!tetany} onClick={() => setTetany(false)}>
-                No
-              </Chip>
-              <Chip active={tetany} onClick={() => setTetany(true)}>
-                Yes — log it
-              </Chip>
-            </div>
-          </Field>
-          {tetany && (
-            <div className="rounded-2xl border border-border p-3 space-y-3">
-              <Field label="Type">
-                <CustomChipList
-                  base={TETANY_TYPES}
-                  custom={data.custom.tetanyTypes}
-                  descriptions={TETANY_TYPE_DESC}
-                  onAddCustom={(v) => addCustom("tetanyTypes", v)}
-                  onRemoveCustom={(v) => {
-                    removeCustom("tetanyTypes", v);
-                    setTetanyTypes((a) => a.filter((x) => x !== v));
-                  }}
-                  onRenameCustom={(o, n) => {
-                    renameCustom("tetanyTypes", o, n);
-                    setTetanyTypes((a) => a.map((x) => (x === o ? n : x)));
-                  }}
-                  selected={tetanyTypes}
-                  onToggle={(v) => setTetanyTypes((a) => toggleIn(a, v))}
-                />
-              </Field>
-              <Field label="Location">
-                <CustomChipList
-                  base={TETANY_LOCATIONS_DEFAULT}
-                  custom={data.custom.tetanyLocations}
-                  onAddCustom={(v) => addCustom("tetanyLocations", v)}
-                  onRemoveCustom={(v) => {
-                    removeCustom("tetanyLocations", v);
-                    setTetanyLoc((a) => a.filter((x) => x !== v));
-                  }}
-                  onRenameCustom={(o, n) => {
-                    renameCustom("tetanyLocations", o, n);
-                    setTetanyLoc((a) => a.map((x) => (x === o ? n : x)));
-                  }}
-                  selected={tetanyLoc}
-                  onToggle={(v) => setTetanyLoc((a) => toggleIn(a, v))}
-                />
-              </Field>
-              <Field label={`Intensity ${tetanyIntensity}/5`}>
-                <IntensityScale
-                  value={tetanyIntensity}
-                  onChange={setTetanyIntensity}
-                  max={5}
-                  descriptions={getScaleDesc(data, "tetany")}
-                  legendTitle="Tetany intensity scale"
-                />
-              </Field>
-              <DurationField
-                minutes={tetanyMin}
-                setMinutes={setTetanyMin}
-                ongoing={tetanyOngoing}
-                setOngoing={setTetanyOngoing}
-              />
-              <Field label="Triggers">
-                <CustomChipList
-                  base={TETANY_TRIGGERS}
-                  custom={data.custom.tetanyTriggers}
-                  onAddCustom={(v) => addCustom("tetanyTriggers", v)}
-                  onRemoveCustom={(v) => {
-                    removeCustom("tetanyTriggers", v);
-                    setTetanyTriggers((a) => a.filter((x) => x !== v));
-                  }}
-                  onRenameCustom={(o, n) => {
-                    renameCustom("tetanyTriggers", o, n);
-                    setTetanyTriggers((a) => a.map((x) => (x === o ? n : x)));
-                  }}
-                  selected={tetanyTriggers}
-                  onToggle={(v) => setTetanyTriggers((a) => toggleIn(a, v))}
-                />
-              </Field>
-              <Field label="What helped">
-                <CustomChipList
-                  base={TETANY_HELPED_DEFAULT}
-                  custom={data.custom.tetanyHelped}
-                  onAddCustom={(v) => addCustom("tetanyHelped", v)}
-                  onRemoveCustom={(v) => {
-                    removeCustom("tetanyHelped", v);
-                    setTetanyHelped((a) => a.filter((x) => x !== v));
-                  }}
-                  onRenameCustom={(o, n) => {
-                    renameCustom("tetanyHelped", o, n);
-                    setTetanyHelped((a) => a.map((x) => (x === o ? n : x)));
-                  }}
-                  selected={tetanyHelped}
-                  onToggle={(v) => setTetanyHelped((a) => toggleIn(a, v))}
-                />
-              </Field>
-              <Field label="Note (optional)">
-                <Textarea rows={2} value={tetanyNote} onChange={(e) => setTetanyNote(e.target.value)} />
-              </Field>
-            </div>
-          )}
-          <Field label="Panic attack?">
-            <div className="mt-1 flex gap-2">
-              <Chip active={!panic} onClick={() => setPanic(false)}>
-                No
-              </Chip>
-              <Chip active={panic} onClick={() => setPanic(true)}>
-                Yes — log it
-              </Chip>
-            </div>
-          </Field>
-          {panic && (
-            <div className="rounded-2xl border border-border p-3 space-y-3">
-              <Field label="Time">
-                <Input type="time" value={panicTime} onChange={(e) => setPanicTime(e.target.value)} />
-              </Field>
-              <DurationField
-                minutes={panicMinutes}
-                setMinutes={setPanicMinutes}
-                ongoing={panicOngoing}
-                setOngoing={setPanicOngoing}
-              />
-              <Field label={`Intensity ${panicIntensity}/10`}>
-                <IntensityScale
-                  value={panicIntensity}
-                  onChange={setPanicIntensity}
-                  max={10}
-                  descriptions={getScaleDesc(data, "panic")}
-                  legendTitle="Panic intensity scale"
-                />
-              </Field>
-              <Field label="Physical symptoms">
-                <CustomChipList
-                  base={PANIC_PHYSICAL}
-                  custom={data.custom.panicPhysical}
-                  onAddCustom={(v) =>
-                    update((d) => ({ ...d, custom: { ...d.custom, panicPhysical: [...d.custom.panicPhysical, v] } }))
-                  }
-                  onRemoveCustom={(v) => {
-                    update((d) => ({
-                      ...d,
-                      custom: { ...d.custom, panicPhysical: d.custom.panicPhysical.filter((x) => x !== v) },
-                    }));
-                    setPanicPhysical((a) => a.filter((x) => x !== v));
-                  }}
-                  onRenameCustom={(o, n) => {
-                    update((d) => ({
-                      ...d,
-                      custom: { ...d.custom, panicPhysical: d.custom.panicPhysical.map((x) => (x === o ? n : x)) },
-                    }));
-                    setPanicPhysical((a) => a.map((x) => (x === o ? n : x)));
-                  }}
-                  selected={panicPhysical}
-                  onToggle={(v) => setPanicPhysical((a) => toggleIn(a, v))}
-                />
-              </Field>
-              <Field label="Cognitive symptoms">
-                <CustomChipList
-                  base={PANIC_COGNITIVE}
-                  custom={data.custom.panicCognitive}
-                  onAddCustom={(v) =>
-                    update((d) => ({ ...d, custom: { ...d.custom, panicCognitive: [...d.custom.panicCognitive, v] } }))
-                  }
-                  onRemoveCustom={(v) => {
-                    update((d) => ({
-                      ...d,
-                      custom: { ...d.custom, panicCognitive: d.custom.panicCognitive.filter((x) => x !== v) },
-                    }));
-                    setPanicCognitive((a) => a.filter((x) => x !== v));
-                  }}
-                  onRenameCustom={(o, n) => {
-                    update((d) => ({
-                      ...d,
-                      custom: { ...d.custom, panicCognitive: d.custom.panicCognitive.map((x) => (x === o ? n : x)) },
-                    }));
-                    setPanicCognitive((a) => a.map((x) => (x === o ? n : x)));
-                  }}
-                  selected={panicCognitive}
-                  onToggle={(v) => setPanicCognitive((a) => toggleIn(a, v))}
-                />
-              </Field>
-              <Field label="Trigger (or 'no obvious trigger')">
-                <Textarea rows={2} value={panicTrigger} onChange={(e) => setPanicTrigger(e.target.value)} />
-              </Field>
-              <Field label="Place (optional)">
-                <Input value={panicPlace} onChange={(e) => setPanicPlace(e.target.value)} />
-              </Field>
-              <Field label="Hyperventilation">
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {(["no", "before", "during", "unknown"] as const).map((v) => (
-                    <Chip key={v} active={panicHyper === v} onClick={() => setPanicHyper(v)}>
-                      {v}
-                    </Chip>
-                  ))}
-                </div>
-              </Field>
-              <Field label="Tetany present?">
-                <div className="mt-2 flex gap-2">
-                  <Chip active={!panicTetany} onClick={() => setPanicTetany(false)}>
-                    No
-                  </Chip>
-                  <Chip active={panicTetany} onClick={() => setPanicTetany(true)}>
-                    Yes
-                  </Chip>
-                </div>
-              </Field>
-              <Field label="What helped">
-                <CustomChipList
-                  base={PANIC_HELPED_DEFAULT}
-                  custom={data.custom.panicHelped}
-                  onAddCustom={(v) =>
-                    update((d) => ({ ...d, custom: { ...d.custom, panicHelped: [...d.custom.panicHelped, v] } }))
-                  }
-                  onRemoveCustom={(v) => {
-                    update((d) => ({
-                      ...d,
-                      custom: { ...d.custom, panicHelped: d.custom.panicHelped.filter((x) => x !== v) },
-                    }));
-                    setPanicHelped((a) => a.filter((x) => x !== v));
-                  }}
-                  onRenameCustom={(o, n) => {
-                    update((d) => ({
-                      ...d,
-                      custom: { ...d.custom, panicHelped: d.custom.panicHelped.map((x) => (x === o ? n : x)) },
-                    }));
-                    setPanicHelped((a) => a.map((x) => (x === o ? n : x)));
-                  }}
-                  selected={panicHelped}
-                  onToggle={(v) => setPanicHelped((a) => toggleIn(a, v))}
-                />
-              </Field>
-              <Field label="Note (optional)">
-                <Textarea rows={2} value={panicNote} onChange={(e) => setPanicNote(e.target.value)} />
-              </Field>
-            </div>
-          )}
-        </div>
-      )}
-
-      {step === 4 && (
-        <div className="space-y-4">
-          {(() => {
-            const STRESS_DESC = getScaleDesc(data, "stress");
-            return (
-              <Field label={`Stress ${stress ?? "-"} / 10`}>
-                <div className="mt-2 grid gap-1" style={{ gridTemplateColumns: "repeat(11, minmax(0, 1fr))" }}>
-                  {Array.from({ length: 11 }, (_, n) => {
-                    const hue = 130 - n * 13;
-                    const bg = `hsl(${hue} 70% 50%)`;
-                    const active = stress === n;
-                    return (
-                      <button
-                        key={n}
-                        type="button"
-                        onClick={() => setStress(stress === n ? undefined : n)}
-                        title={`${n} — ${STRESS_DESC[n]}`}
-                        aria-label={`Stress ${n} — ${STRESS_DESC[n]}`}
-                        className={`aspect-square w-full rounded-full text-[11px] font-bold transition ${
-                          active ? "text-white ring-2 ring-foreground scale-110" : "text-white/90"
-                        }`}
-                        style={{ background: bg, opacity: active || stress == null ? 1 : 0.55 }}
-                      >
-                        {n}
-                      </button>
-                    );
-                  })}
-                </div>
-                {stress != null && (
-                  <div className="mt-2 rounded-lg bg-tint px-2.5 py-1.5 text-[11px] leading-snug text-foreground">
-                    <span className="font-semibold">Level {stress}:</span> {STRESS_DESC[stress]}
-                  </div>
-                )}
-                <ScaleLegend max={10} from={0} descriptions={STRESS_DESC} value={stress} title="Stress scale" />
-              </Field>
-            );
-          })()}
-          <Field label="Body battery">
-            <div className="mt-2 flex justify-between gap-2">
-              {BODY_BATTERY.map((b) => (
-                <button
-                  key={b.n}
-                  type="button"
-                  onClick={() => setBodyBattery(bodyBattery === b.n ? undefined : b.n)}
-                  className={`flex flex-1 flex-col items-center gap-1 rounded-2xl border p-2 transition ${bodyBattery === b.n ? "border-primary bg-primary/10" : "border-border bg-surface"}`}
-                >
-                  <div className="grid h-10 w-6 place-items-end rounded-md border-2 border-foreground/60 p-0.5">
-                    <div className="w-full rounded" style={{ height: `${b.n * 18}%`, background: b.color }} />
-                  </div>
-                  <span className="text-[10px]">{b.emoji}</span>
-                </button>
-              ))}
-            </div>
-          </Field>
-          <Field label="Mood">
-            <CustomChipList
-              base={MOODS_DEFAULT}
-              custom={data.custom.moods}
-              onAddCustom={(v) => addCustom("moods", v)}
-              onRemoveCustom={(v) => {
-                removeCustom("moods", v);
-                setMood((a) => a.filter((x) => x !== v));
-              }}
-              onRenameCustom={(o, n) => {
-                renameCustom("moods", o, n);
-                setMood((a) => a.map((x) => (x === o ? n : x)));
-              }}
-              selected={mood}
-              onToggle={(v) => setMood((a) => toggleIn(a, v))}
-            />
-          </Field>
-          <Field label="Time of entry">
-            <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
-          </Field>
-          <Field label="Note (optional)">
-            <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Anything else…" />
-          </Field>
-        </div>
-      )}
-
-      {quickSymptomUpdate && step === 3 ? (
-        <SheetFooter className="mt-4 flex-row gap-2">
-          <Button
-            variant="outline"
-            onClick={() => {
-              setQuickSymptomUpdate(false);
-              setCopiedFromTime(undefined);
-              setStep(0);
-            }}
-            className="flex-1"
-          >
-            Edit full log
-          </Button>
-          <Button onClick={save} className="flex-1">
-            Save update
-          </Button>
-        </SheetFooter>
-      ) : (
-        <SheetFooter className="mt-4 flex-row gap-2">
-          {step > 0 && (
-            <Button variant="outline" onClick={() => setStep(step - 1)} className="flex-1">
-              Back
-            </Button>
-          )}
-          {step < 4 ? (
-            <Button onClick={() => setStep(step + 1)} className="flex-1">
-              Next
-            </Button>
-          ) : (
-            <Button onClick={save} className="flex-1">
-              Save
-            </Button>
-          )}
-        </SheetFooter>
-      )}
-    </div>
-  );
-}
-
-/* ------------------- PANIC attack ------------------- */
-function PanicForm({
-  date,
-  data,
-  update,
-  onDone,
-  initialEntry,
-}: {
-  date: string;
-  data: BixboData;
-  update: UpdateFn;
-  onDone: () => void;
-  initialEntry?: PanicAttack;
-}) {
-  const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
-  const [minutes, setMinutes] = useState(initialEntry?.minutes != null ? String(initialEntry.minutes) : "10");
-  const [ongoing, setOngoing] = useState(initialEntry?.minutes == null && !!initialEntry);
-  const [intensity, setIntensity] = useState(initialEntry?.intensity ?? 5);
-  const [physical, setPhysical] = useState<string[]>(initialEntry?.physical ?? []);
-  const [cognitive, setCognitive] = useState<string[]>(initialEntry?.cognitive ?? []);
-  const [trigger, setTrigger] = useState(initialEntry?.trigger ?? "");
-  const [place, setPlace] = useState(initialEntry?.place ?? "");
-  const [hyper, setHyper] = useState<"no" | "before" | "during" | "unknown">(
-    initialEntry?.hyperventilation ?? "unknown",
-  );
-  const [tetanyPresent, setTetanyPresent] = useState(initialEntry?.tetanyPresent ?? false);
-  const [helped, setHelped] = useState<string[]>(initialEntry?.helped ?? []);
-  const [rescueMed, setRescueMed] = useState<string>(initialEntry?.rescueMed ?? "");
-  const [note, setNote] = useState(initialEntry?.note ?? "");
-  const addHelped = (v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, panicHelped: [...d.custom.panicHelped, v] } }));
-  const rmHelped = (v: string) => {
-    update((d) => ({ ...d, custom: { ...d.custom, panicHelped: d.custom.panicHelped.filter((x) => x !== v) } }));
-    setHelped((a) => a.filter((x) => x !== v));
-  };
-
-  const save = () => {
-    const editing = !!initialEntry;
-    const p: PanicAttack = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
-      time,
-      minutes: ongoing ? undefined : minutes === "" ? undefined : Number(minutes),
-      intensity,
-      physical,
-      cognitive,
-      trigger: trigger.trim(),
-      place: place.trim() || undefined,
-      hyperventilation: hyper,
-      tetanyPresent,
-      helped,
-      rescueMed: rescueMed.trim() || undefined,
-      note: note.trim() || undefined,
-    };
-    updateDayLog(update, date, (l) => ({
-      ...l,
-      panic: editing ? (l.panic ?? []).map((x) => (x.id === p.id ? p : x)) : [...(l.panic ?? []), p],
-    }));
-    onDone();
-  };
-  return (
-    <div className="space-y-3">
-      <Field label="Time">
-        <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="w-full" />
-      </Field>
-      <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} />
-      <Field label={`Intensity ${intensity}/10`}>
-        <IntensityScale
-          value={intensity}
-          onChange={setIntensity}
-          max={10}
-          descriptions={getScaleDesc(data, "panic")}
-          legendTitle="Panic intensity scale"
-        />
-      </Field>
-      <Field label="Physical symptoms">
-        <CustomChipList
-          base={PANIC_PHYSICAL}
-          custom={data.custom.panicPhysical}
-          onAddCustom={(v) =>
-            update((d) => ({ ...d, custom: { ...d.custom, panicPhysical: [...d.custom.panicPhysical, v] } }))
-          }
-          onRemoveCustom={(v) => {
-            update((d) => ({
-              ...d,
-              custom: { ...d.custom, panicPhysical: d.custom.panicPhysical.filter((x) => x !== v) },
-            }));
-            setPhysical((a) => a.filter((x) => x !== v));
-          }}
-          onRenameCustom={(o, n) => {
-            update((d) => ({
-              ...d,
-              custom: { ...d.custom, panicPhysical: d.custom.panicPhysical.map((x) => (x === o ? n : x)) },
-            }));
-            setPhysical((a) => a.map((x) => (x === o ? n : x)));
-          }}
-          selected={physical}
-          onToggle={(v) => setPhysical((a) => toggleIn(a, v))}
-        />
-      </Field>
-      <Field label="Cognitive symptoms">
-        <CustomChipList
-          base={PANIC_COGNITIVE}
-          custom={data.custom.panicCognitive}
-          onAddCustom={(v) =>
-            update((d) => ({ ...d, custom: { ...d.custom, panicCognitive: [...d.custom.panicCognitive, v] } }))
-          }
-          onRemoveCustom={(v) => {
-            update((d) => ({
-              ...d,
-              custom: { ...d.custom, panicCognitive: d.custom.panicCognitive.filter((x) => x !== v) },
-            }));
-            setCognitive((a) => a.filter((x) => x !== v));
-          }}
-          onRenameCustom={(o, n) => {
-            update((d) => ({
-              ...d,
-              custom: { ...d.custom, panicCognitive: d.custom.panicCognitive.map((x) => (x === o ? n : x)) },
-            }));
-            setCognitive((a) => a.map((x) => (x === o ? n : x)));
-          }}
-          selected={cognitive}
-          onToggle={(v) => setCognitive((a) => toggleIn(a, v))}
-        />
-      </Field>
-      <Field label="Trigger (or 'no obvious trigger')">
-        <Textarea rows={2} value={trigger} onChange={(e) => setTrigger(e.target.value)} />
-      </Field>
-      <Field label="Place (optional)">
-        <Input value={place} onChange={(e) => setPlace(e.target.value)} />
-      </Field>
-      <Field label="Hyperventilation">
-        <div className="mt-2 flex flex-wrap gap-2">
-          {(["no", "before", "during", "unknown"] as const).map((v) => (
-            <Chip key={v} active={hyper === v} onClick={() => setHyper(v)}>
-              {v}
-            </Chip>
-          ))}
-        </div>
-      </Field>
-      <Field label="Tetany present?">
-        <div className="mt-2 flex gap-2">
-          <Chip active={!tetanyPresent} onClick={() => setTetanyPresent(false)}>
-            No
-          </Chip>
-          <Chip active={tetanyPresent} onClick={() => setTetanyPresent(true)}>
-            Yes
-          </Chip>
-        </div>
-      </Field>
-      <Field label="What helped">
-        <CustomChipList
-          base={PANIC_HELPED_DEFAULT}
-          custom={data.custom.panicHelped}
-          onAddCustom={addHelped}
-          onRemoveCustom={rmHelped}
-          selected={helped}
-          onToggle={(v) => setHelped((a) => toggleIn(a, v))}
-        />
-      </Field>
-      <Field label="Rescue med (what you took)">
-        <Input value={rescueMed} onChange={(e) => setRescueMed(e.target.value)} placeholder="e.g. Frontin 0.25 mg" />
-        {data.meds.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {data.meds.map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => setRescueMed(m.dose ? `${m.name} ${m.dose}` : m.name)}
-                className="rounded-full bg-tint px-3 py-1 text-xs font-medium text-foreground ring-1 ring-border"
-              >
-                {m.name}
-                {m.dose ? ` ${m.dose}` : ""}
-              </button>
-            ))}
-          </div>
-        )}
-      </Field>
-      <Field label="Note (optional)">
-        <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
-      </Field>
-      <SaveBar onCancel={onDone} onSave={save} />
-    </div>
-  );
-}
-
-/* ------------------- TETANY episode ------------------- */
-function TetanyForm({
-  date,
-  data,
-  update,
-  onDone,
-  initialEntry,
-}: {
-  date: string;
-  data: BixboData;
-  update: UpdateFn;
-  onDone: () => void;
-  initialEntry?: TetanyEpisode;
-}) {
-  const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
-  const [types, setTypes] = useState<string[]>(initialEntry?.types ?? []);
-  const [loc, setLoc] = useState<string[]>(initialEntry?.location ?? []);
-  const [intensity, setIntensity] = useState(initialEntry?.intensity ?? 1);
-  const [minutes, setMinutes] = useState(initialEntry?.minutes != null ? String(initialEntry.minutes) : "5");
-  const [ongoing, setOngoing] = useState(initialEntry?.minutes == null && !!initialEntry);
-  const [triggers, setTriggers] = useState<string[]>(initialEntry?.triggers ?? []);
-  const [helped, setHelped] = useState<string[]>(initialEntry?.helped ?? []);
-  const [rescueMed, setRescueMed] = useState<string>(initialEntry?.rescueMed ?? "");
-  const [note, setNote] = useState(initialEntry?.note ?? "");
-
-  type CK = "tetanyTypes" | "tetanyLocations" | "tetanyTriggers" | "tetanyHelped";
-  const addC = (k: CK, v: string) => update((d) => ({ ...d, custom: { ...d.custom, [k]: [...d.custom[k], v] } }));
-  const rmC = (k: CK, v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [k]: d.custom[k].filter((x) => x !== v) } }));
-  const rnC = (k: CK, o: string, n: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [k]: d.custom[k].map((x) => (x === o ? n : x)) } }));
-
-  const save = () => {
-    const editing = !!initialEntry;
-    const t: TetanyEpisode = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
-      time,
-      types,
-      location: loc,
-      intensity,
-      minutes: ongoing ? undefined : minutes === "" ? undefined : Number(minutes),
-      triggers,
-      helped,
-      rescueMed: rescueMed.trim() || undefined,
-      note: note.trim() || undefined,
-    };
-    updateDayLog(update, date, (l) => ({
-      ...l,
-      tetany: editing ? (l.tetany ?? []).map((x) => (x.id === t.id ? t : x)) : [...(l.tetany ?? []), t],
-    }));
-    onDone();
-  };
-
-  return (
-    <div className="space-y-3">
-      <Field label="Time">
-        <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
-      </Field>
-      <Field label="Type">
-        <CustomChipList
-          base={TETANY_TYPES}
-          custom={data.custom.tetanyTypes}
-          descriptions={TETANY_TYPE_DESC}
-          onAddCustom={(v) => addC("tetanyTypes", v)}
-          onRemoveCustom={(v) => {
-            rmC("tetanyTypes", v);
-            setTypes((a) => a.filter((x) => x !== v));
-          }}
-          onRenameCustom={(o, n) => {
-            rnC("tetanyTypes", o, n);
-            setTypes((a) => a.map((x) => (x === o ? n : x)));
-          }}
-          selected={types}
-          onToggle={(v) => setTypes((a) => toggleIn(a, v))}
-        />
-      </Field>
-      <Field label="Location">
-        <CustomChipList
-          base={TETANY_LOCATIONS_DEFAULT}
-          custom={data.custom.tetanyLocations}
-          onAddCustom={(v) => addC("tetanyLocations", v)}
-          onRemoveCustom={(v) => {
-            rmC("tetanyLocations", v);
-            setLoc((a) => a.filter((x) => x !== v));
-          }}
-          onRenameCustom={(o, n) => {
-            rnC("tetanyLocations", o, n);
-            setLoc((a) => a.map((x) => (x === o ? n : x)));
-          }}
-          selected={loc}
-          onToggle={(v) => setLoc((a) => toggleIn(a, v))}
-        />
-      </Field>
-      <Field label={`Intensity ${intensity}/5`}>
-        <IntensityScale
-          value={intensity}
-          onChange={setIntensity}
-          max={5}
-          descriptions={getScaleDesc(data, "tetany")}
-          legendTitle="Tetany intensity scale"
-        />
-      </Field>
-      <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} />
-      <Field label="Triggers">
-        <CustomChipList
-          base={TETANY_TRIGGERS}
-          custom={data.custom.tetanyTriggers}
-          onAddCustom={(v) => addC("tetanyTriggers", v)}
-          onRemoveCustom={(v) => {
-            rmC("tetanyTriggers", v);
-            setTriggers((a) => a.filter((x) => x !== v));
-          }}
-          onRenameCustom={(o, n) => {
-            rnC("tetanyTriggers", o, n);
-            setTriggers((a) => a.map((x) => (x === o ? n : x)));
-          }}
-          selected={triggers}
-          onToggle={(v) => setTriggers((a) => toggleIn(a, v))}
-        />
-      </Field>
-      <Field label="What helped">
-        <CustomChipList
-          base={TETANY_HELPED_DEFAULT}
-          custom={data.custom.tetanyHelped}
-          onAddCustom={(v) => addC("tetanyHelped", v)}
-          onRemoveCustom={(v) => {
-            rmC("tetanyHelped", v);
-            setHelped((a) => a.filter((x) => x !== v));
-          }}
-          onRenameCustom={(o, n) => {
-            rnC("tetanyHelped", o, n);
-            setHelped((a) => a.map((x) => (x === o ? n : x)));
-          }}
-          selected={helped}
-          onToggle={(v) => setHelped((a) => toggleIn(a, v))}
-        />
-      </Field>
-      <Field label="Rescue med (what you took)">
-        <Input value={rescueMed} onChange={(e) => setRescueMed(e.target.value)} placeholder="e.g. Magnesium 400 mg" />
-        {data.meds.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {data.meds.map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => setRescueMed(m.dose ? `${m.name} ${m.dose}` : m.name)}
-                className="rounded-full bg-tint px-3 py-1 text-xs font-medium text-foreground ring-1 ring-border"
-              >
-                {m.name}
-                {m.dose ? ` ${m.dose}` : ""}
-              </button>
-            ))}
-          </div>
-        )}
-      </Field>
-      <Field label="Note (optional)">
-        <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
-      </Field>
-      <SaveBar onCancel={onDone} onSave={save} />
-    </div>
-  );
-}
-
-/* ------------------- PERIOD (Blueberry) ------------------- */
-function PeriodForm({
-  date,
-  data,
-  update,
-  onDone,
-}: {
-  date: string;
-  data: BixboData;
-  update: UpdateFn;
-  onDone: () => void;
-}) {
-  const cur = data.dayLogs[date]?.periodInfo;
-  const [level, setLevel] = useState<PeriodLevel>(cur?.level ?? "");
-  const [discharge, setDischarge] = useState<string>(cur?.discharge ?? "");
-  const [dNote, setDNote] = useState<string>(cur?.dischargeNote ?? "");
-  const [note, setNote] = useState<string>(cur?.note ?? "");
-  const [cramps, setCramps] = useState<number | undefined>(cur?.cramps);
-  const painDesc = getScaleDesc(data, "pain");
-
-  const save = () => {
-    updateDayLog(update, date, (l) => ({
-      ...l,
-      period: level || undefined,
-      periodInfo: {
-        level,
-        discharge: discharge || undefined,
-        dischargeNote: dNote.trim() || undefined,
-        note: note.trim() || undefined,
-        cramps,
-      },
-    }));
-    onDone();
-  };
-  const LEVELS: { v: Exclude<PeriodLevel, "">; color: string }[] = [
-    { v: "spotting", color: "var(--period-spotting)" },
-    { v: "light", color: "var(--period-light)" },
-    { v: "medium", color: "var(--period-medium)" },
-    { v: "heavy", color: "var(--period-heavy)" },
-    { v: "very-heavy", color: "var(--period-veryheavy)" },
-  ];
-  return (
-    <div className="space-y-3">
-      <Field label="Flow">
-        <div className="mt-2 grid grid-cols-5 gap-1.5">
-          {LEVELS.map((L) => (
-            <button
-              key={L.v}
-              onClick={() => setLevel(L.v)}
-              className={`rounded-2xl p-2 text-[11px] font-medium ${level === L.v ? "text-white ring-2 ring-foreground" : "bg-tint text-foreground"}`}
-              style={level === L.v ? { background: L.color } : undefined}
-            >
-              {periodLabel(L.v)}
-            </button>
-          ))}
-        </div>
-      </Field>
-      <Field label={`Cramp pain ${cramps == null ? "—" : Number.isInteger(cramps) ? cramps : cramps.toFixed(1)} / 10`}>
-        <div className="mt-2 flex items-center gap-3">
-          <div
-            className="grid h-14 w-14 shrink-0 place-items-center rounded-full text-lg font-bold text-white"
-            style={{ background: cramps == null ? "hsl(var(--muted-foreground))" : painColor(cramps) }}
-          >
-            {cramps == null ? "—" : Number.isInteger(cramps) ? cramps : cramps.toFixed(1)}
-          </div>
-          <div className="flex-1">
-            <Slider value={[(cramps ?? 0) * 2]} min={0} max={20} step={1} onValueChange={([v]) => setCramps(v / 2)} />
-          </div>
-        </div>
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {Array.from({ length: 21 }, (_, i) => i / 2).map((n) => (
-            <button
-              key={n}
-              type="button"
-              onClick={() => setCramps(cramps === n ? undefined : n)}
-              title={`${n} — ${painDesc[Math.round(n)]}`}
-              className={`h-7 w-7 rounded-full text-[10px] font-semibold ${
-                cramps === n ? "text-white ring-2 ring-foreground" : "bg-tint text-foreground"
-              }`}
-              style={cramps === n ? { background: painColor(n) } : undefined}
-            >
-              {Number.isInteger(n) ? n : n.toFixed(1)}
-            </button>
-          ))}
-        </div>
-        {cramps != null && (
-          <div className="mt-2 rounded-lg bg-tint px-2.5 py-1.5 text-[11px] leading-snug text-foreground">
-            <span className="font-semibold">Level {Math.round(cramps)}:</span> {painDesc[Math.round(cramps)]}
-          </div>
-        )}
-        <ScaleLegend
-          max={10}
-          from={0}
-          descriptions={painDesc}
-          value={cramps == null ? undefined : Math.round(cramps)}
-          title="Pain scale (Mankosky)"
-        />
-      </Field>
-      <Field label="Discharge (optional)">
-        <div className="mt-2 flex flex-wrap gap-2">
-          {DISCHARGE_OPTS.map((d) => (
-            <Chip
-              key={d.value}
-              active={discharge === d.value}
-              onClick={() => setDischarge(discharge === d.value ? "" : d.value)}
-              color={d.color}
-            >
-              {d.label}
-            </Chip>
-          ))}
-        </div>
-      </Field>
-      <Field label="Discharge note (optional)">
-        <Input value={dNote} onChange={(e) => setDNote(e.target.value)} />
-      </Field>
-      <Field label="Day note (optional)">
-        <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
-      </Field>
-      <Field label="Birth control since (optional)">
-        <Input
-          type="date"
-          value={data.settings.birthControlSince ?? ""}
-          onChange={(e) =>
-            update((d) => ({ ...d, settings: { ...d.settings, birthControlSince: e.target.value || undefined } }))
-          }
-        />
-        {data.settings.birthControlSince && (
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            Taking birth control since {data.settings.birthControlSince}
-          </p>
-        )}
-      </Field>
-      <Field label="Pregnant?">
-        <div className="mt-1 flex gap-2">
-          <Chip
-            active={!data.settings.pregnantSince}
-            onClick={() => update((d) => ({ ...d, settings: { ...d.settings, pregnantSince: undefined } }))}
-          >
-            No
-          </Chip>
-          <Chip
-            active={!!data.settings.pregnantSince}
-            onClick={() =>
-              update((d) => ({
-                ...d,
-                settings: { ...d.settings, pregnantSince: d.settings.pregnantSince ?? todayKey() },
-              }))
-            }
-          >
-            Yes
-          </Chip>
-        </div>
-        {data.settings.pregnantSince && (
-          <div className="mt-2">
-            <span className="text-xs font-medium text-muted-foreground">Since when</span>
-            <Input
-              type="date"
-              className="mt-1"
-              value={data.settings.pregnantSince}
-              onChange={(e) =>
-                update((d) => ({ ...d, settings: { ...d.settings, pregnantSince: e.target.value || undefined } }))
-              }
-            />
-            {(() => {
-              const p = pregnancyInfo(data.settings.pregnantSince);
-              return p ? (
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  Week {p.week} · Trimester {p.trimester} — cycle predictions are paused.
-                </p>
-              ) : null;
-            })()}
-          </div>
-        )}
-      </Field>
-      <div className="rounded-2xl bg-tint p-3 text-[11px] leading-relaxed text-muted-foreground">
-        Cycle prediction is based on your last period and cycle length (edit in Settings later).
-      </div>
-      {cur && (
-        <button
-          type="button"
-          onClick={() => {
-            updateDayLog(update, date, (l) => {
-              const { period: _p, periodInfo: _pi, ...rest } = l;
-              void _p;
-              void _pi;
-              return rest;
-            });
-            onDone();
-          }}
-          className="w-full rounded-2xl bg-destructive/10 py-2.5 text-sm font-medium text-destructive ring-1 ring-destructive/30"
-        >
-          Delete Blueberry entry
-        </button>
-      )}
-      <SaveBar onCancel={onDone} onSave={save} />
-    </div>
-  );
-}
-
-/* ------------------- ŠukŠuk (Sex) ------------------- */
-function SexForm({
-  date,
-  data,
-  update,
-  onDone,
-  initialEntry,
-}: {
-  date: string;
-  data: BixboData;
-  update: UpdateFn;
-  onDone: () => void;
-  initialEntry?: SexEntry;
-}) {
-  const [kind, setKind] = useState<SexKind>(initialEntry?.kind ?? "sex");
-  const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
-  const [feelingAfter, setFeelingAfter] = useState<string[]>(asArr(initialEntry?.feelingAfter));
-  const [painful, setPainful] = useState<PainfulWhen>(initialEntry?.painful ?? "no");
-  const [note, setNote] = useState(initialEntry?.note ?? "");
-  const addCustom = (v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, sexTypes: [...d.custom.sexTypes, v] } }));
-  const rmCustom = (v: string) => {
-    if (!confirm(`Remove "${v}" from your list?`)) return;
-    update((d) => ({ ...d, custom: { ...d.custom, sexTypes: d.custom.sexTypes.filter((x) => x !== v) } }));
-    if (kind === (`other:${v}` as SexKind)) setKind("sex");
-  };
-  const custom = data.custom.sexTypes;
-  const save = () => {
-    const editing = !!initialEntry;
-    const e: SexEntry = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
-      time,
-      kind,
-      feelingAfter: feelingAfter.length ? feelingAfter : undefined,
-      painful,
-      note: note.trim() || undefined,
-    };
-    updateDayLog(update, date, (l) => ({
-      ...l,
-      sex: editing ? (l.sex ?? []).map((x) => (x.id === e.id ? e : x)) : [...(l.sex ?? []), e],
-    }));
-    onDone();
-  };
-  return (
-    <div className="space-y-3">
-      <Field label="Time">
-        <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
-      </Field>
-      <Field label="Type">
-        <div className="mt-2 flex flex-wrap gap-2">
-          {SEX_TYPES_DEFAULT.map((o) => (
-            <Chip key={o.value} active={kind === o.value} onClick={() => setKind(o.value)}>
-              {o.label}
-            </Chip>
-          ))}
-          {custom.map((c) => (
-            <span key={c} className="relative inline-flex items-center">
-              <Chip active={kind === (`other:${c}` as SexKind)} onClick={() => setKind(`other:${c}` as SexKind)}>
-                {c}
-              </Chip>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  rmCustom(c);
-                }}
-                aria-label={`Remove ${c}`}
-                className="ml-1 grid h-5 w-5 place-items-center rounded-full bg-tint text-muted-foreground hover:bg-destructive/15 hover:text-destructive"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </span>
-          ))}
-          <AddCustomInline onAdd={addCustom} />
-        </div>
-      </Field>
-      <Field label="How I feel after">
-        <CustomChipList
-          base={SEX_FEELINGS_DEFAULT}
-          custom={data.custom.sexFeelings ?? []}
-          onAddCustom={(v) =>
-            update((d) => ({ ...d, custom: { ...d.custom, sexFeelings: [...(d.custom.sexFeelings ?? []), v] } }))
-          }
-          onRemoveCustom={(v) => {
-            update((d) => ({
-              ...d,
-              custom: { ...d.custom, sexFeelings: (d.custom.sexFeelings ?? []).filter((x) => x !== v) },
-            }));
-            setFeelingAfter((a) => a.filter((x) => x !== v));
-          }}
-          onRenameCustom={(o, n) => {
-            update((d) => ({
-              ...d,
-              custom: { ...d.custom, sexFeelings: (d.custom.sexFeelings ?? []).map((x) => (x === o ? n : x)) },
-            }));
-            setFeelingAfter((a) => a.map((x) => (x === o ? n : x)));
-          }}
-          selected={feelingAfter}
-          onToggle={(v) => setFeelingAfter((a) => toggleIn(a, v))}
-        />
-      </Field>
-      <Field label="Painful?">
-        <div className="mt-2 flex gap-2">
-          {(["no", "before", "during", "after"] as const).map((v) => (
-            <Chip key={v} active={painful === v} onClick={() => setPainful(v)}>
-              {v}
-            </Chip>
-          ))}
-        </div>
-      </Field>
-      <Field label="Note (optional)">
-        <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
-      </Field>
-      <SaveBar onCancel={onDone} onSave={save} />
-    </div>
-  );
-}
-function AddCustomInline({ onAdd }: { onAdd: (v: string) => void }) {
-  const [adding, setAdding] = useState(false);
-  const [text, setText] = useState("");
-  if (!adding)
-    return (
-      <button
-        type="button"
-        onClick={() => setAdding(true)}
-        className="flex items-center gap-1 rounded-full bg-tint px-3 py-1.5 text-xs font-medium text-muted-foreground"
-      >
-        <Plus className="h-3 w-3" /> Add
-      </button>
-    );
-  const commit = () => {
-    if (text.trim()) {
-      onAdd(text.trim());
-      setText("");
-      setAdding(false);
-    }
-  };
-  return (
-    <div className="flex items-center gap-1">
-      <Input
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            commit();
-          }
-        }}
-        className="h-8 w-32"
-        placeholder="Custom…"
-        autoFocus
-      />
-      <Button type="button" size="sm" onClick={commit}>
-        Add
-      </Button>
-    </div>
-  );
-}
-
-/* ------------------- Heat / Cold / TENS ------------------- */
-function ThermoForm({
-  date,
-  update,
-  onDone,
-  initialEntry,
-}: {
-  date: string;
-  update: UpdateFn;
-  onDone: () => void;
-  initialEntry?: ThermoSession;
-}) {
-  const [kind, setKind] = useState<ThermoKind>(initialEntry?.kind ?? "heat");
-  const [start, setStart] = useState(initialEntry?.start ?? nowHHMM());
-  const [minutes, setMinutes] = useState<string>(
-    initialEntry ? (initialEntry.minutes != null ? String(initialEntry.minutes) : "") : "20",
-  );
-  const [ongoing, setOngoing] = useState(!!initialEntry?.ongoing);
-  const [note, setNote] = useState(initialEntry?.note ?? "");
-  const save = () => {
-    const editing = !!initialEntry;
-    const mins = ongoing ? 0 : minutes === "" ? 0 : Number(minutes);
-    const e: ThermoSession = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
-      kind,
-      start,
-      minutes: mins,
-      ongoing: ongoing || undefined,
-      note: note.trim() || undefined,
-    };
-    updateDayLog(update, date, (l) => ({
-      ...l,
-      heat: editing ? (l.heat ?? []).map((x) => (x.id === e.id ? e : x)) : [...(l.heat ?? []), e],
-    }));
-    onDone();
-  };
-  return (
-    <div className="space-y-3">
-      <Field label="Type">
-        <div className="mt-2 flex gap-2">
-          <Chip active={kind === "heat"} onClick={() => setKind("heat")}>
-            <Ico e="♨️" size={16} /> Heat
-          </Chip>
-          <Chip active={kind === "cold"} onClick={() => setKind("cold")}>
-            <Ico e="🧊" size={16} /> Cold
-          </Chip>
-          <Chip active={kind === "tens"} onClick={() => setKind("tens")}>
-            <Ico e="⭐" size={16} /> TENS
-          </Chip>
-        </div>
-      </Field>
-      <Field label="Start">
-        <Input type="time" value={start} onChange={(e) => setStart(e.target.value)} className="w-full" />
-      </Field>
-      <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} />
-      <Field label="Note (optional)">
-        <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
-      </Field>
-      <SaveBar onCancel={onDone} onSave={save} />
-    </div>
-  );
-}
-
-/* ------------------- FOOD ------------------- */
-function FoodForm({
-  date,
-  data,
-  update,
-  onDone,
-  initialEntry,
-}: {
-  date: string;
-  data: BixboData;
-  update: UpdateFn;
-  onDone: () => void;
-  initialEntry?: FoodEntry;
-}) {
-  const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
-  const [what, setWhat] = useState(initialEntry?.what ?? "");
-  const [feelings, setFeelings] = useState<string[]>(initialEntry?.feelings ?? []);
-  const [after, setAfter] = useState(initialEntry?.after ?? "");
-  const [hydration, setHydration] = useState<string>(
-    initialEntry?.hydrationMl != null ? String(initialEntry.hydrationMl) : "",
-  );
-  const [caffeine, setCaffeine] = useState<string>(
-    initialEntry?.caffeineMg != null ? String(initialEntry.caffeineMg) : "",
-  );
-  const [alcohol, setAlcohol] = useState<string>(
-    initialEntry?.alcoholDrinks != null ? String(initialEntry.alcoholDrinks) : "",
-  );
-  const [symptomsAfter, setSymptomsAfter] = useState<string[]>(initialEntry?.symptomsAfter ?? []);
-  const [histFlare, setHistFlare] = useState<boolean>(!!initialEntry?.histamineFlare);
-  const [histSymptoms, setHistSymptoms] = useState<string[]>(initialEntry?.histamineSymptoms ?? []);
-  const [highHist, setHighHist] = useState<boolean>(!!initialEntry?.highHistamine);
-  const [allergensInMeal, setAllergensInMeal] = useState<string[]>(initialEntry?.allergensInMeal ?? []);
-  const [allergicReaction, setAllergicReaction] = useState<boolean>(!!initialEntry?.allergicReaction);
-  const [reactionSeverity, setReactionSeverity] = useState<"mild" | "moderate" | "severe" | undefined>(
-    initialEntry?.reactionSeverity,
-  );
-  const allergensBase = data.settings.allergens ?? ALLERGENS_DEFAULT;
-  const addCustom = (v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, foodFeelings: [...d.custom.foodFeelings, v] } }));
-  const addCustomList = (k: "histamineSymptoms" | "foodSymptomsAfter", v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [k]: [...(d.custom[k] ?? []), v] } }));
-  const removeCustomList = (k: "histamineSymptoms" | "foodSymptomsAfter", v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [k]: (d.custom[k] ?? []).filter((x) => x !== v) } }));
-  const renameCustomList = (k: "histamineSymptoms" | "foodSymptomsAfter", o: string, n: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [k]: (d.custom[k] ?? []).map((x) => (x === o ? n : x)) } }));
-  const save = () => {
-    if (!what.trim() && !hydration && !caffeine && !alcohol && !histFlare && symptomsAfter.length === 0) return;
-    const editing = !!initialEntry;
-    const entry: FoodEntry = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
-      time,
-      what: what.trim(),
-      feelings,
-      after: after.trim() || undefined,
-      hydrationMl: hydration === "" ? undefined : Number(hydration),
-      caffeineMg: caffeine === "" ? undefined : Number(caffeine),
-      alcoholDrinks: alcohol === "" ? undefined : Number(alcohol),
-      symptomsAfter: symptomsAfter.length ? symptomsAfter : undefined,
-      histamineFlare: histFlare || undefined,
-      histamineSymptoms: histFlare && histSymptoms.length ? histSymptoms : undefined,
-      highHistamine: highHist || undefined,
-      allergensInMeal: allergensInMeal.length ? allergensInMeal : undefined,
-      allergicReaction: allergicReaction || undefined,
-      reactionSeverity: allergicReaction ? reactionSeverity : undefined,
-    };
-    updateDayLog(update, date, (l) => ({
-      ...l,
-      food: editing ? (l.food ?? []).map((x) => (x.id === entry.id ? entry : x)) : [...(l.food ?? []), entry],
-    }));
-    onDone();
-  };
-  return (
-    <div className="space-y-3">
-      <Field label="Time">
-        <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
-      </Field>
-      <Field label="What did you eat?">
-        <Textarea
-          rows={2}
-          value={what}
-          onChange={(e) => setWhat(e.target.value)}
-          placeholder="e.g. chicken, rice, tomato"
-        />
-      </Field>
-      <Field label="Quick add">
-        <div className="mt-2 flex flex-wrap gap-2">
-          {[
-            { l: "🍵 Matcha", w: "Matcha", caf: 70 },
-            { l: "☕ Coffee", w: "Coffee", caf: 95 },
-            { l: "🫖 Tea", w: "Tea", caf: 40 },
-            { l: "💧 Water", w: "Water", hyd: 250 },
-            { l: "🥑 Avocado", w: "Avocado" },
-          ].map((q) => (
-            <button
-              key={q.l}
-              type="button"
-              onClick={() => {
-                setWhat((w) => (w ? `${w}, ${q.w}` : q.w));
-                if (q.caf) setCaffeine(String((Number(caffeine) || 0) + q.caf));
-                if (q.hyd) setHydration(String((Number(hydration) || 0) + q.hyd));
-              }}
-              className="rounded-full bg-tint px-3 py-1.5 text-xs font-semibold ring-1 ring-border hover:bg-primary/10"
-            >
-              <IcoText text={q.l} size={14} />
-            </button>
-          ))}
-          {data.custom.foodQuickAdd.map((c) => (
-            <span key={c} className="relative inline-flex items-center">
-              <button
-                type="button"
-                onClick={() => setWhat((w) => (w ? `${w}, ${c}` : c))}
-                className="rounded-full bg-tint px-3 py-1.5 text-xs font-semibold ring-1 ring-border hover:bg-primary/10"
-              >
-                <IcoText text={c} size={14} />
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (confirm(`Remove "${c}" from quick add?`))
-                    update((d) => ({
-                      ...d,
-                      custom: { ...d.custom, foodQuickAdd: d.custom.foodQuickAdd.filter((x) => x !== c) },
-                    }));
-                }}
-                aria-label={`Remove ${c}`}
-                className="ml-1 grid h-5 w-5 place-items-center rounded-full bg-tint text-muted-foreground hover:bg-destructive/15 hover:text-destructive"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </span>
-          ))}
-          <AddCustomInline
-            onAdd={(v) =>
-              update((d) => ({ ...d, custom: { ...d.custom, foodQuickAdd: [...d.custom.foodQuickAdd, v] } }))
-            }
-          />
-        </div>
-      </Field>
-      <Field label="Reaction?">
-        <div className="mt-1 flex gap-2">
-          <Chip active={!allergicReaction} onClick={() => setAllergicReaction(false)}>
-            No / not sure
-          </Chip>
-          <Chip active={allergicReaction} onClick={() => setAllergicReaction(true)}>
-            Yes — log it
-          </Chip>
-        </div>
-        {allergicReaction && (
-          <div className="mt-2 flex gap-2">
-            {(["mild", "moderate", "severe"] as const).map((s2) => (
-              <Chip key={s2} active={reactionSeverity === s2} onClick={() => setReactionSeverity(s2)}>
-                {s2[0].toUpperCase() + s2.slice(1)}
-              </Chip>
-            ))}
-          </div>
-        )}
-      </Field>
-      <Field label="How do I feel after food?">
-        <CustomChipList
-          base={FOOD_FEELINGS_DEFAULT}
-          custom={data.custom.foodFeelings}
-          onAddCustom={addCustom}
-          onRemoveCustom={(v) => {
-            update((d) => ({
-              ...d,
-              custom: { ...d.custom, foodFeelings: d.custom.foodFeelings.filter((x) => x !== v) },
-            }));
-            setFeelings((a) => a.filter((x) => x !== v));
-          }}
-          selected={feelings}
-          onToggle={(v) => setFeelings((a) => toggleIn(a, v))}
-        />
-      </Field>
-      <Field label="Symptoms after food">
-        <CustomChipList
-          base={FOOD_SYMPTOMS_AFTER}
-          custom={data.custom.foodSymptomsAfter ?? []}
-          onAddCustom={(v) => addCustomList("foodSymptomsAfter", v)}
-          onRemoveCustom={(v) => {
-            removeCustomList("foodSymptomsAfter", v);
-            setSymptomsAfter((a) => a.filter((x) => x !== v));
-          }}
-          onRenameCustom={(o, n) => {
-            renameCustomList("foodSymptomsAfter", o, n);
-            setSymptomsAfter((a) => a.map((x) => (x === o ? n : x)));
-          }}
-          selected={symptomsAfter}
-          onToggle={(v) => setSymptomsAfter((a) => toggleIn(a, v))}
-        />
-      </Field>
-      <Field label="High histamine food?">
-        <div className="mt-1 flex gap-2">
-          <Chip active={!highHist} onClick={() => setHighHist(false)}>
-            No
-          </Chip>
-          <Chip active={highHist} onClick={() => setHighHist(true)}>
-            Yes
-          </Chip>
-        </div>
-      </Field>
-      <Field label="Histamine flare?">
-        <div className="mt-1 flex gap-2">
-          <Chip active={!histFlare} onClick={() => setHistFlare(false)}>
-            No
-          </Chip>
-          <Chip active={histFlare} onClick={() => setHistFlare(true)}>
-            Yes — log it
-          </Chip>
-        </div>
-      </Field>
-      {histFlare && (
-        <div className="rounded-2xl border border-border p-3">
-          <Field label="Histamine flare symptoms">
-            <CustomChipList
-              base={HISTAMINE_SYMPTOMS}
-              custom={data.custom.histamineSymptoms ?? []}
-              onAddCustom={(v) => addCustomList("histamineSymptoms", v)}
-              onRemoveCustom={(v) => {
-                removeCustomList("histamineSymptoms", v);
-                setHistSymptoms((a) => a.filter((x) => x !== v));
-              }}
-              onRenameCustom={(o, n) => {
-                renameCustomList("histamineSymptoms", o, n);
-                setHistSymptoms((a) => a.map((x) => (x === o ? n : x)));
-              }}
-              selected={histSymptoms}
-              onToggle={(v) => setHistSymptoms((a) => toggleIn(a, v))}
-            />
-          </Field>
-        </div>
-      )}
-      <Field label="Allergens in this meal">
-        <CustomChipList
-          base={allergensBase}
-          custom={data.custom.allergens}
-          onAddCustom={(v) =>
-            update((d) => ({
-              ...d,
-              settings: { ...d.settings, allergens: [...(d.settings.allergens ?? ALLERGENS_DEFAULT), v] },
-              custom: { ...d.custom, allergens: [...d.custom.allergens, v] },
-            }))
-          }
-          onRemoveCustom={(v) => {
-            update((d) => ({ ...d, custom: { ...d.custom, allergens: d.custom.allergens.filter((x) => x !== v) } }));
-            setAllergensInMeal((a) => a.filter((x) => x !== v));
-          }}
-          onRenameCustom={(o, n) => {
-            update((d) => ({
-              ...d,
-              custom: { ...d.custom, allergens: d.custom.allergens.map((x) => (x === o ? n : x)) },
-            }));
-            setAllergensInMeal((a) => a.map((x) => (x === o ? n : x)));
-          }}
-          selected={allergensInMeal}
-          onToggle={(v) => setAllergensInMeal((a) => toggleIn(a, v))}
-        />
-      </Field>
-      <div className="grid grid-cols-3 gap-2">
-        <Field label="Water (ml)">
-          <Input type="number" value={hydration} onChange={(e) => setHydration(e.target.value)} placeholder="300" />
-        </Field>
-        <Field label="Caffeine (mg)">
-          <Input type="number" value={caffeine} onChange={(e) => setCaffeine(e.target.value)} placeholder="80" />
-        </Field>
-        <Field label="Alcohol (drinks)">
-          <Input type="number" value={alcohol} onChange={(e) => setAlcohol(e.target.value)} placeholder="0" />
-        </Field>
-      </div>
-      <Field label="Additional note (optional)">
-        <Textarea rows={2} value={after} onChange={(e) => setAfter(e.target.value)} />
-      </Field>
-      <SaveBar onCancel={onDone} onSave={save} />
-    </div>
-  );
-}
-
-/* ------------------- BOWEL ------------------- */
-function BristolIcon({ shape, color }: { shape: string; color: string }) {
-  const s = shape;
-  return (
-    <svg viewBox="0 0 60 40" className="h-8 w-14 shrink-0">
-      {s === "lumps" &&
-        Array.from({ length: 5 }).map((_, i) => <circle key={i} cx={8 + i * 11} cy={20} r={4.5} fill={color} />)}
-      {s === "lumpy" && (
-        <rect x={4} y={12} width={52} height={16} rx={7} fill={color} stroke="#0002" strokeDasharray="4 3" />
-      )}
-      {s === "cracked" && (
-        <>
-          <rect x={4} y={12} width={52} height={16} rx={8} fill={color} />
-          {[16, 26, 36, 46].map((x) => (
-            <line key={x} x1={x} y1={13} x2={x} y2={27} stroke="#0004" strokeWidth={1.5} />
-          ))}
-        </>
-      )}
-      {s === "smooth" && <rect x={4} y={13} width={52} height={14} rx={7} fill={color} />}
-      {s === "blobs" && (
-        <>
-          <ellipse cx={16} cy={20} rx={10} ry={7} fill={color} />
-          <ellipse cx={32} cy={20} rx={9} ry={6} fill={color} />
-          <ellipse cx={46} cy={20} rx={8} ry={6} fill={color} />
-        </>
-      )}
-      {s === "mushy" && <path d="M4 22 Q10 10 20 22 T36 22 T56 22 L56 30 L4 30 Z" fill={color} />}
-      {s === "liquid" && (
-        <>
-          <rect x={4} y={22} width={52} height={8} rx={4} fill={color} />
-          {[12, 24, 36, 48].map((x) => (
-            <circle key={x} cx={x} cy={16} r={2} fill={color} opacity={0.6} />
-          ))}
-        </>
-      )}
-    </svg>
-  );
-}
-function BowelForm({
-  date,
-  data,
-  update,
-  onDone,
-  initialEntry,
-}: {
-  date: string;
-  data: BixboData;
-  update: UpdateFn;
-  onDone: () => void;
-  initialEntry?: BowelEntry;
-}) {
-  const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
-  const [bristol, setBristol] = useState<number>(initialEntry?.bristol ?? 4);
-  const [feelings, setFeelings] = useState<string[]>((initialEntry?.feelings ?? []).map(stripEmoji));
-  const [symptoms, setSymptoms] = useState<string[]>(initialEntry?.symptoms ?? []);
-  const [urinary, setUrinary] = useState<string[]>(initialEntry?.urinary ?? []);
-  const [note, setNote] = useState(initialEntry?.note ?? "");
-  const addUrinary = (v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, urinary: [...d.custom.urinary, v] } }));
-  const rmUrinary = (v: string) => {
-    update((d) => ({ ...d, custom: { ...d.custom, urinary: d.custom.urinary.filter((x) => x !== v) } }));
-    setUrinary((a) => a.filter((x) => x !== v));
-  };
-  const rnUrinary = (o: string, n: string) => {
-    update((d) => ({ ...d, custom: { ...d.custom, urinary: d.custom.urinary.map((x) => (x === o ? n : x)) } }));
-    setUrinary((a) => a.map((x) => (x === o ? n : x)));
-  };
-  const addFeel = (v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, bowelFeelings: [...d.custom.bowelFeelings, v] } }));
-  const rmFeel = (v: string) => {
-    update((d) => ({ ...d, custom: { ...d.custom, bowelFeelings: d.custom.bowelFeelings.filter((x) => x !== v) } }));
-    setFeelings((a) => a.filter((x) => x !== v));
-  };
-  const addSym = (v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, bowelSymptoms: [...d.custom.bowelSymptoms, v] } }));
-  const rmSym = (v: string) => {
-    update((d) => ({ ...d, custom: { ...d.custom, bowelSymptoms: d.custom.bowelSymptoms.filter((x) => x !== v) } }));
-    setSymptoms((a) => a.filter((x) => x !== v));
-  };
-  const save = () => {
-    const editing = !!initialEntry;
-    const entry: BowelEntry = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
-      time,
-      bristol,
-      feelings: feelings.length ? feelings : undefined,
-      symptoms: symptoms.length ? symptoms : undefined,
-      urinary: urinary.length ? urinary : undefined,
-      note: note.trim() || undefined,
-    };
-    updateDayLog(update, date, (l) => ({
-      ...l,
-      bowel: editing ? (l.bowel ?? []).map((x) => (x.id === entry.id ? entry : x)) : [...(l.bowel ?? []), entry],
-    }));
-    onDone();
-  };
-  return (
-    <div className="space-y-3">
-      <Field label="Time">
-        <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
-      </Field>
-      <Field label="Bristol stool scale">
-        <div className="mt-1 space-y-1.5">
-          <button
-            onClick={() => setBristol(-1)}
-            className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-2 text-left text-sm transition ${
-              bristol === -1 ? "border-primary bg-primary/10" : "border-border bg-surface"
-            }`}
-          >
-            <span className="grid h-8 w-8 place-items-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">
-              ∅
-            </span>
-            <span className="flex-1">
-              <span className="font-medium">No bowel movement</span>
-              <br />
-              <span className="text-[11px] text-muted-foreground">Didn't go today</span>
-            </span>
-          </button>
-          <button
-            onClick={() => setBristol(0)}
-            className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-2 text-left text-sm transition ${
-              bristol === 0 ? "border-primary bg-primary/10" : "border-border bg-surface"
-            }`}
-          >
-            <span
-              className="grid h-8 w-8 place-items-center rounded-full text-xs font-semibold text-white"
-              style={{ background: "linear-gradient(135deg,#ef4444,#f59e0b,#eab308,#22c55e,#3b82f6,#8b5cf6)" }}
-            >
-              0
-            </span>
-            <span className="flex-1">
-              <span className="font-medium">Type 0 — Mystery</span>
-              <br />
-              <span className="text-[11px] text-muted-foreground">Unknown / mixed</span>
-            </span>
-          </button>
-
-          {BRISTOL.map((b) => (
-            <button
-              key={b.n}
-              onClick={() => setBristol(b.n)}
-              className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-2 text-left text-sm transition ${
-                bristol === b.n ? "border-primary bg-primary/10" : "border-border bg-surface"
-              }`}
-            >
-              <span
-                className="grid h-8 w-8 place-items-center rounded-full text-xs font-semibold text-white"
-                style={{ background: b.color }}
-              >
-                {b.n}
-              </span>
-              <BristolIcon shape={b.shape} color={b.color} />
-              <div className="flex-1">
-                <p className="font-medium">
-                  <IcoText text={b.label} size={14} />
-                </p>
-                <p className="text-[11px] text-muted-foreground">
-                  <IcoText text={b.sub} size={12} />
-                </p>
-              </div>
-            </button>
-          ))}
-        </div>
-      </Field>
-      <Field label="Urinary">
-        <CustomChipList
-          base={URINARY_DEFAULT}
-          custom={data.custom.urinary}
-          onAddCustom={addUrinary}
-          onRemoveCustom={rmUrinary}
-          onRenameCustom={rnUrinary}
-          selected={urinary}
-          onToggle={(v) => setUrinary((a) => toggleIn(a, v))}
-        />
-      </Field>
-      <Field label="How do you feel?">
-        <CustomChipList
-          base={BOWEL_FEELINGS_DEFAULT}
-          custom={data.custom.bowelFeelings}
-          onAddCustom={addFeel}
-          onRemoveCustom={rmFeel}
-          selected={feelings}
-          onToggle={(v) => setFeelings((a) => toggleIn(a, v))}
-        />
-      </Field>
-      <Field label="Symptoms">
-        <CustomChipList
-          base={BOWEL_SYMPTOMS_DEFAULT}
-          custom={data.custom.bowelSymptoms}
-          onAddCustom={addSym}
-          onRemoveCustom={rmSym}
-          selected={symptoms}
-          onToggle={(v) => setSymptoms((a) => toggleIn(a, v))}
-        />
-      </Field>
-      <Field label="Note (optional)">
-        <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
-      </Field>
-      <SaveBar onCancel={onDone} onSave={save} />
-    </div>
-  );
-}
-
-/* ------------------- TEMP / WEIGHT / SLEEP ------------------- */
-function TempForm({
-  date,
-  data,
-  update,
-  onDone,
-}: {
-  date: string;
-  data: BixboData;
-  update: UpdateFn;
-  onDone: () => void;
-}) {
-  const cur = data.dayLogs[date] ?? {};
-  const [temperature, setTemperature] = useState<string>(cur.temperature != null ? String(cur.temperature) : "");
-  const [weight, setWeight] = useState<string>(cur.weight != null ? String(cur.weight) : "");
-  const [sleep, setSleep] = useState<string>(cur.sleepHours != null ? String(cur.sleepHours) : "");
-  const [quality, setQuality] = useState<string[]>(asArr(cur.sleepQuality));
-  const save = () => {
-    updateDayLog(update, date, (l) => ({
-      ...l,
-      temperature: temperature === "" ? undefined : Number(temperature),
-      weight: weight === "" ? undefined : Number(weight),
-      sleepHours: sleep === "" ? undefined : Number(sleep),
-      sleepQuality: quality.length ? quality : undefined,
-    }));
-    onDone();
-  };
-  return (
-    <div className="space-y-3">
-      <Field label="Temperature (°C)">
-        <Input
-          type="number"
-          step="0.1"
-          value={temperature}
-          onChange={(e) => setTemperature(e.target.value)}
-          placeholder="36.6"
-        />
-      </Field>
-      <Field label="Weight (kg)">
-        <Input type="number" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="65.0" />
-      </Field>
-      <Field label="Sleep (hours)">
-        <Input type="number" step="0.5" value={sleep} onChange={(e) => setSleep(e.target.value)} placeholder="8" />
-      </Field>
-      <Field label="How I slept">
-        <div className="mt-2 flex flex-wrap gap-2">
-          {SLEEP_QUALITY.map((q) => (
-            <Chip key={q} active={quality.includes(q)} onClick={() => setQuality((a) => toggleIn(a, q))}>
-              {q}
-            </Chip>
-          ))}
-        </div>
-      </Field>
-      <SaveBar onCancel={onDone} onSave={save} />
-    </div>
-  );
-}
-
-/* ------------------- MEDS ------------------- */
-function MedsForm({
-  date,
-  data,
-  update,
-  onDone,
-}: {
-  date: string;
-  data: BixboData;
-  update: UpdateFn;
-  onDone: () => void;
-}) {
-  const meds = data.meds;
-  const taken = data.medLog[date] ?? {};
-  const takenTimes = data.medLogTimes?.[date] ?? {};
-  const toggle = (key: string, defaultTime?: string) =>
-    update((d) => {
-      const day = { ...(d.medLog[date] ?? {}) };
-      const times = { ...(d.medLogTimes?.[date] ?? {}) };
-      const nextOn = !day[key];
-      day[key] = nextOn;
-      if (nextOn && defaultTime && !times[key]) times[key] = defaultTime;
-      if (!nextOn) delete times[key];
-      return { ...d, medLog: { ...d.medLog, [date]: day }, medLogTimes: { ...(d.medLogTimes ?? {}), [date]: times } };
-    });
-  const setTakenTime = (key: string, time: string) =>
-    update((d) => {
-      const times = { ...(d.medLogTimes?.[date] ?? {}) };
-      times[key] = time;
-      return { ...d, medLogTimes: { ...(d.medLogTimes ?? {}), [date]: times } };
-    });
-
-  const [extraName, setExtraName] = useState("");
-  const [extraDose, setExtraDose] = useState("");
-  const [extraTime, setExtraTime] = useState(nowHHMM());
-  const [extraNote, setExtraNote] = useState("");
-  const addExtra = () => {
-    if (!extraName.trim()) return;
-    const e: ExtraMed = {
-      id: crypto.randomUUID(),
-      time: extraTime,
-      name: extraName.trim(),
-      dose: extraDose.trim() || undefined,
-      note: extraNote.trim() || undefined,
-    };
-    updateDayLog(update, date, (l) => ({ ...l, extraMeds: [...(l.extraMeds ?? []), e] }));
-    setExtraName("");
-    setExtraDose("");
-    setExtraNote("");
-    setExtraTime(nowHHMM());
-  };
-  const today = date === todayKey();
-  const extras = data.dayLogs[date]?.extraMeds ?? [];
-
-  return (
-    <div className="space-y-4">
-      {meds.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No medications yet. Add them from Meds settings.</p>
-      ) : (
-        <div>
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">{today ? "Today" : date}</p>
-          <div className="mt-2 space-y-2">
-            {meds.map((m) =>
-              m.asNeeded ? (
-                <label key={m.id} className="flex items-center gap-3 rounded-2xl bg-surface p-3 ring-1 ring-border">
-                  <input
-                    type="checkbox"
-                    checked={!!taken[`${m.id}@asneeded`]}
-                    onChange={() => toggle(`${m.id}@asneeded`, nowHHMM())}
-                    className="h-4 w-4"
-                  />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">{m.name}</p>
-                    <p className="text-xs text-muted-foreground">As needed{m.dose ? ` · ${m.dose}` : ""}</p>
-                    {m.note && (
-                      <p className="text-[11px] text-muted-foreground">
-                        <Ico e="📝" size={13} /> <IcoText text={m.note} size={12} />
-                      </p>
-                    )}
-                  </div>
-                  {taken[`${m.id}@asneeded`] && (
-                    <Input
-                      type="time"
-                      value={takenTimes[`${m.id}@asneeded`] ?? nowHHMM()}
-                      onChange={(e) => setTakenTime(`${m.id}@asneeded`, e.target.value)}
-                      className="h-8 w-24"
-                    />
-                  )}
-                </label>
-              ) : (
-                m.times.map((t) => {
-                  const k = `${m.id}@${t}`;
-                  const isTaken = !!taken[k];
-                  return (
-                    <label key={k} className="flex items-center gap-3 rounded-2xl bg-surface p-3 ring-1 ring-border">
-                      <input type="checkbox" checked={isTaken} onChange={() => toggle(k, t)} className="h-4 w-4" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">
-                          {m.name} <span className="text-xs text-muted-foreground">· scheduled {t}</span>
-                        </p>
-                        {m.dose && <p className="text-xs text-muted-foreground">{m.dose}</p>}
-                        {m.note && (
-                          <p className="text-[11px] text-muted-foreground">
-                            <Ico e="📝" size={13} /> <IcoText text={m.note} size={12} />
-                          </p>
-                        )}
-                      </div>
-                      {isTaken && (
-                        <Input
-                          type="time"
-                          value={takenTimes[k] ?? t}
-                          onChange={(e) => setTakenTime(k, e.target.value)}
-                          className="h-8 w-24"
-                          title="Actual time taken"
-                        />
-                      )}
-                    </label>
-                  );
-                })
-              ),
-            )}
-          </div>
-        </div>
-      )}
-      <div>
-        <p className="text-xs uppercase tracking-wider text-muted-foreground">Extra dose (one-off)</p>
-        <div className="mt-2 grid grid-cols-3 gap-2">
-          <Input
-            placeholder="Name"
-            value={extraName}
-            onChange={(e) => setExtraName(e.target.value)}
-            className="col-span-2"
-          />
-          <Input type="time" value={extraTime} onChange={(e) => setExtraTime(e.target.value)} />
-        </div>
-        <div className="mt-2 grid grid-cols-2 gap-2">
-          <Input placeholder="Dose (optional)" value={extraDose} onChange={(e) => setExtraDose(e.target.value)} />
-          <Input placeholder="Note (optional)" value={extraNote} onChange={(e) => setExtraNote(e.target.value)} />
-        </div>
-        <Button className="mt-2 w-full" onClick={addExtra} disabled={!extraName.trim()}>
-          Add extra dose
-        </Button>
-        {extras.length > 0 && (
-          <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
-            {extras.map((e) => (
-              <li key={e.id}>
-                • {e.time} — {e.name}
-                {e.dose ? ` (${e.dose})` : ""}
-                {e.note ? ` — ${e.note}` : ""}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-      <SheetFooter className="mt-2">
-        <Button className="w-full" onClick={onDone}>
-          Done
-        </Button>
-      </SheetFooter>
-    </div>
-  );
-}
-
-/* ------------------- WORKOUT ------------------- */
-function WorkoutForm({
-  date,
-  data,
-  update,
-  onDone,
-  initialEntry,
-}: {
-  date: string;
-  data: BixboData;
-  update: UpdateFn;
-  onDone: () => void;
-  initialEntry?: WorkoutEntry;
-}) {
-  const [kind, setKind] = useState<string>(
-    initialEntry?.kind ? stripEmoji(initialEntry.kind) : WORKOUT_KINDS_DEFAULT[0],
-  );
-  const [minutes, setMinutes] = useState<number>(initialEntry?.minutes ?? 30);
-  const [weight, setWeight] = useState<string>(initialEntry?.weightKg != null ? String(initialEntry.weightKg) : "");
-  const [distance, setDistance] = useState<string>(
-    initialEntry?.distanceKm != null ? String(initialEntry.distanceKm) : "",
-  );
-  const [elevation, setElevation] = useState<string>(
-    initialEntry?.elevationM != null ? String(initialEntry.elevationM) : "",
-  );
-  const [exercises, setExercises] = useState<WorkoutExercise[]>(initialEntry?.exercises ?? []);
-  const [rpe, setRpe] = useState<number | undefined>(initialEntry?.rpe);
-  const [magnesium, setMagnesium] = useState<boolean>(initialEntry?.magnesiumBefore ?? false);
-  const [trigger, setTrigger] = useState<WorkoutEntry["triggeredSymptom"]>(initialEntry?.triggeredSymptom);
-  const [feeling, setFeeling] = useState<string[]>(asArr(initialEntry?.feeling).map(stripEmoji));
-  const [note, setNote] = useState<string>(initialEntry?.note ?? "");
-  const addKind = (v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, workoutKinds: [...d.custom.workoutKinds, v] } }));
-  const rmKind = (v: string) => {
-    update((d) => ({ ...d, custom: { ...d.custom, workoutKinds: d.custom.workoutKinds.filter((x) => x !== v) } }));
-    if (kind === v) setKind(WORKOUT_KINDS_DEFAULT[0]);
-  };
-
-  const log = data.dayLogs[date];
-  const symptomOptions = [
-    ...(log?.tetany ?? []).map((t) => ({
-      type: "tetany" as const,
-      id: t.id,
-      label: `${t.time} tetany ${t.intensity}/5`,
+  return {
+    ...EMPTY,
+    ...parsed,
+    dayLogs,
+    folders: (parsed.folders as NoteFolder[] | undefined)?.length ? (parsed.folders as NoteFolder[]) : DEFAULT_FOLDERS,
+    cycle: {
+      ...EMPTY.cycle,
+      ...(parsed.cycle as Partial<CyclePrefs> | undefined),
+    },
+    custom,
+    settings: {
+      ...EMPTY.settings,
+      ...(parsed.settings as Partial<Settings> | undefined),
+      savedTriggers: (parsed.settings as Partial<Settings> | undefined)?.savedTriggers ?? [],
+    },
+    tasks: (parsed.tasks as TaskEntry[] | undefined) ?? [],
+    events: (parsed.events as EventEntry[] | undefined) ?? [],
+    notebook: ((parsed.notebook as Note[] | undefined) ?? []).map((note) => ({
+      ...note,
+      folderId: note.folderId ?? "general",
     })),
-    ...(log?.pain ?? []).map((p) => ({ type: "pain" as const, id: p.id, label: `${p.time} pain ${p.score}/10` })),
-  ];
-
-  const save = () => {
-    const editing = !!initialEntry;
-    const e: WorkoutEntry = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
-      time: initialEntry?.time ?? nowHHMM(),
-      kind,
-      minutes,
-      weightKg: weight === "" ? undefined : Number(weight),
-      distanceKm: workoutHasDistance(kind) && distance !== "" ? Number(distance) : undefined,
-      elevationM: workoutIsHike(kind) && elevation !== "" ? Number(elevation) : undefined,
-      exercises: workoutIsStrength(kind) && exercises.length ? exercises : undefined,
-      rpe,
-      magnesiumBefore: magnesium || undefined,
-      triggeredSymptom: trigger,
-      feeling: feeling.length ? feeling : undefined,
-      note: note.trim() || undefined,
-    };
-    updateDayLog(update, date, (l) => ({
-      ...l,
-      workout: editing ? (l.workout ?? []).map((x) => (x.id === e.id ? e : x)) : [...(l.workout ?? []), e],
-    }));
-    // NOTE: workout "weight after" is stored on the workout entry only — it must not
-    // overwrite the day's body-weight metric used by the Weight chart.
-    onDone();
+    labs: (parsed.labs as LabResult[] | undefined) ?? [],
+    docs: (parsed.docs as DocEntry[] | undefined) ?? [],
+    diagnoses: (parsed.diagnoses as Diagnosis[] | undefined) ?? [],
+    deletedIds: (parsed.deletedIds as string[] | undefined) ?? [],
   };
-  return (
-    <div className="space-y-3">
-      <Field label="Type">
-        <CustomChipList
-          base={WORKOUT_KINDS_DEFAULT}
-          custom={data.custom.workoutKinds}
-          onAddCustom={addKind}
-          onRemoveCustom={rmKind}
-          selected={[kind]}
-          onToggle={(v) => setKind(v)}
-        />
-      </Field>
-      <Field label="Duration (minutes)">
-        <Input type="number" min={1} value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} />
-      </Field>
+}
 
-      {workoutHasDistance(kind) && (
-        <div className="grid grid-cols-2 gap-2">
-          <Field label="Distance (km)">
-            <Input type="number" step="0.1" min={0} value={distance} onChange={(e) => setDistance(e.target.value)} />
-          </Field>
-          {workoutIsHike(kind) && (
-            <Field label="Elevation gain (m)">
-              <Input type="number" step="1" min={0} value={elevation} onChange={(e) => setElevation(e.target.value)} />
-            </Field>
-          )}
-        </div>
-      )}
+/* ------------------- Shared store ------------------- */
+let _state: BixboData = EMPTY;
+let _hydrated = false;
+const listeners = new Set<() => void>();
+const changeListeners = new Set<(d: BixboData, reason: "local" | "remote") => void>();
 
-      {workoutIsStrength(kind) && (
-        <Field label="Exercises">
-          <div className="space-y-2">
-            {exercises.map((ex, i) => (
-              <div key={ex.id} className="rounded-2xl border border-border p-2 space-y-2">
-                <div className="flex items-center gap-2">
-                  <Input
-                    value={ex.name}
-                    placeholder="Exercise name"
-                    onChange={(e) =>
-                      setExercises((a) => a.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))
-                    }
-                  />
-                  <button
-                    type="button"
-                    aria-label="Remove exercise"
-                    onClick={() => setExercises((a) => a.filter((_, j) => j !== i))}
-                    className="rounded-full p-2 text-muted-foreground hover:text-destructive"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <Input
-                    type="number"
-                    min={0}
-                    placeholder="Sets"
-                    value={ex.sets ?? ""}
-                    onChange={(e) =>
-                      setExercises((a) =>
-                        a.map((x, j) =>
-                          j === i ? { ...x, sets: e.target.value === "" ? undefined : Number(e.target.value) } : x,
-                        ),
-                      )
-                    }
-                  />
-                  <Input
-                    type="number"
-                    min={0}
-                    placeholder="Reps"
-                    value={ex.reps ?? ""}
-                    onChange={(e) =>
-                      setExercises((a) =>
-                        a.map((x, j) =>
-                          j === i ? { ...x, reps: e.target.value === "" ? undefined : Number(e.target.value) } : x,
-                        ),
-                      )
-                    }
-                  />
-                  <Input
-                    type="number"
-                    min={0}
-                    step="0.5"
-                    placeholder="kg"
-                    value={ex.weightKg ?? ""}
-                    onChange={(e) =>
-                      setExercises((a) =>
-                        a.map((x, j) =>
-                          j === i ? { ...x, weightKg: e.target.value === "" ? undefined : Number(e.target.value) } : x,
-                        ),
-                      )
-                    }
-                  />
-                </div>
-              </div>
-            ))}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setExercises((a) => [...a, { id: crypto.randomUUID(), name: "" }])}
-            >
-              <Plus className="h-4 w-4" /> Add exercise
-            </Button>
-          </div>
-        </Field>
-      )}
+function emit() {
+  listeners.forEach((l) => l());
+}
 
-      <Field label={`Intensity (RPE) ${rpe ?? "-"} / 10`}>
-        <div className="mt-2 grid gap-1" style={{ gridTemplateColumns: "repeat(10, minmax(0, 1fr))" }}>
-          {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => {
-            const hue = 130 - (n - 1) * 13;
-            const active = rpe === n;
-            return (
-              <button
-                key={n}
-                type="button"
-                onClick={() => setRpe(rpe === n ? undefined : n)}
-                aria-label={`RPE ${n}`}
-                className={`aspect-square w-full rounded-full text-[11px] font-bold transition ${active ? "text-white ring-2 ring-foreground scale-110" : "text-white/90"}`}
-                style={{ background: `hsl(${hue} 70% 50%)`, opacity: active || rpe == null ? 1 : 0.55 }}
-              >
-                {n}
-              </button>
-            );
-          })}
-        </div>
-      </Field>
+function hydrate() {
+  if (_hydrated || typeof window === "undefined") return;
+  try {
+    const raw = localStorage.getItem(KEY) ?? localStorage.getItem(LEGACY_KEY);
+    if (raw) _state = migrate(JSON.parse(raw));
+  } catch {}
+  _hydrated = true;
+  emit();
+}
 
-      <Field label="Magnesium before workout?">
-        <div className="mt-1 flex gap-2">
-          <Chip active={!magnesium} onClick={() => setMagnesium(false)}>
-            No
-          </Chip>
-          <Chip active={magnesium} onClick={() => setMagnesium(true)}>
-            Yes
-          </Chip>
-        </div>
-      </Field>
+function persist() {
+  if (typeof window === "undefined") return;
+  // Never write before we've loaded what's already stored, otherwise an early
+  // write (e.g. cloud sync clearing partner) would wipe saved data.
+  if (!_hydrated) hydrate();
+  try {
+    localStorage.setItem(KEY, JSON.stringify(_state));
+  } catch {}
+}
 
-      <Field label="Triggered a symptom? (optional)">
-        {symptomOptions.length === 0 ? (
-          <p className="text-[11px] text-muted-foreground">No tetany or pain entries logged for this day yet.</p>
-        ) : (
-          <div className="mt-1 flex flex-wrap gap-2">
-            <Chip active={!trigger} onClick={() => setTrigger(undefined)}>
-              No
-            </Chip>
-            {symptomOptions.map((o) => (
-              <Chip
-                key={o.id}
-                active={trigger?.id === o.id}
-                onClick={() =>
-                  setTrigger(trigger?.id === o.id ? undefined : { type: o.type, id: o.id, label: o.label })
-                }
-              >
-                {o.label}
-              </Chip>
-            ))}
-          </div>
-        )}
-      </Field>
+export function setBixbo(updater: (d: BixboData) => BixboData) {
+  hydrate();
+  _state = migrate(updater(_state));
+  persist();
+  emit();
+  changeListeners.forEach((l) => l(_state, "local"));
+}
+export function replaceBixbo(d: BixboData, reason: "local" | "remote" = "local") {
+  _state = migrate(d);
+  persist();
+  emit();
+  changeListeners.forEach((l) => l(_state, reason));
+}
+export function setPartner(partner: PartnerData | undefined) {
+  hydrate();
+  _state = { ..._state, partner };
+  persist();
+  emit();
+}
+export function getBixbo(): BixboData {
+  hydrate();
+  return _state;
+}
+export function subscribeBixboChanges(fn: (d: BixboData, reason: "local" | "remote") => void) {
+  changeListeners.add(fn);
+  return () => {
+    changeListeners.delete(fn);
+  };
+}
 
-      <Field label="Weight after (kg, optional)">
-        <Input type="number" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} />
-        <p className="mt-1 text-[11px] text-muted-foreground">
-          Saved with this workout only — it doesn't change your daily weight.
-        </p>
-      </Field>
-      <Field label="How you feel">
-        <div className="mt-2 flex flex-wrap gap-2">
-          {["Great", "Good", "Ok", "Tired", "Sore"].map((f) => (
-            <Chip key={f} active={feeling.includes(f)} onClick={() => setFeeling((a) => toggleIn(a, f))}>
-              {f}
-            </Chip>
-          ))}
-        </div>
-      </Field>
-      <Field label="Note (optional)">
-        <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
-      </Field>
-      <SaveBar onCancel={onDone} onSave={save} />
-    </div>
+export function useBixbo() {
+  useEffect(() => {
+    hydrate();
+  }, []);
+  const data = useSyncExternalStore(
+    (cb) => {
+      listeners.add(cb);
+      return () => {
+        listeners.delete(cb);
+      };
+    },
+    () => _state,
+    () => EMPTY,
+  );
+  useEffect(() => {
+    if (!_hydrated) return;
+    const map = { sm: "14px", md: "16px", lg: "18px", xl: "20px" } as const;
+    document.documentElement.style.fontSize = map[data.settings.textSize] ?? "16px";
+  }, [data.settings.textSize]);
+  return { data, update: setBixbo, replace: (d: BixboData) => replaceBixbo(d, "local"), hydrated: _hydrated };
+}
+
+/* ------------------- Day helpers ------------------- */
+export function updateDayLog(
+  update: (u: (d: BixboData) => BixboData) => void,
+  date: string,
+  patch: (log: DayLog) => DayLog,
+) {
+  update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: patch(d.dayLogs[date] ?? {}) } }));
+}
+
+export function hasAnyLog(l?: DayLog): boolean {
+  if (!l) return false;
+  return !!(
+    l.pain?.length ||
+    l.tetany?.length ||
+    l.panic?.length ||
+    l.heat?.length ||
+    l.period ||
+    l.periodInfo?.level ||
+    l.food?.length ||
+    l.bowel?.length ||
+    l.sex?.length ||
+    l.temperatureEntries?.length ||
+    l.weightEntries?.length ||
+    l.temperature != null ||
+    l.weight != null ||
+    l.sleepHours != null ||
+    l.extraMeds?.length ||
+    l.workout?.length
   );
 }
 
-/* ------------------- EVENT ------------------- */
-function EventForm({
-  date,
-  update,
-  onDone,
-  initialEntry,
-}: {
-  date: string;
-  update: UpdateFn;
-  onDone: () => void;
-  initialEntry?: EventEntry;
-}) {
-  const [title, setTitle] = useState(initialEntry?.title ?? "");
-  const [startDate, setStartDate] = useState(initialEntry?.startDate ?? date);
-  const [endDate, setEndDate] = useState(initialEntry?.endDate ?? date);
-  const [time, setTime] = useState(initialEntry?.time ?? "");
-  const [timeEnd, setTimeEnd] = useState(initialEntry?.timeEnd ?? "");
-  const [note, setNote] = useState(initialEntry?.note ?? "");
-  const [color, setColor] = useState(initialEntry?.color ?? EVENT_COLORS[0]);
-  const save = () => {
-    if (!title.trim()) return;
-    const editing = !!initialEntry;
-    const e: EventEntry = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
-      title: title.trim(),
-      startDate,
-      endDate: endDate < startDate ? startDate : endDate,
-      time: time || undefined,
-      timeEnd: timeEnd || undefined,
-      note: note.trim() || undefined,
-      color,
-    };
-    update((d) => ({ ...d, events: editing ? d.events.map((x) => (x.id === e.id ? e : x)) : [...d.events, e] }));
-    onDone();
-  };
-  return (
-    <div className="space-y-3">
-      <Field label="Title">
-        <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Doctor visit" />
-      </Field>
-      <div className="grid grid-cols-2 gap-2">
-        <Field label="From">
-          <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-        </Field>
-        <Field label="To">
-          <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-        </Field>
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        <Field label="Time from">
-          <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
-        </Field>
-        <Field label="Time to">
-          <Input type="time" value={timeEnd} onChange={(e) => setTimeEnd(e.target.value)} />
-        </Field>
-      </div>
-      <Field label="Color">
-        <div className="mt-2 flex gap-2 flex-wrap">
-          {EVENT_COLORS.map((c) => (
-            <button
-              key={c}
-              onClick={() => setColor(c)}
-              className={`h-8 w-8 rounded-full ${color === c ? "ring-2 ring-foreground" : ""}`}
-              style={{ background: c }}
-            />
-          ))}
-        </div>
-      </Field>
-      <Field label="Note (optional)">
-        <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
-      </Field>
-      <SaveBar onCancel={onDone} onSave={save} disabled={!title.trim()} />
-    </div>
-  );
+/* ------------------- Date helpers ------------------- */
+export function toKey(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+export function fromKey(k: string): Date {
+  const [y, m, d] = k.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+export function todayKey() {
+  return toKey(new Date());
+}
+export function nowHHMM(): string {
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+export function daysBetween(a: string, b: string): number {
+  return Math.round((fromKey(b).getTime() - fromKey(a).getTime()) / 86400000);
+}
+export function addDays(k: string, n: number): string {
+  const d = fromKey(k);
+  d.setDate(d.getDate() + n);
+  return toKey(d);
+}
+export function isDateInRange(k: string, start: string, end: string): boolean {
+  return k >= start && k <= end;
 }
 
-/* ------------------- TASK ------------------- */
-function TaskForm({
-  date,
-  update,
-  onDone,
-  initialEntry,
-}: {
-  date: string;
-  update: UpdateFn;
-  onDone: () => void;
-  initialEntry?: TaskEntry;
-}) {
-  const [title, setTitle] = useState(initialEntry?.title ?? "");
-  const [startDate, setStartDate] = useState(initialEntry?.startDate ?? date);
-  const [endDate, setEndDate] = useState(initialEntry?.endDate ?? date);
-  const [time, setTime] = useState(initialEntry?.time ?? "");
-  const [timeEnd, setTimeEnd] = useState(initialEntry?.timeEnd ?? "");
-  const [note, setNote] = useState(initialEntry?.note ?? "");
-  const save = () => {
-    if (!title.trim()) return;
-    const editing = !!initialEntry;
-    const t: TaskEntry = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
-      title: title.trim(),
-      startDate,
-      endDate: endDate < startDate ? startDate : endDate,
-      time: time || undefined,
-      timeEnd: timeEnd || undefined,
-      done: initialEntry?.done ?? false,
-      note: note.trim() || undefined,
-    };
-    update((d) => ({ ...d, tasks: editing ? d.tasks.map((x) => (x.id === t.id ? t : x)) : [...d.tasks, t] }));
-    onDone();
-  };
-  return (
-    <div className="space-y-3">
-      <Field label="Task">
-        <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="What to do…" />
-      </Field>
-      <div className="grid grid-cols-2 gap-2">
-        <Field label="From">
-          <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-        </Field>
-        <Field label="To">
-          <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-        </Field>
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        <Field label="Time from">
-          <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
-        </Field>
-        <Field label="Time to">
-          <Input type="time" value={timeEnd} onChange={(e) => setTimeEnd(e.target.value)} />
-        </Field>
-      </div>
-      <Field label="Note (optional)">
-        <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
-      </Field>
-      <SaveBar onCancel={onDone} onSave={save} disabled={!title.trim()} />
-    </div>
-  );
+/* ------------------- Cycle prediction ------------------- */
+export function predictPeriods(cycle: CyclePrefs, from: Date, to: Date): { start: string; end: string }[] {
+  if (!cycle.lastPeriodStart) return [];
+  const out: { start: string; end: string }[] = [];
+  const fromK = toKey(from),
+    toK = toKey(to);
+  let curStart = cycle.lastPeriodStart;
+  while (curStart <= toK) {
+    const end = addDays(curStart, Math.max(0, cycle.periodLength - 1));
+    if (end >= fromK) out.push({ start: curStart, end });
+    curStart = addDays(curStart, cycle.cycleLength);
+    if (out.length > 24) break;
+  }
+  if (cycle.lastPeriodStart && cycle.lastPeriodEnd) {
+    const s = cycle.lastPeriodStart,
+      e = cycle.lastPeriodEnd;
+    if (s <= toK && e >= fromK && !out.some((o) => o.start === s)) out.unshift({ start: s, end: e });
+  }
+  return out;
+}
+export function nextPredictedPeriod(cycle: CyclePrefs): { start: string; end: string } | null {
+  if (!cycle.lastPeriodStart) return null;
+  const todayK = todayKey();
+  let s = cycle.lastPeriodStart;
+  while (s <= todayK) s = addDays(s, cycle.cycleLength);
+  return { start: s, end: addDays(s, Math.max(0, cycle.periodLength - 1)) };
 }
 
-/* ------------------- NOTE ------------------- */
-function NoteForm({ date, update, onDone }: { date: string; update: UpdateFn; onDone: () => void }) {
-  const [t, setT] = useState("");
-  const [time, setTime] = useState("");
-  const save = () => {
-    if (!t.trim()) return;
-    update((d) => {
-      const list = (d.dayNotes[date] ?? []) as (string | { text: string; time?: string })[];
-      const next: { text: string; time?: string }[] = list.map((x) => (typeof x === "string" ? { text: x } : x));
-      next.push({ text: t.trim(), time: time || undefined });
-      return { ...d, dayNotes: { ...d.dayNotes, [date]: next } };
-    });
-    onDone();
-  };
-  return (
-    <div className="space-y-3">
-      <Field label="Time (optional)">
-        <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
-      </Field>
-      <Textarea rows={6} value={t} onChange={(e) => setT(e.target.value)} placeholder="Anything about today…" />
-      <SaveBar onCancel={onDone} onSave={save} disabled={!t.trim()} />
-    </div>
-  );
+/* ------------------- Constants ------------------- */
+export const PAIN_DESCRIPTIONS: Record<number, string> = {
+  0: "Pain free",
+  1: "Very minor annoyance",
+  2: "Minor annoyance",
+  3: "Annoying, distracting",
+  4: "Bearable if involved in work",
+  5: "Can't be ignored > 30 min",
+  6: "Can't be ignored for long",
+  7: "Hard to concentrate",
+  8: "Physical activity limited",
+  9: "Unable to speak, crying out",
+  10: "Unconscious — passes out",
+};
+export function painColor(score: number): string {
+  const n = Math.max(0, Math.min(10, Math.round(score)));
+  return `var(--pain-${n})`;
+}
+export function avgDayPain(log?: DayLog): number | undefined {
+  if (!log?.pain?.length) return undefined;
+  const sum = log.pain.reduce((s, p) => s + p.score, 0);
+  return sum / log.pain.length;
+}
+
+/** Return valid vital measurements sorted from earliest to latest. */
+export function vitalEntriesFor(log: DayLog | undefined, field: VitalField): VitalMeasurement[] {
+  return (log?.[field] ?? [])
+    .filter((entry) => Number.isFinite(entry.value))
+    .slice()
+    .sort((a, b) => a.time.localeCompare(b.time) || a.id.localeCompare(b.id));
+}
+
+/** Latest weight measurement of the day, with legacy scalar fallback. */
+export function latestDayWeight(log?: DayLog): number | undefined {
+  return latestVitalValue(vitalEntriesFor(log, "weightEntries")) ?? log?.weight;
+}
+
+/** Latest body-temperature measurement of the day, with legacy scalar fallback. */
+export function latestDayTemperature(log?: DayLog): number | undefined {
+  return latestVitalValue(vitalEntriesFor(log, "temperatureEntries")) ?? log?.temperature;
+}
+
+/** Average body temperature across all measurements of the day. */
+export function averageDayTemperature(log?: DayLog): number | undefined {
+  const entries = vitalEntriesFor(log, "temperatureEntries");
+  if (!entries.length) return log?.temperature;
+  return entries.reduce((sum, entry) => sum + entry.value, 0) / entries.length;
+}
+
+export const BODY_PARTS_DEFAULT = [
+  "Abdomen",
+  "Lower abdomen",
+  "Lower belly",
+  "Pelvis",
+  "Ovaries",
+  "Uterus",
+  "Vagina",
+  "Groin",
+  "Back",
+  "Head",
+  "Legs",
+  "Chest",
+];
+export const PAIN_QUALITY_DEFAULT = [
+  "Cramping",
+  "Stabbing",
+  "Burning",
+  "Dull",
+  "Sharp",
+  "Throbbing",
+  "Pressure",
+  "Shooting",
+  "Aching",
+];
+export const OTHER_SYMPTOMS_DEFAULT = [
+  "Dizziness",
+  "Fatigue",
+  "Bloating",
+  "Diarrhea",
+  "Constipation",
+  "Cold sweats",
+  "Fainting",
+  "Mood swings",
+  "Flu",
+];
+export const FOOD_FEELINGS_DEFAULT = [
+  "😊 Great",
+  "🙂 Fine",
+  "😐 Neutral",
+  "😕 Off",
+  "😖 Bloated",
+  "🤢 Nauseous",
+  "🤕 Stomach pain",
+  "😴 Sleepy",
+  "🥵 Flushed",
+  "⚡ Energy up",
+];
+export const WORKOUT_KINDS_DEFAULT = [
+  "Yoga",
+  "Walk",
+  "Run",
+  "Hike",
+  "Cycling",
+  "Strength",
+  "Stretching",
+  "Swim",
+  "Meditation",
+];
+export function workoutHasDistance(kind: string) {
+  return /walk|run|hike/i.test(kind);
+}
+export function workoutIsHike(kind: string) {
+  return /hike/i.test(kind);
+}
+export function workoutIsStrength(kind: string) {
+  return /strength/i.test(kind);
+}
+export const MOODS_DEFAULT = [
+  "🌀 All over the place",
+  "😠 Angry",
+  "😤 Annoyed",
+  "😰 Anxious",
+  "😑 Apathetic",
+  "🥱 Bored",
+  "🏃 Busy",
+  "😌 Calm",
+  "🥺 Clingy",
+  "😾 Cranky",
+  "😔 Depressed",
+  "🤩 Excited",
+  "😪 Fatigued",
+  "🙏 Grateful",
+  "😊 Happy",
+  "🥰 In love",
+  "🤕 In pain",
+  "😐 Indifferent",
+  "😒 Irritated",
+  "😎 Just chillin",
+  "🥲 Lonely",
+  "😕 Meh",
+  "🌩️ PMDD",
+  "💪 Productive",
+  "😴 Restful",
+  "😢 Sad",
+  "🫥 Self-deprecating",
+  "😴 Sleepy",
+  "😖 Stressed",
+  "🥱 Tired",
+];
+export const TETANY_TYPES = [
+  "Carpopedal spasm",
+  "Calf cramps",
+  "Twitches around mouth/face",
+  "Tingling / numbness",
+  "Fasciculations",
+  "Eyelid twitching",
+  "Jaw clenching",
+  "Chvostek sign",
+  "Trousseau sign",
+  "Whole body tremor",
+];
+export const TETANY_TYPE_DESC: Record<string, string> = {
+  "Carpopedal spasm": "Cramp of hands/feet — fingers pulled into an “obstetrician's hand” or feet arched like a bow.",
+  "Calf cramps": "Painful cramps in the calves, often at night or after exertion.",
+  "Twitches around mouth/face": "Small twitches around the mouth or face.",
+  "Tingling / numbness": "Pins and needles or numbness (lips, fingers, limbs).",
+  Fasciculations: "Fine muscle rippling under the skin without limb movement.",
+  "Eyelid twitching": "Eyelid twitch — often with fatigue or low magnesium.",
+  "Jaw clenching": "Jaw clenching, teeth grinding.",
+  "Chvostek sign": "Facial twitch when tapping the facial nerve (in front of the ear).",
+  "Trousseau sign": "Hand cramp after inflating a BP cuff above systolic pressure.",
+  "Whole body tremor": "Whole-body tremor or shaking from within.",
+};
+export const TETANY_LOCATIONS_DEFAULT = ["Lips", "Fingers", "Toes", "Hands", "Calves", "Face", "Around mouth"];
+export const TETANY_TRIGGERS = ["Hyperventilation / stress", "Exercise", "Cold", "Cycle phase", "Other"];
+export const TETANY_HELPED_DEFAULT = ["Slow breathing", "Breathe into bag/hands", "Warmth", "Extra magnesium", "Rest"];
+export const PANIC_PHYSICAL = [
+  "Racing heart",
+  "Shortness of breath",
+  "Chest pressure",
+  "Dizziness",
+  "Tingling / numbness",
+  "Trembling",
+  "Nausea",
+  "Hot flashes / chills",
+];
+export const PANIC_COGNITIVE = ["Loss of control", "Derealization", "Fear of dying", "Fear of collapse"];
+export const PANIC_HELPED_DEFAULT = ["Slow exhale", "Frontin", "Grounding", "Someone with me", "Fresh air"];
+
+export const HEADACHE_TYPES = [
+  "Tension",
+  "Migraine",
+  "Cluster",
+  "Sinus",
+  "Cervicogenic",
+  "Hormonal",
+  "Dehydration",
+  "Hangover",
+  "Eye strain",
+  "Caffeine withdrawal",
+  "Ice-pick",
+  "Thunderclap",
+];
+export const HEADACHE_TYPE_DESC: Record<string, string> = {
+  Tension:
+    "Tension headache — dull, pressing pain on both sides, like a band around the head. Often from stress, fatigue, or poor posture.",
+  Migraine:
+    "Migraine — throbbing pain (often one-sided), sensitivity to light/sound, nausea. May include aura (flashes, tingling).",
+  Cluster: "Cluster — extremely severe pain behind/around one eye, in bouts; watery eye, blocked nose on that side.",
+  Sinus:
+    "Sinus — pressure in the face/behind the eyes/forehead, worse when bending forward; typically with a cold or sinusitis.",
+  Cervicogenic:
+    "Cervicogenic — originates in the neck; pain rises from the nape up into the head, worse with neck movement.",
+  Hormonal: "Hormonal — linked to the cycle (before/during period), ovulation, or contraception.",
+  Dehydration: "Dehydration — dull, whole-head pain from low fluid intake, worse with movement.",
+  Hangover: "Hangover — throbbing pain with nausea after drinking alcohol.",
+  "Eye strain": "Eye strain — after long screen time; pressure behind the eyes, blurred vision.",
+  "Caffeine withdrawal": "Caffeine withdrawal — dull pain with fatigue after skipping coffee.",
+  "Ice-pick": "“Ice-pick” — brief, sharp stabbing jabs of pain lasting seconds.",
+  Thunderclap:
+    "“Thunderclap” — sudden, extremely severe pain peaking within 1 minute. WARNING: seek medical help, can be serious.",
+};
+
+export const SEX_TYPES_DEFAULT: { value: SexKind; label: string }[] = [
+  { value: "sex", label: "Sex" },
+  { value: "fingering", label: "Fingering" },
+  { value: "suck_dick", label: "Suck dick" },
+  { value: "oral", label: "Oral (receiving)" },
+];
+
+export function isIntercourseKind(kind: unknown): boolean {
+  const raw = String(kind ?? "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/^other:/, "");
+  return ["sex", "sex_with_condom", "sex_without_condom", "with_condom", "without_condom"].includes(raw);
+}
+
+export const DISCHARGE_OPTS: { value: string; label: string; color: string }[] = [
+  { value: "clear", label: "Clear / egg-white", color: "#dbeafe" },
+  { value: "white", label: "White / creamy", color: "#f5f5f4" },
+  { value: "yellow", label: "Yellow", color: "#fde68a" },
+  { value: "brown", label: "Brown / spotting", color: "#a16207" },
+  { value: "other", label: "Other", color: "#c084fc" },
+];
+
+export const BRISTOL: { n: number; label: string; sub: string; color: string; shape: string }[] = [
+  { n: 1, label: "Type 1 — Constipation", sub: "Separate hard lumps", color: "#7c3aed", shape: "lumps" },
+  { n: 2, label: "Type 2 — Constipation", sub: "Sausage-shaped but firm and lumpy", color: "#2563eb", shape: "lumpy" },
+  { n: 3, label: "Type 3 — Normal", sub: "Thicker but soft, with cracks", color: "#16a34a", shape: "cracked" },
+  { n: 4, label: "Type 4 — Normal", sub: "Smooth, soft, uniform", color: "#eab308", shape: "smooth" },
+  { n: 5, label: "Type 5 — Lacks fiber", sub: "Soft blobs with clear-cut edges", color: "#f97316", shape: "blobs" },
+  { n: 6, label: "Type 6 — Diarrhea", sub: "Fluffy, mushy, ragged edges", color: "#ec4899", shape: "mushy" },
+  { n: 7, label: "Type 7 — Diarrhea", sub: "Watery, no solid pieces", color: "#dc2626", shape: "liquid" },
+];
+
+export const BOWEL_FEELINGS_DEFAULT = [
+  "Relief",
+  "Normal",
+  "Neutral",
+  "Painful",
+  "Cramping",
+  "Urgent",
+  "Gassy",
+  "Incomplete",
+];
+export const BOWEL_SYMPTOMS_DEFAULT = [
+  "Bloating",
+  "Cramps",
+  "Straining",
+  "Blood",
+  "Mucus",
+  "Burning",
+  "Nausea",
+  "Urgency",
+];
+
+export const EVENT_COLORS = ["#22c55e", "#3b82f6", "#f97316", "#eab308", "#ec4899", "#a855f7", "#06b6d4", "#ef4444"];
+
+export const BODY_BATTERY: { n: number; label: string; color: string; emoji: string }[] = [
+  { n: 1, label: "Drained", color: "#ef4444", emoji: "😴" },
+  { n: 2, label: "Low", color: "#f97316", emoji: "🙁" },
+  { n: 3, label: "Ok", color: "#eab308", emoji: "😐" },
+  { n: 4, label: "Good", color: "#22c55e", emoji: "🙂" },
+  { n: 5, label: "Fully charged", color: "#16a34a", emoji: "⚡" },
+];
+
+export const SLEEP_QUALITY = [
+  "😩 Awful",
+  "😴 Terrible",
+  "🥱 Restless",
+  "🙁 Poor",
+  "😐 Ok",
+  "🌙 Broken sleep",
+  "😪 Woke up a lot",
+  "🙂 Good",
+  "😌 Refreshed",
+  "😀 Great",
+  "🤩 Perfect",
+  "💤 Slept in",
+  "⏰ Too short",
+  "🛌 Too long",
+  "🥴 Groggy",
+  "😵‍💫 Foggy head",
+  "😰 Nightmares",
+  "💭 Vivid dreams",
+  "🌡️ Sweaty night",
+  "🥶 Cold night",
+  "🤕 Woke with headache",
+  "🦵 Cramps at night",
+  "🚽 Up to the toilet",
+  "📱 Fell asleep late",
+  "☀️ Woke up early",
+  "🐢 Hard to get up",
+  "🧘 Deep & calm",
+  "😻 Best sleep ever",
+];
+
+/* ------------------- Pregnancy ------------------- */
+export function pregnancyInfo(since?: string): { week: number; trimester: 1 | 2 | 3 } | null {
+  if (!since) return null;
+  const days = daysBetween(since, todayKey());
+  if (days < 0) return null;
+  const week = Math.floor(days / 7) + 1;
+  const trimester: 1 | 2 | 3 = week <= 13 ? 1 : week <= 27 ? 2 : 3;
+  return { week, trimester };
+}
+
+export const SEX_FEELINGS_DEFAULT = [
+  "😊 Great",
+  "🥰 Loved",
+  "🤩 Amazing",
+  "😌 Relaxed",
+  "🙂 Good",
+  "😐 Meh",
+  "😞 Down",
+  "😢 Sad",
+  "😤 Frustrated",
+  "🤕 Sore",
+  "😴 Sleepy",
+  "💦 Sweaty",
+  "🥵 Hot",
+  "🥶 Cold",
+  "😵‍💫 Dizzy",
+  "🤢 Nauseous",
+  "💪 Energized",
+  "🫠 Drained",
+];
+
+export const PCOS_SYMPTOMS = [
+  "Acne",
+  "Hirsutism (excess hair)",
+  "Hair thinning / crown loss",
+  "Sugar cravings / energy swings after meals",
+  "Oily skin",
+  "Dark skin patches (acanthosis nigricans)",
+  "Skin tags",
+  "Weight gain / hard to lose",
+  "Heavy sweating",
+  "Fatigue / low energy",
+  "Hunger soon after eating",
+];
+
+export const HISTAMINE_SYMPTOMS = [
+  "Flushing / redness",
+  "Hives / rash",
+  "Itching",
+  "Stuffy nose",
+  "Headache",
+  "GI issues",
+  "Rapid heart rate",
+  "Swelling",
+  "Fatigue after food",
+];
+
+export const FOOD_SYMPTOMS_AFTER = [
+  "Bloating",
+  "Gas",
+  "Abdominal pain / cramps",
+  "Nausea",
+  "Diarrhea",
+  "Constipation",
+  "Heartburn / reflux",
+  "Burping",
+  "Fatigue after food",
+  "Headache",
+  "Flushing / redness",
+  "Itching / hives",
+  "Rapid heart rate",
+];
+
+export const URINARY_DEFAULT = [
+  "Frequent urination",
+  "Painful urination",
+  "Urgency",
+  "Incomplete emptying",
+  "Night urination",
+  "Blood in urine",
+];
+
+export const ALLERGENS_DEFAULT = ["Nuts", "Casein / dairy", "Gluten", "Eggs", "Fish", "Soy", "Shellfish", "Peanuts"];
+
+/* ------------------- Pressure (pain quality expansion) ------------------- */
+export const PRESSURE_TYPES = ["Pelvic", "Abdominal", "Chest", "Head / sinus", "Vaginal", "Rectal", "Lower back"];
+
+/* ------------------- Nausea ------------------- */
+export const NAUSEA_TYPES = [
+  "Mild nausea",
+  "Moderate nausea",
+  "Severe nausea",
+  "Constant nausea",
+  "Intermittent nausea",
+  "Morning nausea",
+  "Post-meal nausea",
+  "Motion-induced nausea",
+];
+export const NAUSEA_TYPE_DESC: Record<string, string> = {
+  "Mild nausea": "Slight queasiness you can easily ignore.",
+  "Moderate nausea": "Clearly unpleasant, but you can still eat and function.",
+  "Severe nausea": "Hard to function; vomiting feels likely.",
+  "Constant nausea": "Present all day without letting up.",
+  "Intermittent nausea": "Comes and goes in waves through the day.",
+  "Morning nausea": "Worst right after waking, before eating.",
+  "Post-meal nausea": "Starts shortly after eating.",
+  "Motion-induced nausea": "Triggered by travel or movement (car, bus, boat).",
+};
+export const NAUSEA_SEVERITY_DESC: Record<number, string> = {
+  0: "No nausea — feeling completely normal",
+  1: "Very mild — occasionally noticeable, doesn't bother me",
+  2: "Very mild — occasionally noticeable, doesn't bother me",
+  3: "Mild — unpleasant, but I can function and eat normally",
+  4: "Mild — unpleasant, but I can function and eat normally",
+  5: "Moderate — need to sit or rest, food is very unappealing",
+  6: "Moderate — need to sit or rest, food is very unappealing",
+  7: "Strong — hard to concentrate, feel like I'll vomit",
+  8: "Strong — hard to concentrate, feel like I'll vomit",
+  9: "Very strong — almost unbearable, vomiting likely or already started",
+  10: "Extreme — constant vomiting or the worst nausea imaginable",
+};
+export const NAUSEA_TRIGGERS = [
+  "After food",
+  "Car ride",
+  "Smell",
+  "Medication",
+  "Hormonal",
+  "Stress",
+  "Hunger",
+  "Unknown",
+];
+export const NAUSEA_SYMPTOMS = ["Dizziness", "Cold sweat", "Bloating", "Headache", "Weakness", "Vomiting"];
+export const NAUSEA_HELPED = ["Lying down", "Ginger tea", "Fresh air", "Medication", "Food", "Nothing helped"];
+
+/* ------------------- Deletion tombstones ------------------- */
+export function markDeleted(update: (u: (d: BixboData) => BixboData) => void, ...ids: string[]) {
+  update((d) => ({ ...d, deletedIds: Array.from(new Set([...(d.deletedIds ?? []), ...ids])).slice(-2000) }));
 }
