@@ -401,50 +401,16 @@ function Chip({
 }
 function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave: () => void; disabled?: boolean }) {
   return (
-   {quickSymptomUpdate && step === 3 ? (
-  <SheetFooter className="mt-4 flex-row gap-2">
-    <Button
-      variant="outline"
-      onClick={() => {
-        setQuickSymptomUpdate(false);
-        setCopiedFromTime(undefined);
-        setStep(0);
-      }}
-      className="flex-1"
-    >
-      Edit full log
-    </Button>
-
-    <Button onClick={save} className="flex-1">
-      Save update
-    </Button>
-  </SheetFooter>
-) : (
-  <SheetFooter className="mt-4 flex-row gap-2">
-    {step > 0 && (
-      <Button
-        variant="outline"
-        onClick={() => setStep(step - 1)}
-        className="flex-1"
-      >
-        Back
+    <SheetFooter className="mt-4 gap-2 sm:flex-row">
+      <Button variant="outline" onClick={onCancel} className="flex-1">
+        Cancel
       </Button>
-    )}
-
-    {step < 4 ? (
-      <Button
-        onClick={() => setStep(step + 1)}
-        className="flex-1"
-      >
-        Next
-      </Button>
-    ) : (
-      <Button onClick={save} className="flex-1">
+      <Button onClick={onSave} disabled={disabled} className="flex-1">
         Save
       </Button>
-    )}
-  </SheetFooter>
-)}
+    </SheetFooter>
+  );
+}
 function CustomChipList({
   base,
   custom,
@@ -885,14 +851,6 @@ function PainWizard({
     setStep(3);
   };
 
-  useEffect(() => {
-    if (!quickSymptomUpdate || step !== 3) return;
-    const frame = window.requestAnimationFrame(() => {
-      headacheSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [quickSymptomUpdate, step]);
-
   type CKey =
     | "bodyParts"
     | "quality"
@@ -1020,86 +978,43 @@ function PainWizard({
       onTouchEnd={onTouchEnd}
     >
       <div className="flex items-center justify-between px-1 pb-2">
-  {quickSymptomUpdate ? (
-    <>
-      <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-        Quick symptom update
-      </span>
-
-      <span className="text-xs text-muted-foreground">
-        New entry · {time}
-      </span>
-    </>
-  ) : (
-    <>
-      <div className="flex gap-1">
-        {[0, 1, 2, 3, 4].map((i) => (
-          <span
-            key={i}
-            className={`h-1.5 w-6 rounded-full ${
-              i <= step ? "bg-primary" : "bg-tint"
-            }`}
-          />
-        ))}
-      </div>
-
-      <span className="text-xs text-muted-foreground">
-        {step + 1}/5
-      </span>
-    </>
-  )}
-</div>
+        {quickSymptomUpdate ? (
+          <>
+            <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+              Quick symptom update
+            </span>
+            <span className="text-xs text-muted-foreground">New entry · {time}</span>
+          </>
+        ) : (
+          <>
+            <div className="flex gap-1">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <span key={i} className={`h-1.5 w-6 rounded-full ${i <= step ? "bg-primary" : "bg-tint"}`} />
+              ))}
+            </div>
             <span className="text-xs text-muted-foreground">{step + 1}/5</span>
           </>
         )}
       </div>
 
       {step === 0 && (
-        {latestPain && !initialEntry && (
-  <div className="w-full rounded-2xl border border-primary/30 bg-surface/90 p-3 shadow-sm">
-    <div className="mb-3 flex items-start justify-between gap-3">
-      <div>
-        <p className="text-sm font-semibold">
-          Add a later symptom update?
-        </p>
-
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          Last log: {latestPain.time} · pain {latestPain.score}/10.
-          Reuse its pain and symptom state, then change only what is
-          different now.
-        </p>
-      </div>
-
-      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10">
-        <Ico e="📝" size={22} />
-      </span>
-    </div>
-
-    <Button
-      type="button"
-      onClick={startSymptomUpdate}
-      className="w-full"
-    >
-      Add symptom update
-    </Button>
-  </div>
-)}
         <div className="flex flex-col items-center gap-4 py-6">
           {latestPain && !initialEntry && (
             <div className="w-full rounded-2xl border border-primary/30 bg-surface/90 p-3 shadow-sm">
               <div className="mb-3 flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold">Pain still feels the same?</p>
+                  <p className="text-sm font-semibold">Add a later symptom update?</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    Last log: {latestPain.time} · pain {latestPain.score}/10. Reuse it and add only the new headache.
+                    Last log: {latestPain.time} · pain {latestPain.score}/10. Reuse its pain and symptom state, then
+                    change only what is different now.
                   </p>
                 </div>
                 <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10">
-                  <Ico e="🤕" size={22} />
+                  <Ico e="📝" size={22} />
                 </span>
               </div>
-              <Button type="button" onClick={startHeadacheUpdate} className="w-full">
-                {latestPain.headache ? "Same pain — update headache" : "Same pain — add headache"}
+              <Button type="button" onClick={startSymptomUpdate} className="w-full">
+                Add symptom update
               </Button>
             </div>
           )}
@@ -1212,19 +1127,6 @@ function PainWizard({
         </div>
       )}
       {step === 3 && (
-        {quickSymptomUpdate && (
-  <div className="rounded-2xl border border-primary/30 bg-primary/10 p-3 text-sm">
-    <p className="font-semibold">
-      Pain {score}/10 copied from{" "}
-      {copiedFromTime ?? "the latest log"}
-    </p>
-
-    <p className="mt-1 text-xs text-muted-foreground">
-      This saves a new entry at {time}; the older log stays unchanged.
-      Change any symptom below that is different now.
-    </p>
-  </div>
-)}
         <div className="space-y-4">
           {quickSymptomUpdate && (
             <div className="rounded-2xl border border-primary/30 bg-primary/10 p-3 text-sm">
@@ -1232,8 +1134,8 @@ function PainWizard({
                 Pain {score}/10 copied from {copiedFromTime ?? "the latest log"}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                This saves a new entry at {time}; the older log stays unchanged. Add or adjust the headache details
-                below.
+                This saves a new entry at {time}; the older log stays unchanged. Change any symptom below that is
+                different now.
               </p>
             </div>
           )}
@@ -1364,14 +1266,7 @@ function PainWizard({
               </Field>
             </div>
           )}
-          <div
-            ref={headacheSectionRef}
-            className={
-              quickSymptomUpdate
-                ? "scroll-mt-4 rounded-2xl ring-2 ring-primary/40 ring-offset-2 ring-offset-background"
-                : ""
-            }
-          >
+          <div>
             <Field label="Headache?">
               <div className="mt-1 flex gap-2">
                 <Chip active={!headache} onClick={() => setHeadache(false)}>
