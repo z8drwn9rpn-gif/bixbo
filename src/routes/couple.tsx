@@ -504,6 +504,179 @@ function DayNotesList({ title, notes }: { title: string; notes: { dateKey: strin
 }
 
 /* -------------------------------------------------------------------------- */
+/* Pain chart — restored from the previous Couple page                        */
+/* -------------------------------------------------------------------------- */
+
+function CouplePainChart({
+  days,
+  mine,
+  theirs,
+  partnerName,
+}: {
+  days: string[];
+  mine: Record<string, { pain?: PainEntry[] }>;
+  theirs: Record<string, { pain?: PainEntry[] }>;
+  partnerName: string;
+}) {
+  const width = 340;
+  const height = 190;
+  const left = 24;
+  const right = 10;
+  const top = 12;
+  const bottom = 40;
+  const chartWidth = width - left - right;
+  const chartHeight = height - top - bottom;
+  const count = Math.max(1, days.length);
+  const slot = chartWidth / count;
+  const barWidth = Math.max(4, (slot - 4) / 2);
+
+  const yFor = (value: number) => top + ((10 - Math.max(0, Math.min(10, value))) / 10) * chartHeight;
+
+  const baselineY = yFor(0);
+  const yTicks = [10, 8, 6, 4, 2, 0];
+
+  const mySeries = days.map((day) => avgDayPain(mine[day]));
+  const partnerSeries = days.map((day) => avgDayPain(theirs[day]));
+
+  return (
+    <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
+      <div>
+        <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Pain — last 14 days</h2>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+          Daily average pain. Solid bars are yours; striped bars belong to {partnerName}.
+        </p>
+      </div>
+
+      <div className="mt-3 overflow-hidden">
+        <svg
+          viewBox={`0 0 ${width} ${height}`}
+          className="h-48 w-full"
+          role="img"
+          aria-label={`Pain comparison between you and ${partnerName} during the last 14 days`}
+        >
+          <defs>
+            <pattern
+              id="couple-pain-stripes"
+              patternUnits="userSpaceOnUse"
+              width="4"
+              height="4"
+              patternTransform="rotate(45)"
+            >
+              <rect width="4" height="4" fill="currentColor" opacity="0.35" />
+              <line x1="0" y1="0" x2="0" y2="4" stroke="currentColor" strokeWidth="2" />
+            </pattern>
+          </defs>
+
+          {yTicks.map((tick) => (
+            <g key={tick}>
+              <line
+                x1={left}
+                x2={width - right}
+                y1={yFor(tick)}
+                y2={yFor(tick)}
+                stroke="var(--border)"
+                strokeDasharray="3 3"
+                strokeWidth="1"
+              />
+              <text x={left - 4} y={yFor(tick) + 3} textAnchor="end" fontSize="9" fill="var(--muted-foreground)">
+                {tick}
+              </text>
+            </g>
+          ))}
+
+          {days.map((day, index) => {
+            const date = fromKey(day);
+            const centerX = left + slot * index + slot / 2;
+            const myValue = mySeries[index];
+            const partnerValue = partnerSeries[index];
+            const myColor = myValue != null ? painColor(myValue) : "transparent";
+            const partnerColor = partnerValue != null ? painColor(partnerValue) : "transparent";
+            const weekday = date.toLocaleDateString("en-US", { weekday: "short" }).slice(0, 2);
+
+            return (
+              <g key={day}>
+                {myValue != null && (
+                  <rect
+                    x={centerX - barWidth - 1}
+                    y={yFor(myValue)}
+                    width={barWidth}
+                    height={baselineY - yFor(myValue)}
+                    fill={myColor}
+                    rx="2"
+                  >
+                    <title>{`You · ${day}: ${myValue.toFixed(1)}/10`}</title>
+                  </rect>
+                )}
+
+                {partnerValue != null && (
+                  <g style={{ color: partnerColor }}>
+                    <rect
+                      x={centerX + 1}
+                      y={yFor(partnerValue)}
+                      width={barWidth}
+                      height={baselineY - yFor(partnerValue)}
+                      fill={partnerColor}
+                      rx="2"
+                      opacity="0.35"
+                    />
+                    <rect
+                      x={centerX + 1}
+                      y={yFor(partnerValue)}
+                      width={barWidth}
+                      height={baselineY - yFor(partnerValue)}
+                      fill="url(#couple-pain-stripes)"
+                      rx="2"
+                    >
+                      <title>{`${partnerName} · ${day}: ${partnerValue.toFixed(1)}/10`}</title>
+                    </rect>
+                    <rect
+                      x={centerX + 1}
+                      y={yFor(partnerValue)}
+                      width={barWidth}
+                      height={baselineY - yFor(partnerValue)}
+                      fill="none"
+                      stroke={partnerColor}
+                      strokeWidth="1"
+                      rx="2"
+                    />
+                  </g>
+                )}
+
+                <text x={centerX} y={height - 22} textAnchor="middle" fontSize="8" fill="var(--muted-foreground)">
+                  {weekday}
+                </text>
+                <text x={centerX} y={height - 12} textAnchor="middle" fontSize="8" fill="var(--muted-foreground)">
+                  {date.getDate()}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+
+      <div className="mt-2 flex flex-wrap gap-4 text-xs text-muted-foreground">
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-3 w-3 rounded-sm bg-primary" />
+          You — solid
+        </span>
+
+        <span className="flex items-center gap-1.5">
+          <span
+            className="inline-block h-3 w-3 rounded-sm"
+            style={{
+              background:
+                "repeating-linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)) 3px, transparent 3px, transparent 5px)",
+              border: "1px solid hsl(var(--primary))",
+            }}
+          />
+          {partnerName} — striped
+        </span>
+      </div>
+    </section>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
 /* Period sharing                                                             */
 /* -------------------------------------------------------------------------- */
 
@@ -801,6 +974,8 @@ function CouplePage() {
 
   const partnerName = partner?.name || "Partner";
 
+  const chartDays = Array.from({ length: 14 }, (_, index) => addDays(todayKey(), index - 13));
+
   return (
     <AppShell title="Bixbo Couple">
       <div className="space-y-4 px-5 pb-24 pt-4">
@@ -833,6 +1008,9 @@ function CouplePage() {
                 </div>
               </div>
             </SectionCard>
+
+            {/* Restored daily pain chart */}
+            <CouplePainChart days={chartDays} mine={view.dayLogs} theirs={partner.dayLogs} partnerName={partnerName} />
 
             {/* Comparison */}
             <SimilarityCard score={similarityScore} partnerName={partnerName} />
