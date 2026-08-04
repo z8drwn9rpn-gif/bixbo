@@ -37,26 +37,6 @@ import {
   thisAndLastMonthPrefixes,
 } from "@/lib/patterns";
 
-import { AppShell } from "@/components/AppShell";
-import { CHART_COLORS, CHART_TINTS } from "@/components/ui/chart";
-import { EMPTY, addDays, avgDayPain, todayKey, useBixbo, type DayLog, type Diagnosis } from "@/lib/storage";
-import {
-  avg,
-  dayBowelSymptoms,
-  dayEnergy,
-  dayHeadacheIntensity,
-  dayHotFlash,
-  dayPanicIntensity,
-  dayTetanyIntensity,
-  daysOfMonth,
-  historicCycles,
-  negativeMoodCount,
-  phaseAvg,
-  phaseDays,
-  phaseFlowMode,
-  thisAndLastMonthPrefixes,
-} from "@/lib/patterns";
-
 export const Route = createFileRoute("/patterns")({
   head: () => ({
     meta: [
