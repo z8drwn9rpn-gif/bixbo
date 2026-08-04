@@ -1,20 +1,20 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState, type ReactNode } from "react";
 import {
-  Activity,
-  Brain,
-  Dumbbell,
-  Flame,
-  HeartPulse,
-  Moon,
-  Pill,
-  Scale,
-  Sparkles,
-  ThermometerSun,
-  TrendingDown,
-  TrendingUp,
-  Waves,
-} from "lucide-react";
+  avg,
+  dayBowelSymptoms,
+  dayEnergy,
+  dayHeadacheIntensity,
+  dayHotFlash,
+  dayPanicIntensity,
+  dayPressureIntensity,
+  dayTetanyIntensity,
+  daysOfMonth,
+  historicCycles,
+  negativeMoodCount,
+  phaseAvg,
+  phaseDays,
+  phaseFlowMode,
+  thisAndLastMonthPrefixes,
+} from "@/lib/patterns";
 
 import { AppShell } from "@/components/AppShell";
 import { CHART_COLORS, CHART_TINTS } from "@/components/ui/chart";
@@ -553,6 +553,21 @@ function PatternsPage() {
     },
   ];
 
+  const pressurePhaseBars: PhaseBar[] = [
+    {
+      label: "Before",
+      value: phaseAvg(phaseBuckets.before, dayLogs, dayPressureIntensity),
+    },
+    {
+      label: "During",
+      value: phaseAvg(phaseBuckets.during, dayLogs, dayPressureIntensity),
+    },
+    {
+      label: "After",
+      value: phaseAvg(phaseBuckets.after, dayLogs, dayPressureIntensity),
+    },
+  ];
+
   const bowelPhaseBars: PhaseBar[] = [
     {
       label: "Before",
@@ -640,6 +655,17 @@ function PatternsPage() {
     previousMonthDays,
     (log) => (log.pain ?? []).filter((entry) => entry.headache).length,
     dayHeadacheIntensity,
+  );
+  const pressureCurrent = countAndAverage(
+    currentMonthDays,
+    (log) => (log.pain ?? []).filter((entry) => entry.pressureIntensity != null).length,
+    dayPressureIntensity,
+  );
+
+  const pressurePrevious = countAndAverage(
+    previousMonthDays,
+    (log) => (log.pain ?? []).filter((entry) => entry.pressureIntensity != null).length,
+    dayPressureIntensity,
   );
   const sleepAverage = (days: string[]) =>
     avg(days.map((day) => dayLogs[day]?.sleepHours).filter((value): value is number => value != null));
@@ -1242,6 +1268,14 @@ function PatternsPage() {
             />
 
             <PhaseBarChart
+              title="Pressure intensity"
+              description="Average logged pressure intensity in each cycle phase."
+              bars={pressurePhaseBars}
+              max={10}
+              unit="/10"
+            />
+
+            <PhaseBarChart
               title="Bowel symptoms"
               description="Average number of bowel symptoms logged per day."
               bars={bowelPhaseBars}
@@ -1367,6 +1401,30 @@ function PatternsPage() {
               color="cyan"
               higherIsWorse
               icon={<HeartPulse className="h-5 w-5" />}
+            />
+
+            <ComparisonMetric
+              title="Pressure entries"
+              subtitle="Number of pain logs containing pressure"
+              previous={pressurePrevious.count}
+              current={pressureCurrent.count}
+              decimals={0}
+              color="rose"
+              higherIsWorse
+              icon={<Waves className="h-5 w-5" />}
+            />
+
+            <ComparisonMetric
+              title="Pressure intensity"
+              subtitle="Average intensity of logged pressure"
+              previous={pressurePrevious.intensity}
+              current={pressureCurrent.intensity}
+              max={10}
+              decimals={1}
+              unit="/10"
+              color="rose"
+              higherIsWorse
+              icon={<Activity className="h-5 w-5" />}
             />
 
             <ComparisonMetric
