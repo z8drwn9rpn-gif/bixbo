@@ -9,13 +9,9 @@ import {
   useBixbo,
   setPartner,
   EMPTY,
-  todayKey,
-  daysBetween,
   fromKey,
   painColor,
   PAIN_DESCRIPTIONS,
-  predictPeriods,
-  nextPredictedPeriod,
   avgDayPain,
   type PainEntry,
   type PanicAttack,
@@ -23,7 +19,6 @@ import {
   type ExtraMed,
   type Med,
   type PartnerData,
-  type DayNote,
 } from "@/lib/storage";
 import { fetchPartner } from "@/lib/cloudSync";
 
