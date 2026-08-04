@@ -16,7 +16,7 @@ import {
   todayKey,
   PAIN_DESCRIPTIONS,
   painColor,
-  periodLabel,
+  periodLabel as getPeriodLabel,
   BRISTOL,
   nextPredictedPeriod,
   pregnancyInfo,
@@ -793,7 +793,7 @@ function DayPreview({
           <Card title="Blueberry" icon="🫐">
             <button onClick={() => onEdit?.("period", undefined)} className="w-full text-left">
               {(log?.periodInfo?.level || log?.period) && (
-                <p className="text-sm">Flow: {periodLabel(log?.periodInfo?.level ?? log?.period)}</p>
+                <p className="text-sm">Flow: {getPeriodLabel(log?.periodInfo?.level ?? log?.period)}</p>
               )}
               {log?.periodInfo?.cramps != null && (
                 <p className="text-xs" style={{ color: painColor(log.periodInfo.cramps) }}>
@@ -1206,7 +1206,7 @@ function ShareDayButton({ date, view }: { date: string; view: BixboData }) {
       lines.push("");
     }
     if (log.periodInfo?.level || log.period)
-      lines.push(`🫐 Period: ${periodLabel(log.periodInfo?.level ?? log.period!)}`);
+      lines.push(`🫐 Period: ${getPeriodLabel(log.periodInfo?.level ?? log.period!)}`);
     if (log.sleepHours != null) lines.push(`😴 Sleep: ${log.sleepHours}h ${asArr(log.sleepQuality).join(", ")}`);
     if (log.temperature != null) lines.push(`🌡️ Temp: ${log.temperature}°C`);
     if (log.weight != null) lines.push(`⚖️ Weight: ${log.weight}kg`);
