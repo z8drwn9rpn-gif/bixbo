@@ -56,8 +56,7 @@ function HomePage() {
 
   const [logOpen, setLogOpen] = useState(false);
   const [quickCat, setQuickCat] = useState<string | undefined>();
-  const [editPain, setEditPain] =
-    useState<import("@/lib/storage").PainEntry | undefined>();
+  const [editPain, setEditPain] = useState<import("@/lib/storage").PainEntry | undefined>();
   const [editEntry, setEditEntry] = useState<unknown>(undefined);
 
   const openEdit = (cat: string, entry: unknown) => {
@@ -103,9 +102,7 @@ function HomePage() {
     const int = window.setInterval(() => {
       const now = new Date();
 
-      const hhmm = `${String(now.getHours()).padStart(2, "0")}:${String(
-        now.getMinutes(),
-      ).padStart(2, "0")}`;
+      const hhmm = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 
       view.meds.forEach((m) => {
         if (m.asNeeded) return;
@@ -115,20 +112,14 @@ function HomePage() {
 
           if (!taken) {
             new Notification(`💊 ${m.name}`, {
-              body: `Time for your ${hhmm} dose${
-                m.dose ? ` (${m.dose})` : ""
-              }`,
+              body: `Time for your ${hhmm} dose${m.dose ? ` (${m.dose})` : ""}`,
             });
           }
         }
       });
 
       // Period predict: 1 day before at 09:00
-      if (
-        !isMale &&
-        !view.settings.pregnantSince &&
-        hhmm === "09:00"
-      ) {
+      if (!isMale && !view.settings.pregnantSince && hhmm === "09:00") {
         const p = nextPredictedPeriod(view.cycle);
 
         if (p && daysBetween(todayKey(), p.start) === 1) {
@@ -161,17 +152,11 @@ function HomePage() {
   }
 
   const goToPrevMonth = () => {
-    setMonthAnchor(
-      (current) =>
-        new Date(current!.getFullYear(), current!.getMonth() - 1, 1),
-    );
+    setMonthAnchor((current) => new Date(current!.getFullYear(), current!.getMonth() - 1, 1));
   };
 
   const goToNextMonth = () => {
-    setMonthAnchor(
-      (current) =>
-        new Date(current!.getFullYear(), current!.getMonth() + 1, 1),
-    );
+    setMonthAnchor((current) => new Date(current!.getFullYear(), current!.getMonth() + 1, 1));
   };
 
   return (
@@ -182,17 +167,12 @@ function HomePage() {
           <span>BIXBO</span>
 
           <span className="text-xs font-normal text-muted-foreground">
-            Hi, {view.settings.userName?.trim() || "there"}{" "}
-            <Ico e="❤️" size={12} />
+            Hi, {view.settings.userName?.trim() || "there"} <Ico e="❤️" size={12} />
           </span>
         </div>
       }
       right={
-        <Link
-          to="/settings"
-          className="rounded-full p-2 hover:bg-tint"
-          aria-label="Settings"
-        >
+        <Link to="/settings" className="rounded-full p-2 hover:bg-tint" aria-label="Settings">
           <SettingsIcon className="h-5 w-5" />
         </Link>
       }
@@ -208,10 +188,7 @@ function HomePage() {
             <ChevronLeft className="h-5 w-5" />
           </button>
 
-          <h2
-            className="font-serif text-xl font-bold"
-            suppressHydrationWarning
-          >
+          <h2 className="font-serif text-xl font-bold" suppressHydrationWarning>
             {hydrated ? monthLabel(monthAnchor) : ""}
           </h2>
 
@@ -234,14 +211,7 @@ function HomePage() {
             selected={selected}
             onSelect={setSelected}
             onSwipeMonth={(delta) => {
-              setMonthAnchor(
-                (current) =>
-                  new Date(
-                    current!.getFullYear(),
-                    current!.getMonth() + delta,
-                    1,
-                  ),
-              );
+              setMonthAnchor((current) => new Date(current!.getFullYear(), current!.getMonth() + delta, 1));
             }}
           />
         ) : (
@@ -256,11 +226,8 @@ function HomePage() {
 
         return (
           <div className="mx-5 mt-3 rounded-full bg-tint px-4 py-2 text-center text-xs text-muted-foreground ring-1 ring-border">
-            🤰 Pregnancy ·{" "}
-            <span className="font-semibold text-foreground">
-              Week {preg.week}
-            </span>{" "}
-            · Trimester {preg.trimester}
+            🤰 Pregnancy · <span className="font-semibold text-foreground">Week {preg.week}</span> · Trimester{" "}
+            {preg.trimester}
           </div>
         );
       })()}
@@ -297,11 +264,7 @@ function HomePage() {
         <VitalTile
           emoji="😴"
           label="Sleep"
-          value={
-            view.dayLogs[selected]?.sleepHours != null
-              ? String(view.dayLogs[selected]!.sleepHours)
-              : "—"
-          }
+          value={view.dayLogs[selected]?.sleepHours != null ? String(view.dayLogs[selected]!.sleepHours) : "—"}
           onClick={() => {
             setQuickCat("temp");
             setEditEntry(undefined);
@@ -313,11 +276,7 @@ function HomePage() {
         <VitalTile
           emoji="🌡️"
           label="Temp"
-          value={
-            view.dayLogs[selected]?.temperature != null
-              ? String(view.dayLogs[selected]!.temperature)
-              : "—"
-          }
+          value={view.dayLogs[selected]?.temperature != null ? String(view.dayLogs[selected]!.temperature) : "—"}
           onClick={() => {
             setQuickCat("temp");
             setEditEntry(undefined);
@@ -329,11 +288,7 @@ function HomePage() {
         <VitalTile
           emoji="⚖️"
           label="Weight"
-          value={
-            view.dayLogs[selected]?.weight != null
-              ? String(view.dayLogs[selected]!.weight)
-              : "—"
-          }
+          value={view.dayLogs[selected]?.weight != null ? String(view.dayLogs[selected]!.weight) : "—"}
           onClick={() => {
             setQuickCat("temp");
             setEditEntry(undefined);
@@ -410,102 +365,6 @@ function HomePage() {
           setLogOpen(open);
 
           if (!open) {
-            setQuickCat(undefined);
-            setEditPain(undefined);
-            setEditEntry(undefined);
-          }
-        }}
-        date={selected}
-        data={view}
-        update={update}
-        initial={quickCat as never}
-        initialPain={editPain}
-        editEntry={editEntry}
-      />
-    </AppShell>
-  );
-}
-        />
-        <VitalTile
-          emoji="🌡️"
-          label="Temp"
-          value={view.dayLogs[selected]?.temperature != null ? String(view.dayLogs[selected]!.temperature) : "—"}
-          onClick={() => {
-            setQuickCat("temp");
-            setEditEntry(undefined);
-            setEditPain(undefined);
-            setLogOpen(true);
-          }}
-        />
-        <VitalTile
-          emoji="⚖️"
-          label="Weight"
-          value={view.dayLogs[selected]?.weight != null ? String(view.dayLogs[selected]!.weight) : "—"}
-          onClick={() => {
-            setQuickCat("temp");
-            setEditEntry(undefined);
-            setEditPain(undefined);
-            setLogOpen(true);
-          }}
-        />
-      </div>
-
-      {/* Quick log — placed above Today.
-          Wrapper overrides fix the caption wrapping to one line and hide the
-          secondary removable-chip row without touching QuickTags.tsx. */}
-      <div className="[&_p.text-\[11px\].uppercase]:min-w-0 [&_p.text-\[11px\].uppercase]:flex-1 [&_p.text-\[11px\].uppercase]:truncate [&_p.text-\[11px\].uppercase]:text-[10px] [&_.mt-1.flex.flex-wrap.gap-1]:hidden">
-        <QuickTags
-          data={view}
-          update={update}
-          onLongPress={(cat: string) => {
-            const map: Record<string, string | undefined> = {
-              pain: "pain",
-              tetany: "tetany",
-              panic: "panic",
-              sex: "sex",
-              food: "food",
-              period: "period",
-              meds: "meds",
-              workout: "workout",
-            };
-            const target = map[cat];
-            if (target) {
-              setQuickCat(target);
-              setEditPain(undefined);
-              setEditEntry(undefined);
-              setLogOpen(true);
-            }
-          }}
-        />
-      </div>
-
-      <div className="mt-4 flex items-center justify-between px-5">
-        <h2 className="font-serif text-xl font-bold">
-          {selected === todayKey()
-            ? "Today"
-            : fromKey(selected).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}
-        </h2>
-        <ShareDayButton date={selected} view={view} />
-      </div>
-
-      <DayPreview
-        date={selected}
-        data={view}
-        update={update}
-        onEditPain={(p) => {
-          setEditPain(p);
-          setEditEntry(undefined);
-          setQuickCat("pain");
-          setLogOpen(true);
-        }}
-        onEdit={openEdit}
-      />
-
-      <LogSheet
-        open={logOpen}
-        onOpenChange={(b) => {
-          setLogOpen(b);
-          if (!b) {
             setQuickCat(undefined);
             setEditPain(undefined);
             setEditEntry(undefined);
@@ -799,7 +658,11 @@ function DayPreview({
                   {p.pcosSymptoms?.length ? (
                     <p className="text-xs text-muted-foreground">PCOS: {p.pcosSymptoms.join(", ")}</p>
                   ) : null}
-                  {p.mood?.length ? <p className="text-xs text-muted-foreground">Mood: <IcoText text={p.mood.join(", ")} size={13} /></p> : null}
+                  {p.mood?.length ? (
+                    <p className="text-xs text-muted-foreground">
+                      Mood: <IcoText text={p.mood.join(", ")} size={13} />
+                    </p>
+                  ) : null}
                   {p.stress != null && <p className="text-xs text-muted-foreground">Stress {p.stress}/10</p>}
                   {p.bodyBattery != null && <p className="text-xs text-muted-foreground">Battery {p.bodyBattery}/5</p>}
                   {p.note && <p className="mt-1 text-sm whitespace-pre-line">"{p.note}"</p>}
@@ -961,7 +824,14 @@ function DayPreview({
               <li key={s.id} className="flex items-start gap-2">
                 <button onClick={() => onEdit?.("sex", s)} className="flex-1 text-left">
                   {s.time} · {String(s.kind).replace(/_/g, " ")}
-                  {asArr(s.feelingAfter).length ? <> · <IcoText text={asArr(s.feelingAfter).join(", ")} size={13} /></> : ""}
+                  {asArr(s.feelingAfter).length ? (
+                    <>
+                      {" "}
+                      · <IcoText text={asArr(s.feelingAfter).join(", ")} size={13} />
+                    </>
+                  ) : (
+                    ""
+                  )}
                   {s.painful && s.painful !== "no" ? ` · painful ${s.painful}` : ""}
                   {s.note ? ` — ${s.note}` : ""}
                 </button>
@@ -1026,10 +896,14 @@ function DayPreview({
                     {f.alcoholDrinks != null ? ` · ${f.alcoholDrinks}` : ""}
                   </div>
                   {f.feelings.length ? (
-                    <div className="text-xs text-muted-foreground">Feel: <IcoText text={f.feelings.join(", ")} size={13} /></div>
+                    <div className="text-xs text-muted-foreground">
+                      Feel: <IcoText text={f.feelings.join(", ")} size={13} />
+                    </div>
                   ) : null}
                   {f.symptomsAfter?.length ? (
-                    <div className="text-xs text-muted-foreground">After: <IcoText text={f.symptomsAfter.join(", ")} size={13} /></div>
+                    <div className="text-xs text-muted-foreground">
+                      After: <IcoText text={f.symptomsAfter.join(", ")} size={13} />
+                    </div>
                   ) : null}
                   {f.histamineFlare ? (
                     <div className="text-xs text-destructive">
@@ -1073,8 +947,22 @@ function DayPreview({
                 <li key={b.id} className="flex items-start gap-2">
                   <button onClick={() => onEdit?.("bowel", b)} className="flex-1 text-left">
                     {b.time} · <IcoText text={label} size={14} />
-                    {b.feelings?.length ? <> · <IcoText text={b.feelings.join(", ")} size={13} /></> : ""}
-                    {b.symptoms?.length ? <> · <IcoText text={b.symptoms.join(", ")} size={13} /></> : ""}
+                    {b.feelings?.length ? (
+                      <>
+                        {" "}
+                        · <IcoText text={b.feelings.join(", ")} size={13} />
+                      </>
+                    ) : (
+                      ""
+                    )}
+                    {b.symptoms?.length ? (
+                      <>
+                        {" "}
+                        · <IcoText text={b.symptoms.join(", ")} size={13} />
+                      </>
+                    ) : (
+                      ""
+                    )}
                     {b.note ? ` — ${b.note}` : ""}
                   </button>
                   <DeleteBtn
@@ -1138,7 +1026,9 @@ function DayPreview({
                     </span>
                   )}
                   {asArr(w.feeling).length ? (
-                    <span className="block text-xs text-muted-foreground"><IcoText text={asArr(w.feeling).join(", ")} size={13} /></span>
+                    <span className="block text-xs text-muted-foreground">
+                      <IcoText text={asArr(w.feeling).join(", ")} size={13} />
+                    </span>
                   ) : null}
                   {w.note ? (
                     <span className="block whitespace-pre-line text-xs text-muted-foreground">{w.note}</span>
@@ -1175,7 +1065,9 @@ function DayPreview({
               </p>
             )}
             {asArr(log?.sleepQuality).length > 0 && log?.sleepHours == null && (
-              <p className="text-sm">Sleep quality: <IcoText text={asArr(log.sleepQuality).join(", ")} size={14} /></p>
+              <p className="text-sm">
+                Sleep quality: <IcoText text={asArr(log.sleepQuality).join(", ")} size={14} />
+              </p>
             )}
             <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
           </button>
