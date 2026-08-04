@@ -908,7 +908,7 @@ function DayPreview({
                     </span>
                   )}
                   {asArr(w.feeling).length ? (
-                    <span className="block text-xs text-muted-foreground">{asArr(w.feeling).join(", ")}</span>
+                    <span className="block text-xs text-muted-foreground"><IcoText text={asArr(w.feeling).join(", ")} size={13} /></span>
                   ) : null}
                   {w.note ? (
                     <span className="block whitespace-pre-line text-xs text-muted-foreground">{w.note}</span>
