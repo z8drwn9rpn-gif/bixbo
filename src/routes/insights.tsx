@@ -56,6 +56,14 @@ function TapTooltip({ leftPct, text }: { leftPct: number; text: string }) {
 const TETANY_COLOR = CHART_COLORS.tetany;
 const PANIC_COLOR = CHART_COLORS.panic;
 
+const PAIN_ACCENT = "#ef4770";
+const PAIN_SOFT = "rgba(239, 71, 112, 0.10)";
+const PAIN_BORDER = "rgba(239, 71, 112, 0.24)";
+
+const GREEN_ACCENT = "#6f9d16";
+const GREEN_SOFT = "rgba(111, 157, 22, 0.10)";
+const GREEN_BORDER = "rgba(111, 157, 22, 0.24)";
+
 function timeBlockOf(time?: string): number | null {
   if (!time) return null;
   const m = /^(\d{1,2}):(\d{2})/.exec(time);
@@ -332,8 +340,14 @@ function InsightsPage() {
 
             <BirthControlCalendar data={view} anchor={anchor} />
 
-            <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
-              <p className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
+            <section
+              className="rounded-3xl p-5 ring-1"
+              style={{
+                backgroundColor: GREEN_SOFT,
+                boxShadow: `inset 0 0 0 1px ${GREEN_BORDER}`,
+              }}
+            >
+              <p className="flex items-center gap-2 text-xs uppercase tracking-wider" style={{ color: GREEN_ACCENT }}>
                 <Ico e="❤️" size={16} /> ŠukŠuk!
               </p>
               <p className="mt-2 font-serif text-5xl leading-none">{sexCount}</p>
@@ -344,8 +358,16 @@ function InsightsPage() {
 
         {period !== "P" && (
           <>
-            <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">Pain scale</p>
+            <section
+              className="rounded-3xl p-5 ring-1"
+              style={{
+                backgroundColor: PAIN_SOFT,
+                boxShadow: `inset 0 0 0 1px ${PAIN_BORDER}`,
+              }}
+            >
+              <p className="text-xs uppercase tracking-wider" style={{ color: PAIN_ACCENT }}>
+                Pain scale
+              </p>
               <div className="mt-2 flex items-baseline gap-2">
                 <span className="font-serif text-5xl leading-none">{painAvg != null ? painAvg.toFixed(1) : "–"}</span>
                 <span className="text-sm text-muted-foreground">
@@ -356,8 +378,16 @@ function InsightsPage() {
               <PainChart period={period} days={days} series={painSeries} anchor={anchor} />
             </section>
 
-            <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">ŠukŠuk!</p>
+            <section
+              className="rounded-3xl p-5 ring-1"
+              style={{
+                backgroundColor: GREEN_SOFT,
+                boxShadow: `inset 0 0 0 1px ${GREEN_BORDER}`,
+              }}
+            >
+              <p className="text-xs uppercase tracking-wider" style={{ color: GREEN_ACCENT }}>
+                ŠukŠuk!
+              </p>
               <p className="mt-2 font-serif text-5xl leading-none">{sexCount}</p>
               <p className="mt-2 text-sm text-muted-foreground">
                 {sexCount === 1 ? "entry" : "entries"} in this{" "}
@@ -1269,7 +1299,7 @@ function SleepChart({
                   style={{ height: `${Math.max(4, (b.value / 12) * 100)}%`, background: sleepColor(b.value) }}
                 />
               ) : (
-                <div key={i} className="h-[2px] w-full self-end rounded bg-tint/60" />
+                <div key={i} className="h-[2px] w-full self-end rounded" style={{ backgroundColor: PAIN_SOFT }} />
               ),
             )}
             {active != null && bars[active]?.value != null && (
@@ -1388,7 +1418,10 @@ function PainChart({
                     setActive(active === i ? null : i);
                   }}
                   className="w-full rounded-t"
-                  style={{ height: `${Math.max(4, (b.value / 10) * 100)}%`, background: painColor(b.value) }}
+                  style={{
+                    height: `${Math.max(4, (b.value / 10) * 100)}%`,
+                    background: PAIN_ACCENT,
+                  }}
                 />
               ) : (
                 <div key={i} className="h-[2px] w-full self-end rounded bg-tint/60" />
