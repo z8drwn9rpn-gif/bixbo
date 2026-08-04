@@ -322,12 +322,21 @@ function ComparisonMetric({
 
   const isUnchanged = delta === 0;
 
-  const improved = delta == null || isUnchanged ? null : higherIsWorse ? delta < 0 : delta > 0;
+  const improved = delta == null || isUnchanged || neutralTrend ? null : higherIsWorse ? delta < 0 : delta > 0;
 
   const trendText =
-    delta == null ? "Comparison unavailable" : isUnchanged ? "No change" : improved ? "Improved" : "Worsened";
+    delta == null
+      ? "Comparison unavailable"
+      : isUnchanged
+        ? "No change"
+        : neutralTrend
+          ? "Changed"
+          : improved
+            ? "Improved"
+            : "Worsened";
 
-  const trendColor = delta == null || isUnchanged ? "var(--muted-foreground)" : improved ? "#16a34a" : "#dc2626";
+  const trendColor =
+    delta == null || isUnchanged || neutralTrend ? "var(--muted-foreground)" : improved ? "#16a34a" : "#dc2626";
 
   const absoluteDelta = delta == null ? null : Math.abs(delta);
 
@@ -360,7 +369,11 @@ function ComparisonMetric({
 
         {delta != null && (
           <div className="flex shrink-0 items-center gap-1 text-xs font-semibold" style={{ color: trendColor }}>
-            {isUnchanged ? null : improved ? <TrendingDown className="h-4 w-4" /> : <TrendingUp className="h-4 w-4" />}
+            {isUnchanged || neutralTrend ? null : improved ? (
+              <TrendingDown className="h-4 w-4" />
+            ) : (
+              <TrendingUp className="h-4 w-4" />
+            )}
 
             {absoluteDelta != null && !isUnchanged && formatMetricValue(absoluteDelta, decimals, unit)}
           </div>
