@@ -16,8 +16,6 @@ import {
   todayKey,
   PAIN_DESCRIPTIONS,
   painColor,
-  periodLabel,
-  BODY_PARTS_DEFAULT,
   BRISTOL,
   nextPredictedPeriod,
   pregnancyInfo,
