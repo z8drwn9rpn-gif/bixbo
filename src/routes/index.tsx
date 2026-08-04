@@ -808,7 +808,7 @@ function DayPreview({
           <Card title="Blueberry" icon="🫐">
             <button onClick={() => onEdit?.("period", undefined)} className="w-full text-left">
               {(log?.periodInfo?.level || log?.period) && (
-                <p className="text-sm">Flow: {getPeriodLabel(log?.periodInfo?.level ?? log?.period)}</p>
+                <p className="text-sm">Flow: {flowLabel(log?.periodInfo?.level ?? log?.period)}</p>
               )}
               {log?.periodInfo?.cramps != null && (
                 <p className="text-xs" style={{ color: painColor(log.periodInfo.cramps) }}>
