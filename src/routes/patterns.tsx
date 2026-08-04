@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
+import { CHART_COLORS, CHART_TINTS } from "@/components/ui/chart";
 import { EMPTY, addDays, avgDayPain, todayKey, useBixbo, type DayLog, type Diagnosis } from "@/lib/storage";
 import {
   avg,
@@ -109,63 +110,63 @@ const METRIC_COLORS: Record<
   }
 > = {
   rose: {
-    solid: "#f43f5e",
-    soft: "rgba(244, 63, 94, 0.13)",
-    text: "#e11d48",
-    border: "rgba(244, 63, 94, 0.24)",
+    solid: CHART_COLORS.pain,
+    soft: CHART_TINTS.pain,
+    text: CHART_COLORS.pain,
+    border: "rgba(111, 115, 0, 0.24)",
   },
   purple: {
-    solid: "#8b5cf6",
-    soft: "rgba(139, 92, 246, 0.13)",
-    text: "#7c3aed",
+    solid: CHART_COLORS.panic,
+    soft: CHART_TINTS.panic,
+    text: CHART_COLORS.panic,
     border: "rgba(139, 92, 246, 0.24)",
   },
   blue: {
-    solid: "#3b82f6",
-    soft: "rgba(59, 130, 246, 0.13)",
-    text: "#2563eb",
+    solid: CHART_COLORS.tetany,
+    soft: CHART_TINTS.tetany,
+    text: CHART_COLORS.tetany,
     border: "rgba(59, 130, 246, 0.24)",
   },
   orange: {
-    solid: "#f97316",
-    soft: "rgba(249, 115, 22, 0.13)",
-    text: "#ea580c",
+    solid: CHART_COLORS.hotFlash,
+    soft: CHART_TINTS.hotFlash,
+    text: CHART_COLORS.hotFlash,
     border: "rgba(249, 115, 22, 0.24)",
   },
   amber: {
-    solid: "#f59e0b",
-    soft: "rgba(245, 158, 11, 0.14)",
-    text: "#d97706",
+    solid: CHART_COLORS.histamine,
+    soft: CHART_TINTS.histamine,
+    text: CHART_COLORS.histamine,
     border: "rgba(245, 158, 11, 0.24)",
   },
   emerald: {
-    solid: "#10b981",
-    soft: "rgba(16, 185, 129, 0.13)",
-    text: "#059669",
+    solid: CHART_COLORS.medication,
+    soft: CHART_TINTS.medication,
+    text: CHART_COLORS.medication,
     border: "rgba(16, 185, 129, 0.24)",
   },
   teal: {
-    solid: "#14b8a6",
-    soft: "rgba(20, 184, 166, 0.13)",
-    text: "#0f766e",
-    border: "rgba(20, 184, 166, 0.24)",
+    solid: CHART_COLORS.workout,
+    soft: CHART_TINTS.workout,
+    text: CHART_COLORS.workout,
+    border: "rgba(34, 197, 94, 0.24)",
   },
   cyan: {
-    solid: "#06b6d4",
-    soft: "rgba(6, 182, 212, 0.13)",
-    text: "#0891b2",
-    border: "rgba(6, 182, 212, 0.24)",
+    solid: CHART_COLORS.headache,
+    soft: CHART_TINTS.headache,
+    text: CHART_COLORS.headache,
+    border: "rgba(239, 68, 68, 0.24)",
   },
   pink: {
-    solid: "#ec4899",
-    soft: "rgba(236, 72, 153, 0.13)",
-    text: "#db2777",
-    border: "rgba(236, 72, 153, 0.24)",
+    solid: CHART_COLORS.pcos,
+    soft: CHART_TINTS.pcos,
+    text: CHART_COLORS.pcos,
+    border: "rgba(192, 38, 211, 0.24)",
   },
   slate: {
-    solid: "#64748b",
-    soft: "rgba(100, 116, 139, 0.13)",
-    text: "#475569",
+    solid: CHART_COLORS.weight,
+    soft: CHART_TINTS.weight,
+    text: CHART_COLORS.weight,
     border: "rgba(100, 116, 139, 0.24)",
   },
 };
@@ -173,18 +174,18 @@ const METRIC_COLORS: Record<
 const PHASE_COLORS = [
   {
     label: "Before",
-    solid: "#8b5cf6",
-    soft: "rgba(139, 92, 246, 0.15)",
+    solid: CHART_COLORS.panic,
+    soft: CHART_TINTS.panic,
   },
   {
     label: "During",
-    solid: "#f43f5e",
-    soft: "rgba(244, 63, 94, 0.15)",
+    solid: CHART_COLORS.period,
+    soft: CHART_TINTS.period,
   },
   {
     label: "After",
-    solid: "#10b981",
-    soft: "rgba(16, 185, 129, 0.15)",
+    solid: CHART_COLORS.workout,
+    soft: CHART_TINTS.workout,
   },
 ] as const;
 
@@ -337,7 +338,11 @@ function ComparisonMetric({
             : "Worsened";
 
   const trendColor =
-    delta == null || isUnchanged || neutralTrend ? "var(--muted-foreground)" : improved ? "#16a34a" : "#dc2626";
+    delta == null || isUnchanged || neutralTrend
+      ? "var(--muted-foreground)"
+      : improved
+        ? CHART_COLORS.workout
+        : CHART_COLORS.headache;
 
   const absoluteDelta = delta == null ? null : Math.abs(delta);
 
@@ -1580,14 +1585,14 @@ function PatternsPage() {
               label="With trigger"
               detail={`${daysWithTrigger.length} logged day${daysWithTrigger.length === 1 ? "" : "s"}`}
               percentage={percentWithTrigger}
-              color="#8b5cf6"
+              color={CHART_COLORS.panic}
             />
 
             <TriggerResult
               label="Without trigger"
               detail={`${daysWithoutTrigger.length} logged day${daysWithoutTrigger.length === 1 ? "" : "s"}`}
               percentage={percentWithoutTrigger}
-              color="#14b8a6"
+              color={CHART_COLORS.workout}
             />
           </div>
 
@@ -1613,7 +1618,11 @@ function PatternsPage() {
                   className="mt-3 flex items-center justify-center gap-1.5 rounded-xl bg-background/60 px-3 py-2 text-xs font-semibold"
                   style={{
                     color:
-                      triggerDifference > 0 ? "#dc2626" : triggerDifference < 0 ? "#16a34a" : "var(--muted-foreground)",
+                      triggerDifference > 0
+                        ? CHART_COLORS.headache
+                        : triggerDifference < 0
+                          ? CHART_COLORS.workout
+                          : "var(--muted-foreground)",
                   }}
                 >
                   {triggerDifference > 0 ? (
