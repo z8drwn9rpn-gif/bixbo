@@ -63,7 +63,18 @@ export const Route = createFileRoute("/patterns")({
 /* Types                                                                      */
 /* -------------------------------------------------------------------------- */
 
-type MetricColor = "rose" | "purple" | "blue" | "orange" | "amber" | "emerald" | "teal" | "cyan" | "pink" | "slate";
+type MetricColor =
+  | "rose"
+  | "green"
+  | "purple"
+  | "blue"
+  | "orange"
+  | "amber"
+  | "emerald"
+  | "teal"
+  | "cyan"
+  | "pink"
+  | "slate";
 
 type PhaseBar = {
   label: string;
@@ -110,10 +121,16 @@ const METRIC_COLORS: Record<
   }
 > = {
   rose: {
-    solid: CHART_COLORS.pain,
-    soft: CHART_TINTS.pain,
-    text: CHART_COLORS.pain,
-    border: "rgba(111, 115, 0, 0.24)",
+    solid: "#ef4770",
+    soft: "rgba(239,71,112,0.10)",
+    text: "#df315d",
+    border: "rgba(239,71,112,0.24)",
+  },
+  green: {
+    solid: "#6f9d16",
+    soft: "rgba(111,157,22,0.10)",
+    text: "#5f8911",
+    border: "rgba(111,157,22,0.24)",
   },
   purple: {
     solid: CHART_COLORS.panic,
@@ -1476,7 +1493,7 @@ function PatternsPage() {
                 max={10}
                 decimals={1}
                 unit="/10"
-                color="rose"
+                color="green"
                 higherIsWorse
                 previousLabel="Before"
                 currentLabel="After"
