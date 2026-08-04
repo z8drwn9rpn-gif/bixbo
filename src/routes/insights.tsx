@@ -14,6 +14,7 @@ import {
   BRISTOL,
   avgDayPain,
   isIntercourseKind,
+  type DayLog,
 } from "@/lib/storage";
 
 const WD_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -91,6 +92,41 @@ export const Route = createFileRoute("/insights")({
 });
 
 type Period = "W" | "M" | "Y" | "P";
+
+type VitalMeasurement = {
+  id: string;
+  time: string;
+  value: number;
+};
+
+type DayLogWithVitalEntries = DayLog & {
+  weightEntries?: VitalMeasurement[];
+  temperatureEntries?: VitalMeasurement[];
+};
+
+function vitalEntriesFor(log: DayLog | undefined, field: "weightEntries" | "temperatureEntries"): VitalMeasurement[] {
+  const entries = (log as DayLogWithVitalEntries | undefined)?.[field] ?? [];
+
+  return entries
+    .filter((entry) => Number.isFinite(entry.value))
+    .slice()
+    .sort((a, b) => (a.time ?? "").localeCompare(b.time ?? ""));
+}
+
+/** Weight chart uses the latest measurement recorded on each day. */
+function lastWeightForDay(log?: DayLog): number | undefined {
+  const entries = vitalEntriesFor(log, "weightEntries");
+  return entries.length ? entries[entries.length - 1].value : log?.weight;
+}
+
+/** Temperature chart uses the daily average when several measurements exist. */
+function averageTemperatureForDay(log?: DayLog): number | undefined {
+  const entries = vitalEntriesFor(log, "temperatureEntries");
+
+  if (!entries.length) return log?.temperature;
+
+  return entries.reduce((sum, entry) => sum + entry.value, 0) / entries.length;
+}
 
 function rangeFor(period: Period, anchor: Date) {
   // Always derive purely from `period` + `anchor` (no mutation of shared objects,
@@ -171,13 +207,11 @@ function InsightsPage() {
     else start.setFullYear(end.getFullYear() - 1);
     return eachDay(toKey(start), toKey(end));
   }, [period, anchor]);
-  const weightSeries = weightDays.map((k) => view.dayLogs[k]?.weight);
-  const tempSeries = weightDays.map((k) => view.dayLogs[k]?.temperature);
+  const weightSeries = weightDays.map((k) => lastWeightForDay(view.dayLogs[k]));
+  const tempSeries = weightDays.map((k) => averageTemperatureForDay(view.dayLogs[k]));
 
   // Sleep
   const sleepSeries = days.map((k) => view.dayLogs[k]?.sleepHours);
-  const sleepColor = (h?: number) =>
-    h == null ? "var(--tint)" : h < 8 ? CHART_COLORS.headache : h === 8 ? CHART_COLORS.energy : CHART_COLORS.workout;
 
   // Hot flashes — collect per-day max intensity + distribution across levels 1–5
   const hfDescriptions: Record<number, string> = {
@@ -385,9 +419,10 @@ function InsightsPage() {
                 boxShadow: `inset 0 0 0 1px ${GREEN_BORDER}`,
               }}
             >
-              <p className="text-xs uppercase tracking-wider" style={{ color: GREEN_ACCENT }}></p>
+              <p className="text-xs uppercase tracking-wider" style={{ color: GREEN_ACCENT }}>
+                ŠukŠuk!
+              </p>
               <p className="mt-2 font-serif text-5xl leading-none">{sexCount}</p>
-              <Ico e="❤️" size={16} /> ŠukŠuk!
               <p className="mt-2 text-sm text-muted-foreground">
                 {sexCount === 1 ? "entry" : "entries"} in this{" "}
                 {period === "W" ? "week" : period === "M" ? "month" : "year"}
@@ -1295,10 +1330,7 @@ function SleepChart({
                     setActive(active === i ? null : i);
                   }}
                   className="w-full rounded-t"
-                  style={{
-                    height: `${Math.max(4, (b.value / 10) * 100)}%`,
-                    background: painColor(b.value),
-                  }}
+                  style={{ height: `${Math.max(4, (b.value / 12) * 100)}%`, background: sleepColor(b.value) }}
                 />
               ) : (
                 <div key={i} className="h-[2px] w-full self-end rounded" style={{ backgroundColor: PAIN_SOFT }} />
@@ -1422,7 +1454,7 @@ function PainChart({
                   className="w-full rounded-t"
                   style={{
                     height: `${Math.max(4, (b.value / 10) * 100)}%`,
-                    background: PAIN_ACCENT,
+                    background: painColor(b.value),
                   }}
                 />
               ) : (
