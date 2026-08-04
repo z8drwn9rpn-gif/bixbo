@@ -386,7 +386,7 @@ function InsightsPage() {
               }}
             >
               <p className="text-xs uppercase tracking-wider" style={{ color: GREEN_ACCENT }}>
-                ŠukŠuk!
+                ŠukŠuk❤️
               </p>
               <p className="mt-2 font-serif text-5xl leading-none">{sexCount}</p>
               <Ico e="❤️" size={16} /> ŠukŠuk!
