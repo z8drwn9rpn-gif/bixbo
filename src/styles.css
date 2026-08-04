@@ -41,6 +41,7 @@
   --color-period-medium: var(--period-medium);
   --color-period-heavy: var(--period-heavy);
   --color-period-veryheavy: var(--period-veryheavy);
+
   --color-pain-0: var(--pain-0);
   --color-pain-1: var(--pain-1);
   --color-pain-2: var(--pain-2);
@@ -52,6 +53,7 @@
   --color-pain-8: var(--pain-8);
   --color-pain-9: var(--pain-9);
   --color-pain-10: var(--pain-10);
+
   --color-today: var(--today);
   --color-predicted: var(--predicted);
   --color-surface: var(--surface);
@@ -62,42 +64,49 @@
 :root {
   --radius: 1rem;
 
-  /* Olive — richer green-tan shades */
+  /* Main light palette */
   --background: oklch(0.955 0.055 110);
   --foreground: oklch(0.22 0.05 115);
+
   --surface: oklch(0.985 0.03 110);
   --surface-elevated: oklch(0.94 0.07 110);
   --tint: oklch(0.88 0.09 110);
 
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.22 0.04 115);
+
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.22 0.04 115);
 
   --primary: oklch(0.52 0.11 115);
   --primary-foreground: oklch(1 0 0);
+
   --secondary: oklch(0.92 0.06 115);
   --secondary-foreground: oklch(0.28 0.07 115);
+
   --muted: oklch(0.955 0.03 115);
   --muted-foreground: oklch(0.5 0.04 115);
+
   --accent: oklch(0.88 0.08 115);
   --accent-foreground: oklch(0.28 0.07 115);
+
   --destructive: oklch(0.58 0.22 25);
   --destructive-foreground: oklch(1 0 0);
+
   --border: oklch(0.88 0.04 115);
   --input: oklch(0.88 0.04 115);
   --ring: oklch(0.52 0.11 115);
 
-  /* Period intensity — blueberry blues to deep */
+  /* Period intensity */
   --period-spotting: oklch(0.78 0.06 275);
   --period-light: oklch(0.68 0.14 275);
   --period-medium: oklch(0.55 0.19 275);
   --period-heavy: oklch(0.45 0.21 280);
-  --period-veryheavy: oklch(0.35 0.20 285);
+  --period-veryheavy: oklch(0.35 0.2 285);
 
-  /* Pain 0..10 — green -> lime -> yellow -> orange -> red */
+  /* Pain 0–10 */
   --pain-0: oklch(0.78 0.16 150);
-  --pain-1: oklch(0.80 0.17 140);
+  --pain-1: oklch(0.8 0.17 140);
   --pain-2: oklch(0.82 0.17 130);
   --pain-3: oklch(0.84 0.17 115);
   --pain-4: oklch(0.85 0.17 95);
@@ -106,75 +115,59 @@
   --pain-7: oklch(0.72 0.19 50);
   --pain-8: oklch(0.65 0.21 35);
   --pain-9: oklch(0.58 0.22 25);
-  --pain-10: oklch(0.50 0.24 20);
+  --pain-10: oklch(0.5 0.24 20);
 
-  --today: oklch(0.88 0.16 95);           /* yellow */
-  --predicted: oklch(0.72 0.18 55);        /* orange */
+  --today: oklch(0.88 0.16 95);
+  --predicted: oklch(0.72 0.18 55);
 }
 
 .dark {
-  /* Backgrounds */
-  --background: oklch(0.220 0.018 122.9);
-  --foreground: oklch(0.965 0.020 101.2);
+  /* Main dark palette */
+  --background: oklch(0.22 0.018 122.9);
+  --foreground: oklch(0.965 0.02 101.2);
 
-  --surface: oklch(0.270 0.022 123.0);
-  --surface-elevated: oklch(0.320 0.028 123.0);
-  --tint: oklch(0.335 0.030 122.5);
+  --surface: oklch(0.27 0.022 123);
+  --surface-elevated: oklch(0.32 0.028 123);
+  --tint: oklch(0.335 0.03 122.5);
 
-  /* Cards */
-  --card: oklch(0.270 0.022 123.0);
-  --card-foreground: oklch(0.965 0.020 101.2);
+  --card: oklch(0.27 0.022 123);
+  --card-foreground: oklch(0.965 0.02 101.2);
 
-  /* Popover */
-  --popover: oklch(0.270 0.022 123.0);
-  --popover-foreground: oklch(0.965 0.020 101.2);
+  --popover: oklch(0.27 0.022 123);
+  --popover-foreground: oklch(0.965 0.02 101.2);
 
-  /* Primary */
   --primary: oklch(0.742 0.123 122.9);
-  --primary-foreground: oklch(0.220 0.018 122.9);
+  --primary-foreground: oklch(0.22 0.018 122.9);
 
-  /* Secondary */
   --secondary: oklch(0.355 0.032 122.5);
-  --secondary-foreground: oklch(0.965 0.020 101.2);
+  --secondary-foreground: oklch(0.965 0.02 101.2);
 
-  /* Muted */
-  --muted: oklch(0.320 0.026 122.5);
-  --muted-foreground: oklch(0.820 0.030 101.7);
+  --muted: oklch(0.32 0.026 122.5);
+  --muted-foreground: oklch(0.82 0.03 101.7);
 
-  /* Accent */
-  --accent: oklch(0.400 0.038 120);
-  --accent-foreground: oklch(0.965 0.020 101.2);
+  --accent: oklch(0.4 0.038 120);
+  --accent-foreground: oklch(0.965 0.02 101.2);
 
-  /* Status */
   --destructive: oklch(0.65 0.22 25);
   --destructive-foreground: oklch(1 0 0);
 
-  /* Borders */
-  --border: oklch(0.350 0.030 120);
-  --input: oklch(0.350 0.030 120);
+  --border: oklch(0.39 0.03 120);
+  --input: oklch(0.39 0.03 120);
   --ring: oklch(0.742 0.123 122.9);
 
-  /* Period colors */
+  /* Period intensity in dark mode */
   --period-spotting: oklch(0.75 0.07 275);
   --period-light: oklch(0.65 0.15 275);
   --period-medium: oklch(0.55 0.19 275);
   --period-heavy: oklch(0.46 0.21 280);
-  --predicted: oklch(0.65 0.18 55);
-}
+  --period-veryheavy: oklch(0.38 0.2 285);
 
-  /* Period intensity — kept in blueberry blues, brightened for dark bg */
-  --period-spotting: oklch(0.75 0.07 275);
-  --period-light: oklch(0.65 0.15 275);
-  --period-medium: oklch(0.55 0.19 275);
-  --period-heavy: oklch(0.46 0.21 280);
-  --period-veryheavy: oklch(0.38 0.20 285);
-
-  /* Pain 0..10 — green -> lime -> yellow -> orange -> red, brightened for dark bg */
+  /* Pain 0–10 in dark mode */
   --pain-0: oklch(0.72 0.16 150);
   --pain-1: oklch(0.74 0.17 140);
   --pain-2: oklch(0.76 0.17 130);
   --pain-3: oklch(0.78 0.17 115);
-  --pain-4: oklch(0.80 0.17 95);
+  --pain-4: oklch(0.8 0.17 95);
   --pain-5: oklch(0.78 0.18 80);
   --pain-6: oklch(0.73 0.18 65);
   --pain-7: oklch(0.68 0.19 50);
@@ -182,19 +175,27 @@
   --pain-9: oklch(0.56 0.22 25);
   --pain-10: oklch(0.48 0.24 20);
 
-  --today: oklch(0.80 0.16 95);
+  --today: oklch(0.8 0.16 95);
   --predicted: oklch(0.65 0.18 55);
 }
 
 @layer base {
-  * { border-color: var(--color-border); }
-  html, body {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html,
+  body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
   }
-  h1, h2, h3, .font-serif {
+
+  h1,
+  h2,
+  h3,
+  .font-serif {
     font-family: var(--font-serif);
     letter-spacing: -0.01em;
   }
