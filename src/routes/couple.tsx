@@ -1,6 +1,6 @@
-import { useEffect, useMemo, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Activity, HeartPulse, Pill, Sparkles, TrendingUp, Users } from "lucide-react";
+import { Activity, ChevronLeft, ChevronRight, HeartPulse, Pill, Sparkles, TrendingUp, Users } from "lucide-react";
 
 import { Ico } from "@/components/icons/BixboIcons";
 import { AppShell } from "@/components/AppShell";
@@ -10,7 +10,6 @@ import {
   EMPTY,
   todayKey,
   daysBetween,
-  addDays,
   fromKey,
   painColor,
   PAIN_DESCRIPTIONS,
@@ -100,15 +99,36 @@ function average(values: number[]) {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
-function currentMonthPrefix() {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+function monthPrefix(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
-function currentMonthDaysUntilToday() {
-  const prefix = currentMonthPrefix();
-  const now = new Date();
-  return Array.from({ length: now.getDate() }, (_, index) => {
+function monthLabel(date: Date) {
+  return date.toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function startOfMonth(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function shiftMonth(date: Date, amount: number) {
+  return new Date(date.getFullYear(), date.getMonth() + amount, 1);
+}
+
+function isSameMonth(a: Date, b: Date) {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
+}
+
+function daysForMonth(date: Date) {
+  const prefix = monthPrefix(date);
+  const today = new Date();
+  const current = isSameMonth(date, today);
+  const totalDays = current ? today.getDate() : new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+
+  return Array.from({ length: totalDays }, (_, index) => {
     const day = String(index + 1).padStart(2, "0");
     return `${prefix}-${day}`;
   });
@@ -327,7 +347,7 @@ function SimilarityCard({ score, partnerName }: { score: number; partnerName: st
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Health similarity</p>
           <h2 className="mt-1 font-serif text-xl font-semibold">You + {partnerName}</h2>
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-            Based on shared symptom days, pain averages, panic and tetany during the current month.
+            Based on shared symptom days, pain averages, panic and tetany during the selected month.
           </p>
         </div>
       </div>
@@ -512,13 +532,15 @@ function CouplePainChart({
   mine,
   theirs,
   partnerName,
+  periodLabel,
 }: {
   days: string[];
   mine: Record<string, { pain?: PainEntry[] }>;
   theirs: Record<string, { pain?: PainEntry[] }>;
   partnerName: string;
+  periodLabel: string;
 }) {
-  const width = 340;
+  const width = Math.max(340, days.length * 22 + 34);
   const height = 190;
   const left = 24;
   const right = 10;
@@ -541,18 +563,19 @@ function CouplePainChart({
   return (
     <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
       <div>
-        <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Pain — last 14 days</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{`Pain — ${periodLabel}`}</h2>
         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
           Daily average pain. Solid bars are yours; striped bars belong to {partnerName}.
         </p>
       </div>
 
-      <div className="mt-3 overflow-hidden">
+      <div className="mt-3 overflow-x-auto overscroll-x-contain">
         <svg
           viewBox={`0 0 ${width} ${height}`}
-          className="h-48 w-full"
+          className="h-48 max-w-none"
+          style={{ width: `${width}px` }}
           role="img"
-          aria-label={`Pain comparison between you and ${partnerName} during the last 14 days`}
+          aria-label={`Pain comparison between you and ${partnerName} during ${periodLabel}`}
         >
           <defs>
             <pattern
@@ -688,7 +711,17 @@ const PERIOD_COLORS: Record<string, string> = {
   "very-heavy": "#7A1F45",
 };
 
-function BlueberrySection({ partner }: { partner: PartnerData }) {
+function BlueberrySection({
+  partner,
+  selectedMonth,
+  selectedMonthLabel,
+  isCurrentMonth,
+}: {
+  partner: PartnerData;
+  selectedMonth: Date;
+  selectedMonthLabel: string;
+  isCurrentMonth: boolean;
+}) {
   const cycle = partner.cycle;
 
   if (!cycle?.lastPeriodStart) {
@@ -697,17 +730,15 @@ function BlueberrySection({ partner }: { partner: PartnerData }) {
   }
 
   const today = new Date();
-  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const monthStart = startOfMonth(selectedMonth);
   const rangeStart = new Date(monthStart);
   rangeStart.setDate(rangeStart.getDate() - 14);
-  const rangeEnd = new Date(monthStart);
-  rangeEnd.setMonth(rangeEnd.getMonth() + 2);
-  rangeEnd.setDate(0);
+  const rangeEnd = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0);
 
   const predicted = cycle ? predictPeriods(cycle, rangeStart, rangeEnd) : [];
-  const next = cycle ? nextPredictedPeriod(cycle) : null;
+  const next = cycle && isCurrentMonth ? nextPredictedPeriod(cycle) : null;
 
-  const first = new Date(today.getFullYear(), today.getMonth(), 1);
+  const first = startOfMonth(selectedMonth);
   const dayOffset = (first.getDay() + 6) % 7;
   const gridStart = new Date(first);
   gridStart.setDate(first.getDate() - dayOffset);
@@ -722,7 +753,7 @@ function BlueberrySection({ partner }: { partner: PartnerData }) {
     return {
       key,
       date,
-      inMonth: date.getMonth() === today.getMonth(),
+      inMonth: date.getFullYear() === selectedMonth.getFullYear() && date.getMonth() === selectedMonth.getMonth(),
     };
   });
 
@@ -732,10 +763,6 @@ function BlueberrySection({ partner }: { partner: PartnerData }) {
     const log = partner.dayLogs[key];
     return log?.periodInfo?.level || log?.period || null;
   };
-  const monthName = today.toLocaleString("en-US", {
-    month: "long",
-    year: "numeric",
-  });
 
   useEffect(() => {
     if (!next || typeof window === "undefined" || !("Notification" in window)) {
@@ -800,7 +827,7 @@ function BlueberrySection({ partner }: { partner: PartnerData }) {
       )}
 
       <div className="rounded-2xl bg-tint p-3">
-        <p className="mb-2 text-center text-xs font-medium">{monthName}</p>
+        <p className="mb-2 text-center text-xs font-medium">{selectedMonthLabel}</p>
         <div className="mb-1 grid grid-cols-7 gap-1 text-center text-[10px] text-muted-foreground">
           {["M", "T", "W", "T", "F", "S", "S"].map((day, index) => (
             <span key={index}>{day}</span>
@@ -843,6 +870,7 @@ function CouplePage() {
   const { data, hydrated } = useBixbo();
   const view = hydrated ? data : EMPTY;
   const partner = view.partner;
+  const [selectedMonth, setSelectedMonth] = useState(() => startOfMonth(new Date()));
 
   useEffect(() => {
     let cancelled = false;
@@ -858,7 +886,22 @@ function CouplePage() {
     };
   }, []);
 
-  const monthDays = useMemo(() => currentMonthDaysUntilToday(), []);
+  const monthDays = useMemo(() => daysForMonth(selectedMonth), [selectedMonth]);
+  const selectedMonthLabel = monthLabel(selectedMonth);
+  const currentMonth = startOfMonth(new Date());
+  const isCurrentMonth = isSameMonth(selectedMonth, currentMonth);
+  const canGoNext = selectedMonth.getTime() < currentMonth.getTime();
+
+  const goToPreviousMonth = () => {
+    setSelectedMonth((current) => shiftMonth(current, -1));
+  };
+
+  const goToNextMonth = () => {
+    setSelectedMonth((current) => {
+      const next = shiftMonth(current, 1);
+      return next.getTime() > currentMonth.getTime() ? current : next;
+    });
+  };
 
   const collectPain = (dayLogs: Record<string, ComparableDayLog>) => {
     const output: (PainEntry & { dateKey: string })[] = [];
@@ -974,11 +1017,39 @@ function CouplePage() {
 
   const partnerName = partner?.name || "Partner";
 
-  const chartDays = Array.from({ length: 14 }, (_, index) => addDays(todayKey(), index - 13));
-
   return (
     <AppShell title="Bixbo Couple">
       <div className="space-y-4 px-5 pb-24 pt-4">
+        <section className="rounded-3xl bg-surface p-3 ring-1 ring-border">
+          <div className="flex items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={goToPreviousMonth}
+              aria-label="Previous month"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-tint text-foreground transition active:scale-95"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+
+            <div className="min-w-0 text-center">
+              <p className="font-serif text-lg font-semibold">{selectedMonthLabel}</p>
+              <p className="text-[10px] text-muted-foreground">
+                {isCurrentMonth ? `Current month · ${monthDays.length} days so far` : `${monthDays.length} days`}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={goToNextMonth}
+              disabled={!canGoNext}
+              aria-label="Next month"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-tint text-foreground transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-30"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </div>
+        </section>
+
         {!partner ? (
           <div className="rounded-3xl bg-surface p-6 text-center ring-1 ring-border">
             <p className="text-sm font-medium">No partner linked yet.</p>
@@ -991,26 +1062,14 @@ function CouplePage() {
           </div>
         ) : (
           <>
-            {/* Sharing status */}
-            <SectionCard
-              title="Couple sharing"
-              description="Your latest partner snapshot is refreshed whenever this page opens."
-            >
-              <div className="mt-4 flex items-center gap-3 rounded-2xl bg-tint p-4">
-                <div className="grid h-11 w-11 place-items-center rounded-2xl bg-primary/10 text-primary">
-                  <Users className="h-5 w-5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold">Connected with {partnerName}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    Current month · {monthDays.length} days compared
-                  </p>
-                </div>
-              </div>
-            </SectionCard>
-
             {/* Restored daily pain chart */}
-            <CouplePainChart days={chartDays} mine={view.dayLogs} theirs={partner.dayLogs} partnerName={partnerName} />
+            <CouplePainChart
+              days={monthDays}
+              mine={view.dayLogs}
+              theirs={partner.dayLogs}
+              partnerName={partnerName}
+              periodLabel={selectedMonthLabel}
+            />
 
             {/* Comparison */}
             <SimilarityCard score={similarityScore} partnerName={partnerName} />
@@ -1077,7 +1136,7 @@ function CouplePage() {
                 />
                 <ComparisonBarCard
                   title="Panic attacks"
-                  subtitle="Number of attacks logged this month"
+                  subtitle="Number of attacks logged in the selected month"
                   mine={myPanic.length}
                   theirs={partnerPanic.length}
                   decimals={0}
@@ -1088,7 +1147,7 @@ function CouplePage() {
                 />
                 <ComparisonBarCard
                   title="Tetany episodes"
-                  subtitle="Number of episodes logged this month"
+                  subtitle="Number of episodes logged in the selected month"
                   mine={myTetany.length}
                   theirs={partnerTetany.length}
                   decimals={0}
@@ -1112,13 +1171,10 @@ function CouplePage() {
             </SectionCard>
 
             {/* Smart insights */}
-            <SectionCard
-              title="Shared insights"
-              description="Simple observations calculated from your current-month logs."
-            >
+            <SectionCard title="Shared insights" description="Simple observations calculated from the selected month.">
               <div className="mt-4 space-y-2">
                 <Insight
-                  text={`You both logged symptoms on ${sharedSymptomDays} day${sharedSymptomDays === 1 ? "" : "s"} this month.`}
+                  text={`You both logged symptoms on ${sharedSymptomDays} day${sharedSymptomDays === 1 ? "" : "s"} in ${selectedMonthLabel}.`}
                 />
                 <Insight
                   text={
@@ -1133,7 +1189,7 @@ function CouplePage() {
                   text={
                     myPanic.length === partnerPanic.length
                       ? `You both logged the same number of panic attacks.`
-                      : `${myPanic.length > partnerPanic.length ? "You" : partnerName} logged more panic attacks this month.`
+                      : `${myPanic.length > partnerPanic.length ? "You" : partnerName} logged more panic attacks in ${selectedMonthLabel}.`
                   }
                 />
               </div>
@@ -1142,7 +1198,7 @@ function CouplePage() {
             {/* Partner sharing detail */}
             <SectionCard
               title={`${partnerName} — shared details`}
-              description="Recent entries received through Couple sharing."
+              description="Entries received through Couple sharing for the selected month."
             >
               <div className="mt-4 space-y-5">
                 <PainList title="Pain" entries={partnerPain} />
@@ -1153,12 +1209,19 @@ function CouplePage() {
               </div>
             </SectionCard>
 
-            {partner.gender !== "male" && <BlueberrySection partner={partner} />}
+            {partner.gender !== "male" && (
+              <BlueberrySection
+                partner={partner}
+                selectedMonth={selectedMonth}
+                selectedMonthLabel={selectedMonthLabel}
+                isCurrentMonth={isCurrentMonth}
+              />
+            )}
 
             {/* My detail */}
             <SectionCard
               title="My shared details"
-              description="Your current-month entries shown beside the partner comparison."
+              description="Your entries for the selected month shown beside the partner comparison."
             >
               <div className="mt-4 space-y-5">
                 <PainList title="Pain" entries={myPain} />
