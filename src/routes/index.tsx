@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Settings as SettingsIcon, Share2, Trash2 } from "lucide-react";
 
-import { Ico, PillIcon } from "@/components/icons/BixboIcons";
+import { Ico, IcoText, PillIcon } from "@/components/icons/BixboIcons";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { MonthCalendar, monthLabel } from "@/components/MonthCalendar";
