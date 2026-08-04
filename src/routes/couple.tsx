@@ -867,11 +867,14 @@ function BlueberrySection({
 /* Page                                                                       */
 /* -------------------------------------------------------------------------- */
 
+type CoupleTab = "overview" | "compare" | "health" | "sharing";
+
 function CouplePage() {
   const { data, hydrated } = useBixbo();
   const view = hydrated ? data : EMPTY;
   const partner = view.partner;
   const [selectedMonth, setSelectedMonth] = useState(() => startOfMonth(new Date()));
+  const [activeTab, setActiveTab] = useState<CoupleTab>("overview");
 
   useEffect(() => {
     let cancelled = false;
@@ -1018,6 +1021,13 @@ function CouplePage() {
 
   const partnerName = partner?.name || "Partner";
 
+  const tabs: { id: CoupleTab; label: string; icon: string }[] = [
+    { id: "overview", label: "Overview", icon: "❤️" },
+    { id: "compare", label: "Compare", icon: "📊" },
+    { id: "health", label: "Health", icon: "🌿" },
+    { id: "sharing", label: "Sharing", icon: "⚙️" },
+  ];
+
   return (
     <AppShell title="Bixbo Couple">
       <div className="space-y-4 px-5 pb-24 pt-4">
@@ -1063,129 +1073,194 @@ function CouplePage() {
           </div>
         ) : (
           <>
-            {/* Restored daily pain chart */}
-            <CouplePainChart
-              days={monthDays}
-              mine={view.dayLogs}
-              theirs={partner.dayLogs}
-              partnerName={partnerName}
-              periodLabel={selectedMonthLabel}
-            />
+            <nav
+              aria-label="Couple sections"
+              className="sticky top-0 z-20 rounded-3xl bg-surface/95 p-1.5 shadow-sm ring-1 ring-border backdrop-blur"
+            >
+              <div className="grid grid-cols-4 gap-1">
+                {tabs.map((tab) => {
+                  const active = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setActiveTab(tab.id)}
+                      aria-pressed={active}
+                      className={`flex min-w-0 flex-col items-center justify-center rounded-2xl px-1 py-2 text-[10px] font-semibold transition ${
+                        active
+                          ? "bg-tint text-primary ring-1 ring-border"
+                          : "text-muted-foreground hover:bg-tint/60 hover:text-foreground"
+                      }`}
+                    >
+                      <span className="text-base leading-none" aria-hidden="true">
+                        {tab.icon}
+                      </span>
+                      <span className="mt-1 truncate">{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </nav>
+
+            {activeTab === "compare" && (
+              <CouplePainChart
+                days={monthDays}
+                mine={view.dayLogs}
+                theirs={partner.dayLogs}
+                partnerName={partnerName}
+                periodLabel={selectedMonthLabel}
+              />
+            )}
 
             {/* Comparison */}
-            <SimilarityCard score={similarityScore} partnerName={partnerName} />
+            {activeTab === "overview" && <SimilarityCard score={similarityScore} partnerName={partnerName} />}
 
-            <div className="grid grid-cols-2 gap-3">
-              <StatCard
-                icon={<Users className="h-4 w-4" />}
-                label="Shared symptom days"
-                value={`${sharedSymptomDays}`}
-                detail="Days when both of you logged pain, panic or tetany."
-                tone="purple"
-              />
-              <StatCard
-                icon={<HeartPulse className="h-4 w-4" />}
-                label="Your symptom days"
-                value={`${mySymptomDays}`}
-                detail={`${partnerName}: ${partnerSymptomDays} days`}
-                tone="rose"
-              />
-              <StatCard
-                icon={<Sparkles className="h-4 w-4" />}
-                label="Panic attacks together"
-                value={`${Math.min(myPanic.length, partnerPanic.length)}`}
-                detail={`You ${myPanic.length} · ${partnerName} ${partnerPanic.length}`}
-                tone="purple"
-              />
-              <StatCard
-                icon={<Activity className="h-4 w-4" />}
-                label="Tetany episodes"
-                value={`${myTetany.length + partnerTetany.length}`}
-                detail={`You ${myTetany.length} · ${partnerName} ${partnerTetany.length}`}
-                tone="blue"
-              />
-            </div>
-
-            <SectionCard
-              title="Health comparison"
-              description="Solid bars are yours. Striped bars belong to your partner."
-            >
-              <div className="mt-4 space-y-3">
-                <ComparisonBarCard
-                  title="Average pain"
-                  subtitle="Average intensity of logged pain entries"
-                  mine={myPainAverage}
-                  theirs={partnerPainAverage}
-                  max={10}
-                  decimals={1}
-                  unit="/10"
-                  mineLabel="You"
-                  partnerLabel={partnerName}
-                  tone="rose"
-                  icon={<HeartPulse className="h-5 w-5" />}
-                />
-                <ComparisonBarCard
-                  title="Pain days"
-                  subtitle="Days with at least one pain entry"
-                  mine={myPainDays}
-                  theirs={partnerPainDays}
-                  decimals={0}
-                  mineLabel="You"
-                  partnerLabel={partnerName}
-                  tone="green"
-                  icon={<TrendingUp className="h-5 w-5" />}
-                />
-                <ComparisonBarCard
-                  title="Panic attacks"
-                  subtitle="Number of attacks logged in the selected month"
-                  mine={myPanic.length}
-                  theirs={partnerPanic.length}
-                  decimals={0}
-                  mineLabel="You"
-                  partnerLabel={partnerName}
+            {activeTab === "overview" && (
+              <div className="grid grid-cols-2 gap-3">
+                <StatCard
+                  icon={<Users className="h-4 w-4" />}
+                  label="Shared symptom days"
+                  value={`${sharedSymptomDays}`}
+                  detail="Days when both of you logged pain, panic or tetany."
                   tone="purple"
-                  icon={<Sparkles className="h-5 w-5" />}
                 />
-                <ComparisonBarCard
-                  title="Tetany episodes"
-                  subtitle="Number of episodes logged in the selected month"
-                  mine={myTetany.length}
-                  theirs={partnerTetany.length}
-                  decimals={0}
-                  mineLabel="You"
-                  partnerLabel={partnerName}
+                <StatCard
+                  icon={<HeartPulse className="h-4 w-4" />}
+                  label="Your symptom days"
+                  value={`${mySymptomDays}`}
+                  detail={`${partnerName}: ${partnerSymptomDays} days`}
+                  tone="rose"
+                />
+                <StatCard
+                  icon={<Sparkles className="h-4 w-4" />}
+                  label="Panic attacks together"
+                  value={`${Math.min(myPanic.length, partnerPanic.length)}`}
+                  detail={`You ${myPanic.length} · ${partnerName} ${partnerPanic.length}`}
+                  tone="purple"
+                />
+                <StatCard
+                  icon={<Activity className="h-4 w-4" />}
+                  label="Tetany episodes"
+                  value={`${myTetany.length + partnerTetany.length}`}
+                  detail={`You ${myTetany.length} · ${partnerName} ${partnerTetany.length}`}
                   tone="blue"
-                  icon={<Activity className="h-5 w-5" />}
-                />
-                <ComparisonBarCard
-                  title="Medication doses"
-                  subtitle="Scheduled doses marked as taken"
-                  mine={myTakenDoses}
-                  theirs={partnerTakenDoses}
-                  decimals={0}
-                  mineLabel="You"
-                  partnerLabel={partnerName}
-                  tone="emerald"
-                  icon={<Pill className="h-5 w-5" />}
                 />
               </div>
-            </SectionCard>
+            )}
+
+            {activeTab === "compare" && (
+              <SectionCard
+                title="Health comparison"
+                description="Solid bars are yours. Striped bars belong to your partner."
+              >
+                <div className="mt-4 space-y-3">
+                  <ComparisonBarCard
+                    title="Average pain"
+                    subtitle="Average intensity of logged pain entries"
+                    mine={myPainAverage}
+                    theirs={partnerPainAverage}
+                    max={10}
+                    decimals={1}
+                    unit="/10"
+                    mineLabel="You"
+                    partnerLabel={partnerName}
+                    tone="rose"
+                    icon={<HeartPulse className="h-5 w-5" />}
+                  />
+                  <ComparisonBarCard
+                    title="Pain days"
+                    subtitle="Days with at least one pain entry"
+                    mine={myPainDays}
+                    theirs={partnerPainDays}
+                    decimals={0}
+                    mineLabel="You"
+                    partnerLabel={partnerName}
+                    tone="green"
+                    icon={<TrendingUp className="h-5 w-5" />}
+                  />
+                  <ComparisonBarCard
+                    title="Panic attacks"
+                    subtitle="Number of attacks logged in the selected month"
+                    mine={myPanic.length}
+                    theirs={partnerPanic.length}
+                    decimals={0}
+                    mineLabel="You"
+                    partnerLabel={partnerName}
+                    tone="purple"
+                    icon={<Sparkles className="h-5 w-5" />}
+                  />
+                  <ComparisonBarCard
+                    title="Tetany episodes"
+                    subtitle="Number of episodes logged in the selected month"
+                    mine={myTetany.length}
+                    theirs={partnerTetany.length}
+                    decimals={0}
+                    mineLabel="You"
+                    partnerLabel={partnerName}
+                    tone="blue"
+                    icon={<Activity className="h-5 w-5" />}
+                  />
+                  <ComparisonBarCard
+                    title="Medication doses"
+                    subtitle="Scheduled doses marked as taken"
+                    mine={myTakenDoses}
+                    theirs={partnerTakenDoses}
+                    decimals={0}
+                    mineLabel="You"
+                    partnerLabel={partnerName}
+                    tone="emerald"
+                    icon={<Pill className="h-5 w-5" />}
+                  />
+                </div>
+              </SectionCard>
+            )}
 
             {/* Partner sharing detail */}
-            <SectionCard
-              title={`${partnerName} — shared details`}
-              description="Entries received through Couple sharing for the selected month."
-            >
-              <div className="mt-4 space-y-5">
-                <PainList title="Pain" entries={partnerPain} />
-                <TetanyList title="Tetany" entries={partnerTetany} />
-                <PanicList title="Panic attacks" entries={partnerPanic} />
-                <MedsList title="Medication" days={partnerMeds} />
-                <DayNotesList title="Day notes" notes={partnerNotes} />
-              </div>
-            </SectionCard>
+            {activeTab === "health" && (
+              <SectionCard
+                title={`${partnerName} — shared details`}
+                description="Entries received through Couple sharing for the selected month."
+              >
+                <div className="mt-4 space-y-2">
+                  <details className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
+                    <summary className="cursor-pointer text-sm font-semibold">Pain ({partnerPain.length})</summary>
+                    <div className="mt-3">
+                      <PainList title="Pain" entries={partnerPain} />
+                    </div>
+                  </details>
+                  <details className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
+                    <summary className="cursor-pointer text-sm font-semibold">Tetany ({partnerTetany.length})</summary>
+                    <div className="mt-3">
+                      <TetanyList title="Tetany" entries={partnerTetany} />
+                    </div>
+                  </details>
+                  <details className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
+                    <summary className="cursor-pointer text-sm font-semibold">
+                      Panic attacks ({partnerPanic.length})
+                    </summary>
+                    <div className="mt-3">
+                      <PanicList title="Panic attacks" entries={partnerPanic} />
+                    </div>
+                  </details>
+                  <details className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
+                    <summary className="cursor-pointer text-sm font-semibold">Medication</summary>
+                    <div className="mt-3">
+                      <MedsList title="Medication" days={partnerMeds} />
+                    </div>
+                  </details>
+                  <details className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
+                    <summary className="cursor-pointer text-sm font-semibold">
+                      Day notes ({partnerNotes.length})
+                    </summary>
+                    <div className="mt-3">
+                      <DayNotesList title="Day notes" notes={partnerNotes} />
+                    </div>
+                  </details>
+                </div>
+              </SectionCard>
+            )}
 
-            {partner.gender !== "male" && (
+            {activeTab === "health" && partner.gender !== "male" && (
               <BlueberrySection
                 partner={partner}
                 selectedMonth={selectedMonth}
@@ -1195,18 +1270,82 @@ function CouplePage() {
             )}
 
             {/* My detail */}
-            <SectionCard
-              title="My shared details"
-              description="Your entries for the selected month shown beside the partner comparison."
-            >
-              <div className="mt-4 space-y-5">
-                <PainList title="Pain" entries={myPain} />
-                <TetanyList title="Tetany" entries={myTetany} />
-                <PanicList title="Panic attacks" entries={myPanic} />
-                <MedsList title="Medication" days={myMeds} />
-                <DayNotesList title="Day notes" notes={myNotes} />
+            {activeTab === "health" && (
+              <SectionCard
+                title="My shared details"
+                description="Your entries for the selected month shown beside the partner comparison."
+              >
+                <div className="mt-4 space-y-2">
+                  <details className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
+                    <summary className="cursor-pointer text-sm font-semibold">Pain ({myPain.length})</summary>
+                    <div className="mt-3">
+                      <PainList title="Pain" entries={myPain} />
+                    </div>
+                  </details>
+                  <details className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
+                    <summary className="cursor-pointer text-sm font-semibold">Tetany ({myTetany.length})</summary>
+                    <div className="mt-3">
+                      <TetanyList title="Tetany" entries={myTetany} />
+                    </div>
+                  </details>
+                  <details className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
+                    <summary className="cursor-pointer text-sm font-semibold">Panic attacks ({myPanic.length})</summary>
+                    <div className="mt-3">
+                      <PanicList title="Panic attacks" entries={myPanic} />
+                    </div>
+                  </details>
+                  <details className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
+                    <summary className="cursor-pointer text-sm font-semibold">Medication</summary>
+                    <div className="mt-3">
+                      <MedsList title="Medication" days={myMeds} />
+                    </div>
+                  </details>
+                  <details className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
+                    <summary className="cursor-pointer text-sm font-semibold">Day notes ({myNotes.length})</summary>
+                    <div className="mt-3">
+                      <DayNotesList title="Day notes" notes={myNotes} />
+                    </div>
+                  </details>
+                </div>
+              </SectionCard>
+            )}
+
+            {activeTab === "sharing" && (
+              <div className="space-y-4">
+                <SectionCard title="Partner" description="Your currently linked Couple sharing partner.">
+                  <div className="mt-4 flex items-center gap-3 rounded-2xl bg-tint p-4 ring-1 ring-border/40">
+                    <span className="grid h-12 w-12 place-items-center rounded-full bg-surface text-xl">👥</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-serif text-lg font-semibold">{partnerName}</p>
+                      <p className="text-xs text-muted-foreground">Connected through Couple sharing</p>
+                    </div>
+                  </div>
+                </SectionCard>
+
+                <SectionCard
+                  title="Sharing settings"
+                  description="Manage pairing, permissions and shared data in Settings."
+                >
+                  <Link
+                    to="/settings"
+                    className="mt-4 flex items-center justify-between rounded-2xl bg-tint px-4 py-4 text-sm font-semibold text-foreground ring-1 ring-border/40"
+                  >
+                    <span>Open Couple sharing settings</span>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                  </Link>
+                </SectionCard>
+
+                <SectionCard title="What is shared" description="Categories currently available in Couple comparison.">
+                  <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
+                    {["Pain", "Panic attacks", "Tetany", "Medication", "Period", "Day notes"].map((item) => (
+                      <div key={item} className="rounded-2xl bg-tint px-3 py-3 ring-1 ring-border/40">
+                        ✓ {item}
+                      </div>
+                    ))}
+                  </div>
+                </SectionCard>
               </div>
-            </SectionCard>
+            )}
           </>
         )}
       </div>
