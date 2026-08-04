@@ -2,22 +2,6 @@ import { useEffect, useSyncExternalStore } from "react";
 
 /* ------------------- Types ------------------- */
 export type PeriodLevel = "" | "spotting" | "light" | "medium" | "heavy" | "very-heavy";
-export function periodLabel(level?: PeriodLevel | null): string {
-  switch (level) {
-    case "spotting":
-      return "Spotting";
-    case "light":
-      return "Light";
-    case "medium":
-      return "Medium";
-    case "heavy":
-      return "Heavy";
-    case "very-heavy":
-      return "Very heavy";
-    default:
-      return "";
-  }
-}
 export type SexKind =
   | "sex"
   | "fingering"
@@ -218,6 +202,13 @@ export interface HistamineEntry {
   note?: string;
 }
 
+/** A single time-stamped weight or body-temperature measurement. */
+export interface VitalMeasurement {
+  id: string;
+  time: string;
+  value: number;
+}
+
 export interface DayLog {
   pain?: PainEntry[];
   tetany?: TetanyEpisode[];
@@ -228,7 +219,13 @@ export interface DayLog {
   food?: FoodEntry[];
   bowel?: BowelEntry[];
   sex?: SexEntry[];
+  /** Multiple time-stamped body-temperature measurements for this day. */
+  temperatureEntries?: VitalMeasurement[];
+  /** Multiple time-stamped weight measurements for this day. */
+  weightEntries?: VitalMeasurement[];
+  /** Legacy/current summary value kept for compatibility with older UI code. */
   temperature?: number;
+  /** Legacy/current summary value kept for compatibility with older UI code. */
   weight?: number;
   sleepHours?: number;
   sleepQuality?: string | string[];
@@ -547,6 +544,41 @@ export const EMPTY: BixboData = {
 const KEY = "bixbo:v2";
 const LEGACY_KEY = "bixbo:v1";
 
+type VitalField = "weightEntries" | "temperatureEntries";
+
+function normalizeVitalEntries(raw: unknown, dateKey: string, kind: "weight" | "temperature"): VitalMeasurement[] {
+  if (!Array.isArray(raw)) return [];
+
+  return raw
+    .map((item, index): VitalMeasurement | null => {
+      if (!item || typeof item !== "object") return null;
+
+      const source = item as Partial<VitalMeasurement>;
+      const value = Number(source.value);
+
+      if (!Number.isFinite(value)) return null;
+
+      return {
+        id: typeof source.id === "string" && source.id.trim() ? source.id : `${dateKey}-${kind}-${index}`,
+        time: typeof source.time === "string" && /^\d{2}:\d{2}$/.test(source.time) ? source.time : "00:00",
+        value,
+      };
+    })
+    .filter((entry): entry is VitalMeasurement => entry != null)
+    .sort((a, b) => a.time.localeCompare(b.time) || a.id.localeCompare(b.id));
+}
+
+function latestVitalValue(entries?: VitalMeasurement[]): number | undefined {
+  if (!entries?.length) return undefined;
+
+  const sorted = entries
+    .filter((entry) => Number.isFinite(entry.value))
+    .slice()
+    .sort((a, b) => a.time.localeCompare(b.time) || a.id.localeCompare(b.id));
+
+  return sorted.length ? sorted[sorted.length - 1].value : undefined;
+}
+
 function migrate(raw: unknown): BixboData {
   const parsed = (raw ?? {}) as Partial<BixboData> & Record<string, unknown>;
   const src = (parsed.dayLogs ?? {}) as Record<string, Record<string, unknown>>;
@@ -566,6 +598,36 @@ function migrate(raw: unknown): BixboData {
         ...out.periodInfo,
         level: "very-heavy",
       };
+    }
+
+    const temperatureEntries = normalizeVitalEntries(legacyLog.temperatureEntries, key, "temperature");
+    const weightEntries = normalizeVitalEntries(legacyLog.weightEntries, key, "weight");
+
+    // Convert old one-value-per-day fields into time-stamped entries once.
+    if (!temperatureEntries.length && typeof legacyLog.temperature === "number") {
+      temperatureEntries.push({
+        id: `${key}-legacy-temperature`,
+        time: "00:00",
+        value: legacyLog.temperature,
+      });
+    }
+
+    if (!weightEntries.length && typeof legacyLog.weight === "number") {
+      weightEntries.push({
+        id: `${key}-legacy-weight`,
+        time: "00:00",
+        value: legacyLog.weight,
+      });
+    }
+
+    if (temperatureEntries.length) {
+      out.temperatureEntries = temperatureEntries;
+      out.temperature = latestVitalValue(temperatureEntries);
+    }
+
+    if (weightEntries.length) {
+      out.weightEntries = weightEntries;
+      out.weight = latestVitalValue(weightEntries);
     }
 
     if (typeof legacyLog.pain === "number") {
@@ -675,7 +737,7 @@ function persist() {
 
 export function setBixbo(updater: (d: BixboData) => BixboData) {
   hydrate();
-  _state = updater(_state);
+  _state = migrate(updater(_state));
   persist();
   emit();
   changeListeners.forEach((l) => l(_state, "local"));
@@ -746,6 +808,8 @@ export function hasAnyLog(l?: DayLog): boolean {
     l.food?.length ||
     l.bowel?.length ||
     l.sex?.length ||
+    l.temperatureEntries?.length ||
+    l.weightEntries?.length ||
     l.temperature != null ||
     l.weight != null ||
     l.sleepHours != null ||
@@ -834,6 +898,31 @@ export function avgDayPain(log?: DayLog): number | undefined {
   if (!log?.pain?.length) return undefined;
   const sum = log.pain.reduce((s, p) => s + p.score, 0);
   return sum / log.pain.length;
+}
+
+/** Return valid vital measurements sorted from earliest to latest. */
+export function vitalEntriesFor(log: DayLog | undefined, field: VitalField): VitalMeasurement[] {
+  return (log?.[field] ?? [])
+    .filter((entry) => Number.isFinite(entry.value))
+    .slice()
+    .sort((a, b) => a.time.localeCompare(b.time) || a.id.localeCompare(b.id));
+}
+
+/** Latest weight measurement of the day, with legacy scalar fallback. */
+export function latestDayWeight(log?: DayLog): number | undefined {
+  return latestVitalValue(vitalEntriesFor(log, "weightEntries")) ?? log?.weight;
+}
+
+/** Latest body-temperature measurement of the day, with legacy scalar fallback. */
+export function latestDayTemperature(log?: DayLog): number | undefined {
+  return latestVitalValue(vitalEntriesFor(log, "temperatureEntries")) ?? log?.temperature;
+}
+
+/** Average body temperature across all measurements of the day. */
+export function averageDayTemperature(log?: DayLog): number | undefined {
+  const entries = vitalEntriesFor(log, "temperatureEntries");
+  if (!entries.length) return log?.temperature;
+  return entries.reduce((sum, entry) => sum + entry.value, 0) / entries.length;
 }
 
 export const BODY_PARTS_DEFAULT = [
