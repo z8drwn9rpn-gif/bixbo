@@ -1352,7 +1352,7 @@ function ThermoForm({ date, update, onDone, initialEntry }:
         <div className="mt-2 flex gap-2">
           <Chip active={kind === "heat"} onClick={() => setKind("heat")}><Ico e="♨️" size={16} /> Heat</Chip>
           <Chip active={kind === "cold"} onClick={() => setKind("cold")}><Ico e="🧊" size={16} /> Cold</Chip>
-          <Chip active={kind === "tens"} onClick={() => setKind("tens")}><Ico e="✨" size={16} /> TENS</Chip>
+          <Chip active={kind === "tens"} onClick={() => setKind("tens")}><Ico e="⭐" size={16} /> TENS</Chip>
         </div>
       </Field>
       <Field label="Start"><Input type="time" value={start} onChange={(e) => setStart(e.target.value)} className="w-full" /></Field>

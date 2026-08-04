@@ -25,10 +25,10 @@ function iconsFor(log: DayLog | undefined, hasMed: boolean, _isMale: boolean): s
   const out: string[] = [];
   if (log?.sex?.some((e) => isIntercourseKind(e.kind))) out.push("❤️");
   if (hasMed) out.push("💊");
-  if (log?.bowel?.some((b) => b.bristol > 0)) out.push("💩");
+  if (log?.bowel?.some((b) => b.bristol > 0)) out.push("💩⚪");
   if (log?.heat?.some((h) => h.kind === "heat")) out.push("♨️");
   if (log?.heat?.some((h) => h.kind === "cold")) out.push("🧊");
-  if (log?.heat?.some((h) => h.kind === "tens")) out.push("✨");
+  if (log?.heat?.some((h) => h.kind === "tens")) out.push("⭐");
   if (log?.tetany?.length) out.push("⚡");
   if (log?.panic?.length) out.push("🫯");
   return out;
@@ -49,7 +49,7 @@ function daySummaryLines(log: DayLog | undefined, isMale: boolean): string[] {
   if (log.food?.length) out.push(`🍽️ Food: ${log.food.map((f) => f.what).filter(Boolean).join(", ") || `${log.food.length} entries`}`);
   if (!isMale && (log.periodInfo?.level ?? log.period)) out.push(`🫐 Period: ${log.periodInfo?.level ?? log.period}`);
   if (log.bowel?.length) out.push(`💩 Bowel: ${log.bowel.map((b) => `type ${b.bristol}`).join(", ")}`);
-  if (log.heat?.length) out.push(`♨️ Heat/Cold/TENS: ${log.heat.map((h) => h.kind).join(", ")}`);
+  if (log.heat?.length) out.push(`♨️ Heat/Cold/TENS: ${log.heat.map((h) => h.kind === "tens" ? "⭐ TENS" : h.kind).join(", ")}`);
   if (log.workout?.length) out.push(`🧘🏼‍♀️ Workout: ${log.workout.map((w) => `${w.kind} ${w.minutes}min`).join(", ")}`);
   if (log.weight != null) out.push(`⚖️ Weight: ${log.weight} kg`);
   if (log.temperature != null) out.push(`🌡️ Temp: ${log.temperature} °C`);

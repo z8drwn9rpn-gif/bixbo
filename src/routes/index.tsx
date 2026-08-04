@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Settings as SettingsIcon, Share2, Trash2 } from "lucide-react";
 
-import { Ico, PillIcon } from "@/components/icons/BixboIcons";
+import { Ico, IcoText, PillIcon } from "@/components/icons/BixboIcons";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { MonthCalendar, monthLabel } from "@/components/MonthCalendar";
@@ -569,7 +569,7 @@ function DayPreview({
                   {p.pcosSymptoms?.length ? (
                     <p className="text-xs text-muted-foreground">PCOS: {p.pcosSymptoms.join(", ")}</p>
                   ) : null}
-                  {p.mood?.length ? <p className="text-xs text-muted-foreground">Mood: {p.mood.join(", ")}</p> : null}
+                  {p.mood?.length ? <p className="text-xs text-muted-foreground">Mood: <IcoText text={p.mood.join(", ")} size={13} /></p> : null}
                   {p.stress != null && <p className="text-xs text-muted-foreground">Stress {p.stress}/10</p>}
                   {p.bodyBattery != null && <p className="text-xs text-muted-foreground">Battery {p.bodyBattery}/5</p>}
                   {p.note && <p className="mt-1 text-sm whitespace-pre-line">"{p.note}"</p>}
@@ -731,7 +731,7 @@ function DayPreview({
               <li key={s.id} className="flex items-start gap-2">
                 <button onClick={() => onEdit?.("sex", s)} className="flex-1 text-left">
                   {s.time} · {String(s.kind).replace(/_/g, " ")}
-                  {asArr(s.feelingAfter).length ? ` · ${asArr(s.feelingAfter).join(", ")}` : ""}
+                  {asArr(s.feelingAfter).length ? <> · <IcoText text={asArr(s.feelingAfter).join(", ")} size={13} /></> : ""}
                   {s.painful && s.painful !== "no" ? ` · painful ${s.painful}` : ""}
                   {s.note ? ` — ${s.note}` : ""}
                 </button>
@@ -758,7 +758,7 @@ function DayPreview({
             {log.heat.map((h) => (
               <li key={h.id} className="flex items-start gap-2">
                 <button onClick={() => onEdit?.("heat", h)} className="flex-1 text-left">
-                  <Ico e={h.kind === "heat" ? "♨️" : h.kind === "cold" ? "🧊" : "✨"} size={14} /> {h.start} ·{" "}
+                  <Ico e={h.kind === "heat" ? "♨️" : h.kind === "cold" ? "🧊" : "⭐"} size={14} /> {h.start} ·{" "}
                   {h.ongoing ? "ongoing" : `${h.minutes ?? 0} min`}
                   {h.note ? ` — ${h.note}` : ""}
                 </button>
@@ -789,17 +789,17 @@ function DayPreview({
               <li key={f.id} className="flex items-start gap-2">
                 <button onClick={() => onEdit?.("food", f)} className="flex-1 text-left">
                   <div>
-                    {f.time} · {f.what || (f.histamineFlare ? "(histamine flare)" : "—")}
+                    {f.time} · <IcoText text={f.what || (f.histamineFlare ? "(histamine flare)" : "—")} size={14} />
                     {f.highHistamine ? " · high histamine" : ""}
                     {f.hydrationMl != null ? ` · ${f.hydrationMl}ml` : ""}
                     {f.caffeineMg != null ? ` · ${f.caffeineMg}mg` : ""}
                     {f.alcoholDrinks != null ? ` · ${f.alcoholDrinks}` : ""}
                   </div>
                   {f.feelings.length ? (
-                    <div className="text-xs text-muted-foreground">Feel: {f.feelings.join(", ")}</div>
+                    <div className="text-xs text-muted-foreground">Feel: <IcoText text={f.feelings.join(", ")} size={13} /></div>
                   ) : null}
                   {f.symptomsAfter?.length ? (
-                    <div className="text-xs text-muted-foreground">After: {f.symptomsAfter.join(", ")}</div>
+                    <div className="text-xs text-muted-foreground">After: <IcoText text={f.symptomsAfter.join(", ")} size={13} /></div>
                   ) : null}
                   {f.histamineFlare ? (
                     <div className="text-xs text-destructive">
@@ -842,9 +842,9 @@ function DayPreview({
               return (
                 <li key={b.id} className="flex items-start gap-2">
                   <button onClick={() => onEdit?.("bowel", b)} className="flex-1 text-left">
-                    {b.time} · {label}
-                    {b.feelings?.length ? ` · ${b.feelings.join(", ")}` : ""}
-                    {b.symptoms?.length ? ` · ${b.symptoms.join(", ")}` : ""}
+                    {b.time} · <IcoText text={label} size={14} />
+                    {b.feelings?.length ? <> · <IcoText text={b.feelings.join(", ")} size={13} /></> : ""}
+                    {b.symptoms?.length ? <> · <IcoText text={b.symptoms.join(", ")} size={13} /></> : ""}
                     {b.note ? ` — ${b.note}` : ""}
                   </button>
                   <DeleteBtn
@@ -875,7 +875,7 @@ function DayPreview({
               <li key={w.id} className="flex items-start gap-2">
                 <button onClick={() => onEdit?.("workout", w)} className="flex-1 text-left">
                   <span className="font-medium">
-                    {w.time} · {w.kind} · {w.minutes} min
+                    {w.time} · <IcoText text={w.kind} size={14} /> · {w.minutes} min
                   </span>
                   {(w.distanceKm != null || w.elevationM != null || w.rpe != null || w.magnesiumBefore) && (
                     <span className="block text-xs text-muted-foreground">
@@ -908,7 +908,7 @@ function DayPreview({
                     </span>
                   )}
                   {asArr(w.feeling).length ? (
-                    <span className="block text-xs text-muted-foreground">{asArr(w.feeling).join(", ")}</span>
+                    <span className="block text-xs text-muted-foreground"><IcoText text={asArr(w.feeling).join(", ")} size={13} /></span>
                   ) : null}
                   {w.note ? (
                     <span className="block whitespace-pre-line text-xs text-muted-foreground">{w.note}</span>
@@ -941,11 +941,11 @@ function DayPreview({
             {log?.weight != null && <p className="text-sm">Weight: {log.weight} kg</p>}
             {log?.sleepHours != null && (
               <p className="text-sm">
-                Sleep: {log.sleepHours} h {asArr(log.sleepQuality).join(", ")}
+                Sleep: {log.sleepHours} h <IcoText text={asArr(log.sleepQuality).join(", ")} size={14} />
               </p>
             )}
             {asArr(log?.sleepQuality).length > 0 && log?.sleepHours == null && (
-              <p className="text-sm">Sleep quality: {asArr(log.sleepQuality).join(", ")}</p>
+              <p className="text-sm">Sleep quality: <IcoText text={asArr(log.sleepQuality).join(", ")} size={14} /></p>
             )}
             <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
           </button>
