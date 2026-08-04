@@ -113,31 +113,54 @@
 }
 
 .dark {
-  /* Olive dark palette */
-  --background: oklch(0.260 0.022 122.9);
-  --foreground: oklch(0.924 0.032 101.2);
-  --surface: oklch(0.303 0.027 123.0);
-  --surface-elevated: oklch(0.355 0.032 122.5);
+  /* Backgrounds */
+  --background: oklch(0.220 0.018 122.9);
+  --foreground: oklch(0.965 0.020 101.2);
+
+  --surface: oklch(0.270 0.022 123.0);
+  --surface-elevated: oklch(0.320 0.028 123.0);
   --tint: oklch(0.335 0.030 122.5);
 
-  --card: oklch(0.303 0.027 123.0);
-  --card-foreground: oklch(0.924 0.032 101.2);
-  --popover: oklch(0.303 0.027 123.0);
-  --popover-foreground: oklch(0.924 0.032 101.2);
+  /* Cards */
+  --card: oklch(0.270 0.022 123.0);
+  --card-foreground: oklch(0.965 0.020 101.2);
 
+  /* Popover */
+  --popover: oklch(0.270 0.022 123.0);
+  --popover-foreground: oklch(0.965 0.020 101.2);
+
+  /* Primary */
   --primary: oklch(0.742 0.123 122.9);
-  --primary-foreground: oklch(0.260 0.022 122.9);
+  --primary-foreground: oklch(0.220 0.018 122.9);
+
+  /* Secondary */
   --secondary: oklch(0.355 0.032 122.5);
-  --secondary-foreground: oklch(0.924 0.032 101.2);
-  --muted: oklch(0.335 0.030 122.5);
-  --muted-foreground: oklch(0.713 0.046 101.7);
-  --accent: oklch(0.400 0.038 120.0);
-  --accent-foreground: oklch(0.924 0.032 101.2);
+  --secondary-foreground: oklch(0.965 0.020 101.2);
+
+  /* Muted */
+  --muted: oklch(0.320 0.026 122.5);
+  --muted-foreground: oklch(0.820 0.030 101.7);
+
+  /* Accent */
+  --accent: oklch(0.400 0.038 120);
+  --accent-foreground: oklch(0.965 0.020 101.2);
+
+  /* Status */
   --destructive: oklch(0.65 0.22 25);
   --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.400 0.038 120.0);
-  --input: oklch(0.420 0.040 120.0);
+
+  /* Borders */
+  --border: oklch(0.350 0.030 120);
+  --input: oklch(0.350 0.030 120);
   --ring: oklch(0.742 0.123 122.9);
+
+  /* Period colors */
+  --period-spotting: oklch(0.75 0.07 275);
+  --period-light: oklch(0.65 0.15 275);
+  --period-medium: oklch(0.55 0.19 275);
+  --period-heavy: oklch(0.46 0.21 280);
+  --predicted: oklch(0.65 0.18 55);
+}
 
   /* Period intensity — kept in blueberry blues, brightened for dark bg */
   --period-spotting: oklch(0.75 0.07 275);
