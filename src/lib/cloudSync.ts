@@ -20,6 +20,7 @@ type PartnerSharedPayload = {
   dayLogs: BixboData["dayLogs"];
   meds: BixboData["meds"];
   medLog: BixboData["medLog"];
+  cycle: BixboData["cycle"];
 };
 
 /**
@@ -80,11 +81,13 @@ export async function unlinkPartner(): Promise<void> {
  * - dayNotes and notebook notes
  * - sex, food and bowel logs
  * - mood and energy logs
- * - period and cycle data
  * - workouts
  * - temperature, sleep and weight
  * - tasks, events, labs, documents and diagnoses
  * - settings, custom lists and deleted IDs
+ *
+ * Explicitly shared in addition to pain/panic/tetany/medication:
+ * - period logs and cycle settings used by the Blueberry calendar
  */
 function toPartnerSharedPayload(payload: BixboData): PartnerSharedPayload {
   const dayLogs: BixboData["dayLogs"] = {};
@@ -94,13 +97,17 @@ function toPartnerSharedPayload(payload: BixboData): PartnerSharedPayload {
     const panic = log.panic?.length ? log.panic : undefined;
     const tetany = log.tetany?.length ? log.tetany : undefined;
     const extraMeds = log.extraMeds?.length ? log.extraMeds : undefined;
+    const period = log.period || undefined;
+    const periodInfo = log.periodInfo?.level ? log.periodInfo : undefined;
 
-    if (pain || panic || tetany || extraMeds) {
+    if (pain || panic || tetany || extraMeds || period || periodInfo) {
       dayLogs[date] = {
         pain,
         panic,
         tetany,
         extraMeds,
+        period,
+        periodInfo,
       };
     }
   }
@@ -109,6 +116,7 @@ function toPartnerSharedPayload(payload: BixboData): PartnerSharedPayload {
     dayLogs,
     meds: payload.meds ?? [],
     medLog: payload.medLog ?? {},
+    cycle: payload.cycle,
   };
 }
 
@@ -116,12 +124,21 @@ function toPartnerView(shared: PartnerSharedPayload | null, name: string, gender
   const dayLogs: PartnerData["dayLogs"] = {};
 
   for (const [date, log] of Object.entries(shared?.dayLogs ?? {})) {
-    if (log?.pain?.length || log?.panic?.length || log?.tetany?.length || log?.extraMeds?.length) {
+    if (
+      log?.pain?.length ||
+      log?.panic?.length ||
+      log?.tetany?.length ||
+      log?.extraMeds?.length ||
+      log?.period ||
+      log?.periodInfo?.level
+    ) {
       dayLogs[date] = {
         pain: log.pain,
         panic: log.panic,
         tetany: log.tetany,
         extraMeds: log.extraMeds,
+        period: log.period,
+        periodInfo: log.periodInfo,
       };
     }
   }
@@ -134,6 +151,7 @@ function toPartnerView(shared: PartnerSharedPayload | null, name: string, gender
     dayNotes: {},
     meds: shared?.meds ?? [],
     medLog: shared?.medLog ?? {},
+    cycle: shared?.cycle,
     gender: safeGender,
     importedAt: Date.now(),
   };

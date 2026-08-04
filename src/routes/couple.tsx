@@ -498,27 +498,6 @@ function MedsList({
   );
 }
 
-function DayNotesList({ title, notes }: { title: string; notes: { dateKey: string; text: string; time?: string }[] }) {
-  if (!notes.length) return null;
-
-  return (
-    <div className="space-y-2">
-      <p className="text-xs uppercase tracking-wider text-muted-foreground">{title}</p>
-      <ul className="space-y-2">
-        {notes.map((note, index) => (
-          <li key={`${note.dateKey}-${note.time ?? index}-${index}`} className="rounded-2xl bg-tint p-3 text-sm">
-            <p className="text-xs text-muted-foreground">
-              {note.dateKey}
-              {note.time ? ` · ${note.time}` : ""}
-            </p>
-            <p className="mt-1 whitespace-pre-line">{note.text}</p>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
 /* -------------------------------------------------------------------------- */
 /* Pain chart — restored from the previous Couple page                        */
 /* -------------------------------------------------------------------------- */
