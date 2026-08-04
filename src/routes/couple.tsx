@@ -1171,31 +1171,6 @@ function CouplePage() {
               </div>
             </SectionCard>
 
-            {/* Smart insights */}
-            <SectionCard title="Shared insights" description="Simple observations calculated from the selected month.">
-              <div className="mt-4 space-y-2">
-                <Insight
-                  text={`You both logged symptoms on ${sharedSymptomDays} day${sharedSymptomDays === 1 ? "" : "s"} in ${selectedMonthLabel}.`}
-                />
-                <Insight
-                  text={
-                    myPainAverage != null && partnerPainAverage != null
-                      ? `Your average pain differs by ${Math.abs(myPainAverage - partnerPainAverage).toFixed(
-                          1,
-                        )} points.`
-                      : "More pain data is needed to compare your averages."
-                  }
-                />
-                <Insight
-                  text={
-                    myPanic.length === partnerPanic.length
-                      ? `You both logged the same number of panic attacks.`
-                      : `${myPanic.length > partnerPanic.length ? "You" : partnerName} logged more panic attacks in ${selectedMonthLabel}.`
-                  }
-                />
-              </div>
-            </SectionCard>
-
             {/* Partner sharing detail */}
             <SectionCard
               title={`${partnerName} — shared details`}
