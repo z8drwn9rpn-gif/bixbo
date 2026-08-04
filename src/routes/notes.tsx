@@ -172,7 +172,7 @@ function NoteEditor({
     if (!editorRef.current) return;
 
     const migratedContent = (note.content || "")
-      .replaceAll("#fef3c7", "#dfe6b8")
+      .replaceAll("#fef3c7", "#b4be80")
       .replaceAll("rgb(254, 243, 199)", "rgb(223, 230, 184)");
 
     if (editorRef.current.innerHTML !== migratedContent) {
@@ -222,8 +222,8 @@ function NoteEditor({
       if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
       const range = sel.getRangeAt(0);
       const span = document.createElement("mark");
-      span.style.background = "#dfe6b8";
-      span.style.color = "#39421f";
+      span.style.background = "#b4be80";
+      span.style.color = "#2f3518";
       span.style.padding = "0 2px";
       span.style.borderRadius = "2px";
       try {
