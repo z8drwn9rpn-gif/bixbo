@@ -986,26 +986,70 @@ function PainWizard({
       onTouchEnd={onTouchEnd}
     >
       <div className="flex items-center justify-between px-1 pb-2">
-        {quickSymptomUpdate ? (
-          <>
-            <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-              Quick symptom update
-            </span>
-            <span className="text-xs text-muted-foreground">New entry · {time}</span>
-          </>
-        ) : (
-          <>
-            <div className="flex gap-1">
-              {[0, 1, 2, 3, 4].map((i) => (
-                <span key={i} className={`h-1.5 w-6 rounded-full ${i <= step ? "bg-primary" : "bg-tint"}`} />
-              ))}
-            </div>
+  {quickSymptomUpdate ? (
+    <>
+      <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+        Quick symptom update
+      </span>
+
+      <span className="text-xs text-muted-foreground">
+        New entry · {time}
+      </span>
+    </>
+  ) : (
+    <>
+      <div className="flex gap-1">
+        {[0, 1, 2, 3, 4].map((i) => (
+          <span
+            key={i}
+            className={`h-1.5 w-6 rounded-full ${
+              i <= step ? "bg-primary" : "bg-tint"
+            }`}
+          />
+        ))}
+      </div>
+
+      <span className="text-xs text-muted-foreground">
+        {step + 1}/5
+      </span>
+    </>
+  )}
+</div>
             <span className="text-xs text-muted-foreground">{step + 1}/5</span>
           </>
         )}
       </div>
 
       {step === 0 && (
+        {latestPain && !initialEntry && (
+  <div className="w-full rounded-2xl border border-primary/30 bg-surface/90 p-3 shadow-sm">
+    <div className="mb-3 flex items-start justify-between gap-3">
+      <div>
+        <p className="text-sm font-semibold">
+          Add a later symptom update?
+        </p>
+
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          Last log: {latestPain.time} · pain {latestPain.score}/10.
+          Reuse its pain and symptom state, then change only what is
+          different now.
+        </p>
+      </div>
+
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10">
+        <Ico e="📝" size={22} />
+      </span>
+    </div>
+
+    <Button
+      type="button"
+      onClick={startSymptomUpdate}
+      className="w-full"
+    >
+      Add symptom update
+    </Button>
+  </div>
+)}
         <div className="flex flex-col items-center gap-4 py-6">
           {latestPain && !initialEntry && (
             <div className="w-full rounded-2xl border border-primary/30 bg-surface/90 p-3 shadow-sm">
