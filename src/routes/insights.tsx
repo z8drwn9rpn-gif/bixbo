@@ -1295,7 +1295,10 @@ function SleepChart({
                     setActive(active === i ? null : i);
                   }}
                   className="w-full rounded-t"
-                  style={{ height: `${Math.max(4, (b.value / 12) * 100)}%`, background: sleepColor(b.value) }}
+                  style={{
+                    height: `${Math.max(4, (b.value / 10) * 100)}%`,
+                    background: painColor(b.value),
+                  }}
                 />
               ) : (
                 <div key={i} className="h-[2px] w-full self-end rounded" style={{ backgroundColor: PAIN_SOFT }} />
