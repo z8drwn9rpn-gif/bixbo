@@ -569,7 +569,7 @@ function DayPreview({
                   {p.pcosSymptoms?.length ? (
                     <p className="text-xs text-muted-foreground">PCOS: {p.pcosSymptoms.join(", ")}</p>
                   ) : null}
-                  {p.mood?.length ? <p className="text-xs text-muted-foreground">Mood: {p.mood.join(", ")}</p> : null}
+                  {p.mood?.length ? <p className="text-xs text-muted-foreground">Mood: <IcoText text={p.mood.join(", ")} size={13} /></p> : null}
                   {p.stress != null && <p className="text-xs text-muted-foreground">Stress {p.stress}/10</p>}
                   {p.bodyBattery != null && <p className="text-xs text-muted-foreground">Battery {p.bodyBattery}/5</p>}
                   {p.note && <p className="mt-1 text-sm whitespace-pre-line">"{p.note}"</p>}
