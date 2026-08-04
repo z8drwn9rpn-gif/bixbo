@@ -2122,12 +2122,12 @@ function PeriodForm({
     }));
     onDone();
   };
-  const LEVELS: { v: PeriodLevel; label: string; color: string }[] = [
-    { v: "spotting", label: "Spotting", color: "var(--period-spotting)" },
-    { v: "light", label: "Light", color: "var(--period-light)" },
-    { v: "medium", label: "Medium", color: "var(--period-medium)" },
-    { v: "heavy", label: "Heavy", color: "var(--period-heavy)" },
-    { v: "veryheavy", label: "Very heavy", color: "var(--period-veryheavy)" },
+  const LEVELS: { v: Exclude<PeriodLevel, "">; color: string }[] = [
+    { v: "spotting", color: "var(--period-spotting)" },
+    { v: "light", color: "var(--period-light)" },
+    { v: "medium", color: "var(--period-medium)" },
+    { v: "heavy", color: "var(--period-heavy)" },
+    { v: "very-heavy", color: "var(--period-veryheavy)" },
   ];
   return (
     <div className="space-y-3">
@@ -2140,7 +2140,7 @@ function PeriodForm({
               className={`rounded-2xl p-2 text-[11px] font-medium ${level === L.v ? "text-white ring-2 ring-foreground" : "bg-tint text-foreground"}`}
               style={level === L.v ? { background: L.color } : undefined}
             >
-              {L.label}
+              {periodLabel(L.v)}
             </button>
           ))}
         </div>
