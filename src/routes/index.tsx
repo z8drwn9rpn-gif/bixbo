@@ -42,28 +42,39 @@ export const Route = createFileRoute("/")({
   component: HomePage,
 });
 
-function periodLabel(p?: PeriodLevel) {
-  if (!p) return null;
-  return { spotting: "Spotting", light: "Light", medium: "Medium", heavy: "Heavy", veryheavy: "Very heavy" }[p];
-}
-
 function HomePage() {
-  // no navigate needed
   const { data, update, hydrated } = useBixbo();
   const view = hydrated ? data : EMPTY;
 
-  const [monthAnchor, setMonthAnchor] = useState<Date>(() => new Date());
-  const [selected, setSelected] = useState<string>(todayKey());
+  /*
+   * Dátum vytvárame až v prehliadači.
+   * Server aj prvý klientsky render preto dostanú rovnaký obsah
+   * a nevznikne hydration mismatch.
+   */
+  const [monthAnchor, setMonthAnchor] = useState<Date | null>(null);
+  const [selected, setSelected] = useState("");
+
   const [logOpen, setLogOpen] = useState(false);
   const [quickCat, setQuickCat] = useState<string | undefined>();
-  const [editPain, setEditPain] = useState<import("@/lib/storage").PainEntry | undefined>();
+  const [editPain, setEditPain] =
+    useState<import("@/lib/storage").PainEntry | undefined>();
   const [editEntry, setEditEntry] = useState<unknown>(undefined);
+
   const openEdit = (cat: string, entry: unknown) => {
     setQuickCat(cat);
     setEditEntry(entry);
     setEditPain(undefined);
     setLogOpen(true);
   };
+
+  /*
+   * Inicializácia dátumu musí byť v effecte, pretože new Date()
+   * na serveri a v prehliadači môže vytvoriť odlišný render.
+   */
+  useEffect(() => {
+    setMonthAnchor(new Date());
+    setSelected(todayKey());
+  }, []);
 
   // Listen for "open log" from bottom nav
   useEffect(() => {
@@ -73,8 +84,12 @@ function HomePage() {
       setEditEntry(undefined);
       setLogOpen(true);
     };
+
     window.addEventListener("bixbo:open-log", h);
-    return () => window.removeEventListener("bixbo:open-log", h);
+
+    return () => {
+      window.removeEventListener("bixbo:open-log", h);
+    };
   }, []);
 
   // Meds reminders + period notification
@@ -82,31 +97,82 @@ function HomePage() {
     if (!hydrated || !view.settings.notifications) return;
     if (typeof window === "undefined" || !("Notification" in window)) return;
     if (Notification.permission !== "granted") return;
+
     const isMale = view.settings.gender === "male";
-    const int = setInterval(() => {
+
+    const int = window.setInterval(() => {
       const now = new Date();
-      const hhmm = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
+      const hhmm = `${String(now.getHours()).padStart(2, "0")}:${String(
+        now.getMinutes(),
+      ).padStart(2, "0")}`;
+
       view.meds.forEach((m) => {
         if (m.asNeeded) return;
+
         if (m.times.includes(hhmm)) {
           const taken = view.medLog[todayKey()]?.[`${m.id}@${hhmm}`];
-          if (!taken)
-            new Notification(`💊 ${m.name}`, { body: `Time for your ${hhmm} dose${m.dose ? ` (${m.dose})` : ""}` });
+
+          if (!taken) {
+            new Notification(`💊 ${m.name}`, {
+              body: `Time for your ${hhmm} dose${
+                m.dose ? ` (${m.dose})` : ""
+              }`,
+            });
+          }
         }
       });
-      // Period predict: 1 day before at 09:00 (skip in male mode)
-      if (!isMale && !view.settings.pregnantSince && hhmm === "09:00") {
+
+      // Period predict: 1 day before at 09:00
+      if (
+        !isMale &&
+        !view.settings.pregnantSince &&
+        hhmm === "09:00"
+      ) {
         const p = nextPredictedPeriod(view.cycle);
+
         if (p && daysBetween(todayKey(), p.start) === 1) {
-          new Notification("🫐 Period starts tomorrow", { body: "Get your supplies ready 💚" });
+          new Notification("🫐 Period starts tomorrow", {
+            body: "Get your supplies ready 💚",
+          });
         }
       }
     }, 60000);
-    return () => clearInterval(int);
-  }, [hydrated, view.meds, view.medLog, view.cycle, view.settings.notifications, view.settings.gender]);
 
-  const goToPrevMonth = () => setMonthAnchor((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1));
-  const goToNextMonth = () => setMonthAnchor((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1));
+    return () => {
+      window.clearInterval(int);
+    };
+  }, [
+    hydrated,
+    view.meds,
+    view.medLog,
+    view.cycle,
+    view.settings.notifications,
+    view.settings.gender,
+    view.settings.pregnantSince,
+  ]);
+
+  /*
+   * Tento return musí byť až po všetkých useEffect/useState hookoch.
+   * Hooky nesmú byť pod podmieneným returnom.
+   */
+  if (!monthAnchor || !selected) {
+    return <div className="h-[360px]" />;
+  }
+
+  const goToPrevMonth = () => {
+    setMonthAnchor(
+      (current) =>
+        new Date(current!.getFullYear(), current!.getMonth() - 1, 1),
+    );
+  };
+
+  const goToNextMonth = () => {
+    setMonthAnchor(
+      (current) =>
+        new Date(current!.getFullYear(), current!.getMonth() + 1, 1),
+    );
+  };
 
   return (
     <AppShell
@@ -114,26 +180,47 @@ function HomePage() {
       title={
         <div className="flex flex-col leading-tight">
           <span>BIXBO</span>
+
           <span className="text-xs font-normal text-muted-foreground">
-            Hi, {view.settings.userName?.trim() || "there"} <Ico e="❤️" size={12} />
+            Hi, {view.settings.userName?.trim() || "there"}{" "}
+            <Ico e="❤️" size={12} />
           </span>
         </div>
       }
       right={
-        <Link to="/settings" className="rounded-full p-2 hover:bg-tint" aria-label="Settings">
+        <Link
+          to="/settings"
+          className="rounded-full p-2 hover:bg-tint"
+          aria-label="Settings"
+        >
           <SettingsIcon className="h-5 w-5" />
         </Link>
       }
     >
       <div className="px-5 pt-0.5">
         <div className="flex items-center justify-between">
-          <button onClick={goToPrevMonth} aria-label="Previous month" className="rounded-full p-1.5 hover:bg-tint">
+          <button
+            type="button"
+            onClick={goToPrevMonth}
+            aria-label="Previous month"
+            className="rounded-full p-1.5 hover:bg-tint"
+          >
             <ChevronLeft className="h-5 w-5" />
           </button>
-          <h2 className="font-serif text-xl font-bold" suppressHydrationWarning>
+
+          <h2
+            className="font-serif text-xl font-bold"
+            suppressHydrationWarning
+          >
             {hydrated ? monthLabel(monthAnchor) : ""}
           </h2>
-          <button onClick={goToNextMonth} aria-label="Next month" className="rounded-full p-1.5 hover:bg-tint">
+
+          <button
+            type="button"
+            onClick={goToNextMonth}
+            aria-label="Next month"
+            className="rounded-full p-1.5 hover:bg-tint"
+          >
             <ChevronRight className="h-5 w-5" />
           </button>
         </div>
@@ -146,7 +233,16 @@ function HomePage() {
             data={view}
             selected={selected}
             onSelect={setSelected}
-            onSwipeMonth={(delta) => setMonthAnchor((d) => new Date(d.getFullYear(), d.getMonth() + delta, 1))}
+            onSwipeMonth={(delta) => {
+              setMonthAnchor(
+                (current) =>
+                  new Date(
+                    current!.getFullYear(),
+                    current!.getMonth() + delta,
+                    1,
+                  ),
+              );
+            }}
           />
         ) : (
           <div className="h-[360px]" />
@@ -155,11 +251,16 @@ function HomePage() {
 
       {(() => {
         const preg = pregnancyInfo(view.settings.pregnantSince);
+
         if (!preg) return null;
+
         return (
           <div className="mx-5 mt-3 rounded-full bg-tint px-4 py-2 text-center text-xs text-muted-foreground ring-1 ring-border">
-            🤰 Pregnancy · <span className="font-semibold text-foreground">Week {preg.week}</span> · Trimester{" "}
-            {preg.trimester}
+            🤰 Pregnancy ·{" "}
+            <span className="font-semibold text-foreground">
+              Week {preg.week}
+            </span>{" "}
+            · Trimester {preg.trimester}
           </div>
         );
       })()}
@@ -168,8 +269,15 @@ function HomePage() {
         !view.settings.pregnantSince &&
         (() => {
           const p = nextPredictedPeriod(view.cycle);
+
           if (!p) return null;
-          const fmt = (k: string) => fromKey(k).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+
+          const fmt = (k: string) =>
+            fromKey(k).toLocaleDateString("en-GB", {
+              day: "numeric",
+              month: "short",
+            });
+
           return (
             <div className="mx-5 mt-3 rounded-full bg-tint px-4 py-2 text-center text-xs text-muted-foreground ring-1 ring-border">
               Next period predicted:{" "}
@@ -185,16 +293,138 @@ function HomePage() {
         <div className="col-span-2">
           <MedsProgress data={view} />
         </div>
+
         <VitalTile
           emoji="😴"
           label="Sleep"
-          value={view.dayLogs[selected]?.sleepHours != null ? String(view.dayLogs[selected]!.sleepHours) : "—"}
+          value={
+            view.dayLogs[selected]?.sleepHours != null
+              ? String(view.dayLogs[selected]!.sleepHours)
+              : "—"
+          }
           onClick={() => {
             setQuickCat("temp");
             setEditEntry(undefined);
             setEditPain(undefined);
             setLogOpen(true);
           }}
+        />
+
+        <VitalTile
+          emoji="🌡️"
+          label="Temp"
+          value={
+            view.dayLogs[selected]?.temperature != null
+              ? String(view.dayLogs[selected]!.temperature)
+              : "—"
+          }
+          onClick={() => {
+            setQuickCat("temp");
+            setEditEntry(undefined);
+            setEditPain(undefined);
+            setLogOpen(true);
+          }}
+        />
+
+        <VitalTile
+          emoji="⚖️"
+          label="Weight"
+          value={
+            view.dayLogs[selected]?.weight != null
+              ? String(view.dayLogs[selected]!.weight)
+              : "—"
+          }
+          onClick={() => {
+            setQuickCat("temp");
+            setEditEntry(undefined);
+            setEditPain(undefined);
+            setLogOpen(true);
+          }}
+        />
+      </div>
+
+      {/* Quick log */}
+      <div className="[&_p.text-\[11px\].uppercase]:min-w-0 [&_p.text-\[11px\].uppercase]:flex-1 [&_p.text-\[11px\].uppercase]:truncate [&_p.text-\[11px\].uppercase]:text-[10px] [&_.mt-1.flex.flex-wrap.gap-1]:hidden">
+        <QuickTags
+          data={view}
+          update={update}
+          onLongPress={(cat: string) => {
+            const map: Record<string, string | undefined> = {
+              pain: "pain",
+              tetany: "tetany",
+              panic: "panic",
+              sex: "sex",
+              food: "food",
+              period: "period",
+              meds: "meds",
+              workout: "workout",
+              bowel: "bowel",
+              thermo: "heat",
+              headache: "pain",
+              hotFlashes: "pain",
+              sleep: "temp",
+            };
+
+            const target = map[cat];
+
+            if (!target) return;
+
+            setQuickCat(target);
+            setEditPain(undefined);
+            setEditEntry(undefined);
+            setLogOpen(true);
+          }}
+        />
+      </div>
+
+      <div className="mt-4 flex items-center justify-between px-5">
+        <h2 className="font-serif text-xl font-bold">
+          {selected === todayKey()
+            ? "Today"
+            : fromKey(selected).toLocaleDateString("en-GB", {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+              })}
+        </h2>
+
+        <ShareDayButton date={selected} view={view} />
+      </div>
+
+      <DayPreview
+        date={selected}
+        data={view}
+        update={update}
+        onEditPain={(p) => {
+          setEditPain(p);
+          setEditEntry(undefined);
+          setQuickCat("pain");
+          setLogOpen(true);
+        }}
+        onEdit={openEdit}
+      />
+
+      <LogSheet
+        open={logOpen}
+        onOpenChange={(open) => {
+          setLogOpen(open);
+
+          if (!open) {
+            setQuickCat(undefined);
+            setEditPain(undefined);
+            setEditEntry(undefined);
+          }
+        }}
+        date={selected}
+        data={view}
+        update={update}
+        initial={quickCat as never}
+        initialPain={editPain}
+        editEntry={editEntry}
+      />
+    </AppShell>
+  );
+}
         />
         <VitalTile
           emoji="🌡️"
