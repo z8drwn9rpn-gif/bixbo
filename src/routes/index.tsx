@@ -16,7 +16,6 @@ import {
   todayKey,
   PAIN_DESCRIPTIONS,
   painColor,
-  periodLabel as getPeriodLabel,
   BRISTOL,
   nextPredictedPeriod,
   pregnancyInfo,
@@ -460,6 +459,22 @@ function DayPreview({
   const missedList = scheduled.filter((x) => !x.taken && (date < k || (date === k && x.time < nowHHMM)));
   const extraMeds = log?.extraMeds ?? [];
   const isMale = data.settings.gender === "male";
+  const flowLabel = (level?: string | null): string => {
+    switch (level) {
+      case "spotting":
+        return "Spotting";
+      case "light":
+        return "Light";
+      case "medium":
+        return "Medium";
+      case "heavy":
+        return "Heavy";
+      case "very-heavy":
+        return "Very heavy";
+      default:
+        return "";
+    }
+  };
 
   const anything =
     !!(
