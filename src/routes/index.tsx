@@ -758,7 +758,7 @@ function DayPreview({
             {log.heat.map((h) => (
               <li key={h.id} className="flex items-start gap-2">
                 <button onClick={() => onEdit?.("heat", h)} className="flex-1 text-left">
-                  <Ico e={h.kind === "heat" ? "♨️" : h.kind === "cold" ? "🧊" : "✨"} size={14} /> {h.start} ·{" "}
+                  <Ico e={h.kind === "heat" ? "♨️" : h.kind === "cold" ? "🧊" : "⭐"} size={14} /> {h.start} ·{" "}
                   {h.ongoing ? "ongoing" : `${h.minutes ?? 0} min`}
                   {h.note ? ` — ${h.note}` : ""}
                 </button>
