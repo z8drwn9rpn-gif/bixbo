@@ -4,6 +4,7 @@ import { Activity, ChevronLeft, ChevronRight, HeartPulse, Pill, Sparkles, Trendi
 
 import { Ico } from "@/components/icons/BixboIcons";
 import { AppShell } from "@/components/AppShell";
+import { CHART_COLORS, CHART_TINTS } from "@/components/ui/chart";
 import {
   useBixbo,
   setPartner,
@@ -59,34 +60,34 @@ type ComparisonTone = "rose" | "purple" | "blue" | "emerald" | "amber";
 
 const TONES: Record<ComparisonTone, { solid: string; soft: string; border: string; text: string }> = {
   rose: {
-    solid: "#f43f5e",
-    soft: "rgba(244, 63, 94, 0.12)",
-    border: "rgba(244, 63, 94, 0.24)",
-    text: "#e11d48",
+    solid: CHART_COLORS.pain,
+    soft: CHART_TINTS.pain,
+    border: "rgba(111, 115, 0, 0.24)",
+    text: CHART_COLORS.pain,
   },
   purple: {
-    solid: "#8b5cf6",
-    soft: "rgba(139, 92, 246, 0.12)",
+    solid: CHART_COLORS.panic,
+    soft: CHART_TINTS.panic,
     border: "rgba(139, 92, 246, 0.24)",
-    text: "#7c3aed",
+    text: CHART_COLORS.panic,
   },
   blue: {
-    solid: "#3b82f6",
-    soft: "rgba(59, 130, 246, 0.12)",
+    solid: CHART_COLORS.tetany,
+    soft: CHART_TINTS.tetany,
     border: "rgba(59, 130, 246, 0.24)",
-    text: "#2563eb",
+    text: CHART_COLORS.tetany,
   },
   emerald: {
-    solid: "#10b981",
-    soft: "rgba(16, 185, 129, 0.12)",
+    solid: CHART_COLORS.medication,
+    soft: CHART_TINTS.medication,
     border: "rgba(16, 185, 129, 0.24)",
-    text: "#059669",
+    text: CHART_COLORS.medication,
   },
   amber: {
-    solid: "#f59e0b",
-    soft: "rgba(245, 158, 11, 0.12)",
+    solid: CHART_COLORS.histamine,
+    soft: CHART_TINTS.histamine,
     border: "rgba(245, 158, 11, 0.24)",
-    text: "#d97706",
+    text: CHART_COLORS.histamine,
   },
 };
 
@@ -332,7 +333,7 @@ function SimilarityCard({ score, partnerName }: { score: number; partnerName: st
         <div
           className="grid h-24 w-24 shrink-0 place-items-center rounded-full p-2"
           style={{
-            background: `conic-gradient(#8b5cf6 ${safeScore}%, rgba(139,92,246,.14) ${safeScore}% 100%)`,
+            background: `conic-gradient(${CHART_COLORS.panic} ${safeScore}%, ${CHART_TINTS.panic} ${safeScore}% 100%)`,
           }}
         >
           <div className="grid h-full w-full place-items-center rounded-full bg-surface">
@@ -706,7 +707,7 @@ function CouplePainChart({
 const PERIOD_COLORS: Record<string, string> = {
   spotting: "#F9C6D7",
   light: "#F19FBB",
-  medium: "#D96B94",
+  medium: CHART_COLORS.period,
   heavy: "#B33B6C",
   "very-heavy": "#7A1F45",
 };
@@ -838,7 +839,7 @@ function BlueberrySection({
           {cells.map((cell) => {
             const logged = loggedLevel(cell.key);
             const predictedDay = isPredicted(cell.key) && !logged;
-            const background = logged ? PERIOD_COLORS[logged] || "#D96B94" : undefined;
+            const background = logged ? PERIOD_COLORS[logged] || CHART_COLORS.period : undefined;
 
             return (
               <div
@@ -849,7 +850,7 @@ function BlueberrySection({
                 style={{
                   background,
                   color: logged ? "white" : undefined,
-                  border: predictedDay ? "1.5px dashed #D96B94" : undefined,
+                  border: predictedDay ? `1.5px dashed ${CHART_COLORS.period}` : undefined,
                 }}
               >
                 {cell.date.getDate()}
