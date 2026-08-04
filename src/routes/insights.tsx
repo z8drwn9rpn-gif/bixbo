@@ -306,21 +306,21 @@ function InsightsPage() {
                 <Ico e="🫐" size={16} /> Blueberry cycle
               </p>
               <div className="mt-3 grid grid-cols-2 gap-2">
-                <div className="rounded-2xl bg-tint p-3">
+                <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
                   <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Cycle length</p>
                   <p className="mt-1 font-serif text-xl">{cycleSummary.avg} days</p>
                 </div>
-                <div className="rounded-2xl bg-tint p-3">
+                <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
                   <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Period length</p>
                   <p className="mt-1 font-serif text-xl">{cycleSummary.periodLen} days</p>
                 </div>
-                <div className="rounded-2xl bg-tint p-3">
+                <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
                   <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Regularity</p>
                   <p className="mt-1 font-serif text-lg">
                     {cycleSummary.count >= 2 ? `Regular (${cycleSummary.avg}-day)` : "Not enough data"}
                   </p>
                 </div>
-                <div className="rounded-2xl bg-tint p-3">
+                <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
                   <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Last period</p>
                   <p className="mt-1 font-serif text-base">
                     {view.cycle.lastPeriodStart ?? "—"}
@@ -369,21 +369,21 @@ function InsightsPage() {
               <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
                 <p className="text-xs uppercase tracking-wider text-muted-foreground">Blueberry cycle</p>
                 <div className="mt-3 grid grid-cols-2 gap-2">
-                  <div className="rounded-2xl bg-tint p-3">
+                  <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
                     <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Cycle length</p>
                     <p className="mt-1 font-serif text-xl">{cycleSummary.avg} days</p>
                   </div>
-                  <div className="rounded-2xl bg-tint p-3">
+                  <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
                     <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Period length</p>
                     <p className="mt-1 font-serif text-xl">{cycleSummary.periodLen} days</p>
                   </div>
-                  <div className="rounded-2xl bg-tint p-3">
+                  <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
                     <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Regularity</p>
                     <p className="mt-1 font-serif text-lg">
                       {cycleSummary.count >= 2 ? `Regular (${cycleSummary.avg}-day)` : "Not enough data"}
                     </p>
                   </div>
-                  <div className="rounded-2xl bg-tint p-3">
+                  <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
                     <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Last period</p>
                     <p className="mt-1 font-serif text-base">
                       {view.cycle.lastPeriodStart ?? "—"}
