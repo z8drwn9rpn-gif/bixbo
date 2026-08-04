@@ -25,10 +25,10 @@ function iconsFor(log: DayLog | undefined, hasMed: boolean, _isMale: boolean): s
   const out: string[] = [];
   if (log?.sex?.some((e) => isIntercourseKind(e.kind))) out.push("❤️");
   if (hasMed) out.push("💊");
-  if (log?.bowel?.some((b) => b.bristol > 0)) out.push("💩");
+  if (log?.bowel?.some((b) => b.bristol > 0)) out.push("💩⚪");
   if (log?.heat?.some((h) => h.kind === "heat")) out.push("♨️");
   if (log?.heat?.some((h) => h.kind === "cold")) out.push("🧊");
-  if (log?.heat?.some((h) => h.kind === "tens")) out.push("✨");
+  if (log?.heat?.some((h) => h.kind === "tens")) out.push("⭐");
   if (log?.tetany?.length) out.push("⚡");
   if (log?.panic?.length) out.push("🫯");
   return out;
