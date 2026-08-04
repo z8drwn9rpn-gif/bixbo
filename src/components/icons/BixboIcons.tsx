@@ -43,7 +43,7 @@ export function ChiliIcon({ size = 24, ...rest }: IconProps) {
   const stemGradient = useSvgId();
   const shineGradient = useSvgId();
 
-  const mini = size <= 18;
+  const mini = size <= 20;
 
   if (mini) {
     return (
