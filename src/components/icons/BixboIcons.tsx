@@ -45,6 +45,63 @@ export function ChiliIcon({ size = 24, ...rest }: IconProps) {
 
   const mini = size <= 18;
 
+  if (mini) {
+    return (
+      <Svg size={size} {...rest}>
+        <g transform="rotate(-7 32 32)">
+          {/* Plné telo papričky — žiadna tenká šupka */}
+          <path
+            d="
+            M39 17
+            C47 17.5 52.5 23.5 51.5 32
+            C50.4 42.2 41.5 50.2 27.5 56
+            C20.2 59 13.2 58.3 9 55.4
+            C7.4 54.3 7.7 52 9.4 51.2
+            C10.5 50.6 11.7 51 13.2 51.4
+            C18.6 52.8 23.8 49.8 28.3 45
+            C33.6 39.3 36 32.9 35.3 27
+            C34.8 23.5 33.8 20.8 35.5 18.8
+            C36.4 17.7 37.7 17 39 17
+            Z
+          "
+            fill="#e63b35"
+            stroke="#a71924"
+            strokeWidth="1.8"
+            strokeLinejoin="round"
+          />
+
+          {/* Zelená stopka */}
+          <path
+            d="
+            M35.6 20
+            C34.1 15 35.4 9.7 39.7 6.2
+            C41.4 4.8 43.8 6.4 42.7 8.5
+            C41.3 11.3 41.5 14.3 43.3 16.7
+            C44.6 18.5 43.2 20.8 41.1 21.1
+            L38.6 21.3
+            C37.2 21.4 36.1 20.8 35.6 20
+            Z
+          "
+            fill="#4b9939"
+            stroke="#2f7130"
+            strokeWidth="1.5"
+            strokeLinejoin="round"
+          />
+
+          {/* Jednoduchý mini odlesk */}
+          <path
+            d="M40.5 22.5C44 23.5 46.2 26 46.5 29.5"
+            fill="none"
+            stroke="#ffffff"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            opacity="0.48"
+          />
+        </g>
+      </Svg>
+    );
+  }
+
   return (
     <Svg size={size} {...rest}>
       <defs>
