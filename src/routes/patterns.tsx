@@ -1,13 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-
-export const Route = createFileRoute("/patterns")({
-  component: PatternsPage,
-});
-
-function PatternsPage() {
-  return <></>;
-}
-import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState, type ReactNode } from "react";
 import {
   Activity,
