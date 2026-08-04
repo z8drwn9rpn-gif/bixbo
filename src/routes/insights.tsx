@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { CHART_COLORS } from "@/components/ui/chart";
 import { Ico } from "@/components/icons/BixboIcons";
 import {
   useBixbo,
@@ -52,8 +53,8 @@ function TapTooltip({ leftPct, text }: { leftPct: number; text: string }) {
   );
 }
 
-const TETANY_COLOR = "#8b5cf6";
-const PANIC_COLOR = "#f97316";
+const TETANY_COLOR = CHART_COLORS.tetany;
+const PANIC_COLOR = CHART_COLORS.panic;
 
 function timeBlockOf(time?: string): number | null {
   if (!time) return null;
@@ -167,7 +168,8 @@ function InsightsPage() {
 
   // Sleep
   const sleepSeries = days.map((k) => view.dayLogs[k]?.sleepHours);
-  const sleepColor = (h?: number) => (h == null ? "var(--tint)" : h < 8 ? "#ef4444" : h === 8 ? "#eab308" : "#22c55e");
+  const sleepColor = (h?: number) =>
+    h == null ? "var(--tint)" : h < 8 ? CHART_COLORS.headache : h === 8 ? CHART_COLORS.energy : CHART_COLORS.workout;
 
   // Hot flashes — collect per-day max intensity + distribution across levels 1–5
   const hfDescriptions: Record<number, string> = {
@@ -626,8 +628,8 @@ function BirthControlCalendar({ data, anchor }: { data: ReturnType<typeof useBix
             color = "var(--primary-foreground)";
             ring = "none";
           } else if (missed) {
-            ring = "2px solid #d94545";
-            color = "#d94545";
+            ring = `2px solid ${CHART_COLORS.headache}`;
+            color = CHART_COLORS.headache;
           }
 
           return (
@@ -656,7 +658,7 @@ function BirthControlCalendar({ data, anchor }: { data: ReturnType<typeof useBix
           <span className="h-2.5 w-2.5 rounded-full bg-primary" /> taken
         </span>
         <span className="flex items-center gap-1">
-          <span className="h-2.5 w-2.5 rounded-full border-2" style={{ borderColor: "#d94545" }} /> missed
+          <span className="h-2.5 w-2.5 rounded-full border-2" style={{ borderColor: CHART_COLORS.headache }} /> missed
         </span>
         <span className="flex items-center gap-1">
           <span className="h-2.5 w-2.5 rounded-full bg-tint ring-1 ring-border" /> inactive (white)
@@ -686,7 +688,11 @@ function BirthControlCalendar({ data, anchor }: { data: ReturnType<typeof useBix
             <button
               onClick={() => markMissed(sel)}
               className="flex-1 rounded-xl px-3 py-1.5 text-xs font-medium"
-              style={{ background: "transparent", border: "1.5px solid #d94545", color: "#d94545" }}
+              style={{
+                background: "transparent",
+                border: `1.5px solid ${CHART_COLORS.headache}`,
+                color: CHART_COLORS.headache,
+              }}
             >
               Mark missed
             </button>
@@ -809,9 +815,9 @@ function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) 
   const cellColor = (d: (typeof perDay)[number]) => {
     if (d.expected === 0) return "var(--tint)";
     const r = d.taken / d.expected;
-    if (r >= 1) return "#22c55e";
-    if (r > 0) return "#eab308";
-    return "#ef4444";
+    if (r >= 1) return CHART_COLORS.workout;
+    if (r > 0) return CHART_COLORS.energy;
+    return CHART_COLORS.headache;
   };
 
   const fmt = (k: string) => fromKey(k).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
@@ -868,13 +874,13 @@ function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) 
               </div>
               <div className="mt-2 flex gap-3 text-[10px] text-muted-foreground">
                 <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded" style={{ background: "#22c55e" }} /> full
+                  <span className="h-2 w-2 rounded" style={{ background: CHART_COLORS.workout }} /> full
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded" style={{ background: "#eab308" }} /> partial
+                  <span className="h-2 w-2 rounded" style={{ background: CHART_COLORS.energy }} /> partial
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded" style={{ background: "#ef4444" }} /> none
+                  <span className="h-2 w-2 rounded" style={{ background: CHART_COLORS.headache }} /> none
                 </span>
                 <span className="flex items-center gap-1">
                   <span className="h-2 w-2 rounded bg-tint" /> n/a
@@ -933,7 +939,8 @@ function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) 
               <p className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">Per medication</p>
               <ul className="space-y-2">
                 {perMed.map((m) => {
-                  const color = m.pct >= 90 ? "#22c55e" : m.pct >= 60 ? "#eab308" : "#ef4444";
+                  const color =
+                    m.pct >= 90 ? CHART_COLORS.workout : m.pct >= 60 ? CHART_COLORS.energy : CHART_COLORS.headache;
                   return (
                     <li key={m.id} className="flex items-center gap-2 text-xs">
                       <span className="w-32 shrink-0 truncate">
@@ -1222,7 +1229,8 @@ function SleepChart({
     });
   }
 
-  const sleepColor = (h?: number) => (h == null ? "var(--tint)" : h < 8 ? "#ef4444" : h === 8 ? "#eab308" : "#22c55e");
+  const sleepColor = (h?: number) =>
+    h == null ? "var(--tint)" : h < 8 ? CHART_COLORS.headache : h === 8 ? CHART_COLORS.energy : CHART_COLORS.workout;
   const yLabels = [12, 10, 8, 6, 4, 2, 0];
   const height = 140;
 
@@ -1432,7 +1440,7 @@ function BristolChart({ bowelCounts }: { bowelCounts: number[] }) {
       n: 0,
       label: "Type 0 — Mystery",
       sub: "Unknown / mixed",
-      color: "#64748b",
+      color: CHART_COLORS.weight,
       shape: "mystery",
     },
     ...BRISTOL,
