@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState, type ReactNode } from "react";
 import {
   Activity,
-  BatteryCharging,
   Brain,
   Dumbbell,
   Flame,
@@ -213,11 +212,6 @@ function Empty({ text = "Not enough data yet" }: { text?: string }) {
     </div>
   );
 }
-
-function SectionDivider() {
-  return <div className="my-4 h-px bg-border/70" />;
-}
-
 function formatMetricValue(value: number | null, decimals: number, unit: string) {
   if (value == null || !Number.isFinite(value)) return "—";
 
@@ -550,7 +544,9 @@ function PatternsPage() {
 
   const currentMonthDays = daysOfMonth(currentMonthPrefix).filter((day) => day <= todayKey());
 
-  const previousMonthDays = daysOfMonth(previousMonthPrefix);
+  const elapsedDayCount = currentMonthDays.length;
+
+  const previousMonthDays = daysOfMonth(previousMonthPrefix).slice(0, elapsedDayCount);
 
   function countAndAverage(
     days: string[],
@@ -909,11 +905,17 @@ function PatternsPage() {
     }
 
     if (trigger === "period") {
-      return Boolean(log.period);
+      return (
+        log.period === "spotting" ||
+        log.period === "light" ||
+        log.period === "medium" ||
+        log.period === "heavy" ||
+        log.period === "very-heavy"
+      );
     }
 
     if (trigger === "heavyPeriod") {
-      return log.period === "heavy" || log.period === "very-heavy" || log.period === "veryHeavy";
+      return log.period === "heavy" || log.period === "very Heavy";
     }
 
     if (trigger === "panic") {
@@ -1221,7 +1223,7 @@ function PatternsPage() {
 
         <Card
           title="Monthly comparison — panic & tetany"
-          description="This month is compared with the complete previous calendar month."
+          description="This month is compared with the same number of days from last month."
         >
           <div className="mt-4 space-y-3">
             <ComparisonMetric
