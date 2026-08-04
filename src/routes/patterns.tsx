@@ -1493,7 +1493,7 @@ function PatternsPage() {
                 max={10}
                 decimals={1}
                 unit="/10"
-                color="green"
+                color="rose"
                 higherIsWorse
                 previousLabel="Before"
                 currentLabel="After"
