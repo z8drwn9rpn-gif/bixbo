@@ -1221,7 +1221,7 @@ function ShareDayButton({ date, view }: { date: string; view: BixboData }) {
       lines.push("");
     }
     if (log.periodInfo?.level || log.period)
-      lines.push(`🫐 Period: ${getPeriodLabel(log.periodInfo?.level ?? log.period!)}`);
+      lines.push(`🫐 Period: ${flowLabel(log.periodInfo?.level ?? log.period!)}`);
     if (log.sleepHours != null) lines.push(`😴 Sleep: ${log.sleepHours}h ${asArr(log.sleepQuality).join(", ")}`);
     if (log.temperature != null) lines.push(`🌡️ Temp: ${log.temperature}°C`);
     if (log.weight != null) lines.push(`⚖️ Weight: ${log.weight}kg`);
