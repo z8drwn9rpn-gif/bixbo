@@ -401,16 +401,50 @@ function Chip({
 }
 function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave: () => void; disabled?: boolean }) {
   return (
-    <SheetFooter className="mt-4 gap-2 sm:flex-row">
-      <Button variant="outline" onClick={onCancel} className="flex-1">
-        Cancel
+   {quickSymptomUpdate && step === 3 ? (
+  <SheetFooter className="mt-4 flex-row gap-2">
+    <Button
+      variant="outline"
+      onClick={() => {
+        setQuickSymptomUpdate(false);
+        setCopiedFromTime(undefined);
+        setStep(0);
+      }}
+      className="flex-1"
+    >
+      Edit full log
+    </Button>
+
+    <Button onClick={save} className="flex-1">
+      Save update
+    </Button>
+  </SheetFooter>
+) : (
+  <SheetFooter className="mt-4 flex-row gap-2">
+    {step > 0 && (
+      <Button
+        variant="outline"
+        onClick={() => setStep(step - 1)}
+        className="flex-1"
+      >
+        Back
       </Button>
-      <Button onClick={onSave} disabled={disabled} className="flex-1">
+    )}
+
+    {step < 4 ? (
+      <Button
+        onClick={() => setStep(step + 1)}
+        className="flex-1"
+      >
+        Next
+      </Button>
+    ) : (
+      <Button onClick={save} className="flex-1">
         Save
       </Button>
-    </SheetFooter>
-  );
-}
+    )}
+  </SheetFooter>
+)}
 function CustomChipList({
   base,
   custom,
