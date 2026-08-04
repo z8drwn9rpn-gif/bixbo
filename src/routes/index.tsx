@@ -1187,6 +1187,24 @@ function Card({ title, icon, children }: { title: string; icon: string; children
 }
 
 function ShareDayButton({ date, view }: { date: string; view: BixboData }) {
+  function ShareDayButton({ date, view }: { date: string; view: BixboData }) {
+  const flowLabel = (level?: string | null): string => {
+    switch (level) {
+      case "spotting":
+        return "Spotting";
+      case "light":
+        return "Light";
+      case "medium":
+        return "Medium";
+      case "heavy":
+        return "Heavy";
+      case "very-heavy":
+        return "Very heavy";
+      default:
+        return "";
+    }
+  };
+    
   const share = async () => {
     const log = view.dayLogs[date] ?? {};
     const dateLabel = fromKey(date).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
