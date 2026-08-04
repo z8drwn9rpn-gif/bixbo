@@ -1595,18 +1595,150 @@ function SymptomLoadHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo
 
   const active_ = active ? summaryFor(active) : null;
 
-  return (
+    return (
     <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
-      <p className="text-xs uppercase tracking-wider text-muted-foreground">Symptom Load — {year}</p>
-      <section>
-  <div className="relative mt-3 overflow-x-auto">
-      heatmap
-  </div>
+      <p className="text-xs uppercase tracking-wider text-muted-foreground">
+        Symptom Load — {year}
+      </p>
 
-  {active && (
-      details
-  )}
-</section>
+      {/* Horizontálne sa posúva iba heatmapa. */}
+      <div className="mt-3 overflow-x-auto">
+        <div
+          className="grid w-max grid-flow-col gap-[3px]"
+          style={{
+            gridTemplateRows: "repeat(7, 10px)",
+            gridAutoColumns: "10px",
+          }}
+        >
+          {dayInfo.map((c, i) => {
+            if (!c.key) {
+              return (
+                <div
+                  key={`empty-${i}`}
+                  className="h-[10px] w-[10px]"
+                />
+              );
+            }
+
+            const summary = summaryFor(c.key);
+            const load = summary?.load ?? 0;
+            const isActive = active === c.key;
+
+            return (
+              <button
+                key={c.key}
+                type="button"
+                aria-label={`${fmtTapDay(c.key)} symptom load`}
+                aria-pressed={isActive}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActive((current) =>
+                    current === c.key ? null : c.key,
+                  );
+                }}
+                className={`h-[10px] w-[10px] rounded-[2px] ${
+                  isActive ? "ring-2 ring-primary" : ""
+                }`}
+                style={{
+                  background: colorFor(load),
+                }}
+              />
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Detail a poznámky sú mimo scrollovacieho kontajnera. */}
+      {active && (
+        <div
+          className="mt-3 min-w-0 max-w-full rounded-2xl bg-tint p-3 text-xs"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <p className="font-medium">{fmtTapDay(active)}</p>
+
+          {active_ ? (
+            <div className="mt-1 text-muted-foreground">
+              <p>
+                Pain:{" "}
+                {active_.pain != null
+                  ? active_.pain.toFixed(1)
+                  : "—"}
+              </p>
+
+              {active_.tetany > 0 && (
+                <p>Tetany: {active_.tetany}×</p>
+              )}
+
+              {active_.panic > 0 && (
+                <p>Panic: {active_.panic}×</p>
+              )}
+
+              {active_.hf > 0 && (
+                <p>Hot flashes: {active_.hf}×</p>
+              )}
+
+              {active_.headache > 0 && (
+                <p>Headache: {active_.headache}×</p>
+              )}
+
+              {active_.nausea > 0 && (
+                <p>Nausea: {active_.nausea}×</p>
+              )}
+
+              {active_.bowel > 0 && (
+                <p>Bowel: {active_.bowel}×</p>
+              )}
+            </div>
+          ) : (
+            <p className="mt-1 text-muted-foreground">
+              No symptoms logged.
+            </p>
+          )}
+
+          {activeNotes.length > 0 ? (
+            <div className="mt-2 min-w-0 border-t border-border pt-2">
+              <p className="font-medium">Notes</p>
+
+              {activeNotes.map((note, index) => (
+                <p
+                  key={`${active}-${index}`}
+                  className="mt-1 max-w-full whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-muted-foreground"
+                >
+                  {note}
+                </p>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-2 text-muted-foreground">
+              No notes for this day.
+            </p>
+          )}
+        </div>
+      )}
+
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
+        <span>No symptoms</span>
+
+        <span className="flex gap-[2px]">
+          {[0, 0.25, 0.5, 0.75, 1].map((t) => (
+            <span
+              key={t}
+              className="h-[10px] w-[10px] rounded-[2px]"
+              style={{
+                background:
+                  t === 0
+                    ? "var(--tint)"
+                    : `hsl(6 ${20 + t * 60}% ${88 - t * 48}%)`,
+              }}
+            />
+          ))}
+        </span>
+
+        <span>High load</span>
+      </div>
+    </section>
+  );
+}
         <div className="grid grid-flow-col gap-[3px]" style={{ gridTemplateRows: "repeat(7, minmax(0, 1fr))" }}>
           {dayInfo.map((c, i) => {
             if (!c.key) return <div key={i} className="h-[10px] w-[10px]" />;
