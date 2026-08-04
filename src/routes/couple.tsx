@@ -2,23 +2,27 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Activity, ChevronLeft, ChevronRight, HeartPulse, Pill, Sparkles, TrendingUp, Users } from "lucide-react";
 
-import { Ico } from "@/components/icons/BixboIcons";
 import { AppShell } from "@/components/AppShell";
+import { Ico } from "@/components/icons/BixboIcons";
 import { CHART_COLORS, CHART_TINTS } from "@/components/ui/chart";
 import {
-  useBixbo,
-  setPartner,
   EMPTY,
-  fromKey,
-  painColor,
   PAIN_DESCRIPTIONS,
   avgDayPain,
-  type PainEntry,
-  type PanicAttack,
-  type TetanyEpisode,
+  daysBetween,
+  fromKey,
+  nextPredictedPeriod,
+  painColor,
+  predictPeriods,
+  setPartner,
+  todayKey,
+  useBixbo,
   type ExtraMed,
   type Med,
+  type PainEntry,
+  type PanicAttack,
   type PartnerData,
+  type TetanyEpisode,
 } from "@/lib/storage";
 import { fetchPartner } from "@/lib/cloudSync";
 
@@ -28,12 +32,12 @@ export const Route = createFileRoute("/couple")({
       { title: "Bixbo Couple" },
       {
         name: "description",
-        content: "Share health logs and compare pain, tetany, panic and medication patterns with your partner.",
+        content: "Share and compare pain, tetany, panic and medication patterns with your partner.",
       },
       { property: "og:title", content: "Bixbo Couple" },
       {
         property: "og:description",
-        content: "Partner sharing, health comparison and shared symptom insights.",
+        content: "Private partner sharing for selected health categories.",
       },
     ],
   }),
@@ -41,7 +45,7 @@ export const Route = createFileRoute("/couple")({
 });
 
 /* -------------------------------------------------------------------------- */
-/* Shared helpers                                                             */
+/* Types and helpers                                                          */
 /* -------------------------------------------------------------------------- */
 
 type ComparableDayLog = {
@@ -51,44 +55,40 @@ type ComparableDayLog = {
   extraMeds?: ExtraMed[];
 };
 
-type ComparisonTone = "rose" | "green" | "purple" | "blue" | "emerald" | "amber";
+type ComparisonTone = "rose" | "green" | "purple" | "blue" | "emerald";
 
-const TONES: Record<ComparisonTone, { solid: string; soft: string; border: string; text: string }> = {
+const TONES: Record<
+  ComparisonTone,
+  {
+    solid: string;
+    soft: string;
+    text: string;
+  }
+> = {
   rose: {
     solid: "#ef4770",
     soft: "rgba(239, 71, 112, 0.10)",
-    border: "rgba(239, 71, 112, 0.24)",
     text: "#df315d",
   },
   green: {
     solid: "#6f9d16",
     soft: "rgba(111, 157, 22, 0.10)",
-    border: "rgba(111, 157, 22, 0.24)",
     text: "#5f8911",
   },
   purple: {
     solid: CHART_COLORS.panic,
     soft: CHART_TINTS.panic,
-    border: "rgba(139, 92, 246, 0.24)",
     text: CHART_COLORS.panic,
   },
   blue: {
     solid: CHART_COLORS.tetany,
     soft: CHART_TINTS.tetany,
-    border: "rgba(59, 130, 246, 0.24)",
     text: CHART_COLORS.tetany,
   },
   emerald: {
     solid: CHART_COLORS.medication,
     soft: CHART_TINTS.medication,
-    border: "rgba(16, 185, 129, 0.24)",
     text: CHART_COLORS.medication,
-  },
-  amber: {
-    solid: CHART_COLORS.histamine,
-    soft: CHART_TINTS.histamine,
-    border: "rgba(245, 158, 11, 0.24)",
-    text: CHART_COLORS.histamine,
   },
 };
 
@@ -128,6 +128,7 @@ function daysForMonth(date: Date) {
   const prefix = monthPrefix(date);
   const today = new Date();
   const current = isSameMonth(date, today);
+
   const totalDays = current ? today.getDate() : new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
 
   return Array.from({ length: totalDays }, (_, index) => {
@@ -148,7 +149,9 @@ function countTakenScheduledDoses(days: string[], meds: Med[], medLog: Record<st
       .filter((med) => !med.asNeeded)
       .forEach((med) => {
         med.times.forEach((time) => {
-          if (medLog[day]?.[`${med.id}@${time}`]) taken += 1;
+          if (medLog[day]?.[`${med.id}@${time}`]) {
+            taken += 1;
+          }
         });
       });
   });
@@ -157,18 +160,21 @@ function countTakenScheduledDoses(days: string[], meds: Med[], medLog: Record<st
 }
 
 function formatValue(value: number | null, decimals = 0, unit = "") {
-  return value == null || !Number.isFinite(value) ? "—" : `${value.toFixed(decimals)}${unit}`;
+  if (value == null || !Number.isFinite(value)) return "—";
+  return `${value.toFixed(decimals)}${unit}`;
 }
 
 /* -------------------------------------------------------------------------- */
-/* Comparison UI                                                              */
+/* Shared UI                                                                  */
 /* -------------------------------------------------------------------------- */
 
 function SectionCard({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
   return (
     <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
       <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{title}</h2>
-      {description && <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{description}</p>}
+
+      {description ? <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{description}</p> : null}
+
       {children}
     </section>
   );
@@ -193,12 +199,18 @@ function StatCard({
     <article className="rounded-3xl bg-tint p-4 ring-1 ring-border">
       <div
         className="grid h-9 w-9 place-items-center rounded-2xl"
-        style={{ color: palette.text, backgroundColor: "var(--surface)" }}
+        style={{
+          color: palette.text,
+          backgroundColor: "var(--surface)",
+        }}
       >
         {icon}
       </div>
+
       <p className="mt-3 text-[11px] font-medium text-muted-foreground">{label}</p>
+
       <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">{value}</p>
+
       <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">{detail}</p>
     </article>
   );
@@ -230,11 +242,13 @@ function ComparisonBarCard({
   icon: ReactNode;
 }) {
   const palette = TONES[tone];
+
   const calculatedMax =
     max ??
     Math.max(1, ...[mine, theirs].filter((value): value is number => value != null).map((value) => Math.abs(value)));
 
   const minePercent = mine == null ? 0 : clampPercent((Math.max(0, mine) / calculatedMax) * 100);
+
   const theirsPercent = theirs == null ? 0 : clampPercent((Math.max(0, theirs) / calculatedMax) * 100);
 
   return (
@@ -249,8 +263,10 @@ function ComparisonBarCard({
         >
           {icon}
         </span>
+
         <div className="min-w-0 flex-1">
           <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+
           <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">{subtitle}</p>
         </div>
       </div>
@@ -264,6 +280,7 @@ function ComparisonBarCard({
           decimals={decimals}
           unit={unit}
         />
+
         <ComparisonRow
           label={partnerLabel}
           value={theirs}
@@ -299,10 +316,12 @@ function ComparisonRow({
     <div>
       <div className="flex items-center justify-between gap-3">
         <span className="truncate text-[11px] font-medium text-muted-foreground">{label}</span>
+
         <span className="shrink-0 text-sm font-bold tabular-nums text-foreground">
           {formatValue(value, decimals, unit)}
         </span>
       </div>
+
       <div className="mt-1.5 h-3 overflow-hidden rounded-full bg-surface/70 ring-1 ring-border/40">
         <div
           className="h-full rounded-full transition-[width] duration-500"
@@ -334,6 +353,7 @@ function SimilarityCard({ score, partnerName }: { score: number; partnerName: st
           <div className="grid h-full w-full place-items-center rounded-full bg-surface">
             <div className="text-center">
               <p className="text-2xl font-bold tabular-nums">{safeScore.toFixed(0)}%</p>
+
               <p className="text-[9px] uppercase tracking-wider text-muted-foreground">similarity</p>
             </div>
           </div>
@@ -341,9 +361,11 @@ function SimilarityCard({ score, partnerName }: { score: number; partnerName: st
 
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Health similarity</p>
+
           <h2 className="mt-1 font-serif text-xl font-semibold">You + {partnerName}</h2>
+
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-            Based on shared symptom days, pain averages, panic and tetany during the selected month.
+            Based only on shared pain, panic and tetany data during the selected month.
           </p>
         </div>
       </div>
@@ -352,17 +374,18 @@ function SimilarityCard({ score, partnerName }: { score: number; partnerName: st
 }
 
 /* -------------------------------------------------------------------------- */
-/* Existing detail lists                                                      */
+/* Detail lists                                                               */
 /* -------------------------------------------------------------------------- */
 
 function PainList({ title, entries }: { title: string; entries: (PainEntry & { dateKey: string })[] }) {
-  if (entries.length === 0) {
+  if (!entries.length) {
     return <p className="text-xs text-muted-foreground">No pain entries yet.</p>;
   }
 
   return (
     <div className="space-y-3">
       <p className="text-xs uppercase tracking-wider text-muted-foreground">{title}</p>
+
       <ul className="space-y-2">
         {entries.map((pain) => (
           <li key={`${pain.dateKey}-${pain.id}`} className="flex items-start gap-3 rounded-2xl bg-tint p-3">
@@ -377,17 +400,32 @@ function PainList({ title, entries }: { title: string; entries: (PainEntry & { d
               <p className="text-xs text-muted-foreground">
                 {pain.dateKey} · {pain.time} · {PAIN_DESCRIPTIONS[Math.round(pain.score)]}
               </p>
+
               {pain.parts?.length ? <p className="text-sm">{pain.parts.join(", ")}</p> : null}
+
               {pain.quality?.length ? <p className="text-xs text-muted-foreground">{pain.quality.join(", ")}</p> : null}
+
               {pain.symptoms?.length ? (
                 <p className="text-xs text-muted-foreground">+ {pain.symptoms.join(", ")}</p>
               ) : null}
+
               {pain.hotFlashes != null ? (
-                <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Ico e="🥵" size={16} /> Hot flashes {pain.hotFlashes}/5
+                <p className="text-xs text-muted-foreground">Hot flashes {pain.hotFlashes}/5</p>
+              ) : null}
+
+              {pain.headache ? (
+                <p className="text-xs text-muted-foreground">
+                  Headache
+                  {pain.headacheIntensity != null ? ` ${pain.headacheIntensity}/10` : ""}
                 </p>
               ) : null}
-              {pain.note && <p className="mt-1 whitespace-pre-line text-sm">"{pain.note}"</p>}
+
+              {pain.nausea ? (
+                <p className="text-xs text-muted-foreground">
+                  Nausea
+                  {pain.nauseaSeverity != null ? ` ${pain.nauseaSeverity}/10` : ""}
+                </p>
+              ) : null}
             </div>
           </li>
         ))}
@@ -397,23 +435,35 @@ function PainList({ title, entries }: { title: string; entries: (PainEntry & { d
 }
 
 function TetanyList({ title, entries }: { title: string; entries: (TetanyEpisode & { dateKey: string })[] }) {
-  if (!entries.length) return null;
+  if (!entries.length) {
+    return <p className="text-xs text-muted-foreground">No tetany episodes yet.</p>;
+  }
 
   return (
     <div className="space-y-2">
       <p className="text-xs uppercase tracking-wider text-muted-foreground">{title}</p>
+
       <ul className="space-y-2">
         {entries.map((episode) => (
           <li key={`${episode.dateKey}-${episode.id}`} className="rounded-2xl bg-tint p-3 text-sm">
             <p className="text-xs text-muted-foreground">
               {episode.dateKey} · {episode.time} · intensity {episode.intensity}/5 ·{" "}
-              {episode.minutes == null ? " ongoing" : ` ${episode.minutes} min`}
+              {episode.minutes == null ? "ongoing" : `${episode.minutes} min`}
             </p>
+
             {episode.types?.length ? <p>{episode.types.join(", ")}</p> : null}
+
             {episode.location?.length ? (
               <p className="text-xs text-muted-foreground">Location: {episode.location.join(", ")}</p>
             ) : null}
-            {episode.note && <p className="mt-1 whitespace-pre-line">"{episode.note}"</p>}
+
+            {episode.triggers?.length ? (
+              <p className="text-xs text-muted-foreground">Triggers: {episode.triggers.join(", ")}</p>
+            ) : null}
+
+            {episode.helped?.length ? (
+              <p className="text-xs text-muted-foreground">Helped by: {episode.helped.join(", ")}</p>
+            ) : null}
           </li>
         ))}
       </ul>
@@ -422,20 +472,35 @@ function TetanyList({ title, entries }: { title: string; entries: (TetanyEpisode
 }
 
 function PanicList({ title, entries }: { title: string; entries: (PanicAttack & { dateKey: string })[] }) {
-  if (!entries.length) return null;
+  if (!entries.length) {
+    return <p className="text-xs text-muted-foreground">No panic attacks yet.</p>;
+  }
 
   return (
     <div className="space-y-2">
       <p className="text-xs uppercase tracking-wider text-muted-foreground">{title}</p>
+
       <ul className="space-y-2">
         {entries.map((attack) => (
           <li key={`${attack.dateKey}-${attack.id}`} className="rounded-2xl bg-tint p-3 text-sm">
             <p className="text-xs text-muted-foreground">
               {attack.dateKey} · {attack.time} · intensity {attack.intensity}/10 ·{" "}
-              {attack.minutes == null ? " ongoing" : ` ${attack.minutes} min`}
+              {attack.minutes == null ? "ongoing" : `${attack.minutes} min`}
             </p>
-            {attack.trigger && <p>Trigger: {attack.trigger}</p>}
-            {attack.note && <p className="mt-1 whitespace-pre-line">"{attack.note}"</p>}
+
+            {attack.physical?.length ? (
+              <p className="text-xs text-muted-foreground">Physical: {attack.physical.join(", ")}</p>
+            ) : null}
+
+            {attack.cognitive?.length ? (
+              <p className="text-xs text-muted-foreground">Cognitive: {attack.cognitive.join(", ")}</p>
+            ) : null}
+
+            {attack.trigger ? <p className="text-xs text-muted-foreground">Trigger: {attack.trigger}</p> : null}
+
+            {attack.helped?.length ? (
+              <p className="text-xs text-muted-foreground">Helped by: {attack.helped.join(", ")}</p>
+            ) : null}
           </li>
         ))}
       </ul>
@@ -462,16 +527,18 @@ function MedsList({
   );
 
   if (!nonEmpty.length) {
-    return <p className="text-xs text-muted-foreground">No meds logged yet.</p>;
+    return <p className="text-xs text-muted-foreground">No medication logged yet.</p>;
   }
 
   return (
     <div className="space-y-2">
       <p className="text-xs uppercase tracking-wider text-muted-foreground">{title}</p>
+
       <ul className="space-y-2">
         {nonEmpty.slice(0, 14).map((day) => (
           <li key={day.dateKey} className="rounded-2xl bg-tint p-3 text-sm">
             <p className="mb-1 text-xs text-muted-foreground">{day.dateKey}</p>
+
             {day.meds.map((med) =>
               med.asNeeded
                 ? null
@@ -484,11 +551,11 @@ function MedsList({
                       </p>
                     )),
             )}
+
             {day.extra.map((extra) => (
               <p key={extra.id}>
                 • {extra.time} — {extra.name}
                 {extra.dose ? ` (${extra.dose})` : ""}
-                {extra.note ? ` — ${extra.note}` : ""}
               </p>
             ))}
           </li>
@@ -499,7 +566,7 @@ function MedsList({
 }
 
 /* -------------------------------------------------------------------------- */
-/* Pain chart — restored from the previous Couple page                        */
+/* Pain comparison chart                                                      */
 /* -------------------------------------------------------------------------- */
 
 function CouplePainChart({
@@ -538,7 +605,10 @@ function CouplePainChart({
   return (
     <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
       <div>
-        <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{`Pain — ${periodLabel}`}</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          {`Pain — ${periodLabel}`}
+        </h2>
+
         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
           Daily average pain. Solid bars are yours; striped bars belong to {partnerName}.
         </p>
@@ -561,6 +631,7 @@ function CouplePainChart({
               patternTransform="rotate(45)"
             >
               <rect width="4" height="4" fill="currentColor" opacity="0.35" />
+
               <line x1="0" y1="0" x2="0" y2="4" stroke="currentColor" strokeWidth="2" />
             </pattern>
           </defs>
@@ -576,6 +647,7 @@ function CouplePainChart({
                 strokeDasharray="3 3"
                 strokeWidth="1"
               />
+
               <text x={left - 4} y={yFor(tick) + 3} textAnchor="end" fontSize="9" fill="var(--muted-foreground)">
                 {tick}
               </text>
@@ -587,13 +659,20 @@ function CouplePainChart({
             const centerX = left + slot * index + slot / 2;
             const myValue = mySeries[index];
             const partnerValue = partnerSeries[index];
+
             const myColor = myValue != null ? painColor(myValue) : "transparent";
+
             const partnerColor = partnerValue != null ? painColor(partnerValue) : "transparent";
-            const weekday = date.toLocaleDateString("en-US", { weekday: "short" }).slice(0, 2);
+
+            const weekday = date
+              .toLocaleDateString("en-US", {
+                weekday: "short",
+              })
+              .slice(0, 2);
 
             return (
               <g key={day}>
-                {myValue != null && (
+                {myValue != null ? (
                   <rect
                     x={centerX - barWidth - 1}
                     y={yFor(myValue)}
@@ -604,9 +683,9 @@ function CouplePainChart({
                   >
                     <title>{`You · ${day}: ${myValue.toFixed(1)}/10`}</title>
                   </rect>
-                )}
+                ) : null}
 
-                {partnerValue != null && (
+                {partnerValue != null ? (
                   <g style={{ color: partnerColor }}>
                     <rect
                       x={centerX + 1}
@@ -617,6 +696,7 @@ function CouplePainChart({
                       rx="2"
                       opacity="0.35"
                     />
+
                     <rect
                       x={centerX + 1}
                       y={yFor(partnerValue)}
@@ -627,6 +707,7 @@ function CouplePainChart({
                     >
                       <title>{`${partnerName} · ${day}: ${partnerValue.toFixed(1)}/10`}</title>
                     </rect>
+
                     <rect
                       x={centerX + 1}
                       y={yFor(partnerValue)}
@@ -638,11 +719,12 @@ function CouplePainChart({
                       rx="2"
                     />
                   </g>
-                )}
+                ) : null}
 
                 <text x={centerX} y={height - 22} textAnchor="middle" fontSize="8" fill="var(--muted-foreground)">
                   {weekday}
                 </text>
+
                 <text x={centerX} y={height - 12} textAnchor="middle" fontSize="8" fill="var(--muted-foreground)">
                   {date.getDate()}
                 </text>
@@ -701,16 +783,18 @@ function BlueberrySection({
 
   if (!cycle?.lastPeriodStart) {
     const anyPeriod = Object.values(partner.dayLogs).some((log) => log.period || log.periodInfo?.level);
+
     if (!anyPeriod) return null;
   }
 
-  const today = new Date();
   const monthStart = startOfMonth(selectedMonth);
   const rangeStart = new Date(monthStart);
   rangeStart.setDate(rangeStart.getDate() - 14);
+
   const rangeEnd = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0);
 
   const predicted = cycle ? predictPeriods(cycle, rangeStart, rangeEnd) : [];
+
   const next = cycle && isCurrentMonth ? nextPredictedPeriod(cycle) : null;
 
   const first = startOfMonth(selectedMonth);
@@ -721,10 +805,11 @@ function BlueberrySection({
   const cells = Array.from({ length: 42 }, (_, index) => {
     const date = new Date(gridStart);
     date.setDate(gridStart.getDate() + index);
-    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
-      2,
-      "0",
-    )}-${String(date.getDate()).padStart(2, "0")}`;
+
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+      date.getDate(),
+    ).padStart(2, "0")}`;
+
     return {
       key,
       date,
@@ -732,8 +817,10 @@ function BlueberrySection({
     };
   });
 
-  const todayK = todayKey();
+  const today = todayKey();
+
   const isPredicted = (key: string) => predicted.some((period) => key >= period.start && key <= period.end);
+
   const loggedLevel = (key: string) => {
     const log = partner.dayLogs[key];
     return log?.periodInfo?.level || log?.period || null;
@@ -745,9 +832,11 @@ function BlueberrySection({
     }
 
     const daysUntil = daysBetween(todayKey(), next.start);
+
     if (daysUntil < 0 || daysUntil > 3) return;
 
     const notifyKey = `bixbo:partner-period-notified:${next.start}`;
+
     if (localStorage.getItem(notifyKey)) return;
 
     const fire = () => {
@@ -763,6 +852,7 @@ function BlueberrySection({
           body,
           icon: "/favicon.svg",
         });
+
         localStorage.setItem(notifyKey, "1");
       } catch {
         // Ignore notification errors.
@@ -773,7 +863,9 @@ function BlueberrySection({
       fire();
     } else if (Notification.permission !== "denied") {
       Notification.requestPermission().then((permission) => {
-        if (permission === "granted") fire();
+        if (permission === "granted") {
+          fire();
+        }
       });
     }
   }, [next?.start, partner.name]);
@@ -784,28 +876,30 @@ function BlueberrySection({
         <Ico e="🫐" size={16} /> {partner.name || "Partner"} — Blueberry
       </h3>
 
-      {next && (
+      {next ? (
         <div className="space-y-1 rounded-2xl bg-tint p-3 text-sm">
           <p>
             🩸 Next period: <span className="font-semibold">{next.start}</span>
           </p>
+
           <p className="text-xs text-muted-foreground">
             Predicted window: {next.start} → {next.end}
           </p>
         </div>
-      )}
+      ) : null}
 
-      {cycle && (
+      {cycle ? (
         <p className="text-xs text-muted-foreground">
           Cycle {cycle.cycleLength}d · period {cycle.periodLength}d
         </p>
-      )}
+      ) : null}
 
       <div className="rounded-2xl bg-tint p-3">
         <p className="mb-2 text-center text-xs font-medium">{selectedMonthLabel}</p>
+
         <div className="mb-1 grid grid-cols-7 gap-1 text-center text-[10px] text-muted-foreground">
           {["M", "T", "W", "T", "F", "S", "S"].map((day, index) => (
-            <span key={index}>{day}</span>
+            <span key={`${day}-${index}`}>{day}</span>
           ))}
         </div>
 
@@ -813,6 +907,7 @@ function BlueberrySection({
           {cells.map((cell) => {
             const logged = loggedLevel(cell.key);
             const predictedDay = isPredicted(cell.key) && !logged;
+
             const background = logged ? PERIOD_COLORS[logged] || CHART_COLORS.period : undefined;
 
             return (
@@ -820,7 +915,7 @@ function BlueberrySection({
                 key={cell.key}
                 className={`grid aspect-square place-items-center rounded-full text-[10px] ${
                   cell.inMonth ? "" : "opacity-30"
-                } ${cell.key === todayK ? "ring-2 ring-primary" : ""}`}
+                } ${cell.key === today ? "ring-2 ring-primary" : ""}`}
                 style={{
                   background,
                   color: logged ? "white" : undefined,
@@ -847,7 +942,9 @@ function CouplePage() {
   const { data, hydrated } = useBixbo();
   const view = hydrated ? data : EMPTY;
   const partner = view.partner;
+
   const [selectedMonth, setSelectedMonth] = useState(() => startOfMonth(new Date()));
+
   const [activeTab, setActiveTab] = useState<CoupleTab>("overview");
 
   useEffect(() => {
@@ -855,9 +952,13 @@ function CouplePage() {
 
     fetchPartner()
       .then((partnerData) => {
-        if (!cancelled && partnerData) setPartner(partnerData);
+        if (!cancelled) {
+          setPartner(partnerData ?? undefined);
+        }
       })
-      .catch(() => {});
+      .catch((error) => {
+        console.error("Couple fetchPartner", error);
+      });
 
     return () => {
       cancelled = true;
@@ -865,9 +966,12 @@ function CouplePage() {
   }, []);
 
   const monthDays = useMemo(() => daysForMonth(selectedMonth), [selectedMonth]);
+
   const selectedMonthLabel = monthLabel(selectedMonth);
   const currentMonth = startOfMonth(new Date());
+
   const isCurrentMonth = isSameMonth(selectedMonth, currentMonth);
+
   const canGoNext = selectedMonth.getTime() < currentMonth.getTime();
 
   const goToPreviousMonth = () => {
@@ -877,6 +981,7 @@ function CouplePage() {
   const goToNextMonth = () => {
     setSelectedMonth((current) => {
       const next = shiftMonth(current, 1);
+
       return next.getTime() > currentMonth.getTime() ? current : next;
     });
   };
@@ -886,7 +991,10 @@ function CouplePage() {
 
     for (const day of monthDays) {
       for (const pain of dayLogs[day]?.pain ?? []) {
-        output.push({ ...pain, dateKey: day });
+        output.push({
+          ...pain,
+          dateKey: day,
+        });
       }
     }
 
@@ -896,11 +1004,16 @@ function CouplePage() {
   };
 
   const collectTetany = (dayLogs: Record<string, ComparableDayLog>) => {
-    const output: (TetanyEpisode & { dateKey: string })[] = [];
+    const output: (TetanyEpisode & {
+      dateKey: string;
+    })[] = [];
 
     for (const day of monthDays) {
       for (const episode of dayLogs[day]?.tetany ?? []) {
-        output.push({ ...episode, dateKey: day });
+        output.push({
+          ...episode,
+          dateKey: day,
+        });
       }
     }
 
@@ -908,11 +1021,16 @@ function CouplePage() {
   };
 
   const collectPanic = (dayLogs: Record<string, ComparableDayLog>) => {
-    const output: (PanicAttack & { dateKey: string })[] = [];
+    const output: (PanicAttack & {
+      dateKey: string;
+    })[] = [];
 
     for (const day of monthDays) {
       for (const attack of dayLogs[day]?.panic ?? []) {
-        output.push({ ...attack, dateKey: day });
+        output.push({
+          ...attack,
+          dateKey: day,
+        });
       }
     }
 
@@ -934,38 +1052,26 @@ function CouplePage() {
         extra: dayLogs[day]?.extraMeds ?? [],
       }));
 
-  const collectNotes = (dayNotes: Record<string, DayNote[] | string[] | undefined>) => {
-    const output: { dateKey: string; text: string; time?: string }[] = [];
-
-    for (const day of monthDays) {
-      for (const note of dayNotes[day] ?? []) {
-        if (typeof note === "string") {
-          output.push({ dateKey: day, text: note });
-        } else if (note.text?.trim()) {
-          output.push({ dateKey: day, text: note.text, time: note.time });
-        }
-      }
-    }
-
-    return output.sort((a, b) => b.dateKey.localeCompare(a.dateKey));
-  };
-
   const myPain = collectPain(view.dayLogs);
   const myTetany = collectTetany(view.dayLogs);
   const myPanic = collectPanic(view.dayLogs);
+
   const myMeds = collectMedDays(view.meds, view.medLog, view.dayLogs);
-  const myNotes = collectNotes(view.dayNotes);
 
   const partnerPain = partner ? collectPain(partner.dayLogs) : [];
+
   const partnerTetany = partner ? collectTetany(partner.dayLogs) : [];
+
   const partnerPanic = partner ? collectPanic(partner.dayLogs) : [];
+
   const partnerMeds = partner ? collectMedDays(partner.meds ?? [], partner.medLog ?? {}, partner.dayLogs) : [];
-  const partnerNotes = partner ? collectNotes(partner.dayNotes ?? {}) : [];
 
   const myPainAverage = average(myPain.map((pain) => pain.score));
+
   const partnerPainAverage = average(partnerPain.map((pain) => pain.score));
 
   const myPainDays = monthDays.filter((day) => (view.dayLogs[day]?.pain?.length ?? 0) > 0).length;
+
   const partnerPainDays = partner ? monthDays.filter((day) => (partner.dayLogs[day]?.pain?.length ?? 0) > 0).length : 0;
 
   const sharedSymptomDays = partner
@@ -973,33 +1079,59 @@ function CouplePage() {
     : 0;
 
   const mySymptomDays = monthDays.filter((day) => hasSymptoms(view.dayLogs[day])).length;
+
   const partnerSymptomDays = partner ? monthDays.filter((day) => hasSymptoms(partner.dayLogs[day])).length : 0;
 
   const myTakenDoses = countTakenScheduledDoses(monthDays, view.meds, view.medLog);
+
   const partnerTakenDoses = partner ? countTakenScheduledDoses(monthDays, partner.meds ?? [], partner.medLog ?? {}) : 0;
 
   const similarityScore = partner
     ? (() => {
         const symptomDayGap = Math.abs(mySymptomDays - partnerSymptomDays) / Math.max(1, monthDays.length);
+
         const painGap =
           myPainAverage == null || partnerPainAverage == null ? 0.5 : Math.abs(myPainAverage - partnerPainAverage) / 10;
+
         const panicGap =
           Math.abs(myPanic.length - partnerPanic.length) / Math.max(1, myPanic.length, partnerPanic.length);
+
         const tetanyGap =
           Math.abs(myTetany.length - partnerTetany.length) / Math.max(1, myTetany.length, partnerTetany.length);
 
         const averageGap = (symptomDayGap + painGap + panicGap + tetanyGap) / 4;
+
         return clampPercent((1 - averageGap) * 100);
       })()
     : 0;
 
   const partnerName = partner?.name || "Partner";
 
-  const tabs: { id: CoupleTab; label: string; icon: string }[] = [
-    { id: "overview", label: "Overview", icon: "❤️" },
-    { id: "compare", label: "Compare", icon: "📊" },
-    { id: "health", label: "Health", icon: "🌿" },
-    { id: "sharing", label: "Sharing", icon: "⚙️" },
+  const tabs: {
+    id: CoupleTab;
+    label: string;
+    icon: string;
+  }[] = [
+    {
+      id: "overview",
+      label: "Overview",
+      icon: "❤️",
+    },
+    {
+      id: "compare",
+      label: "Compare",
+      icon: "📊",
+    },
+    {
+      id: "health",
+      label: "Health",
+      icon: "🌿",
+    },
+    {
+      id: "sharing",
+      label: "Sharing",
+      icon: "⚙️",
+    },
   ];
 
   return (
@@ -1018,6 +1150,7 @@ function CouplePage() {
 
             <div className="min-w-0 text-center">
               <p className="font-serif text-lg font-semibold">{selectedMonthLabel}</p>
+
               <p className="text-[10px] text-muted-foreground">
                 {isCurrentMonth ? `Current month · ${monthDays.length} days so far` : `${monthDays.length} days`}
               </p>
@@ -1038,9 +1171,11 @@ function CouplePage() {
         {!partner ? (
           <div className="rounded-3xl bg-surface p-6 text-center ring-1 ring-border">
             <p className="text-sm font-medium">No partner linked yet.</p>
+
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-              In Settings → Couple sharing, exchange pairing codes with your partner to compare your shared health logs.
+              In Settings → Couple sharing, exchange pairing codes with your partner to compare selected health logs.
             </p>
+
             <Link to="/settings" className="mt-3 inline-block text-sm text-primary underline">
               Open Couple sharing
             </Link>
@@ -1054,6 +1189,7 @@ function CouplePage() {
               <div className="grid grid-cols-4 gap-1">
                 {tabs.map((tab) => {
                   const active = activeTab === tab.id;
+
                   return (
                     <button
                       key={tab.id}
@@ -1069,6 +1205,7 @@ function CouplePage() {
                       <span className="text-base leading-none" aria-hidden="true">
                         {tab.icon}
                       </span>
+
                       <span className="mt-1 truncate">{tab.label}</span>
                     </button>
                   );
@@ -1076,20 +1213,9 @@ function CouplePage() {
               </div>
             </nav>
 
-            {activeTab === "compare" && (
-              <CouplePainChart
-                days={monthDays}
-                mine={view.dayLogs}
-                theirs={partner.dayLogs}
-                partnerName={partnerName}
-                periodLabel={selectedMonthLabel}
-              />
-            )}
+            {activeTab === "overview" ? <SimilarityCard score={similarityScore} partnerName={partnerName} /> : null}
 
-            {/* Comparison */}
-            {activeTab === "overview" && <SimilarityCard score={similarityScore} partnerName={partnerName} />}
-
-            {activeTab === "overview" && (
+            {activeTab === "overview" ? (
               <div className="grid grid-cols-2 gap-3">
                 <StatCard
                   icon={<Users className="h-4 w-4" />}
@@ -1098,6 +1224,7 @@ function CouplePage() {
                   detail="Days when both of you logged pain, panic or tetany."
                   tone="purple"
                 />
+
                 <StatCard
                   icon={<HeartPulse className="h-4 w-4" />}
                   label="Your symptom days"
@@ -1105,13 +1232,15 @@ function CouplePage() {
                   detail={`${partnerName}: ${partnerSymptomDays} days`}
                   tone="rose"
                 />
+
                 <StatCard
                   icon={<Sparkles className="h-4 w-4" />}
-                  label="Panic attacks together"
-                  value={`${Math.min(myPanic.length, partnerPanic.length)}`}
+                  label="Panic attacks"
+                  value={`${myPanic.length + partnerPanic.length}`}
                   detail={`You ${myPanic.length} · ${partnerName} ${partnerPanic.length}`}
                   tone="purple"
                 />
+
                 <StatCard
                   icon={<Activity className="h-4 w-4" />}
                   label="Tetany episodes"
@@ -1120,186 +1249,197 @@ function CouplePage() {
                   tone="blue"
                 />
               </div>
-            )}
+            ) : null}
 
-            {activeTab === "compare" && (
-              <SectionCard
-                title="Health comparison"
-                description="Solid bars are yours. Striped bars belong to your partner."
-              >
-                <div className="mt-4 space-y-3">
-                  <ComparisonBarCard
-                    title="Average pain"
-                    subtitle="Average intensity of logged pain entries"
-                    mine={myPainAverage}
-                    theirs={partnerPainAverage}
-                    max={10}
-                    decimals={1}
-                    unit="/10"
-                    mineLabel="You"
-                    partnerLabel={partnerName}
-                    tone="rose"
-                    icon={<HeartPulse className="h-5 w-5" />}
-                  />
-                  <ComparisonBarCard
-                    title="Pain days"
-                    subtitle="Days with at least one pain entry"
-                    mine={myPainDays}
-                    theirs={partnerPainDays}
-                    decimals={0}
-                    mineLabel="You"
-                    partnerLabel={partnerName}
-                    tone="green"
-                    icon={<TrendingUp className="h-5 w-5" />}
-                  />
-                  <ComparisonBarCard
-                    title="Panic attacks"
-                    subtitle="Number of attacks logged in the selected month"
-                    mine={myPanic.length}
-                    theirs={partnerPanic.length}
-                    decimals={0}
-                    mineLabel="You"
-                    partnerLabel={partnerName}
-                    tone="purple"
-                    icon={<Sparkles className="h-5 w-5" />}
-                  />
-                  <ComparisonBarCard
-                    title="Tetany episodes"
-                    subtitle="Number of episodes logged in the selected month"
-                    mine={myTetany.length}
-                    theirs={partnerTetany.length}
-                    decimals={0}
-                    mineLabel="You"
-                    partnerLabel={partnerName}
-                    tone="blue"
-                    icon={<Activity className="h-5 w-5" />}
-                  />
-                  <ComparisonBarCard
-                    title="Medication doses"
-                    subtitle="Scheduled doses marked as taken"
-                    mine={myTakenDoses}
-                    theirs={partnerTakenDoses}
-                    decimals={0}
-                    mineLabel="You"
-                    partnerLabel={partnerName}
-                    tone="emerald"
-                    icon={<Pill className="h-5 w-5" />}
-                  />
-                </div>
-              </SectionCard>
-            )}
+            {activeTab === "compare" ? (
+              <>
+                <CouplePainChart
+                  days={monthDays}
+                  mine={view.dayLogs}
+                  theirs={partner.dayLogs}
+                  partnerName={partnerName}
+                  periodLabel={selectedMonthLabel}
+                />
 
-            {/* Partner sharing detail */}
-            {activeTab === "health" && (
+                <SectionCard
+                  title="Health comparison"
+                  description="Solid bars are yours. Striped bars belong to your partner."
+                >
+                  <div className="mt-4 space-y-3">
+                    <ComparisonBarCard
+                      title="Average pain"
+                      subtitle="Average intensity of logged pain entries"
+                      mine={myPainAverage}
+                      theirs={partnerPainAverage}
+                      max={10}
+                      decimals={1}
+                      unit="/10"
+                      mineLabel="You"
+                      partnerLabel={partnerName}
+                      tone="rose"
+                      icon={<HeartPulse className="h-5 w-5" />}
+                    />
+
+                    <ComparisonBarCard
+                      title="Pain days"
+                      subtitle="Days with at least one pain entry"
+                      mine={myPainDays}
+                      theirs={partnerPainDays}
+                      decimals={0}
+                      mineLabel="You"
+                      partnerLabel={partnerName}
+                      tone="green"
+                      icon={<TrendingUp className="h-5 w-5" />}
+                    />
+
+                    <ComparisonBarCard
+                      title="Panic attacks"
+                      subtitle="Number logged in the selected month"
+                      mine={myPanic.length}
+                      theirs={partnerPanic.length}
+                      decimals={0}
+                      mineLabel="You"
+                      partnerLabel={partnerName}
+                      tone="purple"
+                      icon={<Sparkles className="h-5 w-5" />}
+                    />
+
+                    <ComparisonBarCard
+                      title="Tetany episodes"
+                      subtitle="Number logged in the selected month"
+                      mine={myTetany.length}
+                      theirs={partnerTetany.length}
+                      decimals={0}
+                      mineLabel="You"
+                      partnerLabel={partnerName}
+                      tone="blue"
+                      icon={<Activity className="h-5 w-5" />}
+                    />
+
+                    <ComparisonBarCard
+                      title="Medication doses"
+                      subtitle="Scheduled doses marked as taken"
+                      mine={myTakenDoses}
+                      theirs={partnerTakenDoses}
+                      decimals={0}
+                      mineLabel="You"
+                      partnerLabel={partnerName}
+                      tone="emerald"
+                      icon={<Pill className="h-5 w-5" />}
+                    />
+                  </div>
+                </SectionCard>
+              </>
+            ) : null}
+
+            {activeTab === "health" ? (
               <SectionCard
                 title={`${partnerName} — shared details`}
-                description="Entries received through Couple sharing for the selected month."
+                description="Only the explicitly shared categories for the selected month."
               >
                 <div className="mt-4 space-y-2">
                   <details className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
                     <summary className="cursor-pointer text-sm font-semibold">Pain ({partnerPain.length})</summary>
+
                     <div className="mt-3">
                       <PainList title="Pain" entries={partnerPain} />
                     </div>
                   </details>
+
                   <details className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
                     <summary className="cursor-pointer text-sm font-semibold">Tetany ({partnerTetany.length})</summary>
+
                     <div className="mt-3">
                       <TetanyList title="Tetany" entries={partnerTetany} />
                     </div>
                   </details>
+
                   <details className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
                     <summary className="cursor-pointer text-sm font-semibold">
                       Panic attacks ({partnerPanic.length})
                     </summary>
+
                     <div className="mt-3">
                       <PanicList title="Panic attacks" entries={partnerPanic} />
                     </div>
                   </details>
+
                   <details className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
                     <summary className="cursor-pointer text-sm font-semibold">Medication</summary>
+
                     <div className="mt-3">
                       <MedsList title="Medication" days={partnerMeds} />
                     </div>
                   </details>
-                  <details className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
-                    <summary className="cursor-pointer text-sm font-semibold">
-                      Day notes ({partnerNotes.length})
-                    </summary>
-                    <div className="mt-3">
-                      <DayNotesList title="Day notes" notes={partnerNotes} />
-                    </div>
-                  </details>
                 </div>
               </SectionCard>
-            )}
+            ) : null}
 
-            {activeTab === "health" && partner.gender !== "male" && (
+            {activeTab === "health" && partner.gender !== "male" ? (
               <BlueberrySection
                 partner={partner}
                 selectedMonth={selectedMonth}
                 selectedMonthLabel={selectedMonthLabel}
                 isCurrentMonth={isCurrentMonth}
               />
-            )}
+            ) : null}
 
-            {/* My detail */}
-            {activeTab === "health" && (
+            {activeTab === "health" ? (
               <SectionCard
                 title="My shared details"
-                description="Your entries for the selected month shown beside the partner comparison."
+                description="The same categories that your partner is allowed to receive."
               >
                 <div className="mt-4 space-y-2">
                   <details className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
                     <summary className="cursor-pointer text-sm font-semibold">Pain ({myPain.length})</summary>
+
                     <div className="mt-3">
                       <PainList title="Pain" entries={myPain} />
                     </div>
                   </details>
+
                   <details className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
                     <summary className="cursor-pointer text-sm font-semibold">Tetany ({myTetany.length})</summary>
+
                     <div className="mt-3">
                       <TetanyList title="Tetany" entries={myTetany} />
                     </div>
                   </details>
+
                   <details className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
                     <summary className="cursor-pointer text-sm font-semibold">Panic attacks ({myPanic.length})</summary>
+
                     <div className="mt-3">
                       <PanicList title="Panic attacks" entries={myPanic} />
                     </div>
                   </details>
+
                   <details className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
                     <summary className="cursor-pointer text-sm font-semibold">Medication</summary>
+
                     <div className="mt-3">
                       <MedsList title="Medication" days={myMeds} />
                     </div>
                   </details>
-                  <details className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
-                    <summary className="cursor-pointer text-sm font-semibold">Day notes ({myNotes.length})</summary>
-                    <div className="mt-3">
-                      <DayNotesList title="Day notes" notes={myNotes} />
-                    </div>
-                  </details>
                 </div>
               </SectionCard>
-            )}
+            ) : null}
 
-            {activeTab === "sharing" && (
+            {activeTab === "sharing" ? (
               <div className="space-y-4">
                 <SectionCard title="Partner" description="Your currently linked Couple sharing partner.">
                   <div className="mt-4 flex items-center gap-3 rounded-2xl bg-tint p-4 ring-1 ring-border/40">
                     <span className="grid h-12 w-12 place-items-center rounded-full bg-surface text-xl">👥</span>
+
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-serif text-lg font-semibold">{partnerName}</p>
+
                       <p className="text-xs text-muted-foreground">Connected through Couple sharing</p>
                     </div>
                   </div>
                 </SectionCard>
 
-                <SectionCard
-                  title="Sharing settings"
-                  description="Manage pairing, permissions and shared data in Settings."
-                >
+                <SectionCard title="Sharing settings" description="Manage pairing and shared data in Settings.">
                   <Link
                     to="/settings"
                     className="mt-4 flex items-center justify-between rounded-2xl bg-tint px-4 py-4 text-sm font-semibold text-foreground ring-1 ring-border/40"
@@ -1309,29 +1449,28 @@ function CouplePage() {
                   </Link>
                 </SectionCard>
 
-                <SectionCard title="What is shared" description="Categories currently available in Couple comparison.">
+                <SectionCard
+                  title="What is shared"
+                  description="Only these categories are available to your linked partner."
+                >
                   <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
-                    {["Pain", "Panic attacks", "Tetany", "Medication", "Period", "Day notes"].map((item) => (
+                    {["Pain", "Panic attacks", "Tetany", "Medication", "Period / Blueberry"].map((item) => (
                       <div key={item} className="rounded-2xl bg-tint px-3 py-3 ring-1 ring-border/40">
                         ✓ {item}
                       </div>
                     ))}
                   </div>
+
+                  <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
+                    Notes, sex logs, food, bowel, mood, workouts, sleep, weight and other private data are not shown
+                    here. Period and cycle data are shared only for the Blueberry calendar.
+                  </p>
                 </SectionCard>
               </div>
-            )}
+            ) : null}
           </>
         )}
       </div>
     </AppShell>
-  );
-}
-
-function Insight({ text }: { text: string }) {
-  return (
-    <div className="flex items-start gap-2 rounded-2xl bg-tint px-4 py-3">
-      <span className="mt-0.5 text-sm">✦</span>
-      <p className="text-xs leading-relaxed text-foreground/85">{text}</p>
-    </div>
   );
 }
