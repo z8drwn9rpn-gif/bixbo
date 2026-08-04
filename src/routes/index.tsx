@@ -941,11 +941,11 @@ function DayPreview({
             {log?.weight != null && <p className="text-sm">Weight: {log.weight} kg</p>}
             {log?.sleepHours != null && (
               <p className="text-sm">
-                Sleep: {log.sleepHours} h {asArr(log.sleepQuality).join(", ")}
+                Sleep: {log.sleepHours} h <IcoText text={asArr(log.sleepQuality).join(", ")} size={14} />
               </p>
             )}
             {asArr(log?.sleepQuality).length > 0 && log?.sleepHours == null && (
-              <p className="text-sm">Sleep quality: {asArr(log.sleepQuality).join(", ")}</p>
+              <p className="text-sm">Sleep quality: <IcoText text={asArr(log.sleepQuality).join(", ")} size={14} /></p>
             )}
             <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
           </button>
