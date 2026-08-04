@@ -6,14 +6,65 @@ import { cn } from "@/lib/utils";
 // Format: { THEME_NAME: CSS_SELECTOR }
 const THEMES = { light: "", dark: ".dark" } as const;
 
+/**
+ * Shared semantic chart palette for the whole Bixbo app.
+ *
+ * Use these values in Insights, Patterns and Couple instead of hard-coded
+ * hex colors so the same health metric always has the same visual identity.
+ *
+ * Example:
+ *   <Bar fill={CHART_COLORS.panic} />
+ *   <Line stroke={CHART_COLORS.tetany} />
+ */
+export const CHART_COLORS = {
+  pain: "#6F7300",
+  panic: "#8B5CF6",
+  tetany: "#3B82F6",
+  headache: "#EF4444",
+  hotFlash: "#F97316",
+  bowel: "#A16207",
+  energy: "#EAB308",
+  workout: "#22C55E",
+  medication: "#10B981",
+  sleep: "#60A5FA",
+  weight: "#64748B",
+  mood: "#EC4899",
+  period: "#D96B94",
+  histamine: "#F59E0B",
+  pcos: "#C026D3",
+  neutral: "#7C8163",
+} as const;
+
+/**
+ * Soft card/background variants matching CHART_COLORS.
+ * These are useful for tinted comparison cards.
+ */
+export const CHART_TINTS = {
+  pain: "rgba(111, 115, 0, 0.10)",
+  panic: "rgba(139, 92, 246, 0.10)",
+  tetany: "rgba(59, 130, 246, 0.10)",
+  headache: "rgba(239, 68, 68, 0.10)",
+  hotFlash: "rgba(249, 115, 22, 0.10)",
+  bowel: "rgba(161, 98, 7, 0.10)",
+  energy: "rgba(234, 179, 8, 0.10)",
+  workout: "rgba(34, 197, 94, 0.10)",
+  medication: "rgba(16, 185, 129, 0.10)",
+  sleep: "rgba(96, 165, 250, 0.10)",
+  weight: "rgba(100, 116, 139, 0.10)",
+  mood: "rgba(236, 72, 153, 0.10)",
+  period: "rgba(217, 107, 148, 0.10)",
+  histamine: "rgba(245, 158, 11, 0.10)",
+  pcos: "rgba(192, 38, 211, 0.10)",
+  neutral: "rgba(124, 129, 99, 0.10)",
+} as const;
+
+export type ChartColorKey = keyof typeof CHART_COLORS;
+
 export type ChartConfig = {
   [k in string]: {
     label?: React.ReactNode;
     icon?: React.ComponentType;
-  } & (
-    | { color?: string; theme?: never }
-    | { color?: never; theme: Record<keyof typeof THEMES, string> }
-  );
+  } & ({ color?: string; theme?: never } | { color?: never; theme: Record<keyof typeof THEMES, string> });
 };
 
 type ChartContextProps = {
@@ -137,9 +188,7 @@ const ChartTooltipContent = React.forwardRef<
           : itemConfig?.label;
 
       if (labelFormatter) {
-        return (
-          <div className={cn("font-medium", labelClassName)}>{labelFormatter(value, payload)}</div>
-        );
+        return <div className={cn("font-medium", labelClassName)}>{labelFormatter(value, payload)}</div>;
       }
 
       if (!value) {
@@ -189,16 +238,12 @@ const ChartTooltipContent = React.forwardRef<
                       ) : (
                         !hideIndicator && (
                           <div
-                            className={cn(
-                              "shrink-0 rounded-[2px] border-(--color-border) bg-(--color-bg)",
-                              {
-                                "h-2.5 w-2.5": indicator === "dot",
-                                "w-1": indicator === "line",
-                                "w-0 border-[1.5px] border-dashed bg-transparent":
-                                  indicator === "dashed",
-                                "my-0.5": nestLabel && indicator === "dashed",
-                              },
-                            )}
+                            className={cn("shrink-0 rounded-[2px] border-(--color-border) bg-(--color-bg)", {
+                              "h-2.5 w-2.5": indicator === "dot",
+                              "w-1": indicator === "line",
+                              "w-0 border-[1.5px] border-dashed bg-transparent": indicator === "dashed",
+                              "my-0.5": nestLabel && indicator === "dashed",
+                            })}
                             style={
                               {
                                 "--color-bg": indicatorColor,
@@ -216,9 +261,7 @@ const ChartTooltipContent = React.forwardRef<
                       >
                         <div className="grid gap-1.5">
                           {nestLabel ? tooltipLabel : null}
-                          <span className="text-muted-foreground">
-                            {itemConfig?.label || item.name}
-                          </span>
+                          <span className="text-muted-foreground">{itemConfig?.label || item.name}</span>
                         </div>
                         {item.value && (
                           <span className="font-mono font-medium tabular-nums text-foreground">
@@ -257,11 +300,7 @@ const ChartLegendContent = React.forwardRef<
   return (
     <div
       ref={ref}
-      className={cn(
-        "flex items-center justify-center gap-4",
-        verticalAlign === "top" ? "pb-3" : "pt-3",
-        className,
-      )}
+      className={cn("flex items-center justify-center gap-4", verticalAlign === "top" ? "pb-3" : "pt-3", className)}
     >
       {payload
         .filter((item) => item.type !== "none")
@@ -272,9 +311,7 @@ const ChartLegendContent = React.forwardRef<
           return (
             <div
               key={item.value}
-              className={cn(
-                "flex items-center gap-1.5 [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-muted-foreground",
-              )}
+              className={cn("flex items-center gap-1.5 [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-muted-foreground")}
             >
               {itemConfig?.icon && !hideIcon ? (
                 <itemConfig.icon />
@@ -321,11 +358,4 @@ function getPayloadConfigFromPayload(config: ChartConfig, payload: unknown, key:
   return configLabelKey in config ? config[configLabelKey] : config[key as keyof typeof config];
 }
 
-export {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  ChartLegend,
-  ChartLegendContent,
-  ChartStyle,
-};
+export { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, ChartStyle };
