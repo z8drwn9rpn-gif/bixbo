@@ -1,3 +1,24 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useMemo, useState, type ReactNode } from "react";
+import {
+  Activity,
+  Brain,
+  Dumbbell,
+  Flame,
+  HeartPulse,
+  Moon,
+  Pill,
+  Scale,
+  Sparkles,
+  ThermometerSun,
+  TrendingDown,
+  TrendingUp,
+  Waves,
+} from "lucide-react";
+
+import { AppShell } from "@/components/AppShell";
+import { CHART_COLORS, CHART_TINTS } from "@/components/ui/chart";
+import { EMPTY, addDays, avgDayPain, todayKey, useBixbo, type DayLog, type Diagnosis } from "@/lib/storage";
 import {
   avg,
   dayBowelSymptoms,
