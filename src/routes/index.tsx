@@ -731,7 +731,7 @@ function DayPreview({
               <li key={s.id} className="flex items-start gap-2">
                 <button onClick={() => onEdit?.("sex", s)} className="flex-1 text-left">
                   {s.time} · {String(s.kind).replace(/_/g, " ")}
-                  {asArr(s.feelingAfter).length ? ` · ${asArr(s.feelingAfter).join(", ")}` : ""}
+                  {asArr(s.feelingAfter).length ? <> · <IcoText text={asArr(s.feelingAfter).join(", ")} size={13} /></> : ""}
                   {s.painful && s.painful !== "no" ? ` · painful ${s.painful}` : ""}
                   {s.note ? ` — ${s.note}` : ""}
                 </button>
