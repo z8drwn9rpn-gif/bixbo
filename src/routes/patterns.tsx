@@ -39,7 +39,7 @@ export const Route = createFileRoute("/patterns")({
     meta: [
       { title: "Health of Bixbo — Bixbo Patterns" },
       { name: "description", content: "Compare cycle phases, months, treatments and triggers to spot your patterns." },
-      { property: "og:title", content: "Health of Bixbo — Patterns" },
+      { property: "og:title", content: "Health of Bixbo — Bixbo Patterns" },
       { property: "og:description", content: "Cycle, monthly, treatment, couple and trigger comparisons." },
     ],
   }),
