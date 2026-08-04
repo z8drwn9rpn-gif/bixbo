@@ -78,6 +78,7 @@ type ComparisonMetricProps = {
   decimals?: number;
   unit?: string;
   color: MetricColor;
+  higherIsWorse?: boolean;
   neutralTrend?: boolean;
   icon?: ReactNode;
   previousLabel?: string;
