@@ -16,13 +16,13 @@ import {
   todayKey,
   PAIN_DESCRIPTIONS,
   painColor,
+  periodLabel
   BRISTOL,
   nextPredictedPeriod,
   pregnancyInfo,
   daysBetween,
   asArr,
   type BixboData,
-  type PeriodLevel,
   type BowelEntry,
   type SexEntry,
 } from "@/lib/storage";
