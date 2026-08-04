@@ -302,6 +302,7 @@ function ComparisonMetric({
   unit = "",
   color,
   higherIsWorse = true,
+  neutralTrend = false,
   icon,
   previousLabel = "Last month",
   currentLabel = "This month",
