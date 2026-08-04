@@ -56,14 +56,20 @@ type ComparableDayLog = {
   extraMeds?: ExtraMed[];
 };
 
-type ComparisonTone = "rose" | "purple" | "blue" | "emerald" | "amber";
+type ComparisonTone = "rose" | "green" | "purple" | "blue" | "emerald" | "amber";
 
 const TONES: Record<ComparisonTone, { solid: string; soft: string; border: string; text: string }> = {
   rose: {
-    solid: CHART_COLORS.pain,
-    soft: CHART_TINTS.pain,
-    border: "rgba(111, 115, 0, 0.24)",
-    text: CHART_COLORS.pain,
+    solid: "#ef4770",
+    soft: "rgba(239, 71, 112, 0.10)",
+    border: "rgba(239, 71, 112, 0.24)",
+    text: "#df315d",
+  },
+  green: {
+    solid: "#6f9d16",
+    soft: "rgba(111, 157, 22, 0.10)",
+    border: "rgba(111, 157, 22, 0.24)",
+    text: "#5f8911",
   },
   purple: {
     solid: CHART_COLORS.panic,
@@ -1126,7 +1132,7 @@ function CouplePage() {
                   decimals={0}
                   mineLabel="You"
                   partnerLabel={partnerName}
-                  tone="rose"
+                  tone="green"
                   icon={<TrendingUp className="h-5 w-5" />}
                 />
                 <ComparisonBarCard
