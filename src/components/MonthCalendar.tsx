@@ -1,24 +1,48 @@
-import { Ico, IcoText } from "@/components/icons/BixboIcons";
-import { useRef, useState } from "react";
 import {
-  toKey, hasAnyLog, painColor, isDateInRange, predictPeriods, avgDayPain, isIntercourseKind,
-  type BixboData, type DayLog, type EventEntry,
+  toKey,
+  hasAnyLog,
+  painColor,
+  periodLabel,
+  isDateInRange,
+  predictPeriods,
+  avgDayPain,
+  isIntercourseKind,
+  type BixboData,
+  type DayLog,
+  type EventEntry,
+  type PeriodLevel,
 } from "@/lib/storage";
 
 const WEEKDAYS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
 const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
-function periodColorVar(level?: string) {
+function periodColorVar(level?: PeriodLevel) {
   switch (level) {
-    case "spotting":  return "var(--period-spotting)";
-    case "light":     return "var(--period-light)";
-    case "medium":    return "var(--period-medium)";
-    case "heavy":     return "var(--period-heavy)";
-    case "veryheavy": return "var(--period-veryheavy)";
-    default: return null;
+    case "spotting":
+      return "var(--period-spotting)";
+    case "light":
+      return "var(--period-light)";
+    case "medium":
+      return "var(--period-medium)";
+    case "heavy":
+      return "var(--period-heavy)";
+    case "very-heavy":
+      return "var(--period-veryheavy)";
+    default:
+      return null;
   }
 }
 function iconsFor(log: DayLog | undefined, hasMed: boolean, _isMale: boolean): string[] {
@@ -43,22 +67,41 @@ function daySummaryLines(log: DayLog | undefined, isMale: boolean): string[] {
   const hf = log.pain?.filter((p) => (p.hotFlashes ?? 0) > 0) ?? [];
   if (hf.length) out.push(`🥵 Hot flashes: ${hf.map((p) => `${p.hotFlashes}/5`).join(", ")}`);
   const ha = log.pain?.filter((p) => p.headacheIntensity != null || (p.headacheTypes?.length ?? 0) > 0) ?? [];
-  if (ha.length) out.push(`🤕 Headache: ${ha.map((p) => `${p.headacheTypes?.join("/") ?? "yes"}${p.headacheIntensity != null ? ` ${p.headacheIntensity}/10` : ""}`).join(", ")}`);
+  if (ha.length)
+    out.push(
+      `🤕 Headache: ${ha.map((p) => `${p.headacheTypes?.join("/") ?? "yes"}${p.headacheIntensity != null ? ` ${p.headacheIntensity}/10` : ""}`).join(", ")}`,
+    );
   if (log.extraMeds?.length) out.push(`💊 Extra meds: ${log.extraMeds.map((m) => m.name).join(", ")}`);
   if (log.sex?.length) out.push(`❤️ ŠukŠuk: ${log.sex.length}×`);
-  if (log.food?.length) out.push(`🍽️ Food: ${log.food.map((f) => f.what).filter(Boolean).join(", ") || `${log.food.length} entries`}`);
+  if (log.food?.length)
+    out.push(
+      `🍽️ Food: ${
+        log.food
+          .map((f) => f.what)
+          .filter(Boolean)
+          .join(", ") || `${log.food.length} entries`
+      }`,
+    );
   if (!isMale && (log.periodInfo?.level ?? log.period)) out.push(`🫐 Period: ${log.periodInfo?.level ?? log.period}`);
   if (log.bowel?.length) out.push(`💩 Bowel: ${log.bowel.map((b) => `type ${b.bristol}`).join(", ")}`);
-  if (log.heat?.length) out.push(`♨️ Heat/Cold/TENS: ${log.heat.map((h) => h.kind === "tens" ? "⭐ TENS" : h.kind).join(", ")}`);
+  if (log.heat?.length)
+    out.push(`♨️ Heat/Cold/TENS: ${log.heat.map((h) => (h.kind === "tens" ? "⭐ TENS" : h.kind)).join(", ")}`);
   if (log.workout?.length) out.push(`🧘🏼‍♀️ Workout: ${log.workout.map((w) => `${w.kind} ${w.minutes}min`).join(", ")}`);
   if (log.weight != null) out.push(`⚖️ Weight: ${log.weight} kg`);
   if (log.temperature != null) out.push(`🌡️ Temp: ${log.temperature} °C`);
   if (log.sleepHours != null) out.push(`😴 Sleep: ${log.sleepHours} h`);
+  if (!isMale && (log.periodInfo?.level ?? log.period)) {
+    out.push(`🫐 Period: ${periodLabel(log.periodInfo?.level ?? log.period)}`);
+  }
   return out;
 }
 
 export function MonthCalendar({
-  month, data, selected, onSelect, onSwipeMonth,
+  month,
+  data,
+  selected,
+  onSelect,
+  onSwipeMonth,
 }: {
   month: Date;
   data: BixboData;
@@ -70,7 +113,12 @@ export function MonthCalendar({
   const [peek, setPeek] = useState<string | null>(null);
   const longTimer = useRef<number | null>(null);
   const longFired = useRef(false);
-  const clearLong = () => { if (longTimer.current) { window.clearTimeout(longTimer.current); longTimer.current = null; } };
+  const clearLong = () => {
+    if (longTimer.current) {
+      window.clearTimeout(longTimer.current);
+      longTimer.current = null;
+    }
+  };
   const y = month.getFullYear();
   const m = month.getMonth();
   const first = new Date(y, m, 1);
@@ -84,9 +132,15 @@ export function MonthCalendar({
     const dayNum = i - startWeekday + 1;
     let d: Date;
     let inMonth = true;
-    if (dayNum < 1) { d = new Date(y, m - 1, prevDays + dayNum); inMonth = false; }
-    else if (dayNum > daysInMonth) { d = new Date(y, m + 1, dayNum - daysInMonth); inMonth = false; }
-    else { d = new Date(y, m, dayNum); }
+    if (dayNum < 1) {
+      d = new Date(y, m - 1, prevDays + dayNum);
+      inMonth = false;
+    } else if (dayNum > daysInMonth) {
+      d = new Date(y, m + 1, dayNum - daysInMonth);
+      inMonth = false;
+    } else {
+      d = new Date(y, m, dayNum);
+    }
     cells.push({ date: d, inMonth, key: toKey(d) });
   }
 
@@ -118,21 +172,32 @@ export function MonthCalendar({
   };
 
   // Build week rows for Apple-style event bars
-  const weeks: typeof cells[] = [];
+  const weeks: (typeof cells)[] = [];
   for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
 
   // For each week compute event segments (Apple-style)
-  const eventSegmentsForWeek = (week: typeof cells): {
-    event: EventEntry; startIdx: number; endIdx: number; showTitle: boolean;
+  const eventSegmentsForWeek = (
+    week: typeof cells,
+  ): {
+    event: EventEntry;
+    startIdx: number;
+    endIdx: number;
+    showTitle: boolean;
   }[] => {
     const weekStart = week[0].key;
     const weekEnd = week[6].key;
     const evs = data.events.filter((e) => e.startDate <= weekEnd && e.endDate >= weekStart);
     return evs.map((e) => {
-      const startIdx = Math.max(0, week.findIndex((c) => c.key >= e.startDate && c.key <= e.endDate));
+      const startIdx = Math.max(
+        0,
+        week.findIndex((c) => c.key >= e.startDate && c.key <= e.endDate),
+      );
       let endIdx = startIdx;
       for (let i = week.length - 1; i >= 0; i--) {
-        if (week[i].key >= e.startDate && week[i].key <= e.endDate) { endIdx = i; break; }
+        if (week[i].key >= e.startDate && week[i].key <= e.endDate) {
+          endIdx = i;
+          break;
+        }
       }
       return { event: e, startIdx, endIdx, showTitle: e.startDate >= weekStart || startIdx === 0 };
     });
@@ -141,19 +206,24 @@ export function MonthCalendar({
   return (
     <div className="px-1 landscape:px-2" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       <div className="grid grid-cols-7 gap-0.5 pb-1 text-center text-[11px] font-semibold text-muted-foreground landscape:pb-0 landscape:text-[10px]">
-        {WEEKDAYS.map((d) => <div key={d}>{d}</div>)}
+        {WEEKDAYS.map((d) => (
+          <div key={d}>{d}</div>
+        ))}
       </div>
       <div className="space-y-0.5">
-
         {weeks.map((week, wi) => {
           const segments = eventSegmentsForWeek(week);
           // stack up to 2 event rows
           const rows: (typeof segments)[] = [[], []];
-          const usedByCell: (boolean[])[] = [new Array(7).fill(false), new Array(7).fill(false)];
+          const usedByCell: boolean[][] = [new Array(7).fill(false), new Array(7).fill(false)];
           for (const seg of segments) {
             for (let r = 0; r < 2; r++) {
               let ok = true;
-              for (let i = seg.startIdx; i <= seg.endIdx; i++) if (usedByCell[r][i]) { ok = false; break; }
+              for (let i = seg.startIdx; i <= seg.endIdx; i++)
+                if (usedByCell[r][i]) {
+                  ok = false;
+                  break;
+                }
               if (ok) {
                 rows[r].push(seg);
                 for (let i = seg.startIdx; i <= seg.endIdx; i++) usedByCell[r][i] = true;
@@ -174,7 +244,9 @@ export function MonthCalendar({
                 const takenToday = data.medLog[key] ?? {};
                 const hasMed = Object.values(takenToday).some(Boolean) || !!log?.extraMeds?.length;
                 const periodLevel = isMale ? undefined : (log?.periodInfo?.level ?? log?.period);
-                const periodColor = isMale ? null : (periodColorVar(periodLevel) ?? (isActualPeriod(key) ? "var(--period-medium)" : null));
+                const periodColor = isMale
+                  ? null
+                  : (periodColorVar(periodLevel) ?? (isActualPeriod(key) ? "var(--period-medium)" : null));
                 const pAvg = avgDayPain(log);
                 const isSel = key === selected;
                 const predictedOrange = isPredicted(key);
@@ -189,11 +261,20 @@ export function MonthCalendar({
                       clearLong();
                       longTimer.current = window.setTimeout(() => {
                         longFired.current = true;
-                        if (navigator.vibrate) { try { navigator.vibrate(15); } catch { /* noop */ } }
+                        if (navigator.vibrate) {
+                          try {
+                            navigator.vibrate(15);
+                          } catch {
+                            /* noop */
+                          }
+                        }
                         setPeek(key);
                       }, 500);
                     }}
-                    onPointerUp={() => { clearLong(); if (!longFired.current) onSelect(key); }}
+                    onPointerUp={() => {
+                      clearLong();
+                      if (!longFired.current) onSelect(key);
+                    }}
                     onPointerLeave={clearLong}
                     onPointerCancel={clearLong}
                     onContextMenu={(e) => e.preventDefault()}
@@ -226,7 +307,9 @@ export function MonthCalendar({
                       </div>
                       {icons.length > 0 && (
                         <span className="pointer-events-none absolute bottom-0.5 left-1/2 flex -translate-x-1/2 items-center gap-[1px] text-[7px] leading-none drop-shadow-sm landscape:text-[6px]">
-                          {icons.slice(0, 3).map((ic, idx) => <Ico key={idx} e={ic} size={15} />)}
+                          {icons.slice(0, 3).map((ic, idx) => (
+                            <Ico key={idx} e={ic} size={15} />
+                          ))}
                           {icons.length > 3 && (
                             <span className="text-[9px] font-medium text-muted-foreground">+{icons.length - 3}</span>
                           )}
@@ -241,7 +324,7 @@ export function MonthCalendar({
               })}
 
               {/* Event bar rows */}
-              {rows.map((row, ri) => (
+              {rows.map((row, ri) =>
                 row.length ? (
                   <div key={`r-${ri}`} className="col-span-7 grid grid-cols-7 gap-0.5">
                     {new Array(7).fill(null).map((_, ci) => {
@@ -253,7 +336,7 @@ export function MonthCalendar({
                         return (
                           <div
                             key={ci}
-                             className={`h-3 truncate px-1 text-[8px] font-medium leading-3 text-primary-foreground ${
+                            className={`h-3 truncate px-1 text-[8px] font-medium leading-3 text-primary-foreground ${
                               isStart ? "rounded-l" : ""
                             } ${isEnd ? "rounded-r" : ""}`}
                             style={{
@@ -271,8 +354,8 @@ export function MonthCalendar({
                       return <div key={ci} className="h-3" />;
                     })}
                   </div>
-                ) : null
-              ))}
+                ) : null,
+              )}
               {overflowByCell.some((n) => n > 0) && (
                 <div className="col-span-7 grid grid-cols-7 gap-0.5">
                   {overflowByCell.map((n, ci) => (
@@ -287,26 +370,48 @@ export function MonthCalendar({
         })}
       </div>
 
-      {peek && (() => {
-        const lines = daySummaryLines(data.dayLogs[peek], isMale);
-        const d = new Date(`${peek}T00:00:00`);
-        return (
-          <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-6" onClick={() => setPeek(null)}>
-            <div className="max-h-[70dvh] w-full max-w-sm overflow-y-auto rounded-3xl bg-background p-4 ring-1 ring-border" onClick={(e) => e.stopPropagation()}>
-              <p className="mb-2 font-serif text-lg">{d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}</p>
-              {lines.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Nothing logged on this day.</p>
-              ) : (
-                <ul className="space-y-1 text-sm">{lines.map((l, i) => <li key={i} className="whitespace-pre-line"><IcoText text={l} size={15} /></li>)}</ul>
-              )}
-              <div className="mt-4 flex gap-2">
-                <button onClick={() => setPeek(null)} className="flex-1 rounded-2xl bg-tint py-2 text-sm">Close</button>
-                <button onClick={() => { onSelect(peek); setPeek(null); }} className="flex-1 rounded-2xl bg-primary py-2 text-sm text-primary-foreground">Open day</button>
+      {peek &&
+        (() => {
+          const lines = daySummaryLines(data.dayLogs[peek], isMale);
+          const d = new Date(`${peek}T00:00:00`);
+          return (
+            <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-6" onClick={() => setPeek(null)}>
+              <div
+                className="max-h-[70dvh] w-full max-w-sm overflow-y-auto rounded-3xl bg-background p-4 ring-1 ring-border"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <p className="mb-2 font-serif text-lg">
+                  {d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}
+                </p>
+                {lines.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nothing logged on this day.</p>
+                ) : (
+                  <ul className="space-y-1 text-sm">
+                    {lines.map((l, i) => (
+                      <li key={i} className="whitespace-pre-line">
+                        <IcoText text={l} size={15} />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <div className="mt-4 flex gap-2">
+                  <button onClick={() => setPeek(null)} className="flex-1 rounded-2xl bg-tint py-2 text-sm">
+                    Close
+                  </button>
+                  <button
+                    onClick={() => {
+                      onSelect(peek);
+                      setPeek(null);
+                    }}
+                    className="flex-1 rounded-2xl bg-primary py-2 text-sm text-primary-foreground"
+                  >
+                    Open day
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        );
-      })()}
+          );
+        })()}
     </div>
   );
 }
