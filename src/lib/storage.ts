@@ -404,6 +404,229 @@ export interface PartnerData {
   importedAt: number;
 }
 
+/* ------------------- Lab results / documents / diagnoses ------------------- */
+export interface LabResult {
+  id: string;
+  test: string;
+  value: number;
+  unit?: string;
+  refLow?: number;
+  refHigh?: number;
+  date: string;
+  note?: string;
+}
+
+export interface DocEntry {
+  id: string;
+  name: string;
+  date: string;
+  mime?: string;
+  /** data URL of the uploaded file (stored locally + synced) */
+  dataUrl?: string;
+  labId?: string;
+}
+
+export interface Diagnosis {
+  id: string;
+  name: string;
+  date?: string;
+  doctor?: string;
+  note?: string;
+  docId?: string;
+}
+
+export interface BixboData {
+  dayLogs: Record<string, DayLog>;
+  dayNotes: Record<string, DayNote[] | string[]>;
+  todos: Record<string, Todo[]>;
+  tasks: TaskEntry[];
+  events: EventEntry[];
+  meds: Med[];
+  medLog: Record<string, Record<string, boolean>>;
+  medLogTimes: Record<string, Record<string, string>>;
+  medNames?: Record<string, string>;
+  folders: NoteFolder[];
+  notebook: Note[];
+  cycle: CyclePrefs;
+  custom: CustomLists;
+  settings: Settings;
+  partner?: PartnerData;
+  labs?: LabResult[];
+  docs?: DocEntry[];
+  diagnoses?: Diagnosis[];
+  /** Ids of entries the user deleted — used by cloud merge so a union merge
+   * doesn't resurrect them from another device. */
+  deletedIds?: string[];
+}
+
+export const DEFAULT_FOLDERS: NoteFolder[] = [
+  { id: "general", name: "General", icon: "📓" },
+  { id: "health", name: "Health", icon: "💚" },
+  { id: "ideas", name: "Ideas", icon: "💡" },
+];
+
+export const EMPTY: BixboData = {
+  dayLogs: {},
+  dayNotes: {},
+  todos: {},
+  tasks: [],
+  events: [],
+  meds: [],
+  medLog: {},
+  medLogTimes: {},
+  medNames: {},
+  folders: DEFAULT_FOLDERS,
+  notebook: [],
+  cycle: {
+    lastPeriodStart: "2026-07-15",
+    lastPeriodEnd: "2026-07-19",
+    cycleLength: 28,
+    periodLength: 5,
+  },
+  custom: {
+    bodyParts: [],
+    quality: [],
+    symptoms: [],
+    foodFeelings: [],
+    foodQuickAdd: [],
+    workoutKinds: [],
+    moods: [],
+    tetanyTypes: [],
+    tetanyLocations: [],
+    tetanyTriggers: [],
+    tetanyHelped: [],
+    panicPhysical: [],
+    panicCognitive: [],
+    panicHelped: [],
+    sexTypes: [],
+    bowelFeelings: [],
+    bowelSymptoms: [],
+    pcosSymptoms: [],
+    headacheTypes: [],
+    histamineSymptoms: [],
+    foodSymptomsAfter: [],
+    sexFeelings: [],
+    urinary: [],
+    allergens: [],
+    pressureTypes: [],
+    nauseaTypes: [],
+    nauseaTriggers: [],
+    nauseaSymptoms: [],
+    nauseaHelped: [],
+    labTests: [],
+  },
+  settings: {
+    textSize: "md",
+    notifications: true,
+    gender: "female",
+    theme: "system",
+    savedTriggers: [],
+  },
+  labs: [],
+  docs: [],
+  diagnoses: [],
+  deletedIds: [],
+};
+
+const KEY = "bixbo:v2";
+const LEGACY_KEY = "bixbo:v1";
+
+function migrate(raw: unknown): BixboData {
+  const parsed = (raw ?? {}) as Partial<BixboData> & Record<string, unknown>;
+  const src = (parsed.dayLogs ?? {}) as Record<string, Record<string, unknown>>;
+  const dayLogs: Record<string, DayLog> = {};
+
+  for (const [key, value] of Object.entries(src)) {
+    const legacyLog = value as Record<string, unknown>;
+    const out: DayLog = { ...(value as DayLog) };
+
+    // Normalize the old period value so previously saved data keeps working.
+    if (out.period === ("veryheavy" as PeriodLevel)) {
+      out.period = "very-heavy";
+    }
+
+    if (out.periodInfo?.level === ("veryheavy" as PeriodLevel)) {
+      out.periodInfo = {
+        ...out.periodInfo,
+        level: "very-heavy",
+      };
+    }
+
+    if (typeof legacyLog.pain === "number") {
+      out.pain = [
+        {
+          id: `${key}-legacy`,
+          time: "00:00",
+          score: legacyLog.pain,
+          parts: [],
+          quality: [],
+          symptoms: [],
+          note: "",
+        },
+      ];
+    }
+
+    if (legacyLog.sex && typeof legacyLog.sex === "object" && !Array.isArray(legacyLog.sex)) {
+      const legacySex = legacyLog.sex as {
+        type?: string;
+        note?: string;
+      };
+
+      if (legacySex.type && legacySex.type !== "none") {
+        const map: Record<string, SexKind> = {
+          with_condom: "sex",
+          without_condom: "sex",
+        };
+
+        out.sex = [
+          {
+            id: `${key}-legacy-sex`,
+            time: "00:00",
+            kind: (map[legacySex.type] ?? "other") as SexKind,
+            note: legacySex.note,
+          },
+        ];
+      } else {
+        out.sex = [];
+      }
+    }
+
+    dayLogs[key] = out;
+  }
+
+  const custom = {
+    ...EMPTY.custom,
+    ...(parsed.custom as Partial<CustomLists> | undefined),
+  };
+
+  return {
+    ...EMPTY,
+    ...parsed,
+    dayLogs,
+    folders: (parsed.folders as NoteFolder[] | undefined)?.length ? (parsed.folders as NoteFolder[]) : DEFAULT_FOLDERS,
+    cycle: {
+      ...EMPTY.cycle,
+      ...(parsed.cycle as Partial<CyclePrefs> | undefined),
+    },
+    custom,
+    settings: {
+      ...EMPTY.settings,
+      ...(parsed.settings as Partial<Settings> | undefined),
+      savedTriggers: (parsed.settings as Partial<Settings> | undefined)?.savedTriggers ?? [],
+    },
+    tasks: (parsed.tasks as TaskEntry[] | undefined) ?? [],
+    events: (parsed.events as EventEntry[] | undefined) ?? [],
+    notebook: ((parsed.notebook as Note[] | undefined) ?? []).map((note) => ({
+      ...note,
+      folderId: note.folderId ?? "general",
+    })),
+    labs: (parsed.labs as LabResult[] | undefined) ?? [],
+    docs: (parsed.docs as DocEntry[] | undefined) ?? [],
+    diagnoses: (parsed.diagnoses as Diagnosis[] | undefined) ?? [],
+    deletedIds: (parsed.deletedIds as string[] | undefined) ?? [],
+  };
+}
+
 /* ------------------- Shared store ------------------- */
 let _state: BixboData = EMPTY;
 let _hydrated = false;
