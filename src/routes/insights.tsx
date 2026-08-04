@@ -1598,7 +1598,15 @@ function SymptomLoadHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo
   return (
     <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
       <p className="text-xs uppercase tracking-wider text-muted-foreground">Symptom Load — {year}</p>
-      <div className="relative mt-3 overflow-x-auto">
+      <section>
+  <div className="relative mt-3 overflow-x-auto">
+      heatmap
+  </div>
+
+  {active && (
+      details
+  )}
+</section>
         <div className="grid grid-flow-col gap-[3px]" style={{ gridTemplateRows: "repeat(7, minmax(0, 1fr))" }}>
           {dayInfo.map((c, i) => {
             if (!c.key) return <div key={i} className="h-[10px] w-[10px]" />;
@@ -1642,7 +1650,7 @@ function SymptomLoadHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo
                 <p className="font-medium">Notes</p>
 
                 {activeNotes.map((note, index) => (
-                  <p key={index} className="mt-1 whitespace-pre-wrap text-muted-foreground">
+                  <p key={index} className="mt-1 whitespace-pre-wrap break-words text-muted-foreground">
                     {note}
                   </p>
                 ))}
