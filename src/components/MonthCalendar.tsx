@@ -82,7 +82,6 @@ function daySummaryLines(log: DayLog | undefined, isMale: boolean): string[] {
           .join(", ") || `${log.food.length} entries`
       }`,
     );
-  if (!isMale && (log.periodInfo?.level ?? log.period)) out.push(`🫐 Period: ${log.periodInfo?.level ?? log.period}`);
   if (log.bowel?.length) out.push(`💩 Bowel: ${log.bowel.map((b) => `type ${b.bristol}`).join(", ")}`);
   if (log.heat?.length)
     out.push(`♨️ Heat/Cold/TENS: ${log.heat.map((h) => (h.kind === "tens" ? "⭐ TENS" : h.kind)).join(", ")}`);
