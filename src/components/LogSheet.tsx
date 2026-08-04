@@ -793,15 +793,15 @@ function PainWizard({
   const [nauseaSymptoms, setNauseaSymptoms] = useState<string[]>(initialEntry?.nauseaSymptoms ?? []);
   const [nauseaHelped, setNauseaHelped] = useState<string[]>(initialEntry?.nauseaHelped ?? []);
 
-  // Quick update: copy the latest state, use the current time and jump to symptoms.
+  // Quick update: copy the latest pain and symptom state,
+  // then let the user change only what is different now.
   const [quickSymptomUpdate, setQuickSymptomUpdate] = useState(false);
   const [copiedFromTime, setCopiedFromTime] = useState<string | undefined>();
-  const headacheSectionRef = useRef<HTMLDivElement | null>(null);
 
-  const startHeadacheUpdate = () => {
+  const startSymptomUpdate = () => {
     if (!latestPain) return;
 
-    // Core pain state.
+    // Keep the latest pain state.
     setScore(latestPain.score);
     setParts([...(latestPain.parts ?? [])]);
     setQuality([...(latestPain.quality ?? [])]);
@@ -809,18 +809,18 @@ function PainWizard({
     setPressureTypes([...(latestPain.pressureTypes ?? [])]);
     setPressureIntensity(latestPain.pressureIntensity);
 
-    // Body battery, stress and mood are momentary measurements. Do not duplicate
-    // their older values into the new time point.
+    // These are momentary measurements, so do not copy old values.
     setBodyBattery(undefined);
     setStress(undefined);
     setMood([]);
 
-    // Carry forward symptom details; the user only changes what is new.
+    // Keep the latest general symptom details.
     setHotFlashesOn(!!latestPain.hotFlashesOn);
     setHotFlashes(latestPain.hotFlashes);
     setPcosSymptoms([...(latestPain.pcosSymptoms ?? [])]);
     setFluNote(latestPain.fluNote ?? "");
 
+    // Keep nausea exactly as it was in the latest entry.
     setNausea(!!latestPain.nausea);
     setNauseaTypes([...(latestPain.nauseaTypes ?? [])]);
     setNauseaSeverity(latestPain.nauseaSeverity);
@@ -830,19 +830,19 @@ function PainWizard({
     setNauseaSymptoms([...(latestPain.nauseaSymptoms ?? [])]);
     setNauseaHelped([...(latestPain.nauseaHelped ?? [])]);
 
-    // Open headache immediately. Existing headache details are preserved if present.
-    setHeadache(true);
+    // Keep headache state, but do not automatically turn headache on.
+    setHeadache(!!latestPain.headache);
     setHeadacheTypes([...(latestPain.headacheTypes ?? [])]);
     setHeadacheIntensity(latestPain.headacheIntensity);
     setHeadacheMedOn(!!latestPain.headacheMed);
     setHeadacheMed(latestPain.headacheMed ?? "");
     setHeadacheMedTime(latestPain.headacheMedTime ?? nowHHMM());
 
-    // A copied note would look like a new note, so leave it blank.
-    setNote("");
+    // The update receives a new time and an empty note.
     setTime(nowHHMM());
+    setNote("");
 
-    // Never duplicate separate inline episodes when carrying a pain state forward.
+    // Do not duplicate previous separate episodes.
     setTetany(false);
     setPanic(false);
 
