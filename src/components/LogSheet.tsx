@@ -1178,6 +1178,19 @@ function PainWizard({
         </div>
       )}
       {step === 3 && (
+        {quickSymptomUpdate && (
+  <div className="rounded-2xl border border-primary/30 bg-primary/10 p-3 text-sm">
+    <p className="font-semibold">
+      Pain {score}/10 copied from{" "}
+      {copiedFromTime ?? "the latest log"}
+    </p>
+
+    <p className="mt-1 text-xs text-muted-foreground">
+      This saves a new entry at {time}; the older log stays unchanged.
+      Change any symptom below that is different now.
+    </p>
+  </div>
+)}
         <div className="space-y-4">
           {quickSymptomUpdate && (
             <div className="rounded-2xl border border-primary/30 bg-primary/10 p-3 text-sm">
