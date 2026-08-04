@@ -875,7 +875,7 @@ function DayPreview({
               <li key={w.id} className="flex items-start gap-2">
                 <button onClick={() => onEdit?.("workout", w)} className="flex-1 text-left">
                   <span className="font-medium">
-                    {w.time} · {w.kind} · {w.minutes} min
+                    {w.time} · <IcoText text={w.kind} size={14} /> · {w.minutes} min
                   </span>
                   {(w.distanceKm != null || w.elevationM != null || w.rpe != null || w.magnesiumBefore) && (
                     <span className="block text-xs text-muted-foreground">
