@@ -1,5 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { Home, StickyNote, Activity, Users, Plus } from "lucide-react";
+import { Home, StickyNote, Activity, Users, Plus, Brain } from "lucide-react";
 
 const items = [
   { to: "/", label: "Home", icon: Home },
