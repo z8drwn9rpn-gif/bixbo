@@ -38,74 +38,193 @@ function Shadow({ cy = 56, rx = 17, ry = 4 }: { cy?: number; rx?: number; ry?: n
 /* ---------------------------------------------------------------- BRAND */
 
 /** BIXBO logo — soft 3D glossy chili pepper. Brand only, never a symptom icon. */
-export function ChiliIcon(p: IconProps) {
-  const a = useSvgId(),
-    b = useSvgId(),
-    c = useSvgId(),
-    d = useSvgId();
-  const mini = (p.size ?? 24) <= 16;
+export function ChiliIcon({ size = 24, ...rest }: IconProps) {
+  const bodyGradient = useSvgId();
+  const stemGradient = useSvgId();
+  const highlightGradient = useSvgId();
+  const lowerShadeGradient = useSvgId();
+
+  const mini = size <= 16;
+
   if (mini) {
     return (
-      <Svg {...p}>
+      <Svg size={size} {...rest}>
+        {/* MINI VERSION — simplified for calendar and navigation sizes */}
+
+        <ellipse cx="33" cy="57" rx="15" ry="3" fill="#1c2a12" opacity="0.1" />
+
+        {/* simple pepper body */}
         <path
-          d="M40 16c7 2 12 9 12 18 0 15-11 24-24 24-10 0-18-4.6-21.5-11-1.2-2.3 1.3-4.6 3.5-3.3 4.6 2.7 9.6 2.9 14 .6 8-4.2 12-11.4 11.8-20.4-.1-3.6 1-6.9 4.2-7.9z"
-          fill="#e0342c"
+          d="
+            M39 17
+            C47 18 53 25 53 34
+            C53 47 43 56 29 57
+            C19 57 11 53 7 47
+            C5.5 44.5 8 42.5 10.5 44
+            C15 46.7 20 46.5 24.5 44
+            C33 39.5 37 31.5 36.5 23
+            C36.3 19.8 37 17.4 39 17
+            Z
+          "
+          fill="#e73b35"
         />
+
+        {/* simple green stem */}
         <path
-          d="M37 17c-1.4-5 .8-9.6 4.6-11.6 1.5-.8 3 .9 2.4 2.5-1 2.6-.8 4.8.4 6.7 1 1.6-.3 3.6-2.2 3.7l-2.6.2c-1.2.1-2.3-.4-2.6-1.5z"
-          fill="#3f8f36"
+          d="
+            M37 19
+            C35.5 14 37 9 41.5 6
+            C43.5 4.7 45.5 6.8 44.3 8.8
+            C42.5 11.7 42.4 14.4 44 16.8
+            C45.2 18.7 43.7 21 41.5 21.2
+            L39.8 21.4
+            C38.5 21.5 37.4 20.6 37 19
+            Z
+          "
+          fill="#4c9b3d"
+        />
+
+        {/* clear mini highlight */}
+        <path
+          d="
+            M18 28
+            C21 24 26 22 30 22.5
+            C31.5 22.7 32 24.7 30.7 25.5
+            C27 27.7 24.5 31.2 23.3 35
+            C22.8 36.6 20.5 36.7 19.8 35.2
+            C18.6 32.8 18.1 30.3 18 28
+            Z
+          "
+          fill="#ffffff"
+          opacity="0.45"
         />
       </Svg>
     );
   }
+
   return (
-    <Svg {...p}>
+    <Svg size={size} {...rest}>
       <defs>
-        <linearGradient id={a} x1="10" y1="18" x2="50" y2="58" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#ff8f6a" />
-          <stop offset="0.35" stopColor="#f2402c" />
-          <stop offset="0.75" stopColor="#c81f1f" />
-          <stop offset="1" stopColor="#8f1212" />
+        {/* red glossy body */}
+        <linearGradient id={bodyGradient} x1="14" y1="18" x2="48" y2="56" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#ff9276" />
+          <stop offset="0.3" stopColor="#f65342" />
+          <stop offset="0.68" stopColor="#db302e" />
+          <stop offset="1" stopColor="#a91620" />
         </linearGradient>
-        <linearGradient id={b} x1="30" y1="4" x2="46" y2="20" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#a3e881" />
-          <stop offset="1" stopColor="#3f8f36" />
+
+        {/* green stem */}
+        <linearGradient id={stemGradient} x1="36" y1="4" x2="45" y2="22" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#a9e982" />
+          <stop offset="0.5" stopColor="#65b94d" />
+          <stop offset="1" stopColor="#347e32" />
         </linearGradient>
-        <linearGradient id={c} x1="16" y1="20" x2="30" y2="46" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#fff" stopOpacity="0.95" />
-          <stop offset="1" stopColor="#fff" stopOpacity="0" />
+
+        {/* white glossy reflection */}
+        <linearGradient id={highlightGradient} x1="17" y1="22" x2="29" y2="43" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#ffffff" stopOpacity="0.9" />
+          <stop offset="0.55" stopColor="#ffffff" stopOpacity="0.35" />
+          <stop offset="1" stopColor="#ffffff" stopOpacity="0" />
         </linearGradient>
-        <radialGradient id={d} cx="0.3" cy="0.22" r="0.5">
-          <stop stopColor="#fff" stopOpacity="0.55" />
-          <stop offset="1" stopColor="#fff" stopOpacity="0" />
-        </radialGradient>
+
+        {/* lower volume shading */}
+        <linearGradient id={lowerShadeGradient} x1="25" y1="43" x2="39" y2="58" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#8e1320" stopOpacity="0" />
+          <stop offset="1" stopColor="#72111b" stopOpacity="0.42" />
+        </linearGradient>
       </defs>
-      <Shadow cy={57} rx={16} ry={3.6} />
-      {/* curved glossy chili body */}
+
+      <Shadow cy={58} rx={17} ry={3.5} />
+
+      {/* smooth pepper silhouette */}
       <path
-        d="M39.5 15c8 1.6 14.5 9 14.5 19.4 0 16-13 26.6-27 26.6-11 0-20-5.4-24-13-1.4-2.6 1.6-5.2 4-3.6 5.4 3.6 11.6 3.9 17 1.1 9.4-4.8 14.4-13.6 14.7-24.6.1-3 .5-5.9 .8-3.9z"
-        fill={`url(#${a})`}
+        d="
+          M39.5 17.2
+          C47.8 18.4 54.5 25.3 54.5 34.5
+          C54.5 48.4 43.5 58 28.9 58
+          C19.4 58 10.8 53.5 6.2 46.3
+          C4.7 44 7.4 41.4 9.8 43
+          C14.1 45.9 19.5 46.3 24.2 43.9
+          C32.8 39.5 37 31.7 36.6 22.9
+          C36.5 19.8 37.3 17.6 39.5 17.2
+          Z
+        "
+        fill={`url(#${bodyGradient})`}
       />
+
+      {/* soft darker volume at the bottom */}
       <path
-        d="M39.5 15c8 1.6 14.5 9 14.5 19.4 0 16-13 26.6-27 26.6-11 0-20-5.4-24-13-1.4-2.6 1.6-5.2 4-3.6 5.4 3.6 11.6 3.9 17 1.1 9.4-4.8 14.4-13.6 14.7-24.6.1-3 .5-5.9 .8-3.9z"
-        fill={`url(#${d})`}
+        d="
+          M12 48
+          C16.5 51.5 22.5 52.3 28.5 50.5
+          C38 47.7 45.5 41.3 50.3 33.5
+          C50.5 45 41.3 54.5 29 56
+          C21.5 57 15.2 53.7 12 48
+          Z
+        "
+        fill={`url(#${lowerShadeGradient})`}
       />
-      {/* green curved stem + calyx */}
+
+      {/* curved green stem */}
       <path
-        d="M38 16c-1.6-5.6.4-11.4 5.2-14.2 1.8-1 3.6 1 2.6 3-1.6 3.1-1.7 5.9-.4 8.5 1.1 2.1-.6 4.4-2.9 4.7l-2.6.4c-1.4.2-2.6-.7-2.9-2.4z"
-        fill={`url(#${b})`}
+        d="
+          M37.4 19
+          C35.7 13.6 37.2 8.4 41.6 5.1
+          C43.7 3.5 46.3 5.6 44.9 8
+          C43 11.1 42.8 13.9 44.6 16.5
+          C46 18.6 44.5 21.2 42 21.5
+          L40.1 21.7
+          C38.8 21.9 37.7 20.8 37.4 19
+          Z
+        "
+        fill={`url(#${stemGradient})`}
       />
+
+      {/* small leaf-like calyx */}
       <path
-        d="M35.6 5.6c2.3-2.6 5.4-4 8.4-3.6 1.6.2 2 2.3.6 3.1-2.6 1.5-4.3 3.4-5.1 5.8-.6 1.9-3.2 2-3.9.2l-.9-2.3c-.4-1.1-.1-2.3.9-3.2z"
-        fill="#5aa842"
+        d="
+          M35.4 9.2
+          C37.8 5.6 41.3 3.6 45 3.9
+          C46.8 4.1 47.3 6.5 45.7 7.4
+          C42.9 9 41 11.2 40 14
+          C39.3 15.9 36.7 16 35.9 14.1
+          L34.9 11.8
+          C34.5 10.9 34.7 10 35.4 9.2
+          Z
+        "
+        fill="#5ba947"
       />
-      {/* soft highlight streak */}
+
+      {/* long glossy highlight */}
       <path
-        d="M22 24c4 5 3 14-4.5 20-2.4 2-5-.6-3.6-3.1 3.3-5.9 4.5-11.4 3.6-17.1-.4-2.6 3.1-2.7 4.5-.8z"
-        fill={`url(#${c})`}
-        opacity="0.85"
+        d="
+          M18.2 24.5
+          C22.5 20.7 28.1 19.5 32.4 20.8
+          C34.1 21.3 34.2 23.7 32.7 24.5
+          C27.4 27.4 24.5 32.4 23.2 38
+          C22.6 40.7 19 41.6 17.2 39.5
+          C13.9 35.7 14.5 28 18.2 24.5
+          Z
+        "
+        fill={`url(#${highlightGradient})`}
       />
-      <ellipse cx="18.5" cy="24" rx="3.4" ry="2" transform="rotate(-35 18.5 24)" fill="#fff" opacity="0.7" />
+
+      {/* small bright reflection */}
+      <ellipse cx="19" cy="24" rx="4.1" ry="2.4" transform="rotate(-32 19 24)" fill="#ffffff" opacity="0.68" />
+
+      {/* secondary reflection */}
+      <path
+        d="
+          M34.5 47.5
+          C37.5 46.4 40.4 44.8 42.7 42.8
+          C43.8 41.8 45.5 43 44.8 44.4
+          C43.5 47.1 39.8 49.8 36.1 50.4
+          C34.2 50.7 32.8 48.2 34.5 47.5
+          Z
+        "
+        fill="#ffffff"
+        opacity="0.2"
+      />
     </Svg>
   );
 }
