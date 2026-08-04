@@ -337,6 +337,8 @@ export interface CustomQuickTag {
     mode?: "scheduled" | "extra";
     /** meds: `${medId}@${time}` identifying the scheduled slot */
     scheduleKey?: string;
+    /** meds: HH:MM of the scheduled slot to mark taken */
+    scheduleTime?: string;
     thermoKind?: ThermoKind;
     thermoMinutes?: number;
 
