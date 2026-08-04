@@ -189,16 +189,10 @@ function StatCard({
   const palette = TONES[tone];
 
   return (
-    <article
-      className="rounded-3xl border p-4"
-      style={{
-        borderColor: palette.border,
-        backgroundColor: palette.soft,
-      }}
-    >
+    <article className="rounded-3xl bg-tint p-4 ring-1 ring-border">
       <div
         className="grid h-9 w-9 place-items-center rounded-2xl"
-        style={{ color: palette.text, backgroundColor: "rgba(255,255,255,0.5)" }}
+        style={{ color: palette.text, backgroundColor: "var(--surface)" }}
       >
         {icon}
       </div>
@@ -243,13 +237,13 @@ function ComparisonBarCard({
   const theirsPercent = theirs == null ? 0 : clampPercent((Math.max(0, theirs) / calculatedMax) * 100);
 
   return (
-    <article className="rounded-3xl border p-4" style={{ borderColor: palette.border, backgroundColor: palette.soft }}>
+    <article className="rounded-3xl bg-tint p-4 ring-1 ring-border">
       <div className="flex items-start gap-3">
         <span
           className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl"
           style={{
             color: palette.text,
-            backgroundColor: "rgba(255,255,255,0.52)",
+            backgroundColor: "var(--surface)",
           }}
         >
           {icon}
@@ -308,7 +302,7 @@ function ComparisonRow({
           {formatValue(value, decimals, unit)}
         </span>
       </div>
-      <div className="mt-1.5 h-3 overflow-hidden rounded-full bg-background/70">
+      <div className="mt-1.5 h-3 overflow-hidden rounded-full bg-surface/70 ring-1 ring-border/40">
         <div
           className="h-full rounded-full transition-[width] duration-500"
           style={{
@@ -329,7 +323,7 @@ function SimilarityCard({ score, partnerName }: { score: number; partnerName: st
 
   return (
     <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 rounded-3xl bg-tint p-4 ring-1 ring-border/60">
         <div
           className="grid h-24 w-24 shrink-0 place-items-center rounded-full p-2"
           style={{
