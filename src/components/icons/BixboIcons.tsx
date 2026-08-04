@@ -1271,7 +1271,7 @@ export const EMOJI_ICON: Record<string, BixboIconName> = {
   "🍵": "food",
   "⚡": "bolt",
   "⚡️": "bolt",
-  "🫯": "panic",
+  "🫯": "sparkle",
   "😱": "panic",
   "🥵": "hotflash",
   "🤕": "headache",
