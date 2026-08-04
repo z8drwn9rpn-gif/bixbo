@@ -1,7 +1,7 @@
 import { useEffect, useSyncExternalStore } from "react";
 
 /* ------------------- Types ------------------- */
-export type PeriodLevel = "" | "spotting" | "light" | "medium" | "heavy" | "veryheavy";
+export type PeriodLevel = "" | "spotting" | "light" | "medium" | "heavy" | "very-heavy";
 export type SexKind =
   | "sex"
   | "fingering"
