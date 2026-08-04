@@ -389,6 +389,7 @@ function InsightsPage() {
                 ŠukŠuk!
               </p>
               <p className="mt-2 font-serif text-5xl leading-none">{sexCount}</p>
+              <Ico e="❤️" size={16} /> ŠukŠuk!
               <p className="mt-2 text-sm text-muted-foreground">
                 {sexCount === 1 ? "entry" : "entries"} in this{" "}
                 {period === "W" ? "week" : period === "M" ? "month" : "year"}
