@@ -842,9 +842,9 @@ function DayPreview({
               return (
                 <li key={b.id} className="flex items-start gap-2">
                   <button onClick={() => onEdit?.("bowel", b)} className="flex-1 text-left">
-                    {b.time} · {label}
-                    {b.feelings?.length ? ` · ${b.feelings.join(", ")}` : ""}
-                    {b.symptoms?.length ? ` · ${b.symptoms.join(", ")}` : ""}
+                    {b.time} · <IcoText text={label} size={14} />
+                    {b.feelings?.length ? <> · <IcoText text={b.feelings.join(", ")} size={13} /></> : ""}
+                    {b.symptoms?.length ? <> · <IcoText text={b.symptoms.join(", ")} size={13} /></> : ""}
                     {b.note ? ` — ${b.note}` : ""}
                   </button>
                   <DeleteBtn
