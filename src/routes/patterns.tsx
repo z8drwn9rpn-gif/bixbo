@@ -226,7 +226,7 @@ function Card({ title, description, children }: { title: string; description?: s
 
 function Empty({ text = "Not enough data yet" }: { text?: string }) {
   return (
-    <div className="mt-3 rounded-2xl bg-tint px-4 py-5 text-center">
+    <div className="mt-3 rounded-2xl bg-tint px-4 py-5 text-center ring-1 ring-border/40">
       <p className="text-sm text-muted-foreground">{text}</p>
     </div>
   );
@@ -263,7 +263,7 @@ function PhaseBarChart({
   const hasData = bars.some((bar) => bar.value != null);
 
   return (
-    <div className="rounded-3xl bg-tint p-4">
+    <div className="rounded-3xl bg-tint p-4 ring-1 ring-border/50">
       <div>
         <p className="text-sm font-semibold text-foreground">{title}</p>
 
@@ -364,20 +364,15 @@ function ComparisonMetric({
   const absoluteDelta = delta == null ? null : Math.abs(delta);
 
   return (
-    <article
-      className="rounded-3xl border p-4"
-      style={{
-        borderColor: palette.border,
-        backgroundColor: palette.soft,
-      }}
-    >
+    <article className="rounded-3xl bg-tint p-4 ring-1 ring-border/60">
       <div className="flex items-start gap-3">
         {icon && (
           <span
             className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl"
             style={{
-              backgroundColor: "rgba(255,255,255,0.55)",
+              backgroundColor: "var(--surface)",
               color: palette.text,
+              boxShadow: `inset 0 0 0 1px ${palette.border}`,
             }}
           >
             {icon}
@@ -385,7 +380,9 @@ function ComparisonMetric({
         )}
 
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+          <h3 className="text-sm font-semibold" style={{ color: palette.text }}>
+            {title}
+          </h3>
 
           {subtitle && <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">{subtitle}</p>}
         </div>
@@ -404,7 +401,7 @@ function ComparisonMetric({
       </div>
 
       {!hasAnyData ? (
-        <div className="mt-4 rounded-2xl bg-background/50 px-4 py-5 text-center">
+        <div className="mt-4 rounded-2xl bg-surface/75 px-4 py-5 text-center ring-1 ring-border/40">
           <p className="text-sm text-muted-foreground">Not enough data yet</p>
         </div>
       ) : (
@@ -431,7 +428,7 @@ function ComparisonMetric({
           </div>
 
           <div
-            className="mt-4 rounded-2xl bg-background/50 px-3 py-2 text-center text-xs font-semibold"
+            className="mt-4 rounded-2xl bg-surface/75 px-3 py-2 text-center text-xs font-semibold ring-1 ring-border/40"
             style={{ color: trendColor }}
           >
             {trendText}
@@ -466,7 +463,7 @@ function MetricColumn({
 
       <p className="mt-1 text-xl font-bold tabular-nums text-foreground">{formatMetricValue(value, decimals, unit)}</p>
 
-      <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-background/70">
+      <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-surface/75 ring-1 ring-border/40">
         <div
           className="h-full rounded-full transition-[width] duration-500 ease-out"
           style={{
@@ -1194,7 +1191,7 @@ function PatternsPage() {
           </div>
 
           {cycles.length > 0 ? (
-            <div className="mt-3 rounded-2xl bg-tint px-4 py-3">
+            <div className="mt-3 rounded-2xl bg-tint px-4 py-3 ring-1 ring-border/40">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-medium text-foreground">Most common period flow</p>
@@ -1616,7 +1613,7 @@ function PatternsPage() {
           {percentWithTrigger == null && percentWithoutTrigger == null ? (
             <Empty text="There is not enough matching data for this comparison." />
           ) : (
-            <div className="mt-4 rounded-2xl bg-tint p-4">
+            <div className="mt-4 rounded-2xl bg-tint p-4 ring-1 ring-border/40">
               <p className="text-xs leading-relaxed text-muted-foreground">
                 <span className="font-semibold text-foreground">{selectedOutcomeLabel}</span> occurred on{" "}
                 <span className="font-semibold text-purple-600 dark:text-purple-400">
@@ -1684,7 +1681,10 @@ function PatternsPage() {
                   const savedOutcomeLabel = outcomeOptions.find((option) => option.id === saved.b)?.label ?? saved.b;
 
                   return (
-                    <div key={saved.id} className="flex items-center gap-3 rounded-2xl bg-tint px-4 py-3">
+                    <div
+                      key={saved.id}
+                      className="flex items-center gap-3 rounded-2xl bg-tint px-4 py-3 ring-1 ring-border/40"
+                    >
                       <button
                         type="button"
                         className="min-w-0 flex-1 text-left"
