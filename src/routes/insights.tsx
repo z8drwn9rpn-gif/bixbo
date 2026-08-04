@@ -419,10 +419,9 @@ function InsightsPage() {
                 boxShadow: `inset 0 0 0 1px ${GREEN_BORDER}`,
               }}
             >
-              <p className="text-xs uppercase tracking-wider" style={{ color: GREEN_ACCENT }}>
-                ŠukŠuk!
-              </p>
+              <p className="text-xs uppercase tracking-wider" style={{ color: GREEN_ACCENT }}></p>
               <p className="mt-2 font-serif text-5xl leading-none">{sexCount}</p>
+              <Ico e="❤️" size={16} /> ŠukŠuk!
               <p className="mt-2 text-sm text-muted-foreground">
                 {sexCount === 1 ? "entry" : "entries"} in this{" "}
                 {period === "W" ? "week" : period === "M" ? "month" : "year"}
