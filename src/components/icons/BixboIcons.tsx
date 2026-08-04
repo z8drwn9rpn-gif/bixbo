@@ -37,194 +37,110 @@ function Shadow({ cy = 56, rx = 17, ry = 4 }: { cy?: number; rx?: number; ry?: n
 
 /* ---------------------------------------------------------------- BRAND */
 
-/** BIXBO logo — soft 3D glossy chili pepper. Brand only, never a symptom icon. */
+/** BIXBO logo — full glossy red chili pepper, never a symptom icon. */
 export function ChiliIcon({ size = 24, ...rest }: IconProps) {
   const bodyGradient = useSvgId();
   const stemGradient = useSvgId();
-  const highlightGradient = useSvgId();
-  const lowerShadeGradient = useSvgId();
+  const shineGradient = useSvgId();
 
-  const mini = size <= 16;
-
-  if (mini) {
-    return (
-      <Svg size={size} {...rest}>
-        {/* MINI VERSION — simplified for calendar and navigation sizes */}
-
-        <ellipse cx="33" cy="57" rx="15" ry="3" fill="#1c2a12" opacity="0.1" />
-
-        {/* simple pepper body */}
-        <path
-          d="
-            M39 17
-            C47 18 53 25 53 34
-            C53 47 43 56 29 57
-            C19 57 11 53 7 47
-            C5.5 44.5 8 42.5 10.5 44
-            C15 46.7 20 46.5 24.5 44
-            C33 39.5 37 31.5 36.5 23
-            C36.3 19.8 37 17.4 39 17
-            Z
-          "
-          fill="#e73b35"
-        />
-
-        {/* simple green stem */}
-        <path
-          d="
-            M37 19
-            C35.5 14 37 9 41.5 6
-            C43.5 4.7 45.5 6.8 44.3 8.8
-            C42.5 11.7 42.4 14.4 44 16.8
-            C45.2 18.7 43.7 21 41.5 21.2
-            L39.8 21.4
-            C38.5 21.5 37.4 20.6 37 19
-            Z
-          "
-          fill="#4c9b3d"
-        />
-
-        {/* clear mini highlight */}
-        <path
-          d="
-            M18 28
-            C21 24 26 22 30 22.5
-            C31.5 22.7 32 24.7 30.7 25.5
-            C27 27.7 24.5 31.2 23.3 35
-            C22.8 36.6 20.5 36.7 19.8 35.2
-            C18.6 32.8 18.1 30.3 18 28
-            Z
-          "
-          fill="#ffffff"
-          opacity="0.45"
-        />
-      </Svg>
-    );
-  }
+  const mini = size <= 18;
 
   return (
     <Svg size={size} {...rest}>
       <defs>
-        {/* red glossy body */}
-        <linearGradient id={bodyGradient} x1="14" y1="18" x2="48" y2="56" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#ff9276" />
-          <stop offset="0.3" stopColor="#f65342" />
-          <stop offset="0.68" stopColor="#db302e" />
-          <stop offset="1" stopColor="#a91620" />
+        <linearGradient id={bodyGradient} x1="34" y1="16" x2="23" y2="59" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#ff8068" />
+          <stop offset="0.38" stopColor="#f04436" />
+          <stop offset="0.72" stopColor="#d5272b" />
+          <stop offset="1" stopColor="#a91423" />
         </linearGradient>
 
-        {/* green stem */}
-        <linearGradient id={stemGradient} x1="36" y1="4" x2="45" y2="22" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#a9e982" />
-          <stop offset="0.5" stopColor="#65b94d" />
-          <stop offset="1" stopColor="#347e32" />
+        <linearGradient id={stemGradient} x1="37" y1="3" x2="44" y2="22" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#a9e47a" />
+          <stop offset="0.52" stopColor="#5eae45" />
+          <stop offset="1" stopColor="#307c31" />
         </linearGradient>
 
-        {/* white glossy reflection */}
-        <linearGradient id={highlightGradient} x1="17" y1="22" x2="29" y2="43" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#ffffff" stopOpacity="0.9" />
-          <stop offset="0.55" stopColor="#ffffff" stopOpacity="0.35" />
+        <linearGradient id={shineGradient} x1="22" y1="22" x2="18" y2="42" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#ffffff" stopOpacity="0.82" />
           <stop offset="1" stopColor="#ffffff" stopOpacity="0" />
-        </linearGradient>
-
-        {/* lower volume shading */}
-        <linearGradient id={lowerShadeGradient} x1="25" y1="43" x2="39" y2="58" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#8e1320" stopOpacity="0" />
-          <stop offset="1" stopColor="#72111b" stopOpacity="0.42" />
         </linearGradient>
       </defs>
 
-      <Shadow cy={58} rx={17} ry={3.5} />
+      {!mini && <Shadow cy={59} rx={16} ry={3} />}
 
-      {/* smooth pepper silhouette */}
-      <path
-        d="
-          M39.5 17.2
-          C47.8 18.4 54.5 25.3 54.5 34.5
-          C54.5 48.4 43.5 58 28.9 58
-          C19.4 58 10.8 53.5 6.2 46.3
-          C4.7 44 7.4 41.4 9.8 43
-          C14.1 45.9 19.5 46.3 24.2 43.9
-          C32.8 39.5 37 31.7 36.6 22.9
-          C36.5 19.8 37.3 17.6 39.5 17.2
-          Z
-        "
-        fill={`url(#${bodyGradient})`}
-      />
+      <g transform="rotate(-7 32 32)">
+        {/* Full pepper body — thick top, tapered pointed end */}
+        <path
+          d="
+            M41.5 16.5
+            C50.5 16.8 56.5 23.8 56 33
+            C55.5 44.5 46 53.5 31 58.5
+            C20.5 62 10.5 60.5 5 56
+            C3.8 55 3.9 53.2 5.2 52.2
+            C6.3 51.3 7.7 51.5 9.2 52.3
+            C14.8 55.2 21 53.6 27.1 49.2
+            C35.5 43.1 40.1 34.9 39.1 26.5
+            C38.7 22.8 36.8 20.5 36.8 19.2
+            C36.8 17.4 39.1 16.4 41.5 16.5
+            Z
+          "
+          fill={mini ? "#e83b35" : `url(#${bodyGradient})`}
+          stroke="#a71824"
+          strokeWidth={mini ? 1.8 : 1.2}
+          strokeLinejoin="round"
+        />
 
-      {/* soft darker volume at the bottom */}
-      <path
-        d="
-          M12 48
-          C16.5 51.5 22.5 52.3 28.5 50.5
-          C38 47.7 45.5 41.3 50.3 33.5
-          C50.5 45 41.3 54.5 29 56
-          C21.5 57 15.2 53.7 12 48
-          Z
-        "
-        fill={`url(#${lowerShadeGradient})`}
-      />
+        {/* Green stem */}
+        <path
+          d="
+            M37.6 19.5
+            C35.8 14.6 37.1 9.2 41.1 5.4
+            C42.9 3.7 45.6 5.3 44.5 7.7
+            C43.1 10.6 43.1 13.2 44.8 15.8
+            C46.2 18 44.8 20.8 42.2 21.2
+            L40.3 21.5
+            C39 21.7 38 20.8 37.6 19.5
+            Z
+          "
+          fill={mini ? "#4a9638" : `url(#${stemGradient})`}
+          stroke="#2f7030"
+          strokeWidth={mini ? 1.5 : 1}
+          strokeLinejoin="round"
+        />
 
-      {/* curved green stem */}
-      <path
-        d="
-          M37.4 19
-          C35.7 13.6 37.2 8.4 41.6 5.1
-          C43.7 3.5 46.3 5.6 44.9 8
-          C43 11.1 42.8 13.9 44.6 16.5
-          C46 18.6 44.5 21.2 42 21.5
-          L40.1 21.7
-          C38.8 21.9 37.7 20.8 37.4 19
-          Z
-        "
-        fill={`url(#${stemGradient})`}
-      />
+        {/* Small calyx where stem joins the pepper */}
+        <path
+          d="
+            M35.8 17.5
+            C38 15.2 41.3 14.6 44.5 16
+            C42.4 16.8 40.7 18.3 39.7 20.4
+            C38.3 19.3 37 18.4 35.8 17.5
+            Z
+          "
+          fill="#4f9b3c"
+        />
 
-      {/* small leaf-like calyx */}
-      <path
-        d="
-          M35.4 9.2
-          C37.8 5.6 41.3 3.6 45 3.9
-          C46.8 4.1 47.3 6.5 45.7 7.4
-          C42.9 9 41 11.2 40 14
-          C39.3 15.9 36.7 16 35.9 14.1
-          L34.9 11.8
-          C34.5 10.9 34.7 10 35.4 9.2
-          Z
-        "
-        fill="#5ba947"
-      />
+        {!mini && (
+          <>
+            {/* Short highlight — does not create a peel-shaped inner curve */}
+            <path
+              d="
+                M21.3 23.5
+                C25 20.8 29.6 20 33.1 21.2
+                C34.5 21.7 34.7 23.6 33.3 24.3
+                C28.6 26.7 25.5 30.8 24.1 35.8
+                C23.6 37.8 21.2 38.7 19.7 37.2
+                C16.9 34.3 17.9 26.3 21.3 23.5
+                Z
+              "
+              fill={`url(#${shineGradient})`}
+            />
 
-      {/* long glossy highlight */}
-      <path
-        d="
-          M18.2 24.5
-          C22.5 20.7 28.1 19.5 32.4 20.8
-          C34.1 21.3 34.2 23.7 32.7 24.5
-          C27.4 27.4 24.5 32.4 23.2 38
-          C22.6 40.7 19 41.6 17.2 39.5
-          C13.9 35.7 14.5 28 18.2 24.5
-          Z
-        "
-        fill={`url(#${highlightGradient})`}
-      />
-
-      {/* small bright reflection */}
-      <ellipse cx="19" cy="24" rx="4.1" ry="2.4" transform="rotate(-32 19 24)" fill="#ffffff" opacity="0.68" />
-
-      {/* secondary reflection */}
-      <path
-        d="
-          M34.5 47.5
-          C37.5 46.4 40.4 44.8 42.7 42.8
-          C43.8 41.8 45.5 43 44.8 44.4
-          C43.5 47.1 39.8 49.8 36.1 50.4
-          C34.2 50.7 32.8 48.2 34.5 47.5
-          Z
-        "
-        fill="#ffffff"
-        opacity="0.2"
-      />
+            <ellipse cx="22" cy="23" rx="3.6" ry="2.1" transform="rotate(-30 22 23)" fill="#ffffff" opacity="0.58" />
+          </>
+        )}
+      </g>
     </Svg>
   );
 }
