@@ -9,6 +9,7 @@ import { X, Plus, ChevronLeft, ChevronUp, ChevronDown, GripVertical, Check, Penc
 import {
   PAIN_DESCRIPTIONS,
   painColor,
+  periodLabel,
   BODY_PARTS_DEFAULT,
   PAIN_QUALITY_DEFAULT,
   OTHER_SYMPTOMS_DEFAULT,
