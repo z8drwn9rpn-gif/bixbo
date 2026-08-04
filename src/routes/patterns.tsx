@@ -472,7 +472,7 @@ function PatternsPage() {
     (l.refLow == null || l.value >= l.refLow) && (l.refHigh == null || l.value <= l.refHigh);
 
   return (
-    <AppShell title="Patterns">
+    <AppShell title="Bixbo Patterns">
       <div className="px-5 pt-2 pb-24 space-y-4">
         <Card title="Cycle phase — pain & flow">
           <ThreeBarChart bars={painBars} unit="/10" />
