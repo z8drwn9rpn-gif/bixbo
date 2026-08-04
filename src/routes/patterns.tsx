@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
-import { EMPTY, addDays, avgDayPain, todayKey, useBixbo, type DayLog, type Diagnosis, type Med } from "@/lib/storage";
+import { EMPTY, addDays, avgDayPain, todayKey, useBixbo, type DayLog, type Diagnosis } from "@/lib/storage";
 import {
   avg,
   dayBowelSymptoms,
@@ -915,7 +915,7 @@ function PatternsPage() {
     }
 
     if (trigger === "heavyPeriod") {
-      return log.period === "heavy" || log.period === "very Heavy";
+      return log.period === "heavy" || log.period === "very-heavy";
     }
 
     if (trigger === "panic") {
