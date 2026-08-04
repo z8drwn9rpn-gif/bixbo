@@ -1,167 +1,466 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
-import { AppShell } from "@/components/AppShell";
-import { Ico } from "@/components/icons/BixboIcons";
+
+export const Route = createFileRoute("/patterns")({
+  component: PatternsPage,
+});
+
+function PatternsPage() {
+  return <></>;
+}
+import { createFileRoute } from "@tanstack/react-router";
+import { useMemo, useState, type ReactNode } from "react";
 import {
-  useBixbo,
-  EMPTY,
-  addDays,
-  toKey,
-  fromKey,
-  todayKey,
-  painColor,
-  avgDayPain,
-  type DayLog,
-  type LabResult,
-  type DocEntry,
-  type Diagnosis,
-  type Med,
-} from "@/lib/storage";
+  Activity,
+  BatteryCharging,
+  Brain,
+  Dumbbell,
+  Flame,
+  HeartPulse,
+  Moon,
+  Pill,
+  Scale,
+  Sparkles,
+  ThermometerSun,
+  TrendingDown,
+  TrendingUp,
+  Waves,
+} from "lucide-react";
+
+import { AppShell } from "@/components/AppShell";
+import { EMPTY, addDays, avgDayPain, todayKey, useBixbo, type DayLog, type Diagnosis, type Med } from "@/lib/storage";
 import {
   avg,
-  thisAndLastMonthPrefixes,
+  dayBowelSymptoms,
+  dayEnergy,
+  dayHeadacheIntensity,
+  dayHotFlash,
+  dayPanicIntensity,
+  dayTetanyIntensity,
   daysOfMonth,
   historicCycles,
-  phaseDays,
-  phaseAvg,
-  phaseFlowMode,
   negativeMoodCount,
-  dayEnergy,
-  dayHotFlash,
-  dayBowelSymptoms,
-  dayTetanyIntensity,
-  dayPanicIntensity,
-  dayHeadacheIntensity,
+  phaseAvg,
+  phaseDays,
+  phaseFlowMode,
+  thisAndLastMonthPrefixes,
 } from "@/lib/patterns";
 
 export const Route = createFileRoute("/patterns")({
   head: () => ({
     meta: [
-      { title: "Health of Bixbo — Bixbo Patterns" },
-      { name: "description", content: "Compare cycle phases, months, treatments and triggers to spot your patterns." },
-      { property: "og:title", content: "Health of Bixbo — Bixbo Patterns" },
-      { property: "og:description", content: "Cycle, monthly, treatment, couple and trigger comparisons." },
+      {
+        title: "Health of Bixbo — Bixbo Patterns",
+      },
+      {
+        name: "description",
+        content: "Compare cycle phases, monthly health changes, treatments and possible symptom triggers.",
+      },
+      {
+        property: "og:title",
+        content: "Health of Bixbo — Bixbo Patterns",
+      },
+      {
+        property: "og:description",
+        content: "Cycle, monthly, treatment and trigger comparisons.",
+      },
     ],
   }),
   component: PatternsPage,
 });
 
-/* ------------------------------------------------------------ shared bits */
+/* -------------------------------------------------------------------------- */
+/* Types                                                                      */
+/* -------------------------------------------------------------------------- */
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
+type MetricColor = "rose" | "purple" | "blue" | "orange" | "amber" | "emerald" | "teal" | "cyan" | "pink" | "slate";
+
+type PhaseBar = {
+  label: string;
+  value: number | null;
+};
+
+type ComparisonMetricProps = {
+  title: string;
+  subtitle?: string;
+  previous: number | null;
+  current: number | null;
+  max?: number;
+  decimals?: number;
+  unit?: string;
+  color: MetricColor;
+  higherIsWorse?: boolean;
+  icon?: ReactNode;
+  previousLabel?: string;
+  currentLabel?: string;
+};
+
+type TreatmentMetric = {
+  before: number | null;
+  after: number | null;
+};
+
+type SelectOption = {
+  id: string;
+  label: string;
+};
+
+/* -------------------------------------------------------------------------- */
+/* Colours                                                                    */
+/* -------------------------------------------------------------------------- */
+
+const METRIC_COLORS: Record<
+  MetricColor,
+  {
+    solid: string;
+    soft: string;
+    text: string;
+    border: string;
+  }
+> = {
+  rose: {
+    solid: "#f43f5e",
+    soft: "rgba(244, 63, 94, 0.13)",
+    text: "#e11d48",
+    border: "rgba(244, 63, 94, 0.24)",
+  },
+  purple: {
+    solid: "#8b5cf6",
+    soft: "rgba(139, 92, 246, 0.13)",
+    text: "#7c3aed",
+    border: "rgba(139, 92, 246, 0.24)",
+  },
+  blue: {
+    solid: "#3b82f6",
+    soft: "rgba(59, 130, 246, 0.13)",
+    text: "#2563eb",
+    border: "rgba(59, 130, 246, 0.24)",
+  },
+  orange: {
+    solid: "#f97316",
+    soft: "rgba(249, 115, 22, 0.13)",
+    text: "#ea580c",
+    border: "rgba(249, 115, 22, 0.24)",
+  },
+  amber: {
+    solid: "#f59e0b",
+    soft: "rgba(245, 158, 11, 0.14)",
+    text: "#d97706",
+    border: "rgba(245, 158, 11, 0.24)",
+  },
+  emerald: {
+    solid: "#10b981",
+    soft: "rgba(16, 185, 129, 0.13)",
+    text: "#059669",
+    border: "rgba(16, 185, 129, 0.24)",
+  },
+  teal: {
+    solid: "#14b8a6",
+    soft: "rgba(20, 184, 166, 0.13)",
+    text: "#0f766e",
+    border: "rgba(20, 184, 166, 0.24)",
+  },
+  cyan: {
+    solid: "#06b6d4",
+    soft: "rgba(6, 182, 212, 0.13)",
+    text: "#0891b2",
+    border: "rgba(6, 182, 212, 0.24)",
+  },
+  pink: {
+    solid: "#ec4899",
+    soft: "rgba(236, 72, 153, 0.13)",
+    text: "#db2777",
+    border: "rgba(236, 72, 153, 0.24)",
+  },
+  slate: {
+    solid: "#64748b",
+    soft: "rgba(100, 116, 139, 0.13)",
+    text: "#475569",
+    border: "rgba(100, 116, 139, 0.24)",
+  },
+};
+
+const PHASE_COLORS = [
+  {
+    label: "Before",
+    solid: "#8b5cf6",
+    soft: "rgba(139, 92, 246, 0.15)",
+  },
+  {
+    label: "During",
+    solid: "#f43f5e",
+    soft: "rgba(244, 63, 94, 0.15)",
+  },
+  {
+    label: "After",
+    solid: "#10b981",
+    soft: "rgba(16, 185, 129, 0.15)",
+  },
+] as const;
+
+/* -------------------------------------------------------------------------- */
+/* Shared UI                                                                  */
+/* -------------------------------------------------------------------------- */
+
+function Card({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
   return (
-    <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
-      <p className="text-xs uppercase tracking-wider text-muted-foreground">{title}</p>
+    <section className="overflow-hidden rounded-3xl bg-surface p-5 ring-1 ring-border">
+      <div>
+        <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{title}</h2>
+
+        {description && <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{description}</p>}
+      </div>
+
       {children}
     </section>
   );
 }
 
-function Empty() {
-  return <p className="mt-2 text-sm text-muted-foreground">Not enough data yet</p>;
-}
-
-function ThreeBarChart({
-  bars,
-  max = 10,
-  unit = "",
-}: {
-  bars: { label: string; value: number | null; sub?: string }[];
-  max?: number;
-  unit?: string;
-}) {
-  const hasData = bars.some((b) => b.value != null);
-  if (!hasData) return <Empty />;
+function Empty({ text = "Not enough data yet" }: { text?: string }) {
   return (
-    <div className="mt-4 grid grid-cols-3 gap-3">
-      {bars.map((b) => (
-        <div key={b.label} className="flex flex-col items-center gap-1">
-          <span className="text-sm font-semibold tabular-nums">
-            {b.value != null ? b.value.toFixed(1) : "–"}
-            {unit}
-          </span>
-          <div className="flex h-24 w-full items-end justify-center">
-            <div
-              className="w-8 rounded-t bg-primary"
-              style={{
-                height: b.value != null ? `${Math.max(6, (Math.min(b.value, max) / max) * 100)}%` : "2%",
-                opacity: b.value != null ? 1 : 0.2,
-              }}
-            />
-          </div>
-          <span className="text-[11px] text-center text-muted-foreground">{b.label}</span>
-          {b.sub && <span className="text-[10px] text-muted-foreground">{b.sub}</span>}
-        </div>
-      ))}
+    <div className="mt-3 rounded-2xl bg-tint px-4 py-5 text-center">
+      <p className="text-sm text-muted-foreground">{text}</p>
     </div>
   );
 }
 
-function TwoPointLine({
-  prev,
-  curr,
-  decimals = 1,
-  higherIsWorse = true,
+function SectionDivider() {
+  return <div className="my-4 h-px bg-border/70" />;
+}
+
+function formatMetricValue(value: number | null, decimals: number, unit: string) {
+  if (value == null || !Number.isFinite(value)) return "—";
+
+  return `${value.toFixed(decimals)}${unit}`;
+}
+
+function clampPercent(value: number) {
+  return Math.max(0, Math.min(100, value));
+}
+
+/* -------------------------------------------------------------------------- */
+/* Cycle phase chart                                                          */
+/* -------------------------------------------------------------------------- */
+
+function PhaseBarChart({
+  title,
+  description,
+  bars,
+  max,
   unit = "",
+  decimals = 1,
 }: {
-  prev: number | null;
-  curr: number | null;
-  decimals?: number;
-  higherIsWorse?: boolean;
+  title: string;
+  description?: string;
+  bars: PhaseBar[];
+  max: number;
   unit?: string;
+  decimals?: number;
 }) {
-  if (prev == null && curr == null) return <Empty />;
-  const p = prev ?? curr ?? 0;
-  const c = curr ?? prev ?? 0;
-  const max = Math.max(p, c, 0.001);
-  const min = Math.min(p, c, 0);
-  const span = Math.max(0.001, max - min);
-  const yFor = (v: number) => 50 - ((v - min) / span) * 40 - 5;
-  const delta = curr != null && prev != null ? curr - prev : null;
-  const improved = delta == null ? null : higherIsWorse ? delta < 0 : delta > 0;
-  const trendColor =
-    improved == null
-      ? "var(--muted-foreground)"
-      : improved
-        ? "#22c55e"
-        : delta === 0
-          ? "var(--muted-foreground)"
-          : "#ef4444";
+  const hasData = bars.some((bar) => bar.value != null);
+
   return (
-    <div className="mt-2 flex items-center gap-3">
-      <svg viewBox="0 0 120 60" className="h-14 w-28 shrink-0">
-        <line x1="20" y1={yFor(p)} x2="100" y2={yFor(c)} stroke={trendColor} strokeWidth="2.5" strokeLinecap="round" />
-        <circle cx="20" cy={yFor(p)} r="4" fill="var(--muted-foreground)" />
-        <circle cx="100" cy={yFor(c)} r="4" fill={trendColor} />
-      </svg>
-      <div className="text-xs">
-        <p className="text-muted-foreground">
-          Last month:{" "}
-          <span className="font-medium text-foreground">
-            {prev != null ? prev.toFixed(decimals) : "–"}
-            {unit}
+    <div className="rounded-3xl bg-tint p-4">
+      <div>
+        <p className="text-sm font-semibold text-foreground">{title}</p>
+
+        {description && <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">{description}</p>}
+      </div>
+
+      {!hasData ? (
+        <p className="mt-4 text-sm text-muted-foreground">Not enough cycle data</p>
+      ) : (
+        <div className="mt-5 grid grid-cols-3 gap-3">
+          {bars.map((bar, index) => {
+            const color = PHASE_COLORS[index] ?? PHASE_COLORS[0];
+            const percentage = bar.value == null ? 0 : clampPercent((Math.max(0, bar.value) / max) * 100);
+
+            return (
+              <div key={`${title}-${bar.label}`} className="flex min-w-0 flex-col items-center">
+                <span className="mb-2 min-h-5 text-center text-sm font-bold tabular-nums text-foreground">
+                  {formatMetricValue(bar.value, decimals, unit)}
+                </span>
+
+                <div
+                  className="relative flex h-28 w-full max-w-16 items-end overflow-hidden rounded-2xl"
+                  style={{ backgroundColor: color.soft }}
+                >
+                  <div
+                    className="w-full rounded-2xl transition-[height] duration-500 ease-out"
+                    style={{
+                      height: bar.value == null ? "0%" : `${Math.max(6, percentage)}%`,
+                      backgroundColor: color.solid,
+                    }}
+                  />
+                </div>
+
+                <span className="mt-2 text-center text-[11px] font-medium text-muted-foreground">{bar.label}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Monthly and treatment comparison                                           */
+/* -------------------------------------------------------------------------- */
+
+function ComparisonMetric({
+  title,
+  subtitle,
+  previous,
+  current,
+  max,
+  decimals = 1,
+  unit = "",
+  color,
+  higherIsWorse = true,
+  icon,
+  previousLabel = "Last month",
+  currentLabel = "This month",
+}: ComparisonMetricProps) {
+  const palette = METRIC_COLORS[color];
+  const hasAnyData = previous != null || current != null;
+
+  const values = [previous, current].filter((value): value is number => value != null && Number.isFinite(value));
+
+  const calculatedMax = max ?? Math.max(1, ...values.map((value) => Math.abs(value)));
+
+  const previousPercentage = previous == null ? 0 : clampPercent((Math.max(0, previous) / calculatedMax) * 100);
+
+  const currentPercentage = current == null ? 0 : clampPercent((Math.max(0, current) / calculatedMax) * 100);
+
+  const delta = previous != null && current != null ? current - previous : null;
+
+  const isUnchanged = delta === 0;
+
+  const improved = delta == null || isUnchanged ? null : higherIsWorse ? delta < 0 : delta > 0;
+
+  const trendText =
+    delta == null ? "Comparison unavailable" : isUnchanged ? "No change" : improved ? "Improved" : "Worsened";
+
+  const trendColor = delta == null || isUnchanged ? "var(--muted-foreground)" : improved ? "#16a34a" : "#dc2626";
+
+  const absoluteDelta = delta == null ? null : Math.abs(delta);
+
+  return (
+    <article
+      className="rounded-3xl border p-4"
+      style={{
+        borderColor: palette.border,
+        backgroundColor: palette.soft,
+      }}
+    >
+      <div className="flex items-start gap-3">
+        {icon && (
+          <span
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl"
+            style={{
+              backgroundColor: "rgba(255,255,255,0.55)",
+              color: palette.text,
+            }}
+          >
+            {icon}
           </span>
-        </p>
-        <p className="text-muted-foreground">
-          This month:{" "}
-          <span className="font-medium text-foreground">
-            {curr != null ? curr.toFixed(decimals) : "–"}
-            {unit}
-          </span>
-        </p>
-        {delta != null && (
-          <p className="mt-0.5 font-medium" style={{ color: trendColor }}>
-            {delta === 0 ? "— unchanged" : improved ? "▼ improved" : "▲ worsened"} ({delta > 0 ? "+" : ""}
-            {delta.toFixed(decimals)}
-            {unit})
-          </p>
         )}
+
+        <div className="min-w-0 flex-1">
+          <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+
+          {subtitle && <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">{subtitle}</p>}
+        </div>
+
+        {delta != null && (
+          <div className="flex shrink-0 items-center gap-1 text-xs font-semibold" style={{ color: trendColor }}>
+            {isUnchanged ? null : improved ? <TrendingDown className="h-4 w-4" /> : <TrendingUp className="h-4 w-4" />}
+
+            {absoluteDelta != null && !isUnchanged && formatMetricValue(absoluteDelta, decimals, unit)}
+          </div>
+        )}
+      </div>
+
+      {!hasAnyData ? (
+        <div className="mt-4 rounded-2xl bg-background/50 px-4 py-5 text-center">
+          <p className="text-sm text-muted-foreground">Not enough data yet</p>
+        </div>
+      ) : (
+        <>
+          <div className="mt-5 grid grid-cols-2 gap-4">
+            <MetricColumn
+              label={previousLabel}
+              value={previous}
+              percentage={previousPercentage}
+              decimals={decimals}
+              unit={unit}
+              color={palette.solid}
+              muted
+            />
+
+            <MetricColumn
+              label={currentLabel}
+              value={current}
+              percentage={currentPercentage}
+              decimals={decimals}
+              unit={unit}
+              color={palette.solid}
+            />
+          </div>
+
+          <div
+            className="mt-4 rounded-2xl bg-background/50 px-3 py-2 text-center text-xs font-semibold"
+            style={{ color: trendColor }}
+          >
+            {trendText}
+            {delta != null && !isUnchanged ? ` by ${formatMetricValue(Math.abs(delta), decimals, unit)}` : ""}
+          </div>
+        </>
+      )}
+    </article>
+  );
+}
+
+function MetricColumn({
+  label,
+  value,
+  percentage,
+  decimals,
+  unit,
+  color,
+  muted = false,
+}: {
+  label: string;
+  value: number | null;
+  percentage: number;
+  decimals: number;
+  unit: string;
+  color: string;
+  muted?: boolean;
+}) {
+  return (
+    <div className="min-w-0">
+      <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
+
+      <p className="mt-1 text-xl font-bold tabular-nums text-foreground">{formatMetricValue(value, decimals, unit)}</p>
+
+      <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-background/70">
+        <div
+          className="h-full rounded-full transition-[width] duration-500 ease-out"
+          style={{
+            width: value == null ? "0%" : `${Math.max(percentage, value === 0 ? 0 : 4)}%`,
+            backgroundColor: color,
+            opacity: muted ? 0.45 : 1,
+          }}
+        />
       </div>
     </div>
   );
 }
 
-/* ------------------------------------------------------------ page */
+/* -------------------------------------------------------------------------- */
+/* Page                                                                       */
+/* -------------------------------------------------------------------------- */
 
 function PatternsPage() {
   const { data, update, hydrated } = useBixbo();
@@ -169,827 +468,1348 @@ function PatternsPage() {
   const dayLogs = view.dayLogs;
 
   const cycles = useMemo(() => historicCycles(view), [view]);
-  const buckets = useMemo(() => phaseDays(cycles), [cycles]);
+  const phaseBuckets = useMemo(() => phaseDays(cycles), [cycles]);
 
-  /* ---- 1) Cycle phase: pain & flow ---- */
-  const painBars = [
-    { label: "Before", value: phaseAvg(buckets.before, dayLogs, (l) => avgDayPain(l) ?? null) },
-    { label: "During", value: phaseAvg(buckets.during, dayLogs, (l) => avgDayPain(l) ?? null) },
-    { label: "After", value: phaseAvg(buckets.after, dayLogs, (l) => avgDayPain(l) ?? null) },
+  /* ------------------------------------------------------------------------ */
+  /* Cycle phase calculations                                                 */
+  /* ------------------------------------------------------------------------ */
+
+  const painPhaseBars: PhaseBar[] = [
+    {
+      label: "Before",
+      value: phaseAvg(phaseBuckets.before, dayLogs, (log) => avgDayPain(log) ?? null),
+    },
+    {
+      label: "During",
+      value: phaseAvg(phaseBuckets.during, dayLogs, (log) => avgDayPain(log) ?? null),
+    },
+    {
+      label: "After",
+      value: phaseAvg(phaseBuckets.after, dayLogs, (log) => avgDayPain(log) ?? null),
+    },
   ];
-  const flowMode = phaseFlowMode(buckets.during, dayLogs);
 
-  /* ---- 2 & 3) Monthly comparisons ---- */
-  const [curPrefix, lastPrefix] = thisAndLastMonthPrefixes();
-  const curDays = daysOfMonth(curPrefix).filter((k) => k <= todayKey());
-  const lastDays = daysOfMonth(lastPrefix);
+  const moodPhaseBars: PhaseBar[] = [
+    {
+      label: "Before",
+      value: phaseAvg(phaseBuckets.before, dayLogs, negativeMoodCount),
+    },
+    {
+      label: "During",
+      value: phaseAvg(phaseBuckets.during, dayLogs, negativeMoodCount),
+    },
+    {
+      label: "After",
+      value: phaseAvg(phaseBuckets.after, dayLogs, negativeMoodCount),
+    },
+  ];
 
-  function countAndAvg(days: string[], countFn: (l: DayLog) => number, intensityFn: (l: DayLog) => number | null) {
+  const energyPhaseBars: PhaseBar[] = [
+    {
+      label: "Before",
+      value: phaseAvg(phaseBuckets.before, dayLogs, dayEnergy),
+    },
+    {
+      label: "During",
+      value: phaseAvg(phaseBuckets.during, dayLogs, dayEnergy),
+    },
+    {
+      label: "After",
+      value: phaseAvg(phaseBuckets.after, dayLogs, dayEnergy),
+    },
+  ];
+
+  const hotFlashPhaseBars: PhaseBar[] = [
+    {
+      label: "Before",
+      value: phaseAvg(phaseBuckets.before, dayLogs, dayHotFlash),
+    },
+    {
+      label: "During",
+      value: phaseAvg(phaseBuckets.during, dayLogs, dayHotFlash),
+    },
+    {
+      label: "After",
+      value: phaseAvg(phaseBuckets.after, dayLogs, dayHotFlash),
+    },
+  ];
+
+  const bowelPhaseBars: PhaseBar[] = [
+    {
+      label: "Before",
+      value: phaseAvg(phaseBuckets.before, dayLogs, dayBowelSymptoms),
+    },
+    {
+      label: "During",
+      value: phaseAvg(phaseBuckets.during, dayLogs, dayBowelSymptoms),
+    },
+    {
+      label: "After",
+      value: phaseAvg(phaseBuckets.after, dayLogs, dayBowelSymptoms),
+    },
+  ];
+
+  const commonFlow = phaseFlowMode(phaseBuckets.during, dayLogs);
+
+  /* ------------------------------------------------------------------------ */
+  /* Monthly calculations                                                     */
+  /* ------------------------------------------------------------------------ */
+
+  const [currentMonthPrefix, previousMonthPrefix] = thisAndLastMonthPrefixes();
+
+  const currentMonthDays = daysOfMonth(currentMonthPrefix).filter((day) => day <= todayKey());
+
+  const previousMonthDays = daysOfMonth(previousMonthPrefix);
+
+  function countAndAverage(
+    days: string[],
+    countFn: (log: DayLog) => number,
+    intensityFn: (log: DayLog) => number | null,
+  ) {
     let count = 0;
     const intensities: number[] = [];
-    days.forEach((k) => {
-      const l = dayLogs[k];
-      if (!l) return;
-      count += countFn(l);
-      const i = intensityFn(l);
-      if (i != null) intensities.push(i);
+
+    days.forEach((day) => {
+      const log = dayLogs[day];
+
+      if (!log) return;
+
+      count += countFn(log);
+
+      const intensity = intensityFn(log);
+
+      if (intensity != null && Number.isFinite(intensity)) {
+        intensities.push(intensity);
+      }
     });
-    return { count, intensity: avg(intensities) };
+
+    return {
+      count,
+      intensity: avg(intensities),
+    };
   }
 
-  const panicCur = countAndAvg(curDays, (l) => l.panic?.length ?? 0, dayPanicIntensity);
-  const panicLast = countAndAvg(lastDays, (l) => l.panic?.length ?? 0, dayPanicIntensity);
-  const tetanyCur = countAndAvg(curDays, (l) => l.tetany?.length ?? 0, dayTetanyIntensity);
-  const tetanyLast = countAndAvg(lastDays, (l) => l.tetany?.length ?? 0, dayTetanyIntensity);
+  const panicCurrent = countAndAverage(currentMonthDays, (log) => log.panic?.length ?? 0, dayPanicIntensity);
 
-  const hfCur = countAndAvg(curDays, (l) => (l.pain ?? []).filter((p) => p.hotFlashesOn).length, dayHotFlash);
-  const hfLast = countAndAvg(lastDays, (l) => (l.pain ?? []).filter((p) => p.hotFlashesOn).length, dayHotFlash);
-  const hAcheCur = countAndAvg(curDays, (l) => (l.pain ?? []).filter((p) => p.headache).length, dayHeadacheIntensity);
-  const hAcheLast = countAndAvg(lastDays, (l) => (l.pain ?? []).filter((p) => p.headache).length, dayHeadacheIntensity);
+  const panicPrevious = countAndAverage(previousMonthDays, (log) => log.panic?.length ?? 0, dayPanicIntensity);
 
-  const sleepAvg = (days: string[]) =>
-    avg(days.map((k) => dayLogs[k]?.sleepHours).filter((v): v is number => v != null));
-  const weightAvg = (days: string[]) => avg(days.map((k) => dayLogs[k]?.weight).filter((v): v is number => v != null));
+  const tetanyCurrent = countAndAverage(currentMonthDays, (log) => log.tetany?.length ?? 0, dayTetanyIntensity);
 
-  const medAdherence = (days: string[]) => {
-    const scheduled = view.meds.filter((m) => !m.asNeeded);
-    let expected = 0,
-      taken = 0;
-    days.forEach((k) =>
-      scheduled.forEach((m) =>
-        m.times.forEach((t) => {
-          expected++;
-          if (view.medLog[k]?.[`${m.id}@${t}`]) taken++;
-        }),
-      ),
-    );
-    return expected ? (taken / expected) * 100 : null;
+  const tetanyPrevious = countAndAverage(previousMonthDays, (log) => log.tetany?.length ?? 0, dayTetanyIntensity);
+
+  const hotFlashCurrent = countAndAverage(
+    currentMonthDays,
+    (log) => (log.pain ?? []).filter((entry) => entry.hotFlashesOn).length,
+    dayHotFlash,
+  );
+
+  const hotFlashPrevious = countAndAverage(
+    previousMonthDays,
+    (log) => (log.pain ?? []).filter((entry) => entry.hotFlashesOn).length,
+    dayHotFlash,
+  );
+
+  const headacheCurrent = countAndAverage(
+    currentMonthDays,
+    (log) => (log.pain ?? []).filter((entry) => entry.headache).length,
+    dayHeadacheIntensity,
+  );
+
+  const headachePrevious = countAndAverage(
+    previousMonthDays,
+    (log) => (log.pain ?? []).filter((entry) => entry.headache).length,
+    dayHeadacheIntensity,
+  );
+  const sleepAverage = (days: string[]) =>
+    avg(days.map((day) => dayLogs[day]?.sleepHours).filter((value): value is number => value != null));
+
+  const weightAverage = (days: string[]) =>
+    avg(days.map((day) => dayLogs[day]?.weight).filter((value): value is number => value != null));
+
+  const medicationAdherence = (days: string[]) => {
+    const scheduledMeds = view.meds.filter((med) => !med.asNeeded);
+
+    let expected = 0;
+    let taken = 0;
+
+    days.forEach((day) => {
+      scheduledMeds.forEach((med) => {
+        med.times.forEach((time) => {
+          expected += 1;
+
+          if (view.medLog[day]?.[`${med.id}@${time}`]) {
+            taken += 1;
+          }
+        });
+      });
+    });
+
+    return expected > 0 ? (taken / expected) * 100 : null;
   };
 
   const workoutStats = (days: string[]) => {
-    let count = 0,
-      minutes = 0;
-    days.forEach((k) =>
-      (dayLogs[k]?.workout ?? []).forEach((w) => {
-        count++;
-        minutes += w.minutes || 0;
-      }),
+    let count = 0;
+    let minutes = 0;
+
+    days.forEach((day) => {
+      (dayLogs[day]?.workout ?? []).forEach((workout) => {
+        count += 1;
+        minutes += workout.minutes || 0;
+      });
+    });
+
+    return {
+      count,
+      minutes,
+    };
+  };
+
+  const workoutCurrent = workoutStats(currentMonthDays);
+  const workoutPrevious = workoutStats(previousMonthDays);
+
+  const pcosFrequency = (days: string[]) =>
+    days.reduce(
+      (total, day) =>
+        total +
+        (dayLogs[day]?.pain ?? []).reduce((dayTotal, painEntry) => dayTotal + (painEntry.pcosSymptoms?.length ?? 0), 0),
+      0,
     );
-    return { count, minutes };
-  };
-  const workoutCur = workoutStats(curDays),
-    workoutLast = workoutStats(lastDays);
 
-  const pcosFreq = (days: string[]) =>
-    days.reduce((s, k) => s + (dayLogs[k]?.pain ?? []).reduce((n, p) => n + (p.pcosSymptoms?.length ?? 0), 0), 0);
-  const histamineFreq = (days: string[]) =>
-    days.reduce((s, k) => s + (dayLogs[k]?.food ?? []).filter((f) => f.histamineFlare).length, 0);
+  const histamineFrequency = (days: string[]) =>
+    days.reduce(
+      (total, day) => total + (dayLogs[day]?.food ?? []).filter((foodEntry) => foodEntry.histamineFlare).length,
+      0,
+    );
 
-  /* ---- 4) Cycle phase: other ---- */
-  const moodBars = [
-    { label: "Before", value: phaseAvg(buckets.before, dayLogs, negativeMoodCount) },
-    { label: "During", value: phaseAvg(buckets.during, dayLogs, negativeMoodCount) },
-    { label: "After", value: phaseAvg(buckets.after, dayLogs, negativeMoodCount) },
-  ];
-  const energyBars = [
-    { label: "Before", value: phaseAvg(buckets.before, dayLogs, dayEnergy) },
-    { label: "During", value: phaseAvg(buckets.during, dayLogs, dayEnergy) },
-    { label: "After", value: phaseAvg(buckets.after, dayLogs, dayEnergy) },
-  ];
-  const hfPhaseBars = [
-    { label: "Before", value: phaseAvg(buckets.before, dayLogs, dayHotFlash) },
-    { label: "During", value: phaseAvg(buckets.during, dayLogs, dayHotFlash) },
-    { label: "After", value: phaseAvg(buckets.after, dayLogs, dayHotFlash) },
-  ];
-  const bowelBars = [
-    { label: "Before", value: phaseAvg(buckets.before, dayLogs, dayBowelSymptoms) },
-    { label: "During", value: phaseAvg(buckets.during, dayLogs, dayBowelSymptoms) },
-    { label: "After", value: phaseAvg(buckets.after, dayLogs, dayBowelSymptoms) },
-  ];
+  const sleepCurrent = sleepAverage(currentMonthDays);
+  const sleepPrevious = sleepAverage(previousMonthDays);
 
-  /* ---- 5) Treatment comparison ---- */
-  const [treatDate, setTreatDate] = useState("");
-  const treatWindow = (before: boolean) => {
-    if (!treatDate) return [] as string[];
+  const weightCurrent = weightAverage(currentMonthDays);
+  const weightPrevious = weightAverage(previousMonthDays);
+
+  const medicationCurrent = medicationAdherence(currentMonthDays);
+
+  const medicationPrevious = medicationAdherence(previousMonthDays);
+
+  const pcosCurrent = pcosFrequency(currentMonthDays);
+  const pcosPrevious = pcosFrequency(previousMonthDays);
+
+  const histamineCurrent = histamineFrequency(currentMonthDays);
+
+  const histaminePrevious = histamineFrequency(previousMonthDays);
+
+  /* ------------------------------------------------------------------------ */
+  /* Treatment comparison                                                     */
+  /* ------------------------------------------------------------------------ */
+
+  const [treatmentDate, setTreatmentDate] = useState("");
+
+  const treatmentWindow = (before: boolean) => {
+    if (!treatmentDate) return [] as string[];
+
     const days: string[] = [];
-    for (let i = 1; i <= 28; i++) days.push(before ? addDays(treatDate, -i) : addDays(treatDate, i - 1));
-    return days;
-  };
-  const beforeDays = treatWindow(true),
-    afterDays = treatWindow(false);
-  const treatMetric = (fn: (l: DayLog) => number | null) => ({
-    before: avg(beforeDays.map((k) => fn(dayLogs[k] ?? {})).filter((v): v is number => v != null)),
-    after: avg(afterDays.map((k) => fn(dayLogs[k] ?? {})).filter((v): v is number => v != null)),
-  });
-  const tPain = treatMetric((l) => avgDayPain(l) ?? null);
-  const tTetany = treatMetric(dayTetanyIntensity);
-  const tPanic = treatMetric(dayPanicIntensity);
-  const tMood = treatMetric((l) => negativeMoodCount(l));
 
-  /* ---- 6) Couple comparison ---- */
-  const partner = view.partner;
-  const coupleDays = useMemo(() => {
-    const days: string[] = [];
-    const end = new Date();
-    for (let i = 29; i >= 0; i--) {
-      const d = new Date(end);
-      d.setDate(end.getDate() - i);
-      days.push(toKey(d));
+    for (let index = 1; index <= 28; index += 1) {
+      days.push(before ? addDays(treatmentDate, -index) : addDays(treatmentDate, index - 1));
     }
+
     return days;
-  }, []);
-  const youTetanyCount = coupleDays.reduce((s, k) => s + (dayLogs[k]?.tetany?.length ?? 0), 0);
-  const youPanicCount = coupleDays.reduce((s, k) => s + (dayLogs[k]?.panic?.length ?? 0), 0);
-  const partnerTetanyCount = partner
-    ? coupleDays.reduce((s, k) => s + (partner.dayLogs[k]?.tetany?.length ?? 0), 0)
-    : 0;
-  const partnerPanicCount = partner ? coupleDays.reduce((s, k) => s + (partner.dayLogs[k]?.panic?.length ?? 0), 0) : 0;
+  };
 
-  /* ---- 7) Trigger comparison ---- */
-  const A_OPTIONS = [
-    { id: "highCaffeine", label: "High caffeine (≥200mg)" },
-    { id: "alcohol", label: "Alcohol" },
-    { id: "workout", label: "Workout" },
-    { id: "highHistamine", label: "High-histamine food" },
-    { id: "poorSleep", label: "Poor sleep (<6h)" },
-    ...view.custom.foodQuickAdd.map((f) => ({ id: `food:${f}`, label: `Ate "${f}"` })),
-  ];
-  const B_OPTIONS = [
-    { id: "tetany", label: "Tetany episode" },
-    { id: "panic", label: "Panic attack" },
-    { id: "pain", label: "Pain ≥5" },
-    { id: "hotflash", label: "Hot flash" },
-    { id: "headache", label: "Headache" },
-  ];
-  const [triggerA, setTriggerA] = useState(A_OPTIONS[0]?.id ?? "");
-  const [triggerB, setTriggerB] = useState(B_OPTIONS[0]?.id ?? "");
+  const treatmentBeforeDays = treatmentWindow(true);
+  const treatmentAfterDays = treatmentWindow(false);
 
-  const hasA = (l: DayLog | undefined, a: string): boolean => {
-    if (!l) return false;
-    if (a === "highCaffeine") return (l.food ?? []).some((f) => (f.caffeineMg ?? 0) >= 200);
-    if (a === "alcohol") return (l.food ?? []).some((f) => (f.alcoholDrinks ?? 0) > 0);
-    if (a === "workout") return (l.workout?.length ?? 0) > 0;
-    if (a === "highHistamine") return (l.food ?? []).some((f) => f.highHistamine);
-    if (a === "poorSleep") return l.sleepHours != null && l.sleepHours < 6;
-    if (a.startsWith("food:")) return (l.food ?? []).some((f) => f.what === a.slice(5));
+  const treatmentMetric = (metricFn: (log: DayLog) => number | null): TreatmentMetric => ({
+    before: avg(
+      treatmentBeforeDays.map((day) => metricFn(dayLogs[day] ?? {})).filter((value): value is number => value != null),
+    ),
+    after: avg(
+      treatmentAfterDays.map((day) => metricFn(dayLogs[day] ?? {})).filter((value): value is number => value != null),
+    ),
+  });
+
+  const treatmentPain = treatmentMetric((log) => avgDayPain(log) ?? null);
+
+  const treatmentTetany = treatmentMetric(dayTetanyIntensity);
+
+  const treatmentPanic = treatmentMetric(dayPanicIntensity);
+
+  const treatmentMood = treatmentMetric((log) => negativeMoodCount(log));
+
+  /* ------------------------------------------------------------------------ */
+  /* Trigger comparison                                                       */
+  /* ------------------------------------------------------------------------ */
+
+  const triggerOptions: SelectOption[] = [
+    {
+      id: "highCaffeine",
+      label: "High caffeine (≥200 mg)",
+    },
+    {
+      id: "anyCaffeine",
+      label: "Any caffeine",
+    },
+    {
+      id: "alcohol",
+      label: "Alcohol",
+    },
+    {
+      id: "workout",
+      label: "Any workout",
+    },
+    {
+      id: "longWorkout",
+      label: "Long workout (≥45 min)",
+    },
+    {
+      id: "poorSleep",
+      label: "Poor sleep (<6 h)",
+    },
+    {
+      id: "oversleep",
+      label: "Long sleep (>9 h)",
+    },
+    {
+      id: "highHistamine",
+      label: "High-histamine food",
+    },
+    {
+      id: "histamineFlare",
+      label: "Histamine flare",
+    },
+    {
+      id: "period",
+      label: "Period day",
+    },
+    {
+      id: "heavyPeriod",
+      label: "Heavy period",
+    },
+    {
+      id: "panic",
+      label: "Panic attack",
+    },
+    {
+      id: "tetany",
+      label: "Tetany episode",
+    },
+    {
+      id: "headache",
+      label: "Headache",
+    },
+    {
+      id: "hotFlash",
+      label: "Hot flash",
+    },
+    {
+      id: "medicationMissed",
+      label: "Scheduled medication missed",
+    },
+    ...view.custom.foodQuickAdd.map((food) => ({
+      id: `food:${food}`,
+      label: `Ate "${food}"`,
+    })),
+  ];
+
+  const outcomeOptions: SelectOption[] = [
+    {
+      id: "tetany",
+      label: "Tetany episode",
+    },
+    {
+      id: "panic",
+      label: "Panic attack",
+    },
+    {
+      id: "pain3",
+      label: "Pain ≥3",
+    },
+    {
+      id: "pain5",
+      label: "Pain ≥5",
+    },
+    {
+      id: "pain7",
+      label: "Pain ≥7",
+    },
+    {
+      id: "hotFlash",
+      label: "Hot flash",
+    },
+    {
+      id: "headache",
+      label: "Headache",
+    },
+    {
+      id: "lowEnergy",
+      label: "Low energy",
+    },
+    {
+      id: "negativeMood",
+      label: "Negative mood",
+    },
+    {
+      id: "bowelSymptoms",
+      label: "Bowel symptoms",
+    },
+    {
+      id: "poorSleep",
+      label: "Poor sleep",
+    },
+    {
+      id: "histamineFlare",
+      label: "Histamine flare",
+    },
+    {
+      id: "pcosSymptoms",
+      label: "PCOS symptoms",
+    },
+  ];
+
+  const [selectedTrigger, setSelectedTrigger] = useState(triggerOptions[0]?.id ?? "");
+
+  const [selectedOutcome, setSelectedOutcome] = useState(outcomeOptions[0]?.id ?? "");
+
+  const hasScheduledMedicationMissed = (day: string): boolean => {
+    const scheduledMeds = view.meds.filter((med) => !med.asNeeded);
+
+    if (scheduledMeds.length === 0) return false;
+
+    return scheduledMeds.some((med) => med.times.some((time) => !view.medLog[day]?.[`${med.id}@${time}`]));
+  };
+
+  const hasTrigger = (day: string, log: DayLog | undefined, trigger: string): boolean => {
+    if (!log) return false;
+
+    if (trigger === "highCaffeine") {
+      return (log.food ?? []).some((food) => (food.caffeineMg ?? 0) >= 200);
+    }
+
+    if (trigger === "anyCaffeine") {
+      return (log.food ?? []).some((food) => (food.caffeineMg ?? 0) > 0);
+    }
+
+    if (trigger === "alcohol") {
+      return (log.food ?? []).some((food) => (food.alcoholDrinks ?? 0) > 0);
+    }
+
+    if (trigger === "workout") {
+      return (log.workout?.length ?? 0) > 0;
+    }
+
+    if (trigger === "longWorkout") {
+      return (log.workout ?? []).some((workout) => (workout.minutes ?? 0) >= 45);
+    }
+
+    if (trigger === "poorSleep") {
+      return log.sleepHours != null && log.sleepHours < 6;
+    }
+
+    if (trigger === "oversleep") {
+      return log.sleepHours != null && log.sleepHours > 9;
+    }
+
+    if (trigger === "highHistamine") {
+      return (log.food ?? []).some((food) => food.highHistamine);
+    }
+
+    if (trigger === "histamineFlare") {
+      return (log.food ?? []).some((food) => food.histamineFlare);
+    }
+
+    if (trigger === "period") {
+      return Boolean(log.period);
+    }
+
+    if (trigger === "heavyPeriod") {
+      return log.period === "heavy" || log.period === "very-heavy" || log.period === "veryHeavy";
+    }
+
+    if (trigger === "panic") {
+      return (log.panic?.length ?? 0) > 0;
+    }
+
+    if (trigger === "tetany") {
+      return (log.tetany?.length ?? 0) > 0;
+    }
+
+    if (trigger === "headache") {
+      return (log.pain ?? []).some((painEntry) => painEntry.headache);
+    }
+
+    if (trigger === "hotFlash") {
+      return (log.pain ?? []).some((painEntry) => painEntry.hotFlashesOn);
+    }
+
+    if (trigger === "medicationMissed") {
+      return hasScheduledMedicationMissed(day);
+    }
+
+    if (trigger.startsWith("food:")) {
+      const foodName = trigger.slice(5);
+
+      return (log.food ?? []).some((food) => food.what === foodName);
+    }
+
     return false;
   };
-  const hasB = (l: DayLog | undefined, b: string): boolean => {
-    if (!l) return false;
-    if (b === "tetany") return (l.tetany?.length ?? 0) > 0;
-    if (b === "panic") return (l.panic?.length ?? 0) > 0;
-    if (b === "pain") return (avgDayPain(l) ?? 0) >= 5;
-    if (b === "hotflash") return (l.pain ?? []).some((p) => p.hotFlashesOn);
-    if (b === "headache") return (l.pain ?? []).some((p) => p.headache);
+
+  const hasOutcome = (log: DayLog | undefined, outcome: string): boolean => {
+    if (!log) return false;
+
+    if (outcome === "tetany") {
+      return (log.tetany?.length ?? 0) > 0;
+    }
+
+    if (outcome === "panic") {
+      return (log.panic?.length ?? 0) > 0;
+    }
+
+    if (outcome === "pain3") {
+      return (avgDayPain(log) ?? 0) >= 3;
+    }
+
+    if (outcome === "pain5") {
+      return (avgDayPain(log) ?? 0) >= 5;
+    }
+
+    if (outcome === "pain7") {
+      return (avgDayPain(log) ?? 0) >= 7;
+    }
+
+    if (outcome === "hotFlash") {
+      return (log.pain ?? []).some((painEntry) => painEntry.hotFlashesOn);
+    }
+
+    if (outcome === "headache") {
+      return (log.pain ?? []).some((painEntry) => painEntry.headache);
+    }
+
+    if (outcome === "lowEnergy") {
+      const energy = dayEnergy(log);
+      return energy != null && energy <= 2;
+    }
+
+    if (outcome === "negativeMood") {
+      return negativeMoodCount(log) > 0;
+    }
+
+    if (outcome === "bowelSymptoms") {
+      return dayBowelSymptoms(log) > 0;
+    }
+
+    if (outcome === "poorSleep") {
+      return log.sleepHours != null && log.sleepHours < 6;
+    }
+
+    if (outcome === "histamineFlare") {
+      return (log.food ?? []).some((food) => food.histamineFlare);
+    }
+
+    if (outcome === "pcosSymptoms") {
+      return (log.pain ?? []).some((painEntry) => (painEntry.pcosSymptoms?.length ?? 0) > 0);
+    }
+
     return false;
   };
-  const allDayKeys = useMemo(() => Object.keys(dayLogs), [dayLogs]);
-  const withA = allDayKeys.filter((k) => hasA(dayLogs[k], triggerA));
-  const withoutA = allDayKeys.filter((k) => !hasA(dayLogs[k], triggerA));
-  const pctWith = withA.length ? (withA.filter((k) => hasB(dayLogs[k], triggerB)).length / withA.length) * 100 : null;
-  const pctWithout = withoutA.length
-    ? (withoutA.filter((k) => hasB(dayLogs[k], triggerB)).length / withoutA.length) * 100
-    : null;
-  const aLabel = A_OPTIONS.find((o) => o.id === triggerA)?.label ?? triggerA;
-  const bLabel = B_OPTIONS.find((o) => o.id === triggerB)?.label ?? triggerB;
 
-  const saveTrigger = () =>
-    update((d) => ({
-      ...d,
+  const allLoggedDays = useMemo(() => Object.keys(dayLogs).sort(), [dayLogs]);
+
+  const daysWithTrigger = allLoggedDays.filter((day) => hasTrigger(day, dayLogs[day], selectedTrigger));
+
+  const daysWithoutTrigger = allLoggedDays.filter((day) => !hasTrigger(day, dayLogs[day], selectedTrigger));
+
+  const percentWithTrigger =
+    daysWithTrigger.length > 0
+      ? (daysWithTrigger.filter((day) => hasOutcome(dayLogs[day], selectedOutcome)).length / daysWithTrigger.length) *
+        100
+      : null;
+
+  const percentWithoutTrigger =
+    daysWithoutTrigger.length > 0
+      ? (daysWithoutTrigger.filter((day) => hasOutcome(dayLogs[day], selectedOutcome)).length /
+          daysWithoutTrigger.length) *
+        100
+      : null;
+
+  const selectedTriggerLabel = triggerOptions.find((option) => option.id === selectedTrigger)?.label ?? selectedTrigger;
+
+  const selectedOutcomeLabel = outcomeOptions.find((option) => option.id === selectedOutcome)?.label ?? selectedOutcome;
+
+  const triggerDifference =
+    percentWithTrigger != null && percentWithoutTrigger != null ? percentWithTrigger - percentWithoutTrigger : null;
+
+  const saveTriggerCombination = () => {
+    const alreadySaved = (view.settings.savedTriggers ?? []).some(
+      (saved) => saved.a === selectedTrigger && saved.b === selectedOutcome,
+    );
+
+    if (alreadySaved) return;
+
+    update((draft) => ({
+      ...draft,
       settings: {
-        ...d.settings,
-        savedTriggers: [...(d.settings.savedTriggers ?? []), { id: `${Date.now()}`, a: triggerA, b: triggerB }],
+        ...draft.settings,
+        savedTriggers: [
+          ...(draft.settings.savedTriggers ?? []),
+          {
+            id: `${Date.now()}`,
+            a: selectedTrigger,
+            b: selectedOutcome,
+          },
+        ],
       },
     }));
-  const removeTrigger = (id: string) =>
-    update((d) => ({
-      ...d,
-      settings: { ...d.settings, savedTriggers: (d.settings.savedTriggers ?? []).filter((t) => t.id !== id) },
+  };
+
+  const removeTriggerCombination = (id: string) => {
+    update((draft) => ({
+      ...draft,
+      settings: {
+        ...draft.settings,
+        savedTriggers: (draft.settings.savedTriggers ?? []).filter((saved) => saved.id !== id),
+      },
     }));
-
-  /* ---- 8) Labs / docs / diagnoses ---- */
-  const [labForm, setLabForm] = useState({ test: "", value: "", unit: "", refLow: "", refHigh: "", date: todayKey() });
-  const addLab = () => {
-    if (!labForm.test || !labForm.value) return;
-    const entry: LabResult = {
-      id: `${Date.now()}`,
-      test: labForm.test,
-      value: Number(labForm.value),
-      unit: labForm.unit || undefined,
-      refLow: labForm.refLow ? Number(labForm.refLow) : undefined,
-      refHigh: labForm.refHigh ? Number(labForm.refHigh) : undefined,
-      date: labForm.date,
-    };
-    update((d) => ({
-      ...d,
-      labs: [...(d.labs ?? []), entry],
-      custom: { ...d.custom, labTests: Array.from(new Set([...(d.custom.labTests ?? []), entry.test])) },
-    }));
-    setLabForm({ test: "", value: "", unit: "", refLow: "", refHigh: "", date: todayKey() });
   };
-  const removeLab = (id: string) => update((d) => ({ ...d, labs: (d.labs ?? []).filter((l) => l.id !== id) }));
 
-  const labsByTest = useMemo(() => {
-    const map = new Map<string, LabResult[]>();
-    (view.labs ?? []).forEach((l) => {
-      const arr = map.get(l.test) ?? [];
-      arr.push(l);
-      map.set(l.test, arr);
-    });
-    map.forEach((arr) => arr.sort((a, b) => a.date.localeCompare(b.date)));
-    return map;
-  }, [view.labs]);
+  /* ------------------------------------------------------------------------ */
+  /* Diagnoses                                                                */
+  /* ------------------------------------------------------------------------ */
 
-  const [docForm, setDocForm] = useState({ name: "", date: todayKey(), labId: "" });
-  const [docWarn, setDocWarn] = useState("");
-  const [docDataUrl, setDocDataUrl] = useState<{ url: string; mime: string } | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
-  const onDocFile = (file: File) => {
-    if (file.size > 1.5 * 1024 * 1024) setDocWarn("This file is larger than 1.5 MB — it may slow down sync.");
-    else setDocWarn("");
-    const reader = new FileReader();
-    reader.onload = () => setDocDataUrl({ url: String(reader.result), mime: file.type });
-    reader.readAsDataURL(file);
-  };
-  const addDoc = () => {
-    if (!docForm.name || !docDataUrl) return;
-    const entry: DocEntry = {
-      id: `${Date.now()}`,
-      name: docForm.name,
-      date: docForm.date,
-      mime: docDataUrl.mime,
-      dataUrl: docDataUrl.url,
-      labId: docForm.labId || undefined,
-    };
-    update((d) => ({ ...d, docs: [...(d.docs ?? []), entry] }));
-    setDocForm({ name: "", date: todayKey(), labId: "" });
-    setDocDataUrl(null);
-    setDocWarn("");
-    if (fileRef.current) fileRef.current.value = "";
-  };
-  const removeDoc = (id: string) => update((d) => ({ ...d, docs: (d.docs ?? []).filter((x) => x.id !== id) }));
-  const sortedDocs = useMemo(() => [...(view.docs ?? [])].sort((a, b) => b.date.localeCompare(a.date)), [view.docs]);
-
-  const [diagForm, setDiagForm] = useState<{
+  const [diagnosisForm, setDiagnosisForm] = useState<{
     id?: string;
     name: string;
     date: string;
     doctor: string;
     note: string;
-    docId: string;
-  }>({ name: "", date: "", doctor: "", note: "", docId: "" });
-  const saveDiag = () => {
-    if (!diagForm.name) return;
-    const entry: Diagnosis = {
-      id: diagForm.id ?? `${Date.now()}`,
-      name: diagForm.name,
-      date: diagForm.date || undefined,
-      doctor: diagForm.doctor || undefined,
-      note: diagForm.note || undefined,
-      docId: diagForm.docId || undefined,
+  }>({
+    name: "",
+    date: "",
+    doctor: "",
+    note: "",
+  });
+
+  const saveDiagnosis = () => {
+    const trimmedName = diagnosisForm.name.trim();
+
+    if (!trimmedName) return;
+
+    const diagnosis: Diagnosis = {
+      id: diagnosisForm.id ?? `${Date.now()}`,
+      name: trimmedName,
+      date: diagnosisForm.date || undefined,
+      doctor: diagnosisForm.doctor.trim() || undefined,
+      note: diagnosisForm.note.trim() || undefined,
     };
-    update((d) => ({
-      ...d,
-      diagnoses: diagForm.id
-        ? (d.diagnoses ?? []).map((x) => (x.id === diagForm.id ? entry : x))
-        : [...(d.diagnoses ?? []), entry],
+
+    update((draft) => ({
+      ...draft,
+      diagnoses: diagnosisForm.id
+        ? (draft.diagnoses ?? []).map((existing) => (existing.id === diagnosisForm.id ? diagnosis : existing))
+        : [...(draft.diagnoses ?? []), diagnosis],
     }));
-    setDiagForm({ name: "", date: "", doctor: "", note: "", docId: "" });
-  };
-  const editDiag = (dg: Diagnosis) =>
-    setDiagForm({
-      id: dg.id,
-      name: dg.name,
-      date: dg.date ?? "",
-      doctor: dg.doctor ?? "",
-      note: dg.note ?? "",
-      docId: dg.docId ?? "",
+
+    setDiagnosisForm({
+      name: "",
+      date: "",
+      doctor: "",
+      note: "",
     });
-  const removeDiag = (id: string) =>
-    update((d) => ({ ...d, diagnoses: (d.diagnoses ?? []).filter((x) => x.id !== id) }));
+  };
 
-  const inRange = (l: LabResult) =>
-    (l.refLow == null || l.value >= l.refLow) && (l.refHigh == null || l.value <= l.refHigh);
+  const editDiagnosis = (diagnosis: Diagnosis) => {
+    setDiagnosisForm({
+      id: diagnosis.id,
+      name: diagnosis.name,
+      date: diagnosis.date ?? "",
+      doctor: diagnosis.doctor ?? "",
+      note: diagnosis.note ?? "",
+    });
+  };
 
+  const removeDiagnosis = (id: string) => {
+    update((draft) => ({
+      ...draft,
+      diagnoses: (draft.diagnoses ?? []).filter((diagnosis) => diagnosis.id !== id),
+    }));
+
+    if (diagnosisForm.id === id) {
+      setDiagnosisForm({
+        name: "",
+        date: "",
+        doctor: "",
+        note: "",
+      });
+    }
+  };
   return (
     <AppShell title="Bixbo Patterns">
-      <div className="px-5 pt-2 pb-24 space-y-4">
-        <Card title="Cycle phase — pain & flow">
-          <ThreeBarChart bars={painBars} unit="/10" />
-          {cycles.length > 0 && (
-            <p className="mt-2 text-xs text-muted-foreground">
-              Based on {cycles.length} historic cycle{cycles.length === 1 ? "" : "s"}. Most common flow during period:{" "}
-              {flowMode ? flowMode : "—"}
-            </p>
-          )}
-        </Card>
+      <div className="space-y-4 px-5 pb-24 pt-2">
+        {/* ------------------------------------------------------------------ */}
+        {/* Cycle phase                                                        */}
+        {/* ------------------------------------------------------------------ */}
 
-        <Card title="Monthly comparison — panic & tetany">
-          <p className="mt-2 text-xs text-muted-foreground">Panic attacks</p>
-          <TwoPointLine prev={panicLast.count} curr={panicCur.count} decimals={0} unit=" count" />
-          <p className="mt-3 text-xs text-muted-foreground">Panic intensity (avg)</p>
-          <TwoPointLine prev={panicLast.intensity} curr={panicCur.intensity} unit="/10" />
-          <p className="mt-3 text-xs text-muted-foreground">Tetany episodes</p>
-          <TwoPointLine prev={tetanyLast.count} curr={tetanyCur.count} decimals={0} unit=" count" />
-          <p className="mt-3 text-xs text-muted-foreground">Tetany intensity (avg)</p>
-          <TwoPointLine prev={tetanyLast.intensity} curr={tetanyCur.intensity} unit="/5" />
-        </Card>
-
-        <Card title="Monthly comparison — other">
-          <div className="mt-3 space-y-4">
-            <div>
-              <p className="text-xs text-muted-foreground">Hot flashes (count / intensity)</p>
-              <TwoPointLine prev={hfLast.count} curr={hfCur.count} decimals={0} />
-              <TwoPointLine prev={hfLast.intensity} curr={hfCur.intensity} unit="/5" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Headaches (count / intensity)</p>
-              <TwoPointLine prev={hAcheLast.count} curr={hAcheCur.count} decimals={0} />
-              <TwoPointLine prev={hAcheLast.intensity} curr={hAcheCur.intensity} unit="/10" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Sleep (avg hours)</p>
-              <TwoPointLine prev={sleepAvg(lastDays)} curr={sleepAvg(curDays)} higherIsWorse={false} unit="h" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Weight</p>
-              <TwoPointLine prev={weightAvg(lastDays)} curr={weightAvg(curDays)} higherIsWorse={false} unit="kg" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Med adherence</p>
-              <TwoPointLine
-                prev={medAdherence(lastDays)}
-                curr={medAdherence(curDays)}
-                decimals={0}
-                higherIsWorse={false}
-                unit="%"
-              />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Workout (count / minutes)</p>
-              <TwoPointLine prev={workoutLast.count} curr={workoutCur.count} decimals={0} higherIsWorse={false} />
-              <TwoPointLine
-                prev={workoutLast.minutes}
-                curr={workoutCur.minutes}
-                decimals={0}
-                higherIsWorse={false}
-                unit="min"
-              />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">PCOS symptoms (frequency)</p>
-              <TwoPointLine prev={pcosFreq(lastDays)} curr={pcosFreq(curDays)} decimals={0} />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Histamine flares</p>
-              <TwoPointLine prev={histamineFreq(lastDays)} curr={histamineFreq(curDays)} decimals={0} />
-            </div>
+        <Card
+          title="Cycle phase — pain & flow"
+          description="See how your symptoms usually change before, during and after your period."
+        >
+          <div className="mt-4">
+            <PhaseBarChart
+              title="Average pain"
+              description="Average daily pain intensity in each cycle phase."
+              bars={painPhaseBars}
+              max={10}
+              unit="/10"
+            />
           </div>
-        </Card>
 
-        <Card title="Cycle phase — other">
-          <div className="mt-2 space-y-4">
-            <div>
-              <p className="text-[11px] text-muted-foreground">Mood (negative tags/day)</p>
-              <ThreeBarChart bars={moodBars} max={3} />
-            </div>
-            <div>
-              <p className="text-[11px] text-muted-foreground">Energy (body battery)</p>
-              <ThreeBarChart bars={energyBars} max={5} unit="/5" />
-            </div>
-            <div>
-              <p className="text-[11px] text-muted-foreground">Hot flashes</p>
-              <ThreeBarChart bars={hfPhaseBars} max={5} unit="/5" />
-            </div>
-            <div>
-              <p className="text-[11px] text-muted-foreground">Bowel symptoms</p>
-              <ThreeBarChart bars={bowelBars} max={3} />
-            </div>
-          </div>
-        </Card>
+          {cycles.length > 0 ? (
+            <div className="mt-3 rounded-2xl bg-tint px-4 py-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-medium text-foreground">Most common period flow</p>
 
-        <Card title="Treatment comparison">
-          <label className="mt-2 block text-xs text-muted-foreground">
-            Treatment start date{" "}
-            {view.meds.length > 0 && (
-              <span className="text-[10px]">(meds: {view.meds.map((m: Med) => m.name).join(", ")})</span>
-            )}
-          </label>
-          <input
-            type="date"
-            value={treatDate}
-            onChange={(e) => setTreatDate(e.target.value)}
-            className="mt-1 w-full rounded-xl bg-tint px-3 py-2 text-sm ring-1 ring-border"
-          />
-          {!treatDate ? (
-            <Empty />
-          ) : (
-            <div className="mt-3 space-y-3">
-              {(
-                [
-                  ["Pain", tPain, "/10"],
-                  ["Tetany intensity", tTetany, "/5"],
-                  ["Panic intensity", tPanic, "/10"],
-                  ["Negative mood tags/day", tMood, ""],
-                ] as const
-              ).map(([label, m, unit]) => (
-                <div key={label}>
-                  <p className="text-xs text-muted-foreground">{label} — 4 weeks before vs after</p>
-                  <TwoPointLine prev={m.before} curr={m.after} unit={unit} />
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">
+                    Based on {cycles.length} historic cycle
+                    {cycles.length === 1 ? "" : "s"}
+                  </p>
                 </div>
-              ))}
-              <p className="text-[10px] text-muted-foreground">Marker: {treatDate} (start of treatment)</p>
+
+                <span className="rounded-full bg-rose-500/10 px-3 py-1 text-xs font-semibold capitalize text-rose-600 dark:text-rose-400">
+                  {commonFlow || "—"}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <Empty text="Log more periods to see your cycle pattern." />
+          )}
+        </Card>
+
+        <Card
+          title="Cycle phase — other"
+          description="Mood, energy, hot flashes and bowel symptoms grouped by cycle phase."
+        >
+          <div className="mt-4 space-y-4">
+            <PhaseBarChart
+              title="Negative mood"
+              description="Average number of negative mood tags logged per day."
+              bars={moodPhaseBars}
+              max={3}
+              decimals={1}
+            />
+
+            <PhaseBarChart
+              title="Energy"
+              description="Average body-battery or energy score."
+              bars={energyPhaseBars}
+              max={5}
+              unit="/5"
+            />
+
+            <PhaseBarChart
+              title="Hot flashes"
+              description="Average hot-flash intensity."
+              bars={hotFlashPhaseBars}
+              max={5}
+              unit="/5"
+            />
+
+            <PhaseBarChart
+              title="Bowel symptoms"
+              description="Average number of bowel symptoms logged per day."
+              bars={bowelPhaseBars}
+              max={3}
+              decimals={1}
+            />
+          </div>
+        </Card>
+
+        {/* ------------------------------------------------------------------ */}
+        {/* Monthly comparison — panic and tetany                              */}
+        {/* ------------------------------------------------------------------ */}
+
+        <Card
+          title="Monthly comparison — panic & tetany"
+          description="This month is compared with the complete previous calendar month."
+        >
+          <div className="mt-4 space-y-3">
+            <ComparisonMetric
+              title="Panic attacks"
+              subtitle="Number of logged panic attacks"
+              previous={panicPrevious.count}
+              current={panicCurrent.count}
+              decimals={0}
+              unit=""
+              color="purple"
+              higherIsWorse
+              icon={<Sparkles className="h-5 w-5" />}
+            />
+
+            <ComparisonMetric
+              title="Panic intensity"
+              subtitle="Average intensity of logged panic attacks"
+              previous={panicPrevious.intensity}
+              current={panicCurrent.intensity}
+              max={10}
+              decimals={1}
+              unit="/10"
+              color="purple"
+              higherIsWorse
+              icon={<Brain className="h-5 w-5" />}
+            />
+
+            <ComparisonMetric
+              title="Tetany episodes"
+              subtitle="Number of logged tetany episodes"
+              previous={tetanyPrevious.count}
+              current={tetanyCurrent.count}
+              decimals={0}
+              unit=""
+              color="blue"
+              higherIsWorse
+              icon={<Activity className="h-5 w-5" />}
+            />
+
+            <ComparisonMetric
+              title="Tetany intensity"
+              subtitle="Average intensity of logged tetany episodes"
+              previous={tetanyPrevious.intensity}
+              current={tetanyCurrent.intensity}
+              max={5}
+              decimals={1}
+              unit="/5"
+              color="blue"
+              higherIsWorse
+              icon={<Waves className="h-5 w-5" />}
+            />
+          </div>
+        </Card>
+
+        {/* ------------------------------------------------------------------ */}
+        {/* Monthly comparison — other                                         */}
+        {/* ------------------------------------------------------------------ */}
+
+        <Card
+          title="Monthly comparison — other"
+          description="Compare symptoms, routines and health measurements month by month."
+        >
+          <div className="mt-4 space-y-3">
+            <ComparisonMetric
+              title="Hot flashes"
+              subtitle="Number of logged hot flashes"
+              previous={hotFlashPrevious.count}
+              current={hotFlashCurrent.count}
+              decimals={0}
+              color="orange"
+              higherIsWorse
+              icon={<Flame className="h-5 w-5" />}
+            />
+
+            <ComparisonMetric
+              title="Hot-flash intensity"
+              subtitle="Average intensity of logged hot flashes"
+              previous={hotFlashPrevious.intensity}
+              current={hotFlashCurrent.intensity}
+              max={5}
+              decimals={1}
+              unit="/5"
+              color="orange"
+              higherIsWorse
+              icon={<ThermometerSun className="h-5 w-5" />}
+            />
+
+            <ComparisonMetric
+              title="Headaches"
+              subtitle="Number of logged headaches"
+              previous={headachePrevious.count}
+              current={headacheCurrent.count}
+              decimals={0}
+              color="cyan"
+              higherIsWorse
+              icon={<Brain className="h-5 w-5" />}
+            />
+
+            <ComparisonMetric
+              title="Headache intensity"
+              subtitle="Average headache intensity"
+              previous={headachePrevious.intensity}
+              current={headacheCurrent.intensity}
+              max={10}
+              decimals={1}
+              unit="/10"
+              color="cyan"
+              higherIsWorse
+              icon={<HeartPulse className="h-5 w-5" />}
+            />
+
+            <ComparisonMetric
+              title="Average sleep"
+              subtitle="Average number of logged sleep hours"
+              previous={sleepPrevious}
+              current={sleepCurrent}
+              max={12}
+              decimals={1}
+              unit="h"
+              color="blue"
+              higherIsWorse={false}
+              icon={<Moon className="h-5 w-5" />}
+            />
+
+            <ComparisonMetric
+              title="Average weight"
+              subtitle="Average logged body weight"
+              previous={weightPrevious}
+              current={weightCurrent}
+              decimals={1}
+              unit="kg"
+              color="slate"
+              higherIsWorse={false}
+              icon={<Scale className="h-5 w-5" />}
+            />
+
+            <ComparisonMetric
+              title="Medication adherence"
+              subtitle="Percentage of scheduled doses marked as taken"
+              previous={medicationPrevious}
+              current={medicationCurrent}
+              max={100}
+              decimals={0}
+              unit="%"
+              color="emerald"
+              higherIsWorse={false}
+              icon={<Pill className="h-5 w-5" />}
+            />
+
+            <ComparisonMetric
+              title="Workouts"
+              subtitle="Number of logged workout sessions"
+              previous={workoutPrevious.count}
+              current={workoutCurrent.count}
+              decimals={0}
+              color="teal"
+              higherIsWorse={false}
+              icon={<Dumbbell className="h-5 w-5" />}
+            />
+
+            <ComparisonMetric
+              title="Workout time"
+              subtitle="Total logged workout minutes"
+              previous={workoutPrevious.minutes}
+              current={workoutCurrent.minutes}
+              decimals={0}
+              unit=" min"
+              color="teal"
+              higherIsWorse={false}
+              icon={<Activity className="h-5 w-5" />}
+            />
+
+            <ComparisonMetric
+              title="PCOS symptoms"
+              subtitle="Total number of logged PCOS symptom tags"
+              previous={pcosPrevious}
+              current={pcosCurrent}
+              decimals={0}
+              color="pink"
+              higherIsWorse
+              icon={<HeartPulse className="h-5 w-5" />}
+            />
+
+            <ComparisonMetric
+              title="Histamine flares"
+              subtitle="Number of food entries marked as a histamine flare"
+              previous={histaminePrevious}
+              current={histamineCurrent}
+              decimals={0}
+              color="amber"
+              higherIsWorse
+              icon={<Flame className="h-5 w-5" />}
+            />
+          </div>
+        </Card>
+        {/* ------------------------------------------------------------------ */}
+        {/* Treatment comparison                                               */}
+        {/* ------------------------------------------------------------------ */}
+
+        <Card
+          title="Treatment comparison"
+          description="Compare the four weeks before treatment with the first four weeks after its start."
+        >
+          <label className="mt-4 block">
+            <span className="text-xs font-medium text-muted-foreground">Treatment start date</span>
+
+            {view.meds.length > 0 && (
+              <span className="mt-1 block text-[10px] leading-relaxed text-muted-foreground">
+                Current medicines: {view.meds.map((med) => med.name).join(", ")}
+              </span>
+            )}
+
+            <input
+              type="date"
+              value={treatmentDate}
+              onChange={(event) => setTreatmentDate(event.target.value)}
+              className="mt-2 w-full rounded-2xl bg-tint px-4 py-3 text-sm text-foreground outline-none ring-1 ring-border transition focus:ring-2 focus:ring-primary"
+            />
+          </label>
+
+          {!treatmentDate ? (
+            <Empty text="Choose a treatment start date to compare the two periods." />
+          ) : (
+            <div className="mt-4 space-y-3">
+              <ComparisonMetric
+                title="Pain"
+                subtitle="Average pain · 4 weeks before vs 4 weeks after"
+                previous={treatmentPain.before}
+                current={treatmentPain.after}
+                max={10}
+                decimals={1}
+                unit="/10"
+                color="rose"
+                higherIsWorse
+                previousLabel="Before"
+                currentLabel="After"
+                icon={<HeartPulse className="h-5 w-5" />}
+              />
+
+              <ComparisonMetric
+                title="Tetany intensity"
+                subtitle="Average tetany intensity before and after treatment"
+                previous={treatmentTetany.before}
+                current={treatmentTetany.after}
+                max={5}
+                decimals={1}
+                unit="/5"
+                color="blue"
+                higherIsWorse
+                previousLabel="Before"
+                currentLabel="After"
+                icon={<Activity className="h-5 w-5" />}
+              />
+
+              <ComparisonMetric
+                title="Panic intensity"
+                subtitle="Average panic intensity before and after treatment"
+                previous={treatmentPanic.before}
+                current={treatmentPanic.after}
+                max={10}
+                decimals={1}
+                unit="/10"
+                color="purple"
+                higherIsWorse
+                previousLabel="Before"
+                currentLabel="After"
+                icon={<Sparkles className="h-5 w-5" />}
+              />
+
+              <ComparisonMetric
+                title="Negative mood"
+                subtitle="Average negative mood tags per day"
+                previous={treatmentMood.before}
+                current={treatmentMood.after}
+                max={3}
+                decimals={1}
+                color="amber"
+                higherIsWorse
+                previousLabel="Before"
+                currentLabel="After"
+                icon={<Brain className="h-5 w-5" />}
+              />
+
+              <p className="px-1 text-[10px] leading-relaxed text-muted-foreground">
+                Treatment marker: {treatmentDate}. The comparison uses up to 28 days on each side of this date.
+              </p>
             </div>
           )}
         </Card>
 
-        <Card title="Couple comparison">
-          {!partner ? (
-            <Empty />
+        {/* ------------------------------------------------------------------ */}
+        {/* Trigger comparison                                                 */}
+        {/* ------------------------------------------------------------------ */}
+
+        <Card
+          title="Trigger comparison"
+          description="Compare how often an outcome occurred on days with and without a possible trigger."
+        >
+          <div className="mt-4 space-y-3">
+            <label className="block">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Possible trigger
+              </span>
+
+              <select
+                value={selectedTrigger}
+                onChange={(event) => setSelectedTrigger(event.target.value)}
+                className="mt-1.5 w-full rounded-2xl bg-tint px-4 py-3 text-sm text-foreground outline-none ring-1 ring-border transition focus:ring-2 focus:ring-primary"
+              >
+                {triggerOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Compare with outcome
+              </span>
+
+              <select
+                value={selectedOutcome}
+                onChange={(event) => setSelectedOutcome(event.target.value)}
+                className="mt-1.5 w-full rounded-2xl bg-tint px-4 py-3 text-sm text-foreground outline-none ring-1 ring-border transition focus:ring-2 focus:ring-primary"
+              >
+                {outcomeOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <TriggerResult
+              label="With trigger"
+              detail={`${daysWithTrigger.length} logged day${daysWithTrigger.length === 1 ? "" : "s"}`}
+              percentage={percentWithTrigger}
+              color="#8b5cf6"
+            />
+
+            <TriggerResult
+              label="Without trigger"
+              detail={`${daysWithoutTrigger.length} logged day${daysWithoutTrigger.length === 1 ? "" : "s"}`}
+              percentage={percentWithoutTrigger}
+              color="#14b8a6"
+            />
+          </div>
+
+          {percentWithTrigger == null && percentWithoutTrigger == null ? (
+            <Empty text="There is not enough matching data for this comparison." />
           ) : (
-            <>
-              <p className="mt-1 text-[11px] text-muted-foreground">
-                Last 30 days · you vs {partner.name || "partner"}
+            <div className="mt-4 rounded-2xl bg-tint p-4">
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                <span className="font-semibold text-foreground">{selectedOutcomeLabel}</span> occurred on{" "}
+                <span className="font-semibold text-purple-600 dark:text-purple-400">
+                  {percentWithTrigger != null ? `${percentWithTrigger.toFixed(0)}%` : "—"}
+                </span>{" "}
+                of days with <span className="font-semibold text-foreground">{selectedTriggerLabel.toLowerCase()}</span>
+                , compared with{" "}
+                <span className="font-semibold text-teal-600 dark:text-teal-400">
+                  {percentWithoutTrigger != null ? `${percentWithoutTrigger.toFixed(0)}%` : "—"}
+                </span>{" "}
+                of days without it.
               </p>
-              <div className="mt-3 space-y-3">
-                {[
-                  { label: "Tetany", you: youTetanyCount, them: partnerTetanyCount },
-                  { label: "Panic", you: youPanicCount, them: partnerPanicCount },
-                ].map((r) => {
-                  const max = Math.max(1, r.you, r.them);
+
+              {triggerDifference != null && (
+                <div
+                  className="mt-3 flex items-center justify-center gap-1.5 rounded-xl bg-background/60 px-3 py-2 text-xs font-semibold"
+                  style={{
+                    color:
+                      triggerDifference > 0 ? "#dc2626" : triggerDifference < 0 ? "#16a34a" : "var(--muted-foreground)",
+                  }}
+                >
+                  {triggerDifference > 0 ? (
+                    <TrendingUp className="h-4 w-4" />
+                  ) : triggerDifference < 0 ? (
+                    <TrendingDown className="h-4 w-4" />
+                  ) : null}
+
+                  {triggerDifference === 0
+                    ? "No measured difference"
+                    : `${Math.abs(triggerDifference).toFixed(0)} percentage points ${
+                        triggerDifference > 0 ? "higher" : "lower"
+                      } with the trigger`}
+                </div>
+              )}
+
+              <p className="mt-3 text-[10px] leading-relaxed text-muted-foreground">
+                This shows an association in your logs, not proof that the selected trigger caused the outcome.
+              </p>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={saveTriggerCombination}
+            disabled={!selectedTrigger || !selectedOutcome}
+            className="mt-4 w-full rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            ★ Save this comparison
+          </button>
+
+          {(view.settings.savedTriggers ?? []).length > 0 && (
+            <div className="mt-4">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Saved comparisons
+              </p>
+
+              <div className="mt-2 space-y-2">
+                {(view.settings.savedTriggers ?? []).map((saved) => {
+                  const savedTriggerLabel = triggerOptions.find((option) => option.id === saved.a)?.label ?? saved.a;
+
+                  const savedOutcomeLabel = outcomeOptions.find((option) => option.id === saved.b)?.label ?? saved.b;
+
                   return (
-                    <div key={r.label}>
-                      <p className="text-xs text-muted-foreground">{r.label}</p>
-                      <div className="mt-1 flex items-center gap-2">
-                        <span className="w-16 shrink-0 text-[10px] text-muted-foreground">You ({r.you})</span>
-                        <div className="h-3 flex-1 overflow-hidden rounded-full bg-tint">
-                          <div
-                            className="h-full rounded-full bg-primary"
-                            style={{ width: `${(r.you / max) * 100}%` }}
-                          />
-                        </div>
-                      </div>
-                      <div className="mt-1 flex items-center gap-2">
-                        <span className="w-16 shrink-0 text-[10px] text-muted-foreground">
-                          {(partner.name || "Partner").slice(0, 10)} ({r.them})
-                        </span>
-                        <div className="h-3 flex-1 overflow-hidden rounded-full bg-tint">
-                          <div
-                            className="h-full rounded-full bg-accent"
-                            style={{ width: `${(r.them / max) * 100}%` }}
-                          />
-                        </div>
-                      </div>
+                    <div key={saved.id} className="flex items-center gap-3 rounded-2xl bg-tint px-4 py-3">
+                      <button
+                        type="button"
+                        className="min-w-0 flex-1 text-left"
+                        onClick={() => {
+                          setSelectedTrigger(saved.a);
+                          setSelectedOutcome(saved.b);
+                        }}
+                      >
+                        <p className="truncate text-xs font-semibold text-foreground">{savedTriggerLabel}</p>
+
+                        <p className="mt-0.5 truncate text-[11px] text-muted-foreground">→ {savedOutcomeLabel}</p>
+                      </button>
+
+                      <button
+                        type="button"
+                        aria-label="Remove saved comparison"
+                        onClick={() => removeTriggerCombination(saved.id)}
+                        className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm text-muted-foreground transition hover:bg-background hover:text-foreground"
+                      >
+                        ✕
+                      </button>
                     </div>
                   );
                 })}
               </div>
-              <div className="mt-3 flex gap-4 text-[10px] text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <span className="h-2.5 w-2.5 rounded-full bg-primary" /> You
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="h-2.5 w-2.5 rounded-full bg-accent" /> {partner.name || "Partner"}
-                </span>
-              </div>
-            </>
-          )}
-        </Card>
-
-        <Card title="Trigger comparison">
-          <div className="mt-2 grid grid-cols-1 gap-2">
-            <select
-              value={triggerA}
-              onChange={(e) => setTriggerA(e.target.value)}
-              className="rounded-xl bg-tint px-3 py-2 text-sm ring-1 ring-border"
-            >
-              {A_OPTIONS.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-            <select
-              value={triggerB}
-              onChange={(e) => setTriggerB(e.target.value)}
-              className="rounded-xl bg-tint px-3 py-2 text-sm ring-1 ring-border"
-            >
-              {B_OPTIONS.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            {[
-              { label: `Days with A (${withA.length})`, pct: pctWith },
-              { label: `Days without A (${withoutA.length})`, pct: pctWithout },
-            ].map((b) => (
-              <div key={b.label} className="flex flex-col items-center gap-1">
-                <span className="text-sm font-semibold tabular-nums">
-                  {b.pct != null ? `${b.pct.toFixed(0)}%` : "–"}
-                </span>
-                <div className="flex h-20 w-full items-end justify-center">
-                  <div
-                    className="w-8 rounded-t bg-primary"
-                    style={{
-                      height: b.pct != null ? `${Math.max(4, b.pct)}%` : "2%",
-                      opacity: b.pct != null ? 1 : 0.2,
-                    }}
-                  />
-                </div>
-                <span className="text-center text-[10px] text-muted-foreground">{b.label}</span>
-              </div>
-            ))}
-          </div>
-          <p className="mt-3 text-xs text-muted-foreground">
-            Days with {aLabel.toLowerCase()}: {bLabel.toLowerCase()} on{" "}
-            {pctWith != null ? `${pctWith.toFixed(0)}%` : "–"} of days. Days without:{" "}
-            {pctWithout != null ? `${pctWithout.toFixed(0)}%` : "–"}.
-          </p>
-          <button
-            onClick={saveTrigger}
-            className="mt-3 w-full rounded-xl bg-primary px-3 py-2 text-xs font-medium text-primary-foreground"
-          >
-            ★ Save this combo
-          </button>
-          {(view.settings.savedTriggers ?? []).length > 0 && (
-            <div className="mt-3 space-y-1.5">
-              {(view.settings.savedTriggers ?? []).map((t) => (
-                <div key={t.id} className="flex items-center gap-2 rounded-xl bg-tint px-3 py-2 text-xs">
-                  <button
-                    className="flex-1 text-left"
-                    onClick={() => {
-                      setTriggerA(t.a);
-                      setTriggerB(t.b);
-                    }}
-                  >
-                    {A_OPTIONS.find((o) => o.id === t.a)?.label ?? t.a} →{" "}
-                    {B_OPTIONS.find((o) => o.id === t.b)?.label ?? t.b}
-                  </button>
-                  <button onClick={() => removeTrigger(t.id)} className="text-muted-foreground">
-                    ✕
-                  </button>
-                </div>
-              ))}
             </div>
           )}
         </Card>
 
-        <Card title="Lab results">
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            <input
-              list="lab-tests"
-              placeholder="Test name"
-              value={labForm.test}
-              onChange={(e) => setLabForm({ ...labForm, test: e.target.value })}
-              className="col-span-2 rounded-xl bg-tint px-3 py-2 text-sm ring-1 ring-border"
-            />
-            <datalist id="lab-tests">
-              {view.custom.labTests.map((t) => (
-                <option key={t} value={t} />
-              ))}
-            </datalist>
-            <input
-              type="number"
-              placeholder="Value"
-              value={labForm.value}
-              onChange={(e) => setLabForm({ ...labForm, value: e.target.value })}
-              className="rounded-xl bg-tint px-3 py-2 text-sm ring-1 ring-border"
-            />
-            <input
-              placeholder="Unit"
-              value={labForm.unit}
-              onChange={(e) => setLabForm({ ...labForm, unit: e.target.value })}
-              className="rounded-xl bg-tint px-3 py-2 text-sm ring-1 ring-border"
-            />
-            <input
-              type="number"
-              placeholder="Ref low"
-              value={labForm.refLow}
-              onChange={(e) => setLabForm({ ...labForm, refLow: e.target.value })}
-              className="rounded-xl bg-tint px-3 py-2 text-sm ring-1 ring-border"
-            />
-            <input
-              type="number"
-              placeholder="Ref high"
-              value={labForm.refHigh}
-              onChange={(e) => setLabForm({ ...labForm, refHigh: e.target.value })}
-              className="rounded-xl bg-tint px-3 py-2 text-sm ring-1 ring-border"
-            />
-            <input
-              type="date"
-              value={labForm.date}
-              onChange={(e) => setLabForm({ ...labForm, date: e.target.value })}
-              className="col-span-2 rounded-xl bg-tint px-3 py-2 text-sm ring-1 ring-border"
-            />
-          </div>
-          <button
-            onClick={addLab}
-            className="mt-2 w-full rounded-xl bg-primary px-3 py-2 text-xs font-medium text-primary-foreground"
-          >
-            + Add lab result
-          </button>
+        {/* ------------------------------------------------------------------ */}
+        {/* Diagnoses                                                          */}
+        {/* ------------------------------------------------------------------ */}
 
-          {labsByTest.size === 0 ? (
-            <Empty />
-          ) : (
-            <div className="mt-4 space-y-4">
-              {Array.from(labsByTest.entries()).map(([test, entries]) => (
-                <div key={test} className="rounded-2xl bg-tint p-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium">{test}</p>
-                    <span className="text-[10px] text-muted-foreground">
-                      {entries.length} entr{entries.length === 1 ? "y" : "ies"}
-                    </span>
-                  </div>
-                  {entries.length >= 2 && <LabTrendChart entries={entries} />}
-                  <ul className="mt-2 space-y-1 text-xs">
-                    {entries
-                      .slice()
-                      .reverse()
-                      .map((l) => (
-                        <li key={l.id} className="flex items-center justify-between">
-                          <span
-                            className={inRange(l) ? "" : "font-semibold"}
-                            style={{
-                              color: inRange(l)
-                                ? undefined
-                                : l.refHigh != null && l.value > l.refHigh
-                                  ? "#ef4444"
-                                  : "#f97316",
-                            }}
-                          >
-                            {l.date} — {l.value}
-                            {l.unit ?? ""}
-                            {l.refLow != null || l.refHigh != null ? (
-                              <span className="text-muted-foreground">
-                                {" "}
-                                (ref {l.refLow ?? "–"}–{l.refHigh ?? "–"})
-                              </span>
-                            ) : null}
-                          </span>
-                          <button onClick={() => removeLab(l.id)} className="text-muted-foreground">
-                            ✕
-                          </button>
-                        </li>
-                      ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          )}
-        </Card>
-
-        <Card title="Documents">
-          <div className="mt-2 space-y-2">
+        <Card title="My diagnoses" description="Keep a simple list of diagnoses and related notes.">
+          <div className="mt-4 space-y-2.5">
             <input
-              placeholder="Document name"
-              value={docForm.name}
-              onChange={(e) => setDocForm({ ...docForm, name: e.target.value })}
-              className="w-full rounded-xl bg-tint px-3 py-2 text-sm ring-1 ring-border"
-            />
-            <input
-              type="date"
-              value={docForm.date}
-              onChange={(e) => setDocForm({ ...docForm, date: e.target.value })}
-              className="w-full rounded-xl bg-tint px-3 py-2 text-sm ring-1 ring-border"
-            />
-            {(view.labs ?? []).length > 0 && (
-              <select
-                value={docForm.labId}
-                onChange={(e) => setDocForm({ ...docForm, labId: e.target.value })}
-                className="w-full rounded-xl bg-tint px-3 py-2 text-sm ring-1 ring-border"
-              >
-                <option value="">Link to lab result (optional)</option>
-                {(view.labs ?? []).map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.test} — {l.date}
-                  </option>
-                ))}
-              </select>
-            )}
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*,application/pdf"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) onDocFile(f);
-              }}
-              className="w-full text-xs"
-            />
-            {docWarn && (
-              <p className="text-xs" style={{ color: "#f97316" }}>
-                {docWarn}
-              </p>
-            )}
-            <button
-              onClick={addDoc}
-              disabled={!docForm.name || !docDataUrl}
-              className="w-full rounded-xl bg-primary px-3 py-2 text-xs font-medium text-primary-foreground disabled:opacity-40"
-            >
-              + Add document
-            </button>
-          </div>
-          {sortedDocs.length === 0 ? (
-            <Empty />
-          ) : (
-            <ul className="mt-3 space-y-2">
-              {sortedDocs.map((doc) => (
-                <li key={doc.id} className="flex items-center gap-3 rounded-2xl bg-tint p-3">
-                  {doc.mime?.startsWith("image/") && doc.dataUrl ? (
-                    <img src={doc.dataUrl} alt={doc.name} className="h-12 w-12 rounded-lg object-cover" />
-                  ) : (
-                    <span className="grid h-12 w-12 place-items-center rounded-lg bg-surface text-lg">📄</span>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{doc.name}</p>
-                    <p className="text-xs text-muted-foreground">{doc.date}</p>
-                  </div>
-                  <button onClick={() => removeDoc(doc.id)} className="text-muted-foreground">
-                    ✕
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
-
-        <Card title="My diagnoses">
-          <div className="mt-2 space-y-2">
-            <input
+              type="text"
               placeholder="Diagnosis name"
-              value={diagForm.name}
-              onChange={(e) => setDiagForm({ ...diagForm, name: e.target.value })}
-              className="w-full rounded-xl bg-tint px-3 py-2 text-sm ring-1 ring-border"
+              value={diagnosisForm.name}
+              onChange={(event) =>
+                setDiagnosisForm((current) => ({
+                  ...current,
+                  name: event.target.value,
+                }))
+              }
+              className="w-full rounded-2xl bg-tint px-4 py-3 text-sm text-foreground outline-none ring-1 ring-border placeholder:text-muted-foreground focus:ring-2 focus:ring-primary"
             />
+
             <input
               type="date"
-              value={diagForm.date}
-              onChange={(e) => setDiagForm({ ...diagForm, date: e.target.value })}
-              className="w-full rounded-xl bg-tint px-3 py-2 text-sm ring-1 ring-border"
+              value={diagnosisForm.date}
+              onChange={(event) =>
+                setDiagnosisForm((current) => ({
+                  ...current,
+                  date: event.target.value,
+                }))
+              }
+              className="w-full rounded-2xl bg-tint px-4 py-3 text-sm text-foreground outline-none ring-1 ring-border focus:ring-2 focus:ring-primary"
             />
+
             <input
-              placeholder="Doctor / clinic"
-              value={diagForm.doctor}
-              onChange={(e) => setDiagForm({ ...diagForm, doctor: e.target.value })}
-              className="w-full rounded-xl bg-tint px-3 py-2 text-sm ring-1 ring-border"
+              type="text"
+              placeholder="Doctor or clinic"
+              value={diagnosisForm.doctor}
+              onChange={(event) =>
+                setDiagnosisForm((current) => ({
+                  ...current,
+                  doctor: event.target.value,
+                }))
+              }
+              className="w-full rounded-2xl bg-tint px-4 py-3 text-sm text-foreground outline-none ring-1 ring-border placeholder:text-muted-foreground focus:ring-2 focus:ring-primary"
             />
+
             <textarea
+              rows={3}
               placeholder="Note"
-              value={diagForm.note}
-              onChange={(e) => setDiagForm({ ...diagForm, note: e.target.value })}
-              className="w-full rounded-xl bg-tint px-3 py-2 text-sm ring-1 ring-border"
+              value={diagnosisForm.note}
+              onChange={(event) =>
+                setDiagnosisForm((current) => ({
+                  ...current,
+                  note: event.target.value,
+                }))
+              }
+              className="w-full resize-none rounded-2xl bg-tint px-4 py-3 text-sm text-foreground outline-none ring-1 ring-border placeholder:text-muted-foreground focus:ring-2 focus:ring-primary"
             />
-            {(view.docs ?? []).length > 0 && (
-              <select
-                value={diagForm.docId}
-                onChange={(e) => setDiagForm({ ...diagForm, docId: e.target.value })}
-                className="w-full rounded-xl bg-tint px-3 py-2 text-sm ring-1 ring-border"
+
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={saveDiagnosis}
+                disabled={!diagnosisForm.name.trim()}
+                className="rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
               >
-                <option value="">Link to document (optional)</option>
-                {(view.docs ?? []).map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
-            )}
-            <button
-              onClick={saveDiag}
-              className="w-full rounded-xl bg-primary px-3 py-2 text-xs font-medium text-primary-foreground"
-            >
-              {diagForm.id ? "Update diagnosis" : "+ Add diagnosis"}
-            </button>
+                {diagnosisForm.id ? "Update diagnosis" : "+ Add diagnosis"}
+              </button>
+
+              {diagnosisForm.id && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDiagnosisForm({
+                      name: "",
+                      date: "",
+                      doctor: "",
+                      note: "",
+                    })
+                  }
+                  className="rounded-2xl bg-tint px-4 py-3 text-sm font-semibold text-foreground ring-1 ring-border transition active:scale-[0.99]"
+                >
+                  Cancel editing
+                </button>
+              )}
+            </div>
           </div>
+
           {(view.diagnoses ?? []).length === 0 ? (
-            <Empty />
+            <Empty text="No diagnoses added yet." />
           ) : (
-            <ul className="mt-3 space-y-2">
-              {(view.diagnoses ?? []).map((dg) => (
-                <li key={dg.id} className="rounded-2xl bg-tint p-3 text-sm">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="font-medium">{dg.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {[dg.date, dg.doctor].filter(Boolean).join(" · ")}
-                      </p>
-                      {dg.note && <p className="mt-1 text-xs whitespace-pre-line">{dg.note}</p>}
+            <div className="mt-4 space-y-2.5">
+              {(view.diagnoses ?? []).map((diagnosis) => (
+                <article key={diagnosis.id} className="rounded-2xl bg-tint p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="break-words text-sm font-semibold text-foreground">{diagnosis.name}</h3>
+
+                      {(diagnosis.date || diagnosis.doctor) && (
+                        <p className="mt-1 text-[11px] text-muted-foreground">
+                          {[diagnosis.date, diagnosis.doctor].filter(Boolean).join(" · ")}
+                        </p>
+                      )}
+
+                      {diagnosis.note && (
+                        <p className="mt-2 whitespace-pre-line text-xs leading-relaxed text-foreground/85">
+                          {diagnosis.note}
+                        </p>
+                      )}
                     </div>
-                    <div className="flex shrink-0 gap-2 text-xs">
-                      <button onClick={() => editDiag(dg)} className="text-primary">
+
+                    <div className="flex shrink-0 flex-col gap-1 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => editDiagnosis(diagnosis)}
+                        className="rounded-lg px-2 py-1 font-medium text-primary transition hover:bg-background"
+                      >
                         Edit
                       </button>
-                      <button onClick={() => removeDiag(dg.id)} className="text-muted-foreground">
+
+                      <button
+                        type="button"
+                        onClick={() => removeDiagnosis(diagnosis.id)}
+                        className="rounded-lg px-2 py-1 text-muted-foreground transition hover:bg-background hover:text-red-600"
+                      >
                         Delete
                       </button>
                     </div>
                   </div>
-                </li>
+                </article>
               ))}
-            </ul>
+            </div>
           )}
         </Card>
       </div>
@@ -997,38 +1817,42 @@ function PatternsPage() {
   );
 }
 
-function LabTrendChart({ entries }: { entries: LabResult[] }) {
-  const width = 300,
-    height = 110,
-    left = 10,
-    right = 10,
-    top = 10,
-    bottom = 20;
-  const chartW = width - left - right,
-    chartH = height - top - bottom;
-  const vals = entries.map((e) => e.value);
-  const min = Math.min(...vals),
-    max = Math.max(...vals);
-  const span = Math.max(0.001, max - min);
-  const denom = Math.max(1, entries.length - 1);
-  const xFor = (i: number) => left + (i / denom) * chartW;
-  const yFor = (v: number) => top + ((max - v) / span) * chartH;
-  const path = entries
-    .map((e, i) => `${i === 0 ? "M" : "L"}${xFor(i).toFixed(1)},${yFor(e.value).toFixed(1)}`)
-    .join(" ");
-  const dotColor = (e: LabResult) => {
-    if (e.refLow != null && e.value < e.refLow) return "#f97316";
-    if (e.refHigh != null && e.value > e.refHigh) return "#ef4444";
-    return "var(--primary)";
-  };
+/* -------------------------------------------------------------------------- */
+/* Trigger result card                                                        */
+/* -------------------------------------------------------------------------- */
+
+function TriggerResult({
+  label,
+  detail,
+  percentage,
+  color,
+}: {
+  label: string;
+  detail: string;
+  percentage: number | null;
+  color: string;
+}) {
+  const safePercentage = percentage == null ? 0 : clampPercent(percentage);
+
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="mt-2 h-24 w-full">
-      <path d={path} fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      {entries.map((e, i) => (
-        <circle key={e.id} cx={xFor(i)} cy={yFor(e.value)} r="3.5" fill={dotColor(e)}>
-          <title>{`${e.date}: ${e.value}${e.unit ?? ""}`}</title>
-        </circle>
-      ))}
-    </svg>
+    <div className="rounded-3xl bg-tint p-4 text-center">
+      <p className="text-[11px] font-semibold text-muted-foreground">{label}</p>
+
+      <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">
+        {percentage != null ? `${percentage.toFixed(0)}%` : "—"}
+      </p>
+
+      <div className="mx-auto mt-3 flex h-24 w-12 items-end overflow-hidden rounded-2xl bg-background/70">
+        <div
+          className="w-full rounded-2xl transition-[height] duration-500 ease-out"
+          style={{
+            height: percentage == null ? "0%" : `${Math.max(safePercentage, percentage === 0 ? 0 : 5)}%`,
+            backgroundColor: color,
+          }}
+        />
+      </div>
+
+      <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">{detail}</p>
+    </div>
   );
 }
