@@ -801,50 +801,49 @@ function PainWizard({
   const startSymptomUpdate = () => {
     if (!latestPain) return;
 
-    // Keep the latest pain state.
+    // Keep only the pain context from the latest entry.
     setScore(latestPain.score);
     setParts([...(latestPain.parts ?? [])]);
     setQuality([...(latestPain.quality ?? [])]);
-    setSymptoms([...(latestPain.symptoms ?? [])]);
     setPressureTypes([...(latestPain.pressureTypes ?? [])]);
     setPressureIntensity(latestPain.pressureIntensity);
 
-    // These are momentary measurements, so do not copy old values.
+    // Start every symptom field empty so the new entry contains only
+    // symptoms that are added during this quick update.
+    setSymptoms([]);
+
     setBodyBattery(undefined);
     setStress(undefined);
     setMood([]);
 
-    // Keep the latest general symptom details.
-    setHotFlashesOn(!!latestPain.hotFlashesOn);
-    setHotFlashes(latestPain.hotFlashes);
-    setPcosSymptoms([...(latestPain.pcosSymptoms ?? [])]);
-    setFluNote(latestPain.fluNote ?? "");
+    setHotFlashesOn(false);
+    setHotFlashes(undefined);
 
-    // Keep nausea exactly as it was in the latest entry.
-    setNausea(!!latestPain.nausea);
-    setNauseaTypes([...(latestPain.nauseaTypes ?? [])]);
-    setNauseaSeverity(latestPain.nauseaSeverity);
-    setNauseaMinutes(latestPain.nauseaMinutes != null ? String(latestPain.nauseaMinutes) : "");
-    setNauseaOngoing(!!latestPain.nauseaOngoing);
-    setNauseaTriggers([...(latestPain.nauseaTriggers ?? [])]);
-    setNauseaSymptoms([...(latestPain.nauseaSymptoms ?? [])]);
-    setNauseaHelped([...(latestPain.nauseaHelped ?? [])]);
+    setPcosSymptoms([]);
+    setFluNote("");
 
-    // Keep headache state, but do not automatically turn headache on.
-    setHeadache(!!latestPain.headache);
-    setHeadacheTypes([...(latestPain.headacheTypes ?? [])]);
-    setHeadacheIntensity(latestPain.headacheIntensity);
-    setHeadacheMedOn(!!latestPain.headacheMed);
-    setHeadacheMed(latestPain.headacheMed ?? "");
-    setHeadacheMedTime(latestPain.headacheMedTime ?? nowHHMM());
+    setNausea(false);
+    setNauseaTypes([]);
+    setNauseaSeverity(undefined);
+    setNauseaMinutes("");
+    setNauseaOngoing(false);
+    setNauseaTriggers([]);
+    setNauseaSymptoms([]);
+    setNauseaHelped([]);
 
-    // The update receives a new time and an empty note.
-    setTime(nowHHMM());
-    setNote("");
+    setHeadache(false);
+    setHeadacheTypes([]);
+    setHeadacheIntensity(undefined);
+    setHeadacheMedOn(false);
+    setHeadacheMed("");
+    setHeadacheMedTime(nowHHMM());
 
-    // Do not duplicate previous separate episodes.
+    // Separate episodes are also empty until the user adds them now.
     setTetany(false);
     setPanic(false);
+
+    setNote("");
+    setTime(nowHHMM());
 
     setCopiedFromTime(latestPain.time);
     setQuickSymptomUpdate(true);
@@ -1005,8 +1004,8 @@ function PainWizard({
                 <div>
                   <p className="text-sm font-semibold">Add a later symptom update?</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    Last log: {latestPain.time} · pain {latestPain.score}/10. Reuse its pain and symptom state, then
-                    change only what is different now.
+                    Last log: {latestPain.time} · pain {latestPain.score}/10. Keep its pain context and add only the new
+                    symptoms you feel now.
                   </p>
                 </div>
                 <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10">
@@ -1134,8 +1133,8 @@ function PainWizard({
                 Pain {score}/10 copied from {copiedFromTime ?? "the latest log"}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                This saves a new entry at {time}; the older log stays unchanged. Change any symptom below that is
-                different now.
+                This saves a new entry at {time}; the older log stays unchanged. Only symptoms selected below are
+                included in this update.
               </p>
             </div>
           )}
