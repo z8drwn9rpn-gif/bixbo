@@ -1742,7 +1742,7 @@ function PatternsPage() {
                   date: event.target.value,
                 }))
               }
-              className="w-full rounded-2xl bg-tint px-4 py-3 text-sm text-foreground outline-none ring-1 ring-border focus:ring-2 focus:ring-primary"
+              className="w-full rounded-2xl bg-tint px-4 py-3 text-base text-foreground outline-none ring-1 ring-border focus:ring-2 focus:ring-primary"
             />
 
             <input
@@ -1755,7 +1755,7 @@ function PatternsPage() {
                   doctor: event.target.value,
                 }))
               }
-              className="w-full rounded-2xl bg-tint px-4 py-3 text-sm text-foreground outline-none ring-1 ring-border placeholder:text-muted-foreground focus:ring-2 focus:ring-primary"
+              className="w-full rounded-2xl bg-tint px-4 py-3 text-base text-foreground outline-none ring-1 ring-border placeholder:text-muted-foreground focus:ring-2 focus:ring-primary"
             />
 
             <textarea
@@ -1768,7 +1768,7 @@ function PatternsPage() {
                   note: event.target.value,
                 }))
               }
-              className="w-full resize-none rounded-2xl bg-tint px-4 py-3 text-sm text-foreground outline-none ring-1 ring-border placeholder:text-muted-foreground focus:ring-2 focus:ring-primary"
+              className="w-full resize-none rounded-2xl bg-tint px-4 py-3 text-base text-foreground outline-none ring-1 ring-border placeholder:text-muted-foreground focus:ring-2 focus:ring-primary"
             />
 
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -1776,7 +1776,7 @@ function PatternsPage() {
                 type="button"
                 onClick={saveDiagnosis}
                 disabled={!diagnosisForm.name.trim()}
-                className="rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
+                className="rounded-2xl bg-primary px-4 py-3 text-base font-semibold text-primary-foreground transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {diagnosisForm.id ? "Update diagnosis" : "+ Add diagnosis"}
               </button>
@@ -1792,7 +1792,7 @@ function PatternsPage() {
                       note: "",
                     })
                   }
-                  className="rounded-2xl bg-tint px-4 py-3 text-sm font-semibold text-foreground ring-1 ring-border transition active:scale-[0.99]"
+                  className="rounded-2xl bg-tint px-4 py-3 text-base font-semibold text-foreground ring-1 ring-border transition active:scale-[0.99]"
                 >
                   Cancel editing
                 </button>
@@ -1808,7 +1808,7 @@ function PatternsPage() {
                 <article key={diagnosis.id} className="rounded-2xl bg-tint p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <h3 className="break-words text-sm font-semibold text-foreground">{diagnosis.name}</h3>
+                      <h3 className="break-words text-base font-semibold text-foreground">{diagnosis.name}</h3>
 
                       {(diagnosis.date || diagnosis.doctor) && (
                         <p className="mt-1 text-[11px] text-muted-foreground">
