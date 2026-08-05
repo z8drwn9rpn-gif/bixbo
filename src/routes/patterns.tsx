@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Activity,
   Brain,
+  CalendarDays,
   Dumbbell,
   Flame,
   HeartPulse,
@@ -112,6 +113,7 @@ type SelectOption = {
 
 type PatternTab = "cycle" | "monthly" | "treatment" | "triggers";
 type AnalysisRange = 7 | 30 | 90 | "all";
+type TreatmentKind = "medication" | "supplement" | "diet" | "therapy" | "exercise" | "other";
 
 const PATTERN_TABS: Array<{ id: PatternTab; label: string }> = [
   { id: "cycle", label: "Cycle" },
@@ -1098,6 +1100,69 @@ function PatternsPage() {
   /* ------------------------------------------------------------------------ */
 
   const [treatmentDate, setTreatmentDate] = useState("");
+  const [treatmentName, setTreatmentName] = useState("");
+  const [treatmentKind, setTreatmentKind] = useState<TreatmentKind>("medication");
+  const [treatmentNotes, setTreatmentNotes] = useState("");
+  const [customTreatment, setCustomTreatment] = useState(false);
+  const treatmentStorageKey = "bixbo:patterns:treatment";
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(treatmentStorageKey);
+      if (!raw) return;
+      const saved = JSON.parse(raw) as {
+        date?: string;
+        name?: string;
+        kind?: TreatmentKind;
+        notes?: string;
+        custom?: boolean;
+      };
+      setTreatmentDate(saved.date ?? "");
+      setTreatmentName(saved.name ?? "");
+      setTreatmentKind(saved.kind ?? "medication");
+      setTreatmentNotes(saved.notes ?? "");
+      setCustomTreatment(Boolean(saved.custom));
+    } catch {
+      // Ignore malformed local treatment drafts.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const hasTreatment = Boolean(treatmentDate || treatmentName || treatmentNotes);
+    if (!hasTreatment) {
+      window.localStorage.removeItem(treatmentStorageKey);
+      return;
+    }
+    window.localStorage.setItem(
+      treatmentStorageKey,
+      JSON.stringify({
+        date: treatmentDate,
+        name: treatmentName,
+        kind: treatmentKind,
+        notes: treatmentNotes,
+        custom: customTreatment,
+      }),
+    );
+  }, [customTreatment, treatmentDate, treatmentKind, treatmentName, treatmentNotes]);
+
+  const deleteTreatmentComparison = () => {
+    if (
+      !window.confirm(
+        "Delete this treatment comparison? This removes the treatment name, type, start date and notes. Daily health logs and medications will NOT be deleted.",
+      )
+    ) {
+      return;
+    }
+
+    setTreatmentDate("");
+    setTreatmentName("");
+    setTreatmentKind("medication");
+    setTreatmentNotes("");
+    setCustomTreatment(false);
+    if (typeof window !== "undefined") window.localStorage.removeItem(treatmentStorageKey);
+  };
 
   const treatmentWindow = (before: boolean) => {
     if (!treatmentDate) return [] as string[];
@@ -1173,6 +1238,25 @@ function PatternsPage() {
     const relative = entry.percent == null ? "" : ` · ${formatSignedPercent(entry.percent)}`;
     return `${entry.label}: ${direction}${relative}`;
   };
+
+  const formattedTreatmentDate = treatmentDate
+    ? new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short", year: "numeric" }).format(
+        new Date(`${treatmentDate}T12:00:00`),
+      )
+    : "Select treatment start date";
+
+  const treatmentKindLabel =
+    treatmentKind === "medication"
+      ? "Medication"
+      : treatmentKind === "supplement"
+        ? "Supplement"
+        : treatmentKind === "diet"
+          ? "Diet"
+          : treatmentKind === "therapy"
+            ? "Therapy"
+            : treatmentKind === "exercise"
+              ? "Exercise"
+              : "Other";
 
   /* ------------------------------------------------------------------------ */
   /* Trigger comparison                                                       */
@@ -2004,33 +2088,165 @@ function PatternsPage() {
               title="Treatment comparison"
               description="Compare the four weeks before treatment with the first four weeks after its start."
             >
-              <label className="mt-3 block">
-                <span className="text-sm font-semibold text-foreground">Treatment start date</span>
+              <div className="mt-4 space-y-4">
+                <div>
+                  <label htmlFor="treatment-name" className="text-sm font-semibold text-foreground">
+                    What did you start?
+                  </label>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">
+                    Choose one of your medicines or enter another treatment.
+                  </p>
 
-                {view.meds.length > 0 && (
-                  <span className="mt-1 block text-[10px] leading-relaxed text-muted-foreground">
-                    Current medicines: {view.meds.map((med) => med.name).join(", ")}
-                  </span>
+                  {!customTreatment && view.meds.length > 0 ? (
+                    <div className="mt-2 grid grid-cols-[1fr_auto] gap-2">
+                      <select
+                        id="treatment-name"
+                        value={treatmentName}
+                        onChange={(event) => setTreatmentName(event.target.value)}
+                        className="min-h-11 min-w-0 rounded-2xl bg-tint px-4 py-2.5 text-sm text-foreground outline-none ring-1 ring-border focus:ring-2 focus:ring-primary"
+                      >
+                        <option value="">Choose medicine</option>
+                        {view.meds.map((med) => (
+                          <option key={med.id} value={med.name}>
+                            {med.name}
+                            {med.dose ? ` — ${med.dose}` : ""}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCustomTreatment(true);
+                          setTreatmentName("");
+                        }}
+                        className="min-h-11 rounded-2xl bg-background px-3 text-xs font-semibold text-primary ring-1 ring-border"
+                      >
+                        Other
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="mt-2 grid grid-cols-[1fr_auto] gap-2">
+                      <input
+                        id="treatment-name"
+                        type="text"
+                        value={treatmentName}
+                        onChange={(event) => setTreatmentName(event.target.value)}
+                        placeholder="e.g. Elicea, physiotherapy, low-histamine diet"
+                        className="min-h-11 min-w-0 rounded-2xl bg-tint px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none ring-1 ring-border focus:ring-2 focus:ring-primary"
+                      />
+                      {view.meds.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCustomTreatment(false);
+                            setTreatmentName("");
+                          }}
+                          className="min-h-11 rounded-2xl bg-background px-3 text-xs font-semibold text-primary ring-1 ring-border"
+                        >
+                          Medicines
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label htmlFor="treatment-kind" className="text-sm font-semibold text-foreground">
+                    Type
+                  </label>
+                  <select
+                    id="treatment-kind"
+                    value={treatmentKind}
+                    onChange={(event) => setTreatmentKind(event.target.value as TreatmentKind)}
+                    className="mt-2 min-h-11 w-full rounded-2xl bg-tint px-4 py-2.5 text-sm text-foreground outline-none ring-1 ring-border focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="medication">Medication</option>
+                    <option value="supplement">Supplement</option>
+                    <option value="diet">Diet</option>
+                    <option value="therapy">Therapy</option>
+                    <option value="exercise">Exercise</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <span className="text-sm font-semibold text-foreground">Treatment start date</span>
+                  <div className="relative mt-2 min-h-12 overflow-hidden rounded-2xl bg-tint ring-1 ring-border focus-within:ring-2 focus-within:ring-primary">
+                    <div className="pointer-events-none flex min-h-12 items-center justify-between gap-3 px-4">
+                      <span
+                        className={`text-sm font-medium ${treatmentDate ? "text-foreground" : "text-muted-foreground"}`}
+                      >
+                        {formattedTreatmentDate}
+                      </span>
+                      <CalendarDays className="h-5 w-5 shrink-0 text-primary" />
+                    </div>
+                    <input
+                      type="date"
+                      aria-label="Treatment start date"
+                      value={treatmentDate}
+                      onChange={(event) => setTreatmentDate(event.target.value)}
+                      className="absolute inset-0 h-full w-full cursor-pointer opacity-[0.01]"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="treatment-notes" className="text-sm font-semibold text-foreground">
+                    Notes <span className="font-normal text-muted-foreground">(optional)</span>
+                  </label>
+                  <textarea
+                    id="treatment-notes"
+                    value={treatmentNotes}
+                    onChange={(event) => setTreatmentNotes(event.target.value)}
+                    placeholder="Why you started it, dose change, or anything useful to remember"
+                    rows={3}
+                    className="mt-2 w-full resize-none rounded-2xl bg-tint px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none ring-1 ring-border focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+
+                {(treatmentDate || treatmentName || treatmentNotes) && (
+                  <div className="flex items-center justify-between gap-3 rounded-2xl bg-background p-3 ring-1 ring-border">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-foreground">
+                        {treatmentName || "Unnamed treatment"}
+                      </p>
+                      <p className="mt-0.5 text-[11px] text-muted-foreground">
+                        {treatmentKindLabel}
+                        {treatmentDate ? ` · Started ${formattedTreatmentDate}` : " · Start date not selected"}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={deleteTreatmentComparison}
+                      aria-label="Delete treatment comparison"
+                      className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-destructive/10 text-destructive ring-1 ring-destructive/20 hover:bg-destructive/15"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 )}
 
-                <input
-                  type="date"
-                  value={treatmentDate}
-                  onChange={(event) => setTreatmentDate(event.target.value)}
-                  className="mt-2 min-h-11 w-full rounded-2xl bg-tint px-4 py-2.5 text-sm text-foreground [color-scheme:light] outline-none ring-1 ring-border transition focus:ring-2 focus:ring-primary dark:[color-scheme:dark]"
-                />
-              </label>
-
-              {!treatmentDate && (
-                <Empty text="Choose a treatment start date, then log at least 7 days before and after it to unlock the comparison." />
-              )}
+                {!treatmentDate && (
+                  <Empty text="Add what you started and choose its start date. Then log at least 7 days before and after it to unlock the comparison." />
+                )}
+              </div>
             </Card>
 
             {treatmentDate && (
               <>
                 <SummaryPanel
-                  title="Treatment at a glance"
+                  title={treatmentName ? `${treatmentName} at a glance` : "Treatment at a glance"}
                   items={[
+                    {
+                      label: "Treatment",
+                      value: `${treatmentName || "Unnamed"} · ${treatmentKindLabel}`,
+                      tone: "neutral",
+                    },
+                    {
+                      label: "Started",
+                      value: formattedTreatmentDate,
+                      tone: "neutral",
+                    },
                     {
                       label: "Overall",
                       value: treatmentOverall,
