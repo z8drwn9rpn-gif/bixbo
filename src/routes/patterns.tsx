@@ -242,6 +242,19 @@ function clampPercent(value: number) {
   return Math.max(0, Math.min(100, value));
 }
 
+function phaseLabelByValue(bars: PhaseBar[], mode: "highest" | "lowest" = "highest") {
+  const available = bars.filter(
+    (bar): bar is PhaseBar & { value: number } => bar.value != null && Number.isFinite(bar.value),
+  );
+
+  if (available.length === 0) return "—";
+
+  return available.reduce((selected, current) => {
+    if (mode === "lowest") return current.value < selected.value ? current : selected;
+    return current.value > selected.value ? current : selected;
+  }).label;
+}
+
 /* -------------------------------------------------------------------------- */
 /* Cycle phase chart                                                          */
 /* -------------------------------------------------------------------------- */
@@ -657,29 +670,10 @@ function PatternsPage() {
   ];
 
   const commonFlow = phaseFlowMode(phaseBuckets.during, dayLogs);
-  const highestPainPhase =
-    painPhaseBars.reduce(
-      (best, current) => ((current.value ?? -1) > (best.value ?? -1) ? current : best),
-      painPhaseBars[0],
-    )?.label ?? "—";
-
-  const bestEnergyPhase =
-    energyPhaseBars.reduce(
-      (best, current) => ((current.value ?? -1) > (best.value ?? -1) ? current : best),
-      energyPhaseBars[0],
-    )?.label ?? "—";
-
-  const worstMoodPhase =
-    moodPhaseBars.reduce(
-      (worst, current) => ((current.value ?? -1) > (worst.value ?? -1) ? current : worst),
-      moodPhaseBars[0],
-    )?.label ?? "—";
-
-  const mostHotFlashPhase =
-    hotFlashPhaseBars.reduce(
-      (worst, current) => ((current.value ?? -1) > (worst.value ?? -1) ? current : worst),
-      hotFlashPhaseBars[0],
-    )?.label ?? "—";
+  const highestPainPhase = phaseLabelByValue(painPhaseBars);
+  const bestEnergyPhase = phaseLabelByValue(energyPhaseBars);
+  const worstMoodPhase = phaseLabelByValue(moodPhaseBars);
+  const mostHotFlashPhase = phaseLabelByValue(hotFlashPhaseBars);
 
   /* ------------------------------------------------------------------------ */
   /* Monthly calculations                                                     */
@@ -845,7 +839,7 @@ function PatternsPage() {
   const monthlyConfidence: ConfidenceLevel =
     monthlyLoggedDays >= 21 ? "High" : monthlyLoggedDays >= 7 ? "Medium" : "Low";
 
-  const monthlyChanges = useMemo(() => {
+  const monthlyChanges = (() => {
     const entries = [
       {
         label: "Panic attacks",
@@ -918,28 +912,7 @@ function PatternsPage() {
       const score = entry.higherIsWorse ? -delta : delta;
       return { ...entry, delta, score };
     });
-  }, [
-    panicPrevious.count,
-    panicCurrent.count,
-    tetanyPrevious.count,
-    tetanyCurrent.count,
-    hotFlashPrevious.count,
-    hotFlashCurrent.count,
-    headachePrevious.count,
-    headacheCurrent.count,
-    pressurePrevious.count,
-    pressureCurrent.count,
-    medicationPrevious,
-    medicationCurrent,
-    workoutPrevious.count,
-    workoutCurrent.count,
-    workoutPrevious.minutes,
-    workoutCurrent.minutes,
-    pcosPrevious,
-    pcosCurrent,
-    histaminePrevious,
-    histamineCurrent,
-  ]);
+  })();
 
   const mostImproved = [...monthlyChanges].sort((a, b) => b.score - a.score)[0] ?? null;
   const mostWorsened = [...monthlyChanges].sort((a, b) => a.score - b.score)[0] ?? null;
@@ -1331,7 +1304,7 @@ function PatternsPage() {
         ? "Medium"
         : "Low";
 
-  const strongestAssociations = useMemo(() => {
+  const strongestAssociations = (() => {
     const results: Array<{
       trigger: string;
       outcome: string;
@@ -1363,7 +1336,7 @@ function PatternsPage() {
     });
 
     return results.sort((a, b) => Math.abs(b.difference) - Math.abs(a.difference)).slice(0, 3);
-  }, [allLoggedDays, dayLogs, triggerOptions, outcomeOptions]);
+  })();
 
   const saveTriggerCombination = () => {
     const alreadySaved = (view.settings.savedTriggers ?? []).some(
@@ -2094,7 +2067,6 @@ function PatternsPage() {
   );
 }
 
-/* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 /* Trigger result card                                                        */
 /* -------------------------------------------------------------------------- */
