@@ -145,7 +145,6 @@ export function LogSheet({
   const requestedActive = cat ?? initial;
   const edit = editEntry;
 
-  const pregnancyActive = Boolean(data.pregnancy?.active);
   const postpartumActive = Boolean(data.postpartum?.active);
   const cycleTrackingHidden = isCycleTrackingHidden(data);
 
@@ -180,7 +179,7 @@ export function LogSheet({
     }
     for (const c of source) if (!seen.has(c.id)) out.push(c);
     return out;
-  }, [cycleTrackingHidden, data.settings.logOrder, postpartumActive, pregnancyActive]);
+  }, [cycleTrackingHidden, data.settings.logOrder, postpartumActive]);
 
   const moveCat = (idx: number, dir: -1 | 1) => {
     const j = idx + dir;
@@ -201,8 +200,8 @@ export function LogSheet({
         side="bottom"
         className={
           (active
-            ? "flex h-[100dvh] max-h-[100dvh] flex-col rounded-t-none bg-background p-0"
-            : "flex h-[88vh] max-h-[88vh] flex-col rounded-t-3xl bg-background p-0") + " [&>button.absolute]:hidden"
+            ? "flex h-[100dvh] max-h-[100dvh] flex-col rounded-t-none bg-background p-0 pt-[env(safe-area-inset-top)]"
+            : "flex h-[88dvh] max-h-[88dvh] flex-col rounded-t-3xl bg-background p-0") + " [&>button.absolute]:hidden"
         }
       >
         {!active ? (
@@ -211,7 +210,7 @@ export function LogSheet({
               <SheetTitle className="text-center font-serif text-2xl">Log</SheetTitle>
               <button
                 onClick={() => setEditingOrder((v) => !v)}
-                className="absolute left-4 top-4 flex items-center gap-1 rounded-full px-2 py-1 text-xs text-muted-foreground hover:bg-tint"
+                className="absolute left-3 top-3 flex min-h-11 items-center gap-1 rounded-full px-3 text-xs font-medium text-muted-foreground transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 {editingOrder ? (
                   <>
@@ -226,7 +225,7 @@ export function LogSheet({
               <button
                 onClick={close}
                 aria-label="Close"
-                className="absolute right-4 top-4 rounded-full p-1 hover:bg-tint"
+                className="absolute right-3 top-3 grid h-11 w-11 place-items-center rounded-full transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -245,7 +244,7 @@ export function LogSheet({
                       <button
                         onClick={() => moveCat(i, -1)}
                         disabled={i === 0}
-                        className="rounded-full p-2 hover:bg-tint disabled:opacity-30"
+                        className="grid h-11 w-11 place-items-center rounded-full transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-30"
                         aria-label="Move up"
                       >
                         <ChevronUp className="h-5 w-5" />
@@ -253,7 +252,7 @@ export function LogSheet({
                       <button
                         onClick={() => moveCat(i, 1)}
                         disabled={i === orderedCats.length - 1}
-                        className="rounded-full p-2 hover:bg-tint disabled:opacity-30"
+                        className="grid h-11 w-11 place-items-center rounded-full transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-30"
                         aria-label="Move down"
                       >
                         <ChevronDown className="h-5 w-5" />

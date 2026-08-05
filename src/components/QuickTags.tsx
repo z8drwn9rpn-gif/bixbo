@@ -611,8 +611,10 @@ export function QuickTags({
         <button
           type="button"
           onClick={() => setEditMode((value) => !value)}
-          className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
-            editMode ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+          className={`flex min-h-10 items-center gap-1.5 rounded-full px-3 text-[11px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+            editMode
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "bg-tint/70 text-muted-foreground hover:bg-tint hover:text-foreground"
           }`}
         >
           <Pencil className="h-3 w-3" />
@@ -620,8 +622,8 @@ export function QuickTags({
         </button>
       </div>
 
-      <div className="-mx-5 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-        <div className="flex gap-2">
+      <div className="-mx-5 overflow-x-auto overscroll-x-contain px-5 pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex gap-2.5">
           {tags.map((tag, index) => {
             const isFlash = flash === tag.key;
 
@@ -629,13 +631,13 @@ export function QuickTags({
               return (
                 <div
                   key={tag.key}
-                  className="relative flex shrink-0 select-none flex-col items-center gap-0.5 rounded-2xl bg-surface px-3 py-2 ring-1 ring-border"
+                  className="relative flex min-h-[76px] min-w-[72px] shrink-0 select-none flex-col items-center justify-center gap-1 rounded-2xl bg-surface px-3 py-2.5 shadow-sm ring-1 ring-border/80"
                 >
                   <button
                     type="button"
                     onClick={() => hideTag(tag.key)}
                     aria-label={`Remove ${tag.label}`}
-                    className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full bg-destructive text-destructive-foreground shadow"
+                    className="absolute -right-2 -top-2 grid h-7 w-7 place-items-center rounded-full bg-destructive text-destructive-foreground shadow-md transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <X className="h-3 w-3" strokeWidth={3} />
                   </button>
@@ -649,7 +651,7 @@ export function QuickTags({
                       onClick={() => moveTag(tag.key, -1)}
                       disabled={index === 0}
                       aria-label="Move left"
-                      className="grid h-5 w-5 place-items-center rounded-full bg-tint text-muted-foreground disabled:opacity-30"
+                      className="grid h-8 w-8 place-items-center rounded-full bg-tint text-muted-foreground transition hover:bg-primary/15 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-30"
                     >
                       <ChevronLeft className="h-3 w-3" />
                     </button>
@@ -659,7 +661,7 @@ export function QuickTags({
                       onClick={() => moveTag(tag.key, 1)}
                       disabled={index === tags.length - 1}
                       aria-label="Move right"
-                      className="grid h-5 w-5 place-items-center rounded-full bg-tint text-muted-foreground disabled:opacity-30"
+                      className="grid h-8 w-8 place-items-center rounded-full bg-tint text-muted-foreground transition hover:bg-primary/15 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-30"
                     >
                       <ChevronRight className="h-3 w-3" />
                     </button>
@@ -693,8 +695,8 @@ export function QuickTags({
                 onContextMenu={(event) => event.preventDefault()}
                 title={`${tag.label} — long-press for details`}
                 aria-label={tag.label}
-                className={`relative flex shrink-0 select-none flex-col items-center gap-0.5 rounded-2xl bg-surface px-3 py-2 ring-1 ring-border transition-transform active:scale-95 ${
-                  isFlash ? "scale-110 ring-primary" : ""
+                className={`relative flex min-h-[76px] min-w-[72px] shrink-0 select-none flex-col items-center justify-center gap-1 rounded-2xl bg-surface px-3 py-2.5 shadow-sm ring-1 ring-border/80 transition-[transform,box-shadow,background-color,ring-color] duration-150 hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-95 ${
+                  isFlash ? "scale-105 bg-primary/10 ring-2 ring-primary shadow-md" : ""
                 }`}
               >
                 <Ico e={tag.emoji} size={24} />
@@ -714,7 +716,7 @@ export function QuickTags({
             type="button"
             onClick={() => setBuilderOpen(true)}
             aria-label="Add custom quick log button"
-            className="flex shrink-0 select-none flex-col items-center gap-0.5 rounded-2xl border border-dashed border-border bg-transparent px-3 py-2 text-muted-foreground transition-transform active:scale-95"
+            className="flex min-h-[76px] min-w-[72px] shrink-0 select-none flex-col items-center justify-center gap-1 rounded-2xl border border-dashed border-border bg-transparent px-3 py-2.5 text-muted-foreground transition-[transform,background-color,border-color] hover:border-primary/50 hover:bg-tint/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-95"
           >
             <Plus className="h-5 w-5" />
             <span className="text-[10px]">Add</span>
@@ -742,7 +744,7 @@ export function QuickTags({
                       },
                     }));
                   }}
-                  className="flex items-center gap-1 rounded-full bg-tint px-2 py-0.5 text-[10px] text-muted-foreground"
+                  className="flex min-h-8 items-center gap-1 rounded-full bg-tint px-2.5 text-[10px] font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <Ico e={tag.emoji} size={12} />
                   {tag.label}
@@ -755,11 +757,11 @@ export function QuickTags({
 
       {periodOpen && (
         <div
-          className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-6"
+          className="fixed inset-0 z-50 grid place-items-center bg-black/45 p-6 backdrop-blur-sm"
           onClick={() => setPeriodOpen(false)}
         >
           <div
-            className="w-full max-w-xs rounded-3xl bg-background p-4 ring-1 ring-border"
+            className="w-full max-w-xs rounded-3xl bg-background p-5 shadow-2xl ring-1 ring-border/80"
             onClick={(event) => event.stopPropagation()}
           >
             <p className="mb-3 flex items-center justify-center gap-2 text-center font-serif text-lg">
@@ -773,7 +775,7 @@ export function QuickTags({
                   key={level.v}
                   type="button"
                   onClick={() => logPeriod(level.v)}
-                  className="flex w-full items-center gap-3 rounded-2xl bg-surface px-3 py-2.5 text-left text-sm font-medium ring-1 ring-border"
+                  className="flex min-h-11 w-full items-center gap-3 rounded-2xl bg-surface px-3 py-2.5 text-left text-sm font-medium shadow-sm ring-1 ring-border/80 transition hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <span className="h-4 w-4 rounded-full" style={{ background: level.color }} />
                   {level.label}
@@ -794,11 +796,11 @@ export function QuickTags({
 
       {postpartumOpen && (
         <div
-          className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-6"
+          className="fixed inset-0 z-50 grid place-items-center bg-black/45 p-6 backdrop-blur-sm"
           onClick={() => setPostpartumOpen(false)}
         >
           <div
-            className="max-h-[80dvh] w-full max-w-sm overflow-y-auto rounded-3xl bg-background p-4 ring-1 ring-border"
+            className="max-h-[80dvh] w-full max-w-sm overflow-y-auto rounded-3xl bg-background p-5 shadow-2xl ring-1 ring-border/80"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="mb-3 flex items-center justify-center gap-2">
@@ -819,8 +821,10 @@ export function QuickTags({
                     key={symptom}
                     type="button"
                     onClick={() => togglePostpartumSymptom(symptom)}
-                    className={`rounded-full px-3 py-1.5 text-xs font-semibold ring-1 transition ${
-                      active ? "bg-primary text-primary-foreground ring-primary" : "bg-tint text-foreground ring-border"
+                    className={`min-h-9 rounded-full px-3 text-xs font-semibold ring-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                      active
+                        ? "bg-primary text-primary-foreground ring-primary shadow-sm"
+                        : "bg-tint text-foreground ring-border hover:bg-primary/10"
                     }`}
                   >
                     {symptom}
@@ -867,7 +871,7 @@ export function QuickTags({
                   },
                 }));
               }}
-              className="flex items-center gap-1 rounded-full bg-tint px-2 py-0.5 text-[10px] text-muted-foreground"
+              className="flex min-h-8 items-center gap-1 rounded-full bg-tint px-2.5 text-[10px] font-medium text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <Ico e={tag.emoji} size={14} />
               {tag.label}
@@ -986,9 +990,9 @@ function QuickTagBuilder({
   const inputCls = "w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm";
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-6" onClick={onClose}>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/45 p-6 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="w-full max-w-sm rounded-3xl bg-background p-4 ring-1 ring-border"
+        className="w-full max-w-sm rounded-3xl bg-background p-5 shadow-2xl ring-1 ring-border/80"
         onClick={(event) => event.stopPropagation()}
       >
         <p className="mb-3 text-center font-serif text-lg">New quick log button</p>

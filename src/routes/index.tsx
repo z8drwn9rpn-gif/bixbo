@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Settings as SettingsIcon, Share2, Trash2, UserRound } from "lucide-react";
+import { ChevronLeft, ChevronRight, Settings as SettingsIcon, Share2, Trash2 } from "lucide-react";
 
 import { Ico, IcoText, PillIcon } from "@/components/icons/BixboIcons";
 import { AppShell } from "@/components/AppShell";
@@ -97,7 +97,7 @@ function HomePage() {
    * Hooky nesmú byť pod podmieneným returnom.
    */
   if (!monthAnchor || !selected) {
-    return <div className="h-[360px]" />;
+    return <div className="min-h-dvh bg-background" aria-hidden="true" />;
   }
 
   const goToPrevMonth = () => {
@@ -149,16 +149,16 @@ function HomePage() {
         <div className="flex items-center gap-1">
           <Link
             to="/profile"
-            className="rounded-full p-2 transition hover:bg-tint"
+            className="grid h-11 w-11 place-items-center rounded-full transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             aria-label="Health profile"
             title="Health profile"
           >
-            <UserRound className="h-5 w-5" />
+            <Ico name="profile" size={20} />
           </Link>
 
           <Link
             to="/settings"
-            className="rounded-full p-2 transition hover:bg-tint"
+            className="grid h-11 w-11 place-items-center rounded-full transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             aria-label="Settings"
             title="Settings"
           >
@@ -173,7 +173,7 @@ function HomePage() {
             type="button"
             onClick={goToPrevMonth}
             aria-label="Previous month"
-            className="rounded-full p-1.5 hover:bg-tint"
+            className="grid h-11 w-11 place-items-center rounded-full transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
@@ -186,7 +186,7 @@ function HomePage() {
             type="button"
             onClick={goToNextMonth}
             aria-label="Next month"
-            className="rounded-full p-1.5 hover:bg-tint"
+            className="grid h-11 w-11 place-items-center rounded-full transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             <ChevronRight className="h-5 w-5" />
           </button>

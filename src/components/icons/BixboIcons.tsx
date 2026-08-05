@@ -1745,6 +1745,10 @@ function normalizeEmoji(value: string): string {
  * Any still-unknown emoji uses the branded Star icon instead of rendering
  * the operating system's Apple/Android emoji glyph.
  */
+const NORMALIZED_EMOJI_ICON = new Map<string, BixboIconName>(
+  Object.entries(EMOJI_ICON).map(([emoji, icon]) => [normalizeEmoji(emoji), icon]),
+);
+
 export function iconNameForEmoji(value?: string): BixboIconName | undefined {
   if (!value) return undefined;
 
@@ -1753,9 +1757,7 @@ export function iconNameForEmoji(value?: string): BixboIconName | undefined {
 
   const normalized = normalizeEmoji(value);
 
-  const normalizedMatch = Object.entries(EMOJI_ICON).find(([emoji]) => normalizeEmoji(emoji) === normalized)?.[1];
-
-  return normalizedMatch ?? "star";
+  return NORMALIZED_EMOJI_ICON.get(normalized) ?? "star";
 }
 
 /**
@@ -1778,7 +1780,7 @@ export function Ico({
 
   const C = BIXBO_ICONS[key];
 
-  return <C size={size} className={`inline-block shrink-0 align-[-0.15em] ${className ?? ""}`} />;
+  return <C size={size} className={["inline-block shrink-0 align-[-0.15em]", className].filter(Boolean).join(" ")} />;
 }
 
 /**

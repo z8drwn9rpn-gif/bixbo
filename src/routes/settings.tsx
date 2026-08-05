@@ -110,13 +110,13 @@ function Category({
   children: ReactNode;
 }) {
   return (
-    <section className="overflow-hidden rounded-3xl bg-surface ring-1 ring-border">
+    <section className="overflow-hidden rounded-3xl bg-surface shadow-sm ring-1 ring-border/80">
       <button
         id={`cat-${id}-trigger`}
         aria-expanded={open}
         aria-controls={`cat-${id}-panel`}
         onClick={onToggle}
-        className="flex min-h-12 w-full items-center gap-3 px-4 py-3.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+        className="flex min-h-14 w-full items-center gap-3 px-4 py-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
       >
         <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-tint text-foreground">{icon}</span>
         <span className="min-w-0 flex-1">
@@ -143,7 +143,7 @@ function Category({
 
 /** A single settings row with consistent min-height / divider treatment. */
 function Row({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <div className={`min-h-[44px] border-b border-border/60 py-2.5 last:border-b-0 ${className}`}>{children}</div>;
+  return <div className={`min-h-[52px] border-b border-border/60 py-3 last:border-b-0 ${className}`}>{children}</div>;
 }
 
 function SubHeading({ children }: { children: ReactNode }) {
@@ -434,12 +434,15 @@ function SettingsPage() {
   return (
     <AppShell
       title={
-        <button onClick={() => navigate({ to: "/" })} className="flex items-center gap-2">
+        <button
+          onClick={() => navigate({ to: "/" })}
+          className="flex min-h-11 items-center gap-2 rounded-xl px-2 transition hover:bg-tint"
+        >
           <ArrowLeft className="h-5 w-5" /> Settings
         </button>
       }
     >
-      <div className="space-y-3 px-5 pt-4 pb-24">
+      <div className="space-y-4 px-5 pt-4 pb-[calc(96px+env(safe-area-inset-bottom))]">
         {/* ==================== GENERAL ==================== */}
         <Category
           id="general"
@@ -487,7 +490,7 @@ function SettingsPage() {
             <p className="mt-0.5 text-xs text-muted-foreground">Manage your medication list and daily schedule.</p>
             <Link
               to="/meds"
-              className="mt-2 inline-flex h-9 items-center gap-1.5 rounded-md border border-input bg-background px-3 text-sm font-medium hover:bg-accent"
+              className="mt-2 inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-input bg-background px-3 text-sm font-medium hover:bg-accent"
             >
               <Pill className="h-3.5 w-3.5" /> Manage pills
             </Link>
@@ -684,7 +687,7 @@ function SettingsPage() {
             {pregnancyActive && (
               <Link
                 to={"/pregnancy" as never}
-                className="mt-2 inline-flex h-9 items-center gap-1.5 rounded-md border border-input bg-background px-3 text-sm font-medium hover:bg-accent"
+                className="mt-2 inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-input bg-background px-3 text-sm font-medium hover:bg-accent"
               >
                 <ExternalLink className="h-3.5 w-3.5" /> Open pregnancy dashboard
               </Link>
@@ -707,7 +710,7 @@ function SettingsPage() {
             {postpartumActive && (
               <Link
                 to={"/postpartum" as never}
-                className="mt-2 inline-flex h-9 items-center gap-1.5 rounded-md border border-input bg-background px-3 text-sm font-medium hover:bg-accent"
+                className="mt-2 inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-input bg-background px-3 text-sm font-medium hover:bg-accent"
               >
                 <ExternalLink className="h-3.5 w-3.5" /> Open postpartum dashboard
               </Link>
@@ -777,7 +780,7 @@ function SettingsPage() {
                 </p>
                 <Link
                   to="/auth"
-                  className="mt-2 inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground"
+                  className="mt-2 inline-flex min-h-11 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground"
                 >
                   Sign in / Create account
                 </Link>
@@ -865,7 +868,7 @@ function SettingsPage() {
                       e.currentTarget.value = "";
                     }}
                   />
-                  <span className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-md border border-input bg-background px-3 text-sm font-medium hover:bg-accent">
+                  <span className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-xl border border-input bg-background px-3 text-sm font-medium hover:bg-accent">
                     <Upload className="h-3.5 w-3.5" /> Import partner data
                   </span>
                 </label>
@@ -929,7 +932,7 @@ function SettingsPage() {
                     e.currentTarget.value = "";
                   }}
                 />
-                <span className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-md border border-input bg-background px-3 text-sm font-medium hover:bg-accent">
+                <span className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-xl border border-input bg-background px-3 text-sm font-medium hover:bg-accent">
                   <Upload className="h-3.5 w-3.5" /> Import (merge)
                 </span>
               </label>

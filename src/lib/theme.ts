@@ -29,29 +29,18 @@ export function useThemeSync() {
   }, [theme, hydrated]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || theme !== "system") return;
 
     const media = window.matchMedia("(prefers-color-scheme: dark)");
-
-    const handleChange = () => {
-      if ((data.settings.theme ?? "system") === "system") {
-        applyTheme("system");
-      }
-    };
+    const handleChange = () => applyTheme("system");
 
     if (typeof media.addEventListener === "function") {
       media.addEventListener("change", handleChange);
-
-      return () => {
-        media.removeEventListener("change", handleChange);
-      };
+      return () => media.removeEventListener("change", handleChange);
     }
 
     // Older Safari fallback.
     media.addListener(handleChange);
-
-    return () => {
-      media.removeListener(handleChange);
-    };
-  }, [data.settings.theme]);
+    return () => media.removeListener(handleChange);
+  }, [theme]);
 }

@@ -22,10 +22,11 @@ export function AppShell({
                 src="/bixbo-mascot.png"
                 alt=""
                 aria-hidden="true"
+                draggable={false}
                 className={
                   big
-                    ? "h-12 w-auto max-w-[52px] shrink-0 object-contain object-center"
-                    : "h-9 w-auto max-w-[40px] shrink-0 object-contain object-center"
+                    ? "h-12 w-auto max-w-[52px] shrink-0 select-none object-contain object-center"
+                    : "h-9 w-auto max-w-[40px] shrink-0 select-none object-contain object-center"
                 }
               />
 
@@ -42,7 +43,9 @@ export function AppShell({
           </header>
         )}
 
-        <main id="main-content">{children}</main>
+        <main id="main-content" className="min-w-0">
+          {children}
+        </main>
       </div>
 
       <BottomNav />

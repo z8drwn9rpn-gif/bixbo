@@ -392,6 +392,7 @@ html.dark {
 
 body {
   min-height: 100dvh;
+  overflow-x: hidden;
   background: var(--background);
   color: var(--foreground);
   overscroll-behavior-y: none;
@@ -444,6 +445,13 @@ textarea {
   color: var(--foreground);
 }
 
+input[type="checkbox"],
+input[type="radio"],
+input[type="range"],
+progress {
+  accent-color: var(--primary);
+}
+
 input::placeholder,
 textarea::placeholder {
   color: color-mix(in oklch, var(--muted-foreground) 82%, transparent);
@@ -489,13 +497,12 @@ svg {
   scroll-margin-top: 6rem;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: var(--foreground);
+  box-shadow: 0 0 0 1000px var(--background) inset;
+  caret-color: var(--foreground);
 }

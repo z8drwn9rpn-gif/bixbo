@@ -52,7 +52,7 @@ function iconsFor(log: DayLog | undefined, hasMed: boolean): string[] {
   const out: string[] = [];
   if (log?.sex?.some((e) => isIntercourseKind(e.kind))) out.push("❤️");
   if (hasMed) out.push("💊");
-  if (log?.bowel?.some((b) => b.bristol >= 0)) out.push("💩⚪");
+  if (log?.bowel?.some((b) => Number.isFinite(Number(b?.bristol)) && Number(b.bristol) >= 0)) out.push("💩⚪");
   if (log?.heat?.some((h) => h.kind === "heat")) out.push("♨️");
   if (log?.heat?.some((h) => h.kind === "cold")) out.push("🧊");
   if (log?.heat?.some((h) => h.kind === "tens")) out.push("⭐");
@@ -119,7 +119,7 @@ export function MonthCalendar({
   const longTimer = useRef<number | null>(null);
   const longFired = useRef(false);
   const clearLong = () => {
-    if (longTimer.current) {
+    if (longTimer.current !== null) {
       window.clearTimeout(longTimer.current);
       longTimer.current = null;
     }
@@ -155,7 +155,6 @@ export function MonthCalendar({
     predicted.some((p) => isDateInRange(k, p.start, p.end)) &&
     !(data.dayLogs[k]?.period || data.dayLogs[k]?.periodInfo?.level);
   const isActualPeriod = (k: string) => {
-    if (cycleTrackingHidden) return false;
     const c = data.cycle;
     if (!c.lastPeriodStart || !c.lastPeriodEnd) return false;
     return isDateInRange(k, c.lastPeriodStart, c.lastPeriodEnd);

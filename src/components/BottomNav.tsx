@@ -22,19 +22,19 @@ export function BottomNav() {
   };
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[560px] border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_16px_-8px_rgba(0,0,0,0.15)] landscape:max-w-none">
-      <ul className="flex items-stretch justify-around px-2 pt-2 pb-2">
+    <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[560px] border-t border-border/80 bg-surface/95 backdrop-blur-xl pb-[max(8px,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.22)] landscape:max-w-none">
+      <ul className="flex items-stretch justify-around gap-1 px-2 pt-2 pb-2">
         {items.map(({ to, label, icon: Icon }) => {
           const active = to === "/" ? pathname === "/" : pathname.startsWith(to);
           return (
             <li key={to} className="flex-1">
               <Link
                 to={to}
-                className={`flex flex-col items-center gap-1 rounded-xl px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                   active ? "text-primary" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                <Icon className={`h-5 w-5 ${active ? "stroke-[2.4]" : ""}`} />
+                <Icon className={`h-5 w-5 transition-transform ${active ? "stroke-[2.4] scale-110" : ""}`} />
                 <span>{label}</span>
               </Link>
             </li>
@@ -43,10 +43,10 @@ export function BottomNav() {
         <li className="flex-1">
           <button
             onClick={openLog}
-            className="flex w-full flex-col items-center gap-1 rounded-xl px-2 py-1.5 text-[11px] font-semibold text-primary hover:text-foreground"
+            className="flex min-h-14 w-full flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-semibold text-primary transition-all hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-label="Log"
           >
-            <span className="grid h-8 w-8 place-items-center rounded-full bg-primary text-primary-foreground shadow">
+            <span className="grid h-10 w-10 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform group-hover:scale-105">
               <Plus className="h-5 w-5" strokeWidth={2.8} />
             </span>
             <span>Log</span>
