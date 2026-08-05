@@ -4,7 +4,10 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import {
   EMPTY,
+  getBixbo,
+  replaceBixbo,
   setPartner,
+  subscribeBixboChanges,
   type BixboData,
   type DayLog,
   type PartnerData,
@@ -308,6 +311,24 @@ function normalizeRemotePayload(value: unknown): BixboData {
   };
 }
 
+function quarantinePostpartum(payload: BixboData): BixboData {
+  const dayLogs: BixboData["dayLogs"] = {};
+
+  for (const [date, log] of Object.entries(payload.dayLogs ?? {})) {
+    const { postpartum: _postpartum, ...safeLog } = log;
+    dayLogs[date] = safeLog;
+  }
+
+  return {
+    ...payload,
+    dayLogs,
+    postpartum: {
+      active: false,
+      visits: [],
+    },
+  };
+}
+
 export async function pullMyData(): Promise<BixboData | null> {
   const {
     data: { user },
@@ -435,19 +456,42 @@ export function useCloudSync() {
     }
 
     let cancelled = false;
+    let pushTimer: ReturnType<typeof setTimeout> | null = null;
 
     void (async () => {
       try {
-        // Keep account/profile creation working, but do not pull, merge, replace,
-        // push, subscribe to realtime, or fetch partner data during login.
-        // This prevents account-specific legacy cloud data from crashing the app.
         await ensureProfile();
 
+        const remote = await pullMyData();
+
+        if (cancelled) return;
+
+        if (remote) {
+          // Restore the user's cloud data, but temporarily quarantine all
+          // postpartum fields because those legacy values are the known crash
+          // trigger for this account.
+          const safeRemote = quarantinePostpartum(normalizeRemotePayload(remote));
+          const currentPartner = getBixbo().partner;
+
+          replaceBixbo(
+            {
+              ...safeRemote,
+              partner: currentPartner,
+            },
+            "remote",
+          );
+        } else {
+          // First cloud save for a new account.
+          await pushMyData(getBixbo());
+        }
+
+        const partner = await fetchPartner();
+
         if (!cancelled) {
-          setPartner(undefined);
+          setPartner(partner ?? undefined);
         }
       } catch (error) {
-        console.error("useCloudSync login-safe initialization", error);
+        console.error("useCloudSync guarded initial sync", error);
 
         if (!cancelled) {
           setPartner(undefined);
@@ -455,8 +499,98 @@ export function useCloudSync() {
       }
     })();
 
+    const unsubscribeStore = subscribeBixboChanges((nextData, reason) => {
+      if (reason !== "local") return;
+
+      if (pushTimer) clearTimeout(pushTimer);
+
+      pushTimer = setTimeout(() => {
+        // Keep the current local postpartum state rather than restoring the
+        // quarantined legacy cloud postpartum payload.
+        pushMyData(nextData).catch((error) => {
+          console.error("useCloudSync push", error);
+        });
+      }, 400);
+    });
+
+    const refreshPartner = async () => {
+      try {
+        const partner = await fetchPartner();
+
+        if (!cancelled) {
+          setPartner(partner ?? undefined);
+        }
+      } catch (error) {
+        console.error("useCloudSync refreshPartner", error);
+      }
+    };
+
+    const channel = supabase
+      .channel(`bixbo-sync-${session.user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "user_data",
+          filter: `user_id=eq.${session.user.id}`,
+        },
+        (payload) => {
+          try {
+            const incomingRaw = (payload.new as { data?: unknown } | undefined)?.data;
+            if (!incomingRaw) return;
+
+            const incoming = quarantinePostpartum(normalizeRemotePayload(incomingRaw));
+            const incomingJson = JSON.stringify({
+              ...incoming,
+              partner: undefined,
+            });
+
+            if (incomingJson === _lastPushedJson) return;
+
+            replaceBixbo(
+              {
+                ...incoming,
+                partner: getBixbo().partner,
+              },
+              "remote",
+            );
+          } catch (error) {
+            console.error("useCloudSync realtime user_data", error);
+          }
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "partner_shared_data",
+        },
+        () => {
+          void refreshPartner();
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "partner_links",
+        },
+        () => {
+          void refreshPartner();
+        },
+      )
+      .subscribe();
+
     return () => {
       cancelled = true;
+
+      if (pushTimer) clearTimeout(pushTimer);
+
+      unsubscribeStore();
+      void supabase.removeChannel(channel);
     };
   }, [ready, session?.user?.id]);
 }
