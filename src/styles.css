@@ -518,4 +518,14 @@ body {
   background-image:
     radial-gradient(circle at 50% -10%, color-mix(in oklch, var(--primary) 18%, transparent), transparent 34rem),
     linear-gradient(var(--background), var(--background));
+} /* Quick Log */
+.quicklog-scroll {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.quicklog-scroll::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
