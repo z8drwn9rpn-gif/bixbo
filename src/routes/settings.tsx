@@ -18,7 +18,6 @@ import {
   type CloudProfile,
 } from "@/lib/cloudSync";
 import { SCALE_META, type ScaleKey } from "@/lib/scaleDescriptions";
-import { Ico } from "@/components/icons/BixboIcons";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
