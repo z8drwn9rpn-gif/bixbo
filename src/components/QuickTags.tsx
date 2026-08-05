@@ -422,6 +422,9 @@ export function QuickTags({
   const [editMode, setEditMode] = useState(false);
   const timerRef = useRef<number | null>(null);
   const longFiredRef = useRef(false);
+  const startXRef = useRef(0);
+  const startYRef = useRef(0);
+  const draggingRef = useRef(false);
 
   const cycleTrackingHidden = isCycleTrackingHidden(data);
 
@@ -622,7 +625,10 @@ export function QuickTags({
         </button>
       </div>
 
-      <div className="-mx-5 overflow-x-auto overscroll-x-contain px-5 pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+      <div
+        className="-mx-5 overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x px-5 pb-2 snap-x snap-mandatory scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        style={{ WebkitOverflowScrolling: "touch", overscrollBehaviorX: "contain" }}
+      >
         <div className="flex gap-2.5">
           {tags.map((tag, index) => {
             const isFlash = flash === tag.key;
@@ -674,28 +680,57 @@ export function QuickTags({
               <button
                 key={tag.key}
                 type="button"
-                onPointerDown={() => {
+                onPointerDown={(e) => {
+                  draggingRef.current = false;
+                  startXRef.current = e.clientX;
+                  startYRef.current = e.clientY;
                   longFiredRef.current = false;
                   clear();
 
                   timerRef.current = window.setTimeout(() => {
-                    longFiredRef.current = true;
-                    onLongPress(tag.cat);
+                    if (!draggingRef.current) {
+                      longFiredRef.current = true;
+                      onLongPress(tag.cat);
+                    }
                   }, 500);
                 }}
-                onPointerUp={() => {
+                onPointerMove={(e) => {
+                  if (Math.abs(e.clientX - startXRef.current) > 8 || Math.abs(e.clientY - startYRef.current) > 8) {
+                    draggingRef.current = true;
+                    clear();
+                  }
+                }}
+                onPointerUp={(e) => {
                   clear();
+
+                  if (draggingRef.current) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                  }
 
                   if (!longFiredRef.current) {
                     doTap(tag);
                   }
                 }}
-                onPointerLeave={clear}
-                onPointerCancel={clear}
+                onPointerLeave={() => {
+                  draggingRef.current = true;
+                  clear();
+                }}
+                onPointerCancel={() => {
+                  draggingRef.current = true;
+                  clear();
+                }}
+                onClick={(e) => {
+                  if (draggingRef.current) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }
+                }}
                 onContextMenu={(event) => event.preventDefault()}
                 title={`${tag.label} — long-press for details`}
                 aria-label={tag.label}
-                className={`relative flex min-h-[76px] min-w-[72px] shrink-0 select-none flex-col items-center justify-center gap-1 rounded-2xl bg-surface px-3 py-2.5 shadow-sm ring-1 ring-border/80 transition-[transform,box-shadow,background-color,ring-color] duration-150 hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-95 ${
+                className={`relative flex min-h-[76px] min-w-[72px] shrink-0 snap-start select-none touch-manipulation flex-col items-center justify-center gap-1 rounded-2xl bg-surface px-3 py-2.5 shadow-sm ring-1 ring-border/80 transition-[transform,box-shadow,background-color,ring-color] duration-150 hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-95 ${
                   isFlash ? "scale-105 bg-primary/10 ring-2 ring-primary shadow-md" : ""
                 }`}
               >
