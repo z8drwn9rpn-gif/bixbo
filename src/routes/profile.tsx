@@ -51,7 +51,7 @@ export const Route = createFileRoute("/profile")({
 
 function Section({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
   return (
-    <section className="rounded-2xl bg-surface p-4 ring-1 ring-border">
+    <section className="rounded-2xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
       <p className="text-sm font-semibold">{title}</p>
       {subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>}
       <div className="mt-3 space-y-3">{children}</div>
@@ -264,7 +264,7 @@ function SummaryCard({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
+    <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
       <div className="flex items-start gap-3">
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-tint text-primary ring-1 ring-border/50">
           {icon}
@@ -363,16 +363,35 @@ function ProfilePage() {
     patch({ emergencyContact: { ...profile.emergencyContact, ...p } });
 
   const setCurrentWeight = (value: number | undefined) =>
-    update((d) => ({
-      ...d,
-      dayLogs: {
-        ...d.dayLogs,
-        [todayKey()]: {
-          ...(d.dayLogs[todayKey()] ?? {}),
-          weight: value,
+    update((d) => {
+      const date = todayKey();
+      const current = d.dayLogs[date] ?? {};
+      const existingEntries = current.weightEntries ?? [];
+      const profileEntryId = `${date}-profile-weight`;
+      const weightEntries =
+        value == null
+          ? existingEntries.filter((entry) => entry.id !== profileEntryId)
+          : [
+              ...existingEntries.filter((entry) => entry.id !== profileEntryId),
+              {
+                id: profileEntryId,
+                time: new Date().toTimeString().slice(0, 5),
+                value,
+              },
+            ].sort((a, b) => a.time.localeCompare(b.time));
+
+      return {
+        ...d,
+        dayLogs: {
+          ...d.dayLogs,
+          [date]: {
+            ...current,
+            weight: value,
+            weightEntries,
+          },
         },
-      },
-    }));
+      };
+    });
 
   const setGender = (value: "female" | "male") =>
     update((d) => ({

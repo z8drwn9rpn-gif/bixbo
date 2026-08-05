@@ -190,7 +190,7 @@ function PostpartumPage() {
           </button>
         }
       >
-        <div className="px-5 pt-4 pb-24">
+        <div className="px-5 pt-4 pb-[calc(6rem+env(safe-area-inset-bottom))]">
           <p className="text-sm text-muted-foreground">
             Postpartum mode isn't active.{" "}
             {pp?.endedAt ? "It was ended on " + pp.endedAt + "." : "Turn it on below to start tracking your recovery."}
@@ -226,9 +226,9 @@ function PostpartumPage() {
         </button>
       }
     >
-      <div className="space-y-4 px-5 pt-4 pb-24">
+      <div className="space-y-4 px-5 pt-4 pb-[calc(6rem+env(safe-area-inset-bottom))]">
         {/* ---- Header / setup ---- */}
-        <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
+        <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
           {!validBirthDate ? (
             <SetupForm pp={pp} updatePP={updatePP} />
           ) : (
@@ -272,7 +272,7 @@ function PostpartumPage() {
             <VisitsSection pp={pp} updatePP={updatePP} />
             <NotesSection log={log} updateLog={updateLog} />
 
-            <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
+            <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
               <p className="text-sm font-medium">Finish postpartum mode</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 When you're ready, you can turn off postpartum tracking. Your history is kept.
@@ -289,7 +289,7 @@ function PostpartumPage() {
               </Button>
             </section>
 
-            <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
+            <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
               <p className="text-sm font-medium">Reset</p>
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                 Permanently delete all postpartum setup details and daily postpartum logs. Other BIXBO data will remain
@@ -424,7 +424,7 @@ function SymptomsSection({
   };
 
   return (
-    <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
+    <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
       <div className="flex items-center gap-2">
         <Ico name="warning" size={22} />
         <div>
@@ -468,7 +468,7 @@ function BleedingSection({
 }) {
   const trend = Array.from({ length: 42 }, (_, i) => addDays(today, i - 41));
   return (
-    <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
+    <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
       <p className="flex items-center gap-2 text-sm font-medium">
         <Ico name="period" size={20} /> Bleeding (lochia)
       </p>
@@ -533,7 +533,7 @@ function RecoverySection({
   updateLog: (p: (l: PostpartumDayLog) => PostpartumDayLog) => void;
 }) {
   return (
-    <section className="rounded-3xl bg-surface p-4 ring-1 ring-border space-y-4">
+    <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80 space-y-4">
       <p className="text-sm font-medium">Recovery</p>
       <LabeledSlider
         id="pp-recovery"
@@ -579,7 +579,7 @@ function MoodSection({
     setCustom("");
   };
   return (
-    <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
+    <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
       <p className="text-sm font-medium">Mood</p>
       <div className="mt-3 flex flex-wrap gap-2">
         {POSTPARTUM_MOODS.map((m) => (
@@ -649,7 +649,7 @@ function SleepSection({
     ),
   );
   return (
-    <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
+    <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
       <p className="flex items-center gap-2 text-sm font-medium">
         <Ico name="sleep" size={20} /> Sleep
       </p>
@@ -741,7 +741,7 @@ function FeedingSection({
   const totalBottle = bottle.reduce((s, x) => s + (x.ml ?? 0), 0);
 
   return (
-    <section className="rounded-3xl bg-surface p-4 ring-1 ring-border space-y-4">
+    <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80 space-y-4">
       <p className="flex items-center gap-2 text-sm font-medium">
         <Ico name="bottle" size={20} /> Feeding
       </p>
@@ -924,7 +924,7 @@ function DiaperSection({
     updateLog((l) => ({ ...l, diapers: [...(l.diapers ?? []), { id: uid(), time: nowHHMM(), kind }] }));
 
   return (
-    <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
+    <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
       <p className="text-sm font-medium">Diapers</p>
       <div className="mt-3 grid grid-cols-3 gap-2">
         <Button variant="outline" className="min-h-11" onClick={() => add("wet")}>
@@ -989,7 +989,7 @@ function VisitsSection({
   };
 
   return (
-    <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
+    <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium">Doctor visits</p>
         <Button size="sm" onClick={openNew}>
@@ -1100,7 +1100,7 @@ function NotesSection({
   updateLog: (p: (l: PostpartumDayLog) => PostpartumDayLog) => void;
 }) {
   return (
-    <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
+    <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
       <p className="flex items-center gap-2 text-sm font-medium">
         <Ico name="pill" size={20} /> Medication & notes
       </p>

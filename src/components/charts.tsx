@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /**
  * Shared chart primitives used by every chart on the Insights page.
@@ -45,15 +45,17 @@ export function useChartTransition(props = "height, opacity"): string {
 
 /** Dismiss any open tap-tooltip when the user taps anywhere else on the page. */
 export function useDismissTapTooltip(clear: () => void) {
+  const clearRef = useRef(clear);
+
   useEffect(() => {
-    const handler = () => clear();
-    document.addEventListener("click", handler);
-    document.addEventListener("touchstart", handler);
-    return () => {
-      document.removeEventListener("click", handler);
-      document.removeEventListener("touchstart", handler);
-    };
+    clearRef.current = clear;
   }, [clear]);
+
+  useEffect(() => {
+    const handler = () => clearRef.current();
+    document.addEventListener("pointerdown", handler, { passive: true });
+    return () => document.removeEventListener("pointerdown", handler);
+  }, []);
 }
 
 /**
@@ -77,7 +79,10 @@ export function ChartCard({
   style?: React.CSSProperties;
 }) {
   return (
-    <section className={`rounded-3xl bg-surface p-5 ring-1 ring-border ${className}`} style={style}>
+    <section
+      className={`overflow-hidden rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80 ${className}`}
+      style={style}
+    >
       {(title || right) && (
         <div className="flex items-center justify-between gap-2">
           {title && <p className="text-xs uppercase tracking-wider text-muted-foreground">{title}</p>}
@@ -93,8 +98,11 @@ export function ChartCard({
 /** Consistent "no data yet" empty state used by every chart. */
 export function ChartEmpty({ message = "No data yet" }: { message?: string }) {
   return (
-    <div className="flex h-24 items-center justify-center">
-      <p className="text-sm text-muted-foreground">{message}</p>
+    <div
+      className="flex min-h-24 items-center justify-center rounded-2xl bg-tint/55 px-4 py-5 text-center ring-1 ring-border/40"
+      role="status"
+    >
+      <p className="text-sm leading-relaxed text-muted-foreground">{message}</p>
     </div>
   );
 }
@@ -107,7 +115,7 @@ export function ChartEmpty({ message = "No data yet" }: { message?: string }) {
 export function ChartTooltip({ leftPct, text }: { leftPct: number; text: string }) {
   return (
     <div
-      className="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-lg px-2 py-1 text-[11px] font-medium shadow-lg ring-1 ring-border/40"
+      className="pointer-events-none absolute z-20 max-w-[min(18rem,90vw)] -translate-x-1/2 -translate-y-full whitespace-normal rounded-xl px-2.5 py-1.5 text-center text-[11px] font-medium shadow-lg ring-1 ring-border/60"
       style={{
         left: `${Math.min(94, Math.max(6, leftPct))}%`,
         top: -6,
@@ -121,17 +129,7 @@ export function ChartTooltip({ leftPct, text }: { leftPct: number; text: string 
 }
 
 /** Same tooltip, but for use inside an <svg> (line charts). */
-export function ChartSvgTooltip({
-  x,
-  y,
-  width,
-  text,
-}: {
-  x: number;
-  y: number;
-  width: number;
-  text: string;
-}) {
+export function ChartSvgTooltip({ x, y, width, text }: { x: number; y: number; width: number; text: string }) {
   return (
     <g pointerEvents="none">
       <rect x={x} y={y} width={width} height={22} rx={6} fill={CHART_TOOLTIP_BG} className="ring-1 ring-border/40" />

@@ -48,7 +48,7 @@ function periodColorVar(level?: PeriodLevel) {
       return null;
   }
 }
-function iconsFor(log: DayLog | undefined, hasMed: boolean, _isMale: boolean): string[] {
+function iconsFor(log: DayLog | undefined, hasMed: boolean): string[] {
   const out: string[] = [];
   if (log?.sex?.some((e) => isIntercourseKind(e.kind))) out.push("❤️");
   if (hasMed) out.push("💊");
@@ -255,7 +255,7 @@ export function MonthCalendar({
                 const pAvg = avgDayPain(log);
                 const isSel = key === selected;
                 const predictedOrange = isPredicted(key);
-                const icons = iconsFor(log, hasMed, isMale);
+                const icons = iconsFor(log, hasMed);
                 const marked = hasAnyLog(log);
 
                 return (

@@ -239,7 +239,7 @@ const PHASE_COLORS = [
 
 function Card({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
   return (
-    <section className="overflow-hidden rounded-3xl bg-surface p-4 ring-1 ring-border">
+    <section className="overflow-hidden rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
       <div>
         <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{title}</h2>
 
@@ -2797,7 +2797,7 @@ function PatternsPage() {
                 type="button"
                 onClick={saveTriggerCombination}
                 disabled={!selectedTrigger || !selectedOutcome}
-                className="mt-4 w-full rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
+                className="mt-4 w-full rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:brightness-[1.03] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Save this comparison
               </button>

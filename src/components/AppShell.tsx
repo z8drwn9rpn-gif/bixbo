@@ -13,15 +13,15 @@ export function AppShell({
   big?: boolean;
 }) {
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Landscape: full width; portrait: maximum 430 px */}
-      <div className="relative mx-auto min-h-screen w-full bg-background pb-24 portrait:max-w-[430px] landscape:max-w-none">
+    <div className="min-h-dvh bg-background text-foreground">
+      <div className="relative mx-auto min-h-dvh w-full bg-background pb-[calc(6rem+env(safe-area-inset-bottom))] portrait:max-w-[430px] landscape:max-w-none">
         {title !== undefined && (
-          <header className="sticky top-0 z-30 flex min-h-14 items-center justify-between border-b border-border/60 bg-background/95 px-5 py-2 backdrop-blur">
-            <div className="flex min-w-0 items-center gap-3 overflow-visible">
+          <header className="sticky top-0 z-30 flex min-h-14 items-center justify-between border-b border-border/70 bg-background/90 px-5 py-2 pt-[max(0.5rem,env(safe-area-inset-top))] shadow-[0_1px_0_0_var(--border)] backdrop-blur-xl supports-[backdrop-filter]:bg-background/82">
+            <div className="flex min-w-0 items-center gap-3">
               <img
                 src="/bixbo-mascot.png"
-                alt="Bixbo"
+                alt=""
+                aria-hidden="true"
                 className={
                   big
                     ? "h-12 w-auto max-w-[52px] shrink-0 object-contain object-center"
@@ -30,17 +30,19 @@ export function AppShell({
               />
 
               <h1
-                className={`min-w-0 font-serif font-bold leading-none text-foreground ${big ? "text-3xl" : "text-2xl"}`}
+                className={`min-w-0 truncate font-serif font-bold leading-none text-foreground ${
+                  big ? "text-3xl" : "text-2xl"
+                }`}
               >
                 {title}
               </h1>
             </div>
 
-            {right && <div className="ml-3 shrink-0">{right}</div>}
+            {right ? <div className="ml-3 flex shrink-0 items-center">{right}</div> : null}
           </header>
         )}
 
-        {children}
+        <main id="main-content">{children}</main>
       </div>
 
       <BottomNav />

@@ -90,7 +90,7 @@ function PregnancyPage() {
   if (!p.active || (!p.lmp && !p.dueDate)) {
     return (
       <AppShell title="Pregnancy">
-        <div className="px-5 pt-4 pb-24">
+        <div className="px-5 pt-4 pb-[calc(6rem+env(safe-area-inset-bottom))]">
           <SetupForm view={view} update={update} />
         </div>
       </AppShell>
@@ -99,7 +99,7 @@ function PregnancyPage() {
 
   return (
     <AppShell title="Pregnancy">
-      <div className="space-y-4 px-5 pt-2 pb-24">
+      <div className="space-y-4 px-5 pt-2 pb-[calc(6rem+env(safe-area-inset-bottom))]">
         <HeroSection view={view} update={update} progress={progress} />
 
         {progress && <BabySizeCard week={progress.week} />}

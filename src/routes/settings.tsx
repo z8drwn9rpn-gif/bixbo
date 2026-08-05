@@ -116,7 +116,7 @@ function Category({
         aria-expanded={open}
         aria-controls={`cat-${id}-panel`}
         onClick={onToggle}
-        className="flex min-h-[44px] w-full items-center gap-3 px-4 py-3.5 text-left"
+        className="flex min-h-12 w-full items-center gap-3 px-4 py-3.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
       >
         <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-tint text-foreground">{icon}</span>
         <span className="min-w-0 flex-1">
@@ -225,7 +225,20 @@ function SettingsPage() {
       setProfile(null);
       return;
     }
-    ensureProfile(view.settings.partnerName || undefined).then((p) => setProfile(p));
+    let cancelled = false;
+
+    ensureProfile(view.settings.partnerName || undefined)
+      .then((p) => {
+        if (!cancelled) setProfile(p);
+      })
+      .catch((error) => {
+        console.error("Settings ensureProfile", error);
+        if (!cancelled) setProfile(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [ready, session?.user?.id]);
 
   const setSize = (s: "sm" | "md" | "lg" | "xl") => update((d) => ({ ...d, settings: { ...d.settings, textSize: s } }));

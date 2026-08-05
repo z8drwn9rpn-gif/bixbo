@@ -1552,13 +1552,13 @@ function SymptomLoadHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo
         <div
           className="grid w-max grid-flow-col gap-[3px]"
           style={{
-            gridTemplateRows: "repeat(7, 10px)",
-            gridAutoColumns: "10px",
+            gridTemplateRows: "repeat(7, 14px)",
+            gridAutoColumns: "14px",
           }}
         >
           {dayInfo.map((c, i) => {
             if (!c.key) {
-              return <div key={`empty-${i}`} className="h-[10px] w-[10px]" />;
+              return <div key={`empty-${i}`} className="h-3.5 w-3.5" />;
             }
 
             const summary = summaryFor(c.key);
@@ -1575,7 +1575,7 @@ function SymptomLoadHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo
                   e.stopPropagation();
                   setActive((current) => (current === c.key ? null : c.key));
                 }}
-                className={`h-[10px] w-[10px] rounded-[2px] ${isActive ? "ring-2 ring-primary" : ""}`}
+                className={`h-3.5 w-3.5 rounded-[3px] transition-transform hover:scale-110 focus-visible:z-10 ${isActive ? "ring-2 ring-primary ring-offset-1 ring-offset-background" : ""}`}
                 style={{
                   background: colorFor(load),
                 }}
@@ -1636,7 +1636,7 @@ function SymptomLoadHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo
           {[0, 0.25, 0.5, 0.75, 1].map((t) => (
             <span
               key={t}
-              className="h-[10px] w-[10px] rounded-[2px]"
+              className="h-3.5 w-3.5 rounded-[3px]"
               style={{
                 background: t === 0 ? "var(--tint)" : `hsl(6 ${20 + t * 60}% ${88 - t * 48}%)`,
               }}
