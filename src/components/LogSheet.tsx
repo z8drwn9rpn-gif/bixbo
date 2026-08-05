@@ -280,11 +280,18 @@ export function LogSheet({
         ) : (
           <div className="flex h-full min-h-0 flex-col">
             <SheetHeader className="shrink-0 flex-row items-center justify-between border-b border-border px-5 py-3">
-              <button onClick={back} className="flex items-center gap-1 text-sm text-muted-foreground">
+              <button
+                onClick={back}
+                className="flex min-h-11 items-center gap-1 rounded-full px-2 text-sm font-medium text-foreground/80 transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
                 <ChevronLeft className="h-4 w-4" /> Back to Log
               </button>
               <SheetTitle className="font-serif text-lg">{CATEGORIES.find((c) => c.id === active)?.label}</SheetTitle>
-              <button onClick={close} aria-label="Close" className="rounded-full p-1 hover:bg-tint">
+              <button
+                onClick={close}
+                aria-label="Close"
+                className="grid h-11 w-11 place-items-center rounded-full text-foreground transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
                 <X className="h-5 w-5" />
               </button>
             </SheetHeader>
@@ -394,7 +401,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   // manifested as chips getting "auto-selected" in the Pain wizard.
   return (
     <div className="block">
-      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      <span className="text-xs font-semibold text-foreground/80">{label}</span>
       <div className="mt-1">{children}</div>
     </div>
   );
@@ -420,7 +427,7 @@ function Chip({
       className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
         active
           ? "text-white shadow-md ring-2 ring-foreground/70 ring-offset-2 ring-offset-background scale-[1.03]"
-          : "bg-tint text-foreground ring-1 ring-border"
+          : "bg-surface text-foreground shadow-sm ring-1 ring-border"
       }`}
       style={active && color ? { background: color } : active ? { background: "var(--primary)" } : undefined}
     >
@@ -506,7 +513,7 @@ function CustomChipList({
             <button
               type="button"
               onClick={() => setAdding(true)}
-              className="flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary hover:bg-primary/20"
+              className="flex min-h-9 items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground shadow-sm transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <Plus className="h-3 w-3" /> Add custom
             </button>
@@ -515,7 +522,7 @@ function CustomChipList({
             <button
               type="button"
               onClick={() => setEditMode((v) => !v)}
-              className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${editMode ? "bg-primary text-primary-foreground" : "bg-tint text-muted-foreground hover:text-foreground"}`}
+              className={`flex min-h-9 items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${editMode ? "bg-primary text-primary-foreground" : "bg-surface text-foreground ring-1 ring-border hover:bg-tint"}`}
             >
               <Pencil className="h-3 w-3" /> {editMode ? "Done" : "Edit"}
             </button>
@@ -606,8 +613,8 @@ function ScaleLegend({
   const items: number[] = [];
   for (let i = from; i <= max; i++) items.push(i);
   return (
-    <div className="mt-2 rounded-xl border border-border/60 bg-surface/50 p-2.5">
-      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>
+    <div className="mt-2 rounded-xl border border-border bg-surface/95 p-3 shadow-sm">
+      <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-foreground/75">{title}</p>
       <div className="space-y-1 text-[11px] leading-tight">
         {items.map((n) => {
           const span = Math.max(1, max - from);
@@ -620,7 +627,7 @@ function ScaleLegend({
               >
                 {n}
               </span>
-              <span className={value === n ? "font-semibold text-foreground" : "text-muted-foreground"}>
+              <span className={value === n ? "font-bold text-foreground" : "text-foreground/75"}>
                 {descriptions[n]}
               </span>
             </div>
@@ -671,7 +678,7 @@ function IntensityScale({
           );
         })}
       </div>
-      <div className="flex items-center justify-between text-[10px] text-muted-foreground px-0.5">
+      <div className="flex items-center justify-between px-0.5 text-[10px] font-medium text-foreground/75">
         <span className="flex items-center gap-1">
           <span className="h-2 w-2 rounded-full" style={{ background: "hsl(130 70% 50%)" }} />
           Mild
@@ -710,7 +717,7 @@ function DurationField({
 }) {
   return (
     <div className="space-y-1">
-      <span className="text-xs font-medium text-muted-foreground">Duration (min)</span>
+      <span className="text-xs font-semibold text-foreground/80">Duration (min)</span>
       <div className="flex items-center gap-2">
         <Input
           type="number"
@@ -986,7 +993,7 @@ function PainWizard({
   };
 
   const bg = painColor(score);
-  const bgFill = `color-mix(in oklab, ${bg} 35%, white)`;
+  const bgFill = `color-mix(in oklch, ${bg} 20%, var(--background))`;
 
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const onTouchStart = (e: React.TouchEvent) => {
@@ -1009,7 +1016,7 @@ function PainWizard({
 
   return (
     <div
-      className="flex min-h-full flex-col px-5 py-4 transition-colors touch-pan-y"
+      className="flex min-h-full flex-col px-5 py-4 text-foreground transition-colors touch-pan-y"
       style={{ background: bgFill }}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
@@ -1020,7 +1027,7 @@ function PainWizard({
             <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
               Quick symptom update
             </span>
-            <span className="text-xs text-muted-foreground">New entry · {time}</span>
+            <span className="text-xs font-medium text-foreground/75">New entry · {time}</span>
           </>
         ) : (
           <>
@@ -1029,7 +1036,7 @@ function PainWizard({
                 <span key={i} className={`h-1.5 w-6 rounded-full ${i <= step ? "bg-primary" : "bg-tint"}`} />
               ))}
             </div>
-            <span className="text-xs text-muted-foreground">{step + 1}/5</span>
+            <span className="text-xs font-semibold text-foreground/70">{step + 1}/5</span>
           </>
         )}
       </div>
@@ -1061,7 +1068,9 @@ function PainWizard({
           >
             {Number.isInteger(score) ? score : score.toFixed(1)}
           </div>
-          <p className="text-center font-medium">{getScaleDesc(data, "pain")[Math.round(score)]}</p>
+          <p className="text-center text-lg font-semibold text-foreground">
+            {getScaleDesc(data, "pain")[Math.round(score)]}
+          </p>
           <div className="w-full px-4">
             <Slider value={[score * 2]} min={0} max={20} step={1} onValueChange={([v]) => setScore(v / 2)} />
           </div>
@@ -2286,7 +2295,7 @@ function PeriodForm({
         </div>
         {data.settings.pregnantSince && (
           <div className="mt-2">
-            <span className="text-xs font-medium text-muted-foreground">Since when</span>
+            <span className="text-xs font-semibold text-foreground/80">Since when</span>
             <Input
               type="date"
               className="mt-1"
