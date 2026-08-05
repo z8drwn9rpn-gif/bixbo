@@ -1,4 +1,8 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+
+export const Route = createFileRoute("/settings")({
+  component: () => <div>Settings OK</div>,
+});
 import { useEffect, useState, type ReactNode } from "react";
 import {
   ArrowLeft,
