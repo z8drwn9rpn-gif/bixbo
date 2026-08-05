@@ -477,6 +477,25 @@ function MetricColumn({
     </div>
   );
 }
+function SummaryRow({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-center justify-between rounded-2xl bg-tint px-4 py-3 ring-1 ring-border/40">
+      <span className="text-sm text-muted-foreground">
+        {label}
+      </span>
+
+      <span className="font-semibold text-foreground">
+        {value}
+      </span>
+    </div>
+  );
+}
 
 /* -------------------------------------------------------------------------- */
 /* Page                                                                       */
