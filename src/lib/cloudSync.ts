@@ -4,10 +4,7 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import {
   EMPTY,
-  getBixbo,
-  replaceBixbo,
   setPartner,
-  subscribeBixboChanges,
   type BixboData,
   type DayLog,
   type PartnerData,
@@ -394,20 +391,9 @@ export async function flushMyDataPush(): Promise<void> {
   return _flushingPromise;
 }
 
-if (typeof window !== "undefined") {
-  const flush = () => {
-    void flushMyDataPush();
-  };
-
-  window.addEventListener("pagehide", flush);
-  window.addEventListener("beforeunload", flush);
-
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "hidden") {
-      flush();
-    }
-  });
-}
+// Automatic unload/pagehide pushes are intentionally disabled.
+// OAuth redirects can fire these events while the auth session is changing,
+// which can cause an unsafe cloud write during sign-in.
 
 /* ------------------- Session hook ------------------- */
 
@@ -449,148 +435,28 @@ export function useCloudSync() {
     }
 
     let cancelled = false;
-    let pushTimer: ReturnType<typeof setTimeout> | null = null;
 
     void (async () => {
       try {
+        // Keep account/profile creation working, but do not pull, merge, replace,
+        // push, subscribe to realtime, or fetch partner data during login.
+        // This prevents account-specific legacy cloud data from crashing the app.
         await ensureProfile();
 
-        const remote = await pullMyData();
-
-        if (cancelled) return;
-
-        if (remote) {
-          // Login-safe restore:
-          // Load the already-normalized cloud snapshot directly. This avoids a
-          // crash caused by malformed legacy local data during the first merge
-          // after OAuth sign-in. Keep the local-only partner projection.
-          const safeRemote = normalizeRemotePayload(remote);
-          const currentPartner = getBixbo().partner;
-
-          replaceBixbo(
-            {
-              ...safeRemote,
-              partner: currentPartner,
-            },
-            "remote",
-          );
-
-          // Do not immediately push after the first cloud restore. A later local
-          // change will go through the normal debounced push path.
-        } else {
-          // First sync for an account without cloud data.
-          await pushMyData(getBixbo());
-        }
-
-        const partner = await fetchPartner();
-
         if (!cancelled) {
-          setPartner(partner ?? undefined);
+          setPartner(undefined);
         }
       } catch (error) {
-        console.error("useCloudSync initial sync", error);
+        console.error("useCloudSync login-safe initialization", error);
+
+        if (!cancelled) {
+          setPartner(undefined);
+        }
       }
     })();
 
-    const unsubscribeStore = subscribeBixboChanges((nextData, reason) => {
-      if (reason !== "local") return;
-
-      if (pushTimer) {
-        clearTimeout(pushTimer);
-      }
-
-      pushTimer = setTimeout(() => {
-        pushMyData(nextData).catch(console.error);
-      }, 200);
-    });
-
-    const refreshPartner = async () => {
-      const partner = await fetchPartner();
-
-      if (!cancelled) {
-        setPartner(partner ?? undefined);
-      }
-    };
-
-    /*
-     * user_data listener:
-     * Only the signed-in user's private row is observed for multi-device sync.
-     *
-     * partner_shared_data listener:
-     * Refreshes Couple data without exposing the partner's private user_data.
-     */
-    const channel = supabase
-      .channel(`bixbo-sync-${session.user.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "user_data",
-          filter: `user_id=eq.${session.user.id}`,
-        },
-        (payload) => {
-          const incomingRaw = (payload.new as { data?: unknown } | undefined)?.data;
-
-          if (!incomingRaw) return;
-
-          const incoming = normalizeRemotePayload(incomingRaw);
-          const incomingJson = JSON.stringify({
-            ...incoming,
-            partner: undefined,
-          });
-
-          // Ignore a realtime echo of our own most recent private write.
-          if (incomingJson === _lastPushedJson) return;
-
-          // Realtime-safe replace:
-          // Incoming data has already passed normalizeRemotePayload(). Replacing
-          // it directly avoids repeating the same legacy-data merge crash that
-          // can happen immediately after Google sign-in.
-          const currentPartner = getBixbo().partner;
-
-          replaceBixbo(
-            {
-              ...incoming,
-              partner: currentPartner,
-            },
-            "remote",
-          );
-        },
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "partner_shared_data",
-        },
-        () => {
-          void refreshPartner();
-        },
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "partner_links",
-        },
-        () => {
-          void refreshPartner();
-        },
-      )
-      .subscribe();
-
     return () => {
       cancelled = true;
-
-      if (pushTimer) {
-        clearTimeout(pushTimer);
-      }
-
-      unsubscribeStore();
-      void supabase.removeChannel(channel);
     };
   }, [ready, session?.user?.id]);
 }
