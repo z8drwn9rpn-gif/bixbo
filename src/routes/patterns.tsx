@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Activity,
+  Archive,
   Brain,
   CalendarDays,
   Dumbbell,
@@ -10,6 +11,7 @@ import {
   ChevronDown,
   Moon,
   Pill,
+  RotateCcw,
   Scale,
   Sparkles,
   ThermometerSun,
@@ -114,6 +116,16 @@ type SelectOption = {
 type PatternTab = "cycle" | "monthly" | "treatment" | "triggers";
 type AnalysisRange = 7 | 30 | 90 | "all";
 type TreatmentKind = "medication" | "supplement" | "diet" | "therapy" | "exercise" | "other";
+
+type ArchivedTreatment = {
+  id: string;
+  name: string;
+  kind: TreatmentKind;
+  notes: string;
+  startDate: string;
+  archivedAt: string;
+  custom: boolean;
+};
 
 const PATTERN_TABS: Array<{ id: PatternTab; label: string }> = [
   { id: "cycle", label: "Cycle" },
@@ -1104,7 +1116,9 @@ function PatternsPage() {
   const [treatmentKind, setTreatmentKind] = useState<TreatmentKind>("medication");
   const [treatmentNotes, setTreatmentNotes] = useState("");
   const [customTreatment, setCustomTreatment] = useState(false);
+  const [archivedTreatments, setArchivedTreatments] = useState<ArchivedTreatment[]>([]);
   const treatmentStorageKey = "bixbo:patterns:treatment";
+  const treatmentArchiveStorageKey = "bixbo:patterns:treatment-archive";
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1125,6 +1139,15 @@ function PatternsPage() {
       setCustomTreatment(Boolean(saved.custom));
     } catch {
       // Ignore malformed local treatment drafts.
+    }
+
+    try {
+      const rawArchive = window.localStorage.getItem(treatmentArchiveStorageKey);
+      if (!rawArchive) return;
+      const savedArchive = JSON.parse(rawArchive) as ArchivedTreatment[];
+      setArchivedTreatments(Array.isArray(savedArchive) ? savedArchive : []);
+    } catch {
+      // Ignore malformed archive data.
     }
   }, []);
 
@@ -1147,21 +1170,92 @@ function PatternsPage() {
     );
   }, [customTreatment, treatmentDate, treatmentKind, treatmentName, treatmentNotes]);
 
-  const deleteTreatmentComparison = () => {
-    if (
-      !window.confirm(
-        "Delete this treatment comparison? This removes the treatment name, type, start date and notes. Daily health logs and medications will NOT be deleted.",
-      )
-    ) {
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (archivedTreatments.length === 0) {
+      window.localStorage.removeItem(treatmentArchiveStorageKey);
       return;
     }
+    window.localStorage.setItem(treatmentArchiveStorageKey, JSON.stringify(archivedTreatments));
+  }, [archivedTreatments]);
 
+  const clearActiveTreatment = () => {
     setTreatmentDate("");
     setTreatmentName("");
     setTreatmentKind("medication");
     setTreatmentNotes("");
     setCustomTreatment(false);
     if (typeof window !== "undefined") window.localStorage.removeItem(treatmentStorageKey);
+  };
+
+  const archiveTreatmentComparison = () => {
+    if (!treatmentDate) {
+      window.alert("Choose a treatment start date before archiving.");
+      return;
+    }
+
+    if (
+      !window.confirm(
+        "Archive this treatment? It will move to Treatment history and remain available for future review. Daily health logs and medications will not be changed.",
+      )
+    ) {
+      return;
+    }
+
+    const archived: ArchivedTreatment = {
+      id: `${Date.now()}`,
+      name: treatmentName.trim() || "Unnamed treatment",
+      kind: treatmentKind,
+      notes: treatmentNotes.trim(),
+      startDate: treatmentDate,
+      archivedAt: todayKey(),
+      custom: customTreatment,
+    };
+
+    setArchivedTreatments((current) => [archived, ...current]);
+    clearActiveTreatment();
+  };
+
+  const deleteTreatmentComparison = () => {
+    if (
+      !window.confirm(
+        "Permanently delete this treatment comparison? This removes the treatment name, type, start date and notes. Daily health logs and medications will NOT be deleted.",
+      )
+    ) {
+      return;
+    }
+
+    clearActiveTreatment();
+  };
+
+  const restoreArchivedTreatment = (archived: ArchivedTreatment) => {
+    if (
+      treatmentDate &&
+      !window.confirm(
+        "Replace the current active treatment with this archived treatment? The current active treatment will not be archived automatically.",
+      )
+    ) {
+      return;
+    }
+
+    setTreatmentDate(archived.startDate);
+    setTreatmentName(archived.name === "Unnamed treatment" ? "" : archived.name);
+    setTreatmentKind(archived.kind);
+    setTreatmentNotes(archived.notes);
+    setCustomTreatment(archived.custom);
+    setArchivedTreatments((current) => current.filter((item) => item.id !== archived.id));
+  };
+
+  const deleteArchivedTreatment = (id: string) => {
+    if (
+      !window.confirm(
+        "Permanently delete this archived treatment? Daily health logs and medications will NOT be deleted.",
+      )
+    ) {
+      return;
+    }
+
+    setArchivedTreatments((current) => current.filter((item) => item.id !== id));
   };
 
   const treatmentWindow = (before: boolean) => {
@@ -2215,13 +2309,46 @@ function PatternsPage() {
                         {treatmentDate ? ` · Started ${formattedTreatmentDate}` : " · Start date not selected"}
                       </p>
                     </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={archiveTreatmentComparison}
+                        aria-label="Archive treatment"
+                        title="Archive treatment"
+                        className="grid h-10 w-10 place-items-center rounded-full bg-primary/10 text-primary ring-1 ring-primary/20 hover:bg-primary/15"
+                      >
+                        <Archive className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={deleteTreatmentComparison}
+                        aria-label="Permanently delete treatment comparison"
+                        title="Delete permanently"
+                        className="grid h-10 w-10 place-items-center rounded-full bg-destructive/10 text-destructive ring-1 ring-destructive/20 hover:bg-destructive/15"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {(treatmentDate || treatmentName || treatmentNotes) && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={archiveTreatmentComparison}
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-primary/10 px-3 text-sm font-semibold text-primary ring-1 ring-primary/20 hover:bg-primary/15"
+                    >
+                      <Archive className="h-4 w-4" />
+                      Archive
+                    </button>
                     <button
                       type="button"
                       onClick={deleteTreatmentComparison}
-                      aria-label="Delete treatment comparison"
-                      className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-destructive/10 text-destructive ring-1 ring-destructive/20 hover:bg-destructive/15"
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-destructive/10 px-3 text-sm font-semibold text-destructive ring-1 ring-destructive/20 hover:bg-destructive/15"
                     >
                       <Trash2 className="h-4 w-4" />
+                      Delete
                     </button>
                   </div>
                 )}
@@ -2396,6 +2523,84 @@ function PatternsPage() {
               </>
             )}
           </div>
+        )}
+
+        {activeTab === "treatment" && archivedTreatments.length > 0 && (
+          <CollapsibleSection
+            title="Treatment history"
+            subtitle={`${archivedTreatments.length} archived treatment${archivedTreatments.length === 1 ? "" : "s"}`}
+            defaultOpen={true}
+          >
+            <div className="space-y-2.5">
+              {archivedTreatments.map((archived) => {
+                const archivedKindLabel =
+                  archived.kind === "medication"
+                    ? "Medication"
+                    : archived.kind === "supplement"
+                      ? "Supplement"
+                      : archived.kind === "diet"
+                        ? "Diet"
+                        : archived.kind === "therapy"
+                          ? "Therapy"
+                          : archived.kind === "exercise"
+                            ? "Exercise"
+                            : "Other";
+
+                const startLabel = new Intl.DateTimeFormat(undefined, {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                }).format(new Date(`${archived.startDate}T12:00:00`));
+
+                const archivedLabel = new Intl.DateTimeFormat(undefined, {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                }).format(new Date(`${archived.archivedAt}T12:00:00`));
+
+                return (
+                  <article key={archived.id} className="rounded-2xl bg-tint p-3.5 ring-1 ring-border/50">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-foreground">{archived.name}</p>
+                        <p className="mt-0.5 text-[11px] text-muted-foreground">
+                          {archivedKindLabel} · Started {startLabel}
+                        </p>
+                        <p className="mt-0.5 text-[10px] text-muted-foreground">Archived {archivedLabel}</p>
+                        {archived.notes && (
+                          <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                            {archived.notes}
+                          </p>
+                        )}
+                      </div>
+                      <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                        Archived
+                      </span>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
+                      <button
+                        type="button"
+                        onClick={() => restoreArchivedTreatment(archived)}
+                        className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-background px-3 text-xs font-semibold text-foreground ring-1 ring-border hover:bg-surface"
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                        Restore for comparison
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteArchivedTreatment(archived.id)}
+                        aria-label={`Delete archived treatment ${archived.name}`}
+                        className="grid h-10 w-10 place-items-center rounded-xl bg-destructive/10 text-destructive ring-1 ring-destructive/20 hover:bg-destructive/15"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </CollapsibleSection>
         )}
 
         {activeTab === "triggers" && (
