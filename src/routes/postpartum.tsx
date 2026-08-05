@@ -69,6 +69,30 @@ function PostpartumPage() {
   const updateLog = (patch: (l: PostpartumDayLog) => PostpartumDayLog) =>
     updateDayLog(update, today, (l: DayLog) => ({ ...l, postpartum: patch(l.postpartum ?? {}) }));
 
+  const resetPostpartum = () => {
+    const confirmed = window.confirm(
+      "This will permanently delete all postpartum tracking data — birth details, bleeding, recovery, mood, sleep, feeding, diapers, visits and daily postpartum logs. This cannot be undone.",
+    );
+
+    if (!confirmed) return;
+
+    update((d) => {
+      const dayLogs = Object.fromEntries(
+        Object.entries(d.dayLogs).map(([date, dayLog]) => {
+          const nextLog = { ...dayLog };
+          delete nextLog.postpartum;
+          return [date, nextLog];
+        }),
+      ) as BixboData["dayLogs"];
+
+      return {
+        ...d,
+        postpartum: structuredClone(EMPTY.postpartum!),
+        dayLogs,
+      };
+    });
+  };
+
   if (!hydrated) return null;
 
   if (!pp?.active) {
@@ -82,9 +106,13 @@ function PostpartumPage() {
       >
         <div className="px-5 pt-4 pb-24">
           <p className="text-sm text-muted-foreground">
-            Postpartum mode isn't active. {pp?.endedAt ? "It was ended on " + pp.endedAt + "." : "Turn it on below to start tracking your recovery."}
+            Postpartum mode isn't active.{" "}
+            {pp?.endedAt ? "It was ended on " + pp.endedAt + "." : "Turn it on below to start tracking your recovery."}
           </p>
-          <Button className="mt-4" onClick={() => updatePP((p) => ({ ...p, active: true, endedAt: undefined, visits: p.visits ?? [] }))}>
+          <Button
+            className="mt-4"
+            onClick={() => updatePP((p) => ({ ...p, active: true, endedAt: undefined, visits: p.visits ?? [] }))}
+          >
             Start postpartum tracking
           </Button>
         </div>
@@ -156,6 +184,17 @@ function PostpartumPage() {
                 Finish postpartum
               </Button>
             </section>
+
+            <section className="rounded-3xl bg-surface p-4 ring-1 ring-destructive/30">
+              <p className="text-sm font-medium">⚠️ Reset</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                Permanently delete all postpartum setup details and daily postpartum logs. Other BIXBO data will remain
+                unchanged.
+              </p>
+              <Button type="button" variant="destructive" className="mt-3 w-full" onClick={resetPostpartum}>
+                Delete all postpartum data
+              </Button>
+            </section>
           </>
         )}
       </div>
@@ -167,7 +206,15 @@ function deliveryLabel(t: NonNullable<PostpartumState["deliveryType"]>): string 
   return { vaginal: "Vaginal birth", csection: "C-section", assisted: "Assisted delivery", other: "Other" }[t];
 }
 
-function SetupForm({ pp, updatePP, compact = false }: { pp: PostpartumState; updatePP: (p: (x: PostpartumState) => PostpartumState) => void; compact?: boolean }) {
+function SetupForm({
+  pp,
+  updatePP,
+  compact = false,
+}: {
+  pp: PostpartumState;
+  updatePP: (p: (x: PostpartumState) => PostpartumState) => void;
+  compact?: boolean;
+}) {
   const types: { v: NonNullable<PostpartumState["deliveryType"]>; label: string }[] = [
     { v: "vaginal", label: "Vaginal" },
     { v: "csection", label: "C-section" },
@@ -183,7 +230,9 @@ function SetupForm({ pp, updatePP, compact = false }: { pp: PostpartumState; upd
     <div className="space-y-3">
       {!compact && <p className="text-sm font-medium">Welcome — let's set things up</p>}
       <div>
-        <label className="text-xs text-muted-foreground" htmlFor="pp-birthdate">Birth date</label>
+        <label className="text-xs text-muted-foreground" htmlFor="pp-birthdate">
+          Birth date
+        </label>
         <Input
           id="pp-birthdate"
           type="date"
@@ -193,7 +242,9 @@ function SetupForm({ pp, updatePP, compact = false }: { pp: PostpartumState; upd
         />
       </div>
       <div>
-        <label className="text-xs text-muted-foreground" htmlFor="pp-babyname">Baby's name</label>
+        <label className="text-xs text-muted-foreground" htmlFor="pp-babyname">
+          Baby's name
+        </label>
         <Input
           id="pp-babyname"
           className="mt-1"
@@ -218,14 +269,18 @@ function SetupForm({ pp, updatePP, compact = false }: { pp: PostpartumState; upd
         </div>
       </div>
       <div>
-        <label className="text-xs text-muted-foreground" htmlFor="pp-weight">Birth weight (kg)</label>
+        <label className="text-xs text-muted-foreground" htmlFor="pp-weight">
+          Birth weight (kg)
+        </label>
         <Input
           id="pp-weight"
           type="number"
           step="0.01"
           className="mt-1"
           value={pp.babyBirthWeightKg ?? ""}
-          onChange={(e) => updatePP((p) => ({ ...p, babyBirthWeightKg: e.target.value ? Number(e.target.value) : undefined }))}
+          onChange={(e) =>
+            updatePP((p) => ({ ...p, babyBirthWeightKg: e.target.value ? Number(e.target.value) : undefined }))
+          }
           placeholder="e.g. 3.4"
         />
       </div>
@@ -249,12 +304,22 @@ function SetupForm({ pp, updatePP, compact = false }: { pp: PostpartumState; upd
 }
 
 function BleedingSection({
-  view, log, updateLog, today,
-}: { view: BixboData; log: PostpartumDayLog; updateLog: (p: (l: PostpartumDayLog) => PostpartumDayLog) => void; today: string }) {
+  view,
+  log,
+  updateLog,
+  today,
+}: {
+  view: BixboData;
+  log: PostpartumDayLog;
+  updateLog: (p: (l: PostpartumDayLog) => PostpartumDayLog) => void;
+  today: string;
+}) {
   const trend = Array.from({ length: 42 }, (_, i) => addDays(today, i - 41));
   return (
     <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
-      <p className="text-sm font-medium"><Droplets className="mr-1 inline h-4 w-4" /> Bleeding (lochia)</p>
+      <p className="text-sm font-medium">
+        <Droplets className="mr-1 inline h-4 w-4" /> Bleeding (lochia)
+      </p>
       <div className="mt-3 grid grid-cols-5 gap-2">
         {BLEEDING_LEVELS.map(({ v, label, color }) => (
           <button
@@ -282,11 +347,23 @@ function BleedingSection({
   );
 }
 
-function LabeledSlider({ id, label, value, onChange }: { id: string; label: string; value: number; onChange: (v: number) => void }) {
+function LabeledSlider({
+  id,
+  label,
+  value,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+}) {
   return (
     <div>
       <div className="flex items-center justify-between">
-        <label className="text-xs text-muted-foreground" htmlFor={id}>{label}</label>
+        <label className="text-xs text-muted-foreground" htmlFor={id}>
+          {label}
+        </label>
         <span className="text-xs font-medium">{value}/10</span>
       </div>
       <Slider id={id} className="mt-2" min={0} max={10} step={1} value={[value]} onValueChange={([v]) => onChange(v)} />
@@ -295,23 +372,50 @@ function LabeledSlider({ id, label, value, onChange }: { id: string; label: stri
 }
 
 function RecoverySection({
-  pp, log, updateLog,
-}: { pp: PostpartumState; log: PostpartumDayLog; updateLog: (p: (l: PostpartumDayLog) => PostpartumDayLog) => void }) {
+  pp,
+  log,
+  updateLog,
+}: {
+  pp: PostpartumState;
+  log: PostpartumDayLog;
+  updateLog: (p: (l: PostpartumDayLog) => PostpartumDayLog) => void;
+}) {
   return (
     <section className="rounded-3xl bg-surface p-4 ring-1 ring-border space-y-4">
       <p className="text-sm font-medium">Recovery</p>
-      <LabeledSlider id="pp-recovery" label="Overall recovery" value={log.recovery ?? 5} onChange={(v) => updateLog((l) => ({ ...l, recovery: v }))} />
+      <LabeledSlider
+        id="pp-recovery"
+        label="Overall recovery"
+        value={log.recovery ?? 5}
+        onChange={(v) => updateLog((l) => ({ ...l, recovery: v }))}
+      />
       {pp.deliveryType === "csection" && (
-        <LabeledSlider id="pp-csection" label="C-section incision recovery" value={log.csectionRecovery ?? 5} onChange={(v) => updateLog((l) => ({ ...l, csectionRecovery: v }))} />
+        <LabeledSlider
+          id="pp-csection"
+          label="C-section incision recovery"
+          value={log.csectionRecovery ?? 5}
+          onChange={(v) => updateLog((l) => ({ ...l, csectionRecovery: v }))}
+        />
       )}
       {(pp.deliveryType === "vaginal" || pp.deliveryType === "assisted") && (
-        <LabeledSlider id="pp-perineal" label="Perineal healing" value={log.perinealHealing ?? 5} onChange={(v) => updateLog((l) => ({ ...l, perinealHealing: v }))} />
+        <LabeledSlider
+          id="pp-perineal"
+          label="Perineal healing"
+          value={log.perinealHealing ?? 5}
+          onChange={(v) => updateLog((l) => ({ ...l, perinealHealing: v }))}
+        />
       )}
     </section>
   );
 }
 
-function MoodSection({ log, updateLog }: { log: PostpartumDayLog; updateLog: (p: (l: PostpartumDayLog) => PostpartumDayLog) => void }) {
+function MoodSection({
+  log,
+  updateLog,
+}: {
+  log: PostpartumDayLog;
+  updateLog: (p: (l: PostpartumDayLog) => PostpartumDayLog) => void;
+}) {
   const [custom, setCustom] = useState("");
   const moods = log.mood ?? [];
   const toggle = (m: string) =>
@@ -336,55 +440,94 @@ function MoodSection({ log, updateLog }: { log: PostpartumDayLog; updateLog: (p:
             {m}
           </button>
         ))}
-        {moods.filter((m) => !POSTPARTUM_MOODS.includes(m)).map((m) => (
-          <button
-            key={m}
-            type="button"
-            onClick={() => toggle(m)}
-            className="min-h-11 rounded-full border border-primary bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
-          >
-            {m}
-          </button>
-        ))}
+        {moods
+          .filter((m) => !POSTPARTUM_MOODS.includes(m))
+          .map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => toggle(m)}
+              className="min-h-11 rounded-full border border-primary bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
+            >
+              {m}
+            </button>
+          ))}
       </div>
       <div className="mt-3 flex gap-2">
         <Input
           value={custom}
           onChange={(e) => setCustom(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter") addCustom(); }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") addCustom();
+          }}
           placeholder="Add your own..."
         />
-        <Button size="sm" onClick={addCustom}><Plus className="h-3.5 w-3.5" /></Button>
+        <Button size="sm" onClick={addCustom}>
+          <Plus className="h-3.5 w-3.5" />
+        </Button>
       </div>
       <p className="mt-3 text-[11px] text-muted-foreground">
         Feeling persistently low, tearful, anxious or numb for more than two weeks is common but worth mentioning to
-        your doctor or midwife — they can screen for postpartum depression (e.g. with an EPDS questionnaire). This
-        note is not a diagnosis.
+        your doctor or midwife — they can screen for postpartum depression (e.g. with an EPDS questionnaire). This note
+        is not a diagnosis.
       </p>
     </section>
   );
 }
 
 function SleepSection({
-  view, log, updateLog, today,
-}: { view: BixboData; log: PostpartumDayLog; updateLog: (p: (l: PostpartumDayLog) => PostpartumDayLog) => void; today: string }) {
+  view,
+  log,
+  updateLog,
+  today,
+}: {
+  view: BixboData;
+  log: PostpartumDayLog;
+  updateLog: (p: (l: PostpartumDayLog) => PostpartumDayLog) => void;
+  today: string;
+}) {
   const days = Array.from({ length: 14 }, (_, i) => addDays(today, i - 13));
-  const maxH = Math.max(1, ...days.map((k) => Math.max(view.dayLogs[k]?.postpartum?.sleepHours ?? 0, view.dayLogs[k]?.postpartum?.babySleepHours ?? 0)));
+  const maxH = Math.max(
+    1,
+    ...days.map((k) =>
+      Math.max(view.dayLogs[k]?.postpartum?.sleepHours ?? 0, view.dayLogs[k]?.postpartum?.babySleepHours ?? 0),
+    ),
+  );
   return (
     <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
-      <p className="text-sm font-medium"><Moon className="mr-1 inline h-4 w-4" /> Sleep</p>
+      <p className="text-sm font-medium">
+        <Moon className="mr-1 inline h-4 w-4" /> Sleep
+      </p>
       <div className="mt-3 grid grid-cols-2 gap-3">
         <div>
-          <label className="text-xs text-muted-foreground" htmlFor="pp-sleep-mom">Your sleep (hrs)</label>
-          <Input id="pp-sleep-mom" type="number" step="0.5" className="mt-1"
+          <label className="text-xs text-muted-foreground" htmlFor="pp-sleep-mom">
+            Your sleep (hrs)
+          </label>
+          <Input
+            id="pp-sleep-mom"
+            type="number"
+            step="0.5"
+            className="mt-1"
             value={log.sleepHours ?? ""}
-            onChange={(e) => updateLog((l) => ({ ...l, sleepHours: e.target.value ? Number(e.target.value) : undefined }))} />
+            onChange={(e) =>
+              updateLog((l) => ({ ...l, sleepHours: e.target.value ? Number(e.target.value) : undefined }))
+            }
+          />
         </div>
         <div>
-          <label className="text-xs text-muted-foreground" htmlFor="pp-sleep-baby">Baby's sleep (hrs)</label>
-          <Input id="pp-sleep-baby" type="number" step="0.5" className="mt-1"
+          <label className="text-xs text-muted-foreground" htmlFor="pp-sleep-baby">
+            Baby's sleep (hrs)
+          </label>
+          <Input
+            id="pp-sleep-baby"
+            type="number"
+            step="0.5"
+            className="mt-1"
             value={log.babySleepHours ?? ""}
-            onChange={(e) => updateLog((l) => ({ ...l, babySleepHours: e.target.value ? Number(e.target.value) : undefined }))} />
+            onChange={(e) =>
+              updateLog((l) => ({ ...l, babySleepHours: e.target.value ? Number(e.target.value) : undefined }))
+            }
+          />
         </div>
       </div>
       <p className="mt-4 mb-1 text-xs uppercase tracking-wider text-muted-foreground">Last 14 days</p>
@@ -395,21 +538,39 @@ function SleepSection({
           const bh = p?.babySleepHours ?? 0;
           return (
             <div key={k} title={`${fmtDay(k)}: you ${mh}h · baby ${bh}h`} className="flex flex-1 items-end gap-[1px]">
-              <div className="flex-1 rounded-t-sm bg-primary" style={{ height: `${(mh / maxH) * 100}%`, minHeight: mh ? 2 : 0 }} />
-              <div className="flex-1 rounded-t-sm bg-accent-foreground/40" style={{ height: `${(bh / maxH) * 100}%`, minHeight: bh ? 2 : 0 }} />
+              <div
+                className="flex-1 rounded-t-sm bg-primary"
+                style={{ height: `${(mh / maxH) * 100}%`, minHeight: mh ? 2 : 0 }}
+              />
+              <div
+                className="flex-1 rounded-t-sm bg-accent-foreground/40"
+                style={{ height: `${(bh / maxH) * 100}%`, minHeight: bh ? 2 : 0 }}
+              />
             </div>
           );
         })}
       </div>
       <div className="mt-1 flex gap-3 text-[10px] text-muted-foreground">
-        <span><span className="mr-1 inline-block h-2 w-2 rounded-sm bg-primary" />You</span>
-        <span><span className="mr-1 inline-block h-2 w-2 rounded-sm bg-accent-foreground/40" />Baby</span>
+        <span>
+          <span className="mr-1 inline-block h-2 w-2 rounded-sm bg-primary" />
+          You
+        </span>
+        <span>
+          <span className="mr-1 inline-block h-2 w-2 rounded-sm bg-accent-foreground/40" />
+          Baby
+        </span>
       </div>
     </section>
   );
 }
 
-function FeedingSection({ log, updateLog }: { log: PostpartumDayLog; updateLog: (p: (l: PostpartumDayLog) => PostpartumDayLog) => void }) {
+function FeedingSection({
+  log,
+  updateLog,
+}: {
+  log: PostpartumDayLog;
+  updateLog: (p: (l: PostpartumDayLog) => PostpartumDayLog) => void;
+}) {
   const bf = log.breastfeeding ?? [];
   const pumping = log.pumping ?? [];
   const bottle = log.bottle ?? [];
@@ -426,7 +587,9 @@ function FeedingSection({ log, updateLog }: { log: PostpartumDayLog; updateLog: 
 
   return (
     <section className="rounded-3xl bg-surface p-4 ring-1 ring-border space-y-4">
-      <p className="text-sm font-medium"><Baby className="mr-1 inline h-4 w-4" /> Feeding</p>
+      <p className="text-sm font-medium">
+        <Baby className="mr-1 inline h-4 w-4" /> Feeding
+      </p>
       <p className="text-xs text-muted-foreground">
         Today: {totalNursed} min nursed · {totalPumped} ml pumped · {totalBottle} ml bottle
       </p>
@@ -434,25 +597,53 @@ function FeedingSection({ log, updateLog }: { log: PostpartumDayLog; updateLog: 
       <div>
         <p className="text-xs font-medium">Breastfeeding</p>
         <div className="mt-2 flex flex-wrap items-end gap-2">
-          <Input type="number" placeholder="Minutes" className="w-24" value={bfMin} onChange={(e) => setBfMin(e.target.value)} />
+          <Input
+            type="number"
+            placeholder="Minutes"
+            className="w-24"
+            value={bfMin}
+            onChange={(e) => setBfMin(e.target.value)}
+          />
           <div className="flex gap-1">
             {(["left", "right", "both"] as const).map((s) => (
-              <button key={s} type="button" onClick={() => setBfSide(s)}
-                className={`min-h-11 rounded-md border px-2 text-xs capitalize ${bfSide === s ? "border-primary bg-primary/10 text-primary dark:bg-primary dark:text-primary-foreground" : "border-border bg-tint"}`}>
+              <button
+                key={s}
+                type="button"
+                onClick={() => setBfSide(s)}
+                className={`min-h-11 rounded-md border px-2 text-xs capitalize ${bfSide === s ? "border-primary bg-primary/10 text-primary dark:bg-primary dark:text-primary-foreground" : "border-border bg-tint"}`}
+              >
                 {s}
               </button>
             ))}
           </div>
-          <Button size="sm" onClick={() => {
-            updateLog((l) => ({ ...l, breastfeeding: [...(l.breastfeeding ?? []), { id: uid(), time: nowHHMM(), minutes: bfMin ? Number(bfMin) : undefined, side: bfSide }] }));
-            setBfMin("");
-          }}><Plus className="h-3.5 w-3.5" /> Add</Button>
+          <Button
+            size="sm"
+            onClick={() => {
+              updateLog((l) => ({
+                ...l,
+                breastfeeding: [
+                  ...(l.breastfeeding ?? []),
+                  { id: uid(), time: nowHHMM(), minutes: bfMin ? Number(bfMin) : undefined, side: bfSide },
+                ],
+              }));
+              setBfMin("");
+            }}
+          >
+            <Plus className="h-3.5 w-3.5" /> Add
+          </Button>
         </div>
         <ul className="mt-2 space-y-1">
           {bf.map((x) => (
             <li key={x.id} className="flex items-center justify-between rounded-lg bg-tint px-3 py-2 text-xs">
-              <span>{x.time} · {x.minutes ?? "?"} min · {x.side}</span>
-              <button aria-label="Delete breastfeeding entry" onClick={() => updateLog((l) => ({ ...l, breastfeeding: (l.breastfeeding ?? []).filter((y) => y.id !== x.id) }))}>
+              <span>
+                {x.time} · {x.minutes ?? "?"} min · {x.side}
+              </span>
+              <button
+                aria-label="Delete breastfeeding entry"
+                onClick={() =>
+                  updateLog((l) => ({ ...l, breastfeeding: (l.breastfeeding ?? []).filter((y) => y.id !== x.id) }))
+                }
+              >
                 <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
             </li>
@@ -463,18 +654,52 @@ function FeedingSection({ log, updateLog }: { log: PostpartumDayLog; updateLog: 
       <div>
         <p className="text-xs font-medium">Pumping</p>
         <div className="mt-2 flex flex-wrap items-end gap-2">
-          <Input type="number" placeholder="ml" className="w-20" value={pumpMl} onChange={(e) => setPumpMl(e.target.value)} />
-          <Input type="number" placeholder="Minutes" className="w-24" value={pumpMin} onChange={(e) => setPumpMin(e.target.value)} />
-          <Button size="sm" onClick={() => {
-            updateLog((l) => ({ ...l, pumping: [...(l.pumping ?? []), { id: uid(), time: nowHHMM(), ml: pumpMl ? Number(pumpMl) : undefined, minutes: pumpMin ? Number(pumpMin) : undefined }] }));
-            setPumpMl(""); setPumpMin("");
-          }}><Plus className="h-3.5 w-3.5" /> Add</Button>
+          <Input
+            type="number"
+            placeholder="ml"
+            className="w-20"
+            value={pumpMl}
+            onChange={(e) => setPumpMl(e.target.value)}
+          />
+          <Input
+            type="number"
+            placeholder="Minutes"
+            className="w-24"
+            value={pumpMin}
+            onChange={(e) => setPumpMin(e.target.value)}
+          />
+          <Button
+            size="sm"
+            onClick={() => {
+              updateLog((l) => ({
+                ...l,
+                pumping: [
+                  ...(l.pumping ?? []),
+                  {
+                    id: uid(),
+                    time: nowHHMM(),
+                    ml: pumpMl ? Number(pumpMl) : undefined,
+                    minutes: pumpMin ? Number(pumpMin) : undefined,
+                  },
+                ],
+              }));
+              setPumpMl("");
+              setPumpMin("");
+            }}
+          >
+            <Plus className="h-3.5 w-3.5" /> Add
+          </Button>
         </div>
         <ul className="mt-2 space-y-1">
           {pumping.map((x) => (
             <li key={x.id} className="flex items-center justify-between rounded-lg bg-tint px-3 py-2 text-xs">
-              <span>{x.time} · {x.ml ?? "?"} ml · {x.minutes ?? "?"} min</span>
-              <button aria-label="Delete pumping entry" onClick={() => updateLog((l) => ({ ...l, pumping: (l.pumping ?? []).filter((y) => y.id !== x.id) }))}>
+              <span>
+                {x.time} · {x.ml ?? "?"} ml · {x.minutes ?? "?"} min
+              </span>
+              <button
+                aria-label="Delete pumping entry"
+                onClick={() => updateLog((l) => ({ ...l, pumping: (l.pumping ?? []).filter((y) => y.id !== x.id) }))}
+              >
                 <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
             </li>
@@ -485,17 +710,39 @@ function FeedingSection({ log, updateLog }: { log: PostpartumDayLog; updateLog: 
       <div>
         <p className="text-xs font-medium">Bottle feeds</p>
         <div className="mt-2 flex flex-wrap items-end gap-2">
-          <Input type="number" placeholder="ml" className="w-20" value={bottleMl} onChange={(e) => setBottleMl(e.target.value)} />
-          <Button size="sm" onClick={() => {
-            updateLog((l) => ({ ...l, bottle: [...(l.bottle ?? []), { id: uid(), time: nowHHMM(), ml: bottleMl ? Number(bottleMl) : undefined }] }));
-            setBottleMl("");
-          }}><Plus className="h-3.5 w-3.5" /> Add</Button>
+          <Input
+            type="number"
+            placeholder="ml"
+            className="w-20"
+            value={bottleMl}
+            onChange={(e) => setBottleMl(e.target.value)}
+          />
+          <Button
+            size="sm"
+            onClick={() => {
+              updateLog((l) => ({
+                ...l,
+                bottle: [
+                  ...(l.bottle ?? []),
+                  { id: uid(), time: nowHHMM(), ml: bottleMl ? Number(bottleMl) : undefined },
+                ],
+              }));
+              setBottleMl("");
+            }}
+          >
+            <Plus className="h-3.5 w-3.5" /> Add
+          </Button>
         </div>
         <ul className="mt-2 space-y-1">
           {bottle.map((x) => (
             <li key={x.id} className="flex items-center justify-between rounded-lg bg-tint px-3 py-2 text-xs">
-              <span>{x.time} · {x.ml ?? "?"} ml</span>
-              <button aria-label="Delete bottle entry" onClick={() => updateLog((l) => ({ ...l, bottle: (l.bottle ?? []).filter((y) => y.id !== x.id) }))}>
+              <span>
+                {x.time} · {x.ml ?? "?"} ml
+              </span>
+              <button
+                aria-label="Delete bottle entry"
+                onClick={() => updateLog((l) => ({ ...l, bottle: (l.bottle ?? []).filter((y) => y.id !== x.id) }))}
+              >
                 <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
             </li>
@@ -506,7 +753,13 @@ function FeedingSection({ log, updateLog }: { log: PostpartumDayLog; updateLog: 
   );
 }
 
-function DiaperSection({ log, updateLog }: { log: PostpartumDayLog; updateLog: (p: (l: PostpartumDayLog) => PostpartumDayLog) => void }) {
+function DiaperSection({
+  log,
+  updateLog,
+}: {
+  log: PostpartumDayLog;
+  updateLog: (p: (l: PostpartumDayLog) => PostpartumDayLog) => void;
+}) {
   const diapers = log.diapers ?? [];
   const wet = diapers.filter((d) => d.kind === "wet").length;
   const dirty = diapers.filter((d) => d.kind === "dirty").length;
@@ -519,15 +772,26 @@ function DiaperSection({ log, updateLog }: { log: PostpartumDayLog; updateLog: (
     <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
       <p className="text-sm font-medium">Diapers</p>
       <div className="mt-3 grid grid-cols-3 gap-2">
-        <Button variant="outline" className="min-h-11" onClick={() => add("wet")}>Wet ({wet})</Button>
-        <Button variant="outline" className="min-h-11" onClick={() => add("dirty")}>Dirty ({dirty})</Button>
-        <Button variant="outline" className="min-h-11" onClick={() => add("both")}>Both ({both})</Button>
+        <Button variant="outline" className="min-h-11" onClick={() => add("wet")}>
+          Wet ({wet})
+        </Button>
+        <Button variant="outline" className="min-h-11" onClick={() => add("dirty")}>
+          Dirty ({dirty})
+        </Button>
+        <Button variant="outline" className="min-h-11" onClick={() => add("both")}>
+          Both ({both})
+        </Button>
       </div>
       <ul className="mt-3 space-y-1">
         {diapers.map((x) => (
           <li key={x.id} className="flex items-center justify-between rounded-lg bg-tint px-3 py-2 text-xs capitalize">
-            <span>{x.time} · {x.kind}</span>
-            <button aria-label="Delete diaper entry" onClick={() => updateLog((l) => ({ ...l, diapers: (l.diapers ?? []).filter((y) => y.id !== x.id) }))}>
+            <span>
+              {x.time} · {x.kind}
+            </span>
+            <button
+              aria-label="Delete diaper entry"
+              onClick={() => updateLog((l) => ({ ...l, diapers: (l.diapers ?? []).filter((y) => y.id !== x.id) }))}
+            >
               <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
             </button>
           </li>
@@ -537,7 +801,13 @@ function DiaperSection({ log, updateLog }: { log: PostpartumDayLog; updateLog: (
   );
 }
 
-function VisitsSection({ pp, updatePP }: { pp: PostpartumState; updatePP: (p: (x: PostpartumState) => PostpartumState) => void }) {
+function VisitsSection({
+  pp,
+  updatePP,
+}: {
+  pp: PostpartumState;
+  updatePP: (p: (x: PostpartumState) => PostpartumState) => void;
+}) {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<PregnancyAppointment | null>(null);
   const visits = pp.visits ?? [];
@@ -552,21 +822,32 @@ function VisitsSection({ pp, updatePP }: { pp: PostpartumState; updatePP: (p: (x
     }));
   const remove = (id: string) => updatePP((p) => ({ ...p, visits: p.visits.filter((x) => x.id !== id) }));
 
-  const openNew = () => { setEditing(null); setShowForm(true); };
-  const openEdit = (v: PregnancyAppointment) => { setEditing(v); setShowForm(true); };
+  const openNew = () => {
+    setEditing(null);
+    setShowForm(true);
+  };
+  const openEdit = (v: PregnancyAppointment) => {
+    setEditing(v);
+    setShowForm(true);
+  };
 
   return (
     <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium">Doctor visits</p>
-        <Button size="sm" onClick={openNew}><Plus className="h-3.5 w-3.5" /> Add</Button>
+        <Button size="sm" onClick={openNew}>
+          <Plus className="h-3.5 w-3.5" /> Add
+        </Button>
       </div>
 
       {showForm && (
         <VisitForm
           initial={editing}
           onCancel={() => setShowForm(false)}
-          onSave={(v) => { save(v); setShowForm(false); }}
+          onSave={(v) => {
+            save(v);
+            setShowForm(false);
+          }}
         />
       )}
 
@@ -593,7 +874,8 @@ function VisitRow({ v, onEdit, onDelete }: { v: PregnancyAppointment; onEdit: ()
   return (
     <li className="flex items-center justify-between rounded-lg bg-tint px-3 py-2 text-xs">
       <button className="min-h-11 flex-1 text-left" onClick={onEdit}>
-        <span className="font-medium">{v.title}</span> · {fmtDay(v.date)}{v.time ? ` ${v.time}` : ""}
+        <span className="font-medium">{v.title}</span> · {fmtDay(v.date)}
+        {v.time ? ` ${v.time}` : ""}
         {v.doctor ? ` · ${v.doctor}` : ""}
       </button>
       <button aria-label="Delete visit" onClick={onDelete}>
@@ -604,8 +886,14 @@ function VisitRow({ v, onEdit, onDelete }: { v: PregnancyAppointment; onEdit: ()
 }
 
 function VisitForm({
-  initial, onCancel, onSave,
-}: { initial: PregnancyAppointment | null; onCancel: () => void; onSave: (v: PregnancyAppointment) => void }) {
+  initial,
+  onCancel,
+  onSave,
+}: {
+  initial: PregnancyAppointment | null;
+  onCancel: () => void;
+  onSave: (v: PregnancyAppointment) => void;
+}) {
   const [title, setTitle] = useState(initial?.title ?? "");
   const [date, setDate] = useState(initial?.date ?? todayKey());
   const [time, setTime] = useState(initial?.time ?? "");
@@ -625,26 +913,46 @@ function VisitForm({
         <Button
           size="sm"
           disabled={!title.trim()}
-          onClick={() => onSave({
-            id: initial?.id ?? uid(), title: title.trim(), date, time: time || undefined,
-            doctor: doctor || undefined, note: note || undefined, kind: initial?.kind ?? "checkup",
-          })}
+          onClick={() =>
+            onSave({
+              id: initial?.id ?? uid(),
+              title: title.trim(),
+              date,
+              time: time || undefined,
+              doctor: doctor || undefined,
+              note: note || undefined,
+              kind: initial?.kind ?? "checkup",
+            })
+          }
         >
           Save
         </Button>
-        <Button size="sm" variant="outline" onClick={onCancel}>Cancel</Button>
+        <Button size="sm" variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
       </div>
     </div>
   );
 }
 
-function NotesSection({ log, updateLog }: { log: PostpartumDayLog; updateLog: (p: (l: PostpartumDayLog) => PostpartumDayLog) => void }) {
+function NotesSection({
+  log,
+  updateLog,
+}: {
+  log: PostpartumDayLog;
+  updateLog: (p: (l: PostpartumDayLog) => PostpartumDayLog) => void;
+}) {
   return (
     <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
-      <p className="text-sm font-medium"><Pill className="mr-1 inline h-4 w-4" /> Medication & notes</p>
+      <p className="text-sm font-medium">
+        <Pill className="mr-1 inline h-4 w-4" /> Medication & notes
+      </p>
       <p className="mt-1 text-xs text-muted-foreground">
         Track your postpartum vitamins or medications in{" "}
-        <Link to="/meds" className="underline">Medications</Link>.
+        <Link to="/meds" className="underline">
+          Medications
+        </Link>
+        .
       </p>
       <Textarea
         className="mt-3"
