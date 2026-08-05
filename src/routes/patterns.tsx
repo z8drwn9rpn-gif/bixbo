@@ -113,6 +113,27 @@ type SelectOption = {
   label: string;
 };
 
+type VitalEntry = {
+  id?: string;
+  time?: string;
+  value: number;
+};
+
+type DayLogWithVitals = DayLog & {
+  weightEntries?: VitalEntry[];
+};
+
+function latestWeightForDay(log: DayLog | undefined): number | null {
+  if (!log) return null;
+  const entries = ((log as DayLogWithVitals).weightEntries ?? [])
+    .filter((entry) => entry && Number.isFinite(Number(entry.value)))
+    .map((entry) => ({ ...entry, value: Number(entry.value), time: entry.time ?? "" }))
+    .sort((a, b) => a.time.localeCompare(b.time));
+
+  if (entries.length > 0) return entries[entries.length - 1].value;
+  return log.weight != null && Number.isFinite(Number(log.weight)) ? Number(log.weight) : null;
+}
+
 type PatternTab = "cycle" | "monthly" | "treatment" | "triggers";
 type AnalysisRange = 7 | 30 | 90 | "all";
 type TreatmentKind = "medication" | "supplement" | "diet" | "therapy" | "exercise" | "other";
@@ -526,7 +547,7 @@ function MetricColumn({
         {formatMetricValue(value, decimals, unit)}
       </p>
 
-      <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface/75 ring-1 ring-border/40">
+      <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-surface/75 ring-1 ring-border/40">
         <div
           className="h-full rounded-full transition-[width] duration-500 ease-out"
           style={{
@@ -624,7 +645,7 @@ function PatternTabs({
   const tabs = hideCycle ? PATTERN_TABS.filter((tab) => tab.id !== "cycle") : PATTERN_TABS;
 
   return (
-    <div className="sticky top-[45px] z-20 -mx-5 border-y border-border/50 bg-background/90 px-5 py-2 backdrop-blur">
+    <div className="sticky top-[45px] z-20 -mx-5 border-y border-border/50 bg-background/92 px-5 py-2.5 shadow-sm backdrop-blur-xl">
       <div
         className="grid gap-1 rounded-2xl bg-tint p-1 ring-1 ring-border/50"
         style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}
@@ -638,7 +659,7 @@ function PatternTabs({
               type="button"
               onClick={() => onChange(tab.id)}
               aria-pressed={selected}
-              className={`min-w-0 rounded-xl px-2 py-2 text-xs font-semibold transition ${
+              className={`min-h-10 min-w-0 rounded-xl px-2 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                 selected
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
@@ -713,12 +734,12 @@ function CollapsibleSection({
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <section className="overflow-hidden rounded-3xl bg-surface ring-1 ring-border">
+    <section className="overflow-hidden rounded-3xl bg-surface shadow-sm ring-1 ring-border/80">
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
         aria-expanded={open}
-        className="flex w-full items-center gap-3 px-5 py-4 text-left"
+        className="flex min-h-14 w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-tint/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
       >
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-semibold text-foreground">{title}</h2>
@@ -908,13 +929,13 @@ function PatternsPage() {
 
   const hotFlashCurrent = countAndAverage(
     currentMonthDays,
-    (log) => (log.pain ?? []).filter((entry) => entry.hotFlashesOn).length,
+    (log) => (log.pain ?? []).filter((entry) => entry.hotFlashesOn || (entry.hotFlashes ?? 0) > 0).length,
     dayHotFlash,
   );
 
   const hotFlashPrevious = countAndAverage(
     previousMonthDays,
-    (log) => (log.pain ?? []).filter((entry) => entry.hotFlashesOn).length,
+    (log) => (log.pain ?? []).filter((entry) => entry.hotFlashesOn || (entry.hotFlashes ?? 0) > 0).length,
     dayHotFlash,
   );
 
@@ -944,7 +965,7 @@ function PatternsPage() {
     avg(days.map((day) => dayLogs[day]?.sleepHours).filter((value): value is number => value != null));
 
   const weightAverage = (days: string[]) =>
-    avg(days.map((day) => dayLogs[day]?.weight).filter((value): value is number => value != null));
+    avg(days.map((day) => latestWeightForDay(dayLogs[day])).filter((value): value is number => value != null));
 
   const medicationAdherence = (days: string[]) => {
     const scheduledMeds = view.meds.filter((med) => !med.asNeeded);
@@ -1271,7 +1292,9 @@ function PatternsPage() {
   };
 
   const treatmentBeforeDays = treatmentWindow(true);
-  const treatmentAfterDays = treatmentWindow(false);
+  const treatmentAfterDays = treatmentWindow(false).filter((day) => day <= todayKey());
+  const treatmentBeforeLoggedDays = treatmentBeforeDays.filter((day) => Boolean(dayLogs[day])).length;
+  const treatmentAfterLoggedDays = treatmentAfterDays.filter((day) => Boolean(dayLogs[day])).length;
 
   const treatmentMetric = (metricFn: (log: DayLog) => number | null): TreatmentMetric => ({
     before: avg(
@@ -1320,11 +1343,13 @@ function PatternsPage() {
           ? "Overall worsening"
           : "Mixed or unchanged";
 
-  const treatmentLoggedDays = [...treatmentBeforeDays, ...treatmentAfterDays].filter((day) =>
-    Boolean(dayLogs[day]),
-  ).length;
+  const treatmentLoggedDays = treatmentBeforeLoggedDays + treatmentAfterLoggedDays;
   const treatmentConfidence: ConfidenceLevel =
-    treatmentLoggedDays >= 42 ? "High" : treatmentLoggedDays >= 14 ? "Medium" : "Low";
+    treatmentBeforeLoggedDays >= 21 && treatmentAfterLoggedDays >= 21
+      ? "High"
+      : treatmentBeforeLoggedDays >= 7 && treatmentAfterLoggedDays >= 7
+        ? "Medium"
+        : "Low";
 
   const treatmentChangeLabel = (entry: (typeof treatmentChanges)[number] | null) => {
     if (!entry) return "Not enough data";
@@ -1489,6 +1514,18 @@ function PatternsPage() {
 
   const [selectedOutcome, setSelectedOutcome] = useState(outcomeOptions[0]?.id ?? "");
 
+  useEffect(() => {
+    if (!triggerOptions.some((option) => option.id === selectedTrigger)) {
+      setSelectedTrigger(triggerOptions[0]?.id ?? "");
+    }
+  }, [cycleTrackingHidden, selectedTrigger, view.custom.foodQuickAdd]);
+
+  useEffect(() => {
+    if (!outcomeOptions.some((option) => option.id === selectedOutcome)) {
+      setSelectedOutcome(outcomeOptions[0]?.id ?? "");
+    }
+  }, [selectedOutcome]);
+
   const hasScheduledMedicationMissed = (day: string): boolean => {
     const scheduledMeds = view.meds.filter((med) => !med.asNeeded);
 
@@ -1537,17 +1574,15 @@ function PatternsPage() {
     }
 
     if (trigger === "period") {
+      const level = log.periodInfo?.level ?? log.period;
       return (
-        log.period === "spotting" ||
-        log.period === "light" ||
-        log.period === "medium" ||
-        log.period === "heavy" ||
-        log.period === "very-heavy"
+        level === "spotting" || level === "light" || level === "medium" || level === "heavy" || level === "very-heavy"
       );
     }
 
     if (trigger === "heavyPeriod") {
-      return log.period === "heavy" || log.period === "very-heavy";
+      const level = log.periodInfo?.level ?? log.period;
+      return level === "heavy" || level === "very-heavy";
     }
 
     if (trigger === "panic") {
@@ -1761,7 +1796,7 @@ function PatternsPage() {
 
   return (
     <AppShell title="Bixbo Patterns">
-      <div className="space-y-3 px-4 pb-24 pt-2 sm:px-5">
+      <div className="space-y-4 px-4 pb-[calc(96px+env(safe-area-inset-bottom))] pt-3 sm:px-5">
         <PatternTabs active={activeTab} onChange={setActiveTab} hideCycle={cycleTrackingHidden} />
 
         {activeTab === "triggers" && <AnalysisRangeSelector value={analysisRange} onChange={setAnalysisRange} />}
@@ -2211,7 +2246,7 @@ function PatternsPage() {
                         id="treatment-name"
                         value={treatmentName}
                         onChange={(event) => setTreatmentName(event.target.value)}
-                        className="min-h-11 min-w-0 rounded-2xl bg-tint px-4 py-2.5 text-sm text-foreground outline-none ring-1 ring-border focus:ring-2 focus:ring-primary"
+                        className="min-h-11 min-w-0 rounded-2xl bg-tint px-4 py-2.5 text-sm text-foreground outline-none ring-1 ring-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                       >
                         <option value="">Choose medicine</option>
                         {view.meds.map((med) => (
@@ -2240,7 +2275,7 @@ function PatternsPage() {
                         value={treatmentName}
                         onChange={(event) => setTreatmentName(event.target.value)}
                         placeholder="e.g. Elicea, physiotherapy, low-histamine diet"
-                        className="min-h-11 min-w-0 rounded-2xl bg-tint px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none ring-1 ring-border focus:ring-2 focus:ring-primary"
+                        className="min-h-11 min-w-0 rounded-2xl bg-tint px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none ring-1 ring-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                       />
                       {view.meds.length > 0 && (
                         <button
@@ -2266,7 +2301,7 @@ function PatternsPage() {
                     id="treatment-kind"
                     value={treatmentKind}
                     onChange={(event) => setTreatmentKind(event.target.value as TreatmentKind)}
-                    className="mt-2 min-h-11 w-full rounded-2xl bg-tint px-4 py-2.5 text-sm text-foreground outline-none ring-1 ring-border focus:ring-2 focus:ring-primary"
+                    className="mt-2 min-h-11 w-full rounded-2xl bg-tint px-4 py-2.5 text-sm text-foreground outline-none ring-1 ring-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   >
                     <option value="medication">Medication</option>
                     <option value="supplement">Supplement</option>
@@ -2291,6 +2326,7 @@ function PatternsPage() {
                     <input
                       type="date"
                       aria-label="Treatment start date"
+                      max={todayKey()}
                       value={treatmentDate}
                       onChange={(event) => setTreatmentDate(event.target.value)}
                       className="absolute inset-0 h-full w-full cursor-pointer opacity-[0.01]"
@@ -2308,7 +2344,7 @@ function PatternsPage() {
                     onChange={(event) => setTreatmentNotes(event.target.value)}
                     placeholder="Why you started it, dose change, or anything useful to remember"
                     rows={3}
-                    className="mt-2 w-full resize-none rounded-2xl bg-tint px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none ring-1 ring-border focus:ring-2 focus:ring-primary"
+                    className="mt-2 w-full resize-none rounded-2xl bg-tint px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none ring-1 ring-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   />
                 </div>
 
@@ -2323,26 +2359,6 @@ function PatternsPage() {
                         {treatmentDate ? ` · Started ${formattedTreatmentDate}` : " · Start date not selected"}
                       </p>
                     </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={archiveTreatmentComparison}
-                        aria-label="Archive treatment"
-                        title="Archive treatment"
-                        className="grid h-10 w-10 place-items-center rounded-full bg-primary/10 text-primary ring-1 ring-primary/20 hover:bg-primary/15"
-                      >
-                        <Archive className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={deleteTreatmentComparison}
-                        aria-label="Permanently delete treatment comparison"
-                        title="Delete permanently"
-                        className="grid h-10 w-10 place-items-center rounded-full bg-destructive/10 text-destructive ring-1 ring-destructive/20 hover:bg-destructive/15"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
                   </div>
                 )}
 
@@ -2351,7 +2367,7 @@ function PatternsPage() {
                     <button
                       type="button"
                       onClick={archiveTreatmentComparison}
-                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-primary/10 px-3 text-sm font-semibold text-primary ring-1 ring-primary/20 hover:bg-primary/15"
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-primary/10 px-3 text-sm font-semibold text-primary ring-1 ring-primary/20 hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <Archive className="h-4 w-4" />
                       Archive
@@ -2359,7 +2375,7 @@ function PatternsPage() {
                     <button
                       type="button"
                       onClick={deleteTreatmentComparison}
-                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-destructive/10 px-3 text-sm font-semibold text-destructive ring-1 ring-destructive/20 hover:bg-destructive/15"
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-destructive/10 px-3 text-sm font-semibold text-destructive ring-1 ring-destructive/20 hover:bg-destructive/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <Trash2 className="h-4 w-4" />
                       Delete
@@ -2389,6 +2405,11 @@ function PatternsPage() {
                       tone: "neutral",
                     },
                     {
+                      label: "Logged data",
+                      value: `${treatmentBeforeLoggedDays} before · ${treatmentAfterLoggedDays} after`,
+                      tone: "neutral",
+                    },
+                    {
                       label: "Overall",
                       value: treatmentOverall,
                       tone: treatmentOverall.includes("improvement")
@@ -2410,7 +2431,7 @@ function PatternsPage() {
                   ]}
                   confidence={{
                     level: treatmentConfidence,
-                    detail: `Based on ${treatmentLoggedDays} logged days across both periods`,
+                    detail: `Based on ${treatmentBeforeLoggedDays} days before and ${treatmentAfterLoggedDays} days after`,
                   }}
                 />
 
@@ -2526,7 +2547,7 @@ function PatternsPage() {
                     ]}
                     confidence={{
                       level: treatmentConfidence,
-                      detail: `Based on ${treatmentLoggedDays} logged days across both periods`,
+                      detail: `Based on ${treatmentBeforeLoggedDays} days before and ${treatmentAfterLoggedDays} days after`,
                     }}
                   />
 
@@ -2605,7 +2626,7 @@ function PatternsPage() {
                         type="button"
                         onClick={() => deleteArchivedTreatment(archived.id)}
                         aria-label={`Delete archived treatment ${archived.name}`}
-                        className="grid h-10 w-10 place-items-center rounded-xl bg-destructive/10 text-destructive ring-1 ring-destructive/20 hover:bg-destructive/15"
+                        className="grid h-10 w-10 place-items-center rounded-xl bg-destructive/10 text-destructive ring-1 ring-destructive/20 hover:bg-destructive/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>

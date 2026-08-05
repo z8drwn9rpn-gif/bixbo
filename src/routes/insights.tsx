@@ -325,31 +325,37 @@ function InsightsPage() {
 
   return (
     <AppShell title="Health of Bixbo">
-      <div className="px-5 pt-2 pb-24 space-y-4">
+      <div className="space-y-5 px-5 pt-3 pb-[calc(96px+env(safe-area-inset-bottom))]">
         <div className="flex gap-2">
           {((cycleTrackingHidden ? ["W", "M", "Y"] : ["W", "M", "Y", "P"]) as Period[]).map((p) => (
             <button
               key={p}
               onClick={() => setPeriod(p)}
-              className={`flex-1 rounded-2xl px-3 py-2 text-sm font-medium ${period === p ? "bg-primary text-primary-foreground" : "bg-surface text-foreground ring-1 ring-border"}`}
+              className={`flex-1 rounded-2xl px-3 py-2.5 text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${period === p ? "bg-primary text-primary-foreground shadow-sm" : "bg-surface text-foreground ring-1 ring-border hover:bg-tint"}`}
             >
               {p === "W" ? "Week" : p === "M" ? "Month" : p === "Y" ? "Year" : "Period"}
             </button>
           ))}
         </div>
         <div className="flex items-center justify-between">
-          <button onClick={goPrev} className="rounded-full p-2 hover:bg-tint">
+          <button
+            onClick={goPrev}
+            className="grid h-11 w-11 place-items-center rounded-full transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
             <ChevronLeft className="h-4 w-4" />
           </button>
           <span className="text-sm font-medium">{label}</span>
-          <button onClick={goNext} className="rounded-full p-2 hover:bg-tint">
+          <button
+            onClick={goNext}
+            className="grid h-11 w-11 place-items-center rounded-full transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
             <ChevronRight className="h-4 w-4" />
           </button>
         </div>
 
         {!cycleTrackingHidden && period === "P" && (
           <>
-            <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
+            <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
               <p className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
                 <Ico e="🫐" size={16} /> Blueberry cycle
               </p>
@@ -435,7 +441,7 @@ function InsightsPage() {
             </section>
 
             {!cycleTrackingHidden && (
-              <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
+              <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
                 <p className="text-xs uppercase tracking-wider text-muted-foreground">Blueberry cycle</p>
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
@@ -465,7 +471,7 @@ function InsightsPage() {
 
             <BristolChart bowelCounts={bowelCounts} />
 
-            <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
+            <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
               <p className="text-xs uppercase tracking-wider text-muted-foreground">Hot flashes</p>
               {hfTotal ? (
                 <>
@@ -520,7 +526,7 @@ function InsightsPage() {
             <WeightLineChart period={period} days={weightDays} series={weightSeries} label="Weight" unit="kg" />
             <WeightLineChart period={period} days={weightDays} series={tempSeries} label="Body temperature" unit="°C" />
 
-            <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
+            <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
               <p className="text-xs uppercase tracking-wider text-muted-foreground">Sleep</p>
               <SleepChart period={period} days={days} series={sleepSeries} anchor={anchor} />
               <div className="mt-2 flex gap-3 text-[11px] text-muted-foreground">
@@ -659,7 +665,7 @@ function BirthControlCalendar({ data, anchor }: { data: ReturnType<typeof useBix
   })();
 
   return (
-    <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
+    <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
       <p className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
         <Ico e="💊" size={16} /> Birth control
       </p>
@@ -894,7 +900,7 @@ function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) 
   if (data.meds.length === 0 && removedCounts.length === 0) return null;
 
   return (
-    <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
+    <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
       <button onClick={() => setOpen((o) => !o)} className="flex w-full items-center justify-between">
         <p className="text-xs uppercase tracking-wider text-muted-foreground">Meds adherence</p>
         <span className="text-xs text-muted-foreground">{open ? "▾" : "▸"}</span>
@@ -1175,7 +1181,12 @@ function WeightLineChart({
       </div>
       <p className="mt-1 text-sm text-muted-foreground">{dateLabel}</p>
       <div className="mt-3 overflow-hidden">
-        <svg viewBox={`0 0 ${width} ${height}`} className="h-48 w-full" role="img" aria-label={`${label} line chart`}>
+        <svg
+          viewBox={`0 0 ${width} ${height}`}
+          className="h-52 w-full touch-pan-y"
+          role="img"
+          aria-label={`${label} line chart`}
+        >
           {[yMax, yMid, yMin].map((y) => (
             <g key={y}>
               <line x1={left} x2={width - right} y1={yFor(y)} y2={yFor(y)} stroke={CHART_GRID} strokeWidth="1" />
@@ -1699,7 +1710,7 @@ function TimeOfDayPatternChart({
   })();
 
   return (
-    <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
+    <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
       <p className="text-xs uppercase tracking-wider text-muted-foreground">Time of Day Pattern</p>
       {!tetanyTotal && !panicTotal ? (
         <p className="mt-2 text-sm text-muted-foreground">Not enough data yet</p>
