@@ -21,15 +21,7 @@ import {
 /*  Small shared UI helpers                                            */
 /* ------------------------------------------------------------------ */
 
-export function Section({
-  title,
-  icon,
-  children,
-}: {
-  title: string;
-  icon?: string;
-  children: React.ReactNode;
-}) {
+export function Section({ title, icon, children }: { title: string; icon?: string; children: React.ReactNode }) {
   return (
     <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
       <p className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
@@ -78,15 +70,7 @@ export function Slider0to10({
   );
 }
 
-export function Chip({
-  label,
-  active,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-}) {
+export function Chip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
     <button
       type="button"
@@ -195,7 +179,9 @@ export function SimpleLineChart({
     points.length === 1 ? (width - left - right) / 2 + left : left + (i / (points.length - 1)) * (width - left - right);
   const yFor = (v: number) => top + (1 - (v - yMin) / span) * (height - top - bottom);
 
-  const path = points.map((p, i) => `${i === 0 ? "M" : "L"}${xFor(i).toFixed(1)},${yFor(p.value).toFixed(1)}`).join(" ");
+  const path = points
+    .map((p, i) => `${i === 0 ? "M" : "L"}${xFor(i).toFixed(1)},${yFor(p.value).toFixed(1)}`)
+    .join(" ");
 
   return (
     <div className="overflow-hidden">
@@ -226,7 +212,14 @@ export function SimpleLineChart({
           </g>
         ))}
         {points.map((p, i) => (
-          <text key={`l-${p.key}`} x={xFor(i)} y={height - 6} textAnchor="middle" fontSize="8" fill="var(--muted-foreground)">
+          <text
+            key={`l-${p.key}`}
+            x={xFor(i)}
+            y={height - 6}
+            textAnchor="middle"
+            fontSize="8"
+            fill="var(--muted-foreground)"
+          >
             {p.label}
           </text>
         ))}
@@ -305,15 +298,13 @@ export function Checklist({
             <button
               type="button"
               aria-label={it.done ? `Mark ${it.text} not done` : `Mark ${it.text} done`}
-              onClick={() =>
-                onChange(items.map((x) => (x.id === it.id ? { ...x, done: !x.done } : x)))
-              }
+              onClick={() => onChange(items.map((x) => (x.id === it.id ? { ...x, done: !x.done } : x)))}
               className="flex h-11 w-11 shrink-0 items-center justify-center"
             >
               <span
                 className={`flex h-5 w-5 items-center justify-center rounded-md ring-1 ring-border ${it.done ? "bg-primary text-primary-foreground" : "bg-background"}`}
               >
-                {it.done ? "✓" : ""}
+                {it.done ? "Done" : ""}
               </span>
             </button>
             <span className={`flex-1 text-sm ${it.done ? "text-muted-foreground line-through" : ""}`}>{it.text}</span>
@@ -478,11 +469,19 @@ export function KickCounter({
       {sessions.length > 0 && (
         <ul className="mt-3 space-y-1">
           {sessions.map((s) => (
-            <li key={s.id} className="flex items-center justify-between rounded-xl bg-tint px-3 py-2 text-sm ring-1 ring-border/40">
+            <li
+              key={s.id}
+              className="flex items-center justify-between rounded-xl bg-tint px-3 py-2 text-sm ring-1 ring-border/40"
+            >
               <span>
                 {s.time} · {s.count} kicks{s.minutes ? ` in ${s.minutes} min` : ""}
               </span>
-              <button type="button" aria-label="Delete session" onClick={() => onDelete(s.id)} className="flex h-11 w-11 items-center justify-center text-muted-foreground">
+              <button
+                type="button"
+                aria-label="Delete session"
+                onClick={() => onDelete(s.id)}
+                className="flex h-11 w-11 items-center justify-center text-muted-foreground"
+              >
                 <X className="h-4 w-4" />
               </button>
             </li>
@@ -564,11 +563,20 @@ export function ContractionTimer({
               .slice()
               .reverse()
               .map((c) => (
-                <li key={c.id} className="flex items-center justify-between rounded-xl bg-tint px-3 py-2 text-sm ring-1 ring-border/40">
+                <li
+                  key={c.id}
+                  className="flex items-center justify-between rounded-xl bg-tint px-3 py-2 text-sm ring-1 ring-border/40"
+                >
                   <span>
-                    {new Date(c.start).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} · {c.durationSec}s
+                    {new Date(c.start).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} · {c.durationSec}
+                    s
                   </span>
-                  <button type="button" aria-label="Delete contraction" onClick={() => onDelete(c.id)} className="flex h-11 w-11 items-center justify-center text-muted-foreground">
+                  <button
+                    type="button"
+                    aria-label="Delete contraction"
+                    onClick={() => onDelete(c.id)}
+                    className="flex h-11 w-11 items-center justify-center text-muted-foreground"
+                  >
                     <X className="h-4 w-4" />
                   </button>
                 </li>
@@ -697,9 +705,7 @@ export function AppointmentList({
         </span>
       </button>
       {(a.doctor || a.result || a.note) && (
-        <p className="mt-1 text-xs text-muted-foreground">
-          {[a.doctor, a.result, a.note].filter(Boolean).join(" · ")}
-        </p>
+        <p className="mt-1 text-xs text-muted-foreground">{[a.doctor, a.result, a.note].filter(Boolean).join(" · ")}</p>
       )}
       <div className="mt-1 flex justify-end">
         <button
@@ -753,7 +759,9 @@ export function exportTimeline(data: BixboData): string {
     .slice()
     .sort((a, b) => a.date.localeCompare(b.date))
     .forEach((a) => {
-      lines.push(`- ${a.date}${a.time ? ` ${a.time}` : ""} — ${a.title} (${a.kind})${a.doctor ? ` w/ ${a.doctor}` : ""}${a.result ? ` — ${a.result}` : ""}`);
+      lines.push(
+        `- ${a.date}${a.time ? ` ${a.time}` : ""} — ${a.title} (${a.kind})${a.doctor ? ` w/ ${a.doctor}` : ""}${a.result ? ` — ${a.result}` : ""}`,
+      );
     });
   lines.push("");
   lines.push("## Weight & symptoms by day");
