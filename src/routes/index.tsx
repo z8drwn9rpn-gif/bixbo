@@ -163,49 +163,22 @@ function HomePage() {
   const latestPregnancyBP =
     pregnancyToday?.bloodPressure?.[Math.max(0, (pregnancyToday.bloodPressure?.length ?? 1) - 1)];
 
-  const pregnancyStats: { icon: string; label: string; value: string }[] = [];
+  const totalPregnancyKicks = (pregnancyToday?.kicks ?? []).reduce((sum, session) => sum + (session.count ?? 0), 0);
 
-  if (pregnancyToday?.weightKg != null) {
-    pregnancyStats.push({
-      icon: "⚖️",
-      label: "Weight",
-      value: `${pregnancyToday.weightKg} kg`,
-    });
-  }
-
-  if ((pregnancyToday?.symptoms?.length ?? 0) > 0) {
-    pregnancyStats.push({
-      icon: "🤢",
-      label: "Symptoms",
-      value: String(pregnancyToday!.symptoms!.length),
-    });
-  }
-
-  if ((pregnancyToday?.kicks?.length ?? 0) > 0) {
-    const totalKicks = pregnancyToday!.kicks!.reduce((sum, session) => sum + (session.count ?? 0), 0);
-
-    pregnancyStats.push({
-      icon: "👣",
-      label: "Kicks",
-      value: totalKicks > 0 ? String(totalKicks) : `${pregnancyToday!.kicks!.length} sessions`,
-    });
-  }
-
-  if (latestPregnancyBP) {
-    pregnancyStats.push({
-      icon: "❤️",
-      label: "Blood pressure",
-      value: `${latestPregnancyBP.systolic}/${latestPregnancyBP.diastolic}`,
-    });
-  }
-
-  if ((pregnancyToday?.waterMl ?? 0) > 0) {
-    pregnancyStats.push({
-      icon: "💧",
-      label: "Water",
-      value: `${pregnancyToday!.waterMl} ml`,
-    });
-  }
+  const pregnancySummaryItems = [
+    pregnancyToday?.weightKg != null ? { icon: "⚖️", label: `${pregnancyToday.weightKg} kg` } : null,
+    (pregnancyToday?.symptoms?.length ?? 0) > 0
+      ? { icon: "🤢", label: `${pregnancyToday!.symptoms!.length} symptoms` }
+      : null,
+    (pregnancyToday?.kicks?.length ?? 0) > 0
+      ? {
+          icon: "👣",
+          label: totalPregnancyKicks > 0 ? `${totalPregnancyKicks} kicks` : `${pregnancyToday!.kicks!.length} sessions`,
+        }
+      : null,
+    latestPregnancyBP ? { icon: "❤️", label: `${latestPregnancyBP.systolic}/${latestPregnancyBP.diastolic}` } : null,
+    (pregnancyToday?.waterMl ?? 0) > 0 ? { icon: "💧", label: `${pregnancyToday!.waterMl} ml` } : null,
+  ].filter((item): item is { icon: string; label: string } => item != null);
 
   return (
     <AppShell
@@ -312,27 +285,20 @@ function HomePage() {
               <span className="shrink-0 text-xs font-semibold text-primary">Open</span>
             </div>
 
-            {pregnancyStats.length > 0 ? (
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                {pregnancyStats.slice(0, 4).map((stat) => (
-                  <div
-                    key={stat.label}
-                    className="flex min-w-0 items-center gap-2 rounded-2xl bg-surface/80 px-3 py-2 ring-1 ring-border/50"
-                  >
-                    <Ico e={stat.icon} size={17} />
-
-                    <div className="min-w-0">
-                      <p className="truncate text-[9px] font-medium uppercase tracking-wide text-muted-foreground">
-                        {stat.label}
-                      </p>
-                      <p className="truncate text-xs font-semibold tabular-nums text-foreground">{stat.value}</p>
-                    </div>
-                  </div>
+            {pregnancySummaryItems.length > 0 ? (
+              <div className="mt-3 flex min-w-0 items-center gap-2 overflow-hidden rounded-2xl bg-surface/75 px-3 py-2 ring-1 ring-border/40">
+                {pregnancySummaryItems.slice(0, 4).map((item, index) => (
+                  <span key={`${item.icon}-${item.label}`} className="flex min-w-0 items-center gap-1.5">
+                    {index > 0 && <span className="text-border">•</span>}
+                    <Ico e={item.icon} size={15} />
+                    <span className="truncate text-[11px] font-medium tabular-nums text-foreground">{item.label}</span>
+                  </span>
                 ))}
               </div>
             ) : (
-              <div className="mt-3 rounded-2xl bg-surface/70 px-3 py-2 text-xs text-muted-foreground ring-1 ring-border/40">
-                Nothing logged today
+              <div className="mt-3 flex items-center gap-2 rounded-2xl bg-surface/70 px-3 py-2 text-xs text-muted-foreground ring-1 ring-border/40">
+                <Ico name="pregnancy" size={15} />
+                <span>Nothing logged today</span>
               </div>
             )}
           </Link>
