@@ -250,7 +250,179 @@ export interface DayLog {
   mood?: MoodEntry[];
   energy?: EnergyEntry[];
   histamine?: HistamineEntry[];
+  /** Pregnancy-mode daily log (only used when pregnancy mode is on). */
+  pregnancy?: PregnancyDayLog;
+  /** Postpartum-mode daily log (only used when postpartum mode is on). */
+  postpartum?: PostpartumDayLog;
 }
+
+/* ------------------- Pregnancy / postpartum ------------------- */
+export interface KickSession {
+  id: string;
+  time: string;
+  count: number;
+  minutes?: number;
+  note?: string;
+}
+export interface Contraction {
+  id: string;
+  start: string;
+  durationSec: number;
+  note?: string;
+}
+export interface BloodPressureEntry {
+  id: string;
+  time: string;
+  systolic: number;
+  diastolic: number;
+  pulse?: number;
+}
+export interface BloodSugarEntry {
+  id: string;
+  time: string;
+  value: number;
+  context?: "fasting" | "before-meal" | "after-meal" | "bedtime";
+}
+export interface PregnancyDayLog {
+  symptoms?: string[];
+  mood?: string[];
+  energy?: number;
+  swelling?: number;
+  heartburn?: number;
+  nausea?: number;
+  vomiting?: number;
+  sleepHours?: number;
+  cravings?: string[];
+  aversions?: string[];
+  waterMl?: number;
+  weightKg?: number;
+  bloodPressure?: BloodPressureEntry[];
+  bloodSugar?: BloodSugarEntry[];
+  kicks?: KickSession[];
+  contractions?: Contraction[];
+  photos?: string[];
+  note?: string;
+}
+export interface PostpartumDayLog {
+  bleeding?: "" | "none" | "spotting" | "light" | "medium" | "heavy";
+  recovery?: number;
+  csectionRecovery?: number;
+  perinealHealing?: number;
+  mood?: string[];
+  sleepHours?: number;
+  breastfeeding?: { id: string; time: string; minutes?: number; side?: "left" | "right" | "both" }[];
+  pumping?: { id: string; time: string; ml?: number; minutes?: number }[];
+  bottle?: { id: string; time: string; ml?: number }[];
+  diapers?: { id: string; time: string; kind: "wet" | "dirty" | "both" }[];
+  babySleepHours?: number;
+  note?: string;
+}
+
+export interface PregnancyAppointment {
+  id: string;
+  date: string;
+  time?: string;
+  kind: "checkup" | "ultrasound" | "test" | "class" | "other";
+  title: string;
+  doctor?: string;
+  note?: string;
+  /** ultrasound: measurements / findings */
+  result?: string;
+  photo?: string;
+}
+export interface ChecklistItem {
+  id: string;
+  text: string;
+  done: boolean;
+}
+export interface PregnancyState {
+  active: boolean;
+  /** ISO date of last menstrual period used for the due-date estimate. */
+  lmp?: string;
+  /** Manually set estimated due date; wins over the LMP estimate. */
+  dueDate?: string;
+  startWeightKg?: number;
+  multiples?: number;
+  hospitalBag: ChecklistItem[];
+  vaccinations: ChecklistItem[];
+  supplements: ChecklistItem[];
+  appointments: PregnancyAppointment[];
+  note?: string;
+  endedAt?: string;
+}
+export interface PostpartumState {
+  active: boolean;
+  /** ISO date of birth. */
+  birthDate?: string;
+  deliveryType?: "vaginal" | "csection" | "assisted" | "other";
+  babyName?: string;
+  babyBirthWeightKg?: number;
+  feedingMode?: "breast" | "bottle" | "mixed";
+  visits: PregnancyAppointment[];
+  note?: string;
+  endedAt?: string;
+}
+
+/* ------------------- Health profile ------------------- */
+export interface EmergencyContact {
+  name?: string;
+  relation?: string;
+  phone?: string;
+}
+export interface Doctor {
+  name?: string;
+  clinic?: string;
+  phone?: string;
+  email?: string;
+  note?: string;
+}
+export interface HealthProfile {
+  /* Personal */
+  name?: string;
+  nickname?: string;
+  birthDate?: string;
+  heightCm?: number;
+  weightKg?: number;
+  targetWeightKg?: number;
+  gender?: string;
+  pronouns?: string;
+  /* Medical */
+  diagnoses?: string[];
+  chronicIllnesses?: string[];
+  allergies?: string[];
+  intolerances?: string[];
+  surgeries?: string[];
+  pregnancies?: string[];
+  disabilities?: string[];
+  /* Cycle */
+  pregnancyStatus?: "none" | "pregnant" | "postpartum" | "trying" | "unsure";
+  tryingToConceive?: boolean;
+  postpartum?: boolean;
+  breastfeeding?: boolean;
+  menopause?: "no" | "peri" | "post";
+  birthControl?: string;
+  fertilityGoals?: string;
+  /* Lifestyle */
+  smoker?: "no" | "occasionally" | "daily" | "quit";
+  alcohol?: "none" | "rarely" | "weekly" | "daily";
+  caffeine?: "none" | "low" | "medium" | "high";
+  exercise?: "none" | "light" | "moderate" | "intense";
+  sleepGoalHours?: number;
+  hydrationGoalMl?: number;
+  /* Emergency */
+  bloodType?: string;
+  emergencyContact?: EmergencyContact;
+  gp?: Doctor;
+  gynecologist?: Doctor;
+  neurologist?: Doctor;
+  endocrinologist?: Doctor;
+  therapist?: Doctor;
+  /* Medication */
+  reminderTimes?: string[];
+  pharmacy?: string;
+  medicationNotes?: string;
+}
+
 
 export function asArr(v: string | string[] | undefined | null): string[] {
   if (v == null || v === "") return [];
