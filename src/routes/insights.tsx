@@ -1371,8 +1371,6 @@ function PainChart({
   series: (number | undefined)[];
   anchor: Date;
 }) {
-  const [active, setActive] = useState<number | null>(null);
-  useDismissTapTooltip(() => setActive(null));
   // Aggregate for year view: 12 monthly averages
   type Bar = { value?: number; label: string; sub?: string };
   let bars: Bar[] = [];
@@ -1404,84 +1402,21 @@ function PainChart({
     });
   }
 
-  const yLabels = [10, 8, 6, 4, 2, 0];
-  const height = 140;
-
   return (
-    <div className="mt-4">
-      <div className="flex gap-1.5">
-        <div className="flex flex-col items-end pr-1" style={{ height }}>
-          <div className="flex h-full flex-col justify-between text-[10px] font-medium text-muted-foreground">
-            {yLabels.map((y) => (
-              <span key={y} className="leading-none tabular-nums">
-                {y}
-              </span>
-            ))}
-          </div>
-        </div>
-        <div className="relative flex-1">
-          <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
-            {yLabels.map((y) => (
-              <div key={y} className="border-t border-dashed border-border/40" />
-            ))}
-          </div>
-          <div
-            className="relative grid items-end gap-[2px]"
-            style={{ gridTemplateColumns: `repeat(${bars.length}, minmax(0, 1fr))`, height }}
-          >
-            {bars.map((b, i) =>
-              b.value != null ? (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActive(active === i ? null : i);
-                  }}
-                  className="w-full rounded-t"
-                  style={{
-                    height: `${Math.max(4, (b.value / 10) * 100)}%`,
-                    background: painColor(b.value),
-                  }}
-                />
-              ) : (
-                <div key={i} className="h-[2px] w-full self-end rounded bg-tint/60" />
-              ),
-            )}
-            {active != null && bars[active]?.value != null && (
-              <ChartTooltip
-                leftPct={((active + 0.5) / bars.length) * 100}
-                text={
-                  period === "Y"
-                    ? `${fmtTapMonth(active, anchor.getFullYear())} · Pain ${bars[active].value!.toFixed(1)}`
-                    : `${fmtTapDay(days[active])} · Pain ${bars[active].value!.toFixed(1)}`
-                }
-              />
-            )}
-          </div>
-        </div>
-      </div>
-      <div className="mt-1 flex pl-5">
-        <div
-          className="grid flex-1 gap-[2px] text-center text-[9px] text-muted-foreground"
-          style={{ gridTemplateColumns: `repeat(${bars.length}, minmax(0, 1fr))` }}
-        >
-          {bars.map((b, i) => (
-            <div key={i} className="leading-tight">
-              <div className="tabular-nums">{b.label}</div>
-              {b.sub && <div className="text-[8px] opacity-70 tabular-nums">{b.sub}</div>}
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="mt-1 flex items-center justify-between text-[10px] text-muted-foreground">
-        <span>Pain (0–10)</span>
-        <span>{period === "Y" ? "Month" : period === "M" ? "Day of month" : "Day"}</span>
-      </div>
-      {period === "Y" && bars.every((b) => b.value == null) && (
-        <p className="mt-2 text-center text-xs text-muted-foreground">No pain entries in {anchor.getFullYear()}</p>
-      )}
-    </div>
+    <BarChartFrame
+      bars={bars}
+      yLabels={[10, 8, 6, 4, 2, 0]}
+      yMax={10}
+      colorFor={(value) => painColor(value)}
+      tooltipText={(i, value) =>
+        period === "Y"
+          ? `${fmtTapMonth(i, anchor.getFullYear())} · Pain ${value.toFixed(1)}`
+          : `${fmtTapDay(days[i])} · Pain ${value.toFixed(1)}`
+      }
+      axisLabel="Pain (0–10)"
+      periodLabel={period === "Y" ? "Month" : period === "M" ? "Day of month" : "Day"}
+      emptyMessage={period === "Y" ? `No pain entries in ${anchor.getFullYear()}` : undefined}
+    />
   );
 }
 
