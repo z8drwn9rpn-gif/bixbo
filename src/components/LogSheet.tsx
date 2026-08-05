@@ -1039,7 +1039,7 @@ function PainWizard({
         )}
       </div>
 
-      <div className="sticky top-0 z-20 -mx-5 mb-4 border-y border-border/60 bg-background/88 px-5 py-2.5 shadow-sm backdrop-blur-xl">
+      <div className="sticky top-0 z-20 -mx-5 mb-3 border-b border-border/60 bg-background/92 px-5 py-1.5 backdrop-blur-md">
         {quickSymptomUpdate && step === 3 ? (
           <div className="flex gap-2">
             <Button
@@ -1049,27 +1049,27 @@ function PainWizard({
                 setCopiedFromTime(undefined);
                 setStep(0);
               }}
-              className="min-h-11 flex-1"
+              className="h-10 flex-1 rounded-xl"
             >
               Edit full log
             </Button>
-            <Button onClick={save} className="min-h-11 flex-1">
+            <Button onClick={save} className="h-10 flex-1 rounded-xl">
               Save update
             </Button>
           </div>
         ) : (
           <div className="flex gap-2">
             {step > 0 && (
-              <Button variant="outline" onClick={() => setStep(step - 1)} className="min-h-11 flex-1">
+              <Button variant="outline" onClick={() => setStep(step - 1)} className="h-10 flex-1 rounded-xl">
                 Back
               </Button>
             )}
             {step < 4 ? (
-              <Button onClick={() => setStep(step + 1)} className="min-h-11 flex-1">
+              <Button onClick={() => setStep(step + 1)} className="h-10 flex-1 rounded-xl">
                 Next
               </Button>
             ) : (
-              <Button onClick={save} className="min-h-11 flex-1">
+              <Button onClick={save} className="h-10 flex-1 rounded-xl">
                 Save
               </Button>
             )}
