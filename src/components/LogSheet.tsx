@@ -200,9 +200,8 @@ export function LogSheet({
         side="bottom"
         className={
           (active
-            ? "flex h-[100dvh] max-h-[100dvh] flex-col overflow-x-hidden overscroll-x-none rounded-t-none bg-background p-0 pt-[env(safe-area-inset-top)]"
-            : "flex h-[88dvh] max-h-[88dvh] flex-col overflow-x-hidden overscroll-x-none rounded-t-3xl bg-background p-0") +
-          " [&>button.absolute]:hidden"
+            ? "flex h-[100dvh] max-h-[100dvh] flex-col rounded-t-none bg-background p-0 pt-[env(safe-area-inset-top)]"
+            : "flex h-[88dvh] max-h-[88dvh] flex-col rounded-t-3xl bg-background p-0") + " [&>button.absolute]:hidden"
         }
       >
         {!active ? (
@@ -279,7 +278,7 @@ export function LogSheet({
             </ul>
           </>
         ) : (
-          <div className="flex h-full min-h-0 flex-col overflow-x-hidden" style={{ overscrollBehaviorX: "none" }}>
+          <div className="flex h-full min-h-0 flex-col">
             <SheetHeader className="shrink-0 flex-row items-center justify-between border-b border-border px-5 py-3">
               <button
                 onClick={back}
@@ -298,7 +297,7 @@ export function LogSheet({
             </SheetHeader>
             <div
               key={`${active}-${openToken}-${(edit as { id?: string } | undefined)?.id ?? initialPain?.id ?? "new"}`}
-              className={`min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-x-none ${active === "pain" ? "" : "px-5 py-4"}`}
+              className={`min-h-0 flex-1 overflow-y-auto ${active === "pain" ? "" : "px-5 py-4"}`}
             >
               {active === "postpartum" && (
                 <PostpartumSymptomsForm date={date} data={data} update={update} onDone={close} />
@@ -1016,65 +1015,66 @@ function PainWizard({
 
   return (
     <div
-      className="flex min-h-full w-full max-w-full flex-col overflow-x-hidden bg-background px-5 py-4 text-foreground touch-pan-y"
-      style={{ overscrollBehaviorX: "none" }}
+      className="flex min-h-full flex-col bg-background px-5 py-4 text-foreground touch-pan-y"
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      <div className="flex items-center justify-between px-1 pb-2">
-        {quickSymptomUpdate ? (
-          <>
-            <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-              Quick symptom update
-            </span>
-            <span className="text-xs font-medium text-foreground/75">New entry · {time}</span>
-          </>
-        ) : (
-          <>
-            <div className="flex gap-1">
-              {[0, 1, 2, 3, 4].map((i) => (
-                <span key={i} className={`h-1.5 w-6 rounded-full ${i <= step ? "bg-primary" : "bg-tint"}`} />
-              ))}
-            </div>
-            <span className="text-xs font-semibold text-foreground/70">{step + 1}/5</span>
-          </>
-        )}
-      </div>
-
-      <div className="sticky top-0 z-20 -mx-5 mb-3 border-b border-border/60 bg-background/92 px-5 py-1.5 backdrop-blur-md">
+      <div className="sticky top-0 z-20 -mx-5 mb-3 border-y border-border/60 bg-background/92 px-5 py-1.5 shadow-sm backdrop-blur-xl">
         {quickSymptomUpdate && step === 3 ? (
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
+          <div className="grid min-h-10 grid-cols-[1fr_auto] items-center gap-3">
+            <button
+              type="button"
               onClick={() => {
                 setQuickSymptomUpdate(false);
                 setCopiedFromTime(undefined);
                 setStep(0);
               }}
-              className="h-10 flex-1 rounded-xl"
+              className="justify-self-start rounded-lg px-2 py-1.5 text-sm font-semibold text-foreground/75 transition hover:bg-tint hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               Edit full log
-            </Button>
-            <Button onClick={save} className="h-10 flex-1 rounded-xl">
+            </button>
+
+            <button
+              type="button"
+              onClick={save}
+              className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
               Save update
-            </Button>
+            </button>
           </div>
         ) : (
-          <div className="flex gap-2">
-            {step > 0 && (
-              <Button variant="outline" onClick={() => setStep(step - 1)} className="h-10 flex-1 rounded-xl">
-                Back
-              </Button>
-            )}
-            {step < 4 ? (
-              <Button onClick={() => setStep(step + 1)} className="h-10 flex-1 rounded-xl">
-                Next
-              </Button>
-            ) : (
-              <Button onClick={save} className="h-10 flex-1 rounded-xl">
-                Save
-              </Button>
-            )}
+          <div className="grid min-h-10 grid-cols-[72px_1fr_72px] items-center gap-2">
+            <div className="justify-self-start">
+              {step > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setStep(step - 1)}
+                  className="rounded-lg px-2 py-1.5 text-sm font-semibold text-foreground/75 transition hover:bg-tint hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  ← Back
+                </button>
+              )}
+            </div>
+
+            <div className="flex min-w-0 items-center justify-center gap-2">
+              <div className="flex gap-1">
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <span key={i} className={`h-1.5 w-5 rounded-full ${i <= step ? "bg-primary" : "bg-tint"}`} />
+                ))}
+              </div>
+              <span className="shrink-0 text-xs font-semibold text-foreground/70">{step + 1}/5</span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (step < 4) setStep(step + 1);
+                else save();
+              }}
+              className="justify-self-end rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {step < 4 ? "Next →" : "Save"}
+            </button>
           </div>
         )}
       </div>
