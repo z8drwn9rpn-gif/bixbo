@@ -158,29 +158,29 @@
   --period-veryheavy: oklch(0.3 0.18 288);
   --period-veryheavy-fg: oklch(1 0 0);
 
-  /* Pain 0–10: green -> yellow -> orange -> red, tuned for step separation + readable fg */
-  --pain-0: oklch(0.88 0.13 150);
-  --pain-0-fg: oklch(0.18 0.08 150);
-  --pain-1: oklch(0.85 0.15 142);
-  --pain-1-fg: oklch(0.18 0.08 142);
-  --pain-2: oklch(0.82 0.16 132);
-  --pain-2-fg: oklch(0.16 0.08 132);
-  --pain-3: oklch(0.8 0.17 115);
-  --pain-3-fg: oklch(0.16 0.08 115);
-  --pain-4: oklch(0.79 0.18 95);
-  --pain-4-fg: oklch(0.15 0.08 95);
-  --pain-5: oklch(0.76 0.19 78);
-  --pain-5-fg: oklch(0.14 0.08 78);
-  --pain-6: oklch(0.7 0.19 62);
-  --pain-6-fg: oklch(0.12 0.08 62);
-  --pain-7: oklch(0.63 0.2 48);
-  --pain-7-fg: oklch(1 0 0);
-  --pain-8: oklch(0.56 0.21 34);
-  --pain-8-fg: oklch(1 0 0);
-  --pain-9: oklch(0.49 0.22 24);
-  --pain-9-fg: oklch(1 0 0);
-  --pain-10: oklch(0.4 0.23 18);
-  --pain-10-fg: oklch(1 0 0);
+  /* Pain 0–10: BIXBO olive → ochre → warm terracotta */
+  --pain-0: oklch(0.83 0.105 132);
+  --pain-0-fg: oklch(0.2 0.055 125);
+  --pain-1: oklch(0.8 0.11 126);
+  --pain-1-fg: oklch(0.2 0.055 122);
+  --pain-2: oklch(0.77 0.115 118);
+  --pain-2-fg: oklch(0.19 0.055 118);
+  --pain-3: oklch(0.75 0.12 108);
+  --pain-3-fg: oklch(0.19 0.055 108);
+  --pain-4: oklch(0.73 0.125 96);
+  --pain-4-fg: oklch(0.18 0.055 96);
+  --pain-5: oklch(0.71 0.13 83);
+  --pain-5-fg: oklch(0.18 0.05 83);
+  --pain-6: oklch(0.67 0.14 70);
+  --pain-6-fg: oklch(0.17 0.05 70);
+  --pain-7: oklch(0.62 0.15 56);
+  --pain-7-fg: oklch(0.98 0.01 95);
+  --pain-8: oklch(0.56 0.16 43);
+  --pain-8-fg: oklch(0.98 0.01 95);
+  --pain-9: oklch(0.5 0.17 32);
+  --pain-9-fg: oklch(0.98 0.01 95);
+  --pain-10: oklch(0.43 0.16 25);
+  --pain-10-fg: oklch(0.98 0.01 95);
 
   --today: oklch(0.8 0.16 95);
   --predicted: oklch(0.6 0.19 55);
@@ -250,29 +250,29 @@
   --period-veryheavy: oklch(0.34 0.19 288);
   --period-veryheavy-fg: oklch(1 0 0);
 
-  /* Pain 0–10 in dark mode - separated steps + readable fg */
-  --pain-0: oklch(0.8 0.14 150);
-  --pain-0-fg: oklch(0.14 0.06 150);
-  --pain-1: oklch(0.78 0.16 142);
-  --pain-1-fg: oklch(0.13 0.06 142);
-  --pain-2: oklch(0.76 0.17 132);
-  --pain-2-fg: oklch(0.12 0.06 132);
-  --pain-3: oklch(0.74 0.18 115);
-  --pain-3-fg: oklch(0.12 0.06 115);
-  --pain-4: oklch(0.73 0.18 95);
-  --pain-4-fg: oklch(0.12 0.06 95);
-  --pain-5: oklch(0.71 0.19 78);
-  --pain-5-fg: oklch(0.11 0.06 78);
-  --pain-6: oklch(0.66 0.2 62);
-  --pain-6-fg: oklch(0.1 0.06 62);
-  --pain-7: oklch(0.6 0.2 48);
-  --pain-7-fg: oklch(1 0 0);
-  --pain-8: oklch(0.55 0.21 34);
-  --pain-8-fg: oklch(1 0 0);
-  --pain-9: oklch(0.5 0.22 24);
-  --pain-9-fg: oklch(1 0 0);
-  --pain-10: oklch(0.43 0.23 18);
-  --pain-10-fg: oklch(1 0 0);
+  /* Pain 0–10 in dark mode: muted olive → ochre → terracotta */
+  --pain-0: oklch(0.74 0.1 132);
+  --pain-0-fg: oklch(0.16 0.045 125);
+  --pain-1: oklch(0.72 0.105 126);
+  --pain-1-fg: oklch(0.15 0.045 122);
+  --pain-2: oklch(0.7 0.11 118);
+  --pain-2-fg: oklch(0.15 0.045 118);
+  --pain-3: oklch(0.68 0.115 108);
+  --pain-3-fg: oklch(0.14 0.045 108);
+  --pain-4: oklch(0.66 0.12 96);
+  --pain-4-fg: oklch(0.14 0.045 96);
+  --pain-5: oklch(0.64 0.125 83);
+  --pain-5-fg: oklch(0.13 0.045 83);
+  --pain-6: oklch(0.61 0.135 70);
+  --pain-6-fg: oklch(0.12 0.045 70);
+  --pain-7: oklch(0.58 0.145 56);
+  --pain-7-fg: oklch(0.98 0.01 95);
+  --pain-8: oklch(0.54 0.155 43);
+  --pain-8-fg: oklch(0.98 0.01 95);
+  --pain-9: oklch(0.5 0.165 32);
+  --pain-9-fg: oklch(0.98 0.01 95);
+  --pain-10: oklch(0.46 0.16 25);
+  --pain-10-fg: oklch(0.98 0.01 95);
 
   --today: oklch(0.8 0.16 95);
   --predicted: oklch(0.68 0.19 55);

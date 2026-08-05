@@ -424,7 +424,7 @@ export function QuickTags({
   const longFiredRef = useRef(false);
   const startXRef = useRef(0);
   const startYRef = useRef(0);
-  const movedRef = useRef(false);
+  const draggingRef = useRef(false);
 
   const cycleTrackingHidden = isCycleTrackingHidden(data);
 
@@ -625,7 +625,10 @@ export function QuickTags({
         </button>
       </div>
 
-      <div className="-mx-5 overflow-x-auto overscroll-x-contain px-5 pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+      <div
+        className="-mx-5 quicklog-scroll overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x px-5 pb-2 snap-x snap-mandatory scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        style={{ WebkitOverflowScrolling: "touch", overscrollBehaviorX: "contain" }}
+      >
         <div className="flex gap-2.5">
           {tags.map((tag, index) => {
             const isFlash = flash === tag.key;
@@ -634,7 +637,7 @@ export function QuickTags({
               return (
                 <div
                   key={tag.key}
-                  className="relative flex min-h-[76px] min-w-[72px] shrink-0 select-none flex-col items-center justify-center gap-1 rounded-2xl bg-surface px-3 py-2.5 shadow-sm ring-1 ring-border/80"
+                  className="relative flex h-[78px] w-[78px] shrink-0 select-none flex-col items-center justify-center gap-0.5 rounded-full bg-surface p-1.5 text-center shadow-sm ring-1 ring-border/80"
                 >
                   <button
                     type="button"
@@ -645,8 +648,10 @@ export function QuickTags({
                     <X className="h-3 w-3" strokeWidth={3} />
                   </button>
 
-                  <Ico e={tag.emoji} size={22} />
-                  <span className="text-[10px] text-muted-foreground">{tag.label}</span>
+                  <Ico e={tag.emoji} size={25} />
+                  <span className="max-w-[66px] text-[10px] font-medium leading-[1.05] text-muted-foreground">
+                    {tag.label}
+                  </span>
 
                   <div className="mt-1 flex gap-1">
                     <button
@@ -678,50 +683,64 @@ export function QuickTags({
                 key={tag.key}
                 type="button"
                 onPointerDown={(e) => {
+                  draggingRef.current = false;
                   startXRef.current = e.clientX;
                   startYRef.current = e.clientY;
-                  movedRef.current = false;
                   longFiredRef.current = false;
                   clear();
 
                   timerRef.current = window.setTimeout(() => {
-                    if (!movedRef.current) {
+                    if (!draggingRef.current) {
                       longFiredRef.current = true;
                       onLongPress(tag.cat);
                     }
                   }, 500);
                 }}
                 onPointerMove={(e) => {
-                  if (Math.abs(e.clientX - startXRef.current) > 10 || Math.abs(e.clientY - startYRef.current) > 10) {
-                    movedRef.current = true;
+                  if (Math.abs(e.clientX - startXRef.current) > 8 || Math.abs(e.clientY - startYRef.current) > 8) {
+                    draggingRef.current = true;
                     clear();
                   }
                 }}
-                onPointerUp={() => {
+                onPointerUp={(e) => {
                   clear();
-                  if (movedRef.current) return;
+
+                  if (draggingRef.current) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                  }
+
                   if (!longFiredRef.current) {
                     doTap(tag);
                   }
                 }}
                 onPointerLeave={() => {
-                  movedRef.current = true;
+                  draggingRef.current = true;
                   clear();
                 }}
                 onPointerCancel={() => {
-                  movedRef.current = true;
+                  draggingRef.current = true;
                   clear();
+                }}
+                onClick={(e) => {
+                  if (draggingRef.current) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }
                 }}
                 onContextMenu={(event) => event.preventDefault()}
                 title={`${tag.label} — long-press for details`}
                 aria-label={tag.label}
-                className={`relative flex min-h-[76px] min-w-[72px] shrink-0 select-none flex-col items-center justify-center gap-1 rounded-2xl bg-surface px-3 py-2.5 shadow-sm ring-1 ring-border/80 transition-[transform,box-shadow,background-color,ring-color] duration-150 hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-95 ${
+                className={`relative flex h-[78px] w-[78px] shrink-0 snap-start select-none touch-manipulation flex-col items-center justify-center gap-0.5 rounded-full bg-surface p-1.5 text-center shadow-sm ring-1 ring-border/80 transition-[transform,box-shadow,background-color,ring-color] duration-150 hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-95 ${
                   isFlash ? "scale-105 bg-primary/10 ring-2 ring-primary shadow-md" : ""
                 }`}
               >
-                <Ico e={tag.emoji} size={24} />
+                <Ico e={tag.emoji} size={25} />
 
-                <span className="text-[10px] text-muted-foreground">{tag.label}</span>
+                <span className="max-w-[66px] text-[10px] font-medium leading-[1.05] text-muted-foreground">
+                  {tag.label}
+                </span>
 
                 {isFlash && (
                   <span className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full bg-primary text-primary-foreground shadow">
@@ -736,17 +755,19 @@ export function QuickTags({
             type="button"
             onClick={() => setBuilderOpen(true)}
             aria-label="Add custom quick log button"
-            className="flex min-h-[76px] min-w-[72px] shrink-0 select-none flex-col items-center justify-center gap-1 rounded-2xl border border-dashed border-border bg-transparent px-3 py-2.5 text-muted-foreground transition-[transform,background-color,border-color] hover:border-primary/50 hover:bg-tint/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-95"
+            className="flex h-[78px] w-[78px] shrink-0 select-none flex-col items-center justify-center gap-0.5 rounded-full border border-dashed border-border bg-transparent p-1.5 text-center text-muted-foreground transition-[transform,background-color,border-color] hover:border-primary/50 hover:bg-tint/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-95"
           >
             <Plus className="h-5 w-5" />
-            <span className="text-[10px]">Add</span>
+            <span className="text-[10px] font-medium leading-none">Add</span>
           </button>
         </div>
       </div>
 
       {editMode && hidden.size > 0 && (
         <div className="mt-2">
-          <p className="text-[10px] text-muted-foreground">Hidden — tap to restore:</p>
+          <p className="max-w-[66px] text-[10px] font-medium leading-[1.05] text-muted-foreground">
+            Hidden — tap to restore:
+          </p>
 
           <div className="mt-1 flex flex-wrap gap-1.5">
             {sortedTags
