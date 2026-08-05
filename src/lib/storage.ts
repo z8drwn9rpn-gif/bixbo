@@ -658,6 +658,10 @@ export interface BixboData {
   /** Ids of entries the user deleted — used by cloud merge so a union merge
    * doesn't resurrect them from another device. */
   deletedIds?: string[];
+  /** Full health profile (personal, medical, lifestyle, emergency contacts). */
+  profile?: HealthProfile;
+  pregnancy?: PregnancyState;
+  postpartum?: PostpartumState;
 }
 
 export const DEFAULT_FOLDERS: NoteFolder[] = [
@@ -727,6 +731,9 @@ export const EMPTY: BixboData = {
   docs: [],
   diagnoses: [],
   deletedIds: [],
+  profile: {},
+  pregnancy: { active: false, hospitalBag: [], vaccinations: [], supplements: [], appointments: [] },
+  postpartum: { active: false, visits: [] },
 };
 
 const KEY = "bixbo:v2";
@@ -890,6 +897,20 @@ function migrate(raw: unknown): BixboData {
     docs: (parsed.docs as DocEntry[] | undefined) ?? [],
     diagnoses: (parsed.diagnoses as Diagnosis[] | undefined) ?? [],
     deletedIds: (parsed.deletedIds as string[] | undefined) ?? [],
+    profile: { ...(parsed.profile as HealthProfile | undefined) },
+    pregnancy: {
+      ...EMPTY.pregnancy!,
+      ...(parsed.pregnancy as PregnancyState | undefined),
+      hospitalBag: (parsed.pregnancy as PregnancyState | undefined)?.hospitalBag ?? [],
+      vaccinations: (parsed.pregnancy as PregnancyState | undefined)?.vaccinations ?? [],
+      supplements: (parsed.pregnancy as PregnancyState | undefined)?.supplements ?? [],
+      appointments: (parsed.pregnancy as PregnancyState | undefined)?.appointments ?? [],
+    },
+    postpartum: {
+      ...EMPTY.postpartum!,
+      ...(parsed.postpartum as PostpartumState | undefined),
+      visits: (parsed.postpartum as PostpartumState | undefined)?.visits ?? [],
+    },
   };
 }
 
