@@ -1041,6 +1041,44 @@ function PainWizard({
         )}
       </div>
 
+      <div className="sticky top-0 z-20 -mx-5 mb-4 border-y border-border/60 bg-background/88 px-5 py-2.5 shadow-sm backdrop-blur-xl">
+        {quickSymptomUpdate && step === 3 ? (
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setQuickSymptomUpdate(false);
+                setCopiedFromTime(undefined);
+                setStep(0);
+              }}
+              className="min-h-11 flex-1"
+            >
+              Edit full log
+            </Button>
+            <Button onClick={save} className="min-h-11 flex-1">
+              Save update
+            </Button>
+          </div>
+        ) : (
+          <div className="flex gap-2">
+            {step > 0 && (
+              <Button variant="outline" onClick={() => setStep(step - 1)} className="min-h-11 flex-1">
+                Back
+              </Button>
+            )}
+            {step < 4 ? (
+              <Button onClick={() => setStep(step + 1)} className="min-h-11 flex-1">
+                Next
+              </Button>
+            ) : (
+              <Button onClick={save} className="min-h-11 flex-1">
+                Save
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+
       {step === 0 && (
         <div className="flex flex-col items-center gap-4 py-6">
           {latestPain && !initialEntry && (
@@ -1752,42 +1790,6 @@ function PainWizard({
             <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Anything else…" />
           </Field>
         </div>
-      )}
-
-      {quickSymptomUpdate && step === 3 ? (
-        <SheetFooter className="mt-4 flex-row gap-2">
-          <Button
-            variant="outline"
-            onClick={() => {
-              setQuickSymptomUpdate(false);
-              setCopiedFromTime(undefined);
-              setStep(0);
-            }}
-            className="flex-1"
-          >
-            Edit full log
-          </Button>
-          <Button onClick={save} className="flex-1">
-            Save update
-          </Button>
-        </SheetFooter>
-      ) : (
-        <SheetFooter className="mt-4 flex-row gap-2">
-          {step > 0 && (
-            <Button variant="outline" onClick={() => setStep(step - 1)} className="flex-1">
-              Back
-            </Button>
-          )}
-          {step < 4 ? (
-            <Button onClick={() => setStep(step + 1)} className="flex-1">
-              Next
-            </Button>
-          ) : (
-            <Button onClick={save} className="flex-1">
-              Save
-            </Button>
-          )}
-        </SheetFooter>
       )}
     </div>
   );
