@@ -6,7 +6,17 @@
  * a value when the other side is missing it.
  * ------------------------------------------------------------------ */
 import type {
-  BixboData, DayLog, NoteFolder, Note, TaskEntry, EventEntry, Med, CustomLists,
+  BixboData,
+  DayLog,
+  NoteFolder,
+  Note,
+  TaskEntry,
+  EventEntry,
+  Med,
+  CustomLists,
+  PostpartumDayLog,
+  PostpartumState,
+  PregnancyAppointment,
 } from "./storage";
 
 type WithId = { id: string };
@@ -15,13 +25,137 @@ function isObj(v: unknown): v is Record<string, unknown> {
   return !!v && typeof v === "object" && !Array.isArray(v);
 }
 
+function safeArray<T>(value: unknown): T[] {
+  return Array.isArray(value) ? (value as T[]) : [];
+}
+
+function safeStringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+function safeNumber(value: unknown): number | undefined {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function normalizePostpartumDayLog(value: unknown): PostpartumDayLog | undefined {
+  if (!isObj(value)) return undefined;
+
+  const bleeding =
+    value.bleeding === "" ||
+    value.bleeding === "none" ||
+    value.bleeding === "spotting" ||
+    value.bleeding === "light" ||
+    value.bleeding === "medium" ||
+    value.bleeding === "heavy"
+      ? value.bleeding
+      : undefined;
+
+  return {
+    bleeding,
+    symptoms: safeStringArray(value.symptoms),
+    recovery: safeNumber(value.recovery),
+    csectionRecovery: safeNumber(value.csectionRecovery),
+    perinealHealing: safeNumber(value.perinealHealing),
+    mood: safeStringArray(value.mood),
+    sleepHours: safeNumber(value.sleepHours),
+    breastfeeding: safeArray<NonNullable<PostpartumDayLog["breastfeeding"]>[number]>(value.breastfeeding).filter(
+      isObj,
+    ) as NonNullable<PostpartumDayLog["breastfeeding"]>,
+    pumping: safeArray<NonNullable<PostpartumDayLog["pumping"]>[number]>(value.pumping).filter(isObj) as NonNullable<
+      PostpartumDayLog["pumping"]
+    >,
+    bottle: safeArray<NonNullable<PostpartumDayLog["bottle"]>[number]>(value.bottle).filter(isObj) as NonNullable<
+      PostpartumDayLog["bottle"]
+    >,
+    diapers: safeArray<NonNullable<PostpartumDayLog["diapers"]>[number]>(value.diapers).filter(isObj) as NonNullable<
+      PostpartumDayLog["diapers"]
+    >,
+    babySleepHours: safeNumber(value.babySleepHours),
+    note: typeof value.note === "string" ? value.note : undefined,
+  };
+}
+
+function mergePostpartumDayLog(local: unknown, remote: unknown): PostpartumDayLog | undefined {
+  const l = normalizePostpartumDayLog(local);
+  const r = normalizePostpartumDayLog(remote);
+  if (!l && !r) return undefined;
+
+  return {
+    bleeding: l?.bleeding ?? r?.bleeding,
+    symptoms: dedupArray([...(r?.symptoms ?? []), ...(l?.symptoms ?? [])]),
+    recovery: l?.recovery ?? r?.recovery,
+    csectionRecovery: l?.csectionRecovery ?? r?.csectionRecovery,
+    perinealHealing: l?.perinealHealing ?? r?.perinealHealing,
+    mood: dedupArray([...(r?.mood ?? []), ...(l?.mood ?? [])]),
+    sleepHours: l?.sleepHours ?? r?.sleepHours,
+    breastfeeding: unionById(l?.breastfeeding, r?.breastfeeding) ?? [],
+    pumping: unionById(l?.pumping, r?.pumping) ?? [],
+    bottle: unionById(l?.bottle, r?.bottle) ?? [],
+    diapers: unionById(l?.diapers, r?.diapers) ?? [],
+    babySleepHours: l?.babySleepHours ?? r?.babySleepHours,
+    note: l?.note || r?.note,
+  };
+}
+
+function normalizePostpartumState(value: unknown): PostpartumState {
+  const raw = isObj(value) ? value : {};
+
+  const deliveryType =
+    raw.deliveryType === "vaginal" ||
+    raw.deliveryType === "csection" ||
+    raw.deliveryType === "assisted" ||
+    raw.deliveryType === "other"
+      ? raw.deliveryType
+      : undefined;
+
+  const feedingMode =
+    raw.feedingMode === "breast" || raw.feedingMode === "bottle" || raw.feedingMode === "mixed"
+      ? raw.feedingMode
+      : undefined;
+
+  const visits = safeArray<PregnancyAppointment>(raw.visits).filter(
+    (visit) =>
+      isObj(visit) && typeof visit.id === "string" && typeof visit.date === "string" && typeof visit.title === "string",
+  );
+
+  return {
+    active: Boolean(raw.active),
+    birthDate: typeof raw.birthDate === "string" ? raw.birthDate : undefined,
+    deliveryType,
+    babyName: typeof raw.babyName === "string" ? raw.babyName : undefined,
+    babyBirthWeightKg: safeNumber(raw.babyBirthWeightKg),
+    feedingMode,
+    visits,
+    note: typeof raw.note === "string" ? raw.note : undefined,
+    endedAt: typeof raw.endedAt === "string" ? raw.endedAt : undefined,
+  };
+}
+
+function mergePostpartumState(local: unknown, remote: unknown): PostpartumState {
+  const l = normalizePostpartumState(local);
+  const r = normalizePostpartumState(remote);
+
+  return {
+    active: l.active || r.active,
+    birthDate: l.birthDate ?? r.birthDate,
+    deliveryType: l.deliveryType ?? r.deliveryType,
+    babyName: l.babyName || r.babyName,
+    babyBirthWeightKg: l.babyBirthWeightKg ?? r.babyBirthWeightKg,
+    feedingMode: l.feedingMode ?? r.feedingMode,
+    visits: unionById(l.visits, r.visits) ?? [],
+    note: l.note || r.note,
+    endedAt: l.endedAt ?? r.endedAt,
+  };
+}
+
 /** Rough "completeness" score used to pick the better of two same-id entries. */
 function completeness(v: unknown): number {
   if (v == null) return 0;
   if (typeof v !== "object") return 1;
   let n = 0;
   for (const val of Object.values(v as Record<string, unknown>)) {
-    if (val == null || val === "" ) continue;
+    if (val == null || val === "") continue;
     if (Array.isArray(val) && val.length === 0) continue;
     n++;
   }
@@ -35,34 +169,46 @@ let _deleted: Set<string> = new Set();
  * complete one, preferring local when tied. Tombstoned ids are dropped. */
 function unionById<T extends WithId>(local: T[] | undefined, remote: T[] | undefined): T[] | undefined {
   const drop = (arr: T[] | undefined) => arr?.filter((x) => !_deleted.has(x.id));
-  const l = drop(local), r = drop(remote);
+  const l = drop(local),
+    r = drop(remote);
   if (!l?.length) return r?.length ? r.slice() : l;
   if (!r?.length) return l;
   const out = new Map<string, T>();
   for (const rr of r) out.set(rr.id, rr);
   for (const ll of l) {
     const existing = out.get(ll.id);
-    if (!existing) { out.set(ll.id, ll); continue; }
+    if (!existing) {
+      out.set(ll.id, ll);
+      continue;
+    }
     out.set(ll.id, completeness(ll) >= completeness(existing) ? ll : existing);
   }
   return Array.from(out.values());
 }
 
 const ARRAY_FIELDS = [
-  "pain", "tetany", "panic", "heat", "food", "bowel", "sex",
-  "extraMeds", "workout", "mood", "energy", "histamine",
+  "pain",
+  "tetany",
+  "panic",
+  "heat",
+  "food",
+  "bowel",
+  "sex",
+  "extraMeds",
+  "workout",
+  "mood",
+  "energy",
+  "histamine",
 ] as const;
 
-const SCALAR_FIELDS = [
-  "temperature", "weight", "sleepHours", "period", "periodInfo", "sleepQuality",
-] as const;
+const SCALAR_FIELDS = ["temperature", "weight", "sleepHours", "period", "periodInfo", "sleepQuality"] as const;
 
 function mergeDayLog(local: DayLog | undefined, remote: DayLog | undefined): DayLog {
   const out: DayLog = {};
   // Safety net: start from a union of every key present on either side so a
   // future DayLog field is never silently lost if it's missing from the lists.
   const allKeys = new Set([...Object.keys(local ?? {}), ...Object.keys(remote ?? {})]);
-  const handled = new Set<string>([...ARRAY_FIELDS, ...SCALAR_FIELDS]);
+  const handled = new Set<string>([...ARRAY_FIELDS, ...SCALAR_FIELDS, "postpartum"]);
   for (const f of ARRAY_FIELDS) {
     const merged = unionById(local?.[f] as WithId[] | undefined, remote?.[f] as WithId[] | undefined);
     if (merged !== undefined) (out as Record<string, unknown>)[f] = merged;
@@ -72,31 +218,40 @@ function mergeDayLog(local: DayLog | undefined, remote: DayLog | undefined): Day
     const rv = remote?.[f];
     (out as Record<string, unknown>)[f] = lv !== undefined && lv !== null && lv !== "" ? lv : rv;
   }
+
+  const postpartum = mergePostpartumDayLog(local?.postpartum, remote?.postpartum);
+  if (postpartum !== undefined) out.postpartum = postpartum;
   for (const k of allKeys) {
     if (handled.has(k)) continue;
     const lv = (local as Record<string, unknown> | undefined)?.[k];
     const rv = (remote as Record<string, unknown> | undefined)?.[k];
     if (Array.isArray(lv) || Array.isArray(rv)) {
-      const la = lv as WithId[] | undefined, ra = rv as WithId[] | undefined;
+      const la = lv as WithId[] | undefined,
+        ra = rv as WithId[] | undefined;
       const idLike = (la ?? ra ?? []).every((x) => x && typeof x === "object" && "id" in x);
-      (out as Record<string, unknown>)[k] = idLike
-        ? unionById(la, ra)
-        : (la?.length ? la : ra);
+      (out as Record<string, unknown>)[k] = idLike ? unionById(la, ra) : la?.length ? la : ra;
       continue;
     }
-    (out as Record<string, unknown>)[k] =
-      lv !== undefined && lv !== null && lv !== "" ? lv : rv;
+    (out as Record<string, unknown>)[k] = lv !== undefined && lv !== null && lv !== "" ? lv : rv;
   }
   return out;
 }
 
-function mergeDayLogs(local: Record<string, DayLog> | undefined, remote: Record<string, DayLog> | undefined): Record<string, DayLog> {
-  const keys = new Set([...Object.keys(local ?? {}), ...Object.keys(remote ?? {})]);
+function mergeDayLogs(
+  local: Record<string, DayLog> | undefined,
+  remote: Record<string, DayLog> | undefined,
+): Record<string, DayLog> {
+  const safeLocal = isObj(local) ? (local as Record<string, DayLog>) : {};
+  const safeRemote = isObj(remote) ? (remote as Record<string, DayLog>) : {};
+  const keys = new Set([...Object.keys(safeLocal), ...Object.keys(safeRemote)]);
   const out: Record<string, DayLog> = {};
-  for (const k of keys) out[k] = mergeDayLog(local?.[k], remote?.[k]);
+  for (const k of keys) {
+    const localLog = isObj(safeLocal[k]) ? safeLocal[k] : undefined;
+    const remoteLog = isObj(safeRemote[k]) ? safeRemote[k] : undefined;
+    out[k] = mergeDayLog(localLog, remoteLog);
+  }
   return out;
 }
-
 
 /** dayNotes: values are arrays of notes (string or object), union by identity/text+time. */
 function mergeDayNotes(
@@ -130,7 +285,10 @@ function mergeTodos(local: BixboData["todos"] | undefined, remote: BixboData["to
 }
 
 /** medLog: Record<dateKey, Record<medKey, boolean>> — OR booleans together. */
-function mergeMedLog(local: BixboData["medLog"] | undefined, remote: BixboData["medLog"] | undefined): BixboData["medLog"] {
+function mergeMedLog(
+  local: BixboData["medLog"] | undefined,
+  remote: BixboData["medLog"] | undefined,
+): BixboData["medLog"] {
   const keys = new Set([...Object.keys(local ?? {}), ...Object.keys(remote ?? {})]);
   const out: BixboData["medLog"] = {};
   for (const k of keys) {
@@ -145,7 +303,10 @@ function mergeMedLog(local: BixboData["medLog"] | undefined, remote: BixboData["
 }
 
 /** medLogTimes: Record<dateKey, Record<key, string>> — prefer local string when present. */
-function mergeMedLogTimes(local: BixboData["medLogTimes"] | undefined, remote: BixboData["medLogTimes"] | undefined): BixboData["medLogTimes"] {
+function mergeMedLogTimes(
+  local: BixboData["medLogTimes"] | undefined,
+  remote: BixboData["medLogTimes"] | undefined,
+): BixboData["medLogTimes"] {
   const keys = new Set([...Object.keys(local ?? {}), ...Object.keys(remote ?? {})]);
   const out: BixboData["medLogTimes"] = {};
   for (const k of keys) {
@@ -160,7 +321,10 @@ function mergeMedLogTimes(local: BixboData["medLogTimes"] | undefined, remote: B
 }
 
 /** medNames: Record<key, string> — prefer local. */
-function mergeStringMap(local: Record<string, string> | undefined, remote: Record<string, string> | undefined): Record<string, string> {
+function mergeStringMap(
+  local: Record<string, string> | undefined,
+  remote: Record<string, string> | undefined,
+): Record<string, string> {
   const keys = new Set([...Object.keys(local ?? {}), ...Object.keys(remote ?? {})]);
   const out: Record<string, string> = {};
   for (const k of keys) out[k] = local?.[k] || remote?.[k] || "";
@@ -187,7 +351,10 @@ function mergeCustom(local: CustomLists | undefined, remote: CustomLists | undef
     const lv = local?.[k];
     const rv = remote?.[k];
     if (Array.isArray(lv) || Array.isArray(rv)) {
-      (merged as unknown as Record<string, unknown>)[k as string] = dedupArray([...(rv ?? []), ...(lv ?? [])] as unknown[]);
+      (merged as unknown as Record<string, unknown>)[k as string] = dedupArray([
+        ...(rv ?? []),
+        ...(lv ?? []),
+      ] as unknown[]);
     }
   }
   return merged;
@@ -221,6 +388,7 @@ export function mergeBixbo(local: BixboData, remote: BixboData | null | undefine
       cycle: { ...(remote.cycle ?? {}), ...(local.cycle ?? {}) },
       custom: mergeCustom(local.custom, remote.custom),
       settings: { ...(remote.settings ?? {}), ...(local.settings ?? {}) },
+      postpartum: mergePostpartumState(local.postpartum, remote.postpartum),
       // partner is a local-only projection of the other user's data — always keep local's.
       partner: local.partner ?? remote.partner,
     };
