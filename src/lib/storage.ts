@@ -382,8 +382,16 @@ export interface HealthProfile {
   nickname?: string;
   birthDate?: string;
   heightCm?: number;
+  /**
+   * Optional profile snapshot only. Current weight belongs to dayLogs.weightEntries.
+   * Keep this field for compatibility and for users who have not logged a dated weight yet.
+   */
   weightKg?: number;
   targetWeightKg?: number;
+  /**
+   * @deprecated Use settings.gender as the single source of truth.
+   * Kept so older backups continue to import safely.
+   */
   gender?: string;
   pronouns?: string;
   /* Medical */
@@ -395,8 +403,14 @@ export interface HealthProfile {
   pregnancies?: string[];
   disabilities?: string[];
   /* Cycle */
+  /**
+   * Descriptive profile value only. Runtime mode is owned by pregnancy.active/postpartum.active.
+   */
   pregnancyStatus?: "none" | "pregnant" | "postpartum" | "trying" | "unsure";
   tryingToConceive?: boolean;
+  /**
+   * @deprecated Use postpartum.active for runtime mode.
+   */
   postpartum?: boolean;
   breastfeeding?: boolean;
   menopause?: "no" | "peri" | "post";
@@ -418,15 +432,73 @@ export interface HealthProfile {
   endocrinologist?: Doctor;
   therapist?: Doctor;
   /* Medication */
+  /**
+   * @deprecated Medication reminder times belong to each Med.times entry.
+   * Kept for compatibility with existing profile data.
+   */
   reminderTimes?: string[];
   pharmacy?: string;
   medicationNotes?: string;
 }
 
-
 export function asArr(v: string | string[] | undefined | null): string[] {
   if (v == null || v === "") return [];
   return Array.isArray(v) ? v : [v];
+}
+
+/* ------------------- Canonical selectors ------------------- */
+
+/** Gender has one runtime source: settings.gender. */
+export function userGender(data: Pick<BixboData, "settings">): Gender {
+  return data.settings.gender ?? "female";
+}
+
+/**
+ * Active pregnancy selector. The legacy settings.pregnantSince fallback keeps
+ * older backups working until every route has migrated to pregnancy.active.
+ */
+export function isPregnancyActive(data: Pick<BixboData, "pregnancy" | "settings">): boolean {
+  return Boolean(data.pregnancy?.active || data.settings.pregnantSince);
+}
+
+/** Active postpartum selector. */
+export function isPostpartumActive(data: Pick<BixboData, "postpartum">): boolean {
+  return Boolean(data.postpartum?.active);
+}
+
+/**
+ * Single shared rule for hiding period, ovulation and fertility UI.
+ * Use this from Home, QuickTags, MonthCalendar, Insights and Patterns.
+ */
+export function isCycleTrackingHidden(data: Pick<BixboData, "settings" | "pregnancy" | "postpartum">): boolean {
+  return userGender(data) === "male" || isPregnancyActive(data) || isPostpartumActive(data);
+}
+
+/**
+ * Canonical allergen list. Health Profile owns the value; legacy Settings and
+ * Custom lists are fallbacks for existing installations.
+ */
+export function userAllergens(data: Pick<BixboData, "profile" | "settings" | "custom">): string[] {
+  const source = data.profile?.allergies?.length
+    ? data.profile.allergies
+    : data.settings.allergens?.length
+      ? data.settings.allergens
+      : data.custom.allergens;
+
+  return Array.from(new Set((source ?? []).map((value) => value.trim()).filter(Boolean)));
+}
+
+/**
+ * Latest dated body-weight measurement across all logs. Falls back to the
+ * profile snapshot only when no dated measurement exists.
+ */
+export function latestRecordedWeight(data: Pick<BixboData, "dayLogs" | "profile">): number | undefined {
+  const datedValues = Object.entries(data.dayLogs)
+    .map(([date, log]) => ({ date, value: latestDayWeight(log) }))
+    .filter((item): item is { date: string; value: number } => item.value != null && Number.isFinite(item.value))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  return datedValues.at(-1)?.value ?? data.profile?.weightKg;
 }
 
 export interface Todo {
@@ -563,10 +635,17 @@ export interface Settings {
   logOrder?: string[];
   gender?: Gender;
   birthControlSince?: string;
+  /**
+   * @deprecated Legacy pregnancy marker. New code should use pregnancy.active
+   * together with pregnancy.lmp/dueDate.
+   */
   pregnantSince?: string;
   /** Display name used for the "Hi, <name>" greeting on Home. */
   userName?: string;
-  /** Per-user allergen list used by the Food form. */
+  /**
+   * @deprecated Use profile.allergies as the canonical allergen list.
+   * Kept for compatibility while older UI is migrated.
+   */
   allergens?: string[];
   /** Custom order of quick-log tags (ids of built-in + custom tags). */
   quickTagOrder?: string[];
@@ -736,8 +815,22 @@ export const EMPTY: BixboData = {
   postpartum: { active: false, visits: [] },
 };
 
-const KEY = "bixbo:v2";
-const LEGACY_KEY = "bixbo:v1";
+export const BIXBO_STORAGE_KEY = "bixbo:v2";
+export const BIXBO_LEGACY_STORAGE_KEY = "bixbo:v1";
+
+const KEY = BIXBO_STORAGE_KEY;
+const LEGACY_KEY = BIXBO_LEGACY_STORAGE_KEY;
+
+/**
+ * Clears only BIXBO's local data. Never call localStorage.clear(), because that
+ * can also remove authentication/session data owned by other parts of the app.
+ */
+export function clearBixboLocalStorage() {
+  if (typeof window === "undefined") return;
+
+  localStorage.removeItem(BIXBO_STORAGE_KEY);
+  localStorage.removeItem(BIXBO_LEGACY_STORAGE_KEY);
+}
 
 type VitalField = "weightEntries" | "temperatureEntries";
 
@@ -885,6 +978,9 @@ function migrate(raw: unknown): BixboData {
     settings: {
       ...EMPTY.settings,
       ...(parsed.settings as Partial<Settings> | undefined),
+      gender:
+        (parsed.settings as Partial<Settings> | undefined)?.gender ??
+        ((parsed.profile as HealthProfile | undefined)?.gender === "male" ? "male" : "female"),
       savedTriggers: (parsed.settings as Partial<Settings> | undefined)?.savedTriggers ?? [],
     },
     tasks: (parsed.tasks as TaskEntry[] | undefined) ?? [],
@@ -1023,7 +1119,12 @@ export function hasAnyLog(l?: DayLog): boolean {
     l.weight != null ||
     l.sleepHours != null ||
     l.extraMeds?.length ||
-    l.workout?.length
+    l.workout?.length ||
+    l.mood?.length ||
+    l.energy?.length ||
+    l.histamine?.length ||
+    l.pregnancy != null ||
+    l.postpartum != null
   );
 }
 
