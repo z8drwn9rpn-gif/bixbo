@@ -5,6 +5,7 @@ import {
   todayKey,
   nowHHMM,
   updateDayLog,
+  isCycleTrackingHidden,
   HEADACHE_TYPES,
   SLEEP_QUALITY,
   type ThermoKind,
@@ -406,12 +407,13 @@ export function QuickTags({
   const timerRef = useRef<number | null>(null);
   const longFiredRef = useRef(false);
 
-  const pregnant = Boolean(data.settings.pregnantSince);
-  const isMale = data.settings.gender === "male";
+  const cycleTrackingHidden = isCycleTrackingHidden(data);
 
   const allTags = [
-    ...baseTags().filter((tag) => !(tag.cat === "period" && (pregnant || isMale))),
-    ...(data.settings.customQuickTags ?? []).map((c) => customToTag(c, data)),
+    ...baseTags().filter((tag) => !(tag.cat === "period" && cycleTrackingHidden)),
+    ...(data.settings.customQuickTags ?? [])
+      .filter((tag) => !(tag.cat === "period" && cycleTrackingHidden))
+      .map((tag) => customToTag(tag, data)),
   ];
 
   const order = data.settings.quickTagOrder ?? [];

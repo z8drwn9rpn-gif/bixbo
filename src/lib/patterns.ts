@@ -7,31 +7,46 @@ export function avg(nums: number[]): number | null {
 
 export function mostCommon<T extends string>(arr: T[]): T | null {
   if (!arr.length) return null;
+
   const counts = new Map<T, number>();
-  arr.forEach((v) => counts.set(v, (counts.get(v) ?? 0) + 1));
-  let best: T | null = null,
-    bestC = 0;
-  counts.forEach((c, v) => {
-    if (c > bestC) {
-      bestC = c;
-      best = v;
+
+  arr.forEach((value) => {
+    counts.set(value, (counts.get(value) ?? 0) + 1);
+  });
+
+  let best: T | null = null;
+  let bestCount = 0;
+
+  counts.forEach((count, value) => {
+    if (count > bestCount) {
+      bestCount = count;
+      best = value;
     }
   });
+
   return best;
 }
 
 export function thisAndLastMonthPrefixes(): [string, string] {
   const now = new Date();
-  const cur = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const last = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, "0")}`;
-  return [cur, last];
+
+  const current = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+  const previousDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+  const previous = `${previousDate.getFullYear()}-${String(previousDate.getMonth() + 1).padStart(2, "0")}`;
+
+  return [current, previous];
 }
 
 export function daysOfMonth(prefix: string): string[] {
-  const [y, m] = prefix.split("-").map(Number);
-  const last = new Date(y, m, 0).getDate();
-  return Array.from({ length: last }, (_, i) => `${prefix}-${String(i + 1).padStart(2, "0")}`);
+  const [year, month] = prefix.split("-").map(Number);
+
+  if (!Number.isFinite(year) || !Number.isFinite(month)) return [];
+
+  const lastDay = new Date(year, month, 0).getDate();
+
+  return Array.from({ length: lastDay }, (_, index) => `${prefix}-${String(index + 1).padStart(2, "0")}`);
 }
 
 export interface HistoricCycle {
@@ -39,33 +54,66 @@ export interface HistoricCycle {
   end: string;
 }
 
-/** All historic periods, derived from logged period days (+ cycle prefs fallback). */
+/**
+ * All historic periods derived from logged period days.
+ * Falls back to cycle preferences only when no logged period exists.
+ */
 export function historicCycles(data: BixboData): HistoricCycle[] {
   const keys = Object.keys(data.dayLogs).sort();
-  const isPeriodDay = (k: string) => {
-    const l = data.dayLogs[k];
-    return !!(l?.period || l?.periodInfo?.level);
+
+  const isPeriodDay = (key: string) => {
+    const log = data.dayLogs[key];
+
+    return Boolean(log?.period || log?.periodInfo?.level);
   };
+
   const cycles: HistoricCycle[] = [];
-  let curStart: string | null = null;
-  let prev = "";
-  for (const k of keys) {
-    if (isPeriodDay(k)) {
-      if (!curStart) curStart = k;
-      else if (addDays(prev, 1) !== k) {
-        cycles.push({ start: curStart, end: prev });
-        curStart = k;
+
+  let currentStart: string | null = null;
+  let previousPeriodDay = "";
+
+  for (const key of keys) {
+    if (isPeriodDay(key)) {
+      if (!currentStart) {
+        currentStart = key;
+      } else if (previousPeriodDay && addDays(previousPeriodDay, 1) !== key) {
+        cycles.push({
+          start: currentStart,
+          end: previousPeriodDay,
+        });
+
+        currentStart = key;
       }
-      prev = k;
-    } else if (curStart) {
-      cycles.push({ start: curStart, end: prev });
-      curStart = null;
+
+      previousPeriodDay = key;
+      continue;
+    }
+
+    if (currentStart) {
+      cycles.push({
+        start: currentStart,
+        end: previousPeriodDay,
+      });
+
+      currentStart = null;
+      previousPeriodDay = "";
     }
   }
-  if (curStart) cycles.push({ start: curStart, end: prev });
-  if (!cycles.length && data.cycle.lastPeriodStart && data.cycle.lastPeriodEnd) {
-    cycles.push({ start: data.cycle.lastPeriodStart, end: data.cycle.lastPeriodEnd });
+
+  if (currentStart) {
+    cycles.push({
+      start: currentStart,
+      end: previousPeriodDay,
+    });
   }
+
+  if (cycles.length === 0 && data.cycle.lastPeriodStart && data.cycle.lastPeriodEnd) {
+    cycles.push({
+      start: data.cycle.lastPeriodStart,
+      end: data.cycle.lastPeriodEnd,
+    });
+  }
+
   return cycles;
 }
 
@@ -76,69 +124,125 @@ export interface PhaseBuckets {
 }
 
 export function phaseDays(cycles: HistoricCycle[]): PhaseBuckets {
-  const before: string[] = [],
-    during: string[] = [],
-    after: string[] = [];
-  cycles.forEach((c) => {
-    for (let i = 5; i >= 1; i--) before.push(addDays(c.start, -i));
-    let k = c.start;
-    while (k <= c.end) {
-      during.push(k);
-      k = addDays(k, 1);
+  const before: string[] = [];
+  const during: string[] = [];
+  const after: string[] = [];
+
+  cycles.forEach((cycle) => {
+    for (let index = 5; index >= 1; index -= 1) {
+      before.push(addDays(cycle.start, -index));
     }
-    for (let i = 1; i <= 5; i++) after.push(addDays(c.end, i));
+
+    let key = cycle.start;
+
+    while (key <= cycle.end) {
+      during.push(key);
+      key = addDays(key, 1);
+    }
+
+    for (let index = 1; index <= 5; index += 1) {
+      after.push(addDays(cycle.end, index));
+    }
   });
-  return { before, during, after };
+
+  return {
+    before,
+    during,
+    after,
+  };
 }
 
 export function phaseAvg(
   days: string[],
   dayLogs: Record<string, DayLog>,
-  valueFn: (l: DayLog) => number | null | undefined,
+  valueFn: (log: DayLog) => number | null | undefined,
 ): number | null {
-  const vals = days.map((k) => valueFn(dayLogs[k] ?? {})).filter((v): v is number => v != null);
-  return avg(vals);
+  const values = days
+    .map((key) => valueFn(dayLogs[key] ?? {}))
+    .filter((value): value is number => value != null && Number.isFinite(value));
+
+  return avg(values);
 }
 
 export function phaseFlowMode(during: string[], dayLogs: Record<string, DayLog>): PeriodLevel | null {
   const levels = during
-    .map((k) => (dayLogs[k]?.periodInfo?.level || dayLogs[k]?.period || "") as PeriodLevel)
-    .filter((v): v is PeriodLevel => !!v);
+    .map((key) => dayLogs[key]?.periodInfo?.level ?? dayLogs[key]?.period)
+    .filter((value): value is PeriodLevel => value != null && value !== "");
+
   return mostCommon(levels);
 }
 
 const NEGATIVE_MOOD_RE =
   /angry|annoyed|anxious|apathetic|bored|cranky|depressed|fatigued|indifferent|irritated|lonely|meh|pmdd|sad|self-deprecating|stressed|tired|all over the place/i;
-export function negativeMoodCount(l: DayLog): number {
-  return (l.pain ?? []).reduce((s, p) => s + (p.mood ?? []).filter((m) => NEGATIVE_MOOD_RE.test(m)).length, 0);
+
+export function negativeMoodCount(log: DayLog): number {
+  return (log.pain ?? []).reduce(
+    (total, entry) => total + (entry.mood ?? []).filter((mood) => NEGATIVE_MOOD_RE.test(mood)).length,
+    0,
+  );
 }
 
-export function dayEnergy(l: DayLog): number | null {
-  const vals = (l.pain ?? []).map((p) => p.bodyBattery).filter((v): v is number => v != null);
-  return vals.length ? avg(vals) : null;
+export function dayEnergy(log: DayLog): number | null {
+  const values = (log.pain ?? [])
+    .map((entry) => entry.bodyBattery)
+    .filter((value): value is number => value != null && Number.isFinite(value));
+
+  return values.length ? avg(values) : null;
 }
-export function dayHotFlash(l: DayLog): number | null {
-  const vals = (l.pain ?? []).map((p) => p.hotFlashes).filter((v): v is number => v != null);
-  return vals.length ? Math.max(...vals) : null;
+
+export function dayHotFlash(log: DayLog): number | null {
+  const values = (log.pain ?? [])
+    .map((entry) => entry.hotFlashes)
+    .filter((value): value is number => value != null && Number.isFinite(value));
+
+  return values.length ? Math.max(...values) : null;
 }
-export function dayBowelSymptoms(l: DayLog): number | null {
-  if (!l.bowel?.length) return null;
-  return l.bowel.reduce((s, b) => s + (b.symptoms?.length ?? 0), 0);
+
+/**
+ * Daily bowel activity score.
+ *
+ * Every recorded bowel entry counts as at least 1, including Bristol Type 0.
+ * Additional bowel symptom tags increase the score.
+ *
+ * This prevents Type 0 from disappearing from Patterns and trigger analysis
+ * when it has no separate symptom tag.
+ */
+export function dayBowelSymptoms(log: DayLog): number | null {
+  if (!log.bowel?.length) return null;
+
+  return log.bowel.reduce((total, entry) => {
+    const symptomCount = entry.symptoms?.length ?? 0;
+
+    return total + Math.max(1, symptomCount);
+  }, 0);
 }
-export function dayTetanyIntensity(l: DayLog): number | null {
-  const vals = (l.tetany ?? []).map((t) => t.intensity).filter((v): v is number => v != null);
-  return vals.length ? avg(vals) : null;
+
+export function dayTetanyIntensity(log: DayLog): number | null {
+  const values = (log.tetany ?? [])
+    .map((entry) => entry.intensity)
+    .filter((value): value is number => value != null && Number.isFinite(value));
+
+  return values.length ? avg(values) : null;
 }
-export function dayPanicIntensity(l: DayLog): number | null {
-  const vals = (l.panic ?? []).map((p) => p.intensity).filter((v): v is number => v != null);
-  return vals.length ? avg(vals) : null;
+
+export function dayPanicIntensity(log: DayLog): number | null {
+  const values = (log.panic ?? [])
+    .map((entry) => entry.intensity)
+    .filter((value): value is number => value != null && Number.isFinite(value));
+
+  return values.length ? avg(values) : null;
 }
-export function dayHeadacheIntensity(l: DayLog): number | null {
-  const vals = (l.pain ?? []).map((p) => p.headacheIntensity).filter((v): v is number => v != null);
-  return vals.length ? avg(vals) : null;
+
+export function dayHeadacheIntensity(log: DayLog): number | null {
+  const values = (log.pain ?? [])
+    .map((entry) => entry.headacheIntensity)
+    .filter((value): value is number => value != null && Number.isFinite(value));
+
+  return values.length ? avg(values) : null;
 }
-export function dayPressureIntensity(l: DayLog): number | null {
-  const values = (l.pain ?? [])
+
+export function dayPressureIntensity(log: DayLog): number | null {
+  const values = (log.pain ?? [])
     .map((entry) => entry.pressureIntensity)
     .filter((value): value is number => value != null && Number.isFinite(value));
 

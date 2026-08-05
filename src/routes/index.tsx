@@ -19,9 +19,11 @@ import {
   painColor,
   BRISTOL,
   nextPredictedPeriod,
-  pregnancyInfo,
   daysBetween,
   asArr,
+  isCycleTrackingHidden,
+  isPregnancyActive,
+  isPostpartumActive,
   type BixboData,
   type BowelEntry,
   type SexEntry,
@@ -97,7 +99,7 @@ function HomePage() {
     if (typeof window === "undefined" || !("Notification" in window)) return;
     if (Notification.permission !== "granted") return;
 
-    const isMale = view.settings.gender === "male";
+    const cycleTrackingHidden = isCycleTrackingHidden(view);
 
     const int = window.setInterval(() => {
       const now = new Date();
@@ -119,7 +121,7 @@ function HomePage() {
       });
 
       // Period predict: 1 day before at 09:00
-      if (!isMale && !view.settings.pregnantSince && !view.pregnancy?.active && hhmm === "09:00") {
+      if (!cycleTrackingHidden && hhmm === "09:00") {
         const p = nextPredictedPeriod(view.cycle);
 
         if (p && daysBetween(todayKey(), p.start) === 1) {
@@ -141,6 +143,8 @@ function HomePage() {
     view.settings.notifications,
     view.settings.gender,
     view.settings.pregnantSince,
+    view.pregnancy?.active,
+    view.postpartum?.active,
   ]);
 
   /*
@@ -158,6 +162,10 @@ function HomePage() {
   const goToNextMonth = () => {
     setMonthAnchor((current) => new Date(current!.getFullYear(), current!.getMonth() + 1, 1));
   };
+
+  const pregnancyActive = isPregnancyActive(view);
+  const postpartumActive = isPostpartumActive(view);
+  const cycleTrackingHidden = isCycleTrackingHidden(view);
 
   const pregnancyToday = view.dayLogs[todayKey()]?.pregnancy;
   const latestPregnancyBP =
@@ -257,16 +265,7 @@ function HomePage() {
       </div>
 
       {(() => {
-        if (!view.pregnancy?.active) {
-          const preg = pregnancyInfo(view.settings.pregnantSince);
-          if (!preg) return null;
-          return (
-            <div className="mx-5 mt-3 flex items-center justify-center gap-2 rounded-full bg-tint px-4 py-2 text-center text-xs text-muted-foreground ring-1 ring-border">
-              <Ico name="pregnancy" size={16} /> Pregnancy ·{" "}
-              <span className="font-semibold text-foreground">Week {preg.week}</span> · Trimester {preg.trimester}
-            </div>
-          );
-        }
+        if (!pregnancyActive) return null;
 
         const prog = pregnancyProgress(view.pregnancy);
 
@@ -321,7 +320,7 @@ function HomePage() {
         );
       })()}
 
-      {view.postpartum?.active && (
+      {postpartumActive && (
         <Link
           to={"/postpartum" as never}
           className="focus-ring mx-5 mt-3 flex items-center justify-between gap-3 rounded-2xl bg-tint px-4 py-3 text-left ring-1 ring-border"
@@ -342,10 +341,7 @@ function HomePage() {
         </Link>
       )}
 
-      {view.settings.gender !== "male" &&
-        !view.pregnancy?.active &&
-        !view.postpartum?.active &&
-        !view.settings.pregnantSince &&
+      {!cycleTrackingHidden &&
         (() => {
           const p = nextPredictedPeriod(view.cycle);
 
@@ -571,7 +567,7 @@ function DayPreview({
   const takenList = scheduled.filter((x) => x.taken);
   const missedList = scheduled.filter((x) => !x.taken && (date < k || (date === k && x.time < nowHHMM)));
   const extraMeds = log?.extraMeds ?? [];
-  const isMale = data.settings.gender === "male";
+  const cycleTrackingHidden = isCycleTrackingHidden(data);
   const flowLabel = (level?: string | null): string => {
     switch (level) {
       case "spotting":
@@ -909,10 +905,7 @@ function DayPreview({
         </Card>
       ) : null}
 
-      {!isMale &&
-        !data.pregnancy?.active &&
-        !data.postpartum?.active &&
-        !data.settings.pregnantSince &&
+      {!cycleTrackingHidden &&
         !!(
           log?.period ||
           log?.periodInfo?.level ||

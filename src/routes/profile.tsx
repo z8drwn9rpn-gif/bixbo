@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   Plus,
   X,
-  Clock,
   Pencil,
   UserRound,
   HeartPulse,
@@ -21,7 +20,19 @@ import {
   Check,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { useBixbo, EMPTY, type HealthProfile, type Doctor, type EmergencyContact } from "@/lib/storage";
+import {
+  useBixbo,
+  EMPTY,
+  todayKey,
+  latestRecordedWeight,
+  userAllergens,
+  userGender,
+  isPregnancyActive,
+  isPostpartumActive,
+  type HealthProfile,
+  type Doctor,
+  type EmergencyContact,
+} from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -342,21 +353,79 @@ function ProfilePage() {
   const patch = (p: Partial<HealthProfile>) => update((d) => ({ ...d, profile: { ...d.profile, ...p } }));
 
   const age = ageFromBirthDate(profile.birthDate);
+  const currentWeight = latestRecordedWeight(view);
+  const gender = userGender(view);
+  const pregnancyActive = isPregnancyActive(view);
+  const postpartumActive = isPostpartumActive(view);
+  const allergens = userAllergens(view);
+
   const bmi =
-    profile.heightCm && profile.weightKg && profile.heightCm > 0
-      ? profile.weightKg / ((profile.heightCm / 100) * (profile.heightCm / 100))
+    profile.heightCm && currentWeight && profile.heightCm > 0
+      ? currentWeight / ((profile.heightCm / 100) * (profile.heightCm / 100))
       : null;
 
   const setEmergency = (p: Partial<EmergencyContact>) =>
     patch({ emergencyContact: { ...profile.emergencyContact, ...p } });
 
-  const [newTime, setNewTime] = useState("08:00");
-  const reminderTimes = profile.reminderTimes ?? [];
-  const addTime = () => {
-    if (!newTime || reminderTimes.includes(newTime)) return;
-    patch({ reminderTimes: [...reminderTimes, newTime].sort() });
-  };
-  const removeTime = (t: string) => patch({ reminderTimes: reminderTimes.filter((x) => x !== t) });
+  const setCurrentWeight = (value: number | undefined) =>
+    update((d) => ({
+      ...d,
+      dayLogs: {
+        ...d.dayLogs,
+        [todayKey()]: {
+          ...(d.dayLogs[todayKey()] ?? {}),
+          weight: value,
+        },
+      },
+    }));
+
+  const setGender = (value: "female" | "male") =>
+    update((d) => ({
+      ...d,
+      settings: {
+        ...d.settings,
+        gender: value,
+      },
+      profile: {
+        ...(d.profile ?? {}),
+        gender: undefined,
+      },
+    }));
+
+  const reproductiveStatus: NonNullable<HealthProfile["pregnancyStatus"]> = pregnancyActive
+    ? "pregnant"
+    : postpartumActive
+      ? "postpartum"
+      : (profile.pregnancyStatus ?? "none");
+
+  const setReproductiveStatus = (value: NonNullable<HealthProfile["pregnancyStatus"]>) =>
+    update((d) => ({
+      ...d,
+      pregnancy: {
+        ...(d.pregnancy ?? EMPTY.pregnancy!),
+        active: value === "pregnant",
+        endedAt:
+          value === "postpartum"
+            ? (d.pregnancy?.endedAt ?? todayKey())
+            : value === "pregnant"
+              ? undefined
+              : d.pregnancy?.endedAt,
+      },
+      postpartum: {
+        ...(d.postpartum ?? EMPTY.postpartum!),
+        active: value === "postpartum",
+        birthDate: value === "postpartum" ? (d.postpartum?.birthDate ?? todayKey()) : d.postpartum?.birthDate,
+      },
+      settings: {
+        ...d.settings,
+        pregnantSince: undefined,
+      },
+      profile: {
+        ...(d.profile ?? {}),
+        pregnancyStatus: value === "pregnant" || value === "postpartum" || value === "none" ? "none" : value,
+        postpartum: undefined,
+      },
+    }));
 
   const doctors = [
     { label: "GP", value: profile.gp },
@@ -370,14 +439,14 @@ function ProfilePage() {
 
   const medicalTags = [...(profile.diagnoses ?? []), ...(profile.chronicIllnesses ?? [])];
 
-  const allergyTags = [...(profile.allergies ?? []), ...(profile.intolerances ?? [])];
+  const allergyTags = [...allergens, ...(profile.intolerances ?? [])];
 
-  const pregnancyLabel = view.pregnancy?.active
+  const pregnancyLabel = pregnancyActive
     ? "Active pregnancy"
-    : view.postpartum?.active
+    : postpartumActive
       ? "Postpartum"
-      : profile.pregnancyStatus && profile.pregnancyStatus !== "none"
-        ? profile.pregnancyStatus.charAt(0).toUpperCase() + profile.pregnancyStatus.slice(1)
+      : reproductiveStatus !== "none"
+        ? reproductiveStatus.charAt(0).toUpperCase() + reproductiveStatus.slice(1)
         : "Not active";
 
   return (
@@ -443,15 +512,16 @@ function ProfilePage() {
                   onChange={(e) => patch({ heightCm: e.target.value === "" ? undefined : Number(e.target.value) })}
                 />
               </Field>
-              <Field label="Weight (kg)" htmlFor="p-weight">
+              <Field label="Current weight (kg)" htmlFor="p-weight">
                 <Input
                   id="p-weight"
                   type="number"
                   inputMode="decimal"
                   className="h-11"
-                  value={profile.weightKg ?? ""}
-                  onChange={(e) => patch({ weightKg: e.target.value === "" ? undefined : Number(e.target.value) })}
+                  value={currentWeight ?? ""}
+                  onChange={(e) => setCurrentWeight(e.target.value === "" ? undefined : Number(e.target.value))}
                 />
+                <p className="mt-1 text-[10px] text-muted-foreground">Saved as today&apos;s dated weight entry.</p>
               </Field>
               <Field label="Target weight (kg)" htmlFor="p-target-weight">
                 <Input
@@ -471,11 +541,14 @@ function ProfilePage() {
                 </div>
               </Field>
               <Field label="Gender" htmlFor="p-gender">
-                <Input
+                <SelectField
                   id="p-gender"
-                  className="h-11"
-                  value={profile.gender ?? ""}
-                  onChange={(e) => patch({ gender: e.target.value })}
+                  value={gender}
+                  onChange={(value) => setGender(value as "female" | "male")}
+                  options={[
+                    { value: "female", label: "Female" },
+                    { value: "male", label: "Male" },
+                  ]}
                 />
               </Field>
               <Field label="Pronouns" htmlFor="p-pronouns">
@@ -503,8 +576,20 @@ function ProfilePage() {
             />
             <TagListField
               label="Allergies"
-              values={profile.allergies ?? []}
-              onChange={(v) => patch({ allergies: v })}
+              values={allergens}
+              onChange={(values) =>
+                update((d) => ({
+                  ...d,
+                  profile: {
+                    ...(d.profile ?? {}),
+                    allergies: values,
+                  },
+                  settings: {
+                    ...d.settings,
+                    allergens: undefined,
+                  },
+                }))
+              }
             />
             <TagListField
               label="Intolerances"
@@ -530,11 +615,11 @@ function ProfilePage() {
 
           {/* ---------------- Cycle ---------------- */}
           <Section title="Cycle" subtitle="Reproductive and hormonal status.">
-            <Field label="Pregnancy status" htmlFor="p-preg-status">
+            <Field label="Reproductive status" htmlFor="p-preg-status">
               <SelectField
                 id="p-preg-status"
-                value={profile.pregnancyStatus}
-                onChange={(v) => patch({ pregnancyStatus: v as HealthProfile["pregnancyStatus"] })}
+                value={reproductiveStatus}
+                onChange={(value) => setReproductiveStatus(value as NonNullable<HealthProfile["pregnancyStatus"]>)}
                 options={[
                   { value: "none", label: "None" },
                   { value: "pregnant", label: "Pregnant" },
@@ -543,18 +628,20 @@ function ProfilePage() {
                   { value: "unsure", label: "Unsure" },
                 ]}
               />
+              <p className="mt-1 text-[10px] text-muted-foreground">
+                Pregnancy and postpartum modes are synchronized across the whole app.
+              </p>
             </Field>
             <div className="grid grid-cols-1 gap-2">
               <ToggleRow
                 label="Trying to conceive"
                 checked={!!profile.tryingToConceive}
-                onChange={(v) => patch({ tryingToConceive: v })}
+                onChange={(value) => patch({ tryingToConceive: value })}
               />
-              <ToggleRow label="Postpartum" checked={!!profile.postpartum} onChange={(v) => patch({ postpartum: v })} />
               <ToggleRow
                 label="Breastfeeding"
                 checked={!!profile.breastfeeding}
-                onChange={(v) => patch({ breastfeeding: v })}
+                onChange={(value) => patch({ breastfeeding: value })}
               />
             </div>
             <Field label="Menopause" htmlFor="p-menopause">
@@ -727,42 +814,12 @@ function ProfilePage() {
           </Section>
 
           {/* ---------------- Medication ---------------- */}
-          <Section title="Medication" subtitle="Reminders, pharmacy and notes.">
-            <div>
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">Reminder times</label>
-              <div className="flex gap-2">
-                <Input
-                  aria-label="New reminder time"
-                  type="time"
-                  className="h-11"
-                  value={newTime}
-                  onChange={(e) => setNewTime(e.target.value)}
-                />
-                <Button type="button" size="sm" onClick={addTime} className="h-11 min-w-11 px-3">
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-              {reminderTimes.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {reminderTimes.map((t) => (
-                    <span
-                      key={t}
-                      className="inline-flex items-center gap-1 rounded-full bg-tint px-2.5 py-1 text-xs font-medium text-foreground ring-1 ring-border"
-                    >
-                      <Clock className="h-3 w-3" /> {t}
-                      <button
-                        type="button"
-                        aria-label={`Remove reminder ${t}`}
-                        onClick={() => removeTime(t)}
-                        className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
+          <Section title="Medication" subtitle="Medication schedules are managed from the Medications page.">
+            <Button type="button" variant="outline" onClick={() => navigate({ to: "/meds" })} className="w-full">
+              <Pill className="h-4 w-4" />
+              Manage medications and reminder times
+            </Button>
+
             <Field label="Pharmacy" htmlFor="p-pharmacy">
               <Input
                 id="p-pharmacy"
@@ -771,7 +828,8 @@ function ProfilePage() {
                 onChange={(e) => patch({ pharmacy: e.target.value })}
               />
             </Field>
-            <Field label="Medication notes" htmlFor="p-med-notes">
+
+            <Field label="General medication notes" htmlFor="p-med-notes">
               <Textarea
                 id="p-med-notes"
                 value={profile.medicationNotes ?? ""}
@@ -818,7 +876,7 @@ function ProfilePage() {
               <SummaryStat
                 icon={<Scale className="h-3.5 w-3.5" />}
                 label="Weight"
-                value={profile.weightKg != null ? `${profile.weightKg} kg` : "—"}
+                value={currentWeight != null ? `${currentWeight} kg` : "—"}
               />
               <SummaryStat
                 icon={<Target className="h-3.5 w-3.5" />}
@@ -826,7 +884,7 @@ function ProfilePage() {
                 value={profile.targetWeightKg != null ? `${profile.targetWeightKg} kg` : "—"}
               />
               <SummaryStat label="BMI" value={bmi != null ? bmi.toFixed(1) : "—"} />
-              <SummaryStat label="Gender" value={profile.gender || "—"} />
+              <SummaryStat label="Gender" value={gender.charAt(0).toUpperCase() + gender.slice(1)} />
               <SummaryStat label="Pronouns" value={profile.pronouns || "—"} />
             </div>
           </SummaryCard>

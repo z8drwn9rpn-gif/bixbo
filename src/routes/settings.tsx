@@ -39,6 +39,10 @@ import {
   todayKey,
   replaceBixbo,
   getBixbo,
+  clearBixboLocalStorage,
+  isPregnancyActive,
+  isPostpartumActive,
+  userAllergens,
   type BixboData,
   type PartnerData,
   type Gender,
@@ -311,10 +315,45 @@ function SettingsPage() {
   const setCycle = (patch: Partial<BixboData["cycle"]>) => update((d) => ({ ...d, cycle: { ...d.cycle, ...patch } }));
 
   const setPregnancyActive = (active: boolean) =>
-    update((d) => ({ ...d, pregnancy: { ...(d.pregnancy ?? EMPTY.pregnancy!), active } }));
+    update((d) => ({
+      ...d,
+      pregnancy: {
+        ...(d.pregnancy ?? EMPTY.pregnancy!),
+        active,
+        endedAt: active ? undefined : d.pregnancy?.endedAt,
+      },
+      postpartum: active
+        ? {
+            ...(d.postpartum ?? EMPTY.postpartum!),
+            active: false,
+          }
+        : d.postpartum,
+      settings: {
+        ...d.settings,
+        pregnantSince: undefined,
+      },
+    }));
 
   const setPostpartumActive = (active: boolean) =>
-    update((d) => ({ ...d, postpartum: { ...(d.postpartum ?? EMPTY.postpartum!), active } }));
+    update((d) => ({
+      ...d,
+      pregnancy: active
+        ? {
+            ...(d.pregnancy ?? EMPTY.pregnancy!),
+            active: false,
+            endedAt: d.pregnancy?.endedAt ?? todayKey(),
+          }
+        : d.pregnancy,
+      postpartum: {
+        ...(d.postpartum ?? EMPTY.postpartum!),
+        active,
+        birthDate: active ? (d.postpartum?.birthDate ?? todayKey()) : d.postpartum?.birthDate,
+      },
+      settings: {
+        ...d.settings,
+        pregnantSince: undefined,
+      },
+    }));
 
   const babyIsBorn = () => {
     if (
@@ -340,7 +379,7 @@ function SettingsPage() {
       return;
     try {
       const keep = session ? getBixbo() : null;
-      window.localStorage.clear();
+      clearBixboLocalStorage();
       if (keep) replaceBixbo(keep, "remote");
       alert("Local cache reset.");
     } catch {
@@ -355,8 +394,8 @@ function SettingsPage() {
     { v: "xl", label: "XL", px: "20" },
   ];
 
-  const pregnancyActive = view.pregnancy?.active ?? false;
-  const postpartumActive = view.postpartum?.active ?? false;
+  const pregnancyActive = isPregnancyActive(view);
+  const postpartumActive = isPostpartumActive(view);
 
   return (
     <AppShell
@@ -914,18 +953,38 @@ function SettingsPage() {
 
 function AllergensInline({ view, update }: { view: BixboData; update: (u: (d: BixboData) => BixboData) => void }) {
   const [text, setText] = useState("");
-  const allergens = view.settings.allergens ?? [];
+  const allergens = userAllergens(view);
 
   const add = () => {
     const v = text.trim();
-    if (!v || allergens.includes(v)) return;
-    update((d) => ({ ...d, settings: { ...d.settings, allergens: [...(d.settings.allergens ?? []), v] } }));
+    if (!v || allergens.some((item) => item.toLowerCase() === v.toLowerCase())) return;
+
+    update((d) => ({
+      ...d,
+      profile: {
+        ...(d.profile ?? {}),
+        allergies: [...userAllergens(d), v],
+      },
+      settings: {
+        ...d.settings,
+        allergens: undefined,
+      },
+    }));
+
     setText("");
   };
+
   const remove = (a: string) =>
     update((d) => ({
       ...d,
-      settings: { ...d.settings, allergens: (d.settings.allergens ?? []).filter((x) => x !== a) },
+      profile: {
+        ...(d.profile ?? {}),
+        allergies: userAllergens(d).filter((x) => x !== a),
+      },
+      settings: {
+        ...d.settings,
+        allergens: undefined,
+      },
     }));
 
   return (
@@ -933,7 +992,9 @@ function AllergensInline({ view, update }: { view: BixboData; update: (u: (d: Bi
       <label htmlFor="allergen-input" className="text-sm font-medium">
         Allergens
       </label>
-      <p className="mt-0.5 text-xs text-muted-foreground">Your allergens, used to flag them in the Food log.</p>
+      <p className="mt-0.5 text-xs text-muted-foreground">
+        Saved in Health Profile and used to flag them in the Food log.
+      </p>
       <div className="mt-2 flex gap-2">
         <Input
           id="allergen-input"

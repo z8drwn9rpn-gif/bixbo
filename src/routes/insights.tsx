@@ -27,6 +27,7 @@ import {
   BRISTOL,
   avgDayPain,
   isIntercourseKind,
+  isCycleTrackingHidden,
   type DayLog,
 } from "@/lib/storage";
 
@@ -160,6 +161,13 @@ function InsightsPage() {
   const view = hydrated ? data : EMPTY;
   const [period, setPeriod] = useState<Period>("W");
   const [anchor, setAnchor] = useState<Date>(new Date());
+  const cycleTrackingHidden = isCycleTrackingHidden(view);
+
+  useEffect(() => {
+    if (cycleTrackingHidden && period === "P") {
+      setPeriod("M");
+    }
+  }, [cycleTrackingHidden, period]);
 
   const { startK, endK } = useMemo(() => rangeFor(period, anchor), [period, anchor]);
   const days = useMemo(() => eachDay(startK, endK), [startK, endK]);
@@ -309,7 +317,7 @@ function InsightsPage() {
     <AppShell title="Health of Bixbo">
       <div className="px-5 pt-2 pb-24 space-y-4">
         <div className="flex gap-2">
-          {((view.settings.gender === "male" ? ["W", "M", "Y"] : ["W", "M", "Y", "P"]) as Period[]).map((p) => (
+          {((cycleTrackingHidden ? ["W", "M", "Y"] : ["W", "M", "Y", "P"]) as Period[]).map((p) => (
             <button
               key={p}
               onClick={() => setPeriod(p)}
@@ -329,7 +337,7 @@ function InsightsPage() {
           </button>
         </div>
 
-        {period === "P" && (
+        {!cycleTrackingHidden && period === "P" && (
           <>
             <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
               <p className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
@@ -416,7 +424,7 @@ function InsightsPage() {
               </p>
             </section>
 
-            {view.settings.gender !== "male" && (
+            {!cycleTrackingHidden && (
               <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
                 <p className="text-xs uppercase tracking-wider text-muted-foreground">Blueberry cycle</p>
                 <div className="mt-3 grid grid-cols-2 gap-2">
@@ -1526,7 +1534,6 @@ function SymptomLoadHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo
 
   return (
     <ChartCard title={`Symptom Load — ${year}`}>
-
       {/* Horizontálne sa posúva iba heatmapa. */}
       <div className="mt-3 overflow-x-auto">
         <div

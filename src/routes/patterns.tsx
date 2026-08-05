@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Activity,
   Brain,
@@ -19,7 +19,7 @@ import {
 
 import { AppShell } from "@/components/AppShell";
 import { CHART_COLORS, CHART_TINTS } from "@/components/ui/chart";
-import { EMPTY, addDays, avgDayPain, todayKey, useBixbo, type DayLog } from "@/lib/storage";
+import { EMPTY, addDays, avgDayPain, isCycleTrackingHidden, todayKey, useBixbo, type DayLog } from "@/lib/storage";
 import {
   avg,
   dayBowelSymptoms,
@@ -110,6 +110,7 @@ type SelectOption = {
 };
 
 type PatternTab = "cycle" | "monthly" | "treatment" | "triggers";
+type AnalysisRange = 7 | 30 | 90 | "all";
 
 const PATTERN_TABS: Array<{ id: PatternTab; label: string }> = [
   { id: "cycle", label: "Cycle" },
@@ -576,11 +577,24 @@ function SummaryPanel({
   );
 }
 
-function PatternTabs({ active, onChange }: { active: PatternTab; onChange: (tab: PatternTab) => void }) {
+function PatternTabs({
+  active,
+  onChange,
+  hideCycle,
+}: {
+  active: PatternTab;
+  onChange: (tab: PatternTab) => void;
+  hideCycle: boolean;
+}) {
+  const tabs = hideCycle ? PATTERN_TABS.filter((tab) => tab.id !== "cycle") : PATTERN_TABS;
+
   return (
     <div className="sticky top-[45px] z-20 -mx-5 border-y border-border/50 bg-background/90 px-5 py-2 backdrop-blur">
-      <div className="grid grid-cols-4 gap-1 rounded-2xl bg-tint p-1 ring-1 ring-border/50">
-        {PATTERN_TABS.map((tab) => {
+      <div
+        className="grid gap-1 rounded-2xl bg-tint p-1 ring-1 ring-border/50"
+        style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}
+      >
+        {tabs.map((tab) => {
           const selected = active === tab.id;
 
           return (
@@ -601,6 +615,52 @@ function PatternTabs({ active, onChange }: { active: PatternTab; onChange: (tab:
         })}
       </div>
     </div>
+  );
+}
+
+function AnalysisRangeSelector({
+  value,
+  onChange,
+}: {
+  value: AnalysisRange;
+  onChange: (value: AnalysisRange) => void;
+}) {
+  const options: Array<{ value: AnalysisRange; label: string }> = [
+    { value: 7, label: "7 days" },
+    { value: 30, label: "30 days" },
+    { value: 90, label: "90 days" },
+    { value: "all", label: "All" },
+  ];
+
+  return (
+    <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-foreground">Analysis range</p>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
+            Used for trigger comparisons and strongest associations.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-3 grid grid-cols-4 gap-1 rounded-2xl bg-tint p-1 ring-1 ring-border/50">
+        {options.map((option) => (
+          <button
+            key={String(option.value)}
+            type="button"
+            onClick={() => onChange(option.value)}
+            aria-pressed={value === option.value}
+            className={`rounded-xl px-2 py-2 text-xs font-semibold transition ${
+              value === option.value
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -650,9 +710,17 @@ function PatternsPage() {
   const { data, update, hydrated } = useBixbo();
   const view = hydrated ? data : EMPTY;
   const dayLogs = view.dayLogs;
-  const [activeTab, setActiveTab] = useState<PatternTab>("cycle");
+  const cycleTrackingHidden = isCycleTrackingHidden(view);
+  const [activeTab, setActiveTab] = useState<PatternTab>(cycleTrackingHidden ? "monthly" : "cycle");
+  const [analysisRange, setAnalysisRange] = useState<AnalysisRange>(30);
 
-  const cycles = useMemo(() => historicCycles(view), [view]);
+  useEffect(() => {
+    if (cycleTrackingHidden && activeTab === "cycle") {
+      setActiveTab("monthly");
+    }
+  }, [activeTab, cycleTrackingHidden]);
+
+  const cycles = useMemo(() => (cycleTrackingHidden ? [] : historicCycles(view)), [cycleTrackingHidden, view]);
   const phaseBuckets = useMemo(() => phaseDays(cycles), [cycles]);
 
   /* ------------------------------------------------------------------------ */
@@ -1141,7 +1209,10 @@ function PatternsPage() {
       id: `food:${food}`,
       label: `Ate "${food}"`,
     })),
-  ];
+  ].filter((option) => {
+    if (!cycleTrackingHidden) return true;
+    return option.id !== "period" && option.id !== "heavyPeriod";
+  });
 
   const outcomeOptions: SelectOption[] = [
     {
@@ -1353,9 +1424,16 @@ function PatternsPage() {
 
   const allLoggedDays = useMemo(() => Object.keys(dayLogs).sort(), [dayLogs]);
 
-  const daysWithTrigger = allLoggedDays.filter((day) => hasTrigger(day, dayLogs[day], selectedTrigger));
+  const analysisDays = useMemo(() => {
+    if (analysisRange === "all") return allLoggedDays;
 
-  const daysWithoutTrigger = allLoggedDays.filter((day) => !hasTrigger(day, dayLogs[day], selectedTrigger));
+    const start = addDays(todayKey(), -(analysisRange - 1));
+    return allLoggedDays.filter((day) => day >= start && day <= todayKey());
+  }, [allLoggedDays, analysisRange]);
+
+  const daysWithTrigger = analysisDays.filter((day) => hasTrigger(day, dayLogs[day], selectedTrigger));
+
+  const daysWithoutTrigger = analysisDays.filter((day) => !hasTrigger(day, dayLogs[day], selectedTrigger));
 
   const percentWithTrigger =
     daysWithTrigger.length > 0
@@ -1394,8 +1472,8 @@ function PatternsPage() {
     }> = [];
 
     triggerOptions.forEach((trigger) => {
-      const withDays = allLoggedDays.filter((day) => hasTrigger(day, dayLogs[day], trigger.id));
-      const withoutDays = allLoggedDays.filter((day) => !hasTrigger(day, dayLogs[day], trigger.id));
+      const withDays = analysisDays.filter((day) => hasTrigger(day, dayLogs[day], trigger.id));
+      const withoutDays = analysisDays.filter((day) => !hasTrigger(day, dayLogs[day], trigger.id));
       if (withDays.length < 3 || withoutDays.length < 3) return;
 
       outcomeOptions.forEach((outcome) => {
@@ -1454,9 +1532,11 @@ function PatternsPage() {
   return (
     <AppShell title="Bixbo Patterns">
       <div className="space-y-3 px-4 pb-24 pt-2 sm:px-5">
-        <PatternTabs active={activeTab} onChange={setActiveTab} />
+        <PatternTabs active={activeTab} onChange={setActiveTab} hideCycle={cycleTrackingHidden} />
 
-        {activeTab === "cycle" && (
+        {activeTab === "triggers" && <AnalysisRangeSelector value={analysisRange} onChange={setAnalysisRange} />}
+
+        {!cycleTrackingHidden && activeTab === "cycle" && (
           <div className="space-y-4">
             {/* ------------------------------------------------------------------ */}
             {/* Cycle phase                                                        */}

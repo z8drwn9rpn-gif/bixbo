@@ -9,6 +9,7 @@ import {
   predictPeriods,
   avgDayPain,
   isIntercourseKind,
+  isCycleTrackingHidden,
   type BixboData,
   type DayLog,
   type EventEntry,
@@ -51,7 +52,7 @@ function iconsFor(log: DayLog | undefined, hasMed: boolean, _isMale: boolean): s
   const out: string[] = [];
   if (log?.sex?.some((e) => isIntercourseKind(e.kind))) out.push("❤️");
   if (hasMed) out.push("💊");
-  if (log?.bowel?.some((b) => b.bristol > 0)) out.push("💩⚪");
+  if (log?.bowel?.some((b) => b.bristol >= 0)) out.push("💩⚪");
   if (log?.heat?.some((h) => h.kind === "heat")) out.push("♨️");
   if (log?.heat?.some((h) => h.kind === "cold")) out.push("🧊");
   if (log?.heat?.some((h) => h.kind === "tens")) out.push("⭐");
@@ -60,7 +61,7 @@ function iconsFor(log: DayLog | undefined, hasMed: boolean, _isMale: boolean): s
   return out;
 }
 
-function daySummaryLines(log: DayLog | undefined, isMale: boolean): string[] {
+function daySummaryLines(log: DayLog | undefined, cycleTrackingHidden: boolean): string[] {
   if (!log) return [];
   const out: string[] = [];
   if (log.pain?.length) out.push(`🔥 Pain: ${log.pain.map((p) => `${p.time} ${p.score}/10`).join(", ")}`);
@@ -91,7 +92,7 @@ function daySummaryLines(log: DayLog | undefined, isMale: boolean): string[] {
   if (log.weight != null) out.push(`⚖️ Weight: ${log.weight} kg`);
   if (log.temperature != null) out.push(`🌡️ Temp: ${log.temperature} °C`);
   if (log.sleepHours != null) out.push(`😴 Sleep: ${log.sleepHours} h`);
-  if (!isMale && (log.periodInfo?.level ?? log.period)) {
+  if (!cycleTrackingHidden && (log.periodInfo?.level ?? log.period)) {
     out.push(`🫐 Period: ${periodLabel(log.periodInfo?.level ?? log.period)}`);
   }
   return out;
@@ -111,8 +112,9 @@ export function MonthCalendar({
   onSwipeMonth?: (delta: -1 | 1) => void;
 }) {
   const isMale = data.settings.gender === "male";
-  /** Pregnancy mode hides period / ovulation / fertility predictions. */
-  const hidePredictions = isMale || !!data.pregnancy?.active || !!data.settings.pregnantSince;
+  /** Shared rule: hide cycle UI for male, pregnancy and postpartum modes. */
+  const cycleTrackingHidden = isCycleTrackingHidden(data);
+  const hidePredictions = cycleTrackingHidden;
   const [peek, setPeek] = useState<string | null>(null);
   const longTimer = useRef<number | null>(null);
   const longFired = useRef(false);
@@ -153,7 +155,7 @@ export function MonthCalendar({
     predicted.some((p) => isDateInRange(k, p.start, p.end)) &&
     !(data.dayLogs[k]?.period || data.dayLogs[k]?.periodInfo?.level);
   const isActualPeriod = (k: string) => {
-    if (isMale) return false;
+    if (cycleTrackingHidden) return false;
     const c = data.cycle;
     if (!c.lastPeriodStart || !c.lastPeriodEnd) return false;
     return isDateInRange(k, c.lastPeriodStart, c.lastPeriodEnd);
@@ -246,8 +248,8 @@ export function MonthCalendar({
                 const log = data.dayLogs[key];
                 const takenToday = data.medLog[key] ?? {};
                 const hasMed = Object.values(takenToday).some(Boolean) || !!log?.extraMeds?.length;
-                const periodLevel = isMale ? undefined : (log?.periodInfo?.level ?? log?.period);
-                const periodColor = isMale
+                const periodLevel = cycleTrackingHidden ? undefined : (log?.periodInfo?.level ?? log?.period);
+                const periodColor = cycleTrackingHidden
                   ? null
                   : (periodColorVar(periodLevel) ?? (isActualPeriod(key) ? "var(--period-medium)" : null));
                 const pAvg = avgDayPain(log);
@@ -375,7 +377,7 @@ export function MonthCalendar({
 
       {peek &&
         (() => {
-          const lines = daySummaryLines(data.dayLogs[peek], isMale);
+          const lines = daySummaryLines(data.dayLogs[peek], cycleTrackingHidden);
           const d = new Date(`${peek}T00:00:00`);
           return (
             <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-6" onClick={() => setPeek(null)}>
