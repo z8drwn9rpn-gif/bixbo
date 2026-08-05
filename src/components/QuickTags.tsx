@@ -648,7 +648,9 @@ export function QuickTags({
                     <X className="h-3 w-3" strokeWidth={3} />
                   </button>
 
-                  <Ico e={tag.emoji} size={30} />
+                  <div className="grid h-11 w-11 place-items-center rounded-full bg-white/10 dark:bg-white/5">
+  <Ico e={tag.emoji} size={30} />
+</div>/>
                   <span className="text-[11px] font-medium leading-tight text-muted-foreground">{tag.label}</span>
 
                   <div className="mt-1 flex gap-1">
@@ -754,7 +756,9 @@ export function QuickTags({
             className="flex h-[84px] w-[84px] shrink-0 select-none flex-col items-center justify-center gap-1 rounded-full border border-dashed border-border bg-transparent px-3 py-2.5 text-muted-foreground transition-[transform,background-color,border-color] hover:border-primary/50 hover:bg-tint/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-95"
           >
             <Plus className="h-5 w-5" />
-            <span className="text-[10px]">Add</span>
+           <span className="text-[11px] font-medium">
+    Add
+</span>
           </button>
         </div>
       </div>
