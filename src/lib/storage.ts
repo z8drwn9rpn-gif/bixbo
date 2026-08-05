@@ -827,12 +827,18 @@ const LEGACY_KEY = BIXBO_LEGACY_STORAGE_KEY;
  * Clears only BIXBO's local data. Never call localStorage.clear(), because that
  * can also remove authentication/session data owned by other parts of the app.
  */
-export function clearBixboLocalStorage() {
+/**
+ * Remove only BIXBO application data from localStorage.
+ *
+ * This is a named module export used by Settings. It deliberately avoids
+ * localStorage.clear() so authentication and unrelated application data remain.
+ */
+export const clearBixboLocalStorage = (): void => {
   if (typeof window === "undefined") return;
 
-  localStorage.removeItem(BIXBO_STORAGE_KEY);
-  localStorage.removeItem(BIXBO_LEGACY_STORAGE_KEY);
-}
+  window.localStorage.removeItem(BIXBO_STORAGE_KEY);
+  window.localStorage.removeItem(BIXBO_LEGACY_STORAGE_KEY);
+};
 
 type VitalField = "weightEntries" | "temperatureEntries";
 
