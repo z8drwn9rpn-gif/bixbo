@@ -21,7 +21,6 @@ import {
   type PostpartumState,
   type PregnancyAppointment,
 } from "@/lib/storage";
-import { POSTPARTUM_MOODS, POSTPARTUM_SYMPTOMS } from "@/lib/health";
 
 export const Route = createFileRoute("/postpartum")({
   head: () => ({
@@ -57,25 +56,104 @@ const BLEEDING_LEVELS: { v: NonNullable<PostpartumDayLog["bleeding"]>; label: st
   { v: "heavy", label: "Heavy", color: "bg-destructive" },
 ];
 
+const POSTPARTUM_MOODS = ["Calm", "Happy", "Overwhelmed", "Anxious", "Tearful", "Numb", "Irritable", "Proud"];
+
+const POSTPARTUM_SYMPTOMS = [
+  "Afterpains",
+  "Perineal pain",
+  "C-section pain",
+  "Breast tenderness",
+  "Engorgement",
+  "Nipple pain",
+  "Headache",
+  "Dizziness",
+  "Swelling",
+  "Constipation",
+  "Hemorrhoids",
+  "Urinary discomfort",
+  "Back pain",
+  "Pelvic pressure",
+  "Fatigue",
+  "Night sweats",
+];
+
+function safeStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === "string");
+}
+
+function safeObjectArray<T extends object>(value: unknown): T[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is T => Boolean(item) && typeof item === "object");
+}
+
+function normalizePostpartumLog(value: unknown): PostpartumDayLog {
+  const raw = value && typeof value === "object" ? (value as PostpartumDayLog) : {};
+
+  return {
+    ...raw,
+    symptoms: safeStringArray(raw.symptoms),
+    mood: safeStringArray(raw.mood),
+    breastfeeding: safeObjectArray<NonNullable<PostpartumDayLog["breastfeeding"]>[number]>(raw.breastfeeding),
+    pumping: safeObjectArray<NonNullable<PostpartumDayLog["pumping"]>[number]>(raw.pumping),
+    bottle: safeObjectArray<NonNullable<PostpartumDayLog["bottle"]>[number]>(raw.bottle),
+    diapers: safeObjectArray<NonNullable<PostpartumDayLog["diapers"]>[number]>(raw.diapers),
+    sleepHours: Number.isFinite(Number(raw.sleepHours)) ? Number(raw.sleepHours) : undefined,
+    babySleepHours: Number.isFinite(Number(raw.babySleepHours)) ? Number(raw.babySleepHours) : undefined,
+  };
+}
+
+function normalizePostpartumState(value: unknown): PostpartumState {
+  const raw =
+    value && typeof value === "object"
+      ? (value as Partial<PostpartumState>)
+      : ({ active: false } as Partial<PostpartumState>);
+
+  const visits = safeObjectArray<PregnancyAppointment>(raw.visits).filter(
+    (visit) => typeof visit.id === "string" && typeof visit.date === "string" && typeof visit.title === "string",
+  );
+
+  return {
+    active: Boolean(raw.active),
+    birthDate: typeof raw.birthDate === "string" ? raw.birthDate : undefined,
+    deliveryType:
+      raw.deliveryType === "vaginal" ||
+      raw.deliveryType === "csection" ||
+      raw.deliveryType === "assisted" ||
+      raw.deliveryType === "other"
+        ? raw.deliveryType
+        : undefined,
+    babyName: typeof raw.babyName === "string" ? raw.babyName : undefined,
+    babyBirthWeightKg: Number.isFinite(Number(raw.babyBirthWeightKg)) ? Number(raw.babyBirthWeightKg) : undefined,
+    feedingMode:
+      raw.feedingMode === "breast" || raw.feedingMode === "bottle" || raw.feedingMode === "mixed"
+        ? raw.feedingMode
+        : undefined,
+    visits,
+    note: typeof raw.note === "string" ? raw.note : undefined,
+    endedAt: typeof raw.endedAt === "string" ? raw.endedAt : undefined,
+  };
+}
+
 function PostpartumPage() {
   const navigate = useNavigate();
   const { data, update, hydrated } = useBixbo();
   const view = hydrated ? data : EMPTY;
-  const pp = view.postpartum;
+  const pp = normalizePostpartumState(view.postpartum);
   const today = todayKey();
-  const log: PostpartumDayLog = view.dayLogs[today]?.postpartum ?? {};
+  const log = normalizePostpartumLog(view.dayLogs?.[today]?.postpartum);
 
   const updatePP = (patch: (p: PostpartumState) => PostpartumState) =>
     update((d) => {
-      const current: PostpartumState = {
-        ...(d.postpartum ?? { active: true, visits: [] }),
-        visits: d.postpartum?.visits ?? [],
-      };
-      return { ...d, postpartum: patch(current) };
+      const current = normalizePostpartumState(d.postpartum ?? { active: true, visits: [] });
+      return { ...d, postpartum: normalizePostpartumState(patch(current)) };
     });
 
   const updateLog = (patch: (l: PostpartumDayLog) => PostpartumDayLog) =>
-    updateDayLog(update, today, (l: DayLog) => ({ ...l, postpartum: patch(l.postpartum ?? {}) }));
+    updateDayLog(update, today, (l: DayLog) => ({
+      ...l,
+      postpartum: normalizePostpartumLog(patch(normalizePostpartumLog(l.postpartum))),
+    }));
 
   if (!hydrated) return null;
 
@@ -104,7 +182,8 @@ function PostpartumPage() {
     );
   }
 
-  const days = pp.birthDate ? Math.max(0, daysBetween(pp.birthDate, today)) : null;
+  const validBirthDate = Boolean(pp.birthDate && /^\d{4}-\d{2}-\d{2}$/.test(pp.birthDate));
+  const days = validBirthDate && pp.birthDate ? Math.max(0, daysBetween(pp.birthDate, today)) : null;
   const progress =
     days == null
       ? null
@@ -126,7 +205,7 @@ function PostpartumPage() {
       <div className="space-y-4 px-5 pt-4 pb-24">
         {/* ---- Header / setup ---- */}
         <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
-          {!pp.birthDate ? (
+          {!validBirthDate ? (
             <SetupForm pp={pp} updatePP={updatePP} />
           ) : (
             <>
@@ -157,7 +236,7 @@ function PostpartumPage() {
           )}
         </section>
 
-        {pp.birthDate && (
+        {validBirthDate && (
           <>
             <SymptomsSection log={log} updateLog={updateLog} />
             <BleedingSection view={view} log={log} updateLog={updateLog} today={today} />
@@ -374,7 +453,7 @@ function BleedingSection({
       <p className="mt-4 mb-1 text-xs uppercase tracking-wider text-muted-foreground">6-week trend</p>
       <div className="flex items-end gap-[2px]">
         {trend.map((k) => {
-          const b = view.dayLogs[k]?.postpartum?.bleeding;
+          const b = normalizePostpartumLog(view.dayLogs?.[k]?.postpartum).bleeding;
           const idx = BLEEDING_LEVELS.findIndex((x) => x.v === b);
           const color = idx >= 0 ? BLEEDING_LEVELS[idx].color : "bg-border";
           const h = idx >= 0 ? 6 + idx * 5 : 4;
@@ -528,7 +607,10 @@ function SleepSection({
   const maxH = Math.max(
     1,
     ...days.map((k) =>
-      Math.max(view.dayLogs[k]?.postpartum?.sleepHours ?? 0, view.dayLogs[k]?.postpartum?.babySleepHours ?? 0),
+      Math.max(
+        normalizePostpartumLog(view.dayLogs?.[k]?.postpartum).sleepHours ?? 0,
+        normalizePostpartumLog(view.dayLogs?.[k]?.postpartum).babySleepHours ?? 0,
+      ),
     ),
   );
   return (
@@ -571,9 +653,9 @@ function SleepSection({
       <p className="mt-4 mb-1 text-xs uppercase tracking-wider text-muted-foreground">Last 14 days</p>
       <div className="flex items-end gap-1" style={{ height: 60 }}>
         {days.map((k) => {
-          const p = view.dayLogs[k]?.postpartum;
-          const mh = p?.sleepHours ?? 0;
-          const bh = p?.babySleepHours ?? 0;
+          const p = normalizePostpartumLog(view.dayLogs?.[k]?.postpartum);
+          const mh = p.sleepHours ?? 0;
+          const bh = p.babySleepHours ?? 0;
           return (
             <div key={k} title={`${fmtDay(k)}: you ${mh}h · baby ${bh}h`} className="flex flex-1 items-end gap-[1px]">
               <div
