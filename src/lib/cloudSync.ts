@@ -15,7 +15,6 @@ import {
   type PostpartumState,
   type PregnancyAppointment,
 } from "./storage";
-import { mergeBixbo } from "./merge";
 
 export interface CloudProfile {
   id: string;
@@ -461,22 +460,25 @@ export function useCloudSync() {
         if (cancelled) return;
 
         if (remote) {
-          // Never overwrite: merge local and remote so neither device loses data.
+          // Login-safe restore:
+          // Load the already-normalized cloud snapshot directly. This avoids a
+          // crash caused by malformed legacy local data during the first merge
+          // after OAuth sign-in. Keep the local-only partner projection.
           const safeRemote = normalizeRemotePayload(remote);
-          const merged = mergeBixbo(getBixbo(), safeRemote);
+          const currentPartner = getBixbo().partner;
 
           replaceBixbo(
             {
-              ...merged,
-              partner: getBixbo().partner,
+              ...safeRemote,
+              partner: currentPartner,
             },
             "remote",
           );
 
-          // Also refresh the narrow partner_shared_data payload.
-          await pushMyData(merged);
+          // Do not immediately push after the first cloud restore. A later local
+          // change will go through the normal debounced push path.
         } else {
-          // First sync: save private data and the narrow partner payload.
+          // First sync for an account without cloud data.
           await pushMyData(getBixbo());
         }
 
@@ -541,24 +543,19 @@ export function useCloudSync() {
           // Ignore a realtime echo of our own most recent private write.
           if (incomingJson === _lastPushedJson) return;
 
-          const merged = mergeBixbo(getBixbo(), incoming);
-          const mergedJson = JSON.stringify({
-            ...merged,
-            partner: undefined,
-          });
+          // Realtime-safe replace:
+          // Incoming data has already passed normalizeRemotePayload(). Replacing
+          // it directly avoids repeating the same legacy-data merge crash that
+          // can happen immediately after Google sign-in.
+          const currentPartner = getBixbo().partner;
 
           replaceBixbo(
             {
-              ...merged,
-              partner: getBixbo().partner,
+              ...incoming,
+              partner: currentPartner,
             },
             "remote",
           );
-
-          // Push only when merging actually added something to the remote copy.
-          if (mergedJson !== incomingJson) {
-            pushMyData(merged).catch(console.error);
-          }
         },
       )
       .on(
