@@ -200,8 +200,9 @@ export function LogSheet({
         side="bottom"
         className={
           (active
-            ? "flex h-[100dvh] max-h-[100dvh] flex-col rounded-t-none bg-background p-0 pt-[env(safe-area-inset-top)]"
-            : "flex h-[88dvh] max-h-[88dvh] flex-col rounded-t-3xl bg-background p-0") + " [&>button.absolute]:hidden"
+            ? "flex h-[100dvh] max-h-[100dvh] flex-col overflow-x-hidden overscroll-x-none rounded-t-none bg-background p-0 pt-[env(safe-area-inset-top)]"
+            : "flex h-[88dvh] max-h-[88dvh] flex-col overflow-x-hidden overscroll-x-none rounded-t-3xl bg-background p-0") +
+          " [&>button.absolute]:hidden"
         }
       >
         {!active ? (
@@ -278,7 +279,7 @@ export function LogSheet({
             </ul>
           </>
         ) : (
-          <div className="flex h-full min-h-0 flex-col">
+          <div className="flex h-full min-h-0 flex-col overflow-x-hidden" style={{ overscrollBehaviorX: "none" }}>
             <SheetHeader className="shrink-0 flex-row items-center justify-between border-b border-border px-5 py-3">
               <button
                 onClick={back}
@@ -297,7 +298,7 @@ export function LogSheet({
             </SheetHeader>
             <div
               key={`${active}-${openToken}-${(edit as { id?: string } | undefined)?.id ?? initialPain?.id ?? "new"}`}
-              className={`min-h-0 flex-1 overflow-y-auto ${active === "pain" ? "" : "px-5 py-4"}`}
+              className={`min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-x-none ${active === "pain" ? "" : "px-5 py-4"}`}
             >
               {active === "postpartum" && (
                 <PostpartumSymptomsForm date={date} data={data} update={update} onDone={close} />
@@ -1015,7 +1016,8 @@ function PainWizard({
 
   return (
     <div
-      className="flex min-h-full flex-col bg-background px-5 py-4 text-foreground touch-pan-y"
+      className="flex min-h-full w-full max-w-full flex-col overflow-x-hidden bg-background px-5 py-4 text-foreground touch-pan-y"
+      style={{ overscrollBehaviorX: "none" }}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
