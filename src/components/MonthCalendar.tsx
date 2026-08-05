@@ -111,6 +111,8 @@ export function MonthCalendar({
   onSwipeMonth?: (delta: -1 | 1) => void;
 }) {
   const isMale = data.settings.gender === "male";
+  /** Pregnancy mode hides period / ovulation / fertility predictions. */
+  const hidePredictions = isMale || !!data.pregnancy?.active || !!data.settings.pregnantSince;
   const [peek, setPeek] = useState<string | null>(null);
   const longTimer = useRef<number | null>(null);
   const longFired = useRef(false);
@@ -145,9 +147,9 @@ export function MonthCalendar({
     cells.push({ date: d, inMonth, key: toKey(d) });
   }
 
-  const predicted = isMale ? [] : predictPeriods(data.cycle, cells[0].date, cells[cells.length - 1].date);
+  const predicted = hidePredictions ? [] : predictPeriods(data.cycle, cells[0].date, cells[cells.length - 1].date);
   const isPredicted = (k: string) =>
-    !isMale &&
+    !hidePredictions &&
     predicted.some((p) => isDateInRange(k, p.start, p.end)) &&
     !(data.dayLogs[k]?.period || data.dayLogs[k]?.periodInfo?.level);
   const isActualPeriod = (k: string) => {

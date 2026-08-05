@@ -1099,10 +1099,9 @@ function WeightLineChart({
 
   if (!nums.length) {
     return (
-      <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
-        <p className="text-xs uppercase tracking-wider text-muted-foreground">{label}</p>
-        <p className="mt-1 text-sm text-muted-foreground">No data</p>
-      </section>
+      <ChartCard title={label}>
+        <ChartEmpty />
+      </ChartCard>
     );
   }
 
@@ -1148,8 +1147,7 @@ function WeightLineChart({
       : `${fmtDate(days[0])} – ${fmtDate(days[days.length - 1])}`;
 
   return (
-    <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
-      <p className="text-xs uppercase tracking-wider text-muted-foreground">{label}</p>
+    <ChartCard title={label}>
       <div className="mt-2 flex items-end gap-2">
         <span className="font-serif text-5xl leading-none">{avg.toFixed(1)}</span>
         <span className="pb-1 text-sm font-semibold text-muted-foreground">{unit}</span>
@@ -1159,8 +1157,8 @@ function WeightLineChart({
         <svg viewBox={`0 0 ${width} ${height}`} className="h-48 w-full" role="img" aria-label={`${label} line chart`}>
           {[yMax, yMid, yMin].map((y) => (
             <g key={y}>
-              <line x1={left} x2={width - right} y1={yFor(y)} y2={yFor(y)} stroke="var(--border)" strokeWidth="1" />
-              <text x={width - right + 8} y={yFor(y) + 4} fontSize="10" fill="var(--muted-foreground)">
+              <line x1={left} x2={width - right} y1={yFor(y)} y2={yFor(y)} stroke={CHART_GRID} strokeWidth="1" />
+              <text x={width - right + 8} y={yFor(y) + 4} fontSize="10" fill={CHART_AXIS}>
                 {y.toFixed(y % 1 ? 1 : 0)}
               </text>
             </g>
@@ -1172,11 +1170,11 @@ function WeightLineChart({
                 x2={xFor(i)}
                 y1={top}
                 y2={height - bottom}
-                stroke="var(--border)"
+                stroke={CHART_GRID}
                 strokeDasharray="3 3"
                 strokeWidth="1"
               />
-              <text x={xFor(i)} y={height - 8} textAnchor="middle" fontSize="9" fill="var(--muted-foreground)">
+              <text x={xFor(i)} y={height - 8} textAnchor="middle" fontSize="9" fill={CHART_AXIS}>
                 {tickLabel(k)}
               </text>
             </g>
@@ -1221,18 +1219,11 @@ function WeightLineChart({
               const boxW = Math.max(60, text.length * 5.6);
               const x = Math.min(Math.max(xFor(active.index) - boxW / 2, 2), width - right - boxW - 2);
               const y = Math.max(yFor(active.value) - 32, 2);
-              return (
-                <g pointerEvents="none">
-                  <rect x={x} y={y} width={boxW} height="22" rx="6" fill="var(--foreground)" opacity="0.9" />
-                  <text x={x + boxW / 2} y={y + 15} textAnchor="middle" fontSize="9.5" fill="var(--background)">
-                    {text}
-                  </text>
-                </g>
-              );
+              return <ChartSvgTooltip x={x} y={y} width={boxW} text={text} />;
             })()}
         </svg>
       </div>
-    </section>
+    </ChartCard>
   );
 }
 
