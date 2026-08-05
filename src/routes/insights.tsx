@@ -1365,8 +1365,7 @@ function BristolChart({ bowelCounts }: { bowelCounts: number[] }) {
     ...BRISTOL,
   ];
   return (
-    <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
-      <p className="text-xs uppercase tracking-wider text-muted-foreground">Bowel — Bristol distribution</p>
+    <ChartCard title="Bowel — Bristol distribution">
       <div className="relative mt-3 flex items-end gap-2">
         {chartTypes.map((b) => {
           const c = bowelCounts[b.n] ?? 0;
@@ -1526,8 +1525,7 @@ function SymptomLoadHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo
   const active_ = active ? summaryFor(active) : null;
 
   return (
-    <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
-      <p className="text-xs uppercase tracking-wider text-muted-foreground">Symptom Load — {year}</p>
+    <ChartCard title={`Symptom Load — ${year}`}>
 
       {/* Horizontálne sa posúva iba heatmapa. */}
       <div className="mt-3 overflow-x-auto">

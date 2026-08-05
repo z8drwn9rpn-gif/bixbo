@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Settings as SettingsIcon, Share2, Trash2 } f
 
 import { Ico, IcoText, PillIcon } from "@/components/icons/BixboIcons";
 import { AppShell } from "@/components/AppShell";
+import { pregnancyProgress, weeksPostpartum } from "@/lib/health";
 import { Button } from "@/components/ui/button";
 import { MonthCalendar, monthLabel } from "@/components/MonthCalendar";
 import { LogSheet } from "@/components/LogSheet";
