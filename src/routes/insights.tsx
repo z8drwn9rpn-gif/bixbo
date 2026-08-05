@@ -1391,7 +1391,7 @@ function BristolChart({ bowelCounts }: { bowelCounts: number[] }) {
           );
         })}
       </div>
-    </section>
+    </ChartCard>
   );
 }
 
@@ -1626,7 +1626,7 @@ function SymptomLoadHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo
 
         <span>High load</span>
       </div>
-    </section>
+    </ChartCard>
   );
 }
 /** Combined Tetany & Panic time-of-day pattern chart. */
