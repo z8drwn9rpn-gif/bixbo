@@ -1721,7 +1721,6 @@ function PainWizard({
               <Field label={`Stress ${stress ?? "-"} / 10`}>
                 <div className="mt-2 grid gap-1" style={{ gridTemplateColumns: "repeat(11, minmax(0, 1fr))" }}>
                   {Array.from({ length: 11 }, (_, n) => {
-                   hsl(130...)
                     const bg = `hsl(${hue} 70% 50%)`;
                     const active = stress === n;
                     return (
