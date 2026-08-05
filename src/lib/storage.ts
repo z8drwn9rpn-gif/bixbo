@@ -305,6 +305,8 @@ export interface PregnancyDayLog {
 }
 export interface PostpartumDayLog {
   bleeding?: "" | "none" | "spotting" | "light" | "medium" | "heavy";
+  /** Daily postpartum recovery symptoms selected by the user. */
+  symptoms?: string[];
   recovery?: number;
   csectionRecovery?: number;
   perinealHealing?: number;

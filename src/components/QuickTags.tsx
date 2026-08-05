@@ -1,4 +1,5 @@
 import { Ico } from "@/components/icons/BixboIcons";
+import { POSTPARTUM_SYMPTOMS } from "@/lib/health";
 import { useRef, useState } from "react";
 import { Check, Plus, X, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
 import {
@@ -16,14 +17,14 @@ import {
   type PeriodLevel,
 } from "@/lib/storage";
 
-type Cat = QuickTagCategory | "period";
+type Cat = QuickTagCategory | "period" | "postpartum";
 
 type Tag = {
   key: string;
   emoji: string;
   label: string;
   cat: Cat;
-  popup?: "period";
+  popup?: "period" | "postpartum";
   apply?: (l: DayLog) => DayLog;
   scheduledMed?: {
     medId: string;
@@ -402,6 +403,8 @@ export function QuickTags({
 }) {
   const [flash, setFlash] = useState<string | null>(null);
   const [periodOpen, setPeriodOpen] = useState(false);
+  const [postpartumOpen, setPostpartumOpen] = useState(false);
+  const [postpartumSymptoms, setPostpartumSymptoms] = useState<string[]>([]);
   const [builderOpen, setBuilderOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const timerRef = useRef<number | null>(null);
@@ -409,7 +412,18 @@ export function QuickTags({
 
   const cycleTrackingHidden = isCycleTrackingHidden(data);
 
+  const postpartumTag: Tag | null = data.postpartum?.active
+    ? {
+        key: "postpartum-symptoms",
+        emoji: "🤱",
+        label: "Postpartum",
+        cat: "postpartum",
+        popup: "postpartum",
+      }
+    : null;
+
   const allTags = [
+    ...(postpartumTag ? [postpartumTag] : []),
     ...baseTags().filter((tag) => !(tag.cat === "period" && cycleTrackingHidden)),
     ...(data.settings.customQuickTags ?? [])
       .filter((tag) => !(tag.cat === "period" && cycleTrackingHidden))
@@ -493,6 +507,12 @@ export function QuickTags({
       return;
     }
 
+    if (tag.popup === "postpartum") {
+      setPostpartumSymptoms(data.dayLogs[todayKey()]?.postpartum?.symptoms ?? []);
+      setPostpartumOpen(true);
+      return;
+    }
+
     if (tag.scheduledMed) {
       const date = todayKey();
       const actualTime = nowHHMM();
@@ -547,6 +567,25 @@ export function QuickTags({
 
     setPeriodOpen(false);
     flashKey("period");
+  };
+
+  const togglePostpartumSymptom = (symptom: string) => {
+    setPostpartumSymptoms((current) =>
+      current.includes(symptom) ? current.filter((item) => item !== symptom) : [...current, symptom],
+    );
+  };
+
+  const savePostpartumSymptoms = () => {
+    updateDayLog(update, todayKey(), (log) => ({
+      ...log,
+      postpartum: {
+        ...(log.postpartum ?? {}),
+        symptoms: postpartumSymptoms.length ? postpartumSymptoms : undefined,
+      },
+    }));
+
+    setPostpartumOpen(false);
+    flashKey("postpartum-symptoms");
   };
 
   return (
@@ -736,6 +775,64 @@ export function QuickTags({
             >
               Cancel
             </button>
+          </div>
+        </div>
+      )}
+
+      {postpartumOpen && (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-6"
+          onClick={() => setPostpartumOpen(false)}
+        >
+          <div
+            className="max-h-[80dvh] w-full max-w-sm overflow-y-auto rounded-3xl bg-background p-4 ring-1 ring-border"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-3 flex items-center justify-center gap-2">
+              <Ico e="🤱" size={26} />
+              <p className="font-serif text-lg">Postpartum symptoms</p>
+            </div>
+
+            <p className="mb-3 text-center text-xs leading-relaxed text-muted-foreground">
+              Select every symptom you experienced today.
+            </p>
+
+            <div className="flex flex-wrap gap-2">
+              {POSTPARTUM_SYMPTOMS.map((symptom) => {
+                const active = postpartumSymptoms.includes(symptom);
+
+                return (
+                  <button
+                    key={symptom}
+                    type="button"
+                    onClick={() => togglePostpartumSymptom(symptom)}
+                    className={`rounded-full px-3 py-1.5 text-xs font-semibold ring-1 transition ${
+                      active ? "bg-primary text-primary-foreground ring-primary" : "bg-tint text-foreground ring-border"
+                    }`}
+                  >
+                    {symptom}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setPostpartumOpen(false)}
+                className="flex-1 rounded-2xl bg-tint py-2.5 text-sm font-medium"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={savePostpartumSymptoms}
+                className="flex-1 rounded-2xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground"
+              >
+                Save
+              </button>
+            </div>
           </div>
         </div>
       )}

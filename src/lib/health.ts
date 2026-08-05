@@ -15,6 +15,7 @@ export function dueDateOf(p?: PregnancyState): string | undefined {
 export function pregnancyStart(p?: PregnancyState): string | undefined {
   if (!p) return undefined;
   if (p.lmp) return p.lmp;
+
   const due = dueDateOf(p);
   return due ? addDays(due, -280) : undefined;
 }
@@ -32,25 +33,46 @@ export interface PregnancyProgress {
 export function pregnancyProgress(p?: PregnancyState, on: string = todayKey()): PregnancyProgress | null {
   const start = pregnancyStart(p);
   if (!start) return null;
+
   const days = Math.max(0, daysBetween(start, on));
   const week = Math.floor(days / 7);
   const dayOfWeek = days % 7;
   const trimester: 1 | 2 | 3 = week < 13 ? 1 : week < 28 ? 2 : 3;
   const due = dueDateOf(p);
+
   return {
     days,
     week,
     dayOfWeek,
     trimester,
     dueDate: due,
-    daysLeft: due ? daysBetween(on, due) : undefined,
+    daysLeft: due ? Math.max(0, daysBetween(on, due)) : undefined,
     percent: Math.min(100, Math.round((days / 280) * 100)),
   };
 }
 
-export function weeksPostpartum(pp?: PostpartumState, on: string = todayKey()): number | null {
+/* ------------------- Postpartum math ------------------- */
+
+export interface PostpartumProgress {
+  days: number;
+  week: number;
+  dayOfWeek: number;
+}
+
+export function postpartumProgress(pp?: PostpartumState, on: string = todayKey()): PostpartumProgress | null {
   if (!pp?.birthDate) return null;
-  return Math.max(0, Math.floor(daysBetween(pp.birthDate, on) / 7));
+
+  const days = Math.max(0, daysBetween(pp.birthDate, on));
+
+  return {
+    days,
+    week: Math.floor(days / 7),
+    dayOfWeek: days % 7,
+  };
+}
+
+export function weeksPostpartum(pp?: PostpartumState, on: string = todayKey()): number | null {
+  return postpartumProgress(pp, on)?.week ?? null;
 }
 
 /** Fruit/object size comparison per gestational week (weeks 4–41). */
@@ -102,19 +124,23 @@ export function babySize(week: number) {
 
 /* ------------------- Mode helpers ------------------- */
 
-export function isPregnancyMode(d: BixboData): boolean {
-  return !!d.pregnancy?.active;
+export function isPregnancyMode(data: BixboData): boolean {
+  return Boolean(data.pregnancy?.active);
 }
-export function isPostpartumMode(d: BixboData): boolean {
-  return !!d.postpartum?.active;
+
+export function isPostpartumMode(data: BixboData): boolean {
+  return Boolean(data.postpartum?.active);
 }
-/** Cycle predictions (period / ovulation / fertile window) must be hidden in
- * pregnancy mode and for male-mode users. */
-export function showCyclePredictions(d: BixboData): boolean {
-  return d.settings.gender !== "male" && !isPregnancyMode(d);
+
+/**
+ * Cycle predictions must be hidden for male mode, pregnancy and postpartum.
+ */
+export function showCyclePredictions(data: BixboData): boolean {
+  return data.settings.gender !== "male" && !isPregnancyMode(data) && !isPostpartumMode(data);
 }
 
 /* ------------------- Default checklists ------------------- */
+
 export const DEFAULT_HOSPITAL_BAG = [
   "ID + insurance card",
   "Maternity notes",
@@ -132,8 +158,12 @@ export const DEFAULT_HOSPITAL_BAG = [
   "Nappies",
   "Car seat",
 ];
+
 export const DEFAULT_PREGNANCY_VACCINES = ["Flu (influenza)", "Tdap (whooping cough)", "COVID-19", "RSV"];
+
 export const DEFAULT_SUPPLEMENTS = ["Folic acid", "Vitamin D", "Iron", "Iodine", "Omega-3 (DHA)", "Magnesium"];
+
+/* ------------------- Symptoms ------------------- */
 
 export const PREGNANCY_SYMPTOMS = [
   "Nausea",
@@ -152,6 +182,36 @@ export const PREGNANCY_SYMPTOMS = [
   "Fatigue",
   "Round ligament pain",
 ];
+
+export const POSTPARTUM_SYMPTOMS = [
+  "Afterpains / uterine cramps",
+  "Abdominal pain",
+  "Pelvic pain",
+  "Perineal pain",
+  "C-section incision pain",
+  "Back pain",
+  "Breast pain",
+  "Nipple pain",
+  "Breast engorgement",
+  "Blocked duct",
+  "Bleeding / lochia",
+  "Heavy bleeding",
+  "Blood clots",
+  "Swelling",
+  "Headache",
+  "Dizziness",
+  "Fever",
+  "Chills",
+  "Fatigue",
+  "Constipation",
+  "Hemorrhoids",
+  "Painful urination",
+  "Urinary leakage",
+  "Shortness of breath",
+  "Nausea",
+  "Insomnia",
+];
+
 export const POSTPARTUM_MOODS = ["Calm", "Happy", "Overwhelmed", "Anxious", "Tearful", "Numb", "Irritable", "Proud"];
 
 export { addDays, daysBetween, fromKey, toKey, todayKey };

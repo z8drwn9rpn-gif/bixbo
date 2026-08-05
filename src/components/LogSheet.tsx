@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect, type ReactNode } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Ico, IcoText } from "@/components/icons/BixboIcons";
+import { POSTPARTUM_SYMPTOMS } from "@/lib/health";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -52,6 +53,7 @@ import {
   workoutIsHike,
   workoutIsStrength,
   pregnancyInfo,
+  isCycleTrackingHidden,
   URINARY_DEFAULT,
   ALLERGENS_DEFAULT,
   type BixboData,
@@ -72,10 +74,12 @@ import {
   type TetanyEpisode,
   type PanicAttack,
   type PainfulWhen,
+  type PostpartumDayLog,
 } from "@/lib/storage";
 
 type UpdateFn = (u: (d: BixboData) => BixboData) => void;
 type Category =
+  | "postpartum"
   | "meds"
   | "pain"
   | "panic"
@@ -92,6 +96,7 @@ type Category =
   | "note";
 
 const CATEGORIES: { id: Category; label: string; emoji: string; hint: string }[] = [
+  { id: "postpartum", label: "Postpartum symptoms", emoji: "🤱", hint: "Recovery symptoms · notes" },
   { id: "pain", label: "Pain", emoji: "🔥", hint: "0–10, body, quality" },
   { id: "period", label: "Blueberry", emoji: "🫐", hint: "Flow · discharge · notes" },
   { id: "heat", label: "Heat / Cold / TENS session", emoji: "♨️", hint: "Heating, ice or TENS session" },
@@ -140,10 +145,16 @@ export function LogSheet({
   const active = cat ?? initial;
   const edit = editEntry;
 
-  const isMale = data.settings.gender === "male";
+  const cycleTrackingHidden = isCycleTrackingHidden(data);
+  const postpartumActive = Boolean(data.postpartum?.active);
+
   const orderedCats = useMemo(() => {
     const saved = data.settings.logOrder ?? [];
-    const source = CATEGORIES.filter((c) => !(isMale && c.id === "period"));
+    const source = CATEGORIES.filter((category) => {
+      if (category.id === "period" && cycleTrackingHidden) return false;
+      if (category.id === "postpartum" && !postpartumActive) return false;
+      return true;
+    });
     const byId = new Map(source.map((c) => [c.id, c]));
     const seen = new Set<string>();
     const out: typeof CATEGORIES = [];
@@ -156,7 +167,7 @@ export function LogSheet({
     }
     for (const c of source) if (!seen.has(c.id)) out.push(c);
     return out;
-  }, [data.settings.logOrder, isMale]);
+  }, [cycleTrackingHidden, data.settings.logOrder, postpartumActive]);
 
   const moveCat = (idx: number, dir: -1 | 1) => {
     const j = idx + dir;
@@ -269,6 +280,10 @@ export function LogSheet({
               key={`${active}-${openToken}-${(edit as { id?: string } | undefined)?.id ?? initialPain?.id ?? "new"}`}
               className={`min-h-0 flex-1 overflow-y-auto ${active === "pain" ? "" : "px-5 py-4"}`}
             >
+              {active === "postpartum" && (
+                <PostpartumSymptomsForm date={date} data={data} update={update} onDone={close} />
+              )}
+
               {active === "pain" && (
                 <PainWizard
                   date={date}
@@ -3875,6 +3890,103 @@ function NoteForm({ date, update, onDone }: { date: string; update: UpdateFn; on
       </Field>
       <Textarea rows={6} value={t} onChange={(e) => setT(e.target.value)} placeholder="Anything about today…" />
       <SaveBar onCancel={onDone} onSave={save} disabled={!t.trim()} />
+    </div>
+  );
+}
+
+/* ------------------- Postpartum symptoms ------------------- */
+
+function PostpartumSymptomsForm({
+  date,
+  data,
+  update,
+  onDone,
+}: {
+  date: string;
+  data: BixboData;
+  update: UpdateFn;
+  onDone: () => void;
+}) {
+  const current: PostpartumDayLog = data.dayLogs[date]?.postpartum ?? {};
+  const [symptoms, setSymptoms] = useState<string[]>(current.symptoms ?? []);
+  const [note, setNote] = useState(current.note ?? "");
+
+  const toggleSymptom = (symptom: string) => {
+    setSymptoms((currentSymptoms) =>
+      currentSymptoms.includes(symptom)
+        ? currentSymptoms.filter((item) => item !== symptom)
+        : [...currentSymptoms, symptom],
+    );
+  };
+
+  const save = () => {
+    updateDayLog(update, date, (dayLog) => ({
+      ...dayLog,
+      postpartum: {
+        ...(dayLog.postpartum ?? {}),
+        symptoms: symptoms.length ? symptoms : undefined,
+        note: note.trim() || undefined,
+      },
+    }));
+
+    onDone();
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-start gap-3 rounded-3xl bg-tint p-4 ring-1 ring-border/50">
+        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-surface ring-1 ring-border/50">
+          <Ico e="🤱" size={30} />
+        </span>
+
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">Postpartum recovery</h3>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            Select every symptom you experienced today. The BIXBO icon is used instead of an Apple emoji.
+          </p>
+        </div>
+      </div>
+
+      <Field label="Symptoms today">
+        <div className="mt-2 flex flex-wrap gap-2">
+          {POSTPARTUM_SYMPTOMS.map((symptom) => (
+            <Chip key={symptom} active={symptoms.includes(symptom)} onClick={() => toggleSymptom(symptom)}>
+              {symptom}
+            </Chip>
+          ))}
+        </div>
+      </Field>
+
+      <Field label="Recovery note (optional)">
+        <Textarea
+          rows={4}
+          value={note}
+          onChange={(event) => setNote(event.target.value)}
+          placeholder="Add anything important about recovery, bleeding, feeding or how you feel."
+        />
+      </Field>
+
+      {current.symptoms?.length || current.note ? (
+        <button
+          type="button"
+          onClick={() => {
+            updateDayLog(update, date, (dayLog) => ({
+              ...dayLog,
+              postpartum: {
+                ...(dayLog.postpartum ?? {}),
+                symptoms: undefined,
+                note: undefined,
+              },
+            }));
+            onDone();
+          }}
+          className="w-full rounded-2xl bg-destructive/10 py-2.5 text-sm font-medium text-destructive ring-1 ring-destructive/30"
+        >
+          Clear postpartum symptoms
+        </button>
+      ) : null}
+
+      <SaveBar onCancel={onDone} onSave={save} />
     </div>
   );
 }

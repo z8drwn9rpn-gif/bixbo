@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect, useRef } from "react";
 import { AppShell } from "@/components/AppShell";
+import { FoodIcon, HeartIcon, NoteIcon, StarIcon, type IconProps } from "@/components/icons/BixboIcons";
 import { useBixbo, EMPTY, type Note, type NoteChecklistItem, type NoteFolder } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,61 @@ export const Route = createFileRoute("/notes")({
   }),
   component: NotesPage,
 });
+
+type FolderIconComponent = (props: IconProps) => JSX.Element;
+
+function folderIconComponent(folder: Pick<NoteFolder, "name" | "icon">): FolderIconComponent {
+  const name = folder.name.trim().toLowerCase();
+  const legacyIcon = folder.icon?.trim().toLowerCase() ?? "";
+
+  if (
+    name.includes("health") ||
+    name.includes("medical") ||
+    legacyIcon === "💚" ||
+    legacyIcon === "❤️" ||
+    legacyIcon === "heart" ||
+    legacyIcon === "health"
+  ) {
+    return HeartIcon;
+  }
+
+  if (
+    name.includes("cook") ||
+    name.includes("food") ||
+    name.includes("recipe") ||
+    legacyIcon.includes("🍳") ||
+    legacyIcon.includes("🍲") ||
+    legacyIcon === "food" ||
+    legacyIcon === "cooking"
+  ) {
+    return FoodIcon;
+  }
+
+  if (
+    name.includes("idea") ||
+    name.includes("inspiration") ||
+    legacyIcon === "💡" ||
+    legacyIcon === "idea" ||
+    legacyIcon === "star"
+  ) {
+    return StarIcon;
+  }
+
+  return NoteIcon;
+}
+
+function FolderBixboIcon({
+  folder,
+  size = 44,
+  className,
+}: {
+  folder: Pick<NoteFolder, "name" | "icon">;
+  size?: number;
+  className?: string;
+}) {
+  const Icon = folderIconComponent(folder);
+  return <Icon size={size} className={className} />;
+}
 
 function NotesPage() {
   const { data, update, hydrated } = useBixbo();
@@ -57,7 +113,9 @@ function NotesPage() {
       <AppShell
         title={
           <button onClick={() => setOpenFolder(null)} className="flex items-center gap-2">
-            <ChevronLeft className="h-5 w-5" /> {folder.icon} {folder.name}
+            <ChevronLeft className="h-5 w-5" />
+            <FolderBixboIcon folder={folder} size={24} />
+            <span>{folder.name}</span>
           </button>
         }
         right={
@@ -89,7 +147,7 @@ function NotesPage() {
   const addFolder = () => {
     const name = prompt("Folder name");
     if (!name?.trim()) return;
-    const f: NoteFolder = { id: crypto.randomUUID(), name: name.trim(), icon: "📁" };
+    const f: NoteFolder = { id: crypto.randomUUID(), name: name.trim(), icon: "note" };
     update((d) => ({ ...d, folders: [...d.folders, f] }));
   };
   const delFolder = (id: string) => {
@@ -120,7 +178,9 @@ function NotesPage() {
                   onClick={() => setOpenFolder(f.id)}
                   className="flex aspect-square w-full flex-col items-center justify-center gap-2 rounded-3xl bg-surface p-4 ring-1 ring-border hover:bg-tint"
                 >
-                  <span className="text-4xl">{f.icon}</span>
+                  <span className="grid h-16 w-16 place-items-center rounded-3xl bg-tint ring-1 ring-border/50">
+                    <FolderBixboIcon folder={f} size={46} />
+                  </span>
                   <span className="text-center text-sm font-semibold">{f.name}</span>
                   <span className="text-xs text-muted-foreground">
                     {count} {count === 1 ? "note" : "notes"}
