@@ -142,11 +142,24 @@ export function LogSheet({
     onOpenChange(false);
   };
   const back = () => setCat(null);
-  const active = cat ?? initial;
+  const requestedActive = cat ?? initial;
   const edit = editEntry;
 
-  const cycleTrackingHidden = isCycleTrackingHidden(data);
+  const pregnancyActive = Boolean(data.pregnancy?.active);
   const postpartumActive = Boolean(data.postpartum?.active);
+  const cycleTrackingHidden = isCycleTrackingHidden(data) || pregnancyActive || postpartumActive;
+
+  const active =
+    requestedActive === "period" && cycleTrackingHidden
+      ? null
+      : requestedActive === "postpartum" && !postpartumActive
+        ? null
+        : requestedActive;
+
+  useEffect(() => {
+    if (cat === "period" && cycleTrackingHidden) setCat(null);
+    if (cat === "postpartum" && !postpartumActive) setCat(null);
+  }, [cat, cycleTrackingHidden, postpartumActive]);
 
   const orderedCats = useMemo(() => {
     const saved = data.settings.logOrder ?? [];
@@ -167,7 +180,7 @@ export function LogSheet({
     }
     for (const c of source) if (!seen.has(c.id)) out.push(c);
     return out;
-  }, [cycleTrackingHidden, data.settings.logOrder, postpartumActive]);
+  }, [cycleTrackingHidden, data.settings.logOrder, postpartumActive, pregnancyActive]);
 
   const moveCat = (idx: number, dir: -1 | 1) => {
     const j = idx + dir;
@@ -311,7 +324,9 @@ export function LogSheet({
                   initialEntry={edit as TetanyEpisode | undefined}
                 />
               )}
-              {active === "period" && <PeriodForm date={date} data={data} update={update} onDone={close} />}
+              {active === "period" && !cycleTrackingHidden && (
+                <PeriodForm date={date} data={data} update={update} onDone={close} />
+              )}
               {active === "sex" && (
                 <SexForm
                   date={date}
@@ -3047,6 +3062,20 @@ function TempForm({
 
   const [quality, setQuality] = useState<string[]>(asArr(cur.sleepQuality));
 
+  const normalizeDecimalInput = (value: string): string => {
+    const normalized = value.replace(",", ".").replace(/[^0-9.]/g, "");
+    const [whole = "", ...fractionParts] = normalized.split(".");
+    const fraction = fractionParts.join("");
+    return fractionParts.length > 0 ? `${whole}.${fraction}` : whole;
+  };
+
+  const parseDecimalInput = (value: string): number | undefined => {
+    const normalized = value.trim().replace(",", ".");
+    if (!normalized) return undefined;
+    const parsed = Number.parseFloat(normalized);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  };
+
   const sortVitals = (entries: VitalRow[]): VitalRow[] =>
     entries.slice().sort((a, b) => a.time.localeCompare(b.time) || a.id.localeCompare(b.id));
 
@@ -3117,11 +3146,11 @@ function TempForm({
   };
 
   const save = () => {
-    const temperatureValue = temperature.trim() === "" ? undefined : Number(temperature);
+    const temperatureValue = parseDecimalInput(temperature);
 
-    const weightValue = weight.trim() === "" ? undefined : Number(weight);
+    const weightValue = parseDecimalInput(weight);
 
-    const sleepValue = sleep.trim() === "" ? undefined : Number(sleep);
+    const sleepValue = parseDecimalInput(sleep);
 
     updateDayLog(update, date, (log) => {
       const currentTemperatures = existingVitals(log.temperatureEntries, log.temperature, `${date}-legacy-temperature`);
@@ -3129,7 +3158,7 @@ function TempForm({
       const currentWeights = existingVitals(log.weightEntries, log.weight, `${date}-legacy-weight`);
 
       const nextTemperatures =
-        temperatureValue != null && Number.isFinite(temperatureValue)
+        temperatureValue != null && temperatureValue >= 30 && temperatureValue <= 45
           ? sortVitals([
               ...currentTemperatures,
               {
@@ -3141,7 +3170,7 @@ function TempForm({
           : currentTemperatures;
 
       const nextWeights =
-        weightValue != null && Number.isFinite(weightValue)
+        weightValue != null && weightValue > 0 && weightValue <= 500
           ? sortVitals([
               ...currentWeights,
               {
@@ -3165,7 +3194,8 @@ function TempForm({
 
         weight: latestVitalValue(nextWeights),
 
-        sleepHours: sleepValue != null && Number.isFinite(sleepValue) ? sleepValue : undefined,
+        sleepHours:
+          sleepValue != null && sleepValue >= 0 && sleepValue <= 24 ? Math.round(sleepValue * 10) / 10 : undefined,
 
         sleepQuality: quality.length ? quality : undefined,
       };
@@ -3177,19 +3207,25 @@ function TempForm({
   return (
     <div className="space-y-5">
       <Field label="New temperature measurement">
-        <div className="grid grid-cols-[1fr_120px] gap-2">
+        <div className="grid w-full grid-cols-[minmax(0,1fr)_minmax(96px,120px)] gap-2">
           <Input
-            type="number"
+            type="text"
             inputMode="decimal"
-            min="30"
-            max="45"
-            step="0.1"
+            enterKeyHint="next"
             value={temperature}
-            onChange={(e) => setTemperature(e.target.value)}
-            placeholder="36.6 °C"
+            onChange={(e) => setTemperature(normalizeDecimalInput(e.target.value))}
+            placeholder="36,6 °C"
+            aria-label="Temperature in degrees Celsius"
+            className="min-w-0 w-full"
           />
 
-          <Input type="time" value={temperatureTime} onChange={(e) => setTemperatureTime(e.target.value)} />
+          <Input
+            type="time"
+            value={temperatureTime}
+            onChange={(e) => setTemperatureTime(e.target.value)}
+            aria-label="Temperature measurement time"
+            className="min-w-0 w-full"
+          />
         </div>
 
         {temperatureEntries.length > 0 && (
@@ -3228,18 +3264,25 @@ function TempForm({
       </Field>
 
       <Field label="New weight measurement">
-        <div className="grid grid-cols-[1fr_120px] gap-2">
+        <div className="grid w-full grid-cols-[minmax(0,1fr)_minmax(96px,120px)] gap-2">
           <Input
-            type="number"
+            type="text"
             inputMode="decimal"
-            min="0"
-            step="0.1"
+            enterKeyHint="next"
             value={weight}
-            onChange={(e) => setWeight(e.target.value)}
-            placeholder="62.5 kg"
+            onChange={(e) => setWeight(normalizeDecimalInput(e.target.value))}
+            placeholder="62,5 kg"
+            aria-label="Weight in kilograms"
+            className="min-w-0 w-full"
           />
 
-          <Input type="time" value={weightTime} onChange={(e) => setWeightTime(e.target.value)} />
+          <Input
+            type="time"
+            value={weightTime}
+            onChange={(e) => setWeightTime(e.target.value)}
+            aria-label="Weight measurement time"
+            className="min-w-0 w-full"
+          />
         </div>
 
         {weightEntries.length > 0 && (
@@ -3279,14 +3322,14 @@ function TempForm({
 
       <Field label="Sleep (hours)">
         <Input
-          type="number"
+          type="text"
           inputMode="decimal"
-          min="0"
-          max="24"
-          step="0.5"
+          enterKeyHint="done"
           value={sleep}
-          onChange={(e) => setSleep(e.target.value)}
-          placeholder="8"
+          onChange={(e) => setSleep(normalizeDecimalInput(e.target.value))}
+          placeholder="8,5"
+          aria-label="Sleep duration in hours"
+          className="w-full"
         />
       </Field>
 
