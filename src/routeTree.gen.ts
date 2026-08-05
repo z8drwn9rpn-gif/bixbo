@@ -17,6 +17,7 @@ import { Route as MedsRouteImport } from './routes/meds'
 import { Route as NotesRouteImport } from './routes/notes'
 import { Route as PatternsRouteImport } from './routes/patterns'
 import { Route as PostpartumRouteImport } from './routes/postpartum'
+import { Route as PregnancyRouteImport } from './routes/pregnancy'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ApiPublicHooksKeepaliveRouteImport } from './routes/api/public/hooks/keepalive'
@@ -61,6 +62,11 @@ const PostpartumRoute = PostpartumRouteImport.update({
   path: '/postpartum',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PregnancyRoute = PregnancyRouteImport.update({
+  id: '/pregnancy',
+  path: '/pregnancy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -86,6 +92,7 @@ export interface FileRoutesByFullPath {
   '/notes': typeof NotesRoute
   '/patterns': typeof PatternsRoute
   '/postpartum': typeof PostpartumRoute
+  '/pregnancy': typeof PregnancyRoute
   '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
   '/api/public/hooks/keepalive': typeof ApiPublicHooksKeepaliveRoute
@@ -99,6 +106,7 @@ export interface FileRoutesByTo {
   '/notes': typeof NotesRoute
   '/patterns': typeof PatternsRoute
   '/postpartum': typeof PostpartumRoute
+  '/pregnancy': typeof PregnancyRoute
   '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
   '/api/public/hooks/keepalive': typeof ApiPublicHooksKeepaliveRoute
@@ -113,6 +121,7 @@ export interface FileRoutesById {
   '/notes': typeof NotesRoute
   '/patterns': typeof PatternsRoute
   '/postpartum': typeof PostpartumRoute
+  '/pregnancy': typeof PregnancyRoute
   '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
   '/api/public/hooks/keepalive': typeof ApiPublicHooksKeepaliveRoute
@@ -128,6 +137,7 @@ export interface FileRouteTypes {
     | '/notes'
     | '/patterns'
     | '/postpartum'
+    | '/pregnancy'
     | '/profile'
     | '/settings'
     | '/api/public/hooks/keepalive'
@@ -141,6 +151,7 @@ export interface FileRouteTypes {
     | '/notes'
     | '/patterns'
     | '/postpartum'
+    | '/pregnancy'
     | '/profile'
     | '/settings'
     | '/api/public/hooks/keepalive'
@@ -154,6 +165,7 @@ export interface FileRouteTypes {
     | '/notes'
     | '/patterns'
     | '/postpartum'
+    | '/pregnancy'
     | '/profile'
     | '/settings'
     | '/api/public/hooks/keepalive'
@@ -168,6 +180,7 @@ export interface RootRouteChildren {
   NotesRoute: typeof NotesRoute
   PatternsRoute: typeof PatternsRoute
   PostpartumRoute: typeof PostpartumRoute
+  PregnancyRoute: typeof PregnancyRoute
   ProfileRoute: typeof ProfileRoute
   SettingsRoute: typeof SettingsRoute
   ApiPublicHooksKeepaliveRoute: typeof ApiPublicHooksKeepaliveRoute
@@ -231,6 +244,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PostpartumRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pregnancy': {
+      id: '/pregnancy'
+      path: '/pregnancy'
+      fullPath: '/pregnancy'
+      preLoaderRoute: typeof PregnancyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/profile': {
       id: '/profile'
       path: '/profile'
@@ -264,6 +284,7 @@ const rootRouteChildren: RootRouteChildren = {
   NotesRoute: NotesRoute,
   PatternsRoute: PatternsRoute,
   PostpartumRoute: PostpartumRoute,
+  PregnancyRoute: PregnancyRoute,
   ProfileRoute: ProfileRoute,
   SettingsRoute: SettingsRoute,
   ApiPublicHooksKeepaliveRoute: ApiPublicHooksKeepaliveRoute,
@@ -271,13 +292,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
