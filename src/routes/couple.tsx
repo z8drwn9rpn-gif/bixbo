@@ -1,9 +1,19 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Activity, ChevronLeft, ChevronRight, HeartPulse, Pill, Sparkles, TrendingUp, Users } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
-import { Ico } from "@/components/icons/BixboIcons";
+import {
+  BlueberryIcon,
+  BoltIcon,
+  HeartIcon,
+  LeafIcon,
+  PanicIcon,
+  PillIcon,
+  ProfileIcon,
+  SparkleIcon,
+  WaterIcon,
+} from "@/components/icons/BixboIcons";
 import { CHART_COLORS, CHART_TINTS } from "@/components/ui/chart";
 import {
   EMPTY,
@@ -884,7 +894,7 @@ function BlueberrySection({
             : `${partner.name || "Your partner"}'s period is predicted in ${daysUntil} days.`;
 
       try {
-        new Notification("🫐 Blueberry reminder", {
+        new Notification("Blueberry reminder", {
           body,
           icon: "/favicon.svg",
         });
@@ -908,14 +918,18 @@ function BlueberrySection({
 
   return (
     <section className="space-y-3 rounded-3xl bg-surface p-4 ring-1 ring-border">
-      <h3 className="font-serif text-lg font-semibold">
-        <Ico e="🫐" size={16} /> {partner.name || "Partner"} — Blueberry
+      <h3 className="flex items-center gap-2 font-serif text-lg font-semibold">
+        <BlueberryIcon size={21} />
+        <span>{partner.name || "Partner"} — Blueberry</span>
       </h3>
 
       {next ? (
         <div className="space-y-1 rounded-2xl bg-tint p-3 text-sm">
-          <p>
-            🩸 Next period: <span className="font-semibold">{next.start}</span>
+          <p className="flex items-center gap-2">
+            <WaterIcon size={18} />
+            <span>
+              Next period: <span className="font-semibold">{next.start}</span>
+            </span>
           </p>
 
           <p className="text-xs text-muted-foreground">
@@ -1171,22 +1185,22 @@ function CouplePage() {
   const tabs: {
     id: CoupleTab;
     label: string;
-    icon: string;
+    icon: ReactNode;
   }[] = [
     {
       id: "overview",
       label: "Overview",
-      icon: "❤️",
+      icon: <HeartIcon size={24} />,
     },
     {
       id: "compare",
       label: "Compare",
-      icon: "📊",
+      icon: <SparkleIcon size={24} />,
     },
     {
       id: "health",
       label: "Health",
-      icon: "🌿",
+      icon: <LeafIcon size={24} />,
     },
   ];
 
@@ -1258,7 +1272,7 @@ function CouplePage() {
                           : "text-muted-foreground hover:bg-tint/60 hover:text-foreground"
                       }`}
                     >
-                      <span className="text-base leading-none" aria-hidden="true">
+                      <span className="grid h-7 w-7 place-items-center" aria-hidden="true">
                         {tab.icon}
                       </span>
 
@@ -1274,7 +1288,7 @@ function CouplePage() {
             {activeTab === "overview" ? (
               <div className="grid grid-cols-2 gap-3">
                 <StatCard
-                  icon={<Users className="h-4 w-4" />}
+                  icon={<ProfileIcon size={18} />}
                   label="Shared symptom days"
                   value={`${sharedSymptomDays}`}
                   detail="Days when both of you logged pain, panic or tetany."
@@ -1282,7 +1296,7 @@ function CouplePage() {
                 />
 
                 <StatCard
-                  icon={<HeartPulse className="h-4 w-4" />}
+                  icon={<HeartIcon size={18} />}
                   label="Your symptom days"
                   value={`${mySymptomDays}`}
                   detail={`${partnerName}: ${partnerSymptomDays} days`}
@@ -1290,7 +1304,7 @@ function CouplePage() {
                 />
 
                 <StatCard
-                  icon={<Sparkles className="h-4 w-4" />}
+                  icon={<PanicIcon size={18} />}
                   label="Panic attacks"
                   value={`${myPanic.length + partnerPanic.length}`}
                   detail={`You ${myPanic.length} · ${partnerName} ${partnerPanic.length}`}
@@ -1298,7 +1312,7 @@ function CouplePage() {
                 />
 
                 <StatCard
-                  icon={<Activity className="h-4 w-4" />}
+                  icon={<BoltIcon size={18} />}
                   label="Tetany episodes"
                   value={`${myTetany.length + partnerTetany.length}`}
                   detail={`You ${myTetany.length} · ${partnerName} ${partnerTetany.length}`}
@@ -1333,7 +1347,7 @@ function CouplePage() {
                       mineLabel="You"
                       partnerLabel={partnerName}
                       tone="rose"
-                      icon={<HeartPulse className="h-5 w-5" />}
+                      icon={<HeartIcon size={22} />}
                     />
 
                     <ComparisonBarCard
@@ -1345,7 +1359,7 @@ function CouplePage() {
                       mineLabel="You"
                       partnerLabel={partnerName}
                       tone="green"
-                      icon={<TrendingUp className="h-5 w-5" />}
+                      icon={<SparkleIcon size={22} />}
                     />
 
                     <ComparisonBarCard
@@ -1357,7 +1371,7 @@ function CouplePage() {
                       mineLabel="You"
                       partnerLabel={partnerName}
                       tone="purple"
-                      icon={<Sparkles className="h-5 w-5" />}
+                      icon={<PanicIcon size={22} />}
                     />
 
                     <ComparisonBarCard
@@ -1369,7 +1383,7 @@ function CouplePage() {
                       mineLabel="You"
                       partnerLabel={partnerName}
                       tone="blue"
-                      icon={<Activity className="h-5 w-5" />}
+                      icon={<BoltIcon size={22} />}
                     />
 
                     <ComparisonBarCard
@@ -1381,7 +1395,7 @@ function CouplePage() {
                       mineLabel="You"
                       partnerLabel={partnerName}
                       tone="emerald"
-                      icon={<Pill className="h-5 w-5" />}
+                      icon={<PillIcon size={22} />}
                     />
                   </div>
                 </SectionCard>

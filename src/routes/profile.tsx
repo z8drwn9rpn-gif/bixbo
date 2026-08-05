@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
+import { postpartumProgress } from "@/lib/health";
 import { ArrowLeft, Plus, X, Pencil, ChevronRight, Check } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import {
@@ -434,6 +435,9 @@ function ProfilePage() {
   const medicalTags = [...(profile.diagnoses ?? []), ...(profile.chronicIllnesses ?? [])];
 
   const allergyTags = [...allergens, ...(profile.intolerances ?? [])];
+
+  const postpartumStatus = postpartumProgress(view.postpartum);
+  const postpartumToday = view.dayLogs[todayKey()]?.postpartum;
 
   const pregnancyLabel = pregnancyActive
     ? "Active pregnancy"
@@ -948,12 +952,34 @@ function ProfilePage() {
           >
             <div className="grid grid-cols-2 gap-2">
               <SummaryStat label="Status" value={pregnancyLabel} />
-              <SummaryStat label="Birth control" value={profile.birthControl || "—"} />
-              <SummaryStat label="Breastfeeding" value={profile.breastfeeding ? "Yes" : "No"} />
-              <SummaryStat
-                label="Menopause"
-                value={profile.menopause ? profile.menopause.charAt(0).toUpperCase() + profile.menopause.slice(1) : "—"}
-              />
+              {postpartumActive ? (
+                <>
+                  <SummaryStat
+                    label="Postpartum"
+                    value={
+                      postpartumStatus
+                        ? `Week ${postpartumStatus.week} + ${postpartumStatus.dayOfWeek}`
+                        : "Birth date missing"
+                    }
+                  />
+                  <SummaryStat label="Symptoms today" value={`${postpartumToday?.symptoms?.length ?? 0}`} />
+                  <SummaryStat
+                    label="Feeding today"
+                    value={`${(postpartumToday?.breastfeeding?.length ?? 0) + (postpartumToday?.pumping?.length ?? 0) + (postpartumToday?.bottle?.length ?? 0)}`}
+                  />
+                </>
+              ) : (
+                <>
+                  <SummaryStat label="Birth control" value={profile.birthControl || "—"} />
+                  <SummaryStat label="Breastfeeding" value={profile.breastfeeding ? "Yes" : "No"} />
+                  <SummaryStat
+                    label="Menopause"
+                    value={
+                      profile.menopause ? profile.menopause.charAt(0).toUpperCase() + profile.menopause.slice(1) : "—"
+                    }
+                  />
+                </>
+              )}
             </div>
           </SummaryCard>
 

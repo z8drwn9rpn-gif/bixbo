@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, Settings as SettingsIcon, Share2, Trash2, Us
 
 import { Ico, IcoText, PillIcon } from "@/components/icons/BixboIcons";
 import { AppShell } from "@/components/AppShell";
-import { pregnancyProgress, weeksPostpartum } from "@/lib/health";
+import { pregnancyProgress, postpartumProgress } from "@/lib/health";
 import { Button } from "@/components/ui/button";
 import { MonthCalendar, monthLabel } from "@/components/MonthCalendar";
 import { LogSheet } from "@/components/LogSheet";
@@ -320,26 +320,76 @@ function HomePage() {
         );
       })()}
 
-      {postpartumActive && (
-        <Link
-          to={"/postpartum" as never}
-          className="focus-ring mx-5 mt-3 flex items-center justify-between gap-3 rounded-2xl bg-tint px-4 py-3 text-left ring-1 ring-border"
-        >
-          <span className="flex items-center gap-2">
-            <Ico name="baby" size={22} />
-            <span className="text-sm">
-              <span className="font-semibold text-foreground">
-                {(() => {
-                  const w = weeksPostpartum(view.postpartum);
-                  return w == null ? "Postpartum mode" : `Week ${w} postpartum`;
-                })()}
-              </span>
-              <span className="block text-xs text-muted-foreground">Feeding, recovery, baby sleep</span>
-            </span>
-          </span>
-          <span className="text-xs font-medium text-primary">Open</span>
-        </Link>
-      )}
+      {postpartumActive &&
+        (() => {
+          const progress = postpartumProgress(view.postpartum);
+          const todayPostpartum = view.dayLogs[todayKey()]?.postpartum;
+          const feedingCount =
+            (todayPostpartum?.breastfeeding?.length ?? 0) +
+            (todayPostpartum?.pumping?.length ?? 0) +
+            (todayPostpartum?.bottle?.length ?? 0);
+
+          const postpartumSummaryItems = [
+            (todayPostpartum?.symptoms?.length ?? 0) > 0
+              ? { icon: "warning", label: `${todayPostpartum!.symptoms!.length} symptoms` }
+              : null,
+            todayPostpartum?.bleeding && todayPostpartum.bleeding !== "none"
+              ? { icon: "period", label: todayPostpartum.bleeding }
+              : null,
+            feedingCount > 0
+              ? { icon: "bottle", label: `${feedingCount} feeding${feedingCount === 1 ? "" : "s"}` }
+              : null,
+            todayPostpartum?.sleepHours != null
+              ? { icon: "sleep", label: `${todayPostpartum.sleepHours} h sleep` }
+              : null,
+            (todayPostpartum?.mood?.length ?? 0) > 0 ? { icon: "mood", label: todayPostpartum!.mood![0] } : null,
+          ].filter((item): item is { icon: string; label: string } => item != null);
+
+          return (
+            <Link
+              to={"/postpartum" as never}
+              className="focus-ring mx-5 mt-3 block rounded-3xl bg-primary/10 px-4 py-4 text-left ring-1 ring-primary/20"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-surface ring-1 ring-border/50">
+                    <Ico name="baby" size={30} />
+                  </span>
+
+                  <div className="min-w-0">
+                    <p className="truncate text-base font-semibold text-foreground">
+                      {progress ? `Week ${progress.week} + ${progress.dayOfWeek} postpartum` : "Postpartum mode"}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {progress ? `${progress.days} days since birth` : "Add the birth date to calculate progress"}
+                    </p>
+                  </div>
+                </div>
+
+                <span className="shrink-0 text-xs font-semibold text-primary">Open</span>
+              </div>
+
+              {postpartumSummaryItems.length > 0 ? (
+                <div className="mt-3 flex min-w-0 items-center gap-2 overflow-hidden rounded-2xl bg-surface/75 px-3 py-2 ring-1 ring-border/40">
+                  {postpartumSummaryItems.slice(0, 4).map((item, index) => (
+                    <span key={`${item.icon}-${item.label}`} className="flex min-w-0 items-center gap-1.5">
+                      {index > 0 && <span className="text-border">•</span>}
+                      <Ico name={item.icon as never} size={15} />
+                      <span className="truncate text-[11px] font-medium capitalize tabular-nums text-foreground">
+                        {item.label}
+                      </span>
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-3 flex items-center gap-2 rounded-2xl bg-surface/70 px-3 py-2 text-xs text-muted-foreground ring-1 ring-border/40">
+                  <Ico name="baby" size={15} />
+                  <span>Nothing logged today</span>
+                </div>
+              )}
+            </Link>
+          );
+        })()}
 
       {!cycleTrackingHidden &&
         (() => {

@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowLeft, Plus, Trash2, Pill, Droplets, Baby, Moon } from "lucide-react";
+import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { Ico } from "@/components/icons/BixboIcons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,7 +20,7 @@ import {
   type PostpartumState,
   type PregnancyAppointment,
 } from "@/lib/storage";
-import { weeksPostpartum, daysBetween, POSTPARTUM_MOODS } from "@/lib/health";
+import { postpartumProgress, daysBetween, POSTPARTUM_MOODS, POSTPARTUM_SYMPTOMS } from "@/lib/health";
 
 export const Route = createFileRoute("/postpartum")({
   head: () => ({
@@ -69,30 +70,6 @@ function PostpartumPage() {
   const updateLog = (patch: (l: PostpartumDayLog) => PostpartumDayLog) =>
     updateDayLog(update, today, (l: DayLog) => ({ ...l, postpartum: patch(l.postpartum ?? {}) }));
 
-  const resetPostpartum = () => {
-    const confirmed = window.confirm(
-      "This will permanently delete all postpartum tracking data — birth details, bleeding, recovery, mood, sleep, feeding, diapers, visits and daily postpartum logs. This cannot be undone.",
-    );
-
-    if (!confirmed) return;
-
-    update((d) => {
-      const dayLogs = Object.fromEntries(
-        Object.entries(d.dayLogs).map(([date, dayLog]) => {
-          const nextLog = { ...dayLog };
-          delete nextLog.postpartum;
-          return [date, nextLog];
-        }),
-      ) as BixboData["dayLogs"];
-
-      return {
-        ...d,
-        postpartum: structuredClone(EMPTY.postpartum!),
-        dayLogs,
-      };
-    });
-  };
-
   if (!hydrated) return null;
 
   if (!pp?.active) {
@@ -120,8 +97,9 @@ function PostpartumPage() {
     );
   }
 
-  const weeks = weeksPostpartum(pp, today);
-  const days = pp.birthDate ? daysBetween(pp.birthDate, today) : null;
+  const progress = postpartumProgress(pp, today);
+  const weeks = progress?.week ?? null;
+  const days = progress?.days ?? (pp.birthDate ? daysBetween(pp.birthDate, today) : null);
 
   return (
     <AppShell
@@ -139,9 +117,17 @@ function PostpartumPage() {
           ) : (
             <>
               <p className="text-sm font-medium">{pp.babyName || "Baby"}</p>
-              <p className="mt-1 text-2xl font-serif font-bold">
-                {weeks != null ? `${weeks} week${weeks === 1 ? "" : "s"} postpartum` : "—"}
-              </p>
+              <div className="mt-2 flex items-center gap-3">
+                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-tint ring-1 ring-border/50">
+                  <Ico name="baby" size={30} />
+                </span>
+                <div>
+                  <p className="font-serif text-2xl font-bold">
+                    {progress ? `Week ${progress.week} + ${progress.dayOfWeek}` : "Postpartum"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Postpartum recovery</p>
+                </div>
+              </div>
               <p className="text-xs text-muted-foreground">
                 {days != null ? `${days} day${days === 1 ? "" : "s"} since birth` : ""}
                 {pp.deliveryType ? ` · ${deliveryLabel(pp.deliveryType)}` : ""}
@@ -159,6 +145,7 @@ function PostpartumPage() {
 
         {pp.birthDate && (
           <>
+            <SymptomsSection log={log} updateLog={updateLog} />
             <BleedingSection view={view} log={log} updateLog={updateLog} today={today} />
             <RecoverySection pp={pp} log={log} updateLog={updateLog} />
             <MoodSection log={log} updateLog={updateLog} />
@@ -182,17 +169,6 @@ function PostpartumPage() {
                 }}
               >
                 Finish postpartum
-              </Button>
-            </section>
-
-            <section className="rounded-3xl bg-surface p-4 ring-1 ring-destructive/30">
-              <p className="text-sm font-medium">⚠️ Reset</p>
-              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                Permanently delete all postpartum setup details and daily postpartum logs. Other BIXBO data will remain
-                unchanged.
-              </p>
-              <Button type="button" variant="destructive" className="mt-3 w-full" onClick={resetPostpartum}>
-                Delete all postpartum data
               </Button>
             </section>
           </>
@@ -303,6 +279,54 @@ function SetupForm({
   );
 }
 
+function SymptomsSection({
+  log,
+  updateLog,
+}: {
+  log: PostpartumDayLog;
+  updateLog: (patch: (value: PostpartumDayLog) => PostpartumDayLog) => void;
+}) {
+  const selected = log.symptoms ?? [];
+
+  const toggle = (symptom: string) => {
+    updateLog((current) => ({
+      ...current,
+      symptoms: selected.includes(symptom) ? selected.filter((item) => item !== symptom) : [...selected, symptom],
+    }));
+  };
+
+  return (
+    <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
+      <div className="flex items-center gap-2">
+        <Ico name="warning" size={22} />
+        <div>
+          <p className="text-sm font-medium">Symptoms today</p>
+          <p className="text-xs text-muted-foreground">Select everything you noticed during recovery.</p>
+        </div>
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        {POSTPARTUM_SYMPTOMS.map((symptom) => {
+          const active = selected.includes(symptom);
+
+          return (
+            <button
+              key={symptom}
+              type="button"
+              onClick={() => toggle(symptom)}
+              className={`rounded-full px-3 py-1.5 text-xs font-semibold ring-1 transition ${
+                active ? "bg-primary text-primary-foreground ring-primary" : "bg-tint text-foreground ring-border"
+              }`}
+            >
+              {symptom}
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 function BleedingSection({
   view,
   log,
@@ -317,8 +341,8 @@ function BleedingSection({
   const trend = Array.from({ length: 42 }, (_, i) => addDays(today, i - 41));
   return (
     <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
-      <p className="text-sm font-medium">
-        <Droplets className="mr-1 inline h-4 w-4" /> Bleeding (lochia)
+      <p className="flex items-center gap-2 text-sm font-medium">
+        <Ico name="period" size={20} /> Bleeding (lochia)
       </p>
       <div className="mt-3 grid grid-cols-5 gap-2">
         {BLEEDING_LEVELS.map(({ v, label, color }) => (
@@ -495,8 +519,8 @@ function SleepSection({
   );
   return (
     <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
-      <p className="text-sm font-medium">
-        <Moon className="mr-1 inline h-4 w-4" /> Sleep
+      <p className="flex items-center gap-2 text-sm font-medium">
+        <Ico name="sleep" size={20} /> Sleep
       </p>
       <div className="mt-3 grid grid-cols-2 gap-3">
         <div>
@@ -587,8 +611,8 @@ function FeedingSection({
 
   return (
     <section className="rounded-3xl bg-surface p-4 ring-1 ring-border space-y-4">
-      <p className="text-sm font-medium">
-        <Baby className="mr-1 inline h-4 w-4" /> Feeding
+      <p className="flex items-center gap-2 text-sm font-medium">
+        <Ico name="bottle" size={20} /> Feeding
       </p>
       <p className="text-xs text-muted-foreground">
         Today: {totalNursed} min nursed · {totalPumped} ml pumped · {totalBottle} ml bottle
@@ -944,8 +968,8 @@ function NotesSection({
 }) {
   return (
     <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
-      <p className="text-sm font-medium">
-        <Pill className="mr-1 inline h-4 w-4" /> Medication & notes
+      <p className="flex items-center gap-2 text-sm font-medium">
+        <Ico name="pill" size={20} /> Medication & notes
       </p>
       <p className="mt-1 text-xs text-muted-foreground">
         Track your postpartum vitamins or medications in{" "}

@@ -1644,11 +1644,123 @@ export const EMOJI_ICON: Record<string, BixboIconName> = {
   "👤": "profile",
   "🙋‍♀️": "profile",
   "🩸": "drop",
+  /* broad keyboard-emoji coverage */
+  "📓": "note",
+  "📔": "note",
+  "📒": "note",
+  "📕": "note",
+  "📗": "note",
+  "📘": "note",
+  "📙": "note",
+  "📚": "note",
+  "📁": "note",
+  "📂": "note",
+  "🗒️": "note",
+  "🗒": "note",
+  "💡": "star",
+  "🔆": "star",
+  "🌤️": "star",
+  "🌤": "star",
+  "⛅": "star",
+  "☁️": "sleep",
+  "☁": "sleep",
+  "🌧️": "water",
+  "🌧": "water",
+  "🌦️": "water",
+  "🌦": "water",
+  "❄️": "cold",
+  "❄": "cold",
+  "🍲": "food",
+  "🥘": "food",
+  "🍳": "food",
+  "🍴": "food",
+  "🥣": "food",
+  "🍎": "food",
+  "🍌": "food",
+  "🥕": "food",
+  "🥦": "food",
+  "🧠": "profile",
+  "🫀": "heart",
+  "🫁": "heart",
+  "🦷": "appointment",
+  "👩‍⚕️": "appointment",
+  "👨‍⚕️": "appointment",
+  "🧑‍⚕️": "appointment",
+  "🚑": "warning",
+  "🆘": "warning",
+  "❗": "warning",
+  "❕": "warning",
+  "🔔": "warning",
+  "🧪": "appointment",
+  "🔬": "appointment",
+  "🩹": "appointment",
+  "🩼": "appointment",
+  "🛡️": "warning",
+  "🛡": "warning",
+  "👥": "profile",
+  "🫂": "profile",
+  "👫": "profile",
+  "👩‍❤️‍👨": "heart",
+  "👩‍❤️‍👩": "heart",
+  "👨‍❤️‍👨": "heart",
+  "💑": "heart",
+  "💏": "heart",
+  "🏋️": "workout",
+  "🏋": "workout",
+  "🤸": "workout",
+  "🧘‍♀️": "workout",
+  "🚶": "workout",
+  "🏔️": "workout",
+  "🏔": "workout",
+  "🛏️": "sleep",
+  "🛏": "sleep",
+  "🧴": "bottle",
+  "🥛": "bottle",
+  "🫗": "water",
+  "🚰": "water",
+  "🔋": "bolt",
+  "🧯": "flame",
+  "💨": "bolt",
+  "🧷": "baby",
+  "🧸": "baby",
+  "🛒": "task",
+  "📌": "task",
+  "📍": "appointment",
+  "🔍": "profile",
+  "⚙️": "profile",
+  "⚙": "profile",
 };
 
+const EMOJI_CLUSTER_RE =
+  /(?:\p{Regional_Indicator}{2}|[#*0-9]\uFE0F?\u20E3|(?:\p{Extended_Pictographic}|\u00A9|\u00AE|\u2122)(?:\uFE0F|\p{Emoji_Modifier})?(?:\u200D(?:\p{Extended_Pictographic}|\u00A9|\u00AE|\u2122)(?:\uFE0F|\p{Emoji_Modifier})?)*)/gu;
+
+function normalizeEmoji(value: string): string {
+  return value.replace(/\uFE0F/g, "").replace(/\p{Emoji_Modifier}/gu, "");
+}
+
 /**
- * Render a branded icon by name or by the legacy emoji it replaces.
- * Unmapped symbols fall back to their original text so nothing disappears.
+ * Resolves keyboard emoji to a BIXBO icon.
+ *
+ * Exact mappings win. Skin-tone and presentation variants are normalized.
+ * Any still-unknown emoji uses the branded Star icon instead of rendering
+ * the operating system's Apple/Android emoji glyph.
+ */
+export function iconNameForEmoji(value?: string): BixboIconName | undefined {
+  if (!value) return undefined;
+
+  const exact = EMOJI_ICON[value];
+  if (exact) return exact;
+
+  const normalized = normalizeEmoji(value);
+
+  const normalizedMatch = Object.entries(EMOJI_ICON).find(([emoji]) => normalizeEmoji(emoji) === normalized)?.[1];
+
+  return normalizedMatch ?? "star";
+}
+
+/**
+ * Render a branded icon by name or by any keyboard emoji.
+ * Unknown emoji never fall back to a native Apple/Android glyph.
  */
 export function Ico({
   name,
@@ -1661,26 +1773,47 @@ export function Ico({
   size?: number;
   className?: string;
 }) {
-  const key = name ?? (e ? EMOJI_ICON[e] : undefined);
-  if (!key) return e ? <span className={className}>{e}</span> : null;
+  const key = name ?? iconNameForEmoji(e);
+  if (!key) return null;
+
   const C = BIXBO_ICONS[key];
+
   return <C size={size} className={`inline-block shrink-0 align-[-0.15em] ${className ?? ""}`} />;
 }
 
-const EMOJI_RE = new RegExp(
-  `(${Object.keys(EMOJI_ICON)
-    .sort((a, b) => b.length - a.length)
-    .map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
-    .join("|")})`,
-  "g",
-);
-
-/** Renders a string, swapping any legacy emoji inside it for branded icons. */
+/**
+ * Renders arbitrary text and replaces every emoji cluster with a BIXBO icon.
+ * This also covers emoji pasted from the phone keyboard that are not yet in
+ * the explicit mapping.
+ */
 export function IcoText({ text, size = 16, className }: { text: string; size?: number; className?: string }) {
-  const parts = text.split(EMOJI_RE);
+  const parts: Array<{ type: "text" | "emoji"; value: string }> = [];
+  let cursor = 0;
+
+  for (const match of text.matchAll(EMOJI_CLUSTER_RE)) {
+    const index = match.index ?? 0;
+
+    if (index > cursor) {
+      parts.push({ type: "text", value: text.slice(cursor, index) });
+    }
+
+    parts.push({ type: "emoji", value: match[0] });
+    cursor = index + match[0].length;
+  }
+
+  if (cursor < text.length) {
+    parts.push({ type: "text", value: text.slice(cursor) });
+  }
+
   return (
     <span className={className}>
-      {parts.map((part, i) => (EMOJI_ICON[part] ? <Ico key={i} e={part} size={size} /> : <span key={i}>{part}</span>))}
+      {parts.map((part, index) =>
+        part.type === "emoji" ? (
+          <Ico key={`${part.value}-${index}`} e={part.value} size={size} />
+        ) : (
+          <span key={`text-${index}`}>{part.value}</span>
+        ),
+      )}
     </span>
   );
 }
