@@ -1297,6 +1297,168 @@ export function SparkleIcon(p: IconProps) {
   );
 }
 
+/* ------------------------------------------------- PREGNANCY / POSTPARTUM */
+
+/** Pregnant belly silhouette. */
+export function PregnancyIcon(p: IconProps) {
+  const a = useSvgId();
+  const mini = (p.size ?? 24) <= 16;
+  const body = mini ? "#8aa04a" : `url(#${a})`;
+  return (
+    <Svg {...p}>
+      {!mini && (
+        <defs>
+          <linearGradient id={a} x1="16" y1="12" x2="50" y2="56" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#c3d68a" />
+            <stop offset="1" stopColor="#7d9440" />
+          </linearGradient>
+        </defs>
+      )}
+      {!mini && <Shadow />}
+      <circle cx="27" cy="13" r="7" fill={body} />
+      <path
+        d="M27 22c6 0 9 4 10 9 6 1.6 10 6.2 10 11.6 0 6-4.8 10.4-11 10.4-3.2 0-5.4-.9-7.4-2.6l-3.4 3.6c-1 1.1-2.9.4-2.9-1.1V33.5c0-6.6 1.8-11.5 4.7-11.5z"
+        fill={body}
+      />
+      <circle cx="36" cy="42.5" r="6.5" fill="#fff" opacity={mini ? "0.35" : "0.28"} />
+    </Svg>
+  );
+}
+
+/** Baby face. */
+export function BabyIcon(p: IconProps) {
+  const a = useSvgId();
+  const mini = (p.size ?? 24) <= 16;
+  const face = mini ? "#f2c9a5" : `url(#${a})`;
+  return (
+    <Svg {...p}>
+      {!mini && (
+        <defs>
+          <radialGradient id={a} cx="0.35" cy="0.3" r="0.85">
+            <stop stopColor="#ffe2c8" />
+            <stop offset="1" stopColor="#e8ab7d" />
+          </radialGradient>
+        </defs>
+      )}
+      {!mini && <Shadow cy={54} rx={15} />}
+      <circle cx="32" cy="34" r="19" fill={face} stroke="#b07d51" strokeWidth={mini ? 2 : 1.6} />
+      <path d="M28 12c2-3 6-3 8 0" stroke="#b07d51" strokeWidth="3" strokeLinecap="round" fill="none" />
+      <circle cx="25" cy="32" r="2.6" fill="#4a3020" />
+      <circle cx="39" cy="32" r="2.6" fill="#4a3020" />
+      <path d="M27 41c2.6 2.6 7.4 2.6 10 0" stroke="#4a3020" strokeWidth="2.6" strokeLinecap="round" fill="none" />
+    </Svg>
+  );
+}
+
+/** Baby bottle — feeding. */
+export function BottleIcon(p: IconProps) {
+  const a = useSvgId();
+  const mini = (p.size ?? 24) <= 16;
+  const body = mini ? "#cfe2f5" : `url(#${a})`;
+  return (
+    <Svg {...p}>
+      {!mini && (
+        <defs>
+          <linearGradient id={a} x1="20" y1="16" x2="46" y2="56" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#eaf4ff" />
+            <stop offset="1" stopColor="#a9cbee" />
+          </linearGradient>
+        </defs>
+      )}
+      {!mini && <Shadow cy={57} rx={13} />}
+      <path d="M28 6h8c1.4 0 2.4 1.1 2.4 2.4S37.4 11 36 11h-8c-1.4 0-2.4-1.1-2.4-2.5S26.6 6 28 6z" fill="#e8a87c" />
+      <rect x="24" y="11" width="16" height="6" rx="2" fill="#d78f5f" />
+      <rect x="20" y="17" width="24" height="39" rx="8" fill={body} stroke="#7ba4cc" strokeWidth="1.8" />
+      <path d="M24 36h16" stroke="#7ba4cc" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M24 44h16" stroke="#7ba4cc" strokeWidth="1.8" strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+/** Tiny foot — kick counter. */
+export function FootprintIcon(p: IconProps) {
+  const mini = (p.size ?? 24) <= 16;
+  return (
+    <Svg {...p}>
+      {!mini && <Shadow cy={57} rx={13} />}
+      <path
+        d="M22 30c-3.5-6.6-2.2-16 5.6-18.6C35 9 41 14.6 41.6 23c.5 6.8-1.4 9.5-1.4 14.4 0 5.6-3 9-8.6 9s-9-3.6-9-8.6c0-3.4.9-5 -.6-7.8z"
+        fill="#e8a87c"
+        stroke="#b07d51"
+        strokeWidth="1.6"
+      />
+      <circle cx="42.5" cy="30" r="4" fill="#e8a87c" stroke="#b07d51" strokeWidth="1.4" />
+      <circle cx="45" cy="38.5" r="3.4" fill="#e8a87c" stroke="#b07d51" strokeWidth="1.4" />
+      <circle cx="44" cy="46" r="2.8" fill="#e8a87c" stroke="#b07d51" strokeWidth="1.4" />
+    </Svg>
+  );
+}
+
+/** Stethoscope — doctor appointment / checkup. */
+export function StethoscopeIcon(p: IconProps) {
+  const mini = (p.size ?? 24) <= 16;
+  return (
+    <Svg {...p}>
+      {!mini && <Shadow cy={57} rx={14} />}
+      <path
+        d="M18 10v12c0 7.2 5.4 12.6 12 12.6S42 29.2 42 22V10"
+        stroke="#5f7a2e"
+        strokeWidth="4.5"
+        strokeLinecap="round"
+        fill="none"
+      />
+      <circle cx="18" cy="9" r="3.6" fill="#8aa04a" />
+      <circle cx="42" cy="9" r="3.6" fill="#8aa04a" />
+      <path d="M30 34.6V42c0 6.2 5 10.6 11 10.6" stroke="#5f7a2e" strokeWidth="4.5" strokeLinecap="round" fill="none" />
+      <circle cx="46" cy="50" r="7" fill="#c3d68a" stroke="#5f7a2e" strokeWidth="3" />
+    </Svg>
+  );
+}
+
+/** Person bust — profile. */
+export function ProfileIcon(p: IconProps) {
+  const a = useSvgId();
+  const mini = (p.size ?? 24) <= 16;
+  const body = mini ? "#8aa04a" : `url(#${a})`;
+  return (
+    <Svg {...p}>
+      {!mini && (
+        <defs>
+          <linearGradient id={a} x1="14" y1="10" x2="50" y2="54" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#c3d68a" />
+            <stop offset="1" stopColor="#7d9440" />
+          </linearGradient>
+        </defs>
+      )}
+      {!mini && <Shadow />}
+      <circle cx="32" cy="22" r="11" fill={body} />
+      <path d="M11 54c0-11.6 9.4-17 21-17s21 5.4 21 17c0 1.7-1.3 3-3 3H14c-1.7 0-3-1.3-3-3z" fill={body} />
+    </Svg>
+  );
+}
+
+/** Blood drop — bleeding / lochia / blood sugar. */
+export function DropIcon(p: IconProps) {
+  const a = useSvgId();
+  const mini = (p.size ?? 24) <= 16;
+  const body = mini ? "#c0392b" : `url(#${a})`;
+  return (
+    <Svg {...p}>
+      {!mini && (
+        <defs>
+          <linearGradient id={a} x1="22" y1="10" x2="44" y2="54" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#f0736a" />
+            <stop offset="1" stopColor="#a71924" />
+          </linearGradient>
+        </defs>
+      )}
+      {!mini && <Shadow cy={57} rx={12} />}
+      <path d="M32 6c9 12 16 19.4 16 27.6C48 43.6 40.8 51 32 51s-16-7.4-16-17.4C16 25.4 23 18 32 6z" fill={body} />
+      <ellipse cx="26" cy="36" rx="4" ry="6" fill="#fff" opacity="0.25" />
+    </Svg>
+  );
+}
+
 /* ------------------------------------------------------------ REGISTRY */
 
 export const BIXBO_ICONS = {
