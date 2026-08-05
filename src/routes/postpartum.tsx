@@ -12,6 +12,7 @@ import {
   EMPTY,
   todayKey,
   addDays,
+  daysBetween,
   fromKey,
   updateDayLog,
   type BixboData,
@@ -20,7 +21,7 @@ import {
   type PostpartumState,
   type PregnancyAppointment,
 } from "@/lib/storage";
-import { postpartumProgress, daysBetween, POSTPARTUM_MOODS, POSTPARTUM_SYMPTOMS } from "@/lib/health";
+import { POSTPARTUM_MOODS, POSTPARTUM_SYMPTOMS } from "@/lib/health";
 
 export const Route = createFileRoute("/postpartum")({
   head: () => ({
@@ -65,7 +66,13 @@ function PostpartumPage() {
   const log: PostpartumDayLog = view.dayLogs[today]?.postpartum ?? {};
 
   const updatePP = (patch: (p: PostpartumState) => PostpartumState) =>
-    update((d) => ({ ...d, postpartum: patch(d.postpartum ?? { active: true, visits: [] }) }));
+    update((d) => {
+      const current: PostpartumState = {
+        ...(d.postpartum ?? { active: true, visits: [] }),
+        visits: d.postpartum?.visits ?? [],
+      };
+      return { ...d, postpartum: patch(current) };
+    });
 
   const updateLog = (patch: (l: PostpartumDayLog) => PostpartumDayLog) =>
     updateDayLog(update, today, (l: DayLog) => ({ ...l, postpartum: patch(l.postpartum ?? {}) }));
@@ -97,9 +104,16 @@ function PostpartumPage() {
     );
   }
 
-  const progress = postpartumProgress(pp, today);
+  const days = pp.birthDate ? Math.max(0, daysBetween(pp.birthDate, today)) : null;
+  const progress =
+    days == null
+      ? null
+      : {
+          days,
+          week: Math.floor(days / 7),
+          dayOfWeek: days % 7,
+        };
   const weeks = progress?.week ?? null;
-  const days = progress?.days ?? (pp.birthDate ? daysBetween(pp.birthDate, today) : null);
 
   return (
     <AppShell
@@ -842,9 +856,11 @@ function VisitsSection({
   const save = (v: PregnancyAppointment) =>
     updatePP((p) => ({
       ...p,
-      visits: p.visits.some((x) => x.id === v.id) ? p.visits.map((x) => (x.id === v.id ? v : x)) : [...p.visits, v],
+      visits: (p.visits ?? []).some((x) => x.id === v.id)
+        ? (p.visits ?? []).map((x) => (x.id === v.id ? v : x))
+        : [...(p.visits ?? []), v],
     }));
-  const remove = (id: string) => updatePP((p) => ({ ...p, visits: p.visits.filter((x) => x.id !== id) }));
+  const remove = (id: string) => updatePP((p) => ({ ...p, visits: (p.visits ?? []).filter((x) => x.id !== id) }));
 
   const openNew = () => {
     setEditing(null);
