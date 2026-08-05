@@ -910,6 +910,9 @@ function DayPreview({
       ) : null}
 
       {!isMale &&
+        !data.pregnancy?.active &&
+        !data.postpartum?.active &&
+        !data.settings.pregnantSince &&
         !!(
           log?.period ||
           log?.periodInfo?.level ||
