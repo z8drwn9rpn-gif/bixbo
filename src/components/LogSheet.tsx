@@ -624,8 +624,8 @@ function ScaleLegend({
               <span
                 className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full text-[9px] font-bold text-white"
                style={{
-    background:bg
-}}
+                  background: bg,
+                }}
               >
                 {n}
               </span>
@@ -1721,6 +1721,7 @@ function PainWizard({
               <Field label={`Stress ${stress ?? "-"} / 10`}>
                 <div className="mt-2 grid gap-1" style={{ gridTemplateColumns: "repeat(11, minmax(0, 1fr))" }}>
                   {Array.from({ length: 11 }, (_, n) => {
+                   hsl(130...)
                     const bg = `hsl(${hue} 70% 50%)`;
                     const active = stress === n;
                     return (
