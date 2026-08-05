@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { Trash2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Ico } from "@/components/icons/BixboIcons";
 import { Button } from "@/components/ui/button";
@@ -114,7 +115,7 @@ function PregnancyPage() {
               }))
             }
           />
-          <RecentBP view={view} />
+          <RecentBP view={view} update={update} />
         </Section>
 
         <Section title="Blood sugar" icon="🍬">
@@ -126,7 +127,7 @@ function PregnancyPage() {
               }))
             }
           />
-          <RecentBS view={view} />
+          <RecentBS view={view} update={update} />
         </Section>
 
         <Section title="Baby movement" icon="👣">
@@ -381,35 +382,87 @@ function WeightSection({ view, update }: { view: BixboData; update: (u: (d: Bixb
   );
 }
 
-function RecentBP({ view }: { view: BixboData }) {
+function RecentBP({ view, update }: { view: BixboData; update: (u: (d: BixboData) => BixboData) => void }) {
   const entries = Object.entries(view.dayLogs)
     .flatMap(([k, l]) => (l.pregnancy?.bloodPressure ?? []).map((e) => ({ ...e, date: k })))
     .sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time))
     .slice(0, 5);
+
   if (!entries.length) return null;
+
+  const remove = (date: string, id: string) => {
+    if (!window.confirm("Delete this blood pressure entry?")) return;
+    updateDayLog(update, date, (log) => ({
+      ...log,
+      pregnancy: {
+        ...(log.pregnancy ?? {}),
+        bloodPressure: (log.pregnancy?.bloodPressure ?? []).filter((entry) => entry.id !== id),
+      },
+    }));
+  };
+
   return (
     <ul className="mt-3 space-y-1 text-sm">
       {entries.map((e) => (
-        <li key={e.id} className="rounded-xl bg-tint px-3 py-2 ring-1 ring-border/40">
-          {e.date} {e.time} · {e.systolic}/{e.diastolic}
-          {e.pulse ? ` · ${e.pulse} bpm` : ""}
+        <li
+          key={`${e.date}-${e.id}`}
+          className="flex items-center gap-2 rounded-xl bg-tint px-3 py-2 ring-1 ring-border/40"
+        >
+          <span className="min-w-0 flex-1">
+            {e.date} {e.time} · {e.systolic}/{e.diastolic}
+            {e.pulse ? ` · ${e.pulse} bpm` : ""}
+          </span>
+          <button
+            type="button"
+            onClick={() => remove(e.date, e.id)}
+            aria-label="Delete blood pressure entry"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-destructive hover:bg-destructive/10"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
         </li>
       ))}
     </ul>
   );
 }
 
-function RecentBS({ view }: { view: BixboData }) {
+function RecentBS({ view, update }: { view: BixboData; update: (u: (d: BixboData) => BixboData) => void }) {
   const entries = Object.entries(view.dayLogs)
     .flatMap(([k, l]) => (l.pregnancy?.bloodSugar ?? []).map((e) => ({ ...e, date: k })))
     .sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time))
     .slice(0, 5);
+
   if (!entries.length) return null;
+
+  const remove = (date: string, id: string) => {
+    if (!window.confirm("Delete this blood sugar entry?")) return;
+    updateDayLog(update, date, (log) => ({
+      ...log,
+      pregnancy: {
+        ...(log.pregnancy ?? {}),
+        bloodSugar: (log.pregnancy?.bloodSugar ?? []).filter((entry) => entry.id !== id),
+      },
+    }));
+  };
+
   return (
     <ul className="mt-3 space-y-1 text-sm">
       {entries.map((e) => (
-        <li key={e.id} className="rounded-xl bg-tint px-3 py-2 ring-1 ring-border/40">
-          {e.date} {e.time} · {e.value} mmol/L{e.context ? ` (${e.context})` : ""}
+        <li
+          key={`${e.date}-${e.id}`}
+          className="flex items-center gap-2 rounded-xl bg-tint px-3 py-2 ring-1 ring-border/40"
+        >
+          <span className="min-w-0 flex-1">
+            {e.date} {e.time} · {e.value} mmol/L{e.context ? ` (${e.context})` : ""}
+          </span>
+          <button
+            type="button"
+            onClick={() => remove(e.date, e.id)}
+            aria-label="Delete blood sugar entry"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-destructive hover:bg-destructive/10"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
         </li>
       ))}
     </ul>

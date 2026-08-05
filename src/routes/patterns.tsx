@@ -1693,6 +1693,20 @@ function PatternsPage() {
       if (withDays.length < 3 || withoutDays.length < 3) return;
 
       outcomeOptions.forEach((outcome) => {
+        // Do not rank an event against itself (for example Panic → Panic or
+        // Poor sleep → Poor sleep). Those are tautologies, not correlations.
+        if (trigger.id === outcome.id) return;
+
+        const equivalentPairs = new Set([
+          "panic:panic",
+          "tetany:tetany",
+          "headache:headache",
+          "hotFlash:hotFlash",
+          "poorSleep:poorSleep",
+          "histamineFlare:histamineFlare",
+        ]);
+        if (equivalentPairs.has(`${trigger.id}:${outcome.id}`)) return;
+
         const withRate =
           (withDays.filter((day) => hasOutcome(dayLogs[day], outcome.id)).length / withDays.length) * 100;
         const withoutRate =

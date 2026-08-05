@@ -97,9 +97,16 @@ function vitalEntriesFor(log: DayLog | undefined, field: "weightEntries" | "temp
   const entries = (log as DayLogWithVitalEntries | undefined)?.[field] ?? [];
 
   return entries
-    .filter((entry) => Number.isFinite(entry.value))
-    .slice()
-    .sort((a, b) => (a.time ?? "").localeCompare(b.time ?? ""));
+    .filter(
+      (entry): entry is VitalMeasurement =>
+        Boolean(entry) && typeof entry === "object" && Number.isFinite(Number((entry as VitalMeasurement).value)),
+    )
+    .map((entry) => ({
+      ...entry,
+      value: Number(entry.value),
+      time: typeof entry.time === "string" ? entry.time : "",
+    }))
+    .sort((a, b) => a.time.localeCompare(b.time));
 }
 
 /** Weight chart uses the latest measurement recorded on each day. */
@@ -189,7 +196,10 @@ function InsightsPage() {
   const bowelCounts = new Array(8).fill(0) as number[];
   days.forEach((k) =>
     view.dayLogs[k]?.bowel?.forEach((b) => {
-      if (b.bristol != null) bowelCounts[b.bristol] = (bowelCounts[b.bristol] ?? 0) + 1;
+      const bristol = Number(b.bristol);
+      if (Number.isInteger(bristol) && bristol >= 0 && bristol <= 7) {
+        bowelCounts[bristol] = (bowelCounts[bristol] ?? 0) + 1;
+      }
     }),
   );
 
@@ -926,7 +936,8 @@ function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) 
                     key={d.date}
                     onClick={() => setExpandedDay(expandedDay === d.date ? null : d.date)}
                     title={`${fmt(d.date)} — ${d.taken}/${d.expected}`}
-                    className={`aspect-square rounded ${expandedDay === d.date ? "ring-2 ring-primary" : ""}`}
+                    aria-label={`${fmt(d.date)} — ${d.taken}/${d.expected} doses`}
+                    className={`aspect-square min-h-7 min-w-7 rounded ${expandedDay === d.date ? "ring-2 ring-primary" : ""}`}
                     style={{ background: cellColor(d) }}
                   />
                 ))}

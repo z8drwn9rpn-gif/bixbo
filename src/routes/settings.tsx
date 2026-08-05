@@ -195,7 +195,11 @@ function SettingsPage() {
     setRefreshMsg(null);
     try {
       const remote = await pullMyData();
-      if (remote) replaceBixbo({ ...getBixbo(), ...remote, partner: getBixbo().partner }, "remote");
+      if (remote) {
+        const current = getBixbo();
+        const merged = mergeBixbo(current, remote);
+        replaceBixbo({ ...merged, partner: current.partner }, "remote");
+      }
       const p = await fetchPartner();
       if (p) update((d) => ({ ...d, partner: p }));
       else if (session) update((d) => ({ ...d, partner: undefined }));
@@ -234,10 +238,9 @@ function SettingsPage() {
   const setTheme = (t: "light" | "dark" | "system") => update((d) => ({ ...d, settings: { ...d.settings, theme: t } }));
 
   const toggleNotif = (on: boolean) => {
+    // This switch controls reminder preferences only. Browser permission must
+    // be requested exclusively from the explicit push-notification button.
     update((d) => ({ ...d, settings: { ...d.settings, notifications: on } }));
-    if (on && "Notification" in window && Notification.permission === "default") {
-      Notification.requestPermission().then(setNotifPerm);
-    }
   };
 
   const exportJson = () => {

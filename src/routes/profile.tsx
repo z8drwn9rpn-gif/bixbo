@@ -409,7 +409,7 @@ function ProfilePage() {
       postpartum: {
         ...(d.postpartum ?? EMPTY.postpartum!),
         active: value === "postpartum",
-        birthDate: value === "postpartum" ? (d.postpartum?.birthDate ?? todayKey()) : d.postpartum?.birthDate,
+        birthDate: d.postpartum?.birthDate,
       },
       settings: {
         ...d.settings,

@@ -155,6 +155,30 @@ function PostpartumPage() {
       postpartum: normalizePostpartumLog(patch(normalizePostpartumLog(l.postpartum))),
     }));
 
+  const resetPostpartum = () => {
+    const confirmed = window.confirm(
+      "This will permanently delete all postpartum tracking data — birth details, bleeding, recovery, mood, sleep, feeding, diapers and visits. This cannot be undone.",
+    );
+
+    if (!confirmed) return;
+
+    update((d) => {
+      const dayLogs = Object.fromEntries(
+        Object.entries(d.dayLogs).map(([date, dayLog]) => {
+          const nextLog = { ...dayLog };
+          delete nextLog.postpartum;
+          return [date, nextLog];
+        }),
+      ) as BixboData["dayLogs"];
+
+      return {
+        ...d,
+        postpartum: { active: false, visits: [] },
+        dayLogs,
+      };
+    });
+  };
+
   if (!hydrated) return null;
 
   if (!pp?.active) {
@@ -262,6 +286,17 @@ function PostpartumPage() {
                 }}
               >
                 Finish postpartum
+              </Button>
+            </section>
+
+            <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
+              <p className="text-sm font-medium">Reset</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                Permanently delete all postpartum setup details and daily postpartum logs. Other BIXBO data will remain
+                unchanged.
+              </p>
+              <Button type="button" variant="destructive" className="mt-3 h-11 w-full" onClick={resetPostpartum}>
+                Delete all postpartum data
               </Button>
             </section>
           </>
