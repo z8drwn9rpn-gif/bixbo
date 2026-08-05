@@ -1643,203 +1643,206 @@ function PatternsPage() {
             {/* Monthly comparison — other                                         */}
             {/* ------------------------------------------------------------------ */}
 
+            <CollapsibleSection title="Symptoms" subtitle="Hot flashes, headaches and pressure" defaultOpen={false}>
+              <div className="space-y-3">
+                <ComparisonMetric
+                  title="Hot flashes"
+                  subtitle="Number of logged hot flashes"
+                  previous={hotFlashPrevious.count}
+                  current={hotFlashCurrent.count}
+                  decimals={0}
+                  color="orange"
+                  higherIsWorse
+                  icon={<Flame className="h-5 w-5" />}
+                />
+
+                <ComparisonMetric
+                  title="Hot-flash intensity"
+                  subtitle="Average intensity of logged hot flashes"
+                  previous={hotFlashPrevious.intensity}
+                  current={hotFlashCurrent.intensity}
+                  max={5}
+                  decimals={1}
+                  unit="/5"
+                  color="orange"
+                  higherIsWorse
+                  icon={<ThermometerSun className="h-5 w-5" />}
+                />
+
+                <ComparisonMetric
+                  title="Headaches"
+                  subtitle="Number of logged headaches"
+                  previous={headachePrevious.count}
+                  current={headacheCurrent.count}
+                  decimals={0}
+                  color="cyan"
+                  higherIsWorse
+                  icon={<Brain className="h-5 w-5" />}
+                />
+
+                <ComparisonMetric
+                  title="Headache intensity"
+                  subtitle="Average headache intensity"
+                  previous={headachePrevious.intensity}
+                  current={headacheCurrent.intensity}
+                  max={10}
+                  decimals={1}
+                  unit="/10"
+                  color="cyan"
+                  higherIsWorse
+                  icon={<HeartPulse className="h-5 w-5" />}
+                />
+
+                <ComparisonMetric
+                  title="Pressure entries"
+                  subtitle="Number of pain logs containing pressure"
+                  previous={pressurePrevious.count}
+                  current={pressureCurrent.count}
+                  decimals={0}
+                  color="rose"
+                  higherIsWorse
+                  icon={<Waves className="h-5 w-5" />}
+                />
+
+                <ComparisonMetric
+                  title="Pressure intensity"
+                  subtitle="Average intensity of logged pressure"
+                  previous={pressurePrevious.intensity}
+                  current={pressureCurrent.intensity}
+                  max={10}
+                  decimals={1}
+                  unit="/10"
+                  color="rose"
+                  higherIsWorse
+                  icon={<Activity className="h-5 w-5" />}
+                />
+              </div>
+            </CollapsibleSection>
+
             <CollapsibleSection
-              title="Symptoms, lifestyle & hormones"
-              subtitle="Other monthly health measurements"
+              title="Lifestyle & routines"
+              subtitle="Sleep, weight, medication and workouts"
               defaultOpen={false}
             >
-              <Card
-                title="Monthly comparison — other"
-                description="Compare symptoms, routines and health measurements month by month."
-              >
-                <div className="mt-4 space-y-3">
-                  <ComparisonMetric
-                    title="Hot flashes"
-                    subtitle="Number of logged hot flashes"
-                    previous={hotFlashPrevious.count}
-                    current={hotFlashCurrent.count}
-                    decimals={0}
-                    color="orange"
-                    higherIsWorse
-                    icon={<Flame className="h-5 w-5" />}
-                  />
-
-                  <ComparisonMetric
-                    title="Hot-flash intensity"
-                    subtitle="Average intensity of logged hot flashes"
-                    previous={hotFlashPrevious.intensity}
-                    current={hotFlashCurrent.intensity}
-                    max={5}
-                    decimals={1}
-                    unit="/5"
-                    color="orange"
-                    higherIsWorse
-                    icon={<ThermometerSun className="h-5 w-5" />}
-                  />
-
-                  <ComparisonMetric
-                    title="Headaches"
-                    subtitle="Number of logged headaches"
-                    previous={headachePrevious.count}
-                    current={headacheCurrent.count}
-                    decimals={0}
-                    color="cyan"
-                    higherIsWorse
-                    icon={<Brain className="h-5 w-5" />}
-                  />
-
-                  <ComparisonMetric
-                    title="Headache intensity"
-                    subtitle="Average headache intensity"
-                    previous={headachePrevious.intensity}
-                    current={headacheCurrent.intensity}
-                    max={10}
-                    decimals={1}
-                    unit="/10"
-                    color="cyan"
-                    higherIsWorse
-                    icon={<HeartPulse className="h-5 w-5" />}
-                  />
-
-                  <ComparisonMetric
-                    title="Pressure entries"
-                    subtitle="Number of pain logs containing pressure"
-                    previous={pressurePrevious.count}
-                    current={pressureCurrent.count}
-                    decimals={0}
-                    color="rose"
-                    higherIsWorse
-                    icon={<Waves className="h-5 w-5" />}
-                  />
-
-                  <ComparisonMetric
-                    title="Pressure intensity"
-                    subtitle="Average intensity of logged pressure"
-                    previous={pressurePrevious.intensity}
-                    current={pressureCurrent.intensity}
-                    max={10}
-                    decimals={1}
-                    unit="/10"
-                    color="rose"
-                    higherIsWorse
-                    icon={<Activity className="h-5 w-5" />}
-                  />
-
-                  <ComparisonMetric
-                    title="Average sleep"
-                    subtitle="Average number of logged sleep hours"
-                    previous={sleepPrevious}
-                    current={sleepCurrent}
-                    max={12}
-                    decimals={1}
-                    unit="h"
-                    color="blue"
-                    neutralTrend
-                    icon={<Moon className="h-5 w-5" />}
-                  />
-
-                  <ComparisonMetric
-                    title="Average weight"
-                    subtitle="Average logged body weight"
-                    previous={weightPrevious}
-                    current={weightCurrent}
-                    decimals={1}
-                    unit="kg"
-                    color="slate"
-                    neutralTrend
-                    icon={<Scale className="h-5 w-5" />}
-                  />
-
-                  <ComparisonMetric
-                    title="Medication adherence"
-                    subtitle="Percentage of scheduled doses marked as taken"
-                    previous={medicationPrevious}
-                    current={medicationCurrent}
-                    max={100}
-                    decimals={0}
-                    unit="%"
-                    color="emerald"
-                    higherIsWorse={false}
-                    icon={<Pill className="h-5 w-5" />}
-                  />
-
-                  <ComparisonMetric
-                    title="Workouts"
-                    subtitle="Number of logged workout sessions"
-                    previous={workoutPrevious.count}
-                    current={workoutCurrent.count}
-                    decimals={0}
-                    color="teal"
-                    higherIsWorse={false}
-                    icon={<Dumbbell className="h-5 w-5" />}
-                  />
-
-                  <ComparisonMetric
-                    title="Workout time"
-                    subtitle="Total logged workout minutes"
-                    previous={workoutPrevious.minutes}
-                    current={workoutCurrent.minutes}
-                    decimals={0}
-                    unit=" min"
-                    color="teal"
-                    higherIsWorse={false}
-                    icon={<Activity className="h-5 w-5" />}
-                  />
-
-                  <ComparisonMetric
-                    title="PCOS symptoms"
-                    subtitle="Total number of logged PCOS symptom tags"
-                    previous={pcosPrevious}
-                    current={pcosCurrent}
-                    decimals={0}
-                    color="pink"
-                    higherIsWorse
-                    icon={<HeartPulse className="h-5 w-5" />}
-                  />
-
-                  <ComparisonMetric
-                    title="Histamine flares"
-                    subtitle="Number of food entries marked as a histamine flare"
-                    previous={histaminePrevious}
-                    current={histamineCurrent}
-                    decimals={0}
-                    color="amber"
-                    higherIsWorse
-                    icon={<Flame className="h-5 w-5" />}
-                  />
-                </div>
-
-                <SummaryPanel
-                  title="Monthly Summary"
-                  items={[
-                    {
-                      label: "Most improved",
-                      value: formatChange(mostImproved),
-                      tone: mostImproved && mostImproved.score > 0 ? "good" : "neutral",
-                    },
-                    {
-                      label: "Needs attention",
-                      value: formatChange(mostWorsened),
-                      tone: mostWorsened && mostWorsened.score < 0 ? "bad" : "neutral",
-                    },
-                    { label: "Most stable", value: formatChange(mostStable), tone: "neutral" },
-                  ]}
-                  confidence={{
-                    level: monthlyConfidence,
-                    detail: `Based on ${monthlyLoggedDays} logged day${monthlyLoggedDays === 1 ? "" : "s"} this month`,
-                  }}
+              <div className="space-y-3">
+                <ComparisonMetric
+                  title="Average sleep"
+                  subtitle="Average number of logged sleep hours"
+                  previous={sleepPrevious}
+                  current={sleepCurrent}
+                  max={12}
+                  decimals={1}
+                  unit="h"
+                  color="blue"
+                  neutralTrend
+                  icon={<Moon className="h-5 w-5" />}
                 />
-              </Card>
+
+                <ComparisonMetric
+                  title="Average weight"
+                  subtitle="Average logged body weight"
+                  previous={weightPrevious}
+                  current={weightCurrent}
+                  decimals={1}
+                  unit="kg"
+                  color="slate"
+                  neutralTrend
+                  icon={<Scale className="h-5 w-5" />}
+                />
+
+                <ComparisonMetric
+                  title="Medication adherence"
+                  subtitle="Percentage of scheduled doses marked as taken"
+                  previous={medicationPrevious}
+                  current={medicationCurrent}
+                  max={100}
+                  decimals={0}
+                  unit="%"
+                  color="emerald"
+                  higherIsWorse={false}
+                  icon={<Pill className="h-5 w-5" />}
+                />
+
+                <ComparisonMetric
+                  title="Workouts"
+                  subtitle="Number of logged workout sessions"
+                  previous={workoutPrevious.count}
+                  current={workoutCurrent.count}
+                  decimals={0}
+                  color="teal"
+                  higherIsWorse={false}
+                  icon={<Dumbbell className="h-5 w-5" />}
+                />
+
+                <ComparisonMetric
+                  title="Workout time"
+                  subtitle="Total logged workout minutes"
+                  previous={workoutPrevious.minutes}
+                  current={workoutCurrent.minutes}
+                  decimals={0}
+                  unit=" min"
+                  color="teal"
+                  higherIsWorse={false}
+                  icon={<Activity className="h-5 w-5" />}
+                />
+              </div>
+            </CollapsibleSection>
+
+            <CollapsibleSection
+              title="Hormones & monthly summary"
+              subtitle="PCOS, histamine and the most important monthly changes"
+              defaultOpen={false}
+            >
+              <div className="space-y-3">
+                <ComparisonMetric
+                  title="PCOS symptoms"
+                  subtitle="Total number of logged PCOS symptom tags"
+                  previous={pcosPrevious}
+                  current={pcosCurrent}
+                  decimals={0}
+                  color="pink"
+                  higherIsWorse
+                  icon={<HeartPulse className="h-5 w-5" />}
+                />
+
+                <ComparisonMetric
+                  title="Histamine flares"
+                  subtitle="Number of food entries marked as a histamine flare"
+                  previous={histaminePrevious}
+                  current={histamineCurrent}
+                  decimals={0}
+                  color="amber"
+                  higherIsWorse
+                  icon={<Flame className="h-5 w-5" />}
+                />
+              </div>
+
+              <SummaryPanel
+                title="Monthly Summary"
+                items={[
+                  {
+                    label: "Most improved",
+                    value: formatChange(mostImproved),
+                    tone: mostImproved && mostImproved.score > 0 ? "good" : "neutral",
+                  },
+                  {
+                    label: "Needs attention",
+                    value: formatChange(mostWorsened),
+                    tone: mostWorsened && mostWorsened.score < 0 ? "bad" : "neutral",
+                  },
+                  { label: "Most stable", value: formatChange(mostStable), tone: "neutral" },
+                ]}
+                confidence={{
+                  level: monthlyConfidence,
+                  detail: `Based on ${monthlyLoggedDays} logged day${monthlyLoggedDays === 1 ? "" : "s"} this month`,
+                }}
+              />
             </CollapsibleSection>
           </div>
         )}
 
         {activeTab === "treatment" && (
           <div className="space-y-4">
-            {/* ------------------------------------------------------------------ */}
-            {/* Treatment comparison                                               */}
-            {/* ------------------------------------------------------------------ */}
-
             <Card
               title="Treatment comparison"
               description="Compare the four weeks before treatment with the first four weeks after its start."
@@ -1861,69 +1864,83 @@ function PatternsPage() {
                 />
               </label>
 
-              {!treatmentDate ? (
-                <Empty text="Choose a treatment start date to compare the two periods." />
-              ) : (
-                <div className="mt-4 space-y-3">
-                  <ComparisonMetric
-                    title="Pain"
-                    subtitle="Average pain · 4 weeks before vs 4 weeks after"
-                    previous={treatmentPain.before}
-                    current={treatmentPain.after}
-                    max={10}
-                    decimals={1}
-                    unit="/10"
-                    color="rose"
-                    higherIsWorse
-                    previousLabel="Before"
-                    currentLabel="After"
-                    icon={<HeartPulse className="h-5 w-5" />}
-                  />
+              {!treatmentDate && <Empty text="Choose a treatment start date to compare the two periods." />}
+            </Card>
 
-                  <ComparisonMetric
-                    title="Tetany intensity"
-                    subtitle="Average tetany intensity before and after treatment"
-                    previous={treatmentTetany.before}
-                    current={treatmentTetany.after}
-                    max={5}
-                    decimals={1}
-                    unit="/5"
-                    color="blue"
-                    higherIsWorse
-                    previousLabel="Before"
-                    currentLabel="After"
-                    icon={<Activity className="h-5 w-5" />}
-                  />
+            {treatmentDate && (
+              <>
+                <CollapsibleSection
+                  title="Treatment results"
+                  subtitle="Pain, tetany, panic and mood before versus after"
+                  defaultOpen={true}
+                >
+                  <div className="space-y-3">
+                    <ComparisonMetric
+                      title="Pain"
+                      subtitle="Average pain · 4 weeks before vs 4 weeks after"
+                      previous={treatmentPain.before}
+                      current={treatmentPain.after}
+                      max={10}
+                      decimals={1}
+                      unit="/10"
+                      color="rose"
+                      higherIsWorse
+                      previousLabel="Before"
+                      currentLabel="After"
+                      icon={<HeartPulse className="h-5 w-5" />}
+                    />
 
-                  <ComparisonMetric
-                    title="Panic intensity"
-                    subtitle="Average panic intensity before and after treatment"
-                    previous={treatmentPanic.before}
-                    current={treatmentPanic.after}
-                    max={10}
-                    decimals={1}
-                    unit="/10"
-                    color="purple"
-                    higherIsWorse
-                    previousLabel="Before"
-                    currentLabel="After"
-                    icon={<Sparkles className="h-5 w-5" />}
-                  />
+                    <ComparisonMetric
+                      title="Tetany intensity"
+                      subtitle="Average tetany intensity before and after treatment"
+                      previous={treatmentTetany.before}
+                      current={treatmentTetany.after}
+                      max={5}
+                      decimals={1}
+                      unit="/5"
+                      color="blue"
+                      higherIsWorse
+                      previousLabel="Before"
+                      currentLabel="After"
+                      icon={<Activity className="h-5 w-5" />}
+                    />
 
-                  <ComparisonMetric
-                    title="Negative mood"
-                    subtitle="Average negative mood tags per day"
-                    previous={treatmentMood.before}
-                    current={treatmentMood.after}
-                    max={3}
-                    decimals={1}
-                    color="amber"
-                    higherIsWorse
-                    previousLabel="Before"
-                    currentLabel="After"
-                    icon={<Brain className="h-5 w-5" />}
-                  />
+                    <ComparisonMetric
+                      title="Panic intensity"
+                      subtitle="Average panic intensity before and after treatment"
+                      previous={treatmentPanic.before}
+                      current={treatmentPanic.after}
+                      max={10}
+                      decimals={1}
+                      unit="/10"
+                      color="purple"
+                      higherIsWorse
+                      previousLabel="Before"
+                      currentLabel="After"
+                      icon={<Sparkles className="h-5 w-5" />}
+                    />
 
+                    <ComparisonMetric
+                      title="Negative mood"
+                      subtitle="Average negative mood tags per day"
+                      previous={treatmentMood.before}
+                      current={treatmentMood.after}
+                      max={3}
+                      decimals={1}
+                      color="amber"
+                      higherIsWorse
+                      previousLabel="Before"
+                      currentLabel="After"
+                      icon={<Brain className="h-5 w-5" />}
+                    />
+                  </div>
+                </CollapsibleSection>
+
+                <CollapsibleSection
+                  title="Treatment summary"
+                  subtitle="Overall result and confidence"
+                  defaultOpen={false}
+                >
                   <SummaryPanel
                     title="Treatment Summary"
                     items={[
@@ -1956,9 +1973,9 @@ function PatternsPage() {
                   <p className="px-1 text-[10px] leading-relaxed text-muted-foreground">
                     Treatment marker: {treatmentDate}. The comparison uses up to 28 days on each side of this date.
                   </p>
-                </div>
-              )}
-            </Card>
+                </CollapsibleSection>
+              </>
+            )}
           </div>
         )}
 
@@ -2102,13 +2119,15 @@ function PatternsPage() {
                 }}
               />
 
-              {strongestAssociations.length > 0 && (
-                <div className="mt-5 rounded-3xl bg-background p-4 ring-1 ring-border">
-                  <h3 className="text-sm font-semibold text-foreground">Strongest Associations</h3>
-                  <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                    Calculated from your logs only. These are associations, not proof of causation.
-                  </p>
-                  <div className="mt-4 space-y-3">
+              <CollapsibleSection
+                title="Strongest associations"
+                subtitle="The largest differences found in your logs"
+                defaultOpen={false}
+              >
+                {strongestAssociations.length === 0 ? (
+                  <Empty text="Log more matching days to find strong associations." />
+                ) : (
+                  <div className="space-y-3">
                     {strongestAssociations.map((association) => (
                       <div
                         key={`${association.trigger}-${association.outcome}`}
@@ -2117,7 +2136,11 @@ function PatternsPage() {
                         <p className="text-sm font-semibold text-foreground">{association.trigger}</p>
                         <p className="mt-0.5 text-xs text-muted-foreground">→ {association.outcome}</p>
                         <p
-                          className={`mt-2 text-sm font-bold ${association.difference > 0 ? "text-rose-600 dark:text-rose-300" : "text-emerald-700 dark:text-emerald-300"}`}
+                          className={`mt-2 text-sm font-bold ${
+                            association.difference > 0
+                              ? "text-rose-600 dark:text-rose-300"
+                              : "text-emerald-700 dark:text-emerald-300"
+                          }`}
                         >
                           {Math.abs(association.difference).toFixed(0)} percentage points{" "}
                           {association.difference > 0 ? "higher" : "lower"}
@@ -2125,8 +2148,8 @@ function PatternsPage() {
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
+                )}
+              </CollapsibleSection>
 
               <button
                 type="button"
@@ -2137,13 +2160,15 @@ function PatternsPage() {
                 ★ Save this comparison
               </button>
 
-              {(view.settings.savedTriggers ?? []).length > 0 && (
-                <div className="mt-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Saved comparisons
-                  </p>
-
-                  <div className="mt-2 space-y-2">
+              <CollapsibleSection
+                title="Saved comparisons"
+                subtitle="Open a saved trigger and outcome pair"
+                defaultOpen={false}
+              >
+                {(view.settings.savedTriggers ?? []).length === 0 ? (
+                  <Empty text="No saved comparisons yet." />
+                ) : (
+                  <div className="space-y-2">
                     {(view.settings.savedTriggers ?? []).map((saved) => {
                       const savedTriggerLabel =
                         triggerOptions.find((option) => option.id === saved.a)?.label ?? saved.a;
@@ -2165,7 +2190,6 @@ function PatternsPage() {
                             }}
                           >
                             <p className="truncate text-xs font-semibold text-foreground">{savedTriggerLabel}</p>
-
                             <p className="mt-0.5 truncate text-[11px] text-muted-foreground">→ {savedOutcomeLabel}</p>
                           </button>
 
@@ -2181,8 +2205,8 @@ function PatternsPage() {
                       );
                     })}
                   </div>
-                </div>
-              )}
+                )}
+              </CollapsibleSection>
             </Card>{" "}
           </div>
         )}
