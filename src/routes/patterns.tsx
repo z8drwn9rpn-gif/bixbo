@@ -409,11 +409,11 @@ function ComparisonMetric({
   const relativeChange = percentageChange(previous, current);
 
   return (
-    <article className="rounded-3xl bg-tint p-4 ring-1 ring-border/60">
+    <article className="rounded-2xl bg-tint p-3.5 ring-1 ring-border/60">
       <div className="flex items-start gap-3">
         {icon && (
           <span
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl"
             style={{
               backgroundColor: "var(--surface)",
               color: palette.text,
@@ -446,12 +446,13 @@ function ComparisonMetric({
       </div>
 
       {!hasAnyData ? (
-        <div className="mt-4 rounded-2xl bg-surface/75 px-4 py-5 text-center ring-1 ring-border/40">
-          <p className="text-sm text-muted-foreground">Not enough data yet</p>
+        <div className="mt-3 rounded-xl bg-surface/75 px-3 py-3.5 text-center ring-1 ring-border/40">
+          <p className="text-xs font-medium text-foreground">No comparison yet</p>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">Log this metric in both periods to compare it.</p>
         </div>
       ) : (
         <>
-          <div className="mt-5 grid grid-cols-2 gap-4">
+          <div className="mt-3 grid grid-cols-2 gap-3">
             <MetricColumn
               label={previousLabel}
               value={previous}
@@ -473,7 +474,7 @@ function ComparisonMetric({
           </div>
 
           <div
-            className="mt-4 rounded-2xl bg-surface/75 px-3 py-2 text-center text-xs font-semibold ring-1 ring-border/40"
+            className="mt-3 rounded-xl bg-surface/75 px-3 py-2 text-center text-xs font-semibold ring-1 ring-border/40"
             style={{ color: trendColor }}
           >
             {trendText}
@@ -507,9 +508,11 @@ function MetricColumn({
     <div className="min-w-0">
       <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
 
-      <p className="mt-1 text-xl font-bold tabular-nums text-foreground">{formatMetricValue(value, decimals, unit)}</p>
+      <p className="mt-0.5 text-lg font-bold tabular-nums text-foreground">
+        {formatMetricValue(value, decimals, unit)}
+      </p>
 
-      <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-surface/75 ring-1 ring-border/40">
+      <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface/75 ring-1 ring-border/40">
         <div
           className="h-full rounded-full transition-[width] duration-500 ease-out"
           style={{
@@ -1691,6 +1694,41 @@ function PatternsPage() {
 
         {activeTab === "monthly" && (
           <div className="space-y-4">
+            <Card
+              title="This month at a glance"
+              description="The most important changes compared with the same number of days last month."
+            >
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Most improved
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                    {formatChange(mostImproved)}
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Needs attention
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-rose-600 dark:text-rose-300">
+                    {formatChange(mostWorsened)}
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Most stable
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-foreground">{formatChange(mostStable)}</p>
+                </div>
+                <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Confidence</p>
+                  <p className="mt-1 text-sm font-semibold text-foreground">{monthlyConfidence}</p>
+                  <p className="mt-0.5 text-[10px] text-muted-foreground">{monthlyLoggedDays} logged days</p>
+                </div>
+              </div>
+            </Card>
+
             {/* ------------------------------------------------------------------ */}
             {/* Monthly comparison — panic and tetany                              */}
             {/* ------------------------------------------------------------------ */}
@@ -1966,8 +2004,8 @@ function PatternsPage() {
               title="Treatment comparison"
               description="Compare the four weeks before treatment with the first four weeks after its start."
             >
-              <label className="mt-4 block">
-                <span className="text-xs font-medium text-muted-foreground">Treatment start date</span>
+              <label className="mt-3 block">
+                <span className="text-sm font-semibold text-foreground">Treatment start date</span>
 
                 {view.meds.length > 0 && (
                   <span className="mt-1 block text-[10px] leading-relaxed text-muted-foreground">
@@ -1979,15 +2017,46 @@ function PatternsPage() {
                   type="date"
                   value={treatmentDate}
                   onChange={(event) => setTreatmentDate(event.target.value)}
-                  className="mt-2 w-full rounded-2xl bg-tint px-4 py-3 text-sm text-foreground outline-none ring-1 ring-border transition focus:ring-2 focus:ring-primary"
+                  className="mt-2 min-h-11 w-full rounded-2xl bg-tint px-4 py-2.5 text-sm text-foreground [color-scheme:light] outline-none ring-1 ring-border transition focus:ring-2 focus:ring-primary dark:[color-scheme:dark]"
                 />
               </label>
 
-              {!treatmentDate && <Empty text="Choose a treatment start date to compare the two periods." />}
+              {!treatmentDate && (
+                <Empty text="Choose a treatment start date, then log at least 7 days before and after it to unlock the comparison." />
+              )}
             </Card>
 
             {treatmentDate && (
               <>
+                <SummaryPanel
+                  title="Treatment at a glance"
+                  items={[
+                    {
+                      label: "Overall",
+                      value: treatmentOverall,
+                      tone: treatmentOverall.includes("improvement")
+                        ? "good"
+                        : treatmentOverall.includes("worsening")
+                          ? "bad"
+                          : "neutral",
+                    },
+                    {
+                      label: "Strongest change",
+                      value: treatmentChangeLabel(strongestTreatmentChange),
+                      tone:
+                        strongestTreatmentChange?.delta != null && strongestTreatmentChange.delta < 0
+                          ? "good"
+                          : strongestTreatmentChange?.delta != null && strongestTreatmentChange.delta > 0
+                            ? "bad"
+                            : "neutral",
+                    },
+                  ]}
+                  confidence={{
+                    level: treatmentConfidence,
+                    detail: `Based on ${treatmentLoggedDays} logged days across both periods`,
+                  }}
+                />
+
                 <CollapsibleSection
                   title="Treatment results"
                   subtitle="Pain, tetany, panic and mood before versus after"
@@ -2056,8 +2125,8 @@ function PatternsPage() {
                 </CollapsibleSection>
 
                 <CollapsibleSection
-                  title="Treatment summary"
-                  subtitle="Overall result and confidence"
+                  title="Detailed treatment summary"
+                  subtitle="Counts and treatment marker details"
                   defaultOpen={false}
                 >
                   <SummaryPanel
@@ -2371,14 +2440,14 @@ function TriggerResult({
   const safePercentage = percentage == null ? 0 : clampPercent(percentage);
 
   return (
-    <div className="rounded-3xl bg-tint p-4 text-center">
+    <div className="rounded-2xl bg-tint p-3 text-center ring-1 ring-border/40">
       <p className="text-[11px] font-semibold text-muted-foreground">{label}</p>
 
       <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">
         {percentage != null ? `${percentage.toFixed(0)}%` : "—"}
       </p>
 
-      <div className="mx-auto mt-3 flex h-24 w-12 items-end overflow-hidden rounded-2xl bg-background/70">
+      <div className="mx-auto mt-2 flex h-16 w-10 items-end overflow-hidden rounded-xl bg-background/70">
         <div
           className="w-full rounded-2xl transition-[height] duration-500 ease-out"
           style={{
