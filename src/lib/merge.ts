@@ -167,22 +167,39 @@ let _deleted: Set<string> = new Set();
 
 /** Union two arrays of id-keyed entries. On id collision, keep the more
  * complete one, preferring local when tied. Tombstoned ids are dropped. */
-function unionById<T extends WithId>(local: T[] | undefined, remote: T[] | undefined): T[] | undefined {
-  const drop = (arr: T[] | undefined) => arr?.filter((x) => !_deleted.has(x.id));
-  const l = drop(local),
-    r = drop(remote);
-  if (!l?.length) return r?.length ? r.slice() : l;
-  if (!r?.length) return l;
+function unionById<T extends WithId>(local: unknown, remote: unknown): T[] | undefined {
+  const normalize = (value: unknown): T[] => {
+    if (!Array.isArray(value)) return [];
+
+    return value.filter((item): item is T => {
+      if (!isObj(item)) return false;
+      if (typeof item.id !== "string" || !item.id.trim()) return false;
+      return !_deleted.has(item.id);
+    });
+  };
+
+  const l = normalize(local);
+  const r = normalize(remote);
+
+  if (!l.length && !r.length) return [];
+  if (!l.length) return r.slice();
+  if (!r.length) return l.slice();
+
   const out = new Map<string, T>();
+
   for (const rr of r) out.set(rr.id, rr);
+
   for (const ll of l) {
     const existing = out.get(ll.id);
+
     if (!existing) {
       out.set(ll.id, ll);
       continue;
     }
+
     out.set(ll.id, completeness(ll) >= completeness(existing) ? ll : existing);
   }
+
   return Array.from(out.values());
 }
 
@@ -261,16 +278,33 @@ function mergeDayNotes(
   const keys = new Set([...Object.keys(local ?? {}), ...Object.keys(remote ?? {})]);
   const out: BixboData["dayNotes"] = {};
   for (const k of keys) {
-    const l = local?.[k] ?? [];
-    const r = remote?.[k] ?? [];
+    const l = Array.isArray(local?.[k]) ? local[k] : [];
+    const r = Array.isArray(remote?.[k]) ? remote[k] : [];
     const seen = new Set<string>();
     const merged: (string | { text: string; time?: string })[] = [];
-    for (const n of [...l, ...r]) {
-      const key = typeof n === "string" ? n : `${n.text}__${n.time ?? ""}`;
+
+    for (const item of [...l, ...r]) {
+      if (typeof item === "string") {
+        const text = item.trim();
+        if (!text || seen.has(`string:${text}`)) continue;
+        seen.add(`string:${text}`);
+        merged.push(item);
+        continue;
+      }
+
+      if (!isObj(item) || typeof item.text !== "string") continue;
+
+      const note = {
+        text: item.text,
+        time: typeof item.time === "string" ? item.time : undefined,
+      };
+      const key = `note:${note.text}__${note.time ?? ""}`;
+
       if (seen.has(key)) continue;
       seen.add(key);
-      merged.push(n as never);
+      merged.push(note);
     }
+
     out[k] = merged as never;
   }
   return out;
@@ -278,9 +312,15 @@ function mergeDayNotes(
 
 /** todos: Record<dateKey, Todo[]> union by id */
 function mergeTodos(local: BixboData["todos"] | undefined, remote: BixboData["todos"] | undefined): BixboData["todos"] {
-  const keys = new Set([...Object.keys(local ?? {}), ...Object.keys(remote ?? {})]);
+  const safeLocal = isObj(local) ? local : {};
+  const safeRemote = isObj(remote) ? remote : {};
+  const keys = new Set([...Object.keys(safeLocal), ...Object.keys(safeRemote)]);
   const out: BixboData["todos"] = {};
-  for (const k of keys) out[k] = unionById(local?.[k], remote?.[k]) ?? [];
+
+  for (const k of keys) {
+    out[k] = unionById((safeLocal as BixboData["todos"])[k], (safeRemote as BixboData["todos"])[k]) ?? [];
+  }
+
   return out;
 }
 
@@ -289,16 +329,23 @@ function mergeMedLog(
   local: BixboData["medLog"] | undefined,
   remote: BixboData["medLog"] | undefined,
 ): BixboData["medLog"] {
-  const keys = new Set([...Object.keys(local ?? {}), ...Object.keys(remote ?? {})]);
+  const safeLocal = isObj(local) ? local : {};
+  const safeRemote = isObj(remote) ? remote : {};
+  const keys = new Set([...Object.keys(safeLocal), ...Object.keys(safeRemote)]);
   const out: BixboData["medLog"] = {};
+
   for (const k of keys) {
-    const l = local?.[k] ?? {};
-    const r = remote?.[k] ?? {};
+    const lRaw = (safeLocal as BixboData["medLog"])[k];
+    const rRaw = (safeRemote as BixboData["medLog"])[k];
+    const l = isObj(lRaw) ? (lRaw as Record<string, boolean>) : {};
+    const r = isObj(rRaw) ? (rRaw as Record<string, boolean>) : {};
     const innerKeys = new Set([...Object.keys(l), ...Object.keys(r)]);
     const inner: Record<string, boolean> = {};
-    for (const ik of innerKeys) inner[ik] = !!l[ik] || !!r[ik];
+
+    for (const ik of innerKeys) inner[ik] = Boolean(l[ik]) || Boolean(r[ik]);
     out[k] = inner;
   }
+
   return out;
 }
 
@@ -307,16 +354,26 @@ function mergeMedLogTimes(
   local: BixboData["medLogTimes"] | undefined,
   remote: BixboData["medLogTimes"] | undefined,
 ): BixboData["medLogTimes"] {
-  const keys = new Set([...Object.keys(local ?? {}), ...Object.keys(remote ?? {})]);
+  const safeLocal = isObj(local) ? local : {};
+  const safeRemote = isObj(remote) ? remote : {};
+  const keys = new Set([...Object.keys(safeLocal), ...Object.keys(safeRemote)]);
   const out: BixboData["medLogTimes"] = {};
+
   for (const k of keys) {
-    const l = local?.[k] ?? {};
-    const r = remote?.[k] ?? {};
+    const lRaw = (safeLocal as BixboData["medLogTimes"])[k];
+    const rRaw = (safeRemote as BixboData["medLogTimes"])[k];
+    const l = isObj(lRaw) ? (lRaw as Record<string, string>) : {};
+    const r = isObj(rRaw) ? (rRaw as Record<string, string>) : {};
     const innerKeys = new Set([...Object.keys(l), ...Object.keys(r)]);
     const inner: Record<string, string> = {};
-    for (const ik of innerKeys) inner[ik] = l[ik] || r[ik];
+
+    for (const ik of innerKeys) {
+      inner[ik] = (typeof l[ik] === "string" && l[ik]) || (typeof r[ik] === "string" && r[ik]) || "";
+    }
+
     out[k] = inner;
   }
+
   return out;
 }
 
@@ -336,8 +393,13 @@ function dedupArray<T>(arr: T[] | undefined): T[] {
   const seen = new Set<string>();
   const out: T[] = [];
   for (const v of arr) {
-    const key = typeof v === "string" || typeof v === "number" ? String(v) : JSON.stringify(v);
-    if (seen.has(key)) continue;
+    let key: string;
+    try {
+      key = typeof v === "string" || typeof v === "number" ? String(v) : JSON.stringify(v);
+    } catch {
+      continue;
+    }
+    if (!key || seen.has(key)) continue;
     seen.add(key);
     out.push(v);
   }
@@ -364,7 +426,13 @@ export function mergeBixbo(local: BixboData, remote: BixboData | null | undefine
   if (!remote) return local;
   // Union of both sides' tombstones; entries with these ids are dropped from
   // the merge result so a delete on one device isn't undone by another.
-  const deletedIds = Array.from(new Set([...(local.deletedIds ?? []), ...(remote.deletedIds ?? [])])).slice(-2000);
+  const localDeleted = Array.isArray(local.deletedIds)
+    ? local.deletedIds.filter((id): id is string => typeof id === "string")
+    : [];
+  const remoteDeleted = Array.isArray(remote.deletedIds)
+    ? remote.deletedIds.filter((id): id is string => typeof id === "string")
+    : [];
+  const deletedIds = Array.from(new Set([...localDeleted, ...remoteDeleted])).slice(-2000);
   _deleted = new Set(deletedIds);
   try {
     return {
