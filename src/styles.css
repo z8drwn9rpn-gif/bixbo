@@ -96,30 +96,30 @@
   --radius: 1rem;
 
   /* Main light palette — deeper olive neutrals, reduced washed-out brightness */
-  --background: oklch(0.925 0.048 110);
+  --background: oklch(0.9 0.065 110);
   --foreground: oklch(0.19 0.05 115);
 
-  --surface: oklch(0.965 0.032 110);
-  --surface-elevated: oklch(0.91 0.065 110);
-  --surface-sunken: oklch(0.855 0.052 110);
-  --tint: oklch(0.835 0.082 110);
+  --surface: oklch(0.94 0.055 110);
+  --surface-elevated: oklch(0.9 0.075 110);
+  --surface-sunken: oklch(0.84 0.06 110);
+  --tint: oklch(0.8 0.105 110);
 
-  --card: oklch(0.975 0.018 110);
+  --card: oklch(0.95 0.045 110);
   --card-foreground: oklch(0.19 0.04 115);
 
-  --popover: oklch(0.98 0.014 110);
+  --popover: oklch(0.95 0.04 110);
   --popover-foreground: oklch(0.19 0.04 115);
 
   --primary: oklch(0.42 0.12 115);
   --primary-foreground: oklch(1 0 0);
 
-  --secondary: oklch(0.885 0.058 115);
+  --secondary: oklch(0.86 0.075 115);
   --secondary-foreground: oklch(0.25 0.07 115);
 
-  --muted: oklch(0.91 0.032 115);
+  --muted: oklch(0.88 0.05 115);
   --muted-foreground: oklch(0.35 0.055 115);
 
-  --accent: oklch(0.84 0.075 115);
+  --accent: oklch(0.81 0.095 115);
   --accent-foreground: oklch(0.25 0.07 115);
 
   --destructive: oklch(0.5 0.22 25);
@@ -137,8 +137,8 @@
   --info: oklch(0.45 0.13 240);
   --info-foreground: oklch(1 0 0);
 
-  --border: oklch(0.76 0.045 115);
-  --input: oklch(0.76 0.045 115);
+  --border: oklch(0.72 0.055 115);
+  --input: oklch(0.72 0.055 115);
   --ring: oklch(0.42 0.12 115);
 
   --chart-grid: oklch(0.79 0.035 115);
@@ -188,30 +188,30 @@
 
 .dark {
   /* Main dark palette */
-  --background: oklch(0.2 0.018 122.9);
+  --background: oklch(0.25 0.026 123);
   --foreground: oklch(0.965 0.02 101.2);
 
-  --surface: oklch(0.27 0.022 123);
-  --surface-elevated: oklch(0.34 0.03 123);
-  --surface-sunken: oklch(0.16 0.016 122.9);
-  --tint: oklch(0.36 0.032 122.5);
+  --surface: oklch(0.31 0.032 123);
+  --surface-elevated: oklch(0.36 0.038 123);
+  --surface-sunken: oklch(0.22 0.024 123);
+  --tint: oklch(0.42 0.045 123);
 
-  --card: oklch(0.27 0.022 123);
+  --card: oklch(0.31 0.032 123);
   --card-foreground: oklch(0.965 0.02 101.2);
 
-  --popover: oklch(0.27 0.022 123);
+  --popover: oklch(0.31 0.032 123);
   --popover-foreground: oklch(0.965 0.02 101.2);
 
   --primary: oklch(0.82 0.13 122.9);
   --primary-foreground: oklch(0.16 0.018 122.9);
 
-  --secondary: oklch(0.38 0.034 122.5);
+  --secondary: oklch(0.43 0.042 123);
   --secondary-foreground: oklch(0.965 0.02 101.2);
 
-  --muted: oklch(0.34 0.028 122.5);
+  --muted: oklch(0.39 0.036 123);
   --muted-foreground: oklch(0.86 0.03 101.7);
 
-  --accent: oklch(0.43 0.04 120);
+  --accent: oklch(0.48 0.05 123);
   --accent-foreground: oklch(0.965 0.02 101.2);
 
   --destructive: oklch(0.72 0.2 25);
@@ -229,8 +229,8 @@
   --info: oklch(0.78 0.11 235);
   --info-foreground: oklch(0.14 0.04 235);
 
-  --border: oklch(0.42 0.032 120);
-  --input: oklch(0.42 0.032 120);
+  --border: oklch(0.47 0.04 123);
+  --input: oklch(0.47 0.04 123);
   --ring: oklch(0.82 0.13 122.9);
 
   --chart-grid: oklch(0.4 0.03 122);
@@ -503,7 +503,7 @@ input:-webkit-autofill:focus,
 textarea:-webkit-autofill,
 select:-webkit-autofill {
   -webkit-text-fill-color: var(--foreground);
-  box-shadow: 0 0 0 1000px var(--background) inset;
+  box-shadow: 0 0 0 1000px var(--surface) inset;
   caret-color: var(--foreground);
 }
 /* BIXBO olive theme publish revision: 2026-08-06 */
