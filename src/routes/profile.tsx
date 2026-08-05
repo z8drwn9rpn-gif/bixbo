@@ -8,7 +8,6 @@ import {
   UserRound,
   HeartPulse,
   Pill,
-  Baby,
   Stethoscope,
   TriangleAlert,
   Phone,
@@ -20,6 +19,7 @@ import {
   Check,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { Ico } from "@/components/icons/BixboIcons";
 import {
   useBixbo,
   EMPTY,
@@ -448,6 +448,31 @@ function ProfilePage() {
       : reproductiveStatus !== "none"
         ? reproductiveStatus.charAt(0).toUpperCase() + reproductiveStatus.slice(1)
         : "Not active";
+
+  const postpartumToday = view.dayLogs[todayKey()]?.postpartum;
+
+  const postpartumMood = postpartumToday?.mood?.length ? postpartumToday.mood.join(", ") : "—";
+
+  const postpartumFeedingCount =
+    (postpartumToday?.breastfeeding?.length ?? 0) +
+    (postpartumToday?.pumping?.length ?? 0) +
+    (postpartumToday?.bottle?.length ?? 0);
+
+  const postpartumHasTodayData = Boolean(
+    postpartumToday &&
+    (postpartumToday.bleeding ||
+      postpartumToday.recovery != null ||
+      postpartumToday.csectionRecovery != null ||
+      postpartumToday.perinealHealing != null ||
+      postpartumToday.mood?.length ||
+      postpartumToday.sleepHours != null ||
+      postpartumToday.breastfeeding?.length ||
+      postpartumToday.pumping?.length ||
+      postpartumToday.bottle?.length ||
+      postpartumToday.diapers?.length ||
+      postpartumToday.babySleepHours != null ||
+      postpartumToday.note),
+  );
 
   return (
     <AppShell
@@ -948,7 +973,7 @@ function ProfilePage() {
           </SummaryCard>
 
           <SummaryCard
-            icon={<Baby className="h-5 w-5" />}
+            icon={<Ico e={postpartumActive ? "🤱" : "🤰"} size={22} />}
             title="Reproductive health"
             subtitle="Pregnancy, postpartum and hormonal status"
           >
@@ -961,6 +986,145 @@ function ProfilePage() {
                 value={profile.menopause ? profile.menopause.charAt(0).toUpperCase() + profile.menopause.slice(1) : "—"}
               />
             </div>
+
+            {postpartumActive && (
+              <div className="mt-4 border-t border-border/60 pt-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">Today&apos;s postpartum recovery</p>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">Symptoms, recovery, feeding and sleep</p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => navigate({ to: "/postpartum" })}
+                    className="rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
+                  >
+                    {postpartumHasTodayData ? "Edit today" : "Log today"}
+                  </button>
+                </div>
+
+                {postpartumHasTodayData ? (
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <div className="rounded-2xl bg-tint px-3 py-3 ring-1 ring-border/40">
+                      <div className="flex items-center gap-2">
+                        <Ico e="🩸" size={18} />
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          Bleeding
+                        </span>
+                      </div>
+                      <p className="mt-1 text-sm font-semibold capitalize text-foreground">
+                        {postpartumToday?.bleeding || "—"}
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl bg-tint px-3 py-3 ring-1 ring-border/40">
+                      <div className="flex items-center gap-2">
+                        <Ico e="❤️" size={18} />
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          Recovery
+                        </span>
+                      </div>
+                      <p className="mt-1 text-sm font-semibold text-foreground">
+                        {postpartumToday?.recovery != null ? `${postpartumToday.recovery}/10` : "—"}
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl bg-tint px-3 py-3 ring-1 ring-border/40">
+                      <div className="flex items-center gap-2">
+                        <Ico e="✨" size={18} />
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          Mood
+                        </span>
+                      </div>
+                      <p className="mt-1 truncate text-sm font-semibold text-foreground">{postpartumMood}</p>
+                    </div>
+
+                    <div className="rounded-2xl bg-tint px-3 py-3 ring-1 ring-border/40">
+                      <div className="flex items-center gap-2">
+                        <Ico e="😴" size={18} />
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          Your sleep
+                        </span>
+                      </div>
+                      <p className="mt-1 text-sm font-semibold text-foreground">
+                        {postpartumToday?.sleepHours != null ? `${postpartumToday.sleepHours} h` : "—"}
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl bg-tint px-3 py-3 ring-1 ring-border/40">
+                      <div className="flex items-center gap-2">
+                        <Ico e="🍼" size={18} />
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          Feeding
+                        </span>
+                      </div>
+                      <p className="mt-1 text-sm font-semibold text-foreground">
+                        {postpartumFeedingCount > 0 ? `${postpartumFeedingCount} entries` : "—"}
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl bg-tint px-3 py-3 ring-1 ring-border/40">
+                      <div className="flex items-center gap-2">
+                        <Ico e="👶" size={18} />
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          Baby sleep
+                        </span>
+                      </div>
+                      <p className="mt-1 text-sm font-semibold text-foreground">
+                        {postpartumToday?.babySleepHours != null ? `${postpartumToday.babySleepHours} h` : "—"}
+                      </p>
+                    </div>
+
+                    {postpartumToday?.csectionRecovery != null && (
+                      <div className="rounded-2xl bg-tint px-3 py-3 ring-1 ring-border/40">
+                        <div className="flex items-center gap-2">
+                          <Ico e="🩹" size={18} />
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                            C-section
+                          </span>
+                        </div>
+                        <p className="mt-1 text-sm font-semibold text-foreground">
+                          {postpartumToday.csectionRecovery}/10
+                        </p>
+                      </div>
+                    )}
+
+                    {postpartumToday?.perinealHealing != null && (
+                      <div className="rounded-2xl bg-tint px-3 py-3 ring-1 ring-border/40">
+                        <div className="flex items-center gap-2">
+                          <Ico e="🌸" size={18} />
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                            Healing
+                          </span>
+                        </div>
+                        <p className="mt-1 text-sm font-semibold text-foreground">
+                          {postpartumToday.perinealHealing}/10
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="mt-3 rounded-2xl bg-tint px-4 py-4 text-center ring-1 ring-border/40">
+                    <Ico e="🤱" size={28} />
+                    <p className="mt-2 text-sm font-medium text-foreground">No postpartum symptoms logged today</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Add bleeding, recovery, mood, sleep or feeding details.
+                    </p>
+                  </div>
+                )}
+
+                {postpartumToday?.note && (
+                  <div className="mt-3 rounded-2xl bg-tint px-4 py-3 ring-1 ring-border/40">
+                    <div className="flex items-center gap-2">
+                      <Ico e="📝" size={18} />
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Note</p>
+                    </div>
+                    <p className="mt-1 whitespace-pre-wrap text-sm text-foreground">{postpartumToday.note}</p>
+                  </div>
+                )}
+              </div>
+            )}
           </SummaryCard>
 
           <SummaryCard
