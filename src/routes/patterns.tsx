@@ -477,22 +477,12 @@ function MetricColumn({
     </div>
   );
 }
-function SummaryRow({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between rounded-2xl bg-tint px-4 py-3 ring-1 ring-border/40">
-      <span className="text-sm text-muted-foreground">
-        {label}
-      </span>
+      <span className="text-sm text-muted-foreground">{label}</span>
 
-      <span className="font-semibold text-foreground">
-        {value}
-      </span>
+      <span className="font-semibold text-foreground">{value}</span>
     </div>
   );
 }
@@ -605,32 +595,28 @@ function PatternsPage() {
 
   const commonFlow = phaseFlowMode(phaseBuckets.during, dayLogs);
   const highestPainPhase =
-  painPhaseBars.reduce(
-    (best, current) =>
-      (current.value ?? -1) > (best.value ?? -1) ? current : best,
-    painPhaseBars[0],
-  )?.label ?? "—";
+    painPhaseBars.reduce(
+      (best, current) => ((current.value ?? -1) > (best.value ?? -1) ? current : best),
+      painPhaseBars[0],
+    )?.label ?? "—";
 
-const bestEnergyPhase =
-  energyPhaseBars.reduce(
-    (best, current) =>
-      (current.value ?? -1) > (best.value ?? -1) ? current : best,
-    energyPhaseBars[0],
-  )?.label ?? "—";
+  const bestEnergyPhase =
+    energyPhaseBars.reduce(
+      (best, current) => ((current.value ?? -1) > (best.value ?? -1) ? current : best),
+      energyPhaseBars[0],
+    )?.label ?? "—";
 
-const worstMoodPhase =
-  moodPhaseBars.reduce(
-    (worst, current) =>
-      (current.value ?? -1) > (worst.value ?? -1) ? current : worst,
-    moodPhaseBars[0],
-  )?.label ?? "—";
+  const worstMoodPhase =
+    moodPhaseBars.reduce(
+      (worst, current) => ((current.value ?? -1) > (worst.value ?? -1) ? current : worst),
+      moodPhaseBars[0],
+    )?.label ?? "—";
 
-const mostHotFlashPhase =
-  hotFlashPhaseBars.reduce(
-    (worst, current) =>
-      (current.value ?? -1) > (worst.value ?? -1) ? current : worst,
-    hotFlashPhaseBars[0],
-  )?.label ?? "—";
+  const mostHotFlashPhase =
+    hotFlashPhaseBars.reduce(
+      (worst, current) => ((current.value ?? -1) > (worst.value ?? -1) ? current : worst),
+      hotFlashPhaseBars[0],
+    )?.label ?? "—";
 
   /* ------------------------------------------------------------------------ */
   /* Monthly calculations                                                     */
@@ -1284,39 +1270,20 @@ const mostHotFlashPhase =
             <Empty text="Log more periods to see your cycle pattern." />
           )}
           <div className="mt-5 rounded-3xl bg-background p-4 ring-1 ring-border">
-  <h3 className="text-sm font-semibold text-foreground">
-    Cycle Summary
-  </h3>
+            <h3 className="text-sm font-semibold text-foreground">Cycle Summary</h3>
 
-  <div className="mt-4 space-y-3">
+            <div className="mt-4 space-y-3">
+              <SummaryRow label="Highest pain" value={highestPainPhase} />
 
-    <SummaryRow
-      label="Highest pain"
-      value={highestPainPhase}
-    />
+              <SummaryRow label="Best energy" value={bestEnergyPhase} />
 
-    <SummaryRow
-      label="Best energy"
-      value={bestEnergyPhase}
-    />
+              <SummaryRow label="Most negative mood" value={worstMoodPhase} />
 
-    <SummaryRow
-      label="Most negative mood"
-      value={worstMoodPhase}
-    />
+              <SummaryRow label="Most hot flashes" value={mostHotFlashPhase} />
 
-    <SummaryRow
-      label="Most hot flashes"
-      value={mostHotFlashPhase}
-    />
-
-    <SummaryRow
-      label="Most common flow"
-      value={commonFlow || "—"}
-    />
-
-  </div>
-</div>
+              <SummaryRow label="Most common flow" value={commonFlow || "—"} />
+            </div>
+          </div>
         </Card>
 
         <Card
@@ -1991,6 +1958,7 @@ const mostHotFlashPhase =
 }
 
 /* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
 /* Trigger result card                                                        */
 /* -------------------------------------------------------------------------- */
 
@@ -2022,29 +1990,24 @@ function TriggerResult({
             height: percentage == null ? "0%" : `${Math.max(safePercentage, percentage === 0 ? 0 : 5)}%`,
             backgroundColor: color,
           }}
-          function SummaryRow({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="flex items-center justify-between rounded-2xl bg-tint px-4 py-3">
-      <span className="text-sm text-muted-foreground">
-        {label}
-      </span>
-
-      <span className="font-semibold text-foreground">
-        {value}
-      </span>
-    </div>
-  );
-}
         />
       </div>
 
       <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">{detail}</p>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Summary row                                                                */
+/* -------------------------------------------------------------------------- */
+
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between rounded-2xl bg-tint px-4 py-3 ring-1 ring-border/40">
+      <span className="text-sm text-muted-foreground">{label}</span>
+
+      <span className="font-semibold text-foreground">{value}</span>
     </div>
   );
 }
