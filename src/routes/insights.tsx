@@ -1443,7 +1443,10 @@ function HfBars({
 
       <div className="mt-2 min-h-8">
         {active != null && bars[active] != null && (
-          <div className="mx-auto max-w-full rounded-xl bg-foreground px-3 py-2 text-center text-[11px] font-medium text-background">
+          <div
+            className="mx-auto max-w-full rounded-xl px-3 py-2 text-center text-[11px] font-medium ring-1 ring-border/40"
+            style={{ background: CHART_TOOLTIP_BG, color: CHART_TOOLTIP_FG }}
+          >
             {period === "Y"
               ? `${fmtTapMonth(active, anchor.getFullYear())} · Hot flash avg ${bars[active]!.toFixed(1)}/5`
               : `${fmtTapDay(days[active])} · Hot flash ${bars[active]!.toFixed(1)}/5`}
