@@ -113,7 +113,7 @@ function HomePage() {
           const taken = view.medLog[todayKey()]?.[`${m.id}@${hhmm}`];
 
           if (!taken) {
-            new Notification(`💊 ${m.name}`, {
+            new Notification(`${m.name}`, {
               body: `Time for your ${hhmm} dose${m.dose ? ` (${m.dose})` : ""}`,
             });
           }
@@ -125,8 +125,8 @@ function HomePage() {
         const p = nextPredictedPeriod(view.cycle);
 
         if (p && daysBetween(todayKey(), p.start) === 1) {
-          new Notification("🫐 Period starts tomorrow", {
-            body: "Get your supplies ready 💚",
+          new Notification("Period starts tomorrow", {
+            body: "Get your supplies ready",
           });
         }
       }
@@ -713,7 +713,7 @@ function DayPreview({
                     className="text-left text-green-700 hover:underline"
                     title="Tap to uncheck"
                   >
-                    ✓ {actual ?? x.time} — {x.med.name}
+                    Taken · {actual ?? x.time} — {x.med.name}
                     {x.med.dose ? ` (${x.med.dose})` : ""}
                     {shifted && <span className="text-[10px] text-muted-foreground"> · scheduled {x.time}</span>}
                     <span className="text-[10px] text-muted-foreground"> · tap to uncheck</span>
@@ -728,7 +728,7 @@ function DayPreview({
                   className="flex-1 text-left text-destructive/90"
                   title="Tap to mark taken"
                 >
-                  ✗ {x.time} — {x.med.name}
+                  Missed · {x.time} — {x.med.name}
                   {x.med.dose ? ` (${x.med.dose})` : ""}{" "}
                   <span className="text-[10px] text-muted-foreground">· missed (tap if taken)</span>
                 </button>
@@ -1115,7 +1115,7 @@ function DayPreview({
               const label = bristol
                 ? `Type ${bristol.n} — ${bristol.sub}`
                 : b.bristol === 0
-                  ? "Type 0 — Mystery 🌈"
+                  ? "Type 0 — Mystery"
                   : "No bowel movement";
               return (
                 <li key={b.id} className="flex items-start gap-2">
@@ -1345,6 +1345,9 @@ function Card({ title, icon, children }: { title: string; icon: string; children
   );
 }
 
+const stripEmoji = (value: string) =>
+  value.replace(/^[\p{Extended_Pictographic}\u200d\ufe0f\p{Emoji_Modifier}]+\s*/u, "").trim();
+
 function ShareDayButton({ date, view }: { date: string; view: BixboData }) {
   const flowLabel = (level?: string | null): string => {
     switch (level) {
@@ -1366,11 +1369,11 @@ function ShareDayButton({ date, view }: { date: string; view: BixboData }) {
   const share = async () => {
     const log = view.dayLogs[date] ?? {};
     const dateLabel = fromKey(date).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
-    const lines: string[] = [`🥑 BIXBO — ${dateLabel}`, ""];
+    const lines: string[] = [`BIXBO — ${dateLabel}`, ""];
 
     if (log.pain?.length) {
       const avg = log.pain.reduce((s, p) => s + p.score, 0) / log.pain.length;
-      lines.push(`🔥 Pain — avg ${avg.toFixed(1)}/10 · ${log.pain.length} entr${log.pain.length === 1 ? "y" : "ies"}`);
+      lines.push(`Pain — avg ${avg.toFixed(1)}/10 · ${log.pain.length} entr${log.pain.length === 1 ? "y" : "ies"}`);
       for (const p of log.pain) {
         const bits = [`${p.time}`, `${p.score}/10 (${PAIN_DESCRIPTIONS[Math.round(p.score)]})`];
         if (p.parts.length) bits.push(p.parts.join(", "));
@@ -1381,7 +1384,7 @@ function ShareDayButton({ date, view }: { date: string; view: BixboData }) {
       lines.push("");
     }
     if (log.panic?.length) {
-      lines.push(`⚡ Panic attacks — ${log.panic.length}`);
+      lines.push(`Panic attacks — ${log.panic.length}`);
       for (const p of log.panic)
         lines.push(
           `  • ${p.time} · ${p.intensity}/10 · ${p.minutes == null ? "ongoing" : `${p.minutes}min`}${p.trigger ? ` — ${p.trigger}` : ""}`,
@@ -1389,23 +1392,23 @@ function ShareDayButton({ date, view }: { date: string; view: BixboData }) {
       lines.push("");
     }
     if (log.tetany?.length) {
-      lines.push(`💥 Tetany — ${log.tetany.length}`);
+      lines.push(`Tetany — ${log.tetany.length}`);
       for (const t of log.tetany)
         lines.push(
           `  • ${t.time} · ${t.types.join(", ")} · ${t.intensity}/5 · ${t.minutes == null ? "ongoing" : `${t.minutes}min`}`,
         );
       lines.push("");
     }
-    if (log.periodInfo?.level || log.period)
-      lines.push(`🫐 Period: ${flowLabel(log.periodInfo?.level ?? log.period!)}`);
-    if (log.sleepHours != null) lines.push(`😴 Sleep: ${log.sleepHours}h ${asArr(log.sleepQuality).join(", ")}`);
-    if (log.temperature != null) lines.push(`🌡️ Temp: ${log.temperature}°C`);
-    if (log.weight != null) lines.push(`⚖️ Weight: ${log.weight}kg`);
-    if (log.food?.length) lines.push(`🍽️ Food: ${log.food.length} entries`);
+    if (log.periodInfo?.level || log.period) lines.push(`Period: ${flowLabel(log.periodInfo?.level ?? log.period!)}`);
+    if (log.sleepHours != null)
+      lines.push(`Sleep: ${log.sleepHours}h ${asArr(log.sleepQuality).map(stripEmoji).join(", ")}`);
+    if (log.temperature != null) lines.push(`Temperature: ${log.temperature}°C`);
+    if (log.weight != null) lines.push(`Weight: ${log.weight}kg`);
+    if (log.food?.length) lines.push(`Food: ${log.food.length} entries`);
     if (log.workout?.length)
-      lines.push(`🧘 Workout: ${log.workout.map((w) => `${w.kind} ${w.minutes}min`).join(", ")}`);
+      lines.push(`Workout: ${log.workout.map((w) => `${stripEmoji(w.kind)} ${w.minutes}min`).join(", ")}`);
 
-    lines.push("", "— sent from BIXBO 🥑");
+    lines.push("", "— sent from BIXBO");
     const text = lines.join("\n");
     if (navigator.share) {
       try {

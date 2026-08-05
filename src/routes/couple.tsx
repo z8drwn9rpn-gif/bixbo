@@ -12,6 +12,7 @@ import {
   PillIcon,
   ProfileIcon,
   SparkleIcon,
+  TaskIcon,
   WaterIcon,
 } from "@/components/icons/BixboIcons";
 import { CHART_COLORS, CHART_TINTS } from "@/components/ui/chart";
@@ -556,7 +557,10 @@ function MedsList({
                     .filter((time) => day.medLog[`${med.id}@${time}`])
                     .map((time) => (
                       <p key={`${med.id}@${time}`}>
-                        ✓ {time} — {med.name}
+                        <span className="inline-flex items-center gap-1">
+                          <TaskIcon size={14} />
+                          {time} — {med.name}
+                        </span>
                         {med.dose ? ` (${med.dose})` : ""}
                       </p>
                     )),

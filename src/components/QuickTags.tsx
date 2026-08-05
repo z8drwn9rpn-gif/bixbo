@@ -302,7 +302,7 @@ function customToTag(c: CustomQuickTag, data: BixboData): Tag {
           workout: mk(l.workout, {
             id: uid(),
             time: t(),
-            kind: p.kind ?? "🚶🏼‍♀️ Walk",
+            kind: p.kind ?? "Walk",
             minutes: p.minutes ?? 30,
           }),
         };
@@ -904,7 +904,7 @@ function QuickTagBuilder({
   const [medId, setMedId] = useState(firstMed?.id ?? "");
   const [medMode, setMedMode] = useState<"scheduled" | "extra">("scheduled");
   const [scheduleTime, setScheduleTime] = useState(firstMed?.times?.[0] ?? "");
-  const [kind, setKind] = useState("🚶🏼‍♀️ Walk");
+  const [kind, setKind] = useState("Walk");
   const [minutes, setMinutes] = useState(30);
 
   const [bristol, setBristol] = useState(4);
@@ -1269,8 +1269,8 @@ function QuickTagBuilder({
                     onChange={(event) => setSleepQuality(event.target.value)}
                   >
                     {SLEEP_QUALITY.map((quality) => (
-                      <option key={quality} value={quality}>
-                        {quality}
+                      <option key={stripEmoji(quality)} value={stripEmoji(quality)}>
+                        {stripEmoji(quality)}
                       </option>
                     ))}
                   </select>

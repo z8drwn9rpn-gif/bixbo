@@ -963,7 +963,7 @@ function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) 
                                 className="text-left text-green-700 hover:underline"
                                 title="Tap to uncheck"
                               >
-                                ✓ {m.time} — {m.medName}{" "}
+                                Taken · {m.time} — {m.medName}{" "}
                                 <span className="text-[10px] text-muted-foreground">· tap to uncheck</span>
                               </button>
                             </li>
@@ -979,13 +979,15 @@ function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) 
                                 className="text-left hover:underline"
                                 title="Tap to mark taken"
                               >
-                                ✗ {m.time} — {m.medName} <span className="text-[10px]">· tap to mark taken</span>
+                                Missed · {m.time} — {m.medName} <span className="text-[10px]">· tap to mark taken</span>
                               </button>
                             </li>
                           ))}
                         </ul>
                       ) : d.expected > 0 ? (
-                        <p className="mt-1 text-muted-foreground">All doses taken 💚</p>
+                        <p className="mt-1 flex items-center gap-1 text-muted-foreground">
+                          All doses taken <Ico e="💚" size={13} />
+                        </p>
                       ) : null}
                     </div>
                   );
