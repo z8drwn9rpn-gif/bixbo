@@ -3,6 +3,19 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { CHART_COLORS } from "@/components/ui/chart";
+import {
+  BarChartFrame,
+  ChartCard,
+  ChartEmpty,
+  ChartSvgTooltip,
+  ChartTooltip,
+  CHART_AXIS,
+  CHART_GRID,
+  CHART_TOOLTIP_BG,
+  CHART_TOOLTIP_FG,
+  useChartTransition,
+  useDismissTapTooltip,
+} from "@/components/charts";
 import { Ico } from "@/components/icons/BixboIcons";
 import {
   useBixbo,
@@ -27,31 +40,6 @@ function fmtTapDay(k: string): string {
 }
 function fmtTapMonth(monthIndex: number, year: number): string {
   return `${MON_SHORT3[monthIndex]} ${year}`;
-}
-
-/** Dismiss any open tap-tooltip when the user taps anywhere else on the page. */
-function useDismissTapTooltip(clear: () => void) {
-  useEffect(() => {
-    const handler = () => clear();
-    document.addEventListener("click", handler);
-    document.addEventListener("touchstart", handler);
-    return () => {
-      document.removeEventListener("click", handler);
-      document.removeEventListener("touchstart", handler);
-    };
-  }, [clear]);
-}
-
-/** Small floating bubble used for every "tap a bar/point/day" tooltip on this page. */
-function TapTooltip({ leftPct, text }: { leftPct: number; text: string }) {
-  return (
-    <div
-      className="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-lg bg-foreground px-2 py-1 text-[11px] font-medium text-background shadow-lg"
-      style={{ left: `${Math.min(94, Math.max(6, leftPct))}%`, top: -6 }}
-    >
-      {text}
-    </div>
-  );
 }
 
 const TETANY_COLOR = CHART_COLORS.tetany;
@@ -1336,7 +1324,7 @@ function SleepChart({
               ),
             )}
             {active != null && bars[active]?.value != null && (
-              <TapTooltip
+              <ChartTooltip
                 leftPct={((active + 0.5) / bars.length) * 100}
                 text={
                   period === "Y"
@@ -1461,7 +1449,7 @@ function PainChart({
               ),
             )}
             {active != null && bars[active]?.value != null && (
-              <TapTooltip
+              <ChartTooltip
                 leftPct={((active + 0.5) / bars.length) * 100}
                 text={
                   period === "Y"
@@ -1531,7 +1519,7 @@ function BristolChart({ bowelCounts }: { bowelCounts: number[] }) {
                 />
               </div>
               {active === b.n && (
-                <TapTooltip leftPct={50} text={`Type ${b.n} · ${c} ${c === 1 ? "entry" : "entries"}`} />
+                <ChartTooltip leftPct={50} text={`Type ${b.n} · ${c} ${c === 1 ? "entry" : "entries"}`} />
               )}
               <span className="text-[10px] text-muted-foreground">T{b.n}</span>
               <span className="text-[10px]">{c}</span>
@@ -1879,7 +1867,7 @@ function TimeOfDayPatternChart({
                 const count = isTetany ? tetanyBlocks[i] : panicBlocks[i];
                 const leftPct = (i + 0.5) * 25;
                 return (
-                  <TapTooltip
+                  <ChartTooltip
                     leftPct={leftPct}
                     text={`${TIME_BLOCK_LABELS[i]} · ${isTetany ? "Tetany" : "Panic"} ${count}×`}
                   />

@@ -1502,6 +1502,13 @@ export const BIXBO_ICONS = {
   sick: FaceSickIcon,
   clock: ClockIcon,
   sparkle: SparkleIcon,
+  pregnancy: PregnancyIcon,
+  baby: BabyIcon,
+  bottle: BottleIcon,
+  footprint: FootprintIcon,
+  appointment: StethoscopeIcon,
+  profile: ProfileIcon,
+  drop: DropIcon,
 } as const;
 
 export type BixboIconName = keyof typeof BIXBO_ICONS;
@@ -1627,6 +1634,18 @@ export const EMOJI_ICON: Record<string, BixboIconName> = {
   "📱": "note",
   "☀️": "star",
   "⏰": "clock",
+  "🤰": "pregnancy",
+  "🫄": "pregnancy",
+  "🤱": "baby",
+  "👶": "baby",
+  "🍼": "bottle",
+  "🦶": "footprint",
+  "👣": "footprint",
+  "🩺": "appointment",
+  "🏥": "appointment",
+  "👤": "profile",
+  "🙋‍♀️": "profile",
+  "🩸": "drop",
 };
 
 /**

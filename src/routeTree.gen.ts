@@ -16,6 +16,7 @@ import { Route as InsightsRouteImport } from './routes/insights'
 import { Route as MedsRouteImport } from './routes/meds'
 import { Route as NotesRouteImport } from './routes/notes'
 import { Route as PatternsRouteImport } from './routes/patterns'
+import { Route as PostpartumRouteImport } from './routes/postpartum'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ApiPublicHooksKeepaliveRouteImport } from './routes/api/public/hooks/keepalive'
@@ -55,6 +56,11 @@ const PatternsRoute = PatternsRouteImport.update({
   path: '/patterns',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PostpartumRoute = PostpartumRouteImport.update({
+  id: '/postpartum',
+  path: '/postpartum',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -79,6 +85,7 @@ export interface FileRoutesByFullPath {
   '/meds': typeof MedsRoute
   '/notes': typeof NotesRoute
   '/patterns': typeof PatternsRoute
+  '/postpartum': typeof PostpartumRoute
   '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
   '/api/public/hooks/keepalive': typeof ApiPublicHooksKeepaliveRoute
@@ -91,6 +98,7 @@ export interface FileRoutesByTo {
   '/meds': typeof MedsRoute
   '/notes': typeof NotesRoute
   '/patterns': typeof PatternsRoute
+  '/postpartum': typeof PostpartumRoute
   '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
   '/api/public/hooks/keepalive': typeof ApiPublicHooksKeepaliveRoute
@@ -104,6 +112,7 @@ export interface FileRoutesById {
   '/meds': typeof MedsRoute
   '/notes': typeof NotesRoute
   '/patterns': typeof PatternsRoute
+  '/postpartum': typeof PostpartumRoute
   '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
   '/api/public/hooks/keepalive': typeof ApiPublicHooksKeepaliveRoute
@@ -118,6 +127,7 @@ export interface FileRouteTypes {
     | '/meds'
     | '/notes'
     | '/patterns'
+    | '/postpartum'
     | '/profile'
     | '/settings'
     | '/api/public/hooks/keepalive'
@@ -130,6 +140,7 @@ export interface FileRouteTypes {
     | '/meds'
     | '/notes'
     | '/patterns'
+    | '/postpartum'
     | '/profile'
     | '/settings'
     | '/api/public/hooks/keepalive'
@@ -142,6 +153,7 @@ export interface FileRouteTypes {
     | '/meds'
     | '/notes'
     | '/patterns'
+    | '/postpartum'
     | '/profile'
     | '/settings'
     | '/api/public/hooks/keepalive'
@@ -155,6 +167,7 @@ export interface RootRouteChildren {
   MedsRoute: typeof MedsRoute
   NotesRoute: typeof NotesRoute
   PatternsRoute: typeof PatternsRoute
+  PostpartumRoute: typeof PostpartumRoute
   ProfileRoute: typeof ProfileRoute
   SettingsRoute: typeof SettingsRoute
   ApiPublicHooksKeepaliveRoute: typeof ApiPublicHooksKeepaliveRoute
@@ -211,6 +224,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PatternsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/postpartum': {
+      id: '/postpartum'
+      path: '/postpartum'
+      fullPath: '/postpartum'
+      preLoaderRoute: typeof PostpartumRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/profile': {
       id: '/profile'
       path: '/profile'
@@ -243,6 +263,7 @@ const rootRouteChildren: RootRouteChildren = {
   MedsRoute: MedsRoute,
   NotesRoute: NotesRoute,
   PatternsRoute: PatternsRoute,
+  PostpartumRoute: PostpartumRoute,
   ProfileRoute: ProfileRoute,
   SettingsRoute: SettingsRoute,
   ApiPublicHooksKeepaliveRoute: ApiPublicHooksKeepaliveRoute,
