@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      partner_link_requests: {
+        Row: {
+          created_at: string
+          id: string
+          pairing_code: string
+          requester: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pairing_code: string
+          requester?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pairing_code?: string
+          requester?: string
+        }
+        Relationships: []
+      }
       partner_links: {
         Row: {
           a: string
@@ -29,6 +50,24 @@ export type Database = {
           a?: string
           b?: string
           created_at?: string
+        }
+        Relationships: []
+      }
+      partner_shared_data: {
+        Row: {
+          data: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          data?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          data?: Json
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
