@@ -42,7 +42,7 @@ const PERIOD_LEVELS: {
   { v: "medium", label: "Medium", color: "var(--period-medium)" },
   { v: "heavy", label: "Heavy", color: "var(--period-heavy)" },
   {
-    v: "veryheavy",
+    v: "very-heavy",
     label: "Very heavy",
     color: "var(--period-veryheavy)",
   },
