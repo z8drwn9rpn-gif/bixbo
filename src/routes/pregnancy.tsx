@@ -5,14 +5,7 @@ import { Ico } from "@/components/icons/BixboIcons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  useBixbo,
-  EMPTY,
-  todayKey,
-  updateDayLog,
-  type BixboData,
-  type PregnancyAppointment,
-} from "@/lib/storage";
+import { useBixbo, EMPTY, todayKey, updateDayLog, type BixboData, type PregnancyAppointment } from "@/lib/storage";
 import {
   pregnancyProgress,
   dueDateOf,
@@ -62,6 +55,30 @@ function PregnancyPage() {
   const todayLog = view.dayLogs[today]?.pregnancy;
 
   const progress = pregnancyProgress(p, today);
+
+  const resetPregnancy = () => {
+    const confirmed = window.confirm(
+      "This will permanently delete all pregnancy tracking data — due date, weight log, blood pressure, blood sugar, kicks, contractions, appointments, checklists, symptoms and daily pregnancy logs. This cannot be undone.",
+    );
+
+    if (!confirmed) return;
+
+    update((d) => {
+      const dayLogs = Object.fromEntries(
+        Object.entries(d.dayLogs).map(([date, dayLog]) => {
+          const nextLog = { ...dayLog };
+          delete nextLog.pregnancy;
+          return [date, nextLog];
+        }),
+      ) as BixboData["dayLogs"];
+
+      return {
+        ...d,
+        pregnancy: structuredClone(EMPTY.pregnancy!),
+        dayLogs,
+      };
+    });
+  };
 
   if (!p.active || (!p.lmp && !p.dueDate)) {
     return (
@@ -151,7 +168,9 @@ function PregnancyPage() {
           <Checklist
             items={p.hospitalBag}
             defaults={DEFAULT_HOSPITAL_BAG}
-            onChange={(items) => update((d) => ({ ...d, pregnancy: { ...(d.pregnancy ?? EMPTY.pregnancy!), hospitalBag: items } }))}
+            onChange={(items) =>
+              update((d) => ({ ...d, pregnancy: { ...(d.pregnancy ?? EMPTY.pregnancy!), hospitalBag: items } }))
+            }
           />
         </Section>
 
@@ -159,7 +178,9 @@ function PregnancyPage() {
           <Checklist
             items={p.vaccinations}
             defaults={DEFAULT_PREGNANCY_VACCINES}
-            onChange={(items) => update((d) => ({ ...d, pregnancy: { ...(d.pregnancy ?? EMPTY.pregnancy!), vaccinations: items } }))}
+            onChange={(items) =>
+              update((d) => ({ ...d, pregnancy: { ...(d.pregnancy ?? EMPTY.pregnancy!), vaccinations: items } }))
+            }
           />
         </Section>
 
@@ -167,7 +188,9 @@ function PregnancyPage() {
           <Checklist
             items={p.supplements}
             defaults={DEFAULT_SUPPLEMENTS}
-            onChange={(items) => update((d) => ({ ...d, pregnancy: { ...(d.pregnancy ?? EMPTY.pregnancy!), supplements: items } }))}
+            onChange={(items) =>
+              update((d) => ({ ...d, pregnancy: { ...(d.pregnancy ?? EMPTY.pregnancy!), supplements: items } }))
+            }
           />
         </Section>
 
@@ -183,6 +206,16 @@ function PregnancyPage() {
             onClick={() => downloadTextFile(`pregnancy-timeline-${today}.txt`, exportTimeline(view))}
           >
             Export timeline (.txt)
+          </Button>
+        </Section>
+
+        <Section title="Reset" icon="⚠️">
+          <p className="mb-3 text-xs leading-relaxed text-muted-foreground">
+            Permanently delete all pregnancy setup details and daily pregnancy logs. Other BIXBO data will remain
+            unchanged.
+          </p>
+          <Button type="button" variant="destructive" className="h-11 w-full" onClick={resetPregnancy}>
+            Delete all pregnancy data
           </Button>
         </Section>
       </div>
@@ -224,10 +257,20 @@ function SetupForm({ view, update }: { view: BixboData; update: (u: (d: BixboDat
           <Input type="date" className="h-11" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
         </Field>
         <Field label="Starting weight (kg)">
-          <Input inputMode="decimal" className="h-11" value={startWeight} onChange={(e) => setStartWeight(e.target.value)} />
+          <Input
+            inputMode="decimal"
+            className="h-11"
+            value={startWeight}
+            onChange={(e) => setStartWeight(e.target.value)}
+          />
         </Field>
         <Field label="Multiples (twins etc.)">
-          <Input inputMode="numeric" className="h-11" value={multiples} onChange={(e) => setMultiples(e.target.value)} />
+          <Input
+            inputMode="numeric"
+            className="h-11"
+            value={multiples}
+            onChange={(e) => setMultiples(e.target.value)}
+          />
         </Field>
         <Button type="button" className="h-11 w-full" onClick={submit}>
           Start tracking
@@ -304,14 +347,25 @@ function WeightSection({ view, update }: { view: BixboData; update: (u: (d: Bixb
   return (
     <Section title="Weight gain" icon="⚖️">
       <div className="flex gap-2">
-        <Input inputMode="decimal" className="h-11" placeholder="Weight (kg)" value={input} onChange={(e) => setInput(e.target.value)} aria-label="Today's weight" />
+        <Input
+          inputMode="decimal"
+          className="h-11"
+          placeholder="Weight (kg)"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          aria-label="Today's weight"
+        />
         <Button type="button" className="h-11" onClick={save}>
           Log
         </Button>
       </div>
       {gain != null && (
         <p className="mt-2 text-sm text-muted-foreground">
-          Total gain: <span className="font-medium text-foreground">{gain >= 0 ? "+" : ""}{gain.toFixed(1)} kg</span>
+          Total gain:{" "}
+          <span className="font-medium text-foreground">
+            {gain >= 0 ? "+" : ""}
+            {gain.toFixed(1)} kg
+          </span>
         </p>
       )}
       <div className="mt-3">
@@ -331,7 +385,8 @@ function RecentBP({ view }: { view: BixboData }) {
     <ul className="mt-3 space-y-1 text-sm">
       {entries.map((e) => (
         <li key={e.id} className="rounded-xl bg-tint px-3 py-2 ring-1 ring-border/40">
-          {e.date} {e.time} · {e.systolic}/{e.diastolic}{e.pulse ? ` · ${e.pulse} bpm` : ""}
+          {e.date} {e.time} · {e.systolic}/{e.diastolic}
+          {e.pulse ? ` · ${e.pulse} bpm` : ""}
         </li>
       ))}
     </ul>
@@ -376,7 +431,10 @@ function AppointmentsSection({ view, update }: { view: BixboData; update: (u: (d
   const remove = (id: string) =>
     update((d) => ({
       ...d,
-      pregnancy: { ...(d.pregnancy ?? EMPTY.pregnancy!), appointments: (d.pregnancy?.appointments ?? []).filter((x) => x.id !== id) },
+      pregnancy: {
+        ...(d.pregnancy ?? EMPTY.pregnancy!),
+        appointments: (d.pregnancy?.appointments ?? []).filter((x) => x.id !== id),
+      },
     }));
 
   return (
@@ -461,13 +519,26 @@ function SymptomsSection({ view, update }: { view: BixboData; update: (u: (d: Bi
             </span>
           </div>
           <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-tint">
-            <div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(100, ((log.waterMl ?? 0) / goal) * 100)}%` }} />
+            <div
+              className="h-full rounded-full bg-primary"
+              style={{ width: `${Math.min(100, ((log.waterMl ?? 0) / goal) * 100)}%` }}
+            />
           </div>
           <div className="mt-2 flex gap-2">
-            <Button type="button" size="sm" variant="outline" onClick={() => patch({ waterMl: (log.waterMl ?? 0) + 250 })}>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => patch({ waterMl: (log.waterMl ?? 0) + 250 })}
+            >
               +250 ml
             </Button>
-            <Button type="button" size="sm" variant="outline" onClick={() => patch({ waterMl: Math.max(0, (log.waterMl ?? 0) - 250) })}>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => patch({ waterMl: Math.max(0, (log.waterMl ?? 0) - 250) })}
+            >
               -250 ml
             </Button>
           </div>
@@ -524,7 +595,12 @@ function PhotosSection({ view, update }: { view: BixboData; update: (u: (d: Bixb
         <div className="mt-3 grid grid-cols-4 gap-2">
           {log.photos!.map((photo, i) => (
             <div key={i} className="relative aspect-square">
-              <button type="button" aria-label="View photo" onClick={() => setViewing(photo)} className="h-full w-full overflow-hidden rounded-lg ring-1 ring-border">
+              <button
+                type="button"
+                aria-label="View photo"
+                onClick={() => setViewing(photo)}
+                className="h-full w-full overflow-hidden rounded-lg ring-1 ring-border"
+              >
                 <img src={photo} alt="Bump" className="h-full w-full object-cover" />
               </button>
               <button
