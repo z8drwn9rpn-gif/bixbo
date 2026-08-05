@@ -19,7 +19,6 @@ import {
   painColor,
   BRISTOL,
   nextPredictedPeriod,
-  daysBetween,
   asArr,
   isCycleTrackingHidden,
   isPregnancyActive,
@@ -92,60 +91,6 @@ function HomePage() {
       window.removeEventListener("bixbo:open-log", h);
     };
   }, []);
-
-  // Meds reminders + period notification
-  useEffect(() => {
-    if (!hydrated || !view.settings.notifications) return;
-    if (typeof window === "undefined" || !("Notification" in window)) return;
-    if (Notification.permission !== "granted") return;
-
-    const cycleTrackingHidden = isCycleTrackingHidden(view);
-
-    const int = window.setInterval(() => {
-      const now = new Date();
-
-      const hhmm = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-
-      view.meds.forEach((m) => {
-        if (m.asNeeded) return;
-
-        if (m.times.includes(hhmm)) {
-          const taken = view.medLog[todayKey()]?.[`${m.id}@${hhmm}`];
-
-          if (!taken) {
-            new Notification(`${m.name}`, {
-              body: `Time for your ${hhmm} dose${m.dose ? ` (${m.dose})` : ""}`,
-            });
-          }
-        }
-      });
-
-      // Period predict: 1 day before at 09:00
-      if (!cycleTrackingHidden && hhmm === "09:00") {
-        const p = nextPredictedPeriod(view.cycle);
-
-        if (p && daysBetween(todayKey(), p.start) === 1) {
-          new Notification("Period starts tomorrow", {
-            body: "Get your supplies ready",
-          });
-        }
-      }
-    }, 60000);
-
-    return () => {
-      window.clearInterval(int);
-    };
-  }, [
-    hydrated,
-    view.meds,
-    view.medLog,
-    view.cycle,
-    view.settings.notifications,
-    view.settings.gender,
-    view.settings.pregnantSince,
-    view.pregnancy?.active,
-    view.postpartum?.active,
-  ]);
 
   /*
    * Tento return musí byť až po všetkých useEffect/useState hookoch.

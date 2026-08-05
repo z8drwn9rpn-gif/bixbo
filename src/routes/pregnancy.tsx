@@ -74,7 +74,13 @@ function PregnancyPage() {
 
       return {
         ...d,
-        pregnancy: structuredClone(EMPTY.pregnancy!),
+        pregnancy: {
+          active: false,
+          hospitalBag: [],
+          vaccinations: [],
+          supplements: [],
+          appointments: [],
+        },
         dayLogs,
       };
     });

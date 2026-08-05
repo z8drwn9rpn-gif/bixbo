@@ -147,7 +147,7 @@ export function LogSheet({
 
   const pregnancyActive = Boolean(data.pregnancy?.active);
   const postpartumActive = Boolean(data.postpartum?.active);
-  const cycleTrackingHidden = isCycleTrackingHidden(data) || pregnancyActive || postpartumActive;
+  const cycleTrackingHidden = isCycleTrackingHidden(data);
 
   const active =
     requestedActive === "period" && cycleTrackingHidden

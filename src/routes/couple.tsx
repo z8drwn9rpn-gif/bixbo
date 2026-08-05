@@ -20,7 +20,6 @@ import {
   EMPTY,
   PAIN_DESCRIPTIONS,
   avgDayPain,
-  daysBetween,
   fromKey,
   nextPredictedPeriod,
   painColor,
@@ -875,50 +874,6 @@ function BlueberrySection({
     const log = partner.dayLogs[key];
     return log?.periodInfo?.level || log?.period || null;
   };
-
-  useEffect(() => {
-    if (!next || typeof window === "undefined" || !("Notification" in window)) {
-      return;
-    }
-
-    const daysUntil = daysBetween(todayKey(), next.start);
-
-    if (daysUntil < 0 || daysUntil > 3) return;
-
-    const notifyKey = `bixbo:partner-period-notified:${next.start}`;
-
-    if (localStorage.getItem(notifyKey)) return;
-
-    const fire = () => {
-      const body =
-        daysUntil === 0
-          ? `${partner.name || "Your partner"}'s period is predicted today.`
-          : daysUntil === 1
-            ? `${partner.name || "Your partner"}'s period is predicted tomorrow.`
-            : `${partner.name || "Your partner"}'s period is predicted in ${daysUntil} days.`;
-
-      try {
-        new Notification("Blueberry reminder", {
-          body,
-          icon: "/favicon.svg",
-        });
-
-        localStorage.setItem(notifyKey, "1");
-      } catch {
-        // Ignore notification errors.
-      }
-    };
-
-    if (Notification.permission === "granted") {
-      fire();
-    } else if (Notification.permission !== "denied") {
-      Notification.requestPermission().then((permission) => {
-        if (permission === "granted") {
-          fire();
-        }
-      });
-    }
-  }, [next?.start, partner.name]);
 
   return (
     <section className="space-y-3 rounded-3xl bg-surface p-4 ring-1 ring-border">

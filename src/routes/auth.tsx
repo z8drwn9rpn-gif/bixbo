@@ -28,18 +28,32 @@ function AuthPage() {
   const [msg, setMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/settings" });
-    });
+    let cancelled = false;
+
+    supabase.auth
+      .getSession()
+      .then(({ data, error }) => {
+        if (error) throw error;
+        if (!cancelled && data.session) navigate({ to: "/settings" });
+      })
+      .catch((error) => {
+        if (!cancelled) setMsg(error instanceof Error ? error.message : String(error));
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [navigate]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setBusy(true); setMsg(null);
+    setBusy(true);
+    setMsg(null);
     try {
       if (mode === "up") {
         const { error } = await supabase.auth.signUp({
-          email, password,
+          email,
+          password,
           options: { emailRedirectTo: `${window.location.origin}/`, data: { display_name: name || undefined } },
         });
         if (error) throw error;
@@ -52,13 +66,20 @@ function AuthPage() {
       }
     } catch (err) {
       setMsg(err instanceof Error ? err.message : String(err));
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false);
+    }
   };
 
   const google = async () => {
-    setBusy(true); setMsg(null);
+    setBusy(true);
+    setMsg(null);
     const res = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
-    if (res.error) { setMsg(res.error.message); setBusy(false); return; }
+    if (res.error) {
+      setMsg(res.error.message);
+      setBusy(false);
+      return;
+    }
     if (!res.redirected) navigate({ to: "/settings" });
   };
 
@@ -70,8 +91,18 @@ function AuthPage() {
         </p>
 
         <div className="flex gap-2">
-          <button onClick={() => setMode("in")} className={`flex-1 rounded-xl px-3 py-2 text-sm font-medium ${mode === "in" ? "bg-primary text-primary-foreground" : "bg-surface ring-1 ring-border"}`}>Sign in</button>
-          <button onClick={() => setMode("up")} className={`flex-1 rounded-xl px-3 py-2 text-sm font-medium ${mode === "up" ? "bg-primary text-primary-foreground" : "bg-surface ring-1 ring-border"}`}>Create account</button>
+          <button
+            onClick={() => setMode("in")}
+            className={`flex-1 rounded-xl px-3 py-2 text-sm font-medium ${mode === "in" ? "bg-primary text-primary-foreground" : "bg-surface ring-1 ring-border"}`}
+          >
+            Sign in
+          </button>
+          <button
+            onClick={() => setMode("up")}
+            className={`flex-1 rounded-xl px-3 py-2 text-sm font-medium ${mode === "up" ? "bg-primary text-primary-foreground" : "bg-surface ring-1 ring-border"}`}
+          >
+            Create account
+          </button>
         </div>
 
         <form onSubmit={submit} className="space-y-3 rounded-3xl bg-surface p-4 ring-1 ring-border">
@@ -79,8 +110,17 @@ function AuthPage() {
             <Input placeholder="Your name (optional)" value={name} onChange={(e) => setName(e.target.value)} />
           )}
           <Input type="email" placeholder="Email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-          <Input type="password" placeholder="Password (min 6 chars)" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
-          <Button type="submit" disabled={busy} className="w-full">{mode === "up" ? "Create account" : "Sign in"}</Button>
+          <Input
+            type="password"
+            placeholder="Password (min 6 chars)"
+            required
+            minLength={6}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <Button type="submit" disabled={busy} className="w-full">
+            {mode === "up" ? "Create account" : "Sign in"}
+          </Button>
         </form>
 
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -94,7 +134,9 @@ function AuthPage() {
         {msg && <p className="text-sm text-destructive">{msg}</p>}
 
         <div className="text-center">
-          <Link to="/" className="text-xs text-muted-foreground underline">Back to app</Link>
+          <Link to="/" className="text-xs text-muted-foreground underline">
+            Back to app
+          </Link>
         </div>
       </div>
     </AppShell>

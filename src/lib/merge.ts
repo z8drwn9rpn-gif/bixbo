@@ -5,8 +5,9 @@
  * from the user's own device), and prefer whichever side actually has
  * a value when the other side is missing it.
  * ------------------------------------------------------------------ */
-import type {
-  BixboData,
+import {
+  EMPTY,
+  type BixboData,
   DayLog,
   NoteFolder,
   Note,
@@ -378,13 +379,18 @@ function mergeMedLogTimes(
 }
 
 /** medNames: Record<key, string> — prefer local. */
-function mergeStringMap(
-  local: Record<string, string> | undefined,
-  remote: Record<string, string> | undefined,
-): Record<string, string> {
-  const keys = new Set([...Object.keys(local ?? {}), ...Object.keys(remote ?? {})]);
+function mergeStringMap(local: unknown, remote: unknown): Record<string, string> {
+  const l = isObj(local) ? local : {};
+  const r = isObj(remote) ? remote : {};
+  const keys = new Set([...Object.keys(l), ...Object.keys(r)]);
   const out: Record<string, string> = {};
-  for (const k of keys) out[k] = local?.[k] || remote?.[k] || "";
+
+  for (const key of keys) {
+    const localValue = l[key];
+    const remoteValue = r[key];
+    out[key] = (typeof localValue === "string" && localValue) || (typeof remoteValue === "string" && remoteValue) || "";
+  }
+
   return out;
 }
 
@@ -453,9 +459,9 @@ export function mergeBixbo(local: BixboData, remote: BixboData | null | undefine
       docs: unionById(local.docs, remote.docs) ?? [],
       diagnoses: unionById(local.diagnoses, remote.diagnoses) ?? [],
       deletedIds,
-      cycle: { ...(remote.cycle ?? {}), ...(local.cycle ?? {}) },
+      cycle: { ...EMPTY.cycle, ...(remote.cycle ?? {}), ...(local.cycle ?? {}) },
       custom: mergeCustom(local.custom, remote.custom),
-      settings: { ...(remote.settings ?? {}), ...(local.settings ?? {}) },
+      settings: { ...EMPTY.settings, ...(remote.settings ?? {}), ...(local.settings ?? {}) },
       postpartum: mergePostpartumState(local.postpartum, remote.postpartum),
       // partner is a local-only projection of the other user's data — always keep local's.
       partner: local.partner ?? remote.partner,

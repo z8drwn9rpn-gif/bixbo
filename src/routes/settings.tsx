@@ -251,7 +251,11 @@ function SettingsPage() {
   };
   const importJson = async (file: File) => {
     try {
-      const incoming = { ...EMPTY, ...JSON.parse(await file.text()) } as BixboData;
+      const parsed: unknown = JSON.parse(await file.text());
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        throw new Error("Invalid BIXBO backup");
+      }
+      const incoming = mergeBixbo(EMPTY, parsed as BixboData);
       if (
         !window.confirm(
           "Import backup?\n\nYour current data is kept — anything from the file that you don't already have is added. Nothing is deleted.",
@@ -268,7 +272,11 @@ function SettingsPage() {
 
   const importPartner = async (file: File) => {
     try {
-      const raw = JSON.parse(await file.text()) as BixboData;
+      const parsed: unknown = JSON.parse(await file.text());
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        throw new Error("Invalid partner backup");
+      }
+      const raw = mergeBixbo(EMPTY, parsed as BixboData);
       const dayLogs: PartnerData["dayLogs"] = {};
       for (const [k, l] of Object.entries(raw.dayLogs ?? {})) {
         if (l.pain?.length || l.panic?.length) dayLogs[k] = { pain: l.pain, panic: l.panic };

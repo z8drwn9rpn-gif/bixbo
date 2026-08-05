@@ -427,10 +427,19 @@ export function useSession() {
       setSession(nextSession);
     });
 
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setReady(true);
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data, error }) => {
+        if (error) throw error;
+        setSession(data.session);
+      })
+      .catch((error) => {
+        console.error("useSession getSession", error);
+        setSession(null);
+      })
+      .finally(() => {
+        setReady(true);
+      });
 
     return () => subscription.subscription.unsubscribe();
   }, []);
@@ -470,7 +479,7 @@ export function useCloudSync() {
           // Restore the user's cloud data, but temporarily quarantine all
           // postpartum fields because those legacy values are the known crash
           // trigger for this account.
-          const safeRemote = quarantinePostpartum(normalizeRemotePayload(remote));
+          const safeRemote = normalizeRemotePayload(remote);
           const currentPartner = getBixbo().partner;
 
           replaceBixbo(
@@ -540,7 +549,7 @@ export function useCloudSync() {
             const incomingRaw = (payload.new as { data?: unknown } | undefined)?.data;
             if (!incomingRaw) return;
 
-            const incoming = quarantinePostpartum(normalizeRemotePayload(incomingRaw));
+            const incoming = normalizeRemotePayload(incomingRaw);
             const incomingJson = JSON.stringify({
               ...incoming,
               partner: undefined,

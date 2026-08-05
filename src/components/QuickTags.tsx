@@ -34,6 +34,19 @@ type Tag = {
 
 const uid = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 
+const stripEmoji = (value: string): string =>
+  value
+    .replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const normalizeDecimalInput = (value: string): string => {
+  const normalized = value.replace(",", ".").replace(/[^0-9.]/g, "");
+  const [whole = "", ...fractionParts] = normalized.split(".");
+  const fraction = fractionParts.join("");
+  return fractionParts.length > 0 ? `${whole}.${fraction}` : whole;
+};
+
 const PERIOD_LEVELS: {
   v: PeriodLevel;
   label: string;
@@ -913,7 +926,7 @@ function QuickTagBuilder({
   const [headacheType, setHeadacheType] = useState(HEADACHE_TYPES[0] ?? "Tension");
   const [headacheIntensity, setHeadacheIntensity] = useState(3);
   const [hotFlashesIntensity, setHotFlashesIntensity] = useState(3);
-  const [sleepHours, setSleepHours] = useState(8);
+  const [sleepHours, setSleepHours] = useState("8");
   const [sleepQuality, setSleepQuality] = useState(SLEEP_QUALITY[0] ?? "🙂 Good");
 
   const [emoji, setEmoji] = useState("⭐");
@@ -953,7 +966,8 @@ function QuickTagBuilder({
         headacheType: cat === "headache" ? headacheType : undefined,
         headacheIntensity: cat === "headache" ? headacheIntensity : undefined,
         hotFlashesIntensity: cat === "hotFlashes" ? hotFlashesIntensity : undefined,
-        sleepHours: cat === "sleep" ? sleepHours : undefined,
+        sleepHours:
+          cat === "sleep" ? Math.min(24, Math.max(0, Number.parseFloat(sleepHours.replace(",", ".")) || 0)) : undefined,
         sleepQuality: cat === "sleep" ? sleepQuality : undefined,
       },
     };
@@ -1251,12 +1265,12 @@ function QuickTagBuilder({
 
                   <input
                     className={inputCls}
-                    type="number"
-                    min={0}
-                    max={24}
-                    step={0.25}
+                    type="text"
+                    inputMode="decimal"
                     value={sleepHours}
-                    onChange={(event) => setSleepHours(Number(event.target.value))}
+                    onChange={(event) => setSleepHours(normalizeDecimalInput(event.target.value))}
+                    placeholder="8,5"
+                    aria-label="Sleep hours"
                   />
                 </div>
 
