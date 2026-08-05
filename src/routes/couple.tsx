@@ -1439,16 +1439,6 @@ function CouplePage() {
                   </div>
                 </SectionCard>
 
-                <SectionCard title="Sharing settings" description="Manage pairing and shared data in Settings.">
-                  <Link
-                    to="/settings"
-                    className="mt-4 flex items-center justify-between rounded-2xl bg-tint px-4 py-4 text-sm font-semibold text-foreground ring-1 ring-border/40"
-                  >
-                    <span>Open Couple sharing settings</span>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                  </Link>
-                </SectionCard>
-
                 <SectionCard
                   title="What is shared"
                   description="Only these categories are available to your linked partner."
