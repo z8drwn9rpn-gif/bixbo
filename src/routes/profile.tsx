@@ -11,7 +11,10 @@ export const Route = createFileRoute("/profile")({
   head: () => ({
     meta: [
       { title: "Health profile — BIXBO" },
-      { name: "description", content: "Your personal, medical, cycle, lifestyle, emergency and medication profile in BIXBO." },
+      {
+        name: "description",
+        content: "Your personal, medical, cycle, lifestyle, emergency and medication profile in BIXBO.",
+      },
       { property: "og:title", content: "Health profile — BIXBO" },
       { property: "og:description", content: "Everything about you, in one editable place." },
     ],
@@ -78,7 +81,9 @@ function ToggleRow({ label, checked, onChange }: { label: string; checked: boole
       type="button"
       onClick={() => onChange(!checked)}
       className={`flex min-h-11 w-full items-center justify-between rounded-xl border px-3 py-2 text-left text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-        checked ? "border-primary bg-primary/10 text-primary dark:bg-primary dark:text-primary-foreground" : "border-border bg-tint"
+        checked
+          ? "border-primary bg-primary/10 text-primary dark:bg-primary dark:text-primary-foreground"
+          : "border-border bg-tint"
       }`}
     >
       {label}
@@ -106,7 +111,10 @@ function TagListField({
   const add = () => {
     const v = text.trim();
     if (!v) return;
-    if (values.includes(v)) { setText(""); return; }
+    if (values.includes(v)) {
+      setText("");
+      return;
+    }
     onChange([...values, v]);
     setText("");
   };
@@ -121,7 +129,10 @@ function TagListField({
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter") { e.preventDefault(); add(); }
+            if (e.key === "Enter") {
+              e.preventDefault();
+              add();
+            }
           }}
           placeholder={placeholder ?? "Type and press Add…"}
           className="h-11"
@@ -171,16 +182,38 @@ function DoctorForm({
       <p className="mb-2 text-xs font-semibold text-foreground">{title}</p>
       <div className="grid grid-cols-2 gap-2">
         <Field label="Name" htmlFor={`${idBase}-name`}>
-          <Input id={`${idBase}-name`} className="h-11" value={v.name ?? ""} onChange={(e) => set({ name: e.target.value })} />
+          <Input
+            id={`${idBase}-name`}
+            className="h-11"
+            value={v.name ?? ""}
+            onChange={(e) => set({ name: e.target.value })}
+          />
         </Field>
         <Field label="Clinic" htmlFor={`${idBase}-clinic`}>
-          <Input id={`${idBase}-clinic`} className="h-11" value={v.clinic ?? ""} onChange={(e) => set({ clinic: e.target.value })} />
+          <Input
+            id={`${idBase}-clinic`}
+            className="h-11"
+            value={v.clinic ?? ""}
+            onChange={(e) => set({ clinic: e.target.value })}
+          />
         </Field>
         <Field label="Phone" htmlFor={`${idBase}-phone`}>
-          <Input id={`${idBase}-phone`} className="h-11" type="tel" value={v.phone ?? ""} onChange={(e) => set({ phone: e.target.value })} />
+          <Input
+            id={`${idBase}-phone`}
+            className="h-11"
+            type="tel"
+            value={v.phone ?? ""}
+            onChange={(e) => set({ phone: e.target.value })}
+          />
         </Field>
         <Field label="Email" htmlFor={`${idBase}-email`}>
-          <Input id={`${idBase}-email`} className="h-11" type="email" value={v.email ?? ""} onChange={(e) => set({ email: e.target.value })} />
+          <Input
+            id={`${idBase}-email`}
+            className="h-11"
+            type="email"
+            value={v.email ?? ""}
+            onChange={(e) => set({ email: e.target.value })}
+          />
         </Field>
       </div>
       <div className="mt-2">
@@ -211,8 +244,7 @@ function ProfilePage() {
   const view = hydrated ? data : EMPTY;
   const profile: HealthProfile = view.profile ?? {};
 
-  const patch = (p: Partial<HealthProfile>) =>
-    update((d) => ({ ...d, profile: { ...d.profile, ...p } }));
+  const patch = (p: Partial<HealthProfile>) => update((d) => ({ ...d, profile: { ...d.profile, ...p } }));
 
   const age = ageFromBirthDate(profile.birthDate);
   const bmi =
@@ -234,8 +266,8 @@ function ProfilePage() {
   return (
     <AppShell
       title={
-        <button onClick={() => navigate({ to: "/settings" })} className="flex items-center gap-2">
-          <ArrowLeft className="h-5 w-5" /> Profile
+        <button onClick={() => navigate({ to: "/" })} className="flex items-center gap-2">
+          <ArrowLeft className="h-5 w-5" /> Health profile
         </button>
       }
     >
@@ -244,10 +276,20 @@ function ProfilePage() {
         <Section title="Personal" subtitle="Basic information about you.">
           <div className="grid grid-cols-2 gap-3">
             <Field label="Name" htmlFor="p-name">
-              <Input id="p-name" className="h-11" value={profile.name ?? ""} onChange={(e) => patch({ name: e.target.value })} />
+              <Input
+                id="p-name"
+                className="h-11"
+                value={profile.name ?? ""}
+                onChange={(e) => patch({ name: e.target.value })}
+              />
             </Field>
             <Field label="Nickname" htmlFor="p-nickname">
-              <Input id="p-nickname" className="h-11" value={profile.nickname ?? ""} onChange={(e) => patch({ nickname: e.target.value })} />
+              <Input
+                id="p-nickname"
+                className="h-11"
+                value={profile.nickname ?? ""}
+                onChange={(e) => patch({ nickname: e.target.value })}
+              />
             </Field>
             <Field label="Birth date" htmlFor="p-birthdate">
               <Input
@@ -299,10 +341,20 @@ function ProfilePage() {
               </div>
             </Field>
             <Field label="Gender" htmlFor="p-gender">
-              <Input id="p-gender" className="h-11" value={profile.gender ?? ""} onChange={(e) => patch({ gender: e.target.value })} />
+              <Input
+                id="p-gender"
+                className="h-11"
+                value={profile.gender ?? ""}
+                onChange={(e) => patch({ gender: e.target.value })}
+              />
             </Field>
             <Field label="Pronouns" htmlFor="p-pronouns">
-              <Input id="p-pronouns" className="h-11" value={profile.pronouns ?? ""} onChange={(e) => patch({ pronouns: e.target.value })} />
+              <Input
+                id="p-pronouns"
+                className="h-11"
+                value={profile.pronouns ?? ""}
+                onChange={(e) => patch({ pronouns: e.target.value })}
+              />
             </Field>
           </div>
         </Section>
@@ -310,12 +362,28 @@ function ProfilePage() {
         {/* ---------------- Medical ---------------- */}
         <Section title="Medical" subtitle="Diagnoses, conditions and history.">
           <TagListField label="Diagnoses" values={profile.diagnoses ?? []} onChange={(v) => patch({ diagnoses: v })} />
-          <TagListField label="Chronic illnesses" values={profile.chronicIllnesses ?? []} onChange={(v) => patch({ chronicIllnesses: v })} />
+          <TagListField
+            label="Chronic illnesses"
+            values={profile.chronicIllnesses ?? []}
+            onChange={(v) => patch({ chronicIllnesses: v })}
+          />
           <TagListField label="Allergies" values={profile.allergies ?? []} onChange={(v) => patch({ allergies: v })} />
-          <TagListField label="Intolerances" values={profile.intolerances ?? []} onChange={(v) => patch({ intolerances: v })} />
+          <TagListField
+            label="Intolerances"
+            values={profile.intolerances ?? []}
+            onChange={(v) => patch({ intolerances: v })}
+          />
           <TagListField label="Surgeries" values={profile.surgeries ?? []} onChange={(v) => patch({ surgeries: v })} />
-          <TagListField label="Pregnancies" values={profile.pregnancies ?? []} onChange={(v) => patch({ pregnancies: v })} />
-          <TagListField label="Disabilities" values={profile.disabilities ?? []} onChange={(v) => patch({ disabilities: v })} />
+          <TagListField
+            label="Pregnancies"
+            values={profile.pregnancies ?? []}
+            onChange={(v) => patch({ pregnancies: v })}
+          />
+          <TagListField
+            label="Disabilities"
+            values={profile.disabilities ?? []}
+            onChange={(v) => patch({ disabilities: v })}
+          />
         </Section>
 
         {/* ---------------- Cycle ---------------- */}
@@ -335,9 +403,17 @@ function ProfilePage() {
             />
           </Field>
           <div className="grid grid-cols-1 gap-2">
-            <ToggleRow label="Trying to conceive" checked={!!profile.tryingToConceive} onChange={(v) => patch({ tryingToConceive: v })} />
+            <ToggleRow
+              label="Trying to conceive"
+              checked={!!profile.tryingToConceive}
+              onChange={(v) => patch({ tryingToConceive: v })}
+            />
             <ToggleRow label="Postpartum" checked={!!profile.postpartum} onChange={(v) => patch({ postpartum: v })} />
-            <ToggleRow label="Breastfeeding" checked={!!profile.breastfeeding} onChange={(v) => patch({ breastfeeding: v })} />
+            <ToggleRow
+              label="Breastfeeding"
+              checked={!!profile.breastfeeding}
+              onChange={(v) => patch({ breastfeeding: v })}
+            />
           </div>
           <Field label="Menopause" htmlFor="p-menopause">
             <SelectField
@@ -352,10 +428,20 @@ function ProfilePage() {
             />
           </Field>
           <Field label="Birth control" htmlFor="p-birth-control">
-            <Input id="p-birth-control" className="h-11" value={profile.birthControl ?? ""} onChange={(e) => patch({ birthControl: e.target.value })} />
+            <Input
+              id="p-birth-control"
+              className="h-11"
+              value={profile.birthControl ?? ""}
+              onChange={(e) => patch({ birthControl: e.target.value })}
+            />
           </Field>
           <Field label="Fertility goals" htmlFor="p-fertility-goals">
-            <Input id="p-fertility-goals" className="h-11" value={profile.fertilityGoals ?? ""} onChange={(e) => patch({ fertilityGoals: e.target.value })} />
+            <Input
+              id="p-fertility-goals"
+              className="h-11"
+              value={profile.fertilityGoals ?? ""}
+              onChange={(e) => patch({ fertilityGoals: e.target.value })}
+            />
           </Field>
         </Section>
 
@@ -452,13 +538,29 @@ function ProfilePage() {
             <p className="mb-2 text-xs font-semibold text-foreground">Emergency contact</p>
             <div className="grid grid-cols-2 gap-2">
               <Field label="Name" htmlFor="p-ec-name">
-                <Input id="p-ec-name" className="h-11" value={profile.emergencyContact?.name ?? ""} onChange={(e) => setEmergency({ name: e.target.value })} />
+                <Input
+                  id="p-ec-name"
+                  className="h-11"
+                  value={profile.emergencyContact?.name ?? ""}
+                  onChange={(e) => setEmergency({ name: e.target.value })}
+                />
               </Field>
               <Field label="Relation" htmlFor="p-ec-relation">
-                <Input id="p-ec-relation" className="h-11" value={profile.emergencyContact?.relation ?? ""} onChange={(e) => setEmergency({ relation: e.target.value })} />
+                <Input
+                  id="p-ec-relation"
+                  className="h-11"
+                  value={profile.emergencyContact?.relation ?? ""}
+                  onChange={(e) => setEmergency({ relation: e.target.value })}
+                />
               </Field>
               <Field label="Phone" htmlFor="p-ec-phone">
-                <Input id="p-ec-phone" type="tel" className="h-11" value={profile.emergencyContact?.phone ?? ""} onChange={(e) => setEmergency({ phone: e.target.value })} />
+                <Input
+                  id="p-ec-phone"
+                  type="tel"
+                  className="h-11"
+                  value={profile.emergencyContact?.phone ?? ""}
+                  onChange={(e) => setEmergency({ phone: e.target.value })}
+                />
               </Field>
             </div>
           </div>
@@ -466,7 +568,11 @@ function ProfilePage() {
           <DoctorForm title="GP" value={profile.gp} onChange={(v) => patch({ gp: v })} />
           <DoctorForm title="Gynecologist" value={profile.gynecologist} onChange={(v) => patch({ gynecologist: v })} />
           <DoctorForm title="Neurologist" value={profile.neurologist} onChange={(v) => patch({ neurologist: v })} />
-          <DoctorForm title="Endocrinologist" value={profile.endocrinologist} onChange={(v) => patch({ endocrinologist: v })} />
+          <DoctorForm
+            title="Endocrinologist"
+            value={profile.endocrinologist}
+            onChange={(v) => patch({ endocrinologist: v })}
+          />
           <DoctorForm title="Therapist" value={profile.therapist} onChange={(v) => patch({ therapist: v })} />
         </Section>
 
@@ -489,7 +595,10 @@ function ProfilePage() {
             {reminderTimes.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {reminderTimes.map((t) => (
-                  <span key={t} className="inline-flex items-center gap-1 rounded-full bg-tint px-2.5 py-1 text-xs font-medium text-foreground ring-1 ring-border">
+                  <span
+                    key={t}
+                    className="inline-flex items-center gap-1 rounded-full bg-tint px-2.5 py-1 text-xs font-medium text-foreground ring-1 ring-border"
+                  >
                     <Clock className="h-3 w-3" /> {t}
                     <button
                       type="button"
@@ -505,10 +614,19 @@ function ProfilePage() {
             )}
           </div>
           <Field label="Pharmacy" htmlFor="p-pharmacy">
-            <Input id="p-pharmacy" className="h-11" value={profile.pharmacy ?? ""} onChange={(e) => patch({ pharmacy: e.target.value })} />
+            <Input
+              id="p-pharmacy"
+              className="h-11"
+              value={profile.pharmacy ?? ""}
+              onChange={(e) => patch({ pharmacy: e.target.value })}
+            />
           </Field>
           <Field label="Medication notes" htmlFor="p-med-notes">
-            <Textarea id="p-med-notes" value={profile.medicationNotes ?? ""} onChange={(e) => patch({ medicationNotes: e.target.value })} />
+            <Textarea
+              id="p-med-notes"
+              value={profile.medicationNotes ?? ""}
+              onChange={(e) => patch({ medicationNotes: e.target.value })}
+            />
           </Field>
         </Section>
       </div>
