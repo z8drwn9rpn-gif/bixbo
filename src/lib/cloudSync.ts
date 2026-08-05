@@ -2,7 +2,19 @@ import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 
 import { supabase } from "@/integrations/supabase/client";
-import { getBixbo, replaceBixbo, setPartner, subscribeBixboChanges, type BixboData, type PartnerData } from "./storage";
+import {
+  EMPTY,
+  getBixbo,
+  replaceBixbo,
+  setPartner,
+  subscribeBixboChanges,
+  type BixboData,
+  type DayLog,
+  type PartnerData,
+  type PostpartumDayLog,
+  type PostpartumState,
+  type PregnancyAppointment,
+} from "./storage";
 import { mergeBixbo } from "./merge";
 
 export interface CloudProfile {
@@ -179,6 +191,127 @@ export async function fetchPartner(): Promise<PartnerData | null> {
   return toPartnerView(row.data, row.display_name || "Partner", row.gender);
 }
 
+function safeObject(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+}
+
+function safeStringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+function safeObjectArray<T extends object>(value: unknown): T[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is T => Boolean(item) && typeof item === "object" && !Array.isArray(item))
+    : [];
+}
+
+function normalizeRemotePostpartumState(value: unknown): PostpartumState {
+  const raw = safeObject(value);
+
+  const visits = safeObjectArray<PregnancyAppointment>(raw.visits).filter(
+    (visit) => typeof visit.id === "string" && typeof visit.date === "string" && typeof visit.title === "string",
+  );
+
+  const deliveryType =
+    raw.deliveryType === "vaginal" ||
+    raw.deliveryType === "csection" ||
+    raw.deliveryType === "assisted" ||
+    raw.deliveryType === "other"
+      ? raw.deliveryType
+      : undefined;
+
+  const feedingMode =
+    raw.feedingMode === "breast" || raw.feedingMode === "bottle" || raw.feedingMode === "mixed"
+      ? raw.feedingMode
+      : undefined;
+
+  const birthWeight = Number(raw.babyBirthWeightKg);
+
+  return {
+    active: Boolean(raw.active),
+    birthDate: typeof raw.birthDate === "string" ? raw.birthDate : undefined,
+    deliveryType,
+    babyName: typeof raw.babyName === "string" ? raw.babyName : undefined,
+    babyBirthWeightKg: Number.isFinite(birthWeight) ? birthWeight : undefined,
+    feedingMode,
+    visits,
+    note: typeof raw.note === "string" ? raw.note : undefined,
+    endedAt: typeof raw.endedAt === "string" ? raw.endedAt : undefined,
+  };
+}
+
+function normalizeRemotePostpartumDayLog(value: unknown): PostpartumDayLog | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+
+  const raw = value as Record<string, unknown>;
+  const sleepHours = Number(raw.sleepHours);
+  const babySleepHours = Number(raw.babySleepHours);
+  const recovery = Number(raw.recovery);
+  const csectionRecovery = Number(raw.csectionRecovery);
+  const perinealHealing = Number(raw.perinealHealing);
+
+  const bleeding =
+    raw.bleeding === "" ||
+    raw.bleeding === "none" ||
+    raw.bleeding === "spotting" ||
+    raw.bleeding === "light" ||
+    raw.bleeding === "medium" ||
+    raw.bleeding === "heavy"
+      ? raw.bleeding
+      : undefined;
+
+  return {
+    ...(raw as PostpartumDayLog),
+    bleeding,
+    symptoms: safeStringArray(raw.symptoms),
+    mood: safeStringArray(raw.mood),
+    breastfeeding: safeObjectArray<NonNullable<PostpartumDayLog["breastfeeding"]>[number]>(raw.breastfeeding),
+    pumping: safeObjectArray<NonNullable<PostpartumDayLog["pumping"]>[number]>(raw.pumping),
+    bottle: safeObjectArray<NonNullable<PostpartumDayLog["bottle"]>[number]>(raw.bottle),
+    diapers: safeObjectArray<NonNullable<PostpartumDayLog["diapers"]>[number]>(raw.diapers),
+    sleepHours: Number.isFinite(sleepHours) ? sleepHours : undefined,
+    babySleepHours: Number.isFinite(babySleepHours) ? babySleepHours : undefined,
+    recovery: Number.isFinite(recovery) ? recovery : undefined,
+    csectionRecovery: Number.isFinite(csectionRecovery) ? csectionRecovery : undefined,
+    perinealHealing: Number.isFinite(perinealHealing) ? perinealHealing : undefined,
+    note: typeof raw.note === "string" ? raw.note : undefined,
+  };
+}
+
+function normalizeRemotePayload(value: unknown): BixboData {
+  const raw = safeObject(value);
+  const rawDayLogs = safeObject(raw.dayLogs);
+  const dayLogs: Record<string, DayLog> = {};
+
+  for (const [date, rawLog] of Object.entries(rawDayLogs)) {
+    if (!rawLog || typeof rawLog !== "object" || Array.isArray(rawLog)) continue;
+
+    const log = rawLog as DayLog;
+    const postpartum = normalizeRemotePostpartumDayLog((rawLog as Record<string, unknown>).postpartum);
+
+    dayLogs[date] = {
+      ...log,
+      postpartum,
+    };
+  }
+
+  return {
+    ...EMPTY,
+    ...(raw as Partial<BixboData>),
+    dayLogs,
+    postpartum: normalizeRemotePostpartumState(raw.postpartum),
+    tasks: Array.isArray(raw.tasks) ? (raw.tasks as BixboData["tasks"]) : [],
+    events: Array.isArray(raw.events) ? (raw.events as BixboData["events"]) : [],
+    meds: Array.isArray(raw.meds) ? (raw.meds as BixboData["meds"]) : [],
+    folders: Array.isArray(raw.folders) ? (raw.folders as BixboData["folders"]) : EMPTY.folders,
+    notebook: Array.isArray(raw.notebook) ? (raw.notebook as BixboData["notebook"]) : [],
+    labs: Array.isArray(raw.labs) ? (raw.labs as NonNullable<BixboData["labs"]>) : [],
+    docs: Array.isArray(raw.docs) ? (raw.docs as NonNullable<BixboData["docs"]>) : [],
+    diagnoses: Array.isArray(raw.diagnoses) ? (raw.diagnoses as NonNullable<BixboData["diagnoses"]>) : [],
+    deletedIds: Array.isArray(raw.deletedIds) ? (raw.deletedIds as NonNullable<BixboData["deletedIds"]>) : [],
+  };
+}
+
 export async function pullMyData(): Promise<BixboData | null> {
   const {
     data: { user },
@@ -193,7 +326,7 @@ export async function pullMyData(): Promise<BixboData | null> {
     throw error;
   }
 
-  return (data?.data as unknown as BixboData) ?? null;
+  return data?.data ? normalizeRemotePayload(data.data) : null;
 }
 
 /*
@@ -209,12 +342,13 @@ export async function pushMyData(payload: BixboData): Promise<void> {
 
   if (!user) return;
 
+  const safePayload = normalizeRemotePayload(payload);
   const privatePayload = {
-    ...payload,
+    ...safePayload,
     partner: undefined,
   };
 
-  const partnerPayload = toPartnerSharedPayload(payload);
+  const partnerPayload = toPartnerSharedPayload(safePayload);
 
   _lastPushedJson = JSON.stringify(privatePayload);
 
@@ -328,7 +462,8 @@ export function useCloudSync() {
 
         if (remote) {
           // Never overwrite: merge local and remote so neither device loses data.
-          const merged = mergeBixbo(getBixbo(), remote);
+          const safeRemote = normalizeRemotePayload(remote);
+          const merged = mergeBixbo(getBixbo(), safeRemote);
 
           replaceBixbo(
             {
@@ -393,10 +528,11 @@ export function useCloudSync() {
           filter: `user_id=eq.${session.user.id}`,
         },
         (payload) => {
-          const incoming = (payload.new as { data?: BixboData } | undefined)?.data;
+          const incomingRaw = (payload.new as { data?: unknown } | undefined)?.data;
 
-          if (!incoming) return;
+          if (!incomingRaw) return;
 
+          const incoming = normalizeRemotePayload(incomingRaw);
           const incomingJson = JSON.stringify({
             ...incoming,
             partner: undefined,
