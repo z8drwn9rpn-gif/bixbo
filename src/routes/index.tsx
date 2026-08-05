@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Settings as SettingsIcon, Share2, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Settings as SettingsIcon, Share2, Trash2, UserRound } from "lucide-react";
 
 import { Ico, IcoText, PillIcon } from "@/components/icons/BixboIcons";
 import { AppShell } from "@/components/AppShell";
@@ -193,9 +193,25 @@ function HomePage() {
         </div>
       }
       right={
-        <Link to="/settings" className="rounded-full p-2 hover:bg-tint" aria-label="Settings">
-          <SettingsIcon className="h-5 w-5" />
-        </Link>
+        <div className="flex items-center gap-1">
+          <Link
+            to="/profile"
+            className="rounded-full p-2 transition hover:bg-tint"
+            aria-label="Health profile"
+            title="Health profile"
+          >
+            <UserRound className="h-5 w-5" />
+          </Link>
+
+          <Link
+            to="/settings"
+            className="rounded-full p-2 transition hover:bg-tint"
+            aria-label="Settings"
+            title="Settings"
+          >
+            <SettingsIcon className="h-5 w-5" />
+          </Link>
+        </div>
       }
     >
       <div className="px-5 pt-0.5">
