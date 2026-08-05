@@ -41,6 +41,11 @@
   --color-period-medium: var(--period-medium);
   --color-period-heavy: var(--period-heavy);
   --color-period-veryheavy: var(--period-veryheavy);
+  --color-period-spotting-fg: var(--period-spotting-fg);
+  --color-period-light-fg: var(--period-light-fg);
+  --color-period-medium-fg: var(--period-medium-fg);
+  --color-period-heavy-fg: var(--period-heavy-fg);
+  --color-period-veryheavy-fg: var(--period-veryheavy-fg);
 
   --color-pain-0: var(--pain-0);
   --color-pain-1: var(--pain-1);
@@ -53,12 +58,38 @@
   --color-pain-8: var(--pain-8);
   --color-pain-9: var(--pain-9);
   --color-pain-10: var(--pain-10);
+  --color-pain-0-fg: var(--pain-0-fg);
+  --color-pain-1-fg: var(--pain-1-fg);
+  --color-pain-2-fg: var(--pain-2-fg);
+  --color-pain-3-fg: var(--pain-3-fg);
+  --color-pain-4-fg: var(--pain-4-fg);
+  --color-pain-5-fg: var(--pain-5-fg);
+  --color-pain-6-fg: var(--pain-6-fg);
+  --color-pain-7-fg: var(--pain-7-fg);
+  --color-pain-8-fg: var(--pain-8-fg);
+  --color-pain-9-fg: var(--pain-9-fg);
+  --color-pain-10-fg: var(--pain-10-fg);
 
   --color-today: var(--today);
   --color-predicted: var(--predicted);
   --color-surface: var(--surface);
   --color-surface-elevated: var(--surface-elevated);
+  --color-surface-sunken: var(--surface-sunken);
   --color-tint: var(--tint);
+
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
+
+  --color-chart-grid: var(--chart-grid);
+  --color-chart-axis: var(--chart-axis);
+  --color-chart-tooltip-bg: var(--chart-tooltip-bg);
+  --color-chart-tooltip-fg: var(--chart-tooltip-fg);
 }
 
 :root {
@@ -66,69 +97,104 @@
 
   /* Main light palette */
   --background: oklch(0.955 0.055 110);
-  --foreground: oklch(0.22 0.05 115);
+  --foreground: oklch(0.19 0.05 115);
 
   --surface: oklch(0.985 0.03 110);
   --surface-elevated: oklch(0.94 0.07 110);
+  --surface-sunken: oklch(0.9 0.05 110);
   --tint: oklch(0.88 0.09 110);
 
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.22 0.04 115);
+  --card-foreground: oklch(0.19 0.04 115);
 
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.22 0.04 115);
+  --popover-foreground: oklch(0.19 0.04 115);
 
-  --primary: oklch(0.52 0.11 115);
+  --primary: oklch(0.42 0.12 115);
   --primary-foreground: oklch(1 0 0);
 
   --secondary: oklch(0.92 0.06 115);
-  --secondary-foreground: oklch(0.28 0.07 115);
+  --secondary-foreground: oklch(0.25 0.07 115);
 
   --muted: oklch(0.955 0.03 115);
-  --muted-foreground: oklch(0.5 0.04 115);
+  --muted-foreground: oklch(0.4 0.05 115);
 
   --accent: oklch(0.88 0.08 115);
-  --accent-foreground: oklch(0.28 0.07 115);
+  --accent-foreground: oklch(0.25 0.07 115);
 
-  --destructive: oklch(0.58 0.22 25);
+  --destructive: oklch(0.5 0.22 25);
   --destructive-foreground: oklch(1 0 0);
 
-  --border: oklch(0.88 0.04 115);
-  --input: oklch(0.88 0.04 115);
-  --ring: oklch(0.52 0.11 115);
+  --danger: var(--destructive);
+  --danger-foreground: var(--destructive-foreground);
 
-  /* Period intensity */
-  --period-spotting: oklch(0.78 0.06 275);
-  --period-light: oklch(0.68 0.14 275);
-  --period-medium: oklch(0.55 0.19 275);
-  --period-heavy: oklch(0.45 0.21 280);
-  --period-veryheavy: oklch(0.35 0.2 285);
+  --success: oklch(0.4 0.13 145);
+  --success-foreground: oklch(1 0 0);
 
-  /* Pain 0–10 */
-  --pain-0: oklch(0.78 0.16 150);
-  --pain-1: oklch(0.8 0.17 140);
-  --pain-2: oklch(0.82 0.17 130);
-  --pain-3: oklch(0.84 0.17 115);
-  --pain-4: oklch(0.85 0.17 95);
-  --pain-5: oklch(0.83 0.18 80);
-  --pain-6: oklch(0.78 0.18 65);
-  --pain-7: oklch(0.72 0.19 50);
-  --pain-8: oklch(0.65 0.21 35);
-  --pain-9: oklch(0.58 0.22 25);
-  --pain-10: oklch(0.5 0.24 20);
+  --warning: oklch(0.55 0.16 75);
+  --warning-foreground: oklch(1 0 0);
 
-  --today: oklch(0.88 0.16 95);
-  --predicted: oklch(0.72 0.18 55);
+  --info: oklch(0.45 0.13 240);
+  --info-foreground: oklch(1 0 0);
+
+  --border: oklch(0.82 0.04 115);
+  --input: oklch(0.82 0.04 115);
+  --ring: oklch(0.42 0.12 115);
+
+  --chart-grid: oklch(0.85 0.03 115);
+  --chart-axis: oklch(0.45 0.04 115);
+  --chart-tooltip-bg: oklch(1 0 0);
+  --chart-tooltip-fg: oklch(0.19 0.04 115);
+
+  /* Period intensity - readable text always dark on light swatches, adjusted for contrast/step separation */
+  --period-spotting: oklch(0.86 0.05 275);
+  --period-spotting-fg: oklch(0.25 0.08 275);
+  --period-light: oklch(0.72 0.13 275);
+  --period-light-fg: oklch(0.14 0.05 275);
+  --period-medium: oklch(0.56 0.19 278);
+  --period-medium-fg: oklch(1 0 0);
+  --period-heavy: oklch(0.42 0.2 282);
+  --period-heavy-fg: oklch(1 0 0);
+  --period-veryheavy: oklch(0.3 0.18 288);
+  --period-veryheavy-fg: oklch(1 0 0);
+
+  /* Pain 0–10: green -> yellow -> orange -> red, tuned for step separation + readable fg */
+  --pain-0: oklch(0.88 0.13 150);
+  --pain-0-fg: oklch(0.18 0.08 150);
+  --pain-1: oklch(0.85 0.15 142);
+  --pain-1-fg: oklch(0.18 0.08 142);
+  --pain-2: oklch(0.82 0.16 132);
+  --pain-2-fg: oklch(0.16 0.08 132);
+  --pain-3: oklch(0.8 0.17 115);
+  --pain-3-fg: oklch(0.16 0.08 115);
+  --pain-4: oklch(0.79 0.18 95);
+  --pain-4-fg: oklch(0.15 0.08 95);
+  --pain-5: oklch(0.76 0.19 78);
+  --pain-5-fg: oklch(0.14 0.08 78);
+  --pain-6: oklch(0.7 0.19 62);
+  --pain-6-fg: oklch(0.12 0.08 62);
+  --pain-7: oklch(0.63 0.2 48);
+  --pain-7-fg: oklch(1 0 0);
+  --pain-8: oklch(0.56 0.21 34);
+  --pain-8-fg: oklch(1 0 0);
+  --pain-9: oklch(0.49 0.22 24);
+  --pain-9-fg: oklch(1 0 0);
+  --pain-10: oklch(0.4 0.23 18);
+  --pain-10-fg: oklch(1 0 0);
+
+  --today: oklch(0.8 0.16 95);
+  --predicted: oklch(0.6 0.19 55);
 }
 
 .dark {
   /* Main dark palette */
-  --background: oklch(0.22 0.018 122.9);
+  --background: oklch(0.2 0.018 122.9);
   --foreground: oklch(0.965 0.02 101.2);
 
   --surface: oklch(0.27 0.022 123);
-  --surface-elevated: oklch(0.32 0.028 123);
-  --tint: oklch(0.335 0.03 122.5);
+  --surface-elevated: oklch(0.34 0.03 123);
+  --surface-sunken: oklch(0.16 0.016 122.9);
+  --tint: oklch(0.36 0.032 122.5);
 
   --card: oklch(0.27 0.022 123);
   --card-foreground: oklch(0.965 0.02 101.2);
@@ -136,52 +202,118 @@
   --popover: oklch(0.27 0.022 123);
   --popover-foreground: oklch(0.965 0.02 101.2);
 
-  --primary: oklch(0.742 0.123 122.9);
-  --primary-foreground: oklch(0.22 0.018 122.9);
+  --primary: oklch(0.82 0.13 122.9);
+  --primary-foreground: oklch(0.16 0.018 122.9);
 
-  --secondary: oklch(0.355 0.032 122.5);
+  --secondary: oklch(0.38 0.034 122.5);
   --secondary-foreground: oklch(0.965 0.02 101.2);
 
-  --muted: oklch(0.32 0.026 122.5);
-  --muted-foreground: oklch(0.82 0.03 101.7);
+  --muted: oklch(0.34 0.028 122.5);
+  --muted-foreground: oklch(0.86 0.03 101.7);
 
-  --accent: oklch(0.4 0.038 120);
+  --accent: oklch(0.43 0.04 120);
   --accent-foreground: oklch(0.965 0.02 101.2);
 
-  --destructive: oklch(0.65 0.22 25);
-  --destructive-foreground: oklch(1 0 0);
+  --destructive: oklch(0.72 0.2 25);
+  --destructive-foreground: oklch(0.14 0.02 25);
 
-  --border: oklch(0.39 0.03 120);
-  --input: oklch(0.39 0.03 120);
-  --ring: oklch(0.742 0.123 122.9);
+  --danger: var(--destructive);
+  --danger-foreground: var(--destructive-foreground);
 
-  /* Period intensity in dark mode */
-  --period-spotting: oklch(0.75 0.07 275);
-  --period-light: oklch(0.65 0.15 275);
-  --period-medium: oklch(0.55 0.19 275);
-  --period-heavy: oklch(0.46 0.21 280);
-  --period-veryheavy: oklch(0.38 0.2 285);
+  --success: oklch(0.78 0.16 145);
+  --success-foreground: oklch(0.14 0.05 145);
 
-  /* Pain 0–10 in dark mode */
-  --pain-0: oklch(0.72 0.16 150);
-  --pain-1: oklch(0.74 0.17 140);
-  --pain-2: oklch(0.76 0.17 130);
-  --pain-3: oklch(0.78 0.17 115);
-  --pain-4: oklch(0.8 0.17 95);
-  --pain-5: oklch(0.78 0.18 80);
-  --pain-6: oklch(0.73 0.18 65);
-  --pain-7: oklch(0.68 0.19 50);
-  --pain-8: oklch(0.62 0.21 35);
-  --pain-9: oklch(0.56 0.22 25);
-  --pain-10: oklch(0.48 0.24 20);
+  --warning: oklch(0.8 0.15 80);
+  --warning-foreground: oklch(0.14 0.05 80);
+
+  --info: oklch(0.78 0.11 235);
+  --info-foreground: oklch(0.14 0.04 235);
+
+  --border: oklch(0.42 0.032 120);
+  --input: oklch(0.42 0.032 120);
+  --ring: oklch(0.82 0.13 122.9);
+
+  --chart-grid: oklch(0.4 0.03 122);
+  --chart-axis: oklch(0.75 0.03 115);
+  --chart-tooltip-bg: oklch(0.3 0.024 123);
+  --chart-tooltip-fg: oklch(0.965 0.02 101.2);
+
+  /* Period intensity in dark mode - separated + readable fg */
+  --period-spotting: oklch(0.8 0.08 275);
+  --period-spotting-fg: oklch(0.14 0.05 275);
+  --period-light: oklch(0.68 0.15 275);
+  --period-light-fg: oklch(0.12 0.05 275);
+  --period-medium: oklch(0.56 0.2 278);
+  --period-medium-fg: oklch(1 0 0);
+  --period-heavy: oklch(0.44 0.21 282);
+  --period-heavy-fg: oklch(1 0 0);
+  --period-veryheavy: oklch(0.34 0.19 288);
+  --period-veryheavy-fg: oklch(1 0 0);
+
+  /* Pain 0–10 in dark mode - separated steps + readable fg */
+  --pain-0: oklch(0.8 0.14 150);
+  --pain-0-fg: oklch(0.14 0.06 150);
+  --pain-1: oklch(0.78 0.16 142);
+  --pain-1-fg: oklch(0.13 0.06 142);
+  --pain-2: oklch(0.76 0.17 132);
+  --pain-2-fg: oklch(0.12 0.06 132);
+  --pain-3: oklch(0.74 0.18 115);
+  --pain-3-fg: oklch(0.12 0.06 115);
+  --pain-4: oklch(0.73 0.18 95);
+  --pain-4-fg: oklch(0.12 0.06 95);
+  --pain-5: oklch(0.71 0.19 78);
+  --pain-5-fg: oklch(0.11 0.06 78);
+  --pain-6: oklch(0.66 0.2 62);
+  --pain-6-fg: oklch(0.1 0.06 62);
+  --pain-7: oklch(0.6 0.2 48);
+  --pain-7-fg: oklch(1 0 0);
+  --pain-8: oklch(0.55 0.21 34);
+  --pain-8-fg: oklch(1 0 0);
+  --pain-9: oklch(0.5 0.22 24);
+  --pain-9-fg: oklch(1 0 0);
+  --pain-10: oklch(0.43 0.23 18);
+  --pain-10-fg: oklch(1 0 0);
 
   --today: oklch(0.8 0.16 95);
-  --predicted: oklch(0.65 0.18 55);
+  --predicted: oklch(0.68 0.19 55);
+}
+
+@utility tap-target {
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@utility focus-ring {
+  &:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+@utility sr-only-focusable {
+  &:not(:focus):not(:focus-within) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
 }
 
 @layer base {
   * {
     border-color: var(--color-border);
+  }
+
+  html {
+    scroll-behavior: smooth;
   }
 
   html,
@@ -198,6 +330,41 @@
   .font-serif {
     font-family: var(--font-serif);
     letter-spacing: -0.01em;
+  }
+
+  a,
+  button,
+  input,
+  select,
+  textarea,
+  summary,
+  [tabindex] {
+    &:focus-visible {
+      outline: 2px solid var(--color-ring);
+      outline-offset: 2px;
+      border-radius: var(--radius-sm);
+    }
+  }
+
+  :disabled,
+  [aria-disabled="true"] {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 

@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Settings as SettingsIcon, Share2, Trash2 } f
 
 import { Ico, IcoText, PillIcon } from "@/components/icons/BixboIcons";
 import { AppShell } from "@/components/AppShell";
+import { pregnancyProgress, weeksPostpartum } from "@/lib/health";
 import { Button } from "@/components/ui/button";
 import { MonthCalendar, monthLabel } from "@/components/MonthCalendar";
 import { LogSheet } from "@/components/LogSheet";
@@ -118,7 +119,7 @@ function HomePage() {
       });
 
       // Period predict: 1 day before at 09:00
-      if (!isMale && !view.settings.pregnantSince && hhmm === "09:00") {
+      if (!isMale && !view.settings.pregnantSince && !view.pregnancy?.active && hhmm === "09:00") {
         const p = nextPredictedPeriod(view.cycle);
 
         if (p && daysBetween(todayKey(), p.start) === 1) {
@@ -219,19 +220,66 @@ function HomePage() {
       </div>
 
       {(() => {
-        const preg = pregnancyInfo(view.settings.pregnantSince);
+        if (!view.pregnancy?.active) {
+          const preg = pregnancyInfo(view.settings.pregnantSince);
+          if (!preg) return null;
+          return (
+            <div className="mx-5 mt-3 flex items-center justify-center gap-2 rounded-full bg-tint px-4 py-2 text-center text-xs text-muted-foreground ring-1 ring-border">
+              <Ico name="pregnancy" size={16} /> Pregnancy ·{" "}
+              <span className="font-semibold text-foreground">Week {preg.week}</span> · Trimester {preg.trimester}
+            </div>
+          );
+        }
 
-        if (!preg) return null;
+        const prog = pregnancyProgress(view.pregnancy);
 
         return (
-          <div className="mx-5 mt-3 rounded-full bg-tint px-4 py-2 text-center text-xs text-muted-foreground ring-1 ring-border">
-            🤰 Pregnancy · <span className="font-semibold text-foreground">Week {preg.week}</span> · Trimester{" "}
-            {preg.trimester}
-          </div>
+          <Link
+            to={"/pregnancy" as never}
+            className="focus-ring mx-5 mt-3 flex items-center justify-between gap-3 rounded-2xl bg-tint px-4 py-3 text-left ring-1 ring-border"
+          >
+            <span className="flex items-center gap-2">
+              <Ico name="pregnancy" size={22} />
+              <span className="text-sm">
+                <span className="font-semibold text-foreground">
+                  {prog ? `Week ${prog.week} + ${prog.dayOfWeek}` : "Pregnancy mode"}
+                </span>
+                <span className="block text-xs text-muted-foreground">
+                  {prog
+                    ? `Trimester ${prog.trimester}${prog.daysLeft != null ? ` · ${Math.max(0, prog.daysLeft)} days to go` : ""}`
+                    : "Tap to set your due date"}
+                </span>
+              </span>
+            </span>
+            <span className="text-xs font-medium text-primary">Open</span>
+          </Link>
         );
       })()}
 
+      {view.postpartum?.active && (
+        <Link
+          to={"/postpartum" as never}
+          className="focus-ring mx-5 mt-3 flex items-center justify-between gap-3 rounded-2xl bg-tint px-4 py-3 text-left ring-1 ring-border"
+        >
+          <span className="flex items-center gap-2">
+            <Ico name="baby" size={22} />
+            <span className="text-sm">
+              <span className="font-semibold text-foreground">
+                {(() => {
+                  const w = weeksPostpartum(view.postpartum);
+                  return w == null ? "Postpartum mode" : `Week ${w} postpartum`;
+                })()}
+              </span>
+              <span className="block text-xs text-muted-foreground">Feeding, recovery, baby sleep</span>
+            </span>
+          </span>
+          <span className="text-xs font-medium text-primary">Open</span>
+        </Link>
+      )}
+
       {view.settings.gender !== "male" &&
+        !view.pregnancy?.active &&
+        !view.postpartum?.active &&
         !view.settings.pregnantSince &&
         (() => {
           const p = nextPredictedPeriod(view.cycle);

@@ -3,6 +3,19 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { CHART_COLORS } from "@/components/ui/chart";
+import {
+  BarChartFrame,
+  ChartCard,
+  ChartEmpty,
+  ChartSvgTooltip,
+  ChartTooltip,
+  CHART_AXIS,
+  CHART_GRID,
+  CHART_TOOLTIP_BG,
+  CHART_TOOLTIP_FG,
+  useChartTransition,
+  useDismissTapTooltip,
+} from "@/components/charts";
 import { Ico } from "@/components/icons/BixboIcons";
 import {
   useBixbo,
@@ -27,31 +40,6 @@ function fmtTapDay(k: string): string {
 }
 function fmtTapMonth(monthIndex: number, year: number): string {
   return `${MON_SHORT3[monthIndex]} ${year}`;
-}
-
-/** Dismiss any open tap-tooltip when the user taps anywhere else on the page. */
-function useDismissTapTooltip(clear: () => void) {
-  useEffect(() => {
-    const handler = () => clear();
-    document.addEventListener("click", handler);
-    document.addEventListener("touchstart", handler);
-    return () => {
-      document.removeEventListener("click", handler);
-      document.removeEventListener("touchstart", handler);
-    };
-  }, [clear]);
-}
-
-/** Small floating bubble used for every "tap a bar/point/day" tooltip on this page. */
-function TapTooltip({ leftPct, text }: { leftPct: number; text: string }) {
-  return (
-    <div
-      className="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-lg bg-foreground px-2 py-1 text-[11px] font-medium text-background shadow-lg"
-      style={{ left: `${Math.min(94, Math.max(6, leftPct))}%`, top: -6 }}
-    >
-      {text}
-    </div>
-  );
 }
 
 const TETANY_COLOR = CHART_COLORS.tetany;
@@ -1111,10 +1099,9 @@ function WeightLineChart({
 
   if (!nums.length) {
     return (
-      <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
-        <p className="text-xs uppercase tracking-wider text-muted-foreground">{label}</p>
-        <p className="mt-1 text-sm text-muted-foreground">No data</p>
-      </section>
+      <ChartCard title={label}>
+        <ChartEmpty />
+      </ChartCard>
     );
   }
 
@@ -1160,8 +1147,7 @@ function WeightLineChart({
       : `${fmtDate(days[0])} – ${fmtDate(days[days.length - 1])}`;
 
   return (
-    <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
-      <p className="text-xs uppercase tracking-wider text-muted-foreground">{label}</p>
+    <ChartCard title={label}>
       <div className="mt-2 flex items-end gap-2">
         <span className="font-serif text-5xl leading-none">{avg.toFixed(1)}</span>
         <span className="pb-1 text-sm font-semibold text-muted-foreground">{unit}</span>
@@ -1171,8 +1157,8 @@ function WeightLineChart({
         <svg viewBox={`0 0 ${width} ${height}`} className="h-48 w-full" role="img" aria-label={`${label} line chart`}>
           {[yMax, yMid, yMin].map((y) => (
             <g key={y}>
-              <line x1={left} x2={width - right} y1={yFor(y)} y2={yFor(y)} stroke="var(--border)" strokeWidth="1" />
-              <text x={width - right + 8} y={yFor(y) + 4} fontSize="10" fill="var(--muted-foreground)">
+              <line x1={left} x2={width - right} y1={yFor(y)} y2={yFor(y)} stroke={CHART_GRID} strokeWidth="1" />
+              <text x={width - right + 8} y={yFor(y) + 4} fontSize="10" fill={CHART_AXIS}>
                 {y.toFixed(y % 1 ? 1 : 0)}
               </text>
             </g>
@@ -1184,11 +1170,11 @@ function WeightLineChart({
                 x2={xFor(i)}
                 y1={top}
                 y2={height - bottom}
-                stroke="var(--border)"
+                stroke={CHART_GRID}
                 strokeDasharray="3 3"
                 strokeWidth="1"
               />
-              <text x={xFor(i)} y={height - 8} textAnchor="middle" fontSize="9" fill="var(--muted-foreground)">
+              <text x={xFor(i)} y={height - 8} textAnchor="middle" fontSize="9" fill={CHART_AXIS}>
                 {tickLabel(k)}
               </text>
             </g>
@@ -1233,18 +1219,11 @@ function WeightLineChart({
               const boxW = Math.max(60, text.length * 5.6);
               const x = Math.min(Math.max(xFor(active.index) - boxW / 2, 2), width - right - boxW - 2);
               const y = Math.max(yFor(active.value) - 32, 2);
-              return (
-                <g pointerEvents="none">
-                  <rect x={x} y={y} width={boxW} height="22" rx="6" fill="var(--foreground)" opacity="0.9" />
-                  <text x={x + boxW / 2} y={y + 15} textAnchor="middle" fontSize="9.5" fill="var(--background)">
-                    {text}
-                  </text>
-                </g>
-              );
+              return <ChartSvgTooltip x={x} y={y} width={boxW} text={text} />;
             })()}
         </svg>
       </div>
-    </section>
+    </ChartCard>
   );
 }
 
@@ -1259,8 +1238,6 @@ function SleepChart({
   series: (number | undefined)[];
   anchor: Date;
 }) {
-  const [active, setActive] = useState<number | null>(null);
-  useDismissTapTooltip(() => setActive(null));
   // Mirrors PainChart's layout: labelled Y axis on the left, dotted gridlines,
   // and X-axis labels that adapt to the active period.
   type Bar = { value?: number; label: string; sub?: string };
@@ -1294,81 +1271,22 @@ function SleepChart({
 
   const sleepColor = (h?: number) =>
     h == null ? "var(--tint)" : h < 8 ? CHART_COLORS.headache : h === 8 ? CHART_COLORS.energy : CHART_COLORS.workout;
-  const yLabels = [12, 10, 8, 6, 4, 2, 0];
-  const height = 140;
 
   return (
-    <div className="mt-4">
-      <div className="flex gap-1.5">
-        <div className="flex flex-col items-end pr-1" style={{ height }}>
-          <div className="flex h-full flex-col justify-between text-[10px] font-medium text-muted-foreground">
-            {yLabels.map((y) => (
-              <span key={y} className="leading-none tabular-nums">
-                {y}
-              </span>
-            ))}
-          </div>
-        </div>
-        <div className="relative flex-1">
-          <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
-            {yLabels.map((y) => (
-              <div key={y} className="border-t border-dashed border-border/40" />
-            ))}
-          </div>
-          <div
-            className="relative grid items-end gap-[2px]"
-            style={{ gridTemplateColumns: `repeat(${bars.length}, minmax(0, 1fr))`, height }}
-          >
-            {bars.map((b, i) =>
-              b.value != null ? (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActive(active === i ? null : i);
-                  }}
-                  className="w-full rounded-t"
-                  style={{ height: `${Math.max(4, (b.value / 12) * 100)}%`, background: sleepColor(b.value) }}
-                />
-              ) : (
-                <div key={i} className="h-[2px] w-full self-end rounded" style={{ backgroundColor: PAIN_SOFT }} />
-              ),
-            )}
-            {active != null && bars[active]?.value != null && (
-              <TapTooltip
-                leftPct={((active + 0.5) / bars.length) * 100}
-                text={
-                  period === "Y"
-                    ? `${fmtTapMonth(active, anchor.getFullYear())} · Sleep ${bars[active].value!.toFixed(1)}h`
-                    : `${fmtTapDay(days[active])} · Sleep ${bars[active].value!.toFixed(1)}h`
-                }
-              />
-            )}
-          </div>
-        </div>
-      </div>
-      <div className="mt-1 flex pl-5">
-        <div
-          className="grid flex-1 gap-[2px] text-center text-[9px] text-muted-foreground"
-          style={{ gridTemplateColumns: `repeat(${bars.length}, minmax(0, 1fr))` }}
-        >
-          {bars.map((b, i) => (
-            <div key={i} className="leading-tight">
-              <div className="tabular-nums">{b.label}</div>
-              {b.sub && <div className="text-[8px] opacity-70 tabular-nums">{b.sub}</div>}
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="mt-1 flex items-center justify-between text-[10px] text-muted-foreground">
-        <span>Sleep (hours)</span>
-        <span>{period === "Y" ? "Month" : period === "M" ? "Day of month" : "Day"}</span>
-      </div>
-      {period === "Y" && bars.every((b) => b.value == null) && (
-        <p className="mt-2 text-center text-xs text-muted-foreground">No sleep entries in {anchor.getFullYear()}</p>
-      )}
-    </div>
+    <BarChartFrame
+      bars={bars}
+      yLabels={[12, 10, 8, 6, 4, 2, 0]}
+      yMax={12}
+      colorFor={(value) => sleepColor(value)}
+      tooltipText={(i, value) =>
+        period === "Y"
+          ? `${fmtTapMonth(i, anchor.getFullYear())} · Sleep ${value.toFixed(1)}h`
+          : `${fmtTapDay(days[i])} · Sleep ${value.toFixed(1)}h`
+      }
+      axisLabel="Sleep (hours)"
+      periodLabel={period === "Y" ? "Month" : period === "M" ? "Day of month" : "Day"}
+      emptyMessage={period === "Y" ? `No sleep entries in ${anchor.getFullYear()}` : undefined}
+    />
   );
 }
 
@@ -1383,8 +1301,6 @@ function PainChart({
   series: (number | undefined)[];
   anchor: Date;
 }) {
-  const [active, setActive] = useState<number | null>(null);
-  useDismissTapTooltip(() => setActive(null));
   // Aggregate for year view: 12 monthly averages
   type Bar = { value?: number; label: string; sub?: string };
   let bars: Bar[] = [];
@@ -1416,84 +1332,21 @@ function PainChart({
     });
   }
 
-  const yLabels = [10, 8, 6, 4, 2, 0];
-  const height = 140;
-
   return (
-    <div className="mt-4">
-      <div className="flex gap-1.5">
-        <div className="flex flex-col items-end pr-1" style={{ height }}>
-          <div className="flex h-full flex-col justify-between text-[10px] font-medium text-muted-foreground">
-            {yLabels.map((y) => (
-              <span key={y} className="leading-none tabular-nums">
-                {y}
-              </span>
-            ))}
-          </div>
-        </div>
-        <div className="relative flex-1">
-          <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
-            {yLabels.map((y) => (
-              <div key={y} className="border-t border-dashed border-border/40" />
-            ))}
-          </div>
-          <div
-            className="relative grid items-end gap-[2px]"
-            style={{ gridTemplateColumns: `repeat(${bars.length}, minmax(0, 1fr))`, height }}
-          >
-            {bars.map((b, i) =>
-              b.value != null ? (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActive(active === i ? null : i);
-                  }}
-                  className="w-full rounded-t"
-                  style={{
-                    height: `${Math.max(4, (b.value / 10) * 100)}%`,
-                    background: painColor(b.value),
-                  }}
-                />
-              ) : (
-                <div key={i} className="h-[2px] w-full self-end rounded bg-tint/60" />
-              ),
-            )}
-            {active != null && bars[active]?.value != null && (
-              <TapTooltip
-                leftPct={((active + 0.5) / bars.length) * 100}
-                text={
-                  period === "Y"
-                    ? `${fmtTapMonth(active, anchor.getFullYear())} · Pain ${bars[active].value!.toFixed(1)}`
-                    : `${fmtTapDay(days[active])} · Pain ${bars[active].value!.toFixed(1)}`
-                }
-              />
-            )}
-          </div>
-        </div>
-      </div>
-      <div className="mt-1 flex pl-5">
-        <div
-          className="grid flex-1 gap-[2px] text-center text-[9px] text-muted-foreground"
-          style={{ gridTemplateColumns: `repeat(${bars.length}, minmax(0, 1fr))` }}
-        >
-          {bars.map((b, i) => (
-            <div key={i} className="leading-tight">
-              <div className="tabular-nums">{b.label}</div>
-              {b.sub && <div className="text-[8px] opacity-70 tabular-nums">{b.sub}</div>}
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="mt-1 flex items-center justify-between text-[10px] text-muted-foreground">
-        <span>Pain (0–10)</span>
-        <span>{period === "Y" ? "Month" : period === "M" ? "Day of month" : "Day"}</span>
-      </div>
-      {period === "Y" && bars.every((b) => b.value == null) && (
-        <p className="mt-2 text-center text-xs text-muted-foreground">No pain entries in {anchor.getFullYear()}</p>
-      )}
-    </div>
+    <BarChartFrame
+      bars={bars}
+      yLabels={[10, 8, 6, 4, 2, 0]}
+      yMax={10}
+      colorFor={(value) => painColor(value)}
+      tooltipText={(i, value) =>
+        period === "Y"
+          ? `${fmtTapMonth(i, anchor.getFullYear())} · Pain ${value.toFixed(1)}`
+          : `${fmtTapDay(days[i])} · Pain ${value.toFixed(1)}`
+      }
+      axisLabel="Pain (0–10)"
+      periodLabel={period === "Y" ? "Month" : period === "M" ? "Day of month" : "Day"}
+      emptyMessage={period === "Y" ? `No pain entries in ${anchor.getFullYear()}` : undefined}
+    />
   );
 }
 
@@ -1512,8 +1365,7 @@ function BristolChart({ bowelCounts }: { bowelCounts: number[] }) {
     ...BRISTOL,
   ];
   return (
-    <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
-      <p className="text-xs uppercase tracking-wider text-muted-foreground">Bowel — Bristol distribution</p>
+    <ChartCard title="Bowel — Bristol distribution">
       <div className="relative mt-3 flex items-end gap-2">
         {chartTypes.map((b) => {
           const c = bowelCounts[b.n] ?? 0;
@@ -1531,7 +1383,7 @@ function BristolChart({ bowelCounts }: { bowelCounts: number[] }) {
                 />
               </div>
               {active === b.n && (
-                <TapTooltip leftPct={50} text={`Type ${b.n} · ${c} ${c === 1 ? "entry" : "entries"}`} />
+                <ChartTooltip leftPct={50} text={`Type ${b.n} · ${c} ${c === 1 ? "entry" : "entries"}`} />
               )}
               <span className="text-[10px] text-muted-foreground">T{b.n}</span>
               <span className="text-[10px]">{c}</span>
@@ -1539,7 +1391,7 @@ function BristolChart({ bowelCounts }: { bowelCounts: number[] }) {
           );
         })}
       </div>
-    </section>
+    </ChartCard>
   );
 }
 
@@ -1590,7 +1442,10 @@ function HfBars({
 
       <div className="mt-2 min-h-8">
         {active != null && bars[active] != null && (
-          <div className="mx-auto max-w-full rounded-xl bg-foreground px-3 py-2 text-center text-[11px] font-medium text-background">
+          <div
+            className="mx-auto max-w-full rounded-xl px-3 py-2 text-center text-[11px] font-medium ring-1 ring-border/40"
+            style={{ background: CHART_TOOLTIP_BG, color: CHART_TOOLTIP_FG }}
+          >
             {period === "Y"
               ? `${fmtTapMonth(active, anchor.getFullYear())} · Hot flash avg ${bars[active]!.toFixed(1)}/5`
               : `${fmtTapDay(days[active])} · Hot flash ${bars[active]!.toFixed(1)}/5`}
@@ -1670,8 +1525,7 @@ function SymptomLoadHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo
   const active_ = active ? summaryFor(active) : null;
 
   return (
-    <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
-      <p className="text-xs uppercase tracking-wider text-muted-foreground">Symptom Load — {year}</p>
+    <ChartCard title={`Symptom Load — ${year}`}>
 
       {/* Horizontálne sa posúva iba heatmapa. */}
       <div className="mt-3 overflow-x-auto">
@@ -1772,7 +1626,7 @@ function SymptomLoadHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo
 
         <span>High load</span>
       </div>
-    </section>
+    </ChartCard>
   );
 }
 /** Combined Tetany & Panic time-of-day pattern chart. */
@@ -1879,7 +1733,7 @@ function TimeOfDayPatternChart({
                 const count = isTetany ? tetanyBlocks[i] : panicBlocks[i];
                 const leftPct = (i + 0.5) * 25;
                 return (
-                  <TapTooltip
+                  <ChartTooltip
                     leftPct={leftPct}
                     text={`${TIME_BLOCK_LABELS[i]} · ${isTetany ? "Tetany" : "Panic"} ${count}×`}
                   />

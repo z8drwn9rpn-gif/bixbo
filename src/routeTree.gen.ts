@@ -16,6 +16,9 @@ import { Route as InsightsRouteImport } from './routes/insights'
 import { Route as MedsRouteImport } from './routes/meds'
 import { Route as NotesRouteImport } from './routes/notes'
 import { Route as PatternsRouteImport } from './routes/patterns'
+import { Route as PostpartumRouteImport } from './routes/postpartum'
+import { Route as PregnancyRouteImport } from './routes/pregnancy'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ApiPublicHooksKeepaliveRouteImport } from './routes/api/public/hooks/keepalive'
 
@@ -54,6 +57,21 @@ const PatternsRoute = PatternsRouteImport.update({
   path: '/patterns',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PostpartumRoute = PostpartumRouteImport.update({
+  id: '/postpartum',
+  path: '/postpartum',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PregnancyRoute = PregnancyRouteImport.update({
+  id: '/pregnancy',
+  path: '/pregnancy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -73,6 +91,9 @@ export interface FileRoutesByFullPath {
   '/meds': typeof MedsRoute
   '/notes': typeof NotesRoute
   '/patterns': typeof PatternsRoute
+  '/postpartum': typeof PostpartumRoute
+  '/pregnancy': typeof PregnancyRoute
+  '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
   '/api/public/hooks/keepalive': typeof ApiPublicHooksKeepaliveRoute
 }
@@ -84,6 +105,9 @@ export interface FileRoutesByTo {
   '/meds': typeof MedsRoute
   '/notes': typeof NotesRoute
   '/patterns': typeof PatternsRoute
+  '/postpartum': typeof PostpartumRoute
+  '/pregnancy': typeof PregnancyRoute
+  '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
   '/api/public/hooks/keepalive': typeof ApiPublicHooksKeepaliveRoute
 }
@@ -96,6 +120,9 @@ export interface FileRoutesById {
   '/meds': typeof MedsRoute
   '/notes': typeof NotesRoute
   '/patterns': typeof PatternsRoute
+  '/postpartum': typeof PostpartumRoute
+  '/pregnancy': typeof PregnancyRoute
+  '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
   '/api/public/hooks/keepalive': typeof ApiPublicHooksKeepaliveRoute
 }
@@ -109,6 +136,9 @@ export interface FileRouteTypes {
     | '/meds'
     | '/notes'
     | '/patterns'
+    | '/postpartum'
+    | '/pregnancy'
+    | '/profile'
     | '/settings'
     | '/api/public/hooks/keepalive'
   fileRoutesByTo: FileRoutesByTo
@@ -120,6 +150,9 @@ export interface FileRouteTypes {
     | '/meds'
     | '/notes'
     | '/patterns'
+    | '/postpartum'
+    | '/pregnancy'
+    | '/profile'
     | '/settings'
     | '/api/public/hooks/keepalive'
   id:
@@ -131,6 +164,9 @@ export interface FileRouteTypes {
     | '/meds'
     | '/notes'
     | '/patterns'
+    | '/postpartum'
+    | '/pregnancy'
+    | '/profile'
     | '/settings'
     | '/api/public/hooks/keepalive'
   fileRoutesById: FileRoutesById
@@ -143,6 +179,9 @@ export interface RootRouteChildren {
   MedsRoute: typeof MedsRoute
   NotesRoute: typeof NotesRoute
   PatternsRoute: typeof PatternsRoute
+  PostpartumRoute: typeof PostpartumRoute
+  PregnancyRoute: typeof PregnancyRoute
+  ProfileRoute: typeof ProfileRoute
   SettingsRoute: typeof SettingsRoute
   ApiPublicHooksKeepaliveRoute: typeof ApiPublicHooksKeepaliveRoute
 }
@@ -198,6 +237,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PatternsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/postpartum': {
+      id: '/postpartum'
+      path: '/postpartum'
+      fullPath: '/postpartum'
+      preLoaderRoute: typeof PostpartumRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pregnancy': {
+      id: '/pregnancy'
+      path: '/pregnancy'
+      fullPath: '/pregnancy'
+      preLoaderRoute: typeof PregnancyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
@@ -223,6 +283,9 @@ const rootRouteChildren: RootRouteChildren = {
   MedsRoute: MedsRoute,
   NotesRoute: NotesRoute,
   PatternsRoute: PatternsRoute,
+  PostpartumRoute: PostpartumRoute,
+  PregnancyRoute: PregnancyRoute,
+  ProfileRoute: ProfileRoute,
   SettingsRoute: SettingsRoute,
   ApiPublicHooksKeepaliveRoute: ApiPublicHooksKeepaliveRoute,
 }

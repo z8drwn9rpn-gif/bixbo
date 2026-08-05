@@ -2142,7 +2142,7 @@ function PeriodForm({
     { v: "light", label: "Light", color: "var(--period-light)" },
     { v: "medium", label: "Medium", color: "var(--period-medium)" },
     { v: "heavy", label: "Heavy", color: "var(--period-heavy)" },
-    { v: "veryheavy", label: "Very heavy", color: "var(--period-veryheavy)" },
+    { v: "very-heavy", label: "Very heavy", color: "var(--period-veryheavy)" },
   ];
   return (
     <div className="space-y-3">
