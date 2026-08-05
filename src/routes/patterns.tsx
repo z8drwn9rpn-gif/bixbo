@@ -18,7 +18,7 @@ import {
 
 import { AppShell } from "@/components/AppShell";
 import { CHART_COLORS, CHART_TINTS } from "@/components/ui/chart";
-import { EMPTY, addDays, avgDayPain, todayKey, useBixbo, type DayLog, type Diagnosis } from "@/lib/storage";
+import { EMPTY, addDays, avgDayPain, todayKey, useBixbo, type DayLog } from "@/lib/storage";
 import {
   avg,
   dayBowelSymptoms,
@@ -1158,76 +1158,6 @@ function PatternsPage() {
     }));
   };
 
-  /* ------------------------------------------------------------------------ */
-  /* Diagnoses                                                                */
-  /* ------------------------------------------------------------------------ */
-
-  const [diagnosisForm, setDiagnosisForm] = useState<{
-    id?: string;
-    name: string;
-    date: string;
-    doctor: string;
-    note: string;
-  }>({
-    name: "",
-    date: "",
-    doctor: "",
-    note: "",
-  });
-
-  const saveDiagnosis = () => {
-    const trimmedName = diagnosisForm.name.trim();
-
-    if (!trimmedName) return;
-
-    const diagnosis: Diagnosis = {
-      id: diagnosisForm.id ?? `${Date.now()}`,
-      name: trimmedName,
-      date: diagnosisForm.date || undefined,
-      doctor: diagnosisForm.doctor.trim() || undefined,
-      note: diagnosisForm.note.trim() || undefined,
-    };
-
-    update((draft) => ({
-      ...draft,
-      diagnoses: diagnosisForm.id
-        ? (draft.diagnoses ?? []).map((existing) => (existing.id === diagnosisForm.id ? diagnosis : existing))
-        : [...(draft.diagnoses ?? []), diagnosis],
-    }));
-
-    setDiagnosisForm({
-      name: "",
-      date: "",
-      doctor: "",
-      note: "",
-    });
-  };
-
-  const editDiagnosis = (diagnosis: Diagnosis) => {
-    setDiagnosisForm({
-      id: diagnosis.id,
-      name: diagnosis.name,
-      date: diagnosis.date ?? "",
-      doctor: diagnosis.doctor ?? "",
-      note: diagnosis.note ?? "",
-    });
-  };
-
-  const removeDiagnosis = (id: string) => {
-    update((draft) => ({
-      ...draft,
-      diagnoses: (draft.diagnoses ?? []).filter((diagnosis) => diagnosis.id !== id),
-    }));
-
-    if (diagnosisForm.id === id) {
-      setDiagnosisForm({
-        name: "",
-        date: "",
-        doctor: "",
-        note: "",
-      });
-    }
-  };
   return (
     <AppShell title="Bixbo Patterns">
       <div className="space-y-4 px-5 pb-24 pt-2">
@@ -1819,139 +1749,6 @@ function PatternsPage() {
             </div>
           )}
         </Card>
-
-        {/* ------------------------------------------------------------------ */}
-        {/* Diagnoses                                                          */}
-        {/* ------------------------------------------------------------------ */}
-
-        <Card title="My diagnoses" description="Keep a simple list of diagnoses and related notes.">
-          <div className="mt-4 space-y-2.5">
-            <input
-              type="text"
-              placeholder="Diagnosis name"
-              value={diagnosisForm.name}
-              onChange={(event) =>
-                setDiagnosisForm((current) => ({
-                  ...current,
-                  name: event.target.value,
-                }))
-              }
-              className="w-full rounded-2xl bg-tint px-4 py-3 text-base text-foreground outline-none ring-1 ring-border placeholder:text-muted-foreground focus:ring-2 focus:ring-primary"
-            />
-
-            <input
-              type="date"
-              value={diagnosisForm.date}
-              onChange={(event) =>
-                setDiagnosisForm((current) => ({
-                  ...current,
-                  date: event.target.value,
-                }))
-              }
-              className="w-full rounded-2xl bg-tint px-4 py-3 text-base text-foreground outline-none ring-1 ring-border focus:ring-2 focus:ring-primary"
-            />
-
-            <input
-              type="text"
-              placeholder="Doctor or clinic"
-              value={diagnosisForm.doctor}
-              onChange={(event) =>
-                setDiagnosisForm((current) => ({
-                  ...current,
-                  doctor: event.target.value,
-                }))
-              }
-              className="w-full rounded-2xl bg-tint px-4 py-3 text-base text-foreground outline-none ring-1 ring-border placeholder:text-muted-foreground focus:ring-2 focus:ring-primary"
-            />
-
-            <textarea
-              rows={3}
-              placeholder="Note"
-              value={diagnosisForm.note}
-              onChange={(event) =>
-                setDiagnosisForm((current) => ({
-                  ...current,
-                  note: event.target.value,
-                }))
-              }
-              className="w-full resize-none rounded-2xl bg-tint px-4 py-3 text-base text-foreground outline-none ring-1 ring-border placeholder:text-muted-foreground focus:ring-2 focus:ring-primary"
-            />
-
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <button
-                type="button"
-                onClick={saveDiagnosis}
-                disabled={!diagnosisForm.name.trim()}
-                className="rounded-2xl bg-primary px-4 py-3 text-base font-semibold text-primary-foreground transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {diagnosisForm.id ? "Update diagnosis" : "+ Add diagnosis"}
-              </button>
-
-              {diagnosisForm.id && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setDiagnosisForm({
-                      name: "",
-                      date: "",
-                      doctor: "",
-                      note: "",
-                    })
-                  }
-                  className="rounded-2xl bg-tint px-4 py-3 text-base font-semibold text-foreground ring-1 ring-border transition active:scale-[0.99]"
-                >
-                  Cancel editing
-                </button>
-              )}
-            </div>
-          </div>
-
-          {(view.diagnoses ?? []).length === 0 ? (
-            <Empty text="No diagnoses added yet." />
-          ) : (
-            <div className="mt-4 space-y-2.5">
-              {(view.diagnoses ?? []).map((diagnosis) => (
-                <article key={diagnosis.id} className="rounded-2xl bg-tint p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <h3 className="break-words text-base font-semibold text-foreground">{diagnosis.name}</h3>
-
-                      {(diagnosis.date || diagnosis.doctor) && (
-                        <p className="mt-1 text-[11px] text-muted-foreground">
-                          {[diagnosis.date, diagnosis.doctor].filter(Boolean).join(" · ")}
-                        </p>
-                      )}
-
-                      {diagnosis.note && (
-                        <p className="mt-2 whitespace-pre-line text-xs leading-relaxed text-foreground/85">
-                          {diagnosis.note}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="flex shrink-0 flex-col gap-1 text-xs">
-                      <button
-                        type="button"
-                        onClick={() => editDiagnosis(diagnosis)}
-                        className="rounded-lg px-2 py-1 font-medium text-primary transition hover:bg-background"
-                      >
-                        Edit
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => removeDiagnosis(diagnosis.id)}
-                        className="rounded-lg px-2 py-1 text-muted-foreground transition hover:bg-background hover:text-red-600"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
-        </Card>
       </div>
     </AppShell>
   );
@@ -1994,20 +1791,6 @@ function TriggerResult({
       </div>
 
       <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">{detail}</p>
-    </div>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/* Summary row                                                                */
-/* -------------------------------------------------------------------------- */
-
-function SummaryRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between rounded-2xl bg-tint px-4 py-3 ring-1 ring-border/40">
-      <span className="text-sm text-muted-foreground">{label}</span>
-
-      <span className="font-semibold text-foreground">{value}</span>
     </div>
   );
 }
