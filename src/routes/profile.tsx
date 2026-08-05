@@ -1,25 +1,19 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
-import {
-  ArrowLeft,
-  Plus,
-  X,
-  Pencil,
-  UserRound,
-  HeartPulse,
-  Pill,
-  Stethoscope,
-  TriangleAlert,
-  Phone,
-  Ruler,
-  Scale,
-  Target,
-  CalendarDays,
-  ChevronRight,
-  Check,
-} from "lucide-react";
+import { ArrowLeft, Plus, X, Pencil, ChevronRight, Check } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { Ico } from "@/components/icons/BixboIcons";
+import {
+  BabyIcon,
+  CalendarIcon,
+  HeartIcon,
+  PillIcon,
+  PregnancyIcon,
+  ProfileIcon,
+  StethoscopeIcon,
+  WarningIcon,
+  WeightIcon,
+  WorkoutIcon,
+} from "@/components/icons/BixboIcons";
 import {
   useBixbo,
   EMPTY,
@@ -449,31 +443,6 @@ function ProfilePage() {
         ? reproductiveStatus.charAt(0).toUpperCase() + reproductiveStatus.slice(1)
         : "Not active";
 
-  const postpartumToday = view.dayLogs[todayKey()]?.postpartum;
-
-  const postpartumMood = postpartumToday?.mood?.length ? postpartumToday.mood.join(", ") : "—";
-
-  const postpartumFeedingCount =
-    (postpartumToday?.breastfeeding?.length ?? 0) +
-    (postpartumToday?.pumping?.length ?? 0) +
-    (postpartumToday?.bottle?.length ?? 0);
-
-  const postpartumHasTodayData = Boolean(
-    postpartumToday &&
-    (postpartumToday.bleeding ||
-      postpartumToday.recovery != null ||
-      postpartumToday.csectionRecovery != null ||
-      postpartumToday.perinealHealing != null ||
-      postpartumToday.mood?.length ||
-      postpartumToday.sleepHours != null ||
-      postpartumToday.breastfeeding?.length ||
-      postpartumToday.pumping?.length ||
-      postpartumToday.bottle?.length ||
-      postpartumToday.diapers?.length ||
-      postpartumToday.babySleepHours != null ||
-      postpartumToday.note),
-  );
-
   return (
     <AppShell
       title={
@@ -841,7 +810,7 @@ function ProfilePage() {
           {/* ---------------- Medication ---------------- */}
           <Section title="Medication" subtitle="Medication schedules are managed from the Medications page.">
             <Button type="button" variant="outline" onClick={() => navigate({ to: "/meds" })} className="w-full">
-              <Pill className="h-4 w-4" />
+              <PillIcon size={18} />
               Manage medications and reminder times
             </Button>
 
@@ -868,7 +837,7 @@ function ProfilePage() {
           <section className="overflow-hidden rounded-3xl bg-primary/10 p-5 ring-1 ring-primary/20">
             <div className="flex items-center gap-4">
               <span className="grid h-16 w-16 shrink-0 place-items-center rounded-3xl bg-surface text-primary ring-1 ring-border/60">
-                <UserRound className="h-8 w-8" />
+                <ProfileIcon size={36} />
               </span>
 
               <div className="min-w-0 flex-1">
@@ -885,26 +854,26 @@ function ProfilePage() {
             </div>
           </section>
 
-          <SummaryCard icon={<UserRound className="h-5 w-5" />} title="Personal" subtitle="Your main profile details">
+          <SummaryCard icon={<ProfileIcon size={24} />} title="Personal" subtitle="Your main profile details">
             <div className="grid grid-cols-2 gap-2">
               <SummaryStat
-                icon={<CalendarDays className="h-3.5 w-3.5" />}
+                icon={<CalendarIcon size={16} />}
                 label="Birth date"
                 value={formatProfileDate(profile.birthDate)}
               />
               <SummaryStat label="Age" value={age !== null ? `${age} years` : "—"} />
               <SummaryStat
-                icon={<Ruler className="h-3.5 w-3.5" />}
+                icon={<ProfileIcon size={16} />}
                 label="Height"
                 value={profile.heightCm != null ? `${profile.heightCm} cm` : "—"}
               />
               <SummaryStat
-                icon={<Scale className="h-3.5 w-3.5" />}
+                icon={<WeightIcon size={16} />}
                 label="Weight"
                 value={currentWeight != null ? `${currentWeight} kg` : "—"}
               />
               <SummaryStat
-                icon={<Target className="h-3.5 w-3.5" />}
+                icon={<WeightIcon size={16} />}
                 label="Goal"
                 value={profile.targetWeightKg != null ? `${profile.targetWeightKg} kg` : "—"}
               />
@@ -915,7 +884,7 @@ function ProfilePage() {
           </SummaryCard>
 
           <SummaryCard
-            icon={<HeartPulse className="h-5 w-5" />}
+            icon={<HeartIcon size={24} />}
             title="Medical"
             subtitle={`${medicalTags.length} saved condition${medicalTags.length === 1 ? "" : "s"}`}
           >
@@ -932,7 +901,7 @@ function ProfilePage() {
           </SummaryCard>
 
           <SummaryCard
-            icon={<TriangleAlert className="h-5 w-5" />}
+            icon={<WarningIcon size={24} />}
             title="Allergies & intolerances"
             subtitle="Important sensitivities"
           >
@@ -940,7 +909,7 @@ function ProfilePage() {
           </SummaryCard>
 
           <SummaryCard
-            icon={<Pill className="h-5 w-5" />}
+            icon={<PillIcon size={24} />}
             title="Medication"
             subtitle={`${activeMedications.length} active medication${activeMedications.length === 1 ? "" : "s"}`}
           >
@@ -957,7 +926,7 @@ function ProfilePage() {
                         {[med.dose, med.times?.join(", ")].filter(Boolean).join(" · ") || "No schedule"}
                       </p>
                     </div>
-                    <Pill className="h-4 w-4 shrink-0 text-primary" />
+                    <PillIcon size={18} className="shrink-0" />
                   </div>
                 ))}
 
@@ -973,7 +942,7 @@ function ProfilePage() {
           </SummaryCard>
 
           <SummaryCard
-            icon={<Ico e={postpartumActive ? "🤱" : "🤰"} size={22} />}
+            icon={pregnancyActive ? <PregnancyIcon size={24} /> : <BabyIcon size={24} />}
             title="Reproductive health"
             subtitle="Pregnancy, postpartum and hormonal status"
           >
@@ -986,149 +955,10 @@ function ProfilePage() {
                 value={profile.menopause ? profile.menopause.charAt(0).toUpperCase() + profile.menopause.slice(1) : "—"}
               />
             </div>
-
-            {postpartumActive && (
-              <div className="mt-4 border-t border-border/60 pt-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">Today&apos;s postpartum recovery</p>
-                    <p className="mt-0.5 text-[11px] text-muted-foreground">Symptoms, recovery, feeding and sleep</p>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => navigate({ to: "/postpartum" })}
-                    className="rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
-                  >
-                    {postpartumHasTodayData ? "Edit today" : "Log today"}
-                  </button>
-                </div>
-
-                {postpartumHasTodayData ? (
-                  <div className="mt-3 grid grid-cols-2 gap-2">
-                    <div className="rounded-2xl bg-tint px-3 py-3 ring-1 ring-border/40">
-                      <div className="flex items-center gap-2">
-                        <Ico e="🩸" size={18} />
-                        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                          Bleeding
-                        </span>
-                      </div>
-                      <p className="mt-1 text-sm font-semibold capitalize text-foreground">
-                        {postpartumToday?.bleeding || "—"}
-                      </p>
-                    </div>
-
-                    <div className="rounded-2xl bg-tint px-3 py-3 ring-1 ring-border/40">
-                      <div className="flex items-center gap-2">
-                        <Ico e="❤️" size={18} />
-                        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                          Recovery
-                        </span>
-                      </div>
-                      <p className="mt-1 text-sm font-semibold text-foreground">
-                        {postpartumToday?.recovery != null ? `${postpartumToday.recovery}/10` : "—"}
-                      </p>
-                    </div>
-
-                    <div className="rounded-2xl bg-tint px-3 py-3 ring-1 ring-border/40">
-                      <div className="flex items-center gap-2">
-                        <Ico e="✨" size={18} />
-                        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                          Mood
-                        </span>
-                      </div>
-                      <p className="mt-1 truncate text-sm font-semibold text-foreground">{postpartumMood}</p>
-                    </div>
-
-                    <div className="rounded-2xl bg-tint px-3 py-3 ring-1 ring-border/40">
-                      <div className="flex items-center gap-2">
-                        <Ico e="😴" size={18} />
-                        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                          Your sleep
-                        </span>
-                      </div>
-                      <p className="mt-1 text-sm font-semibold text-foreground">
-                        {postpartumToday?.sleepHours != null ? `${postpartumToday.sleepHours} h` : "—"}
-                      </p>
-                    </div>
-
-                    <div className="rounded-2xl bg-tint px-3 py-3 ring-1 ring-border/40">
-                      <div className="flex items-center gap-2">
-                        <Ico e="🍼" size={18} />
-                        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                          Feeding
-                        </span>
-                      </div>
-                      <p className="mt-1 text-sm font-semibold text-foreground">
-                        {postpartumFeedingCount > 0 ? `${postpartumFeedingCount} entries` : "—"}
-                      </p>
-                    </div>
-
-                    <div className="rounded-2xl bg-tint px-3 py-3 ring-1 ring-border/40">
-                      <div className="flex items-center gap-2">
-                        <Ico e="👶" size={18} />
-                        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                          Baby sleep
-                        </span>
-                      </div>
-                      <p className="mt-1 text-sm font-semibold text-foreground">
-                        {postpartumToday?.babySleepHours != null ? `${postpartumToday.babySleepHours} h` : "—"}
-                      </p>
-                    </div>
-
-                    {postpartumToday?.csectionRecovery != null && (
-                      <div className="rounded-2xl bg-tint px-3 py-3 ring-1 ring-border/40">
-                        <div className="flex items-center gap-2">
-                          <Ico e="🩹" size={18} />
-                          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                            C-section
-                          </span>
-                        </div>
-                        <p className="mt-1 text-sm font-semibold text-foreground">
-                          {postpartumToday.csectionRecovery}/10
-                        </p>
-                      </div>
-                    )}
-
-                    {postpartumToday?.perinealHealing != null && (
-                      <div className="rounded-2xl bg-tint px-3 py-3 ring-1 ring-border/40">
-                        <div className="flex items-center gap-2">
-                          <Ico e="🌸" size={18} />
-                          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                            Healing
-                          </span>
-                        </div>
-                        <p className="mt-1 text-sm font-semibold text-foreground">
-                          {postpartumToday.perinealHealing}/10
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="mt-3 rounded-2xl bg-tint px-4 py-4 text-center ring-1 ring-border/40">
-                    <Ico e="🤱" size={28} />
-                    <p className="mt-2 text-sm font-medium text-foreground">No postpartum symptoms logged today</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Add bleeding, recovery, mood, sleep or feeding details.
-                    </p>
-                  </div>
-                )}
-
-                {postpartumToday?.note && (
-                  <div className="mt-3 rounded-2xl bg-tint px-4 py-3 ring-1 ring-border/40">
-                    <div className="flex items-center gap-2">
-                      <Ico e="📝" size={18} />
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Note</p>
-                    </div>
-                    <p className="mt-1 whitespace-pre-wrap text-sm text-foreground">{postpartumToday.note}</p>
-                  </div>
-                )}
-              </div>
-            )}
           </SummaryCard>
 
           <SummaryCard
-            icon={<Stethoscope className="h-5 w-5" />}
+            icon={<StethoscopeIcon size={24} />}
             title="Doctors"
             subtitle={`${doctors.length} saved doctor${doctors.length === 1 ? "" : "s"}`}
           >
@@ -1155,7 +985,7 @@ function ProfilePage() {
           </SummaryCard>
 
           <SummaryCard
-            icon={<Phone className="h-5 w-5" />}
+            icon={<WarningIcon size={24} />}
             title="Emergency"
             subtitle={profile.bloodType ? `Blood type ${profile.bloodType}` : "Emergency contact and blood type"}
           >
@@ -1176,11 +1006,7 @@ function ProfilePage() {
             )}
           </SummaryCard>
 
-          <SummaryCard
-            icon={<HeartPulse className="h-5 w-5" />}
-            title="Lifestyle"
-            subtitle="Daily health goals and habits"
-          >
+          <SummaryCard icon={<WorkoutIcon size={24} />} title="Lifestyle" subtitle="Daily health goals and habits">
             <div className="grid grid-cols-2 gap-2">
               <SummaryStat label="Exercise" value={profile.exercise || "—"} />
               <SummaryStat
