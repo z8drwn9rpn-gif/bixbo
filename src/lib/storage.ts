@@ -1170,7 +1170,11 @@ function migrate(raw: unknown): BixboData {
 }
 
 /* ------------------- Shared store ------------------- */
-let _state: BixboData = EMPTY;
+function freshEmptyState(): BixboData {
+  return migrate(structuredClone(EMPTY));
+}
+
+let _state: BixboData = freshEmptyState();
 let _hydrated = false;
 const listeners = new Set<() => void>();
 const changeListeners = new Set<(d: BixboData, reason: "local" | "remote") => void>();
@@ -1182,9 +1186,12 @@ function emit() {
 function hydrate() {
   if (_hydrated || typeof window === "undefined") return;
   try {
-    const raw = localStorage.getItem(KEY) ?? localStorage.getItem(LEGACY_KEY);
-    if (raw) _state = migrate(JSON.parse(raw));
-  } catch {}
+    const raw = window.localStorage.getItem(KEY) ?? window.localStorage.getItem(LEGACY_KEY);
+    _state = raw ? migrate(JSON.parse(raw)) : freshEmptyState();
+  } catch (error) {
+    console.error("BIXBO local data could not be loaded; using a safe empty state.", error);
+    _state = freshEmptyState();
+  }
   _hydrated = true;
   emit();
 }
@@ -1195,8 +1202,10 @@ function persist() {
   // write (e.g. cloud sync clearing partner) would wipe saved data.
   if (!_hydrated) hydrate();
   try {
-    localStorage.setItem(KEY, JSON.stringify(_state));
-  } catch {}
+    window.localStorage.setItem(KEY, JSON.stringify(_state));
+  } catch (error) {
+    console.error("BIXBO local data could not be saved.", error);
+  }
 }
 
 export function setBixbo(updater: (d: BixboData) => BixboData) {
@@ -1207,6 +1216,7 @@ export function setBixbo(updater: (d: BixboData) => BixboData) {
   changeListeners.forEach((l) => l(_state, "local"));
 }
 export function replaceBixbo(d: BixboData, reason: "local" | "remote" = "local") {
+  hydrate();
   _state = migrate(d);
   persist();
   emit();
@@ -1257,7 +1267,18 @@ export function updateDayLog(
   date: string,
   patch: (log: DayLog) => DayLog,
 ) {
-  update((d) => ({ ...d, dayLogs: { ...d.dayLogs, [date]: patch(d.dayLogs[date] ?? {}) } }));
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    console.error("BIXBO rejected an invalid day-log date key:", date);
+    return;
+  }
+
+  update((d) => ({
+    ...d,
+    dayLogs: {
+      ...d.dayLogs,
+      [date]: patch(d.dayLogs[date] ?? {}),
+    },
+  }));
 }
 
 export function hasAnyLog(l?: DayLog): boolean {
