@@ -14,6 +14,7 @@ import {
   ThermometerSun,
   TrendingDown,
   TrendingUp,
+  Trash2,
   Waves,
 } from "lucide-react";
 
@@ -236,10 +237,11 @@ function Card({ title, description, children }: { title: string; description?: s
   );
 }
 
-function Empty({ text = "Not enough data yet" }: { text?: string }) {
+function Empty({ text = "Log at least 7 days to unlock this analysis." }: { text?: string }) {
   return (
     <div className="mt-3 rounded-2xl bg-tint px-4 py-5 text-center ring-1 ring-border/40">
-      <p className="text-sm text-muted-foreground">{text}</p>
+      <p className="text-sm font-medium text-foreground">More data needed</p>
+      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{text}</p>
     </div>
   );
 }
@@ -251,6 +253,18 @@ function formatMetricValue(value: number | null, decimals: number, unit: string)
 
 function clampPercent(value: number) {
   return Math.max(0, Math.min(100, value));
+}
+
+function percentageChange(previous: number | null, current: number | null): number | null {
+  if (previous == null || current == null || !Number.isFinite(previous) || !Number.isFinite(current)) return null;
+  if (previous === 0) return current === 0 ? 0 : null;
+  return ((current - previous) / Math.abs(previous)) * 100;
+}
+
+function formatSignedPercent(value: number | null): string {
+  if (value == null || !Number.isFinite(value)) return "—";
+  if (value === 0) return "0%";
+  return `${value > 0 ? "+" : ""}${value.toFixed(0)}%`;
 }
 
 function phaseLabelByValue(bars: PhaseBar[], mode: "highest" | "lowest" = "highest") {
@@ -295,7 +309,9 @@ function PhaseBarChart({
       </div>
 
       {!hasData ? (
-        <p className="mt-4 text-sm text-muted-foreground">Not enough cycle data</p>
+        <p className="mt-4 text-sm text-muted-foreground">
+          Log at least one complete menstrual cycle to unlock this analysis.
+        </p>
       ) : (
         <div className="mt-4 rounded-2xl bg-background/55 px-3 py-4 ring-1 ring-border/35">
           <div className="flex h-24 items-end gap-3">
@@ -390,6 +406,7 @@ function ComparisonMetric({
         : CHART_COLORS.headache;
 
   const absoluteDelta = delta == null ? null : Math.abs(delta);
+  const relativeChange = percentageChange(previous, current);
 
   return (
     <article className="rounded-3xl bg-tint p-4 ring-1 ring-border/60">
@@ -461,6 +478,7 @@ function ComparisonMetric({
           >
             {trendText}
             {delta != null && !isUnchanged ? ` by ${formatMetricValue(Math.abs(delta), decimals, unit)}` : ""}
+            {relativeChange != null && !isUnchanged ? ` (${formatSignedPercent(relativeChange)})` : ""}
           </div>
         </>
       )}
@@ -1117,10 +1135,20 @@ function PatternsPage() {
     { label: "Negative mood", metric: treatmentMood },
   ]
     .filter((entry) => entry.metric.before != null && entry.metric.after != null)
-    .map((entry) => ({ ...entry, delta: Number(entry.metric.after) - Number(entry.metric.before) }));
+    .map((entry) => {
+      const delta = Number(entry.metric.after) - Number(entry.metric.before);
+      return {
+        ...entry,
+        delta,
+        percent: percentageChange(entry.metric.before, entry.metric.after),
+      };
+    });
 
   const treatmentImprovedCount = treatmentChanges.filter((entry) => entry.delta < 0).length;
   const treatmentWorsenedCount = treatmentChanges.filter((entry) => entry.delta > 0).length;
+  const treatmentUnchangedCount = treatmentChanges.filter((entry) => entry.delta === 0).length;
+  const strongestTreatmentChange =
+    [...treatmentChanges].sort((a, b) => Math.abs(b.percent ?? b.delta) - Math.abs(a.percent ?? a.delta))[0] ?? null;
   const treatmentOverall =
     treatmentChanges.length === 0
       ? "Not enough data"
@@ -1135,6 +1163,13 @@ function PatternsPage() {
   ).length;
   const treatmentConfidence: ConfidenceLevel =
     treatmentLoggedDays >= 42 ? "High" : treatmentLoggedDays >= 14 ? "Medium" : "Low";
+
+  const treatmentChangeLabel = (entry: (typeof treatmentChanges)[number] | null) => {
+    if (!entry) return "Not enough data";
+    const direction = entry.delta < 0 ? "improved" : entry.delta > 0 ? "worsened" : "unchanged";
+    const relative = entry.percent == null ? "" : ` · ${formatSignedPercent(entry.percent)}`;
+    return `${entry.label}: ${direction}${relative}`;
+  };
 
   /* ------------------------------------------------------------------------ */
   /* Trigger comparison                                                       */
@@ -2039,6 +2074,21 @@ function PatternsPage() {
                         tone: treatmentWorsenedCount > 0 ? "bad" : "neutral",
                       },
                       {
+                        label: "Unchanged metrics",
+                        value: `${treatmentUnchangedCount}`,
+                        tone: "neutral",
+                      },
+                      {
+                        label: "Strongest change",
+                        value: treatmentChangeLabel(strongestTreatmentChange),
+                        tone:
+                          strongestTreatmentChange?.delta != null && strongestTreatmentChange.delta < 0
+                            ? "good"
+                            : strongestTreatmentChange?.delta != null && strongestTreatmentChange.delta > 0
+                              ? "bad"
+                              : "neutral",
+                      },
+                      {
                         label: "Overall",
                         value: treatmentOverall,
                         tone: treatmentOverall.includes("improvement")
@@ -2204,12 +2254,12 @@ function PatternsPage() {
               />
 
               <CollapsibleSection
-                title="Strongest associations"
-                subtitle="The largest differences found in your logs"
+                title="Strongest correlations"
+                subtitle="Ranked associations calculated only from your logged data"
                 defaultOpen={false}
               >
                 {strongestAssociations.length === 0 ? (
-                  <Empty text="Log more matching days to find strong associations." />
+                  <Empty text="Log at least 3 days with and 3 days without a trigger to calculate correlations." />
                 ) : (
                   <div className="space-y-3">
                     {strongestAssociations.map((association) => (
@@ -2219,6 +2269,10 @@ function PatternsPage() {
                       >
                         <p className="text-sm font-semibold text-foreground">{association.trigger}</p>
                         <p className="mt-0.5 text-xs text-muted-foreground">→ {association.outcome}</p>
+                        <p className="mt-2 text-[11px] text-muted-foreground">
+                          Based on {association.withCount} days with and {association.withoutCount} days without the
+                          trigger
+                        </p>
                         <p
                           className={`mt-2 text-sm font-bold ${
                             association.difference > 0
@@ -2283,7 +2337,7 @@ function PatternsPage() {
                             onClick={() => removeTriggerCombination(saved.id)}
                             className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm text-muted-foreground transition hover:bg-background hover:text-foreground"
                           >
-                            ✕
+                            <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
                       );
