@@ -487,6 +487,69 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+type ConfidenceLevel = "Low" | "Medium" | "High";
+
+type SummaryItem = {
+  label: string;
+  value: string;
+  tone?: "good" | "bad" | "neutral";
+};
+
+function ConfidenceBadge({ level, detail }: { level: ConfidenceLevel; detail: string }) {
+  const classes =
+    level === "High"
+      ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+      : level === "Medium"
+        ? "bg-amber-500/10 text-amber-700 dark:text-amber-300"
+        : "bg-muted text-muted-foreground";
+
+  return (
+    <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-background/60 px-4 py-3 ring-1 ring-border/40">
+      <div>
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Confidence</p>
+        <p className="mt-0.5 text-[11px] text-muted-foreground">{detail}</p>
+      </div>
+      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${classes}`}>{level}</span>
+    </div>
+  );
+}
+
+function SummaryPanel({
+  title,
+  items,
+  confidence,
+}: {
+  title: string;
+  items: SummaryItem[];
+  confidence?: { level: ConfidenceLevel; detail: string };
+}) {
+  return (
+    <div className="mt-5 rounded-3xl bg-background p-4 ring-1 ring-border">
+      <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+      <div className="mt-4 space-y-3">
+        {items.map((item) => {
+          const valueClass =
+            item.tone === "good"
+              ? "text-emerald-700 dark:text-emerald-300"
+              : item.tone === "bad"
+                ? "text-rose-600 dark:text-rose-300"
+                : "text-foreground";
+          return (
+            <div
+              key={`${title}-${item.label}`}
+              className="flex items-center justify-between gap-4 rounded-2xl bg-tint px-4 py-3 ring-1 ring-border/40"
+            >
+              <span className="text-sm text-muted-foreground">{item.label}</span>
+              <span className={`text-right font-semibold ${valueClass}`}>{item.value}</span>
+            </div>
+          );
+        })}
+      </div>
+      {confidence && <ConfidenceBadge level={confidence.level} detail={confidence.detail} />}
+    </div>
+  );
+}
+
 /* -------------------------------------------------------------------------- */
 /* Page                                                                       */
 /* -------------------------------------------------------------------------- */
@@ -778,6 +841,116 @@ function PatternsPage() {
 
   const histaminePrevious = histamineFrequency(previousMonthDays);
 
+  const monthlyLoggedDays = currentMonthDays.filter((day) => Boolean(dayLogs[day])).length;
+  const monthlyConfidence: ConfidenceLevel =
+    monthlyLoggedDays >= 21 ? "High" : monthlyLoggedDays >= 7 ? "Medium" : "Low";
+
+  const monthlyChanges = useMemo(() => {
+    const entries = [
+      {
+        label: "Panic attacks",
+        previous: panicPrevious.count,
+        current: panicCurrent.count,
+        higherIsWorse: true,
+        unit: "",
+      },
+      {
+        label: "Tetany episodes",
+        previous: tetanyPrevious.count,
+        current: tetanyCurrent.count,
+        higherIsWorse: true,
+        unit: "",
+      },
+      {
+        label: "Hot flashes",
+        previous: hotFlashPrevious.count,
+        current: hotFlashCurrent.count,
+        higherIsWorse: true,
+        unit: "",
+      },
+      {
+        label: "Headaches",
+        previous: headachePrevious.count,
+        current: headacheCurrent.count,
+        higherIsWorse: true,
+        unit: "",
+      },
+      {
+        label: "Pressure entries",
+        previous: pressurePrevious.count,
+        current: pressureCurrent.count,
+        higherIsWorse: true,
+        unit: "",
+      },
+      {
+        label: "Medication adherence",
+        previous: medicationPrevious,
+        current: medicationCurrent,
+        higherIsWorse: false,
+        unit: "%",
+      },
+      {
+        label: "Workouts",
+        previous: workoutPrevious.count,
+        current: workoutCurrent.count,
+        higherIsWorse: false,
+        unit: "",
+      },
+      {
+        label: "Workout time",
+        previous: workoutPrevious.minutes,
+        current: workoutCurrent.minutes,
+        higherIsWorse: false,
+        unit: " min",
+      },
+      { label: "PCOS symptoms", previous: pcosPrevious, current: pcosCurrent, higherIsWorse: true, unit: "" },
+      {
+        label: "Histamine flares",
+        previous: histaminePrevious,
+        current: histamineCurrent,
+        higherIsWorse: true,
+        unit: "",
+      },
+    ].filter((entry) => entry.previous != null && entry.current != null);
+
+    return entries.map((entry) => {
+      const delta = Number(entry.current) - Number(entry.previous);
+      const score = entry.higherIsWorse ? -delta : delta;
+      return { ...entry, delta, score };
+    });
+  }, [
+    panicPrevious.count,
+    panicCurrent.count,
+    tetanyPrevious.count,
+    tetanyCurrent.count,
+    hotFlashPrevious.count,
+    hotFlashCurrent.count,
+    headachePrevious.count,
+    headacheCurrent.count,
+    pressurePrevious.count,
+    pressureCurrent.count,
+    medicationPrevious,
+    medicationCurrent,
+    workoutPrevious.count,
+    workoutCurrent.count,
+    workoutPrevious.minutes,
+    workoutCurrent.minutes,
+    pcosPrevious,
+    pcosCurrent,
+    histaminePrevious,
+    histamineCurrent,
+  ]);
+
+  const mostImproved = [...monthlyChanges].sort((a, b) => b.score - a.score)[0] ?? null;
+  const mostWorsened = [...monthlyChanges].sort((a, b) => a.score - b.score)[0] ?? null;
+  const mostStable = [...monthlyChanges].sort((a, b) => Math.abs(a.delta) - Math.abs(b.delta))[0] ?? null;
+
+  const formatChange = (entry: (typeof monthlyChanges)[number] | null) => {
+    if (!entry) return "Not enough data";
+    const sign = entry.delta > 0 ? "+" : "";
+    return `${entry.label}: ${sign}${entry.delta.toFixed(entry.unit === "%" ? 0 : 1)}${entry.unit}`;
+  };
+
   /* ------------------------------------------------------------------------ */
   /* Treatment comparison                                                     */
   /* ------------------------------------------------------------------------ */
@@ -815,6 +988,32 @@ function PatternsPage() {
   const treatmentPanic = treatmentMetric(dayPanicIntensity);
 
   const treatmentMood = treatmentMetric((log) => negativeMoodCount(log));
+
+  const treatmentChanges = [
+    { label: "Pain", metric: treatmentPain },
+    { label: "Tetany intensity", metric: treatmentTetany },
+    { label: "Panic intensity", metric: treatmentPanic },
+    { label: "Negative mood", metric: treatmentMood },
+  ]
+    .filter((entry) => entry.metric.before != null && entry.metric.after != null)
+    .map((entry) => ({ ...entry, delta: Number(entry.metric.after) - Number(entry.metric.before) }));
+
+  const treatmentImprovedCount = treatmentChanges.filter((entry) => entry.delta < 0).length;
+  const treatmentWorsenedCount = treatmentChanges.filter((entry) => entry.delta > 0).length;
+  const treatmentOverall =
+    treatmentChanges.length === 0
+      ? "Not enough data"
+      : treatmentImprovedCount > treatmentWorsenedCount
+        ? "Overall improvement"
+        : treatmentWorsenedCount > treatmentImprovedCount
+          ? "Overall worsening"
+          : "Mixed or unchanged";
+
+  const treatmentLoggedDays = [...treatmentBeforeDays, ...treatmentAfterDays].filter((day) =>
+    Boolean(dayLogs[day]),
+  ).length;
+  const treatmentConfidence: ConfidenceLevel =
+    treatmentLoggedDays >= 42 ? "High" : treatmentLoggedDays >= 14 ? "Medium" : "Low";
 
   /* ------------------------------------------------------------------------ */
   /* Trigger comparison                                                       */
@@ -1124,6 +1323,47 @@ function PatternsPage() {
 
   const triggerDifference =
     percentWithTrigger != null && percentWithoutTrigger != null ? percentWithTrigger - percentWithoutTrigger : null;
+
+  const triggerConfidence: ConfidenceLevel =
+    daysWithTrigger.length >= 15 && daysWithoutTrigger.length >= 15
+      ? "High"
+      : daysWithTrigger.length >= 5 && daysWithoutTrigger.length >= 5
+        ? "Medium"
+        : "Low";
+
+  const strongestAssociations = useMemo(() => {
+    const results: Array<{
+      trigger: string;
+      outcome: string;
+      difference: number;
+      withCount: number;
+      withoutCount: number;
+    }> = [];
+
+    triggerOptions.forEach((trigger) => {
+      const withDays = allLoggedDays.filter((day) => hasTrigger(day, dayLogs[day], trigger.id));
+      const withoutDays = allLoggedDays.filter((day) => !hasTrigger(day, dayLogs[day], trigger.id));
+      if (withDays.length < 3 || withoutDays.length < 3) return;
+
+      outcomeOptions.forEach((outcome) => {
+        const withRate =
+          (withDays.filter((day) => hasOutcome(dayLogs[day], outcome.id)).length / withDays.length) * 100;
+        const withoutRate =
+          (withoutDays.filter((day) => hasOutcome(dayLogs[day], outcome.id)).length / withoutDays.length) * 100;
+        const difference = withRate - withoutRate;
+        if (Math.abs(difference) < 10) return;
+        results.push({
+          trigger: trigger.label,
+          outcome: outcome.label,
+          difference,
+          withCount: withDays.length,
+          withoutCount: withoutDays.length,
+        });
+      });
+    });
+
+    return results.sort((a, b) => Math.abs(b.difference) - Math.abs(a.difference)).slice(0, 3);
+  }, [allLoggedDays, dayLogs, triggerOptions, outcomeOptions]);
 
   const saveTriggerCombination = () => {
     const alreadySaved = (view.settings.savedTriggers ?? []).some(
@@ -1488,6 +1728,27 @@ function PatternsPage() {
               icon={<Flame className="h-5 w-5" />}
             />
           </div>
+
+          <SummaryPanel
+            title="Monthly Summary"
+            items={[
+              {
+                label: "Most improved",
+                value: formatChange(mostImproved),
+                tone: mostImproved && mostImproved.score > 0 ? "good" : "neutral",
+              },
+              {
+                label: "Needs attention",
+                value: formatChange(mostWorsened),
+                tone: mostWorsened && mostWorsened.score < 0 ? "bad" : "neutral",
+              },
+              { label: "Most stable", value: formatChange(mostStable), tone: "neutral" },
+            ]}
+            confidence={{
+              level: monthlyConfidence,
+              detail: `Based on ${monthlyLoggedDays} logged day${monthlyLoggedDays === 1 ? "" : "s"} this month`,
+            }}
+          />
         </Card>
         {/* ------------------------------------------------------------------ */}
         {/* Treatment comparison                                               */}
@@ -1575,6 +1836,35 @@ function PatternsPage() {
                 previousLabel="Before"
                 currentLabel="After"
                 icon={<Brain className="h-5 w-5" />}
+              />
+
+              <SummaryPanel
+                title="Treatment Summary"
+                items={[
+                  {
+                    label: "Improved metrics",
+                    value: `${treatmentImprovedCount}`,
+                    tone: treatmentImprovedCount > 0 ? "good" : "neutral",
+                  },
+                  {
+                    label: "Worsened metrics",
+                    value: `${treatmentWorsenedCount}`,
+                    tone: treatmentWorsenedCount > 0 ? "bad" : "neutral",
+                  },
+                  {
+                    label: "Overall",
+                    value: treatmentOverall,
+                    tone: treatmentOverall.includes("improvement")
+                      ? "good"
+                      : treatmentOverall.includes("worsening")
+                        ? "bad"
+                        : "neutral",
+                  },
+                ]}
+                confidence={{
+                  level: treatmentConfidence,
+                  detail: `Based on ${treatmentLoggedDays} logged days across both periods`,
+                }}
               />
 
               <p className="px-1 text-[10px] leading-relaxed text-muted-foreground">
@@ -1692,6 +1982,56 @@ function PatternsPage() {
               <p className="mt-3 text-[10px] leading-relaxed text-muted-foreground">
                 This shows an association in your logs, not proof that the selected trigger caused the outcome.
               </p>
+            </div>
+          )}
+
+          <SummaryPanel
+            title="Trigger Summary"
+            items={[
+              {
+                label: "Selected association",
+                value:
+                  triggerDifference == null
+                    ? "Not enough data"
+                    : triggerDifference === 0
+                      ? "No measured difference"
+                      : `${Math.abs(triggerDifference).toFixed(0)} pp ${triggerDifference > 0 ? "higher" : "lower"} with trigger`,
+                tone:
+                  triggerDifference != null && triggerDifference > 0
+                    ? "bad"
+                    : triggerDifference != null && triggerDifference < 0
+                      ? "good"
+                      : "neutral",
+              },
+              { label: "Days with trigger", value: `${daysWithTrigger.length}` },
+              { label: "Days without trigger", value: `${daysWithoutTrigger.length}` },
+            ]}
+            confidence={{ level: triggerConfidence, detail: "Confidence depends on the number of days in both groups" }}
+          />
+
+          {strongestAssociations.length > 0 && (
+            <div className="mt-5 rounded-3xl bg-background p-4 ring-1 ring-border">
+              <h3 className="text-sm font-semibold text-foreground">Strongest Associations</h3>
+              <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                Calculated from your logs only. These are associations, not proof of causation.
+              </p>
+              <div className="mt-4 space-y-3">
+                {strongestAssociations.map((association) => (
+                  <div
+                    key={`${association.trigger}-${association.outcome}`}
+                    className="rounded-2xl bg-tint px-4 py-3 ring-1 ring-border/40"
+                  >
+                    <p className="text-sm font-semibold text-foreground">{association.trigger}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">→ {association.outcome}</p>
+                    <p
+                      className={`mt-2 text-sm font-bold ${association.difference > 0 ? "text-rose-600 dark:text-rose-300" : "text-emerald-700 dark:text-emerald-300"}`}
+                    >
+                      {Math.abs(association.difference).toFixed(0)} percentage points{" "}
+                      {association.difference > 0 ? "higher" : "lower"}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
