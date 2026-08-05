@@ -40,7 +40,6 @@ import {
   todayKey,
   replaceBixbo,
   getBixbo,
-  clearBixboLocalStorage,
   isPregnancyActive,
   isPostpartumActive,
   userAllergens,
@@ -65,6 +64,16 @@ import {
   type CloudProfile,
 } from "@/lib/cloudSync";
 import { SCALE_META, type ScaleKey } from "@/lib/scaleDescriptions";
+
+const BIXBO_STORAGE_KEYS = ["bixbo:v2", "bixbo:v1"] as const;
+
+function clearLocalBixboCache(): void {
+  if (typeof window === "undefined") return;
+
+  for (const key of BIXBO_STORAGE_KEYS) {
+    window.localStorage.removeItem(key);
+  }
+}
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
@@ -380,7 +389,7 @@ function SettingsPage() {
       return;
     try {
       const keep = session ? getBixbo() : null;
-      clearBixboLocalStorage();
+      clearLocalBixboCache();
       if (keep) replaceBixbo(keep, "remote");
       alert("Local cache reset.");
     } catch {
