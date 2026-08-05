@@ -875,14 +875,94 @@ function latestVitalValue(entries?: VitalMeasurement[]): number | undefined {
   return sorted.length ? sorted[sorted.length - 1].value : undefined;
 }
 
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function safeRecord<T extends Record<string, unknown> = Record<string, unknown>>(value: unknown): T {
+  return (isPlainRecord(value) ? value : {}) as T;
+}
+
+function safeArray<T>(value: unknown): T[] {
+  return Array.isArray(value) ? (value as T[]) : [];
+}
+
+function safeIdArray<T extends { id: string }>(value: unknown): T[] {
+  return safeArray<unknown>(value).filter(
+    (item): item is T => isPlainRecord(item) && typeof item.id === "string" && item.id.trim().length > 0,
+  );
+}
+
+function normalizePostpartumDayLogForStorage(value: unknown): PostpartumDayLog | undefined {
+  if (!isPlainRecord(value)) return undefined;
+
+  const numberOrUndefined = (input: unknown) => {
+    if (input === "" || input == null) return undefined;
+    const parsed = Number(input);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  };
+
+  const bleeding =
+    value.bleeding === "" ||
+    value.bleeding === "none" ||
+    value.bleeding === "spotting" ||
+    value.bleeding === "light" ||
+    value.bleeding === "medium" ||
+    value.bleeding === "heavy"
+      ? value.bleeding
+      : undefined;
+
+  return {
+    bleeding,
+    symptoms: safeArray<unknown>(value.symptoms).filter((item): item is string => typeof item === "string"),
+    recovery: numberOrUndefined(value.recovery),
+    csectionRecovery: numberOrUndefined(value.csectionRecovery),
+    perinealHealing: numberOrUndefined(value.perinealHealing),
+    mood: safeArray<unknown>(value.mood).filter((item): item is string => typeof item === "string"),
+    sleepHours: numberOrUndefined(value.sleepHours),
+    breastfeeding: safeIdArray<NonNullable<PostpartumDayLog["breastfeeding"]>[number]>(value.breastfeeding),
+    pumping: safeIdArray<NonNullable<PostpartumDayLog["pumping"]>[number]>(value.pumping),
+    bottle: safeIdArray<NonNullable<PostpartumDayLog["bottle"]>[number]>(value.bottle),
+    diapers: safeIdArray<NonNullable<PostpartumDayLog["diapers"]>[number]>(value.diapers),
+    babySleepHours: numberOrUndefined(value.babySleepHours),
+    note: typeof value.note === "string" ? value.note : undefined,
+  };
+}
+
 function migrate(raw: unknown): BixboData {
-  const parsed = (raw ?? {}) as Partial<BixboData> & Record<string, unknown>;
-  const src = (parsed.dayLogs ?? {}) as Record<string, Record<string, unknown>>;
+  const parsed = safeRecord<Partial<BixboData> & Record<string, unknown>>(raw);
+  const src = safeRecord<Record<string, Record<string, unknown>>>(parsed.dayLogs);
   const dayLogs: Record<string, DayLog> = {};
 
   for (const [key, value] of Object.entries(src)) {
-    const legacyLog = value as Record<string, unknown>;
+    if (!isPlainRecord(value)) continue;
+
+    const legacyLog = value;
     const out: DayLog = { ...(value as DayLog) };
+
+    const arrayFields: Array<keyof DayLog> = [
+      "pain",
+      "tetany",
+      "panic",
+      "heat",
+      "food",
+      "bowel",
+      "sex",
+      "extraMeds",
+      "workout",
+      "mood",
+      "energy",
+      "histamine",
+    ];
+
+    for (const field of arrayFields) {
+      const rawValue = legacyLog[field as string];
+      if (rawValue !== undefined && !Array.isArray(rawValue)) {
+        delete (out as Record<string, unknown>)[field as string];
+      }
+    }
+
+    out.postpartum = normalizePostpartumDayLogForStorage(legacyLog.postpartum);
 
     // Normalize the old period value so previously saved data keeps working.
     if (out.period === ("veryheavy" as PeriodLevel)) {
@@ -968,52 +1048,123 @@ function migrate(raw: unknown): BixboData {
     dayLogs[key] = out;
   }
 
-  const custom = {
-    ...EMPTY.custom,
-    ...(parsed.custom as Partial<CustomLists> | undefined),
-  };
+  const rawCustom = safeRecord<Partial<CustomLists>>(parsed.custom);
+  const custom = { ...EMPTY.custom } as CustomLists;
+
+  for (const key of Object.keys(EMPTY.custom) as Array<keyof CustomLists>) {
+    const value = rawCustom[key];
+    (custom as unknown as Record<string, unknown>)[key] = Array.isArray(value)
+      ? value.filter((item): item is string => typeof item === "string")
+      : [];
+  }
+
+  const rawSettings = safeRecord<Partial<Settings>>(parsed.settings);
+  const rawCycle = safeRecord<Partial<CyclePrefs>>(parsed.cycle);
+  const rawProfile = safeRecord<HealthProfile>(parsed.profile);
+  const rawPregnancy = safeRecord<Partial<PregnancyState>>(parsed.pregnancy);
+  const rawPostpartum = safeRecord<Partial<PostpartumState>>(parsed.postpartum);
+
+  const dayNotes: BixboData["dayNotes"] = {};
+  for (const [date, notes] of Object.entries(safeRecord(parsed.dayNotes))) {
+    if (!Array.isArray(notes)) continue;
+    dayNotes[date] = notes.filter((item) => {
+      if (typeof item === "string") return true;
+      return isPlainRecord(item) && typeof item.text === "string";
+    }) as BixboData["dayNotes"][string];
+  }
+
+  const todos: BixboData["todos"] = {};
+  for (const [date, items] of Object.entries(safeRecord(parsed.todos))) {
+    todos[date] = safeIdArray<Todo>(items);
+  }
+
+  const medLog: BixboData["medLog"] = {};
+  for (const [date, values] of Object.entries(safeRecord(parsed.medLog))) {
+    if (!isPlainRecord(values)) continue;
+    medLog[date] = Object.fromEntries(Object.entries(values).map(([key, value]) => [key, Boolean(value)]));
+  }
+
+  const medLogTimes: BixboData["medLogTimes"] = {};
+  for (const [date, values] of Object.entries(safeRecord(parsed.medLogTimes))) {
+    if (!isPlainRecord(values)) continue;
+    medLogTimes[date] = Object.fromEntries(
+      Object.entries(values)
+        .filter(([, value]) => typeof value === "string")
+        .map(([key, value]) => [key, value as string]),
+    );
+  }
 
   return {
     ...EMPTY,
     ...parsed,
     dayLogs,
-    folders: (parsed.folders as NoteFolder[] | undefined)?.length ? (parsed.folders as NoteFolder[]) : DEFAULT_FOLDERS,
+    dayNotes,
+    todos,
+    medLog,
+    medLogTimes,
+    medNames: Object.fromEntries(
+      Object.entries(safeRecord(parsed.medNames)).filter(([, value]) => typeof value === "string"),
+    ),
+    folders: safeIdArray<NoteFolder>(parsed.folders).length ? safeIdArray<NoteFolder>(parsed.folders) : DEFAULT_FOLDERS,
     cycle: {
       ...EMPTY.cycle,
-      ...(parsed.cycle as Partial<CyclePrefs> | undefined),
+      ...rawCycle,
+      cycleLength: Number.isFinite(Number(rawCycle.cycleLength))
+        ? Number(rawCycle.cycleLength)
+        : EMPTY.cycle.cycleLength,
+      periodLength: Number.isFinite(Number(rawCycle.periodLength))
+        ? Number(rawCycle.periodLength)
+        : EMPTY.cycle.periodLength,
     },
     custom,
     settings: {
       ...EMPTY.settings,
-      ...(parsed.settings as Partial<Settings> | undefined),
+      ...rawSettings,
       gender:
-        (parsed.settings as Partial<Settings> | undefined)?.gender ??
-        ((parsed.profile as HealthProfile | undefined)?.gender === "male" ? "male" : "female"),
-      savedTriggers: (parsed.settings as Partial<Settings> | undefined)?.savedTriggers ?? [],
+        rawSettings.gender === "male" || rawSettings.gender === "female"
+          ? rawSettings.gender
+          : rawProfile.gender === "male"
+            ? "male"
+            : "female",
+      savedTriggers: safeIdArray<NonNullable<Settings["savedTriggers"]>[number]>(rawSettings.savedTriggers),
+      logOrder: safeArray<unknown>(rawSettings.logOrder).filter((item): item is string => typeof item === "string"),
+      quickTagOrder: safeArray<unknown>(rawSettings.quickTagOrder).filter(
+        (item): item is string => typeof item === "string",
+      ),
+      hiddenQuickTags: safeArray<unknown>(rawSettings.hiddenQuickTags).filter(
+        (item): item is string => typeof item === "string",
+      ),
+      customQuickTags: safeIdArray<CustomQuickTag>(rawSettings.customQuickTags),
     },
-    tasks: (parsed.tasks as TaskEntry[] | undefined) ?? [],
-    events: (parsed.events as EventEntry[] | undefined) ?? [],
-    notebook: ((parsed.notebook as Note[] | undefined) ?? []).map((note) => ({
-      ...note,
-      folderId: note.folderId ?? "general",
+    tasks: safeIdArray<TaskEntry>(parsed.tasks),
+    events: safeIdArray<EventEntry>(parsed.events),
+    meds: safeIdArray<Med>(parsed.meds).map((med) => ({
+      ...med,
+      times: safeArray<unknown>(med.times).filter((item): item is string => typeof item === "string"),
     })),
-    labs: (parsed.labs as LabResult[] | undefined) ?? [],
-    docs: (parsed.docs as DocEntry[] | undefined) ?? [],
-    diagnoses: (parsed.diagnoses as Diagnosis[] | undefined) ?? [],
-    deletedIds: (parsed.deletedIds as string[] | undefined) ?? [],
-    profile: { ...(parsed.profile as HealthProfile | undefined) },
+    notebook: safeIdArray<Note>(parsed.notebook).map((note) => ({
+      ...note,
+      folderId: typeof note.folderId === "string" && note.folderId ? note.folderId : "general",
+    })),
+    labs: safeIdArray<LabResult>(parsed.labs),
+    docs: safeIdArray<DocEntry>(parsed.docs),
+    diagnoses: safeIdArray<Diagnosis>(parsed.diagnoses),
+    deletedIds: safeArray<unknown>(parsed.deletedIds).filter((item): item is string => typeof item === "string"),
+    profile: rawProfile,
     pregnancy: {
       ...EMPTY.pregnancy!,
-      ...(parsed.pregnancy as PregnancyState | undefined),
-      hospitalBag: (parsed.pregnancy as PregnancyState | undefined)?.hospitalBag ?? [],
-      vaccinations: (parsed.pregnancy as PregnancyState | undefined)?.vaccinations ?? [],
-      supplements: (parsed.pregnancy as PregnancyState | undefined)?.supplements ?? [],
-      appointments: (parsed.pregnancy as PregnancyState | undefined)?.appointments ?? [],
+      ...rawPregnancy,
+      active: Boolean(rawPregnancy.active),
+      hospitalBag: safeIdArray<ChecklistItem>(rawPregnancy.hospitalBag),
+      vaccinations: safeIdArray<ChecklistItem>(rawPregnancy.vaccinations),
+      supplements: safeIdArray<ChecklistItem>(rawPregnancy.supplements),
+      appointments: safeIdArray<PregnancyAppointment>(rawPregnancy.appointments),
     },
     postpartum: {
       ...EMPTY.postpartum!,
-      ...(parsed.postpartum as PostpartumState | undefined),
-      visits: (parsed.postpartum as PostpartumState | undefined)?.visits ?? [],
+      ...rawPostpartum,
+      active: Boolean(rawPostpartum.active),
+      visits: safeIdArray<PregnancyAppointment>(rawPostpartum.visits),
     },
   };
 }
