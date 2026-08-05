@@ -565,6 +565,42 @@ function MedsList({
   );
 }
 
+function CurrentAndHistory({
+  title,
+  currentLabel,
+  currentContent,
+  historyCount,
+  historyContent,
+}: {
+  title: string;
+  currentLabel: string;
+  currentContent: ReactNode;
+  historyCount: number;
+  historyContent: ReactNode;
+}) {
+  return (
+    <section className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+        <span className="rounded-full bg-surface px-2.5 py-1 text-[10px] font-semibold text-muted-foreground ring-1 ring-border/40">
+          {currentLabel}
+        </span>
+      </div>
+
+      <div className="mt-3">{currentContent}</div>
+
+      {historyCount > 0 ? (
+        <details className="mt-3 rounded-2xl bg-surface/75 p-3 ring-1 ring-border/40">
+          <summary className="cursor-pointer text-xs font-semibold text-foreground">
+            Show earlier entries ({historyCount})
+          </summary>
+          <div className="mt-3">{historyContent}</div>
+        </details>
+      ) : null}
+    </section>
+  );
+}
+
 /* -------------------------------------------------------------------------- */
 /* Pain comparison chart                                                      */
 /* -------------------------------------------------------------------------- */
@@ -936,7 +972,7 @@ function BlueberrySection({
 /* Page                                                                       */
 /* -------------------------------------------------------------------------- */
 
-type CoupleTab = "overview" | "compare" | "health" | "sharing";
+type CoupleTab = "overview" | "compare" | "health";
 
 function CouplePage() {
   const { data, hydrated } = useBixbo();
@@ -1066,6 +1102,31 @@ function CouplePage() {
 
   const partnerMeds = partner ? collectMedDays(partner.meds ?? [], partner.medLog ?? {}, partner.dayLogs) : [];
 
+  const visibleHealthDay = isCurrentMonth ? todayKey() : (monthDays[monthDays.length - 1] ?? todayKey());
+  const visibleHealthDayLabel = isCurrentMonth ? "Today" : visibleHealthDay;
+
+  const splitEntriesByVisibleDay = <T extends { dateKey: string }>(entries: T[]) => ({
+    current: entries.filter((entry) => entry.dateKey === visibleHealthDay),
+    history: entries.filter((entry) => entry.dateKey !== visibleHealthDay),
+  });
+
+  const splitMedDaysByVisibleDay = (
+    days: { dateKey: string; meds: Med[]; medLog: Record<string, boolean>; extra: ExtraMed[] }[],
+  ) => ({
+    current: days.filter((day) => day.dateKey === visibleHealthDay),
+    history: days.filter((day) => day.dateKey !== visibleHealthDay),
+  });
+
+  const partnerPainSplit = splitEntriesByVisibleDay(partnerPain);
+  const partnerTetanySplit = splitEntriesByVisibleDay(partnerTetany);
+  const partnerPanicSplit = splitEntriesByVisibleDay(partnerPanic);
+  const partnerMedsSplit = splitMedDaysByVisibleDay(partnerMeds);
+
+  const myPainSplit = splitEntriesByVisibleDay(myPain);
+  const myTetanySplit = splitEntriesByVisibleDay(myTetany);
+  const myPanicSplit = splitEntriesByVisibleDay(myPanic);
+  const myMedsSplit = splitMedDaysByVisibleDay(myMeds);
+
   const myPainAverage = average(myPain.map((pain) => pain.score));
 
   const partnerPainAverage = average(partnerPain.map((pain) => pain.score));
@@ -1127,11 +1188,6 @@ function CouplePage() {
       label: "Health",
       icon: "🌿",
     },
-    {
-      id: "sharing",
-      label: "Sharing",
-      icon: "⚙️",
-    },
   ];
 
   return (
@@ -1186,7 +1242,7 @@ function CouplePage() {
               aria-label="Couple sections"
               className="sticky top-0 z-20 rounded-3xl bg-surface/95 p-1.5 shadow-sm ring-1 ring-border backdrop-blur"
             >
-              <div className="grid grid-cols-4 gap-1">
+              <div className="grid grid-cols-3 gap-1">
                 {tabs.map((tab) => {
                   const active = activeTab === tab.id;
 
@@ -1337,40 +1393,38 @@ function CouplePage() {
                 title={`${partnerName} — shared details`}
                 description="Only the explicitly shared categories for the selected month."
               >
-                <div className="mt-4 space-y-2">
-                  <details className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
-                    <summary className="cursor-pointer text-sm font-semibold">Pain ({partnerPain.length})</summary>
+                <div className="mt-4 space-y-3">
+                  <CurrentAndHistory
+                    title={`Pain (${partnerPain.length})`}
+                    currentLabel={visibleHealthDayLabel}
+                    currentContent={<PainList title={visibleHealthDayLabel} entries={partnerPainSplit.current} />}
+                    historyCount={partnerPainSplit.history.length}
+                    historyContent={<PainList title="Earlier pain" entries={partnerPainSplit.history} />}
+                  />
 
-                    <div className="mt-3">
-                      <PainList title="Pain" entries={partnerPain} />
-                    </div>
-                  </details>
+                  <CurrentAndHistory
+                    title={`Tetany (${partnerTetany.length})`}
+                    currentLabel={visibleHealthDayLabel}
+                    currentContent={<TetanyList title={visibleHealthDayLabel} entries={partnerTetanySplit.current} />}
+                    historyCount={partnerTetanySplit.history.length}
+                    historyContent={<TetanyList title="Earlier tetany" entries={partnerTetanySplit.history} />}
+                  />
 
-                  <details className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
-                    <summary className="cursor-pointer text-sm font-semibold">Tetany ({partnerTetany.length})</summary>
+                  <CurrentAndHistory
+                    title={`Panic attacks (${partnerPanic.length})`}
+                    currentLabel={visibleHealthDayLabel}
+                    currentContent={<PanicList title={visibleHealthDayLabel} entries={partnerPanicSplit.current} />}
+                    historyCount={partnerPanicSplit.history.length}
+                    historyContent={<PanicList title="Earlier panic attacks" entries={partnerPanicSplit.history} />}
+                  />
 
-                    <div className="mt-3">
-                      <TetanyList title="Tetany" entries={partnerTetany} />
-                    </div>
-                  </details>
-
-                  <details className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
-                    <summary className="cursor-pointer text-sm font-semibold">
-                      Panic attacks ({partnerPanic.length})
-                    </summary>
-
-                    <div className="mt-3">
-                      <PanicList title="Panic attacks" entries={partnerPanic} />
-                    </div>
-                  </details>
-
-                  <details className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
-                    <summary className="cursor-pointer text-sm font-semibold">Medication</summary>
-
-                    <div className="mt-3">
-                      <MedsList title="Medication" days={partnerMeds} />
-                    </div>
-                  </details>
+                  <CurrentAndHistory
+                    title="Medication"
+                    currentLabel={visibleHealthDayLabel}
+                    currentContent={<MedsList title={visibleHealthDayLabel} days={partnerMedsSplit.current} />}
+                    historyCount={partnerMedsSplit.history.length}
+                    historyContent={<MedsList title="Earlier medication" days={partnerMedsSplit.history} />}
+                  />
                 </div>
               </SectionCard>
             ) : null}
@@ -1389,74 +1443,40 @@ function CouplePage() {
                 title="My shared details"
                 description="The same categories that your partner is allowed to receive."
               >
-                <div className="mt-4 space-y-2">
-                  <details className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
-                    <summary className="cursor-pointer text-sm font-semibold">Pain ({myPain.length})</summary>
+                <div className="mt-4 space-y-3">
+                  <CurrentAndHistory
+                    title={`Pain (${myPain.length})`}
+                    currentLabel={visibleHealthDayLabel}
+                    currentContent={<PainList title={visibleHealthDayLabel} entries={myPainSplit.current} />}
+                    historyCount={myPainSplit.history.length}
+                    historyContent={<PainList title="Earlier pain" entries={myPainSplit.history} />}
+                  />
 
-                    <div className="mt-3">
-                      <PainList title="Pain" entries={myPain} />
-                    </div>
-                  </details>
+                  <CurrentAndHistory
+                    title={`Tetany (${myTetany.length})`}
+                    currentLabel={visibleHealthDayLabel}
+                    currentContent={<TetanyList title={visibleHealthDayLabel} entries={myTetanySplit.current} />}
+                    historyCount={myTetanySplit.history.length}
+                    historyContent={<TetanyList title="Earlier tetany" entries={myTetanySplit.history} />}
+                  />
 
-                  <details className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
-                    <summary className="cursor-pointer text-sm font-semibold">Tetany ({myTetany.length})</summary>
+                  <CurrentAndHistory
+                    title={`Panic attacks (${myPanic.length})`}
+                    currentLabel={visibleHealthDayLabel}
+                    currentContent={<PanicList title={visibleHealthDayLabel} entries={myPanicSplit.current} />}
+                    historyCount={myPanicSplit.history.length}
+                    historyContent={<PanicList title="Earlier panic attacks" entries={myPanicSplit.history} />}
+                  />
 
-                    <div className="mt-3">
-                      <TetanyList title="Tetany" entries={myTetany} />
-                    </div>
-                  </details>
-
-                  <details className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
-                    <summary className="cursor-pointer text-sm font-semibold">Panic attacks ({myPanic.length})</summary>
-
-                    <div className="mt-3">
-                      <PanicList title="Panic attacks" entries={myPanic} />
-                    </div>
-                  </details>
-
-                  <details className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
-                    <summary className="cursor-pointer text-sm font-semibold">Medication</summary>
-
-                    <div className="mt-3">
-                      <MedsList title="Medication" days={myMeds} />
-                    </div>
-                  </details>
+                  <CurrentAndHistory
+                    title="Medication"
+                    currentLabel={visibleHealthDayLabel}
+                    currentContent={<MedsList title={visibleHealthDayLabel} days={myMedsSplit.current} />}
+                    historyCount={myMedsSplit.history.length}
+                    historyContent={<MedsList title="Earlier medication" days={myMedsSplit.history} />}
+                  />
                 </div>
               </SectionCard>
-            ) : null}
-
-            {activeTab === "sharing" ? (
-              <div className="space-y-4">
-                <SectionCard title="Partner" description="Your currently linked Couple sharing partner.">
-                  <div className="mt-4 flex items-center gap-3 rounded-2xl bg-tint p-4 ring-1 ring-border/40">
-                    <span className="grid h-12 w-12 place-items-center rounded-full bg-surface text-xl">👥</span>
-
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-serif text-lg font-semibold">{partnerName}</p>
-
-                      <p className="text-xs text-muted-foreground">Connected through Couple sharing</p>
-                    </div>
-                  </div>
-                </SectionCard>
-
-                <SectionCard
-                  title="What is shared"
-                  description="Only these categories are available to your linked partner."
-                >
-                  <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
-                    {["Pain", "Panic attacks", "Tetany", "Medication", "Period / Blueberry"].map((item) => (
-                      <div key={item} className="rounded-2xl bg-tint px-3 py-3 ring-1 ring-border/40">
-                        ✓ {item}
-                      </div>
-                    ))}
-                  </div>
-
-                  <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
-                    Notes, sex logs, food, bowel, mood, workouts, sleep, weight and other private data are not shown
-                    here. Period and cycle data are shared only for the Blueberry calendar.
-                  </p>
-                </SectionCard>
-              </div>
             ) : null}
           </>
         )}
