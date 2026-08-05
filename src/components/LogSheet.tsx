@@ -993,7 +993,6 @@ function PainWizard({
   };
 
   const bg = painColor(score);
-  const bgFill = `color-mix(in oklch, ${bg} 20%, var(--background))`;
 
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const onTouchStart = (e: React.TouchEvent) => {
@@ -1016,8 +1015,7 @@ function PainWizard({
 
   return (
     <div
-      className="flex min-h-full flex-col px-5 py-4 text-foreground transition-colors touch-pan-y"
-      style={{ background: bgFill }}
+      className="flex min-h-full flex-col bg-background px-5 py-4 text-foreground touch-pan-y"
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
