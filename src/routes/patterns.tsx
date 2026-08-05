@@ -1049,7 +1049,7 @@ function PatternsPage() {
     }
 
     if (outcome === "bowelSymptoms") {
-      return dayBowelSymptoms(log) > 0;
+      return (dayBowelSymptoms(log) ?? 0) > 0;
     }
 
     if (outcome === "poorSleep") {
