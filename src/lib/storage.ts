@@ -1803,3 +1803,4 @@ export const NAUSEA_HELPED = ["Lying down", "Ginger tea", "Fresh air", "Medicati
 export function markDeleted(update: (u: (d: BixboData) => BixboData) => void, ...ids: string[]) {
   update((d) => ({ ...d, deletedIds: Array.from(new Set([...(d.deletedIds ?? []), ...ids])).slice(-2000) }));
 }
+// storage migration hardened for cloud data

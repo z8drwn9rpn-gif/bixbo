@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------------
- * Deep merge for BixboData used by cloud sync.
+// Deep merge for BixboData used by cloud sync — hardened.
  * Goal: never silently drop data from either side. Union arrays by id,
  * prefer local on scalar conflicts (local is "in progress" / freshest
  * from the user's own device), and prefer whichever side actually has
