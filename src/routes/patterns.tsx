@@ -223,7 +223,7 @@ const PHASE_COLORS = [
 
 function Card({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
   return (
-    <section className="overflow-hidden rounded-3xl bg-surface p-5 ring-1 ring-border">
+    <section className="overflow-hidden rounded-3xl bg-surface p-4 ring-1 ring-border">
       <div>
         <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{title}</h2>
 
@@ -550,9 +550,9 @@ function SummaryPanel({
   confidence?: { level: ConfidenceLevel; detail: string };
 }) {
   return (
-    <div className="mt-5 rounded-3xl bg-background p-4 ring-1 ring-border">
+    <div className="mt-4 rounded-3xl bg-background p-4 ring-1 ring-border">
       <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-      <div className="mt-4 space-y-3">
+      <div className="mt-3 space-y-2.5">
         {items.map((item) => {
           const valueClass =
             item.tone === "good"
@@ -633,7 +633,11 @@ function CollapsibleSection({
           className={`h-5 w-5 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
         />
       </button>
-      {open && <div className="border-t border-border/50 p-3">{children}</div>}
+      {open && (
+        <div className="border-t border-border/50 p-3 [&>section]:rounded-2xl [&>section]:bg-transparent [&>section]:p-1 [&>section]:ring-0">
+          {children}
+        </div>
+      )}
     </section>
   );
 }
@@ -1329,7 +1333,7 @@ function PatternsPage() {
     }
 
     if (outcome === "bowelSymptoms") {
-      return dayBowelSymptoms(log) > 0;
+      return (dayBowelSymptoms(log) ?? 0) > 0;
     }
 
     if (outcome === "poorSleep") {
@@ -1449,7 +1453,7 @@ function PatternsPage() {
 
   return (
     <AppShell title="Bixbo Patterns">
-      <div className="space-y-4 px-5 pb-24 pt-2">
+      <div className="space-y-3 px-4 pb-24 pt-2 sm:px-5">
         <PatternTabs active={activeTab} onChange={setActiveTab} />
 
         {activeTab === "cycle" && (
@@ -1497,10 +1501,10 @@ function PatternsPage() {
                 ) : (
                   <Empty text="Log more periods to see your cycle pattern." />
                 )}
-                <div className="mt-5 rounded-3xl bg-background p-4 ring-1 ring-border">
+                <div className="mt-4 rounded-3xl bg-background p-4 ring-1 ring-border">
                   <h3 className="text-sm font-semibold text-foreground">Cycle Summary</h3>
 
-                  <div className="mt-4 space-y-3">
+                  <div className="mt-3 space-y-2.5">
                     <SummaryRow label="Highest pain" value={highestPainPhase} />
 
                     <SummaryRow label="Best energy" value={bestEnergyPhase} />
@@ -1585,7 +1589,7 @@ function PatternsPage() {
                 title="Monthly comparison — panic & tetany"
                 description="This month is compared with the same number of days from last month."
               >
-                <div className="mt-4 space-y-3">
+                <div className="mt-3 space-y-2.5">
                   <ComparisonMetric
                     title="Panic attacks"
                     subtitle="Number of logged panic attacks"
@@ -1988,7 +1992,7 @@ function PatternsPage() {
               title="Trigger comparison"
               description="Compare how often an outcome occurred on days with and without a possible trigger."
             >
-              <div className="mt-4 space-y-3">
+              <div className="mt-3 space-y-2.5">
                 <label className="block">
                   <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                     Possible trigger
