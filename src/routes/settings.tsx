@@ -1178,3 +1178,4 @@ function ScaleInline({ view, update }: { view: BixboData; update: (u: (d: BixboD
     </>
   );
 }
+k;
