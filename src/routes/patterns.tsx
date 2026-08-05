@@ -66,7 +66,7 @@ import {
 } from "@/lib/cloudSync";
 import { SCALE_META, type ScaleKey } from "@/lib/scaleDescriptions";
 
-export const Route = createFileRoute("/settings")({
+export const Route = createFileRoute("/patterns")({
   head: () => ({
     meta: [
       { title: "Settings — BIXBO" },

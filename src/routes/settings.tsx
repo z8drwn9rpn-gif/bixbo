@@ -33,6 +33,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { Ico } from "@/components/icons/BixboIcons";
 import {
   useBixbo,
   EMPTY,
@@ -189,7 +190,7 @@ function SettingsPage() {
       const p = await fetchPartner();
       if (p) update((d) => ({ ...d, partner: p }));
       else if (session) update((d) => ({ ...d, partner: undefined }));
-      setRefreshMsg(`Synced ✓ ${new Date().toLocaleTimeString()}`);
+      setRefreshMsg(`Synced ${new Date().toLocaleTimeString()}`);
     } catch (e) {
       setRefreshMsg(e instanceof Error ? e.message : String(e));
     } finally {
@@ -279,7 +280,7 @@ function SettingsPage() {
     setPartnerMsg(null);
     try {
       const p = await linkPartnerByCode(partnerCode);
-      setPartnerMsg(`Linked with ${p.display_name || "your partner"} ✓`);
+      setPartnerMsg(`Linked with ${p.display_name || "your partner"}`);
       setPartnerCode("");
       // Trigger immediate partner fetch
       const pd = await fetchPartner();
@@ -438,7 +439,10 @@ function SettingsPage() {
                   onClick={() => setGender(g)}
                   className={`min-h-[44px] rounded-xl border p-3 text-sm font-medium capitalize ${(view.settings.gender ?? "female") === g ? "border-primary bg-primary/10 text-primary dark:bg-primary dark:text-primary-foreground" : "border-border bg-tint"}`}
                 >
-                  {g === "female" ? "👩 Female" : "👨 Male"}
+                  <span className="inline-flex items-center gap-2">
+                    <Ico e={g === "female" ? "👩" : "👨"} size={20} />
+                    {g === "female" ? "Female" : "Male"}
+                  </span>
                 </button>
               ))}
             </div>
