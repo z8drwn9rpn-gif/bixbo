@@ -159,6 +159,54 @@ function HomePage() {
     setMonthAnchor((current) => new Date(current!.getFullYear(), current!.getMonth() + 1, 1));
   };
 
+  const pregnancyToday = view.dayLogs[todayKey()]?.pregnancy;
+  const latestPregnancyBP =
+    pregnancyToday?.bloodPressure?.[Math.max(0, (pregnancyToday.bloodPressure?.length ?? 1) - 1)];
+
+  const pregnancyStats: { icon: string; label: string; value: string }[] = [];
+
+  if (pregnancyToday?.weightKg != null) {
+    pregnancyStats.push({
+      icon: "⚖️",
+      label: "Weight",
+      value: `${pregnancyToday.weightKg} kg`,
+    });
+  }
+
+  if ((pregnancyToday?.symptoms?.length ?? 0) > 0) {
+    pregnancyStats.push({
+      icon: "🤢",
+      label: "Symptoms",
+      value: String(pregnancyToday!.symptoms!.length),
+    });
+  }
+
+  if ((pregnancyToday?.kicks?.length ?? 0) > 0) {
+    const totalKicks = pregnancyToday!.kicks!.reduce((sum, session) => sum + (session.count ?? 0), 0);
+
+    pregnancyStats.push({
+      icon: "👣",
+      label: "Kicks",
+      value: totalKicks > 0 ? String(totalKicks) : `${pregnancyToday!.kicks!.length} sessions`,
+    });
+  }
+
+  if (latestPregnancyBP) {
+    pregnancyStats.push({
+      icon: "❤️",
+      label: "Blood pressure",
+      value: `${latestPregnancyBP.systolic}/${latestPregnancyBP.diastolic}`,
+    });
+  }
+
+  if ((pregnancyToday?.waterMl ?? 0) > 0) {
+    pregnancyStats.push({
+      icon: "💧",
+      label: "Water",
+      value: `${pregnancyToday!.waterMl} ml`,
+    });
+  }
+
   return (
     <AppShell
       big
@@ -236,22 +284,57 @@ function HomePage() {
         return (
           <Link
             to={"/pregnancy" as never}
-            className="focus-ring mx-5 mt-3 flex items-center justify-between gap-3 rounded-2xl bg-tint px-4 py-3 text-left ring-1 ring-border"
+            className="focus-ring mx-5 mt-3 block rounded-3xl bg-tint px-4 py-4 text-left ring-1 ring-border transition hover:bg-surface"
           >
-            <span className="flex items-center gap-2">
-              <Ico name="pregnancy" size={22} />
-              <span className="text-sm">
-                <span className="font-semibold text-foreground">
-                  {prog ? `Week ${prog.week} + ${prog.dayOfWeek}` : "Pregnancy mode"}
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-surface ring-1 ring-border/60">
+                  <Ico name="pregnancy" size={24} />
                 </span>
-                <span className="block text-xs text-muted-foreground">
-                  {prog
-                    ? `Trimester ${prog.trimester}${prog.daysLeft != null ? ` · ${Math.max(0, prog.daysLeft)} days to go` : ""}`
-                    : "Tap to set your due date"}
-                </span>
-              </span>
-            </span>
-            <span className="text-xs font-medium text-primary">Open</span>
+
+                <div className="min-w-0">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                    Pregnancy
+                  </p>
+
+                  <p className="mt-0.5 font-serif text-lg font-semibold text-foreground">
+                    {prog ? `Week ${prog.week} + ${prog.dayOfWeek}` : "Pregnancy mode"}
+                  </p>
+
+                  <p className="text-xs text-muted-foreground">
+                    {prog
+                      ? `Trimester ${prog.trimester}${prog.daysLeft != null ? ` · ${Math.max(0, prog.daysLeft)} days to go` : ""}`
+                      : "Tap to set your due date"}
+                  </p>
+                </div>
+              </div>
+
+              <span className="shrink-0 text-xs font-semibold text-primary">Open</span>
+            </div>
+
+            {pregnancyStats.length > 0 ? (
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                {pregnancyStats.slice(0, 4).map((stat) => (
+                  <div
+                    key={stat.label}
+                    className="flex min-w-0 items-center gap-2 rounded-2xl bg-surface/80 px-3 py-2 ring-1 ring-border/50"
+                  >
+                    <Ico e={stat.icon} size={17} />
+
+                    <div className="min-w-0">
+                      <p className="truncate text-[9px] font-medium uppercase tracking-wide text-muted-foreground">
+                        {stat.label}
+                      </p>
+                      <p className="truncate text-xs font-semibold tabular-nums text-foreground">{stat.value}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-3 rounded-2xl bg-surface/70 px-3 py-2 text-xs text-muted-foreground ring-1 ring-border/40">
+                Nothing logged today
+              </div>
+            )}
           </Link>
         );
       })()}
