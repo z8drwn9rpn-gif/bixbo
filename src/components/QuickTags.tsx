@@ -627,9 +627,9 @@ export function QuickTags({
 
       <div
         className="-mx-5 quicklog-scroll overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x px-5 pb-2 snap-x snap-mandatory scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
-        style={{ WebkitOverflowScrolling: "touch", overscrollBehaviorX: "contain" }}
+        style={{ WebkitOverflowScrolling: "touch", overscrollBehaviorX: "contain", scrollbarWidth: "none" }}
       >
-        <div className="flex gap-2">
+        <div className="flex gap-1.5">
           {tags.map((tag, index) => {
             const isFlash = flash === tag.key;
 
@@ -637,43 +637,41 @@ export function QuickTags({
               return (
                 <div
                   key={tag.key}
-                  className="relative flex h-[68px] w-[68px] shrink-0 select-none flex-col items-center justify-center gap-0.5 rounded-full bg-surface p-1.5 text-center shadow-sm ring-1 ring-border/80"
+                  className="relative flex h-[58px] w-[58px] shrink-0 select-none flex-col items-center justify-center gap-0 rounded-full bg-surface p-1 text-center shadow-sm ring-1 ring-border/80"
                 >
                   <button
                     type="button"
                     onClick={() => hideTag(tag.key)}
                     aria-label={`Remove ${tag.label}`}
-                    className="absolute -right-2 -top-2 grid h-7 w-7 place-items-center rounded-full bg-destructive text-destructive-foreground shadow-md transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full bg-destructive text-destructive-foreground shadow-md transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
-                    <X className="h-3 w-3" strokeWidth={3} />
+                    <X className="h-2.5 w-2.5" strokeWidth={3} />
                   </button>
 
-                  <Ico e={tag.emoji} size={22} />
-                  <span className="max-w-[58px] text-[9px] font-medium leading-[1.05] text-muted-foreground">
+                  <Ico e={tag.emoji} size={18} />
+                  <span className="max-w-[48px] text-[8px] font-medium leading-none text-muted-foreground">
                     {tag.label}
                   </span>
 
-                  <div className="mt-1 flex gap-1">
-                    <button
-                      type="button"
-                      onClick={() => moveTag(tag.key, -1)}
-                      disabled={index === 0}
-                      aria-label="Move left"
-                      className="grid h-8 w-8 place-items-center rounded-full bg-tint text-muted-foreground transition hover:bg-primary/15 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-30"
-                    >
-                      <ChevronLeft className="h-3 w-3" />
-                    </button>
+                  <button
+                    type="button"
+                    onClick={() => moveTag(tag.key, -1)}
+                    disabled={index === 0}
+                    aria-label="Move left"
+                    className="absolute bottom-0.5 left-0.5 grid h-5 w-5 place-items-center rounded-full bg-tint/95 text-muted-foreground shadow-sm transition hover:bg-primary/15 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-25"
+                  >
+                    <ChevronLeft className="h-2.5 w-2.5" />
+                  </button>
 
-                    <button
-                      type="button"
-                      onClick={() => moveTag(tag.key, 1)}
-                      disabled={index === tags.length - 1}
-                      aria-label="Move right"
-                      className="grid h-8 w-8 place-items-center rounded-full bg-tint text-muted-foreground transition hover:bg-primary/15 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-30"
-                    >
-                      <ChevronRight className="h-3 w-3" />
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => moveTag(tag.key, 1)}
+                    disabled={index === tags.length - 1}
+                    aria-label="Move right"
+                    className="absolute bottom-0.5 right-0.5 grid h-5 w-5 place-items-center rounded-full bg-tint/95 text-muted-foreground shadow-sm transition hover:bg-primary/15 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-25"
+                  >
+                    <ChevronRight className="h-2.5 w-2.5" />
+                  </button>
                 </div>
               );
             }
@@ -727,24 +725,32 @@ export function QuickTags({
                   if (draggingRef.current) {
                     e.preventDefault();
                     e.stopPropagation();
+                    draggingRef.current = false;
+                    return;
+                  }
+
+                  // Pointer taps are handled by onPointerUp. Keyboard activation
+                  // (Enter / Space) has detail === 0, so handle it here once.
+                  if (e.detail === 0 && !longFiredRef.current) {
+                    doTap(tag);
                   }
                 }}
                 onContextMenu={(event) => event.preventDefault()}
                 title={`${tag.label} — long-press for details`}
                 aria-label={tag.label}
-                className={`relative flex h-[68px] w-[68px] shrink-0 snap-start select-none touch-manipulation flex-col items-center justify-center gap-0.5 rounded-full bg-surface p-1.5 text-center shadow-sm ring-1 ring-border/80 transition-[transform,box-shadow,background-color,ring-color] duration-150 hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-95 ${
+                className={`relative flex h-[58px] w-[58px] shrink-0 snap-start select-none touch-manipulation flex-col items-center justify-center gap-0 rounded-full bg-surface p-1 text-center shadow-sm ring-1 ring-border/80 transition-[transform,box-shadow,background-color,ring-color] duration-150 hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-95 ${
                   isFlash ? "scale-105 bg-primary/10 ring-2 ring-primary shadow-md" : ""
                 }`}
               >
-                <Ico e={tag.emoji} size={22} />
+                <Ico e={tag.emoji} size={19} />
 
-                <span className="max-w-[58px] text-[9px] font-medium leading-[1.05] text-muted-foreground">
+                <span className="max-w-[48px] text-[8px] font-medium leading-none text-muted-foreground">
                   {tag.label}
                 </span>
 
                 {isFlash && (
-                  <span className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full bg-primary text-primary-foreground shadow">
-                    <Check className="h-3 w-3" strokeWidth={3} />
+                  <span className="absolute -right-0.5 -top-0.5 grid h-3.5 w-3.5 place-items-center rounded-full bg-primary text-primary-foreground shadow">
+                    <Check className="h-2.5 w-2.5" strokeWidth={3} />
                   </span>
                 )}
               </button>
@@ -755,19 +761,17 @@ export function QuickTags({
             type="button"
             onClick={() => setBuilderOpen(true)}
             aria-label="Add custom quick log button"
-            className="flex h-[68px] w-[68px] shrink-0 select-none flex-col items-center justify-center gap-0.5 rounded-full border border-dashed border-border bg-transparent p-1.5 text-center text-muted-foreground transition-[transform,background-color,border-color] hover:border-primary/50 hover:bg-tint/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-95"
+            className="flex h-[58px] w-[58px] shrink-0 select-none flex-col items-center justify-center gap-0 rounded-full border border-dashed border-border bg-transparent p-1 text-center text-muted-foreground transition-[transform,background-color,border-color] hover:border-primary/50 hover:bg-tint/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-95"
           >
-            <Plus className="h-5 w-5" />
-            <span className="text-[9px] font-medium leading-none">Add</span>
+            <Plus className="h-4 w-4" />
+            <span className="text-[8px] font-medium leading-none">Add</span>
           </button>
         </div>
       </div>
 
       {editMode && hidden.size > 0 && (
         <div className="mt-2">
-          <p className="max-w-[58px] text-[9px] font-medium leading-[1.05] text-muted-foreground">
-            Hidden — tap to restore:
-          </p>
+          <p className="text-[10px] font-medium leading-tight text-muted-foreground">Hidden — tap to restore:</p>
 
           <div className="mt-1 flex flex-wrap gap-1.5">
             {sortedTags

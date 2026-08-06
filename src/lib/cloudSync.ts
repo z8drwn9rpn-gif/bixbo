@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 
 import { supabase } from "@/integrations/supabase/client";
+import { mergeBixbo } from "./merge";
 import {
   EMPTY,
   getBixbo,
@@ -311,24 +312,6 @@ function normalizeRemotePayload(value: unknown): BixboData {
   };
 }
 
-function quarantinePostpartum(payload: BixboData): BixboData {
-  const dayLogs: BixboData["dayLogs"] = {};
-
-  for (const [date, log] of Object.entries(payload.dayLogs ?? {})) {
-    const { postpartum: _postpartum, ...safeLog } = log;
-    dayLogs[date] = safeLog;
-  }
-
-  return {
-    ...payload,
-    dayLogs,
-    postpartum: {
-      active: false,
-      visits: [],
-    },
-  };
-}
-
 export async function pullMyData(): Promise<BixboData | null> {
   const {
     data: { user },
@@ -392,17 +375,53 @@ export async function pushMyData(payload: BixboData): Promise<void> {
   }
 }
 
+const PENDING_SYNC_KEY = "bixbo:pending-cloud-sync";
+
+function setPendingCloudSync(pending: boolean): void {
+  if (typeof window === "undefined") return;
+
+  try {
+    if (pending) window.localStorage.setItem(PENDING_SYNC_KEY, "1");
+    else window.localStorage.removeItem(PENDING_SYNC_KEY);
+  } catch {
+    // A full or unavailable localStorage must never break health logging.
+  }
+}
+
+export function hasPendingCloudSync(): boolean {
+  if (typeof window === "undefined") return false;
+
+  try {
+    return window.localStorage.getItem(PENDING_SYNC_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function browserIsOffline(): boolean {
+  return typeof navigator !== "undefined" && navigator.onLine === false;
+}
+
 /* ------------------- Immediate-flush queue ------------------- */
 
 let _flushingPromise: Promise<void> | null = null;
 
+/**
+ * Explicitly flushes the newest local snapshot. Failures remain marked so the
+ * mounted cloud-sync hook can retry when connectivity returns.
+ */
 export async function flushMyDataPush(): Promise<void> {
   if (_flushingPromise) return _flushingPromise;
 
+  setPendingCloudSync(true);
+
   _flushingPromise = (async () => {
     try {
+      if (browserIsOffline()) return;
       await pushMyData(getBixbo());
+      setPendingCloudSync(false);
     } catch (error) {
+      setPendingCloudSync(true);
       console.error("flushMyDataPush", error);
     } finally {
       _flushingPromise = null;
@@ -412,9 +431,9 @@ export async function flushMyDataPush(): Promise<void> {
   return _flushingPromise;
 }
 
-// Automatic unload/pagehide pushes are intentionally disabled.
-// OAuth redirects can fire these events while the auth session is changing,
-// which can cause an unsafe cloud write during sign-in.
+// Automatic unload/pagehide pushes are intentionally disabled. OAuth redirects
+// can fire these events while the auth session is changing and cause a write
+// under the wrong session. The persistent pending flag retries safely later.
 
 /* ------------------- Session hook ------------------- */
 
@@ -464,85 +483,159 @@ export function useCloudSync() {
       return;
     }
 
+    const userId = session.user.id;
     let cancelled = false;
     let pushTimer: ReturnType<typeof setTimeout> | null = null;
+    let queuedPushData: BixboData | null = null;
+    let pushInFlight: Promise<void> | null = null;
 
-    void (async () => {
-      try {
-        await ensureProfile();
+    /**
+     * Serializes cloud writes. If data changes while one write is in flight,
+     * the loop immediately sends the newest queued snapshot afterwards.
+     */
+    const runPushQueue = (): Promise<void> => {
+      if (pushInFlight) return pushInFlight;
 
-        const remote = await pullMyData();
+      pushInFlight = (async () => {
+        while (!cancelled && queuedPushData) {
+          if (browserIsOffline()) {
+            setPendingCloudSync(true);
+            return;
+          }
 
-        if (cancelled) return;
+          const payload = queuedPushData;
+          queuedPushData = null;
 
-        if (remote) {
-          // Restore the user's cloud data, but temporarily quarantine all
-          // postpartum fields because those legacy values are the known crash
-          // trigger for this account.
-          const safeRemote = normalizeRemotePayload(remote);
-          const currentPartner = getBixbo().partner;
+          try {
+            // Do not let a delayed write from an old session reach a different
+            // account after sign-out/sign-in.
+            const {
+              data: { user },
+            } = await supabase.auth.getUser();
 
-          replaceBixbo(
-            {
-              ...safeRemote,
-              partner: currentPartner,
-            },
-            "remote",
-          );
-        } else {
-          // First cloud save for a new account.
-          await pushMyData(getBixbo());
+            if (!user || user.id !== userId || cancelled) {
+              queuedPushData = null;
+              return;
+            }
+
+            await pushMyData(payload);
+          } catch (error) {
+            // Preserve the failed snapshot unless a newer local snapshot is
+            // already queued. The online/visibility retry will send it later.
+            if (!queuedPushData) queuedPushData = payload;
+            setPendingCloudSync(true);
+            throw error;
+          }
         }
 
-        const partner = await fetchPartner();
+        if (!cancelled && !queuedPushData) setPendingCloudSync(false);
+      })().finally(() => {
+        pushInFlight = null;
+      });
 
-        if (!cancelled) {
-          setPartner(partner ?? undefined);
-        }
-      } catch (error) {
-        console.error("useCloudSync guarded initial sync", error);
+      return pushInFlight;
+    };
 
-        if (!cancelled) {
-          setPartner(undefined);
-        }
-      }
-    })();
-
-    const unsubscribeStore = subscribeBixboChanges((nextData, reason) => {
-      if (reason !== "local") return;
+    const schedulePush = (nextData: BixboData, delay = 400): void => {
+      queuedPushData = nextData;
+      setPendingCloudSync(true);
 
       if (pushTimer) clearTimeout(pushTimer);
 
       pushTimer = setTimeout(() => {
-        // Keep the current local postpartum state rather than restoring the
-        // quarantined legacy cloud postpartum payload.
-        pushMyData(nextData).catch((error) => {
+        pushTimer = null;
+        void runPushQueue().catch((error) => {
           console.error("useCloudSync push", error);
         });
-      }, 400);
-    });
+      }, delay);
+    };
 
-    const refreshPartner = async () => {
+    const pushNow = async (nextData: BixboData): Promise<void> => {
+      queuedPushData = nextData;
+      setPendingCloudSync(true);
+      await runPushQueue();
+    };
+
+    const refreshPartner = async (): Promise<void> => {
       try {
         const partner = await fetchPartner();
-
-        if (!cancelled) {
-          setPartner(partner ?? undefined);
-        }
+        if (!cancelled) setPartner(partner ?? undefined);
       } catch (error) {
         console.error("useCloudSync refreshPartner", error);
       }
     };
 
+    void (async () => {
+      try {
+        await ensureProfile();
+        const remote = await pullMyData();
+
+        if (cancelled) return;
+
+        // Read local data only after the remote request finishes. This includes
+        // logs entered while the network request was in flight.
+        const currentLocal = getBixbo();
+
+        if (remote) {
+          const safeRemote = normalizeRemotePayload(remote);
+          const merged = mergeBixbo(currentLocal, safeRemote);
+          const reconciled = { ...merged, partner: currentLocal.partner };
+
+          // A remote reason prevents this replacement from being mistaken for
+          // a fresh local edit by the store listener.
+          replaceBixbo(reconciled, "remote");
+
+          // Write the union back so interrupted previous writes and edits from
+          // either device converge without deleting the newer local entry.
+          await pushNow(reconciled);
+        } else {
+          await pushNow(currentLocal);
+        }
+      } catch (error) {
+        setPendingCloudSync(true);
+        console.error("useCloudSync guarded initial sync", error);
+      }
+
+      // Partner refresh is independent: a transient private-data push failure
+      // must not erase an already available partner projection.
+      if (!cancelled) await refreshPartner();
+    })();
+
+    const unsubscribeStore = subscribeBixboChanges((nextData, reason) => {
+      if (reason !== "local") return;
+      schedulePush(nextData);
+    });
+
+    const retryPending = (): void => {
+      if (cancelled || browserIsOffline()) return;
+      if (!hasPendingCloudSync() && !queuedPushData) return;
+
+      queuedPushData = getBixbo();
+      setPendingCloudSync(true);
+
+      if (pushTimer) {
+        clearTimeout(pushTimer);
+        pushTimer = null;
+      }
+
+      void runPushQueue().catch((error) => {
+        console.error("useCloudSync retry", error);
+      });
+    };
+
+    const retryWhenVisible = (): void => {
+      if (document.visibilityState === "visible") retryPending();
+    };
+
     const channel = supabase
-      .channel(`bixbo-sync-${session.user.id}`)
+      .channel(`bixbo-sync-${userId}`)
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "user_data",
-          filter: `user_id=eq.${session.user.id}`,
+          filter: `user_id=eq.${userId}`,
         },
         (payload) => {
           try {
@@ -550,20 +643,25 @@ export function useCloudSync() {
             if (!incomingRaw) return;
 
             const incoming = normalizeRemotePayload(incomingRaw);
-            const incomingJson = JSON.stringify({
-              ...incoming,
+            const incomingJson = JSON.stringify({ ...incoming, partner: undefined });
+
+            // Ignore the normal realtime echo of our most recent cloud write.
+            if (incomingJson === _lastPushedJson) return;
+
+            const currentLocal = getBixbo();
+            const merged = mergeBixbo(currentLocal, incoming);
+            const reconciled = { ...merged, partner: currentLocal.partner };
+
+            replaceBixbo(reconciled, "remote");
+
+            // If the merge retained local-only data, send the union back. This
+            // does not rely on a store event because the replacement is remote.
+            const mergedJson = JSON.stringify({
+              ...normalizeRemotePayload(reconciled),
               partner: undefined,
             });
 
-            if (incomingJson === _lastPushedJson) return;
-
-            replaceBixbo(
-              {
-                ...incoming,
-                partner: getBixbo().partner,
-              },
-              "remote",
-            );
+            if (mergedJson !== incomingJson) schedulePush(reconciled);
           } catch (error) {
             console.error("useCloudSync realtime user_data", error);
           }
@@ -593,12 +691,20 @@ export function useCloudSync() {
       )
       .subscribe();
 
+    window.addEventListener("online", retryPending);
+    document.addEventListener("visibilitychange", retryWhenVisible);
+
+    if (!browserIsOffline()) retryPending();
+
     return () => {
       cancelled = true;
 
       if (pushTimer) clearTimeout(pushTimer);
 
+      queuedPushData = null;
       unsubscribeStore();
+      window.removeEventListener("online", retryPending);
+      document.removeEventListener("visibilitychange", retryWhenVisible);
       void supabase.removeChannel(channel);
     };
   }, [ready, session?.user?.id]);

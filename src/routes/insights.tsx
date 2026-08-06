@@ -54,13 +54,16 @@ const INSIGHT_COLORS = {
   orange: "#E47B25",
   terracotta: "#D85F4B",
   rose: "#D94F78",
+  pinkLight: "#F5A3B7",
+  pink: "#E86D8F",
+  pinkDeep: "#C93C63",
   plum: "#8756A5",
   muted: "#C9CBA2",
   track: "#D8D9AE",
 } as const;
 
-const TETANY_COLOR = INSIGHT_COLORS.olive;
-const PANIC_COLOR = INSIGHT_COLORS.plum;
+const TETANY_COLOR = INSIGHT_COLORS.pinkLight;
+const PANIC_COLOR = INSIGHT_COLORS.pinkDeep;
 
 const PAIN_ACCENT = INSIGHT_COLORS.rose;
 const PAIN_SOFT = "rgba(217, 79, 120, 0.10)";
@@ -939,9 +942,9 @@ function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) 
   const cellColor = (d: (typeof perDay)[number]) => {
     if (d.expected === 0) return "var(--tint)";
     const r = d.taken / d.expected;
-    if (r >= 1) return INSIGHT_COLORS.green;
-    if (r > 0) return INSIGHT_COLORS.amber;
-    return INSIGHT_COLORS.terracotta;
+    if (r >= 1) return INSIGHT_COLORS.pinkLight;
+    if (r > 0) return INSIGHT_COLORS.pink;
+    return INSIGHT_COLORS.pinkDeep;
   };
 
   const fmt = (k: string) => fromKey(k).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
@@ -999,13 +1002,13 @@ function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) 
               </div>
               <div className="mt-2 flex gap-3 text-[10px] text-muted-foreground">
                 <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded" style={{ background: INSIGHT_COLORS.green }} /> full
+                  <span className="h-2 w-2 rounded" style={{ background: INSIGHT_COLORS.pinkLight }} /> full
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded" style={{ background: INSIGHT_COLORS.amber }} /> partial
+                  <span className="h-2 w-2 rounded" style={{ background: INSIGHT_COLORS.pink }} /> partial
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded" style={{ background: INSIGHT_COLORS.terracotta }} /> none
+                  <span className="h-2 w-2 rounded" style={{ background: INSIGHT_COLORS.pinkDeep }} /> none
                 </span>
                 <span className="flex items-center gap-1">
                   <span className="h-2 w-2 rounded bg-tint" /> n/a

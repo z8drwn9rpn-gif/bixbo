@@ -102,6 +102,32 @@ const TONES: Record<
   },
 };
 
+const COUPLE_PAIN_COLORS = [
+  "#8DBF3A",
+  "#A8C93A",
+  "#C4D63A",
+  "#E0D93A",
+  "#F0C43A",
+  "#F3A83A",
+  "#F28A3A",
+  "#EF6E42",
+  "#E9534F",
+  "#D93F55",
+  "#C92F5A",
+] as const;
+
+function couplePainColor(value: number): string {
+  const clamped = Math.max(0, Math.min(10, value));
+  const lower = Math.floor(clamped);
+  const upper = Math.ceil(clamped);
+
+  if (lower === upper) return COUPLE_PAIN_COLORS[lower];
+
+  // Half-step values use the nearest vivid chart color. The global Pain Scale
+  // still uses painColor(); this palette is only for the Couple pain chart.
+  return COUPLE_PAIN_COLORS[Math.round(clamped)];
+}
+
 function clampPercent(value: number) {
   return Math.max(0, Math.min(100, value));
 }
@@ -632,7 +658,7 @@ function CouplePainChart({
   periodLabel: string;
 }) {
   const width = Math.max(340, days.length * 22 + 34);
-  const height = 190;
+  const height = 206;
   const left = 24;
   const right = 10;
   const top = 12;
@@ -641,7 +667,7 @@ function CouplePainChart({
   const chartHeight = height - top - bottom;
   const count = Math.max(1, days.length);
   const slot = chartWidth / count;
-  const barWidth = Math.max(4, (slot - 4) / 2);
+  const barWidth = Math.max(5, (slot - 3) / 2);
 
   const yFor = (value: number) => top + ((10 - Math.max(0, Math.min(10, value))) / 10) * chartHeight;
 
@@ -666,7 +692,7 @@ function CouplePainChart({
       <div className="mt-3 overflow-x-auto overscroll-x-contain">
         <svg
           viewBox={`0 0 ${width} ${height}`}
-          className="h-48 max-w-none"
+          className="h-[206px] max-w-none"
           style={{ width: `${width}px` }}
           role="img"
           aria-label={`Pain comparison between you and ${partnerName} during ${periodLabel}`}
@@ -679,9 +705,9 @@ function CouplePainChart({
               height="4"
               patternTransform="rotate(45)"
             >
-              <rect width="4" height="4" fill="currentColor" opacity="0.35" />
+              <rect width="4" height="4" fill="transparent" />
 
-              <line x1="0" y1="0" x2="0" y2="4" stroke="currentColor" strokeWidth="2" />
+              <line x1="0" y1="0" x2="0" y2="4" stroke="rgba(255,255,255,0.92)" strokeWidth="1.6" />
             </pattern>
           </defs>
 
@@ -709,9 +735,9 @@ function CouplePainChart({
             const myValue = mySeries[index];
             const partnerValue = partnerSeries[index];
 
-            const myColor = myValue != null ? painColor(myValue) : "transparent";
+            const myColor = myValue != null ? couplePainColor(myValue) : "transparent";
 
-            const partnerColor = partnerValue != null ? painColor(partnerValue) : "transparent";
+            const partnerColor = partnerValue != null ? couplePainColor(partnerValue) : "transparent";
 
             const weekday = date
               .toLocaleDateString("en-US", {
@@ -743,7 +769,7 @@ function CouplePainChart({
                       height={baselineY - yFor(partnerValue)}
                       fill={partnerColor}
                       rx="2"
-                      opacity="0.35"
+                      opacity="0.88"
                     />
 
                     <rect
@@ -764,7 +790,7 @@ function CouplePainChart({
                       height={baselineY - yFor(partnerValue)}
                       fill="none"
                       stroke={partnerColor}
-                      strokeWidth="1"
+                      strokeWidth="1.5"
                       rx="2"
                     />
                   </g>
@@ -785,7 +811,7 @@ function CouplePainChart({
 
       <div className="mt-2 flex flex-wrap gap-4 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-3 w-3 rounded-sm bg-primary" />
+          <span className="inline-block h-3 w-3 rounded-sm" style={{ background: couplePainColor(6) }} />
           You — solid
         </span>
 
@@ -793,9 +819,14 @@ function CouplePainChart({
           <span
             className="inline-block h-3 w-3 rounded-sm"
             style={{
-              background:
-                "repeating-linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)) 3px, transparent 3px, transparent 5px)",
-              border: "1px solid hsl(var(--primary))",
+              background: `repeating-linear-gradient(
+                135deg,
+                ${couplePainColor(6)},
+                ${couplePainColor(6)} 3px,
+                rgba(255,255,255,0.95) 3px,
+                rgba(255,255,255,0.95) 5px
+              )`,
+              border: `1px solid ${couplePainColor(6)}`,
             }}
           />
           {partnerName} — striped
