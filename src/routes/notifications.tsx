@@ -6,15 +6,16 @@ import { AppShell } from "@/components/AppShell";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { useBixbo } from "@/lib/storage";
+import { useSession } from "@/lib/cloudSync";
 import {
   NOTIF_CATEGORY_LABELS,
   disableRemotePush,
   enableRemotePush,
   notifPrefs,
   permissionState,
-  requestNotificationPermission,
-  saveNotifPrefs,
   runNotificationChecks,
+  saveNotifPrefs,
+  sendTestPush,
   type NotifCategory,
 } from "@/lib/notifications";
 
@@ -53,11 +54,13 @@ function ToggleRow({
   label,
   hint,
   checked,
+  disabled,
   onChange,
 }: {
   label: string;
   hint?: string;
   checked: boolean;
+  disabled?: boolean;
   onChange: (v: boolean) => void;
 }) {
   return (
@@ -66,7 +69,7 @@ function ToggleRow({
         <p className="text-sm text-foreground">{label}</p>
         {hint && <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>}
       </div>
-      <Switch checked={checked} onCheckedChange={onChange} aria-label={label} />
+      <Switch checked={checked} disabled={disabled} onCheckedChange={onChange} aria-label={label} />
     </div>
   );
 }
@@ -83,7 +86,7 @@ function TimeRow({ label, value, onChange }: { label: string; value: string; onC
 const CATEGORIES: { key: NotifCategory; hint: string }[] = [
   { key: "meds", hint: "At every scheduled medication time you haven't ticked off." },
   { key: "period", hint: "The day before your predicted period." },
-  { key: "ovulation", hint: "The day before your fertile window opens." },
+  { key: "ovulation", hint: "The day before your predicted ovulation window." },
   { key: "dailyLog", hint: "Only when nothing is logged that day — once daily." },
   { key: "symptom", hint: 'A gentle "how are you feeling?" nudge.' },
   { key: "appointments", hint: "24 hours and 2 hours before an appointment." },
@@ -92,73 +95,121 @@ const CATEGORIES: { key: NotifCategory; hint: string }[] = [
   { key: "marketing", hint: "Occasional BIXBO news and tips. Off by default." },
 ];
 
+function messageOf(error: unknown): string {
+  return error instanceof Error ? error.message : "Something went wrong.";
+}
+
 function NotificationsPage() {
   const { data, hydrated } = useBixbo();
+  const { session, ready } = useSession();
   const prefs = notifPrefs(data);
   const [perm, setPerm] = useState<NotificationPermission | "unsupported">("default");
+  const [busy, setBusy] = useState(false);
+  const [testBusy, setTestBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setPerm(permissionState());
   }, []);
 
   const enable = async () => {
-    const result = await requestNotificationPermission();
-    setPerm(result);
+    setBusy(true);
+    setMessage(null);
+    setError(null);
+    try {
+      await enableRemotePush();
+      setMessage("Remote reminders are enabled on this device.");
+    } catch (cause) {
+      setError(messageOf(cause));
+    } finally {
+      setPerm(permissionState());
+      setBusy(false);
+    }
   };
 
   const toggleAll = async (enabled: boolean) => {
+    setBusy(true);
+    setMessage(null);
+    setError(null);
     try {
       if (enabled) {
         await enableRemotePush();
+        setMessage("Remote reminders are enabled on this device.");
       } else {
         await disableRemotePush();
+        setMessage("Remote reminders are disabled on this device.");
       }
-    } catch (error) {
-      console.error("BIXBO notification toggle failed", error);
+    } catch (cause) {
+      setError(messageOf(cause));
     } finally {
       setPerm(permissionState());
+      setBusy(false);
+    }
+  };
+
+  const remoteTest = async () => {
+    setTestBusy(true);
+    setMessage(null);
+    setError(null);
+    try {
+      const result = await sendTestPush();
+      setMessage(`Test push delivered to ${result.delivered} active device${result.delivered === 1 ? "" : "s"}.`);
+    } catch (cause) {
+      setError(messageOf(cause));
+    } finally {
+      setTestBusy(false);
     }
   };
 
   const denied = perm === "denied";
   const unsupported = perm === "unsupported";
+  const signedIn = Boolean(session);
 
   return (
     <AppShell title="Notifications">
-      <div className="space-y-4 px-4 pt-4">
+      <div className="space-y-4 px-4 pb-24 pt-4">
         <Link to="/settings" className="inline-flex items-center gap-1 text-sm text-muted-foreground">
           <ChevronLeft className="h-4 w-4" /> Settings
         </Link>
 
-        <Card title="Push notifications" subtitle="Reminders arrive even when BIXBO is in the background.">
-          {unsupported ? (
+        <Card title="Push notifications" subtitle="Reminders arrive even when BIXBO is fully closed.">
+          {!ready ? (
+            <p className="text-xs text-muted-foreground">Checking your account…</p>
+          ) : !signedIn ? (
+            <p className="text-xs text-destructive">Sign in to enable reminders when BIXBO is fully closed.</p>
+          ) : unsupported ? (
             <p className="flex items-center gap-2 text-xs text-destructive">
-              <BellOff className="h-4 w-4" /> This browser doesn't support notifications.
+              <BellOff className="h-4 w-4" /> This browser doesn't support Web Push.
             </p>
           ) : denied ? (
             <p className="text-xs text-destructive">
-              Notifications are blocked in your browser settings. BIXBO won't ask again — re-allow them for this site to
-              turn reminders back on.
+              Notifications are blocked in your browser settings. Re-allow them for this site before enabling reminders.
             </p>
           ) : perm === "granted" ? (
             <ToggleRow
               label="All reminders"
               hint="Master switch for every category below."
               checked={Boolean(prefs.enabled)}
+              disabled={busy}
               onChange={(enabled) => void toggleAll(enabled)}
             />
           ) : (
             <button
               type="button"
-              onClick={enable}
-              className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground"
+              onClick={() => void enable()}
+              disabled={busy}
+              className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-60"
             >
-              <Bell className="h-4 w-4" /> Enable notifications
+              <Bell className="h-4 w-4" /> {busy ? "Enabling…" : "Enable notifications"}
             </button>
           )}
+
           <p className="text-xs text-muted-foreground">
-            When BIXBO is open, reminders appear as a soft in-app message instead of a system notification.
+            When BIXBO is open, local reminder checks can also appear as a soft in-app message.
           </p>
+          {message && <p className="rounded-xl bg-primary/10 px-3 py-2 text-xs text-foreground">{message}</p>}
+          {error && <p className="rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>}
         </Card>
 
         <Card title="Categories" subtitle="Pick exactly what you want to hear about.">
@@ -202,7 +253,9 @@ function NotificationsPage() {
               min={1}
               max={12}
               value={prefs.hydrationEveryHours}
-              onChange={(e) => saveNotifPrefs({ hydrationEveryHours: Math.max(1, Number(e.target.value) || 3) })}
+              onChange={(e) =>
+                saveNotifPrefs({ hydrationEveryHours: Math.min(12, Math.max(1, Number(e.target.value) || 3)) })
+              }
               className="h-11 w-[8.5rem] text-sm"
             />
           </label>
@@ -216,15 +269,29 @@ function NotificationsPage() {
           <TimeRow label="End" value={prefs.quietEnd} onChange={(v) => saveNotifPrefs({ quietEnd: v })} />
         </Card>
 
-        <Card title="Test" subtitle="Run the reminder check right now.">
-          <button
-            type="button"
-            onClick={() => void runNotificationChecks()}
-            className="min-h-11 rounded-full border border-border px-4 text-sm font-medium text-foreground"
-          >
-            Check reminders now
-          </button>
+        <Card title="Tests" subtitle="Local and server-originated tests are separate.">
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => void runNotificationChecks()}
+              className="min-h-11 rounded-full border border-border px-4 text-sm font-medium text-foreground"
+            >
+              Check local reminders
+            </button>
+            <button
+              type="button"
+              onClick={() => void remoteTest()}
+              disabled={testBusy || !signedIn || !prefs.enabled || perm !== "granted"}
+              className="min-h-11 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
+            >
+              {testBusy ? "Sending…" : "Send real test push"}
+            </button>
+          </div>
           {!hydrated && <p className="text-xs text-muted-foreground">Loading your preferences…</p>}
+          <p className="text-xs text-muted-foreground">
+            For the real test, install BIXBO to the Home Screen on iPhone, close it completely, then tap the button
+            before closing.
+          </p>
         </Card>
       </div>
     </AppShell>

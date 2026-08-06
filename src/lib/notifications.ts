@@ -1,612 +1,870 @@
-import { useEffect, useState } from "react";
-import type { Session } from "@supabase/supabase-js";
+/**
+ * BIXBO notification runtime.
+ *
+ * Local delivery:
+ *  - App visible -> sonner toast
+ *  - App hidden  -> Service Worker notification
+ *
+ * Remote delivery:
+ *  - The browser PushSubscription and a notification-only schedule snapshot
+ *    are stored through Supabase Edge Functions.
+ *  - A Supabase cron invokes send-due-push every minute.
+ *  - The VAPID private key exists only inside Supabase Edge Function secrets.
+ */
+import { useEffect } from "react";
+import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
-import { mergeBixbo } from "./merge";
 import {
-  EMPTY,
   getBixbo,
-  replaceBixbo,
-  setPartner,
+  hasAnyLog,
+  nextPredictedPeriod,
+  setBixbo,
   subscribeBixboChanges,
+  todayKey,
+  addDays,
   type BixboData,
-  type DayLog,
-  type PartnerData,
-  type PostpartumDayLog,
-  type PostpartumState,
-  type PregnancyAppointment,
+  type NotificationPrefs,
 } from "./storage";
+import { showCyclePredictions } from "./health";
 
-export interface CloudProfile {
-  id: string;
-  display_name: string | null;
-  gender: string | null;
-  pairing_code: string;
-}
+export type NotifCategory =
+  | "meds"
+  | "period"
+  | "ovulation"
+  | "dailyLog"
+  | "symptom"
+  | "appointments"
+  | "mood"
+  | "hydration"
+  | "marketing";
 
-/**
- * Only these fields are stored in partner_shared_data and returned through
- * Couple sharing. The complete BixboData object remains private in user_data.
- */
-type PartnerSharedPayload = {
-  dayLogs: BixboData["dayLogs"];
-  meds: BixboData["meds"];
-  medLog: BixboData["medLog"];
-  cycle: BixboData["cycle"];
+export const DEFAULT_NOTIF_PREFS: Required<Omit<NotificationPrefs, "promptSnoozedAt" | "promptAnswered">> = {
+  enabled: false,
+  meds: true,
+  period: true,
+  ovulation: true,
+  dailyLog: true,
+  symptom: true,
+  appointments: true,
+  mood: false,
+  hydration: false,
+  marketing: false,
+  dailyLogTime: "20:00",
+  symptomTime: "18:00",
+  moodTime: "20:30",
+  hydrationStart: "09:00",
+  hydrationEnd: "20:00",
+  hydrationEveryHours: 3,
+  quietStart: "22:00",
+  quietEnd: "07:00",
 };
 
-/**
- * partner_shared_data has the same row shape as user_data.
- * This alias keeps the current generated Supabase types compiling until
- * src/integrations/supabase/types.ts is regenerated with the new table.
- */
-const PARTNER_SHARED_DATA_TABLE = "partner_shared_data" as "user_data";
+export type ResolvedPrefs = typeof DEFAULT_NOTIF_PREFS & Pick<NotificationPrefs, "promptSnoozedAt" | "promptAnswered">;
 
-export async function ensureProfile(displayName?: string): Promise<CloudProfile | null> {
-  const { data, error } = await supabase.rpc("ensure_profile", {
-    _display_name: displayName ?? undefined,
-  });
-
-  if (error) {
-    console.error("ensureProfile", error);
-    return null;
-  }
-
-  return data as unknown as CloudProfile;
+export function notifPrefs(data: Pick<BixboData, "settings">): ResolvedPrefs {
+  const raw = data.settings?.notif ?? {};
+  return { ...DEFAULT_NOTIF_PREFS, ...raw };
 }
 
-export async function updateProfile(patch: Partial<Pick<CloudProfile, "display_name" | "gender">>) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) return;
-
-  const { error } = await supabase.from("profiles").update(patch).eq("id", user.id);
-
-  if (error) {
-    console.error("updateProfile", error);
-    throw error;
-  }
-}
-
-export async function linkPartnerByCode(code: string): Promise<CloudProfile> {
-  const { data, error } = await supabase.rpc("link_partner_by_code", {
-    _code: code.trim().toUpperCase(),
-  });
-
-  if (error) throw error;
-
-  return data as unknown as CloudProfile;
-}
-
-export async function unlinkPartner(): Promise<void> {
-  const { error } = await supabase.rpc("unlink_partner");
-
-  if (error) throw error;
-}
-
-/**
- * Build the narrow payload that a linked partner is allowed to read.
- *
- * Deliberately excluded:
- * - dayNotes and notebook notes
- * - sex, food and bowel logs
- * - mood and energy logs
- * - workouts
- * - temperature, sleep and weight
- * - tasks, events, labs, documents and diagnoses
- * - settings, custom lists and deleted IDs
- *
- * Explicitly shared in addition to pain/panic/tetany/medication:
- * - period logs and cycle settings used by the Blueberry calendar
- */
-function toPartnerSharedPayload(payload: BixboData): PartnerSharedPayload {
-  const dayLogs: BixboData["dayLogs"] = {};
-
-  for (const [date, log] of Object.entries(payload.dayLogs ?? {})) {
-    const pain = log.pain?.length ? log.pain : undefined;
-    const panic = log.panic?.length ? log.panic : undefined;
-    const tetany = log.tetany?.length ? log.tetany : undefined;
-    const extraMeds = log.extraMeds?.length ? log.extraMeds : undefined;
-    const period = log.period || undefined;
-    const periodInfo = log.periodInfo?.level ? log.periodInfo : undefined;
-
-    if (pain || panic || tetany || extraMeds || period || periodInfo) {
-      dayLogs[date] = {
-        pain,
-        panic,
-        tetany,
-        extraMeds,
-        period,
-        periodInfo,
-      };
-    }
-  }
-
-  return {
-    dayLogs,
-    meds: payload.meds ?? [],
-    medLog: payload.medLog ?? {},
-    cycle: payload.cycle,
-  };
-}
-
-function toPartnerView(shared: PartnerSharedPayload | null, name: string, gender?: string | null): PartnerData {
-  const dayLogs: PartnerData["dayLogs"] = {};
-
-  for (const [date, log] of Object.entries(shared?.dayLogs ?? {})) {
-    if (
-      log?.pain?.length ||
-      log?.panic?.length ||
-      log?.tetany?.length ||
-      log?.extraMeds?.length ||
-      log?.period ||
-      log?.periodInfo?.level
-    ) {
-      dayLogs[date] = {
-        pain: log.pain,
-        panic: log.panic,
-        tetany: log.tetany,
-        extraMeds: log.extraMeds,
-        period: log.period,
-        periodInfo: log.periodInfo,
-      };
-    }
-  }
-
-  const safeGender = gender === "female" || gender === "male" ? gender : undefined;
-
-  return {
-    name,
-    dayLogs,
-    dayNotes: {},
-    meds: shared?.meds ?? [],
-    medLog: shared?.medLog ?? {},
-    cycle: shared?.cycle,
-    gender: safeGender,
-    importedAt: Date.now(),
-  };
-}
-
-export async function fetchPartner(): Promise<PartnerData | null> {
-  const { data, error } = await supabase.rpc("get_partner");
-
-  if (error) {
-    console.error("fetchPartner", error);
-    return null;
-  }
-
-  const row = (
-    data as Array<{
-      id: string;
-      display_name: string | null;
-      gender: string | null;
-      data: PartnerSharedPayload | null;
-    }>
-  )?.[0];
-
-  if (!row) return null;
-
-  return toPartnerView(row.data, row.display_name || "Partner", row.gender);
-}
-
-function safeObject(value: unknown): Record<string, unknown> {
-  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
-}
-
-function safeStringArray(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
-}
-
-function safeObjectArray<T extends object>(value: unknown): T[] {
-  return Array.isArray(value)
-    ? value.filter((item): item is T => Boolean(item) && typeof item === "object" && !Array.isArray(item))
-    : [];
-}
-
-function normalizeRemotePostpartumState(value: unknown): PostpartumState {
-  const raw = safeObject(value);
-
-  const visits = safeObjectArray<PregnancyAppointment>(raw.visits).filter(
-    (visit) => typeof visit.id === "string" && typeof visit.date === "string" && typeof visit.title === "string",
-  );
-
-  const deliveryType =
-    raw.deliveryType === "vaginal" ||
-    raw.deliveryType === "csection" ||
-    raw.deliveryType === "assisted" ||
-    raw.deliveryType === "other"
-      ? raw.deliveryType
-      : undefined;
-
-  const feedingMode =
-    raw.feedingMode === "breast" || raw.feedingMode === "bottle" || raw.feedingMode === "mixed"
-      ? raw.feedingMode
-      : undefined;
-
-  const birthWeight = Number(raw.babyBirthWeightKg);
-
-  return {
-    active: Boolean(raw.active),
-    birthDate: typeof raw.birthDate === "string" ? raw.birthDate : undefined,
-    deliveryType,
-    babyName: typeof raw.babyName === "string" ? raw.babyName : undefined,
-    babyBirthWeightKg: Number.isFinite(birthWeight) ? birthWeight : undefined,
-    feedingMode,
-    visits,
-    note: typeof raw.note === "string" ? raw.note : undefined,
-    endedAt: typeof raw.endedAt === "string" ? raw.endedAt : undefined,
-  };
-}
-
-function normalizeRemotePostpartumDayLog(value: unknown): PostpartumDayLog | undefined {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
-
-  const raw = value as Record<string, unknown>;
-  const sleepHours = Number(raw.sleepHours);
-  const babySleepHours = Number(raw.babySleepHours);
-  const recovery = Number(raw.recovery);
-  const csectionRecovery = Number(raw.csectionRecovery);
-  const perinealHealing = Number(raw.perinealHealing);
-
-  const bleeding =
-    raw.bleeding === "" ||
-    raw.bleeding === "none" ||
-    raw.bleeding === "spotting" ||
-    raw.bleeding === "light" ||
-    raw.bleeding === "medium" ||
-    raw.bleeding === "heavy"
-      ? raw.bleeding
-      : undefined;
-
-  return {
-    ...(raw as PostpartumDayLog),
-    bleeding,
-    symptoms: safeStringArray(raw.symptoms),
-    mood: safeStringArray(raw.mood),
-    breastfeeding: safeObjectArray<NonNullable<PostpartumDayLog["breastfeeding"]>[number]>(raw.breastfeeding),
-    pumping: safeObjectArray<NonNullable<PostpartumDayLog["pumping"]>[number]>(raw.pumping),
-    bottle: safeObjectArray<NonNullable<PostpartumDayLog["bottle"]>[number]>(raw.bottle),
-    diapers: safeObjectArray<NonNullable<PostpartumDayLog["diapers"]>[number]>(raw.diapers),
-    sleepHours: Number.isFinite(sleepHours) ? sleepHours : undefined,
-    babySleepHours: Number.isFinite(babySleepHours) ? babySleepHours : undefined,
-    recovery: Number.isFinite(recovery) ? recovery : undefined,
-    csectionRecovery: Number.isFinite(csectionRecovery) ? csectionRecovery : undefined,
-    perinealHealing: Number.isFinite(perinealHealing) ? perinealHealing : undefined,
-    note: typeof raw.note === "string" ? raw.note : undefined,
-  };
-}
-
-function normalizeRemotePayload(value: unknown): BixboData {
-  const raw = safeObject(value);
-  const rawDayLogs = safeObject(raw.dayLogs);
-  const dayLogs: Record<string, DayLog> = {};
-
-  for (const [date, rawLog] of Object.entries(rawDayLogs)) {
-    if (!rawLog || typeof rawLog !== "object" || Array.isArray(rawLog)) continue;
-
-    const log = rawLog as DayLog;
-    const postpartum = normalizeRemotePostpartumDayLog((rawLog as Record<string, unknown>).postpartum);
-
-    dayLogs[date] = {
-      ...log,
-      postpartum,
-    };
-  }
-
-  return {
-    ...EMPTY,
-    ...(raw as Partial<BixboData>),
-    dayLogs,
-    postpartum: normalizeRemotePostpartumState(raw.postpartum),
-    tasks: Array.isArray(raw.tasks) ? (raw.tasks as BixboData["tasks"]) : [],
-    events: Array.isArray(raw.events) ? (raw.events as BixboData["events"]) : [],
-    meds: Array.isArray(raw.meds) ? (raw.meds as BixboData["meds"]) : [],
-    folders: Array.isArray(raw.folders) ? (raw.folders as BixboData["folders"]) : EMPTY.folders,
-    notebook: Array.isArray(raw.notebook) ? (raw.notebook as BixboData["notebook"]) : [],
-    labs: Array.isArray(raw.labs) ? (raw.labs as NonNullable<BixboData["labs"]>) : [],
-    docs: Array.isArray(raw.docs) ? (raw.docs as NonNullable<BixboData["docs"]>) : [],
-    diagnoses: Array.isArray(raw.diagnoses) ? (raw.diagnoses as NonNullable<BixboData["diagnoses"]>) : [],
-    deletedIds: Array.isArray(raw.deletedIds) ? (raw.deletedIds as NonNullable<BixboData["deletedIds"]>) : [],
-  };
-}
-
-function quarantinePostpartum(payload: BixboData): BixboData {
-  const dayLogs: BixboData["dayLogs"] = {};
-
-  for (const [date, log] of Object.entries(payload.dayLogs ?? {})) {
-    const { postpartum: _postpartum, ...safeLog } = log;
-    dayLogs[date] = safeLog;
-  }
-
-  return {
-    ...payload,
-    dayLogs,
-    postpartum: {
-      active: false,
-      visits: [],
+export function saveNotifPrefs(patch: Partial<NotificationPrefs>) {
+  setBixbo((d) => ({
+    ...d,
+    settings: {
+      ...d.settings,
+      notif: { ...(d.settings.notif ?? {}), ...patch },
     },
-  };
+  }));
+
+  // Never recreate a PushSubscription while the master preference is off.
+  // Other preference changes are synced only when remote push is enabled.
+  if (patch.enabled === false) return;
+  queueMicrotask(() => void syncPushState().catch(logPushError));
 }
 
-export async function pullMyData(): Promise<BixboData | null> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export const NOTIF_CATEGORY_LABELS: Record<NotifCategory, string> = {
+  meds: "Medication reminders",
+  period: "Period reminders",
+  ovulation: "Ovulation reminders",
+  dailyLog: "Daily log reminders",
+  symptom: "Symptom reminders",
+  appointments: "Appointment reminders",
+  mood: "Mood reminders",
+  hydration: "Hydration reminders",
+  marketing: "News & tips",
+};
 
-  if (!user) return null;
+/* ------------------------------------------------------------------ */
+/* Service worker                                                      */
+/* ------------------------------------------------------------------ */
 
-  const { data, error } = await supabase.from("user_data").select("data").eq("user_id", user.id).maybeSingle();
+const SW_URL = "/bixbo-push-sw.js";
+let swPromise: Promise<ServiceWorkerRegistration | null> | null = null;
 
-  if (error) {
-    console.error("pullMyData", error);
-    throw error;
-  }
-
-  return data?.data ? normalizeRemotePayload(data.data) : null;
+function logPushError(error: unknown) {
+  console.warn("BIXBO Web Push:", error);
 }
 
-/*
- * Track the last private payload we pushed so realtime can ignore an echo of
- * our own write and avoid a merge/push feedback loop.
- */
-let _lastPushedJson: string | null = null;
-
-export async function pushMyData(payload: BixboData): Promise<void> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) return;
-
-  setPendingCloudSync(true);
-  const safePayload = normalizeRemotePayload(payload);
-  const privatePayload = {
-    ...safePayload,
-    partner: undefined,
-  };
-
-  const partnerPayload = toPartnerSharedPayload(safePayload);
-
-  _lastPushedJson = JSON.stringify(privatePayload);
-
-  const [privateResult, sharedResult] = await Promise.all([
-    supabase.from("user_data").upsert({
-      user_id: user.id,
-      data: privatePayload as never,
-    }),
-
-    supabase.from(PARTNER_SHARED_DATA_TABLE).upsert({
-      user_id: user.id,
-      data: partnerPayload as never,
-    }),
-  ]);
-
-  if (privateResult.error) {
-    console.error("pushMyData private data", privateResult.error);
-    throw privateResult.error;
-  }
-
-  if (sharedResult.error) {
-    console.error("pushMyData partner data", sharedResult.error);
-    throw sharedResult.error;
-  }
-
-  setPendingCloudSync(false);
+export function pushSupported(): boolean {
+  return (
+    typeof window !== "undefined" && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window
+  );
 }
 
-const PENDING_SYNC_KEY = "bixbo:pending-cloud-sync";
+export function ensurePushWorker(): Promise<ServiceWorkerRegistration | null> {
+  if (!pushSupported()) return Promise.resolve(null);
+  if (swPromise) return swPromise;
 
-function setPendingCloudSync(pending: boolean) {
-  if (typeof window === "undefined") return;
-  try {
-    if (pending) window.localStorage.setItem(PENDING_SYNC_KEY, "1");
-    else window.localStorage.removeItem(PENDING_SYNC_KEY);
-  } catch {
-    // A full localStorage must not break cloud sync.
-  }
-}
-
-export function hasPendingCloudSync(): boolean {
-  if (typeof window === "undefined") return false;
-  return window.localStorage.getItem(PENDING_SYNC_KEY) === "1";
-}
-
-/* ------------------- Immediate-flush queue ------------------- */
-
-let _flushingPromise: Promise<void> | null = null;
-
-export async function flushMyDataPush(): Promise<void> {
-  if (_flushingPromise) return _flushingPromise;
-
-  _flushingPromise = (async () => {
+  swPromise = (async () => {
     try {
-      await pushMyData(getBixbo());
+      // Always register the expected script. This also upgrades installations
+      // that still have an older service worker controlling scope "/".
+      const registration = await navigator.serviceWorker.register(SW_URL, {
+        scope: "/",
+        updateViaCache: "none",
+      });
+
+      await registration.update().catch(() => undefined);
+      await navigator.serviceWorker.ready;
+      return registration;
     } catch (error) {
-      setPendingCloudSync(true);
-      console.error("flushMyDataPush", error);
-    } finally {
-      _flushingPromise = null;
+      logPushError(error);
+      return null;
     }
   })();
 
-  return _flushingPromise;
+  return swPromise;
 }
 
-// Automatic unload/pagehide pushes are intentionally disabled.
-// OAuth redirects can fire these events while the auth session is changing,
-// which can cause an unsafe cloud write during sign-in.
+/* ------------------------------------------------------------------ */
+/* Permission + subscription                                           */
+/* ------------------------------------------------------------------ */
 
-/* ------------------- Session hook ------------------- */
+export function permissionState(): NotificationPermission | "unsupported" {
+  if (!pushSupported()) return "unsupported";
+  return Notification.permission;
+}
 
-export function useSession() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [ready, setReady] = useState(false);
+function urlBase64ToUint8Array(base64: string): Uint8Array {
+  const padding = "=".repeat((4 - (base64.length % 4)) % 4);
+  const normalized = (base64 + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = window.atob(normalized);
+  return Uint8Array.from(raw, (char) => char.charCodeAt(0));
+}
 
-  useEffect(() => {
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-    });
+function vapidPublicKey(): string {
+  const value = (import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined)?.trim();
+  if (!value) {
+    throw new Error("Missing VITE_VAPID_PUBLIC_KEY.");
+  }
+  return value;
+}
 
-    supabase.auth
-      .getSession()
-      .then(({ data, error }) => {
-        if (error) throw error;
-        setSession(data.session);
-      })
-      .catch((error) => {
-        console.error("useSession getSession", error);
-        setSession(null);
-      })
-      .finally(() => {
-        setReady(true);
-      });
+export async function ensurePushSubscription(): Promise<PushSubscription | null> {
+  if (Notification.permission !== "granted") return null;
 
-    return () => subscription.subscription.unsubscribe();
-  }, []);
+  const registration = await ensurePushWorker();
+  if (!registration) return null;
+
+  const current = await registration.pushManager.getSubscription();
+  if (current) return current;
+
+  return registration.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: urlBase64ToUint8Array(vapidPublicKey()),
+  });
+}
+
+const PENDING_DELETE_KEY = "bixbo:pending-push-deletes";
+
+function readPendingDeleteEndpoints(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const parsed: unknown = JSON.parse(window.localStorage.getItem(PENDING_DELETE_KEY) ?? "[]");
+    return Array.isArray(parsed) ? parsed.filter((value): value is string => typeof value === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function writePendingDeleteEndpoints(endpoints: string[]) {
+  if (typeof window === "undefined") return;
+  try {
+    const unique = [...new Set(endpoints.filter(Boolean))];
+    if (unique.length) window.localStorage.setItem(PENDING_DELETE_KEY, JSON.stringify(unique));
+    else window.localStorage.removeItem(PENDING_DELETE_KEY);
+  } catch {
+    // A full localStorage must not prevent disabling notifications.
+  }
+}
+
+function queuePendingDelete(endpoint: string | undefined) {
+  if (!endpoint) return;
+  writePendingDeleteEndpoints([...readPendingDeleteEndpoints(), endpoint]);
+}
+
+async function requireAuthenticatedUser() {
+  const { data, error } = await supabase.auth.getUser();
+  if (error) throw error;
+  if (!data.user) throw new Error("Sign in to enable reminders when BIXBO is fully closed.");
+  return data.user;
+}
+
+async function invokePushSubscription(
+  action: "upsert" | "delete",
+  subscription?: PushSubscription,
+  endpointOverride?: string,
+) {
+  const body =
+    action === "upsert"
+      ? {
+          action,
+          subscription: subscription?.toJSON(),
+          userAgent: navigator.userAgent,
+        }
+      : {
+          action,
+          endpoint: endpointOverride ?? subscription?.endpoint,
+        };
+
+  const { error } = await supabase.functions.invoke("push-subscription", { body });
+  if (error) throw error;
+}
+
+export async function flushPendingPushDeletes(): Promise<void> {
+  if (typeof window === "undefined" || !navigator.onLine) return;
+  const endpoints = readPendingDeleteEndpoints();
+  if (!endpoints.length) return;
+
+  try {
+    await requireAuthenticatedUser();
+  } catch {
+    return;
+  }
+
+  const failed: string[] = [];
+  for (const endpoint of endpoints) {
+    try {
+      await invokePushSubscription("delete", undefined, endpoint);
+    } catch {
+      failed.push(endpoint);
+    }
+  }
+  writePendingDeleteEndpoints(failed);
+}
+
+/**
+ * Enables remote Web Push and stores the device subscription server-side.
+ * The user must be authenticated in Supabase.
+ */
+export async function enableRemotePush(): Promise<PushSubscription> {
+  if (!pushSupported()) throw new Error("Web Push is not supported in this browser.");
+
+  // Check authentication before showing the browser permission prompt.
+  await requireAuthenticatedUser();
+
+  let permission = Notification.permission;
+  if (permission === "default") {
+    permission = await Notification.requestPermission();
+  }
+  if (permission !== "granted") {
+    throw new Error("Notification permission was not granted.");
+  }
+
+  const subscription = await ensurePushSubscription();
+  if (!subscription) throw new Error("The browser did not create a push subscription.");
+
+  try {
+    await invokePushSubscription("upsert", subscription);
+    saveNotifPrefs({ enabled: true, promptAnswered: true });
+    await syncPushState();
+    return subscription;
+  } catch (error) {
+    // Browser permission and a browser subscription do not mean the server
+    // subscription succeeded. Keep the master state off on failure.
+    saveNotifPrefs({ enabled: false, promptAnswered: true });
+    throw error;
+  }
+}
+
+/**
+ * Removes this browser from the server and unsubscribes it from PushManager.
+ */
+export async function disableRemotePush(): Promise<void> {
+  // Turn the master preference off first so no concurrent sync can recreate
+  // the subscription while deletion is in progress.
+  saveNotifPrefs({ enabled: false, promptAnswered: true });
+
+  const registration = await ensurePushWorker();
+  const subscription = await registration?.pushManager.getSubscription();
+  if (!subscription) return;
+
+  try {
+    await requireAuthenticatedUser();
+    await invokePushSubscription("delete", subscription);
+  } catch (error) {
+    queuePendingDelete(subscription.endpoint);
+    logPushError(error);
+  } finally {
+    await subscription.unsubscribe().catch(logPushError);
+  }
+}
+
+/**
+ * Backwards-compatible function used by the existing notification settings page.
+ */
+export async function requestNotificationPermission(): Promise<NotificationPermission | "unsupported"> {
+  if (!pushSupported()) return "unsupported";
+  if (Notification.permission === "denied") return "denied";
+
+  try {
+    await enableRemotePush();
+    return "granted";
+  } catch (error) {
+    logPushError(error);
+    // Permission may be granted even though the authenticated server upsert
+    // failed. Never report remote push as enabled in that state.
+    saveNotifPrefs({ promptAnswered: true, enabled: false });
+    return Notification.permission;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Server snapshot                                                     */
+/* ------------------------------------------------------------------ */
+
+type ServerMedication = {
+  id: string;
+  name: string;
+  dose?: string;
+  times: string[];
+};
+
+type ServerAppointment = {
+  id: string;
+  title: string;
+  startsAt: string;
+};
+
+type PushSnapshot = {
+  timezone: string;
+  localDate: string;
+  prefs: ResolvedPrefs;
+  medications: ServerMedication[];
+  takenMedicationSlots: string[];
+  hasLogToday: boolean;
+  nextPeriodStart: string | null;
+  showCyclePredictions: boolean;
+  appointments: ServerAppointment[];
+};
+
+function browserTimezone(): string {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+}
+
+function appointmentIso(date: string, time?: string): string | null {
+  const [year, month, day] = date.split("-").map(Number);
+  const [hour, minute] = (time || "09:00").split(":").map(Number);
+
+  if (!year || !month || !day) return null;
+  const local = new Date(year, month - 1, day, hour || 0, minute || 0, 0, 0);
+  return Number.isNaN(local.getTime()) ? null : local.toISOString();
+}
+
+function buildPushSnapshot(data = getBixbo()): PushSnapshot {
+  const today = todayKey();
+  const prefs = notifPrefs(data);
+  const nextPeriod = showCyclePredictions(data) ? (nextPredictedPeriod(data.cycle)?.start ?? null) : null;
+
+  const medications: ServerMedication[] = (data.meds ?? [])
+    .filter((med) => !med.asNeeded && Array.isArray(med.times) && med.times.length > 0)
+    .map((med) => ({
+      id: String(med.id),
+      name: med.name,
+      dose: med.dose || undefined,
+      times: med.times,
+    }));
+
+  const appointments: ServerAppointment[] = [
+    ...(data.pregnancy?.appointments ?? []),
+    ...(data.postpartum?.visits ?? []),
+  ].flatMap((appointment) => {
+    if (!appointment?.id || !appointment.date) return [];
+    const startsAt = appointmentIso(appointment.date, appointment.time);
+    if (!startsAt) return [];
+    return [
+      {
+        id: String(appointment.id),
+        title: appointment.title || "Appointment",
+        startsAt,
+      },
+    ];
+  });
 
   return {
-    session,
-    ready,
-    user: session?.user ?? null,
+    timezone: browserTimezone(),
+    localDate: today,
+    prefs,
+    medications,
+    takenMedicationSlots: Object.keys(data.medLog?.[today] ?? {}).filter((slot) =>
+      Boolean(data.medLog?.[today]?.[slot]),
+    ),
+    hasLogToday: hasAnyLog(data.dayLogs[today]),
+    nextPeriodStart: nextPeriod,
+    showCyclePredictions: showCyclePredictions(data),
+    appointments,
   };
 }
 
-/* ------------------- Sync orchestrator ------------------- */
+let syncPromise: Promise<void> | null = null;
 
-export function useCloudSync() {
-  const { session, ready } = useSession();
+/**
+ * Sends only data needed to calculate reminders. It does not upload the complete
+ * health log. The server row is protected by RLS and keyed to auth.uid().
+ */
+export async function syncPushState(): Promise<void> {
+  if (typeof window === "undefined") return;
 
-  useEffect(() => {
-    if (!ready) return;
+  await flushPendingPushDeletes();
 
-    if (!session) {
-      setPartner(undefined);
-      return;
-    }
+  const prefs = notifPrefs(getBixbo());
+  if (!prefs.enabled) return;
+  if (Notification.permission !== "granted") return;
 
-    let cancelled = false;
-    let pushTimer: ReturnType<typeof setTimeout> | null = null;
-    let latestPushData: BixboData | null = null;
+  if (syncPromise) return syncPromise;
 
-    const schedulePush = (nextData: BixboData, delay = 400) => {
-      latestPushData = nextData;
-      setPendingCloudSync(true);
-      if (pushTimer) clearTimeout(pushTimer);
+  syncPromise = (async () => {
+    await requireAuthenticatedUser();
+    const subscription = await ensurePushSubscription();
+    if (!subscription) return;
 
-      pushTimer = setTimeout(() => {
-        pushTimer = null;
-        const payload = latestPushData ?? getBixbo();
-        latestPushData = null;
-        pushMyData(payload).catch((error) => {
-          setPendingCloudSync(true);
-          console.error("useCloudSync push", error);
-        });
-      }, delay);
-    };
+    // Refresh/upsert first in case the browser rotated the subscription.
+    await invokePushSubscription("upsert", subscription);
 
-    void (async () => {
-      try {
-        await ensureProfile();
-
-        const local = getBixbo();
-        const remote = await pullMyData();
-        if (cancelled) return;
-
-        if (remote) {
-          // Merge instead of replacing so a newer local log can never be lost
-          // when the previous cloud push was interrupted by closing the app.
-          const safeRemote = normalizeRemotePayload(remote);
-          const merged = mergeBixbo(local, safeRemote);
-          const withLocalPartner = { ...merged, partner: local.partner };
-          replaceBixbo(withLocalPartner, "remote");
-
-          // Reconcile the merged result back to cloud. This also clears a
-          // persistent pending-sync marker after a successful retry.
-          await pushMyData(withLocalPartner);
-        } else {
-          await pushMyData(local);
-        }
-
-        const partner = await fetchPartner();
-        if (!cancelled) setPartner(partner ?? undefined);
-      } catch (error) {
-        setPendingCloudSync(true);
-        console.error("useCloudSync guarded initial sync", error);
-        if (!cancelled) setPartner(undefined);
-      }
-    })();
-
-    const unsubscribeStore = subscribeBixboChanges((nextData, reason) => {
-      if (reason !== "local") return;
-      schedulePush(nextData);
+    const { error } = await supabase.functions.invoke("push-subscription", {
+      body: {
+        action: "sync-profile",
+        profile: buildPushSnapshot(),
+      },
     });
 
-    const retryPending = () => {
-      if (!hasPendingCloudSync()) return;
-      schedulePush(getBixbo(), 0);
-    };
+    if (error) throw error;
+  })().finally(() => {
+    syncPromise = null;
+  });
 
-    const refreshPartner = async () => {
-      try {
-        const partner = await fetchPartner();
-        if (!cancelled) setPartner(partner ?? undefined);
-      } catch (error) {
-        console.error("useCloudSync refreshPartner", error);
+  return syncPromise;
+}
+
+export type RemoteTestPushResult = {
+  attempted: number;
+  delivered: number;
+  failed: number;
+  removed: number;
+};
+
+/** Sends a real server-originated Web Push to every active device on this account. */
+export async function sendTestPush(): Promise<RemoteTestPushResult> {
+  await requireAuthenticatedUser();
+
+  const prefs = notifPrefs(getBixbo());
+  if (!prefs.enabled) throw new Error("Enable remote notifications before sending a test push.");
+  if (Notification.permission !== "granted") throw new Error("Browser notification permission is not granted.");
+
+  // Ensure this exact device and its latest reminder profile exist server-side.
+  await syncPushState();
+  const subscription = await ensurePushSubscription();
+  if (!subscription) throw new Error("No active push subscription was found for this device.");
+
+  const { data, error } = await supabase.functions.invoke("push-subscription", {
+    body: { action: "test", endpoint: subscription.endpoint },
+  });
+  if (error) throw error;
+
+  const result = data as Partial<RemoteTestPushResult> & { ok?: boolean; error?: string };
+  if (!result?.ok) throw new Error(result?.error || "The server did not send the test notification.");
+
+  return {
+    attempted: Number(result.attempted ?? 0),
+    delivered: Number(result.delivered ?? 0),
+    failed: Number(result.failed ?? 0),
+    removed: Number(result.removed ?? 0),
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Local fallback delivery                                             */
+/* ------------------------------------------------------------------ */
+
+const SENT_KEY = "bixbo:notif-sent";
+
+function readSent(): Record<string, number> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(SENT_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === "object" ? (parsed as Record<string, number>) : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeSent(map: Record<string, number>) {
+  if (typeof window === "undefined") return;
+  const cutoff = Date.now() - 8 * 86_400_000;
+  const pruned = Object.fromEntries(Object.entries(map).filter(([, timestamp]) => timestamp > cutoff));
+  try {
+    window.localStorage.setItem(SENT_KEY, JSON.stringify(pruned));
+  } catch {
+    // A full localStorage must not break the app.
+  }
+}
+
+function alreadySent(key: string): boolean {
+  return Boolean(readSent()[key]);
+}
+
+function markSent(key: string) {
+  const sent = readSent();
+  sent[key] = Date.now();
+  writeSent(sent);
+}
+
+export function minutesOf(hhmm: string): number {
+  const [hour, minute] = hhmm.split(":").map(Number);
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) return 0;
+  return hour * 60 + minute;
+}
+
+function nowMinutes(date = new Date()): number {
+  return date.getHours() * 60 + date.getMinutes();
+}
+
+export function inQuietHours(prefs: ResolvedPrefs, at = new Date()): boolean {
+  const start = minutesOf(prefs.quietStart);
+  const end = minutesOf(prefs.quietEnd);
+  const now = nowMinutes(at);
+  if (start === end) return false;
+  return start < end ? now >= start && now < end : now >= start || now < end;
+}
+
+export interface NotifPayload {
+  title: string;
+  body: string;
+  url: string;
+  tag: string;
+  category: NotifCategory;
+}
+
+async function deliver(payload: NotifPayload) {
+  const visible = typeof document !== "undefined" && document.visibilityState === "visible";
+
+  if (visible) {
+    toast(payload.title, {
+      description: payload.body,
+      duration: 8000,
+    });
+    return;
+  }
+
+  if (permissionState() !== "granted") return;
+  const registration = await ensurePushWorker();
+  if (!registration) return;
+
+  const open = await registration.getNotifications({ tag: payload.tag });
+  if (open.length) return;
+
+  await registration.showNotification(payload.title, {
+    body: payload.body,
+    tag: payload.tag,
+    icon: "/icon-192.png",
+    badge: "/icon-192.png",
+    data: {
+      url: payload.url,
+      category: payload.category,
+      tag: payload.tag,
+    },
+  });
+}
+
+async function fire(prefs: ResolvedPrefs, payload: NotifPayload, dedupeKey: string) {
+  if (!prefs[payload.category]) return;
+  if (alreadySent(dedupeKey)) return;
+  if (payload.category !== "meds" && inQuietHours(prefs)) return;
+
+  markSent(dedupeKey);
+  await deliver(payload);
+}
+
+const GRACE = 90;
+
+function dueNow(target: string, at = new Date()): boolean {
+  const difference = nowMinutes(at) - minutesOf(target);
+  return difference >= 0 && difference <= GRACE;
+}
+
+/**
+ * Keeps the existing foreground/local fallback behavior. Remote push is
+ * generated independently by send-due-push and therefore also works after the
+ * app and browser UI have been closed.
+ */
+export async function runNotificationChecks(now = new Date()) {
+  const data = getBixbo();
+  const prefs = notifPrefs(data);
+  if (!prefs.enabled) return;
+  if (permissionState() === "denied") return;
+
+  const today = todayKey();
+  const log = data.dayLogs[today];
+  const loggedToday = hasAnyLog(log);
+
+  if (prefs.meds) {
+    for (const med of data.meds ?? []) {
+      if (med.asNeeded) continue;
+      for (const time of med.times ?? []) {
+        if (!dueNow(time, now)) continue;
+        const slot = `${med.id}@${time}`;
+        if (data.medLog?.[today]?.[slot]) continue;
+        await fire(
+          prefs,
+          {
+            title: `Time for ${med.name}`,
+            body: med.dose ? `Take your ${med.dose} dose.` : "Take your scheduled medication.",
+            url: "/meds",
+            tag: `med-${slot}-${today}`,
+            category: "meds",
+          },
+          `med:${slot}:${today}`,
+        );
+      }
+    }
+  }
+
+  if (showCyclePredictions(data)) {
+    const next = nextPredictedPeriod(data.cycle);
+    if (next) {
+      const dayBefore = addDays(next.start, -1);
+      if (prefs.period && today === dayBefore && dueNow("09:00", now)) {
+        await fire(
+          prefs,
+          {
+            title: "Period expected tomorrow",
+            body: "Tomorrow your period is predicted to start.",
+            url: "/",
+            tag: `period-${next.start}`,
+            category: "period",
+          },
+          `period:${next.start}`,
+        );
+      }
+
+      const ovulation = addDays(next.start, -14);
+      const dayBeforeOvulation = addDays(ovulation, -1);
+      if (prefs.ovulation && today === dayBeforeOvulation && dueNow("09:00", now)) {
+        await fire(
+          prefs,
+          {
+            title: "Ovulation window",
+            body: "Ovulation window starts tomorrow.",
+            url: "/",
+            tag: `ovulation-${ovulation}`,
+            category: "ovulation",
+          },
+          `ovulation:${ovulation}`,
+        );
+      }
+    }
+  }
+
+  if (prefs.symptom && !loggedToday && dueNow(prefs.symptomTime, now)) {
+    await fire(
+      prefs,
+      {
+        title: "How are you feeling today?",
+        body: "Log today's symptoms in BIXBO.",
+        url: "/",
+        tag: `symptom-${today}`,
+        category: "symptom",
+      },
+      `symptom:${today}`,
+    );
+  }
+
+  if (prefs.dailyLog && !loggedToday && dueNow(prefs.dailyLogTime, now)) {
+    await fire(
+      prefs,
+      {
+        title: "Today's log is still empty",
+        body: "Take a moment to write down how your day went.",
+        url: "/",
+        tag: `daily-${today}`,
+        category: "dailyLog",
+      },
+      `daily:${today}`,
+    );
+  }
+
+  if (prefs.mood && dueNow(prefs.moodTime, now)) {
+    await fire(
+      prefs,
+      {
+        title: "How is your mood today?",
+        body: "A quick mood check-in helps spot patterns.",
+        url: "/",
+        tag: `mood-${today}`,
+        category: "mood",
+      },
+      `mood:${today}`,
+    );
+  }
+
+  if (prefs.hydration) {
+    const start = minutesOf(prefs.hydrationStart);
+    const end = minutesOf(prefs.hydrationEnd);
+    const step = Math.max(1, prefs.hydrationEveryHours) * 60;
+    const current = nowMinutes(now);
+
+    if (current >= start && current <= end) {
+      const slotIndex = Math.floor((current - start) / step);
+      const slotTime = start + slotIndex * step;
+      if (current - slotTime <= 30) {
+        await fire(
+          prefs,
+          {
+            title: "Time for some water",
+            body: "A glass of water now keeps the day gentler.",
+            url: "/",
+            tag: `water-${today}-${slotIndex}`,
+            category: "hydration",
+          },
+          `water:${today}:${slotIndex}`,
+        );
+      }
+    }
+  }
+
+  if (prefs.appointments) {
+    const appointments = [...(data.pregnancy?.appointments ?? []), ...(data.postpartum?.visits ?? [])];
+
+    for (const appointment of appointments) {
+      if (!appointment?.date) continue;
+      const startsAt = appointmentIso(appointment.date, appointment.time);
+      if (!startsAt) continue;
+      const difference = (new Date(startsAt).getTime() - now.getTime()) / 60_000;
+
+      const windows = [
+        { label: "tomorrow", minutes: 24 * 60, key: "24h" },
+        { label: "in 2 hours", minutes: 120, key: "2h" },
+      ];
+
+      for (const window of windows) {
+        if (difference <= window.minutes && difference > window.minutes - 30) {
+          await fire(
+            prefs,
+            {
+              title: `Appointment ${window.label}`,
+              body: `${appointment.title || "Appointment"}${appointment.time ? ` at ${appointment.time}` : ""}.`,
+              url: "/",
+              tag: `appt-${appointment.id}-${window.key}`,
+              category: "appointments",
+            },
+            `appt:${appointment.id}:${window.key}`,
+          );
+        }
+      }
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Runtime hook                                                        */
+/* ------------------------------------------------------------------ */
+
+const TICK_MS = 60_000;
+const SERVER_SYNC_MS = 5 * 60_000;
+
+export function useNotificationRuntime() {
+  useEffect(() => {
+    if (typeof window === "undefined" || !pushSupported()) return;
+
+    let stopped = false;
+    let lastServerSync = 0;
+    let stateSyncTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const tick = async () => {
+      if (stopped) return;
+
+      await runNotificationChecks().catch(logPushError);
+
+      if (Notification.permission === "granted" && Date.now() - lastServerSync >= SERVER_SYNC_MS) {
+        lastServerSync = Date.now();
+        await syncPushState().catch(logPushError);
       }
     };
 
-    const channel = supabase
-      .channel(`bixbo-sync-${session.user.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "user_data",
-          filter: `user_id=eq.${session.user.id}`,
-        },
-        (payload) => {
-          try {
-            const incomingRaw = (payload.new as { data?: unknown } | undefined)?.data;
-            if (!incomingRaw) return;
+    if (Notification.permission === "granted" && notifPrefs(getBixbo()).enabled) {
+      void ensurePushWorker();
+      void syncPushState().catch(logPushError);
+    }
 
-            const incoming = normalizeRemotePayload(incomingRaw);
-            const incomingJson = JSON.stringify({ ...incoming, partner: undefined });
-            if (incomingJson === _lastPushedJson) return;
+    const first = window.setTimeout(() => void tick(), 4000);
+    const interval = window.setInterval(() => void tick(), TICK_MS);
 
-            const local = getBixbo();
-            const merged = mergeBixbo(local, incoming);
-            const withLocalPartner = { ...merged, partner: local.partner };
-            replaceBixbo(withLocalPartner, "remote");
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void tick();
+    };
 
-            // If local-only data was added by the merge, reconcile it back to
-            // cloud without relying on a local-store event (reason is remote).
-            const mergedJson = JSON.stringify({ ...normalizeRemotePayload(withLocalPartner), partner: undefined });
-            if (mergedJson !== incomingJson) schedulePush(withLocalPartner);
-          } catch (error) {
-            console.error("useCloudSync realtime user_data", error);
-          }
-        },
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "partner_shared_data" },
-        () => void refreshPartner(),
-      )
-      .on("postgres_changes", { event: "*", schema: "public", table: "partner_links" }, () => void refreshPartner())
-      .subscribe();
+    const onOnline = () => {
+      void flushPendingPushDeletes().finally(() => void syncPushState().catch(logPushError));
+    };
 
-    window.addEventListener("online", retryPending);
-    if (navigator.onLine) retryPending();
+    // Keep the server reminder snapshot current shortly after any relevant
+    // local change instead of waiting for the five-minute interval.
+    const unsubscribeStore = subscribeBixboChanges((_nextData, reason) => {
+      if (reason !== "local") return;
+      if (stateSyncTimer) window.clearTimeout(stateSyncTimer);
+      stateSyncTimer = window.setTimeout(() => {
+        stateSyncTimer = null;
+        void syncPushState().catch(logPushError);
+      }, 800);
+    });
+
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("online", onOnline);
 
     return () => {
-      cancelled = true;
-      if (pushTimer) clearTimeout(pushTimer);
+      stopped = true;
+      window.clearTimeout(first);
+      window.clearInterval(interval);
+      if (stateSyncTimer) window.clearTimeout(stateSyncTimer);
       unsubscribeStore();
-      window.removeEventListener("online", retryPending);
-      void supabase.removeChannel(channel);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("online", onOnline);
     };
-  }, [ready, session?.user?.id]);
+  }, []);
+}
+
+/* ------------------------------------------------------------------ */
+/* Permission prompt                                                   */
+/* ------------------------------------------------------------------ */
+
+const SNOOZE_DAYS = 5;
+
+export function loggedDayCount(data: BixboData): number {
+  return Object.values(data.dayLogs ?? {}).filter((log) => hasAnyLog(log)).length;
+}
+
+export function shouldAskForPermission(data: BixboData): boolean {
+  if (!pushSupported()) return false;
+  if (Notification.permission !== "default") return false;
+  const prefs = notifPrefs(data);
+  if (prefs.promptAnswered) return false;
+  if (prefs.promptSnoozedAt && Date.now() - prefs.promptSnoozedAt < SNOOZE_DAYS * 86_400_000) {
+    return false;
+  }
+  return loggedDayCount(data) >= 3;
+}
+
+export function snoozePermissionPrompt() {
+  saveNotifPrefs({ promptSnoozedAt: Date.now() });
 }
