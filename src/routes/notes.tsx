@@ -19,7 +19,7 @@ export const Route = createFileRoute("/notes")({
   component: NotesPage,
 });
 
-type FolderIconComponent = (props: IconProps) => JSX.Element;
+type FolderIconComponent = (props: IconProps) => ReactElement;
 
 function folderIconComponent(folder: Pick<NoteFolder, "name" | "icon">): FolderIconComponent {
   const name = folder.name.trim().toLowerCase();

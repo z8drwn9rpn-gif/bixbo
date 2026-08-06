@@ -1060,7 +1060,7 @@ function migrate(raw: unknown): BixboData {
 
   const rawSettings = safeRecord<Partial<Settings>>(parsed.settings);
   const rawCycle = safeRecord<Partial<CyclePrefs>>(parsed.cycle);
-  const rawProfile = safeRecord<HealthProfile>(parsed.profile);
+  const rawProfile = safeRecord(parsed.profile) as HealthProfile;
   const rawPregnancy = safeRecord<Partial<PregnancyState>>(parsed.pregnancy);
   const rawPostpartum = safeRecord<Partial<PostpartumState>>(parsed.postpartum);
 
@@ -1103,7 +1103,9 @@ function migrate(raw: unknown): BixboData {
     medLog,
     medLogTimes,
     medNames: Object.fromEntries(
-      Object.entries(safeRecord(parsed.medNames)).filter(([, value]) => typeof value === "string"),
+      Object.entries(safeRecord(parsed.medNames)).filter(
+        (entry): entry is [string, string] => typeof entry[1] === "string",
+      ),
     ),
     folders: safeIdArray<NoteFolder>(parsed.folders).length ? safeIdArray<NoteFolder>(parsed.folders) : DEFAULT_FOLDERS,
     cycle: {
