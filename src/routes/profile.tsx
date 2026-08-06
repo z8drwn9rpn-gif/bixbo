@@ -630,6 +630,19 @@ function ProfilePage() {
     autoBackup: false,
     lastBackup: "",
   });
+  const [reminderPrefs, setReminderPrefs] = useState({
+    medication: true,
+    dailyCheckIn: false,
+    periodPrediction: true,
+    water: false,
+    sleep: false,
+    doctorAppointments: true,
+    quietHours: false,
+    dailyTime: "20:00",
+    waterIntervalHours: "3",
+    quietStart: "22:00",
+    quietEnd: "08:00",
+  });
   const [prefsLoaded, setPrefsLoaded] = useState(false);
 
   useEffect(() => {
@@ -643,12 +656,14 @@ function ProfilePage() {
           units?: typeof units;
           privacyPrefs?: typeof privacyPrefs;
           backupPrefs?: typeof backupPrefs;
+          reminderPrefs?: typeof reminderPrefs;
         };
         if (parsed.trackingPrefs) setTrackingPrefs((current) => ({ ...current, ...parsed.trackingPrefs }));
         if (parsed.painScale) setPainScale(parsed.painScale);
         if (parsed.units) setUnits((current) => ({ ...current, ...parsed.units }));
         if (parsed.privacyPrefs) setPrivacyPrefs((current) => ({ ...current, ...parsed.privacyPrefs }));
         if (parsed.backupPrefs) setBackupPrefs((current) => ({ ...current, ...parsed.backupPrefs }));
+        if (parsed.reminderPrefs) setReminderPrefs((current) => ({ ...current, ...parsed.reminderPrefs }));
       }
     } catch {
       // Ignore malformed local preference data and keep safe defaults.
@@ -661,9 +676,9 @@ function ProfilePage() {
     if (!prefsLoaded || typeof window === "undefined") return;
     window.localStorage.setItem(
       "bixbo:health-preferences",
-      JSON.stringify({ trackingPrefs, painScale, units, privacyPrefs, backupPrefs }),
+      JSON.stringify({ trackingPrefs, painScale, units, privacyPrefs, backupPrefs, reminderPrefs }),
     );
-  }, [prefsLoaded, trackingPrefs, painScale, units, privacyPrefs, backupPrefs]);
+  }, [prefsLoaded, trackingPrefs, painScale, units, privacyPrefs, backupPrefs, reminderPrefs]);
 
   const patch = (p: Partial<HealthProfile>) => update((d) => ({ ...d, profile: { ...d.profile, ...p } }));
   const setTheme = (theme: "light" | "dark" | "system") =>
@@ -1288,14 +1303,108 @@ function ProfilePage() {
   }
 
   if (healthView === "reminders") {
+    const setReminder = <K extends keyof typeof reminderPrefs>(key: K, value: (typeof reminderPrefs)[K]) =>
+      setReminderPrefs((current) => ({ ...current, [key]: value }));
+
     return (
       <HealthSubpage title="Reminders" onBack={() => setHealthView("hub")}>
-        <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
-          <p className="text-sm font-semibold text-foreground">Medication and reminders</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Medication reminder times are managed in Medications. App reminders are available in Notifications.
-          </p>
-        </section>
+        <Section title="Health reminders" subtitle="Choose which reminders BIXBO should show.">
+          <ToggleRow
+            label="Medication reminders"
+            checked={reminderPrefs.medication}
+            onChange={(value) => setReminder("medication", value)}
+          />
+          <ToggleRow
+            label="Daily check-in"
+            checked={reminderPrefs.dailyCheckIn}
+            onChange={(value) => setReminder("dailyCheckIn", value)}
+          />
+          <ToggleRow
+            label="Predicted period reminder"
+            checked={reminderPrefs.periodPrediction}
+            onChange={(value) => setReminder("periodPrediction", value)}
+          />
+          <ToggleRow
+            label="Water reminder"
+            checked={reminderPrefs.water}
+            onChange={(value) => setReminder("water", value)}
+          />
+          <ToggleRow
+            label="Sleep reminder"
+            checked={reminderPrefs.sleep}
+            onChange={(value) => setReminder("sleep", value)}
+          />
+          <ToggleRow
+            label="Doctor appointment reminder"
+            checked={reminderPrefs.doctorAppointments}
+            onChange={(value) => setReminder("doctorAppointments", value)}
+          />
+        </Section>
+
+        <Section title="Reminder timing">
+          <Field label="Daily check-in time" htmlFor="reminder-daily-time">
+            <Input
+              id="reminder-daily-time"
+              type="time"
+              value={reminderPrefs.dailyTime}
+              disabled={!reminderPrefs.dailyCheckIn}
+              onChange={(event) => setReminder("dailyTime", event.target.value)}
+            />
+          </Field>
+
+          <Field label="Water reminder interval" htmlFor="water-reminder-interval">
+            <select
+              id="water-reminder-interval"
+              value={reminderPrefs.waterIntervalHours}
+              disabled={!reminderPrefs.water}
+              onChange={(event) => setReminder("waterIntervalHours", event.target.value)}
+              className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm disabled:opacity-50"
+            >
+              <option value="1">Every hour</option>
+              <option value="2">Every 2 hours</option>
+              <option value="3">Every 3 hours</option>
+              <option value="4">Every 4 hours</option>
+            </select>
+          </Field>
+        </Section>
+
+        <Section title="Quiet hours" subtitle="Pause non-urgent reminders during this period.">
+          <ToggleRow
+            label="Enable quiet hours"
+            checked={reminderPrefs.quietHours}
+            onChange={(value) => setReminder("quietHours", value)}
+          />
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="From" htmlFor="quiet-hours-start">
+              <Input
+                id="quiet-hours-start"
+                type="time"
+                value={reminderPrefs.quietStart}
+                disabled={!reminderPrefs.quietHours}
+                onChange={(event) => setReminder("quietStart", event.target.value)}
+              />
+            </Field>
+            <Field label="To" htmlFor="quiet-hours-end">
+              <Input
+                id="quiet-hours-end"
+                type="time"
+                value={reminderPrefs.quietEnd}
+                disabled={!reminderPrefs.quietHours}
+                onChange={(event) => setReminder("quietEnd", event.target.value)}
+              />
+            </Field>
+          </div>
+        </Section>
+
+        <Section title="Medication schedule">
+          <Link
+            to="/meds"
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-input px-4 text-sm font-semibold"
+          >
+            Manage medication times
+          </Link>
+        </Section>
       </HealthSubpage>
     );
   }
