@@ -95,32 +95,32 @@
 :root {
   --radius: 1rem;
 
-  /* Main light palette — deeper olive neutrals, reduced washed-out brightness */
-  --background: oklch(0.9 0.065 110);
-  --foreground: oklch(0.19 0.05 115);
+  /* Main light palette — richer BIXBO olive, stronger separation, no washed-out yellow cast */
+  --background: oklch(0.84 0.085 112);
+  --foreground: oklch(0.18 0.06 116);
 
-  --surface: oklch(0.94 0.055 110);
-  --surface-elevated: oklch(0.9 0.075 110);
-  --surface-sunken: oklch(0.84 0.06 110);
-  --tint: oklch(0.8 0.105 110);
+  --surface: oklch(0.89 0.072 111);
+  --surface-elevated: oklch(0.85 0.09 112);
+  --surface-sunken: oklch(0.76 0.08 113);
+  --tint: oklch(0.73 0.12 114);
 
-  --card: oklch(0.95 0.045 110);
-  --card-foreground: oklch(0.19 0.04 115);
+  --card: oklch(0.9 0.065 111);
+  --card-foreground: oklch(0.18 0.055 116);
 
-  --popover: oklch(0.95 0.04 110);
-  --popover-foreground: oklch(0.19 0.04 115);
+  --popover: oklch(0.91 0.06 111);
+  --popover-foreground: oklch(0.18 0.055 116);
 
-  --primary: oklch(0.42 0.12 115);
+  --primary: oklch(0.36 0.135 116);
   --primary-foreground: oklch(1 0 0);
 
-  --secondary: oklch(0.86 0.075 115);
-  --secondary-foreground: oklch(0.25 0.07 115);
+  --secondary: oklch(0.79 0.095 114);
+  --secondary-foreground: oklch(0.2 0.075 116);
 
-  --muted: oklch(0.88 0.05 115);
-  --muted-foreground: oklch(0.35 0.055 115);
+  --muted: oklch(0.82 0.065 113);
+  --muted-foreground: oklch(0.3 0.065 116);
 
-  --accent: oklch(0.81 0.095 115);
-  --accent-foreground: oklch(0.25 0.07 115);
+  --accent: oklch(0.74 0.12 114);
+  --accent-foreground: oklch(0.2 0.075 116);
 
   --destructive: oklch(0.5 0.22 25);
   --destructive-foreground: oklch(1 0 0);
@@ -137,14 +137,14 @@
   --info: oklch(0.45 0.13 240);
   --info-foreground: oklch(1 0 0);
 
-  --border: oklch(0.72 0.055 115);
-  --input: oklch(0.72 0.055 115);
-  --ring: oklch(0.42 0.12 115);
+  --border: oklch(0.61 0.07 114);
+  --input: oklch(0.61 0.07 114);
+  --ring: oklch(0.36 0.135 116);
 
-  --chart-grid: oklch(0.79 0.035 115);
-  --chart-axis: oklch(0.39 0.045 115);
-  --chart-tooltip-bg: oklch(0.975 0.018 110);
-  --chart-tooltip-fg: oklch(0.19 0.04 115);
+  --chart-grid: oklch(0.68 0.05 114);
+  --chart-axis: oklch(0.3 0.06 116);
+  --chart-tooltip-bg: oklch(0.91 0.06 111);
+  --chart-tooltip-fg: oklch(0.18 0.055 116);
 
   /* Period intensity - readable text always dark on light swatches, adjusted for contrast/step separation */
   --period-spotting: oklch(0.86 0.05 275);
@@ -368,6 +368,17 @@
   }
 }
 
+/* Olive-tinted elevation for light mode */
+:root:not(.dark) .shadow-sm {
+  --tw-shadow-color: color-mix(in oklch, var(--primary) 20%, transparent);
+}
+
+:root:not(.dark) .shadow-md,
+:root:not(.dark) .shadow-lg,
+:root:not(.dark) .shadow-xl {
+  --tw-shadow-color: color-mix(in oklch, var(--primary) 24%, transparent);
+}
+
 /* Note editor placeholder */
 [contenteditable][data-placeholder]:empty::before {
   content: attr(data-placeholder);
@@ -393,10 +404,19 @@ html.dark {
 body {
   min-height: 100dvh;
   overflow-x: hidden;
-  background: var(--background);
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklch, var(--background) 94%, var(--primary) 6%) 0%,
+    var(--background) 46%,
+    color-mix(in oklch, var(--background) 96%, var(--surface-sunken) 4%) 100%
+  );
   color: var(--foreground);
   overscroll-behavior-y: none;
   -webkit-font-smoothing: antialiased;
+}
+
+.dark body {
+  background: var(--background);
 }
 
 ::selection {
@@ -506,4 +526,4 @@ select:-webkit-autofill {
   box-shadow: 0 0 0 1000px var(--surface) inset;
   caret-color: var(--foreground);
 }
-/* BIXBO olive theme publish revision: 2026-08-06 */
+/* BIXBO deeper olive theme publish revision: 2026-08-06 */
