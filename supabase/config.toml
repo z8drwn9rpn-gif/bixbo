@@ -1,7 +1,7 @@
 project_id = "zvpfzfofhalmwrtipcsp"
 
 [functions.push-subscription]
-verify_jwt = on
+verify_jwt = true
 
 [functions.send-due-push]
 verify_jwt = false
