@@ -13,6 +13,9 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { useCloudSync } from "../lib/cloudSync";
 import { useThemeSync } from "../lib/theme";
+import { useNotificationRuntime } from "../lib/notifications";
+import { NotificationPrompt } from "../components/NotificationPrompt";
+import { Toaster } from "../components/ui/sonner";
 
 function NotFoundComponent() {
   return (
@@ -131,11 +134,14 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   useCloudSync();
   useThemeSync();
+  useNotificationRuntime();
 
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
+      <NotificationPrompt />
+      <Toaster />
     </QueryClientProvider>
   );
 }
