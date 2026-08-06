@@ -609,18 +609,29 @@ export function QuickTags({
       <div className="mb-2.5 flex items-center justify-between gap-3">
         <p className="shrink-0 text-[11px] uppercase tracking-wider text-muted-foreground">Quick Log</p>
 
-        <button
-          type="button"
-          onClick={() => setEditMode((value) => !value)}
-          className={`flex min-h-9 items-center gap-1 rounded-full px-3 text-[11px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
-            editMode
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "bg-tint/70 text-muted-foreground hover:bg-tint hover:text-foreground"
-          }`}
-        >
-          <Pencil className="h-3 w-3" />
-          {editMode ? "Done" : "Edit"}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setEditMode((value) => !value)}
+            className={`flex min-h-9 items-center gap-1 rounded-full px-3 text-[11px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+              editMode
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "bg-tint/70 text-muted-foreground hover:bg-tint hover:text-foreground"
+            }`}
+          >
+            <Pencil className="h-3 w-3" />
+            {editMode ? "Done" : "Edit"}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setBuilderOpen(true)}
+            className="flex min-h-9 items-center gap-1 rounded-full bg-tint/70 px-3 text-[11px] font-semibold text-muted-foreground transition hover:bg-tint hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add
+          </button>
+        </div>
       </div>
 
       <div className="pb-1">
@@ -748,17 +759,6 @@ export function QuickTags({
               </button>
             );
           })}
-        </div>
-
-        <div className="mt-3 flex justify-end">
-          <button
-            type="button"
-            onClick={() => setBuilderOpen(true)}
-            className="flex min-h-10 items-center gap-1.5 rounded-full bg-tint/70 px-4 text-sm font-semibold text-muted-foreground transition hover:bg-tint hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          >
-            <Plus className="h-4 w-4" />
-            Add
-          </button>
         </div>
       </div>
 
