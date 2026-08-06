@@ -1962,22 +1962,6 @@ function SymptomLoadHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo
   const [active, setActive] = useState<string | null>(null);
   const detailRef = useRef<HTMLDivElement | null>(null);
 
-  const notesFor = (k: string): { text: string; time?: string }[] => {
-    const raw = data.dayNotes[k] ?? [];
-
-    return raw
-      .map((note) => {
-        if (typeof note === "string") return { text: note };
-        return {
-          text: note.text,
-          time: typeof note.time === "string" ? note.time : undefined,
-        };
-      })
-      .filter((note) => Boolean(note.text?.trim()));
-  };
-
-  const activeNotes = active ? notesFor(active) : [];
-
   useDismissTapTooltip(() => setActive(null));
 
   useEffect(() => {
@@ -2088,7 +2072,7 @@ function SymptomLoadHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo
 
   return (
     <ChartCard title={`Symptom Load — ${year}`}>
-      <p className="mt-1 text-xs text-muted-foreground">Tap any day to see every saved detail and the complete note.</p>
+      <p className="mt-1 text-xs text-muted-foreground">Tap any day to see the saved health details.</p>
 
       <div className="mt-3 overflow-x-auto overscroll-x-contain">
         <div
@@ -2130,7 +2114,7 @@ function SymptomLoadHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo
       {active ? (
         <div
           ref={detailRef}
-          className="mt-4 mb-6 min-w-0 max-w-full scroll-mt-24 scroll-mb-[calc(132px+env(safe-area-inset-bottom))] overflow-visible rounded-3xl bg-primary/20 p-4 text-xs ring-1 ring-primary/25"
+          className="mt-4 mb-3 min-w-0 max-w-full scroll-mt-24 scroll-mb-[calc(132px+env(safe-area-inset-bottom))] overflow-visible rounded-3xl bg-primary/20 p-4 text-xs ring-1 ring-primary/25"
           onClick={(event) => event.stopPropagation()}
           role="status"
           aria-live="polite"
@@ -2246,31 +2230,6 @@ function SymptomLoadHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo
           ) : (
             <p className="mt-3 text-muted-foreground">No symptom entries saved for this day.</p>
           )}
-
-          <div className="mt-3 min-w-0 border-t border-border/70 pt-3">
-            <p className="font-semibold text-foreground">Notes</p>
-
-            {activeNotes.length > 0 ? (
-              <div className="mt-2 space-y-2">
-                {activeNotes.map((note, index) => (
-                  <article
-                    key={`${active}-${index}`}
-                    className="min-w-0 max-w-full overflow-visible rounded-2xl bg-surface/70 p-3 ring-1 ring-border/50"
-                  >
-                    {note.time ? (
-                      <p className="mb-1 text-[10px] font-medium text-muted-foreground">{note.time}</p>
-                    ) : null}
-
-                    <p className="max-w-full whitespace-pre-wrap break-words text-[12px] leading-relaxed text-foreground [overflow-wrap:anywhere]">
-                      {note.text}
-                    </p>
-                  </article>
-                ))}
-              </div>
-            ) : (
-              <p className="mt-2 text-muted-foreground">No notes for this day.</p>
-            )}
-          </div>
         </div>
       ) : (
         <p className="mt-3 text-center text-[10px] text-muted-foreground">Tap a square for full details.</p>
