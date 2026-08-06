@@ -272,7 +272,7 @@ function SummaryCard({
   return (
     <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
       <div className="flex items-start gap-3">
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-tint text-primary ring-1 ring-border/50">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-tint ring-1 ring-border/50">
           {icon}
         </span>
 
@@ -344,7 +344,18 @@ function ageFromBirthDate(birthDate?: string): number | null {
   return age;
 }
 
-type HealthView = "hub" | "summary" | "journey" | "achievements" | "statistics" | "export";
+type HealthView =
+  | "hub"
+  | "summary"
+  | "journey"
+  | "achievements"
+  | "statistics"
+  | "export"
+  | "language"
+  | "appearance"
+  | "notifications"
+  | "privacy"
+  | "backup";
 
 function HubRow({
   icon,
@@ -363,7 +374,7 @@ function HubRow({
       onClick={onClick}
       className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-tint"
     >
-      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-tint text-primary ring-1 ring-border/50">
+      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-tint ring-1 ring-border/50">
         {icon}
       </span>
 
@@ -465,35 +476,35 @@ function HealthHub({
               icon={<NoteIcon size={22} />}
               title="Language"
               subtitle="App language"
-              onClick={() => onNavigate("/settings")}
+              onClick={() => onOpen("language")}
             />
             <div className="ml-[4.5rem] border-t border-border/60" />
             <HubRow
               icon={<LeafIcon size={22} />}
               title="Appearance"
               subtitle="Theme and display"
-              onClick={() => onNavigate("/settings")}
+              onClick={() => onOpen("appearance")}
             />
             <div className="ml-[4.5rem] border-t border-border/60" />
             <HubRow
               icon={<WarningIcon size={22} />}
               title="Notifications"
               subtitle="Reminders and alerts"
-              onClick={() => onNavigate("/settings")}
+              onClick={() => onOpen("notifications")}
             />
             <div className="ml-[4.5rem] border-t border-border/60" />
             <HubRow
               icon={<HeartIcon size={22} />}
               title="Privacy"
               subtitle="Privacy and data control"
-              onClick={() => onNavigate("/settings")}
+              onClick={() => onOpen("privacy")}
             />
             <div className="ml-[4.5rem] border-t border-border/60" />
             <HubRow
               icon={<DropIcon size={22} />}
               title="Backup & Sync"
               subtitle="Backup and restore your data"
-              onClick={() => onNavigate("/settings")}
+              onClick={() => onOpen("backup")}
             />
           </section>
         </div>
@@ -523,6 +534,43 @@ function HealthSubpage({ title, onBack, children }: { title: string; onBack: () 
     >
       <div className="space-y-4 px-5 pb-28 pt-4">{children}</div>
     </AppShell>
+  );
+}
+
+function PreferenceOption({
+  icon,
+  title,
+  subtitle,
+  onClick,
+}: {
+  icon: ReactNode;
+  title: string;
+  subtitle: string;
+  onClick?: () => void;
+}) {
+  const content = (
+    <>
+      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-tint ring-1 ring-border/50">
+        {icon}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-semibold text-foreground">{title}</span>
+        <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">{subtitle}</span>
+      </span>
+      {onClick ? <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" /> : null}
+    </>
+  );
+
+  return onClick ? (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-tint"
+    >
+      {content}
+    </button>
+  ) : (
+    <div className="flex w-full items-center gap-3 px-4 py-3">{content}</div>
   );
 }
 
@@ -827,12 +875,85 @@ function ProfilePage() {
     );
   }
 
+  if (healthView === "language") {
+    return (
+      <HealthSubpage title="Language" onBack={() => setHealthView("hub")}>
+        <section className="overflow-hidden rounded-3xl bg-surface shadow-sm ring-1 ring-border/80">
+          <PreferenceOption
+            icon={<NoteIcon size={24} />}
+            title="App language"
+            subtitle="Language selection will be completed with the final app translation."
+          />
+        </section>
+      </HealthSubpage>
+    );
+  }
+
+  if (healthView === "appearance") {
+    return (
+      <HealthSubpage title="Appearance" onBack={() => setHealthView("hub")}>
+        <section className="overflow-hidden rounded-3xl bg-surface shadow-sm ring-1 ring-border/80">
+          <PreferenceOption
+            icon={<LeafIcon size={24} />}
+            title="Theme and display"
+            subtitle="Open the existing appearance controls."
+            onClick={() => navigate({ to: "/settings" })}
+          />
+        </section>
+      </HealthSubpage>
+    );
+  }
+
+  if (healthView === "notifications") {
+    return (
+      <HealthSubpage title="Notifications" onBack={() => setHealthView("hub")}>
+        <section className="overflow-hidden rounded-3xl bg-surface shadow-sm ring-1 ring-border/80">
+          <PreferenceOption
+            icon={<StarIcon size={24} />}
+            title="Reminders and alerts"
+            subtitle="Open medication, symptom and app notification settings."
+            onClick={() => navigate({ to: "/settings" })}
+          />
+        </section>
+      </HealthSubpage>
+    );
+  }
+
+  if (healthView === "privacy") {
+    return (
+      <HealthSubpage title="Privacy" onBack={() => setHealthView("hub")}>
+        <section className="overflow-hidden rounded-3xl bg-surface shadow-sm ring-1 ring-border/80">
+          <PreferenceOption
+            icon={<WarningIcon size={24} />}
+            title="Privacy and data control"
+            subtitle="Review data, sharing and reset controls."
+            onClick={() => navigate({ to: "/settings" })}
+          />
+        </section>
+      </HealthSubpage>
+    );
+  }
+
+  if (healthView === "backup") {
+    return (
+      <HealthSubpage title="Backup & Sync" onBack={() => setHealthView("hub")}>
+        <section className="overflow-hidden rounded-3xl bg-surface shadow-sm ring-1 ring-border/80">
+          <PreferenceOption
+            icon={<DropIcon size={24} />}
+            title="Backup and restore"
+            subtitle="Backup and sync controls can be connected here later."
+          />
+        </section>
+      </HealthSubpage>
+    );
+  }
+
   if (healthView === "export") {
     return (
       <HealthSubpage title="Export" onBack={() => setHealthView("hub")}>
         <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
           <div className="flex items-start gap-3">
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-tint text-primary ring-1 ring-border/50">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-tint ring-1 ring-border/50">
               <NoteIcon size={22} />
             </span>
             <div>
