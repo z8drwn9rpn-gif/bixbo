@@ -645,7 +645,7 @@ function PatternTabs({
   const tabs = hideCycle ? PATTERN_TABS.filter((tab) => tab.id !== "cycle") : PATTERN_TABS;
 
   return (
-    <div className="sticky top-[45px] z-20 -mx-5 border-y border-border/50 bg-background/92 px-5 py-2.5 shadow-sm backdrop-blur-xl">
+    <div className="-mx-4 border-y border-border/50 bg-background/92 px-5 py-2.5 shadow-sm backdrop-blur-xl sm:-mx-5">
       <div
         className="grid gap-1 rounded-2xl bg-tint p-1 ring-1 ring-border/50"
         style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}
