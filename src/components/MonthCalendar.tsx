@@ -32,26 +32,6 @@ const MONTHS = [
   "December",
 ];
 
-/**
- * More vivid pain palette used only for pain/intensity visuals.
- * Period colors are intentionally untouched.
- */
-function vividPainColor(value: number): string {
-  const n = Math.max(0, Math.min(10, value));
-
-  if (n <= 0.5) return "#82C45B";
-  if (n <= 1.5) return "#9DCC58";
-  if (n <= 2.5) return "#B8C93C";
-  if (n <= 3.5) return "#D3BC24";
-  if (n <= 4.5) return "#E7A915";
-  if (n <= 5.5) return "#F19412";
-  if (n <= 6.5) return "#EF7718";
-  if (n <= 7.5) return "#E95824";
-  if (n <= 8.5) return "#DF3F32";
-  if (n <= 9.5) return "#CF2444";
-  return "#B80F3D";
-}
-
 function periodColorVar(level?: PeriodLevel) {
   switch (level) {
     case "spotting":
@@ -311,7 +291,7 @@ export function MonthCalendar({
                         <span
                           aria-hidden
                           className="pointer-events-none absolute h-10 w-10 rounded-full"
-                          style={{ boxShadow: `0 0 0 4.75px ${vividPainColor(pAvg)}` }}
+                          style={{ boxShadow: `0 0 0 4.75px ${painColor(pAvg)}` }}
                         />
                       )}
                       {predictedOrange && (
