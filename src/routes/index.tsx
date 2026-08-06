@@ -478,60 +478,150 @@ function HomePage() {
         onEdit={openEdit}
       />
 
-      {todayOpen && (
-        <div className="fixed inset-0 z-[90] flex items-end justify-center">
-          <button
-            type="button"
-            aria-label="Close today's summary"
-            className="absolute inset-0 bg-black/35 backdrop-blur-[1px]"
-            onClick={() => setTodayOpen(false)}
-          />
+      {todayOpen &&
+        (() => {
+          const todayTetany = todayLog?.tetany?.length ?? 0;
+          const todayPanic = todayLog?.panic?.length ?? 0;
+          const latestBowel = todayLog?.bowel?.[todayLog.bowel.length - 1];
+          const noteValue = view.dayNotes[todayDateKey]?.[0];
+          const noteText =
+            typeof noteValue === "string"
+              ? noteValue
+              : noteValue && typeof noteValue === "object" && "text" in noteValue
+                ? String(noteValue.text)
+                : "";
 
-          <section className="relative z-10 max-h-[82dvh] w-full max-w-lg overflow-hidden rounded-t-[2rem] bg-background shadow-2xl ring-1 ring-border">
-            <div className="sticky top-0 z-20 bg-background/95 px-5 pb-3 pt-2 backdrop-blur">
-              <div className="mx-auto h-1.5 w-12 rounded-full bg-border" />
-              <div className="mt-4 flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Today</p>
-                  <h2 className="font-serif text-2xl font-bold text-foreground">
-                    {fromKey(todayDateKey).toLocaleDateString("en-GB", {
-                      weekday: "long",
-                      day: "numeric",
-                      month: "long",
-                    })}
-                  </h2>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setTodayOpen(false)}
-                  className="rounded-full bg-tint px-3 py-2 text-xs font-semibold text-foreground ring-1 ring-border"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
+          const rows = [
+            {
+              key: "pain",
+              icon: <Ico name="flame" size={22} />,
+              label: "Pain",
+              value: todayPain != null ? `${todayPain.toFixed(1)} / 10` : "No pain logged",
+            },
+            {
+              key: "meds",
+              icon: <PillIcon size={22} />,
+              label: "Medication",
+              value: `${todayMedsTaken} of ${todayScheduled.length} taken`,
+            },
+            {
+              key: "sleep",
+              icon: <Ico name={"sleep" as never} size={22} />,
+              label: "Sleep",
+              value: todayLog?.sleepHours != null ? `${todayLog.sleepHours} h` : "Not logged",
+            },
+            {
+              key: "tetany",
+              icon: <Ico name={"tetany" as never} size={22} />,
+              label: "Tetany",
+              value: todayTetany ? `${todayTetany} episode${todayTetany === 1 ? "" : "s"}` : "None",
+            },
+            {
+              key: "panic",
+              icon: <Ico name={"panic" as never} size={22} />,
+              label: "Panic attacks",
+              value: todayPanic ? `${todayPanic}` : "None",
+            },
+            {
+              key: "bowel",
+              icon: <Ico name={"bowel" as never} size={22} />,
+              label: "Bowel",
+              value: latestBowel ? `Type ${latestBowel.type}` : "Not logged",
+            },
+            {
+              key: "temperature",
+              icon: <Ico name={"temperature" as never} size={22} />,
+              label: "Temperature",
+              value: todayLog?.temperature != null ? `${todayLog.temperature} °C` : "Not logged",
+            },
+            {
+              key: "weight",
+              icon: <Ico name={"weight" as never} size={22} />,
+              label: "Weight",
+              value: todayLog?.weight != null ? `${todayLog.weight} kg` : "Not logged",
+            },
+          ];
 
-            <div className="max-h-[calc(82dvh-88px)] overflow-y-auto pb-8">
-              <DayPreview
-                date={todayDateKey}
-                data={view}
-                update={update}
-                onEditPain={(pain) => {
-                  setTodayOpen(false);
-                  setEditPain(pain);
-                  setEditEntry(undefined);
-                  setQuickCat("pain");
-                  setLogOpen(true);
-                }}
-                onEdit={(cat, entry) => {
-                  setTodayOpen(false);
-                  openEdit(cat, entry);
-                }}
+          return (
+            <div className="fixed inset-0 z-[90] flex items-center justify-center px-5">
+              <button
+                type="button"
+                aria-label="Close today's summary"
+                className="absolute inset-0 bg-black/35 backdrop-blur-[1px]"
+                onClick={() => setTodayOpen(false)}
               />
+
+              <section className="relative z-10 w-full max-w-sm overflow-hidden rounded-[2rem] bg-background shadow-2xl ring-1 ring-border">
+                <div className="flex items-start justify-between gap-3 border-b border-border/70 px-5 pb-4 pt-5">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Today</p>
+                    <h2 className="mt-1 font-serif text-xl font-bold text-foreground">
+                      {fromKey(todayDateKey).toLocaleDateString("en-GB", {
+                        weekday: "long",
+                        day: "numeric",
+                        month: "long",
+                      })}
+                    </h2>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setTodayOpen(false)}
+                    className="grid h-9 w-9 place-items-center rounded-full bg-tint text-sm font-bold text-foreground ring-1 ring-border"
+                    aria-label="Close"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div className="max-h-[58dvh] overflow-y-auto px-4 py-2">
+                  {rows.map((row, index) => (
+                    <div
+                      key={row.key}
+                      className={`flex items-center gap-3 px-1 py-3 ${index ? "border-t border-border/60" : ""}`}
+                    >
+                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-tint ring-1 ring-border/50">
+                        {row.icon}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-xs font-medium text-muted-foreground">{row.label}</span>
+                        <span className="mt-0.5 block truncate text-sm font-semibold text-foreground">{row.value}</span>
+                      </span>
+                    </div>
+                  ))}
+
+                  {noteText && (
+                    <div className="border-t border-border/60 px-1 py-3">
+                      <div className="flex items-start gap-3">
+                        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-tint ring-1 ring-border/50">
+                          <Ico name={"note" as never} size={22} />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-xs font-medium text-muted-foreground">Note</span>
+                          <span className="mt-0.5 line-clamp-2 block text-sm text-foreground">{noteText}</span>
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="border-t border-border/70 p-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelected(todayDateKey);
+                      setMonthAnchor(fromKey(todayDateKey));
+                      setTodayOpen(false);
+                    }}
+                    className="min-h-11 w-full rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
+                  >
+                    Open today on calendar
+                  </button>
+                </div>
+              </section>
             </div>
-          </section>
-        </div>
-      )}
+          );
+        })()}
 
       <LogSheet
         open={logOpen}
