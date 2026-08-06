@@ -389,224 +389,22 @@ function HubRow({
   );
 }
 
-function HealthHub({ onOpen, onSettings }: { onOpen: (view: HealthView) => void; onSettings: () => void }) {
-  const allDayLogs = Object.values(view.dayLogs);
-  const totalPainLogs = allDayLogs.reduce((sum, day) => sum + (day?.pain?.length ?? 0), 0);
-  const totalBowelLogs = allDayLogs.reduce((sum, day) => sum + (day?.bowel?.length ?? 0), 0);
-  const totalSleepLogs = allDayLogs.filter((day) => day?.sleepHours != null).length;
-  const totalTetanyLogs = allDayLogs.reduce((sum, day) => sum + (day?.tetany?.length ?? 0), 0);
-  const trackedDates = Object.keys(view.dayLogs).filter((date) => {
-    const day = view.dayLogs[date];
-    return Boolean(
-      (day?.pain?.length ?? 0) ||
-      (day?.bowel?.length ?? 0) ||
-      (day?.tetany?.length ?? 0) ||
-      (day?.panic?.length ?? 0) ||
-      day?.sleepHours != null ||
-      day?.temperature != null ||
-      day?.weight != null,
-    );
-  });
-
-  const firstTrackedDate = trackedDates.slice().sort()[0];
-  const trackingDays = firstTrackedDate
-    ? Math.max(1, Math.floor((Date.now() - new Date(`${firstTrackedDate}T00:00:00`).getTime()) / 86400000) + 1)
-    : 0;
-
-  if (healthView === "hub") {
-    return (
-      <HealthHub
-        onOpen={(next) => {
-          setEditing(false);
-          setHealthView(next);
-        }}
-        onSettings={() => navigate({ to: "/settings" })}
-      />
-    );
-  }
-
-  if (healthView === "journey") {
-    const journeyItems = [
-      firstTrackedDate
-        ? {
-            date: formatProfileDate(firstTrackedDate),
-            title: "Started tracking with BIXBO",
-            icon: <CalendarIcon size={20} />,
-          }
-        : null,
-      medicalTags.length
-        ? {
-            date: "Health profile",
-            title: `${medicalTags.length} condition${medicalTags.length === 1 ? "" : "s"} saved`,
-            icon: <HeartIcon size={20} />,
-          }
-        : null,
-      activeMedications.length
-        ? {
-            date: "Medication",
-            title: `${activeMedications.length} active medication${activeMedications.length === 1 ? "" : "s"}`,
-            icon: <PillIcon size={20} />,
-          }
-        : null,
-      pregnancyActive
-        ? {
-            date: "Current",
-            title: "Pregnancy mode active",
-            icon: <PregnancyIcon size={20} />,
-          }
-        : null,
-      postpartumActive
-        ? {
-            date: "Current",
-            title: "Postpartum mode active",
-            icon: <BabyIcon size={20} />,
-          }
-        : null,
-      {
-        date: "Today",
-        title: "Continuing your health journey",
-        icon: <HeartIcon size={20} />,
-      },
-    ].filter((item): item is { date: string; title: string; icon: ReactNode } => item != null);
-
-    return (
-      <HealthSubpage title="Health Journey" onBack={() => setHealthView("hub")}>
-        <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
-          <div className="relative space-y-5">
-            <span className="absolute bottom-4 left-5 top-4 w-px bg-border" aria-hidden />
-
-            {journeyItems.map((item, index) => (
-              <div key={`${item.date}-${item.title}-${index}`} className="relative flex gap-4">
-                <span className="relative z-10 grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-tint text-primary ring-1 ring-border/60">
-                  {item.icon}
-                </span>
-                <div className="min-w-0 pt-0.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    {item.date}
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-foreground">{item.title}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      </HealthSubpage>
-    );
-  }
-
-  if (healthView === "achievements") {
-    const achievements = [
-      { icon: <HeartIcon size={24} />, value: totalPainLogs, label: "Pain logs", goal: 100 },
-      { icon: <CalendarIcon size={24} />, value: trackedDates.length, label: "Days tracked", goal: 365 },
-      {
-        icon: <PillIcon size={24} />,
-        value: Object.values(view.medLog).reduce(
-          (sum, day) => sum + Object.values(day ?? {}).filter(Boolean).length,
-          0,
-        ),
-        label: "Medication doses",
-        goal: 365,
-      },
-      { icon: <WeightIcon size={24} />, value: totalSleepLogs, label: "Sleep logs", goal: 100 },
-      { icon: <WarningIcon size={24} />, value: totalTetanyLogs, label: "Tetany logs", goal: 50 },
-      { icon: <WorkoutIcon size={24} />, value: totalBowelLogs, label: "Bowel logs", goal: 50 },
-    ];
-
-    return (
-      <HealthSubpage title="Achievements" onBack={() => setHealthView("hub")}>
-        <div className="grid grid-cols-2 gap-3">
-          {achievements.map((item) => {
-            const unlocked = item.value >= item.goal;
-            return (
-              <article
-                key={item.label}
-                className="rounded-3xl bg-surface p-4 text-center shadow-sm ring-1 ring-border/80"
-              >
-                <span
-                  className={`mx-auto grid h-12 w-12 place-items-center rounded-2xl ring-1 ring-border/50 ${unlocked ? "bg-primary/15 text-primary" : "bg-tint text-muted-foreground"}`}
-                >
-                  {item.icon}
-                </span>
-                <p className="mt-3 font-serif text-3xl font-bold tabular-nums">{item.value}</p>
-                <p className="mt-1 text-xs font-semibold text-foreground">{item.label}</p>
-                <p className="mt-1 text-[10px] text-muted-foreground">
-                  {unlocked ? "Unlocked" : `${Math.max(0, item.goal - item.value)} to go`}
-                </p>
-              </article>
-            );
-          })}
-        </div>
-      </HealthSubpage>
-    );
-  }
-
-  if (healthView === "statistics") {
-    const painScores = allDayLogs.flatMap((day) => (day?.pain ?? []).map((entry) => entry.score));
-    const averagePain = painScores.length
-      ? painScores.reduce((sum, value) => sum + value, 0) / painScores.length
-      : null;
-    const sleepValues = allDayLogs.map((day) => day?.sleepHours).filter((value): value is number => value != null);
-    const averageSleep = sleepValues.length
-      ? sleepValues.reduce((sum, value) => sum + value, 0) / sleepValues.length
-      : null;
-
-    const stats = [
-      ["Tracking for", trackingDays ? `${trackingDays} days` : "—"],
-      ["Days with logs", String(trackedDates.length)],
-      ["Pain logs", String(totalPainLogs)],
-      ["Average daily pain", averagePain != null ? `${averagePain.toFixed(1)} / 10` : "—"],
-      ["Sleep logs", String(totalSleepLogs)],
-      ["Average sleep", averageSleep != null ? `${averageSleep.toFixed(1)} h` : "—"],
-      ["Bowel logs", String(totalBowelLogs)],
-      ["Tetany logs", String(totalTetanyLogs)],
-      ["Active medications", String(activeMedications.length)],
-      ["Saved conditions", String(medicalTags.length)],
-    ];
-
-    return (
-      <HealthSubpage title="My Statistics" onBack={() => setHealthView("hub")}>
-        <section className="overflow-hidden rounded-3xl bg-surface shadow-sm ring-1 ring-border/80">
-          {stats.map(([label, value], index) => (
-            <div
-              key={label}
-              className={`flex items-center justify-between gap-4 px-4 py-3 ${index ? "border-t border-border/60" : ""}`}
-            >
-              <span className="text-sm text-foreground">{label}</span>
-              <span className="shrink-0 text-sm font-semibold tabular-nums text-primary">{value}</span>
-            </div>
-          ))}
-        </section>
-      </HealthSubpage>
-    );
-  }
-
-  if (healthView === "export") {
-    return (
-      <HealthSubpage title="Export" onBack={() => setHealthView("hub")}>
-        <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
-          <div className="flex items-start gap-3">
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-tint text-primary ring-1 ring-border/50">
-              <FileText className="h-5 w-5" />
-            </span>
-            <div>
-              <p className="text-sm font-semibold text-foreground">Health reports</p>
-              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                PDF and CSV export can be added here later without changing the rest of the Health Hub.
-              </p>
-            </div>
-          </div>
-        </section>
-      </HealthSubpage>
-    );
-  }
-
+function HealthHub({
+  onHome,
+  onOpen,
+  onNavigate,
+}: {
+  onHome: () => void;
+  onOpen: (view: HealthView) => void;
+  onNavigate: (to: string) => void;
+}) {
   return (
     <AppShell
       title={
-        <div className="flex items-center gap-2">
-          <HeartIcon size={24} />
-          <span>Health</span>
-        </div>
+        <button type="button" onClick={onHome} className="flex items-center gap-2">
+          <ArrowLeft className="h-5 w-5" />
+          Health
+        </button>
       }
     >
       <div className="space-y-5 px-5 pb-28 pt-4">
@@ -619,7 +417,7 @@ function HealthHub({ onOpen, onSettings }: { onOpen: (view: HealthView) => void;
             <div className="min-w-0">
               <p className="font-serif text-2xl font-bold text-foreground">Your health hub</p>
               <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                Your profile, journey, achievements and reports in one place.
+                Your health profile, journey, milestones and app preferences.
               </p>
             </div>
           </div>
@@ -633,7 +431,6 @@ function HealthHub({ onOpen, onSettings }: { onOpen: (view: HealthView) => void;
             onClick={() => onOpen("summary")}
           />
           <div className="ml-[4.5rem] border-t border-border/60" />
-
           <HubRow
             icon={<Clock3 className="h-5 w-5" />}
             title="Health Journey"
@@ -641,7 +438,6 @@ function HealthHub({ onOpen, onSettings }: { onOpen: (view: HealthView) => void;
             onClick={() => onOpen("journey")}
           />
           <div className="ml-[4.5rem] border-t border-border/60" />
-
           <HubRow
             icon={<Trophy className="h-5 w-5" />}
             title="Achievements"
@@ -649,7 +445,6 @@ function HealthHub({ onOpen, onSettings }: { onOpen: (view: HealthView) => void;
             onClick={() => onOpen("achievements")}
           />
           <div className="ml-[4.5rem] border-t border-border/60" />
-
           <HubRow
             icon={<BarChart3 className="h-5 w-5" />}
             title="My Statistics"
@@ -657,11 +452,10 @@ function HealthHub({ onOpen, onSettings }: { onOpen: (view: HealthView) => void;
             onClick={() => onOpen("statistics")}
           />
           <div className="ml-[4.5rem] border-t border-border/60" />
-
           <HubRow
             icon={<FileText className="h-5 w-5" />}
             title="Export"
-            subtitle="Create reports for your doctor"
+            subtitle="Reports for your doctor — coming later"
             onClick={() => onOpen("export")}
           />
         </section>
@@ -676,47 +470,42 @@ function HealthHub({ onOpen, onSettings }: { onOpen: (view: HealthView) => void;
               icon={<Users className="h-5 w-5" />}
               title="Couple"
               subtitle="Partner and shared settings"
-              onClick={() => window.location.assign("/couple")}
+              onClick={() => onNavigate("/couple")}
             />
             <div className="ml-[4.5rem] border-t border-border/60" />
-
             <HubRow
               icon={<Languages className="h-5 w-5" />}
               title="Language"
               subtitle="App language"
-              onClick={onSettings}
+              onClick={() => onNavigate("/settings")}
             />
             <div className="ml-[4.5rem] border-t border-border/60" />
-
             <HubRow
               icon={<Palette className="h-5 w-5" />}
               title="Appearance"
               subtitle="Theme and display"
-              onClick={onSettings}
+              onClick={() => onNavigate("/settings")}
             />
             <div className="ml-[4.5rem] border-t border-border/60" />
-
             <HubRow
               icon={<Bell className="h-5 w-5" />}
               title="Notifications"
               subtitle="Reminders and alerts"
-              onClick={onSettings}
+              onClick={() => onNavigate("/settings")}
             />
             <div className="ml-[4.5rem] border-t border-border/60" />
-
             <HubRow
               icon={<ShieldCheck className="h-5 w-5" />}
               title="Privacy"
               subtitle="Privacy and data control"
-              onClick={onSettings}
+              onClick={() => onNavigate("/settings")}
             />
             <div className="ml-[4.5rem] border-t border-border/60" />
-
             <HubRow
               icon={<Cloud className="h-5 w-5" />}
               title="Backup & Sync"
               subtitle="Backup and restore your data"
-              onClick={onSettings}
+              onClick={() => onNavigate("/settings")}
             />
           </section>
         </div>
@@ -725,8 +514,8 @@ function HealthHub({ onOpen, onSettings }: { onOpen: (view: HealthView) => void;
           <HubRow
             icon={<Settings className="h-5 w-5" />}
             title="Settings"
-            subtitle="General app settings"
-            onClick={onSettings}
+            subtitle="General app and tracking settings"
+            onClick={() => onNavigate("/settings")}
           />
         </section>
       </div>
@@ -877,6 +666,198 @@ function ProfilePage() {
       : reproductiveStatus !== "none"
         ? reproductiveStatus.charAt(0).toUpperCase() + reproductiveStatus.slice(1)
         : "Not active";
+
+  const allDayLogs = Object.values(view.dayLogs);
+  const totalPainLogs = allDayLogs.reduce((sum, day) => sum + (day?.pain?.length ?? 0), 0);
+  const totalBowelLogs = allDayLogs.reduce((sum, day) => sum + (day?.bowel?.length ?? 0), 0);
+  const totalSleepLogs = allDayLogs.filter((day) => day?.sleepHours != null).length;
+  const totalTetanyLogs = allDayLogs.reduce((sum, day) => sum + (day?.tetany?.length ?? 0), 0);
+  const trackedDates = Object.keys(view.dayLogs).filter((date) => {
+    const day = view.dayLogs[date];
+    return Boolean(
+      (day?.pain?.length ?? 0) ||
+      (day?.bowel?.length ?? 0) ||
+      (day?.tetany?.length ?? 0) ||
+      (day?.panic?.length ?? 0) ||
+      day?.sleepHours != null ||
+      day?.temperature != null ||
+      day?.weight != null,
+    );
+  });
+  const firstTrackedDate = trackedDates.slice().sort()[0];
+  const trackingDays = firstTrackedDate
+    ? Math.max(1, Math.floor((Date.now() - new Date(`${firstTrackedDate}T00:00:00`).getTime()) / 86400000) + 1)
+    : 0;
+
+  if (healthView === "hub") {
+    return (
+      <HealthHub
+        onHome={() => navigate({ to: "/" })}
+        onOpen={(next) => {
+          setEditing(false);
+          setHealthView(next);
+        }}
+        onNavigate={(to) => navigate({ to: to as never })}
+      />
+    );
+  }
+
+  if (healthView === "journey") {
+    const journeyItems = [
+      firstTrackedDate
+        ? {
+            date: formatProfileDate(firstTrackedDate),
+            title: "Started tracking with BIXBO",
+            icon: <CalendarIcon size={20} />,
+          }
+        : null,
+      medicalTags.length
+        ? {
+            date: "Health profile",
+            title: `${medicalTags.length} saved condition${medicalTags.length === 1 ? "" : "s"}`,
+            icon: <HeartIcon size={20} />,
+          }
+        : null,
+      activeMedications.length
+        ? {
+            date: "Medication",
+            title: `${activeMedications.length} active medication${activeMedications.length === 1 ? "" : "s"}`,
+            icon: <PillIcon size={20} />,
+          }
+        : null,
+      pregnancyActive ? { date: "Current", title: "Pregnancy mode active", icon: <PregnancyIcon size={20} /> } : null,
+      postpartumActive ? { date: "Current", title: "Postpartum mode active", icon: <BabyIcon size={20} /> } : null,
+      { date: "Today", title: "Continuing your health journey", icon: <HeartIcon size={20} /> },
+    ].filter((item): item is { date: string; title: string; icon: ReactNode } => item != null);
+
+    return (
+      <HealthSubpage title="Health Journey" onBack={() => setHealthView("hub")}>
+        <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
+          <div className="relative space-y-5">
+            <span className="absolute bottom-4 left-5 top-4 w-px bg-border" aria-hidden />
+            {journeyItems.map((item, index) => (
+              <div key={`${item.date}-${item.title}-${index}`} className="relative flex gap-4">
+                <span className="relative z-10 grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-tint text-primary ring-1 ring-border/60">
+                  {item.icon}
+                </span>
+                <div className="min-w-0 pt-0.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    {item.date}
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-foreground">{item.title}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      </HealthSubpage>
+    );
+  }
+
+  if (healthView === "achievements") {
+    const achievements = [
+      { icon: <HeartIcon size={24} />, value: totalPainLogs, label: "Pain logs", goal: 100 },
+      { icon: <CalendarIcon size={24} />, value: trackedDates.length, label: "Days tracked", goal: 365 },
+      {
+        icon: <PillIcon size={24} />,
+        value: Object.values(view.medLog).reduce(
+          (sum, day) => sum + Object.values(day ?? {}).filter(Boolean).length,
+          0,
+        ),
+        label: "Medication doses",
+        goal: 365,
+      },
+      { icon: <WeightIcon size={24} />, value: totalSleepLogs, label: "Sleep logs", goal: 100 },
+      { icon: <WarningIcon size={24} />, value: totalTetanyLogs, label: "Tetany logs", goal: 50 },
+      { icon: <WorkoutIcon size={24} />, value: totalBowelLogs, label: "Bowel logs", goal: 50 },
+    ];
+
+    return (
+      <HealthSubpage title="Achievements" onBack={() => setHealthView("hub")}>
+        <div className="grid grid-cols-2 gap-3">
+          {achievements.map((item) => {
+            const unlocked = item.value >= item.goal;
+            return (
+              <article
+                key={item.label}
+                className="rounded-3xl bg-surface p-4 text-center shadow-sm ring-1 ring-border/80"
+              >
+                <span
+                  className={`mx-auto grid h-12 w-12 place-items-center rounded-2xl ring-1 ring-border/50 ${unlocked ? "bg-primary/15 text-primary" : "bg-tint text-muted-foreground"}`}
+                >
+                  {item.icon}
+                </span>
+                <p className="mt-3 font-serif text-3xl font-bold tabular-nums">{item.value}</p>
+                <p className="mt-1 text-xs font-semibold text-foreground">{item.label}</p>
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  {unlocked ? "Unlocked" : `${Math.max(0, item.goal - item.value)} to go`}
+                </p>
+              </article>
+            );
+          })}
+        </div>
+      </HealthSubpage>
+    );
+  }
+
+  if (healthView === "statistics") {
+    const painScores = allDayLogs.flatMap((day) => (day?.pain ?? []).map((entry) => entry.score));
+    const averagePain = painScores.length
+      ? painScores.reduce((sum, value) => sum + value, 0) / painScores.length
+      : null;
+    const sleepValues = allDayLogs.map((day) => day?.sleepHours).filter((value): value is number => value != null);
+    const averageSleep = sleepValues.length
+      ? sleepValues.reduce((sum, value) => sum + value, 0) / sleepValues.length
+      : null;
+    const stats = [
+      ["Tracking for", trackingDays ? `${trackingDays} days` : "—"],
+      ["Days with logs", String(trackedDates.length)],
+      ["Pain logs", String(totalPainLogs)],
+      ["Average pain", averagePain != null ? `${averagePain.toFixed(1)} / 10` : "—"],
+      ["Sleep logs", String(totalSleepLogs)],
+      ["Average sleep", averageSleep != null ? `${averageSleep.toFixed(1)} h` : "—"],
+      ["Bowel logs", String(totalBowelLogs)],
+      ["Tetany logs", String(totalTetanyLogs)],
+      ["Active medications", String(activeMedications.length)],
+      ["Saved conditions", String(medicalTags.length)],
+    ];
+
+    return (
+      <HealthSubpage title="My Statistics" onBack={() => setHealthView("hub")}>
+        <section className="overflow-hidden rounded-3xl bg-surface shadow-sm ring-1 ring-border/80">
+          {stats.map(([label, value], index) => (
+            <div
+              key={label}
+              className={`flex items-center justify-between gap-4 px-4 py-3 ${index ? "border-t border-border/60" : ""}`}
+            >
+              <span className="text-sm text-foreground">{label}</span>
+              <span className="shrink-0 text-sm font-semibold tabular-nums text-primary">{value}</span>
+            </div>
+          ))}
+        </section>
+      </HealthSubpage>
+    );
+  }
+
+  if (healthView === "export") {
+    return (
+      <HealthSubpage title="Export" onBack={() => setHealthView("hub")}>
+        <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
+          <div className="flex items-start gap-3">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-tint text-primary ring-1 ring-border/50">
+              <FileText className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-foreground">Health reports</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                PDF and CSV export will be completed later.
+              </p>
+            </div>
+          </div>
+        </section>
+      </HealthSubpage>
+    );
+  }
 
   return (
     <AppShell

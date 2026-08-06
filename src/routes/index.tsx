@@ -17,6 +17,7 @@ import {
   todayKey,
   PAIN_DESCRIPTIONS,
   painColor,
+  avgDayPain,
   BRISTOL,
   nextPredictedPeriod,
   asArr,
@@ -133,6 +134,14 @@ function HomePage() {
     (pregnancyToday?.waterMl ?? 0) > 0 ? { icon: "💧", label: `${pregnancyToday!.waterMl} ml` } : null,
   ].filter((item): item is { icon: string; label: string } => item != null);
 
+  const todayDateKey = todayKey();
+  const todayLog = view.dayLogs[todayDateKey];
+  const todayPain = avgDayPain(todayLog);
+  const todayScheduled = view.meds
+    .filter((med) => !med.asNeeded)
+    .flatMap((med) => med.times.map((time) => `${med.id}@${time}`));
+  const todayMedsTaken = todayScheduled.filter((key) => view.medLog[todayDateKey]?.[key]).length;
+
   return (
     <AppShell
       big
@@ -146,15 +155,27 @@ function HomePage() {
         </div>
       }
       right={
-        <Link
-          to="/profile"
-          className="flex min-w-[52px] flex-col items-center justify-center rounded-2xl px-2 py-1.5 text-primary transition hover:bg-tint"
-          aria-label="Health"
-          title="Health"
-        >
-          <HeartIcon size={24} />
-          <span className="mt-0.5 text-[10px] font-semibold leading-none">Health</span>
-        </Link>
+        <div className="flex items-center gap-1">
+          <div
+            className="flex min-w-[74px] flex-col items-end justify-center rounded-2xl px-2 py-1"
+            aria-label="Today's summary"
+          >
+            <span className="text-[10px] font-semibold leading-none text-muted-foreground">Today</span>
+            <span className="mt-1 whitespace-nowrap text-[11px] font-semibold leading-none text-foreground">
+              🔥 {todayPain != null ? todayPain.toFixed(1) : "—"} · 💊 {todayMedsTaken}/{todayScheduled.length}
+            </span>
+          </div>
+
+          <Link
+            to="/profile"
+            className="flex min-w-[52px] flex-col items-center justify-center rounded-2xl px-2 py-1.5 text-primary transition hover:bg-tint"
+            aria-label="Health"
+            title="Health"
+          >
+            <HeartIcon size={24} />
+            <span className="mt-0.5 text-[10px] font-semibold leading-none">Health</span>
+          </Link>
+        </div>
       }
     >
       <div className="px-5 pt-0.5">
