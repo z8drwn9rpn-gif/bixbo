@@ -57,6 +57,7 @@ function HomePage() {
   const [selected, setSelected] = useState("");
 
   const [logOpen, setLogOpen] = useState(false);
+  const [todayOpen, setTodayOpen] = useState(false);
   const [quickCat, setQuickCat] = useState<string | undefined>();
   const [editPain, setEditPain] = useState<import("@/lib/storage").PainEntry | undefined>();
   const [editEntry, setEditEntry] = useState<unknown>(undefined);
@@ -156,15 +157,19 @@ function HomePage() {
       }
       right={
         <div className="flex items-center gap-1">
-          <div
-            className="flex min-w-[74px] flex-col items-end justify-center rounded-2xl px-2 py-1"
-            aria-label="Today's summary"
+          <button
+            type="button"
+            onClick={() => setTodayOpen(true)}
+            className="flex min-w-[82px] flex-col items-end justify-center rounded-2xl px-2 py-1 transition hover:bg-tint"
+            aria-label="Open today's summary"
           >
             <span className="text-[10px] font-semibold leading-none text-muted-foreground">Today</span>
-            <span className="mt-1 whitespace-nowrap text-[11px] font-semibold leading-none text-foreground">
-              🔥 {todayPain != null ? todayPain.toFixed(1) : "—"} · 💊 {todayMedsTaken}/{todayScheduled.length}
+            <span className="mt-1 flex items-center gap-1 whitespace-nowrap text-[11px] font-semibold leading-none text-foreground">
+              <Ico name="flame" size={14} /> {todayPain != null ? todayPain.toFixed(1) : "—"}
+              <span className="text-muted-foreground">·</span>
+              <PillIcon size={14} /> {todayMedsTaken}/{todayScheduled.length}
             </span>
-          </div>
+          </button>
 
           <Link
             to="/profile"
@@ -472,6 +477,61 @@ function HomePage() {
         }}
         onEdit={openEdit}
       />
+
+      {todayOpen && (
+        <div className="fixed inset-0 z-[90] flex items-end justify-center">
+          <button
+            type="button"
+            aria-label="Close today's summary"
+            className="absolute inset-0 bg-black/35 backdrop-blur-[1px]"
+            onClick={() => setTodayOpen(false)}
+          />
+
+          <section className="relative z-10 max-h-[82dvh] w-full max-w-lg overflow-hidden rounded-t-[2rem] bg-background shadow-2xl ring-1 ring-border">
+            <div className="sticky top-0 z-20 bg-background/95 px-5 pb-3 pt-2 backdrop-blur">
+              <div className="mx-auto h-1.5 w-12 rounded-full bg-border" />
+              <div className="mt-4 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Today</p>
+                  <h2 className="font-serif text-2xl font-bold text-foreground">
+                    {fromKey(todayDateKey).toLocaleDateString("en-GB", {
+                      weekday: "long",
+                      day: "numeric",
+                      month: "long",
+                    })}
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setTodayOpen(false)}
+                  className="rounded-full bg-tint px-3 py-2 text-xs font-semibold text-foreground ring-1 ring-border"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+
+            <div className="max-h-[calc(82dvh-88px)] overflow-y-auto pb-8">
+              <DayPreview
+                date={todayDateKey}
+                data={view}
+                update={update}
+                onEditPain={(pain) => {
+                  setTodayOpen(false);
+                  setEditPain(pain);
+                  setEditEntry(undefined);
+                  setQuickCat("pain");
+                  setLogOpen(true);
+                }}
+                onEdit={(cat, entry) => {
+                  setTodayOpen(false);
+                  openEdit(cat, entry);
+                }}
+              />
+            </div>
+          </section>
+        </div>
+      )}
 
       <LogSheet
         open={logOpen}

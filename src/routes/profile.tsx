@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
 import { postpartumProgress } from "@/lib/health";
 import { ArrowLeft, Plus, X, Pencil, ChevronRight, Check } from "lucide-react";
@@ -604,6 +604,19 @@ function ProfilePage() {
   const [healthView, setHealthView] = useState<HealthView>("hub");
 
   const patch = (p: Partial<HealthProfile>) => update((d) => ({ ...d, profile: { ...d.profile, ...p } }));
+  const setTheme = (theme: "light" | "dark" | "system") =>
+    update((d) => ({ ...d, settings: { ...d.settings, theme } }));
+  const setTextSize = (textSize: "sm" | "md" | "lg" | "xl") =>
+    update((d) => ({ ...d, settings: { ...d.settings, textSize } }));
+  const exportJson = () => {
+    const blob = new Blob([JSON.stringify(view, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `bixbo-backup-${todayKey()}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
 
   const age = ageFromBirthDate(profile.birthDate);
   const currentWeight = latestRecordedWeight(view);
@@ -898,23 +911,66 @@ function ProfilePage() {
   if (healthView === "language") {
     return (
       <HealthSubpage title="Language" onBack={() => setHealthView("hub")}>
-        <section className="overflow-hidden rounded-3xl bg-surface shadow-sm ring-1 ring-border/80">
-          <PreferenceOption
-            icon={<NoteIcon size={24} />}
-            title="App language"
-            subtitle="Language selection will be completed with the final app translation."
-          />
+        <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
+          <p className="text-sm font-semibold text-foreground">App language</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            English is currently active. More languages will be added with translation.
+          </p>
+          <select
+            className="mt-4 h-11 w-full rounded-xl border border-input bg-background px-3 text-sm"
+            value="en"
+            disabled
+          >
+            <option value="en">English</option>
+          </select>
         </section>
       </HealthSubpage>
     );
   }
 
   if (healthView === "appearance") {
+    const themes = ["light", "dark", "system"] as const;
+    const sizes = [
+      { value: "sm" as const, label: "Small", px: 13 },
+      { value: "md" as const, label: "Medium", px: 15 },
+      { value: "lg" as const, label: "Large", px: 17 },
+      { value: "xl" as const, label: "Extra", px: 19 },
+    ];
     return (
       <HealthSubpage title="Appearance" onBack={() => setHealthView("hub")}>
-        <section className="overflow-hidden rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
-          <p className="text-sm font-semibold text-foreground">Theme and display</p>
-          <p className="mt-1 text-xs text-muted-foreground">Appearance controls belong directly on this page.</p>
+        <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
+          <p className="text-sm font-semibold text-foreground">Theme</p>
+          <p className="mt-1 text-xs text-muted-foreground">Choose how BIXBO looks on this device.</p>
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            {themes.map((theme) => (
+              <button
+                key={theme}
+                type="button"
+                onClick={() => setTheme(theme)}
+                className={`min-h-11 rounded-xl border px-3 text-sm font-semibold capitalize ${(view.settings.theme ?? "system") === theme ? "border-primary bg-primary text-primary-foreground" : "border-border bg-tint"}`}
+              >
+                {theme}
+              </button>
+            ))}
+          </div>
+        </section>
+        <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
+          <p className="text-sm font-semibold text-foreground">Text size</p>
+          <div className="mt-3 grid grid-cols-4 gap-2">
+            {sizes.map((size) => (
+              <button
+                key={size.value}
+                type="button"
+                onClick={() => setTextSize(size.value)}
+                className={`min-h-16 rounded-xl border p-2 ${(view.settings.textSize ?? "md") === size.value ? "border-primary bg-primary/10 text-primary" : "border-border bg-tint"}`}
+              >
+                <span className="block font-semibold" style={{ fontSize: size.px }}>
+                  Aa
+                </span>
+                <span className="mt-1 block text-[10px] text-muted-foreground">{size.label}</span>
+              </button>
+            ))}
+          </div>
         </section>
       </HealthSubpage>
     );
@@ -923,9 +979,24 @@ function ProfilePage() {
   if (healthView === "notifications") {
     return (
       <HealthSubpage title="Notifications" onBack={() => setHealthView("hub")}>
-        <section className="overflow-hidden rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
-          <p className="text-sm font-semibold text-foreground">Notifications</p>
-          <p className="mt-1 text-xs text-muted-foreground">App notification controls belong directly on this page.</p>
+        <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
+          <p className="text-sm font-semibold text-foreground">Reminders and alerts</p>
+          <p className="mt-1 text-xs text-muted-foreground">Manage medication, period and app reminders.</p>
+          <Link
+            to={"/notifications" as never}
+            className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
+          >
+            Open notification controls
+          </Link>
+        </section>
+        <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
+          <p className="text-sm font-semibold text-foreground">Medication reminders</p>
+          <Link
+            to={"/meds" as never}
+            className="mt-3 inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-input px-4 text-sm font-semibold"
+          >
+            Manage medication times
+          </Link>
         </section>
       </HealthSubpage>
     );
@@ -934,11 +1005,25 @@ function ProfilePage() {
   if (healthView === "privacy") {
     return (
       <HealthSubpage title="Privacy" onBack={() => setHealthView("hub")}>
-        <section className="overflow-hidden rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
-          <p className="text-sm font-semibold text-foreground">Privacy and data control</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Privacy, sharing and reset controls belong directly on this page.
-          </p>
+        <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
+          <p className="text-sm font-semibold text-foreground">Account and cloud privacy</p>
+          <p className="mt-1 text-xs text-muted-foreground">Sign in, sync and account controls.</p>
+          <Link
+            to={"/auth" as never}
+            className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-input px-4 text-sm font-semibold"
+          >
+            Account controls
+          </Link>
+        </section>
+        <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
+          <p className="text-sm font-semibold text-foreground">Your data</p>
+          <button
+            type="button"
+            onClick={exportJson}
+            className="mt-3 min-h-11 w-full rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
+          >
+            Export JSON copy
+          </button>
         </section>
       </HealthSubpage>
     );
@@ -947,12 +1032,29 @@ function ProfilePage() {
   if (healthView === "backup") {
     return (
       <HealthSubpage title="Backup & Sync" onBack={() => setHealthView("hub")}>
-        <section className="overflow-hidden rounded-3xl bg-surface shadow-sm ring-1 ring-border/80">
-          <PreferenceOption
-            icon={<DropIcon size={24} />}
-            title="Backup and restore"
-            subtitle="Backup and sync controls can be connected here later."
-          />
+        <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
+          <p className="text-sm font-semibold text-foreground">Create backup</p>
+          <p className="mt-1 text-xs text-muted-foreground">Download a complete JSON copy of your BIXBO data.</p>
+          <button
+            type="button"
+            onClick={exportJson}
+            className="mt-4 min-h-11 w-full rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
+          >
+            Download backup
+          </button>
+        </section>
+        <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
+          <p className="text-sm font-semibold text-foreground">Cloud sync</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Cloud account and sync controls are available from Privacy.
+          </p>
+          <button
+            type="button"
+            onClick={() => setHealthView("privacy")}
+            className="mt-3 min-h-11 w-full rounded-xl border border-input px-4 text-sm font-semibold"
+          >
+            Open Privacy
+          </button>
         </section>
       </HealthSubpage>
     );
@@ -964,7 +1066,8 @@ function ProfilePage() {
         <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
           <p className="text-sm font-semibold text-foreground">Tracking preferences</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Cycle, symptoms and health tracking controls belong directly on this page.
+            Cycle and symptom tracking preferences are managed here. Use Health Summary to edit personal health
+            information.
           </p>
         </section>
       </HealthSubpage>
@@ -976,7 +1079,9 @@ function ProfilePage() {
       <HealthSubpage title="Reminders" onBack={() => setHealthView("hub")}>
         <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
           <p className="text-sm font-semibold text-foreground">Medication and reminders</p>
-          <p className="mt-1 text-xs text-muted-foreground">Reminder controls belong directly on this page.</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Medication reminder times are managed in Medications. App reminders are available in Notifications.
+          </p>
         </section>
       </HealthSubpage>
     );
@@ -988,7 +1093,7 @@ function ProfilePage() {
         <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
           <p className="text-sm font-semibold text-foreground">Measurement units</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Weight, temperature and measurement unit controls belong directly on this page.
+            BIXBO currently uses kilograms and Celsius. Additional units can be added here later.
           </p>
         </section>
       </HealthSubpage>
@@ -1000,9 +1105,14 @@ function ProfilePage() {
       <HealthSubpage title="Data & Storage" onBack={() => setHealthView("hub")}>
         <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
           <p className="text-sm font-semibold text-foreground">Local data</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Storage, import, reset and data management controls belong directly on this page.
-          </p>
+          <p className="mt-1 text-xs text-muted-foreground">Download a complete copy of your local BIXBO data.</p>
+          <button
+            type="button"
+            onClick={exportJson}
+            className="mt-4 min-h-11 w-full rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
+          >
+            Export JSON
+          </button>
         </section>
       </HealthSubpage>
     );
@@ -1013,9 +1123,7 @@ function ProfilePage() {
       <HealthSubpage title="About BIXBO" onBack={() => setHealthView("hub")}>
         <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
           <p className="text-sm font-semibold text-foreground">BIXBO</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Version information, credits, privacy documents and licenses belong directly on this page.
-          </p>
+          <p className="mt-1 text-xs text-muted-foreground">Health tracking application. Development build.</p>
         </section>
       </HealthSubpage>
     );
