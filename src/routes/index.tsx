@@ -2,7 +2,20 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Share2, Trash2 } from "lucide-react";
 
-import { HeartIcon, Ico, IcoText, PillIcon } from "@/components/icons/BixboIcons";
+import {
+  ClockIcon,
+  FlameIcon,
+  HeartIcon,
+  Ico,
+  IcoText,
+  NoteIcon,
+  PanicIcon,
+  PillIcon,
+  PoopIcon,
+  StarIcon,
+  ThermometerIcon,
+  WeightIcon,
+} from "@/components/icons/BixboIcons";
 import { AppShell } from "@/components/AppShell";
 import { pregnancyProgress, postpartumProgress } from "@/lib/health";
 import { Button } from "@/components/ui/button";
@@ -482,7 +495,8 @@ function HomePage() {
         (() => {
           const todayTetany = todayLog?.tetany?.length ?? 0;
           const todayPanic = todayLog?.panic?.length ?? 0;
-          const latestBowel = todayLog?.bowel?.[todayLog.bowel.length - 1];
+          const todayBowelEntries = todayLog?.bowel ?? [];
+          const latestBowel = todayBowelEntries.length ? todayBowelEntries[todayBowelEntries.length - 1] : undefined;
           const noteValue = view.dayNotes[todayDateKey]?.[0];
           const noteText =
             typeof noteValue === "string"
@@ -494,7 +508,7 @@ function HomePage() {
           const rows = [
             {
               key: "pain",
-              icon: <Ico name="flame" size={22} />,
+              icon: <FlameIcon size={22} />,
               label: "Pain",
               value: todayPain != null ? `${todayPain.toFixed(1)} / 10` : "No pain logged",
             },
@@ -506,37 +520,37 @@ function HomePage() {
             },
             {
               key: "sleep",
-              icon: <Ico name={"sleep" as never} size={22} />,
+              icon: <ClockIcon size={22} />,
               label: "Sleep",
               value: todayLog?.sleepHours != null ? `${todayLog.sleepHours} h` : "Not logged",
             },
             {
               key: "tetany",
-              icon: <Ico name={"tetany" as never} size={22} />,
+              icon: <StarIcon size={22} />,
               label: "Tetany",
               value: todayTetany ? `${todayTetany} episode${todayTetany === 1 ? "" : "s"}` : "None",
             },
             {
               key: "panic",
-              icon: <Ico name={"panic" as never} size={22} />,
+              icon: <PanicIcon size={22} />,
               label: "Panic attacks",
               value: todayPanic ? `${todayPanic}` : "None",
             },
             {
               key: "bowel",
-              icon: <Ico name={"bowel" as never} size={22} />,
+              icon: <PoopIcon size={22} />,
               label: "Bowel",
               value: latestBowel ? `Type ${latestBowel.type}` : "Not logged",
             },
             {
               key: "temperature",
-              icon: <Ico name={"temperature" as never} size={22} />,
+              icon: <ThermometerIcon size={22} />,
               label: "Temperature",
               value: todayLog?.temperature != null ? `${todayLog.temperature} °C` : "Not logged",
             },
             {
               key: "weight",
-              icon: <Ico name={"weight" as never} size={22} />,
+              icon: <WeightIcon size={22} />,
               label: "Weight",
               value: todayLog?.weight != null ? `${todayLog.weight} kg` : "Not logged",
             },
@@ -594,7 +608,7 @@ function HomePage() {
                     <div className="border-t border-border/60 px-1 py-3">
                       <div className="flex items-start gap-3">
                         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-tint ring-1 ring-border/50">
-                          <Ico name={"note" as never} size={22} />
+                          <NoteIcon size={22} />
                         </span>
                         <span className="min-w-0 flex-1">
                           <span className="block text-xs font-medium text-muted-foreground">Note</span>

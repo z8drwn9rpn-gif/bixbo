@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { postpartumProgress } from "@/lib/health";
 import { ArrowLeft, Plus, X, Pencil, ChevronRight, Check } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
@@ -603,6 +603,68 @@ function ProfilePage() {
   const [editing, setEditing] = useState(false);
   const [healthView, setHealthView] = useState<HealthView>("hub");
 
+  const [trackingPrefs, setTrackingPrefs] = useState({
+    pain: true,
+    tetany: true,
+    panic: true,
+    bowel: true,
+    cycle: true,
+    pregnancy: false,
+    postpartum: false,
+  });
+  const [painScale, setPainScale] = useState<"whole" | "half">("half");
+  const [units, setUnits] = useState({
+    weight: "kg" as "kg" | "lb",
+    temperature: "c" as "c" | "f",
+    volume: "ml" as "ml" | "oz",
+    time: "24h" as "24h" | "12h",
+  });
+  const [privacyPrefs, setPrivacyPrefs] = useState({
+    faceId: false,
+    pinLock: false,
+    blurScreenshots: false,
+    analytics: false,
+    crashReports: true,
+  });
+  const [backupPrefs, setBackupPrefs] = useState({
+    autoBackup: false,
+    lastBackup: "",
+  });
+  const [prefsLoaded, setPrefsLoaded] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const saved = window.localStorage.getItem("bixbo:health-preferences");
+      if (saved) {
+        const parsed = JSON.parse(saved) as {
+          trackingPrefs?: typeof trackingPrefs;
+          painScale?: "whole" | "half";
+          units?: typeof units;
+          privacyPrefs?: typeof privacyPrefs;
+          backupPrefs?: typeof backupPrefs;
+        };
+        if (parsed.trackingPrefs) setTrackingPrefs((current) => ({ ...current, ...parsed.trackingPrefs }));
+        if (parsed.painScale) setPainScale(parsed.painScale);
+        if (parsed.units) setUnits((current) => ({ ...current, ...parsed.units }));
+        if (parsed.privacyPrefs) setPrivacyPrefs((current) => ({ ...current, ...parsed.privacyPrefs }));
+        if (parsed.backupPrefs) setBackupPrefs((current) => ({ ...current, ...parsed.backupPrefs }));
+      }
+    } catch {
+      // Ignore malformed local preference data and keep safe defaults.
+    } finally {
+      setPrefsLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!prefsLoaded || typeof window === "undefined") return;
+    window.localStorage.setItem(
+      "bixbo:health-preferences",
+      JSON.stringify({ trackingPrefs, painScale, units, privacyPrefs, backupPrefs }),
+    );
+  }, [prefsLoaded, trackingPrefs, painScale, units, privacyPrefs, backupPrefs]);
+
   const patch = (p: Partial<HealthProfile>) => update((d) => ({ ...d, profile: { ...d.profile, ...p } }));
   const setTheme = (theme: "light" | "dark" | "system") =>
     update((d) => ({ ...d, settings: { ...d.settings, theme } }));
@@ -624,6 +686,14 @@ function ProfilePage() {
   const pregnancyActive = isPregnancyActive(view);
   const postpartumActive = isPostpartumActive(view);
   const allergens = userAllergens(view);
+
+  useEffect(() => {
+    setTrackingPrefs((current) => ({
+      ...current,
+      pregnancy: pregnancyActive,
+      postpartum: postpartumActive,
+    }));
+  }, [pregnancyActive, postpartumActive]);
 
   const bmi =
     profile.heightCm && currentWeight && profile.heightCm > 0
@@ -1005,71 +1075,214 @@ function ProfilePage() {
   if (healthView === "privacy") {
     return (
       <HealthSubpage title="Privacy" onBack={() => setHealthView("hub")}>
-        <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
-          <p className="text-sm font-semibold text-foreground">Account and cloud privacy</p>
-          <p className="mt-1 text-xs text-muted-foreground">Sign in, sync and account controls.</p>
+        <Section title="App protection" subtitle="These preferences are stored on this device.">
+          <ToggleRow
+            label="Face ID / biometric lock"
+            checked={privacyPrefs.faceId}
+            onChange={(value) => setPrivacyPrefs((current) => ({ ...current, faceId: value }))}
+          />
+          <ToggleRow
+            label="PIN lock"
+            checked={privacyPrefs.pinLock}
+            onChange={(value) => setPrivacyPrefs((current) => ({ ...current, pinLock: value }))}
+          />
+          <ToggleRow
+            label="Blur app in screenshots / app switcher"
+            checked={privacyPrefs.blurScreenshots}
+            onChange={(value) => setPrivacyPrefs((current) => ({ ...current, blurScreenshots: value }))}
+          />
+        </Section>
+
+        <Section title="Diagnostics">
+          <ToggleRow
+            label="Anonymous analytics"
+            checked={privacyPrefs.analytics}
+            onChange={(value) => setPrivacyPrefs((current) => ({ ...current, analytics: value }))}
+          />
+          <ToggleRow
+            label="Crash reports"
+            checked={privacyPrefs.crashReports}
+            onChange={(value) => setPrivacyPrefs((current) => ({ ...current, crashReports: value }))}
+          />
+        </Section>
+
+        <Section title="Account">
           <Link
             to={"/auth" as never}
-            className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-input px-4 text-sm font-semibold"
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-input px-4 text-sm font-semibold"
           >
-            Account controls
+            Account and cloud controls
           </Link>
-        </section>
-        <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
-          <p className="text-sm font-semibold text-foreground">Your data</p>
-          <button
-            type="button"
-            onClick={exportJson}
-            className="mt-3 min-h-11 w-full rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
-          >
-            Export JSON copy
-          </button>
-        </section>
+        </Section>
       </HealthSubpage>
     );
   }
 
   if (healthView === "backup") {
+    const restoreBackup = async (file: File) => {
+      try {
+        const raw = await file.text();
+        JSON.parse(raw);
+        window.alert("Backup file is valid. Restore/merge can now be connected to the existing import logic.");
+      } catch {
+        window.alert("This is not a valid BIXBO JSON backup.");
+      }
+    };
+
+    const runBackup = () => {
+      exportJson();
+      setBackupPrefs((current) => ({ ...current, lastBackup: new Date().toISOString() }));
+    };
+
     return (
       <HealthSubpage title="Backup & Sync" onBack={() => setHealthView("hub")}>
-        <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
-          <p className="text-sm font-semibold text-foreground">Create backup</p>
-          <p className="mt-1 text-xs text-muted-foreground">Download a complete JSON copy of your BIXBO data.</p>
+        <Section title="Automatic backup">
+          <ToggleRow
+            label="Auto backup"
+            checked={backupPrefs.autoBackup}
+            onChange={(value) => setBackupPrefs((current) => ({ ...current, autoBackup: value }))}
+          />
+          <p className="text-xs text-muted-foreground">
+            Last backup:{" "}
+            <span className="font-semibold text-foreground">
+              {backupPrefs.lastBackup ? new Date(backupPrefs.lastBackup).toLocaleString("en-GB") : "Never"}
+            </span>
+          </p>
+        </Section>
+
+        <Section title="Backup actions">
+          <button
+            type="button"
+            onClick={runBackup}
+            className="min-h-11 w-full rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
+          >
+            Back up now
+          </button>
+
+          <label className="block">
+            <input
+              type="file"
+              accept="application/json"
+              className="hidden"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) void restoreBackup(file);
+                event.currentTarget.value = "";
+              }}
+            />
+            <span className="inline-flex min-h-11 w-full cursor-pointer items-center justify-center rounded-xl border border-input px-4 text-sm font-semibold">
+              Restore backup
+            </span>
+          </label>
+
           <button
             type="button"
             onClick={exportJson}
-            className="mt-4 min-h-11 w-full rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
+            className="min-h-11 w-full rounded-xl border border-input px-4 text-sm font-semibold"
           >
-            Download backup
+            Export JSON
           </button>
-        </section>
-        <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
-          <p className="text-sm font-semibold text-foreground">Cloud sync</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Cloud account and sync controls are available from Privacy.
-          </p>
-          <button
-            type="button"
-            onClick={() => setHealthView("privacy")}
-            className="mt-3 min-h-11 w-full rounded-xl border border-input px-4 text-sm font-semibold"
-          >
-            Open Privacy
-          </button>
-        </section>
+        </Section>
       </HealthSubpage>
     );
   }
 
   if (healthView === "tracking") {
+    const toggleTracking = (key: keyof typeof trackingPrefs, enabled: boolean) => {
+      setTrackingPrefs((current) => ({ ...current, [key]: enabled }));
+
+      if (key === "pregnancy") {
+        setReproductiveStatus(enabled ? "pregnant" : "none");
+      }
+      if (key === "postpartum") {
+        setReproductiveStatus(enabled ? "postpartum" : "none");
+      }
+    };
+
     return (
       <HealthSubpage title="Tracking" onBack={() => setHealthView("hub")}>
-        <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
-          <p className="text-sm font-semibold text-foreground">Tracking preferences</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Cycle and symptom tracking preferences are managed here. Use Health Summary to edit personal health
-            information.
-          </p>
-        </section>
+        <Section title="Tracked categories" subtitle="Choose which categories you want available in BIXBO.">
+          <ToggleRow label="Pain" checked={trackingPrefs.pain} onChange={(value) => toggleTracking("pain", value)} />
+          <ToggleRow
+            label="Tetany"
+            checked={trackingPrefs.tetany}
+            onChange={(value) => toggleTracking("tetany", value)}
+          />
+          <ToggleRow
+            label="Panic attacks"
+            checked={trackingPrefs.panic}
+            onChange={(value) => toggleTracking("panic", value)}
+          />
+          <ToggleRow label="Bowel" checked={trackingPrefs.bowel} onChange={(value) => toggleTracking("bowel", value)} />
+          <ToggleRow
+            label="Cycle tracking"
+            checked={trackingPrefs.cycle}
+            onChange={(value) => toggleTracking("cycle", value)}
+          />
+        </Section>
+
+        <Section title="Reproductive modes" subtitle="Pregnancy and postpartum cannot be active at the same time.">
+          <ToggleRow
+            label="Pregnancy mode"
+            checked={pregnancyActive}
+            onChange={(value) => toggleTracking("pregnancy", value)}
+          />
+          <ToggleRow
+            label="Postpartum mode"
+            checked={postpartumActive}
+            onChange={(value) => toggleTracking("postpartum", value)}
+          />
+        </Section>
+
+        <Section title="Default pain scale" subtitle="Choose whether pain can be logged in whole or half steps.">
+          <div className="grid grid-cols-2 gap-2">
+            {(
+              [
+                { value: "whole", label: "Whole numbers", detail: "0, 1, 2…" },
+                { value: "half", label: "Half steps", detail: "0, 0.5, 1…" },
+              ] as const
+            ).map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setPainScale(option.value)}
+                className={`min-h-16 rounded-xl border p-3 text-left ${
+                  painScale === option.value
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-tint text-foreground"
+                }`}
+              >
+                <span className="block text-sm font-semibold">{option.label}</span>
+                <span className="mt-1 block text-xs text-muted-foreground">{option.detail}</span>
+              </button>
+            ))}
+          </div>
+        </Section>
+
+        <Section title="Temperature unit">
+          <div className="grid grid-cols-2 gap-2">
+            {(
+              [
+                { value: "c", label: "Celsius", symbol: "°C" },
+                { value: "f", label: "Fahrenheit", symbol: "°F" },
+              ] as const
+            ).map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setUnits((current) => ({ ...current, temperature: option.value }))}
+                className={`min-h-14 rounded-xl border p-3 ${
+                  units.temperature === option.value
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-tint"
+                }`}
+              >
+                <span className="block text-sm font-semibold">{option.label}</span>
+                <span className="text-xs opacity-75">{option.symbol}</span>
+              </button>
+            ))}
+          </div>
+        </Section>
       </HealthSubpage>
     );
   }
@@ -1088,14 +1301,73 @@ function ProfilePage() {
   }
 
   if (healthView === "units") {
+    const UnitChoice = ({
+      title,
+      value,
+      options,
+      onChange,
+    }: {
+      title: string;
+      value: string;
+      options: { value: string; label: string }[];
+      onChange: (value: string) => void;
+    }) => (
+      <Section title={title}>
+        <div className="grid grid-cols-2 gap-2">
+          {options.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => onChange(option.value)}
+              className={`min-h-12 rounded-xl border px-3 text-sm font-semibold ${
+                value === option.value ? "border-primary bg-primary text-primary-foreground" : "border-border bg-tint"
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </Section>
+    );
+
     return (
       <HealthSubpage title="Units" onBack={() => setHealthView("hub")}>
-        <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
-          <p className="text-sm font-semibold text-foreground">Measurement units</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            BIXBO currently uses kilograms and Celsius. Additional units can be added here later.
-          </p>
-        </section>
+        <UnitChoice
+          title="Weight"
+          value={units.weight}
+          options={[
+            { value: "kg", label: "Kilograms (kg)" },
+            { value: "lb", label: "Pounds (lb)" },
+          ]}
+          onChange={(value) => setUnits((current) => ({ ...current, weight: value as "kg" | "lb" }))}
+        />
+        <UnitChoice
+          title="Temperature"
+          value={units.temperature}
+          options={[
+            { value: "c", label: "Celsius (°C)" },
+            { value: "f", label: "Fahrenheit (°F)" },
+          ]}
+          onChange={(value) => setUnits((current) => ({ ...current, temperature: value as "c" | "f" }))}
+        />
+        <UnitChoice
+          title="Volume"
+          value={units.volume}
+          options={[
+            { value: "ml", label: "Millilitres (ml)" },
+            { value: "oz", label: "Fluid ounces (oz)" },
+          ]}
+          onChange={(value) => setUnits((current) => ({ ...current, volume: value as "ml" | "oz" }))}
+        />
+        <UnitChoice
+          title="Time format"
+          value={units.time}
+          options={[
+            { value: "24h", label: "24-hour" },
+            { value: "12h", label: "12-hour" },
+          ]}
+          onChange={(value) => setUnits((current) => ({ ...current, time: value as "24h" | "12h" }))}
+        />
       </HealthSubpage>
     );
   }
