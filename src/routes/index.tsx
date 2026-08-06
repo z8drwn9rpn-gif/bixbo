@@ -118,7 +118,7 @@ function timeBlockOf(time?: string): number | null {
 const TIME_BLOCK_LABELS = ["Night (0–6)", "Morning (6–12)", "Afternoon (12–18)", "Evening (18–24)"];
 const TIME_BLOCK_SHORT = ["Night", "Morning", "Afternoon", "Evening"];
 
-export const Route = createFileRoute("/insights")({
+export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Health of Bixbo — Insights" },
