@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Settings as SettingsIcon, Share2, Trash2, UserRound } from "lucide-react";
+import { ChevronLeft, ChevronRight, Share2, Trash2 } from "lucide-react";
 
-import { Ico, IcoText, PillIcon } from "@/components/icons/BixboIcons";
+import { HeartIcon, Ico, IcoText, PillIcon } from "@/components/icons/BixboIcons";
 import { AppShell } from "@/components/AppShell";
 import { pregnancyProgress, postpartumProgress } from "@/lib/health";
 import { Button } from "@/components/ui/button";
@@ -146,25 +146,15 @@ function HomePage() {
         </div>
       }
       right={
-        <div className="flex items-center gap-1">
-          <Link
-            to="/profile"
-            className="rounded-full p-2 transition hover:bg-tint"
-            aria-label="Health profile"
-            title="Health profile"
-          >
-            <UserRound className="h-5 w-5" />
-          </Link>
-
-          <Link
-            to="/settings"
-            className="rounded-full p-2 transition hover:bg-tint"
-            aria-label="Settings"
-            title="Settings"
-          >
-            <SettingsIcon className="h-5 w-5" />
-          </Link>
-        </div>
+        <Link
+          to="/profile"
+          className="flex min-w-[52px] flex-col items-center justify-center rounded-2xl px-2 py-1.5 text-primary transition hover:bg-tint"
+          aria-label="Health"
+          title="Health"
+        >
+          <HeartIcon size={24} />
+          <span className="mt-0.5 text-[10px] font-semibold leading-none">Health</span>
+        </Link>
       }
     >
       <div className="px-5 pt-0.5">
