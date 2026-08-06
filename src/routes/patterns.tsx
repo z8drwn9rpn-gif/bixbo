@@ -2640,6 +2640,46 @@ function PatternsPage() {
 
         {activeTab === "triggers" && (
           <div className="space-y-4">
+            <Card
+              title="Smart correlations"
+              description="Automatically ranked associations calculated only from your own logs."
+            >
+              {strongestAssociations.length === 0 ? (
+                <Empty text="Log at least 3 days with and 3 days without a trigger to unlock smart correlations." />
+              ) : (
+                <div className="mt-3 space-y-3">
+                  {strongestAssociations.slice(0, 5).map((association, index) => (
+                    <article
+                      key={`smart-${association.trigger}-${association.outcome}`}
+                      className="rounded-2xl bg-tint px-4 py-3 ring-1 ring-border/40"
+                    >
+                      <div className="flex items-start gap-3">
+                        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-surface text-xs font-bold ring-1 ring-border/50">
+                          {index + 1}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-foreground">
+                            {association.trigger} → {association.outcome}
+                          </p>
+                          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                            The outcome was {Math.abs(association.difference).toFixed(0)} percentage points{" "}
+                            {association.difference > 0 ? "more common" : "less common"} on days with this trigger.
+                          </p>
+                          <p className="mt-1 text-[10px] text-muted-foreground">
+                            Based on {association.withCount} days with and {association.withoutCount} days without the
+                            trigger.
+                          </p>
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+
+                  <p className="text-[10px] leading-relaxed text-muted-foreground">
+                    Correlations show associations in your logs. They do not prove that one factor caused another.
+                  </p>
+                </div>
+              )}
+            </Card>
             {/* ------------------------------------------------------------------ */}
             {/* Trigger comparison                                                 */}
             {/* ------------------------------------------------------------------ */}

@@ -510,6 +510,8 @@ function InsightsPage() {
   return (
     <AppShell title="Health of Bixbo">
       <div className="space-y-5 px-5 pt-3 pb-[calc(96px+env(safe-area-inset-bottom))]">
+        <TodaySummaryCard data={view} />
+
         <div
           className={`grid gap-1 rounded-[2rem] bg-primary/20 p-1.5 ring-1 ring-primary/15 ${
             cycleTrackingHidden ? "grid-cols-3" : "grid-cols-4"
@@ -720,6 +722,72 @@ function InsightsPage() {
         )}
       </div>
     </AppShell>
+  );
+}
+
+function TodaySummaryCard({ data }: { data: ReturnType<typeof useBixbo>["data"] }) {
+  const today = toKey(new Date());
+  const log = data.dayLogs[today];
+  const pain = avgDayPain(log);
+  const scheduled = data.meds
+    .filter((med) => !med.asNeeded)
+    .flatMap((med) => med.times.map((time) => ({ key: `${med.id}@${time}` })));
+  const medsTaken = scheduled.filter((slot) => data.medLog[today]?.[slot.key]).length;
+  const latestTemp = averageTemperatureForDay(log);
+  const latestWeight = lastWeightForDay(log);
+  const bowel = log?.bowel?.at(-1);
+  const mood = log?.mood?.at(-1)?.value;
+  const tetanyCount = log?.tetany?.length ?? 0;
+  const panicCount = log?.panic?.length ?? 0;
+  const hotFlashCount = (log?.pain ?? []).filter((entry) => (entry.hotFlashes ?? 0) > 0).length;
+
+  const summary =
+    pain != null && pain >= 7
+      ? "Pain is high today."
+      : panicCount > 0 || tetanyCount > 0
+        ? "You logged symptoms today."
+        : scheduled.length > 0 && medsTaken === scheduled.length
+          ? "Medication is complete today."
+          : "Your daily overview.";
+
+  const cells = [
+    { icon: "🔥", label: "Pain", value: pain != null ? `${pain.toFixed(1)}/10` : "—" },
+    { icon: "😴", label: "Sleep", value: log?.sleepHours != null ? `${log.sleepHours} h` : "—" },
+    { icon: "💊", label: "Meds", value: scheduled.length ? `${medsTaken}/${scheduled.length}` : "—" },
+    { icon: "🌡️", label: "Temp", value: latestTemp != null ? `${latestTemp.toFixed(1)} °C` : "—" },
+    { icon: "⚖️", label: "Weight", value: latestWeight != null ? `${latestWeight} kg` : "—" },
+    { icon: "💩", label: "Bowel", value: bowel ? `Type ${bowel.bristol}` : "—" },
+    { icon: "⚡", label: "Tetany", value: String(tetanyCount) },
+    { icon: "✨", label: "Panic", value: String(panicCount) },
+    { icon: "🥵", label: "Hot flashes", value: String(hotFlashCount) },
+    { icon: "🙂", label: "Mood", value: mood ?? "—" },
+  ];
+
+  return (
+    <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">Today</p>
+          <p className="mt-1 font-serif text-2xl">
+            {new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">{summary}</p>
+        </div>
+        <Ico e="🌿" size={25} />
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        {cells.map((cell) => (
+          <div key={cell.label} className="flex items-center gap-3 rounded-2xl bg-tint p-3 ring-1 ring-border/40">
+            <Ico e={cell.icon} size={18} />
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{cell.label}</p>
+              <p className="truncate text-sm font-semibold text-foreground">{cell.value}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
