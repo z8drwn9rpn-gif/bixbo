@@ -629,7 +629,7 @@ export function QuickTags({
         className="-mx-5 quicklog-scroll overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x px-5 pb-2 snap-x snap-mandatory scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
         style={{ WebkitOverflowScrolling: "touch", overscrollBehaviorX: "contain" }}
       >
-        <div className="flex gap-2.5">
+        <div className="flex gap-2">
           {tags.map((tag, index) => {
             const isFlash = flash === tag.key;
 
@@ -637,7 +637,7 @@ export function QuickTags({
               return (
                 <div
                   key={tag.key}
-                  className="relative flex h-[78px] w-[78px] shrink-0 select-none flex-col items-center justify-center gap-0.5 rounded-full bg-surface p-1.5 text-center shadow-sm ring-1 ring-border/80"
+                  className="relative flex h-[68px] w-[68px] shrink-0 select-none flex-col items-center justify-center gap-0.5 rounded-full bg-surface p-1.5 text-center shadow-sm ring-1 ring-border/80"
                 >
                   <button
                     type="button"
@@ -648,8 +648,8 @@ export function QuickTags({
                     <X className="h-3 w-3" strokeWidth={3} />
                   </button>
 
-                  <Ico e={tag.emoji} size={25} />
-                  <span className="max-w-[66px] text-[10px] font-medium leading-[1.05] text-muted-foreground">
+                  <Ico e={tag.emoji} size={22} />
+                  <span className="max-w-[58px] text-[9px] font-medium leading-[1.05] text-muted-foreground">
                     {tag.label}
                   </span>
 
@@ -732,13 +732,13 @@ export function QuickTags({
                 onContextMenu={(event) => event.preventDefault()}
                 title={`${tag.label} — long-press for details`}
                 aria-label={tag.label}
-                className={`relative flex h-[78px] w-[78px] shrink-0 snap-start select-none touch-manipulation flex-col items-center justify-center gap-0.5 rounded-full bg-surface p-1.5 text-center shadow-sm ring-1 ring-border/80 transition-[transform,box-shadow,background-color,ring-color] duration-150 hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-95 ${
+                className={`relative flex h-[68px] w-[68px] shrink-0 snap-start select-none touch-manipulation flex-col items-center justify-center gap-0.5 rounded-full bg-surface p-1.5 text-center shadow-sm ring-1 ring-border/80 transition-[transform,box-shadow,background-color,ring-color] duration-150 hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-95 ${
                   isFlash ? "scale-105 bg-primary/10 ring-2 ring-primary shadow-md" : ""
                 }`}
               >
-                <Ico e={tag.emoji} size={25} />
+                <Ico e={tag.emoji} size={22} />
 
-                <span className="max-w-[66px] text-[10px] font-medium leading-[1.05] text-muted-foreground">
+                <span className="max-w-[58px] text-[9px] font-medium leading-[1.05] text-muted-foreground">
                   {tag.label}
                 </span>
 
@@ -755,17 +755,17 @@ export function QuickTags({
             type="button"
             onClick={() => setBuilderOpen(true)}
             aria-label="Add custom quick log button"
-            className="flex h-[78px] w-[78px] shrink-0 select-none flex-col items-center justify-center gap-0.5 rounded-full border border-dashed border-border bg-transparent p-1.5 text-center text-muted-foreground transition-[transform,background-color,border-color] hover:border-primary/50 hover:bg-tint/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-95"
+            className="flex h-[68px] w-[68px] shrink-0 select-none flex-col items-center justify-center gap-0.5 rounded-full border border-dashed border-border bg-transparent p-1.5 text-center text-muted-foreground transition-[transform,background-color,border-color] hover:border-primary/50 hover:bg-tint/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-95"
           >
             <Plus className="h-5 w-5" />
-            <span className="text-[10px] font-medium leading-none">Add</span>
+            <span className="text-[9px] font-medium leading-none">Add</span>
           </button>
         </div>
       </div>
 
       {editMode && hidden.size > 0 && (
         <div className="mt-2">
-          <p className="max-w-[66px] text-[10px] font-medium leading-[1.05] text-muted-foreground">
+          <p className="max-w-[58px] text-[9px] font-medium leading-[1.05] text-muted-foreground">
             Hidden — tap to restore:
           </p>
 
