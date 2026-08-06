@@ -50,38 +50,55 @@ function InsightFloatingTooltip({
   details: InsightTooltipDetails;
   top?: number;
 }) {
-  const safeLeft = Math.max(18, Math.min(82, leftPct));
+  const clampedLeft = Math.max(0, Math.min(100, leftPct));
+  const placement = clampedLeft < 24 ? "left" : clampedLeft > 76 ? "right" : "center";
+
+  const positionStyle =
+    placement === "left"
+      ? { left: "4px", transform: "none" }
+      : placement === "right"
+        ? { right: "4px", transform: "none" }
+        : { left: `${clampedLeft}%`, transform: "translateX(-50%)" };
+
+  const arrowLeft =
+    placement === "left"
+      ? `${Math.max(18, Math.min(82, (clampedLeft / 24) * 100))}%`
+      : placement === "right"
+        ? `${Math.max(18, Math.min(82, 100 - ((100 - clampedLeft) / 24) * 100))}%`
+        : "50%";
 
   return (
     <div
-      className="pointer-events-none absolute z-30 w-[190px] max-w-[calc(100vw-48px)] -translate-x-1/2 overflow-visible rounded-2xl border bg-surface p-3 shadow-xl"
+      className="pointer-events-none absolute z-30 w-[148px] max-w-[calc(100%-8px)] overflow-visible rounded-[1.15rem] border bg-surface px-2.5 py-2 shadow-lg"
       style={{
-        left: `${safeLeft}%`,
+        ...positionStyle,
         top,
         borderColor: details.color,
-        boxShadow: `0 14px 30px color-mix(in srgb, ${details.color} 18%, transparent)`,
+        boxShadow: `0 10px 22px color-mix(in srgb, ${details.color} 16%, transparent)`,
       }}
       aria-hidden="true"
     >
-      <div className="flex items-center gap-2">
-        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: details.color }} />
-        <span className="min-w-0 whitespace-normal break-words text-[11px] font-semibold leading-tight text-foreground">
+      <div className="flex min-w-0 items-start gap-1.5">
+        <span className="mt-0.5 h-2 w-2 shrink-0 rounded-full" style={{ background: details.color }} />
+        <span className="min-w-0 whitespace-normal break-words text-[9px] font-semibold leading-[1.2] text-foreground [overflow-wrap:anywhere]">
           {details.owner ? `${details.owner} · ` : ""}
           {details.heading}
         </span>
       </div>
 
-      <p className="mt-2 whitespace-normal break-words text-lg font-bold leading-tight text-foreground">
+      <p className="mt-1.5 whitespace-normal break-words text-[15px] font-bold leading-tight text-foreground [overflow-wrap:anywhere]">
         {details.value}
       </p>
 
       {details.description ? (
-        <p className="mt-2 text-[11px] leading-tight text-muted-foreground">{details.description}</p>
+        <p className="mt-1 whitespace-normal break-words text-[9px] leading-[1.25] text-muted-foreground [overflow-wrap:anywhere]">
+          {details.description}
+        </p>
       ) : null}
 
       <span
-        className="absolute -bottom-2 left-1/2 h-4 w-4 -translate-x-1/2 rotate-45 border-b border-r bg-surface"
-        style={{ borderColor: details.color }}
+        className="absolute -bottom-1.5 h-3 w-3 -translate-x-1/2 rotate-45 border-b border-r bg-surface"
+        style={{ left: arrowLeft, borderColor: details.color }}
       />
     </div>
   );
@@ -89,23 +106,23 @@ function InsightFloatingTooltip({
 
 function InsightTooltipSummary({ details, onClose }: { details: InsightTooltipDetails; onClose: () => void }) {
   return (
-    <div className="mt-2 rounded-[1.5rem] bg-primary/20 px-3 py-2.5 text-xs text-foreground ring-1 ring-primary/20">
+    <div className="mt-2 rounded-[1.25rem] bg-primary/20 px-2.5 py-2 text-[11px] text-foreground ring-1 ring-primary/20">
       <button
         type="button"
         onClick={(event) => {
           event.stopPropagation();
           onClose();
         }}
-        className="flex w-full items-center justify-between gap-3 text-left"
+        className="flex w-full items-center justify-between gap-2 text-left"
         aria-label="Close selected chart details"
       >
-        <span className="min-w-0 leading-relaxed">
+        <span className="min-w-0 break-words leading-snug [overflow-wrap:anywhere]">
           {details.owner ? <b>{details.owner}</b> : null}
           {details.owner ? " · " : ""}
           {details.summary}
         </span>
 
-        <span className="shrink-0 text-[10px] text-muted-foreground">Tap to close</span>
+        <span className="shrink-0 text-[9px] text-muted-foreground">Tap to close</span>
       </button>
     </div>
   );
@@ -1729,7 +1746,7 @@ function BristolChart({ bowelCounts }: { bowelCounts: number[] }) {
   ];
   return (
     <ChartCard title="Bowel — Bristol distribution">
-      <div className={`relative mt-3 flex items-end gap-2 transition-[padding] ${active != null ? "pt-28" : ""}`}>
+      <div className={`relative mt-3 flex items-end gap-2 transition-[padding] ${active != null ? "pt-20" : ""}`}>
         {chartTypes.map((b) => {
           const count = bowelCounts[b.n] ?? 0;
           const selected = active === b.n;
@@ -1825,10 +1842,10 @@ function HfBars({
   return (
     <div>
       <div
-        className={`relative grid items-end gap-1 transition-[padding,height] ${active != null ? "pt-28" : "pt-7"}`}
+        className={`relative grid items-end gap-1 transition-[padding,height] ${active != null ? "pt-20" : "pt-5"}`}
         style={{
           gridTemplateColumns: `repeat(${Math.max(1, bars.length)}, minmax(0, 1fr))`,
-          height: active != null ? 172 : 88,
+          height: active != null ? 146 : 82,
         }}
       >
         {bars.map((value, index) =>
@@ -2316,9 +2333,9 @@ function TimeOfDayPatternChart({
           </div>
           <div
             className={`relative mt-4 grid grid-cols-4 items-end gap-3 transition-[padding,height] ${
-              active ? "pt-28" : ""
+              active ? "pt-20" : ""
             }`}
-            style={{ height: active ? 198 : 110 }}
+            style={{ height: active ? 168 : 110 }}
           >
             {[0, 1, 2, 3].map((i) => (
               <div key={i} className="flex h-full items-end justify-center gap-1">
