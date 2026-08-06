@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type ReactElement } from "react";
 import { AppShell } from "@/components/AppShell";
 import { FoodIcon, HeartIcon, NoteIcon, StarIcon, type IconProps } from "@/components/icons/BixboIcons";
 import { useBixbo, EMPTY, type Note, type NoteChecklistItem, type NoteFolder } from "@/lib/storage";
