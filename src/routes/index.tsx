@@ -557,7 +557,7 @@ function HomePage() {
           ];
 
           return (
-            <div className="fixed inset-0 z-[90] flex items-center justify-center px-5">
+            <div className="fixed inset-0 z-[90] flex items-center justify-center px-7">
               <button
                 type="button"
                 aria-label="Close today's summary"
@@ -565,11 +565,11 @@ function HomePage() {
                 onClick={() => setTodayOpen(false)}
               />
 
-              <section className="relative z-10 w-full max-w-sm overflow-hidden rounded-[2rem] bg-background shadow-2xl ring-1 ring-border">
-                <div className="flex items-start justify-between gap-3 border-b border-border/70 px-5 pb-4 pt-5">
+              <section className="relative z-10 w-full max-w-[320px] overflow-hidden rounded-[1.65rem] bg-background shadow-2xl ring-1 ring-border">
+                <div className="flex items-start justify-between gap-2 border-b border-border/70 px-4 pb-3 pt-4">
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Today</p>
-                    <h2 className="mt-1 font-serif text-xl font-bold text-foreground">
+                    <h2 className="mt-0.5 font-serif text-lg font-bold text-foreground">
                       {fromKey(todayDateKey).toLocaleDateString("en-GB", {
                         weekday: "long",
                         day: "numeric",
@@ -581,45 +581,46 @@ function HomePage() {
                   <button
                     type="button"
                     onClick={() => setTodayOpen(false)}
-                    className="grid h-9 w-9 place-items-center rounded-full bg-tint text-sm font-bold text-foreground ring-1 ring-border"
+                    className="grid h-8 w-8 place-items-center rounded-full bg-tint text-xs font-bold text-foreground ring-1 ring-border"
                     aria-label="Close"
                   >
                     ×
                   </button>
                 </div>
 
-                <div className="max-h-[58dvh] overflow-y-auto px-4 py-2">
-                  {rows.map((row, index) => (
-                    <div
-                      key={row.key}
-                      className={`flex items-center gap-3 px-1 py-3 ${index ? "border-t border-border/60" : ""}`}
-                    >
-                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-tint ring-1 ring-border/50">
-                        {row.icon}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-xs font-medium text-muted-foreground">{row.label}</span>
-                        <span className="mt-0.5 block truncate text-sm font-semibold text-foreground">{row.value}</span>
-                      </span>
-                    </div>
-                  ))}
+                <div className="max-h-[48dvh] overflow-y-auto p-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    {rows.map((row) => (
+                      <div key={row.key} className="min-w-0 rounded-2xl bg-tint px-2.5 py-2.5 ring-1 ring-border/50">
+                        <div className="flex items-center gap-2">
+                          <span className="grid h-8 w-8 shrink-0 place-items-center">{row.icon}</span>
+                          <span className="min-w-0">
+                            <span className="block truncate text-[10px] font-medium text-muted-foreground">
+                              {row.label}
+                            </span>
+                            <span className="mt-0.5 block truncate text-xs font-semibold text-foreground">
+                              {row.value}
+                            </span>
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
 
                   {noteText && (
-                    <div className="border-t border-border/60 px-1 py-3">
-                      <div className="flex items-start gap-3">
-                        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-tint ring-1 ring-border/50">
-                          <NoteIcon size={22} />
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block text-xs font-medium text-muted-foreground">Note</span>
-                          <span className="mt-0.5 line-clamp-2 block text-sm text-foreground">{noteText}</span>
-                        </span>
-                      </div>
+                    <div className="mt-2 flex items-start gap-2 rounded-2xl bg-tint px-3 py-2.5 ring-1 ring-border/50">
+                      <span className="grid h-8 w-8 shrink-0 place-items-center">
+                        <NoteIcon size={20} />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[10px] font-medium text-muted-foreground">Note</span>
+                        <span className="mt-0.5 line-clamp-1 block text-xs text-foreground">{noteText}</span>
+                      </span>
                     </div>
                   )}
                 </div>
 
-                <div className="border-t border-border/70 p-4">
+                <div className="border-t border-border/70 p-3">
                   <button
                     type="button"
                     onClick={() => {
@@ -627,7 +628,7 @@ function HomePage() {
                       setMonthAnchor(fromKey(todayDateKey));
                       setTodayOpen(false);
                     }}
-                    className="min-h-11 w-full rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
+                    className="min-h-10 w-full rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground"
                   >
                     Open today on calendar
                   </button>
