@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CoupleRouteImport } from './routes/couple'
 import { Route as InsightsRouteImport } from './routes/insights'
@@ -22,6 +23,11 @@ import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ApiPublicHooksKeepaliveRouteImport } from './routes/api/public/hooks/keepalive'
 
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -84,6 +90,7 @@ const ApiPublicHooksKeepaliveRoute = ApiPublicHooksKeepaliveRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/couple': typeof CoupleRoute
   '/insights': typeof InsightsRoute
@@ -98,6 +105,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/keepalive': typeof ApiPublicHooksKeepaliveRoute
 }
 export interface FileRoutesByTo {
+  '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/couple': typeof CoupleRoute
   '/insights': typeof InsightsRoute
@@ -113,6 +121,7 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/couple': typeof CoupleRoute
   '/insights': typeof InsightsRoute
@@ -129,6 +138,7 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/'
     | '/auth'
     | '/couple'
     | '/insights'
@@ -143,6 +153,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/keepalive'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/'
     | '/auth'
     | '/couple'
     | '/insights'
@@ -157,6 +168,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/keepalive'
   id:
     | '__root__'
+    | '/'
     | '/auth'
     | '/couple'
     | '/insights'
@@ -172,6 +184,7 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
   CoupleRoute: typeof CoupleRoute
   InsightsRoute: typeof InsightsRoute
@@ -188,6 +201,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -276,6 +296,7 @@ declare module '@tanstack/react-router' {
 }
 
 const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
   CoupleRoute: CoupleRoute,
   InsightsRoute: InsightsRoute,

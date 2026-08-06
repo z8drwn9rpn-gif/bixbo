@@ -3,7 +3,6 @@ import { useRef, useState } from "react";
 import {
   toKey,
   hasAnyLog,
-  painColor,
   periodLabel,
   isDateInRange,
   predictPeriods,
@@ -34,17 +33,17 @@ const MONTHS = [
 
 /** Calendar pain rings use the same vivid severity progression, ending in true red rather than pink. */
 const CALENDAR_PAIN_COLORS = [
-  "#72C64A", // 0
+  "#72C64A", // 0 — green
   "#91CD3A", // 1
   "#B7D12F", // 2
-  "#DFD11F", // 3
-  "#F3C30D", // 4
-  "#F5A20B", // 5
-  "#F47B16", // 6
-  "#F05A28", // 7
-  "#EF4444", // 8
-  "#DC2626", // 9
-  "#B91C1C", // 10
+  "#DFD11F", // 3 — yellow-green
+  "#F3C30D", // 4 — yellow
+  "#F5A20B", // 5 — amber
+  "#F47B16", // 6 — orange
+  "#F05A28", // 7 — red-orange
+  "#EF4444", // 8 — red
+  "#DC2626", // 9 — dark red
+  "#B91C1C", // 10 — deepest red
 ] as const;
 
 function calendarPainColor(value: number): string {
