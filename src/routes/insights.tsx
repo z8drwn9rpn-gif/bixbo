@@ -709,7 +709,7 @@ function InsightsPage() {
 
             <TimeOfDayPatternChart data={view} days={days} period={period} />
 
-            <MedsAdherence data={view} />
+            <MedsAdherence data={view} period={period} anchor={anchor} />
           </>
         )}
       </div>
@@ -956,250 +956,484 @@ function BirthControlCalendar({ data, anchor }: { data: ReturnType<typeof useBix
   );
 }
 
-function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) {
+function MedsAdherence({
+  data,
+  period,
+  anchor,
+}: {
+  data: ReturnType<typeof useBixbo>["data"];
+  period: Exclude<Period, "P">;
+  anchor: Date;
+}) {
   const { update } = useBixbo();
-  const [range, setRange] = useState<7 | 30>(7);
   const [open, setOpen] = useState(true);
-  const [expandedDay, setExpandedDay] = useState<string | null>(null);
+  const [expandedKey, setExpandedKey] = useState<string | null>(null);
 
-  const end = new Date();
-  end.setHours(0, 0, 0, 0);
-  const start = new Date(end);
-  start.setDate(end.getDate() - (range - 1));
-  const days: string[] = [];
-  for (let i = 0; i < range; i++) {
-    const d = new Date(start);
-    d.setDate(start.getDate() + i);
-    days.push(toKey(d));
-  }
+  const scheduled = data.meds.filter((med) => !med.asNeeded);
+  const asNeeded = data.meds.filter((med) => med.asNeeded);
 
-  const scheduled = data.meds.filter((m) => !m.asNeeded);
-  const asNeeded = data.meds.filter((m) => m.asNeeded);
+  const range = useMemo(() => {
+    const base = new Date(anchor);
+    base.setHours(0, 0, 0, 0);
 
-  const toggleDose = (dayKey: string, medKey: string) =>
-    update((d) => {
-      const day = { ...(d.medLog[dayKey] ?? {}) };
-      if (day[medKey]) delete day[medKey];
-      else day[medKey] = true;
-      return { ...d, medLog: { ...d.medLog, [dayKey]: day } };
-    });
+    if (period === "W") {
+      const mondayOffset = (base.getDay() + 6) % 7;
+      const start = new Date(base);
+      start.setDate(base.getDate() - mondayOffset);
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
 
-  const perDay = days.map((k) => {
-    const expected = scheduled.reduce((s, m) => s + m.times.length, 0);
-    const missed: { medName: string; time: string; key: string }[] = [];
-    const takenList: { medName: string; time: string; key: string }[] = [];
-    let taken = 0;
-    scheduled.forEach((m) =>
-      m.times.forEach((t) => {
-        const key = `${m.id}@${t}`;
-        if (data.medLog[k]?.[key]) {
-          taken++;
-          takenList.push({ medName: m.name, time: t, key });
-        } else missed.push({ medName: m.name, time: t, key });
-      }),
-    );
-    return { date: k, expected, taken, missed, takenList };
-  });
-  const totalExpected = perDay.reduce((s, d) => s + d.expected, 0);
-  const totalTaken = perDay.reduce((s, d) => s + d.taken, 0);
-  const overallPct = totalExpected ? Math.round((totalTaken / totalExpected) * 100) : null;
+      return {
+        start,
+        end,
+        label: `${start.toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "short",
+        })} – ${end.toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        })}`,
+        title: "Week",
+      };
+    }
 
-  const perMed = scheduled
-    .flatMap((m) =>
-      m.times.map((t) => {
+    if (period === "M") {
+      const start = new Date(base.getFullYear(), base.getMonth(), 1);
+      const end = new Date(base.getFullYear(), base.getMonth() + 1, 0);
+
+      return {
+        start,
+        end,
+        label: start.toLocaleDateString("en-GB", {
+          month: "long",
+          year: "numeric",
+        }),
+        title: "Month",
+      };
+    }
+
+    const start = new Date(base.getFullYear(), 0, 1);
+    const end = new Date(base.getFullYear(), 11, 31);
+
+    return {
+      start,
+      end,
+      label: String(base.getFullYear()),
+      title: "Year",
+    };
+  }, [anchor, period]);
+
+  const days = useMemo(() => {
+    const out: string[] = [];
+    const cursor = new Date(range.start);
+
+    while (cursor <= range.end) {
+      out.push(toKey(cursor));
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return out;
+  }, [range.end, range.start]);
+
+  const expectedPerDay = scheduled.reduce((sum, med) => sum + med.times.length, 0);
+
+  const perDay = useMemo(
+    () =>
+      days.map((date) => {
+        const missed: { medName: string; time: string; key: string }[] = [];
+        const takenList: { medName: string; time: string; key: string }[] = [];
         let taken = 0;
-        days.forEach((k) => {
-          if (data.medLog[k]?.[`${m.id}@${t}`]) taken++;
+
+        scheduled.forEach((med) => {
+          med.times.forEach((time) => {
+            const key = `${med.id}@${time}`;
+
+            if (data.medLog[date]?.[key]) {
+              taken += 1;
+              takenList.push({ medName: med.name, time, key });
+            } else {
+              missed.push({ medName: med.name, time, key });
+            }
+          });
         });
-        const expected = days.length;
+
         return {
-          id: `${m.id}@${t}`,
-          name: m.name,
-          dose: m.dose,
-          time: t,
+          date,
+          expected: expectedPerDay,
           taken,
-          expected,
-          pct: expected ? Math.round((taken / expected) * 100) : 0,
+          missed,
+          takenList,
+          pct: expectedPerDay ? Math.round((taken / expectedPerDay) * 100) : null,
         };
       }),
-    )
-    .sort((a, b) => a.pct - b.pct);
+    [data.medLog, days, expectedPerDay, scheduled],
+  );
 
-  const asNeededCounts = asNeeded.map((m) => {
-    let count = 0;
-    days.forEach((k) => {
-      const log = data.medLog[k] ?? {};
-      Object.keys(log).forEach((key) => {
-        if (log[key] && (key === `${m.id}@asNeeded` || key.startsWith(`${m.id}@`))) count++;
-      });
-    });
-    return { id: m.id, name: m.name, count };
-  });
+  const totalExpected = perDay.reduce((sum, day) => sum + day.expected, 0);
+  const totalTaken = perDay.reduce((sum, day) => sum + day.taken, 0);
+  const overallPct = totalExpected ? Math.round((totalTaken / totalExpected) * 100) : null;
 
-  // Doses logged for meds that no longer exist in the list — keep history visible.
-  const knownIds = new Set(data.meds.map((m) => m.id));
-  const removedCounts = (() => {
-    const acc: Record<string, number> = {};
-    days.forEach((k) => {
-      const log = data.medLog[k] ?? {};
-      Object.entries(log).forEach(([key, val]) => {
-        if (!val) return;
-        const id = key.split("@")[0];
-        if (knownIds.has(id)) return;
-        acc[id] = (acc[id] ?? 0) + 1;
-      });
-    });
-    return Object.entries(acc).map(([id, count]) => ({ id, count, name: data.medNames?.[id] ?? "Removed medication" }));
-  })();
-
-  const cellColor = (d: (typeof perDay)[number]) => {
-    if (d.expected === 0) return "var(--tint)";
-    const r = d.taken / d.expected;
-    if (r >= 1) return INSIGHT_COLORS.pinkLight;
-    if (r > 0) return INSIGHT_COLORS.pink;
-    return INSIGHT_COLORS.pinkDeep;
+  const adherenceColor = (pct: number | null): string => {
+    if (pct == null) return INSIGHT_COLORS.oliveLight;
+    if (pct >= 90) return "#28A85B";
+    if (pct >= 75) return "#F0D33A";
+    if (pct >= 40) return "#F7A21C";
+    return "#D84343";
   };
 
-  const fmt = (k: string) => fromKey(k).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  const perMed = useMemo(
+    () =>
+      scheduled
+        .flatMap((med) =>
+          med.times.map((time) => {
+            let taken = 0;
+
+            days.forEach((date) => {
+              if (data.medLog[date]?.[`${med.id}@${time}`]) taken += 1;
+            });
+
+            const expected = days.length;
+            const pct = expected ? Math.round((taken / expected) * 100) : 0;
+
+            return {
+              id: `${med.id}@${time}`,
+              name: med.name,
+              dose: med.dose,
+              time,
+              taken,
+              expected,
+              pct,
+            };
+          }),
+        )
+        .sort((a, b) => a.pct - b.pct),
+    [data.medLog, days, scheduled],
+  );
+
+  const asNeededCounts = useMemo(
+    () =>
+      asNeeded.map((med) => {
+        let count = 0;
+
+        days.forEach((date) => {
+          const log = data.medLog[date] ?? {};
+
+          Object.keys(log).forEach((key) => {
+            if (log[key] && (key === `${med.id}@asNeeded` || key.startsWith(`${med.id}@`))) {
+              count += 1;
+            }
+          });
+        });
+
+        return { id: med.id, name: med.name, count };
+      }),
+    [asNeeded, data.medLog, days],
+  );
+
+  const knownIds = new Set(data.meds.map((med) => med.id));
+  const removedCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+
+    days.forEach((date) => {
+      const log = data.medLog[date] ?? {};
+
+      Object.entries(log).forEach(([key, value]) => {
+        if (!value) return;
+
+        const id = key.split("@")[0];
+        if (knownIds.has(id)) return;
+
+        counts[id] = (counts[id] ?? 0) + 1;
+      });
+    });
+
+    return Object.entries(counts).map(([id, count]) => ({
+      id,
+      count,
+      name: data.medNames?.[id] ?? "Removed medication",
+    }));
+  }, [data.medLog, data.medNames, days, knownIds]);
+
+  const toggleDose = (dayKey: string, medKey: string) =>
+    update((current) => {
+      const day = { ...(current.medLog[dayKey] ?? {}) };
+
+      if (day[medKey]) delete day[medKey];
+      else day[medKey] = true;
+
+      return {
+        ...current,
+        medLog: {
+          ...current.medLog,
+          [dayKey]: day,
+        },
+      };
+    });
+
+  const fmtDay = (date: string) =>
+    fromKey(date).toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+    });
+
+  const monthly = useMemo(() => {
+    if (period !== "Y") return [];
+
+    return Array.from({ length: 12 }, (_, monthIndex) => {
+      const monthDays = perDay.filter((day) => fromKey(day.date).getMonth() === monthIndex);
+      const expected = monthDays.reduce((sum, day) => sum + day.expected, 0);
+      const taken = monthDays.reduce((sum, day) => sum + day.taken, 0);
+      const pct = expected ? Math.round((taken / expected) * 100) : null;
+
+      return {
+        key: `${range.start.getFullYear()}-${String(monthIndex + 1).padStart(2, "0")}`,
+        label: MON_SHORT3[monthIndex],
+        expected,
+        taken,
+        pct,
+      };
+    });
+  }, [perDay, period, range.start]);
+
+  const bestMonth =
+    period === "Y"
+      ? monthly.filter((month) => month.pct != null).sort((a, b) => (b.pct ?? 0) - (a.pct ?? 0))[0]
+      : undefined;
+
+  const worstMonth =
+    period === "Y"
+      ? monthly.filter((month) => month.pct != null).sort((a, b) => (a.pct ?? 0) - (b.pct ?? 0))[0]
+      : undefined;
 
   if (data.meds.length === 0 && removedCounts.length === 0) return null;
 
   return (
     <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
-      <button onClick={() => setOpen((o) => !o)} className="flex w-full items-center justify-between">
-        <p className="text-xs uppercase tracking-wider text-muted-foreground">Meds adherence</p>
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        className="flex w-full items-center justify-between"
+      >
+        <div className="text-left">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">Meds adherence</p>
+          <p className="mt-1 text-[11px] font-medium text-foreground">
+            {range.title} · {range.label}
+          </p>
+        </div>
+
         <span className="text-xs text-muted-foreground">{open ? "▾" : "▸"}</span>
       </button>
+
       {open && (
         <>
-          <div className="mt-3 flex gap-2">
-            {([7, 30] as const).map((r) => (
-              <button
-                key={r}
-                onClick={() => setRange(r)}
-                className={`flex-1 rounded-xl px-3 py-1.5 text-xs font-medium ${range === r ? "bg-primary text-primary-foreground" : "bg-tint text-foreground"}`}
-              >
-                {r}-day
-              </button>
-            ))}
-          </div>
-
           {totalExpected > 0 ? (
-            <div className="mt-4 flex items-baseline gap-2">
-              <span className="font-serif text-5xl leading-none">{overallPct}%</span>
-              <span className="text-sm text-muted-foreground">
-                {totalTaken}/{totalExpected} doses
-              </span>
+            <div className="mt-4">
+              <div className="flex items-end gap-2">
+                <span className="font-serif text-5xl leading-none" style={{ color: adherenceColor(overallPct) }}>
+                  {overallPct}%
+                </span>
+
+                <span className="pb-1 text-sm text-muted-foreground">
+                  {totalTaken}/{totalExpected} doses
+                </span>
+              </div>
+
+              <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-tint">
+                <div
+                  className="h-full rounded-full transition-all duration-300"
+                  style={{
+                    width: `${overallPct ?? 0}%`,
+                    background: adherenceColor(overallPct),
+                  }}
+                />
+              </div>
             </div>
           ) : (
-            <p className="mt-4 text-sm text-muted-foreground">No scheduled meds in this range.</p>
+            <p className="mt-4 text-sm text-muted-foreground">No scheduled meds in this period.</p>
           )}
 
-          {perDay.length > 0 && (
-            <div className="mt-4">
-              <p className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">Daily heatmap</p>
-              <div
-                className="grid gap-1"
-                style={{ gridTemplateColumns: `repeat(${Math.min(range, 15)}, minmax(0, 1fr))` }}
-              >
-                {perDay.map((d) => (
+          <div className="mt-5">
+            <p className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+              {period === "Y" ? "Monthly adherence" : "Daily adherence"}
+            </p>
+
+            {period === "Y" ? (
+              <div className="grid grid-cols-6 gap-2">
+                {monthly.map((month) => (
                   <button
-                    key={d.date}
-                    onClick={() => setExpandedDay(expandedDay === d.date ? null : d.date)}
-                    title={`${fmt(d.date)} — ${d.taken}/${d.expected}`}
-                    aria-label={`${fmt(d.date)} — ${d.taken}/${d.expected} doses`}
-                    className={`aspect-square min-h-7 min-w-7 rounded ${expandedDay === d.date ? "ring-2 ring-primary" : ""}`}
-                    style={{ background: cellColor(d) }}
+                    key={month.key}
+                    type="button"
+                    onClick={() => setExpandedKey(expandedKey === month.key ? null : month.key)}
+                    className={`rounded-xl p-2 text-center ring-1 transition ${
+                      expandedKey === month.key ? "ring-primary" : "ring-border/70"
+                    }`}
+                    style={{ background: adherenceColor(month.pct) }}
+                  >
+                    <span className="block text-[10px] font-semibold text-black/75">{month.label}</span>
+                    <span className="mt-0.5 block text-[10px] font-bold text-black/80">
+                      {month.pct == null ? "n/a" : `${month.pct}%`}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div
+                className="grid gap-1.5"
+                style={{
+                  gridTemplateColumns: `repeat(${period === "W" ? 7 : 7}, minmax(0, 1fr))`,
+                }}
+              >
+                {perDay.map((day) => (
+                  <button
+                    key={day.date}
+                    type="button"
+                    onClick={() => setExpandedKey(expandedKey === day.date ? null : day.date)}
+                    title={`${fmtDay(day.date)} — ${day.taken}/${day.expected}`}
+                    aria-label={`${fmtDay(day.date)} — ${day.taken}/${day.expected} doses`}
+                    className={`aspect-square min-h-7 min-w-0 rounded-lg ring-1 transition ${
+                      expandedKey === day.date ? "ring-2 ring-primary" : "ring-border/30"
+                    }`}
+                    style={{ background: adherenceColor(day.pct) }}
                   />
                 ))}
               </div>
-              <div className="mt-2 flex gap-3 text-[10px] text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <span className="h-2.5 w-2.5 rounded" style={{ background: INSIGHT_COLORS.pinkLight }} /> full
+            )}
+
+            <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
+              {[
+                { label: "90–100%", color: "#28A85B" },
+                { label: "75–89%", color: "#F0D33A" },
+                { label: "40–74%", color: "#F7A21C" },
+                { label: "0–39%", color: "#D84343" },
+                { label: "n/a", color: INSIGHT_COLORS.oliveLight },
+              ].map((item) => (
+                <span key={item.label} className="flex items-center gap-1">
+                  <span className="h-2.5 w-2.5 rounded" style={{ background: item.color }} />
+                  {item.label}
                 </span>
-                <span className="flex items-center gap-1">
-                  <span className="h-2.5 w-2.5 rounded" style={{ background: INSIGHT_COLORS.pink }} /> partial
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="h-2.5 w-2.5 rounded" style={{ background: INSIGHT_COLORS.pinkDeep }} /> none
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="h-2.5 w-2.5 rounded bg-tint" /> n/a
-                </span>
-              </div>
-              {expandedDay &&
-                (() => {
-                  const d = perDay.find((x) => x.date === expandedDay);
-                  if (!d) return null;
-                  return (
-                    <div className="mt-3 rounded-2xl bg-tint p-3 text-xs" role="status" aria-live="polite">
-                      <p className="font-medium">
-                        {fmt(d.date)} — {d.taken}/{d.expected} taken
-                      </p>
-                      {d.takenList.length > 0 && (
-                        <ul className="mt-1 space-y-0.5">
-                          {d.takenList.map((m) => (
-                            <li key={m.key}>
-                              <button
-                                onClick={() => toggleDose(d.date, m.key)}
-                                className="text-left text-green-700 hover:underline"
-                                title="Tap to uncheck"
-                              >
-                                Taken · {m.time} — {m.medName}{" "}
-                                <span className="text-[10px] text-muted-foreground">· tap to uncheck</span>
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                      {d.missed.length > 0 ? (
-                        <ul className="mt-1 space-y-0.5 text-muted-foreground">
-                          {d.missed.map((m) => (
-                            <li key={m.key}>
-                              <button
-                                onClick={() => toggleDose(d.date, m.key)}
-                                className="text-left hover:underline"
-                                title="Tap to mark taken"
-                              >
-                                Missed · {m.time} — {m.medName} <span className="text-[10px]">· tap to mark taken</span>
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : d.expected > 0 ? (
-                        <p className="mt-1 flex items-center gap-1 text-muted-foreground">
-                          All doses taken <Ico e="💚" size={13} />
+              ))}
+            </div>
+
+            {expandedKey &&
+              (period === "Y"
+                ? (() => {
+                    const month = monthly.find((item) => item.key === expandedKey);
+                    if (!month) return null;
+
+                    return (
+                      <div className="mt-3 rounded-2xl bg-tint p-3 text-xs">
+                        <p className="font-medium">
+                          {month.label} {range.start.getFullYear()} · {month.pct == null ? "n/a" : `${month.pct}%`}
                         </p>
-                      ) : null}
-                    </div>
-                  );
-                })()}
+                        <p className="mt-1 text-muted-foreground">
+                          {month.taken}/{month.expected} doses taken
+                        </p>
+                      </div>
+                    );
+                  })()
+                : (() => {
+                    const day = perDay.find((item) => item.date === expandedKey);
+                    if (!day) return null;
+
+                    return (
+                      <div className="mt-3 rounded-2xl bg-tint p-3 text-xs" role="status" aria-live="polite">
+                        <p className="font-medium">
+                          {fmtDay(day.date)} — {day.taken}/{day.expected} taken
+                        </p>
+
+                        {day.takenList.length > 0 && (
+                          <ul className="mt-1 space-y-0.5">
+                            {day.takenList.map((med) => (
+                              <li key={med.key}>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleDose(day.date, med.key)}
+                                  className="text-left hover:underline"
+                                  style={{ color: "#28A85B" }}
+                                  title="Tap to uncheck"
+                                >
+                                  Taken · {med.time} — {med.medName}
+                                  <span className="text-[10px] text-muted-foreground"> · tap to uncheck</span>
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+
+                        {day.missed.length > 0 ? (
+                          <ul className="mt-1 space-y-0.5 text-muted-foreground">
+                            {day.missed.map((med) => (
+                              <li key={med.key}>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleDose(day.date, med.key)}
+                                  className="text-left hover:underline"
+                                  title="Tap to mark taken"
+                                >
+                                  Missed · {med.time} — {med.medName}
+                                  <span className="text-[10px]"> · tap to mark taken</span>
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : day.expected > 0 ? (
+                          <p className="mt-1 flex items-center gap-1 text-muted-foreground">
+                            All doses taken <Ico e="💚" size={13} />
+                          </p>
+                        ) : null}
+                      </div>
+                    );
+                  })())}
+          </div>
+
+          {period === "Y" && (bestMonth || worstMonth) && (
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <div className="rounded-2xl bg-tint p-3">
+                <p className="text-[9px] uppercase tracking-wider text-muted-foreground">Best month</p>
+                <p className="mt-1 text-sm font-semibold">
+                  {bestMonth?.label ?? "—"} · {bestMonth?.pct ?? "—"}%
+                </p>
+              </div>
+
+              <div className="rounded-2xl bg-tint p-3">
+                <p className="text-[9px] uppercase tracking-wider text-muted-foreground">Lowest month</p>
+                <p className="mt-1 text-sm font-semibold">
+                  {worstMonth?.label ?? "—"} · {worstMonth?.pct ?? "—"}%
+                </p>
+              </div>
             </div>
           )}
 
           {perMed.length > 0 && (
-            <div className="mt-4">
+            <div className="mt-5">
               <p className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">Per medication</p>
-              <ul className="space-y-2">
-                {perMed.map((m) => {
-                  const color =
-                    m.pct >= 90
-                      ? INSIGHT_COLORS.pinkLight
-                      : m.pct >= 60
-                        ? INSIGHT_COLORS.pink
-                        : INSIGHT_COLORS.pinkDeep;
+
+              <ul className="space-y-3">
+                {perMed.map((med) => {
+                  const color = adherenceColor(med.pct);
+
                   return (
-                    <li key={m.id} className="flex items-center gap-2 text-xs">
+                    <li key={med.id} className="flex items-center gap-2 text-xs">
                       <span className="w-32 shrink-0 truncate">
-                        {m.name} <span className="text-muted-foreground">{m.time}</span>
+                        {med.name}
+                        <span className="text-muted-foreground"> {med.time}</span>
                       </span>
-                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-tint">
-                        <div className="h-full rounded-full" style={{ width: `${m.pct}%`, background: color }} />
+
+                      <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-tint">
+                        <div
+                          className="h-full rounded-full transition-all duration-300"
+                          style={{
+                            width: `${med.pct}%`,
+                            background: color,
+                          }}
+                        />
                       </div>
+
                       <span className="w-14 shrink-0 text-right tabular-nums">
-                        {m.pct}%{" "}
-                        <span className="text-muted-foreground">
-                          ({m.taken}/{m.expected})
+                        {med.pct}%
+                        <span className="block text-[10px] text-muted-foreground">
+                          {med.taken}/{med.expected}
                         </span>
                       </span>
                     </li>
@@ -1210,31 +1444,34 @@ function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) 
           )}
 
           {asNeededCounts.length > 0 && (
-            <div className="mt-4">
+            <div className="mt-5">
               <p className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">As-needed (frequency)</p>
+
               <ul className="space-y-1 text-xs">
-                {asNeededCounts.map((m) => (
-                  <li key={m.id} className="flex justify-between">
-                    <span>{m.name}</span>
+                {asNeededCounts.map((med) => (
+                  <li key={med.id} className="flex justify-between gap-3">
+                    <span>{med.name}</span>
                     <span className="text-muted-foreground">
-                      {m.count}× in {range} days
+                      {med.count}× in this {range.title.toLowerCase()}
                     </span>
                   </li>
                 ))}
               </ul>
             </div>
           )}
+
           {removedCounts.length > 0 && (
-            <div className="mt-4">
+            <div className="mt-5">
               <p className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">
                 Discontinued meds (history)
               </p>
+
               <ul className="space-y-1 text-xs">
-                {removedCounts.map((m) => (
-                  <li key={m.id} className="flex justify-between">
-                    <span>{m.name}</span>
+                {removedCounts.map((med) => (
+                  <li key={med.id} className="flex justify-between gap-3">
+                    <span>{med.name}</span>
                     <span className="text-muted-foreground">
-                      {m.count} doses in {range} days
+                      {med.count} doses in this {range.title.toLowerCase()}
                     </span>
                   </li>
                 ))}
