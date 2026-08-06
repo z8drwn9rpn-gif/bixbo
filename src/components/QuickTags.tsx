@@ -736,9 +736,9 @@ export function QuickTags({
                   isFlash ? "scale-105 bg-primary/10 ring-2 ring-primary shadow-md" : ""
                 }`}
               >
-                <Ico e={tag.emoji} size={25} />
+                <Ico e={tag.emoji} size={22} />
 
-                <span className="max-w-[66px] text-[10px] font-medium leading-[1.05] text-muted-foreground">
+                <span className="max-w-[58px] text-[9px] font-medium leading-[1.05] text-muted-foreground">
                   {tag.label}
                 </span>
 
