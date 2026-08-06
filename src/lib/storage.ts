@@ -663,6 +663,38 @@ export interface Settings {
   >;
   /** Saved Trigger Comparison combos on the Patterns tab. */
   savedTriggers?: { id: string; a: string; b: string }[];
+  /**
+   * Web-push / reminder preferences. Optional so older backups migrate safely:
+   * missing values fall back to DEFAULT_NOTIF_PREFS in src/lib/notifications.ts.
+   */
+  notif?: NotificationPrefs;
+}
+
+/** Per-category reminder preferences. All fields optional for safe migration. */
+export interface NotificationPrefs {
+  enabled?: boolean;
+  meds?: boolean;
+  period?: boolean;
+  ovulation?: boolean;
+  dailyLog?: boolean;
+  symptom?: boolean;
+  appointments?: boolean;
+  mood?: boolean;
+  hydration?: boolean;
+  marketing?: boolean;
+  /** "HH:MM" times. */
+  dailyLogTime?: string;
+  symptomTime?: string;
+  moodTime?: string;
+  hydrationStart?: string;
+  hydrationEnd?: string;
+  hydrationEveryHours?: number;
+  quietStart?: string;
+  quietEnd?: string;
+  /** Epoch ms of the last "Maybe later" dismissal of the permission card. */
+  promptSnoozedAt?: number;
+  /** Set once the user has answered the permission card. */
+  promptAnswered?: boolean;
 }
 
 export interface PartnerData {
