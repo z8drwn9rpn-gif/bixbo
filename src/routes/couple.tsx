@@ -102,32 +102,6 @@ const TONES: Record<
   },
 };
 
-const COUPLE_PAIN_COLORS = [
-  "#8DBF3A",
-  "#A8C93A",
-  "#C4D63A",
-  "#E0D93A",
-  "#F0C43A",
-  "#F3A83A",
-  "#F28A3A",
-  "#EF6E42",
-  "#E9534F",
-  "#D93F55",
-  "#C92F5A",
-] as const;
-
-function couplePainColor(value: number): string {
-  const clamped = Math.max(0, Math.min(10, value));
-  const lower = Math.floor(clamped);
-  const upper = Math.ceil(clamped);
-
-  if (lower === upper) return COUPLE_PAIN_COLORS[lower];
-
-  // Half-step values use the nearest vivid chart color. The global Pain Scale
-  // still uses painColor(); this palette is only for the Couple pain chart.
-  return COUPLE_PAIN_COLORS[Math.round(clamped)];
-}
-
 function clampPercent(value: number) {
   return Math.max(0, Math.min(100, value));
 }
@@ -773,9 +747,9 @@ function CouplePainChart({
             const myValue = mySeries[index];
             const partnerValue = partnerSeries[index];
 
-            const myColor = myValue != null ? couplePainColor(myValue) : "transparent";
+            const myColor = myValue != null ? painColor(myValue) : "transparent";
 
-            const partnerColor = partnerValue != null ? couplePainColor(partnerValue) : "transparent";
+            const partnerColor = partnerValue != null ? painColor(partnerValue) : "transparent";
 
             const weekday = date
               .toLocaleDateString("en-US", {
@@ -1009,7 +983,7 @@ function CouplePainChart({
 
       <div className="mt-2 flex flex-wrap gap-4 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-3 w-3 rounded-sm" style={{ background: couplePainColor(6) }} />
+          <span className="inline-block h-3 w-3 rounded-sm" style={{ background: painColor(6) }} />
           You — solid
         </span>
 
@@ -1019,12 +993,12 @@ function CouplePainChart({
             style={{
               background: `repeating-linear-gradient(
                 135deg,
-                ${couplePainColor(6)},
-                ${couplePainColor(6)} 3px,
+                ${painColor(6)},
+                ${painColor(6)} 3px,
                 rgba(255,255,255,0.95) 3px,
                 rgba(255,255,255,0.95) 5px
               )`,
-              border: `1px solid ${couplePainColor(6)}`,
+              border: `1px solid ${painColor(6)}`,
             }}
           />
           {partnerName} — striped

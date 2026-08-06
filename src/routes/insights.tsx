@@ -21,6 +21,7 @@ import {
   fromKey,
   BRISTOL,
   PAIN_DESCRIPTIONS,
+  painColor,
   avgDayPain,
   isIntercourseKind,
   isCycleTrackingHidden,
@@ -87,16 +88,7 @@ const HOT_FLASH_DESCRIPTIONS: Record<number, string> = {
   5: "Drenching",
 };
 
-const BRISTOL_COLORS = [
-  INSIGHT_COLORS.muted,
-  INSIGHT_COLORS.terracotta,
-  INSIGHT_COLORS.amber,
-  INSIGHT_COLORS.green,
-  INSIGHT_COLORS.teal,
-  INSIGHT_COLORS.oliveLight,
-  INSIGHT_COLORS.orange,
-  INSIGHT_COLORS.rose,
-] as const;
+const BRISTOL_MYSTERY_COLOR = "linear-gradient(135deg,#ef4444,#f59e0b,#eab308,#22c55e,#3b82f6,#8b5cf6)";
 
 const SYMPTOM_LOAD_COLORS = [
   INSIGHT_COLORS.muted,
@@ -105,14 +97,6 @@ const SYMPTOM_LOAD_COLORS = [
   INSIGHT_COLORS.rose,
   INSIGHT_COLORS.pinkDeep,
 ] as const;
-
-function painInsightColor(value: number): string {
-  if (value <= 2) return INSIGHT_COLORS.sageLight;
-  if (value <= 4) return INSIGHT_COLORS.green;
-  if (value <= 6) return INSIGHT_COLORS.amber;
-  if (value <= 8) return INSIGHT_COLORS.terracotta;
-  return INSIGHT_COLORS.rose;
-}
 
 function timeBlockOf(time?: string): number | null {
   if (!time) return null;
@@ -379,16 +363,33 @@ function InsightsPage() {
   return (
     <AppShell title="Health of Bixbo">
       <div className="space-y-5 px-5 pt-3 pb-[calc(96px+env(safe-area-inset-bottom))]">
-        <div className="flex gap-2">
-          {((cycleTrackingHidden ? ["W", "M", "Y"] : ["W", "M", "Y", "P"]) as Period[]).map((p) => (
-            <button
-              key={p}
-              onClick={() => setPeriod(p)}
-              className={`flex-1 rounded-2xl px-3 py-2.5 text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${period === p ? "bg-primary text-primary-foreground shadow-sm" : "bg-surface text-foreground ring-1 ring-border hover:bg-tint"}`}
-            >
-              {p === "W" ? "Week" : p === "M" ? "Month" : p === "Y" ? "Year" : "Period"}
-            </button>
-          ))}
+        <div
+          className={`grid gap-1 rounded-[2rem] bg-primary/20 p-1.5 ring-1 ring-primary/15 ${
+            cycleTrackingHidden ? "grid-cols-3" : "grid-cols-4"
+          }`}
+          role="tablist"
+          aria-label="Insights period"
+        >
+          {((cycleTrackingHidden ? ["W", "M", "Y"] : ["W", "M", "Y", "P"]) as Period[]).map((p) => {
+            const active = period === p;
+
+            return (
+              <button
+                key={p}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setPeriod(p)}
+                className={`min-w-0 rounded-[1.65rem] px-2 py-3 text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+                  active
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "text-foreground/80 hover:bg-surface/45 hover:text-foreground"
+                }`}
+              >
+                {p === "W" ? "Week" : p === "M" ? "Month" : p === "Y" ? "Year" : "Period"}
+              </button>
+            );
+          })}
         </div>
         <div className="flex items-center justify-between">
           <button
@@ -1588,7 +1589,7 @@ function PainChart({
       bars={bars}
       yLabels={[10, 8, 6, 4, 2, 0]}
       yMax={10}
-      colorFor={(value) => painInsightColor(value)}
+      colorFor={(value) => painColor(value)}
       tooltipText={(i, value) =>
         period === "Y"
           ? `${fmtTapMonth(i, anchor.getFullYear())} · Pain ${value.toFixed(1)}/10 · ${
@@ -1614,7 +1615,7 @@ function BristolChart({ bowelCounts }: { bowelCounts: number[] }) {
       n: 0,
       label: "Type 0 — Mystery",
       sub: "Unknown / mixed",
-      color: BRISTOL_COLORS[0],
+      color: BRISTOL_MYSTERY_COLOR,
       shape: "mystery",
     },
     ...BRISTOL,
@@ -1642,7 +1643,7 @@ function BristolChart({ bowelCounts }: { bowelCounts: number[] }) {
                   }`}
                   style={{
                     height: `${Math.max(5, (count / max) * 100)}%`,
-                    background: BRISTOL_COLORS[b.n],
+                    background: b.color,
                   }}
                 />
               </div>
