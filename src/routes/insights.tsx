@@ -212,13 +212,19 @@ const GREEN_SOFT = "rgba(83, 102, 0, 0.08)";
 const GREEN_BORDER = "rgba(83, 102, 0, 0.22)";
 
 const HOT_FLASH_COLORS = [
-  INSIGHT_COLORS.muted,
-  INSIGHT_COLORS.sageLight,
-  INSIGHT_COLORS.green,
-  INSIGHT_COLORS.amber,
-  INSIGHT_COLORS.orange,
-  INSIGHT_COLORS.terracotta,
+  VIVID_PAIN_CHART_COLORS[0], // unused index 0
+  VIVID_PAIN_CHART_COLORS[2], // level 1 — green
+  VIVID_PAIN_CHART_COLORS[4], // level 2 — yellow
+  VIVID_PAIN_CHART_COLORS[6], // level 3 — orange
+  VIVID_PAIN_CHART_COLORS[8], // level 4 — red
+  VIVID_PAIN_CHART_COLORS[10], // level 5 — deepest red
 ] as const;
+
+const SLEEP_COLORS = {
+  short: VIVID_PAIN_CHART_COLORS[8], // under 8 h — red
+  target: VIVID_PAIN_CHART_COLORS[4], // exactly 8 h — yellow
+  long: VIVID_PAIN_CHART_COLORS[0], // over 8 h — green
+} as const;
 
 const HOT_FLASH_DESCRIPTIONS: Record<number, string> = {
   1: "Mild warmth",
@@ -694,13 +700,13 @@ function InsightsPage() {
               <SleepChart period={period} days={days} series={sleepSeries} anchor={anchor} />
               <div className="mt-2 flex gap-3 text-[10px] text-muted-foreground">
                 <span className="flex items-center gap-1">
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: INSIGHT_COLORS.terracotta }} /> &lt;8h
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: SLEEP_COLORS.short }} /> &lt;8h
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: INSIGHT_COLORS.amber }} /> 8h
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: SLEEP_COLORS.target }} /> 8h
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: INSIGHT_COLORS.green }} /> &gt;8h
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: SLEEP_COLORS.long }} /> &gt;8h
                 </span>
               </div>
             </section>
