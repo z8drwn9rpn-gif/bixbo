@@ -94,11 +94,11 @@ const BRISTOL_COLORS = [
 ] as const;
 
 const SYMPTOM_LOAD_COLORS = [
-  INSIGHT_COLORS.sageLight,
-  INSIGHT_COLORS.green,
-  INSIGHT_COLORS.amber,
-  INSIGHT_COLORS.orange,
+  INSIGHT_COLORS.muted,
+  INSIGHT_COLORS.pinkLight,
+  INSIGHT_COLORS.pink,
   INSIGHT_COLORS.rose,
+  INSIGHT_COLORS.pinkDeep,
 ] as const;
 
 function painInsightColor(value: number): string {
@@ -462,8 +462,8 @@ function InsightsPage() {
             <section
               className="rounded-3xl p-5 ring-1"
               style={{
-                backgroundColor: PAIN_SOFT,
-                boxShadow: `inset 0 0 0 1px ${PAIN_BORDER}`,
+                backgroundColor: GREEN_SOFT,
+                boxShadow: `inset 0 0 0 1px ${GREEN_BORDER}`,
               }}
             >
               <p className="text-xs uppercase tracking-wider" style={{ color: PAIN_ACCENT }}>
@@ -1070,7 +1070,11 @@ function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) 
               <ul className="space-y-2">
                 {perMed.map((m) => {
                   const color =
-                    m.pct >= 90 ? INSIGHT_COLORS.green : m.pct >= 60 ? INSIGHT_COLORS.amber : INSIGHT_COLORS.terracotta;
+                    m.pct >= 90
+                      ? INSIGHT_COLORS.pinkLight
+                      : m.pct >= 60
+                        ? INSIGHT_COLORS.pink
+                        : INSIGHT_COLORS.pinkDeep;
                   return (
                     <li key={m.id} className="flex items-center gap-2 text-xs">
                       <span className="w-32 shrink-0 truncate">
