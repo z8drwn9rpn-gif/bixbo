@@ -32,6 +32,13 @@ function fmtTapMonth(monthIndex: number, year: number): string {
   return `${MON_SHORT3[monthIndex]} ${year}`;
 }
 
+function fmtCoupleTooltipDay(k: string): string {
+  return fromKey(k).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
 type InsightTooltipDetails = {
   owner?: string;
   heading: string;
@@ -51,6 +58,8 @@ function InsightFloatingTooltip({
   top?: number;
 }) {
   const tooltipWidth = 138;
+  const tooltipHeight = 58;
+  const connectorHeight = 12;
   const clampedLeft = Math.max(0, Math.min(100, leftPct));
   const placement = clampedLeft < 24 ? "left" : clampedLeft > 76 ? "right" : "center";
 
@@ -61,76 +70,48 @@ function InsightFloatingTooltip({
         ? { right: "4px", transform: "none" }
         : { left: `${clampedLeft}%`, transform: "translateX(-50%)" };
 
-  const arrowX =
+  const connectorX =
     placement === "left"
-      ? Math.max(18, Math.min(120, (clampedLeft / 24) * tooltipWidth))
+      ? Math.max(12, Math.min(tooltipWidth - 12, (clampedLeft / 24) * tooltipWidth))
       : placement === "right"
-        ? Math.max(18, Math.min(120, tooltipWidth - ((100 - clampedLeft) / 24) * tooltipWidth))
+        ? Math.max(12, Math.min(tooltipWidth - 12, tooltipWidth - ((100 - clampedLeft) / 24) * tooltipWidth))
         : tooltipWidth / 2;
 
   const headingText = `${details.owner ? `${details.owner} · ` : ""}${details.heading}`;
-  const heading = headingText.length > 28 ? `${headingText.slice(0, 27).trimEnd()}…` : headingText;
+  const heading = headingText.length > 29 ? `${headingText.slice(0, 28).trimEnd()}…` : headingText;
 
-  const wrapSvgText = (value: string, maxChars: number, maxLines = 2) => {
-    const words = value.trim().split(/\s+/);
-    const lines: string[] = [];
-    let current = "";
+  const valueFontSize = details.value.length > 23 ? 8.5 : details.value.length > 18 ? 10 : 12;
 
-    for (const word of words) {
-      const next = current ? `${current} ${word}` : word;
-
-      if (next.length <= maxChars) {
-        current = next;
-        continue;
-      }
-
-      if (current) lines.push(current);
-      current = word;
-
-      if (lines.length === maxLines - 1) {
-        const remaining = [current, ...words.slice(words.indexOf(word) + 1)].join(" ");
-        lines.push(remaining);
-        current = "";
-        break;
-      }
-    }
-
-    if (current) lines.push(current);
-
-    const visible = lines.slice(0, maxLines);
-    const lastIndex = visible.length - 1;
-
-    if (lastIndex >= 0 && visible[lastIndex].length > maxChars) {
-      visible[lastIndex] = `${visible[lastIndex].slice(0, Math.max(1, maxChars - 1)).trimEnd()}…`;
-    }
-
-    return visible;
-  };
-
-  const descriptionLines = details.description ? wrapSvgText(details.description, 29, 2) : [];
-
-  const cardHeight = descriptionLines.length > 1 ? 66 : 58;
-  const svgHeight = cardHeight + 8;
-  const valueFontSize = details.value.length > 22 ? 9.5 : details.value.length > 17 ? 10.5 : 12;
+  const description = details.description ?? "";
+  const descriptionFontSize = description.length > 31 ? 7 : description.length > 27 ? 7.5 : 8;
+  const visibleDescription = description.length > 38 ? `${description.slice(0, 37).trimEnd()}…` : description;
 
   return (
     <svg
       width={tooltipWidth}
-      height={svgHeight}
-      viewBox={`0 0 ${tooltipWidth} ${svgHeight}`}
+      height={tooltipHeight + connectorHeight}
+      viewBox={`0 0 ${tooltipWidth} ${tooltipHeight + connectorHeight}`}
       className="pointer-events-none absolute z-30 overflow-visible"
       style={{
         ...positionStyle,
         top,
-        filter: `drop-shadow(0 8px 14px color-mix(in srgb, ${details.color} 18%, transparent))`,
       }}
       aria-hidden="true"
     >
+      <line
+        x1={connectorX}
+        x2={connectorX}
+        y1={tooltipHeight}
+        y2={tooltipHeight + connectorHeight}
+        stroke={details.color}
+        strokeWidth="1.25"
+      />
+
       <rect
-        x="1"
-        y="1"
-        width={tooltipWidth - 2}
-        height={cardHeight - 2}
+        x="0"
+        y="0"
+        width={tooltipWidth}
+        height={tooltipHeight}
         rx="9"
         fill="var(--surface)"
         stroke={details.color}
@@ -147,35 +128,18 @@ function InsightFloatingTooltip({
         {details.value}
       </text>
 
-      {descriptionLines.map((line, index) => (
-        <text key={`${line}-${index}`} x="10" y={48 + index * 9} fontSize="8" fill="var(--muted-foreground)">
-          {line}
+      {visibleDescription ? (
+        <text x="10" y="49" fontSize={descriptionFontSize} fill="var(--muted-foreground)">
+          {visibleDescription}
         </text>
-      ))}
-
-      <path
-        d={`M ${arrowX - 6} ${cardHeight - 1} L ${arrowX} ${cardHeight + 7} L ${arrowX + 6} ${cardHeight - 1} Z`}
-        fill="var(--surface)"
-        stroke={details.color}
-        strokeWidth="1.2"
-        strokeLinejoin="round"
-      />
-
-      <line
-        x1={arrowX - 5}
-        x2={arrowX + 5}
-        y1={cardHeight - 1}
-        y2={cardHeight - 1}
-        stroke="var(--surface)"
-        strokeWidth="2.2"
-      />
+      ) : null}
     </svg>
   );
 }
 
 function InsightTooltipSummary({ details, onClose }: { details: InsightTooltipDetails; onClose: () => void }) {
   return (
-    <div className="mt-2 rounded-[1.1rem] bg-primary/20 px-2 py-2 text-[10px] text-foreground ring-1 ring-primary/20">
+    <div className="mt-2 rounded-[1.25rem] bg-primary/20 px-2.5 py-2 text-[11px] text-foreground ring-1 ring-primary/20">
       <button
         type="button"
         onClick={(event) => {
@@ -191,7 +155,7 @@ function InsightTooltipSummary({ details, onClose }: { details: InsightTooltipDe
           {details.summary}
         </span>
 
-        <span className="shrink-0 text-[8px] text-muted-foreground">Tap to close</span>
+        <span className="shrink-0 text-[9px] text-muted-foreground">Tap to close</span>
       </button>
     </div>
   );
@@ -1483,7 +1447,7 @@ function WeightLineChart({
               const heading =
                 period === "Y"
                   ? fmtTapMonth(fromKey(active.date).getMonth(), fromKey(active.date).getFullYear())
-                  : fmtTapDay(active.date);
+                  : fmtCoupleTooltipDay(active.date);
               const description = label === "Body temperature" ? "Daily average" : "Latest daily measurement";
               const details: InsightTooltipDetails = {
                 owner: "You",
@@ -1491,7 +1455,7 @@ function WeightLineChart({
                 value: `${label} ${active.value.toFixed(1)} ${unit}`,
                 description,
                 color: "var(--primary)",
-                summary: `${heading} · ${label} ${active.value.toFixed(1)} ${unit} · ${description}`,
+                summary: `${period === "Y" ? heading : active.date} · ${label} ${active.value.toFixed(1)} ${unit} · ${description}`,
               };
 
               return <InsightFloatingTooltip leftPct={(xFor(active.index) / width) * 100} details={details} />;
@@ -1504,7 +1468,7 @@ function WeightLineChart({
           const heading =
             period === "Y"
               ? fmtTapMonth(fromKey(active.date).getMonth(), fromKey(active.date).getFullYear())
-              : fmtTapDay(active.date);
+              : fmtCoupleTooltipDay(active.date);
           const description = label === "Body temperature" ? "Daily average" : "Latest daily measurement";
           const details: InsightTooltipDetails = {
             owner: "You",
@@ -1512,7 +1476,7 @@ function WeightLineChart({
             value: `${label} ${active.value.toFixed(1)} ${unit}`,
             description,
             color: "var(--primary)",
-            summary: `${heading} · ${label} ${active.value.toFixed(1)} ${unit} · ${description}`,
+            summary: `${period === "Y" ? heading : active.date} · ${label} ${active.value.toFixed(1)} ${unit} · ${description}`,
           };
 
           return <InsightTooltipSummary details={details} onClose={() => setActive(null)} />;
@@ -1710,7 +1674,7 @@ function SleepChart({
       yMax={12}
       colorFor={(value) => sleepColor(value)}
       tooltipDetails={(i, value) => {
-        const heading = period === "Y" ? fmtTapMonth(i, anchor.getFullYear()) : fmtTapDay(days[i]);
+        const heading = period === "Y" ? fmtTapMonth(i, anchor.getFullYear()) : fmtCoupleTooltipDay(days[i]);
         const description = value < 8 ? "Below 8 hours" : value === 8 ? "8-hour target" : "Above 8 hours";
         const color = sleepColor(value);
 
@@ -1720,7 +1684,7 @@ function SleepChart({
           value: `Sleep ${value.toFixed(1)}h`,
           description,
           color,
-          summary: `${heading} · Sleep ${value.toFixed(1)}h · ${description}`,
+          summary: `${period === "Y" ? heading : days[i]} · Sleep ${value.toFixed(1)}h · ${description}`,
         };
       }}
       axisLabel="Sleep (hours)"
@@ -1779,7 +1743,7 @@ function PainChart({
       yMax={10}
       colorFor={(value) => vividPainChartColor(value)}
       tooltipDetails={(i, value) => {
-        const heading = period === "Y" ? fmtTapMonth(i, anchor.getFullYear()) : fmtTapDay(days[i]);
+        const heading = period === "Y" ? fmtTapMonth(i, anchor.getFullYear()) : fmtCoupleTooltipDay(days[i]);
         const description = PAIN_DESCRIPTIONS[Math.max(0, Math.min(10, Math.round(value)))] ?? "Pain";
         const color = vividPainChartColor(value);
 
@@ -1789,7 +1753,7 @@ function PainChart({
           value: `Pain ${value.toFixed(1)}/10`,
           description,
           color,
-          summary: `${heading} · Pain ${value.toFixed(1)}/10 · ${description}`,
+          summary: `${period === "Y" ? heading : days[i]} · Pain ${value.toFixed(1)}/10 · ${description}`,
         };
       }}
       axisLabel="Pain (0–10)"
@@ -1948,7 +1912,8 @@ function HfBars({
         {active != null && bars[active] != null
           ? (() => {
               const value = bars[active]!;
-              const heading = period === "Y" ? fmtTapMonth(active, anchor.getFullYear()) : fmtTapDay(days[active]);
+              const heading =
+                period === "Y" ? fmtTapMonth(active, anchor.getFullYear()) : fmtCoupleTooltipDay(days[active]);
               const description = HOT_FLASH_DESCRIPTIONS[Math.max(1, Math.min(5, Math.round(value)))] ?? "Hot flash";
               const color = HOT_FLASH_COLORS[Math.max(1, Math.min(5, Math.round(value)))];
               const details: InsightTooltipDetails = {
@@ -1957,7 +1922,7 @@ function HfBars({
                 value: `Hot flash ${value.toFixed(1)}/5`,
                 description,
                 color,
-                summary: `${heading} · Hot flash ${value.toFixed(1)}/5 · ${description}`,
+                summary: `${period === "Y" ? heading : days[active]} · Hot flash ${value.toFixed(1)}/5 · ${description}`,
               };
 
               return (
@@ -1970,7 +1935,8 @@ function HfBars({
       {active != null && bars[active] != null ? (
         (() => {
           const value = bars[active]!;
-          const heading = period === "Y" ? fmtTapMonth(active, anchor.getFullYear()) : fmtTapDay(days[active]);
+          const heading =
+            period === "Y" ? fmtTapMonth(active, anchor.getFullYear()) : fmtCoupleTooltipDay(days[active]);
           const description = HOT_FLASH_DESCRIPTIONS[Math.max(1, Math.min(5, Math.round(value)))] ?? "Hot flash";
           const color = HOT_FLASH_COLORS[Math.max(1, Math.min(5, Math.round(value)))];
           const details: InsightTooltipDetails = {
@@ -1979,7 +1945,7 @@ function HfBars({
             value: `Hot flash ${value.toFixed(1)}/5`,
             description,
             color,
-            summary: `${heading} · Hot flash ${value.toFixed(1)}/5 · ${description}`,
+            summary: `${period === "Y" ? heading : days[active]} · Hot flash ${value.toFixed(1)}/5 · ${description}`,
           };
 
           return <InsightTooltipSummary details={details} onClose={() => setActive(null)} />;
