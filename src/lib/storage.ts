@@ -663,6 +663,38 @@ export interface Settings {
   >;
   /** Saved Trigger Comparison combos on the Patterns tab. */
   savedTriggers?: { id: string; a: string; b: string }[];
+  /**
+   * Web-push / reminder preferences. Optional so older backups migrate safely:
+   * missing values fall back to DEFAULT_NOTIF_PREFS in src/lib/notifications.ts.
+   */
+  notif?: NotificationPrefs;
+}
+
+/** Per-category reminder preferences. All fields optional for safe migration. */
+export interface NotificationPrefs {
+  enabled?: boolean;
+  meds?: boolean;
+  period?: boolean;
+  ovulation?: boolean;
+  dailyLog?: boolean;
+  symptom?: boolean;
+  appointments?: boolean;
+  mood?: boolean;
+  hydration?: boolean;
+  marketing?: boolean;
+  /** "HH:MM" times. */
+  dailyLogTime?: string;
+  symptomTime?: string;
+  moodTime?: string;
+  hydrationStart?: string;
+  hydrationEnd?: string;
+  hydrationEveryHours?: number;
+  quietStart?: string;
+  quietEnd?: string;
+  /** Epoch ms of the last "Maybe later" dismissal of the permission card. */
+  promptSnoozedAt?: number;
+  /** Set once the user has answered the permission card. */
+  promptAnswered?: boolean;
 }
 
 export interface PartnerData {
@@ -1060,7 +1092,7 @@ function migrate(raw: unknown): BixboData {
 
   const rawSettings = safeRecord<Partial<Settings>>(parsed.settings);
   const rawCycle = safeRecord<Partial<CyclePrefs>>(parsed.cycle);
-  const rawProfile = safeRecord<HealthProfile>(parsed.profile);
+  const rawProfile = safeRecord(parsed.profile) as HealthProfile;
   const rawPregnancy = safeRecord<Partial<PregnancyState>>(parsed.pregnancy);
   const rawPostpartum = safeRecord<Partial<PostpartumState>>(parsed.postpartum);
 
@@ -1103,7 +1135,9 @@ function migrate(raw: unknown): BixboData {
     medLog,
     medLogTimes,
     medNames: Object.fromEntries(
-      Object.entries(safeRecord(parsed.medNames)).filter(([, value]) => typeof value === "string"),
+      Object.entries(safeRecord(parsed.medNames)).filter(
+        (entry): entry is [string, string] => typeof entry[1] === "string",
+      ),
     ),
     folders: safeIdArray<NoteFolder>(parsed.folders).length ? safeIdArray<NoteFolder>(parsed.folders) : DEFAULT_FOLDERS,
     cycle: {

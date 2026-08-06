@@ -470,7 +470,7 @@ function BleedingSection({
   return (
     <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
       <p className="flex items-center gap-2 text-sm font-medium">
-        <Ico name="period" size={20} /> Bleeding (lochia)
+        <Ico name="blueberry" size={20} /> Bleeding (lochia)
       </p>
       <div className="mt-3 grid grid-cols-5 gap-2">
         {BLEEDING_LEVELS.map(({ v, label, color }) => (

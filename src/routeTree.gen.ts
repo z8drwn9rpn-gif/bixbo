@@ -15,6 +15,7 @@ import { Route as CoupleRouteImport } from './routes/couple'
 import { Route as InsightsRouteImport } from './routes/insights'
 import { Route as MedsRouteImport } from './routes/meds'
 import { Route as NotesRouteImport } from './routes/notes'
+import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as PatternsRouteImport } from './routes/patterns'
 import { Route as PostpartumRouteImport } from './routes/postpartum'
 import { Route as PregnancyRouteImport } from './routes/pregnancy'
@@ -50,6 +51,11 @@ const MedsRoute = MedsRouteImport.update({
 const NotesRoute = NotesRouteImport.update({
   id: '/notes',
   path: '/notes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PatternsRoute = PatternsRouteImport.update({
@@ -90,6 +96,7 @@ export interface FileRoutesByFullPath {
   '/insights': typeof InsightsRoute
   '/meds': typeof MedsRoute
   '/notes': typeof NotesRoute
+  '/notifications': typeof NotificationsRoute
   '/patterns': typeof PatternsRoute
   '/postpartum': typeof PostpartumRoute
   '/pregnancy': typeof PregnancyRoute
@@ -104,6 +111,7 @@ export interface FileRoutesByTo {
   '/insights': typeof InsightsRoute
   '/meds': typeof MedsRoute
   '/notes': typeof NotesRoute
+  '/notifications': typeof NotificationsRoute
   '/patterns': typeof PatternsRoute
   '/postpartum': typeof PostpartumRoute
   '/pregnancy': typeof PregnancyRoute
@@ -119,6 +127,7 @@ export interface FileRoutesById {
   '/insights': typeof InsightsRoute
   '/meds': typeof MedsRoute
   '/notes': typeof NotesRoute
+  '/notifications': typeof NotificationsRoute
   '/patterns': typeof PatternsRoute
   '/postpartum': typeof PostpartumRoute
   '/pregnancy': typeof PregnancyRoute
@@ -135,6 +144,7 @@ export interface FileRouteTypes {
     | '/insights'
     | '/meds'
     | '/notes'
+    | '/notifications'
     | '/patterns'
     | '/postpartum'
     | '/pregnancy'
@@ -149,6 +159,7 @@ export interface FileRouteTypes {
     | '/insights'
     | '/meds'
     | '/notes'
+    | '/notifications'
     | '/patterns'
     | '/postpartum'
     | '/pregnancy'
@@ -163,6 +174,7 @@ export interface FileRouteTypes {
     | '/insights'
     | '/meds'
     | '/notes'
+    | '/notifications'
     | '/patterns'
     | '/postpartum'
     | '/pregnancy'
@@ -178,6 +190,7 @@ export interface RootRouteChildren {
   InsightsRoute: typeof InsightsRoute
   MedsRoute: typeof MedsRoute
   NotesRoute: typeof NotesRoute
+  NotificationsRoute: typeof NotificationsRoute
   PatternsRoute: typeof PatternsRoute
   PostpartumRoute: typeof PostpartumRoute
   PregnancyRoute: typeof PregnancyRoute
@@ -228,6 +241,13 @@ declare module '@tanstack/react-router' {
       path: '/notes'
       fullPath: '/notes'
       preLoaderRoute: typeof NotesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/patterns': {
@@ -282,6 +302,7 @@ const rootRouteChildren: RootRouteChildren = {
   InsightsRoute: InsightsRoute,
   MedsRoute: MedsRoute,
   NotesRoute: NotesRoute,
+  NotificationsRoute: NotificationsRoute,
   PatternsRoute: PatternsRoute,
   PostpartumRoute: PostpartumRoute,
   PregnancyRoute: PregnancyRoute,
