@@ -182,17 +182,17 @@ const INSIGHT_COLORS = {
 } as const;
 
 const VIVID_PAIN_CHART_COLORS = [
-  "#72C64A",
-  "#91CD3A",
-  "#B7D12F",
-  "#DFD11F",
-  "#F3C30D",
-  "#F5A20B",
-  "#F47B16",
-  "#F05C5F",
-  "#EC3F74",
-  "#DE2557",
-  "#C81746",
+  "#72C64A", // 0 — green
+  "#91CD3A", // 1
+  "#B7D12F", // 2
+  "#DFD11F", // 3
+  "#F3C30D", // 4 — yellow
+  "#F5A20B", // 5 — amber
+  "#F47B16", // 6 — orange
+  "#F05A28", // 7 — red-orange
+  "#EF4444", // 8 — red
+  "#DC2626", // 9 — dark red
+  "#B91C1C", // 10 — deepest red
 ] as const;
 
 function vividPainChartColor(value: number): string {
@@ -203,9 +203,9 @@ function vividPainChartColor(value: number): string {
 const TETANY_COLOR = INSIGHT_COLORS.pinkLight;
 const PANIC_COLOR = INSIGHT_COLORS.pinkDeep;
 
-const PAIN_ACCENT = INSIGHT_COLORS.rose;
-const PAIN_SOFT = "rgba(217, 79, 120, 0.10)";
-const PAIN_BORDER = "rgba(217, 79, 120, 0.26)";
+const PAIN_ACCENT = "#DC2626";
+const PAIN_SOFT = "rgba(220, 38, 38, 0.08)";
+const PAIN_BORDER = "rgba(220, 38, 38, 0.22)";
 
 const GREEN_ACCENT = INSIGHT_COLORS.olive;
 const GREEN_SOFT = "rgba(83, 102, 0, 0.08)";
