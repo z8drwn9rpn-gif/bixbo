@@ -50,6 +50,7 @@ function InsightFloatingTooltip({
   details: InsightTooltipDetails;
   top?: number;
 }) {
+  const tooltipWidth = 138;
   const clampedLeft = Math.max(0, Math.min(100, leftPct));
   const placement = clampedLeft < 24 ? "left" : clampedLeft > 76 ? "right" : "center";
 
@@ -60,53 +61,121 @@ function InsightFloatingTooltip({
         ? { right: "4px", transform: "none" }
         : { left: `${clampedLeft}%`, transform: "translateX(-50%)" };
 
-  const arrowLeft =
+  const arrowX =
     placement === "left"
-      ? `${Math.max(18, Math.min(82, (clampedLeft / 24) * 100))}%`
+      ? Math.max(18, Math.min(120, (clampedLeft / 24) * tooltipWidth))
       : placement === "right"
-        ? `${Math.max(18, Math.min(82, 100 - ((100 - clampedLeft) / 24) * 100))}%`
-        : "50%";
+        ? Math.max(18, Math.min(120, tooltipWidth - ((100 - clampedLeft) / 24) * tooltipWidth))
+        : tooltipWidth / 2;
+
+  const headingText = `${details.owner ? `${details.owner} · ` : ""}${details.heading}`;
+  const heading = headingText.length > 28 ? `${headingText.slice(0, 27).trimEnd()}…` : headingText;
+
+  const wrapSvgText = (value: string, maxChars: number, maxLines = 2) => {
+    const words = value.trim().split(/\s+/);
+    const lines: string[] = [];
+    let current = "";
+
+    for (const word of words) {
+      const next = current ? `${current} ${word}` : word;
+
+      if (next.length <= maxChars) {
+        current = next;
+        continue;
+      }
+
+      if (current) lines.push(current);
+      current = word;
+
+      if (lines.length === maxLines - 1) {
+        const remaining = [current, ...words.slice(words.indexOf(word) + 1)].join(" ");
+        lines.push(remaining);
+        current = "";
+        break;
+      }
+    }
+
+    if (current) lines.push(current);
+
+    const visible = lines.slice(0, maxLines);
+    const lastIndex = visible.length - 1;
+
+    if (lastIndex >= 0 && visible[lastIndex].length > maxChars) {
+      visible[lastIndex] = `${visible[lastIndex].slice(0, Math.max(1, maxChars - 1)).trimEnd()}…`;
+    }
+
+    return visible;
+  };
+
+  const descriptionLines = details.description ? wrapSvgText(details.description, 29, 2) : [];
+
+  const cardHeight = descriptionLines.length > 1 ? 66 : 58;
+  const svgHeight = cardHeight + 8;
+  const valueFontSize = details.value.length > 22 ? 9.5 : details.value.length > 17 ? 10.5 : 12;
 
   return (
-    <div
-      className="pointer-events-none absolute z-30 w-[148px] max-w-[calc(100%-8px)] overflow-visible rounded-[1.15rem] border bg-surface px-2.5 py-2 shadow-lg"
+    <svg
+      width={tooltipWidth}
+      height={svgHeight}
+      viewBox={`0 0 ${tooltipWidth} ${svgHeight}`}
+      className="pointer-events-none absolute z-30 overflow-visible"
       style={{
         ...positionStyle,
         top,
-        borderColor: details.color,
-        boxShadow: `0 10px 22px color-mix(in srgb, ${details.color} 16%, transparent)`,
+        filter: `drop-shadow(0 8px 14px color-mix(in srgb, ${details.color} 18%, transparent))`,
       }}
       aria-hidden="true"
     >
-      <div className="flex min-w-0 items-start gap-1.5">
-        <span className="mt-0.5 h-2 w-2 shrink-0 rounded-full" style={{ background: details.color }} />
-        <span className="min-w-0 whitespace-normal break-words text-[9px] font-semibold leading-[1.2] text-foreground [overflow-wrap:anywhere]">
-          {details.owner ? `${details.owner} · ` : ""}
-          {details.heading}
-        </span>
-      </div>
-
-      <p className="mt-1.5 whitespace-normal break-words text-[15px] font-bold leading-tight text-foreground [overflow-wrap:anywhere]">
-        {details.value}
-      </p>
-
-      {details.description ? (
-        <p className="mt-1 whitespace-normal break-words text-[9px] leading-[1.25] text-muted-foreground [overflow-wrap:anywhere]">
-          {details.description}
-        </p>
-      ) : null}
-
-      <span
-        className="absolute -bottom-1.5 h-3 w-3 -translate-x-1/2 rotate-45 border-b border-r bg-surface"
-        style={{ left: arrowLeft, borderColor: details.color }}
+      <rect
+        x="1"
+        y="1"
+        width={tooltipWidth - 2}
+        height={cardHeight - 2}
+        rx="9"
+        fill="var(--surface)"
+        stroke={details.color}
+        strokeWidth="1.4"
       />
-    </div>
+
+      <circle cx="11" cy="12" r="3.5" fill={details.color} />
+
+      <text x="19" y="15" fontSize="8.5" fontWeight="600" fill="var(--foreground)">
+        {heading}
+      </text>
+
+      <text x="10" y="34" fontSize={valueFontSize} fontWeight="700" fill="var(--foreground)">
+        {details.value}
+      </text>
+
+      {descriptionLines.map((line, index) => (
+        <text key={`${line}-${index}`} x="10" y={48 + index * 9} fontSize="8" fill="var(--muted-foreground)">
+          {line}
+        </text>
+      ))}
+
+      <path
+        d={`M ${arrowX - 6} ${cardHeight - 1} L ${arrowX} ${cardHeight + 7} L ${arrowX + 6} ${cardHeight - 1} Z`}
+        fill="var(--surface)"
+        stroke={details.color}
+        strokeWidth="1.2"
+        strokeLinejoin="round"
+      />
+
+      <line
+        x1={arrowX - 5}
+        x2={arrowX + 5}
+        y1={cardHeight - 1}
+        y2={cardHeight - 1}
+        stroke="var(--surface)"
+        strokeWidth="2.2"
+      />
+    </svg>
   );
 }
 
 function InsightTooltipSummary({ details, onClose }: { details: InsightTooltipDetails; onClose: () => void }) {
   return (
-    <div className="mt-2 rounded-[1.25rem] bg-primary/20 px-2.5 py-2 text-[11px] text-foreground ring-1 ring-primary/20">
+    <div className="mt-2 rounded-[1.1rem] bg-primary/20 px-2 py-2 text-[10px] text-foreground ring-1 ring-primary/20">
       <button
         type="button"
         onClick={(event) => {
@@ -122,7 +191,7 @@ function InsightTooltipSummary({ details, onClose }: { details: InsightTooltipDe
           {details.summary}
         </span>
 
-        <span className="shrink-0 text-[9px] text-muted-foreground">Tap to close</span>
+        <span className="shrink-0 text-[8px] text-muted-foreground">Tap to close</span>
       </button>
     </div>
   );
@@ -616,7 +685,7 @@ function InsightsPage() {
                   <HfBars bars={hfBars} period={period} days={days} anchor={anchor} />
                   {period === "Y" && (
                     <div
-                      className="mt-1 grid gap-1 text-center text-[9px] text-muted-foreground"
+                      className="mt-1 grid gap-1 text-center text-[8px] text-muted-foreground"
                       style={{ gridTemplateColumns: "repeat(12, minmax(0, 1fr))" }}
                     >
                       {monthLabels.map((l, i) => (
@@ -630,7 +699,7 @@ function InsightsPage() {
                       const pct = hfTotal ? (c / hfTotal) * 100 : 0;
                       const color = HOT_FLASH_COLORS[n];
                       return (
-                        <div key={n} className="flex items-center gap-2 text-[11px]">
+                        <div key={n} className="flex items-center gap-2 text-[10px]">
                           <span
                             className="grid h-4 w-4 place-items-center rounded-full text-[9px] font-bold text-white shrink-0"
                             style={{ background: color }}
@@ -658,15 +727,15 @@ function InsightsPage() {
             <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
               <p className="text-xs uppercase tracking-wider text-muted-foreground">Sleep</p>
               <SleepChart period={period} days={days} series={sleepSeries} anchor={anchor} />
-              <div className="mt-2 flex gap-3 text-[11px] text-muted-foreground">
+              <div className="mt-2 flex gap-3 text-[10px] text-muted-foreground">
                 <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-full" style={{ background: INSIGHT_COLORS.terracotta }} /> &lt;8h
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: INSIGHT_COLORS.terracotta }} /> &lt;8h
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-full" style={{ background: INSIGHT_COLORS.amber }} /> 8h
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: INSIGHT_COLORS.amber }} /> 8h
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-full" style={{ background: INSIGHT_COLORS.green }} /> &gt;8h
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: INSIGHT_COLORS.green }} /> &gt;8h
                 </span>
               </div>
             </section>
@@ -914,7 +983,7 @@ function BirthControlCalendar({ data, anchor }: { data: ReturnType<typeof useBix
         </div>
       )}
       {!bcMed && (
-        <p className="mt-2 text-[11px] text-muted-foreground">
+        <p className="mt-2 text-[10px] text-muted-foreground">
           Tip: add your pill in Medications (name it e.g. “Birth control”) so taken doses are detected precisely.
         </p>
       )}
@@ -1063,7 +1132,7 @@ function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) 
 
           {perDay.length > 0 && (
             <div className="mt-4">
-              <p className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">Daily heatmap</p>
+              <p className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">Daily heatmap</p>
               <div
                 className="grid gap-1"
                 style={{ gridTemplateColumns: `repeat(${Math.min(range, 15)}, minmax(0, 1fr))` }}
@@ -1081,16 +1150,16 @@ function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) 
               </div>
               <div className="mt-2 flex gap-3 text-[10px] text-muted-foreground">
                 <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded" style={{ background: INSIGHT_COLORS.pinkLight }} /> full
+                  <span className="h-2.5 w-2.5 rounded" style={{ background: INSIGHT_COLORS.pinkLight }} /> full
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded" style={{ background: INSIGHT_COLORS.pink }} /> partial
+                  <span className="h-2.5 w-2.5 rounded" style={{ background: INSIGHT_COLORS.pink }} /> partial
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded" style={{ background: INSIGHT_COLORS.pinkDeep }} /> none
+                  <span className="h-2.5 w-2.5 rounded" style={{ background: INSIGHT_COLORS.pinkDeep }} /> none
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded bg-tint" /> n/a
+                  <span className="h-2.5 w-2.5 rounded bg-tint" /> n/a
                 </span>
               </div>
               {expandedDay &&
@@ -1145,7 +1214,7 @@ function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) 
 
           {perMed.length > 0 && (
             <div className="mt-4">
-              <p className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">Per medication</p>
+              <p className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">Per medication</p>
               <ul className="space-y-2">
                 {perMed.map((m) => {
                   const color =
@@ -1177,7 +1246,7 @@ function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) 
 
           {asNeededCounts.length > 0 && (
             <div className="mt-4">
-              <p className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">As-needed (frequency)</p>
+              <p className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">As-needed (frequency)</p>
               <ul className="space-y-1 text-xs">
                 {asNeededCounts.map((m) => (
                   <li key={m.id} className="flex justify-between">
@@ -1192,7 +1261,7 @@ function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) 
           )}
           {removedCounts.length > 0 && (
             <div className="mt-4">
-              <p className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">
+              <p className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">
                 Discontinued meds (history)
               </p>
               <ul className="space-y-1 text-xs">
@@ -1551,7 +1620,7 @@ function InsightBarChartFrame({
 
       <div className="mt-1 flex pl-5">
         <div
-          className="grid flex-1 gap-[2px] text-center text-[9px] text-muted-foreground"
+          className="grid flex-1 gap-[2px] text-center text-[8px] text-muted-foreground"
           style={{ gridTemplateColumns: `repeat(${Math.max(1, bars.length)}, minmax(0, 1fr))` }}
         >
           {bars.map((bar, index) => (
@@ -2116,7 +2185,7 @@ function SymptomLoadHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo
           </div>
 
           {activeSummary ? (
-            <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 rounded-2xl bg-surface/60 p-3 text-[11px] ring-1 ring-border/50">
+            <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 rounded-2xl bg-surface/60 p-3 text-[10px] ring-1 ring-border/50">
               <p>
                 <span className="text-muted-foreground">Pain:</span>{" "}
                 <b>{activeSummary.pain != null ? `${activeSummary.pain.toFixed(1)}/10` : "—"}</b>
@@ -2323,7 +2392,7 @@ function TimeOfDayPatternChart({
         <p className="mt-2 text-sm text-muted-foreground">Not enough data yet</p>
       ) : (
         <>
-          <div className="mt-2 flex gap-4 text-[11px]">
+          <div className="mt-2 flex gap-4 text-[10px]">
             <span className="flex items-center gap-1.5">
               <span className="h-2.5 w-2.5 rounded-full" style={{ background: TETANY_COLOR }} /> Tetany ({tetanyTotal})
             </span>
@@ -2403,7 +2472,7 @@ function TimeOfDayPatternChart({
                 return <InsightFloatingTooltip leftPct={(i + 0.5) * 25} details={details} />;
               })()}
           </div>
-          <div className="mt-1 grid grid-cols-4 gap-3 text-center text-[9px] text-muted-foreground">
+          <div className="mt-1 grid grid-cols-4 gap-3 text-center text-[8px] text-muted-foreground">
             {TIME_BLOCK_SHORT.map((l) => (
               <span key={l}>{l}</span>
             ))}
