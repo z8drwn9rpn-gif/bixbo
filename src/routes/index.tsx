@@ -1,1840 +1,1376 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
+import { ChevronLeft, ChevronRight, Settings as SettingsIcon, Share2, Trash2, UserRound } from "lucide-react";
+
+import { Ico, IcoText, PillIcon } from "@/components/icons/BixboIcons";
 import { AppShell } from "@/components/AppShell";
-import { CHART_COLORS } from "@/components/ui/chart";
-import {
-  BarChartFrame,
-  ChartCard,
-  ChartEmpty,
-  ChartSvgTooltip,
-  ChartTooltip,
-  CHART_AXIS,
-  CHART_GRID,
-  CHART_TOOLTIP_BG,
-  CHART_TOOLTIP_FG,
-  useChartTransition,
-  useDismissTapTooltip,
-} from "@/components/charts";
-import { Ico } from "@/components/icons/BixboIcons";
+import { pregnancyProgress, postpartumProgress } from "@/lib/health";
+import { Button } from "@/components/ui/button";
+import { MonthCalendar, monthLabel } from "@/components/MonthCalendar";
+import { LogSheet } from "@/components/LogSheet";
+import { QuickTags } from "@/components/QuickTags";
 import {
   useBixbo,
   EMPTY,
-  addDays,
   toKey,
   fromKey,
+  todayKey,
+  PAIN_DESCRIPTIONS,
+  painColor,
   BRISTOL,
-  avgDayPain,
-  isIntercourseKind,
+  nextPredictedPeriod,
+  asArr,
   isCycleTrackingHidden,
-  type DayLog,
+  isPregnancyActive,
+  isPostpartumActive,
+  type BixboData,
+  type BowelEntry,
+  type SexEntry,
 } from "@/lib/storage";
-
-const WD_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const MON_SHORT3 = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-/** "Thu 30 Jul" style label used across every tap tooltip on this page. */
-function fmtTapDay(k: string): string {
-  const d = fromKey(k);
-  return `${WD_SHORT[d.getDay()]} ${d.getDate()} ${MON_SHORT3[d.getMonth()]}`;
-}
-function fmtTapMonth(monthIndex: number, year: number): string {
-  return `${MON_SHORT3[monthIndex]} ${year}`;
-}
-
-/** Unified muted BIXBO palette used by every Insights chart. */
-const INSIGHT_COLORS = {
-  olive: "#596300",
-  oliveLight: "#9FAA55",
-  sage: "#7F9060",
-  sageLight: "#B8C68D",
-  mint: "#79A66B",
-  amber: "#C2A244",
-  terracotta: "#B86752",
-  rose: "#A96872",
-  plum: "#8B746A",
-  muted: "#C8C99E",
-  track: "#D6D8AE",
-} as const;
-
-const TETANY_COLOR = INSIGHT_COLORS.olive;
-const PANIC_COLOR = INSIGHT_COLORS.plum;
-
-const PAIN_ACCENT = INSIGHT_COLORS.rose;
-const PAIN_SOFT = "rgba(169, 104, 114, 0.10)";
-const PAIN_BORDER = "rgba(169, 104, 114, 0.24)";
-
-const GREEN_ACCENT = INSIGHT_COLORS.olive;
-const GREEN_SOFT = "rgba(89, 99, 0, 0.08)";
-const GREEN_BORDER = "rgba(89, 99, 0, 0.20)";
-
-const HOT_FLASH_COLORS = [
-  INSIGHT_COLORS.muted,
-  INSIGHT_COLORS.sageLight,
-  INSIGHT_COLORS.mint,
-  INSIGHT_COLORS.amber,
-  INSIGHT_COLORS.terracotta,
-  INSIGHT_COLORS.rose,
-] as const;
-
-const BRISTOL_COLORS = [
-  INSIGHT_COLORS.muted,
-  INSIGHT_COLORS.terracotta,
-  INSIGHT_COLORS.amber,
-  INSIGHT_COLORS.olive,
-  INSIGHT_COLORS.mint,
-  INSIGHT_COLORS.sage,
-  INSIGHT_COLORS.amber,
-  INSIGHT_COLORS.terracotta,
-] as const;
-
-const SYMPTOM_LOAD_COLORS = [
-  INSIGHT_COLORS.sageLight,
-  INSIGHT_COLORS.mint,
-  INSIGHT_COLORS.sage,
-  INSIGHT_COLORS.olive,
-  INSIGHT_COLORS.terracotta,
-] as const;
-
-function painInsightColor(value: number): string {
-  if (value <= 2) return INSIGHT_COLORS.sageLight;
-  if (value <= 4) return INSIGHT_COLORS.mint;
-  if (value <= 6) return INSIGHT_COLORS.amber;
-  if (value <= 8) return INSIGHT_COLORS.terracotta;
-  return INSIGHT_COLORS.rose;
-}
-
-function timeBlockOf(time?: string): number | null {
-  if (!time) return null;
-  const m = /^(\d{1,2}):(\d{2})/.exec(time);
-  if (!m) return null;
-  const h = Number(m[1]);
-  if (Number.isNaN(h)) return null;
-  if (h < 6) return 0;
-  if (h < 12) return 1;
-  if (h < 18) return 2;
-  return 3;
-}
-const TIME_BLOCK_LABELS = ["Night (0–6)", "Morning (6–12)", "Afternoon (12–18)", "Evening (18–24)"];
-const TIME_BLOCK_SHORT = ["Night", "Morning", "Afternoon", "Evening"];
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Health of Bixbo — Insights" },
-      { name: "description", content: "Weekly, monthly and yearly overview of pain, cycle, sleep and more." },
-      { property: "og:title", content: "Health of Bixbo — Insights" },
-      { property: "og:description", content: "Weekly, monthly and yearly trends." },
+      { title: "BIXBO — Calendar & daily overview" },
+      {
+        name: "description",
+        content: "Track pain, panic attacks, cycle, meds, food and more — all on one calm calendar.",
+      },
+      { property: "og:title", content: "BIXBO — Calendar & daily overview" },
+      { property: "og:description", content: "Track pain, panic attacks, cycle, meds, food and more." },
     ],
   }),
-  component: InsightsPage,
+  component: HomePage,
 });
 
-type Period = "W" | "M" | "Y" | "P";
-
-type VitalMeasurement = {
-  id: string;
-  time: string;
-  value: number;
-};
-
-type DayLogWithVitalEntries = DayLog & {
-  weightEntries?: VitalMeasurement[];
-  temperatureEntries?: VitalMeasurement[];
-};
-
-function vitalEntriesFor(log: DayLog | undefined, field: "weightEntries" | "temperatureEntries"): VitalMeasurement[] {
-  const entries = (log as DayLogWithVitalEntries | undefined)?.[field] ?? [];
-
-  return entries
-    .filter(
-      (entry): entry is VitalMeasurement =>
-        Boolean(entry) && typeof entry === "object" && Number.isFinite(Number((entry as VitalMeasurement).value)),
-    )
-    .map((entry) => ({
-      ...entry,
-      value: Number(entry.value),
-      time: typeof entry.time === "string" ? entry.time : "",
-    }))
-    .sort((a, b) => a.time.localeCompare(b.time));
-}
-
-/** Weight chart uses the latest measurement recorded on each day. */
-function lastWeightForDay(log?: DayLog): number | undefined {
-  const entries = vitalEntriesFor(log, "weightEntries");
-  return entries.length ? entries[entries.length - 1].value : log?.weight;
-}
-
-/** Temperature chart uses the daily average when several measurements exist. */
-function averageTemperatureForDay(log?: DayLog): number | undefined {
-  const entries = vitalEntriesFor(log, "temperatureEntries");
-
-  if (!entries.length) return log?.temperature;
-
-  return entries.reduce((sum, entry) => sum + entry.value, 0) / entries.length;
-}
-
-function rangeFor(period: Period, anchor: Date) {
-  // Always derive purely from `period` + `anchor` (no mutation of shared objects,
-  // no reliance on the previous render's day-of-month). Root cause of the stale
-  // month bug: `end` used to be a clone of `anchor` keeping its original
-  // day-of-month, so a month view only ever covered days 1..anchor-day-of-month
-  // instead of the full month (e.g. viewing July while anchor's date was "1"
-  // showed just a single day). Now start/end are computed as true calendar
-  // boundaries for the given period.
-  const base = new Date(anchor);
-  base.setHours(0, 0, 0, 0);
-  if (period === "W") {
-    // Monday → Sunday of the week containing `anchor`.
-    const dow = (base.getDay() + 6) % 7; // Mon=0 ... Sun=6
-    const start = new Date(base);
-    start.setDate(base.getDate() - dow);
-    const end = new Date(start);
-    end.setDate(start.getDate() + 6);
-    return { startK: toKey(start), endK: toKey(end) };
-  }
-  if (period === "M" || period === "P") {
-    const start = new Date(base.getFullYear(), base.getMonth(), 1);
-    const end = new Date(base.getFullYear(), base.getMonth() + 1, 0);
-    return { startK: toKey(start), endK: toKey(end) };
-  }
-  const start = new Date(base.getFullYear(), 0, 1);
-  const end = new Date(base.getFullYear(), 11, 31);
-  return { startK: toKey(start), endK: toKey(end) };
-}
-
-function eachDay(startK: string, endK: string): string[] {
-  const out: string[] = [];
-  let k = startK;
-  while (k <= endK) {
-    out.push(k);
-    k = addDays(k, 1);
-  }
-  return out;
-}
-
-function InsightsPage() {
-  const { data, hydrated } = useBixbo();
+function HomePage() {
+  const { data, update, hydrated } = useBixbo();
   const view = hydrated ? data : EMPTY;
-  const [period, setPeriod] = useState<Period>("W");
-  const [anchor, setAnchor] = useState<Date>(new Date());
+
+  /*
+   * Dátum vytvárame až v prehliadači.
+   * Server aj prvý klientsky render preto dostanú rovnaký obsah
+   * a nevznikne hydration mismatch.
+   */
+  const [monthAnchor, setMonthAnchor] = useState<Date | null>(null);
+  const [selected, setSelected] = useState("");
+
+  const [logOpen, setLogOpen] = useState(false);
+  const [quickCat, setQuickCat] = useState<string | undefined>();
+  const [editPain, setEditPain] = useState<import("@/lib/storage").PainEntry | undefined>();
+  const [editEntry, setEditEntry] = useState<unknown>(undefined);
+
+  const openEdit = (cat: string, entry: unknown) => {
+    setQuickCat(cat);
+    setEditEntry(entry);
+    setEditPain(undefined);
+    setLogOpen(true);
+  };
+
+  /*
+   * Inicializácia dátumu musí byť v effecte, pretože new Date()
+   * na serveri a v prehliadači môže vytvoriť odlišný render.
+   */
+  useEffect(() => {
+    setMonthAnchor(new Date());
+    setSelected(todayKey());
+  }, []);
+
+  // Listen for "open log" from bottom nav
+  useEffect(() => {
+    const h = () => {
+      setQuickCat(undefined);
+      setEditPain(undefined);
+      setEditEntry(undefined);
+      setLogOpen(true);
+    };
+
+    window.addEventListener("bixbo:open-log", h);
+
+    return () => {
+      window.removeEventListener("bixbo:open-log", h);
+    };
+  }, []);
+
+  /*
+   * Tento return musí byť až po všetkých useEffect/useState hookoch.
+   * Hooky nesmú byť pod podmieneným returnom.
+   */
+  if (!monthAnchor || !selected) {
+    return <div className="h-[360px]" />;
+  }
+
+  const goToPrevMonth = () => {
+    setMonthAnchor((current) => new Date(current!.getFullYear(), current!.getMonth() - 1, 1));
+  };
+
+  const goToNextMonth = () => {
+    setMonthAnchor((current) => new Date(current!.getFullYear(), current!.getMonth() + 1, 1));
+  };
+
+  const pregnancyActive = isPregnancyActive(view);
+  const postpartumActive = isPostpartumActive(view);
   const cycleTrackingHidden = isCycleTrackingHidden(view);
 
-  useEffect(() => {
-    if (cycleTrackingHidden && period === "P") {
-      setPeriod("M");
-    }
-  }, [cycleTrackingHidden, period]);
+  const pregnancyToday = view.dayLogs[todayKey()]?.pregnancy;
+  const latestPregnancyBP =
+    pregnancyToday?.bloodPressure?.[Math.max(0, (pregnancyToday.bloodPressure?.length ?? 1) - 1)];
 
-  const { startK, endK } = useMemo(() => rangeFor(period, anchor), [period, anchor]);
-  const days = useMemo(() => eachDay(startK, endK), [startK, endK]);
+  const totalPregnancyKicks = (pregnancyToday?.kicks ?? []).reduce((sum, session) => sum + (session.count ?? 0), 0);
 
-  const painSeries = days.map((k) => avgDayPain(view.dayLogs[k]));
-  const painAvg = (() => {
-    const nums = painSeries.filter((n): n is number => n != null);
-    if (!nums.length) return null;
-    return nums.reduce((a, b) => a + b, 0) / nums.length;
-  })();
-
-  // ŠukŠuk! — count only actual sex/intercourse entries, not oral/fingering/other touch entries.
-  const sexCount = days.reduce(
-    (s, k) => s + (view.dayLogs[k]?.sex?.filter((e) => isIntercourseKind(e.kind)).length ?? 0),
-    0,
-  );
-
-  // Bowel by type
-  const bowelCounts = new Array(8).fill(0) as number[];
-  days.forEach((k) =>
-    view.dayLogs[k]?.bowel?.forEach((b) => {
-      const bristol = Number(b.bristol);
-      if (Number.isInteger(bristol) && bristol >= 0 && bristol <= 7) {
-        bowelCounts[bristol] = (bowelCounts[bristol] ?? 0) + 1;
-      }
-    }),
-  );
-
-  // Weight uses an Apple-style rolling range so previous logged days are visible in Month view.
-  const weightDays = useMemo(() => {
-    const end = new Date(anchor);
-    end.setHours(0, 0, 0, 0);
-    const start = new Date(end);
-    if (period === "W") start.setDate(end.getDate() - 6);
-    else if (period === "M") start.setDate(end.getDate() - 30);
-    else start.setFullYear(end.getFullYear() - 1);
-    return eachDay(toKey(start), toKey(end));
-  }, [period, anchor]);
-  const weightSeries = weightDays.map((k) => lastWeightForDay(view.dayLogs[k]));
-  const tempSeries = weightDays.map((k) => averageTemperatureForDay(view.dayLogs[k]));
-
-  // Sleep
-  const sleepSeries = days.map((k) => view.dayLogs[k]?.sleepHours);
-
-  // Hot flashes — collect per-day max intensity + distribution across levels 1–5
-  const hfDescriptions: Record<number, string> = {
-    1: "Mild warmth",
-    2: "Warm flush",
-    3: "Sweating",
-    4: "Strong wave",
-    5: "Drenching",
-  };
-  const hfSeries = days.map((k) => {
-    const vals = (view.dayLogs[k]?.pain ?? []).map((p) => p.hotFlashes).filter((n): n is number => n != null);
-    return vals.length ? Math.max(...vals) : undefined;
-  });
-  const hfCounts = [0, 0, 0, 0, 0, 0] as number[];
-  days.forEach((k) =>
-    (view.dayLogs[k]?.pain ?? []).forEach((p) => {
-      if (p.hotFlashes && p.hotFlashes >= 1 && p.hotFlashes <= 5) hfCounts[p.hotFlashes]++;
-    }),
-  );
-  // Year view aggregates to 12 monthly buckets so the bars stay readable,
-  // matching the weight/temperature charts.
-  const monthLabels = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
-  const aggregateMonthly = (keys: string[], series: (number | undefined)[]) => {
-    const sums = new Array(12).fill(0) as number[];
-    const counts = new Array(12).fill(0) as number[];
-    keys.forEach((k, i) => {
-      const v = series[i];
-      if (v == null) return;
-      const mi = Number(k.slice(5, 7)) - 1;
-      sums[mi] += v;
-      counts[mi]++;
-    });
-    return sums.map((s, i) => (counts[i] ? s / counts[i] : undefined));
-  };
-  const hfBars = period === "Y" ? aggregateMonthly(days, hfSeries) : hfSeries;
-  const hfTotal = hfCounts.reduce((a, b) => a + b, 0);
-  const hfAvg = (() => {
-    const s = hfCounts.reduce((sum, c, i) => sum + c * i, 0);
-    return hfTotal ? s / hfTotal : null;
-  })();
-  const hfTop = (() => {
-    let bestN = 0,
-      bestC = 0;
-    for (let i = 1; i <= 5; i++)
-      if (hfCounts[i] > bestC) {
-        bestC = hfCounts[i];
-        bestN = i;
-      }
-    return bestN;
-  })();
-
-  // Cycle summary (last 6 months)
-  const cycleSummary = (() => {
-    const starts: string[] = [];
-    if (view.cycle.lastPeriodStart) starts.push(view.cycle.lastPeriodStart);
-    // Detect period starts from dayLogs
-    const keys = Object.keys(view.dayLogs).sort();
-    let prev = "";
-    for (const k of keys) {
-      const l = view.dayLogs[k];
-      if (!l?.period && !l?.periodInfo?.level) continue;
-      const prevIsPeriod = prev && (view.dayLogs[prev]?.period || view.dayLogs[prev]?.periodInfo?.level);
-      if (!prevIsPeriod || addDays(prev, 1) !== k) starts.push(k);
-      prev = k;
-    }
-    const uniq = Array.from(new Set(starts)).sort();
-    const cycleLens: number[] = [];
-    for (let i = 1; i < uniq.length; i++) {
-      const d = (new Date(uniq[i]).getTime() - new Date(uniq[i - 1]).getTime()) / 86400000;
-      if (d > 10 && d < 60) cycleLens.push(d);
-    }
-    const avg = cycleLens.length
-      ? Math.round(cycleLens.reduce((a, b) => a + b, 0) / cycleLens.length)
-      : view.cycle.cycleLength;
-    return { avg, count: cycleLens.length, periodLen: view.cycle.periodLength };
-  })();
-
-  const goPrev = () =>
-    setAnchor((d) => {
-      const n = new Date(d);
-      if (period === "W") n.setDate(n.getDate() - 7);
-      else if (period === "M" || period === "P") {
-        n.setDate(1);
-        n.setMonth(n.getMonth() - 1);
-      } else n.setFullYear(n.getFullYear() - 1);
-      return n;
-    });
-  const goNext = () =>
-    setAnchor((d) => {
-      const n = new Date(d);
-      if (period === "W") n.setDate(n.getDate() + 7);
-      else if (period === "M" || period === "P") {
-        n.setDate(1);
-        n.setMonth(n.getMonth() + 1);
-      } else n.setFullYear(n.getFullYear() + 1);
-      return n;
-    });
-
-  const label =
-    period === "Y"
-      ? String(anchor.getFullYear())
-      : period === "M" || period === "P"
-        ? anchor.toLocaleDateString("en-GB", { month: "long", year: "numeric" })
-        : `${startK} → ${endK}`;
+  const pregnancySummaryItems = [
+    pregnancyToday?.weightKg != null ? { icon: "⚖️", label: `${pregnancyToday.weightKg} kg` } : null,
+    (pregnancyToday?.symptoms?.length ?? 0) > 0
+      ? { icon: "🤢", label: `${pregnancyToday!.symptoms!.length} symptoms` }
+      : null,
+    (pregnancyToday?.kicks?.length ?? 0) > 0
+      ? {
+          icon: "👣",
+          label: totalPregnancyKicks > 0 ? `${totalPregnancyKicks} kicks` : `${pregnancyToday!.kicks!.length} sessions`,
+        }
+      : null,
+    latestPregnancyBP ? { icon: "❤️", label: `${latestPregnancyBP.systolic}/${latestPregnancyBP.diastolic}` } : null,
+    (pregnancyToday?.waterMl ?? 0) > 0 ? { icon: "💧", label: `${pregnancyToday!.waterMl} ml` } : null,
+  ].filter((item): item is { icon: string; label: string } => item != null);
 
   return (
-    <AppShell title="Health of Bixbo">
-      <div className="space-y-5 px-5 pt-3 pb-[calc(96px+env(safe-area-inset-bottom))]">
-        <div className="flex gap-2">
-          {((cycleTrackingHidden ? ["W", "M", "Y"] : ["W", "M", "Y", "P"]) as Period[]).map((p) => (
-            <button
-              key={p}
-              onClick={() => setPeriod(p)}
-              className={`flex-1 rounded-2xl px-3 py-2.5 text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${period === p ? "bg-primary text-primary-foreground shadow-sm" : "bg-surface text-foreground ring-1 ring-border hover:bg-tint"}`}
-            >
-              {p === "W" ? "Week" : p === "M" ? "Month" : p === "Y" ? "Year" : "Period"}
-            </button>
-          ))}
+    <AppShell
+      big
+      title={
+        <div className="flex flex-col leading-tight">
+          <span>BIXBO</span>
+
+          <span className="text-xs font-normal text-muted-foreground">
+            Hi, {view.settings.userName?.trim() || "there"} <Ico e="❤️" size={12} />
+          </span>
         </div>
+      }
+      right={
+        <div className="flex items-center gap-1">
+          <Link
+            to="/profile"
+            className="rounded-full p-2 transition hover:bg-tint"
+            aria-label="Health profile"
+            title="Health profile"
+          >
+            <UserRound className="h-5 w-5" />
+          </Link>
+
+          <Link
+            to="/settings"
+            className="rounded-full p-2 transition hover:bg-tint"
+            aria-label="Settings"
+            title="Settings"
+          >
+            <SettingsIcon className="h-5 w-5" />
+          </Link>
+        </div>
+      }
+    >
+      <div className="px-5 pt-0.5">
         <div className="flex items-center justify-between">
           <button
-            onClick={goPrev}
-            className="grid h-11 w-11 place-items-center rounded-full transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            type="button"
+            onClick={goToPrevMonth}
+            aria-label="Previous month"
+            className="rounded-full p-1.5 hover:bg-tint"
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-5 w-5" />
           </button>
-          <span className="text-sm font-medium">{label}</span>
+
+          <h2 className="font-serif text-xl font-bold" suppressHydrationWarning>
+            {hydrated ? monthLabel(monthAnchor) : ""}
+          </h2>
+
           <button
-            onClick={goNext}
-            className="grid h-11 w-11 place-items-center rounded-full transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            type="button"
+            onClick={goToNextMonth}
+            aria-label="Next month"
+            className="rounded-full p-1.5 hover:bg-tint"
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-5 w-5" />
           </button>
         </div>
+      </div>
 
-        {!cycleTrackingHidden && period === "P" && (
-          <>
-            <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
-              <p className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
-                <Ico e="🫐" size={16} /> Blueberry cycle
-              </p>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Cycle length</p>
-                  <p className="mt-1 font-serif text-xl">{cycleSummary.avg} days</p>
-                </div>
-                <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Period length</p>
-                  <p className="mt-1 font-serif text-xl">{cycleSummary.periodLen} days</p>
-                </div>
-                <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Regularity</p>
-                  <p className="mt-1 font-serif text-lg">
-                    {cycleSummary.count >= 2 ? `Regular (${cycleSummary.avg}-day)` : "Not enough data"}
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Last period</p>
-                  <p className="mt-1 font-serif text-base">
-                    {view.cycle.lastPeriodStart ?? "—"}
-                    {view.cycle.lastPeriodEnd ? ` → ${view.cycle.lastPeriodEnd}` : ""}
-                  </p>
-                </div>
-              </div>
-            </section>
-
-            <BirthControlCalendar data={view} anchor={anchor} />
-
-            <section
-              className="rounded-3xl p-5 ring-1"
-              style={{
-                backgroundColor: GREEN_SOFT,
-                boxShadow: `inset 0 0 0 1px ${GREEN_BORDER}`,
-              }}
-            >
-              <p className="flex items-center gap-2 text-xs uppercase tracking-wider" style={{ color: GREEN_ACCENT }}>
-                <Ico e="❤️" size={16} /> ŠukŠuk!
-              </p>
-              <p className="mt-2 font-serif text-5xl leading-none">{sexCount}</p>
-              <p className="mt-2 text-sm text-muted-foreground">{sexCount === 1 ? "entry" : "entries"} this month</p>
-            </section>
-          </>
-        )}
-
-        {period !== "P" && (
-          <>
-            <section
-              className="rounded-3xl p-5 ring-1"
-              style={{
-                backgroundColor: PAIN_SOFT,
-                boxShadow: `inset 0 0 0 1px ${PAIN_BORDER}`,
-              }}
-            >
-              <p className="text-xs uppercase tracking-wider" style={{ color: PAIN_ACCENT }}>
-                Pain scale
-              </p>
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="font-serif text-5xl leading-none">{painAvg != null ? painAvg.toFixed(1) : "–"}</span>
-                <span className="text-sm text-muted-foreground">
-                  avg · {painSeries.filter((n) => n != null).length}{" "}
-                  {painSeries.filter((n) => n != null).length === 1 ? "entry" : "entries"}
-                </span>
-              </div>
-              <PainChart period={period} days={days} series={painSeries} anchor={anchor} />
-            </section>
-
-            <section
-              className="rounded-3xl p-5 ring-1"
-              style={{
-                backgroundColor: GREEN_SOFT,
-                boxShadow: `inset 0 0 0 1px ${GREEN_BORDER}`,
-              }}
-            >
-              <p className="text-xs uppercase tracking-wider" style={{ color: GREEN_ACCENT }}></p>
-              <p className="mt-2 font-serif text-5xl leading-none">{sexCount}</p>
-              <Ico e="❤️" size={16} /> ŠukŠuk!
-              <p className="mt-2 text-sm text-muted-foreground">
-                {sexCount === 1 ? "entry" : "entries"} in this{" "}
-                {period === "W" ? "week" : period === "M" ? "month" : "year"}
-              </p>
-            </section>
-
-            {!cycleTrackingHidden && (
-              <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
-                <p className="text-xs uppercase tracking-wider text-muted-foreground">Blueberry cycle</p>
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Cycle length</p>
-                    <p className="mt-1 font-serif text-xl">{cycleSummary.avg} days</p>
-                  </div>
-                  <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Period length</p>
-                    <p className="mt-1 font-serif text-xl">{cycleSummary.periodLen} days</p>
-                  </div>
-                  <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Regularity</p>
-                    <p className="mt-1 font-serif text-lg">
-                      {cycleSummary.count >= 2 ? `Regular (${cycleSummary.avg}-day)` : "Not enough data"}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Last period</p>
-                    <p className="mt-1 font-serif text-base">
-                      {view.cycle.lastPeriodStart ?? "—"}
-                      {view.cycle.lastPeriodEnd ? ` → ${view.cycle.lastPeriodEnd}` : ""}
-                    </p>
-                  </div>
-                </div>
-              </section>
-            )}
-
-            <BristolChart bowelCounts={bowelCounts} />
-
-            <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">Hot flashes</p>
-              {hfTotal ? (
-                <>
-                  <div className="mt-2 flex items-baseline gap-2">
-                    <span className="font-serif text-4xl leading-none">{hfTotal}</span>
-                    <span className="text-sm text-muted-foreground">
-                      {hfTotal === 1 ? "episode" : "episodes"} · avg {hfAvg!.toFixed(1)}/5 · most often L{hfTop}
-                    </span>
-                  </div>
-                  <HfBars bars={hfBars} period={period} days={days} anchor={anchor} />
-                  {period === "Y" && (
-                    <div
-                      className="mt-1 grid gap-1 text-center text-[9px] text-muted-foreground"
-                      style={{ gridTemplateColumns: "repeat(12, minmax(0, 1fr))" }}
-                    >
-                      {monthLabels.map((l, i) => (
-                        <span key={i}>{l}</span>
-                      ))}
-                    </div>
-                  )}
-                  <div className="mt-3 space-y-1">
-                    {[1, 2, 3, 4, 5].map((n) => {
-                      const c = hfCounts[n];
-                      const pct = hfTotal ? (c / hfTotal) * 100 : 0;
-                      const color = HOT_FLASH_COLORS[n];
-                      return (
-                        <div key={n} className="flex items-center gap-2 text-[11px]">
-                          <span
-                            className="grid h-4 w-4 place-items-center rounded-full text-[9px] font-bold text-white shrink-0"
-                            style={{ background: color }}
-                          >
-                            {n}
-                          </span>
-                          <span className="w-16 shrink-0 text-muted-foreground">{hfDescriptions[n]}</span>
-                          <div className="h-2 flex-1 overflow-hidden rounded-full bg-tint">
-                            <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
-                          </div>
-                          <span className="w-6 text-right tabular-nums text-muted-foreground">{c}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              ) : (
-                <p className="mt-1 text-sm text-muted-foreground">No hot flashes logged</p>
-              )}
-            </section>
-
-            <WeightLineChart period={period} days={weightDays} series={weightSeries} label="Weight" unit="kg" />
-            <WeightLineChart period={period} days={weightDays} series={tempSeries} label="Body temperature" unit="°C" />
-
-            <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">Sleep</p>
-              <SleepChart period={period} days={days} series={sleepSeries} anchor={anchor} />
-              <div className="mt-2 flex gap-3 text-[11px] text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-full" style={{ background: INSIGHT_COLORS.terracotta }} /> &lt;8h
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-full" style={{ background: INSIGHT_COLORS.amber }} /> 8h
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-full" style={{ background: INSIGHT_COLORS.mint }} /> &gt;8h
-                </span>
-              </div>
-            </section>
-
-            {period === "Y" && <SymptomLoadHeatmap data={view} anchor={anchor} />}
-
-            <TimeOfDayPatternChart data={view} days={days} period={period} />
-
-            <MedsAdherence data={view} />
-          </>
+      <div className="mt-0.5">
+        {hydrated ? (
+          <MonthCalendar
+            month={monthAnchor}
+            data={view}
+            selected={selected}
+            onSelect={setSelected}
+            onSwipeMonth={(delta) => {
+              setMonthAnchor((current) => new Date(current!.getFullYear(), current!.getMonth() + delta, 1));
+            }}
+          />
+        ) : (
+          <div className="h-[360px]" />
         )}
       </div>
+
+      {(() => {
+        if (!pregnancyActive) return null;
+
+        const prog = pregnancyProgress(view.pregnancy);
+
+        return (
+          <Link
+            to={"/pregnancy" as never}
+            className="focus-ring mx-5 mt-3 block rounded-3xl bg-tint px-4 py-4 text-left ring-1 ring-border transition hover:bg-surface"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-surface ring-1 ring-border/60">
+                  <Ico name="pregnancy" size={24} />
+                </span>
+
+                <div className="min-w-0">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                    Pregnancy
+                  </p>
+
+                  <p className="mt-0.5 font-serif text-lg font-semibold text-foreground">
+                    {prog ? `Week ${prog.week} + ${prog.dayOfWeek}` : "Pregnancy mode"}
+                  </p>
+
+                  <p className="text-xs text-muted-foreground">
+                    {prog
+                      ? `Trimester ${prog.trimester}${prog.daysLeft != null ? ` · ${Math.max(0, prog.daysLeft)} days to go` : ""}`
+                      : "Tap to set your due date"}
+                  </p>
+                </div>
+              </div>
+
+              <span className="shrink-0 text-xs font-semibold text-primary">Open</span>
+            </div>
+
+            {pregnancySummaryItems.length > 0 ? (
+              <div className="mt-3 flex min-w-0 items-center gap-2 overflow-hidden rounded-2xl bg-surface/75 px-3 py-2 ring-1 ring-border/40">
+                {pregnancySummaryItems.slice(0, 4).map((item, index) => (
+                  <span key={`${item.icon}-${item.label}`} className="flex min-w-0 items-center gap-1.5">
+                    {index > 0 && <span className="text-border">•</span>}
+                    <Ico e={item.icon} size={15} />
+                    <span className="truncate text-[11px] font-medium tabular-nums text-foreground">{item.label}</span>
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-3 flex items-center gap-2 rounded-2xl bg-surface/70 px-3 py-2 text-xs text-muted-foreground ring-1 ring-border/40">
+                <Ico name="pregnancy" size={15} />
+                <span>Nothing logged today</span>
+              </div>
+            )}
+          </Link>
+        );
+      })()}
+
+      {postpartumActive &&
+        (() => {
+          const progress = postpartumProgress(view.postpartum);
+          const todayPostpartum = view.dayLogs[todayKey()]?.postpartum;
+          const feedingCount =
+            (todayPostpartum?.breastfeeding?.length ?? 0) +
+            (todayPostpartum?.pumping?.length ?? 0) +
+            (todayPostpartum?.bottle?.length ?? 0);
+
+          const postpartumSummaryItems = [
+            (todayPostpartum?.symptoms?.length ?? 0) > 0
+              ? { icon: "warning", label: `${todayPostpartum!.symptoms!.length} symptoms` }
+              : null,
+            todayPostpartum?.bleeding && todayPostpartum.bleeding !== "none"
+              ? { icon: "period", label: todayPostpartum.bleeding }
+              : null,
+            feedingCount > 0
+              ? { icon: "bottle", label: `${feedingCount} feeding${feedingCount === 1 ? "" : "s"}` }
+              : null,
+            todayPostpartum?.sleepHours != null
+              ? { icon: "sleep", label: `${todayPostpartum.sleepHours} h sleep` }
+              : null,
+            (todayPostpartum?.mood?.length ?? 0) > 0 ? { icon: "mood", label: todayPostpartum!.mood![0] } : null,
+          ].filter((item): item is { icon: string; label: string } => item != null);
+
+          return (
+            <Link
+              to={"/postpartum" as never}
+              className="focus-ring mx-5 mt-3 block rounded-3xl bg-primary/10 px-4 py-4 text-left ring-1 ring-primary/20"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-surface ring-1 ring-border/50">
+                    <Ico name="baby" size={30} />
+                  </span>
+
+                  <div className="min-w-0">
+                    <p className="truncate text-base font-semibold text-foreground">
+                      {progress ? `Week ${progress.week} + ${progress.dayOfWeek} postpartum` : "Postpartum mode"}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {progress ? `${progress.days} days since birth` : "Add the birth date to calculate progress"}
+                    </p>
+                  </div>
+                </div>
+
+                <span className="shrink-0 text-xs font-semibold text-primary">Open</span>
+              </div>
+
+              {postpartumSummaryItems.length > 0 ? (
+                <div className="mt-3 flex min-w-0 items-center gap-2 overflow-hidden rounded-2xl bg-surface/75 px-3 py-2 ring-1 ring-border/40">
+                  {postpartumSummaryItems.slice(0, 4).map((item, index) => (
+                    <span key={`${item.icon}-${item.label}`} className="flex min-w-0 items-center gap-1.5">
+                      {index > 0 && <span className="text-border">•</span>}
+                      <Ico name={item.icon as never} size={15} />
+                      <span className="truncate text-[11px] font-medium capitalize tabular-nums text-foreground">
+                        {item.label}
+                      </span>
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-3 flex items-center gap-2 rounded-2xl bg-surface/70 px-3 py-2 text-xs text-muted-foreground ring-1 ring-border/40">
+                  <Ico name="baby" size={15} />
+                  <span>Nothing logged today</span>
+                </div>
+              )}
+            </Link>
+          );
+        })()}
+
+      {!cycleTrackingHidden &&
+        (() => {
+          const p = nextPredictedPeriod(view.cycle);
+
+          if (!p) return null;
+
+          const fmt = (k: string) =>
+            fromKey(k).toLocaleDateString("en-GB", {
+              day: "numeric",
+              month: "short",
+            });
+
+          return (
+            <div className="mx-5 mt-3 rounded-full bg-tint px-4 py-2 text-center text-xs text-muted-foreground ring-1 ring-border">
+              Next period predicted:{" "}
+              <span className="font-semibold text-foreground">
+                {fmt(p.start)} – {fmt(p.end)}
+              </span>
+            </div>
+          );
+        })()}
+
+      {/* Top vitals row */}
+      <div className="mt-4 grid grid-cols-5 gap-2 px-5">
+        <div className="col-span-2">
+          <MedsProgress data={view} />
+        </div>
+
+        <VitalTile
+          emoji="😴"
+          label="Sleep"
+          value={view.dayLogs[selected]?.sleepHours != null ? String(view.dayLogs[selected]!.sleepHours) : "—"}
+          onClick={() => {
+            setQuickCat("temp");
+            setEditEntry(undefined);
+            setEditPain(undefined);
+            setLogOpen(true);
+          }}
+        />
+
+        <VitalTile
+          emoji="🌡️"
+          label="Temp"
+          value={view.dayLogs[selected]?.temperature != null ? String(view.dayLogs[selected]!.temperature) : "—"}
+          onClick={() => {
+            setQuickCat("temp");
+            setEditEntry(undefined);
+            setEditPain(undefined);
+            setLogOpen(true);
+          }}
+        />
+
+        <VitalTile
+          emoji="⚖️"
+          label="Weight"
+          value={view.dayLogs[selected]?.weight != null ? String(view.dayLogs[selected]!.weight) : "—"}
+          onClick={() => {
+            setQuickCat("temp");
+            setEditEntry(undefined);
+            setEditPain(undefined);
+            setLogOpen(true);
+          }}
+        />
+      </div>
+
+      {/* Quick log */}
+      <div className="[&_p.text-\[11px\].uppercase]:min-w-0 [&_p.text-\[11px\].uppercase]:flex-1 [&_p.text-\[11px\].uppercase]:truncate [&_p.text-\[11px\].uppercase]:text-[10px] [&_.mt-1.flex.flex-wrap.gap-1]:hidden">
+        <QuickTags
+          data={view}
+          update={update}
+          onLongPress={(cat: string) => {
+            const map: Record<string, string | undefined> = {
+              pain: "pain",
+              tetany: "tetany",
+              panic: "panic",
+              sex: "sex",
+              food: "food",
+              period: "period",
+              meds: "meds",
+              workout: "workout",
+              bowel: "bowel",
+              thermo: "heat",
+              headache: "pain",
+              hotFlashes: "pain",
+              sleep: "temp",
+            };
+
+            const target = map[cat];
+
+            if (!target) return;
+
+            setQuickCat(target);
+            setEditPain(undefined);
+            setEditEntry(undefined);
+            setLogOpen(true);
+          }}
+        />
+      </div>
+
+      <div className="mt-4 flex items-center justify-between px-5">
+        <h2 className="font-serif text-xl font-bold">
+          {selected === todayKey()
+            ? "Today"
+            : fromKey(selected).toLocaleDateString("en-GB", {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+              })}
+        </h2>
+
+        <ShareDayButton date={selected} view={view} />
+      </div>
+
+      <DayPreview
+        date={selected}
+        data={view}
+        update={update}
+        onEditPain={(p) => {
+          setEditPain(p);
+          setEditEntry(undefined);
+          setQuickCat("pain");
+          setLogOpen(true);
+        }}
+        onEdit={openEdit}
+      />
+
+      <LogSheet
+        open={logOpen}
+        onOpenChange={(open) => {
+          setLogOpen(open);
+
+          if (!open) {
+            setQuickCat(undefined);
+            setEditPain(undefined);
+            setEditEntry(undefined);
+          }
+        }}
+        date={selected}
+        data={view}
+        update={update}
+        initial={quickCat as never}
+        initialPain={editPain}
+        editEntry={editEntry}
+      />
     </AppShell>
   );
 }
 
-/**
- * Birth-control (HAK) monthly calendar.
- * 28-day pack: pills #1–#24 active, #25–#28 inactive placebo.
- * Pill number counts continuously from settings.birthControlSince.
- */
-function BirthControlCalendar({ data, anchor }: { data: ReturnType<typeof useBixbo>["data"]; anchor: Date }) {
-  const { update } = useBixbo();
-  const [sel, setSel] = useState<string | null>(null);
-  const [pickTime, setPickTime] = useState<string>("");
-  const since = data.settings.birthControlSince;
-  if (!since || data.settings.gender === "male") return null;
-
-  const bcMed = data.meds.find((m) =>
-    /antikonc|birth\s*control|contracept|hak|pill/i.test(`${m.name} ${m.dose ?? ""}`),
-  );
-  // Fall back to a synthetic id (like the "removed medication" history pattern)
-  // so taken/missed can still be recorded even without a matching med entry.
-  const bcId = bcMed?.id ?? "hak-default";
-
-  const y = anchor.getFullYear(),
-    mo = anchor.getMonth();
-  const first = new Date(y, mo, 1);
-  const startWeekday = (first.getDay() + 6) % 7;
-  const daysInMonth = new Date(y, mo + 1, 0).getDate();
-  const todayK = toKey(new Date());
-
-  const pillNumber = (k: string) => {
-    const diff = Math.round((fromKey(k).getTime() - fromKey(since).getTime()) / 86400000);
-    if (diff < 0) return null;
-    return (diff % 28) + 1;
-  };
-  const takenAt = (k: string): string | null => {
-    const log = data.medLog[k] ?? {};
-    const times = data.medLogTimes?.[k] ?? {};
-    const keys = Object.keys(log).filter((key) => log[key] && key !== `${bcId}@missed` && key.startsWith(`${bcId}@`));
-    if (!keys.length) return null;
-    return times[keys[0]] ?? keys[0].split("@")[1] ?? "";
-  };
-  const missedAt = (k: string): boolean => !!data.medLog[k]?.[`${bcId}@missed`];
-
-  const cells: (string | null)[] = [
-    ...new Array(startWeekday).fill(null),
-    ...Array.from({ length: daysInMonth }, (_, i) => toKey(new Date(y, mo, i + 1))),
-  ];
-
-  const markTaken = (k: string, time: string) =>
-    update((d) => {
-      const t = time || new Date().toTimeString().slice(0, 5);
-      const day = { ...(d.medLog[k] ?? {}) };
-      // Clear any prior taken/missed markers for this pill on this day, then record the new dose.
-      Object.keys(day).forEach((key) => {
-        if (key.startsWith(`${bcId}@`)) delete day[key];
-      });
-      day[`${bcId}@${t}`] = true;
-      const dayTimes = { ...(d.medLogTimes[k] ?? {}) };
-      Object.keys(dayTimes).forEach((key) => {
-        if (key.startsWith(`${bcId}@`)) delete dayTimes[key];
-      });
-      dayTimes[`${bcId}@${t}`] = t;
-      return {
-        ...d,
-        medLog: { ...d.medLog, [k]: day },
-        medLogTimes: { ...d.medLogTimes, [k]: dayTimes },
-        medNames: bcMed ? d.medNames : { ...d.medNames, [bcId]: "Birth control" },
-      };
-    });
-
-  const markMissed = (k: string) =>
-    update((d) => {
-      const day = { ...(d.medLog[k] ?? {}) };
-      Object.keys(day).forEach((key) => {
-        if (key.startsWith(`${bcId}@`)) delete day[key];
-      });
-      day[`${bcId}@missed`] = true;
-      const dayTimes = { ...(d.medLogTimes[k] ?? {}) };
-      Object.keys(dayTimes).forEach((key) => {
-        if (key.startsWith(`${bcId}@`)) delete dayTimes[key];
-      });
-      return {
-        ...d,
-        medLog: { ...d.medLog, [k]: day },
-        medLogTimes: { ...d.medLogTimes, [k]: dayTimes },
-        medNames: bcMed ? d.medNames : { ...d.medNames, [bcId]: "Birth control" },
-      };
-    });
-
-  const clearRecord = (k: string) =>
-    update((d) => {
-      const day = { ...(d.medLog[k] ?? {}) };
-      Object.keys(day).forEach((key) => {
-        if (key.startsWith(`${bcId}@`)) delete day[key];
-      });
-      const dayTimes = { ...(d.medLogTimes[k] ?? {}) };
-      Object.keys(dayTimes).forEach((key) => {
-        if (key.startsWith(`${bcId}@`)) delete dayTimes[key];
-      });
-      return { ...d, medLog: { ...d.medLog, [k]: day }, medLogTimes: { ...d.medLogTimes, [k]: dayTimes } };
-    });
-
-  const detail = (() => {
-    if (!sel) return null;
-    const n = pillNumber(sel);
-    if (n == null) return `${sel} · before you started`;
-    const t = takenAt(sel);
-    const missed = missedAt(sel);
-    const inactive = n > 24;
-    const status = t != null ? `taken at ${t}` : missed ? "marked missed" : "not recorded";
-    return `Pill #${n}${inactive ? " (inactive white)" : ""} · ${status}`;
-  })();
-
+function VitalTile({
+  emoji,
+  label,
+  value,
+  onClick,
+}: {
+  emoji: string;
+  label: string;
+  value: string;
+  onClick: () => void;
+}) {
   return (
-    <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
-      <p className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
-        <Ico e="💊" size={16} /> Birth control
-      </p>
-      <p className="mt-3 text-center font-serif text-lg">
-        {anchor.toLocaleDateString("en-GB", { month: "long", year: "numeric" })}
-      </p>
-      <div className="mt-2 grid grid-cols-7 gap-1 text-center text-[10px] text-muted-foreground">
-        {["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map((d) => (
-          <span key={d}>{d}</span>
-        ))}
-      </div>
-      <div className="mt-1 grid grid-cols-7 gap-1">
-        {cells.map((k, i) => {
-          if (!k) return <span key={i} />;
-          const n = pillNumber(k);
-          const t = n == null ? null : takenAt(k);
-          const explicitMissed = n != null && missedAt(k);
-          const inactive = n != null && n > 24;
-          const future = k > todayK;
-          const isToday = k === todayK;
-          const missed = n != null && !inactive && !t && (explicitMissed || !future);
-
-          let bg = "transparent",
-            color = "var(--foreground)",
-            ring = "1px solid var(--border)";
-          if (n == null || (future && !t && !explicitMissed)) {
-            bg = "transparent";
-            color = "var(--muted-foreground)";
-          } else if (inactive) {
-            bg = "var(--tint)";
-            color = "var(--muted-foreground)";
-            ring = "1px solid var(--border)";
-          } else if (t != null) {
-            bg = "var(--primary)";
-            color = "var(--primary-foreground)";
-            ring = "none";
-          } else if (missed) {
-            ring = `2px solid ${CHART_COLORS.headache}`;
-            color = CHART_COLORS.headache;
-          }
-
-          return (
-            <button
-              key={k}
-              onClick={() => {
-                setSel(sel === k ? null : k);
-                setPickTime("");
-              }}
-              className={`flex aspect-square flex-col items-center justify-center rounded-full text-[13px] leading-none ${sel === k ? "ring-2 ring-primary" : ""}`}
-              style={{
-                background: bg,
-                color,
-                border: sel === k ? undefined : ring,
-                outline: isToday ? "2.5px solid var(--foreground)" : undefined,
-              }}
-            >
-              <span className="text-[8px] opacity-70">{n != null ? `#${n}` : ""}</span>
-              <span className="font-semibold">{Number(k.slice(8, 10))}</span>
-            </button>
-          );
-        })}
-      </div>
-      <div className="mt-3 flex flex-wrap gap-3 text-[10px] text-muted-foreground">
-        <span className="flex items-center gap-1">
-          <span className="h-2.5 w-2.5 rounded-full bg-primary" /> taken
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="h-2.5 w-2.5 rounded-full border-2" style={{ borderColor: CHART_COLORS.headache }} /> missed
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="h-2.5 w-2.5 rounded-full bg-tint ring-1 ring-border" /> inactive (white)
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="h-2.5 w-2.5 rounded-full ring-2 ring-foreground" /> today
-        </span>
-      </div>
-      <p className="mt-3 rounded-2xl bg-tint p-3 text-xs">{detail ?? "Tap a day for details."}</p>
-      {sel && pillNumber(sel) != null && pillNumber(sel)! <= 24 && (
-        <div className="mt-2 rounded-2xl bg-tint p-3 space-y-2">
-          <div className="flex items-center gap-2">
-            <input
-              type="time"
-              value={pickTime}
-              onChange={(e) => setPickTime(e.target.value)}
-              className="rounded-lg bg-surface px-2 py-1 text-xs ring-1 ring-border"
-            />
-            <button
-              onClick={() => markTaken(sel, pickTime)}
-              className="flex-1 rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
-            >
-              Mark taken
-            </button>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => markMissed(sel)}
-              className="flex-1 rounded-xl px-3 py-1.5 text-xs font-medium"
-              style={{
-                background: "transparent",
-                border: `1.5px solid ${CHART_COLORS.headache}`,
-                color: CHART_COLORS.headache,
-              }}
-            >
-              Mark missed
-            </button>
-            {(takenAt(sel) != null || missedAt(sel)) && (
-              <button
-                onClick={() => clearRecord(sel)}
-                className="rounded-xl bg-surface px-3 py-1.5 text-xs text-muted-foreground ring-1 ring-border"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-      {!bcMed && (
-        <p className="mt-2 text-[11px] text-muted-foreground">
-          Tip: add your pill in Medications (name it e.g. “Birth control”) so taken doses are detected precisely.
-        </p>
-      )}
-    </section>
+    <button
+      onClick={onClick}
+      className="flex flex-col items-center justify-center gap-0.5 rounded-2xl bg-surface p-2 ring-1 ring-border hover:bg-tint"
+    >
+      <Ico e={emoji} size={16} />
+      <span className="font-serif text-base font-bold leading-tight">{value}</span>
+      <span className="text-[10px] font-medium text-muted-foreground">{label}</span>
+    </button>
   );
 }
 
-function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) {
-  const { update } = useBixbo();
-  const [range, setRange] = useState<7 | 30>(7);
-  const [open, setOpen] = useState(true);
-  const [expandedDay, setExpandedDay] = useState<string | null>(null);
-
-  const end = new Date();
-  end.setHours(0, 0, 0, 0);
-  const start = new Date(end);
-  start.setDate(end.getDate() - (range - 1));
-  const days: string[] = [];
-  for (let i = 0; i < range; i++) {
-    const d = new Date(start);
-    d.setDate(start.getDate() + i);
-    days.push(toKey(d));
-  }
-
+function MedsProgress({ data }: { data: BixboData }) {
+  const k = todayKey();
   const scheduled = data.meds.filter((m) => !m.asNeeded);
-  const asNeeded = data.meds.filter((m) => m.asNeeded);
-
-  const toggleDose = (dayKey: string, medKey: string) =>
-    update((d) => {
-      const day = { ...(d.medLog[dayKey] ?? {}) };
-      if (day[medKey]) delete day[medKey];
-      else day[medKey] = true;
-      return { ...d, medLog: { ...d.medLog, [dayKey]: day } };
-    });
-
-  const perDay = days.map((k) => {
-    const expected = scheduled.reduce((s, m) => s + m.times.length, 0);
-    const missed: { medName: string; time: string; key: string }[] = [];
-    const takenList: { medName: string; time: string; key: string }[] = [];
-    let taken = 0;
-    scheduled.forEach((m) =>
-      m.times.forEach((t) => {
-        const key = `${m.id}@${t}`;
-        if (data.medLog[k]?.[key]) {
-          taken++;
-          takenList.push({ medName: m.name, time: t, key });
-        } else missed.push({ medName: m.name, time: t, key });
-      }),
-    );
-    return { date: k, expected, taken, missed, takenList };
-  });
-  const totalExpected = perDay.reduce((s, d) => s + d.expected, 0);
-  const totalTaken = perDay.reduce((s, d) => s + d.taken, 0);
-  const overallPct = totalExpected ? Math.round((totalTaken / totalExpected) * 100) : null;
-
-  const perMed = scheduled
-    .flatMap((m) =>
-      m.times.map((t) => {
-        let taken = 0;
-        days.forEach((k) => {
-          if (data.medLog[k]?.[`${m.id}@${t}`]) taken++;
-        });
-        const expected = days.length;
-        return {
-          id: `${m.id}@${t}`,
-          name: m.name,
-          dose: m.dose,
-          time: t,
-          taken,
-          expected,
-          pct: expected ? Math.round((taken / expected) * 100) : 0,
-        };
-      }),
-    )
-    .sort((a, b) => a.pct - b.pct);
-
-  const asNeededCounts = asNeeded.map((m) => {
-    let count = 0;
-    days.forEach((k) => {
-      const log = data.medLog[k] ?? {};
-      Object.keys(log).forEach((key) => {
-        if (log[key] && (key === `${m.id}@asNeeded` || key.startsWith(`${m.id}@`))) count++;
-      });
-    });
-    return { id: m.id, name: m.name, count };
-  });
-
-  // Doses logged for meds that no longer exist in the list — keep history visible.
-  const knownIds = new Set(data.meds.map((m) => m.id));
-  const removedCounts = (() => {
-    const acc: Record<string, number> = {};
-    days.forEach((k) => {
-      const log = data.medLog[k] ?? {};
-      Object.entries(log).forEach(([key, val]) => {
-        if (!val) return;
-        const id = key.split("@")[0];
-        if (knownIds.has(id)) return;
-        acc[id] = (acc[id] ?? 0) + 1;
-      });
-    });
-    return Object.entries(acc).map(([id, count]) => ({ id, count, name: data.medNames?.[id] ?? "Removed medication" }));
-  })();
-
-  const cellColor = (d: (typeof perDay)[number]) => {
-    if (d.expected === 0) return "var(--tint)";
-    const r = d.taken / d.expected;
-    if (r >= 1) return INSIGHT_COLORS.mint;
-    if (r > 0) return INSIGHT_COLORS.amber;
-    return INSIGHT_COLORS.terracotta;
-  };
-
-  const fmt = (k: string) => fromKey(k).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-
-  if (data.meds.length === 0 && removedCounts.length === 0) return null;
-
+  const total = scheduled.reduce((s, m) => s + m.times.length, 0);
+  const taken = scheduled.reduce((s, m) => s + m.times.filter((t) => data.medLog[k]?.[`${m.id}@${t}`]).length, 0);
   return (
-    <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
-      <button onClick={() => setOpen((o) => !o)} className="flex w-full items-center justify-between">
-        <p className="text-xs uppercase tracking-wider text-muted-foreground">Meds adherence</p>
-        <span className="text-xs text-muted-foreground">{open ? "▾" : "▸"}</span>
-      </button>
-      {open && (
-        <>
-          <div className="mt-3 flex gap-2">
-            {([7, 30] as const).map((r) => (
-              <button
-                key={r}
-                onClick={() => setRange(r)}
-                className={`flex-1 rounded-xl px-3 py-1.5 text-xs font-medium ${range === r ? "bg-primary text-primary-foreground" : "bg-tint text-foreground"}`}
-              >
-                {r}-day
-              </button>
-            ))}
-          </div>
-
-          {totalExpected > 0 ? (
-            <div className="mt-4 flex items-baseline gap-2">
-              <span className="font-serif text-5xl leading-none">{overallPct}%</span>
-              <span className="text-sm text-muted-foreground">
-                {totalTaken}/{totalExpected} doses
-              </span>
-            </div>
-          ) : (
-            <p className="mt-4 text-sm text-muted-foreground">No scheduled meds in this range.</p>
-          )}
-
-          {perDay.length > 0 && (
-            <div className="mt-4">
-              <p className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">Daily heatmap</p>
-              <div
-                className="grid gap-1"
-                style={{ gridTemplateColumns: `repeat(${Math.min(range, 15)}, minmax(0, 1fr))` }}
-              >
-                {perDay.map((d) => (
-                  <button
-                    key={d.date}
-                    onClick={() => setExpandedDay(expandedDay === d.date ? null : d.date)}
-                    title={`${fmt(d.date)} — ${d.taken}/${d.expected}`}
-                    aria-label={`${fmt(d.date)} — ${d.taken}/${d.expected} doses`}
-                    className={`aspect-square min-h-7 min-w-7 rounded ${expandedDay === d.date ? "ring-2 ring-primary" : ""}`}
-                    style={{ background: cellColor(d) }}
-                  />
-                ))}
-              </div>
-              <div className="mt-2 flex gap-3 text-[10px] text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded" style={{ background: INSIGHT_COLORS.mint }} /> full
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded" style={{ background: INSIGHT_COLORS.amber }} /> partial
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded" style={{ background: INSIGHT_COLORS.terracotta }} /> none
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded bg-tint" /> n/a
-                </span>
-              </div>
-              {expandedDay &&
-                (() => {
-                  const d = perDay.find((x) => x.date === expandedDay);
-                  if (!d) return null;
-                  return (
-                    <div className="mt-3 rounded-2xl bg-tint p-3 text-xs">
-                      <p className="font-medium">
-                        {fmt(d.date)} — {d.taken}/{d.expected} taken
-                      </p>
-                      {d.takenList.length > 0 && (
-                        <ul className="mt-1 space-y-0.5">
-                          {d.takenList.map((m) => (
-                            <li key={m.key}>
-                              <button
-                                onClick={() => toggleDose(d.date, m.key)}
-                                className="text-left text-green-700 hover:underline"
-                                title="Tap to uncheck"
-                              >
-                                Taken · {m.time} — {m.medName}{" "}
-                                <span className="text-[10px] text-muted-foreground">· tap to uncheck</span>
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                      {d.missed.length > 0 ? (
-                        <ul className="mt-1 space-y-0.5 text-muted-foreground">
-                          {d.missed.map((m) => (
-                            <li key={m.key}>
-                              <button
-                                onClick={() => toggleDose(d.date, m.key)}
-                                className="text-left hover:underline"
-                                title="Tap to mark taken"
-                              >
-                                Missed · {m.time} — {m.medName} <span className="text-[10px]">· tap to mark taken</span>
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : d.expected > 0 ? (
-                        <p className="mt-1 flex items-center gap-1 text-muted-foreground">
-                          All doses taken <Ico e="💚" size={13} />
-                        </p>
-                      ) : null}
-                    </div>
-                  );
-                })()}
-            </div>
-          )}
-
-          {perMed.length > 0 && (
-            <div className="mt-4">
-              <p className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">Per medication</p>
-              <ul className="space-y-2">
-                {perMed.map((m) => {
-                  const color =
-                    m.pct >= 90 ? INSIGHT_COLORS.mint : m.pct >= 60 ? INSIGHT_COLORS.amber : INSIGHT_COLORS.terracotta;
-                  return (
-                    <li key={m.id} className="flex items-center gap-2 text-xs">
-                      <span className="w-32 shrink-0 truncate">
-                        {m.name} <span className="text-muted-foreground">{m.time}</span>
-                      </span>
-                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-tint">
-                        <div className="h-full rounded-full" style={{ width: `${m.pct}%`, background: color }} />
-                      </div>
-                      <span className="w-14 shrink-0 text-right tabular-nums">
-                        {m.pct}%{" "}
-                        <span className="text-muted-foreground">
-                          ({m.taken}/{m.expected})
-                        </span>
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          )}
-
-          {asNeededCounts.length > 0 && (
-            <div className="mt-4">
-              <p className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">As-needed (frequency)</p>
-              <ul className="space-y-1 text-xs">
-                {asNeededCounts.map((m) => (
-                  <li key={m.id} className="flex justify-between">
-                    <span>{m.name}</span>
-                    <span className="text-muted-foreground">
-                      {m.count}× in {range} days
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {removedCounts.length > 0 && (
-            <div className="mt-4">
-              <p className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">
-                Discontinued meds (history)
-              </p>
-              <ul className="space-y-1 text-xs">
-                {removedCounts.map((m) => (
-                  <li key={m.id} className="flex justify-between">
-                    <span>{m.name}</span>
-                    <span className="text-muted-foreground">
-                      {m.count} doses in {range} days
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </>
-      )}
-    </section>
-  );
-}
-
-function WeightLineChart({
-  period,
-  days,
-  series,
-  label = "Weight",
-  unit = "kg",
-}: {
-  period: Period;
-  days: string[];
-  series: (number | undefined)[];
-  label?: string;
-  unit?: string;
-}) {
-  const [active, setActive] = useState<{ value: number; index: number; date: string } | null>(null);
-  useDismissTapTooltip(() => setActive(null));
-  // For yearly view, collapse 365 daily samples into 12 monthly averages so labels are readable.
-  const aggregated = (() => {
-    if (period !== "Y") {
-      return days.map((k, i) => ({ value: series[i], date: k }));
-    }
-    const monthly: { sum: number; n: number; anyDate: string }[] = Array.from({ length: 12 }, () => ({
-      sum: 0,
-      n: 0,
-      anyDate: "",
-    }));
-    days.forEach((k, i) => {
-      const v = series[i];
-      if (v == null) return;
-      const m = fromKey(k).getMonth();
-      monthly[m].sum += v;
-      monthly[m].n += 1;
-      monthly[m].anyDate = k;
-    });
-    const now = new Date();
-    return monthly.map((mm, i) => ({
-      value: mm.n ? mm.sum / mm.n : undefined,
-      date: mm.anyDate || toKey(new Date(now.getFullYear(), i, 15)),
-    }));
-  })();
-
-  const points = aggregated
-    .map((p, index) => (p.value == null ? null : { value: p.value, index, date: p.date }))
-    .filter((p): p is { value: number; index: number; date: string } => p != null);
-  const nums = points.map((p) => p.value);
-  const fmtDate = (k: string) => fromKey(k).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-
-  if (!nums.length) {
-    return (
-      <ChartCard title={label}>
-        <ChartEmpty />
-      </ChartCard>
-    );
-  }
-
-  const avg = nums.reduce((a, b) => a + b, 0) / nums.length;
-  const rawMin = Math.min(...nums);
-  const rawMax = Math.max(...nums);
-  const span = Math.max(0.6, rawMax - rawMin);
-  const yMin = Math.floor((rawMin - span * 0.25) * 2) / 2;
-  const yMax = Math.ceil((rawMax + span * 0.25) * 2) / 2;
-  const yMid = (yMin + yMax) / 2;
-
-  const width = 320;
-  const height = 170;
-  const left = 10;
-  const right = 38;
-  const top = 12;
-  const bottom = 30;
-  const chartW = width - left - right;
-  const chartH = height - top - bottom;
-  const denom = Math.max(1, aggregated.length - 1);
-  const xFor = (index: number) => left + (index / denom) * chartW;
-  const yFor = (value: number) => top + ((yMax - value) / Math.max(0.1, yMax - yMin)) * chartH;
-  const path = points
-    .map((p, i) => `${i === 0 ? "M" : "L"}${xFor(p.index).toFixed(1)},${yFor(p.value).toFixed(1)}`)
-    .join(" ");
-
-  const MON_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const ticks = aggregated
-    .map((p, i) => ({ k: p.date, i, d: fromKey(p.date) }))
-    .filter(({ i, d }) => {
-      if (period === "W") return true;
-      if (period === "M") return i === 0 || i === aggregated.length - 1 || i % 7 === 0;
-      // Year: every month (aggregated already has 12 points)
-      return true;
-    });
-  const tickLabel = (k: string) => {
-    const d = fromKey(k);
-    return period === "Y" ? MON_SHORT[d.getMonth()] : String(d.getDate());
-  };
-  const dateLabel =
-    period === "Y"
-      ? `${new Date().getFullYear()} — monthly average`
-      : `${fmtDate(days[0])} – ${fmtDate(days[days.length - 1])}`;
-
-  return (
-    <ChartCard title={label}>
-      <div className="mt-2 flex items-end gap-2">
-        <span className="font-serif text-5xl leading-none">{avg.toFixed(1)}</span>
-        <span className="pb-1 text-sm font-semibold text-muted-foreground">{unit}</span>
+    <div className="flex items-center justify-between rounded-2xl bg-surface p-3 ring-1 ring-border">
+      <div>
+        <p className="text-xs text-muted-foreground">Meds today</p>
+        <p className="font-serif text-lg font-bold">
+          {taken}/{total || 0}
+        </p>
       </div>
-      <p className="mt-1 text-sm text-muted-foreground">{dateLabel}</p>
-      <div className="mt-3 overflow-hidden">
-        <svg
-          viewBox={`0 0 ${width} ${height}`}
-          className="h-52 w-full touch-pan-y"
-          role="img"
-          aria-label={`${label} line chart`}
-        >
-          {[yMax, yMid, yMin].map((y) => (
-            <g key={y}>
-              <line x1={left} x2={width - right} y1={yFor(y)} y2={yFor(y)} stroke={CHART_GRID} strokeWidth="1" />
-              <text x={width - right + 8} y={yFor(y) + 4} fontSize="10" fill={CHART_AXIS}>
-                {y.toFixed(y % 1 ? 1 : 0)}
-              </text>
-            </g>
-          ))}
-          {ticks.map(({ k, i }) => (
-            <g key={k}>
-              <line
-                x1={xFor(i)}
-                x2={xFor(i)}
-                y1={top}
-                y2={height - bottom}
-                stroke={CHART_GRID}
-                strokeDasharray="3 3"
-                strokeWidth="1"
-              />
-              <text x={xFor(i)} y={height - 8} textAnchor="middle" fontSize="9" fill={CHART_AXIS}>
-                {tickLabel(k)}
-              </text>
-            </g>
-          ))}
-          <path
-            d={path}
-            fill="none"
-            stroke="var(--primary)"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          {points.map((p) => (
-            <g key={p.date}>
-              <circle
-                cx={xFor(p.index)}
-                cy={yFor(p.value)}
-                r="3"
-                fill="var(--surface)"
-                stroke="var(--primary)"
-                strokeWidth="2"
-              />
-              <circle
-                cx={xFor(p.index)}
-                cy={yFor(p.value)}
-                r="12"
-                fill="transparent"
-                style={{ cursor: "pointer" }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setActive(active?.date === p.date ? null : p);
-                }}
-              />
-            </g>
-          ))}
-          {active &&
-            (() => {
-              const text =
-                period === "Y"
-                  ? `${fmtTapMonth(fromKey(active.date).getMonth(), fromKey(active.date).getFullYear())} · ${label} ${active.value.toFixed(1)} ${unit}`
-                  : `${fmtTapDay(active.date)} · ${label} ${active.value.toFixed(1)} ${unit}`;
-              const boxW = Math.max(60, text.length * 5.6);
-              const x = Math.min(Math.max(xFor(active.index) - boxW / 2, 2), width - right - boxW - 2);
-              const y = Math.max(yFor(active.value) - 32, 2);
-              return <ChartSvgTooltip x={x} y={y} width={boxW} text={text} />;
-            })()}
-        </svg>
-      </div>
-    </ChartCard>
-  );
-}
-
-function SleepChart({
-  period,
-  days,
-  series,
-  anchor,
-}: {
-  period: Period;
-  days: string[];
-  series: (number | undefined)[];
-  anchor: Date;
-}) {
-  // Mirrors PainChart's layout: labelled Y axis on the left, dotted gridlines,
-  // and X-axis labels that adapt to the active period.
-  type Bar = { value?: number; label: string; sub?: string };
-  let bars: Bar[] = [];
-  if (period === "Y") {
-    const monthly: { sum: number; n: number }[] = Array.from({ length: 12 }, () => ({ sum: 0, n: 0 }));
-    days.forEach((k, i) => {
-      const v = series[i];
-      if (v == null) return;
-      const m = fromKey(k).getMonth();
-      monthly[m].sum += v;
-      monthly[m].n += 1;
-    });
-    const MON = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
-    bars = monthly.map((mm, i) => ({
-      value: mm.n ? mm.sum / mm.n : undefined,
-      label: MON[i],
-    }));
-  } else if (period === "M") {
-    bars = days.map((k, i) => {
-      const d = fromKey(k).getDate();
-      return { value: series[i], label: d % 2 === 1 ? String(d) : "" };
-    });
-  } else {
-    bars = days.map((k, i) => {
-      const d = fromKey(k);
-      const wd = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"][d.getDay()];
-      return { value: series[i], label: wd, sub: String(d.getDate()) };
-    });
-  }
-
-  const sleepColor = (h?: number) =>
-    h == null
-      ? "var(--tint)"
-      : h < 8
-        ? INSIGHT_COLORS.terracotta
-        : h === 8
-          ? INSIGHT_COLORS.amber
-          : INSIGHT_COLORS.mint;
-
-  return (
-    <BarChartFrame
-      bars={bars}
-      yLabels={[12, 10, 8, 6, 4, 2, 0]}
-      yMax={12}
-      colorFor={(value) => sleepColor(value)}
-      tooltipText={(i, value) =>
-        period === "Y"
-          ? `${fmtTapMonth(i, anchor.getFullYear())} · Sleep ${value.toFixed(1)}h`
-          : `${fmtTapDay(days[i])} · Sleep ${value.toFixed(1)}h`
-      }
-      axisLabel="Sleep (hours)"
-      periodLabel={period === "Y" ? "Month" : period === "M" ? "Day of month" : "Day"}
-      emptyMessage={period === "Y" ? `No sleep entries in ${anchor.getFullYear()}` : undefined}
-    />
-  );
-}
-
-function PainChart({
-  period,
-  days,
-  series,
-  anchor,
-}: {
-  period: Period;
-  days: string[];
-  series: (number | undefined)[];
-  anchor: Date;
-}) {
-  // Aggregate for year view: 12 monthly averages
-  type Bar = { value?: number; label: string; sub?: string };
-  let bars: Bar[] = [];
-  if (period === "Y") {
-    const monthly: { sum: number; n: number }[] = Array.from({ length: 12 }, () => ({ sum: 0, n: 0 }));
-    days.forEach((k, i) => {
-      const v = series[i];
-      if (v == null) return;
-      const m = fromKey(k).getMonth();
-      monthly[m].sum += v;
-      monthly[m].n += 1;
-    });
-    const MON = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
-    bars = monthly.map((mm, i) => ({
-      value: mm.n ? mm.sum / mm.n : undefined,
-      label: MON[i],
-    }));
-  } else if (period === "M") {
-    bars = days.map((k, i) => {
-      const d = fromKey(k).getDate();
-      // Show every other day so labels never collide but daily rating is readable.
-      return { value: series[i], label: d % 2 === 1 ? String(d) : "" };
-    });
-  } else {
-    bars = days.map((k, i) => {
-      const d = fromKey(k);
-      const wd = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"][d.getDay()];
-      return { value: series[i], label: wd, sub: String(d.getDate()) };
-    });
-  }
-
-  return (
-    <BarChartFrame
-      bars={bars}
-      yLabels={[10, 8, 6, 4, 2, 0]}
-      yMax={10}
-      colorFor={(value) => painInsightColor(value)}
-      tooltipText={(i, value) =>
-        period === "Y"
-          ? `${fmtTapMonth(i, anchor.getFullYear())} · Pain ${value.toFixed(1)}`
-          : `${fmtTapDay(days[i])} · Pain ${value.toFixed(1)}`
-      }
-      axisLabel="Pain (0–10)"
-      periodLabel={period === "Y" ? "Month" : period === "M" ? "Day of month" : "Day"}
-      emptyMessage={period === "Y" ? `No pain entries in ${anchor.getFullYear()}` : undefined}
-    />
-  );
-}
-
-function BristolChart({ bowelCounts }: { bowelCounts: number[] }) {
-  const [active, setActive] = useState<number | null>(null);
-  useDismissTapTooltip(() => setActive(null));
-  const max = Math.max(1, ...bowelCounts);
-  const chartTypes = [
-    {
-      n: 0,
-      label: "Type 0 — Mystery",
-      sub: "Unknown / mixed",
-      color: BRISTOL_COLORS[0],
-      shape: "mystery",
-    },
-    ...BRISTOL,
-  ];
-  return (
-    <ChartCard title="Bowel — Bristol distribution">
-      <div className="relative mt-3 flex items-end gap-2">
-        {chartTypes.map((b) => {
-          const c = bowelCounts[b.n] ?? 0;
-          return (
-            <div key={b.n} className="relative flex flex-1 flex-col items-center gap-1">
-              <div className="h-20 w-full flex items-end">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActive(active === b.n ? null : b.n);
-                  }}
-                  className="w-full rounded-t"
-                  style={{ height: `${(c / max) * 100}%`, background: BRISTOL_COLORS[b.n] }}
-                />
-              </div>
-              {active === b.n && (
-                <ChartTooltip leftPct={50} text={`Type ${b.n} · ${c} ${c === 1 ? "entry" : "entries"}`} />
-              )}
-              <span className="text-[10px] text-muted-foreground">T{b.n}</span>
-              <span className="text-[10px]">{c}</span>
-            </div>
-          );
-        })}
-      </div>
-    </ChartCard>
-  );
-}
-
-function HfBars({
-  bars,
-  period,
-  days,
-  anchor,
-}: {
-  bars: (number | undefined)[];
-  period: Period;
-  days: string[];
-  anchor: Date;
-}) {
-  const [active, setActive] = useState<number | null>(null);
-
-  useDismissTapTooltip(() => setActive(null));
-
-  return (
-    <div>
-      <div
-        className="grid items-end gap-1"
-        style={{
-          gridTemplateColumns: `repeat(${bars.length}, minmax(0, 1fr))`,
-          height: 60,
-        }}
-      >
-        {bars.map((n, i) =>
-          n != null ? (
-            <button
-              key={i}
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setActive(active === i ? null : i);
-              }}
-              className="w-full rounded-t"
-              style={{
-                height: `${Math.max(10, (n / 5) * 100)}%`,
-                background: HOT_FLASH_COLORS[Math.max(1, Math.min(5, Math.round(n)))],
-              }}
-            />
-          ) : (
-            <div key={i} className="h-1 w-full self-end rounded bg-tint" />
-          ),
-        )}
-      </div>
-
-      <div className="mt-2 min-h-8">
-        {active != null && bars[active] != null && (
-          <div
-            className="mx-auto max-w-full rounded-xl px-3 py-2 text-center text-[11px] font-medium ring-1 ring-border/40"
-            style={{ background: CHART_TOOLTIP_BG, color: CHART_TOOLTIP_FG }}
-          >
-            {period === "Y"
-              ? `${fmtTapMonth(active, anchor.getFullYear())} · Hot flash avg ${bars[active]!.toFixed(1)}/5`
-              : `${fmtTapDay(days[active])} · Hot flash ${bars[active]!.toFixed(1)}/5`}
-          </div>
-        )}
+      <div className="grid h-10 w-10 place-items-center rounded-full bg-primary/15 text-primary">
+        <PillIcon size={20} />
       </div>
     </div>
   );
 }
 
-/** GitHub-contributions-style yearly heatmap of daily "symptom load" (avg pain + symptom entry counts). */
-function SymptomLoadHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>["data"]; anchor: Date }) {
-  const [active, setActive] = useState<string | null>(null);
-  const notesFor = (k: string): string[] => {
-    const raw = data.dayNotes[k] ?? [];
+/* ------------------- Day preview ------------------- */
+function DayPreview({
+  date,
+  data,
+  update,
+  onEditPain,
+  onEdit,
+}: {
+  date: string;
+  data: BixboData;
+  update: (u: (d: BixboData) => BixboData) => void;
+  onEditPain?: (p: import("@/lib/storage").PainEntry) => void;
+  onEdit?: (cat: string, entry: unknown) => void;
+}) {
+  const log = data.dayLogs[date];
+  const rawNotes = data.dayNotes[date] ?? [];
+  const notes: { text: string; time?: string }[] = (rawNotes as (string | { text: string; time?: string })[]).map(
+    (n) => (typeof n === "string" ? { text: n } : n),
+  );
+  const todos = data.todos[date] ?? [];
+  const events = data.events.filter((e) => date >= e.startDate && date <= e.endDate);
+  const tasks = data.tasks.filter((t) => date >= t.startDate && date <= t.endDate);
 
-    return raw
-      .map((note) => {
-        if (typeof note === "string") return note;
-        return note.text;
-      })
-      .filter((text): text is string => Boolean(text?.trim()));
-  };
-  const activeNotes = active ? notesFor(active) : [];
-  useDismissTapTooltip(() => setActive(null));
-  const year = anchor.getFullYear();
-
-  const dayInfo = useMemo(() => {
-    const start = new Date(year, 0, 1);
-    const dow = (start.getDay() + 6) % 7; // Mon=0
-    const gridStart = new Date(start);
-    gridStart.setDate(start.getDate() - dow);
-    const cells: { key: string | null; inYear: boolean }[] = [];
-    for (let i = 0; i < 53 * 7; i++) {
-      const d = new Date(gridStart);
-      d.setDate(gridStart.getDate() + i);
-      const inYear = d.getFullYear() === year;
-      cells.push({ key: inYear ? toKey(d) : null, inYear });
+  const k = todayKey();
+  const isToday = date === k;
+  const nowHHMM = new Date().toTimeString().slice(0, 5);
+  const meds = data.meds;
+  const scheduled = data.meds
+    .filter((m) => !m.asNeeded)
+    .flatMap((m) =>
+      m.times.map((t) => ({ key: `${m.id}@${t}`, med: m, time: t, taken: !!data.medLog[date]?.[`${m.id}@${t}`] })),
+    );
+  const takenList = scheduled.filter((x) => x.taken);
+  const missedList = scheduled.filter((x) => !x.taken && (date < k || (date === k && x.time < nowHHMM)));
+  const extraMeds = log?.extraMeds ?? [];
+  const cycleTrackingHidden = isCycleTrackingHidden(data);
+  const flowLabel = (level?: string | null): string => {
+    switch (level) {
+      case "spotting":
+        return "Spotting";
+      case "light":
+        return "Light";
+      case "medium":
+        return "Medium";
+      case "heavy":
+        return "Heavy";
+      case "very-heavy":
+        return "Very heavy";
+      default:
+        return "";
     }
-    return cells;
-  }, [year]);
-
-  const summaryFor = (k: string) => {
-    const log = data.dayLogs[k];
-    if (!log) return null;
-    const pain = avgDayPain(log);
-    const tetany = log.tetany?.length ?? 0;
-    const panic = log.panic?.length ?? 0;
-    const hf = log.pain?.filter((p) => p.hotFlashes != null).length ?? 0;
-    const headache = log.pain?.filter((p) => p.headache).length ?? 0;
-    const nausea = log.pain?.filter((p) => p.nausea).length ?? 0;
-    const bowel = log.bowel?.length ?? 0;
-    const symptomCount = tetany + panic + hf + headache + nausea + bowel;
-    const load = (pain ?? 0) + symptomCount * 1.5;
-    return { pain, tetany, panic, hf, headache, nausea, bowel, symptomCount, load };
   };
 
-  const maxLoad = useMemo(() => {
-    let max = 0;
-    dayInfo.forEach((c) => {
-      if (!c.key) return;
-      const s = summaryFor(c.key);
-      if (s && s.load > max) max = s.load;
-    });
-    return Math.max(1, max);
-  }, [dayInfo, data.dayLogs]);
+  const anything =
+    !!(
+      log &&
+      (log.pain?.length ||
+        log.tetany?.length ||
+        log.panic?.length ||
+        log.period ||
+        log.periodInfo?.level ||
+        log.food?.length ||
+        log.bowel?.length ||
+        log.sex?.length ||
+        log.heat?.length ||
+        log.workout?.length ||
+        log.temperature != null ||
+        log.weight != null ||
+        log.sleepHours != null ||
+        extraMeds.length)
+    ) ||
+    notes.length ||
+    todos.length ||
+    events.length ||
+    tasks.length ||
+    takenList.length ||
+    missedList.length;
 
-  const colorFor = (load: number) => {
-    if (load <= 0) return "var(--tint)";
-    const t = Math.min(1, load / maxLoad);
-    const index = Math.min(SYMPTOM_LOAD_COLORS.length - 1, Math.floor(t * SYMPTOM_LOAD_COLORS.length));
-    return SYMPTOM_LOAD_COLORS[index];
-  };
+  if (!anything)
+    return (
+      <div className="mx-5 mt-4 rounded-3xl bg-surface p-6 text-center ring-1 ring-border">
+        <p className="text-sm text-muted-foreground">Nothing logged {isToday ? "today" : "this day"} yet.</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Tap the <span className="font-bold">+ Log</span> button below.
+        </p>
+      </div>
+    );
 
-  const active_ = active ? summaryFor(active) : null;
+  const markMissedTaken = (medKey: string) =>
+    update((d) => ({
+      ...d,
+      medLog: { ...d.medLog, [date]: { ...(d.medLog[date] ?? {}), [medKey]: true } },
+      medLogTimes: {
+        ...(d.medLogTimes ?? {}),
+        [date]: {
+          ...(d.medLogTimes?.[date] ?? {}),
+          [medKey]: (() => {
+            const n = new Date();
+            return `${String(n.getHours()).padStart(2, "0")}:${String(n.getMinutes()).padStart(2, "0")}`;
+          })(),
+        },
+      },
+    }));
 
   return (
-    <ChartCard title={`Symptom Load — ${year}`}>
-      {/* Horizontálne sa posúva iba heatmapa. */}
-      <div className="mt-3 overflow-x-auto">
-        <div
-          className="grid w-max grid-flow-col gap-[3px]"
-          style={{
-            gridTemplateRows: "repeat(7, 14px)",
-            gridAutoColumns: "14px",
-          }}
-        >
-          {dayInfo.map((c, i) => {
-            if (!c.key) {
-              return <div key={`empty-${i}`} className="h-3.5 w-3.5" />;
-            }
-
-            const summary = summaryFor(c.key);
-            const load = summary?.load ?? 0;
-            const isActive = active === c.key;
-
-            return (
-              <button
-                key={c.key}
-                type="button"
-                aria-label={`${fmtTapDay(c.key)} symptom load`}
-                aria-pressed={isActive}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setActive((current) => (current === c.key ? null : c.key));
-                }}
-                className={`h-3.5 w-3.5 rounded-[3px] transition-transform hover:scale-110 focus-visible:z-10 ${isActive ? "ring-2 ring-primary ring-offset-1 ring-offset-background" : ""}`}
-                style={{
-                  background: colorFor(load),
-                }}
-              />
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Detail a poznámky sú mimo scrollovacieho kontajnera. */}
-      {active && (
-        <div className="mt-3 min-w-0 max-w-full rounded-2xl bg-tint p-3 text-xs" onClick={(e) => e.stopPropagation()}>
-          <p className="font-medium">{fmtTapDay(active)}</p>
-
-          {active_ ? (
-            <div className="mt-1 text-muted-foreground">
-              <p>Pain: {active_.pain != null ? active_.pain.toFixed(1) : "—"}</p>
-
-              {active_.tetany > 0 && <p>Tetany: {active_.tetany}×</p>}
-
-              {active_.panic > 0 && <p>Panic: {active_.panic}×</p>}
-
-              {active_.hf > 0 && <p>Hot flashes: {active_.hf}×</p>}
-
-              {active_.headache > 0 && <p>Headache: {active_.headache}×</p>}
-
-              {active_.nausea > 0 && <p>Nausea: {active_.nausea}×</p>}
-
-              {active_.bowel > 0 && <p>Bowel: {active_.bowel}×</p>}
-            </div>
-          ) : (
-            <p className="mt-1 text-muted-foreground">No symptoms logged.</p>
-          )}
-
-          {activeNotes.length > 0 ? (
-            <div className="mt-2 min-w-0 border-t border-border pt-2">
-              <p className="font-medium">Notes</p>
-
-              {activeNotes.map((note, index) => (
-                <p
-                  key={`${active}-${index}`}
-                  className="mt-1 max-w-full whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-muted-foreground"
+    <div className="space-y-3 px-5 pt-3 pb-32">
+      {(takenList.length > 0 || extraMeds.length > 0 || missedList.length > 0) && (
+        <Card title="Meds" icon="💊">
+          <ul className="space-y-1 text-sm">
+            {takenList.map((x) => {
+              const actual = data.medLogTimes?.[date]?.[x.key];
+              const shifted = actual && actual !== x.time;
+              return (
+                <li key={x.key}>
+                  <button
+                    onClick={() =>
+                      update((d) => {
+                        const day = { ...(d.medLog[date] ?? {}) };
+                        delete day[x.key];
+                        const times = { ...(d.medLogTimes?.[date] ?? {}) };
+                        delete times[x.key];
+                        return {
+                          ...d,
+                          medLog: { ...d.medLog, [date]: day },
+                          medLogTimes: { ...(d.medLogTimes ?? {}), [date]: times },
+                        };
+                      })
+                    }
+                    className="text-left text-green-700 hover:underline"
+                    title="Tap to uncheck"
+                  >
+                    Taken · {actual ?? x.time} — {x.med.name}
+                    {x.med.dose ? ` (${x.med.dose})` : ""}
+                    {shifted && <span className="text-[10px] text-muted-foreground"> · scheduled {x.time}</span>}
+                    <span className="text-[10px] text-muted-foreground"> · tap to uncheck</span>
+                  </button>
+                </li>
+              );
+            })}
+            {missedList.map((x) => (
+              <li key={x.key} className="flex items-start gap-2">
+                <button
+                  onClick={() => markMissedTaken(x.key)}
+                  className="flex-1 text-left text-destructive/90"
+                  title="Tap to mark taken"
                 >
-                  {note}
-                </p>
-              ))}
-            </div>
-          ) : (
-            <p className="mt-2 text-muted-foreground">No notes for this day.</p>
-          )}
-        </div>
+                  Missed · {x.time} — {x.med.name}
+                  {x.med.dose ? ` (${x.med.dose})` : ""}{" "}
+                  <span className="text-[10px] text-muted-foreground">· missed (tap if taken)</span>
+                </button>
+              </li>
+            ))}
+            {extraMeds.map((e) => (
+              <li key={e.id} className="flex items-start gap-2">
+                <button onClick={() => onEdit?.("meds", e)} className="flex-1 text-left">
+                  • {e.time} — {e.name}
+                  {e.dose ? ` (${e.dose})` : ""}
+                  {e.note ? ` — ${e.note}` : ""}
+                </button>
+                <button
+                  onClick={() =>
+                    update((d) => ({
+                      ...d,
+                      dayLogs: {
+                        ...d.dayLogs,
+                        [date]: {
+                          ...d.dayLogs[date],
+                          extraMeds: (d.dayLogs[date]?.extraMeds ?? []).filter((x) => x.id !== e.id),
+                        },
+                      },
+                    }))
+                  }
+                  aria-label="Delete"
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </Card>
       )}
 
-      <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
-        <span>No symptoms</span>
+      {(log?.pain?.length && (
+        <Card title="Pain" icon="🔥">
+          <ul className="space-y-2">
+            {log.pain.map((p) => (
+              <li key={p.id} className="flex items-start gap-3">
+                <button
+                  onClick={() => onEditPain?.(p)}
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-sm font-bold text-white"
+                  style={{ background: painColor(p.score) }}
+                  aria-label="Edit pain entry"
+                >
+                  {Number.isInteger(p.score) ? p.score : p.score.toFixed(1)}
+                </button>
+                <button onClick={() => onEditPain?.(p)} className="min-w-0 flex-1 text-left">
+                  <p className="text-xs text-muted-foreground">
+                    {p.time} · {PAIN_DESCRIPTIONS[Math.round(p.score)]}
+                  </p>
+                  {p.parts.length > 0 && <p className="text-sm">{p.parts.join(", ")}</p>}
+                  {p.quality.length > 0 && <p className="text-xs text-muted-foreground">{p.quality.join(", ")}</p>}
+                  {p.symptoms.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      + {p.symptoms.join(", ")}
+                      {p.symptoms.includes("Flu") && p.fluNote ? ` (Flu: ${p.fluNote})` : ""}
+                    </p>
+                  )}
+                  {p.pressureTypes?.length || p.pressureIntensity != null ? (
+                    <p className="text-xs text-muted-foreground">
+                      Pressure: {p.pressureTypes?.join(", ")}
+                      {p.pressureIntensity != null
+                        ? `${p.pressureTypes?.length ? " " : ""}${p.pressureIntensity}/10`
+                        : ""}
+                    </p>
+                  ) : null}
+                  {p.nausea || p.nauseaTypes?.length || p.nauseaSeverity != null ? (
+                    <p className="text-xs text-muted-foreground">
+                      Nausea: {p.nauseaTypes?.join(", ")}
+                      {p.nauseaSeverity != null ? `${p.nauseaTypes?.length ? " " : ""}${p.nauseaSeverity}/10` : ""}
+                      {p.nauseaOngoing ? " · ongoing" : p.nauseaMinutes != null ? ` · ${p.nauseaMinutes} min` : ""}
+                      {p.nauseaTriggers?.length ? ` · triggers: ${p.nauseaTriggers.join(", ")}` : ""}
+                      {p.nauseaSymptoms?.length ? ` · symptoms: ${p.nauseaSymptoms.join(", ")}` : ""}
+                      {p.nauseaHelped?.length ? ` · relieved by: ${p.nauseaHelped.join(", ")}` : ""}
+                    </p>
+                  ) : null}
+                  {p.hotFlashes != null && (
+                    <p className="text-xs text-muted-foreground">
+                      <Ico e="🥵" size={13} /> Hot flashes intensity {p.hotFlashes}/5
+                    </p>
+                  )}
+                  {p.headacheTypes?.length ? (
+                    <p className="text-xs text-muted-foreground">
+                      <Ico e="🤕" size={13} /> Headache: {p.headacheTypes.join(", ")}
+                      {p.headacheIntensity != null ? ` · ${p.headacheIntensity}/10` : ""}
+                    </p>
+                  ) : p.headacheIntensity != null ? (
+                    <p className="text-xs text-muted-foreground">
+                      <Ico e="🤕" size={13} /> Headache intensity {p.headacheIntensity}/10
+                    </p>
+                  ) : null}
+                  {p.headacheMed ? (
+                    <p className="text-xs text-muted-foreground">
+                      <Ico e="💊" size={13} /> Headache med: {p.headacheMed}
+                      {p.headacheMedTime ? ` at ${p.headacheMedTime}` : ""}
+                    </p>
+                  ) : null}
+                  {p.pcosSymptoms?.length ? (
+                    <p className="text-xs text-muted-foreground">PCOS: {p.pcosSymptoms.join(", ")}</p>
+                  ) : null}
+                  {p.mood?.length ? (
+                    <p className="text-xs text-muted-foreground">
+                      Mood: <IcoText text={p.mood.join(", ")} size={13} />
+                    </p>
+                  ) : null}
+                  {p.stress != null && <p className="text-xs text-muted-foreground">Stress {p.stress}/10</p>}
+                  {p.bodyBattery != null && <p className="text-xs text-muted-foreground">Battery {p.bodyBattery}/5</p>}
+                  {p.note && <p className="mt-1 text-sm whitespace-pre-line">"{p.note}"</p>}
+                  <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
+                </button>
+                <DeleteBtn
+                  onClick={() =>
+                    update((d) => ({
+                      ...d,
+                      dayLogs: {
+                        ...d.dayLogs,
+                        [date]: {
+                          ...d.dayLogs[date],
+                          pain: (d.dayLogs[date]?.pain ?? []).filter((x) => x.id !== p.id),
+                        },
+                      },
+                    }))
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )) ||
+        null}
 
-        <span className="flex gap-[2px]">
-          {[0, 0.25, 0.5, 0.75, 1].map((t) => (
-            <span
-              key={t}
-              className="h-3.5 w-3.5 rounded-[3px]"
-              style={{
-                background:
-                  t === 0
-                    ? "var(--tint)"
-                    : SYMPTOM_LOAD_COLORS[
-                        Math.min(SYMPTOM_LOAD_COLORS.length - 1, Math.ceil(t * SYMPTOM_LOAD_COLORS.length) - 1)
-                      ],
-              }}
-            />
-          ))}
-        </span>
+      {log?.panic?.length ? (
+        <Card title="Panic attacks" icon="🫯">
+          <ul className="space-y-2">
+            {log.panic.map((p) => (
+              <li key={p.id} className="flex items-start gap-2">
+                <button onClick={() => onEdit?.("panic", p)} className="flex-1 text-left">
+                  <p className="text-sm font-medium">
+                    {p.time} · intensity {p.intensity}/10 · {p.minutes == null ? "ongoing" : `${p.minutes} min`}
+                  </p>
+                  {p.trigger && <p className="text-xs text-muted-foreground">Trigger: {p.trigger}</p>}
+                  {p.physical.length > 0 && <p className="text-xs">Physical: {p.physical.join(", ")}</p>}
+                  {p.cognitive.length > 0 && <p className="text-xs">Cognitive: {p.cognitive.join(", ")}</p>}
+                  <p className="text-[11px] text-muted-foreground">
+                    Hyperventilation: {p.hyperventilation}
+                    {p.tetanyPresent ? " · tetany present" : ""}
+                  </p>
+                  {p.helped.length > 0 && (
+                    <p className="text-[11px] text-muted-foreground">Helped: {p.helped.join(", ")}</p>
+                  )}
+                  {p.rescueMed ? (
+                    <p className="text-xs text-muted-foreground">
+                      <Ico e="💊" size={13} /> Rescue: {p.rescueMed}
+                    </p>
+                  ) : null}
+                  {p.note && <p className="mt-1 text-sm whitespace-pre-line">"{p.note}"</p>}
+                  <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
+                </button>
+                <DeleteBtn
+                  onClick={() =>
+                    update((d) => ({
+                      ...d,
+                      dayLogs: {
+                        ...d.dayLogs,
+                        [date]: {
+                          ...d.dayLogs[date],
+                          panic: (d.dayLogs[date]?.panic ?? []).filter((x) => x.id !== p.id),
+                        },
+                      },
+                    }))
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
 
-        <span>High load</span>
-      </div>
-    </ChartCard>
+      {log?.tetany?.length ? (
+        <Card title="Tetany" icon="⚡">
+          <ul className="space-y-2 text-sm">
+            {log.tetany.map((t) => (
+              <li key={t.id} className="flex items-start gap-2">
+                <button onClick={() => onEdit?.("tetany", t)} className="flex-1 text-left">
+                  <p>
+                    {t.time} · {t.types.join(", ") || "Tetany"} · {t.intensity}/5 ·{" "}
+                    {t.minutes == null ? "ongoing" : `${t.minutes}min`}
+                    {t.triggers.length ? ` — ${t.triggers.join(", ")}` : ""}
+                  </p>
+                  {t.location?.length ? (
+                    <p className="text-xs text-muted-foreground">Location: {t.location.join(", ")}</p>
+                  ) : null}
+                  {t.helped?.length ? (
+                    <p className="text-xs text-muted-foreground">Helped: {t.helped.join(", ")}</p>
+                  ) : null}
+                  {t.rescueMed ? (
+                    <p className="text-xs text-muted-foreground">
+                      <Ico e="💊" size={13} /> Rescue: {t.rescueMed}
+                    </p>
+                  ) : null}
+                  {t.note && <p className="mt-1 text-sm whitespace-pre-line">"{t.note}"</p>}
+                  <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
+                </button>
+                <DeleteBtn
+                  onClick={() =>
+                    update((d) => ({
+                      ...d,
+                      dayLogs: {
+                        ...d.dayLogs,
+                        [date]: {
+                          ...d.dayLogs[date],
+                          tetany: (d.dayLogs[date]?.tetany ?? []).filter((x) => x.id !== t.id),
+                        },
+                      },
+                    }))
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+
+      {!cycleTrackingHidden &&
+        !!(
+          log?.period ||
+          log?.periodInfo?.level ||
+          log?.periodInfo?.discharge ||
+          log?.periodInfo?.dischargeNote ||
+          log?.periodInfo?.cramps != null ||
+          log?.periodInfo?.note
+        ) && (
+          <Card title="Blueberry" icon="🫐">
+            <button onClick={() => onEdit?.("period", undefined)} className="w-full text-left">
+              {(log?.periodInfo?.level || log?.period) && (
+                <p className="text-sm">Flow: {flowLabel(log?.periodInfo?.level ?? log?.period)}</p>
+              )}
+              {log?.periodInfo?.cramps != null && (
+                <p className="text-xs" style={{ color: painColor(log.periodInfo.cramps) }}>
+                  Cramp pain:{" "}
+                  <span className="font-semibold">
+                    {Number.isInteger(log.periodInfo.cramps) ? log.periodInfo.cramps : log.periodInfo.cramps.toFixed(1)}
+                    /10
+                  </span>{" "}
+                  — {PAIN_DESCRIPTIONS[Math.round(log.periodInfo.cramps)]}
+                </p>
+              )}
+              {log?.periodInfo?.discharge && (
+                <p className="text-xs text-muted-foreground">
+                  Discharge: {log.periodInfo.discharge}
+                  {log.periodInfo.dischargeNote ? ` — ${log.periodInfo.dischargeNote}` : ""}
+                </p>
+              )}
+              {log?.periodInfo?.note && <p className="mt-1 text-sm whitespace-pre-line">"{log.periodInfo.note}"</p>}
+              <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
+            </button>
+          </Card>
+        )}
+
+      {log?.sex?.length ? (
+        <Card title="ŠukŠuk!" icon="❤️">
+          <ul className="space-y-1 text-sm">
+            {log.sex.map((s: SexEntry) => (
+              <li key={s.id} className="flex items-start gap-2">
+                <button onClick={() => onEdit?.("sex", s)} className="flex-1 text-left">
+                  {s.time} · {String(s.kind).replace(/_/g, " ")}
+                  {asArr(s.feelingAfter).length ? (
+                    <>
+                      {" "}
+                      · <IcoText text={asArr(s.feelingAfter).join(", ")} size={13} />
+                    </>
+                  ) : (
+                    ""
+                  )}
+                  {s.painful && s.painful !== "no" ? ` · painful ${s.painful}` : ""}
+                  {s.note ? ` — ${s.note}` : ""}
+                </button>
+                <DeleteBtn
+                  onClick={() =>
+                    update((d) => ({
+                      ...d,
+                      dayLogs: {
+                        ...d.dayLogs,
+                        [date]: { ...d.dayLogs[date], sex: (d.dayLogs[date]?.sex ?? []).filter((x) => x.id !== s.id) },
+                      },
+                    }))
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+
+      {log?.heat?.length ? (
+        <Card title="Heat / Cold / TENS" icon="♨️">
+          <ul className="space-y-1 text-sm">
+            {log.heat.map((h) => (
+              <li key={h.id} className="flex items-start gap-2">
+                <button onClick={() => onEdit?.("heat", h)} className="flex-1 text-left">
+                  <Ico e={h.kind === "heat" ? "♨️" : h.kind === "cold" ? "🧊" : "⭐"} size={14} /> {h.start} ·{" "}
+                  {h.ongoing ? "ongoing" : `${h.minutes ?? 0} min`}
+                  {h.note ? ` — ${h.note}` : ""}
+                </button>
+                <DeleteBtn
+                  onClick={() =>
+                    update((d) => ({
+                      ...d,
+                      dayLogs: {
+                        ...d.dayLogs,
+                        [date]: {
+                          ...d.dayLogs[date],
+                          heat: (d.dayLogs[date]?.heat ?? []).filter((x) => x.id !== h.id),
+                        },
+                      },
+                    }))
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+
+      {log?.food?.length ? (
+        <Card title="Food" icon="🍽️">
+          <ul className="space-y-1 text-sm">
+            {log.food.map((f) => (
+              <li key={f.id} className="flex items-start gap-2">
+                <button onClick={() => onEdit?.("food", f)} className="flex-1 text-left">
+                  <div>
+                    {f.time} · <IcoText text={f.what || (f.histamineFlare ? "(histamine flare)" : "—")} size={14} />
+                    {f.highHistamine ? " · high histamine" : ""}
+                    {f.hydrationMl != null ? ` · ${f.hydrationMl}ml` : ""}
+                    {f.caffeineMg != null ? ` · ${f.caffeineMg}mg` : ""}
+                    {f.alcoholDrinks != null ? ` · ${f.alcoholDrinks}` : ""}
+                  </div>
+                  {f.feelings.length ? (
+                    <div className="text-xs text-muted-foreground">
+                      Feel: <IcoText text={f.feelings.join(", ")} size={13} />
+                    </div>
+                  ) : null}
+                  {f.symptomsAfter?.length ? (
+                    <div className="text-xs text-muted-foreground">
+                      After: <IcoText text={f.symptomsAfter.join(", ")} size={13} />
+                    </div>
+                  ) : null}
+                  {f.histamineFlare ? (
+                    <div className="text-xs text-destructive">
+                      <Ico e="🔥" size={13} /> Histamine flare
+                      {f.histamineSymptoms?.length ? `: ${f.histamineSymptoms.join(", ")}` : ""}
+                    </div>
+                  ) : null}
+                  {f.after ? <div className="mt-1 text-sm whitespace-pre-line">"{f.after}"</div> : null}
+                </button>
+                <DeleteBtn
+                  onClick={() =>
+                    update((d) => ({
+                      ...d,
+                      dayLogs: {
+                        ...d.dayLogs,
+                        [date]: {
+                          ...d.dayLogs[date],
+                          food: (d.dayLogs[date]?.food ?? []).filter((x) => x.id !== f.id),
+                        },
+                      },
+                    }))
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+
+      {log?.bowel?.length ? (
+        <Card title="Bowel" icon="💩">
+          <ul className="space-y-1 text-sm">
+            {log.bowel.map((b: BowelEntry) => {
+              const bristol = b.bristol >= 0 ? BRISTOL.find((x) => x.n === b.bristol) : null;
+              const label = bristol
+                ? `Type ${bristol.n} — ${bristol.sub}`
+                : b.bristol === 0
+                  ? "Type 0 — Mystery"
+                  : "No bowel movement";
+              return (
+                <li key={b.id} className="flex items-start gap-2">
+                  <button onClick={() => onEdit?.("bowel", b)} className="flex-1 text-left">
+                    {b.time} · <IcoText text={label} size={14} />
+                    {b.feelings?.length ? (
+                      <>
+                        {" "}
+                        · <IcoText text={b.feelings.join(", ")} size={13} />
+                      </>
+                    ) : (
+                      ""
+                    )}
+                    {b.symptoms?.length ? (
+                      <>
+                        {" "}
+                        · <IcoText text={b.symptoms.join(", ")} size={13} />
+                      </>
+                    ) : (
+                      ""
+                    )}
+                    {b.note ? ` — ${b.note}` : ""}
+                  </button>
+                  <DeleteBtn
+                    onClick={() =>
+                      update((d) => ({
+                        ...d,
+                        dayLogs: {
+                          ...d.dayLogs,
+                          [date]: {
+                            ...d.dayLogs[date],
+                            bowel: (d.dayLogs[date]?.bowel ?? []).filter((x) => x.id !== b.id),
+                          },
+                        },
+                      }))
+                    }
+                  />
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+      ) : null}
+
+      {log?.workout?.length ? (
+        <Card title="Workout" icon="👟">
+          <ul className="space-y-1 text-sm">
+            {log.workout.map((w) => (
+              <li key={w.id} className="flex items-start gap-2">
+                <button onClick={() => onEdit?.("workout", w)} className="flex-1 text-left">
+                  <span className="font-medium">
+                    {w.time} · <IcoText text={w.kind} size={14} /> · {w.minutes} min
+                  </span>
+                  {(w.distanceKm != null || w.elevationM != null || w.rpe != null || w.magnesiumBefore) && (
+                    <span className="block text-xs text-muted-foreground">
+                      {[
+                        w.distanceKm != null ? `${w.distanceKm} km` : null,
+                        w.elevationM != null ? `↑ ${w.elevationM} m` : null,
+                        w.rpe != null ? `RPE ${w.rpe}/10` : null,
+                        w.magnesiumBefore ? "Mg before" : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </span>
+                  )}
+                  {w.exercises?.length ? (
+                    <span className="block text-xs text-muted-foreground">
+                      {w.exercises
+                        .map(
+                          (ex) =>
+                            `${ex.name || "Exercise"}${ex.sets ? ` ${ex.sets}×${ex.reps ?? "?"}` : ""}${ex.weightKg ? ` @ ${ex.weightKg} kg` : ""}`,
+                        )
+                        .join(" · ")}
+                    </span>
+                  ) : null}
+                  {w.weightKg != null && (
+                    <span className="block text-xs text-muted-foreground">Weight after: {w.weightKg} kg</span>
+                  )}
+                  {w.triggeredSymptom && (
+                    <span className="block text-xs text-muted-foreground">
+                      <Ico e="⚠️" size={13} /> Triggered: {w.triggeredSymptom.label ?? w.triggeredSymptom.type}
+                    </span>
+                  )}
+                  {asArr(w.feeling).length ? (
+                    <span className="block text-xs text-muted-foreground">
+                      <IcoText text={asArr(w.feeling).join(", ")} size={13} />
+                    </span>
+                  ) : null}
+                  {w.note ? (
+                    <span className="block whitespace-pre-line text-xs text-muted-foreground">{w.note}</span>
+                  ) : null}
+                </button>
+                <DeleteBtn
+                  onClick={() =>
+                    update((d) => ({
+                      ...d,
+                      dayLogs: {
+                        ...d.dayLogs,
+                        [date]: {
+                          ...d.dayLogs[date],
+                          workout: (d.dayLogs[date]?.workout ?? []).filter((x) => x.id !== w.id),
+                        },
+                      },
+                    }))
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+
+      {(log?.temperature != null || log?.weight != null || log?.sleepHours != null || log?.sleepQuality) && (
+        <Card title="Temp / Sleep / Weight" icon="🌡️">
+          <button onClick={() => onEdit?.("temp", undefined)} className="w-full text-left">
+            {log?.temperature != null && <p className="text-sm">Temperature: {log.temperature}°C</p>}
+            {log?.weight != null && <p className="text-sm">Weight: {log.weight} kg</p>}
+            {log?.sleepHours != null && (
+              <p className="text-sm">
+                Sleep: {log.sleepHours} h <IcoText text={asArr(log.sleepQuality).join(", ")} size={14} />
+              </p>
+            )}
+            {asArr(log?.sleepQuality).length > 0 && log?.sleepHours == null && (
+              <p className="text-sm">
+                Sleep quality: <IcoText text={asArr(log.sleepQuality).join(", ")} size={14} />
+              </p>
+            )}
+            <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
+          </button>
+        </Card>
+      )}
+
+      {tasks.length > 0 && (
+        <Card title="Tasks" icon="✅">
+          <ul className="space-y-1 text-sm">
+            {tasks.map((t) => (
+              <li key={t.id} className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={t.done}
+                  onChange={() =>
+                    update((d) => ({ ...d, tasks: d.tasks.map((x) => (x.id === t.id ? { ...x, done: !x.done } : x)) }))
+                  }
+                />
+                <button
+                  onClick={() => onEdit?.("task", t)}
+                  className={`flex-1 text-left ${t.done ? "line-through text-muted-foreground" : ""}`}
+                >
+                  {t.title}
+                  {t.time ? ` · ${t.time}${t.timeEnd ? `–${t.timeEnd}` : ""}` : ""}
+                  {t.note ? ` — ${t.note}` : ""}
+                </button>
+                <DeleteBtn onClick={() => update((d) => ({ ...d, tasks: d.tasks.filter((x) => x.id !== t.id) }))} />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
+      {events.length > 0 && (
+        <Card title="Events" icon="📅">
+          <ul className="space-y-1 text-sm">
+            {events.map((e) => (
+              <li key={e.id} className="flex items-start gap-2">
+                <span className="mt-1 h-2 w-2 rounded-full" style={{ background: e.color ?? "var(--primary)" }} />
+                <button onClick={() => onEdit?.("event", e)} className="flex-1 text-left">
+                  {e.title}
+                  {e.time ? ` · ${e.time}${e.timeEnd ? `–${e.timeEnd}` : ""}` : ""}
+                  {e.startDate !== e.endDate ? ` (${e.startDate}→${e.endDate})` : ""}
+                  {e.note ? ` — ${e.note}` : ""}
+                </button>
+                <DeleteBtn onClick={() => update((d) => ({ ...d, events: d.events.filter((x) => x.id !== e.id) }))} />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
+      {notes.length > 0 && (
+        <Card title="Notes" icon="📝">
+          <ul className="space-y-1 text-sm">
+            {notes.map((n, i) => (
+              <li key={i} className="flex items-start gap-2">
+                <span className="flex-1">
+                  {n.time ? `${n.time} · ` : ""}
+                  {n.text}
+                </span>
+                <button
+                  onClick={() =>
+                    update((d) => {
+                      const list = (d.dayNotes[date] ?? []) as (string | { text: string; time?: string })[];
+                      const next = list.filter((_, j) => j !== i);
+                      return { ...d, dayNotes: { ...d.dayNotes, [date]: next as { text: string; time?: string }[] } };
+                    })
+                  }
+                  className="text-muted-foreground hover:text-destructive"
+                  aria-label="Delete"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+    </div>
   );
 }
-/** Combined Tetany & Panic time-of-day pattern chart. */
-function TimeOfDayPatternChart({
-  data,
-  days,
-  period,
-}: {
-  data: ReturnType<typeof useBixbo>["data"];
-  days: string[];
-  period: Period;
-}) {
-  const [active, setActive] = useState<string | null>(null);
-  useDismissTapTooltip(() => setActive(null));
 
-  const tetanyBlocks = [0, 0, 0, 0];
-  const panicBlocks = [0, 0, 0, 0];
-  days.forEach((k) => {
-    data.dayLogs[k]?.tetany?.forEach((t) => {
-      const b = timeBlockOf(t.time);
-      if (b != null) tetanyBlocks[b]++;
-    });
-    data.dayLogs[k]?.panic?.forEach((p) => {
-      const b = timeBlockOf(p.time);
-      if (b != null) panicBlocks[b]++;
-    });
-  });
-  const tetanyTotal = tetanyBlocks.reduce((a, b) => a + b, 0);
-  const panicTotal = panicBlocks.reduce((a, b) => a + b, 0);
-  const max = Math.max(1, ...tetanyBlocks, ...panicBlocks);
-
-  const sentence = (() => {
-    if (!tetanyTotal && !panicTotal) return null;
-    const topOf = (blocks: number[], total: number) => {
-      if (!total) return null;
-      let best = 0;
-      for (let i = 1; i < 4; i++) if (blocks[i] > blocks[best]) best = i;
-      return { i: best, pct: Math.round((blocks[best] / total) * 100) };
-    };
-    const t = topOf(tetanyBlocks, tetanyTotal);
-    const p = topOf(panicBlocks, panicTotal);
-    if (t && p) {
-      return `Tetany occurs most often in the ${TIME_BLOCK_SHORT[t.i].toLowerCase()} (${TIME_BLOCK_LABELS[t.i].split(" ")[1]}, ${t.pct}% of cases), while panic attacks peak in the ${TIME_BLOCK_SHORT[p.i].toLowerCase()} (${TIME_BLOCK_LABELS[p.i].split(" ")[1]}, ${p.pct}% of cases).`;
-    }
-    if (t)
-      return `Tetany occurs most often in the ${TIME_BLOCK_SHORT[t.i].toLowerCase()} (${TIME_BLOCK_LABELS[t.i].split(" ")[1]}, ${t.pct}% of cases).`;
-    if (p)
-      return `Panic attacks occur most often in the ${TIME_BLOCK_SHORT[p.i].toLowerCase()} (${TIME_BLOCK_LABELS[p.i].split(" ")[1]}, ${p.pct}% of cases).`;
-    return null;
-  })();
-
+function DeleteBtn({ onClick }: { onClick: () => void }) {
   return (
-    <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
-      <p className="text-xs uppercase tracking-wider text-muted-foreground">Time of Day Pattern</p>
-      {!tetanyTotal && !panicTotal ? (
-        <p className="mt-2 text-sm text-muted-foreground">Not enough data yet</p>
-      ) : (
-        <>
-          <div className="mt-2 flex gap-4 text-[11px]">
-            <span className="flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full" style={{ background: TETANY_COLOR }} /> Tetany ({tetanyTotal})
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full" style={{ background: PANIC_COLOR }} /> Panic ({panicTotal})
-            </span>
-          </div>
-          <div className="relative mt-4 grid grid-cols-4 items-end gap-3" style={{ height: 110 }}>
-            {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="flex h-full items-end justify-center gap-1">
-                <div className="flex flex-col items-center justify-end" style={{ height: "100%" }}>
-                  {tetanyBlocks[i] > 0 && (
-                    <span className="mb-0.5 text-[10px] tabular-nums text-muted-foreground">{tetanyBlocks[i]}</span>
-                  )}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActive(active === `t${i}` ? null : `t${i}`);
-                    }}
-                    className="w-4 rounded-t"
-                    style={{ height: `${Math.max(4, (tetanyBlocks[i] / max) * 100)}%`, background: TETANY_COLOR }}
-                  />
-                </div>
-                <div className="flex flex-col items-center justify-end" style={{ height: "100%" }}>
-                  {panicBlocks[i] > 0 && (
-                    <span className="mb-0.5 text-[10px] tabular-nums text-muted-foreground">{panicBlocks[i]}</span>
-                  )}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActive(active === `p${i}` ? null : `p${i}`);
-                    }}
-                    className="w-4 rounded-t"
-                    style={{ height: `${Math.max(4, (panicBlocks[i] / max) * 100)}%`, background: PANIC_COLOR }}
-                  />
-                </div>
-              </div>
-            ))}
-            {active &&
-              (() => {
-                const isTetany = active[0] === "t";
-                const i = Number(active.slice(1));
-                const count = isTetany ? tetanyBlocks[i] : panicBlocks[i];
-                const leftPct = (i + 0.5) * 25;
-                return (
-                  <ChartTooltip
-                    leftPct={leftPct}
-                    text={`${TIME_BLOCK_LABELS[i]} · ${isTetany ? "Tetany" : "Panic"} ${count}×`}
-                  />
-                );
-              })()}
-          </div>
-          <div className="mt-1 grid grid-cols-4 gap-3 text-center text-[9px] text-muted-foreground">
-            {TIME_BLOCK_SHORT.map((l) => (
-              <span key={l}>{l}</span>
-            ))}
-          </div>
-          {sentence && <p className="mt-3 text-sm text-muted-foreground">{sentence}</p>}
-        </>
-      )}
-    </section>
+    <button onClick={onClick} className="text-muted-foreground hover:text-destructive" aria-label="Delete">
+      <Trash2 className="h-3.5 w-3.5" />
+    </button>
+  );
+}
+
+function Card({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-3xl bg-surface p-4 ring-1 ring-border">
+      <div className="mb-2 flex items-center gap-2">
+        <Ico e={icon} size={22} />
+        <h3 className="font-serif text-lg font-semibold">{title}</h3>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+const stripEmoji = (value: string) =>
+  value.replace(/^[\p{Extended_Pictographic}\u200d\ufe0f\p{Emoji_Modifier}]+\s*/u, "").trim();
+
+function ShareDayButton({ date, view }: { date: string; view: BixboData }) {
+  const flowLabel = (level?: string | null): string => {
+    switch (level) {
+      case "spotting":
+        return "Spotting";
+      case "light":
+        return "Light";
+      case "medium":
+        return "Medium";
+      case "heavy":
+        return "Heavy";
+      case "very-heavy":
+        return "Very heavy";
+      default:
+        return "";
+    }
+  };
+
+  const share = async () => {
+    const log = view.dayLogs[date] ?? {};
+    const dateLabel = fromKey(date).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+    const lines: string[] = [`BIXBO — ${dateLabel}`, ""];
+
+    if (log.pain?.length) {
+      const avg = log.pain.reduce((s, p) => s + p.score, 0) / log.pain.length;
+      lines.push(`Pain — avg ${avg.toFixed(1)}/10 · ${log.pain.length} entr${log.pain.length === 1 ? "y" : "ies"}`);
+      for (const p of log.pain) {
+        const bits = [`${p.time}`, `${p.score}/10 (${PAIN_DESCRIPTIONS[Math.round(p.score)]})`];
+        if (p.parts.length) bits.push(p.parts.join(", "));
+        if (p.quality.length) bits.push(`[${p.quality.join(", ")}]`);
+        lines.push(`  • ${bits.join(" · ")}`);
+        if (p.note) lines.push(`    "${p.note}"`);
+      }
+      lines.push("");
+    }
+    if (log.panic?.length) {
+      lines.push(`Panic attacks — ${log.panic.length}`);
+      for (const p of log.panic)
+        lines.push(
+          `  • ${p.time} · ${p.intensity}/10 · ${p.minutes == null ? "ongoing" : `${p.minutes}min`}${p.trigger ? ` — ${p.trigger}` : ""}`,
+        );
+      lines.push("");
+    }
+    if (log.tetany?.length) {
+      lines.push(`Tetany — ${log.tetany.length}`);
+      for (const t of log.tetany)
+        lines.push(
+          `  • ${t.time} · ${t.types.join(", ")} · ${t.intensity}/5 · ${t.minutes == null ? "ongoing" : `${t.minutes}min`}`,
+        );
+      lines.push("");
+    }
+    if (log.periodInfo?.level || log.period) lines.push(`Period: ${flowLabel(log.periodInfo?.level ?? log.period!)}`);
+    if (log.sleepHours != null)
+      lines.push(`Sleep: ${log.sleepHours}h ${asArr(log.sleepQuality).map(stripEmoji).join(", ")}`);
+    if (log.temperature != null) lines.push(`Temperature: ${log.temperature}°C`);
+    if (log.weight != null) lines.push(`Weight: ${log.weight}kg`);
+    if (log.food?.length) lines.push(`Food: ${log.food.length} entries`);
+    if (log.workout?.length)
+      lines.push(`Workout: ${log.workout.map((w) => `${stripEmoji(w.kind)} ${w.minutes}min`).join(", ")}`);
+
+    lines.push("", "— sent from BIXBO");
+    const text = lines.join("\n");
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: `How I feel · ${dateLabel}`, text });
+        return;
+      } catch {}
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      alert("Copied to clipboard");
+    } catch {
+      alert(text);
+    }
+  };
+  return (
+    <Button size="sm" variant="outline" className="rounded-full" onClick={share}>
+      <Share2 className="h-3.5 w-3.5" /> Share day
+    </Button>
   );
 }

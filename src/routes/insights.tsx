@@ -42,63 +42,65 @@ function fmtTapMonth(monthIndex: number, year: number): string {
   return `${MON_SHORT3[monthIndex]} ${year}`;
 }
 
-/** Unified muted BIXBO palette used by every Insights chart. */
+/** High-contrast BIXBO palette used by every Insights chart. */
 const INSIGHT_COLORS = {
-  olive: "#596300",
-  oliveLight: "#9FAA55",
-  sage: "#7F9060",
-  sageLight: "#B8C68D",
-  mint: "#79A66B",
-  amber: "#C2A244",
-  terracotta: "#B86752",
-  rose: "#A96872",
-  plum: "#8B746A",
-  muted: "#C8C99E",
-  track: "#D6D8AE",
+  olive: "#536600",
+  oliveLight: "#8EA629",
+  green: "#28A85B",
+  sage: "#70A65B",
+  sageLight: "#A8C96F",
+  teal: "#2D9588",
+  amber: "#E2A913",
+  orange: "#E47B25",
+  terracotta: "#D85F4B",
+  rose: "#D94F78",
+  plum: "#8756A5",
+  muted: "#C9CBA2",
+  track: "#D8D9AE",
 } as const;
 
 const TETANY_COLOR = INSIGHT_COLORS.olive;
 const PANIC_COLOR = INSIGHT_COLORS.plum;
 
 const PAIN_ACCENT = INSIGHT_COLORS.rose;
-const PAIN_SOFT = "rgba(169, 104, 114, 0.10)";
-const PAIN_BORDER = "rgba(169, 104, 114, 0.24)";
+const PAIN_SOFT = "rgba(217, 79, 120, 0.10)";
+const PAIN_BORDER = "rgba(217, 79, 120, 0.26)";
 
 const GREEN_ACCENT = INSIGHT_COLORS.olive;
-const GREEN_SOFT = "rgba(89, 99, 0, 0.08)";
-const GREEN_BORDER = "rgba(89, 99, 0, 0.20)";
+const GREEN_SOFT = "rgba(83, 102, 0, 0.08)";
+const GREEN_BORDER = "rgba(83, 102, 0, 0.22)";
 
 const HOT_FLASH_COLORS = [
   INSIGHT_COLORS.muted,
   INSIGHT_COLORS.sageLight,
-  INSIGHT_COLORS.mint,
+  INSIGHT_COLORS.green,
   INSIGHT_COLORS.amber,
+  INSIGHT_COLORS.orange,
   INSIGHT_COLORS.terracotta,
-  INSIGHT_COLORS.rose,
 ] as const;
 
 const BRISTOL_COLORS = [
   INSIGHT_COLORS.muted,
   INSIGHT_COLORS.terracotta,
   INSIGHT_COLORS.amber,
-  INSIGHT_COLORS.olive,
-  INSIGHT_COLORS.mint,
-  INSIGHT_COLORS.sage,
-  INSIGHT_COLORS.amber,
-  INSIGHT_COLORS.terracotta,
+  INSIGHT_COLORS.green,
+  INSIGHT_COLORS.teal,
+  INSIGHT_COLORS.oliveLight,
+  INSIGHT_COLORS.orange,
+  INSIGHT_COLORS.rose,
 ] as const;
 
 const SYMPTOM_LOAD_COLORS = [
   INSIGHT_COLORS.sageLight,
-  INSIGHT_COLORS.mint,
-  INSIGHT_COLORS.sage,
-  INSIGHT_COLORS.olive,
-  INSIGHT_COLORS.terracotta,
+  INSIGHT_COLORS.green,
+  INSIGHT_COLORS.amber,
+  INSIGHT_COLORS.orange,
+  INSIGHT_COLORS.rose,
 ] as const;
 
 function painInsightColor(value: number): string {
   if (value <= 2) return INSIGHT_COLORS.sageLight;
-  if (value <= 4) return INSIGHT_COLORS.mint;
+  if (value <= 4) return INSIGHT_COLORS.green;
   if (value <= 6) return INSIGHT_COLORS.amber;
   if (value <= 8) return INSIGHT_COLORS.terracotta;
   return INSIGHT_COLORS.rose;
@@ -584,7 +586,7 @@ function InsightsPage() {
                   <span className="h-2 w-2 rounded-full" style={{ background: INSIGHT_COLORS.amber }} /> 8h
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-full" style={{ background: INSIGHT_COLORS.mint }} /> &gt;8h
+                  <span className="h-2 w-2 rounded-full" style={{ background: INSIGHT_COLORS.green }} /> &gt;8h
                 </span>
               </div>
             </section>
@@ -937,7 +939,7 @@ function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) 
   const cellColor = (d: (typeof perDay)[number]) => {
     if (d.expected === 0) return "var(--tint)";
     const r = d.taken / d.expected;
-    if (r >= 1) return INSIGHT_COLORS.mint;
+    if (r >= 1) return INSIGHT_COLORS.green;
     if (r > 0) return INSIGHT_COLORS.amber;
     return INSIGHT_COLORS.terracotta;
   };
@@ -997,7 +999,7 @@ function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) 
               </div>
               <div className="mt-2 flex gap-3 text-[10px] text-muted-foreground">
                 <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded" style={{ background: INSIGHT_COLORS.mint }} /> full
+                  <span className="h-2 w-2 rounded" style={{ background: INSIGHT_COLORS.green }} /> full
                 </span>
                 <span className="flex items-center gap-1">
                   <span className="h-2 w-2 rounded" style={{ background: INSIGHT_COLORS.amber }} /> partial
@@ -1065,7 +1067,7 @@ function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) 
               <ul className="space-y-2">
                 {perMed.map((m) => {
                   const color =
-                    m.pct >= 90 ? INSIGHT_COLORS.mint : m.pct >= 60 ? INSIGHT_COLORS.amber : INSIGHT_COLORS.terracotta;
+                    m.pct >= 90 ? INSIGHT_COLORS.green : m.pct >= 60 ? INSIGHT_COLORS.amber : INSIGHT_COLORS.terracotta;
                   return (
                     <li key={m.id} className="flex items-center gap-2 text-xs">
                       <span className="w-32 shrink-0 truncate">
@@ -1355,7 +1357,7 @@ function SleepChart({
         ? INSIGHT_COLORS.terracotta
         : h === 8
           ? INSIGHT_COLORS.amber
-          : INSIGHT_COLORS.mint;
+          : INSIGHT_COLORS.green;
 
   return (
     <BarChartFrame
