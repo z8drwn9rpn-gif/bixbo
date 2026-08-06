@@ -535,6 +535,10 @@ export interface Note {
   checklist?: NoteChecklistItem[];
   createdAt: number;
   updatedAt?: number;
+  /** Optional UI metadata. Missing values keep older notes fully compatible. */
+  pinned?: boolean;
+  archived?: boolean;
+  color?: "default" | "olive" | "sand" | "rose" | "blue";
 }
 
 export interface CyclePrefs {
