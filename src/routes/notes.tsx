@@ -10,7 +10,6 @@ import {
   Bold,
   Check,
   ChevronLeft,
-  Folder,
   Highlighter,
   ListChecks,
   MoreVertical,
@@ -253,17 +252,11 @@ function NotesPage() {
     setMenuNoteId(null);
   };
 
-  if (openNote) {
-    const note = view.notebook.find((item) => item.id === openNote);
-
-    if (!note) {
-      setOpenNote(null);
-      return null;
-    }
-
-    return <NoteEditor note={note} folders={view.folders} onBack={() => setOpenNote(null)} update={update} />;
-  }
-
+  /*
+   * Keep every hook above conditional returns.
+   * Previously `useMemo` was called only while the notes list was visible.
+   * Opening a note changed the hook count and React crashed the route.
+   */
   const activeFolder = openFolder ? view.folders.find((folder) => folder.id === openFolder) : undefined;
 
   const searchedNotes = useMemo(() => {
@@ -293,6 +286,29 @@ function NotesPage() {
 
   const pinnedNotes = searchedNotes.filter((note) => note.pinned);
   const regularNotes = searchedNotes.filter((note) => !note.pinned);
+
+  if (openNote) {
+    const note = view.notebook.find((item) => item.id === openNote);
+
+    if (!note) {
+      return (
+        <AppShell title="Notes">
+          <div className="px-5 py-8 text-sm text-muted-foreground">
+            This note could not be found.
+            <button
+              type="button"
+              onClick={() => setOpenNote(null)}
+              className="mt-4 block rounded-2xl bg-primary px-4 py-2 font-semibold text-primary-foreground"
+            >
+              Back to notes
+            </button>
+          </div>
+        </AppShell>
+      );
+    }
+
+    return <NoteEditor note={note} folders={view.folders} onBack={() => setOpenNote(null)} update={update} />;
+  }
 
   const addFolder = () => {
     const name = prompt("Folder name");
