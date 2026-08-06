@@ -606,17 +606,168 @@ export function QuickTags({
 
   return (
     <div className="mt-3 px-5">
-      <div className="mb-2 flex items-center justify-between">
-        <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Quick Log</p>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <p className="shrink-0 text-[11px] uppercase tracking-wider text-muted-foreground">Quick Log</p>
 
-        <div className="flex items-center gap-2"></div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setBuilderOpen(true)}
+            className="flex min-h-10 items-center gap-1.5 rounded-full bg-tint/70 px-3 text-[11px] font-semibold text-muted-foreground transition hover:bg-tint hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setEditMode((value) => !value)}
+            className={`flex min-h-10 items-center gap-1.5 rounded-full px-3 text-[11px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+              editMode
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "bg-tint/70 text-muted-foreground hover:bg-tint hover:text-foreground"
+            }`}
+          >
+            <Pencil className="h-3 w-3" />
+            {editMode ? "Done" : "Edit"}
+          </button>
+        </div>
+      </div>
+
+      <div
+        className="-mx-5 quicklog-scroll overflow-x-auto overflow-y-visible overscroll-x-contain touch-pan-x px-5 pb-3 snap-x snap-mandatory scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        style={{ WebkitOverflowScrolling: "touch", overscrollBehaviorX: "contain" }}
+      >
+        <div className="flex gap-2">
+          {tags.map((tag, index) => {
+            const isFlash = flash === tag.key;
+
+            if (editMode) {
+              return (
+                <div
+                  key={tag.key}
+                  className="relative flex h-[68px] w-[68px] shrink-0 select-none flex-col items-center justify-center gap-0.5 rounded-full bg-surface p-1.5 text-center shadow-sm ring-1 ring-border/80"
+                >
+                  <button
+                    type="button"
+                    onClick={() => hideTag(tag.key)}
+                    aria-label={`Remove ${tag.label}`}
+                    className="absolute -right-2 -top-2 grid h-7 w-7 place-items-center rounded-full bg-destructive text-destructive-foreground shadow-md transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <X className="h-3 w-3" strokeWidth={3} />
+                  </button>
+
+                  <Ico e={tag.emoji} size={22} />
+                  <span className="max-w-[58px] text-[9px] font-medium leading-[1.05] text-muted-foreground">
+                    {tag.label}
+                  </span>
+
+                  <div className="mt-1 flex gap-1">
+                    <button
+                      type="button"
+                      onClick={() => moveTag(tag.key, -1)}
+                      disabled={index === 0}
+                      aria-label="Move left"
+                      className="grid h-8 w-8 place-items-center rounded-full bg-tint text-muted-foreground transition hover:bg-primary/15 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-30"
+                    >
+                      <ChevronLeft className="h-3 w-3" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => moveTag(tag.key, 1)}
+                      disabled={index === tags.length - 1}
+                      aria-label="Move right"
+                      className="grid h-8 w-8 place-items-center rounded-full bg-tint text-muted-foreground transition hover:bg-primary/15 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-30"
+                    >
+                      <ChevronRight className="h-3 w-3" />
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+
+            return (
+              <button
+                key={tag.key}
+                type="button"
+                onPointerDown={(event) => {
+                  draggingRef.current = false;
+                  startXRef.current = event.clientX;
+                  startYRef.current = event.clientY;
+                  longFiredRef.current = false;
+                  clear();
+
+                  timerRef.current = window.setTimeout(() => {
+                    if (!draggingRef.current) {
+                      longFiredRef.current = true;
+                      onLongPress(tag.cat);
+                    }
+                  }, 500);
+                }}
+                onPointerMove={(event) => {
+                  if (
+                    Math.abs(event.clientX - startXRef.current) > 8 ||
+                    Math.abs(event.clientY - startYRef.current) > 8
+                  ) {
+                    draggingRef.current = true;
+                    clear();
+                  }
+                }}
+                onPointerUp={(event) => {
+                  clear();
+
+                  if (draggingRef.current) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    return;
+                  }
+
+                  if (!longFiredRef.current) {
+                    doTap(tag);
+                  }
+                }}
+                onPointerLeave={() => {
+                  draggingRef.current = true;
+                  clear();
+                }}
+                onPointerCancel={() => {
+                  draggingRef.current = true;
+                  clear();
+                }}
+                onClick={(event) => {
+                  if (draggingRef.current) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                  }
+                }}
+                onContextMenu={(event) => event.preventDefault()}
+                title={`${tag.label} — long-press for details`}
+                aria-label={tag.label}
+                className={`relative flex h-[68px] w-[68px] shrink-0 snap-start select-none touch-manipulation flex-col items-center justify-center gap-0.5 rounded-full bg-surface p-1.5 text-center shadow-sm ring-1 ring-border/80 transition-[transform,box-shadow,background-color,ring-color] duration-150 hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-95 ${
+                  isFlash ? "scale-105 bg-primary/10 ring-2 ring-primary shadow-md" : ""
+                }`}
+              >
+                <Ico e={tag.emoji} size={22} />
+
+                <span className="max-w-[58px] text-[9px] font-medium leading-[1.05] text-muted-foreground">
+                  {tag.label}
+                </span>
+
+                {isFlash && (
+                  <span className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full bg-primary text-primary-foreground shadow">
+                    <Check className="h-3 w-3" strokeWidth={3} />
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {editMode && hidden.size > 0 && (
         <div className="mt-2">
-          <p className="max-w-[58px] text-[9px] font-medium leading-[1.05] text-muted-foreground">
-            Hidden — tap to restore:
-          </p>
+          <p className="text-[9px] font-medium leading-[1.05] text-muted-foreground">Hidden — tap to restore:</p>
 
           <div className="mt-1 flex flex-wrap gap-1.5">
             {sortedTags
@@ -746,7 +897,7 @@ export function QuickTags({
 
       {builderOpen && <QuickTagBuilder data={data} update={update} onClose={() => setBuilderOpen(false)} />}
 
-      {(data.settings.customQuickTags?.length ?? 0) > 0 && (
+      {editMode && (data.settings.customQuickTags?.length ?? 0) > 0 && (
         <div className="mt-1 flex flex-wrap gap-1">
           {(data.settings.customQuickTags ?? []).map((tag) => (
             <button
