@@ -1,34 +1,22 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
 import { postpartumProgress } from "@/lib/health";
-import {
-  ArrowLeft,
-  Plus,
-  X,
-  Pencil,
-  ChevronRight,
-  Check,
-  Trophy,
-  Clock3,
-  FileText,
-  BarChart3,
-  Settings,
-  Bell,
-  ShieldCheck,
-  Cloud,
-  Palette,
-  Languages,
-  Users,
-} from "lucide-react";
+import { ArrowLeft, Plus, X, Pencil, ChevronRight, Check } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import {
   BabyIcon,
   CalendarIcon,
+  ClockIcon,
+  DropIcon,
   HeartIcon,
+  LeafIcon,
+  NoteIcon,
   PillIcon,
   PregnancyIcon,
   ProfileIcon,
+  StarIcon,
   StethoscopeIcon,
+  TaskIcon,
   WarningIcon,
   WeightIcon,
   WorkoutIcon,
@@ -432,28 +420,28 @@ function HealthHub({
           />
           <div className="ml-[4.5rem] border-t border-border/60" />
           <HubRow
-            icon={<Clock3 className="h-5 w-5" />}
+            icon={<ClockIcon size={22} />}
             title="Health Journey"
             subtitle="A timeline of important health events"
             onClick={() => onOpen("journey")}
           />
           <div className="ml-[4.5rem] border-t border-border/60" />
           <HubRow
-            icon={<Trophy className="h-5 w-5" />}
+            icon={<StarIcon size={22} />}
             title="Achievements"
             subtitle="Tracking milestones and streaks"
             onClick={() => onOpen("achievements")}
           />
           <div className="ml-[4.5rem] border-t border-border/60" />
           <HubRow
-            icon={<BarChart3 className="h-5 w-5" />}
+            icon={<TaskIcon size={22} />}
             title="My Statistics"
             subtitle="Your personal tracking numbers"
             onClick={() => onOpen("statistics")}
           />
           <div className="ml-[4.5rem] border-t border-border/60" />
           <HubRow
-            icon={<FileText className="h-5 w-5" />}
+            icon={<NoteIcon size={22} />}
             title="Export"
             subtitle="Reports for your doctor — coming later"
             onClick={() => onOpen("export")}
@@ -467,42 +455,42 @@ function HealthHub({
 
           <section className="overflow-hidden rounded-3xl bg-surface shadow-sm ring-1 ring-border/80">
             <HubRow
-              icon={<Users className="h-5 w-5" />}
+              icon={<HeartIcon size={22} />}
               title="Couple"
               subtitle="Partner and shared settings"
               onClick={() => onNavigate("/couple")}
             />
             <div className="ml-[4.5rem] border-t border-border/60" />
             <HubRow
-              icon={<Languages className="h-5 w-5" />}
+              icon={<NoteIcon size={22} />}
               title="Language"
               subtitle="App language"
               onClick={() => onNavigate("/settings")}
             />
             <div className="ml-[4.5rem] border-t border-border/60" />
             <HubRow
-              icon={<Palette className="h-5 w-5" />}
+              icon={<LeafIcon size={22} />}
               title="Appearance"
               subtitle="Theme and display"
               onClick={() => onNavigate("/settings")}
             />
             <div className="ml-[4.5rem] border-t border-border/60" />
             <HubRow
-              icon={<Bell className="h-5 w-5" />}
+              icon={<WarningIcon size={22} />}
               title="Notifications"
               subtitle="Reminders and alerts"
               onClick={() => onNavigate("/settings")}
             />
             <div className="ml-[4.5rem] border-t border-border/60" />
             <HubRow
-              icon={<ShieldCheck className="h-5 w-5" />}
+              icon={<HeartIcon size={22} />}
               title="Privacy"
               subtitle="Privacy and data control"
               onClick={() => onNavigate("/settings")}
             />
             <div className="ml-[4.5rem] border-t border-border/60" />
             <HubRow
-              icon={<Cloud className="h-5 w-5" />}
+              icon={<DropIcon size={22} />}
               title="Backup & Sync"
               subtitle="Backup and restore your data"
               onClick={() => onNavigate("/settings")}
@@ -512,7 +500,7 @@ function HealthHub({
 
         <section className="overflow-hidden rounded-3xl bg-surface shadow-sm ring-1 ring-border/80">
           <HubRow
-            icon={<Settings className="h-5 w-5" />}
+            icon={<ProfileIcon size={22} />}
             title="Settings"
             subtitle="General app and tracking settings"
             onClick={() => onNavigate("/settings")}
@@ -767,9 +755,9 @@ function ProfilePage() {
         label: "Medication doses",
         goal: 365,
       },
-      { icon: <WeightIcon size={24} />, value: totalSleepLogs, label: "Sleep logs", goal: 100 },
-      { icon: <WarningIcon size={24} />, value: totalTetanyLogs, label: "Tetany logs", goal: 50 },
-      { icon: <WorkoutIcon size={24} />, value: totalBowelLogs, label: "Bowel logs", goal: 50 },
+      { icon: <ClockIcon size={24} />, value: totalSleepLogs, label: "Sleep logs", goal: 100 },
+      { icon: <StarIcon size={24} />, value: totalTetanyLogs, label: "Tetany logs", goal: 50 },
+      { icon: <TaskIcon size={24} />, value: totalBowelLogs, label: "Bowel logs", goal: 50 },
     ];
 
     return (
@@ -845,7 +833,7 @@ function ProfilePage() {
         <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
           <div className="flex items-start gap-3">
             <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-tint text-primary ring-1 ring-border/50">
-              <FileText className="h-5 w-5" />
+              <NoteIcon size={22} />
             </span>
             <div>
               <p className="text-sm font-semibold text-foreground">Health reports</p>
