@@ -756,6 +756,12 @@ function SettingsPage() {
             <p className="mt-2 text-xs text-muted-foreground">
               Manage individual medication reminder times from Medications above.
             </p>
+            <Link
+              to="/notifications"
+              className="mt-3 inline-flex min-h-11 items-center rounded-md border border-input px-4 text-sm font-medium text-foreground"
+            >
+              Notification settings
+            </Link>
           </Row>
         </Category>
 
