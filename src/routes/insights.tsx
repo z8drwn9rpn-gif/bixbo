@@ -23,7 +23,6 @@ import {
   addDays,
   toKey,
   fromKey,
-  painColor,
   BRISTOL,
   avgDayPain,
   isIntercourseKind,
@@ -43,16 +42,67 @@ function fmtTapMonth(monthIndex: number, year: number): string {
   return `${MON_SHORT3[monthIndex]} ${year}`;
 }
 
-const TETANY_COLOR = CHART_COLORS.tetany;
-const PANIC_COLOR = CHART_COLORS.panic;
+/** Unified muted BIXBO palette used by every Insights chart. */
+const INSIGHT_COLORS = {
+  olive: "#596300",
+  oliveLight: "#9FAA55",
+  sage: "#7F9060",
+  sageLight: "#B8C68D",
+  mint: "#79A66B",
+  amber: "#C2A244",
+  terracotta: "#B86752",
+  rose: "#A96872",
+  plum: "#8B746A",
+  muted: "#C8C99E",
+  track: "#D6D8AE",
+} as const;
 
-const PAIN_ACCENT = "#ef4770";
-const PAIN_SOFT = "rgba(239, 71, 112, 0.10)";
-const PAIN_BORDER = "rgba(239, 71, 112, 0.24)";
+const TETANY_COLOR = INSIGHT_COLORS.olive;
+const PANIC_COLOR = INSIGHT_COLORS.plum;
 
-const GREEN_ACCENT = "#6f9d16";
-const GREEN_SOFT = "rgba(111, 157, 22, 0.10)";
-const GREEN_BORDER = "rgba(111, 157, 22, 0.24)";
+const PAIN_ACCENT = INSIGHT_COLORS.rose;
+const PAIN_SOFT = "rgba(169, 104, 114, 0.10)";
+const PAIN_BORDER = "rgba(169, 104, 114, 0.24)";
+
+const GREEN_ACCENT = INSIGHT_COLORS.olive;
+const GREEN_SOFT = "rgba(89, 99, 0, 0.08)";
+const GREEN_BORDER = "rgba(89, 99, 0, 0.20)";
+
+const HOT_FLASH_COLORS = [
+  INSIGHT_COLORS.muted,
+  INSIGHT_COLORS.sageLight,
+  INSIGHT_COLORS.mint,
+  INSIGHT_COLORS.amber,
+  INSIGHT_COLORS.terracotta,
+  INSIGHT_COLORS.rose,
+] as const;
+
+const BRISTOL_COLORS = [
+  INSIGHT_COLORS.muted,
+  INSIGHT_COLORS.terracotta,
+  INSIGHT_COLORS.amber,
+  INSIGHT_COLORS.olive,
+  INSIGHT_COLORS.mint,
+  INSIGHT_COLORS.sage,
+  INSIGHT_COLORS.amber,
+  INSIGHT_COLORS.terracotta,
+] as const;
+
+const SYMPTOM_LOAD_COLORS = [
+  INSIGHT_COLORS.sageLight,
+  INSIGHT_COLORS.mint,
+  INSIGHT_COLORS.sage,
+  INSIGHT_COLORS.olive,
+  INSIGHT_COLORS.terracotta,
+] as const;
+
+function painInsightColor(value: number): string {
+  if (value <= 2) return INSIGHT_COLORS.sageLight;
+  if (value <= 4) return INSIGHT_COLORS.mint;
+  if (value <= 6) return INSIGHT_COLORS.amber;
+  if (value <= 8) return INSIGHT_COLORS.terracotta;
+  return INSIGHT_COLORS.rose;
+}
 
 function timeBlockOf(time?: string): number | null {
   if (!time) return null;
@@ -496,21 +546,18 @@ function InsightsPage() {
                     {[1, 2, 3, 4, 5].map((n) => {
                       const c = hfCounts[n];
                       const pct = hfTotal ? (c / hfTotal) * 100 : 0;
-                      const hue = 130 - ((n - 1) * 130) / 4;
+                      const color = HOT_FLASH_COLORS[n];
                       return (
                         <div key={n} className="flex items-center gap-2 text-[11px]">
                           <span
                             className="grid h-4 w-4 place-items-center rounded-full text-[9px] font-bold text-white shrink-0"
-                            style={{ background: `hsl(${hue} 70% 50%)` }}
+                            style={{ background: color }}
                           >
                             {n}
                           </span>
                           <span className="w-16 shrink-0 text-muted-foreground">{hfDescriptions[n]}</span>
                           <div className="h-2 flex-1 overflow-hidden rounded-full bg-tint">
-                            <div
-                              className="h-full rounded-full"
-                              style={{ width: `${pct}%`, background: `hsl(${hue} 70% 50%)` }}
-                            />
+                            <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
                           </div>
                           <span className="w-6 text-right tabular-nums text-muted-foreground">{c}</span>
                         </div>
@@ -531,13 +578,13 @@ function InsightsPage() {
               <SleepChart period={period} days={days} series={sleepSeries} anchor={anchor} />
               <div className="mt-2 flex gap-3 text-[11px] text-muted-foreground">
                 <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-full bg-red-500" /> &lt;8h
+                  <span className="h-2 w-2 rounded-full" style={{ background: INSIGHT_COLORS.terracotta }} /> &lt;8h
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-full bg-yellow-500" /> 8h
+                  <span className="h-2 w-2 rounded-full" style={{ background: INSIGHT_COLORS.amber }} /> 8h
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-full bg-green-500" /> &gt;8h
+                  <span className="h-2 w-2 rounded-full" style={{ background: INSIGHT_COLORS.mint }} /> &gt;8h
                 </span>
               </div>
             </section>
@@ -890,9 +937,9 @@ function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) 
   const cellColor = (d: (typeof perDay)[number]) => {
     if (d.expected === 0) return "var(--tint)";
     const r = d.taken / d.expected;
-    if (r >= 1) return CHART_COLORS.workout;
-    if (r > 0) return CHART_COLORS.energy;
-    return CHART_COLORS.headache;
+    if (r >= 1) return INSIGHT_COLORS.mint;
+    if (r > 0) return INSIGHT_COLORS.amber;
+    return INSIGHT_COLORS.terracotta;
   };
 
   const fmt = (k: string) => fromKey(k).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
@@ -950,13 +997,13 @@ function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) 
               </div>
               <div className="mt-2 flex gap-3 text-[10px] text-muted-foreground">
                 <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded" style={{ background: CHART_COLORS.workout }} /> full
+                  <span className="h-2 w-2 rounded" style={{ background: INSIGHT_COLORS.mint }} /> full
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded" style={{ background: CHART_COLORS.energy }} /> partial
+                  <span className="h-2 w-2 rounded" style={{ background: INSIGHT_COLORS.amber }} /> partial
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded" style={{ background: CHART_COLORS.headache }} /> none
+                  <span className="h-2 w-2 rounded" style={{ background: INSIGHT_COLORS.terracotta }} /> none
                 </span>
                 <span className="flex items-center gap-1">
                   <span className="h-2 w-2 rounded bg-tint" /> n/a
@@ -1018,7 +1065,7 @@ function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) 
               <ul className="space-y-2">
                 {perMed.map((m) => {
                   const color =
-                    m.pct >= 90 ? CHART_COLORS.workout : m.pct >= 60 ? CHART_COLORS.energy : CHART_COLORS.headache;
+                    m.pct >= 90 ? INSIGHT_COLORS.mint : m.pct >= 60 ? INSIGHT_COLORS.amber : INSIGHT_COLORS.terracotta;
                   return (
                     <li key={m.id} className="flex items-center gap-2 text-xs">
                       <span className="w-32 shrink-0 truncate">
@@ -1302,7 +1349,13 @@ function SleepChart({
   }
 
   const sleepColor = (h?: number) =>
-    h == null ? "var(--tint)" : h < 8 ? CHART_COLORS.headache : h === 8 ? CHART_COLORS.energy : CHART_COLORS.workout;
+    h == null
+      ? "var(--tint)"
+      : h < 8
+        ? INSIGHT_COLORS.terracotta
+        : h === 8
+          ? INSIGHT_COLORS.amber
+          : INSIGHT_COLORS.mint;
 
   return (
     <BarChartFrame
@@ -1369,7 +1422,7 @@ function PainChart({
       bars={bars}
       yLabels={[10, 8, 6, 4, 2, 0]}
       yMax={10}
-      colorFor={(value) => painColor(value)}
+      colorFor={(value) => painInsightColor(value)}
       tooltipText={(i, value) =>
         period === "Y"
           ? `${fmtTapMonth(i, anchor.getFullYear())} · Pain ${value.toFixed(1)}`
@@ -1391,7 +1444,7 @@ function BristolChart({ bowelCounts }: { bowelCounts: number[] }) {
       n: 0,
       label: "Type 0 — Mystery",
       sub: "Unknown / mixed",
-      color: CHART_COLORS.weight,
+      color: BRISTOL_COLORS[0],
       shape: "mystery",
     },
     ...BRISTOL,
@@ -1411,7 +1464,7 @@ function BristolChart({ bowelCounts }: { bowelCounts: number[] }) {
                     setActive(active === b.n ? null : b.n);
                   }}
                   className="w-full rounded-t"
-                  style={{ height: `${(c / max) * 100}%`, background: b.color }}
+                  style={{ height: `${(c / max) * 100}%`, background: BRISTOL_COLORS[b.n] }}
                 />
               </div>
               {active === b.n && (
@@ -1463,7 +1516,7 @@ function HfBars({
               className="w-full rounded-t"
               style={{
                 height: `${Math.max(10, (n / 5) * 100)}%`,
-                background: `hsl(${130 - ((n - 1) * 130) / 4} 70% 50%)`,
+                background: HOT_FLASH_COLORS[Math.max(1, Math.min(5, Math.round(n)))],
               }}
             />
           ) : (
@@ -1548,10 +1601,8 @@ function SymptomLoadHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo
   const colorFor = (load: number) => {
     if (load <= 0) return "var(--tint)";
     const t = Math.min(1, load / maxLoad);
-    // light neutral -> deep red
-    const l = 88 - t * 48;
-    const s = 20 + t * 60;
-    return `hsl(6 ${s}% ${l}%)`;
+    const index = Math.min(SYMPTOM_LOAD_COLORS.length - 1, Math.floor(t * SYMPTOM_LOAD_COLORS.length));
+    return SYMPTOM_LOAD_COLORS[index];
   };
 
   const active_ = active ? summaryFor(active) : null;
@@ -1649,7 +1700,12 @@ function SymptomLoadHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo
               key={t}
               className="h-3.5 w-3.5 rounded-[3px]"
               style={{
-                background: t === 0 ? "var(--tint)" : `hsl(6 ${20 + t * 60}% ${88 - t * 48}%)`,
+                background:
+                  t === 0
+                    ? "var(--tint)"
+                    : SYMPTOM_LOAD_COLORS[
+                        Math.min(SYMPTOM_LOAD_COLORS.length - 1, Math.ceil(t * SYMPTOM_LOAD_COLORS.length) - 1)
+                      ],
               }}
             />
           ))}
