@@ -609,36 +609,22 @@ export function QuickTags({
       <div className="mb-2.5 flex items-center justify-between gap-3">
         <p className="shrink-0 text-[11px] uppercase tracking-wider text-muted-foreground">Quick Log</p>
 
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => setEditMode((value) => !value)}
-            className={`flex min-h-9 items-center gap-1 rounded-full px-2.5 text-[11px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
-              editMode
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "bg-tint/70 text-muted-foreground hover:bg-tint hover:text-foreground"
-            }`}
-          >
-            <Pencil className="h-3 w-3" />
-            {editMode ? "Done" : "Edit"}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setBuilderOpen(true)}
-            className="flex min-h-9 items-center gap-1 rounded-full bg-tint/70 px-2.5 text-[11px] font-semibold text-muted-foreground transition hover:bg-tint hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Add
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => setEditMode((value) => !value)}
+          className={`flex min-h-9 items-center gap-1 rounded-full px-3 text-[11px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+            editMode
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "bg-tint/70 text-muted-foreground hover:bg-tint hover:text-foreground"
+          }`}
+        >
+          <Pencil className="h-3 w-3" />
+          {editMode ? "Done" : "Edit"}
+        </button>
       </div>
 
-      <div
-        className="quicklog-scroll overflow-x-auto overflow-y-visible overscroll-x-contain touch-pan-x pb-3 snap-x snap-mandatory scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
-        style={{ WebkitOverflowScrolling: "touch", overscrollBehaviorX: "contain" }}
-      >
-        <div className="flex gap-2">
+      <div className="pb-1">
+        <div className="grid grid-cols-5 gap-x-2 gap-y-3">
           {tags.map((tag, index) => {
             const isFlash = flash === tag.key;
 
@@ -646,7 +632,7 @@ export function QuickTags({
               return (
                 <div
                   key={tag.key}
-                  className="relative flex h-[68px] w-[68px] shrink-0 select-none flex-col items-center justify-center gap-0.5 rounded-full bg-surface p-1.5 text-center shadow-sm ring-1 ring-border/80"
+                  className="relative flex aspect-square min-w-0 select-none flex-col items-center justify-center gap-0.5 rounded-full bg-surface p-1.5 text-center shadow-sm ring-1 ring-border/80"
                 >
                   <button
                     type="button"
@@ -744,7 +730,7 @@ export function QuickTags({
                 onContextMenu={(event) => event.preventDefault()}
                 title={`${tag.label} — long-press for details`}
                 aria-label={tag.label}
-                className={`relative flex h-[68px] w-[68px] shrink-0 snap-start select-none touch-manipulation flex-col items-center justify-center gap-0.5 rounded-full bg-surface p-1.5 text-center shadow-sm ring-1 ring-border/80 transition-[transform,box-shadow,background-color,ring-color] duration-150 hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-95 ${
+                className={`relative flex aspect-square min-w-0 select-none touch-manipulation flex-col items-center justify-center gap-0.5 rounded-full bg-surface p-1.5 text-center shadow-sm ring-1 ring-border/80 transition-[transform,box-shadow,background-color,ring-color] duration-150 hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-95 ${
                   isFlash ? "scale-105 bg-primary/10 ring-2 ring-primary shadow-md" : ""
                 }`}
               >
@@ -762,6 +748,17 @@ export function QuickTags({
               </button>
             );
           })}
+        </div>
+
+        <div className="mt-3 flex justify-end">
+          <button
+            type="button"
+            onClick={() => setBuilderOpen(true)}
+            className="flex min-h-10 items-center gap-1.5 rounded-full bg-tint/70 px-4 text-sm font-semibold text-muted-foreground transition hover:bg-tint hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            <Plus className="h-4 w-4" />
+            Add
+          </button>
         </div>
       </div>
 
