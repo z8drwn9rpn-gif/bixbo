@@ -32,6 +32,26 @@ const MONTHS = [
   "December",
 ];
 
+/** Calendar pain rings use the same vivid severity progression, ending in true red rather than pink. */
+const CALENDAR_PAIN_COLORS = [
+  "#72C64A", // 0
+  "#91CD3A", // 1
+  "#B7D12F", // 2
+  "#DFD11F", // 3
+  "#F3C30D", // 4
+  "#F5A20B", // 5
+  "#F47B16", // 6
+  "#F05A28", // 7
+  "#EF4444", // 8
+  "#DC2626", // 9
+  "#B91C1C", // 10
+] as const;
+
+function calendarPainColor(value: number): string {
+  const index = Math.max(0, Math.min(10, Math.round(value)));
+  return CALENDAR_PAIN_COLORS[index];
+}
+
 function periodColorVar(level?: PeriodLevel) {
   switch (level) {
     case "spotting":
@@ -291,7 +311,7 @@ export function MonthCalendar({
                         <span
                           aria-hidden
                           className="pointer-events-none absolute h-10 w-10 rounded-full"
-                          style={{ boxShadow: `0 0 0 4.75px ${painColor(pAvg)}` }}
+                          style={{ boxShadow: `0 0 0 4.75px ${calendarPainColor(pAvg)}` }}
                         />
                       )}
                       {predictedOrange && (
