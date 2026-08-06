@@ -1,17 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { CHART_COLORS } from "@/components/ui/chart";
-import {
-  ChartCard,
-  ChartEmpty,
-  ChartSvgTooltip,
-  ChartTooltip,
-  CHART_AXIS,
-  CHART_GRID,
-  useDismissTapTooltip,
-} from "@/components/charts";
+import { ChartCard, ChartEmpty, CHART_AXIS, CHART_GRID, useDismissTapTooltip } from "@/components/charts";
 import { Ico } from "@/components/icons/BixboIcons";
 import {
   useBixbo,
@@ -40,6 +32,85 @@ function fmtTapMonth(monthIndex: number, year: number): string {
   return `${MON_SHORT3[monthIndex]} ${year}`;
 }
 
+type InsightTooltipDetails = {
+  owner?: string;
+  heading: string;
+  value: string;
+  description?: string;
+  color: string;
+  summary: string;
+};
+
+function InsightFloatingTooltip({
+  leftPct,
+  details,
+  top = 4,
+}: {
+  leftPct: number;
+  details: InsightTooltipDetails;
+  top?: number;
+}) {
+  const safeLeft = Math.max(18, Math.min(82, leftPct));
+
+  return (
+    <div
+      className="pointer-events-none absolute z-30 w-[190px] max-w-[calc(100vw-48px)] -translate-x-1/2 overflow-visible rounded-2xl border bg-surface p-3 shadow-xl"
+      style={{
+        left: `${safeLeft}%`,
+        top,
+        borderColor: details.color,
+        boxShadow: `0 14px 30px color-mix(in srgb, ${details.color} 18%, transparent)`,
+      }}
+      aria-hidden="true"
+    >
+      <div className="flex items-center gap-2">
+        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: details.color }} />
+        <span className="min-w-0 whitespace-normal break-words text-[11px] font-semibold leading-tight text-foreground">
+          {details.owner ? `${details.owner} · ` : ""}
+          {details.heading}
+        </span>
+      </div>
+
+      <p className="mt-2 whitespace-normal break-words text-lg font-bold leading-tight text-foreground">
+        {details.value}
+      </p>
+
+      {details.description ? (
+        <p className="mt-2 text-[11px] leading-tight text-muted-foreground">{details.description}</p>
+      ) : null}
+
+      <span
+        className="absolute -bottom-2 left-1/2 h-4 w-4 -translate-x-1/2 rotate-45 border-b border-r bg-surface"
+        style={{ borderColor: details.color }}
+      />
+    </div>
+  );
+}
+
+function InsightTooltipSummary({ details, onClose }: { details: InsightTooltipDetails; onClose: () => void }) {
+  return (
+    <div className="mt-2 rounded-[1.5rem] bg-primary/20 px-3 py-2.5 text-xs text-foreground ring-1 ring-primary/20">
+      <button
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          onClose();
+        }}
+        className="flex w-full items-center justify-between gap-3 text-left"
+        aria-label="Close selected chart details"
+      >
+        <span className="min-w-0 leading-relaxed">
+          {details.owner ? <b>{details.owner}</b> : null}
+          {details.owner ? " · " : ""}
+          {details.summary}
+        </span>
+
+        <span className="shrink-0 text-[10px] text-muted-foreground">Tap to close</span>
+      </button>
+    </div>
+  );
+}
+
 /** High-contrast BIXBO palette used by every Insights chart. */
 const INSIGHT_COLORS = {
   olive: "#536600",
@@ -59,6 +130,25 @@ const INSIGHT_COLORS = {
   muted: "#C9CBA2",
   track: "#D8D9AE",
 } as const;
+
+const VIVID_PAIN_CHART_COLORS = [
+  "#72C64A",
+  "#91CD3A",
+  "#B7D12F",
+  "#DFD11F",
+  "#F3C30D",
+  "#F5A20B",
+  "#F47B16",
+  "#F05C5F",
+  "#EC3F74",
+  "#DE2557",
+  "#C81746",
+] as const;
+
+function vividPainChartColor(value: number): string {
+  const index = Math.max(0, Math.min(10, Math.round(value)));
+  return VIVID_PAIN_CHART_COLORS[index];
+}
 
 const TETANY_COLOR = INSIGHT_COLORS.pinkLight;
 const PANIC_COLOR = INSIGHT_COLORS.pinkDeep;
@@ -493,35 +583,6 @@ function InsightsPage() {
                 {period === "W" ? "week" : period === "M" ? "month" : "year"}
               </p>
             </section>
-
-            {!cycleTrackingHidden && (
-              <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
-                <p className="text-xs uppercase tracking-wider text-muted-foreground">Blueberry cycle</p>
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Cycle length</p>
-                    <p className="mt-1 font-serif text-xl">{cycleSummary.avg} days</p>
-                  </div>
-                  <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Period length</p>
-                    <p className="mt-1 font-serif text-xl">{cycleSummary.periodLen} days</p>
-                  </div>
-                  <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Regularity</p>
-                    <p className="mt-1 font-serif text-lg">
-                      {cycleSummary.count >= 2 ? `Regular (${cycleSummary.avg}-day)` : "Not enough data"}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Last period</p>
-                    <p className="mt-1 font-serif text-base">
-                      {view.cycle.lastPeriodStart ?? "—"}
-                      {view.cycle.lastPeriodEnd ? ` → ${view.cycle.lastPeriodEnd}` : ""}
-                    </p>
-                  </div>
-                </div>
-              </section>
-            )}
 
             <BristolChart bowelCounts={bowelCounts} />
 
@@ -1237,7 +1298,7 @@ function WeightLineChart({
         <span className="pb-1 text-sm font-semibold text-muted-foreground">{unit}</span>
       </div>
       <p className="mt-1 text-sm text-muted-foreground">{dateLabel}</p>
-      <div className="mt-3 overflow-hidden">
+      <div className="relative mt-3 overflow-visible">
         <svg
           viewBox={`0 0 ${width} ${height}`}
           className="h-52 w-full touch-pan-y"
@@ -1329,20 +1390,50 @@ function WeightLineChart({
               </g>
             );
           })}
-          {active &&
-            (() => {
-              const text =
-                period === "Y"
-                  ? `${fmtTapMonth(fromKey(active.date).getMonth(), fromKey(active.date).getFullYear())} · ${label} ${active.value.toFixed(1)} ${unit}`
-                  : `${fmtTapDay(active.date)} · ${label} ${active.value.toFixed(1)} ${unit}`;
-              const boxW = Math.max(60, text.length * 5.6);
-              const x = Math.min(Math.max(xFor(active.index) - boxW / 2, 2), width - right - boxW - 2);
-              const y = Math.max(yFor(active.value) - 32, 2);
-              return <ChartSvgTooltip x={x} y={y} width={boxW} text={text} />;
-            })()}
         </svg>
+
+        {active
+          ? (() => {
+              const heading =
+                period === "Y"
+                  ? fmtTapMonth(fromKey(active.date).getMonth(), fromKey(active.date).getFullYear())
+                  : fmtTapDay(active.date);
+              const description = label === "Body temperature" ? "Daily average" : "Latest daily measurement";
+              const details: InsightTooltipDetails = {
+                owner: "You",
+                heading,
+                value: `${label} ${active.value.toFixed(1)} ${unit}`,
+                description,
+                color: "var(--primary)",
+                summary: `${heading} · ${label} ${active.value.toFixed(1)} ${unit} · ${description}`,
+              };
+
+              return <InsightFloatingTooltip leftPct={(xFor(active.index) / width) * 100} details={details} />;
+            })()
+          : null}
       </div>
-      <p className="mt-1 text-center text-[10px] text-muted-foreground">Tap a point for exact details.</p>
+
+      {active ? (
+        (() => {
+          const heading =
+            period === "Y"
+              ? fmtTapMonth(fromKey(active.date).getMonth(), fromKey(active.date).getFullYear())
+              : fmtTapDay(active.date);
+          const description = label === "Body temperature" ? "Daily average" : "Latest daily measurement";
+          const details: InsightTooltipDetails = {
+            owner: "You",
+            heading,
+            value: `${label} ${active.value.toFixed(1)} ${unit}`,
+            description,
+            color: "var(--primary)",
+            summary: `${heading} · ${label} ${active.value.toFixed(1)} ${unit} · ${description}`,
+          };
+
+          return <InsightTooltipSummary details={details} onClose={() => setActive(null)} />;
+        })()
+      ) : (
+        <p className="mt-1 text-center text-[10px] text-muted-foreground">Tap a point for exact details.</p>
+      )}
     </ChartCard>
   );
 }
@@ -1358,7 +1449,7 @@ function InsightBarChartFrame({
   yLabels,
   yMax,
   colorFor,
-  tooltipText,
+  tooltipDetails,
   axisLabel,
   periodLabel,
   emptyMessage,
@@ -1367,7 +1458,7 @@ function InsightBarChartFrame({
   yLabels: number[];
   yMax: number;
   colorFor: (value: number, index: number) => string;
-  tooltipText: (index: number, value: number) => string;
+  tooltipDetails: (index: number, value: number) => InsightTooltipDetails;
   axisLabel?: string;
   periodLabel?: string;
   emptyMessage?: string;
@@ -1377,6 +1468,8 @@ function InsightBarChartFrame({
 
   const height = 140;
   const allEmpty = bars.every((bar) => bar.value == null);
+  const activeDetails =
+    active != null && bars[active]?.value != null ? tooltipDetails(active, bars[active].value!) : null;
 
   return (
     <div className="mt-4">
@@ -1410,14 +1503,14 @@ function InsightBarChartFrame({
                 <button
                   key={index}
                   type="button"
-                  aria-label={tooltipText(index, bar.value)}
+                  aria-label={tooltipDetails(index, bar.value).summary}
                   aria-pressed={active === index}
                   onClick={(event) => {
                     event.stopPropagation();
                     setActive((current) => (current === index ? null : index));
                   }}
                   className={`min-w-0 rounded-t transition-[transform,filter] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                    active === index ? "brightness-105 ring-2 ring-foreground/70" : ""
+                    active === index ? "brightness-105 ring-2 ring-foreground/80" : ""
                   }`}
                   style={{
                     height: `${Math.max(5, (bar.value / yMax) * 100)}%`,
@@ -1429,10 +1522,10 @@ function InsightBarChartFrame({
               ),
             )}
 
-            {active != null && bars[active]?.value != null ? (
-              <ChartTooltip
+            {activeDetails && active != null ? (
+              <InsightFloatingTooltip
                 leftPct={((active + 0.5) / Math.max(1, bars.length)) * 100}
-                text={tooltipText(active, bars[active].value!)}
+                details={activeDetails}
               />
             ) : null}
           </div>
@@ -1460,11 +1553,15 @@ function InsightBarChartFrame({
         </div>
       )}
 
+      {activeDetails ? (
+        <InsightTooltipSummary details={activeDetails} onClose={() => setActive(null)} />
+      ) : (
+        <p className="mt-1 text-center text-[10px] text-muted-foreground">Tap a bar for exact details.</p>
+      )}
+
       {allEmpty && emptyMessage ? (
         <p className="mt-2 text-center text-xs text-muted-foreground">{emptyMessage}</p>
       ) : null}
-
-      <p className="mt-1 text-center text-[10px] text-muted-foreground">Tap a bar for exact details.</p>
     </div>
   );
 }
@@ -1526,15 +1623,20 @@ function SleepChart({
       yLabels={[12, 10, 8, 6, 4, 2, 0]}
       yMax={12}
       colorFor={(value) => sleepColor(value)}
-      tooltipText={(i, value) =>
-        period === "Y"
-          ? `${fmtTapMonth(i, anchor.getFullYear())} · Sleep ${value.toFixed(1)}h · ${
-              value < 8 ? "below 8h" : value === 8 ? "8h target" : "above 8h"
-            }`
-          : `${fmtTapDay(days[i])} · Sleep ${value.toFixed(1)}h · ${
-              value < 8 ? "below 8h" : value === 8 ? "8h target" : "above 8h"
-            }`
-      }
+      tooltipDetails={(i, value) => {
+        const heading = period === "Y" ? fmtTapMonth(i, anchor.getFullYear()) : fmtTapDay(days[i]);
+        const description = value < 8 ? "Below 8 hours" : value === 8 ? "8-hour target" : "Above 8 hours";
+        const color = sleepColor(value);
+
+        return {
+          owner: "You",
+          heading,
+          value: `Sleep ${value.toFixed(1)}h`,
+          description,
+          color,
+          summary: `${heading} · Sleep ${value.toFixed(1)}h · ${description}`,
+        };
+      }}
       axisLabel="Sleep (hours)"
       periodLabel={period === "Y" ? "Month" : period === "M" ? "Day of month" : "Day"}
       emptyMessage={period === "Y" ? `No sleep entries in ${anchor.getFullYear()}` : undefined}
@@ -1589,16 +1691,21 @@ function PainChart({
       bars={bars}
       yLabels={[10, 8, 6, 4, 2, 0]}
       yMax={10}
-      colorFor={(value) => painColor(value)}
-      tooltipText={(i, value) =>
-        period === "Y"
-          ? `${fmtTapMonth(i, anchor.getFullYear())} · Pain ${value.toFixed(1)}/10 · ${
-              PAIN_DESCRIPTIONS[Math.max(0, Math.min(10, Math.round(value)))] ?? "Pain"
-            }`
-          : `${fmtTapDay(days[i])} · Pain ${value.toFixed(1)}/10 · ${
-              PAIN_DESCRIPTIONS[Math.max(0, Math.min(10, Math.round(value)))] ?? "Pain"
-            }`
-      }
+      colorFor={(value) => vividPainChartColor(value)}
+      tooltipDetails={(i, value) => {
+        const heading = period === "Y" ? fmtTapMonth(i, anchor.getFullYear()) : fmtTapDay(days[i]);
+        const description = PAIN_DESCRIPTIONS[Math.max(0, Math.min(10, Math.round(value)))] ?? "Pain";
+        const color = vividPainChartColor(value);
+
+        return {
+          owner: "You",
+          heading,
+          value: `Pain ${value.toFixed(1)}/10`,
+          description,
+          color,
+          summary: `${heading} · Pain ${value.toFixed(1)}/10 · ${description}`,
+        };
+      }}
       axisLabel="Pain (0–10)"
       periodLabel={period === "Y" ? "Month" : period === "M" ? "Day of month" : "Day"}
       emptyMessage={period === "Y" ? `No pain entries in ${anchor.getFullYear()}` : undefined}
@@ -1622,7 +1729,7 @@ function BristolChart({ bowelCounts }: { bowelCounts: number[] }) {
   ];
   return (
     <ChartCard title="Bowel — Bristol distribution">
-      <div className="relative mt-3 flex items-end gap-2">
+      <div className={`relative mt-3 flex items-end gap-2 transition-[padding] ${active != null ? "pt-28" : ""}`}>
         {chartTypes.map((b) => {
           const count = bowelCounts[b.n] ?? 0;
           const selected = active === b.n;
@@ -1659,16 +1766,43 @@ function BristolChart({ bowelCounts }: { bowelCounts: number[] }) {
               const item = chartTypes.find((type) => type.n === active);
               const count = bowelCounts[active] ?? 0;
 
-              return item ? (
-                <ChartTooltip
-                  leftPct={((active + 0.5) / chartTypes.length) * 100}
-                  text={`${item.label} · ${count} ${count === 1 ? "entry" : "entries"} · ${item.sub}`}
-                />
-              ) : null;
+              if (!item) return null;
+
+              const details: InsightTooltipDetails = {
+                owner: "You",
+                heading: item.label,
+                value: `${count} ${count === 1 ? "entry" : "entries"}`,
+                description: item.sub,
+                color: item.n === 0 ? "#8b5cf6" : item.color,
+                summary: `${item.label} · ${count} ${count === 1 ? "entry" : "entries"} · ${item.sub}`,
+              };
+
+              return <InsightFloatingTooltip leftPct={((active + 0.5) / chartTypes.length) * 100} details={details} />;
             })()
           : null}
       </div>
-      <p className="mt-1 text-center text-[10px] text-muted-foreground">Tap a type for exact details.</p>
+
+      {active != null ? (
+        (() => {
+          const item = chartTypes.find((type) => type.n === active);
+          const count = bowelCounts[active] ?? 0;
+
+          if (!item) return null;
+
+          const details: InsightTooltipDetails = {
+            owner: "You",
+            heading: item.label,
+            value: `${count} ${count === 1 ? "entry" : "entries"}`,
+            description: item.sub,
+            color: item.n === 0 ? "#8b5cf6" : item.color,
+            summary: `${item.label} · ${count} ${count === 1 ? "entry" : "entries"} · ${item.sub}`,
+          };
+
+          return <InsightTooltipSummary details={details} onClose={() => setActive(null)} />;
+        })()
+      ) : (
+        <p className="mt-1 text-center text-[10px] text-muted-foreground">Tap a type for exact details.</p>
+      )}
     </ChartCard>
   );
 }
@@ -1691,10 +1825,10 @@ function HfBars({
   return (
     <div>
       <div
-        className="relative grid items-end gap-1 pt-7"
+        className={`relative grid items-end gap-1 transition-[padding,height] ${active != null ? "pt-28" : "pt-7"}`}
         style={{
           gridTemplateColumns: `repeat(${Math.max(1, bars.length)}, minmax(0, 1fr))`,
-          height: 88,
+          height: active != null ? 172 : 88,
         }}
       >
         {bars.map((value, index) =>
@@ -1725,23 +1859,48 @@ function HfBars({
           ),
         )}
 
-        {active != null && bars[active] != null ? (
-          <ChartTooltip
-            leftPct={((active + 0.5) / Math.max(1, bars.length)) * 100}
-            text={
-              period === "Y"
-                ? `${fmtTapMonth(active, anchor.getFullYear())} · Hot flash avg ${bars[active]!.toFixed(1)}/5 · ${
-                    HOT_FLASH_DESCRIPTIONS[Math.max(1, Math.min(5, Math.round(bars[active]!)))] ?? "Hot flash"
-                  }`
-                : `${fmtTapDay(days[active])} · Hot flash ${bars[active]!.toFixed(1)}/5 · ${
-                    HOT_FLASH_DESCRIPTIONS[Math.max(1, Math.min(5, Math.round(bars[active]!)))] ?? "Hot flash"
-                  }`
-            }
-          />
-        ) : null}
+        {active != null && bars[active] != null
+          ? (() => {
+              const value = bars[active]!;
+              const heading = period === "Y" ? fmtTapMonth(active, anchor.getFullYear()) : fmtTapDay(days[active]);
+              const description = HOT_FLASH_DESCRIPTIONS[Math.max(1, Math.min(5, Math.round(value)))] ?? "Hot flash";
+              const color = HOT_FLASH_COLORS[Math.max(1, Math.min(5, Math.round(value)))];
+              const details: InsightTooltipDetails = {
+                owner: "You",
+                heading,
+                value: `Hot flash ${value.toFixed(1)}/5`,
+                description,
+                color,
+                summary: `${heading} · Hot flash ${value.toFixed(1)}/5 · ${description}`,
+              };
+
+              return (
+                <InsightFloatingTooltip leftPct={((active + 0.5) / Math.max(1, bars.length)) * 100} details={details} />
+              );
+            })()
+          : null}
       </div>
 
-      <p className="mt-1 text-center text-[10px] text-muted-foreground">Tap a bar for exact details.</p>
+      {active != null && bars[active] != null ? (
+        (() => {
+          const value = bars[active]!;
+          const heading = period === "Y" ? fmtTapMonth(active, anchor.getFullYear()) : fmtTapDay(days[active]);
+          const description = HOT_FLASH_DESCRIPTIONS[Math.max(1, Math.min(5, Math.round(value)))] ?? "Hot flash";
+          const color = HOT_FLASH_COLORS[Math.max(1, Math.min(5, Math.round(value)))];
+          const details: InsightTooltipDetails = {
+            owner: "You",
+            heading,
+            value: `Hot flash ${value.toFixed(1)}/5`,
+            description,
+            color,
+            summary: `${heading} · Hot flash ${value.toFixed(1)}/5 · ${description}`,
+          };
+
+          return <InsightTooltipSummary details={details} onClose={() => setActive(null)} />;
+        })()
+      ) : (
+        <p className="mt-1 text-center text-[10px] text-muted-foreground">Tap a bar for exact details.</p>
+      )}
     </div>
   );
 }
@@ -1749,18 +1908,40 @@ function HfBars({
 /** GitHub-contributions-style yearly heatmap of daily "symptom load" (avg pain + symptom entry counts). */
 function SymptomLoadHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>["data"]; anchor: Date }) {
   const [active, setActive] = useState<string | null>(null);
-  const notesFor = (k: string): string[] => {
+  const detailRef = useRef<HTMLDivElement | null>(null);
+
+  const notesFor = (k: string): { text: string; time?: string }[] => {
     const raw = data.dayNotes[k] ?? [];
 
     return raw
       .map((note) => {
-        if (typeof note === "string") return note;
-        return note.text;
+        if (typeof note === "string") return { text: note };
+        return {
+          text: note.text,
+          time: typeof note.time === "string" ? note.time : undefined,
+        };
       })
-      .filter((text): text is string => Boolean(text?.trim()));
+      .filter((note) => Boolean(note.text?.trim()));
   };
+
   const activeNotes = active ? notesFor(active) : [];
+
   useDismissTapTooltip(() => setActive(null));
+
+  useEffect(() => {
+    if (!active) return;
+
+    const timer = window.setTimeout(() => {
+      detailRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+        inline: "nearest",
+      });
+    }, 80);
+
+    return () => window.clearTimeout(timer);
+  }, [active]);
+
   const year = anchor.getFullYear();
 
   const dayInfo = useMemo(() => {
@@ -1769,18 +1950,21 @@ function SymptomLoadHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo
     const gridStart = new Date(start);
     gridStart.setDate(start.getDate() - dow);
     const cells: { key: string | null; inYear: boolean }[] = [];
+
     for (let i = 0; i < 53 * 7; i++) {
       const d = new Date(gridStart);
       d.setDate(gridStart.getDate() + i);
       const inYear = d.getFullYear() === year;
       cells.push({ key: inYear ? toKey(d) : null, inYear });
     }
+
     return cells;
   }, [year]);
 
   const summaryFor = (k: string) => {
     const log = data.dayLogs[k];
     if (!log) return null;
+
     const pain = avgDayPain(log);
     const tetany = log.tetany?.length ?? 0;
     const panic = log.panic?.length ?? 0;
@@ -1788,34 +1972,73 @@ function SymptomLoadHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo
     const headache = log.pain?.filter((p) => p.headache).length ?? 0;
     const nausea = log.pain?.filter((p) => p.nausea).length ?? 0;
     const bowel = log.bowel?.length ?? 0;
+    const bowelTypes = Array.from(
+      new Set(
+        (log.bowel ?? [])
+          .map((entry) => Number(entry.bristol))
+          .filter((value) => Number.isInteger(value) && value >= 0 && value <= 7),
+      ),
+    );
+    const sleep = log.sleepHours ?? log.pregnancy?.sleepHours ?? log.postpartum?.sleepHours;
+    const weight = lastWeightForDay(log);
+    const temperature = averageTemperatureForDay(log);
+    const mood = log.mood?.map((entry) => entry.value).join(", ") ?? "";
+    const energy = log.energy?.map((entry) => entry.value).join(", ") ?? "";
+    const period = log.periodInfo?.level ?? log.period;
+    const extraMeds = log.extraMeds?.length ?? 0;
+
     const symptomCount = tetany + panic + hf + headache + nausea + bowel;
     const load = (pain ?? 0) + symptomCount * 1.5;
-    return { pain, tetany, panic, hf, headache, nausea, bowel, symptomCount, load };
+
+    return {
+      pain,
+      tetany,
+      panic,
+      hf,
+      headache,
+      nausea,
+      bowel,
+      bowelTypes,
+      sleep,
+      weight,
+      temperature,
+      mood,
+      energy,
+      period,
+      extraMeds,
+      symptomCount,
+      load,
+    };
   };
 
   const maxLoad = useMemo(() => {
     let max = 0;
-    dayInfo.forEach((c) => {
-      if (!c.key) return;
-      const s = summaryFor(c.key);
-      if (s && s.load > max) max = s.load;
+
+    dayInfo.forEach((cell) => {
+      if (!cell.key) return;
+      const summary = summaryFor(cell.key);
+      if (summary && summary.load > max) max = summary.load;
     });
+
     return Math.max(1, max);
   }, [dayInfo, data.dayLogs]);
 
   const colorFor = (load: number) => {
     if (load <= 0) return "var(--tint)";
+
     const t = Math.min(1, load / maxLoad);
     const index = Math.min(SYMPTOM_LOAD_COLORS.length - 1, Math.floor(t * SYMPTOM_LOAD_COLORS.length));
+
     return SYMPTOM_LOAD_COLORS[index];
   };
 
-  const active_ = active ? summaryFor(active) : null;
+  const activeSummary = active ? summaryFor(active) : null;
 
   return (
     <ChartCard title={`Symptom Load — ${year}`}>
-      {/* Horizontálne sa posúva iba heatmapa. */}
-      <div className="mt-3 overflow-x-auto">
+      <p className="mt-1 text-xs text-muted-foreground">Tap any day to see every saved detail and the complete note.</p>
+
+      <div className="mt-3 overflow-x-auto overscroll-x-contain">
         <div
           className="grid w-max grid-flow-col gap-[3px]"
           style={{
@@ -1823,82 +2046,182 @@ function SymptomLoadHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo
             gridAutoColumns: "14px",
           }}
         >
-          {dayInfo.map((c, i) => {
-            if (!c.key) {
-              return <div key={`empty-${i}`} className="h-3.5 w-3.5" />;
+          {dayInfo.map((cell, index) => {
+            if (!cell.key) {
+              return <div key={`empty-${index}`} className="h-3.5 w-3.5" />;
             }
 
-            const summary = summaryFor(c.key);
+            const summary = summaryFor(cell.key);
             const load = summary?.load ?? 0;
-            const isActive = active === c.key;
+            const isActive = active === cell.key;
 
             return (
               <button
-                key={c.key}
+                key={cell.key}
                 type="button"
-                aria-label={`${fmtTapDay(c.key)} symptom load`}
+                aria-label={`${fmtTapDay(cell.key)} symptom load`}
                 aria-pressed={isActive}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setActive((current) => (current === c.key ? null : c.key));
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setActive((current) => (current === cell.key ? null : cell.key));
                 }}
-                className={`h-3.5 w-3.5 rounded-[3px] transition-transform hover:scale-110 focus-visible:z-10 ${isActive ? "ring-2 ring-primary ring-offset-1 ring-offset-background" : ""}`}
-                style={{
-                  background: colorFor(load),
-                }}
+                className={`h-3.5 w-3.5 rounded-[3px] transition-transform hover:scale-110 focus-visible:z-10 ${
+                  isActive ? "ring-2 ring-primary ring-offset-1 ring-offset-background" : ""
+                }`}
+                style={{ background: colorFor(load) }}
               />
             );
           })}
         </div>
       </div>
 
-      {/* Detail a poznámky sú mimo scrollovacieho kontajnera. */}
-      {active && (
+      {active ? (
         <div
-          className="mt-3 min-w-0 max-w-full rounded-2xl bg-tint p-3 text-xs"
+          ref={detailRef}
+          className="mt-4 mb-6 min-w-0 max-w-full scroll-mt-24 scroll-mb-[calc(132px+env(safe-area-inset-bottom))] overflow-visible rounded-3xl bg-primary/20 p-4 text-xs ring-1 ring-primary/25"
           onClick={(event) => event.stopPropagation()}
           role="status"
           aria-live="polite"
         >
-          <p className="font-medium">{fmtTapDay(active)}</p>
-
-          {active_ ? (
-            <div className="mt-1 text-muted-foreground">
-              <p>Pain: {active_.pain != null ? active_.pain.toFixed(1) : "—"}</p>
-
-              {active_.tetany > 0 && <p>Tetany: {active_.tetany}×</p>}
-
-              {active_.panic > 0 && <p>Panic: {active_.panic}×</p>}
-
-              {active_.hf > 0 && <p>Hot flashes: {active_.hf}×</p>}
-
-              {active_.headache > 0 && <p>Headache: {active_.headache}×</p>}
-
-              {active_.nausea > 0 && <p>Nausea: {active_.nausea}×</p>}
-
-              {active_.bowel > 0 && <p>Bowel: {active_.bowel}×</p>}
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="font-semibold text-foreground">{fmtTapDay(active)}</p>
+              <p className="mt-0.5 text-[10px] text-muted-foreground">{active}</p>
             </div>
-          ) : (
-            <p className="mt-1 text-muted-foreground">No symptoms logged.</p>
-          )}
 
-          {activeNotes.length > 0 ? (
-            <div className="mt-2 min-w-0 border-t border-border pt-2">
-              <p className="font-medium">Notes</p>
+            <button
+              type="button"
+              onClick={() => setActive(null)}
+              className="shrink-0 rounded-full bg-surface px-3 py-1 text-[10px] font-medium text-muted-foreground ring-1 ring-border"
+            >
+              Close
+            </button>
+          </div>
 
-              {activeNotes.map((note, index) => (
-                <p
-                  key={`${active}-${index}`}
-                  className="mt-1 max-w-full whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-muted-foreground"
-                >
-                  {note}
+          {activeSummary ? (
+            <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 rounded-2xl bg-surface/60 p-3 text-[11px] ring-1 ring-border/50">
+              <p>
+                <span className="text-muted-foreground">Pain:</span>{" "}
+                <b>{activeSummary.pain != null ? `${activeSummary.pain.toFixed(1)}/10` : "—"}</b>
+              </p>
+
+              {activeSummary.sleep != null ? (
+                <p>
+                  <span className="text-muted-foreground">Sleep:</span> <b>{activeSummary.sleep.toFixed(1)}h</b>
                 </p>
-              ))}
+              ) : null}
+
+              {activeSummary.bowel > 0 ? (
+                <p>
+                  <span className="text-muted-foreground">Bowel:</span>{" "}
+                  <b>
+                    {activeSummary.bowel}×
+                    {activeSummary.bowelTypes.length ? ` · T${activeSummary.bowelTypes.join(", T")}` : ""}
+                  </b>
+                </p>
+              ) : null}
+
+              {activeSummary.tetany > 0 ? (
+                <p>
+                  <span className="text-muted-foreground">Tetany:</span> <b>{activeSummary.tetany}×</b>
+                </p>
+              ) : null}
+
+              {activeSummary.panic > 0 ? (
+                <p>
+                  <span className="text-muted-foreground">Panic:</span> <b>{activeSummary.panic}×</b>
+                </p>
+              ) : null}
+
+              {activeSummary.hf > 0 ? (
+                <p>
+                  <span className="text-muted-foreground">Hot flashes:</span> <b>{activeSummary.hf}×</b>
+                </p>
+              ) : null}
+
+              {activeSummary.headache > 0 ? (
+                <p>
+                  <span className="text-muted-foreground">Headache:</span> <b>{activeSummary.headache}×</b>
+                </p>
+              ) : null}
+
+              {activeSummary.nausea > 0 ? (
+                <p>
+                  <span className="text-muted-foreground">Nausea:</span> <b>{activeSummary.nausea}×</b>
+                </p>
+              ) : null}
+
+              {activeSummary.weight != null ? (
+                <p>
+                  <span className="text-muted-foreground">Weight:</span> <b>{activeSummary.weight.toFixed(1)} kg</b>
+                </p>
+              ) : null}
+
+              {activeSummary.temperature != null ? (
+                <p>
+                  <span className="text-muted-foreground">Temperature:</span>{" "}
+                  <b>{activeSummary.temperature.toFixed(1)} °C</b>
+                </p>
+              ) : null}
+
+              {activeSummary.mood ? (
+                <p className="col-span-2">
+                  <span className="text-muted-foreground">Mood:</span>{" "}
+                  <b className="capitalize">{activeSummary.mood}</b>
+                </p>
+              ) : null}
+
+              {activeSummary.energy ? (
+                <p className="col-span-2">
+                  <span className="text-muted-foreground">Energy:</span>{" "}
+                  <b className="capitalize">{activeSummary.energy}</b>
+                </p>
+              ) : null}
+
+              {activeSummary.period ? (
+                <p className="col-span-2">
+                  <span className="text-muted-foreground">Period flow:</span>{" "}
+                  <b className="capitalize">{String(activeSummary.period).replace("-", " ")}</b>
+                </p>
+              ) : null}
+
+              {activeSummary.extraMeds > 0 ? (
+                <p className="col-span-2">
+                  <span className="text-muted-foreground">Extra medication:</span> <b>{activeSummary.extraMeds}×</b>
+                </p>
+              ) : null}
             </div>
           ) : (
-            <p className="mt-2 text-muted-foreground">No notes for this day.</p>
+            <p className="mt-3 text-muted-foreground">No symptom entries saved for this day.</p>
           )}
+
+          <div className="mt-3 min-w-0 border-t border-border/70 pt-3">
+            <p className="font-semibold text-foreground">Notes</p>
+
+            {activeNotes.length > 0 ? (
+              <div className="mt-2 space-y-2">
+                {activeNotes.map((note, index) => (
+                  <article
+                    key={`${active}-${index}`}
+                    className="min-w-0 max-w-full overflow-visible rounded-2xl bg-surface/70 p-3 ring-1 ring-border/50"
+                  >
+                    {note.time ? (
+                      <p className="mb-1 text-[10px] font-medium text-muted-foreground">{note.time}</p>
+                    ) : null}
+
+                    <p className="max-w-full whitespace-pre-wrap break-words text-[12px] leading-relaxed text-foreground [overflow-wrap:anywhere]">
+                      {note.text}
+                    </p>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-2 text-muted-foreground">No notes for this day.</p>
+            )}
+          </div>
         </div>
+      ) : (
+        <p className="mt-3 text-center text-[10px] text-muted-foreground">Tap a square for full details.</p>
       )}
 
       <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
@@ -1926,6 +2249,7 @@ function SymptomLoadHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo
     </ChartCard>
   );
 }
+
 /** Combined Tetany & Panic time-of-day pattern chart. */
 function TimeOfDayPatternChart({
   data,
@@ -1990,7 +2314,12 @@ function TimeOfDayPatternChart({
               <span className="h-2.5 w-2.5 rounded-full" style={{ background: PANIC_COLOR }} /> Panic ({panicTotal})
             </span>
           </div>
-          <div className="relative mt-4 grid grid-cols-4 items-end gap-3" style={{ height: 110 }}>
+          <div
+            className={`relative mt-4 grid grid-cols-4 items-end gap-3 transition-[padding,height] ${
+              active ? "pt-28" : ""
+            }`}
+            style={{ height: active ? 198 : 110 }}
+          >
             {[0, 1, 2, 3].map((i) => (
               <div key={i} className="flex h-full items-end justify-center gap-1">
                 <div className="flex flex-col items-center justify-end" style={{ height: "100%" }}>
@@ -2044,14 +2373,17 @@ function TimeOfDayPatternChart({
                 const count = isTetany ? tetanyBlocks[i] : panicBlocks[i];
                 const total = isTetany ? tetanyTotal : panicTotal;
                 const percentage = total ? Math.round((count / total) * 100) : 0;
-                const leftPct = (i + 0.5) * 25;
+                const color = isTetany ? TETANY_COLOR : PANIC_COLOR;
+                const details: InsightTooltipDetails = {
+                  owner: "You",
+                  heading: TIME_BLOCK_LABELS[i],
+                  value: `${isTetany ? "Tetany" : "Panic"} ${count}×`,
+                  description: `${percentage}% of entries in the selected period`,
+                  color,
+                  summary: `${TIME_BLOCK_LABELS[i]} · ${isTetany ? "Tetany" : "Panic"} ${count}× · ${percentage}%`,
+                };
 
-                return (
-                  <ChartTooltip
-                    leftPct={leftPct}
-                    text={`${TIME_BLOCK_LABELS[i]} · ${isTetany ? "Tetany" : "Panic"} ${count}× · ${percentage}%`}
-                  />
-                );
+                return <InsightFloatingTooltip leftPct={(i + 0.5) * 25} details={details} />;
               })()}
           </div>
           <div className="mt-1 grid grid-cols-4 gap-3 text-center text-[9px] text-muted-foreground">
@@ -2059,7 +2391,28 @@ function TimeOfDayPatternChart({
               <span key={l}>{l}</span>
             ))}
           </div>
-          <p className="mt-1 text-center text-[10px] text-muted-foreground">Tap a bar for exact details.</p>
+          {active ? (
+            (() => {
+              const isTetany = active[0] === "t";
+              const i = Number(active.slice(1));
+              const count = isTetany ? tetanyBlocks[i] : panicBlocks[i];
+              const total = isTetany ? tetanyTotal : panicTotal;
+              const percentage = total ? Math.round((count / total) * 100) : 0;
+              const color = isTetany ? TETANY_COLOR : PANIC_COLOR;
+              const details: InsightTooltipDetails = {
+                owner: "You",
+                heading: TIME_BLOCK_LABELS[i],
+                value: `${isTetany ? "Tetany" : "Panic"} ${count}×`,
+                description: `${percentage}% of entries in the selected period`,
+                color,
+                summary: `${TIME_BLOCK_LABELS[i]} · ${isTetany ? "Tetany" : "Panic"} ${count}× · ${percentage}%`,
+              };
+
+              return <InsightTooltipSummary details={details} onClose={() => setActive(null)} />;
+            })()
+          ) : (
+            <p className="mt-1 text-center text-[10px] text-muted-foreground">Tap a bar for exact details.</p>
+          )}
           {sentence && <p className="mt-3 text-sm text-muted-foreground">{sentence}</p>}
         </>
       )}

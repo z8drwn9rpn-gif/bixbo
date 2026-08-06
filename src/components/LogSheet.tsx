@@ -95,6 +95,26 @@ type Category =
   | "event"
   | "note";
 
+/**
+ * More vivid pain palette used only for pain/intensity visuals.
+ * Period colors are intentionally untouched.
+ */
+function vividPainColor(value: number): string {
+  const n = Math.max(0, Math.min(10, value));
+
+  if (n <= 0.5) return "#82C45B";
+  if (n <= 1.5) return "#9DCC58";
+  if (n <= 2.5) return "#B8C93C";
+  if (n <= 3.5) return "#D3BC24";
+  if (n <= 4.5) return "#E7A915";
+  if (n <= 5.5) return "#F19412";
+  if (n <= 6.5) return "#EF7718";
+  if (n <= 7.5) return "#E95824";
+  if (n <= 8.5) return "#DF3F32";
+  if (n <= 9.5) return "#CF2444";
+  return "#B80F3D";
+}
+
 const CATEGORIES: { id: Category; label: string; emoji: string; hint: string }[] = [
   { id: "postpartum", label: "Postpartum symptoms", emoji: "🤱", hint: "Recovery symptoms · notes" },
   { id: "pain", label: "Pain", emoji: "🔥", hint: "0–10, body, quality" },
@@ -618,7 +638,7 @@ function ScaleLegend({
       <div className="space-y-1 text-[11px] leading-tight">
         {items.map((n) => {
           const span = Math.max(1, max - from);
-          const bg = painColor(n);
+          const bg = vividPainColor(n);
           return (
             <div key={n} className="flex items-start gap-2">
               <span
@@ -660,7 +680,7 @@ function IntensityScale({
       <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${nums.length}, minmax(0, 1fr))` }}>
         {nums.map((n) => {
           const span = Math.max(1, max - from);
-          const bg = painColor(n);
+          const bg = vividPainColor(n);
           const active = value === n;
           return (
             <button
@@ -679,15 +699,15 @@ function IntensityScale({
       </div>
       <div className="flex items-center justify-between px-0.5 text-[10px] font-medium text-foreground/75">
         <span className="flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full" style={{ background: painColor(1) }} />
+          <span className="h-2 w-2 rounded-full" style={{ background: vividPainColor(1) }} />
           Mild
         </span>
         <span className="flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full" style={{ background: painColor(5) }} />
+          <span className="h-2 w-2 rounded-full" style={{ background: vividPainColor(5) }} />
           Moderate
         </span>
         <span className="flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full" style={{ background: painColor(10) }} />
+          <span className="h-2 w-2 rounded-full" style={{ background: vividPainColor(10) }} />
           Severe
         </span>
       </div>
@@ -991,7 +1011,7 @@ function PainWizard({
     onDone();
   };
 
-  const bg = painColor(score);
+  const bg = vividPainColor(score);
 
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const onTouchStart = (e: React.TouchEvent) => {
@@ -1118,10 +1138,13 @@ function PainWizard({
                 type="button"
                 onClick={() => setScore(n)}
                 title={`${n} — ${getScaleDesc(data, "pain")[Math.round(n)]}`}
-                className={`h-8 w-8 rounded-full text-[11px] font-semibold ${
-                  score === n ? "text-white ring-2 ring-foreground" : "bg-tint text-foreground"
+                className={`h-8 w-8 rounded-full text-[11px] font-semibold transition ${
+                  score === n ? "text-white ring-2 ring-foreground shadow-sm scale-105" : "text-foreground/90"
                 }`}
-                style={score === n ? { background: painColor(n) } : undefined}
+                style={{
+                  background: vividPainColor(n),
+                  opacity: score === n ? 1 : 0.72,
+                }}
               >
                 {Number.isInteger(n) ? n : n.toFixed(1)}
               </button>
@@ -1719,7 +1742,7 @@ function PainWizard({
               <Field label={`Stress ${stress ?? "-"} / 10`}>
                 <div className="mt-2 grid gap-1" style={{ gridTemplateColumns: "repeat(11, minmax(0, 1fr))" }}>
                   {Array.from({ length: 11 }, (_, n) => {
-                    const bg = painColor(n);
+                    const bg = vividPainColor(n);
                     const active = stress === n;
                     return (
                       <button
@@ -2202,7 +2225,7 @@ function PeriodForm({
         <div className="mt-2 flex items-center gap-3">
           <div
             className="grid h-14 w-14 shrink-0 place-items-center rounded-full text-lg font-bold text-white"
-            style={{ background: cramps == null ? "var(--muted-foreground)" : painColor(cramps) }}
+            style={{ background: cramps == null ? "var(--muted-foreground)" : vividPainColor(cramps) }}
           >
             {cramps == null ? "—" : Number.isInteger(cramps) ? cramps : cramps.toFixed(1)}
           </div>
@@ -2220,7 +2243,7 @@ function PeriodForm({
               className={`h-7 w-7 rounded-full text-[10px] font-semibold ${
                 cramps === n ? "text-white ring-2 ring-foreground" : "bg-tint text-foreground"
               }`}
-              style={cramps === n ? { background: painColor(n) } : undefined}
+              style={cramps === n ? { background: vividPainColor(n) } : undefined}
             >
               {Number.isInteger(n) ? n : n.toFixed(1)}
             </button>
@@ -3714,7 +3737,7 @@ function WorkoutForm({
                 onClick={() => setRpe(rpe === n ? undefined : n)}
                 aria-label={`RPE ${n}`}
                 className={`aspect-square w-full rounded-full text-[11px] font-bold transition ${active ? "text-white ring-2 ring-foreground scale-110" : "text-white/90"}`}
-                style={{ background: painColor(n), opacity: active || rpe == null ? 1 : 0.55 }}
+                style={{ background: vividPainColor(n), opacity: active || rpe == null ? 1 : 0.55 }}
               >
                 {n}
               </button>

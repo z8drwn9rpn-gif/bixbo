@@ -102,6 +102,32 @@ const TONES: Record<
   },
 };
 
+const COUPLE_PAIN_COLORS = [
+  "#8DBF3A",
+  "#A8C93A",
+  "#C4D63A",
+  "#E0D93A",
+  "#F0C43A",
+  "#F3A83A",
+  "#F28A3A",
+  "#EF6E42",
+  "#E9534F",
+  "#D93F55",
+  "#C92F5A",
+] as const;
+
+function couplePainColor(value: number): string {
+  const clamped = Math.max(0, Math.min(10, value));
+  const lower = Math.floor(clamped);
+  const upper = Math.ceil(clamped);
+
+  if (lower === upper) return COUPLE_PAIN_COLORS[lower];
+
+  // Half-step values use the nearest vivid chart color. The global Pain Scale
+  // still uses painColor(); this palette is only for the Couple pain chart.
+  return COUPLE_PAIN_COLORS[Math.round(clamped)];
+}
+
 function clampPercent(value: number) {
   return Math.max(0, Math.min(100, value));
 }
@@ -651,44 +677,6 @@ function CouplePainChart({
   const mySeries = days.map((day) => avgDayPain(mine[day]));
   const partnerSeries = days.map((day) => avgDayPain(theirs[day]));
 
-  const [selectedBar, setSelectedBar] = useState<{
-    owner: string;
-    day: string;
-    value: number;
-    color: string;
-    centerX: number;
-    barTopY: number;
-    series: "mine" | "partner";
-  } | null>(null);
-
-  useEffect(() => {
-    setSelectedBar(null);
-  }, [periodLabel, partnerName]);
-
-  const showBarDetails = (
-    owner: string,
-    day: string,
-    value: number,
-    color: string,
-    centerX: number,
-    barTopY: number,
-    series: "mine" | "partner",
-  ) => {
-    setSelectedBar((current) =>
-      current?.day === day && current.series === series
-        ? null
-        : {
-            owner,
-            day,
-            value,
-            color,
-            centerX,
-            barTopY,
-            series,
-          },
-    );
-  };
-
   return (
     <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
       <div>
@@ -697,7 +685,7 @@ function CouplePainChart({
         </h2>
 
         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-          Daily average pain. Tap a bar to see its value. Solid bars are yours; striped bars belong to {partnerName}.
+          Daily average pain. Solid bars are yours; striped bars belong to {partnerName}.
         </p>
       </div>
 
@@ -747,9 +735,9 @@ function CouplePainChart({
             const myValue = mySeries[index];
             const partnerValue = partnerSeries[index];
 
-            const myColor = myValue != null ? painColor(myValue) : "transparent";
+            const myColor = myValue != null ? couplePainColor(myValue) : "transparent";
 
-            const partnerColor = partnerValue != null ? painColor(partnerValue) : "transparent";
+            const partnerColor = partnerValue != null ? couplePainColor(partnerValue) : "transparent";
 
             const weekday = date
               .toLocaleDateString("en-US", {
@@ -760,52 +748,16 @@ function CouplePainChart({
             return (
               <g key={day}>
                 {myValue != null ? (
-                  <>
-                    <rect
-                      x={centerX - barWidth - 1}
-                      y={yFor(myValue)}
-                      width={barWidth}
-                      height={baselineY - yFor(myValue)}
-                      fill={myColor}
-                      stroke={
-                        selectedBar?.day === day && selectedBar.series === "mine" ? "var(--foreground)" : "transparent"
-                      }
-                      strokeWidth={selectedBar?.day === day && selectedBar.series === "mine" ? 2 : 0}
-                      rx="2"
-                      pointerEvents="none"
-                    >
-                      <title>{`You · ${day}: ${myValue.toFixed(1)}/10`}</title>
-                    </rect>
-
-                    <rect
-                      x={centerX - slot / 2}
-                      y={top}
-                      width={slot / 2}
-                      height={chartHeight}
-                      fill="transparent"
-                      role="button"
-                      tabIndex={0}
-                      aria-label={`You, ${day}, pain ${myValue.toFixed(1)} out of 10`}
-                      className="cursor-pointer focus:outline-none"
-                      onClick={() =>
-                        showBarDetails("You", day, myValue, myColor, centerX - barWidth / 2 - 1, yFor(myValue), "mine")
-                      }
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          showBarDetails(
-                            "You",
-                            day,
-                            myValue,
-                            myColor,
-                            centerX - barWidth / 2 - 1,
-                            yFor(myValue),
-                            "mine",
-                          );
-                        }
-                      }}
-                    />
-                  </>
+                  <rect
+                    x={centerX - barWidth - 1}
+                    y={yFor(myValue)}
+                    width={barWidth}
+                    height={baselineY - yFor(myValue)}
+                    fill={myColor}
+                    rx="2"
+                  >
+                    <title>{`You · ${day}: ${myValue.toFixed(1)}/10`}</title>
+                  </rect>
                 ) : null}
 
                 {partnerValue != null ? (
@@ -818,7 +770,6 @@ function CouplePainChart({
                       fill={partnerColor}
                       rx="2"
                       opacity="0.88"
-                      pointerEvents="none"
                     />
 
                     <rect
@@ -828,7 +779,6 @@ function CouplePainChart({
                       height={baselineY - yFor(partnerValue)}
                       fill="url(#couple-pain-stripes)"
                       rx="2"
-                      pointerEvents="none"
                     >
                       <title>{`${partnerName} · ${day}: ${partnerValue.toFixed(1)}/10`}</title>
                     </rect>
@@ -839,51 +789,9 @@ function CouplePainChart({
                       width={barWidth}
                       height={baselineY - yFor(partnerValue)}
                       fill="none"
-                      stroke={
-                        selectedBar?.day === day && selectedBar.series === "partner"
-                          ? "var(--foreground)"
-                          : partnerColor
-                      }
-                      strokeWidth={selectedBar?.day === day && selectedBar.series === "partner" ? 2.5 : 1.5}
+                      stroke={partnerColor}
+                      strokeWidth="1.5"
                       rx="2"
-                      pointerEvents="none"
-                    />
-
-                    <rect
-                      x={centerX}
-                      y={top}
-                      width={slot / 2}
-                      height={chartHeight}
-                      fill="transparent"
-                      role="button"
-                      tabIndex={0}
-                      aria-label={`${partnerName}, ${day}, pain ${partnerValue.toFixed(1)} out of 10`}
-                      className="cursor-pointer focus:outline-none"
-                      onClick={() =>
-                        showBarDetails(
-                          partnerName,
-                          day,
-                          partnerValue,
-                          partnerColor,
-                          centerX + barWidth / 2 + 1,
-                          yFor(partnerValue),
-                          "partner",
-                        )
-                      }
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          showBarDetails(
-                            partnerName,
-                            day,
-                            partnerValue,
-                            partnerColor,
-                            centerX + barWidth / 2 + 1,
-                            yFor(partnerValue),
-                            "partner",
-                          );
-                        }
-                      }}
                     />
                   </g>
                 ) : null}
@@ -898,92 +806,12 @@ function CouplePainChart({
               </g>
             );
           })}
-
-          {selectedBar
-            ? (() => {
-                const tooltipWidth = 154;
-                const tooltipHeight = 68;
-                const tooltipX = Math.max(
-                  left + 2,
-                  Math.min(width - right - tooltipWidth - 2, selectedBar.centerX - tooltipWidth / 2),
-                );
-                const tooltipY = Math.max(4, selectedBar.barTopY - tooltipHeight - 8);
-                const dateLabel = fromKey(selectedBar.day).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                });
-                const description =
-                  PAIN_DESCRIPTIONS[Math.max(0, Math.min(10, Math.round(selectedBar.value)))] ?? "Pain";
-
-                return (
-                  <g pointerEvents="none" aria-hidden="true">
-                    <line
-                      x1={selectedBar.centerX}
-                      x2={selectedBar.centerX}
-                      y1={tooltipY + tooltipHeight}
-                      y2={Math.max(tooltipY + tooltipHeight, selectedBar.barTopY - 2)}
-                      stroke={selectedBar.color}
-                      strokeWidth="1.5"
-                    />
-
-                    <rect
-                      x={tooltipX}
-                      y={tooltipY}
-                      width={tooltipWidth}
-                      height={tooltipHeight}
-                      rx="10"
-                      fill="var(--surface)"
-                      stroke={selectedBar.color}
-                      strokeWidth="1.5"
-                    />
-
-                    <circle cx={tooltipX + 13} cy={tooltipY + 14} r="4" fill={selectedBar.color} />
-
-                    <text x={tooltipX + 23} y={tooltipY + 18} fontSize="10" fontWeight="600" fill="var(--foreground)">
-                      {selectedBar.owner} · {dateLabel}
-                    </text>
-
-                    <text x={tooltipX + 12} y={tooltipY + 40} fontSize="15" fontWeight="700" fill="var(--foreground)">
-                      Pain {selectedBar.value.toFixed(1)}/10
-                    </text>
-
-                    <text x={tooltipX + 12} y={tooltipY + 57} fontSize="9" fill="var(--muted-foreground)">
-                      {description}
-                    </text>
-                  </g>
-                );
-              })()
-            : null}
         </svg>
-      </div>
-
-      <div
-        className={`mt-2 rounded-2xl px-3 py-2 text-xs ring-1 transition ${
-          selectedBar ? "bg-tint text-foreground ring-border" : "bg-transparent text-muted-foreground ring-transparent"
-        }`}
-        aria-live="polite"
-      >
-        {selectedBar ? (
-          <button
-            type="button"
-            onClick={() => setSelectedBar(null)}
-            className="flex w-full items-center justify-between gap-3 text-left"
-            aria-label="Close selected pain details"
-          >
-            <span>
-              <b>{selectedBar.owner}</b> · {selectedBar.day} · Pain <b>{selectedBar.value.toFixed(1)}/10</b> ·{" "}
-              {PAIN_DESCRIPTIONS[Math.max(0, Math.min(10, Math.round(selectedBar.value)))] ?? "Pain"}
-            </span>
-            <span className="shrink-0 text-[10px] text-muted-foreground">Tap to close</span>
-          </button>
-        ) : (
-          <span>Tap any pain bar to see the exact value.</span>
-        )}
       </div>
 
       <div className="mt-2 flex flex-wrap gap-4 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-3 w-3 rounded-sm" style={{ background: painColor(6) }} />
+          <span className="inline-block h-3 w-3 rounded-sm" style={{ background: couplePainColor(6) }} />
           You — solid
         </span>
 
@@ -993,12 +821,12 @@ function CouplePainChart({
             style={{
               background: `repeating-linear-gradient(
                 135deg,
-                ${painColor(6)},
-                ${painColor(6)} 3px,
+                ${couplePainColor(6)},
+                ${couplePainColor(6)} 3px,
                 rgba(255,255,255,0.95) 3px,
                 rgba(255,255,255,0.95) 5px
               )`,
-              border: `1px solid ${painColor(6)}`,
+              border: `1px solid ${couplePainColor(6)}`,
             }}
           />
           {partnerName} — striped
