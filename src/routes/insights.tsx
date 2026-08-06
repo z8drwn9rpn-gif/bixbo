@@ -4,16 +4,12 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { CHART_COLORS } from "@/components/ui/chart";
 import {
-  BarChartFrame,
   ChartCard,
   ChartEmpty,
   ChartSvgTooltip,
   ChartTooltip,
   CHART_AXIS,
   CHART_GRID,
-  CHART_TOOLTIP_BG,
-  CHART_TOOLTIP_FG,
-  useChartTransition,
   useDismissTapTooltip,
 } from "@/components/charts";
 import { Ico } from "@/components/icons/BixboIcons";
@@ -24,6 +20,7 @@ import {
   toKey,
   fromKey,
   BRISTOL,
+  PAIN_DESCRIPTIONS,
   avgDayPain,
   isIntercourseKind,
   isCycleTrackingHidden,
@@ -81,6 +78,14 @@ const HOT_FLASH_COLORS = [
   INSIGHT_COLORS.orange,
   INSIGHT_COLORS.terracotta,
 ] as const;
+
+const HOT_FLASH_DESCRIPTIONS: Record<number, string> = {
+  1: "Mild warmth",
+  2: "Warm flush",
+  3: "Sweating",
+  4: "Strong wave",
+  5: "Drenching",
+};
 
 const BRISTOL_COLORS = [
   INSIGHT_COLORS.muted,
@@ -275,13 +280,6 @@ function InsightsPage() {
   const sleepSeries = days.map((k) => view.dayLogs[k]?.sleepHours);
 
   // Hot flashes — collect per-day max intensity + distribution across levels 1–5
-  const hfDescriptions: Record<number, string> = {
-    1: "Mild warmth",
-    2: "Warm flush",
-    3: "Sweating",
-    4: "Strong wave",
-    5: "Drenching",
-  };
   const hfSeries = days.map((k) => {
     const vals = (view.dayLogs[k]?.pain ?? []).map((p) => p.hotFlashes).filter((n): n is number => n != null);
     return vals.length ? Math.max(...vals) : undefined;
@@ -560,7 +558,7 @@ function InsightsPage() {
                           >
                             {n}
                           </span>
-                          <span className="w-16 shrink-0 text-muted-foreground">{hfDescriptions[n]}</span>
+                          <span className="w-16 shrink-0 text-muted-foreground">{HOT_FLASH_DESCRIPTIONS[n]}</span>
                           <div className="h-2 flex-1 overflow-hidden rounded-full bg-tint">
                             <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
                           </div>
@@ -794,7 +792,9 @@ function BirthControlCalendar({ data, anchor }: { data: ReturnType<typeof useBix
           <span className="h-2.5 w-2.5 rounded-full ring-2 ring-foreground" /> today
         </span>
       </div>
-      <p className="mt-3 rounded-2xl bg-tint p-3 text-xs">{detail ?? "Tap a day for details."}</p>
+      <p className="mt-3 rounded-2xl bg-tint p-3 text-xs" role="status" aria-live="polite">
+        {detail ?? "Tap a day for details."}
+      </p>
       {sel && pillNumber(sel) != null && pillNumber(sel)! <= 24 && (
         <div className="mt-2 rounded-2xl bg-tint p-3 space-y-2">
           <div className="flex items-center gap-2">
@@ -1019,7 +1019,7 @@ function MedsAdherence({ data }: { data: ReturnType<typeof useBixbo>["data"] }) 
                   const d = perDay.find((x) => x.date === expandedDay);
                   if (!d) return null;
                   return (
-                    <div className="mt-3 rounded-2xl bg-tint p-3 text-xs">
+                    <div className="mt-3 rounded-2xl bg-tint p-3 text-xs" role="status" aria-live="polite">
                       <p className="font-medium">
                         {fmt(d.date)} — {d.taken}/{d.expected} taken
                       </p>
@@ -1275,29 +1275,59 @@ function WeightLineChart({
             strokeLinecap="round"
             strokeLinejoin="round"
           />
-          {points.map((p) => (
-            <g key={p.date}>
-              <circle
-                cx={xFor(p.index)}
-                cy={yFor(p.value)}
-                r="3"
-                fill="var(--surface)"
-                stroke="var(--primary)"
-                strokeWidth="2"
-              />
-              <circle
-                cx={xFor(p.index)}
-                cy={yFor(p.value)}
-                r="12"
-                fill="transparent"
-                style={{ cursor: "pointer" }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setActive(active?.date === p.date ? null : p);
-                }}
-              />
-            </g>
-          ))}
+          {active ? (
+            <line
+              x1={xFor(active.index)}
+              x2={xFor(active.index)}
+              y1={top}
+              y2={height - bottom}
+              stroke="var(--primary)"
+              strokeDasharray="3 3"
+              strokeWidth="1.25"
+              opacity="0.75"
+              pointerEvents="none"
+            />
+          ) : null}
+
+          {points.map((p) => {
+            const selected = active?.date === p.date;
+
+            return (
+              <g key={p.date}>
+                <circle
+                  cx={xFor(p.index)}
+                  cy={yFor(p.value)}
+                  r={selected ? 5 : 3}
+                  fill={selected ? "var(--primary)" : "var(--surface)"}
+                  stroke="var(--primary)"
+                  strokeWidth={selected ? 2.5 : 2}
+                  pointerEvents="none"
+                />
+
+                <circle
+                  cx={xFor(p.index)}
+                  cy={yFor(p.value)}
+                  r="16"
+                  fill="transparent"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`${label}, ${fmtTapDay(p.date)}, ${p.value.toFixed(1)} ${unit}`}
+                  style={{ cursor: "pointer", outline: "none" }}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setActive((current) => (current?.date === p.date ? null : p));
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      setActive((current) => (current?.date === p.date ? null : p));
+                    }
+                  }}
+                />
+              </g>
+            );
+          })}
           {active &&
             (() => {
               const text =
@@ -1311,7 +1341,130 @@ function WeightLineChart({
             })()}
         </svg>
       </div>
+      <p className="mt-1 text-center text-[10px] text-muted-foreground">Tap a point for exact details.</p>
     </ChartCard>
+  );
+}
+
+type InsightBar = {
+  value?: number;
+  label: string;
+  sub?: string;
+};
+
+function InsightBarChartFrame({
+  bars,
+  yLabels,
+  yMax,
+  colorFor,
+  tooltipText,
+  axisLabel,
+  periodLabel,
+  emptyMessage,
+}: {
+  bars: InsightBar[];
+  yLabels: number[];
+  yMax: number;
+  colorFor: (value: number, index: number) => string;
+  tooltipText: (index: number, value: number) => string;
+  axisLabel?: string;
+  periodLabel?: string;
+  emptyMessage?: string;
+}) {
+  const [active, setActive] = useState<number | null>(null);
+  useDismissTapTooltip(() => setActive(null));
+
+  const height = 140;
+  const allEmpty = bars.every((bar) => bar.value == null);
+
+  return (
+    <div className="mt-4">
+      <div className="flex gap-1.5">
+        <div className="flex flex-col items-end pr-1" style={{ height }}>
+          <div className="flex h-full flex-col justify-between text-[10px] font-medium text-muted-foreground">
+            {yLabels.map((value) => (
+              <span key={value} className="leading-none tabular-nums">
+                {value}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="relative flex-1">
+          <div className="pointer-events-none absolute inset-0 flex flex-col justify-between">
+            {yLabels.map((value) => (
+              <div key={value} className="border-t border-dashed" style={{ borderColor: CHART_GRID }} />
+            ))}
+          </div>
+
+          <div
+            className="relative grid items-end gap-[2px]"
+            style={{
+              gridTemplateColumns: `repeat(${Math.max(1, bars.length)}, minmax(0, 1fr))`,
+              height,
+            }}
+          >
+            {bars.map((bar, index) =>
+              bar.value != null ? (
+                <button
+                  key={index}
+                  type="button"
+                  aria-label={tooltipText(index, bar.value)}
+                  aria-pressed={active === index}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setActive((current) => (current === index ? null : index));
+                  }}
+                  className={`min-w-0 rounded-t transition-[transform,filter] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                    active === index ? "brightness-105 ring-2 ring-foreground/70" : ""
+                  }`}
+                  style={{
+                    height: `${Math.max(5, (bar.value / yMax) * 100)}%`,
+                    background: colorFor(bar.value, index),
+                  }}
+                />
+              ) : (
+                <div key={index} className="h-[2px] w-full self-end rounded bg-tint/60" />
+              ),
+            )}
+
+            {active != null && bars[active]?.value != null ? (
+              <ChartTooltip
+                leftPct={((active + 0.5) / Math.max(1, bars.length)) * 100}
+                text={tooltipText(active, bars[active].value!)}
+              />
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-1 flex pl-5">
+        <div
+          className="grid flex-1 gap-[2px] text-center text-[9px] text-muted-foreground"
+          style={{ gridTemplateColumns: `repeat(${Math.max(1, bars.length)}, minmax(0, 1fr))` }}
+        >
+          {bars.map((bar, index) => (
+            <div key={index} className="leading-tight">
+              <div className="tabular-nums">{bar.label}</div>
+              {bar.sub ? <div className="text-[8px] tabular-nums opacity-70">{bar.sub}</div> : null}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {(axisLabel || periodLabel) && (
+        <div className="mt-1 flex items-center justify-between text-[10px] text-muted-foreground">
+          <span>{axisLabel}</span>
+          <span>{periodLabel}</span>
+        </div>
+      )}
+
+      {allEmpty && emptyMessage ? (
+        <p className="mt-2 text-center text-xs text-muted-foreground">{emptyMessage}</p>
+      ) : null}
+
+      <p className="mt-1 text-center text-[10px] text-muted-foreground">Tap a bar for exact details.</p>
+    </div>
   );
 }
 
@@ -1367,15 +1520,19 @@ function SleepChart({
           : INSIGHT_COLORS.green;
 
   return (
-    <BarChartFrame
+    <InsightBarChartFrame
       bars={bars}
       yLabels={[12, 10, 8, 6, 4, 2, 0]}
       yMax={12}
       colorFor={(value) => sleepColor(value)}
       tooltipText={(i, value) =>
         period === "Y"
-          ? `${fmtTapMonth(i, anchor.getFullYear())} · Sleep ${value.toFixed(1)}h`
-          : `${fmtTapDay(days[i])} · Sleep ${value.toFixed(1)}h`
+          ? `${fmtTapMonth(i, anchor.getFullYear())} · Sleep ${value.toFixed(1)}h · ${
+              value < 8 ? "below 8h" : value === 8 ? "8h target" : "above 8h"
+            }`
+          : `${fmtTapDay(days[i])} · Sleep ${value.toFixed(1)}h · ${
+              value < 8 ? "below 8h" : value === 8 ? "8h target" : "above 8h"
+            }`
       }
       axisLabel="Sleep (hours)"
       periodLabel={period === "Y" ? "Month" : period === "M" ? "Day of month" : "Day"}
@@ -1427,15 +1584,19 @@ function PainChart({
   }
 
   return (
-    <BarChartFrame
+    <InsightBarChartFrame
       bars={bars}
       yLabels={[10, 8, 6, 4, 2, 0]}
       yMax={10}
       colorFor={(value) => painInsightColor(value)}
       tooltipText={(i, value) =>
         period === "Y"
-          ? `${fmtTapMonth(i, anchor.getFullYear())} · Pain ${value.toFixed(1)}`
-          : `${fmtTapDay(days[i])} · Pain ${value.toFixed(1)}`
+          ? `${fmtTapMonth(i, anchor.getFullYear())} · Pain ${value.toFixed(1)}/10 · ${
+              PAIN_DESCRIPTIONS[Math.max(0, Math.min(10, Math.round(value)))] ?? "Pain"
+            }`
+          : `${fmtTapDay(days[i])} · Pain ${value.toFixed(1)}/10 · ${
+              PAIN_DESCRIPTIONS[Math.max(0, Math.min(10, Math.round(value)))] ?? "Pain"
+            }`
       }
       axisLabel="Pain (0–10)"
       periodLabel={period === "Y" ? "Month" : period === "M" ? "Day of month" : "Day"}
@@ -1462,29 +1623,51 @@ function BristolChart({ bowelCounts }: { bowelCounts: number[] }) {
     <ChartCard title="Bowel — Bristol distribution">
       <div className="relative mt-3 flex items-end gap-2">
         {chartTypes.map((b) => {
-          const c = bowelCounts[b.n] ?? 0;
+          const count = bowelCounts[b.n] ?? 0;
+          const selected = active === b.n;
+
           return (
             <div key={b.n} className="relative flex flex-1 flex-col items-center gap-1">
-              <div className="h-20 w-full flex items-end">
+              <div className="flex h-20 w-full items-end">
                 <button
                   type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActive(active === b.n ? null : b.n);
+                  aria-label={`${b.label}. ${count} ${count === 1 ? "entry" : "entries"}. ${b.sub}`}
+                  aria-pressed={selected}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setActive((current) => (current === b.n ? null : b.n));
                   }}
-                  className="w-full rounded-t"
-                  style={{ height: `${(c / max) * 100}%`, background: BRISTOL_COLORS[b.n] }}
+                  className={`w-full rounded-t focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                    selected ? "ring-2 ring-foreground/70" : ""
+                  }`}
+                  style={{
+                    height: `${Math.max(5, (count / max) * 100)}%`,
+                    background: BRISTOL_COLORS[b.n],
+                  }}
                 />
               </div>
-              {active === b.n && (
-                <ChartTooltip leftPct={50} text={`Type ${b.n} · ${c} ${c === 1 ? "entry" : "entries"}`} />
-              )}
+
               <span className="text-[10px] text-muted-foreground">T{b.n}</span>
-              <span className="text-[10px]">{c}</span>
+              <span className="text-[10px]">{count}</span>
             </div>
           );
         })}
+
+        {active != null
+          ? (() => {
+              const item = chartTypes.find((type) => type.n === active);
+              const count = bowelCounts[active] ?? 0;
+
+              return item ? (
+                <ChartTooltip
+                  leftPct={((active + 0.5) / chartTypes.length) * 100}
+                  text={`${item.label} · ${count} ${count === 1 ? "entry" : "entries"} · ${item.sub}`}
+                />
+              ) : null;
+            })()
+          : null}
       </div>
+      <p className="mt-1 text-center text-[10px] text-muted-foreground">Tap a type for exact details.</p>
     </ChartCard>
   );
 }
@@ -1507,45 +1690,57 @@ function HfBars({
   return (
     <div>
       <div
-        className="grid items-end gap-1"
+        className="relative grid items-end gap-1 pt-7"
         style={{
-          gridTemplateColumns: `repeat(${bars.length}, minmax(0, 1fr))`,
-          height: 60,
+          gridTemplateColumns: `repeat(${Math.max(1, bars.length)}, minmax(0, 1fr))`,
+          height: 88,
         }}
       >
-        {bars.map((n, i) =>
-          n != null ? (
+        {bars.map((value, index) =>
+          value != null ? (
             <button
-              key={i}
+              key={index}
               type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setActive(active === i ? null : i);
+              aria-label={
+                period === "Y"
+                  ? `${fmtTapMonth(index, anchor.getFullYear())}. Hot flash average ${value.toFixed(1)} out of 5`
+                  : `${fmtTapDay(days[index])}. Hot flash ${value.toFixed(1)} out of 5`
+              }
+              aria-pressed={active === index}
+              onClick={(event) => {
+                event.stopPropagation();
+                setActive((current) => (current === index ? null : index));
               }}
-              className="w-full rounded-t"
+              className={`w-full rounded-t focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                active === index ? "ring-2 ring-foreground/70" : ""
+              }`}
               style={{
-                height: `${Math.max(10, (n / 5) * 100)}%`,
-                background: HOT_FLASH_COLORS[Math.max(1, Math.min(5, Math.round(n)))],
+                height: `${Math.max(10, (value / 5) * 100)}%`,
+                background: HOT_FLASH_COLORS[Math.max(1, Math.min(5, Math.round(value)))],
               }}
             />
           ) : (
-            <div key={i} className="h-1 w-full self-end rounded bg-tint" />
+            <div key={index} className="h-1 w-full self-end rounded bg-tint" />
           ),
         )}
+
+        {active != null && bars[active] != null ? (
+          <ChartTooltip
+            leftPct={((active + 0.5) / Math.max(1, bars.length)) * 100}
+            text={
+              period === "Y"
+                ? `${fmtTapMonth(active, anchor.getFullYear())} · Hot flash avg ${bars[active]!.toFixed(1)}/5 · ${
+                    HOT_FLASH_DESCRIPTIONS[Math.max(1, Math.min(5, Math.round(bars[active]!)))] ?? "Hot flash"
+                  }`
+                : `${fmtTapDay(days[active])} · Hot flash ${bars[active]!.toFixed(1)}/5 · ${
+                    HOT_FLASH_DESCRIPTIONS[Math.max(1, Math.min(5, Math.round(bars[active]!)))] ?? "Hot flash"
+                  }`
+            }
+          />
+        ) : null}
       </div>
 
-      <div className="mt-2 min-h-8">
-        {active != null && bars[active] != null && (
-          <div
-            className="mx-auto max-w-full rounded-xl px-3 py-2 text-center text-[11px] font-medium ring-1 ring-border/40"
-            style={{ background: CHART_TOOLTIP_BG, color: CHART_TOOLTIP_FG }}
-          >
-            {period === "Y"
-              ? `${fmtTapMonth(active, anchor.getFullYear())} · Hot flash avg ${bars[active]!.toFixed(1)}/5`
-              : `${fmtTapDay(days[active])} · Hot flash ${bars[active]!.toFixed(1)}/5`}
-          </div>
-        )}
-      </div>
+      <p className="mt-1 text-center text-[10px] text-muted-foreground">Tap a bar for exact details.</p>
     </div>
   );
 }
@@ -1658,7 +1853,12 @@ function SymptomLoadHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo
 
       {/* Detail a poznámky sú mimo scrollovacieho kontajnera. */}
       {active && (
-        <div className="mt-3 min-w-0 max-w-full rounded-2xl bg-tint p-3 text-xs" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="mt-3 min-w-0 max-w-full rounded-2xl bg-tint p-3 text-xs"
+          onClick={(event) => event.stopPropagation()}
+          role="status"
+          aria-live="polite"
+        >
           <p className="font-medium">{fmtTapDay(active)}</p>
 
           {active_ ? (
@@ -1798,12 +1998,19 @@ function TimeOfDayPatternChart({
                   )}
                   <button
                     type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActive(active === `t${i}` ? null : `t${i}`);
+                    aria-label={`${TIME_BLOCK_LABELS[i]}. Tetany ${tetanyBlocks[i]} times`}
+                    aria-pressed={active === `t${i}`}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setActive((current) => (current === `t${i}` ? null : `t${i}`));
                     }}
-                    className="w-4 rounded-t"
-                    style={{ height: `${Math.max(4, (tetanyBlocks[i] / max) * 100)}%`, background: TETANY_COLOR }}
+                    className={`w-4 rounded-t focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                      active === `t${i}` ? "ring-2 ring-foreground/70" : ""
+                    }`}
+                    style={{
+                      height: `${Math.max(4, (tetanyBlocks[i] / max) * 100)}%`,
+                      background: TETANY_COLOR,
+                    }}
                   />
                 </div>
                 <div className="flex flex-col items-center justify-end" style={{ height: "100%" }}>
@@ -1812,12 +2019,19 @@ function TimeOfDayPatternChart({
                   )}
                   <button
                     type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActive(active === `p${i}` ? null : `p${i}`);
+                    aria-label={`${TIME_BLOCK_LABELS[i]}. Panic ${panicBlocks[i]} times`}
+                    aria-pressed={active === `p${i}`}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setActive((current) => (current === `p${i}` ? null : `p${i}`));
                     }}
-                    className="w-4 rounded-t"
-                    style={{ height: `${Math.max(4, (panicBlocks[i] / max) * 100)}%`, background: PANIC_COLOR }}
+                    className={`w-4 rounded-t focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                      active === `p${i}` ? "ring-2 ring-foreground/70" : ""
+                    }`}
+                    style={{
+                      height: `${Math.max(4, (panicBlocks[i] / max) * 100)}%`,
+                      background: PANIC_COLOR,
+                    }}
                   />
                 </div>
               </div>
@@ -1827,11 +2041,14 @@ function TimeOfDayPatternChart({
                 const isTetany = active[0] === "t";
                 const i = Number(active.slice(1));
                 const count = isTetany ? tetanyBlocks[i] : panicBlocks[i];
+                const total = isTetany ? tetanyTotal : panicTotal;
+                const percentage = total ? Math.round((count / total) * 100) : 0;
                 const leftPct = (i + 0.5) * 25;
+
                 return (
                   <ChartTooltip
                     leftPct={leftPct}
-                    text={`${TIME_BLOCK_LABELS[i]} · ${isTetany ? "Tetany" : "Panic"} ${count}×`}
+                    text={`${TIME_BLOCK_LABELS[i]} · ${isTetany ? "Tetany" : "Panic"} ${count}× · ${percentage}%`}
                   />
                 );
               })()}
@@ -1841,6 +2058,7 @@ function TimeOfDayPatternChart({
               <span key={l}>{l}</span>
             ))}
           </div>
+          <p className="mt-1 text-center text-[10px] text-muted-foreground">Tap a bar for exact details.</p>
           {sentence && <p className="mt-3 text-sm text-muted-foreground">{sentence}</p>}
         </>
       )}
