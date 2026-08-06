@@ -231,11 +231,12 @@ const HOT_FLASH_DESCRIPTIONS: Record<number, string> = {
 const BRISTOL_MYSTERY_COLOR = "linear-gradient(135deg,#ef4444,#f59e0b,#eab308,#22c55e,#3b82f6,#8b5cf6)";
 
 const SYMPTOM_LOAD_COLORS = [
-  INSIGHT_COLORS.muted,
-  INSIGHT_COLORS.pinkLight,
-  INSIGHT_COLORS.pink,
-  INSIGHT_COLORS.rose,
-  INSIGHT_COLORS.pinkDeep,
+  "#B6C45A", // no symptoms
+  "#7DCB5B", // very low
+  "#F0D33A", // low
+  "#F7A21C", // medium
+  "#EE6A3F", // high
+  "#D84343", // very high
 ] as const;
 
 function timeBlockOf(time?: string): number | null {
