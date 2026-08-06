@@ -74,11 +74,64 @@ function FolderBixboIcon({
   return <Icon size={size} className={className} />;
 }
 
+const SAFE_NOTE_TAGS = new Set(["B", "STRONG", "MARK", "BR", "P", "DIV", "UL", "OL", "LI"]);
+const DROP_NOTE_TAGS = new Set(["SCRIPT", "STYLE", "IFRAME", "OBJECT", "EMBED", "IMG", "SVG", "MATH", "LINK", "META"]);
+
+/** Strict allowlist sanitizer for imported, cloud-loaded and edited note HTML. */
+function sanitizeNoteHtml(html: string): string {
+  if (!html) return "";
+  if (typeof document === "undefined") {
+    return html
+      .replace(/<(script|style|iframe|object|embed|img|svg|math|link|meta)\b[^>]*>[\s\S]*?<\/\1>/gi, "")
+      .replace(/<(script|style|iframe|object|embed|img|svg|math|link|meta)\b[^>]*\/?\s*>/gi, "")
+      .replace(/\son[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
+      .replace(/javascript\s*:/gi, "");
+  }
+
+  const template = document.createElement("template");
+  template.innerHTML = html;
+
+  const cleanNode = (node: Node) => {
+    for (const child of [...node.childNodes]) cleanNode(child);
+    if (!(node instanceof HTMLElement)) return;
+
+    if (DROP_NOTE_TAGS.has(node.tagName)) {
+      node.remove();
+      return;
+    }
+
+    if (!SAFE_NOTE_TAGS.has(node.tagName)) {
+      node.replaceWith(...node.childNodes);
+      return;
+    }
+
+    for (const attribute of [...node.attributes]) node.removeAttribute(attribute.name);
+    if (node.tagName === "MARK") {
+      node.style.background = "#b4be80";
+      node.style.color = "#2f3518";
+      node.style.padding = "0 2px";
+      node.style.borderRadius = "2px";
+    }
+  };
+
+  for (const child of [...template.content.childNodes]) cleanNode(child);
+  return template.innerHTML;
+}
+
 function NotesPage() {
   const { data, update, hydrated } = useBixbo();
   const view = hydrated ? data : EMPTY;
   const [openFolder, setOpenFolder] = useState<string | null>(null);
   const [openNote, setOpenNote] = useState<string | null>(null);
+
+  // Sanitize imported and cloud-loaded notes as soon as they enter this route,
+  // before any content is inserted into contentEditable or preview parsing.
+  useEffect(() => {
+    if (!hydrated) return;
+    const sanitized = data.notebook.map((note) => ({ ...note, content: sanitizeNoteHtml(note.content ?? "") }));
+    const changed = sanitized.some((note, index) => note.content !== data.notebook[index]?.content);
+    if (changed) update((current) => ({ ...current, notebook: sanitized }));
+  }, [hydrated, data.notebook, update]);
 
   if (openNote) {
     const note = view.notebook.find((n) => n.id === openNote);
@@ -203,9 +256,10 @@ function NotesPage() {
 }
 
 function stripHtml(html: string) {
-  if (typeof document === "undefined") return html.replace(/<[^>]+>/g, "");
+  const safe = sanitizeNoteHtml(html);
+  if (typeof document === "undefined") return safe.replace(/<[^>]+>/g, "");
   const t = document.createElement("div");
-  t.innerHTML = html;
+  t.innerHTML = safe;
   return t.textContent ?? "";
 }
 
@@ -231,9 +285,9 @@ function NoteEditor({
   useEffect(() => {
     if (!editorRef.current) return;
 
-    const migratedContent = (note.content || "")
-      .replaceAll("#fef3c7", "#b4be80")
-      .replaceAll("rgb(254, 243, 199)", "rgb(223, 230, 184)");
+    const migratedContent = sanitizeNoteHtml(
+      (note.content || "").replaceAll("#fef3c7", "#b4be80").replaceAll("rgb(254, 243, 199)", "rgb(223, 230, 184)"),
+    );
 
     if (editorRef.current.innerHTML !== migratedContent) {
       editorRef.current.innerHTML = migratedContent;
@@ -255,7 +309,7 @@ function NoteEditor({
             ? {
                 ...n,
                 title,
-                content: contentRef.current,
+                content: sanitizeNoteHtml(contentRef.current),
                 checklist: showChecklist ? checklist : undefined,
                 updatedAt: Date.now(),
               }
@@ -297,14 +351,16 @@ function NoteEditor({
       sel.removeAllRanges();
     }
     if (editorRef.current) {
-      contentRef.current = editorRef.current.innerHTML;
+      contentRef.current = sanitizeNoteHtml(editorRef.current.innerHTML);
+      if (editorRef.current.innerHTML !== contentRef.current) editorRef.current.innerHTML = contentRef.current;
       setTick((n) => n + 1);
     }
   };
 
   const onInput = () => {
     if (editorRef.current) {
-      contentRef.current = editorRef.current.innerHTML;
+      contentRef.current = sanitizeNoteHtml(editorRef.current.innerHTML);
+      if (editorRef.current.innerHTML !== contentRef.current) editorRef.current.innerHTML = contentRef.current;
       setTick((n) => n + 1);
     }
   };

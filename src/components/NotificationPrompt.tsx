@@ -3,12 +3,8 @@ import { Link } from "@tanstack/react-router";
 import { Bell } from "lucide-react";
 
 import { useBixbo } from "@/lib/storage";
-import {
-  requestNotificationPermission,
-  saveNotifPrefs,
-  shouldAskForPermission,
-  snoozePermissionPrompt,
-} from "@/lib/notifications";
+import { useSession } from "@/lib/cloudSync";
+import { enableRemotePush, shouldAskForPermission, snoozePermissionPrompt } from "@/lib/notifications";
 
 /**
  * Friendly permission card. It never appears on first launch — only after the
@@ -16,24 +12,31 @@ import {
  */
 export function NotificationPrompt() {
   const { data, hydrated } = useBixbo();
+  const { session, ready } = useSession();
   const [visible, setVisible] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || !ready || !session) {
+      setVisible(false);
+      return;
+    }
     setVisible(shouldAskForPermission(data));
-  }, [hydrated, data]);
+  }, [hydrated, ready, session, data]);
 
   if (!visible) return null;
 
   const enable = async () => {
     setBusy(true);
+    setError(null);
     try {
-      const result = await requestNotificationPermission();
-      if (result === "granted") saveNotifPrefs({ enabled: true, promptAnswered: true });
+      await enableRemotePush();
+      setVisible(false);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not enable notifications.");
     } finally {
       setBusy(false);
-      setVisible(false);
     }
   };
 
@@ -51,6 +54,7 @@ export function NotificationPrompt() {
         <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
           Enable notifications to receive medication reminders, cycle reminders and health alerts.
         </p>
+        {error && <p className="mt-2 text-xs text-destructive">{error}</p>}
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <button
             type="button"
@@ -67,7 +71,10 @@ export function NotificationPrompt() {
           >
             Maybe later
           </button>
-          <Link to="/notifications" className="ml-auto text-xs font-medium text-primary underline-offset-2 hover:underline">
+          <Link
+            to="/notifications"
+            className="ml-auto text-xs font-medium text-primary underline-offset-2 hover:underline"
+          >
             Settings
           </Link>
         </div>

@@ -64,8 +64,13 @@ import {
   type CloudProfile,
 } from "@/lib/cloudSync";
 import { SCALE_META, type ScaleKey } from "@/lib/scaleDescriptions";
+import { disableRemotePush, enableRemotePush, notifPrefs, permissionState } from "@/lib/notifications";
 
 const BIXBO_STORAGE_KEYS = ["bixbo:v2", "bixbo:v1"] as const;
+const APP_VERSION =
+  (import.meta.env.VITE_APP_VERSION as string | undefined)?.trim() ||
+  (import.meta.env.VITE_GIT_COMMIT as string | undefined)?.trim()?.slice(0, 12) ||
+  "Development build";
 
 function clearLocalBixboCache(): void {
   if (typeof window === "undefined") return;
@@ -168,7 +173,10 @@ function SettingsPage() {
   const navigate = useNavigate();
   const { data, update, replace, hydrated } = useBixbo();
   const view = hydrated ? data : EMPTY;
+  const resolvedNotif = notifPrefs(view);
   const [notifPerm, setNotifPerm] = useState<NotificationPermission | "unsupported">("default");
+  const [notifBusy, setNotifBusy] = useState(false);
+  const [notifMsg, setNotifMsg] = useState<string | null>(null);
   const { session, ready } = useSession();
   const [profile, setProfile] = useState<CloudProfile | null>(null);
   const [partnerCode, setPartnerCode] = useState("");
@@ -216,7 +224,7 @@ function SettingsPage() {
       setNotifPerm("unsupported");
       return;
     }
-    setNotifPerm(Notification.permission);
+    setNotifPerm(permissionState());
   }, []);
 
   useEffect(() => {
@@ -250,10 +258,28 @@ function SettingsPage() {
 
   const setTheme = (t: "light" | "dark" | "system") => update((d) => ({ ...d, settings: { ...d.settings, theme: t } }));
 
-  const toggleNotif = (on: boolean) => {
-    // This switch controls reminder preferences only. Browser permission must
-    // be requested exclusively from the explicit push-notification button.
-    update((d) => ({ ...d, settings: { ...d.settings, notifications: on } }));
+  const toggleNotif = async (on: boolean) => {
+    setNotifBusy(true);
+    setNotifMsg(null);
+    try {
+      if (on) {
+        if (!session) {
+          setNotifMsg("Sign in to enable reminders when BIXBO is fully closed.");
+          return;
+        }
+        await enableRemotePush();
+        setNotifMsg("Notifications are active on this device.");
+      } else {
+        await disableRemotePush();
+        setNotifMsg("Notifications are off on this device.");
+      }
+      setNotifPerm(permissionState());
+    } catch (error) {
+      setNotifPerm(permissionState());
+      setNotifMsg(error instanceof Error ? error.message : "Could not update notifications.");
+    } finally {
+      setNotifBusy(false);
+    }
   };
 
   const exportJson = () => {
@@ -745,13 +771,26 @@ function SettingsPage() {
                 <p className="mt-0.5 text-xs text-muted-foreground">Reminders for meds and predicted period.</p>
               </div>
               <Switch
-                checked={view.settings.notifications && notifPerm === "granted"}
-                onCheckedChange={toggleNotif}
+                checked={resolvedNotif.enabled && notifPerm === "granted"}
+                onCheckedChange={(on) => void toggleNotif(on)}
+                disabled={notifBusy || notifPerm === "unsupported"}
                 aria-label="Toggle notifications"
               />
             </div>
             {notifPerm === "unsupported" && (
               <p className="mt-2 text-xs text-destructive">Not supported in this browser.</p>
+            )}
+            {!session && notifPerm !== "unsupported" && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Sign in to enable reminders when BIXBO is fully closed.
+              </p>
+            )}
+            {notifMsg && (
+              <p
+                className={`mt-2 text-xs ${notifMsg.toLowerCase().includes("could not") ? "text-destructive" : "text-muted-foreground"}`}
+              >
+                {notifMsg}
+              </p>
             )}
             <p className="mt-2 text-xs text-muted-foreground">
               Manage individual medication reminder times from Medications above.
@@ -976,7 +1015,7 @@ function SettingsPage() {
         >
           <Row>
             <p className="text-sm font-medium">App version</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">BIXBO web build.</p>
+            <p className="mt-0.5 font-mono text-xs text-muted-foreground">{APP_VERSION}</p>
           </Row>
           <Row className="border-b-0">
             <p className="text-sm font-medium">Reset local cache</p>
