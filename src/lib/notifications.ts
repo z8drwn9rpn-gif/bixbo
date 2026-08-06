@@ -1,19 +1,20 @@
 /**
  * BIXBO notification runtime.
  *
- * Additive layer on top of the existing storage: preferences live in
- * settings.notif (all optional, so old data migrates safely). Nothing here
- * mutates or replaces existing app logic.
+ * Local delivery:
+ *  - App visible -> sonner toast
+ *  - App hidden  -> Service Worker notification
  *
- * Delivery rules:
- *  - App visible  -> in-app sonner toast
- *  - App hidden   -> system notification via the push service worker
- *  - Quiet hours  -> everything except medication reminders is suppressed
- *  - Every reminder is de-duplicated by a stable key stored in localStorage
+ * Remote delivery:
+ *  - The browser PushSubscription and a notification-only schedule snapshot
+ *    are stored through Supabase Edge Functions.
+ *  - A Supabase cron invokes send-due-push every minute.
+ *  - The VAPID private key exists only inside Supabase Edge Function secrets.
  */
 import { useEffect } from "react";
 import { toast } from "sonner";
 
+import { supabase } from "@/integrations/supabase/client";
 import {
   getBixbo,
   hasAnyLog,
@@ -37,9 +38,7 @@ export type NotifCategory =
   | "hydration"
   | "marketing";
 
-export const DEFAULT_NOTIF_PREFS: Required<
-  Omit<NotificationPrefs, "promptSnoozedAt" | "promptAnswered">
-> = {
+export const DEFAULT_NOTIF_PREFS: Required<Omit<NotificationPrefs, "promptSnoozedAt" | "promptAnswered">> = {
   enabled: false,
   meds: true,
   period: true,
@@ -70,8 +69,14 @@ export function notifPrefs(data: Pick<BixboData, "settings">): ResolvedPrefs {
 export function saveNotifPrefs(patch: Partial<NotificationPrefs>) {
   setBixbo((d) => ({
     ...d,
-    settings: { ...d.settings, notif: { ...(d.settings.notif ?? {}), ...patch } },
+    settings: {
+      ...d.settings,
+      notif: { ...(d.settings.notif ?? {}), ...patch },
+    },
   }));
+
+  // Persist the changed preferences/schedule without blocking the UI.
+  queueMicrotask(() => void syncPushState().catch(logPushError));
 }
 
 export const NOTIF_CATEGORY_LABELS: Record<NotifCategory, string> = {
@@ -87,19 +92,19 @@ export const NOTIF_CATEGORY_LABELS: Record<NotifCategory, string> = {
 };
 
 /* ------------------------------------------------------------------ */
-/* Service worker registration (exactly once per page session)         */
+/* Service worker                                                      */
 /* ------------------------------------------------------------------ */
 
 const SW_URL = "/bixbo-push-sw.js";
 let swPromise: Promise<ServiceWorkerRegistration | null> | null = null;
 
+function logPushError(error: unknown) {
+  console.warn("BIXBO Web Push:", error);
+}
+
 export function pushSupported(): boolean {
   return (
-    typeof window !== "undefined" &&
-    "serviceWorker" in navigator &&
-    "Notification" in window &&
-    typeof ServiceWorkerRegistration !== "undefined" &&
-    "showNotification" in ServiceWorkerRegistration.prototype
+    typeof window !== "undefined" && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window
   );
 }
 
@@ -109,12 +114,18 @@ export function ensurePushWorker(): Promise<ServiceWorkerRegistration | null> {
 
   swPromise = (async () => {
     try {
-      const existing = await navigator.serviceWorker.getRegistration(SW_URL);
-      const reg = existing ?? (await navigator.serviceWorker.register(SW_URL, { scope: "/" }));
-      await navigator.serviceWorker.ready.catch(() => undefined);
-      return reg;
+      const existing = await navigator.serviceWorker.getRegistration("/");
+      const registration =
+        existing ??
+        (await navigator.serviceWorker.register(SW_URL, {
+          scope: "/",
+          updateViaCache: "none",
+        }));
+
+      await navigator.serviceWorker.ready;
+      return registration;
     } catch (error) {
-      console.warn("BIXBO: push service worker unavailable", error);
+      logPushError(error);
       return null;
     }
   })();
@@ -123,7 +134,7 @@ export function ensurePushWorker(): Promise<ServiceWorkerRegistration | null> {
 }
 
 /* ------------------------------------------------------------------ */
-/* Permission + push subscription                                      */
+/* Permission + subscription                                           */
 /* ------------------------------------------------------------------ */
 
 export function permissionState(): NotificationPermission | "unsupported" {
@@ -131,60 +142,236 @@ export function permissionState(): NotificationPermission | "unsupported" {
   return Notification.permission;
 }
 
-function urlBase64ToUint8Array(base64: string): ArrayBuffer {
+function urlBase64ToUint8Array(base64: string): Uint8Array {
   const padding = "=".repeat((4 - (base64.length % 4)) % 4);
-  const raw = atob((base64 + padding).replace(/-/g, "+").replace(/_/g, "/"));
-  const out = new Uint8Array(new ArrayBuffer(raw.length));
-  for (let i = 0; i < raw.length; i += 1) out[i] = raw.charCodeAt(i);
-  return out.buffer;
+  const normalized = (base64 + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = window.atob(normalized);
+  return Uint8Array.from(raw, (char) => char.charCodeAt(0));
+}
+
+function vapidPublicKey(): string {
+  const value = (import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined)?.trim();
+  if (!value) {
+    throw new Error("Missing VITE_VAPID_PUBLIC_KEY.");
+  }
+  return value;
+}
+
+export async function ensurePushSubscription(): Promise<PushSubscription | null> {
+  if (Notification.permission !== "granted") return null;
+
+  const registration = await ensurePushWorker();
+  if (!registration) return null;
+
+  const current = await registration.pushManager.getSubscription();
+  if (current) return current;
+
+  return registration.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: urlBase64ToUint8Array(vapidPublicKey()),
+  });
+}
+
+async function invokePushSubscription(action: "upsert" | "delete", subscription?: PushSubscription) {
+  const body =
+    action === "upsert"
+      ? {
+          action,
+          subscription: subscription?.toJSON(),
+          userAgent: navigator.userAgent,
+        }
+      : {
+          action,
+          endpoint: subscription?.endpoint,
+        };
+
+  const { error } = await supabase.functions.invoke("push-subscription", {
+    body,
+  });
+  if (error) throw error;
 }
 
 /**
- * Subscribes to the Push API when a VAPID public key is configured.
- * Without a key the app still delivers every reminder locally through the
- * same service worker, so this failing is never fatal.
+ * Enables remote Web Push and stores the device subscription server-side.
+ * The user must be authenticated in Supabase.
  */
-export async function ensurePushSubscription(): Promise<PushSubscription | null> {
-  const reg = await ensurePushWorker();
-  if (!reg || !("pushManager" in reg)) return null;
-  const key = import.meta.env["VITE_VAPID_PUBLIC_KEY"] as string | undefined;
+export async function enableRemotePush(): Promise<PushSubscription> {
+  if (!pushSupported()) throw new Error("Web Push is not supported in this browser.");
 
-  try {
-    const current = await reg.pushManager.getSubscription();
-    if (current) return current;
-    if (!key) return null;
-    return await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(key),
-    });
-  } catch (error) {
-    console.warn("BIXBO: push subscription unavailable", error);
-    return null;
+  let permission = Notification.permission;
+  if (permission === "default") {
+    permission = await Notification.requestPermission();
   }
+  if (permission !== "granted") {
+    throw new Error("Notification permission was not granted.");
+  }
+
+  const subscription = await ensurePushSubscription();
+  if (!subscription) throw new Error("The browser did not create a push subscription.");
+
+  await invokePushSubscription("upsert", subscription);
+  saveNotifPrefs({ enabled: true, promptAnswered: true });
+  await syncPushState();
+
+  return subscription;
 }
 
+/**
+ * Removes this browser from the server and unsubscribes it from PushManager.
+ */
+export async function disableRemotePush(): Promise<void> {
+  const registration = await ensurePushWorker();
+  const subscription = await registration?.pushManager.getSubscription();
+
+  if (subscription) {
+    await invokePushSubscription("delete", subscription);
+    await subscription.unsubscribe();
+  }
+
+  saveNotifPrefs({ enabled: false, promptAnswered: true });
+}
+
+/**
+ * Backwards-compatible function used by the existing notification settings page.
+ */
 export async function requestNotificationPermission(): Promise<NotificationPermission | "unsupported"> {
   if (!pushSupported()) return "unsupported";
   if (Notification.permission === "denied") return "denied";
-  if (Notification.permission === "granted") {
-    await ensurePushWorker();
-    void ensurePushSubscription();
-    return "granted";
-  }
 
-  const result = await Notification.requestPermission();
-  if (result === "granted") {
-    await ensurePushWorker();
-    void ensurePushSubscription();
-    saveNotifPrefs({ enabled: true, promptAnswered: true });
-  } else {
-    saveNotifPrefs({ promptAnswered: true });
+  try {
+    await enableRemotePush();
+    return "granted";
+  } catch (error) {
+    logPushError(error);
+    const state = Notification.permission;
+    saveNotifPrefs({ promptAnswered: true, enabled: state === "granted" });
+    return state;
   }
-  return result;
 }
 
 /* ------------------------------------------------------------------ */
-/* De-duplication                                                      */
+/* Server snapshot                                                     */
+/* ------------------------------------------------------------------ */
+
+type ServerMedication = {
+  id: string;
+  name: string;
+  dose?: string;
+  times: string[];
+};
+
+type ServerAppointment = {
+  id: string;
+  title: string;
+  startsAt: string;
+};
+
+type PushSnapshot = {
+  timezone: string;
+  localDate: string;
+  prefs: ResolvedPrefs;
+  medications: ServerMedication[];
+  takenMedicationSlots: string[];
+  hasLogToday: boolean;
+  nextPeriodStart: string | null;
+  showCyclePredictions: boolean;
+  appointments: ServerAppointment[];
+};
+
+function browserTimezone(): string {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+}
+
+function appointmentIso(date: string, time?: string): string | null {
+  const [year, month, day] = date.split("-").map(Number);
+  const [hour, minute] = (time || "09:00").split(":").map(Number);
+
+  if (!year || !month || !day) return null;
+  const local = new Date(year, month - 1, day, hour || 0, minute || 0, 0, 0);
+  return Number.isNaN(local.getTime()) ? null : local.toISOString();
+}
+
+function buildPushSnapshot(data = getBixbo()): PushSnapshot {
+  const today = todayKey();
+  const prefs = notifPrefs(data);
+  const nextPeriod = showCyclePredictions(data) ? (nextPredictedPeriod(data.cycle)?.start ?? null) : null;
+
+  const medications: ServerMedication[] = (data.meds ?? [])
+    .filter((med) => !med.asNeeded && Array.isArray(med.times) && med.times.length > 0)
+    .map((med) => ({
+      id: String(med.id),
+      name: med.name,
+      dose: med.dose || undefined,
+      times: med.times,
+    }));
+
+  const appointments: ServerAppointment[] = [
+    ...(data.pregnancy?.appointments ?? []),
+    ...(data.postpartum?.visits ?? []),
+  ].flatMap((appointment) => {
+    if (!appointment?.id || !appointment.date) return [];
+    const startsAt = appointmentIso(appointment.date, appointment.time);
+    if (!startsAt) return [];
+    return [
+      {
+        id: String(appointment.id),
+        title: appointment.title || "Appointment",
+        startsAt,
+      },
+    ];
+  });
+
+  return {
+    timezone: browserTimezone(),
+    localDate: today,
+    prefs,
+    medications,
+    takenMedicationSlots: Object.keys(data.medLog?.[today] ?? {}).filter((slot) =>
+      Boolean(data.medLog?.[today]?.[slot]),
+    ),
+    hasLogToday: hasAnyLog(data.dayLogs[today]),
+    nextPeriodStart: nextPeriod,
+    showCyclePredictions: showCyclePredictions(data),
+    appointments,
+  };
+}
+
+let syncPromise: Promise<void> | null = null;
+
+/**
+ * Sends only data needed to calculate reminders. It does not upload the complete
+ * health log. The server row is protected by RLS and keyed to auth.uid().
+ */
+export async function syncPushState(): Promise<void> {
+  if (typeof window === "undefined") return;
+  if (Notification.permission !== "granted") return;
+
+  if (syncPromise) return syncPromise;
+
+  syncPromise = (async () => {
+    const subscription = await ensurePushSubscription();
+    if (!subscription) return;
+
+    // Refresh/upsert first in case the browser rotated the subscription.
+    await invokePushSubscription("upsert", subscription);
+
+    const { error } = await supabase.functions.invoke("push-subscription", {
+      body: {
+        action: "sync-profile",
+        profile: buildPushSnapshot(),
+      },
+    });
+
+    if (error) throw error;
+  })().finally(() => {
+    syncPromise = null;
+  });
+
+  return syncPromise;
+}
+
+/* ------------------------------------------------------------------ */
+/* Local fallback delivery                                             */
 /* ------------------------------------------------------------------ */
 
 const SENT_KEY = "bixbo:notif-sent";
@@ -194,8 +381,7 @@ function readSent(): Record<string, number> {
   try {
     const raw = window.localStorage.getItem(SENT_KEY);
     const parsed: unknown = raw ? JSON.parse(raw) : {};
-    if (!parsed || typeof parsed !== "object") return {};
-    return parsed as Record<string, number>;
+    return parsed && typeof parsed === "object" ? (parsed as Record<string, number>) : {};
   } catch {
     return {};
   }
@@ -203,12 +389,12 @@ function readSent(): Record<string, number> {
 
 function writeSent(map: Record<string, number>) {
   if (typeof window === "undefined") return;
-  const cutoff = Date.now() - 8 * 86400000;
-  const pruned = Object.fromEntries(Object.entries(map).filter(([, ts]) => ts > cutoff));
+  const cutoff = Date.now() - 8 * 86_400_000;
+  const pruned = Object.fromEntries(Object.entries(map).filter(([, timestamp]) => timestamp > cutoff));
   try {
     window.localStorage.setItem(SENT_KEY, JSON.stringify(pruned));
   } catch {
-    /* storage full — reminders simply repeat next session */
+    // A full localStorage must not break the app.
   }
 }
 
@@ -217,23 +403,19 @@ function alreadySent(key: string): boolean {
 }
 
 function markSent(key: string) {
-  const map = readSent();
-  map[key] = Date.now();
-  writeSent(map);
+  const sent = readSent();
+  sent[key] = Date.now();
+  writeSent(sent);
 }
-
-/* ------------------------------------------------------------------ */
-/* Time helpers                                                        */
-/* ------------------------------------------------------------------ */
 
 export function minutesOf(hhmm: string): number {
-  const [h, m] = hhmm.split(":").map(Number);
-  if (!Number.isFinite(h) || !Number.isFinite(m)) return 0;
-  return h * 60 + m;
+  const [hour, minute] = hhmm.split(":").map(Number);
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) return 0;
+  return hour * 60 + minute;
 }
 
-function nowMinutes(d = new Date()): number {
-  return d.getHours() * 60 + d.getMinutes();
+function nowMinutes(date = new Date()): number {
+  return date.getHours() * 60 + date.getMinutes();
 }
 
 export function inQuietHours(prefs: ResolvedPrefs, at = new Date()): boolean {
@@ -243,10 +425,6 @@ export function inQuietHours(prefs: ResolvedPrefs, at = new Date()): boolean {
   if (start === end) return false;
   return start < end ? now >= start && now < end : now >= start || now < end;
 }
-
-/* ------------------------------------------------------------------ */
-/* Delivery                                                            */
-/* ------------------------------------------------------------------ */
 
 export interface NotifPayload {
   title: string;
@@ -260,27 +438,31 @@ async function deliver(payload: NotifPayload) {
   const visible = typeof document !== "undefined" && document.visibilityState === "visible";
 
   if (visible) {
-    toast(payload.title, { description: payload.body, duration: 8000 });
+    toast(payload.title, {
+      description: payload.body,
+      duration: 8000,
+    });
     return;
   }
 
   if (permissionState() !== "granted") return;
-  const reg = await ensurePushWorker();
-  if (!reg) return;
+  const registration = await ensurePushWorker();
+  if (!registration) return;
 
-  try {
-    const open = await reg.getNotifications({ tag: payload.tag });
-    if (open.length) return;
-    await reg.showNotification(payload.title, {
-      body: payload.body,
+  const open = await registration.getNotifications({ tag: payload.tag });
+  if (open.length) return;
+
+  await registration.showNotification(payload.title, {
+    body: payload.body,
+    tag: payload.tag,
+    icon: "/icon-192.png",
+    badge: "/icon-192.png",
+    data: {
+      url: payload.url,
+      category: payload.category,
       tag: payload.tag,
-      icon: "/icon-192.png",
-      badge: "/icon-192.png",
-      data: { url: payload.url, category: payload.category, tag: payload.tag },
-    });
-  } catch (error) {
-    console.warn("BIXBO: could not show notification", error);
-  }
+    },
+  });
 }
 
 async function fire(prefs: ResolvedPrefs, payload: NotifPayload, dedupeKey: string) {
@@ -292,18 +474,18 @@ async function fire(prefs: ResolvedPrefs, payload: NotifPayload, dedupeKey: stri
   await deliver(payload);
 }
 
-/* ------------------------------------------------------------------ */
-/* Scheduling                                                          */
-/* ------------------------------------------------------------------ */
-
-/** How late a time-based reminder may still fire (minutes). */
 const GRACE = 90;
 
 function dueNow(target: string, at = new Date()): boolean {
-  const diff = nowMinutes(at) - minutesOf(target);
-  return diff >= 0 && diff <= GRACE;
+  const difference = nowMinutes(at) - minutesOf(target);
+  return difference >= 0 && difference <= GRACE;
 }
 
+/**
+ * Keeps the existing foreground/local fallback behavior. Remote push is
+ * generated independently by send-due-push and therefore also works after the
+ * app and browser UI have been closed.
+ */
 export async function runNotificationChecks(now = new Date()) {
   const data = getBixbo();
   const prefs = notifPrefs(data);
@@ -314,7 +496,6 @@ export async function runNotificationChecks(now = new Date()) {
   const log = data.dayLogs[today];
   const loggedToday = hasAnyLog(log);
 
-  /* --- Medication reminders --- */
   if (prefs.meds) {
     for (const med of data.meds ?? []) {
       if (med.asNeeded) continue;
@@ -337,7 +518,6 @@ export async function runNotificationChecks(now = new Date()) {
     }
   }
 
-  /* --- Cycle reminders (hidden in male / pregnancy / postpartum modes) --- */
   if (showCyclePredictions(data)) {
     const next = nextPredictedPeriod(data.cycle);
     if (next) {
@@ -356,27 +536,24 @@ export async function runNotificationChecks(now = new Date()) {
         );
       }
 
-      if (prefs.ovulation) {
-        const ovulation = addDays(next.start, -14);
-        const dayBeforeOvulation = addDays(ovulation, -1);
-        if (today === dayBeforeOvulation && dueNow("09:00", now)) {
-          await fire(
-            prefs,
-            {
-              title: "Ovulation window",
-              body: "Ovulation window starts tomorrow.",
-              url: "/",
-              tag: `ovulation-${ovulation}`,
-              category: "ovulation",
-            },
-            `ovulation:${ovulation}`,
-          );
-        }
+      const ovulation = addDays(next.start, -14);
+      const dayBeforeOvulation = addDays(ovulation, -1);
+      if (prefs.ovulation && today === dayBeforeOvulation && dueNow("09:00", now)) {
+        await fire(
+          prefs,
+          {
+            title: "Ovulation window",
+            body: "Ovulation window starts tomorrow.",
+            url: "/",
+            tag: `ovulation-${ovulation}`,
+            category: "ovulation",
+          },
+          `ovulation:${ovulation}`,
+        );
       }
     }
   }
 
-  /* --- Symptom reminder --- */
   if (prefs.symptom && !loggedToday && dueNow(prefs.symptomTime, now)) {
     await fire(
       prefs,
@@ -391,7 +568,6 @@ export async function runNotificationChecks(now = new Date()) {
     );
   }
 
-  /* --- Daily log reminder (max once a day, only when nothing logged) --- */
   if (prefs.dailyLog && !loggedToday && dueNow(prefs.dailyLogTime, now)) {
     await fire(
       prefs,
@@ -406,7 +582,6 @@ export async function runNotificationChecks(now = new Date()) {
     );
   }
 
-  /* --- Mood reminder --- */
   if (prefs.mood && dueNow(prefs.moodTime, now)) {
     await fire(
       prefs,
@@ -421,16 +596,16 @@ export async function runNotificationChecks(now = new Date()) {
     );
   }
 
-  /* --- Hydration reminder --- */
   if (prefs.hydration) {
     const start = minutesOf(prefs.hydrationStart);
     const end = minutesOf(prefs.hydrationEnd);
     const step = Math.max(1, prefs.hydrationEveryHours) * 60;
-    const cur = nowMinutes(now);
-    if (cur >= start && cur <= end) {
-      const slotIndex = Math.floor((cur - start) / step);
+    const current = nowMinutes(now);
+
+    if (current >= start && current <= end) {
+      const slotIndex = Math.floor((current - start) / step);
       const slotTime = start + slotIndex * step;
-      if (cur - slotTime <= 30) {
+      if (current - slotTime <= 30) {
         await fire(
           prefs,
           {
@@ -446,34 +621,32 @@ export async function runNotificationChecks(now = new Date()) {
     }
   }
 
-  /* --- Appointment reminders (24 h and 2 h before) --- */
   if (prefs.appointments) {
     const appointments = [...(data.pregnancy?.appointments ?? []), ...(data.postpartum?.visits ?? [])];
-    for (const appt of appointments) {
-      if (!appt?.date) continue;
-      const [y, m, d] = appt.date.split("-").map(Number);
-      if (!y || !m || !d) continue;
-      const [hh, mm] = (appt.time ?? "09:00").split(":").map(Number);
-      const when = new Date(y, m - 1, d, hh || 9, mm || 0);
-      const diffMin = (when.getTime() - now.getTime()) / 60000;
 
-      const windows: { label: string; at: number; key: string }[] = [
-        { label: "tomorrow", at: 24 * 60, key: "24h" },
-        { label: "in 2 hours", at: 120, key: "2h" },
+    for (const appointment of appointments) {
+      if (!appointment?.date) continue;
+      const startsAt = appointmentIso(appointment.date, appointment.time);
+      if (!startsAt) continue;
+      const difference = (new Date(startsAt).getTime() - now.getTime()) / 60_000;
+
+      const windows = [
+        { label: "tomorrow", minutes: 24 * 60, key: "24h" },
+        { label: "in 2 hours", minutes: 120, key: "2h" },
       ];
 
-      for (const w of windows) {
-        if (diffMin <= w.at && diffMin > w.at - 30) {
+      for (const window of windows) {
+        if (difference <= window.minutes && difference > window.minutes - 30) {
           await fire(
             prefs,
             {
-              title: `Appointment ${w.label}`,
-              body: `${appt.title || "Appointment"}${appt.time ? ` at ${appt.time}` : ""}.`,
+              title: `Appointment ${window.label}`,
+              body: `${appointment.title || "Appointment"}${appointment.time ? ` at ${appointment.time}` : ""}.`,
               url: "/",
-              tag: `appt-${appt.id}-${w.key}`,
+              tag: `appt-${appointment.id}-${window.key}`,
               category: "appointments",
             },
-            `appt:${appt.id}:${w.key}`,
+            `appt:${appointment.id}:${window.key}`,
           );
         }
       }
@@ -485,47 +658,60 @@ export async function runNotificationChecks(now = new Date()) {
 /* Runtime hook                                                        */
 /* ------------------------------------------------------------------ */
 
-const TICK_MS = 60000;
+const TICK_MS = 60_000;
+const SERVER_SYNC_MS = 5 * 60_000;
 
-/** Mounted once from the root route. Safe to call on every render. */
 export function useNotificationRuntime() {
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!pushSupported()) return;
+    if (typeof window === "undefined" || !pushSupported()) return;
 
     let stopped = false;
+    let lastServerSync = 0;
 
-    const tick = () => {
+    const tick = async () => {
       if (stopped) return;
-      void runNotificationChecks().catch((error) => console.warn("BIXBO notifications", error));
+
+      await runNotificationChecks().catch(logPushError);
+
+      if (Notification.permission === "granted" && Date.now() - lastServerSync >= SERVER_SYNC_MS) {
+        lastServerSync = Date.now();
+        await syncPushState().catch(logPushError);
+      }
     };
 
-    // Register the worker only when the user already granted permission.
-    if (Notification.permission === "granted") void ensurePushWorker();
+    if (Notification.permission === "granted") {
+      void ensurePushWorker();
+      void syncPushState().catch(logPushError);
+    }
 
-    const first = window.setTimeout(tick, 4000);
-    const interval = window.setInterval(tick, TICK_MS);
+    const first = window.setTimeout(() => void tick(), 4000);
+    const interval = window.setInterval(() => void tick(), TICK_MS);
+
     const onVisible = () => {
-      if (document.visibilityState === "visible") tick();
+      if (document.visibilityState === "visible") void tick();
     };
+
+    const onOnline = () => void syncPushState().catch(logPushError);
+
     document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("online", onOnline);
 
     return () => {
       stopped = true;
       window.clearTimeout(first);
       window.clearInterval(interval);
       document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("online", onOnline);
     };
   }, []);
 }
 
 /* ------------------------------------------------------------------ */
-/* Permission prompt eligibility                                       */
+/* Permission prompt                                                   */
 /* ------------------------------------------------------------------ */
 
 const SNOOZE_DAYS = 5;
 
-/** Number of days that already contain a log — used to delay the ask. */
 export function loggedDayCount(data: BixboData): number {
   return Object.values(data.dayLogs ?? {}).filter((log) => hasAnyLog(log)).length;
 }
@@ -535,7 +721,9 @@ export function shouldAskForPermission(data: BixboData): boolean {
   if (Notification.permission !== "default") return false;
   const prefs = notifPrefs(data);
   if (prefs.promptAnswered) return false;
-  if (prefs.promptSnoozedAt && Date.now() - prefs.promptSnoozedAt < SNOOZE_DAYS * 86400000) return false;
+  if (prefs.promptSnoozedAt && Date.now() - prefs.promptSnoozedAt < SNOOZE_DAYS * 86_400_000) {
+    return false;
+  }
   return loggedDayCount(data) >= 3;
 }
 
