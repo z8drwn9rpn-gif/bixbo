@@ -2198,23 +2198,8 @@ function HfBars({
 /** GitHub-contributions-style yearly heatmap of daily "symptom load" (avg pain + symptom entry counts). */
 function SymptomLoadHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>["data"]; anchor: Date }) {
   const [active, setActive] = useState<string | null>(null);
-  const detailRef = useRef<HTMLDivElement | null>(null);
 
   useDismissTapTooltip(() => setActive(null));
-
-  useEffect(() => {
-    if (!active) return;
-
-    const timer = window.setTimeout(() => {
-      detailRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-        inline: "nearest",
-      });
-    }, 80);
-
-    return () => window.clearTimeout(timer);
-  }, [active]);
 
   const year = anchor.getFullYear();
 
@@ -2312,7 +2297,7 @@ function SymptomLoadHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo
     <ChartCard title={`Symptom Load — ${year}`}>
       <p className="mt-1 text-xs text-muted-foreground">Tap any day to see the saved health details.</p>
 
-      <div className="mt-3 overflow-x-auto overscroll-x-contain">
+      <div className="mt-3 overflow-x-auto overscroll-x-contain touch-pan-x">
         <div
           className="grid w-max grid-flow-col gap-[3px]"
           style={{
@@ -2335,11 +2320,13 @@ function SymptomLoadHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo
                 type="button"
                 aria-label={`${fmtTapDay(cell.key)} symptom load`}
                 aria-pressed={isActive}
-                onClick={(event) => {
+                onPointerUp={(event) => {
+                  event.preventDefault();
                   event.stopPropagation();
                   setActive((current) => (current === cell.key ? null : cell.key));
                 }}
-                className={`h-3.5 w-3.5 rounded-[3px] transition-transform hover:scale-110 focus-visible:z-10 ${
+                onClick={(event) => event.preventDefault()}
+                className={`h-3.5 w-3.5 touch-manipulation rounded-[3px] transition-transform hover:scale-110 focus-visible:z-10 ${
                   isActive ? "ring-2 ring-primary ring-offset-1 ring-offset-background" : ""
                 }`}
                 style={{ background: colorFor(load) }}
@@ -2351,7 +2338,6 @@ function SymptomLoadHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo
 
       {active ? (
         <div
-          ref={detailRef}
           className="mt-4 mb-3 min-w-0 max-w-full scroll-mt-24 scroll-mb-[calc(132px+env(safe-area-inset-bottom))] overflow-visible rounded-3xl bg-primary/20 p-4 text-xs ring-1 ring-primary/25"
           onClick={(event) => event.stopPropagation()}
           role="status"
