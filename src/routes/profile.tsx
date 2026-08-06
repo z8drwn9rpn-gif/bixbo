@@ -355,7 +355,12 @@ type HealthView =
   | "appearance"
   | "notifications"
   | "privacy"
-  | "backup";
+  | "backup"
+  | "tracking"
+  | "reminders"
+  | "units"
+  | "data"
+  | "about";
 
 function HubRow({
   icon,
@@ -388,15 +393,7 @@ function HubRow({
   );
 }
 
-function HealthHub({
-  onHome,
-  onOpen,
-  onNavigate,
-}: {
-  onHome: () => void;
-  onOpen: (view: HealthView) => void;
-  onNavigate: (to: string) => void;
-}) {
+function HealthHub({ onHome, onOpen }: { onHome: () => void; onOpen: (view: HealthView) => void }) {
   return (
     <AppShell
       title={
@@ -466,13 +463,6 @@ function HealthHub({
 
           <section className="overflow-hidden rounded-3xl bg-surface shadow-sm ring-1 ring-border/80">
             <HubRow
-              icon={<HeartIcon size={22} />}
-              title="Couple"
-              subtitle="Partner and shared settings"
-              onClick={() => onNavigate("/couple")}
-            />
-            <div className="ml-[4.5rem] border-t border-border/60" />
-            <HubRow
               icon={<NoteIcon size={22} />}
               title="Language"
               subtitle="App language"
@@ -506,17 +496,48 @@ function HealthHub({
               subtitle="Backup and restore your data"
               onClick={() => onOpen("backup")}
             />
+            <div className="ml-[4.5rem] border-t border-border/60" />
+
+            <HubRow
+              icon={<TaskIcon size={22} />}
+              title="Tracking"
+              subtitle="Cycle, symptoms and health tracking"
+              onClick={() => onOpen("tracking")}
+            />
+            <div className="ml-[4.5rem] border-t border-border/60" />
+
+            <HubRow
+              icon={<ClockIcon size={22} />}
+              title="Reminders"
+              subtitle="Medication and reminder settings"
+              onClick={() => onOpen("reminders")}
+            />
+            <div className="ml-[4.5rem] border-t border-border/60" />
+
+            <HubRow
+              icon={<WeightIcon size={22} />}
+              title="Units"
+              subtitle="Weight, temperature and measurements"
+              onClick={() => onOpen("units")}
+            />
+            <div className="ml-[4.5rem] border-t border-border/60" />
+
+            <HubRow
+              icon={<DropIcon size={22} />}
+              title="Data & Storage"
+              subtitle="Manage local app data"
+              onClick={() => onOpen("data")}
+            />
+            <div className="ml-[4.5rem] border-t border-border/60" />
+
+            <HubRow
+              icon={<ProfileIcon size={22} />}
+              title="About BIXBO"
+              subtitle="Version, information and legal"
+              onClick={() => onOpen("about")}
+            />
           </section>
         </div>
-
-        <section className="overflow-hidden rounded-3xl bg-surface shadow-sm ring-1 ring-border/80">
-          <HubRow
-            icon={<ProfileIcon size={22} />}
-            title="Settings"
-            subtitle="General app and tracking settings"
-            onClick={() => onNavigate("/settings")}
-          />
-        </section>
       </div>
     </AppShell>
   );
@@ -733,7 +754,6 @@ function ProfilePage() {
           setEditing(false);
           setHealthView(next);
         }}
-        onNavigate={(to) => navigate({ to: to as never })}
       />
     );
   }
@@ -892,13 +912,9 @@ function ProfilePage() {
   if (healthView === "appearance") {
     return (
       <HealthSubpage title="Appearance" onBack={() => setHealthView("hub")}>
-        <section className="overflow-hidden rounded-3xl bg-surface shadow-sm ring-1 ring-border/80">
-          <PreferenceOption
-            icon={<LeafIcon size={24} />}
-            title="Theme and display"
-            subtitle="Open the existing appearance controls."
-            onClick={() => navigate({ to: "/settings" })}
-          />
+        <section className="overflow-hidden rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
+          <p className="text-sm font-semibold text-foreground">Theme and display</p>
+          <p className="mt-1 text-xs text-muted-foreground">Appearance controls belong directly on this page.</p>
         </section>
       </HealthSubpage>
     );
@@ -907,13 +923,9 @@ function ProfilePage() {
   if (healthView === "notifications") {
     return (
       <HealthSubpage title="Notifications" onBack={() => setHealthView("hub")}>
-        <section className="overflow-hidden rounded-3xl bg-surface shadow-sm ring-1 ring-border/80">
-          <PreferenceOption
-            icon={<StarIcon size={24} />}
-            title="Reminders and alerts"
-            subtitle="Open medication, symptom and app notification settings."
-            onClick={() => navigate({ to: "/settings" })}
-          />
+        <section className="overflow-hidden rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
+          <p className="text-sm font-semibold text-foreground">Notifications</p>
+          <p className="mt-1 text-xs text-muted-foreground">App notification controls belong directly on this page.</p>
         </section>
       </HealthSubpage>
     );
@@ -922,13 +934,11 @@ function ProfilePage() {
   if (healthView === "privacy") {
     return (
       <HealthSubpage title="Privacy" onBack={() => setHealthView("hub")}>
-        <section className="overflow-hidden rounded-3xl bg-surface shadow-sm ring-1 ring-border/80">
-          <PreferenceOption
-            icon={<WarningIcon size={24} />}
-            title="Privacy and data control"
-            subtitle="Review data, sharing and reset controls."
-            onClick={() => navigate({ to: "/settings" })}
-          />
+        <section className="overflow-hidden rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
+          <p className="text-sm font-semibold text-foreground">Privacy and data control</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Privacy, sharing and reset controls belong directly on this page.
+          </p>
         </section>
       </HealthSubpage>
     );
@@ -943,6 +953,69 @@ function ProfilePage() {
             title="Backup and restore"
             subtitle="Backup and sync controls can be connected here later."
           />
+        </section>
+      </HealthSubpage>
+    );
+  }
+
+  if (healthView === "tracking") {
+    return (
+      <HealthSubpage title="Tracking" onBack={() => setHealthView("hub")}>
+        <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
+          <p className="text-sm font-semibold text-foreground">Tracking preferences</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Cycle, symptoms and health tracking controls belong directly on this page.
+          </p>
+        </section>
+      </HealthSubpage>
+    );
+  }
+
+  if (healthView === "reminders") {
+    return (
+      <HealthSubpage title="Reminders" onBack={() => setHealthView("hub")}>
+        <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
+          <p className="text-sm font-semibold text-foreground">Medication and reminders</p>
+          <p className="mt-1 text-xs text-muted-foreground">Reminder controls belong directly on this page.</p>
+        </section>
+      </HealthSubpage>
+    );
+  }
+
+  if (healthView === "units") {
+    return (
+      <HealthSubpage title="Units" onBack={() => setHealthView("hub")}>
+        <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
+          <p className="text-sm font-semibold text-foreground">Measurement units</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Weight, temperature and measurement unit controls belong directly on this page.
+          </p>
+        </section>
+      </HealthSubpage>
+    );
+  }
+
+  if (healthView === "data") {
+    return (
+      <HealthSubpage title="Data & Storage" onBack={() => setHealthView("hub")}>
+        <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
+          <p className="text-sm font-semibold text-foreground">Local data</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Storage, import, reset and data management controls belong directly on this page.
+          </p>
+        </section>
+      </HealthSubpage>
+    );
+  }
+
+  if (healthView === "about") {
+    return (
+      <HealthSubpage title="About BIXBO" onBack={() => setHealthView("hub")}>
+        <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
+          <p className="text-sm font-semibold text-foreground">BIXBO</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Version information, credits, privacy documents and licenses belong directly on this page.
+          </p>
         </section>
       </HealthSubpage>
     );
