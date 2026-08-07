@@ -98,6 +98,102 @@ export type Database = {
         }
         Relationships: []
       }
+      push_delivery_log: {
+        Row: {
+          attempts: number
+          category: string
+          claimed_at: string
+          created_at: string
+          dedupe_key: string
+          id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          category: string
+          claimed_at?: string
+          created_at?: string
+          dedupe_key: string
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          category?: string
+          claimed_at?: string
+          created_at?: string
+          dedupe_key?: string
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      push_reminder_profiles: {
+        Row: {
+          created_at: string
+          profile: Json
+          timezone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          profile?: Json
+          timezone?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          profile?: Json
+          timezone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          expiration_time: number | null
+          id: string
+          p256dh: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          expiration_time?: number | null
+          id?: string
+          p256dh: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          expiration_time?: number | null
+          id?: string
+          p256dh?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_data: {
         Row: {
           data: Json
@@ -121,6 +217,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_push_delivery_log: { Args: never; Returns: undefined }
       ensure_profile: {
         Args: { _display_name?: string }
         Returns: {
