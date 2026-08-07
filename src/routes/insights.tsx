@@ -711,6 +711,14 @@ function BirthControlCalendar({
   const selectedDay = sel ? pillNumber(sel) : null;
   const selectedTaken = sel ? takenAt(sel) : null;
   const selectedMissed = sel ? missedAt(sel) : false;
+  const selectedAssumedTaken =
+    !!sel &&
+    selectedDay != null &&
+    selectedDay <= ACTIVE_DAYS &&
+    sel >= since &&
+    sel < todayK &&
+    !selectedMissed &&
+    !selectedTaken;
 
   const placeboStart = addDays(currentPackStart, ACTIVE_DAYS);
   const placeboEnd = addDays(currentPackStart, PACK_DAYS - 1);
@@ -967,13 +975,11 @@ function BirthControlCalendar({
   };
 
   const wheelAngleForDay = (day: number) => {
-    // Layout mirrors the approved mockup: current day 24 at the top,
-    // active days down both sides, placebo 25–28 at the bottom.
-    if (day === 24) return -90;
-    if (day >= 1 && day <= 11) return -74 + ((day - 1) * 124) / 10;
-    if (day >= 12 && day <= 23) return 130 + ((day - 12) * 124) / 11;
-    if (day >= 25 && day <= 28) return 65 + ((day - 25) * 50) / 3;
-    return -90;
+    // Keep the pill sequence continuous around the wheel:
+    // 24 → 25 → 26 → 27 → 28 → 1 → 2 → ... → 23.
+    // Day 24 stays at the top, matching the approved visual.
+    const visualIndex = (day - 24 + PACK_DAYS) % PACK_DAYS;
+    return -90 + (visualIndex * 360) / PACK_DAYS;
   };
 
   return (
@@ -1059,10 +1065,19 @@ function BirthControlCalendar({
             const left = 50 + Math.cos(angle) * radius;
             const top = 50 + Math.sin(angle) * radius;
             const dateKey = dateForPackDay(day);
-            const taken = !!takenAt(dateKey);
+            const loggedTaken = !!takenAt(dateKey);
             const missed = missedAt(dateKey);
             const isCurrent = day === currentDay;
             const isPlacebo = day > ACTIVE_DAYS;
+
+            // The user confirmed continuous on-time Drovelis use from `since`.
+            // Therefore historical active pills are visually treated as taken
+            // unless that exact date was explicitly marked missed. This prevents
+            // old packs from showing pale/empty circles only because dose logging
+            // was added to the app later.
+            const assumedHistoricalTaken =
+              !isPlacebo && dateKey >= since && dateKey < todayK && !missed;
+            const taken = loggedTaken || assumedHistoricalTaken;
 
             let backgroundColor = isPlacebo ? HAK_PINK_SOFT : "#E9E1F8";
             let color = isPlacebo ? HAK_PINK_DARK : "#3D218D";
@@ -1103,28 +1118,12 @@ function BirthControlCalendar({
                     ? `0 0 0 3px ${HAK_CARD_BG}, 0 0 0 6px ${HAK_PURPLE}66`
                     : "0 1px 5px rgba(58,61,30,.08)",
                 }}
-                aria-label={`HAK day ${day}, ${fmtFullDate(dateKey)}${taken ? ", taken" : missed ? ", missed" : ""}`}
+                aria-label={`HAK day ${day}, ${fmtFullDate(dateKey)}${missed ? ", missed" : taken ? ", taken" : ""}`}
               >
                 {day}
               </button>
             );
           })}
-
-          {/* One normal circular new-cycle marker, matching the other wheel circles. */}
-          <div
-            className="pointer-events-none absolute z-10 grid h-8 w-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[11px] font-bold shadow-sm"
-            style={{
-              left: "83%",
-              top: "84%",
-              backgroundColor: HAK_GREEN_SOFT,
-              color: HAK_GREEN_DARK,
-              border: `1.5px solid ${HAK_GREEN}`,
-              boxShadow: `0 0 0 3px ${HAK_CARD_BG}`,
-            }}
-            aria-label="New cycle, day 1"
-          >
-            1
-          </div>
 
           <div className="pointer-events-none absolute inset-[25%] z-20 flex flex-col items-center justify-center text-center">
             <p className="text-[11px] font-semibold text-foreground">Day</p>
@@ -1466,7 +1465,9 @@ function BirthControlCalendar({
                         ? "Marked missed"
                         : selectedDay > ACTIVE_DAYS
                           ? "Placebo / break day"
-                          : "Not recorded"}
+                          : selectedAssumedTaken
+                            ? "Taken on schedule"
+                            : "Not recorded"}
                   </p>
                 </div>
 
