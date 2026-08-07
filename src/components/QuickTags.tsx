@@ -162,7 +162,7 @@ function baseTags(): Tag[] {
     {
       key: "panic",
       emoji: "✨",
-      label: "Panic attack",
+      label: "Panic episode",
       cat: "panic",
       apply: (l) => ({
         ...l,
@@ -927,8 +927,8 @@ const CATS: {
   label: string;
 }[] = [
   { id: "pain", label: "Pain" },
-  { id: "tetany", label: "Tetany" },
-  { id: "panic", label: "Panic" },
+  { id: "tetany", label: "Tetany episode" },
+  { id: "panic", label: "Panic episode" },
   { id: "sex", label: "ŠukŠuk" },
   { id: "food", label: "Food" },
   { id: "meds", label: "Meds" },
