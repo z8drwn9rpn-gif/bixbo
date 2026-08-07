@@ -145,11 +145,14 @@ export function permissionState(): NotificationPermission | "unsupported" {
   return Notification.permission;
 }
 
-function urlBase64ToUint8Array(base64: string): Uint8Array {
+function urlBase64ToUint8Array(base64: string): ArrayBuffer {
   const padding = "=".repeat((4 - (base64.length % 4)) % 4);
   const normalized = (base64 + padding).replace(/-/g, "+").replace(/_/g, "/");
   const raw = window.atob(normalized);
-  return Uint8Array.from(raw, (char) => char.charCodeAt(0));
+  const buffer = new ArrayBuffer(raw.length);
+  const view = new Uint8Array(buffer);
+  for (let i = 0; i < raw.length; i += 1) view[i] = raw.charCodeAt(i);
+  return buffer;
 }
 
 function vapidPublicKey(): string {
@@ -823,7 +826,7 @@ export function useNotificationRuntime() {
     const unsubscribeStore = subscribeBixboChanges((_nextData, reason) => {
       if (reason !== "local") return;
       if (stateSyncTimer) window.clearTimeout(stateSyncTimer);
-      stateSyncTimer = window.setTimeout(() => {
+      stateSyncTimer = setTimeout(() => {
         stateSyncTimer = null;
         void syncPushState().catch(logPushError);
       }, 800);
