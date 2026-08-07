@@ -1279,10 +1279,10 @@ function BirthControlSummaryCard({
     <button
       type="button"
       onClick={onOpen}
-      className="mx-5 mt-3 block rounded-[1.75rem] p-4 text-left shadow-sm ring-1 transition active:scale-[0.99]"
+      className="mx-5 mt-3 block rounded-[1.75rem] p-5 text-left shadow-sm ring-1 transition active:scale-[0.99]"
       style={{
         background:
-          "linear-gradient(135deg, color-mix(in srgb, var(--surface) 86%, #E7DDF7 14%), color-mix(in srgb, var(--background) 92%, #F7CBD9 8%))",
+          "linear-gradient(135deg, color-mix(in srgb, var(--surface) 90%, #E7DDF7 10%), color-mix(in srgb, var(--background) 94%, #F7CBD9 6%))",
         borderColor: "rgba(122,83,200,.18)",
       }}
       aria-label={`Open birth control overview. HAK day ${packDay} of ${PACK_DAYS}`}
@@ -1299,7 +1299,7 @@ function BirthControlSummaryCard({
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <p className="font-serif text-lg font-bold text-foreground">Birth control</p>
-              <p className="text-[11px] text-muted-foreground">{bcMed?.name || "Drovelis"}</p>
+              <p className="text-[11px] text-muted-foreground">Drovelis</p>
             </div>
             <span className="pt-1 text-xl leading-none text-foreground/70">›</span>
           </div>
@@ -1339,21 +1339,24 @@ function BirthControlSummaryCard({
             </span>
           </div>
 
-          <div className="mt-3 flex items-center gap-2 rounded-2xl bg-background/55 px-3 py-2 ring-1 ring-border/40">
-            <span
-              className="grid h-5 w-5 shrink-0 place-items-center rounded-full text-[10px] font-black text-white"
-              style={{ backgroundColor: missed ? "#C94A55" : takenTime ? HAK_PURPLE : "#8A962D" }}
-            >
-              {missed ? "!" : takenTime ? "✓" : "i"}
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px]">
+            <span className="inline-flex items-center gap-1.5 font-semibold text-foreground">
+              <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "#7FA03A" }} />
+              Protected
             </span>
-            <span className="min-w-0 flex-1 truncate text-[11px] font-semibold text-foreground">
+
+            <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+              <span
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ backgroundColor: missed ? "#C94A55" : takenTime ? HAK_PURPLE : "#C7CC9A" }}
+              />
               {missed
-                ? "Marked missed"
+                ? "Missed"
                 : takenTime
                   ? `Taken${takenTime ? ` · ${takenTime}` : ""}`
                   : isPlacebo
-                    ? "Tap to log placebo tablet"
-                    : "Tap to open HAK tracker"}
+                    ? "Placebo today"
+                    : "Active day"}
             </span>
           </div>
         </div>
@@ -1405,16 +1408,14 @@ function BirthControlOverlay({
 
           <div className="min-w-0 text-center">
             <h1 className="font-serif text-xl font-bold text-foreground">Birth control overview</h1>
-            <p className="text-[10px] text-muted-foreground">Drovelis · HAK tracker</p>
+            <p className="text-[10px] text-muted-foreground">Drovelis</p>
           </div>
 
-          <span className="grid h-10 min-w-10 place-items-center rounded-full bg-primary/10 px-3 text-[11px] font-bold text-primary ring-1 ring-primary/20">
-            HAK
-          </span>
+          <span className="h-10 w-10 shrink-0" aria-hidden="true" />
         </div>
       </div>
 
-      <main className="mx-auto w-full max-w-xl px-4 pb-[calc(110px+env(safe-area-inset-bottom))] pt-4">
+      <main className="mx-auto w-full max-w-[42rem] px-3 pb-[calc(110px+env(safe-area-inset-bottom))] pt-4">
         <BirthControlCalendar
           data={data}
           anchor={anchor}
@@ -2072,7 +2073,7 @@ function BirthControlCalendar({
             </div>
 
             <p className="mt-3 max-w-[165px] text-[10px] leading-snug text-muted-foreground">
-              "Mark taken / missed"
+              Mark taken / missed
             </p>
           </div>
         </div>
