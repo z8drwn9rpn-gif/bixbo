@@ -975,11 +975,15 @@ function BirthControlCalendar({
   };
 
   const wheelAngleForDay = (day: number) => {
-    // Keep the pill sequence continuous around the wheel:
-    // 24 → 25 → 26 → 27 → 28 → 1 → 2 → ... → 23.
-    // Day 24 stays at the top, matching the approved visual.
-    const visualIndex = (day - 24 + PACK_DAYS) % PACK_DAYS;
-    return -90 + (visualIndex * 360) / PACK_DAYS;
+    // Approved wheel layout:
+    // day 24 at the top, days 1–11 down the right side,
+    // placebo 25–28 across the bottom, days 12–23 up the left side.
+    // The spacing intentionally leaves small gaps between the three groups.
+    if (day === 24) return -90;
+    if (day >= 1 && day <= 11) return -73 + ((day - 1) * 126) / 10;
+    if (day >= 25 && day <= 28) return 72 + ((day - 25) * 36) / 3;
+    if (day >= 12 && day <= 23) return 126 + ((day - 12) * 126) / 11;
+    return -90;
   };
 
   return (
@@ -1024,24 +1028,34 @@ function BirthControlCalendar({
         </div>
       </div>
 
-      {/* Circular HAK overview — wheel only. Clicking a wheel day opens the dose popup. */}
+      {/* Circular HAK overview — matches the approved reference. Only wheel pills open the dose popup. */}
       <div className="mx-auto mt-5 w-full max-w-[340px]">
-        <div className="relative aspect-square w-full">
+        <div className="mb-3 flex justify-center">
           <div
-            className="absolute inset-[8%] rounded-full"
+            className="rounded-full px-4 py-2 text-[11px] font-bold ring-1"
             style={{
-              background: `conic-gradient(from 0deg, ${HAK_PURPLE_SOFT} 0 40%, ${HAK_PINK_SOFT} 40% 60%, ${HAK_PURPLE_SOFT} 60% 100%)`,
-              boxShadow: "inset 0 0 0 1px rgba(255,255,255,.34)",
+              backgroundColor: "rgba(229,219,248,.92)",
+              color: HAK_PURPLE_DARK,
+              borderColor: "rgba(122,83,200,.18)",
+              boxShadow: "0 2px 7px rgba(69,47,110,.06)",
             }}
-          />
+          >
+            Active HAK days · 1–24
+          </div>
+        </div>
+
+        <div className="relative aspect-square w-full">
+          {/* Very soft circular track like the approved mockup — no heavy purple/pink donut. */}
           <div
-            className="absolute inset-[18%] rounded-full"
+            className="pointer-events-none absolute inset-[8%] rounded-full"
             style={{
-              backgroundColor: HAK_CARD_BG,
-              boxShadow: "0 0 0 1px rgba(255,255,255,.18)",
+              border: "9px solid rgba(255,255,255,.26)",
+              boxShadow:
+                "inset 0 0 0 1px rgba(255,255,255,.20), 0 0 0 1px rgba(122,83,200,.035)",
             }}
           />
 
+          {/* Small pearl dots between pill circles. */}
           <div className="pointer-events-none absolute inset-0 z-[1]">
             {Array.from({ length: 28 }).map((_, i) => {
               const angle = ((-90 + (i * 360) / 28) * Math.PI) / 180;
@@ -1049,10 +1063,12 @@ function BirthControlCalendar({
               return (
                 <span
                   key={`wheel-track-${i}`}
-                  className="absolute h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/70"
+                  className="absolute h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
                   style={{
                     left: `${50 + Math.cos(angle) * radius}%`,
                     top: `${50 + Math.sin(angle) * radius}%`,
+                    backgroundColor: "rgba(255,255,255,.78)",
+                    boxShadow: "0 0 0 1px rgba(255,255,255,.30)",
                   }}
                 />
               );
@@ -1070,33 +1086,46 @@ function BirthControlCalendar({
             const isCurrent = day === currentDay;
             const isPlacebo = day > ACTIVE_DAYS;
 
-            // The user confirmed continuous on-time Drovelis use from `since`.
-            // Therefore historical active pills are visually treated as taken
-            // unless that exact date was explicitly marked missed. This prevents
-            // old packs from showing pale/empty circles only because dose logging
-            // was added to the app later.
+            // Historical pills are considered on-schedule for protection because the user
+            // confirmed continuous on-time Drovelis use from `since`. Visually, however,
+            // they stay soft lavender like the approved design. Only an explicitly logged
+            // taken pill becomes darker, and the selected/current day gets the strong ring.
             const assumedHistoricalTaken =
               !isPlacebo && dateKey >= since && dateKey < todayK && !missed;
-            const taken = loggedTaken || assumedHistoricalTaken;
+            const takenForStatus = loggedTaken || assumedHistoricalTaken;
 
-            let backgroundColor = isPlacebo ? HAK_PINK_SOFT : "#E9E1F8";
-            let color = isPlacebo ? HAK_PINK_DARK : "#3D218D";
-            let borderColor = isPlacebo ? HAK_PINK : HAK_PURPLE;
+            let backgroundColor = isPlacebo ? "#F8D8E4" : "#DED2F3";
+            let color = isPlacebo ? HAK_PINK_DARK : HAK_PURPLE_DARK;
+            let borderColor = isPlacebo ? "rgba(217,87,130,.72)" : "rgba(122,83,200,.36)";
+            let boxShadow = "0 2px 7px rgba(67,45,105,.08), inset 0 1px 0 rgba(255,255,255,.55)";
 
-            if (taken && !isPlacebo) {
-              backgroundColor = HAK_PURPLE_DARK;
-              color = "#fff";
-              borderColor = HAK_PURPLE_DARK;
-            }
-
-            if (isCurrent && !isPlacebo) {
-              backgroundColor = HAK_PURPLE_DARK;
-              color = "#fff";
-              borderColor = HAK_PURPLE_DARK;
+            // A pill manually marked as taken is visibly darker, as requested.
+            if (loggedTaken && !isPlacebo && !isCurrent) {
+              backgroundColor = "#BDA9E7";
+              color = "#4E2B98";
+              borderColor = "rgba(91,50,174,.58)";
             }
 
             if (missed && !isPlacebo) {
+              backgroundColor = "#F6D7DB";
+              color = "#8E2832";
               borderColor = "#C94A55";
+              boxShadow = "0 0 0 2px rgba(201,74,85,.10)";
+            }
+
+            // Current HAK day is the only strong purple circle with the double halo.
+            if (isCurrent && !isPlacebo) {
+              backgroundColor = HAK_PURPLE;
+              color = "#fff";
+              borderColor = "rgba(255,255,255,.78)";
+              boxShadow = `0 0 0 3px ${HAK_CARD_BG}, 0 0 0 6px rgba(122,83,200,.42), 0 3px 9px rgba(67,45,105,.16)`;
+            }
+
+            if (isCurrent && isPlacebo) {
+              backgroundColor = HAK_PINK;
+              color = "#fff";
+              borderColor = "rgba(255,255,255,.78)";
+              boxShadow = `0 0 0 3px ${HAK_CARD_BG}, 0 0 0 6px rgba(217,87,130,.30)`;
             }
 
             return (
@@ -1107,25 +1136,25 @@ function BirthControlCalendar({
                   setSel(dateKey);
                   setPickTime("");
                 }}
-                className="absolute z-10 grid h-8 w-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[11px] font-bold shadow-sm transition active:scale-95"
+                className="absolute z-10 grid h-9 w-9 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[11px] font-bold transition active:scale-95"
                 style={{
                   left: `${left}%`,
                   top: `${top}%`,
                   backgroundColor,
                   color,
                   border: `1.5px solid ${borderColor}`,
-                  boxShadow: isCurrent
-                    ? `0 0 0 3px ${HAK_CARD_BG}, 0 0 0 6px ${HAK_PURPLE}66`
-                    : "0 1px 5px rgba(58,61,30,.08)",
+                  boxShadow,
                 }}
-                aria-label={`HAK day ${day}, ${fmtFullDate(dateKey)}${missed ? ", missed" : taken ? ", taken" : ""}`}
+                aria-label={`HAK day ${day}, ${fmtFullDate(dateKey)}${missed ? ", missed" : takenForStatus ? ", taken on schedule" : ""}`}
               >
                 {day}
               </button>
             );
           })}
 
-          <div className="pointer-events-none absolute inset-[25%] z-20 flex flex-col items-center justify-center text-center">
+          {/* No extra green Day 1 marker — day 1 exists only once in the wheel. */}
+
+          <div className="pointer-events-none absolute inset-[24%] z-20 flex flex-col items-center justify-center text-center">
             <p className="text-[11px] font-semibold text-foreground">Day</p>
             <p
               className="mt-1 font-serif text-[clamp(2rem,9vw,2.8rem)] font-bold leading-none"
@@ -1140,18 +1169,18 @@ function BirthControlCalendar({
               {currentDay <= ACTIVE_DAYS ? "Active HAK days" : "Placebo / break"}
             </p>
 
-            <div className="relative mt-3 h-[70px] w-[56px] rotate-[8deg]" aria-hidden="true">
+            <div className="relative mt-4 h-[76px] w-[61px] rotate-[8deg]" aria-hidden="true">
               <div
-                className="absolute inset-x-1 bottom-[-6px] h-3 rounded-full opacity-20 blur-[2px]"
+                className="absolute inset-x-1 bottom-[-7px] h-3 rounded-full opacity-20 blur-[3px]"
                 style={{ backgroundColor: "#4E3E6D" }}
               />
               <div
-                className="relative grid h-full w-full grid-cols-2 gap-x-2 gap-y-2 rounded-[12px] p-[8px] shadow-lg ring-1"
+                className="relative grid h-full w-full grid-cols-2 gap-x-2 gap-y-2 rounded-[14px] p-[9px] ring-1"
                 style={{
-                  background: "linear-gradient(145deg, #F1ECFA 0%, #D7C6EE 48%, #B99BD9 100%)",
-                  borderColor: "#B89AD8",
+                  background: "linear-gradient(145deg, #F4EFFC 0%, #DDCEF4 48%, #C4A8E6 100%)",
+                  borderColor: "#C8AFE7",
                   boxShadow:
-                    "inset 2px 2px 4px rgba(255,255,255,.82), inset -2px -2px 4px rgba(92,55,145,.16), 0 7px 12px rgba(63,48,89,.16)",
+                    "inset 2px 2px 4px rgba(255,255,255,.84), inset -2px -2px 4px rgba(92,55,145,.14), 0 8px 13px rgba(63,48,89,.14)",
                 }}
               >
                 {Array.from({ length: 6 }).map((_, i) => (
@@ -1164,7 +1193,7 @@ function BirthControlCalendar({
                           ? "radial-gradient(circle at 32% 28%, #B9A2E9 0%, #8A68CF 45%, #5B39A8 100%)"
                           : "radial-gradient(circle at 32% 28%, #C4B2EE 0%, #9677D5 45%, #6745B0 100%)",
                       boxShadow:
-                        "inset 1px 1px 2px rgba(255,255,255,.75), inset -1px -2px 2px rgba(57,31,103,.28), 0 1px 2px rgba(67,45,105,.28)",
+                        "inset 1px 1px 2px rgba(255,255,255,.75), inset -1px -2px 2px rgba(57,31,103,.24), 0 1px 2px rgba(67,45,105,.24)",
                     }}
                   >
                     <span className="absolute left-[22%] top-[18%] h-[28%] w-[28%] rounded-full bg-white/35" />
@@ -1173,10 +1202,8 @@ function BirthControlCalendar({
               </div>
             </div>
 
-            <p className="mt-3 max-w-[165px] text-[10px] leading-snug text-muted-foreground">
-              {currentDay <= ACTIVE_DAYS
-                ? "Drovelis · full-dose active pill"
-                : "Drovelis placebo · protection continues when the pack is used correctly"}
+            <p className="mt-4 max-w-[145px] text-[10px] leading-snug text-muted-foreground">
+              {currentDay <= ACTIVE_DAYS ? "Continue taking your tablet" : "Placebo / break days"}
             </p>
           </div>
         </div>
@@ -3037,4 +3064,3 @@ function TimeOfDayPatternChart({
       )}
     </section>
   );
-}
