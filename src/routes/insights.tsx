@@ -609,6 +609,7 @@ function BirthControlCalendar({
   const HAK_GREEN_DARK = "#397B2F";
   const HAK_GREEN_SOFT = "#DCEBD2";
   const HAK_TRACK = "#E4E4D3";
+  const HAK_CARD_BG = "color-mix(in srgb, var(--background) 94%, #7C8900 6%)";
 
   const bcMed = data.meds.find((m) =>
     /antikonc|birth\s*control|contracept|hak|pill/i.test(`${m.name} ${m.dose ?? ""}`),
@@ -776,15 +777,73 @@ function BirthControlCalendar({
     year: "numeric",
   });
 
+  type ProtectionState = "onSchedule" | "check" | "unknown";
+
+  const protectionStateFor = (key: string): ProtectionState => {
+    const day = pillNumber(key);
+    if (day == null) return "unknown";
+
+    const packStart = addDays(key, -(day - 1));
+    const activeDaysToCheck = Math.min(day, ACTIVE_DAYS);
+
+    let hasMissed = false;
+    let hasIncompleteLogs = false;
+
+    for (let i = 0; i < activeDaysToCheck; i++) {
+      const activeKey = addDays(packStart, i);
+      if (missedAt(activeKey)) {
+        hasMissed = true;
+        break;
+      }
+      if (!takenAt(activeKey)) {
+        hasIncompleteLogs = true;
+      }
+    }
+
+    if (hasMissed) return "check";
+    if (hasIncompleteLogs) return "unknown";
+    return "onSchedule";
+  };
+
+  const protectionMeta = (state: ProtectionState) => {
+    if (state === "onSchedule") {
+      return {
+        label: "Protection on schedule",
+        short: "On schedule",
+        color: HAK_GREEN,
+        bg: "rgba(220,235,210,.72)",
+        text: HAK_GREEN_DARK,
+      };
+    }
+
+    if (state === "check") {
+      return {
+        label: "Backup protection may be needed",
+        short: "Check / backup",
+        color: "#D99024",
+        bg: "rgba(245,219,172,.62)",
+        text: "#8A5412",
+      };
+    }
+
+    return {
+      label: "Protection status unknown",
+      short: "Unknown",
+      color: "#9A9A82",
+      bg: "rgba(230,230,210,.55)",
+      text: "var(--muted-foreground)",
+    };
+  };
+
   return (
     <section
       className="rounded-[2rem] p-4 shadow-sm ring-1"
       style={{
-        backgroundColor: "rgba(83, 102, 0, 0.045)",
+        backgroundColor: HAK_CARD_BG,
         boxShadow: `inset 0 0 0 1px ${GREEN_BORDER}`,
       }}
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-surface/65 ring-1 ring-border/50">
             <Ico e="🫐" size={25} />
@@ -795,12 +854,6 @@ function BirthControlCalendar({
           </div>
         </div>
 
-        <span
-          className="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold"
-          style={{ backgroundColor: HAK_PURPLE_SOFT, color: HAK_PURPLE_DARK }}
-        >
-          HAK
-        </span>
       </div>
 
       <div className="mt-2 flex justify-end">
@@ -878,7 +931,7 @@ function BirthControlCalendar({
       </div>
 
       {/* Circular HAK wheel */}
-      <div className="mx-auto mt-3 w-full max-w-[360px]">
+      <div className="mx-auto mt-3 w-full max-w-[325px]">
         <div className="relative aspect-square w-full">
           <div
             className="absolute inset-[8%] rounded-full"
@@ -888,8 +941,11 @@ function BirthControlCalendar({
             }}
           />
           <div
-            className="absolute inset-[17%] rounded-full"
-            style={{ backgroundColor: GREEN_SOFT }}
+            className="absolute inset-[18%] rounded-full"
+            style={{
+              backgroundColor: HAK_CARD_BG,
+              boxShadow: "0 0 0 1px rgba(255,255,255,.18)",
+            }}
           />
 
           {wheelDays.map((day) => {
@@ -927,11 +983,7 @@ function BirthControlCalendar({
                   color: isCurrent ? "#fff" : baseColor,
                   border: isCurrent
                     ? "3px solid rgba(255,255,255,.96)"
-                    : taken
-                      ? `2px solid ${HAK_GREEN}`
-                      : missed
-                        ? `2px solid ${CHART_COLORS.headache}`
-                        : "1px solid rgba(255,255,255,.8)",
+                    : `1.5px solid ${isPlacebo ? HAK_PINK : HAK_PURPLE}`,
                   boxShadow: isCurrent
                     ? `0 0 0 3px ${isPlacebo ? HAK_PINK : HAK_PURPLE}66`
                     : "0 1px 5px rgba(58,61,30,.08)",
@@ -939,6 +991,15 @@ function BirthControlCalendar({
                 aria-label={`HAK day ${day}, ${fmtFullDate(dateKey)}`}
               >
                 {day}
+                {(taken || missed) && (
+                  <span
+                    className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full ring-1 ring-white/80"
+                    style={{
+                      backgroundColor: missed ? CHART_COLORS.headache : HAK_GREEN,
+                    }}
+                    aria-hidden="true"
+                  />
+                )}
               </button>
             );
           })}
@@ -946,24 +1007,77 @@ function BirthControlCalendar({
           <div
             className="pointer-events-none absolute z-20 grid h-8 w-8 place-items-center rounded-full text-xs font-bold shadow-sm"
             style={{
-              left: "88%",
-              top: "76%",
+              left: "84%",
+              top: "82%",
               transform: "translate(-50%, -50%)",
               backgroundColor: HAK_GREEN_SOFT,
               color: HAK_GREEN_DARK,
               border: `2px solid ${HAK_GREEN}`,
-              boxShadow: `0 0 0 4px ${GREEN_SOFT}`,
+              boxShadow: `0 0 0 4px ${HAK_CARD_BG}`,
             }}
             aria-hidden="true"
           >
             1
+          </div>
+
+          <div className="pointer-events-none absolute inset-[25%] z-20 flex flex-col items-center justify-center text-center">
+            <p className="text-[11px] font-semibold text-foreground">Day</p>
+            <p
+              className="mt-1 font-serif text-[clamp(2rem,9vw,2.8rem)] font-bold leading-none"
+              style={{ color: currentDay <= ACTIVE_DAYS ? HAK_PURPLE_DARK : HAK_PINK_DARK }}
+            >
+              {currentDay} / {PACK_DAYS}
+            </p>
+            <p
+              className="mt-2 text-[13px] font-semibold"
+              style={{ color: currentDay <= ACTIVE_DAYS ? HAK_PURPLE_DARK : HAK_PINK_DARK }}
+            >
+              {currentDay <= ACTIVE_DAYS ? "Active HAK days" : "Placebo / break"}
+            </p>
+
+            <div className="relative mt-3 h-[70px] w-[56px] rotate-[8deg]" aria-hidden="true">
+              <div
+                className="absolute inset-x-1 bottom-[-6px] h-3 rounded-full opacity-20 blur-[2px]"
+                style={{ backgroundColor: "#4E3E6D" }}
+              />
+              <div
+                className="relative grid h-full w-full grid-cols-2 gap-x-2 gap-y-2 rounded-[12px] p-[8px] shadow-lg ring-1"
+                style={{
+                  background: "linear-gradient(145deg, #F1ECFA 0%, #D7C6EE 48%, #B99BD9 100%)",
+                  borderColor: "#B89AD8",
+                  boxShadow:
+                    "inset 2px 2px 4px rgba(255,255,255,.82), inset -2px -2px 4px rgba(92,55,145,.16), 0 7px 12px rgba(63,48,89,.16)",
+                }}
+              >
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <span
+                    key={i}
+                    className="relative rounded-full"
+                    style={{
+                      background:
+                        i % 2 === 0
+                          ? "radial-gradient(circle at 32% 28%, #B9A2E9 0%, #8A68CF 45%, #5B39A8 100%)"
+                          : "radial-gradient(circle at 32% 28%, #C4B2EE 0%, #9677D5 45%, #6745B0 100%)",
+                      boxShadow:
+                        "inset 1px 1px 2px rgba(255,255,255,.75), inset -1px -2px 2px rgba(57,31,103,.28), 0 1px 2px rgba(67,45,105,.28)",
+                    }}
+                  >
+                    <span className="absolute left-[22%] top-[18%] h-[28%] w-[28%] rounded-full bg-white/35" />
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <p className="mt-3 max-w-[150px] text-[10px] leading-snug text-muted-foreground">
+              {currentDay <= ACTIVE_DAYS ? "Continue taking your tablet" : "Placebo / break days"}
+            </p>
           </div>
         </div>
       </div>
 
       <div className="mt-1 grid grid-cols-2 gap-2">
         <div
-          className="rounded-2xl px-3 py-2.5 ring-1"
+          className="rounded-2xl px-3 py-2 ring-1"
           style={{
             backgroundColor: "rgba(251,224,233,.62)",
             borderColor: "rgba(217,87,130,.16)",
@@ -993,12 +1107,12 @@ function BirthControlCalendar({
         </div>
       </div>
 
-      {/* Detailed linear pack progress — matches the user's detailed reference */}
-      <div className="mt-1">
+      {/* Detailed linear pack progress — compact reference layout */}
+      <div className="mt-4">
         <h3 className="font-serif text-lg font-bold text-foreground">Your current phase</h3>
 
-        <div className="relative mt-4 pt-10 pb-10">
-          <div className="absolute inset-x-0 top-0 grid grid-cols-[1.7fr_1.15fr_.8fr] items-start gap-1 text-center">
+        <div className="relative mt-3 pt-10 pb-9">
+          <div className="absolute inset-x-0 top-0 grid grid-cols-[3fr_1fr_.72fr] items-start text-center">
             <div>
               <p className="text-[10px] font-bold" style={{ color: HAK_PURPLE_DARK }}>
                 Active HAK days
@@ -1028,10 +1142,10 @@ function BirthControlCalendar({
           </div>
 
           <div
-            className="relative mt-2 rounded-full px-2 py-2 ring-1"
+            className="relative rounded-full px-2 py-2 ring-1"
             style={{
-              backgroundColor: "rgba(255,255,255,.22)",
-              borderColor: "rgba(129,135,67,.16)",
+              backgroundColor: "rgba(255,255,255,.24)",
+              borderColor: "rgba(129,135,67,.18)",
             }}
           >
             <div
@@ -1052,11 +1166,11 @@ function BirthControlCalendar({
                 return (
                   <span
                     key={`${item.kind}-${index}`}
-                    className="mx-auto block aspect-square w-full max-w-[11px] rounded-full"
+                    className="mx-auto block aspect-square w-full max-w-[10px] rounded-full"
                     style={{
                       backgroundColor: color,
                       boxShadow: isCurrent
-                        ? `0 0 0 3px ${GREEN_SOFT}, 0 0 0 6px ${
+                        ? `0 0 0 3px ${HAK_CARD_BG}, 0 0 0 6px ${
                             item.kind === "placebo" ? HAK_PINK_DARK : HAK_PURPLE_DARK
                           }`
                         : item.kind === "next"
@@ -1070,7 +1184,7 @@ function BirthControlCalendar({
           </div>
 
           <div
-            className="absolute bottom-[25px] h-5 w-px"
+            className="absolute bottom-[22px] h-4 w-px"
             style={{
               left: `${timelineMarkerLeft}%`,
               backgroundColor: currentDay <= ACTIVE_DAYS ? HAK_PURPLE : HAK_PINK,
@@ -1078,7 +1192,7 @@ function BirthControlCalendar({
           />
 
           <p
-            className="absolute bottom-0 whitespace-nowrap text-xs font-bold"
+            className="absolute bottom-0 whitespace-nowrap text-[11px] font-bold"
             style={{
               left: `${timelineMarkerLeft}%`,
               transform: "translateX(-50%)",
@@ -1203,6 +1317,8 @@ function BirthControlCalendar({
               const taken = takenAt(cell.key);
               const missed = missedAt(cell.key);
               const isToday = cell.key === todayK;
+              const protectionState = cell.inMonth ? protectionStateFor(cell.key) : "unknown";
+              const protection = protectionMeta(protectionState);
 
               return (
                 <button
@@ -1248,22 +1364,60 @@ function BirthControlCalendar({
                       style={{ backgroundColor: CHART_COLORS.headache }}
                     />
                   )}
+
+                  {cell.inMonth && packDay != null && (
+                    <span
+                      className="absolute bottom-1 right-1 grid h-3.5 w-3.5 place-items-center rounded-full text-[7px] font-bold text-white"
+                      style={{ backgroundColor: protection.color }}
+                      title={protection.label}
+                      aria-label={protection.label}
+                    >
+                      {protectionState === "onSchedule" ? "✓" : protectionState === "check" ? "!" : "?"}
+                    </span>
+                  )}
                 </button>
               );
             })}
           </div>
 
-          <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-            {[
-              ["Active HAK", HAK_PURPLE],
-              ["Placebo", HAK_PINK],
-              ["Taken", HAK_GREEN],
-            ].map(([label, color]) => (
-              <div key={label} className="rounded-2xl bg-surface/45 p-2 ring-1 ring-border/40">
-                <span className="mx-auto block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
-                <p className="mt-1 text-[9px] font-semibold text-foreground">{label}</p>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <div className="rounded-2xl bg-surface/45 p-2.5 ring-1 ring-border/40">
+              <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: HAK_PURPLE }} />
+                <p className="text-[9px] font-semibold text-foreground">Active HAK · 1–{ACTIVE_DAYS}</p>
               </div>
-            ))}
+            </div>
+
+            <div className="rounded-2xl bg-surface/45 p-2.5 ring-1 ring-border/40">
+              <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: HAK_PINK }} />
+                <p className="text-[9px] font-semibold text-foreground">Placebo · {ACTIVE_DAYS + 1}–{PACK_DAYS}</p>
+              </div>
+            </div>
+
+            {(["onSchedule", "check", "unknown"] as ProtectionState[]).map((state) => {
+              const item = protectionMeta(state);
+              return (
+                <div key={state} className="rounded-2xl bg-surface/45 p-2.5 ring-1 ring-border/40">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="grid h-4 w-4 shrink-0 place-items-center rounded-full text-[8px] font-bold text-white"
+                      style={{ backgroundColor: item.color }}
+                    >
+                      {state === "onSchedule" ? "✓" : state === "check" ? "!" : "?"}
+                    </span>
+                    <p className="text-[9px] font-semibold text-foreground">{item.short}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-3 rounded-2xl bg-surface/40 p-3 ring-1 ring-border/35">
+            <p className="text-[10px] font-semibold text-foreground">HAK protection status</p>
+            <p className="mt-1 text-[9px] leading-relaxed text-muted-foreground">
+              Based only on your logged doses. If a pill was late or missed, follow the instructions for your exact contraceptive or your prescriber before relying on the app.
+            </p>
           </div>
         </div>
       )}
@@ -1380,6 +1534,25 @@ function BirthControlCalendar({
                           : "Not recorded"}
                   </p>
                 </div>
+
+                {(() => {
+                  const state = protectionStateFor(sel);
+                  const item = protectionMeta(state);
+                  return (
+                    <div
+                      className="mt-2 rounded-2xl p-3 ring-1"
+                      style={{ backgroundColor: item.bg, borderColor: `${item.color}33` }}
+                    >
+                      <p className="text-xs text-muted-foreground">HAK protection</p>
+                      <p className="mt-1 text-sm font-semibold" style={{ color: item.text }}>
+                        {item.label}
+                      </p>
+                      <p className="mt-1 text-[9px] leading-relaxed text-muted-foreground">
+                        This is based on logged doses only; it is not an STI-safety indicator.
+                      </p>
+                    </div>
+                  );
+                })()}
 
                 {selectedDay <= ACTIVE_DAYS && (
                   <div className="mt-3 space-y-2">
