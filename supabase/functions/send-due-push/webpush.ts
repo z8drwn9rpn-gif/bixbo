@@ -85,25 +85,41 @@ async function importVapidSigningKey(config: VapidConfig): Promise<CryptoKey> {
   }
 
   const privateBytes = b64urlToBytes(config.privateKey);
-  if (privateBytes.length !== 32) {
-    throw new Error("VAPID_PRIVATE_KEY is not a 32-byte P-256 private scalar.");
+
+  // Raw 32-byte scalar — the format web-push and most generators emit.
+  if (privateBytes.length === 32) {
+    return crypto.subtle.importKey(
+      "jwk",
+      {
+        kty: "EC",
+        crv: "P-256",
+        d: bytesToB64url(privateBytes),
+        x: bytesToB64url(publicBytes.slice(1, 33)),
+        y: bytesToB64url(publicBytes.slice(33, 65)),
+        ext: true,
+      },
+      { name: "ECDSA", namedCurve: "P-256" },
+      false,
+      ["sign"],
+    );
   }
 
-  return crypto.subtle.importKey(
-    "jwk",
-    {
-      kty: "EC",
-      crv: "P-256",
-      d: bytesToB64url(privateBytes),
-      x: bytesToB64url(publicBytes.slice(1, 33)),
-      y: bytesToB64url(publicBytes.slice(33, 65)),
-      ext: true,
-    },
-    { name: "ECDSA", namedCurve: "P-256" },
-    false,
-    ["sign"],
-  );
+  // PKCS#8 DER (what `openssl ecparam ... -outform DER` produces).
+  try {
+    return await crypto.subtle.importKey(
+      "pkcs8",
+      toArrayBuffer(privateBytes),
+      { name: "ECDSA", namedCurve: "P-256" },
+      false,
+      ["sign"],
+    );
+  } catch {
+    throw new Error(
+      `VAPID_PRIVATE_KEY is not a usable P-256 key (decoded to ${privateBytes.length} bytes; expected a 32-byte base64url scalar or PKCS#8 DER).`,
+    );
+  }
 }
+
 
 /**
  * Proves VAPID_PRIVATE_KEY really belongs to VAPID_PUBLIC_KEY by signing with
