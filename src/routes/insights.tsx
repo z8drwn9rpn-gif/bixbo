@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { CHART_COLORS } from "@/components/ui/chart";
@@ -221,12 +221,6 @@ const HOT_FLASH_COLORS = [
   VIVID_PAIN_CHART_COLORS[10], // level 5 — deepest red
 ] as const;
 
-const SLEEP_COLORS = {
-  short: VIVID_PAIN_CHART_COLORS[8], // under 8 h — red
-  target: VIVID_PAIN_CHART_COLORS[4], // exactly 8 h — yellow
-  long: VIVID_PAIN_CHART_COLORS[0], // over 8 h — green
-} as const;
-
 const HOT_FLASH_DESCRIPTIONS: Record<number, string> = {
   1: "Mild warmth",
   2: "Warm flush",
@@ -345,8 +339,6 @@ function InsightsPage() {
     }),
   );
 
-  // Sleep
-  const sleepSeries = days.map((k) => view.dayLogs[k]?.sleepHours);
 
   // Hot flashes — collect per-day max intensity + distribution across levels 1–5
   const hfSeries = days.map((k) => {
@@ -525,19 +517,6 @@ function InsightsPage() {
 
             <BirthControlCalendar data={view} anchor={anchor} />
 
-            <section
-              className="rounded-3xl p-5 ring-1"
-              style={{
-                backgroundColor: GREEN_SOFT,
-                boxShadow: `inset 0 0 0 1px ${GREEN_BORDER}`,
-              }}
-            >
-              <p className="flex items-center gap-2 text-xs uppercase tracking-wider" style={{ color: GREEN_ACCENT }}>
-                <Ico e="❤️" size={16} /> ŠukŠuk!
-              </p>
-              <p className="mt-2 font-serif text-5xl leading-none">{sexCount}</p>
-              <p className="mt-2 text-sm text-muted-foreground">{sexCount === 1 ? "entry" : "entries"} this month</p>
-            </section>
           </>
         )}
 
@@ -630,21 +609,6 @@ function InsightsPage() {
               )}
             </section>
 
-            <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">Sleep</p>
-              <SleepChart period={period} days={days} series={sleepSeries} anchor={anchor} />
-              <div className="mt-2 flex gap-3 text-[10px] text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: SLEEP_COLORS.short }} /> &lt;8h
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: SLEEP_COLORS.target }} /> 8h
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: SLEEP_COLORS.long }} /> &gt;8h
-                </span>
-              </div>
-            </section>
 
             {period === "Y" && <YearHealthHeatmap data={view} anchor={anchor} />}
 
@@ -1553,84 +1517,6 @@ function InsightBarChartFrame({
   );
 }
 
-function SleepChart({
-  period,
-  days,
-  series,
-  anchor,
-}: {
-  period: Period;
-  days: string[];
-  series: (number | undefined)[];
-  anchor: Date;
-}) {
-  // Mirrors PainChart's layout: labelled Y axis on the left, dotted gridlines,
-  // and X-axis labels that adapt to the active period.
-  type Bar = { value?: number; label: string; sub?: string };
-  let bars: Bar[] = [];
-  if (period === "Y") {
-    const monthly: { sum: number; n: number }[] = Array.from({ length: 12 }, () => ({ sum: 0, n: 0 }));
-    days.forEach((k, i) => {
-      const v = series[i];
-      if (v == null) return;
-      const m = fromKey(k).getMonth();
-      monthly[m].sum += v;
-      monthly[m].n += 1;
-    });
-    const MON = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
-    bars = monthly.map((mm, i) => ({
-      value: mm.n ? mm.sum / mm.n : undefined,
-      label: MON[i],
-    }));
-  } else if (period === "M") {
-    bars = days.map((k, i) => {
-      const d = fromKey(k).getDate();
-      return { value: series[i], label: d % 2 === 1 ? String(d) : "" };
-    });
-  } else {
-    bars = days.map((k, i) => {
-      const d = fromKey(k);
-      const wd = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"][d.getDay()];
-      return { value: series[i], label: wd, sub: String(d.getDate()) };
-    });
-  }
-
-  const sleepColor = (h?: number) =>
-    h == null
-      ? "var(--tint)"
-      : h < 8
-        ? INSIGHT_COLORS.terracotta
-        : h === 8
-          ? INSIGHT_COLORS.amber
-          : INSIGHT_COLORS.green;
-
-  return (
-    <InsightBarChartFrame
-      bars={bars}
-      yLabels={[12, 10, 8, 6, 4, 2, 0]}
-      yMax={12}
-      colorFor={(value) => sleepColor(value)}
-      tooltipDetails={(i, value) => {
-        const heading = period === "Y" ? fmtTapMonth(i, anchor.getFullYear()) : fmtCoupleTooltipDay(days[i]);
-        const description = value < 8 ? "Below 8 hours" : value === 8 ? "8-hour target" : "Above 8 hours";
-        const color = sleepColor(value);
-
-        return {
-          owner: "You",
-          heading,
-          value: `Sleep ${value.toFixed(1)}h`,
-          description,
-          color,
-          summary: `${period === "Y" ? heading : days[i]} · Sleep ${value.toFixed(1)}h · ${description}`,
-        };
-      }}
-      axisLabel="Sleep (hours)"
-      periodLabel={period === "Y" ? "Month" : period === "M" ? "Day of month" : "Day"}
-      emptyMessage={period === "Y" ? `No sleep entries in ${anchor.getFullYear()}` : undefined}
-    />
-  );
-}
-
 function PainChart({
   period,
   days,
@@ -1948,34 +1834,61 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
   const [active, setActive] = useState<string | null>(null);
   const year = anchor.getFullYear();
 
-  useDismissTapTooltip(() => setActive(null));
-
+  // Do not use the global "tap outside" dismiss hook here. On iOS it fired while
+  // the user was scrolling the year grid and made the heatmap feel frozen.
+  // The detail card stays open until another cell/metric is chosen or Close is tapped.
   useEffect(() => {
     setActive(null);
   }, [metric, year]);
 
-  const datumFor = (key: string, selectedMetric: HeatmapMetric): HeatmapDatum | null => {
+  const dayNotesFor = useCallback(
+    (key: string): string[] =>
+      (data.dayNotes[key] ?? [])
+        .map((note) => {
+          if (typeof note === "string") return note.trim();
+          const text = note?.text?.trim();
+          if (!text) return "";
+          return `${note.time ? `${note.time} · ` : ""}${text}`;
+        })
+        .filter(Boolean),
+    [data.dayNotes],
+  );
+
+  const datumFor = useCallback((key: string, selectedMetric: HeatmapMetric): HeatmapDatum | null => {
     const log = data.dayLogs[key];
     if (!log) return null;
 
     if (selectedMetric === "pain") {
+      const entries = (log.pain ?? []).filter((entry) => Number.isFinite(entry.score));
       const value = avgDayPain(log);
-      if (value == null) return null;
-      const count = log.pain?.length ?? 0;
+      if (value == null || !entries.length) return null;
       return {
         color: vividPainChartColor(value),
         value: `${value.toFixed(1)}/10`,
-        details: [`${count} pain ${count === 1 ? "entry" : "entries"}`],
+        details: entries.map((entry) => {
+          const pieces = [`${entry.time || "—"} · Pain ${entry.score}/10`];
+          if (entry.parts?.length) pieces.push(`Locations: ${entry.parts.join(", ")}`);
+          if (entry.quality?.length) pieces.push(`Quality: ${entry.quality.join(", ")}`);
+          if (entry.symptoms?.length) pieces.push(`Symptoms: ${entry.symptoms.join(", ")}`);
+          if (entry.note?.trim()) pieces.push(`Note: ${entry.note.trim()}`);
+          return pieces.join(" · ");
+        }),
       };
     }
 
     if (selectedMetric === "period") {
       const level = log.periodInfo?.level ?? log.period;
       if (!level) return null;
+      const info = log.periodInfo;
+      const details = ["Logged period flow"];
+      if (info?.cramps != null) details.push(`Cramps: ${info.cramps}/10`);
+      if (info?.discharge) details.push(`Discharge: ${info.discharge}`);
+      if (info?.dischargeNote?.trim()) details.push(`Discharge note: ${info.dischargeNote.trim()}`);
+      if (info?.note?.trim()) details.push(`Note: ${info.note.trim()}`);
       return {
         color: heatmapPeriodColor(level),
         value: periodLabel(level) || String(level),
-        details: ["Logged period flow"],
+        details,
       };
     }
 
@@ -1991,10 +1904,13 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
       return {
         color: type === 0 ? "#64748B" : bristol?.color ?? INSIGHT_COLORS.sage,
         value: `Type ${type}`,
-        details: [
-          `${entries.length} bowel ${entries.length === 1 ? "entry" : "entries"}`,
-          entries.map((entry) => `${entry.time || "—"} · Type ${Number(entry.bristol)}`).join(" · "),
-        ],
+        details: entries.map((entry) => {
+          const parts = [`${entry.time || "—"} · Type ${Number(entry.bristol)}`];
+          if (entry.feelings?.length) parts.push(`Feelings: ${entry.feelings.join(", ")}`);
+          if (entry.symptoms?.length) parts.push(`Symptoms: ${entry.symptoms.join(", ")}`);
+          if (entry.note?.trim()) parts.push(`Note: ${entry.note.trim()}`);
+          return parts.join(" · ");
+        }),
       };
     }
 
@@ -2005,12 +1921,16 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
       return {
         color: vividPainChartColor(highest),
         value: `${highest}/10 highest`,
-        details: [
-          `${entries.length} panic ${entries.length === 1 ? "episode" : "episodes"}`,
-          entries
-            .map((entry) => `${entry.time || "—"} · ${entry.intensity}/10${entry.minutes != null ? ` · ${entry.minutes} min` : ""}`)
-            .join(" · "),
-        ],
+        details: entries.map((entry) => {
+          const parts = [
+            `${entry.time || "—"} · ${entry.intensity}/10${entry.minutes != null ? ` · ${entry.minutes} min` : " · ongoing"}`,
+          ];
+          if (entry.trigger?.trim()) parts.push(`Trigger: ${entry.trigger.trim()}`);
+          if (entry.physical?.length) parts.push(`Physical: ${entry.physical.join(", ")}`);
+          if (entry.cognitive?.length) parts.push(`Cognitive: ${entry.cognitive.join(", ")}`);
+          if (entry.note?.trim()) parts.push(`Note: ${entry.note.trim()}`);
+          return parts.join(" · ");
+        }),
       };
     }
 
@@ -2021,41 +1941,79 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
       return {
         color: fiveLevelSeverityColor(highest),
         value: `${highest}/5 highest`,
-        details: [
-          `${entries.length} tetany ${entries.length === 1 ? "episode" : "episodes"}`,
-          entries
-            .map((entry) => `${entry.time || "—"} · ${entry.intensity}/5${entry.minutes != null ? ` · ${entry.minutes} min` : ""}`)
-            .join(" · "),
-        ],
+        details: entries.map((entry) => {
+          const parts = [
+            `${entry.time || "—"} · ${entry.intensity}/5${entry.minutes != null ? ` · ${entry.minutes} min` : " · ongoing"}`,
+          ];
+          if (entry.types?.length) parts.push(`Type: ${entry.types.join(", ")}`);
+          if (entry.location?.length) parts.push(`Location: ${entry.location.join(", ")}`);
+          if (entry.triggers?.length) parts.push(`Triggers: ${entry.triggers.join(", ")}`);
+          if (entry.note?.trim()) parts.push(`Note: ${entry.note.trim()}`);
+          return parts.join(" · ");
+        }),
       };
     }
 
     if (selectedMetric === "hotFlashes") {
-      const values = (log.pain ?? [])
-        .map((entry) => entry.hotFlashes)
-        .filter((value): value is number => value != null && Number.isFinite(value) && value > 0);
-      if (!values.length) return null;
-      const highest = Math.max(...values);
+      const entries = (log.pain ?? []).filter(
+        (entry) => entry.hotFlashes != null && Number.isFinite(entry.hotFlashes) && entry.hotFlashes > 0,
+      );
+      if (!entries.length) return null;
+      const highest = Math.max(...entries.map((entry) => entry.hotFlashes!));
       return {
         color: fiveLevelSeverityColor(highest),
         value: `${highest}/5 highest`,
-        details: [`${values.length} hot-flash ${values.length === 1 ? "entry" : "entries"}`],
+        details: entries.map((entry) => {
+          const parts = [`${entry.time || "—"} · Hot flashes ${entry.hotFlashes}/5`];
+          if (entry.note?.trim()) parts.push(`Note: ${entry.note.trim()}`);
+          return parts.join(" · ");
+        }),
       };
     }
 
     const hours = log.sleepHours ?? log.pregnancy?.sleepHours ?? log.postpartum?.sleepHours;
     if (hours == null || !Number.isFinite(hours)) return null;
+    const details: string[] = [];
+    if (log.sleepQuality) {
+      details.push(`Quality: ${Array.isArray(log.sleepQuality) ? log.sleepQuality.join(", ") : log.sleepQuality}`);
+    }
+    if (log.pregnancy?.note?.trim()) details.push(`Pregnancy note: ${log.pregnancy.note.trim()}`);
+    if (log.postpartum?.note?.trim()) details.push(`Postpartum note: ${log.postpartum.note.trim()}`);
+    if (!details.length) details.push("Sleep duration");
     return {
       color: sleepHeatmapColor(hours),
       value: `${hours.toFixed(1)} h`,
-      details: log.sleepQuality
-        ? [`Quality: ${Array.isArray(log.sleepQuality) ? log.sleepQuality.join(", ") : log.sleepQuality}`]
-        : ["Sleep duration"],
+      details,
     };
-  };
+  }, [data.dayLogs]);
 
-  const activeDatum = active ? datumFor(active, metric) : null;
+  // Precompute the selected metric once per year/metric. Previously datumFor() was
+  // called from every one of the 372 cells on every render, which was noticeably
+  // expensive on iPhone when scrolling the Insights page.
+  const heatmapData = useMemo<Record<string, HeatmapDatum | null>>(() => {
+    const result: Record<string, HeatmapDatum | null> = {};
+    for (let month = 0; month < 12; month++) {
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      for (let day = 1; day <= daysInMonth; day++) {
+        const key = toKey(new Date(year, month, day));
+        result[key] = datumFor(key, metric);
+      }
+    }
+    return result;
+  }, [datumFor, metric, year]);
+
+  const activeDatum = active ? heatmapData[active] ?? null : null;
   const activeMetricLabel = HEATMAP_OPTIONS.find((option) => option.id === metric)?.label ?? "Heatmap";
+  const activeDayNotes = active ? dayNotesFor(active) : [];
+
+  useEffect(() => {
+    if (!active || typeof document === "undefined") return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [active]);
 
   const legend = (() => {
     if (metric === "period") {
@@ -2069,10 +2027,7 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
     }
 
     if (metric === "bowel") {
-      return [
-        ["T0", "#64748B"],
-        ...BRISTOL.map((item) => [`T${item.n}`, item.color] as const),
-      ];
+      return [["T0", "#64748B"], ...BRISTOL.map((item) => [`T${item.n}`, item.color] as const)];
     }
 
     if (metric === "sleep") {
@@ -2097,7 +2052,7 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
 
   return (
     <ChartCard title={`Year heatmap — ${year}`}>
-      <p className="mt-1 text-xs text-muted-foreground">Choose a metric, then tap a coloured day for its saved details.</p>
+      <p className="mt-1 text-xs text-muted-foreground">Choose a metric, then tap a coloured day for its saved details and notes.</p>
 
       <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1">
         {HEATMAP_OPTIONS.map((option) => (
@@ -2116,21 +2071,21 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
         ))}
       </div>
 
-      <div className="mt-4 overflow-x-auto overscroll-x-contain pb-1 touch-pan-x">
+      <div className="mt-4 overflow-x-auto overscroll-x-contain pb-2 touch-auto">
         <div
-          className="grid w-max items-center gap-[3px]"
-          style={{ gridTemplateColumns: "28px repeat(12, 20px)" }}
+          className="grid w-max items-center gap-1"
+          style={{ gridTemplateColumns: "30px repeat(12, 24px)" }}
         >
           <div />
           {MON_SHORT3.map((month) => (
-            <div key={month} className="text-center text-[8px] font-semibold text-muted-foreground">
-              {month}
+            <div key={month} className="text-center text-[9px] font-semibold text-muted-foreground">
+              {month.slice(0, 1)}
             </div>
           ))}
 
           {Array.from({ length: 31 }, (_, dayIndex) => dayIndex + 1).flatMap((day) => {
             const row: ReactNode[] = [
-              <div key={`day-${day}`} className="pr-1 text-right text-[9px] tabular-nums text-muted-foreground">
+              <div key={`day-${day}`} className="pr-1 text-right text-[10px] tabular-nums text-muted-foreground">
                 {day}
               </div>,
             ];
@@ -2140,12 +2095,12 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
               const valid = date.getFullYear() === year && date.getMonth() === month && date.getDate() === day;
 
               if (!valid) {
-                row.push(<div key={`${month}-${day}`} className="h-5 w-5 rounded-[5px] bg-transparent" />);
+                row.push(<div key={`${month}-${day}`} className="h-6 w-6 rounded-[6px] bg-transparent" />);
                 continue;
               }
 
               const key = toKey(date);
-              const datum = datumFor(key, metric);
+              const datum = heatmapData[key] ?? null;
               const isActive = active === key;
 
               row.push(
@@ -2153,18 +2108,15 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
                   key={key}
                   type="button"
                   disabled={!datum}
-                  onPointerUp={(event) => {
+                  onClick={() => {
                     if (!datum) return;
-                    event.preventDefault();
-                    event.stopPropagation();
                     setActive((current) => (current === key ? null : key));
                   }}
-                  onClick={(event) => event.preventDefault()}
                   aria-label={`${fmtTapDay(key)} · ${activeMetricLabel}${datum ? ` · ${datum.value}` : " · no data"}`}
                   aria-pressed={isActive}
-                  className={`h-5 w-5 rounded-[5px] transition-transform ${
-                    datum ? "touch-manipulation hover:scale-110" : "cursor-default"
-                  } ${isActive ? "ring-2 ring-primary ring-offset-1 ring-offset-background" : ""}`}
+                  className={`h-6 w-6 rounded-[6px] transition-transform ${
+                    datum ? "touch-auto active:scale-95" : "cursor-default"
+                  } ${isActive ? "ring-2 ring-foreground ring-offset-1 ring-offset-background" : ""}`}
                   style={{ background: datum?.color ?? "var(--tint)" }}
                 />,
               );
@@ -2187,44 +2139,67 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
         ))}
       </div>
 
-      {active && activeDatum ? (
-        <div
-          className="mt-4 min-w-0 rounded-3xl bg-primary/15 p-4 text-xs ring-1 ring-primary/20"
-          onClick={(event) => event.stopPropagation()}
-          role="status"
-          aria-live="polite"
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="font-semibold text-foreground">{fmtTapDay(active)}</p>
-              <p className="mt-0.5 text-[10px] text-muted-foreground">{activeMetricLabel}</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setActive(null)}
-              className="shrink-0 rounded-full bg-surface px-3 py-1 text-[10px] font-medium text-muted-foreground ring-1 ring-border"
-            >
-              Close
-            </button>
-          </div>
+      <p className="mt-3 text-center text-[10px] text-muted-foreground">
+        {active && activeDatum ? "Detail stays open while you scroll. Tap Close when finished." : "Tap a coloured square for details."}
+      </p>
 
-          <div className="mt-3 rounded-2xl bg-surface/70 p-3 ring-1 ring-border/50">
-            <p className="text-sm font-semibold text-foreground">{activeDatum.value}</p>
-            {activeDatum.details.map((detail, index) => (
-              <p key={index} className="mt-1 break-words text-[10px] leading-snug text-muted-foreground">
-                {detail}
-              </p>
-            ))}
-          </div>
+      {active && activeDatum ? (
+        <div className="fixed inset-0 z-[120] flex items-start justify-center px-4 pb-6 pt-[calc(env(safe-area-inset-top)+5.75rem)]">
+          <div className="absolute inset-0 bg-black/30" aria-hidden="true" />
+
+          <section className="relative z-10 w-full max-w-sm overflow-hidden rounded-[1.75rem] bg-surface shadow-2xl ring-1 ring-border">
+            <div className="flex items-start justify-between gap-3 border-b border-border/70 px-4 pb-3 pt-4">
+              <div className="min-w-0">
+                <p className="font-serif text-xl font-bold text-foreground">{fmtTapDay(active)}</p>
+                <p className="mt-0.5 text-[11px] font-medium text-muted-foreground">{activeMetricLabel}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActive(null)}
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-tint text-base font-semibold text-foreground ring-1 ring-border"
+                aria-label="Close heatmap detail"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="max-h-[58dvh] overflow-y-auto overscroll-contain touch-pan-y p-4">
+              <div className="flex items-center justify-between gap-3 rounded-2xl bg-tint/70 p-3 ring-1 ring-border/50">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Saved value</span>
+                <span
+                  className="rounded-full px-3 py-1.5 text-xs font-bold text-white shadow-sm"
+                  style={{ background: activeDatum.color }}
+                >
+                  {activeDatum.value}
+                </span>
+              </div>
+
+              <div className="mt-3 space-y-2">
+                {activeDatum.details.map((detail, index) => (
+                  <div key={index} className="rounded-2xl bg-background/80 px-3 py-2.5 ring-1 ring-border/50">
+                    <p className="break-words text-[11px] leading-relaxed text-foreground">{detail}</p>
+                  </div>
+                ))}
+
+                {activeDayNotes.length ? (
+                  <div className="rounded-2xl bg-primary/10 px-3 py-2.5 ring-1 ring-primary/20">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Day notes</p>
+                    {activeDayNotes.map((note, index) => (
+                      <p key={index} className="mt-1 break-words text-[11px] leading-relaxed text-foreground">
+                        {note}
+                      </p>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </section>
         </div>
-      ) : (
-        <p className="mt-3 text-center text-[10px] text-muted-foreground">Tap a coloured square for details.</p>
-      )}
+      ) : null}
     </ChartCard>
   );
 }
 
-/** Combined Tetany & Panic time-of-day pattern chart. */
 function TimeOfDayPatternChart({
   data,
   days,
