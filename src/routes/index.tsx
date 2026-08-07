@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Share2, Trash2 } from "lucide-react";
 
 import {
@@ -25,12 +25,15 @@ import { QuickTags } from "@/components/QuickTags";
 import {
   useBixbo,
   EMPTY,
+  addDays,
   toKey,
   fromKey,
   todayKey,
   PAIN_DESCRIPTIONS,
   painColor,
   avgDayPain,
+  latestDayWeight,
+  averageDayTemperature,
   BRISTOL,
   nextPredictedPeriod,
   asArr,
@@ -57,6 +60,343 @@ export const Route = createFileRoute("/")({
   component: HomePage,
 });
 
+
+type VitalTrendMetric = "sleep" | "temperature" | "weight";
+type VitalTrendPeriod = "W" | "M" | "Y";
+
+type VitalTrendPoint = {
+  key: string;
+  label: string;
+  value?: number;
+};
+
+function averageNumbers(values: number[]): number | undefined {
+  if (!values.length) return undefined;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function daysBetweenInclusive(start: Date, end: Date): string[] {
+  const out: string[] = [];
+  let key = toKey(start);
+  const endKey = toKey(end);
+  while (key <= endKey) {
+    out.push(key);
+    key = addDays(key, 1);
+  }
+  return out;
+}
+
+function dailyVitalTrendValue(metric: VitalTrendMetric, log?: import("@/lib/storage").DayLog): number | undefined {
+  if (!log) return undefined;
+  if (metric === "sleep") return log.sleepHours;
+  if (metric === "temperature") return averageDayTemperature(log);
+  return latestDayWeight(log);
+}
+
+function monthlyVitalValues(metric: VitalTrendMetric, log?: import("@/lib/storage").DayLog): number[] {
+  if (!log) return [];
+
+  if (metric === "sleep") {
+    return log.sleepHours != null && Number.isFinite(log.sleepHours) ? [log.sleepHours] : [];
+  }
+
+  if (metric === "temperature") {
+    const entries = (log.temperatureEntries ?? [])
+      .map((entry) => Number(entry.value))
+      .filter((value) => Number.isFinite(value));
+    if (entries.length) return entries;
+    return log.temperature != null && Number.isFinite(log.temperature) ? [log.temperature] : [];
+  }
+
+  const entries = (log.weightEntries ?? [])
+    .map((entry) => Number(entry.value))
+    .filter((value) => Number.isFinite(value));
+  if (entries.length) return entries;
+  return log.weight != null && Number.isFinite(log.weight) ? [log.weight] : [];
+}
+
+function trendRange(period: VitalTrendPeriod, anchor: Date) {
+  const base = new Date(anchor);
+  base.setHours(0, 0, 0, 0);
+
+  if (period === "W") {
+    const mondayOffset = (base.getDay() + 6) % 7;
+    const start = new Date(base);
+    start.setDate(base.getDate() - mondayOffset);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    return { start, end };
+  }
+
+  if (period === "M") {
+    return {
+      start: new Date(base.getFullYear(), base.getMonth(), 1),
+      end: new Date(base.getFullYear(), base.getMonth() + 1, 0),
+    };
+  }
+
+  return {
+    start: new Date(base.getFullYear(), 0, 1),
+    end: new Date(base.getFullYear(), 11, 31),
+  };
+}
+
+function shiftTrendAnchor(anchor: Date, period: VitalTrendPeriod, delta: -1 | 1): Date {
+  const next = new Date(anchor);
+  if (period === "W") next.setDate(next.getDate() + delta * 7);
+  if (period === "M") {
+    next.setDate(1);
+    next.setMonth(next.getMonth() + delta);
+  }
+  if (period === "Y") next.setFullYear(next.getFullYear() + delta);
+  return next;
+}
+
+function vitalTrendTitle(metric: VitalTrendMetric): string {
+  if (metric === "sleep") return "Sleep";
+  if (metric === "temperature") return "Body temperature";
+  return "Weight";
+}
+
+function vitalTrendUnit(metric: VitalTrendMetric): string {
+  if (metric === "sleep") return "h";
+  if (metric === "temperature") return "°C";
+  return "kg";
+}
+
+function VitalTrendPopup({
+  metric,
+  data,
+  anchorKey,
+  onClose,
+}: {
+  metric: VitalTrendMetric;
+  data: BixboData;
+  anchorKey: string;
+  onClose: () => void;
+}) {
+  const [period, setPeriod] = useState<VitalTrendPeriod>("W");
+  const [anchor, setAnchor] = useState(() => fromKey(anchorKey));
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    setAnchor(fromKey(anchorKey));
+  }, [anchorKey, metric]);
+
+  const points = useMemo<VitalTrendPoint[]>(() => {
+    if (period === "Y") {
+      const year = anchor.getFullYear();
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+      return months.map((label, monthIndex) => {
+        const start = new Date(year, monthIndex, 1);
+        const end = new Date(year, monthIndex + 1, 0);
+        const values = daysBetweenInclusive(start, end).flatMap((key) => monthlyVitalValues(metric, data.dayLogs[key]));
+        return {
+          key: `${year}-${String(monthIndex + 1).padStart(2, "0")}`,
+          label,
+          value: averageNumbers(values),
+        };
+      });
+    }
+
+    const { start, end } = trendRange(period, anchor);
+    return daysBetweenInclusive(start, end).map((key) => {
+      const d = fromKey(key);
+      return {
+        key,
+        label:
+          period === "W"
+            ? d.toLocaleDateString("en-GB", { weekday: "short" }).slice(0, 2)
+            : String(d.getDate()),
+        value: dailyVitalTrendValue(metric, data.dayLogs[key]),
+      };
+    });
+  }, [anchor, data.dayLogs, metric, period]);
+
+  useEffect(() => {
+    const last = [...points].map((point, index) => ({ point, index })).filter(({ point }) => point.value != null).at(-1);
+    setActiveIndex(last?.index ?? null);
+  }, [points]);
+
+  const values = points.map((point) => point.value).filter((value): value is number => value != null && Number.isFinite(value));
+  const unit = vitalTrendUnit(metric);
+  const { start, end } = trendRange(period, anchor);
+  const rangeLabel =
+    period === "Y"
+      ? String(anchor.getFullYear())
+      : period === "M"
+        ? anchor.toLocaleDateString("en-GB", { month: "long", year: "numeric" })
+        : `${start.toLocaleDateString("en-GB", { day: "numeric", month: "short" })} – ${end.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`;
+
+  const chartWidth = 278;
+  const chartHeight = 132;
+  const left = 10;
+  const right = 34;
+  const top = 12;
+  const bottom = 24;
+  const chartW = chartWidth - left - right;
+  const chartH = chartHeight - top - bottom;
+  const rawMin = values.length ? Math.min(...values) : 0;
+  const rawMax = values.length ? Math.max(...values) : 1;
+  const basePad = metric === "temperature" ? 0.3 : metric === "weight" ? 0.6 : 1;
+  const span = Math.max(basePad, rawMax - rawMin);
+  const yMin = rawMin - span * 0.25;
+  const yMax = rawMax + span * 0.25;
+  const denom = Math.max(1, points.length - 1);
+  const xFor = (index: number) => left + (index / denom) * chartW;
+  const yFor = (value: number) => top + ((yMax - value) / Math.max(0.001, yMax - yMin)) * chartH;
+  const path = points
+    .map((point, index) => (point.value == null ? null : { x: xFor(index), y: yFor(point.value), index }))
+    .filter((point): point is { x: number; y: number; index: number } => point != null)
+    .map((point, index) => `${index === 0 ? "M" : "L"}${point.x.toFixed(1)},${point.y.toFixed(1)}`)
+    .join(" ");
+
+  const visibleLabelIndexes = new Set<number>();
+  if (period === "W") points.forEach((_, index) => visibleLabelIndexes.add(index));
+  if (period === "M") points.forEach((_, index) => {
+    if (index === 0 || index === points.length - 1 || index % 5 === 0) visibleLabelIndexes.add(index);
+  });
+  if (period === "Y") points.forEach((_, index) => visibleLabelIndexes.add(index));
+
+  const active = activeIndex != null ? points[activeIndex] : undefined;
+
+  return (
+    <div className="fixed inset-0 z-[95] flex items-center justify-center px-7">
+      <button
+        type="button"
+        aria-label={`Close ${vitalTrendTitle(metric)} graph`}
+        className="absolute inset-0 bg-black/35 backdrop-blur-[1px]"
+        onClick={onClose}
+      />
+
+      <section className="relative z-10 w-full max-w-[320px] overflow-hidden rounded-[1.65rem] bg-background shadow-2xl ring-1 ring-border">
+        <div className="flex items-start justify-between gap-2 border-b border-border/70 px-4 pb-3 pt-4">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Trend</p>
+            <h2 className="mt-0.5 font-serif text-lg font-bold text-foreground">{vitalTrendTitle(metric)}</h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="grid h-8 w-8 place-items-center rounded-full bg-tint text-xs font-bold text-foreground ring-1 ring-border"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="max-h-[48dvh] overflow-y-auto p-3">
+          <div className="grid grid-cols-3 gap-1 rounded-2xl bg-tint p-1 ring-1 ring-border/50">
+            {(["W", "M", "Y"] as const).map((value) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setPeriod(value)}
+                className={`rounded-xl px-2 py-1.5 text-[11px] font-semibold transition ${
+                  period === value ? "bg-surface text-foreground shadow-sm ring-1 ring-border" : "text-muted-foreground"
+                }`}
+              >
+                {value === "W" ? "Week" : value === "M" ? "Month" : "Year"}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-3 flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={() => setAnchor((current) => shiftTrendAnchor(current, period, -1))}
+              className="grid h-8 w-8 place-items-center rounded-full bg-tint ring-1 ring-border"
+              aria-label="Previous period"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <p className="text-center text-xs font-semibold text-foreground">{rangeLabel}</p>
+            <button
+              type="button"
+              onClick={() => setAnchor((current) => shiftTrendAnchor(current, period, 1))}
+              className="grid h-8 w-8 place-items-center rounded-full bg-tint ring-1 ring-border"
+              aria-label="Next period"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="mt-3 rounded-2xl bg-tint/70 p-2 ring-1 ring-border/50">
+            {values.length ? (
+              <>
+                <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="h-auto w-full overflow-visible" role="img">
+                  {[0, 0.5, 1].map((fraction) => {
+                    const y = top + fraction * chartH;
+                    const value = yMax - fraction * (yMax - yMin);
+                    return (
+                      <g key={fraction}>
+                        <line x1={left} x2={left + chartW} y1={y} y2={y} stroke="var(--border)" strokeDasharray="2 4" />
+                        <text x={chartWidth - 2} y={y + 3} textAnchor="end" fontSize="8" fill="var(--muted-foreground)">
+                          {value.toFixed(metric === "sleep" ? 1 : 1)}
+                        </text>
+                      </g>
+                    );
+                  })}
+                  {path ? <path d={path} fill="none" stroke="var(--primary)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /> : null}
+                  {points.map((point, index) => {
+                    if (point.value == null) return null;
+                    const activePoint = activeIndex === index;
+                    return (
+                      <circle
+                        key={point.key}
+                        cx={xFor(index)}
+                        cy={yFor(point.value)}
+                        r={activePoint ? 4.5 : 3.2}
+                        fill="var(--surface)"
+                        stroke="var(--primary)"
+                        strokeWidth={activePoint ? 2.5 : 1.8}
+                        onPointerUp={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          setActiveIndex(index);
+                        }}
+                        className="cursor-pointer"
+                      />
+                    );
+                  })}
+                  {points.map((point, index) =>
+                    visibleLabelIndexes.has(index) ? (
+                      <text
+                        key={`label-${point.key}`}
+                        x={xFor(index)}
+                        y={chartHeight - 5}
+                        textAnchor="middle"
+                        fontSize={period === "Y" ? "6.5" : "7.5"}
+                        fill="var(--muted-foreground)"
+                      >
+                        {point.label}
+                      </text>
+                    ) : null,
+                  )}
+                </svg>
+
+                <div className="mt-1 flex items-center justify-between gap-3 rounded-xl bg-surface/70 px-3 py-2 text-[10px] ring-1 ring-border/40">
+                  <span className="text-muted-foreground">
+                    {period === "Y" ? "Monthly average" : active?.key ?? "Selected point"}
+                  </span>
+                  <b className="tabular-nums text-foreground">
+                    {active?.value != null ? `${active.value.toFixed(1)} ${unit}` : "—"}
+                  </b>
+                </div>
+              </>
+            ) : (
+              <div className="grid min-h-32 place-items-center text-center text-xs text-muted-foreground">
+                No {vitalTrendTitle(metric).toLowerCase()} data in this period.
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function HomePage() {
   const { data, update, hydrated } = useBixbo();
   const view = hydrated ? data : EMPTY;
@@ -71,6 +411,7 @@ function HomePage() {
 
   const [logOpen, setLogOpen] = useState(false);
   const [todayOpen, setTodayOpen] = useState(false);
+  const [vitalTrendOpen, setVitalTrendOpen] = useState<VitalTrendMetric | null>(null);
   const [quickCat, setQuickCat] = useState<string | undefined>();
   const [editPain, setEditPain] = useState<import("@/lib/storage").PainEntry | undefined>();
   const [editEntry, setEditEntry] = useState<unknown>(undefined);
@@ -378,9 +719,16 @@ function HomePage() {
             });
 
           return (
-            <div className="mx-5 mt-3 rounded-full bg-tint px-4 py-2 text-center text-xs text-muted-foreground ring-1 ring-border">
+            <div
+              className="mx-5 mt-3 rounded-full px-4 py-2 text-center text-xs ring-1"
+              style={{
+                background: "color-mix(in srgb, var(--period-medium) 14%, transparent)",
+                color: "var(--period-medium)",
+                boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--period-medium) 34%, transparent)",
+              }}
+            >
               Next period predicted:{" "}
-              <span className="font-semibold text-foreground">
+              <span className="font-semibold">
                 {fmt(p.start)} – {fmt(p.end)}
               </span>
             </div>
@@ -397,36 +745,21 @@ function HomePage() {
           emoji="😴"
           label="Sleep"
           value={view.dayLogs[selected]?.sleepHours != null ? String(view.dayLogs[selected]!.sleepHours) : "—"}
-          onClick={() => {
-            setQuickCat("temp");
-            setEditEntry(undefined);
-            setEditPain(undefined);
-            setLogOpen(true);
-          }}
+          onClick={() => setVitalTrendOpen("sleep")}
         />
 
         <VitalTile
           emoji="🌡️"
           label="Temp"
           value={view.dayLogs[selected]?.temperature != null ? String(view.dayLogs[selected]!.temperature) : "—"}
-          onClick={() => {
-            setQuickCat("temp");
-            setEditEntry(undefined);
-            setEditPain(undefined);
-            setLogOpen(true);
-          }}
+          onClick={() => setVitalTrendOpen("temperature")}
         />
 
         <VitalTile
           emoji="⚖️"
           label="Weight"
           value={view.dayLogs[selected]?.weight != null ? String(view.dayLogs[selected]!.weight) : "—"}
-          onClick={() => {
-            setQuickCat("temp");
-            setEditEntry(undefined);
-            setEditPain(undefined);
-            setLogOpen(true);
-          }}
+          onClick={() => setVitalTrendOpen("weight")}
         />
       </div>
 
@@ -491,6 +824,15 @@ function HomePage() {
         onEdit={openEdit}
       />
 
+      {vitalTrendOpen && (
+        <VitalTrendPopup
+          metric={vitalTrendOpen}
+          data={view}
+          anchorKey={selected}
+          onClose={() => setVitalTrendOpen(null)}
+        />
+      )}
+
       {todayOpen &&
         (() => {
           const todayTetany = todayLog?.tetany?.length ?? 0;
@@ -527,13 +869,13 @@ function HomePage() {
             {
               key: "tetany",
               icon: <StarIcon size={22} />,
-              label: "Tetany",
+              label: "Tetany episode",
               value: todayTetany ? `${todayTetany} episode${todayTetany === 1 ? "" : "s"}` : "None",
             },
             {
               key: "panic",
               icon: <PanicIcon size={22} />,
-              label: "Panic attacks",
+              label: "Panic episode",
               value: todayPanic ? `${todayPanic}` : "None",
             },
             {
@@ -985,7 +1327,7 @@ function DayPreview({
         null}
 
       {log?.panic?.length ? (
-        <Card title="Panic attacks" icon="🫯">
+        <Card title="Panic episode" icon="🫯">
           <ul className="space-y-2">
             {log.panic.map((p) => (
               <li key={p.id} className="flex items-start gap-2">
@@ -1032,7 +1374,7 @@ function DayPreview({
       ) : null}
 
       {log?.tetany?.length ? (
-        <Card title="Tetany" icon="⚡">
+        <Card title="Tetany episode" icon="⚡">
           <ul className="space-y-2 text-sm">
             {log.tetany.map((t) => (
               <li key={t.id} className="flex items-start gap-2">
@@ -1505,7 +1847,7 @@ function ShareDayButton({ date, view }: { date: string; view: BixboData }) {
       lines.push("");
     }
     if (log.panic?.length) {
-      lines.push(`Panic attacks — ${log.panic.length}`);
+      lines.push(`Panic episode — ${log.panic.length}`);
       for (const p of log.panic)
         lines.push(
           `  • ${p.time} · ${p.intensity}/10 · ${p.minutes == null ? "ongoing" : `${p.minutes}min`}${p.trigger ? ` — ${p.trigger}` : ""}`,
@@ -1513,7 +1855,7 @@ function ShareDayButton({ date, view }: { date: string; view: BixboData }) {
       lines.push("");
     }
     if (log.tetany?.length) {
-      lines.push(`Tetany — ${log.tetany.length}`);
+      lines.push(`Tetany episode — ${log.tetany.length}`);
       for (const t of log.tetany)
         lines.push(
           `  • ${t.time} · ${t.types.join(", ")} · ${t.intensity}/5 · ${t.minutes == null ? "ongoing" : `${t.minutes}min`}`,
