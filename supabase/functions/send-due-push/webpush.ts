@@ -63,13 +63,14 @@ export type VapidConfig = {
 };
 
 export function readVapidConfig(): VapidConfig {
-  const publicKey = (Deno.env.get("VAPID_PUBLIC_KEY") ?? "").trim();
-  const privateKey = (Deno.env.get("VAPID_PRIVATE_KEY") ?? "").trim();
+  // BIXBO_* holds the verified key pair; the legacy VAPID_* names are a fallback.
+  const publicKey = (Deno.env.get("BIXBO_VAPID_PUBLIC_KEY") ?? Deno.env.get("VAPID_PUBLIC_KEY") ?? "").trim();
+  const privateKey = (Deno.env.get("BIXBO_VAPID_PRIVATE_KEY") ?? Deno.env.get("VAPID_PRIVATE_KEY") ?? "").trim();
   const subject = (Deno.env.get("VAPID_SUBJECT") ?? "").trim() || "mailto:notifications@bixbo.lovable.app";
 
   const missing = [
-    ...(publicKey ? [] : ["VAPID_PUBLIC_KEY"]),
-    ...(privateKey ? [] : ["VAPID_PRIVATE_KEY"]),
+    ...(publicKey ? [] : ["BIXBO_VAPID_PUBLIC_KEY"]),
+    ...(privateKey ? [] : ["BIXBO_VAPID_PRIVATE_KEY"]),
   ];
   if (missing.length) {
     throw new Error(`Missing Edge Function secret(s): ${missing.join(", ")}`);
