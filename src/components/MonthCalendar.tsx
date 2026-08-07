@@ -1,5 +1,5 @@
 import { Ico, IcoText } from "@/components/icons/BixboIcons";
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   toKey,
   hasAnyLog,
@@ -137,6 +137,18 @@ export function MonthCalendar({
   const [peek, setPeek] = useState<string | null>(null);
   const longTimer = useRef<number | null>(null);
   const longFired = useRef(false);
+  const dayPointerStart = useRef<{ x: number; y: number } | null>(null);
+  const dayPointerMoved = useRef(false);
+
+  useEffect(() => {
+    if (!peek) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [peek]);
+
   const clearLong = () => {
     if (longTimer.current !== null) {
       window.clearTimeout(longTimer.current);
@@ -145,39 +157,147 @@ export function MonthCalendar({
   };
   const y = month.getFullYear();
   const m = month.getMonth();
-  const first = new Date(y, m, 1);
-  const startWeekday = (first.getDay() + 6) % 7;
-  const daysInMonth = new Date(y, m + 1, 0).getDate();
-  const prevDays = new Date(y, m, 0).getDate();
-  const totalCells = Math.ceil((startWeekday + daysInMonth) / 7) * 7;
 
-  const cells: { date: Date; inMonth: boolean; key: string }[] = [];
-  for (let i = 0; i < totalCells; i++) {
-    const dayNum = i - startWeekday + 1;
-    let d: Date;
-    let inMonth = true;
-    if (dayNum < 1) {
-      d = new Date(y, m - 1, prevDays + dayNum);
-      inMonth = false;
-    } else if (dayNum > daysInMonth) {
-      d = new Date(y, m + 1, dayNum - daysInMonth);
-      inMonth = false;
-    } else {
-      d = new Date(y, m, dayNum);
+  const { cells, weeks } = useMemo(() => {
+    const first = new Date(y, m, 1);
+    const startWeekday = (first.getDay() + 6) % 7;
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    const prevDays = new Date(y, m, 0).getDate();
+    const totalCells = Math.ceil((startWeekday + daysInMonth) / 7) * 7;
+
+    const nextCells: { date: Date; inMonth: boolean; key: string }[] = [];
+    for (let i = 0; i < totalCells; i++) {
+      const dayNum = i - startWeekday + 1;
+      let d: Date;
+      let inMonth = true;
+      if (dayNum < 1) {
+        d = new Date(y, m - 1, prevDays + dayNum);
+        inMonth = false;
+      } else if (dayNum > daysInMonth) {
+        d = new Date(y, m + 1, dayNum - daysInMonth);
+        inMonth = false;
+      } else {
+        d = new Date(y, m, dayNum);
+      }
+      nextCells.push({ date: d, inMonth, key: toKey(d) });
     }
-    cells.push({ date: d, inMonth, key: toKey(d) });
-  }
 
-  const predicted = hidePredictions ? [] : predictPeriods(data.cycle, cells[0].date, cells[cells.length - 1].date);
-  const isPredicted = (k: string) =>
-    !hidePredictions &&
-    predicted.some((p) => isDateInRange(k, p.start, p.end)) &&
-    !(data.dayLogs[k]?.period || data.dayLogs[k]?.periodInfo?.level);
-  const isActualPeriod = (k: string) => {
-    const c = data.cycle;
-    if (!c.lastPeriodStart || !c.lastPeriodEnd) return false;
-    return isDateInRange(k, c.lastPeriodStart, c.lastPeriodEnd);
-  };
+    const nextWeeks: (typeof nextCells)[] = [];
+    for (let i = 0; i < nextCells.length; i += 7) nextWeeks.push(nextCells.slice(i, i + 7));
+
+    return { cells: nextCells, weeks: nextWeeks };
+  }, [m, y]);
+
+  const predictedKeys = useMemo(() => {
+    const result = new Set<string>();
+    if (hidePredictions || cells.length === 0) return result;
+
+    const predicted = predictPeriods(data.cycle, cells[0].date, cells[cells.length - 1].date);
+    for (const cell of cells) {
+      const hasLoggedPeriod = !!(data.dayLogs[cell.key]?.period || data.dayLogs[cell.key]?.periodInfo?.level);
+      if (!hasLoggedPeriod && predicted.some((p) => isDateInRange(cell.key, p.start, p.end))) {
+        result.add(cell.key);
+      }
+    }
+    return result;
+  }, [cells, data.cycle, data.dayLogs, hidePredictions]);
+
+  const cellMeta = useMemo(() => {
+    const meta = new Map<
+      string,
+      {
+        hasMed: boolean;
+        periodColor: string | null;
+        pAvg: number | null;
+        predictedPeriod: boolean;
+        icons: string[];
+        marked: boolean;
+      }
+    >();
+
+    for (const cell of cells) {
+      const log = data.dayLogs[cell.key];
+      const takenToday = data.medLog[cell.key] ?? {};
+      const hasMed = Object.values(takenToday).some(Boolean) || !!log?.extraMeds?.length;
+      const periodLevel = cycleTrackingHidden ? undefined : (log?.periodInfo?.level ?? log?.period);
+
+      let actualPeriodColor: string | null = null;
+      if (!cycleTrackingHidden && data.cycle.lastPeriodStart && data.cycle.lastPeriodEnd) {
+        if (isDateInRange(cell.key, data.cycle.lastPeriodStart, data.cycle.lastPeriodEnd)) {
+          actualPeriodColor = "var(--period-medium)";
+        }
+      }
+
+      meta.set(cell.key, {
+        hasMed,
+        periodColor: cycleTrackingHidden ? null : (periodColorVar(periodLevel) ?? actualPeriodColor),
+        pAvg: avgDayPain(log),
+        predictedPeriod: predictedKeys.has(cell.key),
+        icons: iconsFor(log, hasMed),
+        marked: hasAnyLog(log),
+      });
+    }
+
+    return meta;
+  }, [cells, cycleTrackingHidden, data.cycle.lastPeriodEnd, data.cycle.lastPeriodStart, data.dayLogs, data.medLog, predictedKeys]);
+
+  const weekLayouts = useMemo(() => {
+    return weeks.map((week) => {
+      const weekStart = week[0].key;
+      const weekEnd = week[6].key;
+      const segments = data.events
+        .filter((event) => event.startDate <= weekEnd && event.endDate >= weekStart)
+        .map((event) => {
+          const startIdx = Math.max(
+            0,
+            week.findIndex((cell) => cell.key >= event.startDate && cell.key <= event.endDate),
+          );
+          let endIdx = startIdx;
+          for (let i = week.length - 1; i >= 0; i--) {
+            if (week[i].key >= event.startDate && week[i].key <= event.endDate) {
+              endIdx = i;
+              break;
+            }
+          }
+          return {
+            event,
+            startIdx,
+            endIdx,
+            showTitle: event.startDate >= weekStart || startIdx === 0,
+          };
+        });
+
+      const rows: (typeof segments)[] = [[], []];
+      const usedByCell: boolean[][] = [new Array(7).fill(false), new Array(7).fill(false)];
+
+      for (const segment of segments) {
+        for (let rowIndex = 0; rowIndex < 2; rowIndex++) {
+          let available = true;
+          for (let i = segment.startIdx; i <= segment.endIdx; i++) {
+            if (usedByCell[rowIndex][i]) {
+              available = false;
+              break;
+            }
+          }
+          if (available) {
+            rows[rowIndex].push(segment);
+            for (let i = segment.startIdx; i <= segment.endIdx; i++) {
+              usedByCell[rowIndex][i] = true;
+            }
+            break;
+          }
+        }
+      }
+
+      const overflowByCell = new Array(7).fill(0);
+      for (const segment of segments) {
+        if (rows[0].includes(segment) || rows[1].includes(segment)) continue;
+        for (let i = segment.startIdx; i <= segment.endIdx; i++) overflowByCell[i]++;
+      }
+
+      return { rows, overflowByCell };
+    });
+  }, [data.events, weeks]);
 
   // Swipe
   const touchStart = useRef<{ x: number; y: number } | null>(null);
@@ -194,37 +314,6 @@ export function MonthCalendar({
     touchStart.current = null;
   };
 
-  // Build week rows for Apple-style event bars
-  const weeks: (typeof cells)[] = [];
-  for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
-
-  // For each week compute event segments (Apple-style)
-  const eventSegmentsForWeek = (
-    week: typeof cells,
-  ): {
-    event: EventEntry;
-    startIdx: number;
-    endIdx: number;
-    showTitle: boolean;
-  }[] => {
-    const weekStart = week[0].key;
-    const weekEnd = week[6].key;
-    const evs = data.events.filter((e) => e.startDate <= weekEnd && e.endDate >= weekStart);
-    return evs.map((e) => {
-      const startIdx = Math.max(
-        0,
-        week.findIndex((c) => c.key >= e.startDate && c.key <= e.endDate),
-      );
-      let endIdx = startIdx;
-      for (let i = week.length - 1; i >= 0; i--) {
-        if (week[i].key >= e.startDate && week[i].key <= e.endDate) {
-          endIdx = i;
-          break;
-        }
-      }
-      return { event: e, startIdx, endIdx, showTitle: e.startDate >= weekStart || startIdx === 0 };
-    });
-  };
 
   return (
     <div className="px-1 landscape:px-2" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
@@ -235,54 +324,30 @@ export function MonthCalendar({
       </div>
       <div className="space-y-0.5">
         {weeks.map((week, wi) => {
-          const segments = eventSegmentsForWeek(week);
-          // stack up to 2 event rows
-          const rows: (typeof segments)[] = [[], []];
-          const usedByCell: boolean[][] = [new Array(7).fill(false), new Array(7).fill(false)];
-          for (const seg of segments) {
-            for (let r = 0; r < 2; r++) {
-              let ok = true;
-              for (let i = seg.startIdx; i <= seg.endIdx; i++)
-                if (usedByCell[r][i]) {
-                  ok = false;
-                  break;
-                }
-              if (ok) {
-                rows[r].push(seg);
-                for (let i = seg.startIdx; i <= seg.endIdx; i++) usedByCell[r][i] = true;
-                break;
-              }
-            }
-          }
-          const overflowByCell = new Array(7).fill(0);
-          for (const seg of segments) {
-            if (rows[0].includes(seg) || rows[1].includes(seg)) continue;
-            for (let i = seg.startIdx; i <= seg.endIdx; i++) overflowByCell[i]++;
-          }
+          const { rows, overflowByCell } = weekLayouts[wi];
 
           return (
             <div key={wi} className="grid grid-cols-7 gap-x-0.5 gap-y-0.5">
               {week.map(({ date, inMonth, key }, ci) => {
-                const log = data.dayLogs[key];
-                const takenToday = data.medLog[key] ?? {};
-                const hasMed = Object.values(takenToday).some(Boolean) || !!log?.extraMeds?.length;
-                const periodLevel = cycleTrackingHidden ? undefined : (log?.periodInfo?.level ?? log?.period);
-                const periodColor = cycleTrackingHidden
-                  ? null
-                  : (periodColorVar(periodLevel) ?? (isActualPeriod(key) ? "var(--period-medium)" : null));
-                const pAvg = avgDayPain(log);
+                const meta = cellMeta.get(key);
+                const periodColor = meta?.periodColor ?? null;
+                const pAvg = meta?.pAvg ?? null;
                 const isSel = key === selected;
-                const predictedPeriod = isPredicted(key);
-                const icons = iconsFor(log, hasMed);
-                const marked = hasAnyLog(log);
+                const predictedPeriod = meta?.predictedPeriod ?? false;
+                const icons = meta?.icons ?? [];
+                const marked = meta?.marked ?? false;
 
                 return (
                   <button
                     key={ci}
-                    onPointerDown={() => {
+                    onPointerDown={(event) => {
                       longFired.current = false;
+                      dayPointerMoved.current = false;
+                      dayPointerStart.current = { x: event.clientX, y: event.clientY };
                       clearLong();
+
                       longTimer.current = window.setTimeout(() => {
+                        if (dayPointerMoved.current) return;
                         longFired.current = true;
                         if (navigator.vibrate) {
                           try {
@@ -294,12 +359,31 @@ export function MonthCalendar({
                         setPeek(key);
                       }, 500);
                     }}
+                    onPointerMove={(event) => {
+                      const start = dayPointerStart.current;
+                      if (!start) return;
+                      if (Math.abs(event.clientX - start.x) > 8 || Math.abs(event.clientY - start.y) > 8) {
+                        dayPointerMoved.current = true;
+                        clearLong();
+                      }
+                    }}
                     onPointerUp={() => {
                       clearLong();
-                      if (!longFired.current) onSelect(key);
+                      const moved = dayPointerMoved.current;
+                      dayPointerStart.current = null;
+                      dayPointerMoved.current = false;
+                      if (!moved && !longFired.current) onSelect(key);
                     }}
-                    onPointerLeave={clearLong}
-                    onPointerCancel={clearLong}
+                    onPointerLeave={() => {
+                      dayPointerMoved.current = true;
+                      dayPointerStart.current = null;
+                      clearLong();
+                    }}
+                    onPointerCancel={() => {
+                      dayPointerMoved.current = true;
+                      dayPointerStart.current = null;
+                      clearLong();
+                    }}
                     onContextMenu={(e) => e.preventDefault()}
                     className={`flex select-none flex-col items-stretch rounded-lg text-left transition ${
                       inMonth ? "" : "opacity-30"
@@ -400,7 +484,7 @@ export function MonthCalendar({
           return (
             <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-6" onClick={() => setPeek(null)}>
               <div
-                className="max-h-[70dvh] w-full max-w-sm overflow-y-auto rounded-3xl bg-background p-4 ring-1 ring-border"
+                className="max-h-[70dvh] w-full max-w-sm overflow-y-auto overscroll-contain touch-pan-y rounded-3xl bg-background p-4 ring-1 ring-border"
                 onClick={(e) => e.stopPropagation()}
               >
                 <p className="mb-2 font-serif text-lg">
