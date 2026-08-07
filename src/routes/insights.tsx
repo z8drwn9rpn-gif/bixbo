@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { CHART_COLORS } from "@/components/ui/chart";
@@ -12,6 +12,7 @@ import {
   toKey,
   fromKey,
   BRISTOL,
+  periodLabel,
   PAIN_DESCRIPTIONS,
   painColor,
   avgDayPain,
@@ -236,14 +237,6 @@ const HOT_FLASH_DESCRIPTIONS: Record<number, string> = {
 
 const BRISTOL_MYSTERY_COLOR = "linear-gradient(135deg,#ef4444,#f59e0b,#eab308,#22c55e,#3b82f6,#8b5cf6)";
 
-const SYMPTOM_LOAD_COLORS = [
-  "#B6C45A", // no symptoms
-  "#7DCB5B", // very low
-  "#F0D33A", // low
-  "#F7A21C", // medium
-  "#EE6A3F", // high
-  "#D84343", // very high
-] as const;
 
 function timeBlockOf(time?: string): number | null {
   if (!time) return null;
@@ -272,48 +265,6 @@ export const Route = createFileRoute("/insights")({
 });
 
 type Period = "W" | "M" | "Y" | "P";
-
-type VitalMeasurement = {
-  id: string;
-  time: string;
-  value: number;
-};
-
-type DayLogWithVitalEntries = DayLog & {
-  weightEntries?: VitalMeasurement[];
-  temperatureEntries?: VitalMeasurement[];
-};
-
-function vitalEntriesFor(log: DayLog | undefined, field: "weightEntries" | "temperatureEntries"): VitalMeasurement[] {
-  const entries = (log as DayLogWithVitalEntries | undefined)?.[field] ?? [];
-
-  return entries
-    .filter(
-      (entry): entry is VitalMeasurement =>
-        Boolean(entry) && typeof entry === "object" && Number.isFinite(Number((entry as VitalMeasurement).value)),
-    )
-    .map((entry) => ({
-      ...entry,
-      value: Number(entry.value),
-      time: typeof entry.time === "string" ? entry.time : "",
-    }))
-    .sort((a, b) => a.time.localeCompare(b.time));
-}
-
-/** Weight chart uses the latest measurement recorded on each day. */
-function lastWeightForDay(log?: DayLog): number | undefined {
-  const entries = vitalEntriesFor(log, "weightEntries");
-  return entries.length ? entries[entries.length - 1].value : log?.weight;
-}
-
-/** Temperature chart uses the daily average when several measurements exist. */
-function averageTemperatureForDay(log?: DayLog): number | undefined {
-  const entries = vitalEntriesFor(log, "temperatureEntries");
-
-  if (!entries.length) return log?.temperature;
-
-  return entries.reduce((sum, entry) => sum + entry.value, 0) / entries.length;
-}
 
 function rangeFor(period: Period, anchor: Date) {
   // Always derive purely from `period` + `anchor` (no mutation of shared objects,
@@ -394,19 +345,6 @@ function InsightsPage() {
     }),
   );
 
-  // Weight uses an Apple-style rolling range so previous logged days are visible in Month view.
-  const weightDays = useMemo(() => {
-    const end = new Date(anchor);
-    end.setHours(0, 0, 0, 0);
-    const start = new Date(end);
-    if (period === "W") start.setDate(end.getDate() - 6);
-    else if (period === "M") start.setDate(end.getDate() - 30);
-    else start.setFullYear(end.getFullYear() - 1);
-    return eachDay(toKey(start), toKey(end));
-  }, [period, anchor]);
-  const weightSeries = weightDays.map((k) => lastWeightForDay(view.dayLogs[k]));
-  const tempSeries = weightDays.map((k) => averageTemperatureForDay(view.dayLogs[k]));
-
   // Sleep
   const sleepSeries = days.map((k) => view.dayLogs[k]?.sleepHours);
 
@@ -422,7 +360,7 @@ function InsightsPage() {
     }),
   );
   // Year view aggregates to 12 monthly buckets so the bars stay readable,
-  // matching the weight/temperature charts.
+  // keeping the yearly hot-flash chart readable.
   const monthLabels = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
   const aggregateMonthly = (keys: string[], series: (number | undefined)[]) => {
     const sums = new Array(12).fill(0) as number[];
@@ -692,9 +630,6 @@ function InsightsPage() {
               )}
             </section>
 
-            <WeightLineChart period={period} days={weightDays} series={weightSeries} label="Weight" unit="kg" />
-            <WeightLineChart period={period} days={weightDays} series={tempSeries} label="Body temperature" unit="°C" />
-
             <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
               <p className="text-xs uppercase tracking-wider text-muted-foreground">Sleep</p>
               <SleepChart period={period} days={days} series={sleepSeries} anchor={anchor} />
@@ -711,7 +646,7 @@ function InsightsPage() {
               </div>
             </section>
 
-            {period === "Y" && <SymptomLoadHeatmap data={view} anchor={anchor} />}
+            {period === "Y" && <YearHealthHeatmap data={view} anchor={anchor} />}
 
             <TimeOfDayPatternChart data={view} days={days} period={period} />
 
@@ -1490,248 +1425,6 @@ function MedsAdherence({
   );
 }
 
-function WeightLineChart({
-  period,
-  days,
-  series,
-  label = "Weight",
-  unit = "kg",
-}: {
-  period: Period;
-  days: string[];
-  series: (number | undefined)[];
-  label?: string;
-  unit?: string;
-}) {
-  const [active, setActive] = useState<{ value: number; index: number; date: string } | null>(null);
-  useDismissTapTooltip(() => setActive(null));
-  // For yearly view, collapse 365 daily samples into 12 monthly averages so labels are readable.
-  const aggregated = (() => {
-    if (period !== "Y") {
-      return days.map((k, i) => ({ value: series[i], date: k }));
-    }
-    const monthly: { sum: number; n: number; anyDate: string }[] = Array.from({ length: 12 }, () => ({
-      sum: 0,
-      n: 0,
-      anyDate: "",
-    }));
-    days.forEach((k, i) => {
-      const v = series[i];
-      if (v == null) return;
-      const m = fromKey(k).getMonth();
-      monthly[m].sum += v;
-      monthly[m].n += 1;
-      monthly[m].anyDate = k;
-    });
-    const now = new Date();
-    return monthly.map((mm, i) => ({
-      value: mm.n ? mm.sum / mm.n : undefined,
-      date: mm.anyDate || toKey(new Date(now.getFullYear(), i, 15)),
-    }));
-  })();
-
-  const points = aggregated
-    .map((p, index) => (p.value == null ? null : { value: p.value, index, date: p.date }))
-    .filter((p): p is { value: number; index: number; date: string } => p != null);
-  const nums = points.map((p) => p.value);
-  const fmtDate = (k: string) => fromKey(k).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-
-  if (!nums.length) {
-    return (
-      <ChartCard title={label}>
-        <ChartEmpty />
-      </ChartCard>
-    );
-  }
-
-  const avg = nums.reduce((a, b) => a + b, 0) / nums.length;
-  const rawMin = Math.min(...nums);
-  const rawMax = Math.max(...nums);
-  const span = Math.max(0.6, rawMax - rawMin);
-  const yMin = Math.floor((rawMin - span * 0.25) * 2) / 2;
-  const yMax = Math.ceil((rawMax + span * 0.25) * 2) / 2;
-  const yMid = (yMin + yMax) / 2;
-
-  const width = 320;
-  const height = 170;
-  const left = 10;
-  const right = 38;
-  const top = 12;
-  const bottom = 30;
-  const chartW = width - left - right;
-  const chartH = height - top - bottom;
-  const denom = Math.max(1, aggregated.length - 1);
-  const xFor = (index: number) => left + (index / denom) * chartW;
-  const yFor = (value: number) => top + ((yMax - value) / Math.max(0.1, yMax - yMin)) * chartH;
-  const path = points
-    .map((p, i) => `${i === 0 ? "M" : "L"}${xFor(p.index).toFixed(1)},${yFor(p.value).toFixed(1)}`)
-    .join(" ");
-
-  const MON_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const ticks = aggregated
-    .map((p, i) => ({ k: p.date, i, d: fromKey(p.date) }))
-    .filter(({ i, d }) => {
-      if (period === "W") return true;
-      if (period === "M") return i === 0 || i === aggregated.length - 1 || i % 7 === 0;
-      // Year: every month (aggregated already has 12 points)
-      return true;
-    });
-  const tickLabel = (k: string) => {
-    const d = fromKey(k);
-    return period === "Y" ? MON_SHORT[d.getMonth()] : String(d.getDate());
-  };
-  const dateLabel =
-    period === "Y"
-      ? `${new Date().getFullYear()} — monthly average`
-      : `${fmtDate(days[0])} – ${fmtDate(days[days.length - 1])}`;
-
-  return (
-    <ChartCard title={label}>
-      <div className="mt-2 flex items-end gap-2">
-        <span className="font-serif text-5xl leading-none">{avg.toFixed(1)}</span>
-        <span className="pb-1 text-sm font-semibold text-muted-foreground">{unit}</span>
-      </div>
-      <p className="mt-1 text-sm text-muted-foreground">{dateLabel}</p>
-      <div className="relative mt-3 overflow-visible">
-        <svg
-          viewBox={`0 0 ${width} ${height}`}
-          className="h-52 w-full touch-pan-y"
-          role="img"
-          aria-label={`${label} line chart`}
-        >
-          {[yMax, yMid, yMin].map((y) => (
-            <g key={y}>
-              <line x1={left} x2={width - right} y1={yFor(y)} y2={yFor(y)} stroke={CHART_GRID} strokeWidth="1" />
-              <text x={width - right + 8} y={yFor(y) + 4} fontSize="10" fill={CHART_AXIS}>
-                {y.toFixed(y % 1 ? 1 : 0)}
-              </text>
-            </g>
-          ))}
-          {ticks.map(({ k, i }) => (
-            <g key={k}>
-              <line
-                x1={xFor(i)}
-                x2={xFor(i)}
-                y1={top}
-                y2={height - bottom}
-                stroke={CHART_GRID}
-                strokeDasharray="3 3"
-                strokeWidth="1"
-              />
-              <text x={xFor(i)} y={height - 8} textAnchor="middle" fontSize="9" fill={CHART_AXIS}>
-                {tickLabel(k)}
-              </text>
-            </g>
-          ))}
-          <path
-            d={path}
-            fill="none"
-            stroke="var(--primary)"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          {active ? (
-            <line
-              x1={xFor(active.index)}
-              x2={xFor(active.index)}
-              y1={top}
-              y2={height - bottom}
-              stroke="var(--primary)"
-              strokeDasharray="3 3"
-              strokeWidth="1.25"
-              opacity="0.75"
-              pointerEvents="none"
-            />
-          ) : null}
-
-          {points.map((p) => {
-            const selected = active?.date === p.date;
-
-            return (
-              <g key={p.date}>
-                <circle
-                  cx={xFor(p.index)}
-                  cy={yFor(p.value)}
-                  r={selected ? 5 : 3}
-                  fill={selected ? "var(--primary)" : "var(--surface)"}
-                  stroke="var(--primary)"
-                  strokeWidth={selected ? 2.5 : 2}
-                  pointerEvents="none"
-                />
-
-                <circle
-                  cx={xFor(p.index)}
-                  cy={yFor(p.value)}
-                  r="16"
-                  fill="transparent"
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`${label}, ${fmtTapDay(p.date)}, ${p.value.toFixed(1)} ${unit}`}
-                  style={{ cursor: "pointer", outline: "none" }}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    setActive((current) => (current?.date === p.date ? null : p));
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      event.stopPropagation();
-                      setActive((current) => (current?.date === p.date ? null : p));
-                    }
-                  }}
-                />
-              </g>
-            );
-          })}
-        </svg>
-
-        {active
-          ? (() => {
-              const heading =
-                period === "Y"
-                  ? fmtTapMonth(fromKey(active.date).getMonth(), fromKey(active.date).getFullYear())
-                  : fmtCoupleTooltipDay(active.date);
-              const description = label === "Body temperature" ? "Daily average" : "Latest daily measurement";
-              const details: InsightTooltipDetails = {
-                owner: "You",
-                heading,
-                value: `${label} ${active.value.toFixed(1)} ${unit}`,
-                description,
-                color: "var(--primary)",
-                summary: `${period === "Y" ? heading : active.date} · ${label} ${active.value.toFixed(1)} ${unit} · ${description}`,
-              };
-
-              return <InsightFloatingTooltip leftPct={(xFor(active.index) / width) * 100} details={details} />;
-            })()
-          : null}
-      </div>
-
-      {active ? (
-        (() => {
-          const heading =
-            period === "Y"
-              ? fmtTapMonth(fromKey(active.date).getMonth(), fromKey(active.date).getFullYear())
-              : fmtCoupleTooltipDay(active.date);
-          const description = label === "Body temperature" ? "Daily average" : "Latest daily measurement";
-          const details: InsightTooltipDetails = {
-            owner: "You",
-            heading,
-            value: `${label} ${active.value.toFixed(1)} ${unit}`,
-            description,
-            color: "var(--primary)",
-            summary: `${period === "Y" ? heading : active.date} · ${label} ${active.value.toFixed(1)} ${unit} · ${description}`,
-          };
-
-          return <InsightTooltipSummary details={details} onClose={() => setActive(null)} />;
-        })()
-      ) : (
-        <p className="mt-1 text-center text-[10px] text-muted-foreground">Tap a point for exact details.</p>
-      )}
-    </ChartCard>
-  );
-}
-
 type InsightBar = {
   value?: number;
   label: string;
@@ -2201,150 +1894,302 @@ function HfBars({
   );
 }
 
-/** GitHub-contributions-style yearly heatmap of daily "symptom load" (avg pain + symptom entry counts). */
-function SymptomLoadHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>["data"]; anchor: Date }) {
+type HeatmapMetric = "pain" | "period" | "bowel" | "panic" | "tetany" | "hotFlashes" | "sleep";
+
+type HeatmapDatum = {
+  color: string;
+  value: string;
+  details: string[];
+};
+
+const HEATMAP_OPTIONS: { id: HeatmapMetric; label: string }[] = [
+  { id: "pain", label: "Pain" },
+  { id: "period", label: "Period" },
+  { id: "bowel", label: "Bowel" },
+  { id: "panic", label: "Panic episode" },
+  { id: "tetany", label: "Tetany episode" },
+  { id: "hotFlashes", label: "Hot flashes" },
+  { id: "sleep", label: "Sleep" },
+];
+
+function heatmapPeriodColor(level?: string | null): string {
+  switch (level) {
+    case "spotting":
+      return "var(--period-spotting)";
+    case "light":
+      return "var(--period-light)";
+    case "medium":
+      return "var(--period-medium)";
+    case "heavy":
+      return "var(--period-heavy)";
+    case "very-heavy":
+      return "var(--period-veryheavy)";
+    default:
+      return "var(--period-medium)";
+  }
+}
+
+function fiveLevelSeverityColor(value: number): string {
+  const normalized = ((Math.max(1, Math.min(5, value)) - 1) / 4) * 10;
+  return vividPainChartColor(normalized);
+}
+
+function sleepHeatmapColor(hours: number): string {
+  if (hours < 4) return VIVID_PAIN_CHART_COLORS[10];
+  if (hours < 5) return VIVID_PAIN_CHART_COLORS[8];
+  if (hours < 6) return VIVID_PAIN_CHART_COLORS[6];
+  if (hours < 7) return VIVID_PAIN_CHART_COLORS[4];
+  if (hours <= 9) return VIVID_PAIN_CHART_COLORS[0];
+  return INSIGHT_COLORS.teal;
+}
+
+function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>["data"]; anchor: Date }) {
+  const [metric, setMetric] = useState<HeatmapMetric>("pain");
   const [active, setActive] = useState<string | null>(null);
+  const year = anchor.getFullYear();
 
   useDismissTapTooltip(() => setActive(null));
 
-  const year = anchor.getFullYear();
+  useEffect(() => {
+    setActive(null);
+  }, [metric, year]);
 
-  const dayInfo = useMemo(() => {
-    const start = new Date(year, 0, 1);
-    const dow = (start.getDay() + 6) % 7; // Mon=0
-    const gridStart = new Date(start);
-    gridStart.setDate(start.getDate() - dow);
-    const cells: { key: string | null; inYear: boolean }[] = [];
-
-    for (let i = 0; i < 53 * 7; i++) {
-      const d = new Date(gridStart);
-      d.setDate(gridStart.getDate() + i);
-      const inYear = d.getFullYear() === year;
-      cells.push({ key: inYear ? toKey(d) : null, inYear });
-    }
-
-    return cells;
-  }, [year]);
-
-  const summaryFor = (k: string) => {
-    const log = data.dayLogs[k];
+  const datumFor = (key: string, selectedMetric: HeatmapMetric): HeatmapDatum | null => {
+    const log = data.dayLogs[key];
     if (!log) return null;
 
-    const pain = avgDayPain(log);
-    const tetany = log.tetany?.length ?? 0;
-    const panic = log.panic?.length ?? 0;
-    const hf = log.pain?.filter((p) => p.hotFlashes != null).length ?? 0;
-    const headache = log.pain?.filter((p) => p.headache).length ?? 0;
-    const nausea = log.pain?.filter((p) => p.nausea).length ?? 0;
-    const bowel = log.bowel?.length ?? 0;
-    const bowelTypes = Array.from(
-      new Set(
-        (log.bowel ?? [])
-          .map((entry) => Number(entry.bristol))
-          .filter((value) => Number.isInteger(value) && value >= 0 && value <= 7),
-      ),
-    );
-    const sleep = log.sleepHours ?? log.pregnancy?.sleepHours ?? log.postpartum?.sleepHours;
-    const weight = lastWeightForDay(log);
-    const temperature = averageTemperatureForDay(log);
-    const mood = log.mood?.map((entry) => entry.value).join(", ") ?? "";
-    const energy = log.energy?.map((entry) => entry.value).join(", ") ?? "";
-    const period = log.periodInfo?.level ?? log.period;
-    const extraMeds = log.extraMeds?.length ?? 0;
+    if (selectedMetric === "pain") {
+      const value = avgDayPain(log);
+      if (value == null) return null;
+      const count = log.pain?.length ?? 0;
+      return {
+        color: vividPainChartColor(value),
+        value: `${value.toFixed(1)}/10`,
+        details: [`${count} pain ${count === 1 ? "entry" : "entries"}`],
+      };
+    }
 
-    const symptomCount = tetany + panic + hf + headache + nausea + bowel;
-    const load = (pain ?? 0) + symptomCount * 1.5;
+    if (selectedMetric === "period") {
+      const level = log.periodInfo?.level ?? log.period;
+      if (!level) return null;
+      return {
+        color: heatmapPeriodColor(level),
+        value: periodLabel(level) || String(level),
+        details: ["Logged period flow"],
+      };
+    }
 
+    if (selectedMetric === "bowel") {
+      const entries = (log.bowel ?? []).filter((entry) => {
+        const type = Number(entry.bristol);
+        return Number.isInteger(type) && type >= 0 && type <= 7;
+      });
+      if (!entries.length) return null;
+      const latest = entries[entries.length - 1];
+      const type = Number(latest.bristol);
+      const bristol = BRISTOL.find((item) => item.n === type);
+      return {
+        color: type === 0 ? "#64748B" : bristol?.color ?? INSIGHT_COLORS.sage,
+        value: `Type ${type}`,
+        details: [
+          `${entries.length} bowel ${entries.length === 1 ? "entry" : "entries"}`,
+          entries.map((entry) => `${entry.time || "—"} · Type ${Number(entry.bristol)}`).join(" · "),
+        ],
+      };
+    }
+
+    if (selectedMetric === "panic") {
+      const entries = log.panic ?? [];
+      if (!entries.length) return null;
+      const highest = Math.max(...entries.map((entry) => entry.intensity));
+      return {
+        color: vividPainChartColor(highest),
+        value: `${highest}/10 highest`,
+        details: [
+          `${entries.length} panic ${entries.length === 1 ? "episode" : "episodes"}`,
+          entries
+            .map((entry) => `${entry.time || "—"} · ${entry.intensity}/10${entry.minutes != null ? ` · ${entry.minutes} min` : ""}`)
+            .join(" · "),
+        ],
+      };
+    }
+
+    if (selectedMetric === "tetany") {
+      const entries = log.tetany ?? [];
+      if (!entries.length) return null;
+      const highest = Math.max(...entries.map((entry) => entry.intensity));
+      return {
+        color: fiveLevelSeverityColor(highest),
+        value: `${highest}/5 highest`,
+        details: [
+          `${entries.length} tetany ${entries.length === 1 ? "episode" : "episodes"}`,
+          entries
+            .map((entry) => `${entry.time || "—"} · ${entry.intensity}/5${entry.minutes != null ? ` · ${entry.minutes} min` : ""}`)
+            .join(" · "),
+        ],
+      };
+    }
+
+    if (selectedMetric === "hotFlashes") {
+      const values = (log.pain ?? [])
+        .map((entry) => entry.hotFlashes)
+        .filter((value): value is number => value != null && Number.isFinite(value) && value > 0);
+      if (!values.length) return null;
+      const highest = Math.max(...values);
+      return {
+        color: fiveLevelSeverityColor(highest),
+        value: `${highest}/5 highest`,
+        details: [`${values.length} hot-flash ${values.length === 1 ? "entry" : "entries"}`],
+      };
+    }
+
+    const hours = log.sleepHours ?? log.pregnancy?.sleepHours ?? log.postpartum?.sleepHours;
+    if (hours == null || !Number.isFinite(hours)) return null;
     return {
-      pain,
-      tetany,
-      panic,
-      hf,
-      headache,
-      nausea,
-      bowel,
-      bowelTypes,
-      sleep,
-      weight,
-      temperature,
-      mood,
-      energy,
-      period,
-      extraMeds,
-      symptomCount,
-      load,
+      color: sleepHeatmapColor(hours),
+      value: `${hours.toFixed(1)} h`,
+      details: log.sleepQuality
+        ? [`Quality: ${Array.isArray(log.sleepQuality) ? log.sleepQuality.join(", ") : log.sleepQuality}`]
+        : ["Sleep duration"],
     };
   };
 
-  const maxLoad = useMemo(() => {
-    let max = 0;
+  const activeDatum = active ? datumFor(active, metric) : null;
+  const activeMetricLabel = HEATMAP_OPTIONS.find((option) => option.id === metric)?.label ?? "Heatmap";
 
-    dayInfo.forEach((cell) => {
-      if (!cell.key) return;
-      const summary = summaryFor(cell.key);
-      if (summary && summary.load > max) max = summary.load;
-    });
+  const legend = (() => {
+    if (metric === "period") {
+      return [
+        ["Spotting", "var(--period-spotting)"],
+        ["Light", "var(--period-light)"],
+        ["Medium", "var(--period-medium)"],
+        ["Heavy", "var(--period-heavy)"],
+        ["Very heavy", "var(--period-veryheavy)"],
+      ] as const;
+    }
 
-    return Math.max(1, max);
-  }, [dayInfo, data.dayLogs]);
+    if (metric === "bowel") {
+      return [
+        ["T0", "#64748B"],
+        ...BRISTOL.map((item) => [`T${item.n}`, item.color] as const),
+      ];
+    }
 
-  const colorFor = (load: number) => {
-    if (load <= 0) return "var(--tint)";
+    if (metric === "sleep") {
+      return [
+        ["<4h", VIVID_PAIN_CHART_COLORS[10]],
+        ["4–5h", VIVID_PAIN_CHART_COLORS[8]],
+        ["5–6h", VIVID_PAIN_CHART_COLORS[6]],
+        ["6–7h", VIVID_PAIN_CHART_COLORS[4]],
+        ["7–9h", VIVID_PAIN_CHART_COLORS[0]],
+        [">9h", INSIGHT_COLORS.teal],
+      ] as const;
+    }
 
-    const t = Math.min(1, load / maxLoad);
-    const index = Math.min(SYMPTOM_LOAD_COLORS.length - 1, Math.floor(t * SYMPTOM_LOAD_COLORS.length));
-
-    return SYMPTOM_LOAD_COLORS[index];
-  };
-
-  const activeSummary = active ? summaryFor(active) : null;
+    return [
+      ["Low", vividPainChartColor(1)],
+      ["Mild", vividPainChartColor(3)],
+      ["Moderate", vividPainChartColor(5)],
+      ["High", vividPainChartColor(8)],
+      ["Severe", vividPainChartColor(10)],
+    ] as const;
+  })();
 
   return (
-    <ChartCard title={`Symptom Load — ${year}`}>
-      <p className="mt-1 text-xs text-muted-foreground">Tap any day to see the saved health details.</p>
+    <ChartCard title={`Year heatmap — ${year}`}>
+      <p className="mt-1 text-xs text-muted-foreground">Choose a metric, then tap a coloured day for its saved details.</p>
 
-      <div className="mt-3 overflow-x-auto overscroll-x-contain touch-pan-x">
+      <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1">
+        {HEATMAP_OPTIONS.map((option) => (
+          <button
+            key={option.id}
+            type="button"
+            onClick={() => setMetric(option.id)}
+            className={`shrink-0 rounded-full px-3 py-1.5 text-[10px] font-semibold transition ${
+              metric === option.id
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "bg-tint text-muted-foreground ring-1 ring-border/60"
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-4 overflow-x-auto overscroll-x-contain pb-1 touch-pan-x">
         <div
-          className="grid w-max grid-flow-col gap-[3px]"
-          style={{
-            gridTemplateRows: "repeat(7, 14px)",
-            gridAutoColumns: "14px",
-          }}
+          className="grid w-max items-center gap-[3px]"
+          style={{ gridTemplateColumns: "28px repeat(12, 20px)" }}
         >
-          {dayInfo.map((cell, index) => {
-            if (!cell.key) {
-              return <div key={`empty-${index}`} className="h-3.5 w-3.5" />;
+          <div />
+          {MON_SHORT3.map((month) => (
+            <div key={month} className="text-center text-[8px] font-semibold text-muted-foreground">
+              {month}
+            </div>
+          ))}
+
+          {Array.from({ length: 31 }, (_, dayIndex) => dayIndex + 1).flatMap((day) => {
+            const row: ReactNode[] = [
+              <div key={`day-${day}`} className="pr-1 text-right text-[9px] tabular-nums text-muted-foreground">
+                {day}
+              </div>,
+            ];
+
+            for (let month = 0; month < 12; month++) {
+              const date = new Date(year, month, day);
+              const valid = date.getFullYear() === year && date.getMonth() === month && date.getDate() === day;
+
+              if (!valid) {
+                row.push(<div key={`${month}-${day}`} className="h-5 w-5 rounded-[5px] bg-transparent" />);
+                continue;
+              }
+
+              const key = toKey(date);
+              const datum = datumFor(key, metric);
+              const isActive = active === key;
+
+              row.push(
+                <button
+                  key={key}
+                  type="button"
+                  disabled={!datum}
+                  onPointerUp={(event) => {
+                    if (!datum) return;
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setActive((current) => (current === key ? null : key));
+                  }}
+                  onClick={(event) => event.preventDefault()}
+                  aria-label={`${fmtTapDay(key)} · ${activeMetricLabel}${datum ? ` · ${datum.value}` : " · no data"}`}
+                  aria-pressed={isActive}
+                  className={`h-5 w-5 rounded-[5px] transition-transform ${
+                    datum ? "touch-manipulation hover:scale-110" : "cursor-default"
+                  } ${isActive ? "ring-2 ring-primary ring-offset-1 ring-offset-background" : ""}`}
+                  style={{ background: datum?.color ?? "var(--tint)" }}
+                />,
+              );
             }
 
-            const summary = summaryFor(cell.key);
-            const load = summary?.load ?? 0;
-            const isActive = active === cell.key;
-
-            return (
-              <button
-                key={cell.key}
-                type="button"
-                aria-label={`${fmtTapDay(cell.key)} symptom load`}
-                aria-pressed={isActive}
-                onPointerUp={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  setActive((current) => (current === cell.key ? null : cell.key));
-                }}
-                onClick={(event) => event.preventDefault()}
-                className={`h-3.5 w-3.5 touch-manipulation rounded-[3px] transition-transform hover:scale-110 focus-visible:z-10 ${
-                  isActive ? "ring-2 ring-primary ring-offset-1 ring-offset-background" : ""
-                }`}
-                style={{ background: colorFor(load) }}
-              />
-            );
+            return row;
           })}
         </div>
       </div>
 
-      {active ? (
+      <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[9px] text-muted-foreground">
+        <span className="flex items-center gap-1">
+          <span className="h-3 w-3 rounded-[3px] bg-tint" /> No data
+        </span>
+        {legend.map(([label, color]) => (
+          <span key={label} className="flex items-center gap-1">
+            <span className="h-3 w-3 rounded-[3px]" style={{ background: color }} />
+            {label}
+          </span>
+        ))}
+      </div>
+
+      {active && activeDatum ? (
         <div
-          className="mt-4 mb-3 min-w-0 max-w-full scroll-mt-24 scroll-mb-[calc(132px+env(safe-area-inset-bottom))] overflow-visible rounded-3xl bg-primary/20 p-4 text-xs ring-1 ring-primary/25"
+          className="mt-4 min-w-0 rounded-3xl bg-primary/15 p-4 text-xs ring-1 ring-primary/20"
           onClick={(event) => event.stopPropagation()}
           role="status"
           aria-live="polite"
@@ -2352,9 +2197,8 @@ function SymptomLoadHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="font-semibold text-foreground">{fmtTapDay(active)}</p>
-              <p className="mt-0.5 text-[10px] text-muted-foreground">{active}</p>
+              <p className="mt-0.5 text-[10px] text-muted-foreground">{activeMetricLabel}</p>
             </div>
-
             <button
               type="button"
               onClick={() => setActive(null)}
@@ -2364,129 +2208,18 @@ function SymptomLoadHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo
             </button>
           </div>
 
-          {activeSummary ? (
-            <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 rounded-2xl bg-surface/60 p-3 text-[10px] ring-1 ring-border/50">
-              <p>
-                <span className="text-muted-foreground">Pain:</span>{" "}
-                <b>{activeSummary.pain != null ? `${activeSummary.pain.toFixed(1)}/10` : "—"}</b>
+          <div className="mt-3 rounded-2xl bg-surface/70 p-3 ring-1 ring-border/50">
+            <p className="text-sm font-semibold text-foreground">{activeDatum.value}</p>
+            {activeDatum.details.map((detail, index) => (
+              <p key={index} className="mt-1 break-words text-[10px] leading-snug text-muted-foreground">
+                {detail}
               </p>
-
-              {activeSummary.sleep != null ? (
-                <p>
-                  <span className="text-muted-foreground">Sleep:</span> <b>{activeSummary.sleep.toFixed(1)}h</b>
-                </p>
-              ) : null}
-
-              {activeSummary.bowel > 0 ? (
-                <p>
-                  <span className="text-muted-foreground">Bowel:</span>{" "}
-                  <b>
-                    {activeSummary.bowel}×
-                    {activeSummary.bowelTypes.length ? ` · T${activeSummary.bowelTypes.join(", T")}` : ""}
-                  </b>
-                </p>
-              ) : null}
-
-              {activeSummary.tetany > 0 ? (
-                <p>
-                  <span className="text-muted-foreground">Tetany:</span> <b>{activeSummary.tetany}×</b>
-                </p>
-              ) : null}
-
-              {activeSummary.panic > 0 ? (
-                <p>
-                  <span className="text-muted-foreground">Panic:</span> <b>{activeSummary.panic}×</b>
-                </p>
-              ) : null}
-
-              {activeSummary.hf > 0 ? (
-                <p>
-                  <span className="text-muted-foreground">Hot flashes:</span> <b>{activeSummary.hf}×</b>
-                </p>
-              ) : null}
-
-              {activeSummary.headache > 0 ? (
-                <p>
-                  <span className="text-muted-foreground">Headache:</span> <b>{activeSummary.headache}×</b>
-                </p>
-              ) : null}
-
-              {activeSummary.nausea > 0 ? (
-                <p>
-                  <span className="text-muted-foreground">Nausea:</span> <b>{activeSummary.nausea}×</b>
-                </p>
-              ) : null}
-
-              {activeSummary.weight != null ? (
-                <p>
-                  <span className="text-muted-foreground">Weight:</span> <b>{activeSummary.weight.toFixed(1)} kg</b>
-                </p>
-              ) : null}
-
-              {activeSummary.temperature != null ? (
-                <p>
-                  <span className="text-muted-foreground">Temperature:</span>{" "}
-                  <b>{activeSummary.temperature.toFixed(1)} °C</b>
-                </p>
-              ) : null}
-
-              {activeSummary.mood ? (
-                <p className="col-span-2">
-                  <span className="text-muted-foreground">Mood:</span>{" "}
-                  <b className="capitalize">{activeSummary.mood}</b>
-                </p>
-              ) : null}
-
-              {activeSummary.energy ? (
-                <p className="col-span-2">
-                  <span className="text-muted-foreground">Energy:</span>{" "}
-                  <b className="capitalize">{activeSummary.energy}</b>
-                </p>
-              ) : null}
-
-              {activeSummary.period ? (
-                <p className="col-span-2">
-                  <span className="text-muted-foreground">Period flow:</span>{" "}
-                  <b className="capitalize">{String(activeSummary.period).replace("-", " ")}</b>
-                </p>
-              ) : null}
-
-              {activeSummary.extraMeds > 0 ? (
-                <p className="col-span-2">
-                  <span className="text-muted-foreground">Extra medication:</span> <b>{activeSummary.extraMeds}×</b>
-                </p>
-              ) : null}
-            </div>
-          ) : (
-            <p className="mt-3 text-muted-foreground">No symptom entries saved for this day.</p>
-          )}
+            ))}
+          </div>
         </div>
       ) : (
-        <p className="mt-3 text-center text-[10px] text-muted-foreground">Tap a square for full details.</p>
+        <p className="mt-3 text-center text-[10px] text-muted-foreground">Tap a coloured square for details.</p>
       )}
-
-      <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
-        <span>No symptoms</span>
-
-        <span className="flex gap-[2px]">
-          {[0, 0.25, 0.5, 0.75, 1].map((t) => (
-            <span
-              key={t}
-              className="h-3.5 w-3.5 rounded-[3px]"
-              style={{
-                background:
-                  t === 0
-                    ? "var(--tint)"
-                    : SYMPTOM_LOAD_COLORS[
-                        Math.min(SYMPTOM_LOAD_COLORS.length - 1, Math.ceil(t * SYMPTOM_LOAD_COLORS.length) - 1)
-                      ],
-              }}
-            />
-          ))}
-        </span>
-
-        <span>High load</span>
-      </div>
     </ChartCard>
   );
 }
