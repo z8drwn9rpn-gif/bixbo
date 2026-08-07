@@ -551,12 +551,6 @@ function BirthControlCalendar({ data, anchor }: { data: ReturnType<typeof useBix
   const { update } = useBixbo();
   const [sel, setSel] = useState<string | null>(null);
   const [pickTime, setPickTime] = useState<string>("");
-  const [hakTab, setHakTab] = useState<"overview" | "calendar" | "tips">("overview");
-  const [hakMonth, setHakMonth] = useState(() => new Date(anchor.getFullYear(), anchor.getMonth(), 1));
-
-  useEffect(() => {
-    setHakMonth(new Date(anchor.getFullYear(), anchor.getMonth(), 1));
-  }, [anchor]);
 
   const since = data.settings.birthControlSince;
 
@@ -731,28 +725,6 @@ function BirthControlCalendar({ data, anchor }: { data: ReturnType<typeof useBix
     Math.min(88, ((timelineCurrentIndex + 0.5) / timelineItems.length) * 100),
   );
 
-  const hakMonthYear = hakMonth.getFullYear();
-  const hakMonthIndex = hakMonth.getMonth();
-  const hakMonthFirst = new Date(hakMonthYear, hakMonthIndex, 1);
-  const hakMonthStartOffset = (hakMonthFirst.getDay() + 6) % 7;
-  const hakMonthDays = new Date(hakMonthYear, hakMonthIndex + 1, 0).getDate();
-  const hakMonthCellCount = Math.ceil((hakMonthStartOffset + hakMonthDays) / 7) * 7;
-  const hakMonthCells = Array.from({ length: hakMonthCellCount }, (_, index) => {
-    const dayNumber = index - hakMonthStartOffset + 1;
-    const date = new Date(hakMonthYear, hakMonthIndex, dayNumber);
-    const key = toKey(date);
-    return {
-      key,
-      date,
-      inMonth: date.getMonth() === hakMonthIndex,
-      packDay: pillNumber(key),
-    };
-  });
-  const hakMonthLabel = hakMonth.toLocaleDateString("en-GB", {
-    month: "long",
-    year: "numeric",
-  });
-
   return (
     <section
       className="overflow-hidden rounded-[2rem] p-4 shadow-sm ring-1"
@@ -781,39 +753,16 @@ function BirthControlCalendar({ data, anchor }: { data: ReturnType<typeof useBix
       </div>
 
       <div className="mt-4 grid grid-cols-3 rounded-2xl bg-surface/45 p-1 ring-1 ring-border/40">
-        {(
-          [
-            ["overview", "Overview"],
-            ["calendar", "Calendar"],
-            ["tips", "Phases & tips"],
-          ] as const
-        ).map(([id, label]) => {
-          const active = hakTab === id;
-          return (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setHakTab(id)}
-              className={`rounded-xl px-2 py-2 text-center text-xs font-semibold transition ${
-                active ? "shadow-sm" : "text-muted-foreground"
-              }`}
-              style={
-                active
-                  ? {
-                      backgroundColor: id === "overview" ? "rgba(127, 164, 83, 0.18)" : HAK_PURPLE_SOFT,
-                      color: id === "overview" ? "var(--foreground)" : HAK_PURPLE_DARK,
-                    }
-                  : undefined
-              }
-            >
-              {label}
-            </button>
-          );
-        })}
+        <div
+          className="rounded-xl px-2 py-2 text-center text-xs font-semibold"
+          style={{ backgroundColor: "rgba(127, 164, 83, 0.18)", color: "var(--foreground)" }}
+        >
+          Overview
+        </div>
+        <div className="px-2 py-2 text-center text-xs text-muted-foreground">Calendar</div>
+        <div className="px-2 py-2 text-center text-xs text-muted-foreground">Phases & tips</div>
       </div>
 
-      {hakTab === "overview" && (
-        <>
       <div className="mt-4 text-center">
         <span
           className="inline-flex rounded-2xl bg-surface/75 px-4 py-2 text-[11px] font-semibold ring-1 ring-border/45"
@@ -1156,192 +1105,12 @@ function BirthControlCalendar({ data, anchor }: { data: ReturnType<typeof useBix
 
       <button
         type="button"
-        onClick={() => setHakTab("calendar")}
         className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-surface/45 px-4 py-3 text-sm font-semibold text-foreground ring-1 ring-border/45"
       >
         <Ico e="📅" size={17} />
         View full month
         <span className="ml-auto">›</span>
       </button>
-        </>
-      )}
-
-      {hakTab === "calendar" && (
-        <div className="mt-4">
-          <div className="flex items-center justify-between gap-3">
-            <button
-              type="button"
-              onClick={() => setHakMonth(new Date(hakMonthYear, hakMonthIndex - 1, 1))}
-              className="grid h-9 w-9 place-items-center rounded-full bg-surface/55 ring-1 ring-border/45"
-              aria-label="Previous month"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-
-            <div className="text-center">
-              <p className="font-serif text-lg font-bold text-foreground">{hakMonthLabel}</p>
-              <p className="text-[10px] text-muted-foreground">Tap a day to see HAK status.</p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setHakMonth(new Date(hakMonthYear, hakMonthIndex + 1, 1))}
-              className="grid h-9 w-9 place-items-center rounded-full bg-surface/55 ring-1 ring-border/45"
-              aria-label="Next month"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
-
-          <div className="mt-4 grid grid-cols-7 gap-1 text-center text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
-            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
-              <div key={day} className="py-1">{day}</div>
-            ))}
-          </div>
-
-          <div className="mt-1 grid grid-cols-7 gap-1.5">
-            {hakMonthCells.map((cell) => {
-              const taken = takenAt(cell.key);
-              const missed = missedAt(cell.key);
-              const isToday = cell.key === todayK;
-              const packDay = cell.packDay;
-              const isActive = packDay != null && packDay <= ACTIVE_DAYS;
-              const isPlacebo = packDay != null && packDay > ACTIVE_DAYS;
-              const background = !cell.inMonth
-                ? "rgba(255,255,255,.12)"
-                : isActive
-                  ? HAK_PURPLE_SOFT
-                  : isPlacebo
-                    ? HAK_PINK_SOFT
-                    : "rgba(255,255,255,.28)";
-              const textColor = !cell.inMonth
-                ? "var(--muted-foreground)"
-                : isActive
-                  ? HAK_PURPLE_DARK
-                  : isPlacebo
-                    ? HAK_PINK_DARK
-                    : "var(--foreground)";
-
-              return (
-                <button
-                  key={cell.key}
-                  type="button"
-                  onClick={() => {
-                    if (packDay == null) return;
-                    setSel(cell.key);
-                    setPickTime("");
-                  }}
-                  disabled={packDay == null}
-                  className="relative aspect-square rounded-xl p-1 text-left transition active:scale-95 disabled:opacity-45"
-                  style={{
-                    backgroundColor: background,
-                    color: textColor,
-                    border: isToday ? `2px solid ${HAK_GREEN_DARK}` : "1px solid rgba(255,255,255,.35)",
-                  }}
-                  aria-label={`${fmtFullDate(cell.key)}${packDay != null ? `, HAK day ${packDay}` : ""}`}
-                >
-                  <span className="text-[10px] font-bold">{cell.date.getDate()}</span>
-                  {packDay != null && cell.inMonth && (
-                    <span className="absolute bottom-1 left-1 text-[8px] font-semibold opacity-75">
-                      {packDay}
-                    </span>
-                  )}
-                  {taken && (
-                    <span
-                      className="absolute right-1 top-1 h-2 w-2 rounded-full"
-                      style={{ backgroundColor: HAK_GREEN }}
-                      aria-label="Taken"
-                    />
-                  )}
-                  {missed && (
-                    <span
-                      className="absolute right-1 top-1 h-2 w-2 rounded-full"
-                      style={{ backgroundColor: CHART_COLORS.headache }}
-                      aria-label="Missed"
-                    />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            <div className="rounded-2xl bg-surface/45 p-2.5 text-center ring-1 ring-border/40">
-              <span className="mx-auto block h-3 w-3 rounded-full" style={{ backgroundColor: HAK_PURPLE }} />
-              <p className="mt-1 text-[9px] font-semibold text-foreground">Active HAK</p>
-            </div>
-            <div className="rounded-2xl bg-surface/45 p-2.5 text-center ring-1 ring-border/40">
-              <span className="mx-auto block h-3 w-3 rounded-full" style={{ backgroundColor: HAK_PINK }} />
-              <p className="mt-1 text-[9px] font-semibold text-foreground">Placebo / break</p>
-            </div>
-            <div className="rounded-2xl bg-surface/45 p-2.5 text-center ring-1 ring-border/40">
-              <span className="mx-auto block h-3 w-3 rounded-full" style={{ backgroundColor: HAK_GREEN }} />
-              <p className="mt-1 text-[9px] font-semibold text-foreground">Taken</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {hakTab === "tips" && (
-        <div className="mt-4 space-y-3">
-          <div
-            className="rounded-3xl p-4 ring-1"
-            style={{ backgroundColor: "rgba(220,207,243,.55)", borderColor: "rgba(91,50,174,.14)" }}
-          >
-            <p className="text-[10px] font-bold uppercase tracking-[0.12em]" style={{ color: HAK_PURPLE_DARK }}>
-              Active HAK days · 1–{ACTIVE_DAYS}
-            </p>
-            <p className="mt-1 text-sm font-semibold text-foreground">Keep your tablet routine consistent.</p>
-            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-              Use the same daily reminder and log the dose when you take it. This view follows your configured HAK pack rather than natural-cycle ovulation predictions.
-            </p>
-          </div>
-
-          <div
-            className="rounded-3xl p-4 ring-1"
-            style={{ backgroundColor: "rgba(247,203,217,.58)", borderColor: "rgba(185,46,96,.14)" }}
-          >
-            <p className="text-[10px] font-bold uppercase tracking-[0.12em]" style={{ color: HAK_PINK_DARK }}>
-              Placebo / break · {ACTIVE_DAYS + 1}–{PACK_DAYS}
-            </p>
-            <p className="mt-1 text-sm font-semibold text-foreground">Withdrawal bleeding may occur.</p>
-            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-              Bleeding can vary between packs. Keep the next-pack date visible even if bleeding is still present.
-            </p>
-          </div>
-
-          <div
-            className="rounded-3xl p-4 ring-1"
-            style={{ backgroundColor: "rgba(220,235,210,.72)", borderColor: "rgba(57,123,47,.14)" }}
-          >
-            <p className="text-[10px] font-bold uppercase tracking-[0.12em]" style={{ color: HAK_GREEN_DARK }}>
-              New pack
-            </p>
-            <p className="mt-1 text-sm font-semibold text-foreground">{fmtDate(nextPackStart)}</p>
-            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-              Start the next pack according to the schedule for your specific contraceptive.
-            </p>
-          </div>
-
-          <div className="rounded-3xl bg-surface/50 p-4 ring-1 ring-border/45">
-            <p className="font-serif text-base font-bold text-foreground">If a tablet is late or missed</p>
-            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-              Instructions differ by contraceptive type and by where you are in the pack. Follow the leaflet for your exact pill or the instructions from your prescriber rather than a generic rule in the app.
-            </p>
-          </div>
-
-          <div className="rounded-3xl bg-surface/50 p-4 ring-1 ring-border/45">
-            <p className="font-serif text-base font-bold text-foreground">Useful things to track</p>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {["Spotting", "Headache", "Nausea", "Mood", "Pain", "Dose time"].map((label) => (
-                <span key={label} className="rounded-full bg-tint px-2.5 py-1 text-[10px] font-semibold text-foreground ring-1 ring-border/40">
-                  {label}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {!bcMed && (
         <p className="mt-3 text-[10px] leading-snug text-muted-foreground">
@@ -2883,3 +2652,4 @@ function TimeOfDayPatternChart({
       )}
     </section>
   );
+}
