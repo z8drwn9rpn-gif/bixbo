@@ -931,7 +931,7 @@ function BirthControlCalendar({
       </div>
 
       {/* Circular HAK wheel */}
-      <div className="mx-auto mt-3 w-full max-w-[325px]">
+      <div className="mx-auto mt-3 w-full max-w-[330px]">
         <div className="relative aspect-square w-full">
           <div
             className="absolute inset-[8%] rounded-full"
@@ -991,24 +991,15 @@ function BirthControlCalendar({
                 aria-label={`HAK day ${day}, ${fmtFullDate(dateKey)}`}
               >
                 {day}
-                {(taken || missed) && (
-                  <span
-                    className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full ring-1 ring-white/80"
-                    style={{
-                      backgroundColor: missed ? CHART_COLORS.headache : HAK_GREEN,
-                    }}
-                    aria-hidden="true"
-                  />
-                )}
               </button>
             );
           })}
 
           <div
-            className="pointer-events-none absolute z-20 grid h-8 w-8 place-items-center rounded-full text-xs font-bold shadow-sm"
+            className="pointer-events-none absolute z-20 grid h-9 w-9 place-items-center rounded-full text-[14px] font-bold shadow-sm"
             style={{
-              left: "84%",
-              top: "82%",
+              left: "92.5%",
+              top: "80.5%",
               transform: "translate(-50%, -50%)",
               backgroundColor: HAK_GREEN_SOFT,
               color: HAK_GREEN_DARK,
@@ -1077,10 +1068,10 @@ function BirthControlCalendar({
 
       <div className="mt-1 grid grid-cols-2 gap-2">
         <div
-          className="rounded-2xl px-3 py-2 ring-1"
+          className="rounded-[1.65rem] px-4 py-3 ring-1"
           style={{
-            backgroundColor: "rgba(251,224,233,.62)",
-            borderColor: "rgba(217,87,130,.16)",
+            backgroundColor: "rgba(251,224,233,.58)",
+            borderColor: "rgba(129,135,67,.18)",
           }}
         >
           <p className="text-[10px] font-bold" style={{ color: HAK_PINK_DARK }}>
@@ -1092,10 +1083,10 @@ function BirthControlCalendar({
         </div>
 
         <div
-          className="rounded-2xl px-3 py-2.5 text-right ring-1"
+          className="rounded-[1.65rem] px-4 py-3 text-right ring-1"
           style={{
-            backgroundColor: "rgba(220,235,210,.65)",
-            borderColor: "rgba(104,169,78,.16)",
+            backgroundColor: "rgba(220,235,210,.62)",
+            borderColor: "rgba(129,135,67,.18)",
           }}
         >
           <p className="text-[10px] font-bold" style={{ color: HAK_GREEN_DARK }}>
@@ -1107,100 +1098,108 @@ function BirthControlCalendar({
         </div>
       </div>
 
-      {/* Detailed linear pack progress — compact reference layout */}
+      {/* Detailed linear pack progress — closer to the user's linear reference */}
       <div className="mt-4">
-        <h3 className="font-serif text-lg font-bold text-foreground">Your current phase</h3>
+        <h3 className="font-serif text-lg font-bold text-foreground">Current HAK pack</h3>
 
-        <div className="relative mt-3 pt-10 pb-9">
-          <div className="absolute inset-x-0 top-0 grid grid-cols-[3fr_1fr_.72fr] items-start text-center">
+        <div
+          className="mt-3 rounded-[1.75rem] px-4 py-4 ring-1"
+          style={{
+            backgroundColor: "rgba(255,255,255,.20)",
+            borderColor: "rgba(129,135,67,.16)",
+          }}
+        >
+          <div className="grid grid-cols-[1.35fr_1fr_.9fr] items-start gap-2 text-center">
             <div>
-              <p className="text-[10px] font-bold" style={{ color: HAK_PURPLE_DARK }}>
+              <p className="text-[9px] font-bold leading-tight" style={{ color: HAK_PURPLE_DARK }}>
                 Active HAK days
               </p>
-              <p className="text-[10px] font-semibold" style={{ color: HAK_PURPLE_DARK }}>
+              <p className="mt-0.5 text-[9px] font-semibold leading-tight" style={{ color: HAK_PURPLE_DARK }}>
                 1–{ACTIVE_DAYS}
               </p>
             </div>
 
             <div>
-              <p className="text-[10px] font-bold" style={{ color: HAK_PINK_DARK }}>
+              <p className="text-[9px] font-bold leading-tight" style={{ color: HAK_PINK_DARK }}>
                 Placebo / break
               </p>
-              <p className="text-[10px] font-semibold" style={{ color: HAK_PINK_DARK }}>
+              <p className="mt-0.5 text-[9px] font-semibold leading-tight" style={{ color: HAK_PINK_DARK }}>
                 {ACTIVE_DAYS + 1}–{PACK_DAYS}
               </p>
             </div>
 
             <div>
-              <p className="text-[10px] font-bold" style={{ color: HAK_GREEN_DARK }}>
+              <p className="text-[9px] font-bold leading-tight" style={{ color: HAK_GREEN_DARK }}>
                 New cycle
               </p>
-              <p className="text-[10px] font-semibold" style={{ color: HAK_GREEN_DARK }}>
+              <p className="mt-0.5 text-[9px] font-semibold leading-tight" style={{ color: HAK_GREEN_DARK }}>
                 Day 1
               </p>
             </div>
           </div>
 
-          <div
-            className="relative rounded-full px-2 py-2 ring-1"
-            style={{
-              backgroundColor: "rgba(255,255,255,.24)",
-              borderColor: "rgba(129,135,67,.18)",
-            }}
-          >
+          <div className="relative mt-4 px-1 pb-8">
             <div
-              className="grid items-center gap-[2px]"
-              style={{ gridTemplateColumns: `repeat(${timelineItems.length}, minmax(0, 1fr))` }}
+              className="rounded-full px-2 py-2 ring-1"
+              style={{
+                backgroundColor: "rgba(255,255,255,.30)",
+                borderColor: "rgba(129,135,67,.18)",
+              }}
             >
-              {timelineItems.map((item, index) => {
-                const isCurrent = index === timelineCurrentIndex;
-                const color =
-                  item.kind === "active"
-                    ? HAK_PURPLE_DOT
-                    : item.kind === "placebo"
-                      ? HAK_PINK
-                      : item.kind === "next"
-                        ? HAK_GREEN
-                        : HAK_TRACK;
-
-                return (
-                  <span
-                    key={`${item.kind}-${index}`}
-                    className="mx-auto block aspect-square w-full max-w-[10px] rounded-full"
-                    style={{
-                      backgroundColor: color,
-                      boxShadow: isCurrent
-                        ? `0 0 0 3px ${HAK_CARD_BG}, 0 0 0 6px ${
-                            item.kind === "placebo" ? HAK_PINK_DARK : HAK_PURPLE_DARK
-                          }`
+              <div
+                className="grid items-center gap-[2px]"
+                style={{ gridTemplateColumns: `repeat(${timelineItems.length}, minmax(0, 1fr))` }}
+              >
+                {timelineItems.map((item, index) => {
+                  const isCurrent = index === timelineCurrentIndex;
+                  const color =
+                    item.kind === "active"
+                      ? HAK_PURPLE_DOT
+                      : item.kind === "placebo"
+                        ? HAK_PINK
                         : item.kind === "next"
-                          ? `0 0 0 2px ${HAK_GREEN_SOFT}`
-                          : undefined,
-                    }}
-                  />
-                );
-              })}
+                          ? HAK_GREEN
+                          : HAK_TRACK;
+
+                  return (
+                    <span
+                      key={`${item.kind}-${index}`}
+                      className="mx-auto block aspect-square w-full max-w-[10px] rounded-full"
+                      style={{
+                        backgroundColor: color,
+                        boxShadow: isCurrent
+                          ? `0 0 0 3px ${HAK_CARD_BG}, 0 0 0 5px ${
+                              item.kind === "placebo" ? HAK_PINK_DARK : HAK_PURPLE_DARK
+                            }`
+                          : item.kind === "next"
+                            ? `0 0 0 2px ${HAK_GREEN_SOFT}`
+                            : undefined,
+                      }}
+                    />
+                  );
+                })}
+              </div>
             </div>
+
+            <div
+              className="absolute bottom-[22px] h-4 w-px"
+              style={{
+                left: `${timelineMarkerLeft}%`,
+                backgroundColor: currentDay <= ACTIVE_DAYS ? HAK_PURPLE : HAK_PINK,
+              }}
+            />
+
+            <p
+              className="absolute bottom-0 whitespace-nowrap text-[11px] font-bold"
+              style={{
+                left: `${timelineMarkerLeft}%`,
+                transform: "translateX(-50%)",
+                color: currentDay <= ACTIVE_DAYS ? HAK_PURPLE_DARK : HAK_PINK_DARK,
+              }}
+            >
+              Day {currentDay} / {PACK_DAYS}
+            </p>
           </div>
-
-          <div
-            className="absolute bottom-[22px] h-4 w-px"
-            style={{
-              left: `${timelineMarkerLeft}%`,
-              backgroundColor: currentDay <= ACTIVE_DAYS ? HAK_PURPLE : HAK_PINK,
-            }}
-          />
-
-          <p
-            className="absolute bottom-0 whitespace-nowrap text-[11px] font-bold"
-            style={{
-              left: `${timelineMarkerLeft}%`,
-              transform: "translateX(-50%)",
-              color: currentDay <= ACTIVE_DAYS ? HAK_PURPLE_DARK : HAK_PINK_DARK,
-            }}
-          >
-            Day {currentDay} / {PACK_DAYS}
-          </p>
         </div>
       </div>
 
