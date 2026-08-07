@@ -20,7 +20,7 @@ import {
   type PushPayload,
   type PushTarget,
   type VapidConfig,
-} from "../push-subscription/webpush.ts";
+} from "./webpush.ts";
 
 /* ------------------------------------------------------------------ */
 /* Snapshot shape mirrored from src/lib/notifications.ts               */
