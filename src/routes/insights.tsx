@@ -1016,10 +1016,6 @@ function BirthControlCalendar({
           {wheelDays.map((day) => {
             // The approved reference starts the pack at the lower-right and
             // progresses counter-clockwise: day 7 sits around the upper-right.
-            // Day 1 is intentionally hidden on the main ring and represented
-            // by the separate green new-cycle marker, matching the reference.
-            if (day === 1) return null;
-
             const angleDeg = 48 - ((day - 1) / PACK_DAYS) * 360;
             const angle = (angleDeg * Math.PI) / 180;
             const radius = 42;
@@ -1029,12 +1025,12 @@ function BirthControlCalendar({
             const dateKey = dateForPackDay(day);
             const isCurrent = day === currentDay;
             const isPlacebo = day > ACTIVE_DAYS;
-            const taken = takenAt(dateKey);
-            const missed = missedAt(dateKey);
+            const isNewCycle = day === 1;
 
-            const baseBg = isPlacebo ? "#F7D7E1" : "#E8DFF7";
-            const baseColor = isPlacebo ? HAK_PINK_DARK : "#3D218D";
-            const currentBg = isPlacebo ? HAK_PINK : HAK_PURPLE_DARK;
+            const baseBg = isPlacebo ? "#F7D7E1" : isNewCycle ? HAK_GREEN_SOFT : "#E8DFF7";
+            const baseColor = isPlacebo ? HAK_PINK_DARK : isNewCycle ? HAK_GREEN_DARK : "#3D218D";
+            const currentBg = isPlacebo ? HAK_PINK : isNewCycle ? HAK_GREEN : HAK_PURPLE_DARK;
+            const ringColor = isPlacebo ? HAK_PINK : isNewCycle ? HAK_GREEN : HAK_PURPLE;
 
             return (
               <button
@@ -1052,9 +1048,9 @@ function BirthControlCalendar({
                   color: isCurrent ? "#fff" : baseColor,
                   border: isCurrent
                     ? "3px solid rgba(255,255,255,.96)"
-                    : `1.5px solid ${isPlacebo ? HAK_PINK : HAK_PURPLE}`,
+                    : `1.5px solid ${ringColor}`,
                   boxShadow: isCurrent
-                    ? `0 0 0 3px ${isPlacebo ? HAK_PINK : HAK_PURPLE}66`
+                    ? `0 0 0 3px ${ringColor}66`
                     : "0 1px 5px rgba(58,61,30,.08)",
                 }}
                 aria-label={`HAK day ${day}, ${fmtFullDate(dateKey)}`}
@@ -1063,40 +1059,6 @@ function BirthControlCalendar({
               </button>
             );
           })}
-
-          <div
-            className="pointer-events-none absolute z-20"
-            style={{
-              left: "89.5%",
-              top: "79.5%",
-              transform: "translate(-50%, -50%)",
-            }}
-            aria-hidden="true"
-          >
-            <div
-              className="absolute inset-0 rounded-[18px] rotate-[32deg]"
-              style={{
-                background: "linear-gradient(145deg, rgba(116,194,103,.92) 0%, rgba(84,167,76,.94) 100%)",
-                boxShadow: `0 0 0 4px ${HAK_CARD_BG}, 0 4px 10px rgba(72,120,62,.14)`,
-              }}
-            />
-            <div className="relative flex h-[58px] w-[42px] flex-col items-center justify-center gap-1.5 py-1">
-              {[0, 1].map((i) => (
-                <span
-                  key={i}
-                  className="grid h-7 w-7 place-items-center rounded-full text-[13px] font-bold"
-                  style={{
-                    backgroundColor: "#F6FFF2",
-                    color: HAK_GREEN_DARK,
-                    border: `2px solid ${HAK_GREEN_SOFT}`,
-                    boxShadow: "0 1px 3px rgba(72,120,62,.16)",
-                  }}
-                >
-                  1
-                </span>
-              ))}
-            </div>
-          </div>
 
           <div className="pointer-events-none absolute inset-[25%] z-20 flex flex-col items-center justify-center text-center">
             <p className="text-[11px] font-semibold text-foreground">Day</p>
@@ -1182,6 +1144,92 @@ function BirthControlCalendar({
           <p className="mt-0.5 text-[10px] font-semibold" style={{ color: HAK_GREEN_DARK }}>
             Day 1
           </p>
+        </div>
+      </div>
+
+
+      <div className="mt-4 rounded-[1.75rem] bg-surface/25 p-4 ring-1 ring-border/35">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h3 className="font-serif text-lg font-bold text-foreground">Calendar preview</h3>
+          <button
+            type="button"
+            onClick={() => setHakTab("calendar")}
+            className="inline-flex items-center gap-2 rounded-full bg-surface/55 px-3 py-1.5 text-[11px] font-semibold text-foreground ring-1 ring-border/40"
+          >
+            View full calendar
+            <span>→</span>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-7 gap-y-2 text-center text-[9px] font-semibold text-muted-foreground">
+          {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((weekday) => (
+            <div key={weekday}>{weekday}</div>
+          ))}
+        </div>
+
+        <div className="mt-2 grid grid-cols-7 gap-y-2 text-center">
+          {hakMonthCells.map((cell) => {
+            const packDay = cell.packDay;
+            const inMonth = cell.inMonth;
+            const protectionState = inMonth && packDay != null ? protectionStateFor(cell.key) : "unknown";
+            const protection = protectionMeta(protectionState as ProtectionState);
+            const isToday = cell.key === todayK;
+
+            let bg = "rgba(255,255,255,.36)";
+            let fg = "rgba(60,60,44,.45)";
+            let border = "rgba(255,255,255,.34)";
+
+            if (inMonth && packDay != null) {
+              if (protectionState === "protected") {
+                bg = HAK_GREEN_SOFT;
+                fg = HAK_GREEN_DARK;
+                border = HAK_GREEN;
+              } else if (protectionState === "backup") {
+                bg = "rgba(248,215,218,.9)";
+                fg = "#8E2832";
+                border = "#C94A55";
+              } else if (packDay > ACTIVE_DAYS) {
+                bg = HAK_PINK_SOFT;
+                fg = HAK_PINK_DARK;
+                border = HAK_PINK;
+              } else {
+                bg = HAK_PURPLE_SOFT;
+                fg = HAK_PURPLE_DARK;
+                border = HAK_PURPLE;
+              }
+            }
+
+            return (
+              <div key={cell.key} className="grid place-items-center">
+                <button
+                  type="button"
+                  disabled={packDay == null}
+                  onClick={() => {
+                    if (packDay == null) return;
+                    setSel(cell.key);
+                  }}
+                  className="grid h-8 w-8 place-items-center rounded-full text-[11px] font-semibold transition active:scale-95 disabled:opacity-40"
+                  style={{
+                    backgroundColor: bg,
+                    color: fg,
+                    border: `1.5px solid ${isToday ? HAK_GREEN_DARK : border}`,
+                    boxShadow: isToday ? `0 0 0 2px ${HAK_CARD_BG}` : undefined,
+                  }}
+                  aria-label={packDay == null ? `Outside current pack: ${fmtFullDate(cell.key)}` : fmtFullDate(cell.key)}
+                  title={packDay == null ? undefined : protection.label}
+                >
+                  {cell.date.getDate()}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-[9px] text-foreground">
+          <div className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full" style={{ backgroundColor: HAK_GREEN_SOFT, border: `1px solid ${HAK_GREEN}` }} />Protected</div>
+          <div className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full" style={{ backgroundColor: 'rgba(248,215,218,.9)', border: '1px solid #C94A55' }} />Use backup</div>
+          <div className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full" style={{ backgroundColor: HAK_PINK_SOFT, border: `1px solid ${HAK_PINK}` }} />Placebo / break</div>
+          <div className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,.36)', border: '1px solid rgba(255,255,255,.34)' }} />Unknown</div>
         </div>
       </div>
 
@@ -1374,7 +1422,7 @@ function BirthControlCalendar({
 
             <div className="min-w-0 text-center">
               <p className="font-serif text-sm font-bold text-foreground">{hakMonthLabel}</p>
-              <p className="text-[9px] text-muted-foreground">Tap a date for HAK details.</p>
+              <p className="text-[9px] text-muted-foreground">Tap a date for HAK details and pregnancy-protection status.</p>
             </div>
 
             <button
@@ -1631,64 +1679,11 @@ function BirthControlCalendar({
                         {item.label}
                       </p>
                       <p className="mt-1 text-[9px] leading-relaxed text-muted-foreground">
-                        Based on logged HAK doses only. It does not indicate STI protection.
+                        Based on logged HAK doses only. It does not indicate STI protection. Dose marking is handled on the main HAK overview.
                       </p>
                     </div>
                   );
                 })()}
-
-                {selectedDay <= ACTIVE_DAYS && (
-                  <div className="mt-3 space-y-2">
-                    <div className="grid grid-cols-[1fr_auto] gap-2">
-                      <input
-                        type="time"
-                        value={pickTime}
-                        onChange={(event) => setPickTime(event.target.value)}
-                        className="min-w-0 rounded-xl bg-tint px-3 py-2 text-sm text-foreground ring-1 ring-border"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          markTaken(sel, pickTime);
-                          setSel(null);
-                        }}
-                        className="rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
-                      >
-                        Mark taken
-                      </button>
-                    </div>
-
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          markMissed(sel);
-                          setSel(null);
-                        }}
-                        className="flex-1 rounded-xl px-3 py-2 text-xs font-semibold"
-                        style={{
-                          border: `1.5px solid ${CHART_COLORS.headache}`,
-                          color: CHART_COLORS.headache,
-                        }}
-                      >
-                        Mark missed
-                      </button>
-
-                      {(selectedTaken || selectedMissed) && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            clearRecord(sel);
-                            setSel(null);
-                          }}
-                          className="rounded-xl bg-tint px-3 py-2 text-xs font-semibold text-muted-foreground ring-1 ring-border"
-                        >
-                          Clear
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                )}
 
                 <button
                   type="button"
