@@ -1,6 +1,6 @@
 import { Ico } from "@/components/icons/BixboIcons";
 import { POSTPARTUM_SYMPTOMS } from "@/lib/health";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check, Plus, X, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   todayKey,
@@ -420,6 +420,15 @@ export function QuickTags({
   const [postpartumSymptoms, setPostpartumSymptoms] = useState<string[]>([]);
   const [builderOpen, setBuilderOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
+
+  useEffect(() => {
+    if (!periodOpen && !postpartumOpen && !builderOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [builderOpen, periodOpen, postpartumOpen]);
   const timerRef = useRef<number | null>(null);
   const longFiredRef = useRef(false);
   const startXRef = useRef(0);
@@ -795,7 +804,7 @@ export function QuickTags({
 
       {periodOpen && (
         <div
-          className="fixed inset-0 z-50 grid place-items-center bg-black/45 p-6 backdrop-blur-sm"
+          className="fixed inset-0 z-50 grid place-items-center bg-black/45 p-6"
           onClick={() => setPeriodOpen(false)}
         >
           <div
@@ -834,11 +843,11 @@ export function QuickTags({
 
       {postpartumOpen && (
         <div
-          className="fixed inset-0 z-50 grid place-items-center bg-black/45 p-6 backdrop-blur-sm"
+          className="fixed inset-0 z-50 grid place-items-center bg-black/45 p-6"
           onClick={() => setPostpartumOpen(false)}
         >
           <div
-            className="max-h-[80dvh] w-full max-w-sm overflow-y-auto rounded-3xl bg-background p-5 shadow-2xl ring-1 ring-border/80"
+            className="max-h-[80dvh] w-full max-w-sm overflow-y-auto overscroll-contain touch-pan-y rounded-3xl bg-background p-5 shadow-2xl ring-1 ring-border/80"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="mb-3 flex items-center justify-center gap-2">
@@ -1028,7 +1037,7 @@ function QuickTagBuilder({
   const inputCls = "w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm";
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/45 p-6 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/45 p-6" onClick={onClose}>
       <div
         className="w-full max-w-sm rounded-3xl bg-background p-5 shadow-2xl ring-1 ring-border/80"
         onClick={(event) => event.stopPropagation()}
