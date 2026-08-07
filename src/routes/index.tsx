@@ -540,7 +540,7 @@ function HomePage() {
               key: "bowel",
               icon: <PoopIcon size={22} />,
               label: "Bowel",
-              value: latestBowel ? `Type ${latestBowel.type}` : "Not logged",
+              value: latestBowel ? `Type ${latestBowel.bristol}` : "Not logged",
             },
             {
               key: "temperature",

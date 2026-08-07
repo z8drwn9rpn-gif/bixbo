@@ -882,7 +882,7 @@ function ProfilePage() {
       pregnancyActive ? { date: "Current", title: "Pregnancy mode active", icon: <PregnancyIcon size={20} /> } : null,
       postpartumActive ? { date: "Current", title: "Postpartum mode active", icon: <BabyIcon size={20} /> } : null,
       { date: "Today", title: "Continuing your health journey", icon: <HeartIcon size={20} /> },
-    ].filter((item): item is { date: string; title: string; icon: ReactNode } => item != null);
+    ].filter((item) => item != null);
 
     return (
       <HealthSubpage title="Health Journey" onBack={() => setHealthView("hub")}>
