@@ -617,6 +617,13 @@ const stripEmoji = (v: string) => v.replace(/^[\p{Extended_Pictographic}\u200d\u
 
 import { getScaleDesc } from "@/lib/scaleDescriptions";
 
+
+function intensityScaleColor(value: number, max: number, from = 1): string {
+  if (max <= from) return vividPainColor(10);
+  const normalized = ((value - from) / (max - from)) * 10;
+  return vividPainColor(normalized);
+}
+
 function ScaleLegend({
   max,
   descriptions,
@@ -637,8 +644,7 @@ function ScaleLegend({
       <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-foreground/75">{title}</p>
       <div className="space-y-1 text-[11px] leading-tight">
         {items.map((n) => {
-          const span = Math.max(1, max - from);
-          const bg = vividPainColor(n);
+          const bg = intensityScaleColor(n, max, from);
           return (
             <div key={n} className="flex items-start gap-2">
               <span
@@ -679,8 +685,7 @@ function IntensityScale({
     <div className="mt-2 space-y-1.5">
       <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${nums.length}, minmax(0, 1fr))` }}>
         {nums.map((n) => {
-          const span = Math.max(1, max - from);
-          const bg = vividPainColor(n);
+          const bg = intensityScaleColor(n, max, from);
           const active = value === n;
           return (
             <button
@@ -699,15 +704,15 @@ function IntensityScale({
       </div>
       <div className="flex items-center justify-between px-0.5 text-[10px] font-medium text-foreground/75">
         <span className="flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full" style={{ background: vividPainColor(1) }} />
+          <span className="h-2 w-2 rounded-full" style={{ background: intensityScaleColor(from, max, from) }} />
           Mild
         </span>
         <span className="flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full" style={{ background: vividPainColor(5) }} />
+          <span className="h-2 w-2 rounded-full" style={{ background: intensityScaleColor(Math.round((from + max) / 2), max, from) }} />
           Moderate
         </span>
         <span className="flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full" style={{ background: vividPainColor(10) }} />
+          <span className="h-2 w-2 rounded-full" style={{ background: intensityScaleColor(max, max, from) }} />
           Severe
         </span>
       </div>
