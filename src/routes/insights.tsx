@@ -138,38 +138,6 @@ function InsightFloatingTooltip({
   );
 }
 
-function InsightTooltipSummary({ details, onClose }: { details: InsightTooltipDetails; onClose: () => void }) {
-  return (
-    <div className="mt-2 h-[68px] overflow-hidden rounded-[1.25rem] bg-primary/20 px-2.5 py-2 text-[11px] text-foreground ring-1 ring-primary/20 [overflow-anchor:none]">
-      <button
-        type="button"
-        onClick={(event) => {
-          event.stopPropagation();
-          onClose();
-        }}
-        className="flex h-full w-full items-start justify-between gap-2 text-left"
-        aria-label="Close selected chart details"
-      >
-        <span className="min-w-0 max-h-[50px] flex-1 overflow-y-auto overscroll-contain break-words pr-1 leading-snug [overflow-wrap:anywhere] [scrollbar-width:none]">
-          {details.owner ? <b>{details.owner}</b> : null}
-          {details.owner ? " · " : ""}
-          {details.summary}
-        </span>
-
-        <span className="mt-0.5 shrink-0 text-[9px] text-muted-foreground">Tap to close</span>
-      </button>
-    </div>
-  );
-}
-
-function InsightTooltipHint({ children }: { children: string }) {
-  return (
-    <div className="mt-2 grid h-[68px] place-items-center text-center text-[10px] text-muted-foreground [overflow-anchor:none]">
-      {children}
-    </div>
-  );
-}
-
 /** High-contrast BIXBO palette used by every Insights chart. */
 const INSIGHT_COLORS = {
   olive: "#536600",
@@ -392,30 +360,6 @@ function InsightsPage() {
   })();
 
   // Cycle summary (last 6 months)
-  const cycleSummary = (() => {
-    const starts: string[] = [];
-    if (view.cycle.lastPeriodStart) starts.push(view.cycle.lastPeriodStart);
-    // Detect period starts from dayLogs
-    const keys = Object.keys(view.dayLogs).sort();
-    let prev = "";
-    for (const k of keys) {
-      const l = view.dayLogs[k];
-      if (!l?.period && !l?.periodInfo?.level) continue;
-      const prevIsPeriod = prev && (view.dayLogs[prev]?.period || view.dayLogs[prev]?.periodInfo?.level);
-      if (!prevIsPeriod || addDays(prev, 1) !== k) starts.push(k);
-      prev = k;
-    }
-    const uniq = Array.from(new Set(starts)).sort();
-    const cycleLens: number[] = [];
-    for (let i = 1; i < uniq.length; i++) {
-      const d = (new Date(uniq[i]).getTime() - new Date(uniq[i - 1]).getTime()) / 86400000;
-      if (d > 10 && d < 60) cycleLens.push(d);
-    }
-    const avg = cycleLens.length
-      ? Math.round(cycleLens.reduce((a, b) => a + b, 0) / cycleLens.length)
-      : view.cycle.cycleLength;
-    return { avg, count: cycleLens.length, periodLen: view.cycle.periodLength };
-  })();
 
   const goPrev = () =>
     setAnchor((d) => {
@@ -493,39 +437,7 @@ function InsightsPage() {
         </div>
 
         {!cycleTrackingHidden && period === "P" && (
-          <>
-            <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
-              <p className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
-                <Ico e="🫐" size={16} /> Blueberry cycle
-              </p>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Cycle length</p>
-                  <p className="mt-1 font-serif text-xl">{cycleSummary.avg} days</p>
-                </div>
-                <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Period length</p>
-                  <p className="mt-1 font-serif text-xl">{cycleSummary.periodLen} days</p>
-                </div>
-                <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Regularity</p>
-                  <p className="mt-1 font-serif text-lg">
-                    {cycleSummary.count >= 2 ? `Regular (${cycleSummary.avg}-day)` : "Not enough data"}
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Last period</p>
-                  <p className="mt-1 font-serif text-base">
-                    {view.cycle.lastPeriodStart ?? "—"}
-                    {view.cycle.lastPeriodEnd ? ` → ${view.cycle.lastPeriodEnd}` : ""}
-                  </p>
-                </div>
-              </div>
-            </section>
-
-            <BirthControlCalendar data={view} anchor={anchor} />
-
-          </>
+          <BirthControlCalendar data={view} anchor={anchor} />
         )}
 
         {period !== "P" && (
@@ -639,56 +551,88 @@ function BirthControlCalendar({ data, anchor }: { data: ReturnType<typeof useBix
   const { update } = useBixbo();
   const [sel, setSel] = useState<string | null>(null);
   const [pickTime, setPickTime] = useState<string>("");
+  const [hakTab, setHakTab] = useState<"overview" | "calendar" | "tips">("overview");
+  const [hakMonth, setHakMonth] = useState(() => new Date(anchor.getFullYear(), anchor.getMonth(), 1));
+
+  useEffect(() => {
+    setHakMonth(new Date(anchor.getFullYear(), anchor.getMonth(), 1));
+  }, [anchor]);
+
   const since = data.settings.birthControlSince;
+
+  useEffect(() => {
+    if (!sel) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [sel]);
+
   if (!since || data.settings.gender === "male") return null;
+
+  // Visual pack requested for the Blueberry HAK overview:
+  // 21 active HAK days + 7 placebo/break days = 28 days.
+  const ACTIVE_DAYS = 21;
+  const PACK_DAYS = 28;
+
+  const HAK_PURPLE = "#7A53C8";
+  const HAK_PURPLE_DARK = "#5B32AE";
+  const HAK_PURPLE_SOFT = "#DCCFF3";
+  const HAK_PURPLE_DOT = "#8C67D4";
+  const HAK_PINK = "#D95782";
+  const HAK_PINK_DARK = "#B92E60";
+  const HAK_PINK_SOFT = "#F7CBD9";
+  const HAK_GREEN = "#68A94E";
+  const HAK_GREEN_DARK = "#397B2F";
+  const HAK_GREEN_SOFT = "#DCEBD2";
+  const HAK_TRACK = "#E4E4D3";
 
   const bcMed = data.meds.find((m) =>
     /antikonc|birth\s*control|contracept|hak|pill/i.test(`${m.name} ${m.dose ?? ""}`),
   );
-  // Fall back to a synthetic id (like the "removed medication" history pattern)
-  // so taken/missed can still be recorded even without a matching med entry.
   const bcId = bcMed?.id ?? "hak-default";
 
-  const y = anchor.getFullYear(),
-    mo = anchor.getMonth();
-  const first = new Date(y, mo, 1);
-  const startWeekday = (first.getDay() + 6) % 7;
-  const daysInMonth = new Date(y, mo + 1, 0).getDate();
   const todayK = toKey(new Date());
 
   const pillNumber = (k: string) => {
     const diff = Math.round((fromKey(k).getTime() - fromKey(since).getTime()) / 86400000);
     if (diff < 0) return null;
-    return (diff % 28) + 1;
+    return (diff % PACK_DAYS) + 1;
   };
+
+  const currentDay = pillNumber(todayK) ?? 1;
+  const currentPackStart = addDays(todayK, -(currentDay - 1));
+
+  const dateForPackDay = (day: number) => addDays(currentPackStart, day - 1);
+
   const takenAt = (k: string): string | null => {
     const log = data.medLog[k] ?? {};
     const times = data.medLogTimes?.[k] ?? {};
-    const keys = Object.keys(log).filter((key) => log[key] && key !== `${bcId}@missed` && key.startsWith(`${bcId}@`));
+    const keys = Object.keys(log).filter(
+      (key) => log[key] && key !== `${bcId}@missed` && key.startsWith(`${bcId}@`),
+    );
     if (!keys.length) return null;
     return times[keys[0]] ?? keys[0].split("@")[1] ?? "";
   };
-  const missedAt = (k: string): boolean => !!data.medLog[k]?.[`${bcId}@missed`];
 
-  const cells: (string | null)[] = [
-    ...new Array(startWeekday).fill(null),
-    ...Array.from({ length: daysInMonth }, (_, i) => toKey(new Date(y, mo, i + 1))),
-  ];
+  const missedAt = (k: string): boolean => !!data.medLog[k]?.[`${bcId}@missed`];
 
   const markTaken = (k: string, time: string) =>
     update((d) => {
       const t = time || new Date().toTimeString().slice(0, 5);
       const day = { ...(d.medLog[k] ?? {}) };
-      // Clear any prior taken/missed markers for this pill on this day, then record the new dose.
       Object.keys(day).forEach((key) => {
         if (key.startsWith(`${bcId}@`)) delete day[key];
       });
       day[`${bcId}@${t}`] = true;
+
       const dayTimes = { ...(d.medLogTimes[k] ?? {}) };
       Object.keys(dayTimes).forEach((key) => {
         if (key.startsWith(`${bcId}@`)) delete dayTimes[key];
       });
       dayTimes[`${bcId}@${t}`] = t;
+
       return {
         ...d,
         medLog: { ...d.medLog, [k]: day },
@@ -704,10 +648,12 @@ function BirthControlCalendar({ data, anchor }: { data: ReturnType<typeof useBix
         if (key.startsWith(`${bcId}@`)) delete day[key];
       });
       day[`${bcId}@missed`] = true;
+
       const dayTimes = { ...(d.medLogTimes[k] ?? {}) };
       Object.keys(dayTimes).forEach((key) => {
         if (key.startsWith(`${bcId}@`)) delete dayTimes[key];
       });
+
       return {
         ...d,
         medLog: { ...d.medLog, [k]: day },
@@ -722,148 +668,780 @@ function BirthControlCalendar({ data, anchor }: { data: ReturnType<typeof useBix
       Object.keys(day).forEach((key) => {
         if (key.startsWith(`${bcId}@`)) delete day[key];
       });
+
       const dayTimes = { ...(d.medLogTimes[k] ?? {}) };
       Object.keys(dayTimes).forEach((key) => {
         if (key.startsWith(`${bcId}@`)) delete dayTimes[key];
       });
-      return { ...d, medLog: { ...d.medLog, [k]: day }, medLogTimes: { ...d.medLogTimes, [k]: dayTimes } };
+
+      return {
+        ...d,
+        medLog: { ...d.medLog, [k]: day },
+        medLogTimes: { ...d.medLogTimes, [k]: dayTimes },
+      };
     });
 
-  const detail = (() => {
-    if (!sel) return null;
-    const n = pillNumber(sel);
-    if (n == null) return `${sel} · before you started`;
-    const t = takenAt(sel);
-    const missed = missedAt(sel);
-    const inactive = n > 24;
-    const status = t != null ? `taken at ${t}` : missed ? "marked missed" : "not recorded";
-    return `Pill #${n}${inactive ? " (inactive white)" : ""} · ${status}`;
-  })();
+  const selectedDay = sel ? pillNumber(sel) : null;
+  const selectedTaken = sel ? takenAt(sel) : null;
+  const selectedMissed = sel ? missedAt(sel) : false;
+
+  const placeboStart = addDays(currentPackStart, ACTIVE_DAYS);
+  const placeboEnd = addDays(currentPackStart, PACK_DAYS - 1);
+  const nextPackStart = addDays(currentPackStart, PACK_DAYS);
+
+  const fmtDate = (key: string) =>
+    fromKey(key).toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+    });
+
+  const fmtFullDate = (key: string) =>
+    fromKey(key).toLocaleDateString("en-GB", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+
+  const wheelDays = Array.from({ length: PACK_DAYS }, (_, i) => i + 1);
+
+  // 21 purple dots, a subtle separator, 7 pink dots, a second separator,
+  // then one green dot for the next pack. This matches the detailed reference.
+  const timelineItems: Array<{
+    kind: "active" | "placebo" | "separator" | "next";
+    day?: number;
+  }> = [
+    ...Array.from({ length: ACTIVE_DAYS }, (_, i) => ({ kind: "active" as const, day: i + 1 })),
+    { kind: "separator" as const },
+    ...Array.from({ length: PACK_DAYS - ACTIVE_DAYS }, (_, i) => ({
+      kind: "placebo" as const,
+      day: ACTIVE_DAYS + i + 1,
+    })),
+    { kind: "separator" as const },
+    { kind: "next" as const, day: 1 },
+  ];
+
+  const timelineCurrentIndex =
+    currentDay <= ACTIVE_DAYS
+      ? currentDay - 1
+      : ACTIVE_DAYS + 1 + (currentDay - ACTIVE_DAYS - 1);
+
+  const timelineMarkerLeft = Math.max(
+    6,
+    Math.min(88, ((timelineCurrentIndex + 0.5) / timelineItems.length) * 100),
+  );
+
+  const hakMonthYear = hakMonth.getFullYear();
+  const hakMonthIndex = hakMonth.getMonth();
+  const hakMonthFirst = new Date(hakMonthYear, hakMonthIndex, 1);
+  const hakMonthStartOffset = (hakMonthFirst.getDay() + 6) % 7;
+  const hakMonthDays = new Date(hakMonthYear, hakMonthIndex + 1, 0).getDate();
+  const hakMonthCellCount = Math.ceil((hakMonthStartOffset + hakMonthDays) / 7) * 7;
+  const hakMonthCells = Array.from({ length: hakMonthCellCount }, (_, index) => {
+    const dayNumber = index - hakMonthStartOffset + 1;
+    const date = new Date(hakMonthYear, hakMonthIndex, dayNumber);
+    const key = toKey(date);
+    return {
+      key,
+      date,
+      inMonth: date.getMonth() === hakMonthIndex,
+      packDay: pillNumber(key),
+    };
+  });
+  const hakMonthLabel = hakMonth.toLocaleDateString("en-GB", {
+    month: "long",
+    year: "numeric",
+  });
 
   return (
-    <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
-      <p className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
-        <Ico e="💊" size={16} /> Birth control
-      </p>
-      <p className="mt-3 text-center font-serif text-lg">
-        {anchor.toLocaleDateString("en-GB", { month: "long", year: "numeric" })}
-      </p>
-      <div className="mt-2 grid grid-cols-7 gap-1 text-center text-[10px] text-muted-foreground">
-        {["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map((d) => (
-          <span key={d}>{d}</span>
-        ))}
+    <section
+      className="overflow-hidden rounded-[2rem] p-4 shadow-sm ring-1"
+      style={{
+        backgroundColor: GREEN_SOFT,
+        boxShadow: `inset 0 0 0 1px ${GREEN_BORDER}`,
+      }}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-surface/65 ring-1 ring-border/50">
+            <Ico e="🫐" size={25} />
+          </span>
+          <div className="min-w-0">
+            <h2 className="font-serif text-xl font-bold text-foreground">Blueberry cycle</h2>
+            <p className="text-[11px] text-muted-foreground">Birth control overview</p>
+          </div>
+        </div>
+
+        <span
+          className="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold"
+          style={{ backgroundColor: HAK_PURPLE_SOFT, color: HAK_PURPLE_DARK }}
+        >
+          HAK
+        </span>
       </div>
-      <div className="mt-1 grid grid-cols-7 gap-1">
-        {cells.map((k, i) => {
-          if (!k) return <span key={i} />;
-          const n = pillNumber(k);
-          const t = n == null ? null : takenAt(k);
-          const explicitMissed = n != null && missedAt(k);
-          const inactive = n != null && n > 24;
-          const future = k > todayK;
-          const isToday = k === todayK;
-          const missed = n != null && !inactive && !t && (explicitMissed || !future);
 
-          let bg = "transparent",
-            color = "var(--foreground)",
-            ring = "1px solid var(--border)";
-          if (n == null || (future && !t && !explicitMissed)) {
-            bg = "transparent";
-            color = "var(--muted-foreground)";
-          } else if (inactive) {
-            bg = "var(--tint)";
-            color = "var(--muted-foreground)";
-            ring = "1px solid var(--border)";
-          } else if (t != null) {
-            bg = "var(--primary)";
-            color = "var(--primary-foreground)";
-            ring = "none";
-          } else if (missed) {
-            ring = `2px solid ${CHART_COLORS.headache}`;
-            color = CHART_COLORS.headache;
-          }
-
+      <div className="mt-4 grid grid-cols-3 rounded-2xl bg-surface/45 p-1 ring-1 ring-border/40">
+        {(
+          [
+            ["overview", "Overview"],
+            ["calendar", "Calendar"],
+            ["tips", "Phases & tips"],
+          ] as const
+        ).map(([id, label]) => {
+          const active = hakTab === id;
           return (
             <button
-              key={k}
-              onClick={() => {
-                setSel(sel === k ? null : k);
-                setPickTime("");
-              }}
-              className={`flex aspect-square flex-col items-center justify-center rounded-full text-[13px] leading-none ${sel === k ? "ring-2 ring-primary" : ""}`}
-              style={{
-                background: bg,
-                color,
-                border: sel === k ? undefined : ring,
-                outline: isToday ? "2.5px solid var(--foreground)" : undefined,
-              }}
+              key={id}
+              type="button"
+              onClick={() => setHakTab(id)}
+              className={`rounded-xl px-2 py-2 text-center text-xs font-semibold transition ${
+                active ? "shadow-sm" : "text-muted-foreground"
+              }`}
+              style={
+                active
+                  ? {
+                      backgroundColor: id === "overview" ? "rgba(127, 164, 83, 0.18)" : HAK_PURPLE_SOFT,
+                      color: id === "overview" ? "var(--foreground)" : HAK_PURPLE_DARK,
+                    }
+                  : undefined
+              }
             >
-              <span className="text-[8px] opacity-70">{n != null ? `#${n}` : ""}</span>
-              <span className="font-semibold">{Number(k.slice(8, 10))}</span>
+              {label}
             </button>
           );
         })}
       </div>
-      <div className="mt-3 flex flex-wrap gap-3 text-[10px] text-muted-foreground">
-        <span className="flex items-center gap-1">
-          <span className="h-2.5 w-2.5 rounded-full bg-primary" /> taken
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="h-2.5 w-2.5 rounded-full border-2" style={{ borderColor: CHART_COLORS.headache }} /> missed
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="h-2.5 w-2.5 rounded-full bg-tint ring-1 ring-border" /> inactive (white)
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="h-2.5 w-2.5 rounded-full ring-2 ring-foreground" /> today
+
+      {hakTab === "overview" && (
+        <>
+      <div className="mt-4 text-center">
+        <span
+          className="inline-flex rounded-2xl bg-surface/75 px-4 py-2 text-[11px] font-semibold ring-1 ring-border/45"
+          style={{ color: currentDay <= ACTIVE_DAYS ? HAK_PURPLE_DARK : HAK_PINK_DARK }}
+        >
+          {currentDay <= ACTIVE_DAYS
+            ? `Active HAK days · 1–${ACTIVE_DAYS}`
+            : `Placebo / break · ${ACTIVE_DAYS + 1}–${PACK_DAYS}`}
         </span>
       </div>
-      <p className="mt-3 rounded-2xl bg-tint p-3 text-xs" role="status" aria-live="polite">
-        {detail ?? "Tap a day for details."}
-      </p>
-      {sel && pillNumber(sel) != null && pillNumber(sel)! <= 24 && (
-        <div className="mt-2 rounded-2xl bg-tint p-3 space-y-2">
-          <div className="flex items-center gap-2">
-            <input
-              type="time"
-              value={pickTime}
-              onChange={(e) => setPickTime(e.target.value)}
-              className="rounded-lg bg-surface px-2 py-1 text-xs ring-1 ring-border"
-            />
-            <button
-              onClick={() => markTaken(sel, pickTime)}
-              className="flex-1 rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
+
+      {/* Circular HAK wheel */}
+      <div className="mx-auto mt-3 w-full max-w-[360px]">
+        <div className="relative aspect-square w-full">
+          <div
+            className="absolute inset-[8%] rounded-full"
+            style={{
+              background: `conic-gradient(from 45deg, ${HAK_PINK_SOFT} 0 25%, ${HAK_PURPLE_SOFT} 25% 100%)`,
+              boxShadow: "inset 0 0 0 1px rgba(255,255,255,.28)",
+            }}
+          />
+          <div
+            className="absolute inset-[17%] rounded-full"
+            style={{ backgroundColor: GREEN_SOFT }}
+          />
+
+          {wheelDays.map((day) => {
+            // The approved reference starts the pack at the lower-right and
+            // progresses counter-clockwise: day 7 sits around the upper-right.
+            const angleDeg = 48 - ((day - 1) / PACK_DAYS) * 360;
+            const angle = (angleDeg * Math.PI) / 180;
+            const radius = 42;
+            const left = 50 + Math.cos(angle) * radius;
+            const top = 50 + Math.sin(angle) * radius;
+
+            const dateKey = dateForPackDay(day);
+            const isCurrent = day === currentDay;
+            const isPlacebo = day > ACTIVE_DAYS;
+            const isPackStart = day === 1;
+            const taken = takenAt(dateKey);
+            const missed = missedAt(dateKey);
+
+            const baseBg = isPackStart
+              ? HAK_GREEN_SOFT
+              : isPlacebo
+                ? "#F7D7E1"
+                : "#E8DFF7";
+            const baseColor = isPackStart
+              ? HAK_GREEN_DARK
+              : isPlacebo
+                ? HAK_PINK_DARK
+                : "#3D218D";
+
+            const currentBg = isPlacebo ? HAK_PINK : isPackStart ? HAK_GREEN : HAK_PURPLE_DARK;
+
+            return (
+              <button
+                key={day}
+                type="button"
+                onClick={() => {
+                  setSel(dateKey);
+                  setPickTime("");
+                }}
+                className="absolute z-10 grid h-7 w-7 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[10px] font-bold shadow-sm transition active:scale-95"
+                style={{
+                  left: `${left}%`,
+                  top: `${top}%`,
+                  backgroundColor: isCurrent ? currentBg : baseBg,
+                  color: isCurrent ? "#fff" : baseColor,
+                  border: isCurrent
+                    ? "3px solid rgba(255,255,255,.96)"
+                    : taken
+                      ? `2px solid ${HAK_GREEN}`
+                      : missed
+                        ? `2px solid ${CHART_COLORS.headache}`
+                        : "1px solid rgba(255,255,255,.8)",
+                  boxShadow: isCurrent
+                    ? `0 0 0 3px ${isPlacebo ? HAK_PINK : isPackStart ? HAK_GREEN : HAK_PURPLE}66`
+                    : "0 1px 5px rgba(58,61,30,.08)",
+                }}
+                aria-label={`HAK day ${day}, ${fmtFullDate(dateKey)}`}
+              >
+                {day}
+              </button>
+            );
+          })}
+
+          <div
+            className="pointer-events-none absolute z-20 grid h-8 w-8 place-items-center rounded-full text-xs font-bold shadow-sm"
+            style={{
+              left: "79%",
+              top: "77%",
+              transform: "translate(-50%, -50%)",
+              backgroundColor: HAK_GREEN_SOFT,
+              color: HAK_GREEN_DARK,
+              border: "2px solid rgba(255,255,255,.9)",
+            }}
+            aria-hidden="true"
+          >
+            1
+          </div>
+
+          <div className="absolute inset-[27%] flex flex-col items-center justify-center text-center">
+            <p className="text-xs font-semibold text-foreground">Day</p>
+            <p
+              className="mt-1 font-serif text-[clamp(2rem,10vw,3rem)] font-bold leading-none"
+              style={{ color: currentDay <= ACTIVE_DAYS ? HAK_PURPLE_DARK : HAK_PINK_DARK }}
             >
-              Mark taken
+              {currentDay} / {PACK_DAYS}
+            </p>
+            <p
+              className="mt-2 text-sm font-semibold"
+              style={{ color: currentDay <= ACTIVE_DAYS ? HAK_PURPLE_DARK : HAK_PINK_DARK }}
+            >
+              {currentDay <= ACTIVE_DAYS ? "Active HAK days" : "Placebo / break"}
+            </p>
+
+            <div className="relative mt-4 h-[78px] w-[62px] rotate-[8deg]" aria-hidden="true">
+              <div
+                className="absolute inset-x-1 bottom-[-7px] h-3 rounded-full opacity-20 blur-[2px]"
+                style={{ backgroundColor: "#4E3E6D" }}
+              />
+              <div
+                className="relative grid h-full w-full grid-cols-2 gap-x-2 gap-y-2 rounded-[13px] p-[9px] shadow-lg ring-1"
+                style={{
+                  background: "linear-gradient(145deg, #F1ECFA 0%, #D7C6EE 48%, #B99BD9 100%)",
+                  borderColor: "#B89AD8",
+                  boxShadow:
+                    "inset 2px 2px 4px rgba(255,255,255,.82), inset -2px -2px 4px rgba(92,55,145,.16), 0 8px 14px rgba(63,48,89,.18)",
+                }}
+              >
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <span
+                    key={i}
+                    className="relative rounded-full"
+                    style={{
+                      background:
+                        i % 2 === 0
+                          ? "radial-gradient(circle at 32% 28%, #B9A2E9 0%, #8A68CF 45%, #5B39A8 100%)"
+                          : "radial-gradient(circle at 32% 28%, #C4B2EE 0%, #9677D5 45%, #6745B0 100%)",
+                      boxShadow:
+                        "inset 1px 1px 2px rgba(255,255,255,.75), inset -1px -2px 2px rgba(57,31,103,.28), 0 1px 2px rgba(67,45,105,.28)",
+                    }}
+                  >
+                    <span className="absolute left-[22%] top-[18%] h-[28%] w-[28%] rounded-full bg-white/35" />
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <p className="mt-4 max-w-[160px] text-[11px] leading-snug text-muted-foreground">
+              {currentDay <= ACTIVE_DAYS ? "Continue taking your tablet" : "Placebo / break days"}
+            </p>
+          </div>
+
+          <div
+            className="absolute bottom-[6%] left-[3%] rounded-2xl px-3 py-2 text-left ring-1"
+            style={{
+              backgroundColor: "rgba(251,224,233,.72)",
+              borderColor: "rgba(217,87,130,.16)",
+            }}
+          >
+            <p className="text-[10px] font-bold" style={{ color: HAK_PINK_DARK }}>
+              Placebo / break
+            </p>
+            <p className="text-[10px] font-semibold" style={{ color: HAK_PINK_DARK }}>
+              {ACTIVE_DAYS + 1}–{PACK_DAYS}
+            </p>
+          </div>
+
+          <div
+            className="absolute bottom-[6%] right-[2%] rounded-2xl px-3 py-2 text-right ring-1"
+            style={{
+              backgroundColor: "rgba(220,235,210,.72)",
+              borderColor: "rgba(104,169,78,.16)",
+            }}
+          >
+            <p className="text-[10px] font-bold" style={{ color: HAK_GREEN_DARK }}>
+              New cycle
+            </p>
+            <p className="text-[10px] font-semibold" style={{ color: HAK_GREEN_DARK }}>
+              Day 1
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Detailed linear pack progress — matches the user's detailed reference */}
+      <div className="mt-1">
+        <h3 className="font-serif text-lg font-bold text-foreground">Your current phase</h3>
+
+        <div className="relative mt-4 pt-10 pb-10">
+          <div className="absolute inset-x-0 top-0 grid grid-cols-[3fr_1.15fr_.8fr] items-start text-center">
+            <div>
+              <p className="text-[10px] font-bold" style={{ color: HAK_PURPLE_DARK }}>
+                Active HAK days
+              </p>
+              <p className="text-[10px] font-semibold" style={{ color: HAK_PURPLE_DARK }}>
+                1–{ACTIVE_DAYS}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-[10px] font-bold" style={{ color: HAK_PINK_DARK }}>
+                Placebo / break
+              </p>
+              <p className="text-[10px] font-semibold" style={{ color: HAK_PINK_DARK }}>
+                {ACTIVE_DAYS + 1}–{PACK_DAYS}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-[10px] font-bold" style={{ color: HAK_GREEN_DARK }}>
+                New cycle
+              </p>
+              <p className="text-[10px] font-semibold" style={{ color: HAK_GREEN_DARK }}>
+                Day 1
+              </p>
+            </div>
+          </div>
+
+          <div
+            className="relative mt-2 rounded-full px-2 py-2 ring-1"
+            style={{
+              backgroundColor: "rgba(255,255,255,.22)",
+              borderColor: "rgba(129,135,67,.16)",
+            }}
+          >
+            <div
+              className="grid items-center gap-[2px]"
+              style={{ gridTemplateColumns: `repeat(${timelineItems.length}, minmax(0, 1fr))` }}
+            >
+              {timelineItems.map((item, index) => {
+                const isCurrent = index === timelineCurrentIndex;
+                const color =
+                  item.kind === "active"
+                    ? HAK_PURPLE_DOT
+                    : item.kind === "placebo"
+                      ? HAK_PINK
+                      : item.kind === "next"
+                        ? HAK_GREEN
+                        : HAK_TRACK;
+
+                return (
+                  <span
+                    key={`${item.kind}-${index}`}
+                    className="mx-auto block aspect-square w-full max-w-[11px] rounded-full"
+                    style={{
+                      backgroundColor: color,
+                      boxShadow: isCurrent
+                        ? `0 0 0 3px ${GREEN_SOFT}, 0 0 0 6px ${
+                            item.kind === "placebo" ? HAK_PINK_DARK : HAK_PURPLE_DARK
+                          }`
+                        : item.kind === "next"
+                          ? `0 0 0 2px ${HAK_GREEN_SOFT}`
+                          : undefined,
+                    }}
+                  />
+                );
+              })}
+            </div>
+          </div>
+
+          <div
+            className="absolute bottom-[25px] h-5 w-px"
+            style={{
+              left: `${timelineMarkerLeft}%`,
+              backgroundColor: currentDay <= ACTIVE_DAYS ? HAK_PURPLE : HAK_PINK,
+            }}
+          />
+
+          <p
+            className="absolute bottom-0 whitespace-nowrap text-xs font-bold"
+            style={{
+              left: `${timelineMarkerLeft}%`,
+              transform: "translateX(-50%)",
+              color: currentDay <= ACTIVE_DAYS ? HAK_PURPLE_DARK : HAK_PINK_DARK,
+            }}
+          >
+            Day {currentDay} / {PACK_DAYS}
+          </p>
+        </div>
+      </div>
+
+      {/* Legend intentionally removed from this location per request. */}
+
+      <div className="mt-3">
+        <h3 className="font-serif text-lg font-bold text-foreground">Important dates</h3>
+
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <div
+            className="rounded-2xl p-3 ring-1"
+            style={{
+              backgroundColor: "rgba(251,224,233,.68)",
+              borderColor: "rgba(217,87,130,.18)",
+            }}
+          >
+            <div className="flex gap-2">
+              <span
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-xl"
+                style={{ backgroundColor: HAK_PINK_SOFT, color: HAK_PINK_DARK }}
+              >
+                <Ico e="🗓️" size={18} />
+              </span>
+              <div className="min-w-0">
+                <p className="text-[9px] leading-tight text-muted-foreground">Expected withdrawal bleeding</p>
+                <p className="mt-1 text-xs font-bold text-foreground">
+                  {fmtDate(placeboStart)} – {fmtDate(placeboEnd)}
+                </p>
+                <p className="mt-0.5 text-[9px] text-muted-foreground">May vary</p>
+              </div>
+            </div>
+          </div>
+
+          <div
+            className="rounded-2xl p-3 ring-1"
+            style={{
+              backgroundColor: "rgba(220,235,210,.72)",
+              borderColor: "rgba(104,169,78,.18)",
+            }}
+          >
+            <div className="flex gap-2">
+              <span
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-xl"
+                style={{ backgroundColor: HAK_GREEN_SOFT, color: HAK_GREEN_DARK }}
+              >
+                <Ico e="📅" size={18} />
+              </span>
+              <div className="min-w-0">
+                <p className="text-[9px] leading-tight" style={{ color: HAK_GREEN_DARK }}>
+                  Start of new pack
+                </p>
+                <p className="mt-1 text-xs font-bold text-foreground">{fmtDate(nextPackStart)}</p>
+                <p className="mt-0.5 text-[9px] text-muted-foreground">New cycle</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => setHakTab("calendar")}
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-surface/45 px-4 py-3 text-sm font-semibold text-foreground ring-1 ring-border/45"
+      >
+        <Ico e="📅" size={17} />
+        View full month
+        <span className="ml-auto">›</span>
+      </button>
+        </>
+      )}
+
+      {hakTab === "calendar" && (
+        <div className="mt-4">
+          <div className="flex items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => setHakMonth(new Date(hakMonthYear, hakMonthIndex - 1, 1))}
+              className="grid h-9 w-9 place-items-center rounded-full bg-surface/55 ring-1 ring-border/45"
+              aria-label="Previous month"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+
+            <div className="text-center">
+              <p className="font-serif text-lg font-bold text-foreground">{hakMonthLabel}</p>
+              <p className="text-[10px] text-muted-foreground">Tap a day to see HAK status.</p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setHakMonth(new Date(hakMonthYear, hakMonthIndex + 1, 1))}
+              className="grid h-9 w-9 place-items-center rounded-full bg-surface/55 ring-1 ring-border/45"
+              aria-label="Next month"
+            >
+              <ChevronRight className="h-4 w-4" />
             </button>
           </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => markMissed(sel)}
-              className="flex-1 rounded-xl px-3 py-1.5 text-xs font-medium"
-              style={{
-                background: "transparent",
-                border: `1.5px solid ${CHART_COLORS.headache}`,
-                color: CHART_COLORS.headache,
-              }}
-            >
-              Mark missed
-            </button>
-            {(takenAt(sel) != null || missedAt(sel)) && (
-              <button
-                onClick={() => clearRecord(sel)}
-                className="rounded-xl bg-surface px-3 py-1.5 text-xs text-muted-foreground ring-1 ring-border"
-              >
-                Clear
-              </button>
-            )}
+
+          <div className="mt-4 grid grid-cols-7 gap-1 text-center text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
+            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
+              <div key={day} className="py-1">{day}</div>
+            ))}
+          </div>
+
+          <div className="mt-1 grid grid-cols-7 gap-1.5">
+            {hakMonthCells.map((cell) => {
+              const taken = takenAt(cell.key);
+              const missed = missedAt(cell.key);
+              const isToday = cell.key === todayK;
+              const packDay = cell.packDay;
+              const isActive = packDay != null && packDay <= ACTIVE_DAYS;
+              const isPlacebo = packDay != null && packDay > ACTIVE_DAYS;
+              const background = !cell.inMonth
+                ? "rgba(255,255,255,.12)"
+                : isActive
+                  ? HAK_PURPLE_SOFT
+                  : isPlacebo
+                    ? HAK_PINK_SOFT
+                    : "rgba(255,255,255,.28)";
+              const textColor = !cell.inMonth
+                ? "var(--muted-foreground)"
+                : isActive
+                  ? HAK_PURPLE_DARK
+                  : isPlacebo
+                    ? HAK_PINK_DARK
+                    : "var(--foreground)";
+
+              return (
+                <button
+                  key={cell.key}
+                  type="button"
+                  onClick={() => {
+                    if (packDay == null) return;
+                    setSel(cell.key);
+                    setPickTime("");
+                  }}
+                  disabled={packDay == null}
+                  className="relative aspect-square rounded-xl p-1 text-left transition active:scale-95 disabled:opacity-45"
+                  style={{
+                    backgroundColor: background,
+                    color: textColor,
+                    border: isToday ? `2px solid ${HAK_GREEN_DARK}` : "1px solid rgba(255,255,255,.35)",
+                  }}
+                  aria-label={`${fmtFullDate(cell.key)}${packDay != null ? `, HAK day ${packDay}` : ""}`}
+                >
+                  <span className="text-[10px] font-bold">{cell.date.getDate()}</span>
+                  {packDay != null && cell.inMonth && (
+                    <span className="absolute bottom-1 left-1 text-[8px] font-semibold opacity-75">
+                      {packDay}
+                    </span>
+                  )}
+                  {taken && (
+                    <span
+                      className="absolute right-1 top-1 h-2 w-2 rounded-full"
+                      style={{ backgroundColor: HAK_GREEN }}
+                      aria-label="Taken"
+                    />
+                  )}
+                  {missed && (
+                    <span
+                      className="absolute right-1 top-1 h-2 w-2 rounded-full"
+                      style={{ backgroundColor: CHART_COLORS.headache }}
+                      aria-label="Missed"
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            <div className="rounded-2xl bg-surface/45 p-2.5 text-center ring-1 ring-border/40">
+              <span className="mx-auto block h-3 w-3 rounded-full" style={{ backgroundColor: HAK_PURPLE }} />
+              <p className="mt-1 text-[9px] font-semibold text-foreground">Active HAK</p>
+            </div>
+            <div className="rounded-2xl bg-surface/45 p-2.5 text-center ring-1 ring-border/40">
+              <span className="mx-auto block h-3 w-3 rounded-full" style={{ backgroundColor: HAK_PINK }} />
+              <p className="mt-1 text-[9px] font-semibold text-foreground">Placebo / break</p>
+            </div>
+            <div className="rounded-2xl bg-surface/45 p-2.5 text-center ring-1 ring-border/40">
+              <span className="mx-auto block h-3 w-3 rounded-full" style={{ backgroundColor: HAK_GREEN }} />
+              <p className="mt-1 text-[9px] font-semibold text-foreground">Taken</p>
+            </div>
           </div>
         </div>
       )}
+
+      {hakTab === "tips" && (
+        <div className="mt-4 space-y-3">
+          <div
+            className="rounded-3xl p-4 ring-1"
+            style={{ backgroundColor: "rgba(220,207,243,.55)", borderColor: "rgba(91,50,174,.14)" }}
+          >
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em]" style={{ color: HAK_PURPLE_DARK }}>
+              Active HAK days · 1–{ACTIVE_DAYS}
+            </p>
+            <p className="mt-1 text-sm font-semibold text-foreground">Keep your tablet routine consistent.</p>
+            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+              Use the same daily reminder and log the dose when you take it. This view follows your configured HAK pack rather than natural-cycle ovulation predictions.
+            </p>
+          </div>
+
+          <div
+            className="rounded-3xl p-4 ring-1"
+            style={{ backgroundColor: "rgba(247,203,217,.58)", borderColor: "rgba(185,46,96,.14)" }}
+          >
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em]" style={{ color: HAK_PINK_DARK }}>
+              Placebo / break · {ACTIVE_DAYS + 1}–{PACK_DAYS}
+            </p>
+            <p className="mt-1 text-sm font-semibold text-foreground">Withdrawal bleeding may occur.</p>
+            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+              Bleeding can vary between packs. Keep the next-pack date visible even if bleeding is still present.
+            </p>
+          </div>
+
+          <div
+            className="rounded-3xl p-4 ring-1"
+            style={{ backgroundColor: "rgba(220,235,210,.72)", borderColor: "rgba(57,123,47,.14)" }}
+          >
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em]" style={{ color: HAK_GREEN_DARK }}>
+              New pack
+            </p>
+            <p className="mt-1 text-sm font-semibold text-foreground">{fmtDate(nextPackStart)}</p>
+            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+              Start the next pack according to the schedule for your specific contraceptive.
+            </p>
+          </div>
+
+          <div className="rounded-3xl bg-surface/50 p-4 ring-1 ring-border/45">
+            <p className="font-serif text-base font-bold text-foreground">If a tablet is late or missed</p>
+            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+              Instructions differ by contraceptive type and by where you are in the pack. Follow the leaflet for your exact pill or the instructions from your prescriber rather than a generic rule in the app.
+            </p>
+          </div>
+
+          <div className="rounded-3xl bg-surface/50 p-4 ring-1 ring-border/45">
+            <p className="font-serif text-base font-bold text-foreground">Useful things to track</p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {["Spotting", "Headache", "Nausea", "Mood", "Pain", "Dose time"].map((label) => (
+                <span key={label} className="rounded-full bg-tint px-2.5 py-1 text-[10px] font-semibold text-foreground ring-1 ring-border/40">
+                  {label}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {!bcMed && (
-        <p className="mt-2 text-[10px] text-muted-foreground">
-          Tip: add your pill in Medications (name it e.g. “Birth control”) so taken doses are detected precisely.
+        <p className="mt-3 text-[10px] leading-snug text-muted-foreground">
+          Add your contraceptive pill in Medications so taken and missed doses can be detected precisely.
         </p>
+      )}
+
+      {sel && selectedDay != null && (
+        <div
+          className="fixed inset-0 z-[90] flex items-end justify-center bg-black/25 p-3 sm:items-center"
+          onClick={() => setSel(null)}
+        >
+          <div
+            className="w-full max-w-sm rounded-[1.75rem] bg-background p-4 shadow-2xl ring-1 ring-border"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  HAK day {selectedDay}
+                </p>
+                <h3 className="mt-1 font-serif text-lg font-bold text-foreground">{fmtFullDate(sel)}</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSel(null)}
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-tint text-sm font-bold ring-1 ring-border"
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="mt-3 rounded-2xl bg-tint p-3">
+              <p className="text-xs text-muted-foreground">Status</p>
+              <p className="mt-1 text-sm font-semibold text-foreground">
+                {selectedTaken
+                  ? `Taken at ${selectedTaken}`
+                  : selectedMissed
+                    ? "Marked missed"
+                    : selectedDay > ACTIVE_DAYS
+                      ? "Placebo / break day"
+                      : "Not recorded"}
+              </p>
+            </div>
+
+            {selectedDay <= ACTIVE_DAYS && (
+              <div className="mt-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="time"
+                    value={pickTime}
+                    onChange={(event) => setPickTime(event.target.value)}
+                    className="min-w-0 flex-1 rounded-xl bg-tint px-3 py-2 text-sm text-foreground ring-1 ring-border"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      markTaken(sel, pickTime);
+                      setSel(null);
+                    }}
+                    className="rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground"
+                  >
+                    Mark taken
+                  </button>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      markMissed(sel);
+                      setSel(null);
+                    }}
+                    className="flex-1 rounded-xl px-3 py-2 text-xs font-semibold"
+                    style={{
+                      border: `1.5px solid ${CHART_COLORS.headache}`,
+                      color: CHART_COLORS.headache,
+                    }}
+                  >
+                    Mark missed
+                  </button>
+
+                  {(selectedTaken || selectedMissed) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        clearRecord(sel);
+                        setSel(null);
+                      }}
+                      className="rounded-xl bg-tint px-3 py-2 text-xs font-semibold text-muted-foreground ring-1 ring-border"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </section>
   );
@@ -1512,12 +2090,6 @@ function InsightBarChartFrame({
         </div>
       )}
 
-      {activeDetails ? (
-        <InsightTooltipSummary details={activeDetails} onClose={() => setActive(null)} />
-      ) : (
-        <InsightTooltipHint>Tap a bar for exact details.</InsightTooltipHint>
-      )}
-
       {allEmpty && emptyMessage ? (
         <p className="mt-2 text-center text-xs text-muted-foreground">{emptyMessage}</p>
       ) : null}
@@ -1663,27 +2235,6 @@ function BristolChart({ bowelCounts }: { bowelCounts: number[] }) {
           : null}
       </div>
 
-      {active != null ? (
-        (() => {
-          const item = chartTypes.find((type) => type.n === active);
-          const count = bowelCounts[active] ?? 0;
-
-          if (!item) return null;
-
-          const details: InsightTooltipDetails = {
-            owner: "You",
-            heading: item.label,
-            value: `${count} ${count === 1 ? "entry" : "entries"}`,
-            description: item.sub,
-            color: item.n === 0 ? "#8b5cf6" : item.color,
-            summary: `${item.label} · ${count} ${count === 1 ? "entry" : "entries"} · ${item.sub}`,
-          };
-
-          return <InsightTooltipSummary details={details} onClose={() => setActive(null)} />;
-        })()
-      ) : (
-        <InsightTooltipHint>Tap a type for exact details.</InsightTooltipHint>
-      )}
     </ChartCard>
   );
 }
@@ -1763,27 +2314,6 @@ function HfBars({
           : null}
       </div>
 
-      {active != null && bars[active] != null ? (
-        (() => {
-          const value = bars[active]!;
-          const heading =
-            period === "Y" ? fmtTapMonth(active, anchor.getFullYear()) : fmtCoupleTooltipDay(days[active]);
-          const description = HOT_FLASH_DESCRIPTIONS[Math.max(1, Math.min(5, Math.round(value)))] ?? "Hot flash";
-          const color = HOT_FLASH_COLORS[Math.max(1, Math.min(5, Math.round(value)))];
-          const details: InsightTooltipDetails = {
-            owner: "You",
-            heading,
-            value: `Hot flash ${value.toFixed(1)}/5`,
-            description,
-            color,
-            summary: `${period === "Y" ? heading : days[active]} · Hot flash ${value.toFixed(1)}/5 · ${description}`,
-          };
-
-          return <InsightTooltipSummary details={details} onClose={() => setActive(null)} />;
-        })()
-      ) : (
-        <InsightTooltipHint>Tap a bar for exact details.</InsightTooltipHint>
-      )}
     </div>
   );
 }
@@ -2348,31 +2878,8 @@ function TimeOfDayPatternChart({
               <span key={l}>{l}</span>
             ))}
           </div>
-          {active ? (
-            (() => {
-              const isTetany = active[0] === "t";
-              const i = Number(active.slice(1));
-              const count = isTetany ? tetanyBlocks[i] : panicBlocks[i];
-              const total = isTetany ? tetanyTotal : panicTotal;
-              const percentage = total ? Math.round((count / total) * 100) : 0;
-              const color = isTetany ? TETANY_COLOR : PANIC_COLOR;
-              const details: InsightTooltipDetails = {
-                owner: "You",
-                heading: TIME_BLOCK_LABELS[i],
-                value: `${isTetany ? "Tetany" : "Panic"} ${count}×`,
-                description: `${percentage}% of entries in the selected period`,
-                color,
-                summary: `${TIME_BLOCK_LABELS[i]} · ${isTetany ? "Tetany" : "Panic"} ${count}× · ${percentage}%`,
-              };
-
-              return <InsightTooltipSummary details={details} onClose={() => setActive(null)} />;
-            })()
-          ) : (
-            <InsightTooltipHint>Tap a bar for exact details.</InsightTooltipHint>
-          )}
           {sentence && <p className="mt-3 text-sm text-muted-foreground">{sentence}</p>}
         </>
       )}
     </section>
   );
-}
