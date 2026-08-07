@@ -1279,7 +1279,7 @@ function BirthControlSummaryCard({
     <button
       type="button"
       onClick={onOpen}
-      className="mt-3 block w-full rounded-[1.75rem] px-5 py-5 text-left shadow-sm ring-1 transition active:scale-[0.99]"
+      className="mt-3 block w-full rounded-2xl px-3 py-3 text-left shadow-sm ring-1 transition active:scale-[0.99]"
       style={{
         background:
           "linear-gradient(135deg, color-mix(in srgb, var(--surface) 90%, #E7DDF7 10%), color-mix(in srgb, var(--background) 94%, #F7CBD9 6%))",
@@ -1287,58 +1287,66 @@ function BirthControlSummaryCard({
       }}
       aria-label={`Open birth control overview. HAK day ${packDay} of ${PACK_DAYS}`}
     >
-      <div className="flex items-start gap-3">
+      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
         <span
-          className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl ring-1"
-          style={{ backgroundColor: "rgba(229,219,248,.72)", borderColor: "rgba(122,83,200,.20)" }}
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-full ring-1"
+          style={{
+            backgroundColor: "rgba(229,219,248,.72)",
+            borderColor: "rgba(122,83,200,.20)",
+          }}
         >
-          <Ico e="💊" size={28} />
+          <Ico e="💊" size={22} />
         </span>
 
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <p className="font-serif text-lg font-bold text-foreground">Birth control</p>
-              <p className="text-[11px] text-muted-foreground">Drovelis</p>
-            </div>
-            <span className="pt-1 text-xl leading-none text-foreground/70">›</span>
+        <div className="min-w-0">
+          <div className="flex items-baseline gap-2">
+            <p className="truncate font-serif text-base font-bold text-foreground">Birth control</p>
+            <span className="text-[10px] text-muted-foreground">Drovelis</span>
           </div>
 
-          <div className="mt-3 grid grid-cols-[1fr_1fr_auto] items-center gap-3">
-            <div>
-              <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Day</p>
-              <p
-                className="mt-0.5 font-serif text-2xl font-bold leading-none"
+          <div className="mt-1 flex items-center gap-3">
+            <div className="flex items-baseline gap-1">
+              <span className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                Day
+              </span>
+              <span
+                className="font-serif text-lg font-bold leading-none"
                 style={{ color: isPlacebo ? HAK_PINK_DARK : HAK_PURPLE_DARK }}
               >
-                {packDay} / {PACK_DAYS}
-              </p>
+                {packDay}/{PACK_DAYS}
+              </span>
             </div>
 
-            <div className="border-l border-border/70 pl-3">
-              <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            <span className="h-5 w-px bg-border/70" />
+
+            <div className="flex items-baseline gap-1">
+              <span className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                 {isPlacebo ? "Placebo" : "Active"}
-              </p>
-              <p
-                className="mt-0.5 text-sm font-bold"
+              </span>
+              <span
+                className="text-xs font-bold"
                 style={{ color: isPlacebo ? HAK_PINK_DARK : HAK_PURPLE_DARK }}
               >
-                {isPlacebo ? `${packDay - ACTIVE_DAYS} / 4` : `${packDay} / 24`}
-              </p>
+                {isPlacebo ? `${packDay - ACTIVE_DAYS}/4` : `${packDay}/24`}
+              </span>
             </div>
-
-            <span
-              className="grid h-14 w-14 shrink-0 place-items-center rounded-full text-base font-bold"
-              style={{
-                color: isPlacebo ? HAK_PINK_DARK : HAK_PURPLE_DARK,
-                backgroundColor: isPlacebo ? HAK_PINK_SOFT : "rgba(220,207,243,.72)",
-                boxShadow: `inset 0 0 0 5px ${isPlacebo ? "rgba(217,87,130,.18)" : "rgba(122,83,200,.16)"}`,
-              }}
-            >
-              {packDay}
-            </span>
           </div>
+        </div>
 
+        <div className="flex items-center gap-2">
+          <span
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-sm font-bold"
+            style={{
+              color: isPlacebo ? HAK_PINK_DARK : HAK_PURPLE_DARK,
+              backgroundColor: isPlacebo ? HAK_PINK_SOFT : "rgba(220,207,243,.72)",
+              boxShadow: `inset 0 0 0 4px ${
+                isPlacebo ? "rgba(217,87,130,.18)" : "rgba(122,83,200,.16)"
+              }`,
+            }}
+          >
+            {packDay}
+          </span>
+          <span className="text-lg leading-none text-foreground/65">›</span>
         </div>
       </div>
     </button>
@@ -1825,17 +1833,14 @@ function BirthControlCalendar({
     return "White tablets are placebo. Missing a placebo tablet does not reduce contraceptive protection; discard it so the placebo phase is not accidentally extended.";
   };
 
-  // Corrected reference layout:
-  // 24 is centered at the top, 1–11 run down the right side,
-  // placebo 25–28 runs across the bottom, and 12–23 runs up the left side.
-  // Every pack number 1–28 is rendered exactly once — no duplicates or skipped numbers.
-  const wheelAngleForDay = (day: number) => {
-    if (day === 24) return -90;
-    if (day >= 1 && day <= 11) return -72 + ((day - 1) * 120) / 10;
-    if (day >= 25 && day <= 28) return 112.5 - ((day - 25) * 45) / 3;
-    if (day >= 12 && day <= 23) return 132 + ((day - 12) * 120) / 11;
-    return -90;
-  };
+  // TRUE mathematical 28-day ring.
+  // Every adjacent bubble is the next pill number:
+  // 1 → 2 → … → 24 → 25 → 26 → 27 → 28 → back to 1.
+  // Rotation keeps placebo 25–28 across the bottom of the wheel.
+  const WHEEL_STEP = 360 / PACK_DAYS;
+  const WHEEL_DAY1_ANGLE = 57;
+  const wheelAngleForDay = (day: number) =>
+    WHEEL_DAY1_ANGLE - (day - 1) * WHEEL_STEP;
 
   return (
     <section
@@ -1880,10 +1885,10 @@ function BirthControlCalendar({
       </div>
 
       {/* Circular HAK overview — only wheel pills open the dose popup. */}
-      <div className="mx-auto mt-5 w-full max-w-[390px]">
+      <div className="mx-auto mt-4 w-full max-w-[336px]">
         <div className="mb-3 flex justify-center">
           <div
-            className="rounded-full px-4 py-2 text-[11px] font-bold ring-1"
+            className="rounded-full px-4 py-1.5 text-[11px] font-bold ring-1"
             style={{
               backgroundColor: "rgba(229,219,248,.92)",
               color: HAK_PURPLE_DARK,
@@ -1896,14 +1901,14 @@ function BirthControlCalendar({
 
         <div className="relative aspect-square w-full">
           <div
-            className="absolute inset-[7%] rounded-full"
+            className="absolute inset-[9%] rounded-full"
             style={{
               background: "rgba(255,255,255,.12)",
               boxShadow: "inset 0 0 0 9px rgba(255,255,255,.24)",
             }}
           />
           <div
-            className="absolute inset-[20%] rounded-full"
+            className="absolute inset-[22%] rounded-full"
             style={{
               backgroundColor: HAK_CARD_BG,
               boxShadow: "0 0 0 1px rgba(255,255,255,.12)",
@@ -1914,7 +1919,7 @@ function BirthControlCalendar({
             {Array.from({ length: PACK_DAYS }).map((_, i) => {
               const day = i + 1;
               const angle = (wheelAngleForDay(day) * Math.PI) / 180;
-              const radius = 43;
+              const radius = 41;
               return (
                 <span
                   key={`wheel-track-${i}`}
@@ -1930,7 +1935,7 @@ function BirthControlCalendar({
 
           {wheelDays.map((day) => {
             const angle = (wheelAngleForDay(day) * Math.PI) / 180;
-            const radius = 43;
+            const radius = 41;
             const left = 50 + Math.cos(angle) * radius;
             const top = 50 + Math.sin(angle) * radius;
             const dateKey = dateForPackDay(day);
@@ -2014,7 +2019,7 @@ function BirthControlCalendar({
                   setSel(dateKey);
                   setPickTime("");
                 }}
-                className="absolute z-10 grid h-9 w-9 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[11px] font-bold transition active:scale-95"
+                className="absolute z-10 grid h-8 w-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[10px] font-bold transition active:scale-95"
                 style={{
                   left: `${left}%`,
                   top: `${top}%`,
@@ -2033,22 +2038,22 @@ function BirthControlCalendar({
             );
           })}
 
-          <div className="pointer-events-none absolute inset-[25%] z-20 flex flex-col items-center justify-center text-center">
-            <p className="text-[11px] font-semibold text-foreground">Day</p>
+          <div className="pointer-events-none absolute inset-[27%] z-20 flex flex-col items-center justify-center text-center">
+            <p className="text-[10px] font-semibold text-foreground">Day</p>
             <p
-              className="mt-1 font-serif text-[clamp(2rem,9vw,2.8rem)] font-bold leading-none"
+              className="mt-1 font-serif text-[clamp(1.9rem,8.2vw,2.55rem)] font-bold leading-none"
               style={{ color: currentDay <= ACTIVE_DAYS ? HAK_PURPLE_DARK : HAK_PINK_DARK }}
             >
               {currentDay} / {PACK_DAYS}
             </p>
             <p
-              className="mt-2 text-[13px] font-semibold"
+              className="mt-2 text-[12px] font-semibold"
               style={{ color: currentDay <= ACTIVE_DAYS ? HAK_PURPLE_DARK : HAK_PINK_DARK }}
             >
               {currentDay <= ACTIVE_DAYS ? "Active HAK days" : "Placebo / break"}
             </p>
 
-            <div className="relative mt-3 h-[70px] w-[56px] rotate-[8deg]" aria-hidden="true">
+            <div className="relative mt-3 h-[62px] w-[50px] rotate-[8deg]" aria-hidden="true">
               <div
                 className="absolute inset-x-1 bottom-[-6px] h-3 rounded-full opacity-20 blur-[2px]"
                 style={{ backgroundColor: "#4E3E6D" }}
