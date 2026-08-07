@@ -605,9 +605,9 @@ function BirthControlCalendar({
   const HAK_PINK = "#D95782";
   const HAK_PINK_DARK = "#B92E60";
   const HAK_PINK_SOFT = "#F7CBD9";
-  const HAK_GREEN = "#68A94E";
-  const HAK_GREEN_DARK = "#397B2F";
-  const HAK_GREEN_SOFT = "#DCEBD2";
+  const HAK_GREEN = "#8A962D";
+  const HAK_GREEN_DARK = "#596313";
+  const HAK_GREEN_SOFT = "#E7E9B8";
   const HAK_TRACK = "#E4E4D3";
   const HAK_CARD_BG = "color-mix(in srgb, var(--background) 94%, #7C8900 6%)";
 
@@ -777,61 +777,104 @@ function BirthControlCalendar({
     year: "numeric",
   });
 
-  type ProtectionState = "onSchedule" | "check" | "unknown";
+  type ProtectionState = "protected" | "backup" | "unknown";
 
+  /**
+   * Conservative pregnancy-protection indicator based only on logged HAK use.
+   *
+   * We intentionally do NOT label a day simply "safe sex", because pregnancy
+   * protection depends on the exact contraceptive, late/missed-pill timing,
+   * vomiting/diarrhoea, interacting medicines and starting the next pack on time.
+   *
+   * App rule:
+   * - protected: all required active pills are logged and there has been no
+   *   unresolved missed-pill event;
+   * - backup: a missed active pill is logged and fewer than 7 consecutive
+   *   active pills have been logged since it;
+   * - unknown: required dose logs are incomplete.
+   *
+   * For the first 7 active days of a new pack, also inspect the final 7 active
+   * days of the previous pack so a late-end-of-pack miss cannot produce a false
+   * green status.
+   */
   const protectionStateFor = (key: string): ProtectionState => {
     const day = pillNumber(key);
     if (day == null) return "unknown";
 
     const packStart = addDays(key, -(day - 1));
-    const activeDaysToCheck = Math.min(day, ACTIVE_DAYS);
 
-    let hasMissed = false;
-    let hasIncompleteLogs = false;
+    const history: string[] = [];
 
-    for (let i = 0; i < activeDaysToCheck; i++) {
-      const activeKey = addDays(packStart, i);
-      if (missedAt(activeKey)) {
-        hasMissed = true;
-        break;
-      }
-      if (!takenAt(activeKey)) {
-        hasIncompleteLogs = true;
+    if (day <= 7) {
+      const previousPackStart = addDays(packStart, -PACK_DAYS);
+      for (let i = ACTIVE_DAYS - 7; i < ACTIVE_DAYS; i++) {
+        history.push(addDays(previousPackStart, i));
       }
     }
 
-    if (hasMissed) return "check";
-    if (hasIncompleteLogs) return "unknown";
-    return "onSchedule";
+    const activeDaysToCheck = day > ACTIVE_DAYS ? ACTIVE_DAYS : day;
+    for (let i = 0; i < activeDaysToCheck; i++) {
+      history.push(addDays(packStart, i));
+    }
+
+    let lastMissedIndex = -1;
+    let incomplete = false;
+
+    history.forEach((activeKey, index) => {
+      if (missedAt(activeKey)) {
+        lastMissedIndex = index;
+        return;
+      }
+      if (!takenAt(activeKey)) {
+        incomplete = true;
+      }
+    });
+
+    if (lastMissedIndex >= 0) {
+      let consecutiveTakenAfterMiss = 0;
+
+      for (let i = lastMissedIndex + 1; i < history.length; i++) {
+        if (missedAt(history[i]) || !takenAt(history[i])) break;
+        consecutiveTakenAfterMiss++;
+      }
+
+      if (consecutiveTakenAfterMiss < 7) return "backup";
+    }
+
+    if (incomplete) return "unknown";
+    return "protected";
   };
 
   const protectionMeta = (state: ProtectionState) => {
-    if (state === "onSchedule") {
+    if (state === "protected") {
       return {
-        label: "Protection on schedule",
-        short: "On schedule",
+        label: "Pregnancy protection expected",
+        short: "Protected",
         color: HAK_GREEN,
         bg: "rgba(220,235,210,.72)",
         text: HAK_GREEN_DARK,
+        symbol: "✓",
       };
     }
 
-    if (state === "check") {
+    if (state === "backup") {
       return {
-        label: "Backup protection may be needed",
-        short: "Check / backup",
-        color: "#D99024",
-        bg: "rgba(245,219,172,.62)",
-        text: "#8A5412",
+        label: "Use a condom / avoid unprotected sex",
+        short: "Use backup",
+        color: "#C94A55",
+        bg: "rgba(248,215,218,.72)",
+        text: "#8E2832",
+        symbol: "!",
       };
     }
 
     return {
-      label: "Protection status unknown",
+      label: "Protection unknown — dose logs incomplete",
       short: "Unknown",
       color: "#9A9A82",
       bg: "rgba(230,230,210,.55)",
       text: "var(--muted-foreground)",
+      symbol: "?",
     };
   };
 
@@ -937,7 +980,7 @@ function BirthControlCalendar({
             className="absolute inset-[8%] rounded-full"
             style={{
               background: `conic-gradient(from 45deg, ${HAK_PINK_SOFT} 0 14.2857%, ${HAK_PURPLE_SOFT} 14.2857% 100%)`,
-              boxShadow: "inset 0 0 0 1px rgba(255,255,255,.28)",
+              boxShadow: "inset 0 0 0 1px rgba(255,255,255,.32)",
             }}
           />
           <div
@@ -948,9 +991,35 @@ function BirthControlCalendar({
             }}
           />
 
+          <div className="pointer-events-none absolute inset-0 z-[1]">
+            {Array.from({ length: 22 }).map((_, i) => {
+              const angleDeg = 42 - (i / 22) * 280;
+              const angle = (angleDeg * Math.PI) / 180;
+              const radius = 42;
+              const left = 50 + Math.cos(angle) * radius;
+              const top = 50 + Math.sin(angle) * radius;
+
+              return (
+                <span
+                  key={`connector-${i}`}
+                  className="absolute h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                  style={{
+                    left: `${left}%`,
+                    top: `${top}%`,
+                    backgroundColor: "rgba(255,255,255,.72)",
+                  }}
+                />
+              );
+            })}
+          </div>
+
           {wheelDays.map((day) => {
             // The approved reference starts the pack at the lower-right and
             // progresses counter-clockwise: day 7 sits around the upper-right.
+            // Day 1 is intentionally hidden on the main ring and represented
+            // by the separate green new-cycle marker, matching the reference.
+            if (day === 1) return null;
+
             const angleDeg = 48 - ((day - 1) / PACK_DAYS) * 360;
             const angle = (angleDeg * Math.PI) / 180;
             const radius = 42;
@@ -975,7 +1044,7 @@ function BirthControlCalendar({
                   setSel(dateKey);
                   setPickTime("");
                 }}
-                className="absolute z-10 grid h-7 w-7 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[10px] font-bold shadow-sm transition active:scale-95"
+                className="absolute z-10 grid h-7.5 w-7.5 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[10px] font-bold shadow-sm transition active:scale-95"
                 style={{
                   left: `${left}%`,
                   top: `${top}%`,
@@ -996,19 +1065,37 @@ function BirthControlCalendar({
           })}
 
           <div
-            className="pointer-events-none absolute z-20 grid h-9 w-9 place-items-center rounded-full text-[14px] font-bold shadow-sm"
+            className="pointer-events-none absolute z-20"
             style={{
-              left: "92.5%",
-              top: "80.5%",
+              left: "89.5%",
+              top: "79.5%",
               transform: "translate(-50%, -50%)",
-              backgroundColor: HAK_GREEN_SOFT,
-              color: HAK_GREEN_DARK,
-              border: `2px solid ${HAK_GREEN}`,
-              boxShadow: `0 0 0 4px ${HAK_CARD_BG}`,
             }}
             aria-hidden="true"
           >
-            1
+            <div
+              className="absolute inset-0 rounded-[18px] rotate-[32deg]"
+              style={{
+                background: "linear-gradient(145deg, rgba(116,194,103,.92) 0%, rgba(84,167,76,.94) 100%)",
+                boxShadow: `0 0 0 4px ${HAK_CARD_BG}, 0 4px 10px rgba(72,120,62,.14)`,
+              }}
+            />
+            <div className="relative flex h-[58px] w-[42px] flex-col items-center justify-center gap-1.5 py-1">
+              {[0, 1].map((i) => (
+                <span
+                  key={i}
+                  className="grid h-7 w-7 place-items-center rounded-full text-[13px] font-bold"
+                  style={{
+                    backgroundColor: "#F6FFF2",
+                    color: HAK_GREEN_DARK,
+                    border: `2px solid ${HAK_GREEN_SOFT}`,
+                    boxShadow: "0 1px 3px rgba(72,120,62,.16)",
+                  }}
+                >
+                  1
+                </span>
+              ))}
+            </div>
           </div>
 
           <div className="pointer-events-none absolute inset-[25%] z-20 flex flex-col items-center justify-center text-center">
@@ -1329,7 +1416,7 @@ function BirthControlCalendar({
                     setSel(cell.key);
                     setPickTime("");
                   }}
-                  className="relative aspect-square min-w-0 rounded-xl p-1 text-left transition active:scale-95 disabled:opacity-30"
+                  className="relative aspect-square min-w-0 rounded-xl p-1.5 text-left transition active:scale-95 disabled:opacity-30"
                   style={{
                     backgroundColor: !cell.inMonth
                       ? "rgba(255,255,255,.10)"
@@ -1343,12 +1430,6 @@ function BirthControlCalendar({
                   }}
                 >
                   <span className="text-[10px] font-bold">{cell.date.getDate()}</span>
-
-                  {cell.inMonth && packDay != null && (
-                    <span className="absolute bottom-1 left-1 text-[7px] font-semibold opacity-70">
-                      H{packDay}
-                    </span>
-                  )}
 
                   {taken && (
                     <span
@@ -1371,7 +1452,7 @@ function BirthControlCalendar({
                       title={protection.label}
                       aria-label={protection.label}
                     >
-                      {protectionState === "onSchedule" ? "✓" : protectionState === "check" ? "!" : "?"}
+                      {protection.symbol}
                     </span>
                   )}
                 </button>
@@ -1394,7 +1475,7 @@ function BirthControlCalendar({
               </div>
             </div>
 
-            {(["onSchedule", "check", "unknown"] as ProtectionState[]).map((state) => {
+            {(["protected", "backup", "unknown"] as ProtectionState[]).map((state) => {
               const item = protectionMeta(state);
               return (
                 <div key={state} className="rounded-2xl bg-surface/45 p-2.5 ring-1 ring-border/40">
@@ -1403,7 +1484,7 @@ function BirthControlCalendar({
                       className="grid h-4 w-4 shrink-0 place-items-center rounded-full text-[8px] font-bold text-white"
                       style={{ backgroundColor: item.color }}
                     >
-                      {state === "onSchedule" ? "✓" : state === "check" ? "!" : "?"}
+                      {item.symbol}
                     </span>
                     <p className="text-[9px] font-semibold text-foreground">{item.short}</p>
                   </div>
@@ -1413,9 +1494,12 @@ function BirthControlCalendar({
           </div>
 
           <div className="mt-3 rounded-2xl bg-surface/40 p-3 ring-1 ring-border/35">
-            <p className="text-[10px] font-semibold text-foreground">HAK protection status</p>
+            <p className="text-[10px] font-semibold text-foreground">Pregnancy protection</p>
             <p className="mt-1 text-[9px] leading-relaxed text-muted-foreground">
-              Based only on your logged doses. If a pill was late or missed, follow the instructions for your exact contraceptive or your prescriber before relying on the app.
+              Green = pregnancy protection expected from your logged HAK use. Red = use a condom or avoid unprotected sex. Grey = the app does not have enough dose logs to judge.
+            </p>
+            <p className="mt-1 text-[9px] leading-relaxed text-muted-foreground">
+              This does not indicate STI protection and cannot account for vomiting, diarrhoea, interacting medicines or pill-specific missed-dose rules.
             </p>
           </div>
         </div>
@@ -1542,12 +1626,12 @@ function BirthControlCalendar({
                       className="mt-2 rounded-2xl p-3 ring-1"
                       style={{ backgroundColor: item.bg, borderColor: `${item.color}33` }}
                     >
-                      <p className="text-xs text-muted-foreground">HAK protection</p>
+                      <p className="text-xs text-muted-foreground">Pregnancy protection</p>
                       <p className="mt-1 text-sm font-semibold" style={{ color: item.text }}>
                         {item.label}
                       </p>
                       <p className="mt-1 text-[9px] leading-relaxed text-muted-foreground">
-                        This is based on logged doses only; it is not an STI-safety indicator.
+                        Based on logged HAK doses only. It does not indicate STI protection.
                       </p>
                     </div>
                   );
