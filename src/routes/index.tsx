@@ -1279,23 +1279,24 @@ function BirthControlSummaryCard({
     <button
       type="button"
       onClick={onOpen}
-      className="mt-3 block w-full rounded-2xl px-3 py-3 text-left shadow-sm ring-1 transition active:scale-[0.99]"
+      className="mt-2 block w-full rounded-2xl px-3 py-2.5 text-left shadow-sm ring-1 transition active:scale-[0.99]"
       style={{
-        background:
-          "linear-gradient(135deg, color-mix(in srgb, var(--surface) 90%, #E7DDF7 10%), color-mix(in srgb, var(--background) 94%, #F7CBD9 6%))",
-        borderColor: "rgba(122,83,200,.18)",
+        background: "color-mix(in srgb, #7467D8 11%, var(--background))",
+        borderColor: "rgba(116,103,216,.48)",
+        boxShadow:
+          "inset 0 0 0 1px rgba(116,103,216,.18), 0 2px 8px rgba(83,72,170,.08)",
       }}
       aria-label={`Open birth control overview. HAK day ${packDay} of ${PACK_DAYS}`}
     >
       <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
         <span
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-full ring-1"
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-full ring-1"
           style={{
-            backgroundColor: "rgba(229,219,248,.72)",
-            borderColor: "rgba(122,83,200,.20)",
+            backgroundColor: "rgba(229,219,248,.88)",
+            borderColor: "rgba(116,103,216,.34)",
           }}
         >
-          <Ico e="💊" size={22} />
+          <Ico e="💊" size={20} />
         </span>
 
         <div className="min-w-0">
@@ -1346,7 +1347,7 @@ function BirthControlSummaryCard({
           >
             {packDay}
           </span>
-          <span className="text-lg leading-none text-foreground/65">›</span>
+          <span className="text-lg leading-none" style={{ color: "#7467D8" }}>›</span>
         </div>
       </div>
     </button>
@@ -1383,7 +1384,7 @@ function BirthControlOverlay({
 
   return (
     <div className="fixed inset-0 z-[80] overflow-y-auto overscroll-contain bg-background">
-      <div className="sticky top-0 z-40 border-b border-border/70 bg-background/95 px-4 pb-3 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur">
+      <div className="sticky top-0 z-40 border-b border-border/70 bg-background/95 px-4 pb-2 pt-[max(.75rem,env(safe-area-inset-top))] backdrop-blur">
         <div className="mx-auto flex w-full max-w-xl items-center justify-between gap-3">
           <button
             type="button"
@@ -1403,7 +1404,7 @@ function BirthControlOverlay({
         </div>
       </div>
 
-      <main className="mx-auto w-full max-w-[42rem] px-3 pb-[calc(110px+env(safe-area-inset-bottom))] pt-4">
+      <main className="mx-auto w-full max-w-[42rem] px-3 pb-[calc(110px+env(safe-area-inset-bottom))] pt-2">
         <BirthControlCalendar
           data={data}
           anchor={anchor}
@@ -2090,32 +2091,6 @@ function BirthControlCalendar({
               Mark taken / missed
             </p>
           </div>
-        </div>
-      </div>
-
-      <div className="mt-1 grid grid-cols-2 gap-2">
-        <div
-          className="rounded-[1.65rem] px-4 py-3 ring-1"
-          style={{
-            backgroundColor: "rgba(251,224,233,.58)",
-            borderColor: "rgba(129,135,67,.18)",
-          }}
-        >
-          <p className="text-[10px] font-bold" style={{ color: HAK_PINK_DARK }}>Placebo / break</p>
-          <p className="mt-0.5 text-[10px] font-semibold" style={{ color: HAK_PINK_DARK }}>
-            {ACTIVE_DAYS + 1}–{PACK_DAYS}
-          </p>
-        </div>
-
-        <div
-          className="rounded-[1.65rem] px-4 py-3 text-right ring-1"
-          style={{
-            backgroundColor: "rgba(231,233,184,.60)",
-            borderColor: "rgba(129,135,67,.18)",
-          }}
-        >
-          <p className="text-[10px] font-bold" style={{ color: HAK_GREEN_DARK }}>New cycle</p>
-          <p className="mt-0.5 text-[10px] font-semibold" style={{ color: HAK_GREEN_DARK }}>Day 1</p>
         </div>
       </div>
 
