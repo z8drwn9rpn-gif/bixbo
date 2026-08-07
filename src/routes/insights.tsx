@@ -573,14 +573,16 @@ function BirthControlCalendar({
   const { update } = useBixbo();
   const [sel, setSel] = useState<string | null>(null);
   const [pickTime, setPickTime] = useState<string>("");
-  const [hakTab, setHakTab] = useState<"overview" | "calendar" | "tips">("overview");
   const [hakMonth, setHakMonth] = useState(() => new Date(anchor.getFullYear(), anchor.getMonth(), 1));
 
   useEffect(() => {
     setHakMonth(new Date(anchor.getFullYear(), anchor.getMonth(), 1));
   }, [anchor]);
 
-  const since = data.settings.birthControlSince;
+  // Personal Drovelis schedule. Keep Settings as the source of truth when present,
+  // with the confirmed start date as a safe fallback for this build.
+  const DROVELIS_START = "2026-04-22";
+  const since = data.settings.birthControlSince || DROVELIS_START;
 
   useEffect(() => {
     if (!sel) return;
@@ -591,12 +593,13 @@ function BirthControlCalendar({
     };
   }, [sel]);
 
-  if (!since || data.settings.gender === "male") return null;
+  if (data.settings.gender === "male") return null;
 
-  // Visual pack requested for the Blueberry HAK overview:
-  // 24 active HAK days + 4 placebo/break days = 28 days.
+  // Drovelis is monophasic: every pink active tablet has the same full dose.
+  // 24 pink active tablets + 4 white placebo tablets = one 28-day pack.
   const ACTIVE_DAYS = 24;
   const PACK_DAYS = 28;
+  const DROVELIS_ACTIVE_DOSE = "3 mg drospirenone + 14.2 mg estetrol";
 
   const HAK_PURPLE = "#7A53C8";
   const HAK_PURPLE_DARK = "#5B32AE";
@@ -777,72 +780,122 @@ function BirthControlCalendar({
     year: "numeric",
   });
 
-  type ProtectionState = "protected" | "backup" | "unknown";
+  type ProtectionState = "protected" | "backup" | "review" | "starting" | "unknown";
+
+  const activeKeysBefore = (key: string, count: number): string[] => {
+    const out: string[] = [];
+    let cursor = addDays(key, -1);
+
+    while (out.length < count && cursor >= since) {
+      const d = pillNumber(cursor);
+      if (d != null && d <= ACTIVE_DAYS) out.unshift(cursor);
+      cursor = addDays(cursor, -1);
+    }
+
+    return out;
+  };
+
+  const activeDaysAfterMissThrough = (missKey: string, key: string): number => {
+    let cursor = addDays(missKey, 1);
+    let consecutive = 0;
+
+    while (cursor <= key) {
+      const d = pillNumber(cursor);
+      if (d != null && d <= ACTIVE_DAYS) {
+        if (missedAt(cursor)) consecutive = 0;
+        else consecutive++;
+      }
+      cursor = addDays(cursor, 1);
+    }
+
+    return consecutive;
+  };
+
+  const explicitMissesThrough = (key: string): string[] => {
+    // 40 days is enough to carry a late-pack miss across placebo and into the
+    // following pack until seven uninterrupted active tablets have elapsed.
+    const start = fromKey(key).getTime() - fromKey(since).getTime() > 40 * 86400000 ? addDays(key, -40) : since;
+    const misses: string[] = [];
+    let cursor = start;
+
+    while (cursor <= key) {
+      const d = pillNumber(cursor);
+      if (d != null && d <= ACTIVE_DAYS && missedAt(cursor)) misses.push(cursor);
+      cursor = addDays(cursor, 1);
+    }
+
+    return misses;
+  };
 
   /**
-   * Conservative pregnancy-protection indicator based only on logged HAK use.
+   * Drovelis pregnancy-protection indicator.
    *
-   * We intentionally do NOT label a day simply "safe sex", because pregnancy
-   * protection depends on the exact contraceptive, late/missed-pill timing,
-   * vomiting/diarrhoea, interacting medicines and starting the next pack on time.
+   * Important modelling rule: an empty medication log is NOT treated as a missed
+   * pill. This calendar is a schedule + exception tracker; only an explicit
+   * "missed" record reduces the status. That prevents old, unlogged packs from
+   * being shown as falsely "Unknown".
    *
-   * App rule:
-   * - protected: all required active pills are logged and there has been no
-   *   unresolved missed-pill event;
-   * - backup: a missed active pill is logged and fewer than 7 consecutive
-   *   active pills have been logged since it;
-   * - unknown: required dose logs are incomplete.
-   *
-   * For the first 7 active days of a new pack, also inspect the final 7 active
-   * days of the previous pack so a late-end-of-pack miss cannot produce a false
-   * green status.
+   * Official Drovelis rules represented here:
+   * - all 24 pink tablets are the same full dose;
+   * - the four placebo days are part of the protected regimen when the preceding
+   *   active tablets were taken correctly and the next pack starts on time;
+   * - <24 h late does not reduce protection (a normal "taken" record stays green);
+   * - days 1-7: an explicit missed active pill triggers backup until seven
+   *   uninterrupted active pills have followed;
+   * - days 8-17: one missed pill can remain protected when the preceding seven
+   *   active pills were correct; repeated/recent misses trigger backup;
+   * - days 18-24: special schedule action is required to avoid extending the
+   *   hormone-free interval, so the app shows REVIEW rather than a false green.
    */
   const protectionStateFor = (key: string): ProtectionState => {
     const day = pillNumber(key);
     if (day == null) return "unknown";
 
-    const packStart = addDays(key, -(day - 1));
+    const daysFromStart = Math.round((fromKey(key).getTime() - fromKey(since).getTime()) / 86400000);
+    const misses = explicitMissesThrough(key);
 
-    const history: string[] = [];
+    // During the first seven calendar days we do not know whether the first pill
+    // was started on menstrual day 1 (immediate protection) or days 2-5 (backup
+    // needed for seven active pills). An explicit miss is stronger and is handled
+    // by the missed-pill rules below.
+    if (!misses.length && daysFromStart >= 0 && daysFromStart < 7) return "starting";
+    if (!misses.length) return "protected";
 
-    if (day <= 7) {
-      const previousPackStart = addDays(packStart, -PACK_DAYS);
-      for (let i = ACTIVE_DAYS - 7; i < ACTIVE_DAYS; i++) {
-        history.push(addDays(previousPackStart, i));
+    let strongest: ProtectionState = "protected";
+
+    for (const missKey of misses) {
+      const missDay = pillNumber(missKey);
+      if (missDay == null || missDay > ACTIVE_DAYS) continue;
+
+      const recovered = activeDaysAfterMissThrough(missKey, key) >= 7;
+      if (recovered) continue;
+
+      if (missDay <= 7) return "backup";
+
+      if (missDay <= 17) {
+        const previousSeven = activeKeysBefore(missKey, 7);
+        const previousSevenClear = previousSeven.length === 7 && previousSeven.every((k) => !missedAt(k));
+
+        const missPackStart = addDays(missKey, -(missDay - 1));
+        let missesInThisPack = 0;
+        let cursor = missPackStart;
+        while (cursor <= missKey) {
+          const d = pillNumber(cursor);
+          if (d != null && d <= ACTIVE_DAYS && missedAt(cursor)) missesInThisPack++;
+          cursor = addDays(cursor, 1);
+        }
+
+        if (!previousSevenClear || missesInThisPack > 1) return "backup";
+        continue;
       }
+
+      // Days 18-24 need a deliberate schedule adjustment (e.g. skipping the
+      // placebo phase) to preserve protection. This fixed 28-day calendar cannot
+      // safely infer that adjustment, so surface an action/review state.
+      strongest = "review";
     }
 
-    const activeDaysToCheck = day > ACTIVE_DAYS ? ACTIVE_DAYS : day;
-    for (let i = 0; i < activeDaysToCheck; i++) {
-      history.push(addDays(packStart, i));
-    }
-
-    let lastMissedIndex = -1;
-    let incomplete = false;
-
-    history.forEach((activeKey, index) => {
-      if (missedAt(activeKey)) {
-        lastMissedIndex = index;
-        return;
-      }
-      if (!takenAt(activeKey)) {
-        incomplete = true;
-      }
-    });
-
-    if (lastMissedIndex >= 0) {
-      let consecutiveTakenAfterMiss = 0;
-
-      for (let i = lastMissedIndex + 1; i < history.length; i++) {
-        if (missedAt(history[i]) || !takenAt(history[i])) break;
-        consecutiveTakenAfterMiss++;
-      }
-
-      if (consecutiveTakenAfterMiss < 7) return "backup";
-    }
-
-    if (incomplete) return "unknown";
-    return "protected";
+    return strongest;
   };
 
   const protectionMeta = (state: ProtectionState) => {
@@ -868,14 +921,59 @@ function BirthControlCalendar({
       };
     }
 
+    if (state === "review") {
+      return {
+        label: "HAK schedule action needed",
+        short: "Check schedule",
+        color: "#D58A22",
+        bg: "rgba(251,232,199,.78)",
+        text: "#8A5511",
+        symbol: "!",
+      };
+    }
+
+    if (state === "starting") {
+      return {
+        label: "Start-up protection depends on cycle-day start",
+        short: "Start-up",
+        color: HAK_PURPLE,
+        bg: "rgba(220,207,243,.62)",
+        text: HAK_PURPLE_DARK,
+        symbol: "i",
+      };
+    }
+
     return {
-      label: "Protection unknown — dose logs incomplete",
+      label: "Outside configured HAK schedule",
       short: "Unknown",
       color: "#9A9A82",
       bg: "rgba(230,230,210,.55)",
       text: "var(--muted-foreground)",
       symbol: "?",
     };
+  };
+
+  const missedPillAdvice = (day: number): string => {
+    if (day <= 7) {
+      return "Take the last missed pink pill as soon as possible and use a condom until 7 uninterrupted active pills have been taken. If unprotected sex happened in the previous 7 days, review pregnancy risk.";
+    }
+    if (day <= 17) {
+      return "Take the last missed pink pill as soon as possible. If this was the only missed pill and the previous 7 active pills were taken correctly, extra contraception is usually not needed; otherwise use backup until 7 uninterrupted active pills.";
+    }
+    if (day <= ACTIVE_DAYS) {
+      return "Late-pack rule: avoid extending the hormone-free interval. Drovelis guidance uses a schedule adjustment such as skipping the 4 placebo tablets and starting the next pack immediately. Review the missed-pill instructions before relying on protection.";
+    }
+    return "White tablets are placebo. Missing a placebo tablet does not reduce contraceptive protection; discard it so the placebo phase is not accidentally extended.";
+  };
+
+  const wheelAngleForDay = (day: number) => {
+    // Layout mirrors the approved mockup: current day 24 at the top,
+    // active days down both sides, placebo 25–28 at the bottom.
+    if (day === 24) return -90;
+    if (day >= 1 && day <= 11) return -74 + ((day - 1) * 124) / 10;
+    if (day >= 12 && day <= 23) return 130 + ((day - 12) * 124) / 11;
+    if (day >= 25 && day <= 28) return 65 + ((day - 25) * 50) / 3;
+    return -90;
   };
 
   return (
@@ -886,7 +984,7 @@ function BirthControlCalendar({
         boxShadow: `inset 0 0 0 1px ${GREEN_BORDER}`,
       }}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-surface/65 ring-1 ring-border/50">
             <Ico e="🫐" size={25} />
@@ -897,17 +995,14 @@ function BirthControlCalendar({
           </div>
         </div>
 
-      </div>
-
-      <div className="mt-2 flex justify-end">
-        <div className="inline-flex items-center gap-0.5 rounded-full bg-surface/35 p-0.5 ring-1 ring-border/35">
+        <div className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-surface/35 p-0.5 ring-1 ring-border/35">
           <button
             type="button"
             onClick={onPrevMonth}
-            className="grid h-6 w-6 place-items-center rounded-full transition hover:bg-tint"
+            className="grid h-7 w-7 place-items-center rounded-full transition hover:bg-tint"
             aria-label="Previous month"
           >
-            <ChevronLeft className="h-3 w-3" />
+            <ChevronLeft className="h-3.5 w-3.5" />
           </button>
           <span className="min-w-[88px] px-1 text-center text-[10px] font-semibold text-foreground/80">
             {monthLabel}
@@ -915,72 +1010,22 @@ function BirthControlCalendar({
           <button
             type="button"
             onClick={onNextMonth}
-            className="grid h-6 w-6 place-items-center rounded-full transition hover:bg-tint"
+            className="grid h-7 w-7 place-items-center rounded-full transition hover:bg-tint"
             aria-label="Next month"
           >
-            <ChevronRight className="h-3 w-3" />
+            <ChevronRight className="h-3.5 w-3.5" />
           </button>
         </div>
       </div>
 
-      <div className="mt-3 grid grid-cols-3 rounded-2xl bg-surface/45 p-1 ring-1 ring-border/40">
-        {(
-          [
-            ["overview", "Overview"],
-            ["calendar", "Calendar"],
-            ["tips", "Phases & tips"],
-          ] as const
-        ).map(([id, label]) => {
-          const active = hakTab === id;
-          return (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setHakTab(id)}
-              className={`rounded-xl px-2 py-2 text-center text-xs font-semibold transition ${
-                active ? "shadow-sm" : "text-muted-foreground"
-              }`}
-              style={
-                active
-                  ? {
-                      backgroundColor: id === "overview" ? "rgba(127, 164, 83, 0.20)" : HAK_PURPLE_SOFT,
-                      color: id === "overview" ? "var(--foreground)" : HAK_PURPLE_DARK,
-                    }
-                  : undefined
-              }
-            >
-              {label}
-            </button>
-          );
-        })}
-      </div>
-
-      {hakTab === "overview" && (
-        <>
-      <div className="mt-3 text-center">
-        {referenceK !== todayK && (
-          <p className="mb-2 text-[10px] font-semibold text-muted-foreground">
-            Showing {anchor.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
-          </p>
-        )}
-        <span
-          className="inline-flex rounded-2xl bg-surface/75 px-4 py-2 text-[11px] font-semibold ring-1 ring-border/45"
-          style={{ color: currentDay <= ACTIVE_DAYS ? HAK_PURPLE_DARK : HAK_PINK_DARK }}
-        >
-          {currentDay <= ACTIVE_DAYS
-            ? `Active HAK days · 1–${ACTIVE_DAYS}`
-            : `Placebo / break · ${ACTIVE_DAYS + 1}–${PACK_DAYS}`}
-        </span>
-      </div>
-
-      {/* Circular HAK wheel */}
-      <div className="mx-auto mt-3 w-full max-w-[330px]">
+      {/* Circular HAK overview — wheel only. Clicking a wheel day opens the dose popup. */}
+      <div className="mx-auto mt-5 w-full max-w-[340px]">
         <div className="relative aspect-square w-full">
           <div
             className="absolute inset-[8%] rounded-full"
             style={{
-              background: `conic-gradient(from 45deg, ${HAK_PINK_SOFT} 0 14.2857%, ${HAK_PURPLE_SOFT} 14.2857% 100%)`,
-              boxShadow: "inset 0 0 0 1px rgba(255,255,255,.32)",
+              background: `conic-gradient(from 0deg, ${HAK_PURPLE_SOFT} 0 40%, ${HAK_PINK_SOFT} 40% 60%, ${HAK_PURPLE_SOFT} 60% 100%)`,
+              boxShadow: "inset 0 0 0 1px rgba(255,255,255,.34)",
             }}
           />
           <div
@@ -992,21 +1037,16 @@ function BirthControlCalendar({
           />
 
           <div className="pointer-events-none absolute inset-0 z-[1]">
-            {Array.from({ length: 22 }).map((_, i) => {
-              const angleDeg = 42 - (i / 22) * 280;
-              const angle = (angleDeg * Math.PI) / 180;
+            {Array.from({ length: 28 }).map((_, i) => {
+              const angle = ((-90 + (i * 360) / 28) * Math.PI) / 180;
               const radius = 42;
-              const left = 50 + Math.cos(angle) * radius;
-              const top = 50 + Math.sin(angle) * radius;
-
               return (
                 <span
-                  key={`connector-${i}`}
-                  className="absolute h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                  key={`wheel-track-${i}`}
+                  className="absolute h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/70"
                   style={{
-                    left: `${left}%`,
-                    top: `${top}%`,
-                    backgroundColor: "rgba(255,255,255,.72)",
+                    left: `${50 + Math.cos(angle) * radius}%`,
+                    top: `${50 + Math.sin(angle) * radius}%`,
                   }}
                 />
               );
@@ -1014,23 +1054,35 @@ function BirthControlCalendar({
           </div>
 
           {wheelDays.map((day) => {
-            // The approved reference starts the pack at the lower-right and
-            // progresses counter-clockwise: day 7 sits around the upper-right.
-            const angleDeg = 48 - ((day - 1) / PACK_DAYS) * 360;
-            const angle = (angleDeg * Math.PI) / 180;
+            const angle = (wheelAngleForDay(day) * Math.PI) / 180;
             const radius = 42;
             const left = 50 + Math.cos(angle) * radius;
             const top = 50 + Math.sin(angle) * radius;
-
             const dateKey = dateForPackDay(day);
+            const taken = !!takenAt(dateKey);
+            const missed = missedAt(dateKey);
             const isCurrent = day === currentDay;
             const isPlacebo = day > ACTIVE_DAYS;
-            const isNewCycle = day === 1;
 
-            const baseBg = isPlacebo ? "#F7D7E1" : isNewCycle ? HAK_GREEN_SOFT : "#E8DFF7";
-            const baseColor = isPlacebo ? HAK_PINK_DARK : isNewCycle ? HAK_GREEN_DARK : "#3D218D";
-            const currentBg = isPlacebo ? HAK_PINK : isNewCycle ? HAK_GREEN : HAK_PURPLE_DARK;
-            const ringColor = isPlacebo ? HAK_PINK : isNewCycle ? HAK_GREEN : HAK_PURPLE;
+            let backgroundColor = isPlacebo ? HAK_PINK_SOFT : "#E9E1F8";
+            let color = isPlacebo ? HAK_PINK_DARK : "#3D218D";
+            let borderColor = isPlacebo ? HAK_PINK : HAK_PURPLE;
+
+            if (taken && !isPlacebo) {
+              backgroundColor = HAK_PURPLE_DARK;
+              color = "#fff";
+              borderColor = HAK_PURPLE_DARK;
+            }
+
+            if (isCurrent && !isPlacebo) {
+              backgroundColor = HAK_PURPLE_DARK;
+              color = "#fff";
+              borderColor = HAK_PURPLE_DARK;
+            }
+
+            if (missed && !isPlacebo) {
+              borderColor = "#C94A55";
+            }
 
             return (
               <button
@@ -1040,25 +1092,39 @@ function BirthControlCalendar({
                   setSel(dateKey);
                   setPickTime("");
                 }}
-                className="absolute z-10 grid h-7.5 w-7.5 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[10px] font-bold shadow-sm transition active:scale-95"
+                className="absolute z-10 grid h-8 w-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[11px] font-bold shadow-sm transition active:scale-95"
                 style={{
                   left: `${left}%`,
                   top: `${top}%`,
-                  backgroundColor: isCurrent ? currentBg : baseBg,
-                  color: isCurrent ? "#fff" : baseColor,
-                  border: isCurrent
-                    ? "3px solid rgba(255,255,255,.96)"
-                    : `1.5px solid ${ringColor}`,
+                  backgroundColor,
+                  color,
+                  border: `1.5px solid ${borderColor}`,
                   boxShadow: isCurrent
-                    ? `0 0 0 3px ${ringColor}66`
+                    ? `0 0 0 3px ${HAK_CARD_BG}, 0 0 0 6px ${HAK_PURPLE}66`
                     : "0 1px 5px rgba(58,61,30,.08)",
                 }}
-                aria-label={`HAK day ${day}, ${fmtFullDate(dateKey)}`}
+                aria-label={`HAK day ${day}, ${fmtFullDate(dateKey)}${taken ? ", taken" : missed ? ", missed" : ""}`}
               >
                 {day}
               </button>
             );
           })}
+
+          {/* One normal circular new-cycle marker, matching the other wheel circles. */}
+          <div
+            className="pointer-events-none absolute z-10 grid h-8 w-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[11px] font-bold shadow-sm"
+            style={{
+              left: "83%",
+              top: "84%",
+              backgroundColor: HAK_GREEN_SOFT,
+              color: HAK_GREEN_DARK,
+              border: `1.5px solid ${HAK_GREEN}`,
+              boxShadow: `0 0 0 3px ${HAK_CARD_BG}`,
+            }}
+            aria-label="New cycle, day 1"
+          >
+            1
+          </div>
 
           <div className="pointer-events-none absolute inset-[25%] z-20 flex flex-col items-center justify-center text-center">
             <p className="text-[11px] font-semibold text-foreground">Day</p>
@@ -1108,8 +1174,10 @@ function BirthControlCalendar({
               </div>
             </div>
 
-            <p className="mt-3 max-w-[150px] text-[10px] leading-snug text-muted-foreground">
-              {currentDay <= ACTIVE_DAYS ? "Continue taking your tablet" : "Placebo / break days"}
+            <p className="mt-3 max-w-[165px] text-[10px] leading-snug text-muted-foreground">
+              {currentDay <= ACTIVE_DAYS
+                ? "Drovelis · full-dose active pill"
+                : "Drovelis placebo · protection continues when the pack is used correctly"}
             </p>
           </div>
         </div>
@@ -1123,9 +1191,7 @@ function BirthControlCalendar({
             borderColor: "rgba(129,135,67,.18)",
           }}
         >
-          <p className="text-[10px] font-bold" style={{ color: HAK_PINK_DARK }}>
-            Placebo / break
-          </p>
+          <p className="text-[10px] font-bold" style={{ color: HAK_PINK_DARK }}>Placebo / break</p>
           <p className="mt-0.5 text-[10px] font-semibold" style={{ color: HAK_PINK_DARK }}>
             {ACTIVE_DAYS + 1}–{PACK_DAYS}
           </p>
@@ -1134,109 +1200,18 @@ function BirthControlCalendar({
         <div
           className="rounded-[1.65rem] px-4 py-3 text-right ring-1"
           style={{
-            backgroundColor: "rgba(220,235,210,.62)",
+            backgroundColor: "rgba(231,233,184,.60)",
             borderColor: "rgba(129,135,67,.18)",
           }}
         >
-          <p className="text-[10px] font-bold" style={{ color: HAK_GREEN_DARK }}>
-            New cycle
-          </p>
-          <p className="mt-0.5 text-[10px] font-semibold" style={{ color: HAK_GREEN_DARK }}>
-            Day 1
-          </p>
+          <p className="text-[10px] font-bold" style={{ color: HAK_GREEN_DARK }}>New cycle</p>
+          <p className="mt-0.5 text-[10px] font-semibold" style={{ color: HAK_GREEN_DARK }}>Day 1</p>
         </div>
       </div>
 
-
-      <div className="mt-4 rounded-[1.75rem] bg-surface/25 p-4 ring-1 ring-border/35">
-        <div className="mb-3 flex items-center justify-between gap-2">
-          <h3 className="font-serif text-lg font-bold text-foreground">Calendar preview</h3>
-          <button
-            type="button"
-            onClick={() => setHakTab("calendar")}
-            className="inline-flex items-center gap-2 rounded-full bg-surface/55 px-3 py-1.5 text-[11px] font-semibold text-foreground ring-1 ring-border/40"
-          >
-            View full calendar
-            <span>→</span>
-          </button>
-        </div>
-
-        <div className="grid grid-cols-7 gap-y-2 text-center text-[9px] font-semibold text-muted-foreground">
-          {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((weekday) => (
-            <div key={weekday}>{weekday}</div>
-          ))}
-        </div>
-
-        <div className="mt-2 grid grid-cols-7 gap-y-2 text-center">
-          {hakMonthCells.map((cell) => {
-            const packDay = cell.packDay;
-            const inMonth = cell.inMonth;
-            const protectionState = inMonth && packDay != null ? protectionStateFor(cell.key) : "unknown";
-            const protection = protectionMeta(protectionState as ProtectionState);
-            const isToday = cell.key === todayK;
-
-            let bg = "rgba(255,255,255,.36)";
-            let fg = "rgba(60,60,44,.45)";
-            let border = "rgba(255,255,255,.34)";
-
-            if (inMonth && packDay != null) {
-              if (protectionState === "protected") {
-                bg = HAK_GREEN_SOFT;
-                fg = HAK_GREEN_DARK;
-                border = HAK_GREEN;
-              } else if (protectionState === "backup") {
-                bg = "rgba(248,215,218,.9)";
-                fg = "#8E2832";
-                border = "#C94A55";
-              } else if (packDay > ACTIVE_DAYS) {
-                bg = HAK_PINK_SOFT;
-                fg = HAK_PINK_DARK;
-                border = HAK_PINK;
-              } else {
-                bg = HAK_PURPLE_SOFT;
-                fg = HAK_PURPLE_DARK;
-                border = HAK_PURPLE;
-              }
-            }
-
-            return (
-              <div key={cell.key} className="grid place-items-center">
-                <button
-                  type="button"
-                  disabled={packDay == null}
-                  onClick={() => {
-                    if (packDay == null) return;
-                    setSel(cell.key);
-                  }}
-                  className="grid h-8 w-8 place-items-center rounded-full text-[11px] font-semibold transition active:scale-95 disabled:opacity-40"
-                  style={{
-                    backgroundColor: bg,
-                    color: fg,
-                    border: `1.5px solid ${isToday ? HAK_GREEN_DARK : border}`,
-                    boxShadow: isToday ? `0 0 0 2px ${HAK_CARD_BG}` : undefined,
-                  }}
-                  aria-label={packDay == null ? `Outside current pack: ${fmtFullDate(cell.key)}` : fmtFullDate(cell.key)}
-                  title={packDay == null ? undefined : protection.label}
-                >
-                  {cell.date.getDate()}
-                </button>
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-[9px] text-foreground">
-          <div className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full" style={{ backgroundColor: HAK_GREEN_SOFT, border: `1px solid ${HAK_GREEN}` }} />Protected</div>
-          <div className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full" style={{ backgroundColor: 'rgba(248,215,218,.9)', border: '1px solid #C94A55' }} />Use backup</div>
-          <div className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full" style={{ backgroundColor: HAK_PINK_SOFT, border: `1px solid ${HAK_PINK}` }} />Placebo / break</div>
-          <div className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,.36)', border: '1px solid rgba(255,255,255,.34)' }} />Unknown</div>
-        </div>
-      </div>
-
-      {/* Detailed linear pack progress — closer to the user's linear reference */}
+      {/* Keep Current HAK pack exactly in the previous compact timeline style. */}
       <div className="mt-4">
         <h3 className="font-serif text-lg font-bold text-foreground">Current HAK pack</h3>
-
         <div
           className="mt-3 rounded-[1.75rem] px-4 py-4 ring-1"
           style={{
@@ -1246,30 +1221,16 @@ function BirthControlCalendar({
         >
           <div className="grid grid-cols-[1.35fr_1fr_.9fr] items-start gap-2 text-center">
             <div>
-              <p className="text-[9px] font-bold leading-tight" style={{ color: HAK_PURPLE_DARK }}>
-                Active HAK days
-              </p>
-              <p className="mt-0.5 text-[9px] font-semibold leading-tight" style={{ color: HAK_PURPLE_DARK }}>
-                1–{ACTIVE_DAYS}
-              </p>
+              <p className="text-[9px] font-bold leading-tight" style={{ color: HAK_PURPLE_DARK }}>Active HAK days</p>
+              <p className="mt-0.5 text-[9px] font-semibold leading-tight" style={{ color: HAK_PURPLE_DARK }}>1–{ACTIVE_DAYS}</p>
             </div>
-
             <div>
-              <p className="text-[9px] font-bold leading-tight" style={{ color: HAK_PINK_DARK }}>
-                Placebo / break
-              </p>
-              <p className="mt-0.5 text-[9px] font-semibold leading-tight" style={{ color: HAK_PINK_DARK }}>
-                {ACTIVE_DAYS + 1}–{PACK_DAYS}
-              </p>
+              <p className="text-[9px] font-bold leading-tight" style={{ color: HAK_PINK_DARK }}>Placebo / break</p>
+              <p className="mt-0.5 text-[9px] font-semibold leading-tight" style={{ color: HAK_PINK_DARK }}>{ACTIVE_DAYS + 1}–{PACK_DAYS}</p>
             </div>
-
             <div>
-              <p className="text-[9px] font-bold leading-tight" style={{ color: HAK_GREEN_DARK }}>
-                New cycle
-              </p>
-              <p className="mt-0.5 text-[9px] font-semibold leading-tight" style={{ color: HAK_GREEN_DARK }}>
-                Day 1
-              </p>
+              <p className="text-[9px] font-bold leading-tight" style={{ color: HAK_GREEN_DARK }}>New cycle</p>
+              <p className="mt-0.5 text-[9px] font-semibold leading-tight" style={{ color: HAK_GREEN_DARK }}>Day 1</p>
             </div>
           </div>
 
@@ -1287,7 +1248,7 @@ function BirthControlCalendar({
               >
                 {timelineItems.map((item, index) => {
                   const isCurrent = index === timelineCurrentIndex;
-                  const color =
+                  const itemColor =
                     item.kind === "active"
                       ? HAK_PURPLE_DOT
                       : item.kind === "placebo"
@@ -1301,7 +1262,7 @@ function BirthControlCalendar({
                       key={`${item.kind}-${index}`}
                       className="mx-auto block aspect-square w-full max-w-[10px] rounded-full"
                       style={{
-                        backgroundColor: color,
+                        backgroundColor: itemColor,
                         boxShadow: isCurrent
                           ? `0 0 0 3px ${HAK_CARD_BG}, 0 0 0 5px ${
                               item.kind === "placebo" ? HAK_PINK_DARK : HAK_PURPLE_DARK
@@ -1323,7 +1284,6 @@ function BirthControlCalendar({
                 backgroundColor: currentDay <= ACTIVE_DAYS ? HAK_PURPLE : HAK_PINK,
               }}
             />
-
             <p
               className="absolute bottom-0 whitespace-nowrap text-[11px] font-bold"
               style={{
@@ -1338,31 +1298,104 @@ function BirthControlCalendar({
         </div>
       </div>
 
-      {/* Legend intentionally removed from this location per request. */}
+      {/* Calendar is always visible on this page; dates are informational only. */}
+      <div className="mt-4 rounded-[1.75rem] bg-surface/25 p-4 ring-1 ring-border/35">
+        <h3 className="font-serif text-lg font-bold text-foreground">Calendar preview</h3>
 
-      <div className="mt-3">
+        <div className="mt-3 grid grid-cols-7 gap-y-2 text-center text-[9px] font-semibold text-muted-foreground">
+          {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((weekday) => (
+            <div key={weekday}>{weekday}</div>
+          ))}
+        </div>
+
+        <div className="mt-2 grid grid-cols-7 gap-y-2 text-center">
+          {hakMonthCells.map((cell) => {
+            const packDay = cell.packDay;
+            const state: ProtectionState = cell.inMonth && packDay != null ? protectionStateFor(cell.key) : "unknown";
+            const isToday = cell.key === todayK;
+
+            let backgroundColor = "rgba(225,225,205,.72)";
+            let color = "rgba(70,70,55,.48)";
+            let borderColor = "rgba(145,145,120,.18)";
+
+            if (cell.inMonth && packDay != null) {
+              if (state === "protected") {
+                backgroundColor = HAK_GREEN;
+                color = "#fff";
+                borderColor = HAK_GREEN_DARK;
+              } else if (state === "backup") {
+                backgroundColor = "#C94A55";
+                color = "#fff";
+                borderColor = "#8E2832";
+              } else if (state === "review") {
+                backgroundColor = "#D58A22";
+                color = "#fff";
+                borderColor = "#8A5511";
+              } else if (state === "starting") {
+                backgroundColor = HAK_PURPLE_SOFT;
+                color = HAK_PURPLE_DARK;
+                borderColor = HAK_PURPLE;
+              }
+            }
+
+            return (
+              <div key={cell.key} className="grid place-items-center">
+                <div
+                  className="grid h-8 w-8 place-items-center rounded-full text-[11px] font-semibold"
+                  style={{
+                    backgroundColor,
+                    color,
+                    border: `1.5px solid ${isToday ? HAK_GREEN_DARK : borderColor}`,
+                    boxShadow: isToday ? `0 0 0 2px ${HAK_CARD_BG}` : undefined,
+                    opacity: cell.inMonth ? 1 : 0.55,
+                  }}
+                  aria-label={`${fmtFullDate(cell.key)} — ${protectionMeta(state).label}`}
+                >
+                  {cell.date.getDate()}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-[9px] text-foreground">
+          <div className="flex items-center gap-1.5">
+            <span className="h-3 w-3 rounded-full" style={{ backgroundColor: HAK_GREEN }} />
+            Protected
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="h-3 w-3 rounded-full" style={{ backgroundColor: "#C94A55" }} />
+            Use backup
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="h-3 w-3 rounded-full" style={{ backgroundColor: "#D58A22" }} />
+            Check schedule
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="h-3 w-3 rounded-full" style={{ backgroundColor: HAK_PURPLE_SOFT, border: `1px solid ${HAK_PURPLE}` }} />
+            Start-up
+          </div>
+        </div>
+
+        <p className="mt-3 text-[9px] leading-relaxed text-muted-foreground">
+          Drovelis: all 24 pink pills are the same full dose. The 4 white placebo days remain part of the protected regimen when active pills are taken correctly and the next pack starts on time. An empty dose log is treated as not recorded, not as a missed pill; mark a pill “missed” when an actual miss occurs. Calendar dates are informational only and do not open the dose editor.
+        </p>
+      </div>
+
+      <div className="mt-4">
         <h3 className="font-serif text-lg font-bold text-foreground">Important dates</h3>
-
         <div className="mt-2 grid grid-cols-2 gap-2">
           <div
             className="rounded-2xl p-3 ring-1"
-            style={{
-              backgroundColor: "rgba(251,224,233,.68)",
-              borderColor: "rgba(217,87,130,.18)",
-            }}
+            style={{ backgroundColor: "rgba(251,224,233,.68)", borderColor: "rgba(217,87,130,.18)" }}
           >
             <div className="flex gap-2">
-              <span
-                className="grid h-8 w-8 shrink-0 place-items-center rounded-xl"
-                style={{ backgroundColor: HAK_PINK_SOFT, color: HAK_PINK_DARK }}
-              >
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl" style={{ backgroundColor: HAK_PINK_SOFT }}>
                 <Ico e="🗓️" size={18} />
               </span>
               <div className="min-w-0">
                 <p className="text-[9px] leading-tight text-muted-foreground">Expected withdrawal bleeding</p>
-                <p className="mt-1 text-xs font-bold text-foreground">
-                  {fmtDate(placeboStart)} – {fmtDate(placeboEnd)}
-                </p>
+                <p className="mt-1 text-xs font-bold text-foreground">{fmtDate(placeboStart)} – {fmtDate(placeboEnd)}</p>
                 <p className="mt-0.5 text-[9px] text-muted-foreground">May vary</p>
               </div>
             </div>
@@ -1370,22 +1403,14 @@ function BirthControlCalendar({
 
           <div
             className="rounded-2xl p-3 ring-1"
-            style={{
-              backgroundColor: "rgba(220,235,210,.72)",
-              borderColor: "rgba(104,169,78,.18)",
-            }}
+            style={{ backgroundColor: "rgba(231,233,184,.72)", borderColor: "rgba(138,150,45,.18)" }}
           >
             <div className="flex gap-2">
-              <span
-                className="grid h-8 w-8 shrink-0 place-items-center rounded-xl"
-                style={{ backgroundColor: HAK_GREEN_SOFT, color: HAK_GREEN_DARK }}
-              >
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl" style={{ backgroundColor: HAK_GREEN_SOFT }}>
                 <Ico e="📅" size={18} />
               </span>
               <div className="min-w-0">
-                <p className="text-[9px] leading-tight" style={{ color: HAK_GREEN_DARK }}>
-                  Start of new pack
-                </p>
+                <p className="text-[9px] leading-tight" style={{ color: HAK_GREEN_DARK }}>Start of new pack</p>
                 <p className="mt-1 text-xs font-bold text-foreground">{fmtDate(nextPackStart)}</p>
                 <p className="mt-0.5 text-[9px] text-muted-foreground">New cycle</p>
               </div>
@@ -1394,221 +1419,13 @@ function BirthControlCalendar({
         </div>
       </div>
 
-      <button
-        type="button"
-        onClick={() => setHakTab("calendar")}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-surface/45 px-4 py-3 text-sm font-semibold text-foreground ring-1 ring-border/45"
-      >
-        <Ico e="📅" size={17} />
-        View full month
-        <span className="ml-auto">›</span>
-      </button>
-        </>
-      )}
-
-      {hakTab === "calendar" && (
-        <div className="mt-4">
-          <div className="flex items-center justify-between gap-3">
-            <button
-              type="button"
-              onClick={() =>
-                setHakMonth((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))
-              }
-              className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-surface/55 ring-1 ring-border/45"
-              aria-label="Previous month"
-            >
-              <ChevronLeft className="h-3 w-3" />
-            </button>
-
-            <div className="min-w-0 text-center">
-              <p className="font-serif text-sm font-bold text-foreground">{hakMonthLabel}</p>
-              <p className="text-[9px] text-muted-foreground">Tap a date for HAK details and pregnancy-protection status.</p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() =>
-                setHakMonth((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))
-              }
-              className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-surface/55 ring-1 ring-border/45"
-              aria-label="Next month"
-            >
-              <ChevronRight className="h-3 w-3" />
-            </button>
-          </div>
-
-          <div className="mt-4 grid grid-cols-7 gap-1 text-center text-[9px] font-semibold text-muted-foreground">
-            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((weekday) => (
-              <div key={weekday} className="py-1">{weekday}</div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-7 gap-1.5">
-            {hakMonthCells.map((cell) => {
-              const packDay = cell.packDay;
-              const active = packDay != null && packDay <= ACTIVE_DAYS;
-              const placebo = packDay != null && packDay > ACTIVE_DAYS;
-              const taken = takenAt(cell.key);
-              const missed = missedAt(cell.key);
-              const isToday = cell.key === todayK;
-              const protectionState = cell.inMonth ? protectionStateFor(cell.key) : "unknown";
-              const protection = protectionMeta(protectionState);
-
-              return (
-                <button
-                  key={cell.key}
-                  type="button"
-                  disabled={packDay == null}
-                  onClick={() => {
-                    if (packDay == null) return;
-                    setSel(cell.key);
-                    setPickTime("");
-                  }}
-                  className="relative aspect-square min-w-0 rounded-xl p-1.5 text-left transition active:scale-95 disabled:opacity-30"
-                  style={{
-                    backgroundColor: !cell.inMonth
-                      ? "rgba(255,255,255,.10)"
-                      : active
-                        ? HAK_PURPLE_SOFT
-                        : placebo
-                          ? HAK_PINK_SOFT
-                          : "rgba(255,255,255,.24)",
-                    color: active ? HAK_PURPLE_DARK : placebo ? HAK_PINK_DARK : "var(--foreground)",
-                    border: isToday ? `2px solid ${HAK_GREEN_DARK}` : "1px solid rgba(255,255,255,.28)",
-                  }}
-                >
-                  <span className="text-[10px] font-bold">{cell.date.getDate()}</span>
-
-                  {taken && (
-                    <span
-                      className="absolute right-1 top-1 h-2 w-2 rounded-full"
-                      style={{ backgroundColor: HAK_GREEN }}
-                    />
-                  )}
-
-                  {missed && (
-                    <span
-                      className="absolute right-1 top-1 h-2 w-2 rounded-full"
-                      style={{ backgroundColor: CHART_COLORS.headache }}
-                    />
-                  )}
-
-                  {cell.inMonth && packDay != null && (
-                    <span
-                      className="absolute bottom-1 right-1 grid h-3.5 w-3.5 place-items-center rounded-full text-[7px] font-bold text-white"
-                      style={{ backgroundColor: protection.color }}
-                      title={protection.label}
-                      aria-label={protection.label}
-                    >
-                      {protection.symbol}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            <div className="rounded-2xl bg-surface/45 p-2.5 ring-1 ring-border/40">
-              <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: HAK_PURPLE }} />
-                <p className="text-[9px] font-semibold text-foreground">Active HAK · 1–{ACTIVE_DAYS}</p>
-              </div>
-            </div>
-
-            <div className="rounded-2xl bg-surface/45 p-2.5 ring-1 ring-border/40">
-              <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: HAK_PINK }} />
-                <p className="text-[9px] font-semibold text-foreground">Placebo · {ACTIVE_DAYS + 1}–{PACK_DAYS}</p>
-              </div>
-            </div>
-
-            {(["protected", "backup", "unknown"] as ProtectionState[]).map((state) => {
-              const item = protectionMeta(state);
-              return (
-                <div key={state} className="rounded-2xl bg-surface/45 p-2.5 ring-1 ring-border/40">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="grid h-4 w-4 shrink-0 place-items-center rounded-full text-[8px] font-bold text-white"
-                      style={{ backgroundColor: item.color }}
-                    >
-                      {item.symbol}
-                    </span>
-                    <p className="text-[9px] font-semibold text-foreground">{item.short}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="mt-3 rounded-2xl bg-surface/40 p-3 ring-1 ring-border/35">
-            <p className="text-[10px] font-semibold text-foreground">Pregnancy protection</p>
-            <p className="mt-1 text-[9px] leading-relaxed text-muted-foreground">
-              Green = pregnancy protection expected from your logged HAK use. Red = use a condom or avoid unprotected sex. Grey = the app does not have enough dose logs to judge.
-            </p>
-            <p className="mt-1 text-[9px] leading-relaxed text-muted-foreground">
-              This does not indicate STI protection and cannot account for vomiting, diarrhoea, interacting medicines or pill-specific missed-dose rules.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {hakTab === "tips" && (
-        <div className="mt-4 space-y-3">
-          <div
-            className="rounded-3xl p-4 ring-1"
-            style={{ backgroundColor: "rgba(220,207,243,.55)", borderColor: "rgba(91,50,174,.14)" }}
-          >
-            <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: HAK_PURPLE_DARK }}>
-              Active HAK days · 1–{ACTIVE_DAYS}
-            </p>
-            <p className="mt-1 text-sm font-semibold text-foreground">Daily tablet routine</p>
-            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-              Log the tablet when you take it so the calendar can show taken and missed days.
-            </p>
-          </div>
-
-          <div
-            className="rounded-3xl p-4 ring-1"
-            style={{ backgroundColor: "rgba(247,203,217,.58)", borderColor: "rgba(185,46,96,.14)" }}
-          >
-            <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: HAK_PINK_DARK }}>
-              Placebo / break · {ACTIVE_DAYS + 1}–{PACK_DAYS}
-            </p>
-            <p className="mt-1 text-sm font-semibold text-foreground">Withdrawal bleeding may occur</p>
-            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-              Timing and amount can vary. The next-pack date stays visible below.
-            </p>
-          </div>
-
-          <div
-            className="rounded-3xl p-4 ring-1"
-            style={{ backgroundColor: "rgba(220,235,210,.70)", borderColor: "rgba(57,123,47,.14)" }}
-          >
-            <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: HAK_GREEN_DARK }}>
-              Next pack
-            </p>
-            <p className="mt-1 text-sm font-semibold text-foreground">{fmtDate(nextPackStart)}</p>
-            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-              Start according to the schedule for your specific contraceptive.
-            </p>
-          </div>
-
-          <div className="rounded-3xl bg-surface/50 p-4 ring-1 ring-border/45">
-            <p className="font-serif text-base font-bold text-foreground">Late or missed tablet</p>
-            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-              Instructions depend on the exact contraceptive and the day in the pack. Follow the leaflet for your pill or your prescriber’s instructions.
-            </p>
-          </div>
-        </div>
-      )}
-
       {!bcMed && (
         <p className="mt-3 text-[10px] leading-snug text-muted-foreground">
           Add your contraceptive pill in Medications so taken and missed doses can be detected precisely.
         </p>
       )}
 
+      {/* Dose editor popup exists only for clicks on the circular HAK wheel. */}
       {sel && selectedDay != null && typeof document !== "undefined"
         ? createPortal(
             <div
@@ -1628,11 +1445,8 @@ function BirthControlCalendar({
                     <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                       HAK day {selectedDay}
                     </p>
-                    <h3 className="mt-1 font-serif text-lg font-bold text-foreground">
-                      {fmtFullDate(sel)}
-                    </h3>
+                    <h3 className="mt-1 font-serif text-lg font-bold text-foreground">{fmtFullDate(sel)}</h3>
                   </div>
-
                   <button
                     type="button"
                     onClick={() => setSel(null)}
@@ -1644,16 +1458,6 @@ function BirthControlCalendar({
                 </div>
 
                 <div className="mt-3 rounded-2xl bg-tint p-3">
-                  <p className="text-xs text-muted-foreground">Phase</p>
-                  <p
-                    className="mt-1 text-sm font-semibold"
-                    style={{ color: selectedDay <= ACTIVE_DAYS ? HAK_PURPLE_DARK : HAK_PINK_DARK }}
-                  >
-                    {selectedDay <= ACTIVE_DAYS ? "Active HAK day" : "Placebo / break"}
-                  </p>
-                </div>
-
-                <div className="mt-2 rounded-2xl bg-tint p-3">
                   <p className="text-xs text-muted-foreground">Status</p>
                   <p className="mt-1 text-sm font-semibold text-foreground">
                     {selectedTaken
@@ -1661,29 +1465,124 @@ function BirthControlCalendar({
                       : selectedMissed
                         ? "Marked missed"
                         : selectedDay > ACTIVE_DAYS
-                          ? "No tablet record required"
+                          ? "Placebo / break day"
                           : "Not recorded"}
                   </p>
                 </div>
 
-                {(() => {
-                  const state = protectionStateFor(sel);
-                  const item = protectionMeta(state);
-                  return (
-                    <div
-                      className="mt-2 rounded-2xl p-3 ring-1"
-                      style={{ backgroundColor: item.bg, borderColor: `${item.color}33` }}
+                <div
+                  className="mt-3 rounded-2xl p-3 ring-1"
+                  style={{
+                    backgroundColor: protectionMeta(protectionStateFor(sel)).bg,
+                    borderColor: protectionMeta(protectionStateFor(sel)).color,
+                  }}
+                >
+                  <div className="flex items-start gap-2.5">
+                    <span
+                      className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-black"
+                      style={{
+                        backgroundColor: protectionMeta(protectionStateFor(sel)).color,
+                        color: "#fff",
+                      }}
                     >
-                      <p className="text-xs text-muted-foreground">Pregnancy protection</p>
-                      <p className="mt-1 text-sm font-semibold" style={{ color: item.text }}>
-                        {item.label}
+                      {protectionMeta(protectionStateFor(sel)).symbol}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                        Pregnancy protection
                       </p>
-                      <p className="mt-1 text-[9px] leading-relaxed text-muted-foreground">
-                        Based on logged HAK doses only. It does not indicate STI protection. Dose marking is handled on the main HAK overview.
+                      <p
+                        className="mt-0.5 text-sm font-bold"
+                        style={{ color: protectionMeta(protectionStateFor(sel)).text }}
+                      >
+                        {protectionMeta(protectionStateFor(sel)).label}
                       </p>
                     </div>
-                  );
-                })()}
+                  </div>
+                </div>
+
+                <div className="mt-3 rounded-2xl bg-surface/70 p-3 ring-1 ring-border/60">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Drovelis</p>
+                  {selectedDay <= ACTIVE_DAYS ? (
+                    <>
+                      <p className="mt-1 text-sm font-bold text-foreground">Active pill {selectedDay}/24 · full dose</p>
+                      <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
+                        {DROVELIS_ACTIVE_DOSE}. Pink pill 24 is not weaker than pink pill 1 — all 24 active tablets contain the same dose.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="mt-1 text-sm font-bold text-foreground">Placebo {selectedDay - ACTIVE_DAYS}/4 · no hormones</p>
+                      <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
+                        Protection continues through the planned 4 placebo days when the preceding active pills were taken correctly and the next pack is started on time.
+                      </p>
+                    </>
+                  )}
+                </div>
+
+                {selectedMissed && (
+                  <div
+                    className="mt-3 rounded-2xl p-3 ring-1"
+                    style={{ backgroundColor: "rgba(251,232,199,.58)", borderColor: "rgba(213,138,34,.35)" }}
+                  >
+                    <p className="text-[10px] font-bold uppercase tracking-[0.12em]" style={{ color: "#8A5511" }}>
+                      Missed-pill guidance
+                    </p>
+                    <p className="mt-1 text-[10px] leading-relaxed text-foreground/80">
+                      {missedPillAdvice(selectedDay)}
+                    </p>
+                  </div>
+                )}
+
+                {selectedDay <= ACTIVE_DAYS && (
+                  <div className="mt-3 space-y-2">
+                    <div className="grid grid-cols-[1fr_auto] gap-2">
+                      <input
+                        type="time"
+                        value={pickTime}
+                        onChange={(event) => setPickTime(event.target.value)}
+                        className="min-w-0 rounded-xl bg-tint px-3 py-2 text-sm text-foreground ring-1 ring-border"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          markTaken(sel, pickTime);
+                          setSel(null);
+                        }}
+                        className="rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
+                      >
+                        Mark taken
+                      </button>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          markMissed(sel);
+                          setSel(null);
+                        }}
+                        className="flex-1 rounded-xl px-3 py-2 text-xs font-semibold"
+                        style={{ border: "1.5px solid #C94A55", color: "#C94A55" }}
+                      >
+                        Mark missed
+                      </button>
+
+                      {(selectedTaken || selectedMissed) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            clearRecord(sel);
+                            setSel(null);
+                          }}
+                          className="rounded-xl bg-tint px-3 py-2 text-xs font-semibold text-muted-foreground ring-1 ring-border"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 <button
                   type="button"
