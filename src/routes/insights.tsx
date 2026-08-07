@@ -974,15 +974,13 @@ function BirthControlCalendar({
     return "White tablets are placebo. Missing a placebo tablet does not reduce contraceptive protection; discard it so the placebo phase is not accidentally extended.";
   };
 
-  const wheelAngleForDay = (day: number) => {
-    // Reference layout: 24 at the top, 1–11 on the right,
-    // placebo 25–28 at the bottom, 12–23 on the left.
-    if (day === 24) return -90;
-    if (day >= 1 && day <= 11) return -73 + ((day - 1) * 126) / 10;
-    if (day >= 25 && day <= 28) return 72 + ((day - 25) * 36) / 3;
-    if (day >= 12 && day <= 23) return 126 + ((day - 12) * 126) / 11;
-    return -90;
-  };
+  // One mathematical 28-step wheel. Days always run in one uninterrupted
+  // sequence: 1 → 2 → … → 24 → 25 → 26 → 27 → 28 → 1.
+  // Day 1 starts at the lower-right so placebo 25–28 stays across the bottom,
+  // matching the approved visual reference without breaking the number order.
+  const WHEEL_STEP = 360 / PACK_DAYS;
+  const WHEEL_DAY1_ANGLE = 57;
+  const wheelAngleForDay = (day: number) => WHEEL_DAY1_ANGLE - (day - 1) * WHEEL_STEP;
 
   return (
     <section
@@ -1058,8 +1056,9 @@ function BirthControlCalendar({
           />
 
           <div className="pointer-events-none absolute inset-0 z-[1]">
-            {Array.from({ length: 28 }).map((_, i) => {
-              const angle = ((-90 + (i * 360) / 28) * Math.PI) / 180;
+            {Array.from({ length: PACK_DAYS }).map((_, i) => {
+              const day = i + 1;
+              const angle = (wheelAngleForDay(day) * Math.PI) / 180;
               const radius = 42;
               return (
                 <span
@@ -1100,19 +1099,31 @@ function BirthControlCalendar({
 
             // Only a pill explicitly marked taken becomes darker. Historical pills
             // remain soft lavender while still counting as on-schedule for protection.
-            if (loggedTaken && !isPlacebo && !isCurrent) {
-              backgroundColor = "#BDA9E7";
-              color = "#4E2B98";
-              borderColor = "rgba(91,50,174,.58)";
+            if (loggedTaken && !isCurrent) {
+              if (isPlacebo) {
+                backgroundColor = "#E99AB5";
+                color = "#8F234B";
+                borderColor = HAK_PINK_DARK;
+              } else {
+                backgroundColor = "#BDA9E7";
+                color = "#4E2B98";
+                borderColor = "rgba(91,50,174,.58)";
+              }
             }
 
-            if (isCurrent && !isPlacebo) {
-              backgroundColor = HAK_PURPLE_DARK;
-              color = "#fff";
-              borderColor = HAK_PURPLE_DARK;
+            if (isCurrent) {
+              if (isPlacebo) {
+                backgroundColor = loggedTaken ? HAK_PINK_DARK : HAK_PINK_SOFT;
+                color = loggedTaken ? "#fff" : HAK_PINK_DARK;
+                borderColor = HAK_PINK_DARK;
+              } else {
+                backgroundColor = HAK_PURPLE_DARK;
+                color = "#fff";
+                borderColor = HAK_PURPLE_DARK;
+              }
             }
 
-            if (missed && !isPlacebo) {
+            if (missed) {
               borderColor = "#C94A55";
             }
 
@@ -1132,7 +1143,7 @@ function BirthControlCalendar({
                   color,
                   border: `1.5px solid ${borderColor}`,
                   boxShadow: isCurrent
-                    ? `0 0 0 3px ${HAK_CARD_BG}, 0 0 0 6px ${HAK_PURPLE}66`
+                    ? `0 0 0 3px ${HAK_CARD_BG}, 0 0 0 6px ${isPlacebo ? HAK_PINK : HAK_PURPLE}66`
                     : "0 1px 5px rgba(58,61,30,.08)",
                 }}
                 aria-label={`HAK day ${day}, ${fmtFullDate(dateKey)}${missed ? ", missed" : takenForStatus ? ", taken on schedule" : ""}`}
@@ -1550,55 +1561,59 @@ function BirthControlCalendar({
                   </div>
                 )}
 
-                {selectedDay <= ACTIVE_DAYS && (
-                  <div className="mt-3 space-y-2">
-                    <div className="grid grid-cols-[1fr_auto] gap-2">
-                      <input
-                        type="time"
-                        value={pickTime}
-                        onChange={(event) => setPickTime(event.target.value)}
-                        className="min-w-0 rounded-xl bg-tint px-3 py-2 text-sm text-foreground ring-1 ring-border"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          markTaken(sel, pickTime);
-                          setSel(null);
-                        }}
-                        className="rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
-                      >
-                        Mark taken
-                      </button>
-                    </div>
-
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          markMissed(sel);
-                          setSel(null);
-                        }}
-                        className="flex-1 rounded-xl px-3 py-2 text-xs font-semibold"
-                        style={{ border: "1.5px solid #C94A55", color: "#C94A55" }}
-                      >
-                        Mark missed
-                      </button>
-
-                      {(selectedTaken || selectedMissed) && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            clearRecord(sel);
-                            setSel(null);
-                          }}
-                          className="rounded-xl bg-tint px-3 py-2 text-xs font-semibold text-muted-foreground ring-1 ring-border"
-                        >
-                          Clear
-                        </button>
-                      )}
-                    </div>
+                <div className="mt-3 space-y-2">
+                  <div className="grid grid-cols-[1fr_auto] gap-2">
+                    <input
+                      type="time"
+                      value={pickTime}
+                      onChange={(event) => setPickTime(event.target.value)}
+                      className="min-w-0 rounded-xl bg-tint px-3 py-2 text-sm text-foreground ring-1 ring-border"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        markTaken(sel, pickTime);
+                        setSel(null);
+                      }}
+                      className="rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
+                    >
+                      Mark taken
+                    </button>
                   </div>
-                )}
+
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        markMissed(sel);
+                        setSel(null);
+                      }}
+                      className="flex-1 rounded-xl px-3 py-2 text-xs font-semibold"
+                      style={{ border: "1.5px solid #C94A55", color: "#C94A55" }}
+                    >
+                      Mark missed
+                    </button>
+
+                    {(selectedTaken || selectedMissed) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          clearRecord(sel);
+                          setSel(null);
+                        }}
+                        className="rounded-xl bg-tint px-3 py-2 text-xs font-semibold text-muted-foreground ring-1 ring-border"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+
+                  {selectedDay > ACTIVE_DAYS && (
+                    <p className="text-[9px] leading-relaxed text-muted-foreground">
+                      Placebo logging is for routine tracking only. Missing a placebo tablet does not reduce pregnancy protection as long as the next pack is started on time.
+                    </p>
+                  )}
+                </div>
 
                 <button
                   type="button"
