@@ -773,7 +773,7 @@ function HomePage() {
         </div>
       </div>
 
-      <div className="mt-0.5">
+      <div className="mt-0.5" style={{ "--period-medium": "#7467D8" } as any}>
         {hydrated ? (
           <MonthCalendar
             month={monthAnchor}
@@ -943,9 +943,9 @@ function HomePage() {
             <div
               className="mx-5 mt-3 rounded-full px-4 py-2 text-center text-xs ring-1"
               style={{
-                background: "color-mix(in srgb, var(--period-medium) 14%, transparent)",
-                color: "var(--period-medium)",
-                boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--period-medium) 34%, transparent)",
+                background: "color-mix(in srgb, #7467D8 14%, transparent)",
+                color: "#7467D8",
+                boxShadow: "inset 0 0 0 1px color-mix(in srgb, #7467D8 34%, transparent)",
               }}
             >
               Next period predicted:{" "}
@@ -1279,7 +1279,7 @@ function BirthControlSummaryCard({
     <button
       type="button"
       onClick={onOpen}
-      className="mx-5 mt-3 block rounded-[1.75rem] p-5 text-left shadow-sm ring-1 transition active:scale-[0.99]"
+      className="mt-3 block w-full rounded-[1.75rem] px-5 py-5 text-left shadow-sm ring-1 transition active:scale-[0.99]"
       style={{
         background:
           "linear-gradient(135deg, color-mix(in srgb, var(--surface) 90%, #E7DDF7 10%), color-mix(in srgb, var(--background) 94%, #F7CBD9 6%))",
@@ -1339,26 +1339,6 @@ function BirthControlSummaryCard({
             </span>
           </div>
 
-          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px]">
-            <span className="inline-flex items-center gap-1.5 font-semibold text-foreground">
-              <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "#7FA03A" }} />
-              Protected
-            </span>
-
-            <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-              <span
-                className="h-2.5 w-2.5 rounded-full"
-                style={{ backgroundColor: missed ? "#C94A55" : takenTime ? HAK_PURPLE : "#C7CC9A" }}
-              />
-              {missed
-                ? "Missed"
-                : takenTime
-                  ? `Taken${takenTime ? ` · ${takenTime}` : ""}`
-                  : isPlacebo
-                    ? "Placebo today"
-                    : "Active day"}
-            </span>
-          </div>
         </div>
       </div>
     </button>
@@ -1845,17 +1825,21 @@ function BirthControlCalendar({
     return "White tablets are placebo. Missing a placebo tablet does not reduce contraceptive protection; discard it so the placebo phase is not accidentally extended.";
   };
 
-  // One mathematical 28-step wheel. Days always run in one uninterrupted
-  // sequence: 1 → 2 → … → 24 → 25 → 26 → 27 → 28 → 1.
-  // Day 1 starts at the lower-right so placebo 25–28 stays across the bottom,
-  // matching the approved visual reference without breaking the number order.
-  const WHEEL_STEP = 360 / PACK_DAYS;
-  const WHEEL_DAY1_ANGLE = 57;
-  const wheelAngleForDay = (day: number) => WHEEL_DAY1_ANGLE - (day - 1) * WHEEL_STEP;
+  // Corrected reference layout:
+  // 24 is centered at the top, 1–11 run down the right side,
+  // placebo 25–28 runs across the bottom, and 12–23 runs up the left side.
+  // Every pack number 1–28 is rendered exactly once — no duplicates or skipped numbers.
+  const wheelAngleForDay = (day: number) => {
+    if (day === 24) return -90;
+    if (day >= 1 && day <= 11) return -72 + ((day - 1) * 120) / 10;
+    if (day >= 25 && day <= 28) return 112.5 - ((day - 25) * 45) / 3;
+    if (day >= 12 && day <= 23) return 132 + ((day - 12) * 120) / 11;
+    return -90;
+  };
 
   return (
     <section
-      className="rounded-[2rem] p-4 shadow-sm ring-1"
+      className="rounded-[2rem] p-3 shadow-sm ring-1"
       style={{
         backgroundColor: HAK_CARD_BG,
         boxShadow: "inset 0 0 0 1px rgba(83, 102, 0, 0.22)",
@@ -1896,7 +1880,7 @@ function BirthControlCalendar({
       </div>
 
       {/* Circular HAK overview — only wheel pills open the dose popup. */}
-      <div className="mx-auto mt-5 w-full max-w-[340px]">
+      <div className="mx-auto mt-5 w-full max-w-[390px]">
         <div className="mb-3 flex justify-center">
           <div
             className="rounded-full px-4 py-2 text-[11px] font-bold ring-1"
@@ -1912,14 +1896,14 @@ function BirthControlCalendar({
 
         <div className="relative aspect-square w-full">
           <div
-            className="absolute inset-[8%] rounded-full"
+            className="absolute inset-[7%] rounded-full"
             style={{
               background: "rgba(255,255,255,.12)",
               boxShadow: "inset 0 0 0 9px rgba(255,255,255,.24)",
             }}
           />
           <div
-            className="absolute inset-[18%] rounded-full"
+            className="absolute inset-[20%] rounded-full"
             style={{
               backgroundColor: HAK_CARD_BG,
               boxShadow: "0 0 0 1px rgba(255,255,255,.12)",
@@ -1930,7 +1914,7 @@ function BirthControlCalendar({
             {Array.from({ length: PACK_DAYS }).map((_, i) => {
               const day = i + 1;
               const angle = (wheelAngleForDay(day) * Math.PI) / 180;
-              const radius = 42;
+              const radius = 43;
               return (
                 <span
                   key={`wheel-track-${i}`}
@@ -1946,7 +1930,7 @@ function BirthControlCalendar({
 
           {wheelDays.map((day) => {
             const angle = (wheelAngleForDay(day) * Math.PI) / 180;
-            const radius = 42;
+            const radius = 43;
             const left = 50 + Math.cos(angle) * radius;
             const top = 50 + Math.sin(angle) * radius;
             const dateKey = dateForPackDay(day);
@@ -1964,38 +1948,62 @@ function BirthControlCalendar({
               !isPlacebo && dateKey >= since && dateKey < todayK && !missed;
             const takenForStatus = loggedTaken || assumedHistoricalTaken;
 
-            let backgroundColor = isPlacebo ? HAK_PINK_SOFT : "#DED2F3";
-            let color = isPlacebo ? HAK_PINK_DARK : HAK_PURPLE_DARK;
-            let borderColor = isPlacebo ? HAK_PINK : "rgba(122,83,200,.40)";
+            // Soft 3D "pill bubble" styling matched to the visual reference.
+            // Keep the wheel math/layout untouched; only visual treatment changes.
+            let bubbleBackground = isPlacebo
+              ? "radial-gradient(circle at 30% 24%, #FFF7FA 0%, #F9DDE7 38%, #F2C3D4 72%, #E9AFC6 100%)"
+              : "radial-gradient(circle at 30% 24%, #F7F2FF 0%, #E7DDF8 38%, #D4C3F0 72%, #C1A9E7 100%)";
+            let color = isPlacebo ? "#B92E60" : "#51309A";
+            let bubbleBorder = isPlacebo
+              ? "rgba(255,255,255,.76)"
+              : "rgba(255,255,255,.72)";
+            let bubbleShadow = isPlacebo
+              ? "inset 1.5px 1.5px 3px rgba(255,255,255,.92), inset -1.5px -2px 3px rgba(177,52,98,.12), 0 2px 7px rgba(110,72,88,.14), 0 0 0 1px rgba(217,87,130,.18)"
+              : "inset 1.5px 1.5px 3px rgba(255,255,255,.92), inset -1.5px -2px 3px rgba(91,50,174,.12), 0 2px 7px rgba(76,54,112,.14), 0 0 0 1px rgba(122,83,200,.16)";
 
-            // Only a pill explicitly marked taken becomes darker. Historical pills
-            // remain soft lavender while still counting as on-schedule for protection.
+            // Explicitly logged tablets become a richer version of the same bubble,
+            // rather than switching to a flat solid fill.
             if (loggedTaken && !isCurrent) {
               if (isPlacebo) {
-                backgroundColor = "#E99AB5";
+                bubbleBackground =
+                  "radial-gradient(circle at 30% 24%, #FFEAF1 0%, #F4BFD2 42%, #E990B0 78%, #D96F98 100%)";
                 color = "#8F234B";
-                borderColor = HAK_PINK_DARK;
+                bubbleBorder = "rgba(255,255,255,.72)";
+                bubbleShadow =
+                  "inset 1.5px 1.5px 3px rgba(255,255,255,.78), inset -1.5px -2px 3px rgba(143,35,75,.16), 0 2px 8px rgba(110,54,78,.16), 0 0 0 1px rgba(185,46,96,.22)";
               } else {
-                backgroundColor = "#BDA9E7";
-                color = "#4E2B98";
-                borderColor = "rgba(91,50,174,.58)";
+                bubbleBackground =
+                  "radial-gradient(circle at 30% 24%, #EEE6FC 0%, #CFBDF0 42%, #AF91DF 78%, #9270D1 100%)";
+                color = "#47258D";
+                bubbleBorder = "rgba(255,255,255,.72)";
+                bubbleShadow =
+                  "inset 1.5px 1.5px 3px rgba(255,255,255,.78), inset -1.5px -2px 3px rgba(71,37,141,.16), 0 2px 8px rgba(73,50,113,.17), 0 0 0 1px rgba(91,50,174,.22)";
               }
             }
 
             if (isCurrent) {
               if (isPlacebo) {
-                backgroundColor = loggedTaken ? HAK_PINK_DARK : HAK_PINK_SOFT;
+                bubbleBackground = loggedTaken
+                  ? "radial-gradient(circle at 30% 24%, #F7BFD2 0%, #E982A7 48%, #C94977 100%)"
+                  : "radial-gradient(circle at 30% 24%, #FFF4F8 0%, #F9D9E5 45%, #F0B8CD 100%)";
                 color = loggedTaken ? "#fff" : HAK_PINK_DARK;
-                borderColor = HAK_PINK_DARK;
+                bubbleBorder = "rgba(255,255,255,.88)";
+                bubbleShadow =
+                  `inset 1.5px 1.5px 3px rgba(255,255,255,.72), inset -1.5px -2px 3px rgba(143,35,75,.13), 0 0 0 3px ${HAK_CARD_BG}, 0 0 0 6px rgba(217,87,130,.30), 0 3px 10px rgba(110,54,78,.18)`;
               } else {
-                backgroundColor = HAK_PURPLE_DARK;
+                bubbleBackground =
+                  "radial-gradient(circle at 30% 24%, #A98CE6 0%, #7D58C8 48%, #5B32AE 100%)";
                 color = "#fff";
-                borderColor = HAK_PURPLE_DARK;
+                bubbleBorder = "rgba(255,255,255,.88)";
+                bubbleShadow =
+                  `inset 1.5px 1.5px 3px rgba(255,255,255,.42), inset -1.5px -2px 3px rgba(57,28,112,.20), 0 0 0 3px ${HAK_CARD_BG}, 0 0 0 6px rgba(122,83,200,.30), 0 3px 10px rgba(73,50,113,.20)`;
               }
             }
 
             if (missed) {
-              borderColor = "#C94A55";
+              bubbleBorder = "#C94A55";
+              bubbleShadow =
+                "inset 1.5px 1.5px 3px rgba(255,255,255,.75), 0 0 0 2px rgba(201,74,85,.22), 0 2px 8px rgba(120,55,61,.16)";
             }
 
             return (
@@ -2006,16 +2014,17 @@ function BirthControlCalendar({
                   setSel(dateKey);
                   setPickTime("");
                 }}
-                className="absolute z-10 grid h-8 w-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[11px] font-bold shadow-sm transition active:scale-95"
+                className="absolute z-10 grid h-9 w-9 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[11px] font-bold transition active:scale-95"
                 style={{
                   left: `${left}%`,
                   top: `${top}%`,
-                  backgroundColor,
+                  background: bubbleBackground,
                   color,
-                  border: `1.5px solid ${borderColor}`,
-                  boxShadow: isCurrent
-                    ? `0 0 0 3px ${HAK_CARD_BG}, 0 0 0 6px ${isPlacebo ? HAK_PINK : HAK_PURPLE}66`
-                    : "0 1px 5px rgba(58,61,30,.08)",
+                  border: `1px solid ${bubbleBorder}`,
+                  boxShadow: bubbleShadow,
+                  textShadow: isCurrent
+                    ? "0 1px 1px rgba(50,30,80,.12)"
+                    : "0 1px 0 rgba(255,255,255,.45)",
                 }}
                 aria-label={`HAK day ${day}, ${fmtFullDate(dateKey)}${missed ? ", missed" : takenForStatus ? ", taken on schedule" : ""}`}
               >
