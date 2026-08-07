@@ -84,8 +84,8 @@ function daySummaryLines(log: DayLog | undefined, cycleTrackingHidden: boolean):
   if (!log) return [];
   const out: string[] = [];
   if (log.pain?.length) out.push(`🔥 Pain: ${log.pain.map((p) => `${p.time} ${p.score}/10`).join(", ")}`);
-  if (log.tetany?.length) out.push(`⚡ Tetany: ${log.tetany.map((t) => `${t.time} ${t.intensity}/5`).join(", ")}`);
-  if (log.panic?.length) out.push(`🫯 Panic: ${log.panic.map((p) => `${p.time} ${p.intensity}/10`).join(", ")}`);
+  if (log.tetany?.length) out.push(`⚡ Tetany episode: ${log.tetany.map((t) => `${t.time} ${t.intensity}/5`).join(", ")}`);
+  if (log.panic?.length) out.push(`🫯 Panic episode: ${log.panic.map((p) => `${p.time} ${p.intensity}/10`).join(", ")}`);
   const hf = log.pain?.filter((p) => (p.hotFlashes ?? 0) > 0) ?? [];
   if (hf.length) out.push(`🥵 Hot flashes: ${hf.map((p) => `${p.hotFlashes}/5`).join(", ")}`);
   const ha = log.pain?.filter((p) => p.headacheIntensity != null || (p.headacheTypes?.length ?? 0) > 0) ?? [];
@@ -272,7 +272,7 @@ export function MonthCalendar({
                   : (periodColorVar(periodLevel) ?? (isActualPeriod(key) ? "var(--period-medium)" : null));
                 const pAvg = avgDayPain(log);
                 const isSel = key === selected;
-                const predictedOrange = isPredicted(key);
+                const predictedPeriod = isPredicted(key);
                 const icons = iconsFor(log, hasMed);
                 const marked = hasAnyLog(log);
 
@@ -313,11 +313,11 @@ export function MonthCalendar({
                           style={{ boxShadow: `0 0 0 4.75px ${calendarPainColor(pAvg)}` }}
                         />
                       )}
-                      {predictedOrange && (
+                      {predictedPeriod && (
                         <span
                           aria-hidden
                           className="pointer-events-none absolute inset-2 rounded-full"
-                          style={{ boxShadow: `0 0 0 2px var(--predicted)` }}
+                          style={{ boxShadow: `0 0 0 2px var(--period-medium)` }}
                         />
                       )}
                       <div
