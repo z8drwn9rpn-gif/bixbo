@@ -84,7 +84,13 @@ async function importVapidSigningKey(config: VapidConfig): Promise<CryptoKey> {
     throw new Error("VAPID_PUBLIC_KEY is not an uncompressed P-256 public key.");
   }
 
-  const privateBytes = b64urlToBytes(config.privateKey);
+  let privateBytes = b64urlToBytes(config.privateKey);
+
+  // Some generators emit the scalar as a signed DER integer, i.e. 32 bytes
+  // prefixed with a 0x00 padding byte. Strip it before importing.
+  if (privateBytes.length === 33 && privateBytes[0] === 0x00) {
+    privateBytes = privateBytes.slice(1);
+  }
 
   // Raw 32-byte scalar — the format web-push and most generators emit.
   if (privateBytes.length === 32) {
