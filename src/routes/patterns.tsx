@@ -386,6 +386,16 @@ function PhaseBarChart({
   );
 }
 
+
+function monthLabelFromPrefix(prefix: string): string {
+  const match = /^(\d{4})-(\d{2})$/.exec(prefix);
+  if (!match) return prefix;
+  return new Date(Number(match[1]), Number(match[2]) - 1, 1).toLocaleDateString("en-GB", {
+    month: "long",
+    year: "numeric",
+  });
+}
+
 /* -------------------------------------------------------------------------- */
 /* Monthly and treatment comparison                                           */
 /* -------------------------------------------------------------------------- */
@@ -402,10 +412,13 @@ function ComparisonMetric({
   higherIsWorse = true,
   neutralTrend = false,
   icon,
-  previousLabel = "Last month",
-  currentLabel = "This month",
+  previousLabel,
+  currentLabel,
 }: ComparisonMetricProps) {
   const palette = METRIC_COLORS[color];
+  const [defaultCurrentPrefix, defaultPreviousPrefix] = thisAndLastMonthPrefixes();
+  const resolvedPreviousLabel = previousLabel ?? monthLabelFromPrefix(defaultPreviousPrefix);
+  const resolvedCurrentLabel = currentLabel ?? monthLabelFromPrefix(defaultCurrentPrefix);
   const hasAnyData = previous != null || current != null;
 
   const values = [previous, current].filter((value): value is number => value != null && Number.isFinite(value));
@@ -489,7 +502,7 @@ function ComparisonMetric({
         <>
           <div className="mt-3 grid grid-cols-2 gap-3">
             <MetricColumn
-              label={previousLabel}
+              label={resolvedPreviousLabel}
               value={previous}
               percentage={previousPercentage}
               decimals={decimals}
@@ -499,7 +512,7 @@ function ComparisonMetric({
             />
 
             <MetricColumn
-              label={currentLabel}
+              label={resolvedCurrentLabel}
               value={current}
               percentage={currentPercentage}
               decimals={decimals}
@@ -884,6 +897,9 @@ function PatternsPage() {
   /* ------------------------------------------------------------------------ */
 
   const [currentMonthPrefix, previousMonthPrefix] = thisAndLastMonthPrefixes();
+  const currentMonthLabel = monthLabelFromPrefix(currentMonthPrefix);
+  const previousMonthLabel = monthLabelFromPrefix(previousMonthPrefix);
+  const monthlyComparisonLabel = `${currentMonthLabel} vs ${previousMonthLabel}`;
 
   const currentMonthDays = daysOfMonth(currentMonthPrefix).filter((day) => day <= todayKey());
 
@@ -1923,7 +1939,7 @@ function PatternsPage() {
           <div className="space-y-4">
             <Card
               title="This month at a glance"
-              description="The most important changes compared with the same number of days last month."
+              description={`${monthlyComparisonLabel} · compared over the same number of days.`}
             >
               <div className="mt-3 grid grid-cols-2 gap-2">
                 <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
@@ -1956,6 +1972,27 @@ function PatternsPage() {
               </div>
             </Card>
 
+            <SummaryPanel
+              title="Monthly Summary"
+              items={[
+                {
+                  label: "Most improved",
+                  value: formatChange(mostImproved),
+                  tone: mostImproved && mostImproved.score > 0 ? "good" : "neutral",
+                },
+                {
+                  label: "Needs attention",
+                  value: formatChange(mostWorsened),
+                  tone: mostWorsened && mostWorsened.score < 0 ? "bad" : "neutral",
+                },
+                { label: "Most stable", value: formatChange(mostStable), tone: "neutral" },
+              ]}
+              confidence={{
+                level: monthlyConfidence,
+                detail: `Based on ${monthlyLoggedDays} logged day${monthlyLoggedDays === 1 ? "" : "s"} in ${currentMonthLabel}`,
+              }}
+            />
+
             {/* ------------------------------------------------------------------ */}
             {/* Monthly comparison — panic and tetany                              */}
             {/* ------------------------------------------------------------------ */}
@@ -1967,7 +2004,7 @@ function PatternsPage() {
             >
               <Card
                 title="Monthly comparison — panic & tetany"
-                description="This month is compared with the same number of days from last month."
+                description={`${monthlyComparisonLabel} · same number of elapsed days in each month.`}
               >
                 <div className="mt-3 space-y-2.5">
                   <ComparisonMetric
@@ -2173,8 +2210,8 @@ function PatternsPage() {
             </CollapsibleSection>
 
             <CollapsibleSection
-              title="Hormones & monthly summary"
-              subtitle="PCOS, histamine and the most important monthly changes"
+              title="Hormones"
+              subtitle="PCOS and histamine changes"
               defaultOpen={false}
             >
               <div className="space-y-3">
@@ -2201,26 +2238,6 @@ function PatternsPage() {
                 />
               </div>
 
-              <SummaryPanel
-                title="Monthly Summary"
-                items={[
-                  {
-                    label: "Most improved",
-                    value: formatChange(mostImproved),
-                    tone: mostImproved && mostImproved.score > 0 ? "good" : "neutral",
-                  },
-                  {
-                    label: "Needs attention",
-                    value: formatChange(mostWorsened),
-                    tone: mostWorsened && mostWorsened.score < 0 ? "bad" : "neutral",
-                  },
-                  { label: "Most stable", value: formatChange(mostStable), tone: "neutral" },
-                ]}
-                confidence={{
-                  level: monthlyConfidence,
-                  detail: `Based on ${monthlyLoggedDays} logged day${monthlyLoggedDays === 1 ? "" : "s"} this month`,
-                }}
-              />
             </CollapsibleSection>
           </div>
         )}
