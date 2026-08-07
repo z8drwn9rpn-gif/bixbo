@@ -1432,7 +1432,6 @@ function BirthControlCalendar({
 }) {
   const { update } = useBixbo();
   const [sel, setSel] = useState<string | null>(null);
-  const [pickTime, setPickTime] = useState<string>("");
   const [hakMonth, setHakMonth] = useState(() => new Date(anchor.getFullYear(), anchor.getMonth(), 1));
 
   useEffect(() => {
@@ -1459,7 +1458,6 @@ function BirthControlCalendar({
   // 24 pink active tablets + 4 white placebo tablets = one 28-day pack.
   const ACTIVE_DAYS = 24;
   const PACK_DAYS = 28;
-  const DROVELIS_ACTIVE_DOSE = "3 mg drospirenone + 14.2 mg estetrol";
 
   const HAK_PURPLE = "#7A53C8";
   const HAK_PURPLE_DARK = "#5B32AE";
@@ -1480,7 +1478,6 @@ function BirthControlCalendar({
   const bcId = bcMed?.id ?? "hak-default";
 
   const todayK = toKey(new Date());
-  const referenceK = toKey(anchor);
 
   const pillNumber = (k: string) => {
     const diff = Math.round((fromKey(k).getTime() - fromKey(since).getTime()) / 86400000);
@@ -1488,8 +1485,10 @@ function BirthControlCalendar({
     return (diff % PACK_DAYS) + 1;
   };
 
-  const currentDay = pillNumber(referenceK) ?? 1;
-  const currentPackStart = addDays(referenceK, -(currentDay - 1));
+  // The circular HAK wheel and Current HAK pack always represent TODAY.
+  // Calendar month navigation is informational only and must not change the real pack day.
+  const currentDay = pillNumber(todayK) ?? 1;
+  const currentPackStart = addDays(todayK, -(currentDay - 1));
 
   const dateForPackDay = (day: number) => addDays(currentPackStart, day - 1);
 
@@ -1571,24 +1570,11 @@ function BirthControlCalendar({
   const selectedDay = sel ? pillNumber(sel) : null;
   const selectedTaken = sel ? takenAt(sel) : null;
   const selectedMissed = sel ? missedAt(sel) : false;
-  const selectedAssumedTaken =
-    !!sel &&
-    selectedDay != null &&
-    selectedDay <= ACTIVE_DAYS &&
-    sel >= since &&
-    sel < todayK &&
-    !selectedMissed &&
-    !selectedTaken;
+  const selectedIsPlacebo = selectedDay != null && selectedDay > ACTIVE_DAYS;
+  const popupAccent = selectedIsPlacebo ? HAK_PINK_DARK : HAK_PURPLE_DARK;
+  const popupSoft = selectedIsPlacebo ? "#F9DDE7" : "#E8DDF8";
 
-  const placeboStart = addDays(currentPackStart, ACTIVE_DAYS);
-  const placeboEnd = addDays(currentPackStart, PACK_DAYS - 1);
-  const nextPackStart = addDays(currentPackStart, PACK_DAYS);
 
-  const fmtDate = (key: string) =>
-    fromKey(key).toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "short",
-    });
 
   const fmtFullDate = (key: string) =>
     fromKey(key).toLocaleDateString("en-GB", {
@@ -1819,19 +1805,6 @@ function BirthControlCalendar({
       text: "var(--muted-foreground)",
       symbol: "?",
     };
-  };
-
-  const missedPillAdvice = (day: number): string => {
-    if (day <= 7) {
-      return "Take the last missed pink pill as soon as possible and use a condom until 7 uninterrupted active pills have been taken. If unprotected sex happened in the previous 7 days, review pregnancy risk.";
-    }
-    if (day <= 17) {
-      return "Take the last missed pink pill as soon as possible. If this was the only missed pill and the previous 7 active pills were taken correctly, extra contraception is usually not needed; otherwise use backup until 7 uninterrupted active pills.";
-    }
-    if (day <= ACTIVE_DAYS) {
-      return "Late-pack rule: avoid extending the hormone-free interval. Drovelis guidance uses a schedule adjustment such as skipping the 4 placebo tablets and starting the next pack immediately. Review the missed-pill instructions before relying on protection.";
-    }
-    return "White tablets are placebo. Missing a placebo tablet does not reduce contraceptive protection; discard it so the placebo phase is not accidentally extended.";
   };
 
   // TRUE mathematical 28-day ring.
@@ -2255,3 +2228,1017 @@ function BirthControlCalendar({
           <div className="flex items-center gap-1.5">
             <span className="h-3 w-3 rounded-full" style={{ backgroundColor: "#D58A22" }} />
             Check schedule
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="h-3 w-3 rounded-full" style={{ backgroundColor: HAK_PURPLE_SOFT, border: `1px solid ${HAK_PURPLE}` }} />
+            Start-up
+          </div>
+        </div>
+
+        <p className="mt-3 text-[9px] leading-relaxed text-muted-foreground">
+          Drovelis: all 24 pink pills are the same full dose. The 4 white placebo days remain part of the protected regimen when active pills are taken correctly and the next pack starts on time. An empty dose log is treated as not recorded, not as a missed pill; mark a pill “missed” when an actual miss occurs. Calendar dates are informational only and do not open the dose editor.
+        </p>
+      </div>
+
+
+
+      {!bcMed && (
+        <p className="mt-3 text-[10px] leading-snug text-muted-foreground">
+          Add your contraceptive pill in Medications so taken and missed doses can be detected precisely.
+        </p>
+      )}
+
+      {/* Compact dose editor — only circular HAK wheel pills open this popup. */}
+      {sel && selectedDay != null && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30 p-5"
+              style={{
+                paddingTop: "max(1rem, env(safe-area-inset-top))",
+                paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
+              }}
+              onClick={() => setSel(null)}
+            >
+              <div
+                className="w-full max-w-[300px] rounded-[1.55rem] p-4 shadow-2xl ring-1"
+                style={{
+                  backgroundColor: popupSoft,
+                  borderColor: popupAccent,
+                  boxShadow: `0 18px 45px color-mix(in srgb, ${popupAccent} 22%, transparent)`,
+                }}
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p
+                      className="text-[10px] font-bold uppercase tracking-[0.14em]"
+                      style={{ color: popupAccent }}
+                    >
+                      HAK day {selectedDay}
+                    </p>
+                    <h3 className="mt-1 font-serif text-[1.05rem] font-bold leading-tight text-foreground">
+                      {fmtFullDate(sel)}
+                    </h3>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setSel(null)}
+                    className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm font-bold ring-1"
+                    style={{
+                      backgroundColor: "rgba(255,255,255,.42)",
+                      borderColor: `color-mix(in srgb, ${popupAccent} 35%, transparent)`,
+                      color: popupAccent,
+                    }}
+                    aria-label="Close"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      markTaken(sel, "");
+                      setSel(null);
+                    }}
+                    className="min-h-11 rounded-xl px-3 py-2.5 text-xs font-bold text-white shadow-sm"
+                    style={{ backgroundColor: popupAccent }}
+                  >
+                    Mark taken
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      markMissed(sel);
+                      setSel(null);
+                    }}
+                    className="min-h-11 rounded-xl bg-white/35 px-3 py-2.5 text-xs font-bold"
+                    style={{
+                      border: `1.5px solid ${popupAccent}`,
+                      color: popupAccent,
+                    }}
+                  >
+                    Mark missed
+                  </button>
+                </div>
+
+                {(selectedTaken || selectedMissed) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      clearRecord(sel);
+                      setSel(null);
+                    }}
+                    className="mt-2 min-h-9 w-full rounded-xl bg-white/30 px-3 py-2 text-[10px] font-semibold"
+                    style={{
+                      border: `1px solid color-mix(in srgb, ${popupAccent} 32%, transparent)`,
+                      color: popupAccent,
+                    }}
+                  >
+                    Clear saved status
+                  </button>
+                )}
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
+
+    </section>
+  );
+}
+
+
+function VitalTile({
+  emoji,
+  label,
+  value,
+  onClick,
+}: {
+  emoji: string;
+  label: string;
+  value: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex flex-col items-center justify-center gap-0.5 rounded-2xl bg-surface p-2 ring-1 ring-border hover:bg-tint"
+    >
+      <Ico e={emoji} size={16} />
+      <span className="font-serif text-base font-bold leading-tight">{value}</span>
+      <span className="text-[10px] font-medium text-muted-foreground">{label}</span>
+    </button>
+  );
+}
+
+function MedsProgress({ data }: { data: BixboData }) {
+  const k = todayKey();
+  const scheduled = data.meds.filter((m) => !m.asNeeded);
+  const total = scheduled.reduce((s, m) => s + m.times.length, 0);
+  const taken = scheduled.reduce((s, m) => s + m.times.filter((t) => data.medLog[k]?.[`${m.id}@${t}`]).length, 0);
+  return (
+    <div className="flex items-center justify-between rounded-2xl bg-surface p-3 ring-1 ring-border">
+      <div>
+        <p className="text-xs text-muted-foreground">Meds today</p>
+        <p className="font-serif text-lg font-bold">
+          {taken}/{total || 0}
+        </p>
+      </div>
+      <div className="grid h-10 w-10 place-items-center rounded-full bg-primary/15 text-primary">
+        <PillIcon size={20} />
+      </div>
+    </div>
+  );
+}
+
+/* ------------------- Day preview ------------------- */
+function DayPreview({
+  date,
+  data,
+  update,
+  onEditPain,
+  onEdit,
+}: {
+  date: string;
+  data: BixboData;
+  update: (u: (d: BixboData) => BixboData) => void;
+  onEditPain?: (p: import("@/lib/storage").PainEntry) => void;
+  onEdit?: (cat: string, entry: unknown) => void;
+}) {
+  const log = data.dayLogs[date];
+  const rawNotes = data.dayNotes[date] ?? [];
+  const notes: { text: string; time?: string }[] = (rawNotes as (string | { text: string; time?: string })[]).map(
+    (n) => (typeof n === "string" ? { text: n } : n),
+  );
+  const todos = data.todos[date] ?? [];
+  const events = data.events.filter((e) => date >= e.startDate && date <= e.endDate);
+  const tasks = data.tasks.filter((t) => date >= t.startDate && date <= t.endDate);
+
+  const k = todayKey();
+  const isToday = date === k;
+  const nowHHMM = new Date().toTimeString().slice(0, 5);
+  const meds = data.meds;
+  const scheduled = data.meds
+    .filter((m) => !m.asNeeded)
+    .flatMap((m) =>
+      m.times.map((t) => ({ key: `${m.id}@${t}`, med: m, time: t, taken: !!data.medLog[date]?.[`${m.id}@${t}`] })),
+    );
+  const takenList = scheduled.filter((x) => x.taken);
+  const missedList = scheduled.filter((x) => !x.taken && (date < k || (date === k && x.time < nowHHMM)));
+  const extraMeds = log?.extraMeds ?? [];
+  const cycleTrackingHidden = isCycleTrackingHidden(data);
+  const flowLabel = (level?: string | null): string => {
+    switch (level) {
+      case "spotting":
+        return "Spotting";
+      case "light":
+        return "Light";
+      case "medium":
+        return "Medium";
+      case "heavy":
+        return "Heavy";
+      case "very-heavy":
+        return "Very heavy";
+      default:
+        return "";
+    }
+  };
+
+  const anything =
+    !!(
+      log &&
+      (log.pain?.length ||
+        log.tetany?.length ||
+        log.panic?.length ||
+        log.period ||
+        log.periodInfo?.level ||
+        log.food?.length ||
+        log.bowel?.length ||
+        log.sex?.length ||
+        log.heat?.length ||
+        log.workout?.length ||
+        log.temperature != null ||
+        log.weight != null ||
+        log.sleepHours != null ||
+        extraMeds.length)
+    ) ||
+    notes.length ||
+    todos.length ||
+    events.length ||
+    tasks.length ||
+    takenList.length ||
+    missedList.length;
+
+  if (!anything)
+    return (
+      <div className="mx-5 mt-4 rounded-3xl bg-surface p-6 text-center ring-1 ring-border">
+        <p className="text-sm text-muted-foreground">Nothing logged {isToday ? "today" : "this day"} yet.</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Tap the <span className="font-bold">+ Log</span> button below.
+        </p>
+      </div>
+    );
+
+  const markMissedTaken = (medKey: string) =>
+    update((d) => ({
+      ...d,
+      medLog: { ...d.medLog, [date]: { ...(d.medLog[date] ?? {}), [medKey]: true } },
+      medLogTimes: {
+        ...(d.medLogTimes ?? {}),
+        [date]: {
+          ...(d.medLogTimes?.[date] ?? {}),
+          [medKey]: (() => {
+            const n = new Date();
+            return `${String(n.getHours()).padStart(2, "0")}:${String(n.getMinutes()).padStart(2, "0")}`;
+          })(),
+        },
+      },
+    }));
+
+  return (
+    <div className="space-y-3 px-5 pt-3 pb-32">
+      {(takenList.length > 0 || extraMeds.length > 0 || missedList.length > 0) && (
+        <Card title="Meds" icon="💊">
+          <ul className="space-y-1 text-sm">
+            {takenList.map((x) => {
+              const actual = data.medLogTimes?.[date]?.[x.key];
+              const shifted = actual && actual !== x.time;
+              return (
+                <li key={x.key}>
+                  <button
+                    onClick={() =>
+                      update((d) => {
+                        const day = { ...(d.medLog[date] ?? {}) };
+                        delete day[x.key];
+                        const times = { ...(d.medLogTimes?.[date] ?? {}) };
+                        delete times[x.key];
+                        return {
+                          ...d,
+                          medLog: { ...d.medLog, [date]: day },
+                          medLogTimes: { ...(d.medLogTimes ?? {}), [date]: times },
+                        };
+                      })
+                    }
+                    className="text-left text-green-700 hover:underline"
+                    title="Tap to uncheck"
+                  >
+                    Taken · {actual ?? x.time} — {x.med.name}
+                    {x.med.dose ? ` (${x.med.dose})` : ""}
+                    {shifted && <span className="text-[10px] text-muted-foreground"> · scheduled {x.time}</span>}
+                    <span className="text-[10px] text-muted-foreground"> · tap to uncheck</span>
+                  </button>
+                </li>
+              );
+            })}
+            {missedList.map((x) => (
+              <li key={x.key} className="flex items-start gap-2">
+                <button
+                  onClick={() => markMissedTaken(x.key)}
+                  className="flex-1 text-left text-destructive/90"
+                  title="Tap to mark taken"
+                >
+                  Missed · {x.time} — {x.med.name}
+                  {x.med.dose ? ` (${x.med.dose})` : ""}{" "}
+                  <span className="text-[10px] text-muted-foreground">· missed (tap if taken)</span>
+                </button>
+              </li>
+            ))}
+            {extraMeds.map((e) => (
+              <li key={e.id} className="flex items-start gap-2">
+                <button onClick={() => onEdit?.("meds", e)} className="flex-1 text-left">
+                  • {e.time} — {e.name}
+                  {e.dose ? ` (${e.dose})` : ""}
+                  {e.note ? ` — ${e.note}` : ""}
+                </button>
+                <button
+                  onClick={() =>
+                    update((d) => ({
+                      ...d,
+                      dayLogs: {
+                        ...d.dayLogs,
+                        [date]: {
+                          ...d.dayLogs[date],
+                          extraMeds: (d.dayLogs[date]?.extraMeds ?? []).filter((x) => x.id !== e.id),
+                        },
+                      },
+                    }))
+                  }
+                  aria-label="Delete"
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
+      {(log?.pain?.length && (
+        <Card title="Pain" icon="🔥">
+          <ul className="space-y-2">
+            {log.pain.map((p) => (
+              <li key={p.id} className="flex items-start gap-3">
+                <button
+                  onClick={() => onEditPain?.(p)}
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-sm font-bold text-white"
+                  style={{ background: painColor(p.score) }}
+                  aria-label="Edit pain entry"
+                >
+                  {Number.isInteger(p.score) ? p.score : p.score.toFixed(1)}
+                </button>
+                <button onClick={() => onEditPain?.(p)} className="min-w-0 flex-1 text-left">
+                  <p className="text-xs text-muted-foreground">
+                    {p.time} · {PAIN_DESCRIPTIONS[Math.round(p.score)]}
+                  </p>
+                  {p.parts.length > 0 && <p className="text-sm">{p.parts.join(", ")}</p>}
+                  {p.quality.length > 0 && <p className="text-xs text-muted-foreground">{p.quality.join(", ")}</p>}
+                  {p.symptoms.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      + {p.symptoms.join(", ")}
+                      {p.symptoms.includes("Flu") && p.fluNote ? ` (Flu: ${p.fluNote})` : ""}
+                    </p>
+                  )}
+                  {p.pressureTypes?.length || p.pressureIntensity != null ? (
+                    <p className="text-xs text-muted-foreground">
+                      Pressure: {p.pressureTypes?.join(", ")}
+                      {p.pressureIntensity != null
+                        ? `${p.pressureTypes?.length ? " " : ""}${p.pressureIntensity}/10`
+                        : ""}
+                    </p>
+                  ) : null}
+                  {p.nausea || p.nauseaTypes?.length || p.nauseaSeverity != null ? (
+                    <p className="text-xs text-muted-foreground">
+                      Nausea: {p.nauseaTypes?.join(", ")}
+                      {p.nauseaSeverity != null ? `${p.nauseaTypes?.length ? " " : ""}${p.nauseaSeverity}/10` : ""}
+                      {p.nauseaOngoing ? " · ongoing" : p.nauseaMinutes != null ? ` · ${p.nauseaMinutes} min` : ""}
+                      {p.nauseaTriggers?.length ? ` · triggers: ${p.nauseaTriggers.join(", ")}` : ""}
+                      {p.nauseaSymptoms?.length ? ` · symptoms: ${p.nauseaSymptoms.join(", ")}` : ""}
+                      {p.nauseaHelped?.length ? ` · relieved by: ${p.nauseaHelped.join(", ")}` : ""}
+                    </p>
+                  ) : null}
+                  {p.hotFlashes != null && (
+                    <p className="text-xs text-muted-foreground">
+                      <Ico e="🥵" size={13} /> Hot flashes intensity {p.hotFlashes}/5
+                    </p>
+                  )}
+                  {p.headacheTypes?.length ? (
+                    <p className="text-xs text-muted-foreground">
+                      <Ico e="🤕" size={13} /> Headache: {p.headacheTypes.join(", ")}
+                      {p.headacheIntensity != null ? ` · ${p.headacheIntensity}/10` : ""}
+                    </p>
+                  ) : p.headacheIntensity != null ? (
+                    <p className="text-xs text-muted-foreground">
+                      <Ico e="🤕" size={13} /> Headache intensity {p.headacheIntensity}/10
+                    </p>
+                  ) : null}
+                  {p.headacheMed ? (
+                    <p className="text-xs text-muted-foreground">
+                      <Ico e="💊" size={13} /> Headache med: {p.headacheMed}
+                      {p.headacheMedTime ? ` at ${p.headacheMedTime}` : ""}
+                    </p>
+                  ) : null}
+                  {p.pcosSymptoms?.length ? (
+                    <p className="text-xs text-muted-foreground">PCOS: {p.pcosSymptoms.join(", ")}</p>
+                  ) : null}
+                  {p.mood?.length ? (
+                    <p className="text-xs text-muted-foreground">
+                      Mood: <IcoText text={p.mood.join(", ")} size={13} />
+                    </p>
+                  ) : null}
+                  {p.stress != null && <p className="text-xs text-muted-foreground">Stress {p.stress}/10</p>}
+                  {p.bodyBattery != null && <p className="text-xs text-muted-foreground">Battery {p.bodyBattery}/5</p>}
+                  {p.note && <p className="mt-1 text-sm whitespace-pre-line">"{p.note}"</p>}
+                  <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
+                </button>
+                <DeleteBtn
+                  onClick={() =>
+                    update((d) => ({
+                      ...d,
+                      dayLogs: {
+                        ...d.dayLogs,
+                        [date]: {
+                          ...d.dayLogs[date],
+                          pain: (d.dayLogs[date]?.pain ?? []).filter((x) => x.id !== p.id),
+                        },
+                      },
+                    }))
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )) ||
+        null}
+
+      {log?.panic?.length ? (
+        <Card title="Panic episode" icon="🫯">
+          <ul className="space-y-2">
+            {log.panic.map((p) => (
+              <li key={p.id} className="flex items-start gap-2">
+                <button onClick={() => onEdit?.("panic", p)} className="flex-1 text-left">
+                  <p className="text-sm font-medium">
+                    {p.time} · intensity {p.intensity}/10 · {p.minutes == null ? "ongoing" : `${p.minutes} min`}
+                  </p>
+                  {p.trigger && <p className="text-xs text-muted-foreground">Trigger: {p.trigger}</p>}
+                  {p.physical.length > 0 && <p className="text-xs">Physical: {p.physical.join(", ")}</p>}
+                  {p.cognitive.length > 0 && <p className="text-xs">Cognitive: {p.cognitive.join(", ")}</p>}
+                  <p className="text-[11px] text-muted-foreground">
+                    Hyperventilation: {p.hyperventilation}
+                    {p.tetanyPresent ? " · tetany present" : ""}
+                  </p>
+                  {p.helped.length > 0 && (
+                    <p className="text-[11px] text-muted-foreground">Helped: {p.helped.join(", ")}</p>
+                  )}
+                  {p.rescueMed ? (
+                    <p className="text-xs text-muted-foreground">
+                      <Ico e="💊" size={13} /> Rescue: {p.rescueMed}
+                    </p>
+                  ) : null}
+                  {p.note && <p className="mt-1 text-sm whitespace-pre-line">"{p.note}"</p>}
+                  <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
+                </button>
+                <DeleteBtn
+                  onClick={() =>
+                    update((d) => ({
+                      ...d,
+                      dayLogs: {
+                        ...d.dayLogs,
+                        [date]: {
+                          ...d.dayLogs[date],
+                          panic: (d.dayLogs[date]?.panic ?? []).filter((x) => x.id !== p.id),
+                        },
+                      },
+                    }))
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+
+      {log?.tetany?.length ? (
+        <Card title="Tetany episode" icon="⚡">
+          <ul className="space-y-2 text-sm">
+            {log.tetany.map((t) => (
+              <li key={t.id} className="flex items-start gap-2">
+                <button onClick={() => onEdit?.("tetany", t)} className="flex-1 text-left">
+                  <p>
+                    {t.time} · {t.types.join(", ") || "Tetany"} · {t.intensity}/5 ·{" "}
+                    {t.minutes == null ? "ongoing" : `${t.minutes}min`}
+                    {t.triggers.length ? ` — ${t.triggers.join(", ")}` : ""}
+                  </p>
+                  {t.location?.length ? (
+                    <p className="text-xs text-muted-foreground">Location: {t.location.join(", ")}</p>
+                  ) : null}
+                  {t.helped?.length ? (
+                    <p className="text-xs text-muted-foreground">Helped: {t.helped.join(", ")}</p>
+                  ) : null}
+                  {t.rescueMed ? (
+                    <p className="text-xs text-muted-foreground">
+                      <Ico e="💊" size={13} /> Rescue: {t.rescueMed}
+                    </p>
+                  ) : null}
+                  {t.note && <p className="mt-1 text-sm whitespace-pre-line">"{t.note}"</p>}
+                  <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
+                </button>
+                <DeleteBtn
+                  onClick={() =>
+                    update((d) => ({
+                      ...d,
+                      dayLogs: {
+                        ...d.dayLogs,
+                        [date]: {
+                          ...d.dayLogs[date],
+                          tetany: (d.dayLogs[date]?.tetany ?? []).filter((x) => x.id !== t.id),
+                        },
+                      },
+                    }))
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+
+      {!cycleTrackingHidden &&
+        !!(
+          log?.period ||
+          log?.periodInfo?.level ||
+          log?.periodInfo?.discharge ||
+          log?.periodInfo?.dischargeNote ||
+          log?.periodInfo?.cramps != null ||
+          log?.periodInfo?.note
+        ) && (
+          <Card title="Blueberry" icon="🫐">
+            <button onClick={() => onEdit?.("period", undefined)} className="w-full text-left">
+              {(log?.periodInfo?.level || log?.period) && (
+                <p className="text-sm">Flow: {flowLabel(log?.periodInfo?.level ?? log?.period)}</p>
+              )}
+              {log?.periodInfo?.cramps != null && (
+                <p className="text-xs" style={{ color: painColor(log.periodInfo.cramps) }}>
+                  Cramp pain:{" "}
+                  <span className="font-semibold">
+                    {Number.isInteger(log.periodInfo.cramps) ? log.periodInfo.cramps : log.periodInfo.cramps.toFixed(1)}
+                    /10
+                  </span>{" "}
+                  — {PAIN_DESCRIPTIONS[Math.round(log.periodInfo.cramps)]}
+                </p>
+              )}
+              {log?.periodInfo?.discharge && (
+                <p className="text-xs text-muted-foreground">
+                  Discharge: {log.periodInfo.discharge}
+                  {log.periodInfo.dischargeNote ? ` — ${log.periodInfo.dischargeNote}` : ""}
+                </p>
+              )}
+              {log?.periodInfo?.note && <p className="mt-1 text-sm whitespace-pre-line">"{log.periodInfo.note}"</p>}
+              <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
+            </button>
+          </Card>
+        )}
+
+      {log?.sex?.length ? (
+        <Card title="ŠukŠuk!" icon="❤️">
+          <ul className="space-y-1 text-sm">
+            {log.sex.map((s: SexEntry) => (
+              <li key={s.id} className="flex items-start gap-2">
+                <button onClick={() => onEdit?.("sex", s)} className="flex-1 text-left">
+                  {s.time} · {String(s.kind).replace(/_/g, " ")}
+                  {asArr(s.feelingAfter).length ? (
+                    <>
+                      {" "}
+                      · <IcoText text={asArr(s.feelingAfter).join(", ")} size={13} />
+                    </>
+                  ) : (
+                    ""
+                  )}
+                  {s.painful && s.painful !== "no" ? ` · painful ${s.painful}` : ""}
+                  {s.note ? ` — ${s.note}` : ""}
+                </button>
+                <DeleteBtn
+                  onClick={() =>
+                    update((d) => ({
+                      ...d,
+                      dayLogs: {
+                        ...d.dayLogs,
+                        [date]: { ...d.dayLogs[date], sex: (d.dayLogs[date]?.sex ?? []).filter((x) => x.id !== s.id) },
+                      },
+                    }))
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+
+      {log?.heat?.length ? (
+        <Card title="Heat / Cold / TENS" icon="♨️">
+          <ul className="space-y-1 text-sm">
+            {log.heat.map((h) => (
+              <li key={h.id} className="flex items-start gap-2">
+                <button onClick={() => onEdit?.("heat", h)} className="flex-1 text-left">
+                  <Ico e={h.kind === "heat" ? "♨️" : h.kind === "cold" ? "🧊" : "⭐"} size={14} /> {h.start} ·{" "}
+                  {h.ongoing ? "ongoing" : `${h.minutes ?? 0} min`}
+                  {h.note ? ` — ${h.note}` : ""}
+                </button>
+                <DeleteBtn
+                  onClick={() =>
+                    update((d) => ({
+                      ...d,
+                      dayLogs: {
+                        ...d.dayLogs,
+                        [date]: {
+                          ...d.dayLogs[date],
+                          heat: (d.dayLogs[date]?.heat ?? []).filter((x) => x.id !== h.id),
+                        },
+                      },
+                    }))
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+
+      {log?.food?.length ? (
+        <Card title="Food" icon="🍽️">
+          <ul className="space-y-1 text-sm">
+            {log.food.map((f) => (
+              <li key={f.id} className="flex items-start gap-2">
+                <button onClick={() => onEdit?.("food", f)} className="flex-1 text-left">
+                  <div>
+                    {f.time} · <IcoText text={f.what || (f.histamineFlare ? "(histamine flare)" : "—")} size={14} />
+                    {f.highHistamine ? " · high histamine" : ""}
+                    {f.hydrationMl != null ? ` · ${f.hydrationMl}ml` : ""}
+                    {f.caffeineMg != null ? ` · ${f.caffeineMg}mg` : ""}
+                    {f.alcoholDrinks != null ? ` · ${f.alcoholDrinks}` : ""}
+                  </div>
+                  {f.feelings.length ? (
+                    <div className="text-xs text-muted-foreground">
+                      Feel: <IcoText text={f.feelings.join(", ")} size={13} />
+                    </div>
+                  ) : null}
+                  {f.symptomsAfter?.length ? (
+                    <div className="text-xs text-muted-foreground">
+                      After: <IcoText text={f.symptomsAfter.join(", ")} size={13} />
+                    </div>
+                  ) : null}
+                  {f.histamineFlare ? (
+                    <div className="text-xs text-destructive">
+                      <Ico e="🔥" size={13} /> Histamine flare
+                      {f.histamineSymptoms?.length ? `: ${f.histamineSymptoms.join(", ")}` : ""}
+                    </div>
+                  ) : null}
+                  {f.after ? <div className="mt-1 text-sm whitespace-pre-line">"{f.after}"</div> : null}
+                </button>
+                <DeleteBtn
+                  onClick={() =>
+                    update((d) => ({
+                      ...d,
+                      dayLogs: {
+                        ...d.dayLogs,
+                        [date]: {
+                          ...d.dayLogs[date],
+                          food: (d.dayLogs[date]?.food ?? []).filter((x) => x.id !== f.id),
+                        },
+                      },
+                    }))
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+
+      {log?.bowel?.length ? (
+        <Card title="Bowel" icon="💩">
+          <ul className="space-y-1 text-sm">
+            {log.bowel.map((b: BowelEntry) => {
+              const bristol = b.bristol >= 0 ? BRISTOL.find((x) => x.n === b.bristol) : null;
+              const label = bristol
+                ? `Type ${bristol.n} — ${bristol.sub}`
+                : b.bristol === 0
+                  ? "Type 0 — Mystery"
+                  : "No bowel movement";
+              return (
+                <li key={b.id} className="flex items-start gap-2">
+                  <button onClick={() => onEdit?.("bowel", b)} className="flex-1 text-left">
+                    {b.time} · <IcoText text={label} size={14} />
+                    {b.feelings?.length ? (
+                      <>
+                        {" "}
+                        · <IcoText text={b.feelings.join(", ")} size={13} />
+                      </>
+                    ) : (
+                      ""
+                    )}
+                    {b.symptoms?.length ? (
+                      <>
+                        {" "}
+                        · <IcoText text={b.symptoms.join(", ")} size={13} />
+                      </>
+                    ) : (
+                      ""
+                    )}
+                    {b.note ? ` — ${b.note}` : ""}
+                  </button>
+                  <DeleteBtn
+                    onClick={() =>
+                      update((d) => ({
+                        ...d,
+                        dayLogs: {
+                          ...d.dayLogs,
+                          [date]: {
+                            ...d.dayLogs[date],
+                            bowel: (d.dayLogs[date]?.bowel ?? []).filter((x) => x.id !== b.id),
+                          },
+                        },
+                      }))
+                    }
+                  />
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+      ) : null}
+
+      {log?.workout?.length ? (
+        <Card title="Workout" icon="👟">
+          <ul className="space-y-1 text-sm">
+            {log.workout.map((w) => (
+              <li key={w.id} className="flex items-start gap-2">
+                <button onClick={() => onEdit?.("workout", w)} className="flex-1 text-left">
+                  <span className="font-medium">
+                    {w.time} · <IcoText text={w.kind} size={14} /> · {w.minutes} min
+                  </span>
+                  {(w.distanceKm != null || w.elevationM != null || w.rpe != null || w.magnesiumBefore) && (
+                    <span className="block text-xs text-muted-foreground">
+                      {[
+                        w.distanceKm != null ? `${w.distanceKm} km` : null,
+                        w.elevationM != null ? `↑ ${w.elevationM} m` : null,
+                        w.rpe != null ? `RPE ${w.rpe}/10` : null,
+                        w.magnesiumBefore ? "Mg before" : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </span>
+                  )}
+                  {w.exercises?.length ? (
+                    <span className="block text-xs text-muted-foreground">
+                      {w.exercises
+                        .map(
+                          (ex) =>
+                            `${ex.name || "Exercise"}${ex.sets ? ` ${ex.sets}×${ex.reps ?? "?"}` : ""}${ex.weightKg ? ` @ ${ex.weightKg} kg` : ""}`,
+                        )
+                        .join(" · ")}
+                    </span>
+                  ) : null}
+                  {w.weightKg != null && (
+                    <span className="block text-xs text-muted-foreground">Weight after: {w.weightKg} kg</span>
+                  )}
+                  {w.triggeredSymptom && (
+                    <span className="block text-xs text-muted-foreground">
+                      <Ico e="⚠️" size={13} /> Triggered: {w.triggeredSymptom.label ?? w.triggeredSymptom.type}
+                    </span>
+                  )}
+                  {asArr(w.feeling).length ? (
+                    <span className="block text-xs text-muted-foreground">
+                      <IcoText text={asArr(w.feeling).join(", ")} size={13} />
+                    </span>
+                  ) : null}
+                  {w.note ? (
+                    <span className="block whitespace-pre-line text-xs text-muted-foreground">{w.note}</span>
+                  ) : null}
+                </button>
+                <DeleteBtn
+                  onClick={() =>
+                    update((d) => ({
+                      ...d,
+                      dayLogs: {
+                        ...d.dayLogs,
+                        [date]: {
+                          ...d.dayLogs[date],
+                          workout: (d.dayLogs[date]?.workout ?? []).filter((x) => x.id !== w.id),
+                        },
+                      },
+                    }))
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+
+      {(log?.temperature != null || log?.weight != null || log?.sleepHours != null || log?.sleepQuality) && (
+        <Card title="Temp / Sleep / Weight" icon="🌡️">
+          <button onClick={() => onEdit?.("temp", undefined)} className="w-full text-left">
+            {log?.temperature != null && <p className="text-sm">Temperature: {log.temperature}°C</p>}
+            {log?.weight != null && <p className="text-sm">Weight: {log.weight} kg</p>}
+            {log?.sleepHours != null && (
+              <p className="text-sm">
+                Sleep: {log.sleepHours} h <IcoText text={asArr(log.sleepQuality).join(", ")} size={14} />
+              </p>
+            )}
+            {asArr(log?.sleepQuality).length > 0 && log?.sleepHours == null && (
+              <p className="text-sm">
+                Sleep quality: <IcoText text={asArr(log.sleepQuality).join(", ")} size={14} />
+              </p>
+            )}
+            <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
+          </button>
+        </Card>
+      )}
+
+      {tasks.length > 0 && (
+        <Card title="Tasks" icon="✅">
+          <ul className="space-y-1 text-sm">
+            {tasks.map((t) => (
+              <li key={t.id} className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={t.done}
+                  onChange={() =>
+                    update((d) => ({ ...d, tasks: d.tasks.map((x) => (x.id === t.id ? { ...x, done: !x.done } : x)) }))
+                  }
+                />
+                <button
+                  onClick={() => onEdit?.("task", t)}
+                  className={`flex-1 text-left ${t.done ? "line-through text-muted-foreground" : ""}`}
+                >
+                  {t.title}
+                  {t.time ? ` · ${t.time}${t.timeEnd ? `–${t.timeEnd}` : ""}` : ""}
+                  {t.note ? ` — ${t.note}` : ""}
+                </button>
+                <DeleteBtn onClick={() => update((d) => ({ ...d, tasks: d.tasks.filter((x) => x.id !== t.id) }))} />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
+      {events.length > 0 && (
+        <Card title="Events" icon="📅">
+          <ul className="space-y-1 text-sm">
+            {events.map((e) => (
+              <li key={e.id} className="flex items-start gap-2">
+                <span className="mt-1 h-2 w-2 rounded-full" style={{ background: e.color ?? "var(--primary)" }} />
+                <button onClick={() => onEdit?.("event", e)} className="flex-1 text-left">
+                  {e.title}
+                  {e.time ? ` · ${e.time}${e.timeEnd ? `–${e.timeEnd}` : ""}` : ""}
+                  {e.startDate !== e.endDate ? ` (${e.startDate}→${e.endDate})` : ""}
+                  {e.note ? ` — ${e.note}` : ""}
+                </button>
+                <DeleteBtn onClick={() => update((d) => ({ ...d, events: d.events.filter((x) => x.id !== e.id) }))} />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
+      {notes.length > 0 && (
+        <Card title="Notes" icon="📝">
+          <ul className="space-y-1 text-sm">
+            {notes.map((n, i) => (
+              <li key={i} className="flex items-start gap-2">
+                <span className="flex-1">
+                  {n.time ? `${n.time} · ` : ""}
+                  {n.text}
+                </span>
+                <button
+                  onClick={() =>
+                    update((d) => {
+                      const list = (d.dayNotes[date] ?? []) as (string | { text: string; time?: string })[];
+                      const next = list.filter((_, j) => j !== i);
+                      return { ...d, dayNotes: { ...d.dayNotes, [date]: next as { text: string; time?: string }[] } };
+                    })
+                  }
+                  className="text-muted-foreground hover:text-destructive"
+                  aria-label="Delete"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+function DeleteBtn({ onClick }: { onClick: () => void }) {
+  return (
+    <button onClick={onClick} className="text-muted-foreground hover:text-destructive" aria-label="Delete">
+      <Trash2 className="h-3.5 w-3.5" />
+    </button>
+  );
+}
+
+function Card({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-3xl bg-surface p-4 ring-1 ring-border">
+      <div className="mb-2 flex items-center gap-2">
+        <Ico e={icon} size={22} />
+        <h3 className="font-serif text-lg font-semibold">{title}</h3>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+const stripEmoji = (value: string) =>
+  value.replace(/^[\p{Extended_Pictographic}\u200d\ufe0f\p{Emoji_Modifier}]+\s*/u, "").trim();
+
+function ShareDayButton({ date, view }: { date: string; view: BixboData }) {
+  const flowLabel = (level?: string | null): string => {
+    switch (level) {
+      case "spotting":
+        return "Spotting";
+      case "light":
+        return "Light";
+      case "medium":
+        return "Medium";
+      case "heavy":
+        return "Heavy";
+      case "very-heavy":
+        return "Very heavy";
+      default:
+        return "";
+    }
+  };
+
+  const share = async () => {
+    const log = view.dayLogs[date] ?? {};
+    const dateLabel = fromKey(date).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+    const lines: string[] = [`BIXBO — ${dateLabel}`, ""];
+
+    if (log.pain?.length) {
+      const avg = log.pain.reduce((s, p) => s + p.score, 0) / log.pain.length;
+      lines.push(`Pain — avg ${avg.toFixed(1)}/10 · ${log.pain.length} entr${log.pain.length === 1 ? "y" : "ies"}`);
+      for (const p of log.pain) {
+        const bits = [`${p.time}`, `${p.score}/10 (${PAIN_DESCRIPTIONS[Math.round(p.score)]})`];
+        if (p.parts.length) bits.push(p.parts.join(", "));
+        if (p.quality.length) bits.push(`[${p.quality.join(", ")}]`);
+        lines.push(`  • ${bits.join(" · ")}`);
+        if (p.note) lines.push(`    "${p.note}"`);
+      }
+      lines.push("");
+    }
+    if (log.panic?.length) {
+      lines.push(`Panic episode — ${log.panic.length}`);
+      for (const p of log.panic)
+        lines.push(
+          `  • ${p.time} · ${p.intensity}/10 · ${p.minutes == null ? "ongoing" : `${p.minutes}min`}${p.trigger ? ` — ${p.trigger}` : ""}`,
+        );
+      lines.push("");
+    }
+    if (log.tetany?.length) {
+      lines.push(`Tetany episode — ${log.tetany.length}`);
+      for (const t of log.tetany)
+        lines.push(
+          `  • ${t.time} · ${t.types.join(", ")} · ${t.intensity}/5 · ${t.minutes == null ? "ongoing" : `${t.minutes}min`}`,
+        );
+      lines.push("");
+    }
+    if (log.periodInfo?.level || log.period) lines.push(`Period: ${flowLabel(log.periodInfo?.level ?? log.period!)}`);
+    if (log.sleepHours != null)
+      lines.push(`Sleep: ${log.sleepHours}h ${asArr(log.sleepQuality).map(stripEmoji).join(", ")}`);
+    if (log.temperature != null) lines.push(`Temperature: ${log.temperature}°C`);
+    if (log.weight != null) lines.push(`Weight: ${log.weight}kg`);
+    if (log.food?.length) lines.push(`Food: ${log.food.length} entries`);
+    if (log.workout?.length)
+      lines.push(`Workout: ${log.workout.map((w) => `${stripEmoji(w.kind)} ${w.minutes}min`).join(", ")}`);
+
+    lines.push("", "— sent from BIXBO");
+    const text = lines.join("\n");
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: `How I feel · ${dateLabel}`, text });
+        return;
+      } catch {}
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      alert("Copied to clipboard");
+    } catch {
+      alert(text);
+    }
+  };
+  return (
+    <Button size="sm" variant="outline" className="rounded-full" onClick={share}>
+      <Share2 className="h-3.5 w-3.5" /> Share day
+    </Button>
+  );
+}
