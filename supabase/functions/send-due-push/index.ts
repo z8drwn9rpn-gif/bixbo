@@ -364,7 +364,8 @@ Deno.serve(async (req) => {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
 
-  const expectedSecret = (Deno.env.get("CRON_SECRET") ?? "").trim();
+  // PUSH_CRON_SECRET is the value pg_cron sends; CRON_SECRET stays as a fallback.
+  const expectedSecret = (Deno.env.get("PUSH_CRON_SECRET") ?? Deno.env.get("CRON_SECRET") ?? "").trim();
   const providedSecret = (req.headers.get("x-cron-secret") ?? "").trim();
   if (!expectedSecret || !timingSafeEqual(expectedSecret, providedSecret)) {
     return json({ ok: false, error: "Forbidden." }, 403);
