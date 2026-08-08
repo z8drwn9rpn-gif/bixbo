@@ -244,13 +244,13 @@ const PHASE_COLORS = [
   },
   {
     label: "During",
-    solid: CHART_COLORS.period,
-    soft: CHART_TINTS.period,
+    solid: "#ef4770",
+    soft: "rgba(239, 71, 112, 0.10)",
   },
   {
     label: "After",
-    solid: CHART_COLORS.workout,
-    soft: CHART_TINTS.workout,
+    solid: "#6f9d16",
+    soft: "rgba(111, 157, 22, 0.10)",
   },
 ] as const;
 
@@ -712,14 +712,20 @@ function AnalysisRangeSelector({
         </div>
       </div>
 
-      <div className="mx-auto mt-3 grid w-full max-w-[340px] grid-cols-3 gap-0.5 rounded-xl bg-surface p-0.5 ring-1 ring-border/55">
+      <div
+        className="mx-auto mt-3 grid w-full max-w-[340px] grid-cols-3 gap-0.5 rounded-xl bg-primary/20 p-0.5 ring-1 ring-primary/15 lg:max-w-sm"
+        role="tablist"
+        aria-label="Patterns analysis period"
+      >
         {options.map((option) => (
           <button
             key={String(option.value)}
             type="button"
             onClick={() => onChange(option.value)}
+            role="tab"
+            aria-selected={value === option.value}
             aria-pressed={value === option.value}
-            className={`min-w-0 rounded-[10px] px-2 py-1.5 text-[11px] font-semibold transition-all duration-200 ${
+            className={`min-w-0 rounded-[10px] px-2 py-1.5 text-[11px] font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
               value === option.value
                 ? "bg-primary text-primary-foreground shadow-md"
                 : "text-foreground/80 hover:bg-surface/45 hover:text-foreground"
