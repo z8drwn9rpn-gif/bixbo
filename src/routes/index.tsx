@@ -41,6 +41,7 @@ import {
   isCycleTrackingHidden,
   isPregnancyActive,
   isPostpartumActive,
+  isIntercourseKind,
   type BixboData,
   type BowelEntry,
   type SexEntry,
@@ -1057,6 +1058,7 @@ function HomePage() {
         onEdit={openEdit}
       />
 
+
       {vitalTrendOpen && (
         <VitalTrendPopup
           metric={vitalTrendOpen}
@@ -1656,7 +1658,7 @@ function BirthControlCalendar({
 
   return (
     <section
-      className="flex h-full min-h-0 flex-col rounded-[2rem] p-3 shadow-sm ring-1"
+      className="flex h-full min-h-0 flex-col overflow-y-auto overscroll-contain rounded-[2rem] p-3 shadow-sm ring-1"
       style={{
         backgroundColor: HAK_CARD_BG,
         boxShadow: "inset 0 0 0 1px rgba(83, 102, 0, 0.22)",
@@ -2029,6 +2031,9 @@ function BirthControlCalendar({
         </div>
       </div>
 
+      {/* ŠukŠuk Insights summary — added inside the HAK calendar only. */}
+      <SukSukPeriodChart data={data} anchorKey={todayKey()} />
+
       {/* Compact dose editor — only circular HAK wheel pills open this popup. */}
       {sel && selectedDay != null && typeof document !== "undefined"
         ? createPortal(
@@ -2199,6 +2204,122 @@ function MedsProgress({ data }: { data: BixboData }) {
 }
 
 /* ------------------- Day preview ------------------- */
+
+type SukSukRange = {
+  label: "Week" | "Month" | "Year";
+  start: Date;
+  end: Date;
+  count: number;
+};
+
+function startOfSelectedWeek(date: Date): Date {
+  const start = new Date(date);
+  start.setHours(0, 0, 0, 0);
+  const mondayOffset = (start.getDay() + 6) % 7;
+  start.setDate(start.getDate() - mondayOffset);
+  return start;
+}
+
+function countIntercourseBetween(data: BixboData, start: Date, end: Date): number {
+  return daysBetweenInclusive(start, end).reduce(
+    (total, key) =>
+      total +
+      (data.dayLogs[key]?.sex?.filter((entry) => isIntercourseKind(entry.kind)).length ?? 0),
+    0,
+  );
+}
+
+function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: string }) {
+  const ranges = useMemo<SukSukRange[]>(() => {
+    const anchor = fromKey(anchorKey);
+    anchor.setHours(0, 0, 0, 0);
+
+    const weekStart = startOfSelectedWeek(anchor);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+
+    const monthStart = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+    const monthEnd = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0);
+
+    const yearStart = new Date(anchor.getFullYear(), 0, 1);
+    const yearEnd = new Date(anchor.getFullYear(), 11, 31);
+
+    return [
+      {
+        label: "Week",
+        start: weekStart,
+        end: weekEnd,
+        count: countIntercourseBetween(data, weekStart, weekEnd),
+      },
+      {
+        label: "Month",
+        start: monthStart,
+        end: monthEnd,
+        count: countIntercourseBetween(data, monthStart, monthEnd),
+      },
+      {
+        label: "Year",
+        start: yearStart,
+        end: yearEnd,
+        count: countIntercourseBetween(data, yearStart, yearEnd),
+      },
+    ];
+  }, [anchorKey, data]);
+
+  const maxCount = Math.max(1, ...ranges.map((range) => range.count));
+  const anchor = fromKey(anchorKey);
+  const anchorLabel = anchor.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+
+  return (
+    <section className="mt-4 rounded-3xl bg-tint p-4 ring-1 ring-border">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-surface">
+            <Ico e="❤️" size={22} />
+          </span>
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold text-foreground">ŠukŠuk!</h2>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">
+              Week · Month · Year together
+            </p>
+          </div>
+        </div>
+        <span className="shrink-0 text-[10px] font-medium text-muted-foreground">{anchorLabel}</span>
+      </div>
+
+      <div className="mt-4 grid grid-cols-3 items-end gap-3">
+        {ranges.map((range) => {
+          const heightPct = range.count > 0 ? Math.max(12, (range.count / maxCount) * 100) : 0;
+
+          return (
+            <div key={range.label} className="flex min-w-0 flex-col items-center">
+              <span className="mb-1 text-sm font-bold tabular-nums text-foreground">{range.count}</span>
+              <div className="flex h-24 w-full max-w-[58px] items-end overflow-hidden rounded-2xl bg-surface ring-1 ring-border/40">
+                <div
+                  className="w-full rounded-2xl transition-[height] duration-300"
+                  style={{
+                    height: `${heightPct}%`,
+                    backgroundColor: "#ef4770",
+                  }}
+                  aria-hidden="true"
+                />
+              </div>
+              <span className="mt-2 text-[10px] font-semibold text-foreground">{range.label}</span>
+              <span className="mt-0.5 text-[9px] text-muted-foreground">
+                {range.count === 1 ? "1 entry" : `${range.count} entries`}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 function DayPreview({
   date,
   data,
