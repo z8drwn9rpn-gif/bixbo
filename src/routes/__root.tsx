@@ -18,6 +18,12 @@ import { NotificationPrompt } from "../components/NotificationPrompt";
 import { Toaster } from "../components/ui/sonner";
 
 function NotFoundComponent() {
+  const router = useRouter();
+
+  useEffect(() => {
+    void router.navigate({ to: "/", replace: true });
+  }, [router]);
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
