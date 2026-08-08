@@ -412,21 +412,42 @@ function dedupArray<T>(arr: T[] | undefined): T[] {
   return out;
 }
 
-function mergeCustom(local: CustomLists | undefined, remote: CustomLists | undefined): CustomLists {
+/** Union of both sides' custom-option tombstones. */
+function mergeDeletedCustom(
+  local: BixboData["deletedCustom"],
+  remote: BixboData["deletedCustom"],
+): Partial<Record<keyof CustomLists, string[]>> {
+  const out: Partial<Record<keyof CustomLists, string[]>> = {};
+  const keys = new Set([...Object.keys(local ?? {}), ...Object.keys(remote ?? {})]) as Set<keyof CustomLists>;
+  for (const k of keys) {
+    const values = Array.from(new Set([...safeStrings(local?.[k]), ...safeStrings(remote?.[k])]));
+    if (values.length) out[k] = values;
+  }
+  return out;
+}
+
+function mergeCustom(
+  local: CustomLists | undefined,
+  remote: CustomLists | undefined,
+  deleted: Partial<Record<keyof CustomLists, string[]>>,
+): CustomLists {
   const merged = { ...(remote ?? {}), ...(local ?? {}) } as CustomLists;
   const keys = new Set([...Object.keys(local ?? {}), ...Object.keys(remote ?? {})]) as Set<keyof CustomLists>;
   for (const k of keys) {
     const lv = local?.[k];
     const rv = remote?.[k];
     if (Array.isArray(lv) || Array.isArray(rv)) {
-      (merged as unknown as Record<string, unknown>)[k as string] = dedupArray([
-        ...(rv ?? []),
-        ...(lv ?? []),
-      ] as unknown[]);
+      const tombstones = new Set(deleted[k] ?? []);
+      const union = dedupArray([...(rv ?? []), ...(lv ?? [])] as unknown[]) as unknown[];
+      // Never resurrect an option the user deleted on any device.
+      (merged as unknown as Record<string, unknown>)[k as string] = union.filter(
+        (v) => !(typeof v === "string" && tombstones.has(v)),
+      );
     }
   }
   return merged;
 }
+
 
 export function mergeBixbo(local: BixboData, remote: BixboData | null | undefined): BixboData {
   if (!remote) return local;
