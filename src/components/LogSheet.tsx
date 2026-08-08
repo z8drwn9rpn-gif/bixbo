@@ -271,7 +271,7 @@ export function LogSheet({
           <div className="flex h-full min-h-0 flex-col">
             <SheetHeader
               className={`shrink-0 flex-row items-center justify-between gap-0 border-b border-border px-5 py-0 ${
-                active === "pain" ? "h-14" : "h-11"
+                active === "pain" ? "h-14" : "h-12"
               }`}
             >
               <button onClick={back} className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -285,7 +285,7 @@ export function LogSheet({
             <div
               key={`${active}-${openToken}-${(edit as { id?: string } | undefined)?.id ?? initialPain?.id ?? "new"}`}
               className={`min-h-0 flex-1 overflow-y-auto ${
-                active === "pain" ? "pt-[60px]" : "mt-[28px] px-5 pb-4"
+                active === "pain" ? "pt-[60px]" : "px-5 pb-4"
               }`}
             >
               {active === "postpartum" && (
@@ -424,14 +424,11 @@ function Chip({
 }
 function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave: () => void; disabled?: boolean }) {
   return (
-    <SheetFooter
-      className="fixed inset-x-0 z-30 h-[28px] flex-row items-center justify-between gap-2 border-b border-border/50 bg-background px-5 py-0"
-      style={{ top: "44px" }}
-    >
+    <SheetFooter className="sticky top-0 z-30 -mx-5 flex-row items-center justify-between gap-2 border-b border-border/50 bg-background px-5 py-1.5">
       <button
         type="button"
         onClick={onCancel}
-        className="flex min-w-[48px] items-center gap-1 text-[11px] font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="flex min-w-[58px] items-center gap-1 text-xs font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <span aria-hidden="true" className="text-sm leading-none">←</span>
         <span>Back</span>
@@ -443,7 +440,7 @@ function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave:
         type="button"
         onClick={onSave}
         disabled={disabled}
-        className="inline-flex h-7 min-w-[60px] items-center justify-center gap-1 rounded-full bg-primary px-2.5 text-[11px] font-semibold text-primary-foreground shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        className="inline-flex h-8 min-w-[68px] items-center justify-center gap-1 rounded-full bg-primary px-3 text-xs font-semibold text-primary-foreground shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
         <span>Save</span>
         <span aria-hidden="true" className="text-sm leading-none">✓</span>
@@ -1873,6 +1870,7 @@ function PanicForm({
   };
   return (
     <div className="space-y-3">
+      <SaveBar onCancel={onDone} onSave={save} />
       <Field label="Time">
         <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="w-full" />
       </Field>
@@ -1992,7 +1990,6 @@ function PanicForm({
       <Field label="Note (optional)">
         <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
-      <SaveBar onCancel={onDone} onSave={save} />
     </div>
   );
 }
@@ -2052,6 +2049,7 @@ function TetanyForm({
 
   return (
     <div className="space-y-3">
+      <SaveBar onCancel={onDone} onSave={save} />
       <Field label="Time">
         <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
       </Field>
@@ -2155,7 +2153,6 @@ function TetanyForm({
       <Field label="Note (optional)">
         <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
-      <SaveBar onCancel={onDone} onSave={save} />
     </div>
   );
 }
@@ -2203,6 +2200,7 @@ function PeriodForm({
   ];
   return (
     <div className="space-y-3">
+      <SaveBar onCancel={onDone} onSave={save} />
       <Field label="Flow">
         <div className="mt-2 grid grid-cols-5 gap-1.5">
           {LEVELS.map((L) => (
@@ -2354,7 +2352,6 @@ function PeriodForm({
           Delete Blueberry entry
         </button>
       )}
-      <SaveBar onCancel={onDone} onSave={save} />
     </div>
   );
 }
@@ -2404,6 +2401,7 @@ function SexForm({
   };
   return (
     <div className="space-y-3">
+      <SaveBar onCancel={onDone} onSave={save} />
       <Field label="Time">
         <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
       </Field>
@@ -2471,7 +2469,6 @@ function SexForm({
       <Field label="Note (optional)">
         <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
-      <SaveBar onCancel={onDone} onSave={save} />
     </div>
   );
 }
@@ -2555,6 +2552,7 @@ function ThermoForm({
   };
   return (
     <div className="space-y-3">
+      <SaveBar onCancel={onDone} onSave={save} />
       <Field label="Type">
         <div className="mt-2 flex gap-2">
           <Chip active={kind === "heat"} onClick={() => setKind("heat")}>
@@ -2575,7 +2573,6 @@ function ThermoForm({
       <Field label="Note (optional)">
         <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
-      <SaveBar onCancel={onDone} onSave={save} />
     </div>
   );
 }
@@ -2653,6 +2650,7 @@ function FoodForm({
   };
   return (
     <div className="space-y-3">
+      <SaveBar onCancel={onDone} onSave={save} />
       <Field label="Time">
         <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
       </Field>
@@ -2851,7 +2849,6 @@ function FoodForm({
       <Field label="Additional note (optional)">
         <Textarea rows={2} value={after} onChange={(e) => setAfter(e.target.value)} />
       </Field>
-      <SaveBar onCancel={onDone} onSave={save} />
     </div>
   );
 }
@@ -2954,6 +2951,7 @@ function BowelForm({
   };
   return (
     <div className="space-y-3">
+      <SaveBar onCancel={onDone} onSave={save} />
       <Field label="Time">
         <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
       </Field>
@@ -3054,7 +3052,6 @@ function BowelForm({
       <Field label="Note (optional)">
         <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
-      <SaveBar onCancel={onDone} onSave={save} />
     </div>
   );
 }
@@ -3218,6 +3215,7 @@ function TempForm({
 
   return (
     <div className="space-y-5">
+      <SaveBar onCancel={onDone} onSave={save} />
       <Field label="New temperature measurement">
         <div className="grid grid-cols-[1fr_120px] gap-2">
           <Input
@@ -3345,8 +3343,6 @@ function TempForm({
           ))}
         </div>
       </Field>
-
-      <SaveBar onCancel={onDone} onSave={save} />
     </div>
   );
 }
@@ -3596,6 +3592,7 @@ function WorkoutForm({
   };
   return (
     <div className="space-y-3">
+      <SaveBar onCancel={onDone} onSave={save} />
       <Field label="Type">
         <CustomChipList
           base={WORKOUT_KINDS_DEFAULT}
@@ -3775,7 +3772,6 @@ function WorkoutForm({
       <Field label="Note (optional)">
         <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
-      <SaveBar onCancel={onDone} onSave={save} />
     </div>
   );
 }
@@ -3817,6 +3813,7 @@ function EventForm({
   };
   return (
     <div className="space-y-3">
+      <SaveBar onCancel={onDone} onSave={save} disabled={!title.trim()} />
       <Field label="Title">
         <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Doctor visit" />
       </Field>
@@ -3851,7 +3848,6 @@ function EventForm({
       <Field label="Note (optional)">
         <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
-      <SaveBar onCancel={onDone} onSave={save} disabled={!title.trim()} />
     </div>
   );
 }
@@ -3892,6 +3888,7 @@ function TaskForm({
   };
   return (
     <div className="space-y-3">
+      <SaveBar onCancel={onDone} onSave={save} disabled={!title.trim()} />
       <Field label="Task">
         <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="What to do…" />
       </Field>
@@ -3914,7 +3911,6 @@ function TaskForm({
       <Field label="Note (optional)">
         <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
-      <SaveBar onCancel={onDone} onSave={save} disabled={!title.trim()} />
     </div>
   );
 }
@@ -3935,11 +3931,11 @@ function NoteForm({ date, update, onDone }: { date: string; update: UpdateFn; on
   };
   return (
     <div className="space-y-3">
+      <SaveBar onCancel={onDone} onSave={save} disabled={!t.trim()} />
       <Field label="Time (optional)">
         <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
       </Field>
       <Textarea rows={6} value={t} onChange={(e) => setT(e.target.value)} placeholder="Anything about today…" />
-      <SaveBar onCancel={onDone} onSave={save} disabled={!t.trim()} />
     </div>
   );
 }
@@ -3984,6 +3980,7 @@ function PostpartumSymptomsForm({
 
   return (
     <div className="space-y-5">
+      <SaveBar onCancel={onDone} onSave={save} />
       <div className="flex items-start gap-3 rounded-3xl bg-tint p-4 ring-1 ring-border/50">
         <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-surface ring-1 ring-border/50">
           <Ico e="🤱" size={30} />
@@ -4035,8 +4032,6 @@ function PostpartumSymptomsForm({
           Clear postpartum symptoms
         </button>
       ) : null}
-
-      <SaveBar onCancel={onDone} onSave={save} />
     </div>
   );
 }
