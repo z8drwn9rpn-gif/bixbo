@@ -1,4029 +1,3542 @@
-import { useState, useMemo, useRef, useEffect, type ReactNode } from "react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
-import { Ico, IcoText } from "@/components/icons/BixboIcons";
-import { POSTPARTUM_SYMPTOMS } from "@/lib/health";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Slider } from "@/components/ui/slider";
-import { X, Plus, ChevronLeft, ChevronUp, ChevronDown, GripVertical, Check, Pencil } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { createPortal } from "react-dom";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { ChevronLeft, ChevronRight, Share2, Trash2 } from "lucide-react";
+
 import {
+  ClockIcon,
+  FlameIcon,
+  HeartIcon,
+  Ico,
+  IcoText,
+  NoteIcon,
+  PanicIcon,
+  PillIcon,
+  PoopIcon,
+  StarIcon,
+  ThermometerIcon,
+  WeightIcon,
+} from "@/components/icons/BixboIcons";
+import { AppShell } from "@/components/AppShell";
+import { pregnancyProgress, postpartumProgress } from "@/lib/health";
+import { Button } from "@/components/ui/button";
+import { MonthCalendar, monthLabel } from "@/components/MonthCalendar";
+import { LogSheet } from "@/components/LogSheet";
+import { QuickTags } from "@/components/QuickTags";
+import {
+  useBixbo,
+  EMPTY,
+  addDays,
+  toKey,
+  fromKey,
+  todayKey,
   PAIN_DESCRIPTIONS,
   painColor,
-  BODY_PARTS_DEFAULT,
-  PAIN_QUALITY_DEFAULT,
-  OTHER_SYMPTOMS_DEFAULT,
-  FOOD_FEELINGS_DEFAULT,
-  WORKOUT_KINDS_DEFAULT,
+  avgDayPain,
+  latestDayWeight,
+  averageDayTemperature,
   BRISTOL,
-  DISCHARGE_OPTS,
-  MOODS_DEFAULT,
-  TETANY_TYPES,
-  TETANY_TYPE_DESC,
-  TETANY_LOCATIONS_DEFAULT,
-  TETANY_TRIGGERS,
-  TETANY_HELPED_DEFAULT,
-  HEADACHE_TYPES,
-  HEADACHE_TYPE_DESC,
-  PRESSURE_TYPES,
-  NAUSEA_TYPES,
-  NAUSEA_TYPE_DESC,
-  NAUSEA_SEVERITY_DESC,
-  NAUSEA_TRIGGERS,
-  NAUSEA_SYMPTOMS,
-  NAUSEA_HELPED,
-  PANIC_PHYSICAL,
-  PANIC_COGNITIVE,
-  PANIC_HELPED_DEFAULT,
-  SEX_TYPES_DEFAULT,
-  BODY_BATTERY,
-  SLEEP_QUALITY,
-  SEX_FEELINGS_DEFAULT,
-  EVENT_COLORS,
-  BOWEL_FEELINGS_DEFAULT,
-  BOWEL_SYMPTOMS_DEFAULT,
-  PCOS_SYMPTOMS,
-  HISTAMINE_SYMPTOMS,
-  FOOD_SYMPTOMS_AFTER,
-  todayKey,
-  nowHHMM,
-  updateDayLog,
+  nextPredictedPeriod,
   asArr,
-  workoutHasDistance,
-  workoutIsHike,
-  workoutIsStrength,
-  pregnancyInfo,
   isCycleTrackingHidden,
-  URINARY_DEFAULT,
-  ALLERGENS_DEFAULT,
+  isPregnancyActive,
+  isPostpartumActive,
+  isIntercourseKind,
   type BixboData,
-  type DayLog,
-  type PainEntry,
-  type PeriodLevel,
-  type FoodEntry,
   type BowelEntry,
-  type ThermoSession,
-  type ThermoKind,
   type SexEntry,
-  type SexKind,
-  type ExtraMed,
-  type WorkoutEntry,
-  type WorkoutExercise,
-  type EventEntry,
-  type TaskEntry,
-  type TetanyEpisode,
-  type PanicAttack,
-  type PainfulWhen,
-  type PostpartumDayLog,
 } from "@/lib/storage";
 
-type UpdateFn = (u: (d: BixboData) => BixboData) => void;
-type Category =
-  | "postpartum"
-  | "meds"
-  | "pain"
-  | "panic"
-  | "tetany"
-  | "period"
-  | "sex"
-  | "heat"
-  | "food"
-  | "bowel"
-  | "workout"
-  | "temp"
-  | "task"
-  | "event"
-  | "note";
-
-const CATEGORIES: { id: Category; label: string; emoji: string; hint: string }[] = [
-  { id: "postpartum", label: "Postpartum symptoms", emoji: "🤱", hint: "Recovery symptoms · notes" },
-  { id: "pain", label: "Pain", emoji: "🔥", hint: "0–10, body, quality" },
-  { id: "period", label: "Blueberry", emoji: "🫐", hint: "Flow · discharge · notes" },
-  { id: "heat", label: "Heat / Cold / TENS session", emoji: "♨️", hint: "Heating, ice or TENS session" },
-  { id: "food", label: "Food", emoji: "🍽️", hint: "What & how you feel" },
-  { id: "bowel", label: "Bowel", emoji: "💩", hint: "Bristol type" },
-  { id: "sex", label: "ŠukŠuk!", emoji: "❤️", hint: "All kinds of activity" },
-  { id: "workout", label: "Workout", emoji: "🧘🏼‍♀️", hint: "Type · duration · weight" },
-  { id: "temp", label: "Temp / Sleep / Weight", emoji: "🌡️", hint: "°C · kg · hours" },
-  { id: "meds", label: "Meds", emoji: "💊", hint: "Taken · extra dose" },
-  { id: "event", label: "Event", emoji: "📅", hint: "Multi-day · time · note" },
-  { id: "task", label: "Task", emoji: "✅", hint: "To-do with date & time" },
-  { id: "note", label: "Note", emoji: "📝", hint: "Any thought for today" },
-];
-
-export function LogSheet({
-  open,
-  onOpenChange,
-  date,
-  data,
-  update,
-  initial,
-  initialPain,
-  editEntry,
-}: {
-  open: boolean;
-  onOpenChange: (b: boolean) => void;
-  date: string;
-  data: BixboData;
-  update: UpdateFn;
-  initial?: Category;
-  initialPain?: PainEntry;
-  editEntry?: unknown;
-}) {
-  const [cat, setCat] = useState<Category | null>(initial ?? null);
-  const [openToken, setOpenToken] = useState(0);
-  useEffect(() => {
-    if (open) setOpenToken((t) => t + 1);
-  }, [open]);
-  const [editingOrder, setEditingOrder] = useState(false);
-  const close = () => {
-    setCat(null);
-    setEditingOrder(false);
-    onOpenChange(false);
-  };
-  const back = () => setCat(null);
-  const active = cat ?? initial;
-  const edit = editEntry;
-
-  const cycleTrackingHidden = isCycleTrackingHidden(data);
-  const postpartumActive = Boolean(data.postpartum?.active);
-
-  const orderedCats = useMemo(() => {
-    const saved = data.settings.logOrder ?? [];
-    const source = CATEGORIES.filter((category) => {
-      if (category.id === "period" && cycleTrackingHidden) return false;
-      if (category.id === "postpartum" && !postpartumActive) return false;
-      return true;
-    });
-    const byId = new Map(source.map((c) => [c.id, c]));
-    const seen = new Set<string>();
-    const out: typeof CATEGORIES = [];
-    for (const id of saved) {
-      const c = byId.get(id as Category);
-      if (c && !seen.has(id)) {
-        out.push(c);
-        seen.add(id);
-      }
-    }
-    for (const c of source) if (!seen.has(c.id)) out.push(c);
-    return out;
-  }, [cycleTrackingHidden, data.settings.logOrder, postpartumActive]);
-
-  const moveCat = (idx: number, dir: -1 | 1) => {
-    const j = idx + dir;
-    if (j < 0 || j >= orderedCats.length) return;
-    const next = orderedCats.slice();
-    [next[idx], next[j]] = [next[j], next[idx]];
-    update((d) => ({ ...d, settings: { ...d.settings, logOrder: next.map((c) => c.id) } }));
-  };
-
-  return (
-    <Sheet
-      open={open}
-      onOpenChange={(b) => {
-        if (!b) close();
-      }}
-    >
-      <SheetContent
-        side="bottom"
-        className={
-          (active
-            ? `flex h-[100dvh] max-h-[100dvh] flex-col rounded-t-none bg-background p-0 ${
-                active === "pain" ? "pt-[env(safe-area-inset-top)]" : "pt-0"
-              }`
-            : "flex h-[88vh] max-h-[88vh] flex-col rounded-t-3xl bg-background p-0") + " [&>button.absolute]:hidden"
-        }
-      >
-        {!active ? (
-          <>
-            <SheetHeader className="shrink-0 relative px-5 pt-5 pb-2">
-              <SheetTitle className="text-center font-serif text-2xl">Log</SheetTitle>
-              <button
-                onClick={() => setEditingOrder((v) => !v)}
-                className="absolute left-4 top-4 flex items-center gap-1 rounded-full px-2 py-1 text-xs text-muted-foreground hover:bg-tint"
-              >
-                {editingOrder ? (
-                  <>
-                    <Check className="h-4 w-4" /> Done
-                  </>
-                ) : (
-                  <>
-                    <GripVertical className="h-4 w-4" /> Reorder
-                  </>
-                )}
-              </button>
-              <button
-                onClick={close}
-                aria-label="Close"
-                className="absolute right-4 top-4 rounded-full p-1 hover:bg-tint"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </SheetHeader>
-            <ul className="min-h-0 flex-1 overflow-y-auto divide-y divide-border border-t border-border">
-              {orderedCats.map((c, i) => (
-                <li key={c.id}>
-                  {editingOrder ? (
-                    <div className="flex w-full items-center gap-3 bg-surface px-5 py-3">
-                      <span className="grid h-10 w-10 place-items-center rounded-full bg-tint">
-                        <Ico e={c.emoji} size={26} />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-base font-semibold">{c.label}</p>
-                      </div>
-                      <button
-                        onClick={() => moveCat(i, -1)}
-                        disabled={i === 0}
-                        className="rounded-full p-2 hover:bg-tint disabled:opacity-30"
-                        aria-label="Move up"
-                      >
-                        <ChevronUp className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={() => moveCat(i, 1)}
-                        disabled={i === orderedCats.length - 1}
-                        className="rounded-full p-2 hover:bg-tint disabled:opacity-30"
-                        aria-label="Move down"
-                      >
-                        <ChevronDown className="h-5 w-5" />
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setCat(c.id)}
-                      className="flex w-full items-center gap-3 bg-surface px-5 py-3 text-left transition hover:bg-tint"
-                    >
-                      <span className="grid h-10 w-10 place-items-center rounded-full bg-tint">
-                        <Ico e={c.emoji} size={26} />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-base font-semibold">{c.label}</p>
-                        <p className="truncate text-xs text-muted-foreground">{c.hint}</p>
-                      </div>
-                      <span className="text-muted-foreground">›</span>
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </>
-        ) : (
-          <div className="flex h-full min-h-0 flex-col">
-            <SheetHeader
-              className={`shrink-0 flex-row items-end justify-between gap-0 border-b border-border px-5 pb-2 ${
-                active === "pain"
-                  ? "h-14 pt-0"
-                  : "h-[calc(40px+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)]"
-              }`}
-            >
-              <button onClick={back} className="flex items-center gap-1 text-sm text-muted-foreground">
-                <ChevronLeft className="h-4 w-4" /> Back to Log
-              </button>
-              <SheetTitle className="font-serif text-lg">{CATEGORIES.find((c) => c.id === active)?.label}</SheetTitle>
-              <button onClick={close} aria-label="Close" className="rounded-full p-1 hover:bg-tint">
-                <X className="h-5 w-5" />
-              </button>
-            </SheetHeader>
-            <div
-              key={`${active}-${openToken}-${(edit as { id?: string } | undefined)?.id ?? initialPain?.id ?? "new"}`}
-              className={`min-h-0 flex-1 overflow-y-auto ${
-                active === "pain" ? "pt-[60px]" : "px-5 pb-4"
-              }`}
-            >
-              {active === "postpartum" && (
-                <PostpartumSymptomsForm date={date} data={data} update={update} onDone={close} />
-              )}
-
-              {active === "pain" && (
-                <PainWizard
-                  date={date}
-                  data={data}
-                  update={update}
-                  onDone={close}
-                  initialEntry={initialPain ?? (edit as PainEntry | undefined)}
-                />
-              )}
-              {active === "panic" && (
-                <PanicForm
-                  date={date}
-                  data={data}
-                  update={update}
-                  onDone={close}
-                  initialEntry={edit as PanicAttack | undefined}
-                />
-              )}
-              {active === "tetany" && (
-                <TetanyForm
-                  date={date}
-                  data={data}
-                  update={update}
-                  onDone={close}
-                  initialEntry={edit as TetanyEpisode | undefined}
-                />
-              )}
-              {active === "period" && <PeriodForm date={date} data={data} update={update} onDone={close} />}
-              {active === "sex" && (
-                <SexForm
-                  date={date}
-                  data={data}
-                  update={update}
-                  onDone={close}
-                  initialEntry={edit as SexEntry | undefined}
-                />
-              )}
-              {active === "heat" && (
-                <ThermoForm
-                  date={date}
-                  update={update}
-                  onDone={close}
-                  initialEntry={edit as ThermoSession | undefined}
-                />
-              )}
-              {active === "food" && (
-                <FoodForm
-                  date={date}
-                  data={data}
-                  update={update}
-                  onDone={close}
-                  initialEntry={edit as FoodEntry | undefined}
-                />
-              )}
-              {active === "bowel" && (
-                <BowelForm
-                  date={date}
-                  data={data}
-                  update={update}
-                  onDone={close}
-                  initialEntry={edit as BowelEntry | undefined}
-                />
-              )}
-              {active === "workout" && (
-                <WorkoutForm
-                  date={date}
-                  data={data}
-                  update={update}
-                  onDone={close}
-                  initialEntry={edit as WorkoutEntry | undefined}
-                />
-              )}
-              {active === "temp" && <TempForm date={date} data={data} update={update} onDone={close} />}
-              {active === "meds" && <MedsForm date={date} data={data} update={update} onDone={close} />}
-              {active === "task" && (
-                <TaskForm date={date} update={update} onDone={close} initialEntry={edit as TaskEntry | undefined} />
-              )}
-              {active === "event" && (
-                <EventForm date={date} update={update} onDone={close} initialEntry={edit as EventEntry | undefined} />
-              )}
-              {active === "note" && <NoteForm date={date} update={update} onDone={close} />}
-            </div>
-          </div>
-        )}
-      </SheetContent>
-    </Sheet>
-  );
-}
-
-/* ------------------- Primitives ------------------- */
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  // Intentionally a <div>, not <label>. Wrapping chip/button groups in <label>
-  // caused stray click activations on the first focusable descendant, which
-  // manifested as chips getting "auto-selected" in the Pain wizard.
-  return (
-    <div className="block">
-      <span className="text-xs font-medium text-muted-foreground">{label}</span>
-      <div className="mt-1">{children}</div>
-    </div>
-  );
-}
-function Chip({
-  active,
-  onClick,
-  children,
-  color,
-  title,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: ReactNode;
-  color?: string;
-  title?: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={title}
-      className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-        active
-          ? "text-white shadow-md ring-2 ring-foreground/70 ring-offset-2 ring-offset-background scale-[1.03]"
-          : "bg-tint text-foreground ring-1 ring-border"
-      }`}
-      style={active && color ? { background: color } : active ? { background: "var(--primary)" } : undefined}
-    >
-      {typeof children === "string" ? <IcoText text={children} size={14} /> : children}
-    </button>
-  );
-}
-function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave: () => void; disabled?: boolean }) {
-  return (
-    <SheetFooter className="sticky top-0 z-30 -mx-5 mt-0 flex-row items-center justify-between gap-2 border-b border-border/50 bg-background px-5 py-1.5">
-      <button
-        type="button"
-        onClick={onCancel}
-        className="flex min-w-[58px] items-center gap-1 text-xs font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        <span aria-hidden="true" className="text-sm leading-none">←</span>
-        <span>Back</span>
-      </button>
-
-      <span className="min-w-0 flex-1" aria-hidden="true" />
-
-      <button
-        type="button"
-        onClick={onSave}
-        disabled={disabled}
-        className="inline-flex h-8 min-w-[68px] items-center justify-center gap-1 rounded-full bg-primary px-3 text-xs font-semibold text-primary-foreground shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-      >
-        <span>Save</span>
-        <span aria-hidden="true" className="text-sm leading-none">✓</span>
-      </button>
-    </SheetFooter>
-  );
-}
-
-function CustomChipList({
-  base,
-  custom,
-  onAddCustom,
-  onRemoveCustom,
-  onRenameCustom,
-  selected,
-  onToggle,
-  descriptions,
-}: {
-  base: string[];
-  custom: string[];
-  onAddCustom: (v: string) => void;
-  onRemoveCustom?: (v: string) => void;
-  onRenameCustom?: (oldV: string, newV: string) => void;
-  selected: string[];
-  onToggle: (v: string) => void;
-  descriptions?: Record<string, string>;
-}) {
-  const [adding, setAdding] = useState(false);
-  const [editMode, setEditMode] = useState(false);
-  const [text, setText] = useState("");
-  const [infoFor, setInfoFor] = useState<string | null>(null);
-  const canEdit = !!(onRenameCustom || onRemoveCustom) && custom.length > 0;
-  return (
-    <div className="mt-2">
-      {(canEdit || true) && (
-        <div className="mb-2 flex items-center gap-2">
-          {adding ? (
-            <div className="flex flex-1 items-center gap-1">
-              <Input
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                className="h-8 flex-1"
-                placeholder="Custom…"
-                autoFocus
-              />
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => {
-                  if (text.trim()) {
-                    onAddCustom(text.trim());
-                    setText("");
-                    setAdding(false);
-                  }
-                }}
-              >
-                Add
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                onClick={() => {
-                  setText("");
-                  setAdding(false);
-                }}
-              >
-                Cancel
-              </Button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setAdding(true)}
-              className="flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary hover:bg-primary/20"
-            >
-              <Plus className="h-3 w-3" /> Add custom
-            </button>
-          )}
-          {canEdit && !adding && (
-            <button
-              type="button"
-              onClick={() => setEditMode((v) => !v)}
-              className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${editMode ? "bg-primary text-primary-foreground" : "bg-tint text-muted-foreground hover:text-foreground"}`}
-            >
-              <Pencil className="h-3 w-3" /> {editMode ? "Done" : "Edit"}
-            </button>
-          )}
-        </div>
-      )}
-      <div className="flex flex-wrap gap-2">
-        {base.map((v) => (
-          <span key={v} className="inline-flex items-center gap-0.5">
-            <Chip active={selected.includes(v)} onClick={() => onToggle(v)} title={descriptions?.[v]}>
-              {v}
-            </Chip>
-            {descriptions?.[v] && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setInfoFor(infoFor === v ? null : v);
-                }}
-                aria-label={`Info ${v}`}
-                className="grid h-4 w-4 place-items-center rounded-full bg-tint text-[10px] font-bold text-muted-foreground hover:bg-primary/15 hover:text-primary"
-              >
-                i
-              </button>
-            )}
-          </span>
-        ))}
-        {custom.map((v) => (
-          <span key={v} className="relative inline-flex items-center">
-            <Chip active={selected.includes(v)} onClick={() => onToggle(v)}>
-              {v}
-            </Chip>
-            {editMode && onRenameCustom && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const next = prompt(`Rename "${v}" to:`, v);
-                  if (next && next.trim() && next.trim() !== v) onRenameCustom(v, next.trim());
-                }}
-                aria-label={`Rename ${v}`}
-                className="ml-1 grid h-5 w-5 place-items-center rounded-full bg-tint text-muted-foreground hover:bg-primary/15 hover:text-primary"
-              >
-                <Pencil className="h-3 w-3" />
-              </button>
-            )}
-            {editMode && onRemoveCustom && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (confirm(`Remove "${v}" from your custom list?`)) onRemoveCustom(v);
-                }}
-                aria-label={`Remove ${v}`}
-                className="ml-1 grid h-5 w-5 place-items-center rounded-full bg-tint text-muted-foreground hover:bg-destructive/15 hover:text-destructive"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            )}
-          </span>
-        ))}
-      </div>
-      {infoFor && descriptions?.[infoFor] && (
-        <div className="mt-2 rounded-lg bg-tint px-2.5 py-1.5 text-[11px] leading-snug text-foreground">
-          <span className="font-semibold">{infoFor}:</span> {descriptions[infoFor]}
-        </div>
-      )}
-    </div>
-  );
-}
-const toggleIn = (arr: string[], v: string) => (arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
-/** Strips a leading emoji (+ following space) so legacy saved values with emoji prefixes still match emoji-free option lists. */
-const stripEmoji = (v: string) => v.replace(/^[\p{Extended_Pictographic}\u200d\ufe0f]+\s*/u, "").trim();
-
-import { getScaleDesc } from "@/lib/scaleDescriptions";
-
-function scaleColor(value: number, from: number, max: number): string {
-  const span = Math.max(0.5, max - from);
-  const normalized = ((value - from) / span) * 10;
-  return painColor(Math.max(0, Math.min(10, normalized)));
-}
-
-function ScaleLegend({
-  max,
-  descriptions,
-  value,
-  title,
-  from = 0,
-}: {
-  max: number;
-  descriptions: Record<number, string>;
-  value?: number;
-  title: string;
-  from?: number;
-}) {
-  const items: number[] = [];
-  for (let i = Math.ceil(from); i <= max; i++) items.push(i);
-  const activeLegendValue = value == null || value < from ? undefined : Math.round(value);
-
-  return (
-    <div className="mt-2 rounded-xl border border-border/60 bg-surface/50 p-2.5">
-      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>
-      <div className="space-y-1 text-[11px] leading-tight">
-        {items.map((n) => (
-          <div key={n} className="flex items-start gap-2">
-            <span
-              className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full text-[9px] font-bold text-white"
-              style={{ background: scaleColor(n, from, max) }}
-            >
-              {n}
-            </span>
-            <span className={activeLegendValue === n ? "font-semibold text-foreground" : "text-muted-foreground"}>
-              {descriptions[n]}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function IntensityScale({
-  value,
-  onChange,
-  max,
-  descriptions,
-  legendTitle,
-  from = 0,
-  compactSingleRow = false,
-  step = 0.5,
-}: {
-  value: number;
-  onChange: (n: number) => void;
-  max: number;
-  descriptions?: Record<number, string>;
-  legendTitle?: string;
-  from?: number;
-  compactSingleRow?: boolean;
-  step?: number;
-}) {
-  const nums = Array.from(
-    { length: Math.floor((max - from) / step) + 1 },
-    (_, i) => Number((from + i * step).toFixed(1)),
-  );
-
-  const roundedValue = Math.round(value);
-  const selectedDescription = descriptions?.[roundedValue];
-
-  return (
-    <div className="mt-2 space-y-1.5">
-      <div
-        className={
-          compactSingleRow
-            ? "flex flex-nowrap items-center justify-center gap-0.5 px-0"
-            : "flex flex-wrap justify-center gap-1.5 px-1"
-        }
-      >
-        {nums.map((n) => {
-          const active = value === n;
-          const description = descriptions?.[Math.round(n)];
-          const bg = scaleColor(n, from, max);
-
-          return (
-            <button
-              key={n}
-              type="button"
-              onClick={() => onChange(n)}
-              title={description ? `${n} — ${description}` : String(n)}
-              aria-label={description ? `${n} — ${description}` : `Intensity ${n}`}
-              className={`${
-                compactSingleRow ? "h-7 w-7 text-[10px]" : "h-8 w-8 text-[11px]"
-              } shrink-0 rounded-full font-semibold transition ${
-                active ? "text-white ring-2 ring-foreground" : "text-foreground"
-              }`}
-              style={{ background: bg }}
-            >
-              {Number.isInteger(n) ? n : n.toFixed(1)}
-            </button>
-          );
-        })}
-      </div>
-
-      {descriptions && value >= from && selectedDescription && (
-        <div className="mt-2 rounded-lg bg-tint px-2.5 py-1.5 text-[11px] leading-snug text-foreground">
-          <span className="font-semibold">
-            Level {Number.isInteger(value) ? value : value.toFixed(1)}:
-          </span>{" "}
-          {selectedDescription}
-        </div>
-      )}
-
-      {descriptions && legendTitle && (
-        <ScaleLegend
-          max={max}
-          from={from}
-          descriptions={descriptions}
-          value={value}
-          title={legendTitle}
-        />
-      )}
-    </div>
-  );
-}
-
-function DurationField({
-  minutes,
-  setMinutes,
-  ongoing,
-  setOngoing,
-}: {
-  minutes: string;
-  setMinutes: (s: string) => void;
-  ongoing: boolean;
-  setOngoing: (b: boolean) => void;
-}) {
-  return (
-    <div className="space-y-1">
-      <span className="text-xs font-medium text-muted-foreground">Duration (min)</span>
-      <div className="flex items-center gap-2">
-        <Input
-          type="number"
-          inputMode="numeric"
-          min={0}
-          value={ongoing ? "" : minutes}
-          disabled={ongoing}
-          onChange={(e) => setMinutes(e.target.value)}
-          className="flex-1"
-          placeholder="—"
-        />
-        <button
-          type="button"
-          onClick={() => setOngoing(!ongoing)}
-          className={`rounded-full px-3 py-1.5 text-xs font-semibold ring-1 ring-border ${ongoing ? "bg-primary text-white" : "bg-tint text-foreground"}`}
-        >
-          Ongoing
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/* ------------------- PAIN wizard ------------------- */
-function PainWizard({
-  date,
-  data,
-  update,
-  onDone,
-  initialEntry,
-}: {
-  date: string;
-  data: BixboData;
-  update: UpdateFn;
-  onDone: () => void;
-  initialEntry?: PainEntry;
-}) {
-  /**
-   * The newest pain entry for the selected day. A new entry can reuse this
-   * state and only add what changed (for example a headache several hours later).
-   * Editing an existing entry never uses this shortcut.
-   */
-  const latestPain = useMemo(() => {
-    if (initialEntry) return undefined;
-    const entries = data.dayLogs[date]?.pain ?? [];
-    if (!entries.length) return undefined;
-
-    return entries.reduce((latest, entry) =>
-      (entry.time ?? "").localeCompare(latest.time ?? "") >= 0 ? entry : latest,
-    );
-  }, [data.dayLogs, date, initialEntry]);
-
-  const [step, setStep] = useState(0);
-  const [score, setScore] = useState(initialEntry?.score ?? 0);
-  const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
-  const [parts, setParts] = useState<string[]>(initialEntry?.parts ?? []);
-  const [quality, setQuality] = useState<string[]>(initialEntry?.quality ?? []);
-  const [symptoms, setSymptoms] = useState<string[]>(initialEntry?.symptoms ?? []);
-  const [note, setNote] = useState(initialEntry?.note ?? "");
-  // Extended
-  const [tetany, setTetany] = useState(false);
-  const [tetanyTypes, setTetanyTypes] = useState<string[]>([]);
-  const [tetanyLoc, setTetanyLoc] = useState<string[]>([]);
-  const [tetanyIntensity, setTetanyIntensity] = useState(1);
-  const [tetanyMin, setTetanyMin] = useState("5");
-  const [tetanyOngoing, setTetanyOngoing] = useState(false);
-  const [tetanyTriggers, setTetanyTriggers] = useState<string[]>([]);
-  const [tetanyHelped, setTetanyHelped] = useState<string[]>([]);
-  const [tetanyNote, setTetanyNote] = useState("");
-  // Panic (full inline log — under Tetany)
-  const [panic, setPanic] = useState(false);
-  const [panicTime, setPanicTime] = useState(nowHHMM());
-  const [panicIntensity, setPanicIntensity] = useState(5);
-  const [panicMinutes, setPanicMinutes] = useState("10");
-  const [panicOngoing, setPanicOngoing] = useState(false);
-  const [panicPhysical, setPanicPhysical] = useState<string[]>([]);
-  const [panicCognitive, setPanicCognitive] = useState<string[]>([]);
-  const [panicTrigger, setPanicTrigger] = useState("");
-  const [panicPlace, setPanicPlace] = useState("");
-  const [panicHyper, setPanicHyper] = useState<"no" | "before" | "during" | "unknown">("unknown");
-  const [panicTetany, setPanicTetany] = useState(false);
-  const [panicHelped, setPanicHelped] = useState<string[]>([]);
-  const [panicNote, setPanicNote] = useState("");
-  const [bodyBattery, setBodyBattery] = useState<number | undefined>(initialEntry?.bodyBattery);
-  const [stress, setStress] = useState<number | undefined>(initialEntry?.stress);
-  const [mood, setMood] = useState<string[]>(initialEntry?.mood ?? []);
-  const [hotFlashesOn, setHotFlashesOn] = useState<boolean>(!!initialEntry?.hotFlashesOn);
-  const [hotFlashes, setHotFlashes] = useState<number | undefined>(initialEntry?.hotFlashes);
-  const [headache, setHeadache] = useState<boolean>(!!initialEntry?.headache);
-  const [headacheTypes, setHeadacheTypes] = useState<string[]>(initialEntry?.headacheTypes ?? []);
-  const [headacheIntensity, setHeadacheIntensity] = useState<number | undefined>(initialEntry?.headacheIntensity);
-  const [headacheMedOn, setHeadacheMedOn] = useState<boolean>(!!initialEntry?.headacheMed);
-  const [headacheMed, setHeadacheMed] = useState<string>(initialEntry?.headacheMed ?? "");
-  const [headacheMedTime, setHeadacheMedTime] = useState<string>(initialEntry?.headacheMedTime ?? nowHHMM());
-  const [pcosSymptoms, setPcosSymptoms] = useState<string[]>(initialEntry?.pcosSymptoms ?? []);
-  const [fluNote, setFluNote] = useState<string>(initialEntry?.fluNote ?? "");
-  // Pressure detail (shown when "Pressure" quality is selected)
-  const [pressureTypes, setPressureTypes] = useState<string[]>(initialEntry?.pressureTypes ?? []);
-  const [pressureIntensity, setPressureIntensity] = useState<number | undefined>(initialEntry?.pressureIntensity);
-  // Nausea section
-  const [nausea, setNausea] = useState<boolean>(!!initialEntry?.nausea);
-  const [nauseaTypes, setNauseaTypes] = useState<string[]>(initialEntry?.nauseaTypes ?? []);
-  const [nauseaSeverity, setNauseaSeverity] = useState<number | undefined>(initialEntry?.nauseaSeverity);
-  const [nauseaMinutes, setNauseaMinutes] = useState<string>(
-    initialEntry?.nauseaMinutes != null ? String(initialEntry.nauseaMinutes) : "",
-  );
-  const [nauseaOngoing, setNauseaOngoing] = useState<boolean>(!!initialEntry?.nauseaOngoing);
-  const [nauseaTriggers, setNauseaTriggers] = useState<string[]>(initialEntry?.nauseaTriggers ?? []);
-  const [nauseaSymptoms, setNauseaSymptoms] = useState<string[]>(initialEntry?.nauseaSymptoms ?? []);
-  const [nauseaHelped, setNauseaHelped] = useState<string[]>(initialEntry?.nauseaHelped ?? []);
-
-  // Quick update: copy the latest state, use the current time and jump to symptoms.
-  const [quickSymptomUpdate, setQuickSymptomUpdate] = useState(false);
-  const [copiedFromTime, setCopiedFromTime] = useState<string | undefined>();
-  const startSymptomUpdate = () => {
-    if (!latestPain) return;
-
-    // Core pain state.
-    setScore(latestPain.score);
-    setParts([...(latestPain.parts ?? [])]);
-    setQuality([...(latestPain.quality ?? [])]);
-    setSymptoms([...(latestPain.symptoms ?? [])]);
-    setPressureTypes([...(latestPain.pressureTypes ?? [])]);
-    setPressureIntensity(latestPain.pressureIntensity);
-
-    // Body battery, stress and mood are momentary measurements. Do not duplicate
-    // their older values into the new time point.
-    setBodyBattery(undefined);
-    setStress(undefined);
-    setMood([]);
-
-    // Carry forward symptom details; the user only changes what is new.
-    setHotFlashesOn(!!latestPain.hotFlashesOn);
-    setHotFlashes(latestPain.hotFlashes);
-    setPcosSymptoms([...(latestPain.pcosSymptoms ?? [])]);
-    setFluNote(latestPain.fluNote ?? "");
-
-    setNausea(!!latestPain.nausea);
-    setNauseaTypes([...(latestPain.nauseaTypes ?? [])]);
-    setNauseaSeverity(latestPain.nauseaSeverity);
-    setNauseaMinutes(latestPain.nauseaMinutes != null ? String(latestPain.nauseaMinutes) : "");
-    setNauseaOngoing(!!latestPain.nauseaOngoing);
-    setNauseaTriggers([...(latestPain.nauseaTriggers ?? [])]);
-    setNauseaSymptoms([...(latestPain.nauseaSymptoms ?? [])]);
-    setNauseaHelped([...(latestPain.nauseaHelped ?? [])]);
-
-    // Preserve the previous headache state; this shortcut is for adding any symptoms.
-    setHeadache(!!latestPain.headache);
-    setHeadacheTypes([...(latestPain.headacheTypes ?? [])]);
-    setHeadacheIntensity(latestPain.headacheIntensity);
-    setHeadacheMedOn(!!latestPain.headacheMed);
-    setHeadacheMed(latestPain.headacheMed ?? "");
-    setHeadacheMedTime(latestPain.headacheMedTime ?? nowHHMM());
-
-    // A copied note would look like a new note, so leave it blank.
-    setNote("");
-    setTime(nowHHMM());
-
-    // Never duplicate separate inline episodes when carrying a pain state forward.
-    setTetany(false);
-    setPanic(false);
-
-    setCopiedFromTime(latestPain.time);
-    setQuickSymptomUpdate(true);
-    setStep(3);
-  };
-
-
-  type CKey =
-    | "bodyParts"
-    | "quality"
-    | "symptoms"
-    | "moods"
-    | "tetanyTypes"
-    | "tetanyLocations"
-    | "tetanyTriggers"
-    | "tetanyHelped"
-    | "pcosSymptoms"
-    | "headacheTypes"
-    | "pressureTypes"
-    | "nauseaTypes"
-    | "nauseaTriggers"
-    | "nauseaSymptoms"
-    | "nauseaHelped";
-  const addCustom = (key: CKey, v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [key]: [...(d.custom[key] ?? []), v] } }));
-  const removeCustom = (key: CKey, v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [key]: (d.custom[key] ?? []).filter((x) => x !== v) } }));
-  const renameCustom = (key: CKey, oldV: string, newV: string) =>
-    update((d) => ({
-      ...d,
-      custom: { ...d.custom, [key]: (d.custom[key] ?? []).map((x) => (x === oldV ? newV : x)) },
-    }));
-
-  const save = () => {
-    const editing = !!initialEntry;
-    const p: PainEntry = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
-      time,
-      score,
-      parts,
-      quality,
-      symptoms,
-      note: note.trim(),
-      bodyBattery,
-      stress,
-      mood: mood.length ? mood : undefined,
-      hotFlashesOn: hotFlashesOn || undefined,
-      hotFlashes: hotFlashesOn ? hotFlashes : undefined,
-      headache: headache || undefined,
-      headacheTypes: headache && headacheTypes.length ? headacheTypes : undefined,
-      headacheIntensity: headache ? headacheIntensity : undefined,
-      headacheMed: headache && headacheMedOn && headacheMed.trim() ? headacheMed.trim() : undefined,
-      headacheMedTime: headache && headacheMedOn && headacheMed.trim() ? headacheMedTime : undefined,
-      pressureTypes: quality.includes("Pressure") && pressureTypes.length ? pressureTypes : undefined,
-      pressureIntensity: quality.includes("Pressure") ? pressureIntensity : undefined,
-      nausea: nausea || undefined,
-      nauseaTypes: nausea && nauseaTypes.length ? nauseaTypes : undefined,
-      nauseaSeverity: nausea ? nauseaSeverity : undefined,
-      nauseaMinutes: nausea && !nauseaOngoing && nauseaMinutes !== "" ? Number(nauseaMinutes) : undefined,
-      nauseaOngoing: nausea ? nauseaOngoing || undefined : undefined,
-      nauseaTriggers: nausea && nauseaTriggers.length ? nauseaTriggers : undefined,
-      nauseaSymptoms: nausea && nauseaSymptoms.length ? nauseaSymptoms : undefined,
-      nauseaHelped: nausea && nauseaHelped.length ? nauseaHelped : undefined,
-      fluNote: symptoms.includes("Flu") && fluNote.trim() ? fluNote.trim() : undefined,
-      pcosSymptoms: pcosSymptoms.length ? pcosSymptoms : undefined,
-    };
-    updateDayLog(update, date, (l) => ({
-      ...l,
-      pain: editing ? (l.pain ?? []).map((x) => (x.id === p.id ? p : x)) : [...(l.pain ?? []), p],
-    }));
-    if (tetany) {
-      const t: TetanyEpisode = {
-        id: crypto.randomUUID(),
-        time: nowHHMM(),
-        types: tetanyTypes,
-        location: tetanyLoc,
-        intensity: tetanyIntensity,
-        minutes: tetanyOngoing ? undefined : tetanyMin === "" ? undefined : Number(tetanyMin),
-        triggers: tetanyTriggers,
-        helped: tetanyHelped,
-        note: tetanyNote.trim() || undefined,
-      };
-      updateDayLog(update, date, (l) => ({ ...l, tetany: [...(l.tetany ?? []), t] }));
-    }
-    if (panic) {
-      const pk: PanicAttack = {
-        id: crypto.randomUUID(),
-        time: panicTime,
-        minutes: panicOngoing ? undefined : panicMinutes === "" ? undefined : Number(panicMinutes),
-        intensity: panicIntensity,
-        physical: panicPhysical,
-        cognitive: panicCognitive,
-        trigger: panicTrigger.trim(),
-        place: panicPlace.trim() || undefined,
-        hyperventilation: panicHyper,
-        tetanyPresent: panicTetany,
-        helped: panicHelped,
-        note: panicNote.trim() || undefined,
-      };
-      updateDayLog(update, date, (l) => ({ ...l, panic: [...(l.panic ?? []), pk] }));
-    }
-    onDone();
-  };
-
-  const bg = painColor(score);
-
-  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
-  const onTouchStart = (e: React.TouchEvent) => {
-    const t = e.touches[0];
-    touchStartRef.current = { x: t.clientX, y: t.clientY };
-  };
-  const onTouchEnd = (e: React.TouchEvent) => {
-    const s = touchStartRef.current;
-    if (!s) return;
-    const t = e.changedTouches[0];
-    const dx = t.clientX - s.x;
-    const dy = t.clientY - s.y;
-    touchStartRef.current = null;
-    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy)) return;
-    const target = e.target as HTMLElement;
-    if (target.closest('input,textarea,select,button,[role="slider"],.no-swipe')) return;
-    if (dx < 0 && step < 4) setStep(step + 1);
-    else if (dx > 0 && step > 0) setStep(step - 1);
-  };
-
-  return (
-    <div
-      className="flex min-h-full flex-col px-5 pb-4 pt-0 transition-colors touch-pan-y"
-      onTouchStart={onTouchStart}
-      onTouchEnd={onTouchEnd}
-    >
-      {quickSymptomUpdate ? (
-        <div className="flex items-center justify-between px-1 pb-3">
-          <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-            Quick symptom update
-          </span>
-          <span className="text-xs text-muted-foreground">New entry · {time}</span>
-        </div>
-      ) : (
-        <div
-          className="fixed inset-x-0 z-30 h-[60px] flex items-center justify-between gap-2 border-b border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur"
-          style={{ top: "calc(env(safe-area-inset-top) + 56px)" }}
-        >
-          {step > 0 ? (
-            <button
-              type="button"
-              onClick={() => setStep(step - 1)}
-              className="flex min-w-[68px] items-center gap-1 text-sm font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <span aria-hidden="true" className="text-base leading-none">←</span>
-              <span>Back</span>
-            </button>
-          ) : (
-            <span className="min-w-[68px]" aria-hidden="true" />
-          )}
-
-          <div className="flex min-w-0 flex-1 items-center justify-center gap-2">
-            <div className="flex gap-1">
-              {[0, 1, 2, 3, 4].map((i) => (
-                <span
-                  key={i}
-                  className={`h-1.5 w-5 rounded-full transition-colors ${i <= step ? "bg-primary" : "bg-tint"}`}
-                />
-              ))}
-            </div>
-            <span className="shrink-0 text-xs font-semibold text-foreground/75">{step + 1}/5</span>
-          </div>
-
-          <button
-            type="button"
-            onClick={step < 4 ? () => setStep(step + 1) : save}
-            className="flex h-[52px] min-w-[64px] flex-col items-center justify-center rounded-[1.15rem] bg-primary px-3 text-primary-foreground shadow-sm transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          >
-            <span className="text-sm font-semibold leading-none">{step < 4 ? "Next" : "Save"}</span>
-            <span aria-hidden="true" className="mt-0.5 text-base leading-none">{step < 4 ? "→" : "✓"}</span>
-          </button>
-        </div>
-      )}
-
-      {step === 0 && (
-        <div className="flex flex-col items-center gap-4 py-6">
-          {latestPain && !initialEntry && (
-            <div className="w-full rounded-2xl border border-primary/30 bg-surface/90 p-3 shadow-sm">
-              <div className="mb-3 flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold">Pain still feels the same?</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    Last log: {latestPain.time} · pain {latestPain.score}/10. Reuse it and add only the new symptoms.
-                  </p>
-                </div>
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10">
-                  <Ico e="🤕" size={22} />
-                </span>
-              </div>
-              <Button type="button" onClick={startSymptomUpdate} className="w-full">
-                Same pain — add symptoms
-              </Button>
-            </div>
-          )}
-
-          <div
-            className="grid h-32 w-32 place-items-center rounded-full text-5xl font-bold text-white"
-            style={{ background: bg }}
-          >
-            {Number.isInteger(score) ? score : score.toFixed(1)}
-          </div>
-          <p className="text-center font-medium">{getScaleDesc(data, "pain")[Math.round(score)]}</p>
-          <div className="w-full px-4">
-            <Slider value={[score * 2]} min={0} max={20} step={1} onValueChange={([v]) => setScore(v / 2)} />
-          </div>
-          <div className="flex flex-wrap justify-center gap-1.5 px-4">
-            {Array.from({ length: 21 }, (_, i) => i / 2).map((n) => (
-              <button
-                key={n}
-                type="button"
-                onClick={() => setScore(n)}
-                title={`${n} — ${getScaleDesc(data, "pain")[Math.round(n)]}`}
-                className={`h-8 w-8 rounded-full text-[11px] font-semibold transition ${
-                  score === n ? "text-white ring-2 ring-foreground" : "text-foreground"
-                }`}
-                style={{ background: painColor(n) }}
-              >
-                {Number.isInteger(n) ? n : n.toFixed(1)}
-              </button>
-            ))}
-          </div>
-          <div className="w-full px-2">
-            <ScaleLegend
-              max={10}
-              from={0}
-              descriptions={getScaleDesc(data, "pain")}
-              value={Math.round(score)}
-              title="Pain scale (Mankosky)"
-            />
-          </div>
-        </div>
-      )}
-
-      {step === 1 && (
-        <Field label="Where does it hurt?">
-          <CustomChipList
-            base={BODY_PARTS_DEFAULT}
-            custom={data.custom.bodyParts}
-            onAddCustom={(v) => addCustom("bodyParts", v)}
-            onRemoveCustom={(v) => {
-              removeCustom("bodyParts", v);
-              setParts((a) => a.filter((x) => x !== v));
-            }}
-            onRenameCustom={(o, n) => {
-              renameCustom("bodyParts", o, n);
-              setParts((a) => a.map((x) => (x === o ? n : x)));
-            }}
-            selected={parts}
-            onToggle={(v) => setParts((a) => toggleIn(a, v))}
-          />
-        </Field>
-      )}
-      {step === 2 && (
-        <div className="space-y-4">
-          <Field label="How does it hurt?">
-            <CustomChipList
-              base={PAIN_QUALITY_DEFAULT}
-              custom={data.custom.quality}
-              onAddCustom={(v) => addCustom("quality", v)}
-              onRemoveCustom={(v) => {
-                removeCustom("quality", v);
-                setQuality((a) => a.filter((x) => x !== v));
-              }}
-              onRenameCustom={(o, n) => {
-                renameCustom("quality", o, n);
-                setQuality((a) => a.map((x) => (x === o ? n : x)));
-              }}
-              selected={quality}
-              onToggle={(v) => setQuality((a) => toggleIn(a, v))}
-            />
-          </Field>
-          {quality.includes("Pressure") && (
-            <div className="rounded-2xl border border-border p-3 space-y-3">
-              <Field label="Type of pressure">
-                <CustomChipList
-                  base={PRESSURE_TYPES}
-                  custom={data.custom.pressureTypes ?? []}
-                  onAddCustom={(v) => addCustom("pressureTypes", v)}
-                  onRemoveCustom={(v) => {
-                    removeCustom("pressureTypes", v);
-                    setPressureTypes((a) => a.filter((x) => x !== v));
-                  }}
-                  onRenameCustom={(o, n) => {
-                    renameCustom("pressureTypes", o, n);
-                    setPressureTypes((a) => a.map((x) => (x === o ? n : x)));
-                  }}
-                  selected={pressureTypes}
-                  onToggle={(v) => setPressureTypes((a) => toggleIn(a, v))}
-                />
-              </Field>
-              <Field label={`Pressure intensity ${pressureIntensity ?? "-"}/10`}>
-                <IntensityScale
-                  value={pressureIntensity ?? -1}
-                  onChange={(n) => setPressureIntensity(pressureIntensity === n ? undefined : n)}
-                  max={10}
-                  from={0}
-                />
-              </Field>
-            </div>
-          )}
-        </div>
-      )}
-      {step === 3 && (
-        <div className="space-y-4">
-          {quickSymptomUpdate && (
-            <div className="rounded-2xl border border-primary/30 bg-primary/10 p-3 text-sm">
-              <p className="font-semibold">
-                Pain {score}/10 copied from {copiedFromTime ?? "the latest log"}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                This saves a new entry at {time}; the older log stays unchanged. Add or adjust the symptoms below.
-              </p>
-            </div>
-          )}
-
-          <Field label="Other symptoms">
-            <CustomChipList
-              base={OTHER_SYMPTOMS_DEFAULT}
-              custom={data.custom.symptoms}
-              onAddCustom={(v) => addCustom("symptoms", v)}
-              onRemoveCustom={(v) => {
-                removeCustom("symptoms", v);
-                setSymptoms((a) => a.filter((x) => x !== v));
-              }}
-              onRenameCustom={(o, n) => {
-                renameCustom("symptoms", o, n);
-                setSymptoms((a) => a.map((x) => (x === o ? n : x)));
-              }}
-              selected={symptoms}
-              onToggle={(v) => setSymptoms((a) => toggleIn(a, v))}
-            />
-          </Field>
-          {symptoms.includes("Flu") && (
-            <Field label="Flu symptoms note">
-              <Textarea
-                rows={2}
-                value={fluNote}
-                onChange={(e) => setFluNote(e.target.value)}
-                placeholder="e.g. stuffy nose, sore throat"
-              />
-            </Field>
-          )}
-          <Field label="Nausea?">
-            <div className="mt-1 flex gap-2">
-              <Chip active={!nausea} onClick={() => setNausea(false)}>
-                No
-              </Chip>
-              <Chip active={nausea} onClick={() => setNausea(true)}>
-                Yes — log it
-              </Chip>
-            </div>
-          </Field>
-          {nausea && (
-            <div className="rounded-2xl border border-border p-3 space-y-3">
-              <Field label="Type of nausea">
-                <CustomChipList
-                  base={NAUSEA_TYPES}
-                  custom={data.custom.nauseaTypes ?? []}
-                  descriptions={NAUSEA_TYPE_DESC}
-                  onAddCustom={(v) => addCustom("nauseaTypes", v)}
-                  onRemoveCustom={(v) => {
-                    removeCustom("nauseaTypes", v);
-                    setNauseaTypes((a) => a.filter((x) => x !== v));
-                  }}
-                  onRenameCustom={(o, n) => {
-                    renameCustom("nauseaTypes", o, n);
-                    setNauseaTypes((a) => a.map((x) => (x === o ? n : x)));
-                  }}
-                  selected={nauseaTypes}
-                  onToggle={(v) => setNauseaTypes((a) => toggleIn(a, v))}
-                />
-              </Field>
-              <Field label={`Nausea severity ${nauseaSeverity ?? "-"}/10`}>
-                <IntensityScale
-                  value={nauseaSeverity ?? -1}
-                  onChange={(n) => setNauseaSeverity(nauseaSeverity === n ? undefined : n)}
-                  max={10}
-                  from={1}
-                  step={1}
-                  descriptions={NAUSEA_SEVERITY_DESC}
-                  legendTitle="Nausea severity scale"
-                  compactSingleRow
-                />
-              </Field>
-              <DurationField
-                minutes={nauseaMinutes}
-                setMinutes={setNauseaMinutes}
-                ongoing={nauseaOngoing}
-                setOngoing={setNauseaOngoing}
-              />
-              <Field label="Triggers">
-                <CustomChipList
-                  base={NAUSEA_TRIGGERS}
-                  custom={data.custom.nauseaTriggers ?? []}
-                  onAddCustom={(v) => addCustom("nauseaTriggers", v)}
-                  onRemoveCustom={(v) => {
-                    removeCustom("nauseaTriggers", v);
-                    setNauseaTriggers((a) => a.filter((x) => x !== v));
-                  }}
-                  onRenameCustom={(o, n) => {
-                    renameCustom("nauseaTriggers", o, n);
-                    setNauseaTriggers((a) => a.map((x) => (x === o ? n : x)));
-                  }}
-                  selected={nauseaTriggers}
-                  onToggle={(v) => setNauseaTriggers((a) => toggleIn(a, v))}
-                />
-              </Field>
-              <Field label="Associated symptoms">
-                <CustomChipList
-                  base={NAUSEA_SYMPTOMS}
-                  custom={data.custom.nauseaSymptoms ?? []}
-                  onAddCustom={(v) => addCustom("nauseaSymptoms", v)}
-                  onRemoveCustom={(v) => {
-                    removeCustom("nauseaSymptoms", v);
-                    setNauseaSymptoms((a) => a.filter((x) => x !== v));
-                  }}
-                  onRenameCustom={(o, n) => {
-                    renameCustom("nauseaSymptoms", o, n);
-                    setNauseaSymptoms((a) => a.map((x) => (x === o ? n : x)));
-                  }}
-                  selected={nauseaSymptoms}
-                  onToggle={(v) => setNauseaSymptoms((a) => toggleIn(a, v))}
-                />
-              </Field>
-              <Field label="Relieved by">
-                <CustomChipList
-                  base={NAUSEA_HELPED}
-                  custom={data.custom.nauseaHelped ?? []}
-                  onAddCustom={(v) => addCustom("nauseaHelped", v)}
-                  onRemoveCustom={(v) => {
-                    removeCustom("nauseaHelped", v);
-                    setNauseaHelped((a) => a.filter((x) => x !== v));
-                  }}
-                  onRenameCustom={(o, n) => {
-                    renameCustom("nauseaHelped", o, n);
-                    setNauseaHelped((a) => a.map((x) => (x === o ? n : x)));
-                  }}
-                  selected={nauseaHelped}
-                  onToggle={(v) => setNauseaHelped((a) => toggleIn(a, v))}
-                />
-              </Field>
-            </div>
-          )}
-          <div>
-            <Field label="Headache?">
-              <div className="mt-1 flex gap-2">
-                <Chip active={!headache} onClick={() => setHeadache(false)}>
-                  No
-                </Chip>
-                <Chip active={headache} onClick={() => setHeadache(true)}>
-                  Yes — log it
-                </Chip>
-              </div>
-            </Field>
-            {headache && (
-              <div className="mt-3 rounded-2xl border border-border p-3 space-y-3">
-                <Field label="Headache type">
-                  <CustomChipList
-                    base={HEADACHE_TYPES}
-                    custom={data.custom.headacheTypes ?? []}
-                    descriptions={HEADACHE_TYPE_DESC}
-                    onAddCustom={(v) => addCustom("headacheTypes", v)}
-                    onRemoveCustom={(v) => {
-                      removeCustom("headacheTypes", v);
-                      setHeadacheTypes((a) => a.filter((x) => x !== v));
-                    }}
-                    onRenameCustom={(o, n) => {
-                      renameCustom("headacheTypes", o, n);
-                      setHeadacheTypes((a) => a.map((x) => (x === o ? n : x)));
-                    }}
-                    selected={headacheTypes}
-                    onToggle={(v) => setHeadacheTypes((a) => toggleIn(a, v))}
-                  />
-                </Field>
-                <Field label={`Headache intensity ${headacheIntensity ?? "-"}/10`}>
-                  <IntensityScale
-                    value={headacheIntensity ?? 0}
-                    onChange={(n) => setHeadacheIntensity(headacheIntensity === n ? undefined : n)}
-                    max={10}
-                    from={1}
-                    step={1}
-                    descriptions={getScaleDesc(data, "headache")}
-                    legendTitle="Headache scale"
-                    compactSingleRow
-                  />
-                </Field>
-                <Field label="Medication taken">
-                  <div className="mt-1 flex gap-2">
-                    <Chip active={!headacheMedOn} onClick={() => setHeadacheMedOn(false)}>
-                      No
-                    </Chip>
-                    <Chip active={headacheMedOn} onClick={() => setHeadacheMedOn(true)}>
-                      Yes
-                    </Chip>
-                  </div>
-                  {headacheMedOn && (
-                    <div className="mt-2 space-y-2">
-                      {data.meds.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {data.meds.map((m) => {
-                            const label = `${m.name}${m.dose ? ` ${m.dose}` : ""}`;
-                            return (
-                              <Chip
-                                key={m.id}
-                                active={headacheMed === label}
-                                onClick={() => setHeadacheMed(headacheMed === label ? "" : label)}
-                              >
-                                {label}
-                              </Chip>
-                            );
-                          })}
-                        </div>
-                      )}
-                      <Input
-                        value={headacheMed}
-                        onChange={(e) => setHeadacheMed(e.target.value)}
-                        placeholder="Medication + dose"
-                      />
-                      <Input type="time" value={headacheMedTime} onChange={(e) => setHeadacheMedTime(e.target.value)} />
-                    </div>
-                  )}
-                </Field>
-              </div>
-            )}
-          </div>
-          <Field label="Hot flashes?">
-            <div className="mt-1 flex gap-2">
-              <Chip active={!hotFlashesOn} onClick={() => setHotFlashesOn(false)}>
-                No
-              </Chip>
-              <Chip active={hotFlashesOn} onClick={() => setHotFlashesOn(true)}>
-                Yes — log it
-              </Chip>
-            </div>
-          </Field>
-          {hotFlashesOn && (
-            <Field label={`Hot flashes intensity ${hotFlashes ?? "-"}/5`}>
-              <IntensityScale
-                value={hotFlashes ?? 0}
-                onChange={(n) => setHotFlashes(hotFlashes === n ? undefined : n)}
-                max={5}
-                from={1}
-                step={1}
-                descriptions={getScaleDesc(data, "hotFlashes")}
-                legendTitle="Hot flashes scale"
-                compactSingleRow
-              />
-            </Field>
-          )}
-          <Field label="PCOS symptoms">
-            <CustomChipList
-              base={PCOS_SYMPTOMS}
-              custom={data.custom.pcosSymptoms ?? []}
-              onAddCustom={(v) => addCustom("pcosSymptoms", v)}
-              onRemoveCustom={(v) => {
-                removeCustom("pcosSymptoms", v);
-                setPcosSymptoms((a) => a.filter((x) => x !== v));
-              }}
-              onRenameCustom={(o, n) => {
-                renameCustom("pcosSymptoms", o, n);
-                setPcosSymptoms((a) => a.map((x) => (x === o ? n : x)));
-              }}
-              selected={pcosSymptoms}
-              onToggle={(v) => setPcosSymptoms((a) => toggleIn(a, v))}
-            />
-          </Field>
-          <Field label="Tetany episode?">
-            <div className="mt-1 flex gap-2">
-              <Chip active={!tetany} onClick={() => setTetany(false)}>
-                No
-              </Chip>
-              <Chip active={tetany} onClick={() => setTetany(true)}>
-                Yes — log it
-              </Chip>
-            </div>
-          </Field>
-          {tetany && (
-            <div className="rounded-2xl border border-border p-3 space-y-3">
-              <Field label="Type">
-                <CustomChipList
-                  base={TETANY_TYPES}
-                  custom={data.custom.tetanyTypes}
-                  descriptions={TETANY_TYPE_DESC}
-                  onAddCustom={(v) => addCustom("tetanyTypes", v)}
-                  onRemoveCustom={(v) => {
-                    removeCustom("tetanyTypes", v);
-                    setTetanyTypes((a) => a.filter((x) => x !== v));
-                  }}
-                  onRenameCustom={(o, n) => {
-                    renameCustom("tetanyTypes", o, n);
-                    setTetanyTypes((a) => a.map((x) => (x === o ? n : x)));
-                  }}
-                  selected={tetanyTypes}
-                  onToggle={(v) => setTetanyTypes((a) => toggleIn(a, v))}
-                />
-              </Field>
-              <Field label="Location">
-                <CustomChipList
-                  base={TETANY_LOCATIONS_DEFAULT}
-                  custom={data.custom.tetanyLocations}
-                  onAddCustom={(v) => addCustom("tetanyLocations", v)}
-                  onRemoveCustom={(v) => {
-                    removeCustom("tetanyLocations", v);
-                    setTetanyLoc((a) => a.filter((x) => x !== v));
-                  }}
-                  onRenameCustom={(o, n) => {
-                    renameCustom("tetanyLocations", o, n);
-                    setTetanyLoc((a) => a.map((x) => (x === o ? n : x)));
-                  }}
-                  selected={tetanyLoc}
-                  onToggle={(v) => setTetanyLoc((a) => toggleIn(a, v))}
-                />
-              </Field>
-              <Field label={`Intensity ${tetanyIntensity}/5`}>
-                <IntensityScale
-                  value={tetanyIntensity}
-                  onChange={setTetanyIntensity}
-                  max={5}
-                  from={1}
-                  step={1}
-                  descriptions={getScaleDesc(data, "tetany")}
-                  legendTitle="Tetany intensity scale"
-                  compactSingleRow
-                />
-              </Field>
-              <DurationField
-                minutes={tetanyMin}
-                setMinutes={setTetanyMin}
-                ongoing={tetanyOngoing}
-                setOngoing={setTetanyOngoing}
-              />
-              <Field label="Triggers">
-                <CustomChipList
-                  base={TETANY_TRIGGERS}
-                  custom={data.custom.tetanyTriggers}
-                  onAddCustom={(v) => addCustom("tetanyTriggers", v)}
-                  onRemoveCustom={(v) => {
-                    removeCustom("tetanyTriggers", v);
-                    setTetanyTriggers((a) => a.filter((x) => x !== v));
-                  }}
-                  onRenameCustom={(o, n) => {
-                    renameCustom("tetanyTriggers", o, n);
-                    setTetanyTriggers((a) => a.map((x) => (x === o ? n : x)));
-                  }}
-                  selected={tetanyTriggers}
-                  onToggle={(v) => setTetanyTriggers((a) => toggleIn(a, v))}
-                />
-              </Field>
-              <Field label="What helped">
-                <CustomChipList
-                  base={TETANY_HELPED_DEFAULT}
-                  custom={data.custom.tetanyHelped}
-                  onAddCustom={(v) => addCustom("tetanyHelped", v)}
-                  onRemoveCustom={(v) => {
-                    removeCustom("tetanyHelped", v);
-                    setTetanyHelped((a) => a.filter((x) => x !== v));
-                  }}
-                  onRenameCustom={(o, n) => {
-                    renameCustom("tetanyHelped", o, n);
-                    setTetanyHelped((a) => a.map((x) => (x === o ? n : x)));
-                  }}
-                  selected={tetanyHelped}
-                  onToggle={(v) => setTetanyHelped((a) => toggleIn(a, v))}
-                />
-              </Field>
-              <Field label="Note (optional)">
-                <Textarea rows={2} value={tetanyNote} onChange={(e) => setTetanyNote(e.target.value)} />
-              </Field>
-            </div>
-          )}
-          <Field label="Panic attack?">
-            <div className="mt-1 flex gap-2">
-              <Chip active={!panic} onClick={() => setPanic(false)}>
-                No
-              </Chip>
-              <Chip active={panic} onClick={() => setPanic(true)}>
-                Yes — log it
-              </Chip>
-            </div>
-          </Field>
-          {panic && (
-            <div className="rounded-2xl border border-border p-3 space-y-3">
-              <Field label="Time">
-                <Input type="time" value={panicTime} onChange={(e) => setPanicTime(e.target.value)} />
-              </Field>
-              <DurationField
-                minutes={panicMinutes}
-                setMinutes={setPanicMinutes}
-                ongoing={panicOngoing}
-                setOngoing={setPanicOngoing}
-              />
-              <Field label={`Intensity ${panicIntensity}/10`}>
-                <IntensityScale
-                  value={panicIntensity}
-                  onChange={setPanicIntensity}
-                  max={10}
-                  from={1}
-                  step={1}
-                  descriptions={getScaleDesc(data, "panic")}
-                  legendTitle="Panic intensity scale"
-                  compactSingleRow
-                />
-              </Field>
-              <Field label="Physical symptoms">
-                <CustomChipList
-                  base={PANIC_PHYSICAL}
-                  custom={data.custom.panicPhysical}
-                  onAddCustom={(v) =>
-                    update((d) => ({ ...d, custom: { ...d.custom, panicPhysical: [...d.custom.panicPhysical, v] } }))
-                  }
-                  onRemoveCustom={(v) => {
-                    update((d) => ({
-                      ...d,
-                      custom: { ...d.custom, panicPhysical: d.custom.panicPhysical.filter((x) => x !== v) },
-                    }));
-                    setPanicPhysical((a) => a.filter((x) => x !== v));
-                  }}
-                  onRenameCustom={(o, n) => {
-                    update((d) => ({
-                      ...d,
-                      custom: { ...d.custom, panicPhysical: d.custom.panicPhysical.map((x) => (x === o ? n : x)) },
-                    }));
-                    setPanicPhysical((a) => a.map((x) => (x === o ? n : x)));
-                  }}
-                  selected={panicPhysical}
-                  onToggle={(v) => setPanicPhysical((a) => toggleIn(a, v))}
-                />
-              </Field>
-              <Field label="Cognitive symptoms">
-                <CustomChipList
-                  base={PANIC_COGNITIVE}
-                  custom={data.custom.panicCognitive}
-                  onAddCustom={(v) =>
-                    update((d) => ({ ...d, custom: { ...d.custom, panicCognitive: [...d.custom.panicCognitive, v] } }))
-                  }
-                  onRemoveCustom={(v) => {
-                    update((d) => ({
-                      ...d,
-                      custom: { ...d.custom, panicCognitive: d.custom.panicCognitive.filter((x) => x !== v) },
-                    }));
-                    setPanicCognitive((a) => a.filter((x) => x !== v));
-                  }}
-                  onRenameCustom={(o, n) => {
-                    update((d) => ({
-                      ...d,
-                      custom: { ...d.custom, panicCognitive: d.custom.panicCognitive.map((x) => (x === o ? n : x)) },
-                    }));
-                    setPanicCognitive((a) => a.map((x) => (x === o ? n : x)));
-                  }}
-                  selected={panicCognitive}
-                  onToggle={(v) => setPanicCognitive((a) => toggleIn(a, v))}
-                />
-              </Field>
-              <Field label="Trigger (or 'no obvious trigger')">
-                <Textarea rows={2} value={panicTrigger} onChange={(e) => setPanicTrigger(e.target.value)} />
-              </Field>
-              <Field label="Place (optional)">
-                <Input value={panicPlace} onChange={(e) => setPanicPlace(e.target.value)} />
-              </Field>
-              <Field label="Hyperventilation">
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {(["no", "before", "during", "unknown"] as const).map((v) => (
-                    <Chip key={v} active={panicHyper === v} onClick={() => setPanicHyper(v)}>
-                      {v}
-                    </Chip>
-                  ))}
-                </div>
-              </Field>
-              <Field label="Tetany present?">
-                <div className="mt-2 flex gap-2">
-                  <Chip active={!panicTetany} onClick={() => setPanicTetany(false)}>
-                    No
-                  </Chip>
-                  <Chip active={panicTetany} onClick={() => setPanicTetany(true)}>
-                    Yes
-                  </Chip>
-                </div>
-              </Field>
-              <Field label="What helped">
-                <CustomChipList
-                  base={PANIC_HELPED_DEFAULT}
-                  custom={data.custom.panicHelped}
-                  onAddCustom={(v) =>
-                    update((d) => ({ ...d, custom: { ...d.custom, panicHelped: [...d.custom.panicHelped, v] } }))
-                  }
-                  onRemoveCustom={(v) => {
-                    update((d) => ({
-                      ...d,
-                      custom: { ...d.custom, panicHelped: d.custom.panicHelped.filter((x) => x !== v) },
-                    }));
-                    setPanicHelped((a) => a.filter((x) => x !== v));
-                  }}
-                  onRenameCustom={(o, n) => {
-                    update((d) => ({
-                      ...d,
-                      custom: { ...d.custom, panicHelped: d.custom.panicHelped.map((x) => (x === o ? n : x)) },
-                    }));
-                    setPanicHelped((a) => a.map((x) => (x === o ? n : x)));
-                  }}
-                  selected={panicHelped}
-                  onToggle={(v) => setPanicHelped((a) => toggleIn(a, v))}
-                />
-              </Field>
-              <Field label="Note (optional)">
-                <Textarea rows={2} value={panicNote} onChange={(e) => setPanicNote(e.target.value)} />
-              </Field>
-            </div>
-          )}
-        </div>
-      )}
-
-      {step === 4 && (
-        <div className="space-y-4">
-          {(() => {
-            const STRESS_DESC = getScaleDesc(data, "stress");
-            return (
-              <Field label={`Stress ${stress ?? "-"} / 10`}>
-                <IntensityScale
-                  value={stress ?? -1}
-                  onChange={(n) => setStress(stress === n ? undefined : n)}
-                  max={10}
-                  from={0}
-                  descriptions={STRESS_DESC}
-                  legendTitle="Stress scale"
-                />
-              </Field>
-            );
-          })()}
-          <Field label="Body battery">
-            <div className="mt-2 flex justify-between gap-2">
-              {BODY_BATTERY.map((b) => (
-                <button
-                  key={b.n}
-                  type="button"
-                  onClick={() => setBodyBattery(bodyBattery === b.n ? undefined : b.n)}
-                  className={`flex flex-1 flex-col items-center gap-1 rounded-2xl border p-2 transition ${bodyBattery === b.n ? "border-primary bg-primary/10" : "border-border bg-surface"}`}
-                >
-                  <div className="grid h-10 w-6 place-items-end rounded-md border-2 border-foreground/60 p-0.5">
-                    <div className="w-full rounded" style={{ height: `${b.n * 18}%`, background: b.color }} />
-                  </div>
-                  <span className="text-[10px]">{b.emoji}</span>
-                </button>
-              ))}
-            </div>
-          </Field>
-          <Field label="Mood">
-            <CustomChipList
-              base={MOODS_DEFAULT}
-              custom={data.custom.moods}
-              onAddCustom={(v) => addCustom("moods", v)}
-              onRemoveCustom={(v) => {
-                removeCustom("moods", v);
-                setMood((a) => a.filter((x) => x !== v));
-              }}
-              onRenameCustom={(o, n) => {
-                renameCustom("moods", o, n);
-                setMood((a) => a.map((x) => (x === o ? n : x)));
-              }}
-              selected={mood}
-              onToggle={(v) => setMood((a) => toggleIn(a, v))}
-            />
-          </Field>
-          <Field label="Time of entry">
-            <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
-          </Field>
-          <Field label="Note (optional)">
-            <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Anything else…" />
-          </Field>
-        </div>
-      )}
-
-      {quickSymptomUpdate && step === 3 && (
-        <SheetFooter className="fixed inset-x-0 z-30 h-[60px] flex-row items-center justify-between gap-3 border-b border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur" style={{ top: "calc(env(safe-area-inset-top) + 56px)" }}>
-          <button
-            type="button"
-            onClick={() => {
-              setQuickSymptomUpdate(false);
-              setCopiedFromTime(undefined);
-              setStep(0);
-            }}
-            className="flex items-center gap-1 px-1 text-sm font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <span aria-hidden="true" className="text-xl leading-none">←</span>
-            <span>Edit full log</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={save}
-            className="inline-flex h-10 min-w-[104px] items-center justify-center gap-1.5 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          >
-            <span>Save update</span>
-            <span aria-hidden="true" className="text-base leading-none">✓</span>
-          </button>
-        </SheetFooter>
-      )}
-    </div>
-  );
-}
-
-/* ------------------- PANIC attack ------------------- */
-function PanicForm({
-  date,
-  data,
-  update,
-  onDone,
-  initialEntry,
-}: {
-  date: string;
-  data: BixboData;
-  update: UpdateFn;
-  onDone: () => void;
-  initialEntry?: PanicAttack;
-}) {
-  const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
-  const [minutes, setMinutes] = useState(initialEntry?.minutes != null ? String(initialEntry.minutes) : "10");
-  const [ongoing, setOngoing] = useState(initialEntry?.minutes == null && !!initialEntry);
-  const [intensity, setIntensity] = useState(initialEntry?.intensity ?? 5);
-  const [physical, setPhysical] = useState<string[]>(initialEntry?.physical ?? []);
-  const [cognitive, setCognitive] = useState<string[]>(initialEntry?.cognitive ?? []);
-  const [trigger, setTrigger] = useState(initialEntry?.trigger ?? "");
-  const [place, setPlace] = useState(initialEntry?.place ?? "");
-  const [hyper, setHyper] = useState<"no" | "before" | "during" | "unknown">(
-    initialEntry?.hyperventilation ?? "unknown",
-  );
-  const [tetanyPresent, setTetanyPresent] = useState(initialEntry?.tetanyPresent ?? false);
-  const [helped, setHelped] = useState<string[]>(initialEntry?.helped ?? []);
-  const [rescueMed, setRescueMed] = useState<string>(initialEntry?.rescueMed ?? "");
-  const [note, setNote] = useState(initialEntry?.note ?? "");
-  const addHelped = (v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, panicHelped: [...d.custom.panicHelped, v] } }));
-  const rmHelped = (v: string) => {
-    update((d) => ({ ...d, custom: { ...d.custom, panicHelped: d.custom.panicHelped.filter((x) => x !== v) } }));
-    setHelped((a) => a.filter((x) => x !== v));
-  };
-
-  const save = () => {
-    const editing = !!initialEntry;
-    const p: PanicAttack = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
-      time,
-      minutes: ongoing ? undefined : minutes === "" ? undefined : Number(minutes),
-      intensity,
-      physical,
-      cognitive,
-      trigger: trigger.trim(),
-      place: place.trim() || undefined,
-      hyperventilation: hyper,
-      tetanyPresent,
-      helped,
-      rescueMed: rescueMed.trim() || undefined,
-      note: note.trim() || undefined,
-    };
-    updateDayLog(update, date, (l) => ({
-      ...l,
-      panic: editing ? (l.panic ?? []).map((x) => (x.id === p.id ? p : x)) : [...(l.panic ?? []), p],
-    }));
-    onDone();
-  };
-  return (
-    <div className="space-y-3">
-      <SaveBar onCancel={onDone} onSave={save} />
-      <Field label="Time">
-        <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="w-full" />
-      </Field>
-      <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} />
-      <Field label={`Intensity ${intensity}/10`}>
-        <IntensityScale
-          value={intensity}
-          onChange={setIntensity}
-          max={10}
-          descriptions={getScaleDesc(data, "panic")}
-          legendTitle="Panic intensity scale"
-        />
-      </Field>
-      <Field label="Physical symptoms">
-        <CustomChipList
-          base={PANIC_PHYSICAL}
-          custom={data.custom.panicPhysical}
-          onAddCustom={(v) =>
-            update((d) => ({ ...d, custom: { ...d.custom, panicPhysical: [...d.custom.panicPhysical, v] } }))
-          }
-          onRemoveCustom={(v) => {
-            update((d) => ({
-              ...d,
-              custom: { ...d.custom, panicPhysical: d.custom.panicPhysical.filter((x) => x !== v) },
-            }));
-            setPhysical((a) => a.filter((x) => x !== v));
-          }}
-          onRenameCustom={(o, n) => {
-            update((d) => ({
-              ...d,
-              custom: { ...d.custom, panicPhysical: d.custom.panicPhysical.map((x) => (x === o ? n : x)) },
-            }));
-            setPhysical((a) => a.map((x) => (x === o ? n : x)));
-          }}
-          selected={physical}
-          onToggle={(v) => setPhysical((a) => toggleIn(a, v))}
-        />
-      </Field>
-      <Field label="Cognitive symptoms">
-        <CustomChipList
-          base={PANIC_COGNITIVE}
-          custom={data.custom.panicCognitive}
-          onAddCustom={(v) =>
-            update((d) => ({ ...d, custom: { ...d.custom, panicCognitive: [...d.custom.panicCognitive, v] } }))
-          }
-          onRemoveCustom={(v) => {
-            update((d) => ({
-              ...d,
-              custom: { ...d.custom, panicCognitive: d.custom.panicCognitive.filter((x) => x !== v) },
-            }));
-            setCognitive((a) => a.filter((x) => x !== v));
-          }}
-          onRenameCustom={(o, n) => {
-            update((d) => ({
-              ...d,
-              custom: { ...d.custom, panicCognitive: d.custom.panicCognitive.map((x) => (x === o ? n : x)) },
-            }));
-            setCognitive((a) => a.map((x) => (x === o ? n : x)));
-          }}
-          selected={cognitive}
-          onToggle={(v) => setCognitive((a) => toggleIn(a, v))}
-        />
-      </Field>
-      <Field label="Trigger (or 'no obvious trigger')">
-        <Textarea rows={2} value={trigger} onChange={(e) => setTrigger(e.target.value)} />
-      </Field>
-      <Field label="Place (optional)">
-        <Input value={place} onChange={(e) => setPlace(e.target.value)} />
-      </Field>
-      <Field label="Hyperventilation">
-        <div className="mt-2 flex flex-wrap gap-2">
-          {(["no", "before", "during", "unknown"] as const).map((v) => (
-            <Chip key={v} active={hyper === v} onClick={() => setHyper(v)}>
-              {v}
-            </Chip>
-          ))}
-        </div>
-      </Field>
-      <Field label="Tetany present?">
-        <div className="mt-2 flex gap-2">
-          <Chip active={!tetanyPresent} onClick={() => setTetanyPresent(false)}>
-            No
-          </Chip>
-          <Chip active={tetanyPresent} onClick={() => setTetanyPresent(true)}>
-            Yes
-          </Chip>
-        </div>
-      </Field>
-      <Field label="What helped">
-        <CustomChipList
-          base={PANIC_HELPED_DEFAULT}
-          custom={data.custom.panicHelped}
-          onAddCustom={addHelped}
-          onRemoveCustom={rmHelped}
-          selected={helped}
-          onToggle={(v) => setHelped((a) => toggleIn(a, v))}
-        />
-      </Field>
-      <Field label="Rescue med (what you took)">
-        <Input value={rescueMed} onChange={(e) => setRescueMed(e.target.value)} placeholder="e.g. Frontin 0.25 mg" />
-        {data.meds.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {data.meds.map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => setRescueMed(m.dose ? `${m.name} ${m.dose}` : m.name)}
-                className="rounded-full bg-tint px-3 py-1 text-xs font-medium text-foreground ring-1 ring-border"
-              >
-                {m.name}
-                {m.dose ? ` ${m.dose}` : ""}
-              </button>
-            ))}
-          </div>
-        )}
-      </Field>
-      <Field label="Note (optional)">
-        <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
-      </Field>
-    </div>
-  );
-}
-
-/* ------------------- TETANY episode ------------------- */
-function TetanyForm({
-  date,
-  data,
-  update,
-  onDone,
-  initialEntry,
-}: {
-  date: string;
-  data: BixboData;
-  update: UpdateFn;
-  onDone: () => void;
-  initialEntry?: TetanyEpisode;
-}) {
-  const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
-  const [types, setTypes] = useState<string[]>(initialEntry?.types ?? []);
-  const [loc, setLoc] = useState<string[]>(initialEntry?.location ?? []);
-  const [intensity, setIntensity] = useState(initialEntry?.intensity ?? 1);
-  const [minutes, setMinutes] = useState(initialEntry?.minutes != null ? String(initialEntry.minutes) : "5");
-  const [ongoing, setOngoing] = useState(initialEntry?.minutes == null && !!initialEntry);
-  const [triggers, setTriggers] = useState<string[]>(initialEntry?.triggers ?? []);
-  const [helped, setHelped] = useState<string[]>(initialEntry?.helped ?? []);
-  const [rescueMed, setRescueMed] = useState<string>(initialEntry?.rescueMed ?? "");
-  const [note, setNote] = useState(initialEntry?.note ?? "");
-
-  type CK = "tetanyTypes" | "tetanyLocations" | "tetanyTriggers" | "tetanyHelped";
-  const addC = (k: CK, v: string) => update((d) => ({ ...d, custom: { ...d.custom, [k]: [...d.custom[k], v] } }));
-  const rmC = (k: CK, v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [k]: d.custom[k].filter((x) => x !== v) } }));
-  const rnC = (k: CK, o: string, n: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [k]: d.custom[k].map((x) => (x === o ? n : x)) } }));
-
-  const save = () => {
-    const editing = !!initialEntry;
-    const t: TetanyEpisode = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
-      time,
-      types,
-      location: loc,
-      intensity,
-      minutes: ongoing ? undefined : minutes === "" ? undefined : Number(minutes),
-      triggers,
-      helped,
-      rescueMed: rescueMed.trim() || undefined,
-      note: note.trim() || undefined,
-    };
-    updateDayLog(update, date, (l) => ({
-      ...l,
-      tetany: editing ? (l.tetany ?? []).map((x) => (x.id === t.id ? t : x)) : [...(l.tetany ?? []), t],
-    }));
-    onDone();
-  };
-
-  return (
-    <div className="space-y-3">
-      <SaveBar onCancel={onDone} onSave={save} />
-      <Field label="Time">
-        <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
-      </Field>
-      <Field label="Type">
-        <CustomChipList
-          base={TETANY_TYPES}
-          custom={data.custom.tetanyTypes}
-          descriptions={TETANY_TYPE_DESC}
-          onAddCustom={(v) => addC("tetanyTypes", v)}
-          onRemoveCustom={(v) => {
-            rmC("tetanyTypes", v);
-            setTypes((a) => a.filter((x) => x !== v));
-          }}
-          onRenameCustom={(o, n) => {
-            rnC("tetanyTypes", o, n);
-            setTypes((a) => a.map((x) => (x === o ? n : x)));
-          }}
-          selected={types}
-          onToggle={(v) => setTypes((a) => toggleIn(a, v))}
-        />
-      </Field>
-      <Field label="Location">
-        <CustomChipList
-          base={TETANY_LOCATIONS_DEFAULT}
-          custom={data.custom.tetanyLocations}
-          onAddCustom={(v) => addC("tetanyLocations", v)}
-          onRemoveCustom={(v) => {
-            rmC("tetanyLocations", v);
-            setLoc((a) => a.filter((x) => x !== v));
-          }}
-          onRenameCustom={(o, n) => {
-            rnC("tetanyLocations", o, n);
-            setLoc((a) => a.map((x) => (x === o ? n : x)));
-          }}
-          selected={loc}
-          onToggle={(v) => setLoc((a) => toggleIn(a, v))}
-        />
-      </Field>
-      <Field label={`Intensity ${intensity}/5`}>
-        <IntensityScale
-          value={intensity}
-          onChange={setIntensity}
-          max={5}
-          descriptions={getScaleDesc(data, "tetany")}
-          legendTitle="Tetany intensity scale"
-        />
-      </Field>
-      <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} />
-      <Field label="Triggers">
-        <CustomChipList
-          base={TETANY_TRIGGERS}
-          custom={data.custom.tetanyTriggers}
-          onAddCustom={(v) => addC("tetanyTriggers", v)}
-          onRemoveCustom={(v) => {
-            rmC("tetanyTriggers", v);
-            setTriggers((a) => a.filter((x) => x !== v));
-          }}
-          onRenameCustom={(o, n) => {
-            rnC("tetanyTriggers", o, n);
-            setTriggers((a) => a.map((x) => (x === o ? n : x)));
-          }}
-          selected={triggers}
-          onToggle={(v) => setTriggers((a) => toggleIn(a, v))}
-        />
-      </Field>
-      <Field label="What helped">
-        <CustomChipList
-          base={TETANY_HELPED_DEFAULT}
-          custom={data.custom.tetanyHelped}
-          onAddCustom={(v) => addC("tetanyHelped", v)}
-          onRemoveCustom={(v) => {
-            rmC("tetanyHelped", v);
-            setHelped((a) => a.filter((x) => x !== v));
-          }}
-          onRenameCustom={(o, n) => {
-            rnC("tetanyHelped", o, n);
-            setHelped((a) => a.map((x) => (x === o ? n : x)));
-          }}
-          selected={helped}
-          onToggle={(v) => setHelped((a) => toggleIn(a, v))}
-        />
-      </Field>
-      <Field label="Rescue med (what you took)">
-        <Input value={rescueMed} onChange={(e) => setRescueMed(e.target.value)} placeholder="e.g. Magnesium 400 mg" />
-        {data.meds.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {data.meds.map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => setRescueMed(m.dose ? `${m.name} ${m.dose}` : m.name)}
-                className="rounded-full bg-tint px-3 py-1 text-xs font-medium text-foreground ring-1 ring-border"
-              >
-                {m.name}
-                {m.dose ? ` ${m.dose}` : ""}
-              </button>
-            ))}
-          </div>
-        )}
-      </Field>
-      <Field label="Note (optional)">
-        <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
-      </Field>
-    </div>
-  );
-}
-
-/* ------------------- PERIOD (Blueberry) ------------------- */
-function PeriodForm({
-  date,
-  data,
-  update,
-  onDone,
-}: {
-  date: string;
-  data: BixboData;
-  update: UpdateFn;
-  onDone: () => void;
-}) {
-  const cur = data.dayLogs[date]?.periodInfo;
-  const [level, setLevel] = useState<PeriodLevel>(cur?.level ?? "");
-  const [discharge, setDischarge] = useState<string>(cur?.discharge ?? "");
-  const [dNote, setDNote] = useState<string>(cur?.dischargeNote ?? "");
-  const [note, setNote] = useState<string>(cur?.note ?? "");
-  const [cramps, setCramps] = useState<number | undefined>(cur?.cramps);
-  const painDesc = getScaleDesc(data, "pain");
-
-  const save = () => {
-    updateDayLog(update, date, (l) => ({
-      ...l,
-      period: level || undefined,
-      periodInfo: {
-        level,
-        discharge: discharge || undefined,
-        dischargeNote: dNote.trim() || undefined,
-        note: note.trim() || undefined,
-        cramps,
+export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "BIXBO — Calendar & daily overview" },
+      {
+        name: "description",
+        content: "Track pain, panic attacks, cycle, meds, food and more — all on one calm calendar.",
       },
-    }));
-    onDone();
-  };
-  const LEVELS: { v: PeriodLevel; label: string; color: string }[] = [
-    { v: "spotting", label: "Spotting", color: "var(--period-spotting)" },
-    { v: "light", label: "Light", color: "var(--period-light)" },
-    { v: "medium", label: "Medium", color: "var(--period-medium)" },
-    { v: "heavy", label: "Heavy", color: "var(--period-heavy)" },
-    { v: "very-heavy", label: "Very heavy", color: "var(--period-veryheavy)" },
+      { property: "og:title", content: "BIXBO — Calendar & daily overview" },
+      { property: "og:description", content: "Track pain, panic attacks, cycle, meds, food and more." },
+    ],
+  }),
+  component: HomePage,
+});
+
+
+type VitalTrendMetric = "sleep" | "temperature" | "weight";
+type VitalTrendPeriod = "W" | "M" | "Y";
+
+type VitalTrendPoint = {
+  key: string;
+  label: string;
+  heading: string;
+  value?: number;
+  details: string[];
+};
+
+function averageNumbers(values: number[]): number | undefined {
+  if (!values.length) return undefined;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function daysBetweenInclusive(start: Date, end: Date): string[] {
+  const out: string[] = [];
+  let key = toKey(start);
+  const endKey = toKey(end);
+  while (key <= endKey) {
+    out.push(key);
+    key = addDays(key, 1);
+  }
+  return out;
+}
+
+function trendDayHeading(key: string): string {
+  return fromKey(key).toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function dailyVitalTrendValue(metric: VitalTrendMetric, log?: import("@/lib/storage").DayLog): number | undefined {
+  if (!log) return undefined;
+  if (metric === "sleep") return log.sleepHours ?? log.pregnancy?.sleepHours ?? log.postpartum?.sleepHours;
+  if (metric === "temperature") return averageDayTemperature(log);
+  return latestDayWeight(log);
+}
+
+function dailyVitalDetails(metric: VitalTrendMetric, key: string, data: BixboData): string[] {
+  const log = data.dayLogs[key];
+  if (!log) return [];
+
+  if (metric === "sleep") {
+    const hours = log.sleepHours ?? log.pregnancy?.sleepHours ?? log.postpartum?.sleepHours;
+    if (hours == null || !Number.isFinite(hours)) return [];
+    const details = [`Sleep ${hours.toFixed(1)} h`];
+    if (log.sleepQuality) {
+      details.push(`Quality: ${Array.isArray(log.sleepQuality) ? log.sleepQuality.join(", ") : log.sleepQuality}`);
+    }
+    return details;
+  }
+
+  const entries = metric === "temperature" ? log.temperatureEntries ?? [] : log.weightEntries ?? [];
+  const unit = metric === "temperature" ? "°C" : "kg";
+  if (entries.length) {
+    return entries
+      .filter((entry) => Number.isFinite(Number(entry.value)))
+      .map((entry) => `${entry.time || "—"} · ${Number(entry.value).toFixed(1)} ${unit}`);
+  }
+
+  const legacy = metric === "temperature" ? log.temperature : log.weight;
+  return legacy != null && Number.isFinite(legacy) ? [`Saved value · ${legacy.toFixed(1)} ${unit}`] : [];
+}
+
+type OverviewVitalEntry = {
+  id: string;
+  time: string;
+  value: number;
+};
+
+function overviewVitalEntries(
+  log: import("@/lib/storage").DayLog | undefined,
+  metric: "temperature" | "weight",
+): OverviewVitalEntry[] {
+  if (!log) return [];
+
+  const raw = metric === "temperature" ? log.temperatureEntries ?? [] : log.weightEntries ?? [];
+  const entries = raw
+    .filter((entry) => Number.isFinite(Number(entry.value)))
+    .map((entry) => ({
+      id: entry.id,
+      time: entry.time || "",
+      value: Number(entry.value),
+    }))
+    .sort((a, b) => a.time.localeCompare(b.time) || a.id.localeCompare(b.id));
+
+  if (entries.length) return entries;
+
+  const legacy = metric === "temperature" ? log.temperature : log.weight;
+  if (legacy == null || !Number.isFinite(legacy)) return [];
+
+  return [
+    {
+      id: `legacy-${metric}`,
+      time: "",
+      value: legacy,
+    },
   ];
-  return (
-    <div className="space-y-3">
-      <SaveBar onCancel={onDone} onSave={save} />
-      <Field label="Flow">
-        <div className="mt-2 grid grid-cols-5 gap-1.5">
-          {LEVELS.map((L) => (
-            <button
-              key={L.v}
-              onClick={() => setLevel(L.v)}
-              className={`rounded-2xl p-2 text-[11px] font-medium ${level === L.v ? "text-white ring-2 ring-foreground" : "bg-tint text-foreground"}`}
-              style={level === L.v ? { background: L.color } : undefined}
-            >
-              {L.label}
-            </button>
-          ))}
-        </div>
-      </Field>
-      <Field label={`Cramp pain ${cramps == null ? "—" : Number.isInteger(cramps) ? cramps : cramps.toFixed(1)} / 10`}>
-        <div className="mt-2 flex items-center gap-3">
-          <div
-            className="grid h-14 w-14 shrink-0 place-items-center rounded-full text-lg font-bold text-white"
-            style={{ background: cramps == null ? "hsl(var(--muted-foreground))" : painColor(cramps) }}
-          >
-            {cramps == null ? "—" : Number.isInteger(cramps) ? cramps : cramps.toFixed(1)}
-          </div>
-          <div className="flex-1">
-            <Slider value={[(cramps ?? 0) * 2]} min={0} max={20} step={1} onValueChange={([v]) => setCramps(v / 2)} />
-          </div>
-        </div>
-        <div className="mt-2 flex flex-wrap justify-center gap-1.5 px-1">
-          {Array.from({ length: 21 }, (_, i) => i / 2).map((n) => (
-            <button
-              key={n}
-              type="button"
-              onClick={() => setCramps(cramps === n ? undefined : n)}
-              title={`${n} — ${painDesc[Math.round(n)]}`}
-              className={`h-8 w-8 rounded-full text-[11px] font-semibold transition ${
-                cramps === n ? "text-white ring-2 ring-foreground" : "text-foreground"
-              }`}
-              style={{ background: painColor(n) }}
-            >
-              {Number.isInteger(n) ? n : n.toFixed(1)}
-            </button>
-          ))}
-        </div>
-        {cramps != null && (
-          <div className="mt-2 rounded-lg bg-tint px-2.5 py-1.5 text-[11px] leading-snug text-foreground">
-            <span className="font-semibold">Level {Math.round(cramps)}:</span> {painDesc[Math.round(cramps)]}
-          </div>
-        )}
-        <ScaleLegend
-          max={10}
-          from={0}
-          descriptions={painDesc}
-          value={cramps == null ? undefined : Math.round(cramps)}
-          title="Pain scale (Mankosky)"
-        />
-      </Field>
-      <Field label="Discharge (optional)">
-        <div className="mt-2 flex flex-wrap gap-2">
-          {DISCHARGE_OPTS.map((d) => (
-            <Chip
-              key={d.value}
-              active={discharge === d.value}
-              onClick={() => setDischarge(discharge === d.value ? "" : d.value)}
-              color={d.color}
-            >
-              {d.label}
-            </Chip>
-          ))}
-        </div>
-      </Field>
-      <Field label="Discharge note (optional)">
-        <Input value={dNote} onChange={(e) => setDNote(e.target.value)} />
-      </Field>
-      <Field label="Day note (optional)">
-        <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
-      </Field>
-      <Field label="Birth control since (optional)">
-        <Input
-          type="date"
-          value={data.settings.birthControlSince ?? ""}
-          onChange={(e) =>
-            update((d) => ({ ...d, settings: { ...d.settings, birthControlSince: e.target.value || undefined } }))
-          }
-        />
-        {data.settings.birthControlSince && (
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            Taking birth control since {data.settings.birthControlSince}
-          </p>
-        )}
-      </Field>
-      <Field label="Pregnant?">
-        <div className="mt-1 flex gap-2">
-          <Chip
-            active={!data.settings.pregnantSince}
-            onClick={() => update((d) => ({ ...d, settings: { ...d.settings, pregnantSince: undefined } }))}
-          >
-            No
-          </Chip>
-          <Chip
-            active={!!data.settings.pregnantSince}
-            onClick={() =>
-              update((d) => ({
-                ...d,
-                settings: { ...d.settings, pregnantSince: d.settings.pregnantSince ?? todayKey() },
-              }))
-            }
-          >
-            Yes
-          </Chip>
-        </div>
-        {data.settings.pregnantSince && (
-          <div className="mt-2">
-            <span className="text-xs font-medium text-muted-foreground">Since when</span>
-            <Input
-              type="date"
-              className="mt-1"
-              value={data.settings.pregnantSince}
-              onChange={(e) =>
-                update((d) => ({ ...d, settings: { ...d.settings, pregnantSince: e.target.value || undefined } }))
-              }
-            />
-            {(() => {
-              const p = pregnancyInfo(data.settings.pregnantSince);
-              return p ? (
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  Week {p.week} · Trimester {p.trimester} — cycle predictions are paused.
-                </p>
-              ) : null;
-            })()}
-          </div>
-        )}
-      </Field>
-      <div className="rounded-2xl bg-tint p-3 text-[11px] leading-relaxed text-muted-foreground">
-        Cycle prediction is based on your last period and cycle length (edit in Settings later).
-      </div>
-      {cur && (
-        <button
-          type="button"
-          onClick={() => {
-            updateDayLog(update, date, (l) => {
-              const { period: _p, periodInfo: _pi, ...rest } = l;
-              void _p;
-              void _pi;
-              return rest;
-            });
-            onDone();
-          }}
-          className="w-full rounded-2xl bg-destructive/10 py-2.5 text-sm font-medium text-destructive ring-1 ring-destructive/30"
-        >
-          Delete Blueberry entry
-        </button>
-      )}
-    </div>
-  );
 }
 
-/* ------------------- ŠukŠuk (Sex) ------------------- */
-function SexForm({
-  date,
-  data,
-  update,
-  onDone,
-  initialEntry,
-}: {
-  date: string;
-  data: BixboData;
-  update: UpdateFn;
-  onDone: () => void;
-  initialEntry?: SexEntry;
-}) {
-  const [kind, setKind] = useState<SexKind>(initialEntry?.kind ?? "sex");
-  const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
-  const [feelingAfter, setFeelingAfter] = useState<string[]>(asArr(initialEntry?.feelingAfter));
-  const [painful, setPainful] = useState<PainfulWhen>(initialEntry?.painful ?? "no");
-  const [note, setNote] = useState(initialEntry?.note ?? "");
-  const addCustom = (v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, sexTypes: [...d.custom.sexTypes, v] } }));
-  const rmCustom = (v: string) => {
-    if (!confirm(`Remove "${v}" from your list?`)) return;
-    update((d) => ({ ...d, custom: { ...d.custom, sexTypes: d.custom.sexTypes.filter((x) => x !== v) } }));
-    if (kind === (`other:${v}` as SexKind)) setKind("sex");
-  };
-  const custom = data.custom.sexTypes;
-  const save = () => {
-    const editing = !!initialEntry;
-    const e: SexEntry = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
-      time,
-      kind,
-      feelingAfter: feelingAfter.length ? feelingAfter : undefined,
-      painful,
-      note: note.trim() || undefined,
-    };
-    updateDayLog(update, date, (l) => ({
-      ...l,
-      sex: editing ? (l.sex ?? []).map((x) => (x.id === e.id ? e : x)) : [...(l.sex ?? []), e],
-    }));
-    onDone();
-  };
-  return (
-    <div className="space-y-3">
-      <SaveBar onCancel={onDone} onSave={save} />
-      <Field label="Time">
-        <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
-      </Field>
-      <Field label="Type">
-        <div className="mt-2 flex flex-wrap gap-2">
-          {SEX_TYPES_DEFAULT.map((o) => (
-            <Chip key={o.value} active={kind === o.value} onClick={() => setKind(o.value)}>
-              {o.label}
-            </Chip>
-          ))}
-          {custom.map((c) => (
-            <span key={c} className="relative inline-flex items-center">
-              <Chip active={kind === (`other:${c}` as SexKind)} onClick={() => setKind(`other:${c}` as SexKind)}>
-                {c}
-              </Chip>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  rmCustom(c);
-                }}
-                aria-label={`Remove ${c}`}
-                className="ml-1 grid h-5 w-5 place-items-center rounded-full bg-tint text-muted-foreground hover:bg-destructive/15 hover:text-destructive"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </span>
-          ))}
-          <AddCustomInline onAdd={addCustom} />
-        </div>
-      </Field>
-      <Field label="How I feel after">
-        <CustomChipList
-          base={SEX_FEELINGS_DEFAULT}
-          custom={data.custom.sexFeelings ?? []}
-          onAddCustom={(v) =>
-            update((d) => ({ ...d, custom: { ...d.custom, sexFeelings: [...(d.custom.sexFeelings ?? []), v] } }))
-          }
-          onRemoveCustom={(v) => {
-            update((d) => ({
-              ...d,
-              custom: { ...d.custom, sexFeelings: (d.custom.sexFeelings ?? []).filter((x) => x !== v) },
-            }));
-            setFeelingAfter((a) => a.filter((x) => x !== v));
-          }}
-          onRenameCustom={(o, n) => {
-            update((d) => ({
-              ...d,
-              custom: { ...d.custom, sexFeelings: (d.custom.sexFeelings ?? []).map((x) => (x === o ? n : x)) },
-            }));
-            setFeelingAfter((a) => a.map((x) => (x === o ? n : x)));
-          }}
-          selected={feelingAfter}
-          onToggle={(v) => setFeelingAfter((a) => toggleIn(a, v))}
-        />
-      </Field>
-      <Field label="Painful?">
-        <div className="mt-2 flex gap-2">
-          {(["no", "before", "during", "after"] as const).map((v) => (
-            <Chip key={v} active={painful === v} onClick={() => setPainful(v)}>
-              {v}
-            </Chip>
-          ))}
-        </div>
-      </Field>
-      <Field label="Note (optional)">
-        <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
-      </Field>
-    </div>
-  );
+function vitalOverviewSummary(
+  log: import("@/lib/storage").DayLog | undefined,
+  metric: "temperature" | "weight",
+): string {
+  const entries = overviewVitalEntries(log, metric);
+  if (!entries.length) return "—";
+
+  const latest = entries[entries.length - 1];
+  const value = latest.value.toFixed(1).replace(/\.0$/, "");
+  return entries.length > 1 ? `${value} · ${entries.length}×` : value;
 }
-function AddCustomInline({ onAdd }: { onAdd: (v: string) => void }) {
-  const [adding, setAdding] = useState(false);
-  const [text, setText] = useState("");
-  if (!adding)
-    return (
-      <button
-        type="button"
-        onClick={() => setAdding(true)}
-        className="flex items-center gap-1 rounded-full bg-tint px-3 py-1.5 text-xs font-medium text-muted-foreground"
-      >
-        <Plus className="h-3 w-3" /> Add
-      </button>
-    );
-  const commit = () => {
-    if (text.trim()) {
-      onAdd(text.trim());
-      setText("");
-      setAdding(false);
+
+function monthlyVitalRecords(metric: VitalTrendMetric, start: Date, end: Date, data: BixboData) {
+  const values: number[] = [];
+  const details: string[] = [];
+  const unit = vitalTrendUnit(metric);
+
+  daysBetweenInclusive(start, end).forEach((key) => {
+    const log = data.dayLogs[key];
+    if (!log) return;
+    const shortDate = fromKey(key).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+
+    if (metric === "sleep") {
+      const hours = log.sleepHours ?? log.pregnancy?.sleepHours ?? log.postpartum?.sleepHours;
+      if (hours == null || !Number.isFinite(hours)) return;
+      values.push(hours);
+      const quality = log.sleepQuality
+        ? ` · ${Array.isArray(log.sleepQuality) ? log.sleepQuality.join(", ") : log.sleepQuality}`
+        : "";
+      details.push(`${shortDate} · ${hours.toFixed(1)} ${unit}${quality}`);
+      return;
     }
-  };
-  return (
-    <div className="flex items-center gap-1">
-      <Input
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            commit();
-          }
-        }}
-        className="h-8 w-32"
-        placeholder="Custom…"
-        autoFocus
-      />
-      <Button type="button" size="sm" onClick={commit}>
-        Add
-      </Button>
-    </div>
-  );
+
+    const entries = metric === "temperature" ? log.temperatureEntries ?? [] : log.weightEntries ?? [];
+    const validEntries = entries.filter((entry) => Number.isFinite(Number(entry.value)));
+    if (validEntries.length) {
+      validEntries.forEach((entry) => {
+        const value = Number(entry.value);
+        values.push(value);
+        details.push(`${shortDate} · ${entry.time || "—"} · ${value.toFixed(1)} ${unit}`);
+      });
+      return;
+    }
+
+    const legacy = metric === "temperature" ? log.temperature : log.weight;
+    if (legacy != null && Number.isFinite(legacy)) {
+      values.push(legacy);
+      details.push(`${shortDate} · ${legacy.toFixed(1)} ${unit}`);
+    }
+  });
+
+  return { values, details };
 }
 
-/* ------------------- Heat / Cold / TENS ------------------- */
-function ThermoForm({
-  date,
-  update,
-  onDone,
-  initialEntry,
-}: {
-  date: string;
-  update: UpdateFn;
-  onDone: () => void;
-  initialEntry?: ThermoSession;
-}) {
-  const [kind, setKind] = useState<ThermoKind>(initialEntry?.kind ?? "heat");
-  const [start, setStart] = useState(initialEntry?.start ?? nowHHMM());
-  const [minutes, setMinutes] = useState<string>(
-    initialEntry ? (initialEntry.minutes != null ? String(initialEntry.minutes) : "") : "20",
-  );
-  const [ongoing, setOngoing] = useState(!!initialEntry?.ongoing);
-  const [note, setNote] = useState(initialEntry?.note ?? "");
-  const save = () => {
-    const editing = !!initialEntry;
-    const mins = ongoing ? 0 : minutes === "" ? 0 : Number(minutes);
-    const e: ThermoSession = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
-      kind,
-      start,
-      minutes: mins,
-      ongoing: ongoing || undefined,
-      note: note.trim() || undefined,
+function trendRange(period: VitalTrendPeriod, anchor: Date) {
+  const base = new Date(anchor);
+  base.setHours(0, 0, 0, 0);
+
+  if (period === "W") {
+    const mondayOffset = (base.getDay() + 6) % 7;
+    const start = new Date(base);
+    start.setDate(base.getDate() - mondayOffset);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    return { start, end };
+  }
+
+  if (period === "M") {
+    return {
+      start: new Date(base.getFullYear(), base.getMonth(), 1),
+      end: new Date(base.getFullYear(), base.getMonth() + 1, 0),
     };
-    updateDayLog(update, date, (l) => ({
-      ...l,
-      heat: editing ? (l.heat ?? []).map((x) => (x.id === e.id ? e : x)) : [...(l.heat ?? []), e],
-    }));
-    onDone();
+  }
+
+  return {
+    start: new Date(base.getFullYear(), 0, 1),
+    end: new Date(base.getFullYear(), 11, 31),
   };
-  return (
-    <div className="space-y-3">
-      <SaveBar onCancel={onDone} onSave={save} />
-      <Field label="Type">
-        <div className="mt-2 flex gap-2">
-          <Chip active={kind === "heat"} onClick={() => setKind("heat")}>
-            <Ico e="♨️" size={16} /> Heat
-          </Chip>
-          <Chip active={kind === "cold"} onClick={() => setKind("cold")}>
-            <Ico e="🧊" size={16} /> Cold
-          </Chip>
-          <Chip active={kind === "tens"} onClick={() => setKind("tens")}>
-            <Ico e="⭐" size={16} /> TENS
-          </Chip>
-        </div>
-      </Field>
-      <Field label="Start">
-        <Input type="time" value={start} onChange={(e) => setStart(e.target.value)} className="w-full" />
-      </Field>
-      <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} />
-      <Field label="Note (optional)">
-        <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
-      </Field>
-    </div>
-  );
 }
 
-/* ------------------- FOOD ------------------- */
-function FoodForm({
-  date,
-  data,
-  update,
-  onDone,
-  initialEntry,
+function shiftTrendAnchor(anchor: Date, period: VitalTrendPeriod, delta: -1 | 1): Date {
+  const next = new Date(anchor);
+  if (period === "W") next.setDate(next.getDate() + delta * 7);
+  if (period === "M") {
+    next.setDate(1);
+    next.setMonth(next.getMonth() + delta);
+  }
+  if (period === "Y") next.setFullYear(next.getFullYear() + delta);
+  return next;
+}
+
+function vitalTrendTitle(metric: VitalTrendMetric): string {
+  if (metric === "sleep") return "Sleep";
+  if (metric === "temperature") return "Body temperature";
+  return "Weight";
+}
+
+function vitalTrendUnit(metric: VitalTrendMetric): string {
+  if (metric === "sleep") return "h";
+  if (metric === "temperature") return "°C";
+  return "kg";
+}
+
+function sleepTrendColor(hours: number): string {
+  if (hours < 8) return "#EF4444";
+  if (Math.abs(hours - 8) < 0.05) return "#F3C30D";
+  return "#72C64A";
+}
+
+function SleepTrendBars({
+  points,
+  activeIndex,
+  onSelect,
 }: {
-  date: string;
-  data: BixboData;
-  update: UpdateFn;
-  onDone: () => void;
-  initialEntry?: FoodEntry;
+  points: VitalTrendPoint[];
+  activeIndex: number | null;
+  onSelect: (index: number) => void;
 }) {
-  const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
-  const [what, setWhat] = useState(initialEntry?.what ?? "");
-  const [feelings, setFeelings] = useState<string[]>(initialEntry?.feelings ?? []);
-  const [after, setAfter] = useState(initialEntry?.after ?? "");
-  const [hydration, setHydration] = useState<string>(
-    initialEntry?.hydrationMl != null ? String(initialEntry.hydrationMl) : "",
-  );
-  const [caffeine, setCaffeine] = useState<string>(
-    initialEntry?.caffeineMg != null ? String(initialEntry.caffeineMg) : "",
-  );
-  const [alcohol, setAlcohol] = useState<string>(
-    initialEntry?.alcoholDrinks != null ? String(initialEntry.alcoholDrinks) : "",
-  );
-  const [symptomsAfter, setSymptomsAfter] = useState<string[]>(initialEntry?.symptomsAfter ?? []);
-  const [histFlare, setHistFlare] = useState<boolean>(!!initialEntry?.histamineFlare);
-  const [histSymptoms, setHistSymptoms] = useState<string[]>(initialEntry?.histamineSymptoms ?? []);
-  const [highHist, setHighHist] = useState<boolean>(!!initialEntry?.highHistamine);
-  const [allergensInMeal, setAllergensInMeal] = useState<string[]>(initialEntry?.allergensInMeal ?? []);
-  const [allergicReaction, setAllergicReaction] = useState<boolean>(!!initialEntry?.allergicReaction);
-  const [reactionSeverity, setReactionSeverity] = useState<"mild" | "moderate" | "severe" | undefined>(
-    initialEntry?.reactionSeverity,
-  );
-  const allergensBase = data.settings.allergens ?? ALLERGENS_DEFAULT;
-  const addCustom = (v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, foodFeelings: [...d.custom.foodFeelings, v] } }));
-  const addCustomList = (k: "histamineSymptoms" | "foodSymptomsAfter", v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [k]: [...(d.custom[k] ?? []), v] } }));
-  const removeCustomList = (k: "histamineSymptoms" | "foodSymptomsAfter", v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [k]: (d.custom[k] ?? []).filter((x) => x !== v) } }));
-  const renameCustomList = (k: "histamineSymptoms" | "foodSymptomsAfter", o: string, n: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [k]: (d.custom[k] ?? []).map((x) => (x === o ? n : x)) } }));
-  const save = () => {
-    if (!what.trim() && !hydration && !caffeine && !alcohol && !histFlare && symptomsAfter.length === 0) return;
-    const editing = !!initialEntry;
-    const entry: FoodEntry = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
-      time,
-      what: what.trim(),
-      feelings,
-      after: after.trim() || undefined,
-      hydrationMl: hydration === "" ? undefined : Number(hydration),
-      caffeineMg: caffeine === "" ? undefined : Number(caffeine),
-      alcoholDrinks: alcohol === "" ? undefined : Number(alcohol),
-      symptomsAfter: symptomsAfter.length ? symptomsAfter : undefined,
-      histamineFlare: histFlare || undefined,
-      histamineSymptoms: histFlare && histSymptoms.length ? histSymptoms : undefined,
-      highHistamine: highHist || undefined,
-      allergensInMeal: allergensInMeal.length ? allergensInMeal : undefined,
-      allergicReaction: allergicReaction || undefined,
-      reactionSeverity: allergicReaction ? reactionSeverity : undefined,
-    };
-    updateDayLog(update, date, (l) => ({
-      ...l,
-      food: editing ? (l.food ?? []).map((x) => (x.id === entry.id ? entry : x)) : [...(l.food ?? []), entry],
-    }));
-    onDone();
-  };
-  return (
-    <div className="space-y-3">
-      <SaveBar onCancel={onDone} onSave={save} />
-      <Field label="Time">
-        <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
-      </Field>
-      <Field label="What did you eat?">
-        <Textarea
-          rows={2}
-          value={what}
-          onChange={(e) => setWhat(e.target.value)}
-          placeholder="e.g. chicken, rice, tomato"
-        />
-      </Field>
-      <Field label="Quick add">
-        <div className="mt-2 flex flex-wrap gap-2">
-          {[
-            { l: "🍵 Matcha", w: "Matcha", caf: 70 },
-            { l: "☕ Coffee", w: "Coffee", caf: 95 },
-            { l: "🫖 Tea", w: "Tea", caf: 40 },
-            { l: "💧 Water", w: "Water", hyd: 250 },
-            { l: "🥑 Avocado", w: "Avocado" },
-          ].map((q) => (
-            <button
-              key={q.l}
-              type="button"
-              onClick={() => {
-                setWhat((w) => (w ? `${w}, ${q.w}` : q.w));
-                if (q.caf) setCaffeine(String((Number(caffeine) || 0) + q.caf));
-                if (q.hyd) setHydration(String((Number(hydration) || 0) + q.hyd));
-              }}
-              className="rounded-full bg-tint px-3 py-1.5 text-xs font-semibold ring-1 ring-border hover:bg-primary/10"
-            >
-              <IcoText text={q.l} size={14} />
-            </button>
-          ))}
-          {data.custom.foodQuickAdd.map((c) => (
-            <span key={c} className="relative inline-flex items-center">
-              <button
-                type="button"
-                onClick={() => setWhat((w) => (w ? `${w}, ${c}` : c))}
-                className="rounded-full bg-tint px-3 py-1.5 text-xs font-semibold ring-1 ring-border hover:bg-primary/10"
-              >
-                <IcoText text={c} size={14} />
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (confirm(`Remove "${c}" from quick add?`))
-                    update((d) => ({
-                      ...d,
-                      custom: { ...d.custom, foodQuickAdd: d.custom.foodQuickAdd.filter((x) => x !== c) },
-                    }));
-                }}
-                aria-label={`Remove ${c}`}
-                className="ml-1 grid h-5 w-5 place-items-center rounded-full bg-tint text-muted-foreground hover:bg-destructive/15 hover:text-destructive"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </span>
-          ))}
-          <AddCustomInline
-            onAdd={(v) =>
-              update((d) => ({ ...d, custom: { ...d.custom, foodQuickAdd: [...d.custom.foodQuickAdd, v] } }))
-            }
-          />
-        </div>
-      </Field>
-      <Field label="Reaction?">
-        <div className="mt-1 flex gap-2">
-          <Chip active={!allergicReaction} onClick={() => setAllergicReaction(false)}>
-            No / not sure
-          </Chip>
-          <Chip active={allergicReaction} onClick={() => setAllergicReaction(true)}>
-            Yes — log it
-          </Chip>
-        </div>
-        {allergicReaction && (
-          <div className="mt-2 flex gap-2">
-            {(["mild", "moderate", "severe"] as const).map((s2) => (
-              <Chip key={s2} active={reactionSeverity === s2} onClick={() => setReactionSeverity(s2)}>
-                {s2[0].toUpperCase() + s2.slice(1)}
-              </Chip>
-            ))}
-          </div>
-        )}
-      </Field>
-      <Field label="How do I feel after food?">
-        <CustomChipList
-          base={FOOD_FEELINGS_DEFAULT}
-          custom={data.custom.foodFeelings}
-          onAddCustom={addCustom}
-          onRemoveCustom={(v) => {
-            update((d) => ({
-              ...d,
-              custom: { ...d.custom, foodFeelings: d.custom.foodFeelings.filter((x) => x !== v) },
-            }));
-            setFeelings((a) => a.filter((x) => x !== v));
-          }}
-          selected={feelings}
-          onToggle={(v) => setFeelings((a) => toggleIn(a, v))}
-        />
-      </Field>
-      <Field label="Symptoms after food">
-        <CustomChipList
-          base={FOOD_SYMPTOMS_AFTER}
-          custom={data.custom.foodSymptomsAfter ?? []}
-          onAddCustom={(v) => addCustomList("foodSymptomsAfter", v)}
-          onRemoveCustom={(v) => {
-            removeCustomList("foodSymptomsAfter", v);
-            setSymptomsAfter((a) => a.filter((x) => x !== v));
-          }}
-          onRenameCustom={(o, n) => {
-            renameCustomList("foodSymptomsAfter", o, n);
-            setSymptomsAfter((a) => a.map((x) => (x === o ? n : x)));
-          }}
-          selected={symptomsAfter}
-          onToggle={(v) => setSymptomsAfter((a) => toggleIn(a, v))}
-        />
-      </Field>
-      <Field label="High histamine food?">
-        <div className="mt-1 flex gap-2">
-          <Chip active={!highHist} onClick={() => setHighHist(false)}>
-            No
-          </Chip>
-          <Chip active={highHist} onClick={() => setHighHist(true)}>
-            Yes
-          </Chip>
-        </div>
-      </Field>
-      <Field label="Histamine flare?">
-        <div className="mt-1 flex gap-2">
-          <Chip active={!histFlare} onClick={() => setHistFlare(false)}>
-            No
-          </Chip>
-          <Chip active={histFlare} onClick={() => setHistFlare(true)}>
-            Yes — log it
-          </Chip>
-        </div>
-      </Field>
-      {histFlare && (
-        <div className="rounded-2xl border border-border p-3">
-          <Field label="Histamine flare symptoms">
-            <CustomChipList
-              base={HISTAMINE_SYMPTOMS}
-              custom={data.custom.histamineSymptoms ?? []}
-              onAddCustom={(v) => addCustomList("histamineSymptoms", v)}
-              onRemoveCustom={(v) => {
-                removeCustomList("histamineSymptoms", v);
-                setHistSymptoms((a) => a.filter((x) => x !== v));
-              }}
-              onRenameCustom={(o, n) => {
-                renameCustomList("histamineSymptoms", o, n);
-                setHistSymptoms((a) => a.map((x) => (x === o ? n : x)));
-              }}
-              selected={histSymptoms}
-              onToggle={(v) => setHistSymptoms((a) => toggleIn(a, v))}
-            />
-          </Field>
-        </div>
-      )}
-      <Field label="Allergens in this meal">
-        <CustomChipList
-          base={allergensBase}
-          custom={data.custom.allergens}
-          onAddCustom={(v) =>
-            update((d) => ({
-              ...d,
-              settings: { ...d.settings, allergens: [...(d.settings.allergens ?? ALLERGENS_DEFAULT), v] },
-              custom: { ...d.custom, allergens: [...d.custom.allergens, v] },
-            }))
-          }
-          onRemoveCustom={(v) => {
-            update((d) => ({ ...d, custom: { ...d.custom, allergens: d.custom.allergens.filter((x) => x !== v) } }));
-            setAllergensInMeal((a) => a.filter((x) => x !== v));
-          }}
-          onRenameCustom={(o, n) => {
-            update((d) => ({
-              ...d,
-              custom: { ...d.custom, allergens: d.custom.allergens.map((x) => (x === o ? n : x)) },
-            }));
-            setAllergensInMeal((a) => a.map((x) => (x === o ? n : x)));
-          }}
-          selected={allergensInMeal}
-          onToggle={(v) => setAllergensInMeal((a) => toggleIn(a, v))}
-        />
-      </Field>
-      <div className="grid grid-cols-3 gap-2">
-        <Field label="Water (ml)">
-          <Input type="number" value={hydration} onChange={(e) => setHydration(e.target.value)} placeholder="300" />
-        </Field>
-        <Field label="Caffeine (mg)">
-          <Input type="number" value={caffeine} onChange={(e) => setCaffeine(e.target.value)} placeholder="80" />
-        </Field>
-        <Field label="Alcohol (drinks)">
-          <Input type="number" value={alcohol} onChange={(e) => setAlcohol(e.target.value)} placeholder="0" />
-        </Field>
-      </div>
-      <Field label="Additional note (optional)">
-        <Textarea rows={2} value={after} onChange={(e) => setAfter(e.target.value)} />
-      </Field>
-    </div>
-  );
-}
+  const yLabels = [12, 10, 8, 6, 4, 2, 0];
+  const height = 132;
 
-/* ------------------- BOWEL ------------------- */
-function BristolIcon({ shape, color }: { shape: string; color: string }) {
-  const s = shape;
   return (
-    <svg viewBox="0 0 60 40" className="h-8 w-14 shrink-0">
-      {s === "lumps" &&
-        Array.from({ length: 5 }).map((_, i) => <circle key={i} cx={8 + i * 11} cy={20} r={4.5} fill={color} />)}
-      {s === "lumpy" && (
-        <rect x={4} y={12} width={52} height={16} rx={7} fill={color} stroke="#0002" strokeDasharray="4 3" />
-      )}
-      {s === "cracked" && (
-        <>
-          <rect x={4} y={12} width={52} height={16} rx={8} fill={color} />
-          {[16, 26, 36, 46].map((x) => (
-            <line key={x} x1={x} y1={13} x2={x} y2={27} stroke="#0004" strokeWidth={1.5} />
-          ))}
-        </>
-      )}
-      {s === "smooth" && <rect x={4} y={13} width={52} height={14} rx={7} fill={color} />}
-      {s === "blobs" && (
-        <>
-          <ellipse cx={16} cy={20} rx={10} ry={7} fill={color} />
-          <ellipse cx={32} cy={20} rx={9} ry={6} fill={color} />
-          <ellipse cx={46} cy={20} rx={8} ry={6} fill={color} />
-        </>
-      )}
-      {s === "mushy" && <path d="M4 22 Q10 10 20 22 T36 22 T56 22 L56 30 L4 30 Z" fill={color} />}
-      {s === "liquid" && (
-        <>
-          <rect x={4} y={22} width={52} height={8} rx={4} fill={color} />
-          {[12, 24, 36, 48].map((x) => (
-            <circle key={x} cx={x} cy={16} r={2} fill={color} opacity={0.6} />
-          ))}
-        </>
-      )}
-    </svg>
-  );
-}
-function BowelForm({
-  date,
-  data,
-  update,
-  onDone,
-  initialEntry,
-}: {
-  date: string;
-  data: BixboData;
-  update: UpdateFn;
-  onDone: () => void;
-  initialEntry?: BowelEntry;
-}) {
-  const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
-  const [bristol, setBristol] = useState<number>(initialEntry?.bristol ?? 4);
-  const [feelings, setFeelings] = useState<string[]>((initialEntry?.feelings ?? []).map(stripEmoji));
-  const [symptoms, setSymptoms] = useState<string[]>(initialEntry?.symptoms ?? []);
-  const [urinary, setUrinary] = useState<string[]>(initialEntry?.urinary ?? []);
-  const [note, setNote] = useState(initialEntry?.note ?? "");
-  const addUrinary = (v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, urinary: [...d.custom.urinary, v] } }));
-  const rmUrinary = (v: string) => {
-    update((d) => ({ ...d, custom: { ...d.custom, urinary: d.custom.urinary.filter((x) => x !== v) } }));
-    setUrinary((a) => a.filter((x) => x !== v));
-  };
-  const rnUrinary = (o: string, n: string) => {
-    update((d) => ({ ...d, custom: { ...d.custom, urinary: d.custom.urinary.map((x) => (x === o ? n : x)) } }));
-    setUrinary((a) => a.map((x) => (x === o ? n : x)));
-  };
-  const addFeel = (v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, bowelFeelings: [...d.custom.bowelFeelings, v] } }));
-  const rmFeel = (v: string) => {
-    update((d) => ({ ...d, custom: { ...d.custom, bowelFeelings: d.custom.bowelFeelings.filter((x) => x !== v) } }));
-    setFeelings((a) => a.filter((x) => x !== v));
-  };
-  const addSym = (v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, bowelSymptoms: [...d.custom.bowelSymptoms, v] } }));
-  const rmSym = (v: string) => {
-    update((d) => ({ ...d, custom: { ...d.custom, bowelSymptoms: d.custom.bowelSymptoms.filter((x) => x !== v) } }));
-    setSymptoms((a) => a.filter((x) => x !== v));
-  };
-  const save = () => {
-    const editing = !!initialEntry;
-    const entry: BowelEntry = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
-      time,
-      bristol,
-      feelings: feelings.length ? feelings : undefined,
-      symptoms: symptoms.length ? symptoms : undefined,
-      urinary: urinary.length ? urinary : undefined,
-      note: note.trim() || undefined,
-    };
-    updateDayLog(update, date, (l) => ({
-      ...l,
-      bowel: editing ? (l.bowel ?? []).map((x) => (x.id === entry.id ? entry : x)) : [...(l.bowel ?? []), entry],
-    }));
-    onDone();
-  };
-  return (
-    <div className="space-y-3">
-      <SaveBar onCancel={onDone} onSave={save} />
-      <Field label="Time">
-        <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
-      </Field>
-      <Field label="Bristol stool scale">
-        <div className="mt-1 space-y-1.5">
-          <button
-            onClick={() => setBristol(-1)}
-            className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-2 text-left text-sm transition ${
-              bristol === -1 ? "border-primary bg-primary/10" : "border-border bg-surface"
-            }`}
-          >
-            <span className="grid h-8 w-8 place-items-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">
-              ∅
-            </span>
-            <span className="flex-1">
-              <span className="font-medium">No bowel movement</span>
-              <br />
-              <span className="text-[11px] text-muted-foreground">Didn't go today</span>
-            </span>
-          </button>
-          <button
-            onClick={() => setBristol(0)}
-            className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-2 text-left text-sm transition ${
-              bristol === 0 ? "border-primary bg-primary/10" : "border-border bg-surface"
-            }`}
-          >
-            <span
-              className="grid h-8 w-8 place-items-center rounded-full text-xs font-semibold text-white"
-              style={{ background: "linear-gradient(135deg,#ef4444,#f59e0b,#eab308,#22c55e,#3b82f6,#8b5cf6)" }}
-            >
-              0
-            </span>
-            <span className="flex-1">
-              <span className="font-medium">Type 0 — Mystery</span>
-              <br />
-              <span className="text-[11px] text-muted-foreground">Unknown / mixed</span>
-            </span>
-          </button>
-
-          {BRISTOL.map((b) => (
-            <button
-              key={b.n}
-              onClick={() => setBristol(b.n)}
-              className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-2 text-left text-sm transition ${
-                bristol === b.n ? "border-primary bg-primary/10" : "border-border bg-surface"
-              }`}
-            >
-              <span
-                className="grid h-8 w-8 place-items-center rounded-full text-xs font-semibold text-white"
-                style={{ background: b.color }}
-              >
-                {b.n}
+    <div className="pt-1">
+      <div className="flex gap-1.5">
+        <div className="flex flex-col items-end pr-1" style={{ height }}>
+          <div className="flex h-full flex-col justify-between text-[8px] font-medium text-muted-foreground">
+            {yLabels.map((value) => (
+              <span key={value} className="leading-none tabular-nums">
+                {value}
               </span>
-              <BristolIcon shape={b.shape} color={b.color} />
-              <div className="flex-1">
-                <p className="font-medium">
-                  <IcoText text={b.label} size={14} />
-                </p>
-                <p className="text-[11px] text-muted-foreground">
-                  <IcoText text={b.sub} size={12} />
-                </p>
-              </div>
-            </button>
-          ))}
-        </div>
-      </Field>
-      <Field label="Urinary">
-        <CustomChipList
-          base={URINARY_DEFAULT}
-          custom={data.custom.urinary}
-          onAddCustom={addUrinary}
-          onRemoveCustom={rmUrinary}
-          onRenameCustom={rnUrinary}
-          selected={urinary}
-          onToggle={(v) => setUrinary((a) => toggleIn(a, v))}
-        />
-      </Field>
-      <Field label="How do you feel?">
-        <CustomChipList
-          base={BOWEL_FEELINGS_DEFAULT}
-          custom={data.custom.bowelFeelings}
-          onAddCustom={addFeel}
-          onRemoveCustom={rmFeel}
-          selected={feelings}
-          onToggle={(v) => setFeelings((a) => toggleIn(a, v))}
-        />
-      </Field>
-      <Field label="Symptoms">
-        <CustomChipList
-          base={BOWEL_SYMPTOMS_DEFAULT}
-          custom={data.custom.bowelSymptoms}
-          onAddCustom={addSym}
-          onRemoveCustom={rmSym}
-          selected={symptoms}
-          onToggle={(v) => setSymptoms((a) => toggleIn(a, v))}
-        />
-      </Field>
-      <Field label="Note (optional)">
-        <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
-      </Field>
-    </div>
-  );
-}
-
-/* ------------------- TEMP / WEIGHT / SLEEP ------------------- */
-function TempForm({
-  date,
-  data,
-  update,
-  onDone,
-}: {
-  date: string;
-  data: BixboData;
-  update: UpdateFn;
-  onDone: () => void;
-}) {
-  type VitalRow = {
-    id: string;
-    time: string;
-    value: number;
-  };
-
-  const cur = data.dayLogs[date] ?? {};
-
-  const [temperature, setTemperature] = useState("");
-  const [temperatureTime, setTemperatureTime] = useState(nowHHMM());
-
-  const [weight, setWeight] = useState("");
-  const [weightTime, setWeightTime] = useState(nowHHMM());
-
-  const [sleep, setSleep] = useState(cur.sleepHours != null ? String(cur.sleepHours) : "");
-
-  const [quality, setQuality] = useState<string[]>(asArr(cur.sleepQuality));
-
-  const sortVitals = (entries: VitalRow[]): VitalRow[] =>
-    entries.slice().sort((a, b) => a.time.localeCompare(b.time) || a.id.localeCompare(b.id));
-
-  const latestVitalValue = (entries: VitalRow[]): number | undefined => {
-    const sorted = sortVitals(entries);
-
-    return sorted.length ? sorted[sorted.length - 1].value : undefined;
-  };
-
-  const existingVitals = (
-    entries: VitalRow[] | undefined,
-    legacyValue: number | undefined,
-    legacyId: string,
-  ): VitalRow[] => {
-    if (entries?.length) {
-      return sortVitals(entries);
-    }
-
-    if (legacyValue != null && Number.isFinite(legacyValue)) {
-      return [
-        {
-          id: legacyId,
-          time: "00:00",
-          value: legacyValue,
-        },
-      ];
-    }
-
-    return [];
-  };
-
-  const temperatureEntries = useMemo(
-    () => existingVitals(cur.temperatureEntries, cur.temperature, `${date}-legacy-temperature`),
-    [cur.temperatureEntries, cur.temperature, date],
-  );
-
-  const weightEntries = useMemo(
-    () => existingVitals(cur.weightEntries, cur.weight, `${date}-legacy-weight`),
-    [cur.weightEntries, cur.weight, date],
-  );
-
-  const deleteTemperature = (id: string) => {
-    updateDayLog(update, date, (log) => {
-      const current = existingVitals(log.temperatureEntries, log.temperature, `${date}-legacy-temperature`);
-
-      const next = sortVitals(current.filter((entry) => entry.id !== id));
-
-      return {
-        ...log,
-        temperatureEntries: next.length ? next : undefined,
-        temperature: latestVitalValue(next),
-      };
-    });
-  };
-
-  const deleteWeight = (id: string) => {
-    updateDayLog(update, date, (log) => {
-      const current = existingVitals(log.weightEntries, log.weight, `${date}-legacy-weight`);
-
-      const next = sortVitals(current.filter((entry) => entry.id !== id));
-
-      return {
-        ...log,
-        weightEntries: next.length ? next : undefined,
-        weight: latestVitalValue(next),
-      };
-    });
-  };
-
-  const save = () => {
-    const temperatureValue = temperature.trim() === "" ? undefined : Number(temperature.replace(",", "."));
-
-    const weightValue = weight.trim() === "" ? undefined : Number(weight.replace(",", "."));
-
-    const sleepValue = sleep.trim() === "" ? undefined : Number(sleep.replace(",", "."));
-
-    updateDayLog(update, date, (log) => {
-      const currentTemperatures = existingVitals(log.temperatureEntries, log.temperature, `${date}-legacy-temperature`);
-
-      const currentWeights = existingVitals(log.weightEntries, log.weight, `${date}-legacy-weight`);
-
-      const nextTemperatures =
-        temperatureValue != null && Number.isFinite(temperatureValue)
-          ? sortVitals([
-              ...currentTemperatures,
-              {
-                id: crypto.randomUUID(),
-                time: temperatureTime || nowHHMM(),
-                value: temperatureValue,
-              },
-            ])
-          : currentTemperatures;
-
-      const nextWeights =
-        weightValue != null && Number.isFinite(weightValue)
-          ? sortVitals([
-              ...currentWeights,
-              {
-                id: crypto.randomUUID(),
-                time: weightTime || nowHHMM(),
-                value: weightValue,
-              },
-            ])
-          : currentWeights;
-
-      return {
-        ...log,
-
-        temperatureEntries: nextTemperatures.length ? nextTemperatures : undefined,
-
-        weightEntries: nextWeights.length ? nextWeights : undefined,
-
-        // Posledná hodnota zostáva aj v starom poli,
-        // aby fungoval Home, Calendar a staršie grafy.
-        temperature: latestVitalValue(nextTemperatures),
-
-        weight: latestVitalValue(nextWeights),
-
-        sleepHours: sleepValue != null && Number.isFinite(sleepValue) ? sleepValue : undefined,
-
-        sleepQuality: quality.length ? quality : undefined,
-      };
-    });
-
-    onDone();
-  };
-
-  return (
-    <div className="space-y-5">
-      <SaveBar onCancel={onDone} onSave={save} />
-      <Field label="New temperature measurement">
-        <div className="grid grid-cols-[1fr_120px] gap-2">
-          <Input
-            type="text"
-            inputMode="decimal"
-            value={temperature}
-            onChange={(e) => setTemperature(e.target.value.replace(/[^0-9.,]/g, "").replace(/([.,].*)[.,]/g, "$1"))}
-            placeholder="36,6 °C"
-          />
-
-          <Input type="time" value={temperatureTime} onChange={(e) => setTemperatureTime(e.target.value)} />
-        </div>
-
-        {temperatureEntries.length > 0 && (
-          <div className="mt-3 space-y-2">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Saved temperature measurements
-            </p>
-
-            {temperatureEntries.map((entry) => (
-              <div
-                key={entry.id}
-                className="flex items-center gap-3 rounded-2xl bg-surface px-3 py-2 ring-1 ring-border"
-              >
-                <span className="grid h-8 w-8 place-items-center rounded-full bg-tint">
-                  <Ico e="🌡️" size={19} />
-                </span>
-
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold">{entry.value.toFixed(1).replace(".", ",")} °C</p>
-
-                  <p className="text-xs text-muted-foreground">{entry.time}</p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => deleteTemperature(entry.id)}
-                  aria-label={`Delete temperature ${entry.value}`}
-                  className="rounded-full p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
             ))}
           </div>
-        )}
-      </Field>
-
-      <Field label="New weight measurement">
-        <div className="grid grid-cols-[1fr_120px] gap-2">
-          <Input
-            type="text"
-            inputMode="decimal"
-            value={weight}
-            onChange={(e) => setWeight(e.target.value.replace(/[^0-9.,]/g, "").replace(/([.,].*)[.,]/g, "$1"))}
-            placeholder="62,5 kg"
-          />
-
-          <Input type="time" value={weightTime} onChange={(e) => setWeightTime(e.target.value)} />
         </div>
 
-        {weightEntries.length > 0 && (
-          <div className="mt-3 space-y-2">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Saved weight measurements
-            </p>
-
-            {weightEntries.map((entry) => (
-              <div
-                key={entry.id}
-                className="flex items-center gap-3 rounded-2xl bg-surface px-3 py-2 ring-1 ring-border"
-              >
-                <span className="grid h-8 w-8 place-items-center rounded-full bg-tint">
-                  <Ico e="⚖️" size={19} />
-                </span>
-
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold">{entry.value.toFixed(1).replace(".", ",")} kg</p>
-
-                  <p className="text-xs text-muted-foreground">{entry.time}</p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => deleteWeight(entry.id)}
-                  aria-label={`Delete weight ${entry.value}`}
-                  className="rounded-full p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
+        <div className="relative flex-1">
+          <div className="pointer-events-none absolute inset-0 flex flex-col justify-between">
+            {yLabels.map((value) => (
+              <div key={value} className="border-t border-dashed border-border/70" />
             ))}
           </div>
-        )}
-      </Field>
 
-      <Field label="Sleep (hours)">
-        <Input
-          type="text"
-          inputMode="decimal"
-          value={sleep}
-          onChange={(e) => setSleep(e.target.value.replace(/[^0-9.,]/g, "").replace(/([.,].*)[.,]/g, "$1"))}
-          placeholder="8"
-        />
-      </Field>
-
-      <Field label="How I slept">
-        <div className="mt-2 flex flex-wrap gap-2">
-          {SLEEP_QUALITY.map((item) => (
-            <Chip
-              key={item}
-              active={quality.includes(item)}
-              onClick={() => setQuality((current) => toggleIn(current, item))}
-            >
-              {item}
-            </Chip>
-          ))}
-        </div>
-      </Field>
-    </div>
-  );
-}
-
-/* ------------------- MEDS ------------------- */
-function MedsForm({
-  date,
-  data,
-  update,
-  onDone,
-}: {
-  date: string;
-  data: BixboData;
-  update: UpdateFn;
-  onDone: () => void;
-}) {
-  const meds = data.meds;
-  const taken = data.medLog[date] ?? {};
-  const takenTimes = data.medLogTimes?.[date] ?? {};
-  const toggle = (key: string, defaultTime?: string) =>
-    update((d) => {
-      const day = { ...(d.medLog[date] ?? {}) };
-      const times = { ...(d.medLogTimes?.[date] ?? {}) };
-      const nextOn = !day[key];
-      day[key] = nextOn;
-      if (nextOn && defaultTime && !times[key]) times[key] = defaultTime;
-      if (!nextOn) delete times[key];
-      return { ...d, medLog: { ...d.medLog, [date]: day }, medLogTimes: { ...(d.medLogTimes ?? {}), [date]: times } };
-    });
-  const setTakenTime = (key: string, time: string) =>
-    update((d) => {
-      const times = { ...(d.medLogTimes?.[date] ?? {}) };
-      times[key] = time;
-      return { ...d, medLogTimes: { ...(d.medLogTimes ?? {}), [date]: times } };
-    });
-
-  const [extraName, setExtraName] = useState("");
-  const [extraDose, setExtraDose] = useState("");
-  const [extraTime, setExtraTime] = useState(nowHHMM());
-  const [extraNote, setExtraNote] = useState("");
-  const addExtra = () => {
-    if (!extraName.trim()) return;
-    const e: ExtraMed = {
-      id: crypto.randomUUID(),
-      time: extraTime,
-      name: extraName.trim(),
-      dose: extraDose.trim() || undefined,
-      note: extraNote.trim() || undefined,
-    };
-    updateDayLog(update, date, (l) => ({ ...l, extraMeds: [...(l.extraMeds ?? []), e] }));
-    setExtraName("");
-    setExtraDose("");
-    setExtraNote("");
-    setExtraTime(nowHHMM());
-  };
-  const today = date === todayKey();
-  const extras = data.dayLogs[date]?.extraMeds ?? [];
-
-  return (
-    <div className="space-y-4">
-      {meds.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No medications yet. Add them from Meds settings.</p>
-      ) : (
-        <div>
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">{today ? "Today" : date}</p>
-          <div className="mt-2 space-y-2">
-            {meds.map((m) =>
-              m.asNeeded ? (
-                <label key={m.id} className="flex items-center gap-3 rounded-2xl bg-surface p-3 ring-1 ring-border">
-                  <input
-                    type="checkbox"
-                    checked={!!taken[`${m.id}@asneeded`]}
-                    onChange={() => toggle(`${m.id}@asneeded`, nowHHMM())}
-                    className="h-4 w-4"
-                  />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">{m.name}</p>
-                    <p className="text-xs text-muted-foreground">As needed{m.dose ? ` · ${m.dose}` : ""}</p>
-                    {m.note && (
-                      <p className="text-[11px] text-muted-foreground">
-                        <Ico e="📝" size={13} /> <IcoText text={m.note} size={12} />
-                      </p>
-                    )}
-                  </div>
-                  {taken[`${m.id}@asneeded`] && (
-                    <Input
-                      type="time"
-                      value={takenTimes[`${m.id}@asneeded`] ?? nowHHMM()}
-                      onChange={(e) => setTakenTime(`${m.id}@asneeded`, e.target.value)}
-                      className="h-8 w-24"
-                    />
-                  )}
-                </label>
+          <div
+            className="relative grid items-end gap-[2px]"
+            style={{ gridTemplateColumns: `repeat(${Math.max(1, points.length)}, minmax(0, 1fr))`, height }}
+          >
+            {points.map((point, index) =>
+              point.value != null ? (
+                <button
+                  key={point.key}
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onSelect(index);
+                  }}
+                  aria-label={`${point.heading} · Sleep ${point.value.toFixed(1)} h`}
+                  className={`min-w-0 rounded-t transition active:scale-[0.98] ${
+                    activeIndex === index ? "ring-2 ring-foreground ring-offset-1 ring-offset-background" : ""
+                  }`}
+                  style={{
+                    height: `${Math.max(5, (Math.min(12, point.value) / 12) * 100)}%`,
+                    background: sleepTrendColor(point.value),
+                  }}
+                />
               ) : (
-                m.times.map((t) => {
-                  const k = `${m.id}@${t}`;
-                  const isTaken = !!taken[k];
-                  return (
-                    <label key={k} className="flex items-center gap-3 rounded-2xl bg-surface p-3 ring-1 ring-border">
-                      <input type="checkbox" checked={isTaken} onChange={() => toggle(k, t)} className="h-4 w-4" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">
-                          {m.name} <span className="text-xs text-muted-foreground">· scheduled {t}</span>
-                        </p>
-                        {m.dose && <p className="text-xs text-muted-foreground">{m.dose}</p>}
-                        {m.note && (
-                          <p className="text-[11px] text-muted-foreground">
-                            <Ico e="📝" size={13} /> <IcoText text={m.note} size={12} />
-                          </p>
-                        )}
-                      </div>
-                      {isTaken && (
-                        <Input
-                          type="time"
-                          value={takenTimes[k] ?? t}
-                          onChange={(e) => setTakenTime(k, e.target.value)}
-                          className="h-8 w-24"
-                          title="Actual time taken"
-                        />
-                      )}
-                    </label>
-                  );
-                })
+                <div key={point.key} className="h-[2px] w-full self-end rounded bg-border/60" />
               ),
             )}
           </div>
         </div>
-      )}
-      <div>
-        <p className="text-xs uppercase tracking-wider text-muted-foreground">Extra dose (one-off)</p>
-        <div className="mt-2 grid grid-cols-3 gap-2">
-          <Input
-            placeholder="Name"
-            value={extraName}
-            onChange={(e) => setExtraName(e.target.value)}
-            className="col-span-2"
-          />
-          <Input type="time" value={extraTime} onChange={(e) => setExtraTime(e.target.value)} />
-        </div>
-        <div className="mt-2 grid grid-cols-2 gap-2">
-          <Input placeholder="Dose (optional)" value={extraDose} onChange={(e) => setExtraDose(e.target.value)} />
-          <Input placeholder="Note (optional)" value={extraNote} onChange={(e) => setExtraNote(e.target.value)} />
-        </div>
-        <Button className="mt-2 w-full" onClick={addExtra} disabled={!extraName.trim()}>
-          Add extra dose
-        </Button>
-        {extras.length > 0 && (
-          <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
-            {extras.map((e) => (
-              <li key={e.id}>
-                • {e.time} — {e.name}
-                {e.dose ? ` (${e.dose})` : ""}
-                {e.note ? ` — ${e.note}` : ""}
-              </li>
-            ))}
-          </ul>
-        )}
       </div>
-      <SheetFooter className="mt-2">
-        <div className="mt-5 flex justify-end border-t border-border/50 pt-4">
+
+      <div className="mt-1 flex pl-5">
+        <div
+          className="grid flex-1 gap-[2px] text-center text-[7px] text-muted-foreground"
+          style={{ gridTemplateColumns: `repeat(${Math.max(1, points.length)}, minmax(0, 1fr))` }}
+        >
+          {points.map((point) => (
+            <span key={point.key} className="truncate">
+              {point.label}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-2 flex items-center justify-center gap-3 text-[9px] text-muted-foreground">
+        <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-[#EF4444]" /> &lt;8h</span>
+        <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-[#F3C30D]" /> 8h</span>
+        <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-[#72C64A]" /> &gt;8h</span>
+      </div>
+    </div>
+  );
+}
+
+function VitalTrendPopup({
+  metric,
+  data,
+  anchorKey,
+  onClose,
+}: {
+  metric: VitalTrendMetric;
+  data: BixboData;
+  anchorKey: string;
+  onClose: () => void;
+}) {
+  const [period, setPeriod] = useState<VitalTrendPeriod>("W");
+  const [anchor, setAnchor] = useState(() => fromKey(anchorKey));
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+
+  // Lock the page behind the modal. iOS Safari/PWA can otherwise try to scroll
+  // both the Home page and the popup at the same time, which feels like a freeze.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
+
+  useEffect(() => {
+    setAnchor(fromKey(anchorKey));
+  }, [anchorKey, metric]);
+
+  const points = useMemo<VitalTrendPoint[]>(() => {
+    if (period === "Y") {
+      const year = anchor.getFullYear();
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+      return months.map((label, monthIndex) => {
+        const start = new Date(year, monthIndex, 1);
+        const end = new Date(year, monthIndex + 1, 0);
+        const records = monthlyVitalRecords(metric, start, end, data);
+        return {
+          key: `${year}-${String(monthIndex + 1).padStart(2, "0")}`,
+          label,
+          heading: start.toLocaleDateString("en-GB", { month: "long", year: "numeric" }),
+          value: averageNumbers(records.values),
+          details: records.details,
+        };
+      });
+    }
+
+    const { start, end } = trendRange(period, anchor);
+    return daysBetweenInclusive(start, end).map((key) => {
+      const d = fromKey(key);
+      return {
+        key,
+        label: period === "W" ? d.toLocaleDateString("en-GB", { weekday: "short" }).slice(0, 2) : String(d.getDate()),
+        heading: trendDayHeading(key),
+        value: dailyVitalTrendValue(metric, data.dayLogs[key]),
+        details: dailyVitalDetails(metric, key, data),
+      };
+    });
+  }, [anchor, data.dayLogs, metric, period]);
+
+  useEffect(() => {
+    // Keep the graph cheap to open: details are rendered only after the user taps a point/bar.
+    setActiveIndex(null);
+  }, [points]);
+
+  const values = points.map((point) => point.value).filter((value): value is number => value != null && Number.isFinite(value));
+  const unit = vitalTrendUnit(metric);
+  const { start, end } = trendRange(period, anchor);
+  const rangeLabel =
+    period === "Y"
+      ? String(anchor.getFullYear())
+      : period === "M"
+        ? anchor.toLocaleDateString("en-GB", { month: "long", year: "numeric" })
+        : `${start.toLocaleDateString("en-GB", { day: "numeric", month: "short" })} – ${end.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`;
+
+  const chartWidth = 278;
+  const chartHeight = 132;
+  const left = 10;
+  const right = 34;
+  const top = 12;
+  const bottom = 24;
+  const chartW = chartWidth - left - right;
+  const chartH = chartHeight - top - bottom;
+  const rawMin = values.length ? Math.min(...values) : 0;
+  const rawMax = values.length ? Math.max(...values) : 1;
+  const basePad = metric === "temperature" ? 0.3 : metric === "weight" ? 0.6 : 1;
+  const span = Math.max(basePad, rawMax - rawMin);
+  const yMin = rawMin - span * 0.25;
+  const yMax = rawMax + span * 0.25;
+  const denom = Math.max(1, points.length - 1);
+  const xFor = (index: number) => left + (index / denom) * chartW;
+  const yFor = (value: number) => top + ((yMax - value) / Math.max(0.001, yMax - yMin)) * chartH;
+  const path = points
+    .map((point, index) => (point.value == null ? null : { x: xFor(index), y: yFor(point.value), index }))
+    .filter((point): point is { x: number; y: number; index: number } => point != null)
+    .map((point, index) => `${index === 0 ? "M" : "L"}${point.x.toFixed(1)},${point.y.toFixed(1)}`)
+    .join(" ");
+
+  const visibleLabelIndexes = new Set<number>();
+  if (period === "W") points.forEach((_, index) => visibleLabelIndexes.add(index));
+  if (period === "M")
+    points.forEach((_, index) => {
+      if (index === 0 || index === points.length - 1 || index % 5 === 0) visibleLabelIndexes.add(index);
+    });
+  if (period === "Y") points.forEach((_, index) => visibleLabelIndexes.add(index));
+
+  const active = activeIndex != null ? points[activeIndex] : undefined;
+
+  return (
+    <div className="fixed inset-0 z-[95] flex items-center justify-center px-7">
+      <button
+        type="button"
+        aria-label={`Close ${vitalTrendTitle(metric)} graph`}
+        className="absolute inset-0 bg-black/35"
+        onClick={onClose}
+      />
+
+      <section className="relative z-10 w-full max-w-[320px] overflow-hidden rounded-[1.65rem] bg-background shadow-2xl ring-1 ring-border">
+        <div className="flex items-start justify-between gap-2 border-b border-border/70 px-4 pb-3 pt-4">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Trend</p>
+            <h2 className="mt-0.5 font-serif text-lg font-bold text-foreground">{vitalTrendTitle(metric)}</h2>
+          </div>
           <button
             type="button"
-            onClick={onDone}
-            className="inline-flex h-10 min-w-[78px] items-center justify-center gap-1.5 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            onClick={onClose}
+            className="grid h-8 w-8 place-items-center rounded-full bg-tint text-xs font-bold text-foreground ring-1 ring-border"
+            aria-label="Close"
           >
-            <span>Done</span>
-            <span aria-hidden="true" className="text-base leading-none">✓</span>
+            ×
           </button>
         </div>
-      </SheetFooter>
+
+        <div className="max-h-[48dvh] overflow-y-auto overscroll-contain touch-pan-y p-3">
+          <div className="grid grid-cols-3 gap-1 rounded-2xl bg-tint p-1 ring-1 ring-border/50">
+            {(["W", "M", "Y"] as const).map((value) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setPeriod(value)}
+                className={`rounded-xl px-2 py-1.5 text-[11px] font-semibold transition ${
+                  period === value ? "bg-surface text-foreground shadow-sm ring-1 ring-border" : "text-muted-foreground"
+                }`}
+              >
+                {value === "W" ? "Week" : value === "M" ? "Month" : "Year"}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-3 flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={() => setAnchor((current) => shiftTrendAnchor(current, period, -1))}
+              className="grid h-8 w-8 place-items-center rounded-full bg-tint ring-1 ring-border"
+              aria-label="Previous period"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <p className="text-center text-xs font-semibold text-foreground">{rangeLabel}</p>
+            <button
+              type="button"
+              onClick={() => setAnchor((current) => shiftTrendAnchor(current, period, 1))}
+              className="grid h-8 w-8 place-items-center rounded-full bg-tint ring-1 ring-border"
+              aria-label="Next period"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="mt-3 rounded-2xl bg-tint/70 p-2 ring-1 ring-border/50">
+            {values.length ? (
+              <>
+                {metric === "sleep" ? (
+                  <SleepTrendBars
+                    points={points}
+                    activeIndex={activeIndex}
+                    onSelect={(index) => setActiveIndex((current) => (current === index ? null : index))}
+                  />
+                ) : (
+                  <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="h-auto w-full overflow-visible" role="img">
+                    {[0, 0.5, 1].map((fraction) => {
+                      const y = top + fraction * chartH;
+                      const value = yMax - fraction * (yMax - yMin);
+                      return (
+                        <g key={fraction}>
+                          <line x1={left} x2={left + chartW} y1={y} y2={y} stroke="var(--border)" strokeDasharray="2 4" />
+                          <text x={chartWidth - 2} y={y + 3} textAnchor="end" fontSize="8" fill="var(--muted-foreground)">
+                            {value.toFixed(1)}
+                          </text>
+                        </g>
+                      );
+                    })}
+                    {path ? <path d={path} fill="none" stroke="var(--primary)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /> : null}
+                    {points.map((point, index) => {
+                      if (point.value == null) return null;
+                      const activePoint = activeIndex === index;
+                      return (
+                        <g key={point.key}>
+                          <circle
+                            cx={xFor(index)}
+                            cy={yFor(point.value)}
+                            r={activePoint ? 4.5 : 3.2}
+                            fill="var(--surface)"
+                            stroke="var(--primary)"
+                            strokeWidth={activePoint ? 2.5 : 1.8}
+                            pointerEvents="none"
+                          />
+                          <circle
+                            cx={xFor(index)}
+                            cy={yFor(point.value)}
+                            r="13"
+                            fill="transparent"
+                            className="cursor-pointer"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setActiveIndex((current) => (current === index ? null : index));
+                            }}
+                          />
+                        </g>
+                      );
+                    })}
+                    {points.map((point, index) =>
+                      visibleLabelIndexes.has(index) ? (
+                        <text
+                          key={`label-${point.key}`}
+                          x={xFor(index)}
+                          y={chartHeight - 5}
+                          textAnchor="middle"
+                          fontSize={period === "Y" ? "6.5" : "7.5"}
+                          fill="var(--muted-foreground)"
+                        >
+                          {point.label}
+                        </text>
+                      ) : null,
+                    )}
+                  </svg>
+                )}
+
+                {active?.value != null ? (
+                  <div className="mt-2 rounded-2xl bg-surface/80 p-3 ring-1 ring-border/50">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-semibold text-muted-foreground">{active.heading}</p>
+                        <p className="mt-1 text-[11px] text-muted-foreground">
+                          {period === "Y" ? "Monthly average from saved entries" : "Saved entry"}
+                        </p>
+                      </div>
+                      <b className="shrink-0 tabular-nums text-sm text-foreground">
+                        {active.value.toFixed(1)} {unit}
+                      </b>
+                    </div>
+
+                    <div className="mt-2 space-y-1.5">
+                      {active.details.length ? (
+                        active.details.map((detail, index) => (
+                          <p key={index} className="rounded-xl bg-background/80 px-2.5 py-2 text-[10px] leading-snug text-foreground ring-1 ring-border/40">
+                            {detail}
+                          </p>
+                        ))
+                      ) : (
+                        <p className="text-[10px] text-muted-foreground">No underlying saved entry found.</p>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mt-2 text-center text-[10px] text-muted-foreground">Tap a point or bar to see the exact saved entry.</p>
+                )}
+              </>
+            ) : (
+              <div className="grid min-h-32 place-items-center text-center text-xs text-muted-foreground">
+                No {vitalTrendTitle(metric).toLowerCase()} data in this period.
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
 
-/* ------------------- WORKOUT ------------------- */
-function WorkoutForm({
-  date,
-  data,
-  update,
-  onDone,
-  initialEntry,
-}: {
-  date: string;
-  data: BixboData;
-  update: UpdateFn;
-  onDone: () => void;
-  initialEntry?: WorkoutEntry;
-}) {
-  const [kind, setKind] = useState<string>(
-    initialEntry?.kind ? stripEmoji(initialEntry.kind) : WORKOUT_KINDS_DEFAULT[0],
-  );
-  const [minutes, setMinutes] = useState<number>(initialEntry?.minutes ?? 30);
-  const [weight, setWeight] = useState<string>(initialEntry?.weightKg != null ? String(initialEntry.weightKg) : "");
-  const [distance, setDistance] = useState<string>(
-    initialEntry?.distanceKm != null ? String(initialEntry.distanceKm) : "",
-  );
-  const [elevation, setElevation] = useState<string>(
-    initialEntry?.elevationM != null ? String(initialEntry.elevationM) : "",
-  );
-  const [exercises, setExercises] = useState<WorkoutExercise[]>(initialEntry?.exercises ?? []);
-  const [rpe, setRpe] = useState<number | undefined>(initialEntry?.rpe);
-  const [magnesium, setMagnesium] = useState<boolean>(initialEntry?.magnesiumBefore ?? false);
-  const [trigger, setTrigger] = useState<WorkoutEntry["triggeredSymptom"]>(initialEntry?.triggeredSymptom);
-  const [feeling, setFeeling] = useState<string[]>(asArr(initialEntry?.feeling).map(stripEmoji));
-  const [note, setNote] = useState<string>(initialEntry?.note ?? "");
-  const addKind = (v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, workoutKinds: [...d.custom.workoutKinds, v] } }));
-  const rmKind = (v: string) => {
-    update((d) => ({ ...d, custom: { ...d.custom, workoutKinds: d.custom.workoutKinds.filter((x) => x !== v) } }));
-    if (kind === v) setKind(WORKOUT_KINDS_DEFAULT[0]);
+function HomePage() {
+  const { data, update, hydrated } = useBixbo();
+  const view = hydrated ? data : EMPTY;
+  const maleMode = String(view.settings.gender ?? "").trim().toLowerCase() === "male";
+
+  /*
+   * Dátum vytvárame až v prehliadači.
+   * Server aj prvý klientsky render preto dostanú rovnaký obsah
+   * a nevznikne hydration mismatch.
+   */
+  const [monthAnchor, setMonthAnchor] = useState<Date | null>(null);
+  const [selected, setSelected] = useState("");
+
+  const [hakOpen, setHakOpen] = useState(false);
+  const [hakAnchor, setHakAnchor] = useState<Date | null>(null);
+
+  const [logOpen, setLogOpen] = useState(false);
+  const [todayOpen, setTodayOpen] = useState(false);
+  const [vitalTrendOpen, setVitalTrendOpen] = useState<VitalTrendMetric | null>(null);
+  const [quickCat, setQuickCat] = useState<string | undefined>();
+  const [editPain, setEditPain] = useState<import("@/lib/storage").PainEntry | undefined>();
+  const [editEntry, setEditEntry] = useState<unknown>(undefined);
+
+  const openEdit = (cat: string, entry: unknown) => {
+    setQuickCat(cat);
+    setEditEntry(entry);
+    setEditPain(undefined);
+    setLogOpen(true);
   };
 
-  const log = data.dayLogs[date];
-  const symptomOptions = [
-    ...(log?.tetany ?? []).map((t) => ({
-      type: "tetany" as const,
-      id: t.id,
-      label: `${t.time} tetany ${t.intensity}/5`,
-    })),
-    ...(log?.pain ?? []).map((p) => ({ type: "pain" as const, id: p.id, label: `${p.time} pain ${p.score}/10` })),
-  ];
+  /*
+   * Inicializácia dátumu musí byť v effecte, pretože new Date()
+   * na serveri a v prehliadači môže vytvoriť odlišný render.
+   */
+  useEffect(() => {
+    setMonthAnchor(new Date());
+    setSelected(todayKey());
+  }, []);
 
-  const save = () => {
-    const editing = !!initialEntry;
-    const e: WorkoutEntry = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
-      time: initialEntry?.time ?? nowHHMM(),
-      kind,
-      minutes,
-      weightKg: weight === "" ? undefined : Number(weight),
-      distanceKm: workoutHasDistance(kind) && distance !== "" ? Number(distance) : undefined,
-      elevationM: workoutIsHike(kind) && elevation !== "" ? Number(elevation) : undefined,
-      exercises: workoutIsStrength(kind) && exercises.length ? exercises : undefined,
-      rpe,
-      magnesiumBefore: magnesium || undefined,
-      triggeredSymptom: trigger,
-      feeling: feeling.length ? feeling : undefined,
-      note: note.trim() || undefined,
+  // Male mode must never expose the HAK tracker. If gender is changed while
+  // the HAK detail is open, close it immediately as well.
+  useEffect(() => {
+    if (maleMode) {
+      setHakOpen(false);
+      setHakAnchor(null);
+    }
+  }, [maleMode]);
+
+  // Listen for "open log" from bottom nav
+  useEffect(() => {
+    const h = () => {
+      setQuickCat(undefined);
+      setEditPain(undefined);
+      setEditEntry(undefined);
+      setLogOpen(true);
     };
-    updateDayLog(update, date, (l) => ({
-      ...l,
-      workout: editing ? (l.workout ?? []).map((x) => (x.id === e.id ? e : x)) : [...(l.workout ?? []), e],
-    }));
-    // NOTE: workout "weight after" is stored on the workout entry only — it must not
-    // overwrite the day's body-weight metric used by the Weight chart.
-    onDone();
-  };
-  return (
-    <div className="space-y-3">
-      <SaveBar onCancel={onDone} onSave={save} />
-      <Field label="Type">
-        <CustomChipList
-          base={WORKOUT_KINDS_DEFAULT}
-          custom={data.custom.workoutKinds}
-          onAddCustom={addKind}
-          onRemoveCustom={rmKind}
-          selected={[kind]}
-          onToggle={(v) => setKind(v)}
-        />
-      </Field>
-      <Field label="Duration (minutes)">
-        <Input type="number" min={1} value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} />
-      </Field>
 
-      {workoutHasDistance(kind) && (
-        <div className="grid grid-cols-2 gap-2">
-          <Field label="Distance (km)">
-            <Input type="number" step="0.1" min={0} value={distance} onChange={(e) => setDistance(e.target.value)} />
-          </Field>
-          {workoutIsHike(kind) && (
-            <Field label="Elevation gain (m)">
-              <Input type="number" step="1" min={0} value={elevation} onChange={(e) => setElevation(e.target.value)} />
-            </Field>
-          )}
+    window.addEventListener("bixbo:open-log", h);
+
+    return () => {
+      window.removeEventListener("bixbo:open-log", h);
+    };
+  }, []);
+
+  /*
+   * Tento return musí byť až po všetkých useEffect/useState hookoch.
+   * Hooky nesmú byť pod podmieneným returnom.
+   */
+  if (!monthAnchor || !selected) {
+    return <div className="h-[360px]" />;
+  }
+
+  const moveCalendarMonth = (delta: number) => {
+    const currentSelected = fromKey(selected);
+    const selectedDayOfMonth = currentSelected.getDate();
+
+    const targetMonth = new Date(monthAnchor.getFullYear(), monthAnchor.getMonth() + delta, 1);
+    const lastDayOfTargetMonth = new Date(
+      targetMonth.getFullYear(),
+      targetMonth.getMonth() + 1,
+      0,
+    ).getDate();
+    const targetDay = Math.min(selectedDayOfMonth, lastDayOfTargetMonth);
+    const nextSelected = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), targetDay);
+
+    setMonthAnchor(targetMonth);
+    setSelected(toKey(nextSelected));
+  };
+
+  const goToPrevMonth = () => moveCalendarMonth(-1);
+  const goToNextMonth = () => moveCalendarMonth(1);
+
+  const pregnancyActive = isPregnancyActive(view);
+  const postpartumActive = isPostpartumActive(view);
+  const cycleTrackingHidden = isCycleTrackingHidden(view);
+
+  const pregnancyToday = view.dayLogs[todayKey()]?.pregnancy;
+  const latestPregnancyBP =
+    pregnancyToday?.bloodPressure?.[Math.max(0, (pregnancyToday.bloodPressure?.length ?? 1) - 1)];
+
+  const totalPregnancyKicks = (pregnancyToday?.kicks ?? []).reduce((sum, session) => sum + (session.count ?? 0), 0);
+
+  const pregnancySummaryItems = [
+    pregnancyToday?.weightKg != null ? { icon: "⚖️", label: `${pregnancyToday.weightKg} kg` } : null,
+    (pregnancyToday?.symptoms?.length ?? 0) > 0
+      ? { icon: "🤢", label: `${pregnancyToday!.symptoms!.length} symptoms` }
+      : null,
+    (pregnancyToday?.kicks?.length ?? 0) > 0
+      ? {
+          icon: "👣",
+          label: totalPregnancyKicks > 0 ? `${totalPregnancyKicks} kicks` : `${pregnancyToday!.kicks!.length} sessions`,
+        }
+      : null,
+    latestPregnancyBP ? { icon: "❤️", label: `${latestPregnancyBP.systolic}/${latestPregnancyBP.diastolic}` } : null,
+    (pregnancyToday?.waterMl ?? 0) > 0 ? { icon: "💧", label: `${pregnancyToday!.waterMl} ml` } : null,
+  ].filter((item): item is { icon: string; label: string } => item != null);
+
+  const todayDateKey = todayKey();
+  const todayLog = view.dayLogs[todayDateKey];
+  const todayPain = avgDayPain(todayLog);
+  const todayScheduled = view.meds
+    .filter((med) => !med.asNeeded)
+    .flatMap((med) => med.times.map((time) => `${med.id}@${time}`));
+  const todayMedsTaken = todayScheduled.filter((key) => view.medLog[todayDateKey]?.[key]).length;
+
+  return (
+    <AppShell
+      big
+      title={
+        <div className="flex flex-col leading-tight">
+          <span>BIXBO</span>
+
+          <span className="text-xs font-normal text-muted-foreground">
+            Hi, {view.settings.userName?.trim() || "there"} <Ico e="❤️" size={12} />
+          </span>
         </div>
+      }
+      right={
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setTodayOpen(true)}
+            className="flex min-w-[82px] flex-col items-end justify-center rounded-2xl px-2 py-1 transition hover:bg-tint"
+            aria-label="Open today's summary"
+          >
+            <span className="text-[10px] font-semibold leading-none text-muted-foreground">Today</span>
+            <span className="mt-1 flex items-center gap-1 whitespace-nowrap text-[11px] font-semibold leading-none text-foreground">
+              <Ico name="flame" size={14} /> {todayPain != null ? todayPain.toFixed(1) : "—"}
+              <span className="text-muted-foreground">·</span>
+              <PillIcon size={14} /> {todayMedsTaken}/{todayScheduled.length}
+            </span>
+          </button>
+
+          <Link
+            to="/profile"
+            className="flex min-w-[52px] flex-col items-center justify-center rounded-2xl px-2 py-1.5 text-primary transition hover:bg-tint"
+            aria-label="Health"
+            title="Health"
+          >
+            <HeartIcon size={24} />
+            <span className="mt-0.5 text-[10px] font-semibold leading-none">Health</span>
+          </Link>
+        </div>
+      }
+    >
+      <div className="px-5 pt-0.5">
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            onClick={goToPrevMonth}
+            aria-label="Previous month"
+            className="rounded-full p-1.5 hover:bg-tint"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+
+          <h2 className="font-serif text-xl font-bold" suppressHydrationWarning>
+            {hydrated ? monthLabel(monthAnchor) : ""}
+          </h2>
+
+          <button
+            type="button"
+            onClick={goToNextMonth}
+            aria-label="Next month"
+            className="rounded-full p-1.5 hover:bg-tint"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-0.5" style={{ "--period-medium": "#7467D8" } as any}>
+        {hydrated ? (
+          <MonthCalendar
+            month={monthAnchor}
+            data={view}
+            selected={selected}
+            onSelect={setSelected}
+            onSwipeMonth={(delta) => {
+              moveCalendarMonth(delta);
+            }}
+          />
+        ) : (
+          <div className="h-[360px]" />
+        )}
+      </div>
+
+      {!maleMode && (
+        <BirthControlSummaryCard
+          data={view}
+          dateKey={selected}
+          onOpen={() => {
+            setHakAnchor(fromKey(selected));
+            setHakOpen(true);
+          }}
+        />
       )}
 
-      {workoutIsStrength(kind) && (
-        <Field label="Exercises">
-          <div className="space-y-2">
-            {exercises.map((ex, i) => (
-              <div key={ex.id} className="rounded-2xl border border-border p-2 space-y-2">
-                <div className="flex items-center gap-2">
-                  <Input
-                    value={ex.name}
-                    placeholder="Exercise name"
-                    onChange={(e) =>
-                      setExercises((a) => a.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))
-                    }
-                  />
-                  <button
-                    type="button"
-                    aria-label="Remove exercise"
-                    onClick={() => setExercises((a) => a.filter((_, j) => j !== i))}
-                    className="rounded-full p-2 text-muted-foreground hover:text-destructive"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <Input
-                    type="number"
-                    min={0}
-                    placeholder="Sets"
-                    value={ex.sets ?? ""}
-                    onChange={(e) =>
-                      setExercises((a) =>
-                        a.map((x, j) =>
-                          j === i ? { ...x, sets: e.target.value === "" ? undefined : Number(e.target.value) } : x,
-                        ),
-                      )
-                    }
-                  />
-                  <Input
-                    type="number"
-                    min={0}
-                    placeholder="Reps"
-                    value={ex.reps ?? ""}
-                    onChange={(e) =>
-                      setExercises((a) =>
-                        a.map((x, j) =>
-                          j === i ? { ...x, reps: e.target.value === "" ? undefined : Number(e.target.value) } : x,
-                        ),
-                      )
-                    }
-                  />
-                  <Input
-                    type="number"
-                    min={0}
-                    step="0.5"
-                    placeholder="kg"
-                    value={ex.weightKg ?? ""}
-                    onChange={(e) =>
-                      setExercises((a) =>
-                        a.map((x, j) =>
-                          j === i ? { ...x, weightKg: e.target.value === "" ? undefined : Number(e.target.value) } : x,
-                        ),
-                      )
-                    }
-                  />
+      {(() => {
+        if (!pregnancyActive) return null;
+
+        const prog = pregnancyProgress(view.pregnancy);
+
+        return (
+          <Link
+            to={"/pregnancy" as never}
+            className="focus-ring mx-5 mt-3 block rounded-3xl bg-tint px-4 py-4 text-left ring-1 ring-border transition hover:bg-surface"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-surface ring-1 ring-border/60">
+                  <Ico name="pregnancy" size={24} />
+                </span>
+
+                <div className="min-w-0">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                    Pregnancy
+                  </p>
+
+                  <p className="mt-0.5 font-serif text-lg font-semibold text-foreground">
+                    {prog ? `Week ${prog.week} + ${prog.dayOfWeek}` : "Pregnancy mode"}
+                  </p>
+
+                  <p className="text-xs text-muted-foreground">
+                    {prog
+                      ? `Trimester ${prog.trimester}${prog.daysLeft != null ? ` · ${Math.max(0, prog.daysLeft)} days to go` : ""}`
+                      : "Tap to set your due date"}
+                  </p>
                 </div>
               </div>
-            ))}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setExercises((a) => [...a, { id: crypto.randomUUID(), name: "" }])}
+
+              <span className="shrink-0 text-xs font-semibold text-primary">Open</span>
+            </div>
+
+            {pregnancySummaryItems.length > 0 ? (
+              <div className="mt-3 flex min-w-0 items-center gap-2 overflow-hidden rounded-2xl bg-surface/75 px-3 py-2 ring-1 ring-border/40">
+                {pregnancySummaryItems.slice(0, 4).map((item, index) => (
+                  <span key={`${item.icon}-${item.label}`} className="flex min-w-0 items-center gap-1.5">
+                    {index > 0 && <span className="text-border">•</span>}
+                    <Ico e={item.icon} size={15} />
+                    <span className="truncate text-[11px] font-medium tabular-nums text-foreground">{item.label}</span>
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-3 flex items-center gap-2 rounded-2xl bg-surface/70 px-3 py-2 text-xs text-muted-foreground ring-1 ring-border/40">
+                <Ico name="pregnancy" size={15} />
+                <span>Nothing logged today</span>
+              </div>
+            )}
+          </Link>
+        );
+      })()}
+
+      {postpartumActive &&
+        (() => {
+          const progress = postpartumProgress(view.postpartum);
+          const todayPostpartum = view.dayLogs[todayKey()]?.postpartum;
+          const feedingCount =
+            (todayPostpartum?.breastfeeding?.length ?? 0) +
+            (todayPostpartum?.pumping?.length ?? 0) +
+            (todayPostpartum?.bottle?.length ?? 0);
+
+          const postpartumSummaryItems = [
+            (todayPostpartum?.symptoms?.length ?? 0) > 0
+              ? { icon: "warning", label: `${todayPostpartum!.symptoms!.length} symptoms` }
+              : null,
+            todayPostpartum?.bleeding && todayPostpartum.bleeding !== "none"
+              ? { icon: "period", label: todayPostpartum.bleeding }
+              : null,
+            feedingCount > 0
+              ? { icon: "bottle", label: `${feedingCount} feeding${feedingCount === 1 ? "" : "s"}` }
+              : null,
+            todayPostpartum?.sleepHours != null
+              ? { icon: "sleep", label: `${todayPostpartum.sleepHours} h sleep` }
+              : null,
+            (todayPostpartum?.mood?.length ?? 0) > 0 ? { icon: "mood", label: todayPostpartum!.mood![0] } : null,
+          ].filter((item): item is { icon: string; label: string } => item != null);
+
+          return (
+            <Link
+              to={"/postpartum" as never}
+              className="focus-ring mx-5 mt-3 block rounded-3xl bg-primary/10 px-4 py-4 text-left ring-1 ring-primary/20"
             >
-              <Plus className="h-4 w-4" /> Add exercise
-            </Button>
-          </div>
-        </Field>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-surface ring-1 ring-border/50">
+                    <Ico name="baby" size={30} />
+                  </span>
+
+                  <div className="min-w-0">
+                    <p className="truncate text-base font-semibold text-foreground">
+                      {progress ? `Week ${progress.week} + ${progress.dayOfWeek} postpartum` : "Postpartum mode"}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {progress ? `${progress.days} days since birth` : "Add the birth date to calculate progress"}
+                    </p>
+                  </div>
+                </div>
+
+                <span className="shrink-0 text-xs font-semibold text-primary">Open</span>
+              </div>
+
+              {postpartumSummaryItems.length > 0 ? (
+                <div className="mt-3 flex min-w-0 items-center gap-2 overflow-hidden rounded-2xl bg-surface/75 px-3 py-2 ring-1 ring-border/40">
+                  {postpartumSummaryItems.slice(0, 4).map((item, index) => (
+                    <span key={`${item.icon}-${item.label}`} className="flex min-w-0 items-center gap-1.5">
+                      {index > 0 && <span className="text-border">•</span>}
+                      <Ico name={item.icon as never} size={15} />
+                      <span className="truncate text-[11px] font-medium capitalize tabular-nums text-foreground">
+                        {item.label}
+                      </span>
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-3 flex items-center gap-2 rounded-2xl bg-surface/70 px-3 py-2 text-xs text-muted-foreground ring-1 ring-border/40">
+                  <Ico name="baby" size={15} />
+                  <span>Nothing logged today</span>
+                </div>
+              )}
+            </Link>
+          );
+        })()}
+
+      {!cycleTrackingHidden &&
+        (() => {
+          const p = nextPredictedPeriod(view.cycle);
+
+          if (!p) return null;
+
+          const fmt = (k: string) =>
+            fromKey(k).toLocaleDateString("en-GB", {
+              day: "numeric",
+              month: "short",
+            });
+
+          return (
+            <div
+              className="mx-5 mt-3 rounded-full px-4 py-2 text-center text-xs ring-1"
+              style={{
+                background: "color-mix(in srgb, #7467D8 14%, transparent)",
+                color: "#7467D8",
+                boxShadow: "inset 0 0 0 1px color-mix(in srgb, #7467D8 34%, transparent)",
+              }}
+            >
+              Next period predicted:{" "}
+              <span className="font-semibold">
+                {fmt(p.start)} – {fmt(p.end)}
+              </span>
+            </div>
+          );
+        })()}
+
+      {/* Top vitals row */}
+      <div className="mt-4 grid grid-cols-5 gap-2 px-5">
+        <div className="col-span-2">
+          <MedsProgress data={view} />
+        </div>
+
+        <VitalTile
+          emoji="😴"
+          label="Sleep"
+          value={view.dayLogs[selected]?.sleepHours != null ? String(view.dayLogs[selected]!.sleepHours) : "—"}
+          onClick={() => setVitalTrendOpen("sleep")}
+        />
+
+        <VitalTile
+          emoji="🌡️"
+          label="Temp"
+          value={vitalOverviewSummary(view.dayLogs[selected], "temperature")}
+          onClick={() => setVitalTrendOpen("temperature")}
+        />
+
+        <VitalTile
+          emoji="⚖️"
+          label="Weight"
+          value={vitalOverviewSummary(view.dayLogs[selected], "weight")}
+          onClick={() => setVitalTrendOpen("weight")}
+        />
+      </div>
+
+      {/* Quick log */}
+      <div className="px-5 [&_p.text-\[11px\].uppercase]:min-w-0 [&_p.text-\[11px\].uppercase]:flex-1 [&_p.text-\[11px\].uppercase]:truncate [&_p.text-\[11px\].uppercase]:text-[10px] [&_.mt-1.flex.flex-wrap.gap-1]:hidden">
+        <QuickTags
+          data={view}
+          update={update}
+          onLongPress={(cat: string) => {
+            const map: Record<string, string | undefined> = {
+              pain: "pain",
+              tetany: "tetany",
+              panic: "panic",
+              sex: "sex",
+              food: "food",
+              period: "period",
+              meds: "meds",
+              workout: "workout",
+              bowel: "bowel",
+              thermo: "heat",
+              headache: "pain",
+              hotFlashes: "pain",
+              sleep: "temp",
+            };
+
+            const target = map[cat];
+
+            if (!target) return;
+
+            setQuickCat(target);
+            setEditPain(undefined);
+            setEditEntry(undefined);
+            setLogOpen(true);
+          }}
+        />
+      </div>
+
+      <div className="mt-4 flex items-center justify-between px-5">
+        <h2 className="font-serif text-xl font-bold">
+          {selected === todayKey()
+            ? "Today"
+            : fromKey(selected).toLocaleDateString("en-GB", {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+              })}
+        </h2>
+
+        <ShareDayButton date={selected} view={view} />
+      </div>
+
+      <DayPreview
+        date={selected}
+        data={view}
+        update={update}
+        onEditPain={(p) => {
+          setEditPain(p);
+          setEditEntry(undefined);
+          setQuickCat("pain");
+          setLogOpen(true);
+        }}
+        onEdit={openEdit}
+      />
+
+
+      {vitalTrendOpen && (
+        <VitalTrendPopup
+          metric={vitalTrendOpen}
+          data={view}
+          anchorKey={selected}
+          onClose={() => setVitalTrendOpen(null)}
+        />
       )}
 
-      <Field label={`Intensity (RPE) ${rpe ?? "-"} / 10`}>
-        <div className="mt-2 flex flex-wrap justify-center gap-1.5 px-1">
-          {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => {
-            const active = rpe === n;
-            return (
+      {todayOpen &&
+        (() => {
+          const todayTetany = todayLog?.tetany?.length ?? 0;
+          const todayPanic = todayLog?.panic?.length ?? 0;
+          const todayBowelEntries = todayLog?.bowel ?? [];
+          const latestBowel = todayBowelEntries.length ? todayBowelEntries[todayBowelEntries.length - 1] : undefined;
+          const todayTemperatureEntries = overviewVitalEntries(todayLog, "temperature");
+          const todayWeightEntries = overviewVitalEntries(todayLog, "weight");
+          const noteValue = view.dayNotes[todayDateKey]?.[0];
+          const noteText =
+            typeof noteValue === "string"
+              ? noteValue
+              : noteValue && typeof noteValue === "object" && "text" in noteValue
+                ? String(noteValue.text)
+                : "";
+
+          const rows = [
+            {
+              key: "pain",
+              icon: <FlameIcon size={22} />,
+              label: "Pain",
+              value: todayPain != null ? `${todayPain.toFixed(1)} / 10` : "No pain logged",
+            },
+            {
+              key: "meds",
+              icon: <PillIcon size={22} />,
+              label: "Medication",
+              value: `${todayMedsTaken} of ${todayScheduled.length} taken`,
+            },
+            {
+              key: "sleep",
+              icon: <ClockIcon size={22} />,
+              label: "Sleep",
+              value: todayLog?.sleepHours != null ? `${todayLog.sleepHours} h` : "Not logged",
+            },
+            {
+              key: "tetany",
+              icon: <StarIcon size={22} />,
+              label: "Tetany episode",
+              value: todayTetany ? `${todayTetany} episode${todayTetany === 1 ? "" : "s"}` : "None",
+            },
+            {
+              key: "panic",
+              icon: <PanicIcon size={22} />,
+              label: "Panic episode",
+              value: todayPanic ? `${todayPanic}` : "None",
+            },
+            {
+              key: "bowel",
+              icon: <PoopIcon size={22} />,
+              label: "Bowel",
+              value: latestBowel ? `Type ${latestBowel.bristol}` : "Not logged",
+            },
+            {
+              key: "temperature",
+              icon: <ThermometerIcon size={22} />,
+              label: "Temperature",
+              value: todayTemperatureEntries.length
+                ? `${todayTemperatureEntries[todayTemperatureEntries.length - 1].value.toFixed(1)} °C${
+                    todayTemperatureEntries.length > 1 ? ` · ${todayTemperatureEntries.length} records` : ""
+                  }`
+                : "Not logged",
+            },
+            {
+              key: "weight",
+              icon: <WeightIcon size={22} />,
+              label: "Weight",
+              value: todayWeightEntries.length
+                ? `${todayWeightEntries[todayWeightEntries.length - 1].value.toFixed(1)} kg${
+                    todayWeightEntries.length > 1 ? ` · ${todayWeightEntries.length} records` : ""
+                  }`
+                : "Not logged",
+            },
+          ];
+
+          return (
+            <div className="fixed inset-0 z-[90] flex items-center justify-center px-7">
               <button
-                key={n}
                 type="button"
-                onClick={() => setRpe(rpe === n ? undefined : n)}
-                aria-label={`RPE ${n}`}
-                className={`h-8 w-8 rounded-full text-[11px] font-semibold transition ${
-                  active ? "text-white ring-2 ring-foreground" : "text-foreground"
-                }`}
-                style={{ background: painColor(n) }}
-              >
-                {n}
-              </button>
-            );
-          })}
-        </div>
-      </Field>
+                aria-label="Close today's summary"
+                className="absolute inset-0 bg-black/35"
+                onClick={() => setTodayOpen(false)}
+              />
 
-      <Field label="Magnesium before workout?">
-        <div className="mt-1 flex gap-2">
-          <Chip active={!magnesium} onClick={() => setMagnesium(false)}>
-            No
-          </Chip>
-          <Chip active={magnesium} onClick={() => setMagnesium(true)}>
-            Yes
-          </Chip>
-        </div>
-      </Field>
+              <section className="relative z-10 w-full max-w-[320px] overflow-hidden rounded-[1.65rem] bg-background shadow-2xl ring-1 ring-border">
+                <div className="flex items-start justify-between gap-2 border-b border-border/70 px-4 pb-3 pt-4">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Today</p>
+                    <h2 className="mt-0.5 font-serif text-lg font-bold text-foreground">
+                      {fromKey(todayDateKey).toLocaleDateString("en-GB", {
+                        weekday: "long",
+                        day: "numeric",
+                        month: "long",
+                      })}
+                    </h2>
+                  </div>
 
-      <Field label="Triggered a symptom? (optional)">
-        {symptomOptions.length === 0 ? (
-          <p className="text-[11px] text-muted-foreground">No tetany or pain entries logged for this day yet.</p>
-        ) : (
-          <div className="mt-1 flex flex-wrap gap-2">
-            <Chip active={!trigger} onClick={() => setTrigger(undefined)}>
-              No
-            </Chip>
-            {symptomOptions.map((o) => (
-              <Chip
-                key={o.id}
-                active={trigger?.id === o.id}
-                onClick={() =>
-                  setTrigger(trigger?.id === o.id ? undefined : { type: o.type, id: o.id, label: o.label })
-                }
-              >
-                {o.label}
-              </Chip>
-            ))}
-          </div>
-        )}
-      </Field>
+                  <button
+                    type="button"
+                    onClick={() => setTodayOpen(false)}
+                    className="grid h-8 w-8 place-items-center rounded-full bg-tint text-xs font-bold text-foreground ring-1 ring-border"
+                    aria-label="Close"
+                  >
+                    ×
+                  </button>
+                </div>
 
-      <Field label="Weight after (kg, optional)">
-        <Input type="number" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} />
-        <p className="mt-1 text-[11px] text-muted-foreground">
-          Saved with this workout only — it doesn't change your daily weight.
-        </p>
-      </Field>
-      <Field label="How you feel">
-        <div className="mt-2 flex flex-wrap gap-2">
-          {["Great", "Good", "Ok", "Tired", "Sore"].map((f) => (
-            <Chip key={f} active={feeling.includes(f)} onClick={() => setFeeling((a) => toggleIn(a, f))}>
-              {f}
-            </Chip>
-          ))}
-        </div>
-      </Field>
-      <Field label="Note (optional)">
-        <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
-      </Field>
-    </div>
+                <div className="max-h-[48dvh] overflow-y-auto overscroll-contain touch-pan-y p-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    {rows.map((row) => (
+                      <div key={row.key} className="min-w-0 rounded-2xl bg-tint px-2.5 py-2.5 ring-1 ring-border/50">
+                        <div className="flex items-center gap-2">
+                          <span className="grid h-8 w-8 shrink-0 place-items-center">{row.icon}</span>
+                          <span className="min-w-0">
+                            <span className="block truncate text-[10px] font-medium text-muted-foreground">
+                              {row.label}
+                            </span>
+                            <span className="mt-0.5 block truncate text-xs font-semibold text-foreground">
+                              {row.value}
+                            </span>
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {noteText && (
+                    <div className="mt-2 flex items-start gap-2 rounded-2xl bg-tint px-3 py-2.5 ring-1 ring-border/50">
+                      <span className="grid h-8 w-8 shrink-0 place-items-center">
+                        <NoteIcon size={20} />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[10px] font-medium text-muted-foreground">Note</span>
+                        <span className="mt-0.5 line-clamp-1 block text-xs text-foreground">{noteText}</span>
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="border-t border-border/70 p-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelected(todayDateKey);
+                      setMonthAnchor(fromKey(todayDateKey));
+                      setTodayOpen(false);
+                    }}
+                    className="min-h-10 w-full rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground"
+                  >
+                    Open today on calendar
+                  </button>
+                </div>
+              </section>
+            </div>
+          );
+        })()}
+
+      {!maleMode && hakOpen && hakAnchor && (
+        <BirthControlOverlay
+          data={view}
+          anchor={hakAnchor}
+          onAnchorChange={setHakAnchor}
+          onClose={() => setHakOpen(false)}
+        />
+      )}
+
+      <LogSheet
+        open={logOpen}
+        onOpenChange={(open) => {
+          setLogOpen(open);
+
+          if (!open) {
+            setQuickCat(undefined);
+            setEditPain(undefined);
+            setEditEntry(undefined);
+          }
+        }}
+        date={selected}
+        data={view}
+        update={update}
+        initial={quickCat as never}
+        initialPain={editPain}
+        editEntry={editEntry}
+      />
+    </AppShell>
   );
 }
 
-/* ------------------- EVENT ------------------- */
-function EventForm({
-  date,
-  update,
-  onDone,
-  initialEntry,
-}: {
-  date: string;
-  update: UpdateFn;
-  onDone: () => void;
-  initialEntry?: EventEntry;
-}) {
-  const [title, setTitle] = useState(initialEntry?.title ?? "");
-  const [startDate, setStartDate] = useState(initialEntry?.startDate ?? date);
-  const [endDate, setEndDate] = useState(initialEntry?.endDate ?? date);
-  const [time, setTime] = useState(initialEntry?.time ?? "");
-  const [timeEnd, setTimeEnd] = useState(initialEntry?.timeEnd ?? "");
-  const [note, setNote] = useState(initialEntry?.note ?? "");
-  const [color, setColor] = useState(initialEntry?.color ?? EVENT_COLORS[0]);
-  const save = () => {
-    if (!title.trim()) return;
-    const editing = !!initialEntry;
-    const e: EventEntry = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
-      title: title.trim(),
-      startDate,
-      endDate: endDate < startDate ? startDate : endDate,
-      time: time || undefined,
-      timeEnd: timeEnd || undefined,
-      note: note.trim() || undefined,
-      color,
-    };
-    update((d) => ({ ...d, events: editing ? d.events.map((x) => (x.id === e.id ? e : x)) : [...d.events, e] }));
-    onDone();
-  };
-  return (
-    <div className="space-y-3">
-      <SaveBar onCancel={onDone} onSave={save} disabled={!title.trim()} />
-      <Field label="Title">
-        <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Doctor visit" />
-      </Field>
-      <div className="grid grid-cols-2 gap-2">
-        <Field label="From">
-          <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-        </Field>
-        <Field label="To">
-          <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-        </Field>
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        <Field label="Time from">
-          <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
-        </Field>
-        <Field label="Time to">
-          <Input type="time" value={timeEnd} onChange={(e) => setTimeEnd(e.target.value)} />
-        </Field>
-      </div>
-      <Field label="Color">
-        <div className="mt-2 flex gap-2 flex-wrap">
-          {EVENT_COLORS.map((c) => (
-            <button
-              key={c}
-              onClick={() => setColor(c)}
-              className={`h-8 w-8 rounded-full ${color === c ? "ring-2 ring-foreground" : ""}`}
-              style={{ background: c }}
-            />
-          ))}
-        </div>
-      </Field>
-      <Field label="Note (optional)">
-        <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
-      </Field>
-    </div>
-  );
-}
 
-/* ------------------- TASK ------------------- */
-function TaskForm({
-  date,
-  update,
-  onDone,
-  initialEntry,
-}: {
-  date: string;
-  update: UpdateFn;
-  onDone: () => void;
-  initialEntry?: TaskEntry;
-}) {
-  const [title, setTitle] = useState(initialEntry?.title ?? "");
-  const [startDate, setStartDate] = useState(initialEntry?.startDate ?? date);
-  const [endDate, setEndDate] = useState(initialEntry?.endDate ?? date);
-  const [time, setTime] = useState(initialEntry?.time ?? "");
-  const [timeEnd, setTimeEnd] = useState(initialEntry?.timeEnd ?? "");
-  const [note, setNote] = useState(initialEntry?.note ?? "");
-  const save = () => {
-    if (!title.trim()) return;
-    const editing = !!initialEntry;
-    const t: TaskEntry = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
-      title: title.trim(),
-      startDate,
-      endDate: endDate < startDate ? startDate : endDate,
-      time: time || undefined,
-      timeEnd: timeEnd || undefined,
-      done: initialEntry?.done ?? false,
-      note: note.trim() || undefined,
-    };
-    update((d) => ({ ...d, tasks: editing ? d.tasks.map((x) => (x.id === t.id ? t : x)) : [...d.tasks, t] }));
-    onDone();
-  };
-  return (
-    <div className="space-y-3">
-      <SaveBar onCancel={onDone} onSave={save} disabled={!title.trim()} />
-      <Field label="Task">
-        <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="What to do…" />
-      </Field>
-      <div className="grid grid-cols-2 gap-2">
-        <Field label="From">
-          <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-        </Field>
-        <Field label="To">
-          <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-        </Field>
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        <Field label="Time from">
-          <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
-        </Field>
-        <Field label="Time to">
-          <Input type="time" value={timeEnd} onChange={(e) => setTimeEnd(e.target.value)} />
-        </Field>
-      </div>
-      <Field label="Note (optional)">
-        <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
-      </Field>
-    </div>
-  );
-}
-
-/* ------------------- NOTE ------------------- */
-function NoteForm({ date, update, onDone }: { date: string; update: UpdateFn; onDone: () => void }) {
-  const [t, setT] = useState("");
-  const [time, setTime] = useState("");
-  const save = () => {
-    if (!t.trim()) return;
-    update((d) => {
-      const list = (d.dayNotes[date] ?? []) as (string | { text: string; time?: string })[];
-      const next: { text: string; time?: string }[] = list.map((x) => (typeof x === "string" ? { text: x } : x));
-      next.push({ text: t.trim(), time: time || undefined });
-      return { ...d, dayNotes: { ...d.dayNotes, [date]: next } };
-    });
-    onDone();
-  };
-  return (
-    <div className="space-y-3">
-      <SaveBar onCancel={onDone} onSave={save} disabled={!t.trim()} />
-      <Field label="Time (optional)">
-        <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
-      </Field>
-      <Textarea rows={6} value={t} onChange={(e) => setT(e.target.value)} placeholder="Anything about today…" />
-    </div>
-  );
-}
-
-/* ------------------- Postpartum symptoms ------------------- */
-
-function PostpartumSymptomsForm({
-  date,
+function BirthControlSummaryCard({
   data,
-  update,
-  onDone,
+  dateKey,
+  onOpen,
 }: {
-  date: string;
   data: BixboData;
-  update: UpdateFn;
-  onDone: () => void;
+  dateKey: string;
+  onOpen: () => void;
 }) {
-  const current: PostpartumDayLog = data.dayLogs[date]?.postpartum ?? {};
-  const [symptoms, setSymptoms] = useState<string[]>(current.symptoms ?? []);
-  const [note, setNote] = useState(current.note ?? "");
+  if (!dateKey || String(data.settings.gender ?? "").trim().toLowerCase() === "male") return null;
 
-  const toggleSymptom = (symptom: string) => {
-    setSymptoms((currentSymptoms) =>
-      currentSymptoms.includes(symptom)
-        ? currentSymptoms.filter((item) => item !== symptom)
-        : [...currentSymptoms, symptom],
+  const DROVELIS_START = "2026-04-22";
+  const ACTIVE_DAYS = 24;
+  const PACK_DAYS = 28;
+  const since = data.settings.birthControlSince || DROVELIS_START;
+  const bcMed = data.meds.find((m) =>
+    /antikonc|birth\s*control|contracept|hak|pill/i.test(`${m.name} ${m.dose ?? ""}`),
+  );
+
+  // Do not show the card before HAK started unless a HAK medication is configured.
+  if (dateKey < since && !bcMed) return null;
+
+  const diff = Math.round((fromKey(dateKey).getTime() - fromKey(since).getTime()) / 86400000);
+  if (diff < 0) return null;
+
+  const packDay = (diff % PACK_DAYS) + 1;
+  const isPlacebo = packDay > ACTIVE_DAYS;
+  const bcId = bcMed?.id ?? "hak-default";
+  const log = data.medLog[dateKey] ?? {};
+  const times = data.medLogTimes?.[dateKey] ?? {};
+  const takenKey = Object.keys(log).find(
+    (key) => log[key] && key !== `${bcId}@missed` && key.startsWith(`${bcId}@`),
+  );
+  const takenTime = takenKey ? times[takenKey] ?? takenKey.split("@")[1] ?? "" : "";
+  const missed = !!log[`${bcId}@missed`];
+
+  const HAK_PURPLE = "#7A53C8";
+  const HAK_PURPLE_DARK = "#5B32AE";
+  const HAK_PINK = "#D95782";
+  const HAK_PINK_DARK = "#B92E60";
+  const HAK_PINK_SOFT = "#F7CBD9";
+
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="mx-5 mt-2 block w-[calc(100%-2.5rem)] rounded-2xl px-3 py-2.5 text-left shadow-sm ring-1 transition active:scale-[0.99]"
+      style={{
+        background: "color-mix(in srgb, #7467D8 14%, transparent)",
+        borderColor: "rgba(116,103,216,.48)",
+        boxShadow:
+          "inset 0 0 0 1px color-mix(in srgb, #7467D8 34%, transparent), 0 2px 8px rgba(83,72,170,.08)",
+      }}
+      aria-label={`Open birth control overview. HAK day ${packDay} of ${PACK_DAYS}`}
+    >
+      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
+        <span
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-full ring-1"
+          style={{
+            backgroundColor: "rgba(229,219,248,.88)",
+            borderColor: "rgba(116,103,216,.34)",
+          }}
+        >
+          <Ico e="💊" size={20} />
+        </span>
+
+        <div className="min-w-0">
+          <div className="flex items-baseline gap-2">
+            <p className="truncate font-serif text-base font-bold text-foreground">Birth control</p>
+            <span className="text-[10px] text-muted-foreground">Drovelis</span>
+          </div>
+
+          <div className="mt-1 flex items-center gap-3">
+            <div className="flex items-baseline gap-1">
+              <span className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                Day
+              </span>
+              <span
+                className="font-serif text-lg font-bold leading-none"
+                style={{ color: isPlacebo ? HAK_PINK_DARK : HAK_PURPLE_DARK }}
+              >
+                {packDay}/{PACK_DAYS}
+              </span>
+            </div>
+
+            <span className="h-5 w-px bg-border/70" />
+
+            <div className="flex items-baseline gap-1">
+              <span className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                {isPlacebo ? "Placebo" : "Active"}
+              </span>
+              <span
+                className="text-xs font-bold"
+                style={{ color: isPlacebo ? HAK_PINK_DARK : HAK_PURPLE_DARK }}
+              >
+                {isPlacebo ? `${packDay - ACTIVE_DAYS}/4` : `${packDay}/24`}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-sm font-bold"
+            style={{
+              color: isPlacebo ? HAK_PINK_DARK : HAK_PURPLE_DARK,
+              backgroundColor: isPlacebo ? HAK_PINK_SOFT : "rgba(220,207,243,.72)",
+              boxShadow: `inset 0 0 0 4px ${
+                isPlacebo ? "rgba(217,87,130,.18)" : "rgba(122,83,200,.16)"
+              }`,
+            }}
+          >
+            {packDay}
+          </span>
+          <span className="text-lg leading-none" style={{ color: "#7467D8" }}>›</span>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+function BirthControlOverlay({
+  data,
+  anchor: _anchor,
+  onAnchorChange: _onAnchorChange,
+  onClose,
+}: {
+  data: BixboData;
+  anchor: Date;
+  onAnchorChange: (date: Date) => void;
+  onClose: () => void;
+}) {
+  const overlayRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    // Always open HAK detail at the very top so the title/back button are visible.
+    overlayRef.current?.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, []);
+
+  const mainRef = useRef<HTMLElement | null>(null);
+  const fitRef = useRef<HTMLDivElement | null>(null);
+  const [fitScale, setFitScale] = useState(1);
+
+  useEffect(() => {
+    const body = document.body;
+    const html = document.documentElement;
+    const previousOverflow = body.style.overflow;
+
+    // Save the complete inline background state. BIXBO's global light theme uses
+    // a green background gradient, so changing only backgroundColor is not enough:
+    // the old green background-image can remain visible in the iOS safe-area/status bar.
+    const previousBodyBackground = body.style.getPropertyValue("background");
+    const previousBodyBackgroundPriority = body.style.getPropertyPriority("background");
+    const previousHtmlBackground = html.style.getPropertyValue("background");
+    const previousHtmlBackgroundPriority = html.style.getPropertyPriority("background");
+    const previousBodyThemeBackground = body.style.getPropertyValue("--background");
+    const previousBodyThemeBackgroundPriority = body.style.getPropertyPriority("--background");
+    const previousHtmlThemeBackground = html.style.getPropertyValue("--background");
+    const previousHtmlThemeBackgroundPriority = html.style.getPropertyPriority("--background");
+
+    let themeMeta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
+    const createdThemeMeta = !themeMeta;
+    if (!themeMeta) {
+      themeMeta = document.createElement("meta");
+      themeMeta.name = "theme-color";
+      document.head.appendChild(themeMeta);
+    }
+    const previousThemeColor = themeMeta.content;
+
+    body.style.overflow = "hidden";
+
+    // Force the full document canvas — including the iOS safe area — to the same
+    // lavender as Birth Control. Using the background shorthand also removes the
+    // global olive gradient while this overlay is open.
+    body.style.setProperty("--background", "#E7DCF5", "important");
+    html.style.setProperty("--background", "#E7DCF5", "important");
+    body.style.setProperty("background", "#E7DCF5", "important");
+    html.style.setProperty("background", "#E7DCF5", "important");
+    themeMeta.content = "#E7DCF5";
+
+    return () => {
+      body.style.overflow = previousOverflow;
+
+      if (previousBodyBackground) {
+        body.style.setProperty("background", previousBodyBackground, previousBodyBackgroundPriority);
+      } else {
+        body.style.removeProperty("background");
+      }
+      if (previousHtmlBackground) {
+        html.style.setProperty("background", previousHtmlBackground, previousHtmlBackgroundPriority);
+      } else {
+        html.style.removeProperty("background");
+      }
+
+      if (previousBodyThemeBackground) {
+        body.style.setProperty("--background", previousBodyThemeBackground, previousBodyThemeBackgroundPriority);
+      } else {
+        body.style.removeProperty("--background");
+      }
+      if (previousHtmlThemeBackground) {
+        html.style.setProperty("--background", previousHtmlThemeBackground, previousHtmlThemeBackgroundPriority);
+      } else {
+        html.style.removeProperty("--background");
+      }
+
+      if (createdThemeMeta) {
+        themeMeta?.remove();
+      } else if (themeMeta) {
+        themeMeta.content = previousThemeColor;
+      }
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    const fit = () => {
+      const main = mainRef.current;
+      const content = fitRef.current;
+      if (!main || !content) return;
+
+      // Measure the original, correct calendar + ŠukŠuk at natural size,
+      // then scale the whole composition uniformly only when needed.
+      // This preserves all internal proportions instead of shrinking
+      // individual calendar/chart pieces.
+      const availableHeight = main.clientHeight;
+      const naturalHeight = content.scrollHeight;
+      if (!availableHeight || !naturalHeight) return;
+
+      const next = Math.min(1, Math.max(0.82, availableHeight / naturalHeight));
+      setFitScale((current) => (Math.abs(current - next) > 0.005 ? next : current));
+    };
+
+    fit();
+    const frame = requestAnimationFrame(fit);
+    const observer =
+      typeof ResizeObserver !== "undefined" ? new ResizeObserver(fit) : null;
+
+    if (mainRef.current) observer?.observe(mainRef.current);
+    if (fitRef.current) observer?.observe(fitRef.current);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      observer?.disconnect();
+    };
+  }, []);
+
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <div
+      ref={overlayRef}
+      className="fixed inset-0 z-[900] flex h-[100dvh] flex-col overflow-hidden bg-background text-foreground"
+      style={{
+        ...({
+          "--background": "#E7DCF5",
+          "--foreground": "#251A34",
+          "--surface": "#EDE5F8",
+          "--surface-elevated": "#F5F0FB",
+          "--surface-sunken": "#D7C6EC",
+          "--tint": "#DDCFF0",
+          "--card": "#EDE5F8",
+          "--card-foreground": "#251A34",
+          "--popover": "#F6F1FB",
+          "--popover-foreground": "#251A34",
+          "--secondary": "#E0D3F1",
+          "--secondary-foreground": "#2F2140",
+          "--muted": "#E2D6F1",
+          "--muted-foreground": "#685B78",
+          "--accent": "#D5C2EC",
+          "--accent-foreground": "#30203F",
+          "--border": "#BDA4DB",
+          "--input": "#BDA4DB",
+          "--ring": "#7A53C8",
+          "--chart-grid": "#D0BDE7",
+          "--chart-axis": "#554466",
+          "--chart-tooltip-bg": "#F7F2FC",
+          "--chart-tooltip-fg": "#251A34",
+        } as CSSProperties),
+        backgroundColor: "#E7DCF5",
+      }}
+    >
+      {/* Explicit iOS safe-area backdrop. The document background is also forced
+          purple above, so no olive strip can bleed through behind the status bar. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-x-0 top-0 z-[905] bg-[#E7DCF5]"
+        style={{ height: "max(env(safe-area-inset-top), 1px)" }}
+      />
+
+      <div className="relative z-[910] shrink-0 border-b border-border/70 bg-background px-4 pb-2 pt-[max(.65rem,env(safe-area-inset-top))]">
+        <div className="mx-auto flex w-full max-w-xl items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-tint ring-1 ring-border"
+            aria-label="Back to calendar"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+
+          <div className="min-w-0 flex-1 px-2 text-center">
+            <h1 className="whitespace-nowrap font-serif text-[1.2rem] font-bold leading-tight text-foreground">
+              Birth control overview
+            </h1>
+            <p className="mt-1 text-[10px] leading-none text-muted-foreground">Drovelis</p>
+          </div>
+
+          <span className="h-10 w-10 shrink-0" aria-hidden="true" />
+        </div>
+      </div>
+
+      <main
+        ref={mainRef}
+        className="mx-auto min-h-0 w-full max-w-[42rem] flex-1 overflow-hidden px-3 pb-[max(.35rem,env(safe-area-inset-bottom))] pt-1"
+      >
+        <div
+          ref={fitRef}
+          className="mx-auto w-full"
+          style={{
+            transform: `scale(${fitScale})`,
+            transformOrigin: "top center",
+          }}
+        >
+          <BirthControlCalendar data={data} />
+        </div>
+      </main>
+    </div>,
+    document.body,
+  );
+}
+
+function BirthControlCalendar({
+  data,
+}: {
+  data: ReturnType<typeof useBixbo>["data"];
+}) {
+  const { update } = useBixbo();
+  const [sel, setSel] = useState<string | null>(null);
+
+  // The month selector controls only the calendar inside the ring.
+  // It never changes the one current 28-day HAK pack shown by the ring.
+  const [hakMonth, setHakMonth] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
+
+  // Personal Drovelis schedule. Keep Settings as the source of truth when present,
+  // with the confirmed start date as a safe fallback for this build.
+  const DROVELIS_START = "2026-04-22";
+  const since = data.settings.birthControlSince || DROVELIS_START;
+
+  useEffect(() => {
+    if (!sel) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [sel]);
+
+  if (String(data.settings.gender ?? "").trim().toLowerCase() === "male") return null;
+
+  // Drovelis is monophasic: every pink active tablet has the same full dose.
+  // 24 pink active tablets + 4 white placebo tablets = one 28-day pack.
+  const ACTIVE_DAYS = 24;
+  const PACK_DAYS = 28;
+
+  const HAK_PURPLE = "#7A53C8";
+  const HAK_PURPLE_DARK = "#5B32AE";
+  const HAK_PURPLE_SOFT = "#DCCFF3";
+  const HAK_PURPLE_DOT = "#8C67D4";
+  const HAK_PINK = "#D95782";
+  const HAK_PINK_DARK = "#B92E60";
+  const HAK_PINK_SOFT = "#F7CBD9";
+  const HAK_GREEN = "#8A962D";
+  const HAK_GREEN_DARK = "#596313";
+  const HAK_GREEN_SOFT = "#E7E9B8";
+  const HAK_TRACK = "#E4E4D3";
+  const HAK_CARD_BG = "color-mix(in srgb, var(--background) 94%, #7A53C8 6%)";
+
+  const bcMed = data.meds.find((m) =>
+    /antikonc|birth\s*control|contracept|hak|pill/i.test(`${m.name} ${m.dose ?? ""}`),
+  );
+  const bcId = bcMed?.id ?? "hak-default";
+
+  const todayK = toKey(new Date());
+
+  const pillNumber = (k: string) => {
+    const diff = Math.round((fromKey(k).getTime() - fromKey(since).getTime()) / 86400000);
+    if (diff < 0) return null;
+    return (diff % PACK_DAYS) + 1;
+  };
+
+  // One fixed 28-day HAK wheel: always the pack that contains TODAY.
+  // Calendar months (28/29/30/31 days) must never move or redefine this wheel.
+  const currentDay = pillNumber(todayK) ?? 1;
+  const currentPackStart = addDays(todayK, -(currentDay - 1));
+
+  const dateForPackDay = (day: number) => addDays(currentPackStart, day - 1);
+
+  const takenAt = (k: string): string | null => {
+    const log = data.medLog[k] ?? {};
+    const times = data.medLogTimes?.[k] ?? {};
+    const keys = Object.keys(log).filter(
+      (key) => log[key] && key !== `${bcId}@missed` && key.startsWith(`${bcId}@`),
+    );
+    if (!keys.length) return null;
+    return times[keys[0]] ?? keys[0].split("@")[1] ?? "";
+  };
+
+  const missedAt = (k: string): boolean => !!data.medLog[k]?.[`${bcId}@missed`];
+
+  const markTaken = (k: string, time: string) =>
+    update((d) => {
+      const t = time || new Date().toTimeString().slice(0, 5);
+      const day = { ...(d.medLog[k] ?? {}) };
+      Object.keys(day).forEach((key) => {
+        if (key.startsWith(`${bcId}@`)) delete day[key];
+      });
+      day[`${bcId}@${t}`] = true;
+
+      const dayTimes = { ...(d.medLogTimes[k] ?? {}) };
+      Object.keys(dayTimes).forEach((key) => {
+        if (key.startsWith(`${bcId}@`)) delete dayTimes[key];
+      });
+      dayTimes[`${bcId}@${t}`] = t;
+
+      return {
+        ...d,
+        medLog: { ...d.medLog, [k]: day },
+        medLogTimes: { ...d.medLogTimes, [k]: dayTimes },
+        medNames: bcMed ? d.medNames : { ...d.medNames, [bcId]: "Birth control" },
+      };
+    });
+
+  const markMissed = (k: string) =>
+    update((d) => {
+      const day = { ...(d.medLog[k] ?? {}) };
+      Object.keys(day).forEach((key) => {
+        if (key.startsWith(`${bcId}@`)) delete day[key];
+      });
+      day[`${bcId}@missed`] = true;
+
+      const dayTimes = { ...(d.medLogTimes[k] ?? {}) };
+      Object.keys(dayTimes).forEach((key) => {
+        if (key.startsWith(`${bcId}@`)) delete dayTimes[key];
+      });
+
+      return {
+        ...d,
+        medLog: { ...d.medLog, [k]: day },
+        medLogTimes: { ...d.medLogTimes, [k]: dayTimes },
+        medNames: bcMed ? d.medNames : { ...d.medNames, [bcId]: "Birth control" },
+      };
+    });
+
+  const clearRecord = (k: string) =>
+    update((d) => {
+      const day = { ...(d.medLog[k] ?? {}) };
+      Object.keys(day).forEach((key) => {
+        if (key.startsWith(`${bcId}@`)) delete day[key];
+      });
+
+      const dayTimes = { ...(d.medLogTimes[k] ?? {}) };
+      Object.keys(dayTimes).forEach((key) => {
+        if (key.startsWith(`${bcId}@`)) delete dayTimes[key];
+      });
+
+      return {
+        ...d,
+        medLog: { ...d.medLog, [k]: day },
+        medLogTimes: { ...d.medLogTimes, [k]: dayTimes },
+      };
+    });
+
+  const selectedDay = sel ? pillNumber(sel) : null;
+  const selectedTaken = sel ? takenAt(sel) : null;
+  const selectedMissed = sel ? missedAt(sel) : false;
+  const selectedIsPlacebo = selectedDay != null && selectedDay > ACTIVE_DAYS;
+  const popupAccent = selectedIsPlacebo ? HAK_PINK_DARK : HAK_PURPLE_DARK;
+  const popupSoft = selectedIsPlacebo ? "#F9DDE7" : "#E8DDF8";
+
+
+
+  const fmtFullDate = (key: string) =>
+    fromKey(key).toLocaleDateString("en-GB", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+
+  const wheelDays = Array.from({ length: PACK_DAYS }, (_, i) => i + 1);
+
+  // 24 purple dots, a subtle separator, 4 pink dots, a second separator,
+  // then one green dot for the next pack. This matches the detailed reference.
+  const timelineItems: Array<{
+    kind: "active" | "placebo" | "separator" | "next";
+    day?: number;
+  }> = [
+    ...Array.from({ length: ACTIVE_DAYS }, (_, i) => ({ kind: "active" as const, day: i + 1 })),
+    { kind: "separator" as const },
+    ...Array.from({ length: PACK_DAYS - ACTIVE_DAYS }, (_, i) => ({
+      kind: "placebo" as const,
+      day: ACTIVE_DAYS + i + 1,
+    })),
+    { kind: "separator" as const },
+    { kind: "next" as const, day: 1 },
+  ];
+
+  const timelineCurrentIndex =
+    currentDay <= ACTIVE_DAYS
+      ? currentDay - 1
+      : ACTIVE_DAYS + 1 + (currentDay - ACTIVE_DAYS - 1);
+
+  const timelineMarkerLeft = Math.max(
+    6,
+    Math.min(88, ((timelineCurrentIndex + 0.5) / timelineItems.length) * 100),
+  );
+
+  const hakMonthYear = hakMonth.getFullYear();
+  const hakMonthIndex = hakMonth.getMonth();
+  const hakMonthOffset = (new Date(hakMonthYear, hakMonthIndex, 1).getDay() + 6) % 7;
+  const hakMonthCellCount = 42;
+  const hakMonthCells = Array.from({ length: hakMonthCellCount }, (_, index) => {
+    const dayNumber = index - hakMonthOffset + 1;
+    const date = new Date(hakMonthYear, hakMonthIndex, dayNumber);
+    const key = toKey(date);
+    return {
+      key,
+      date,
+      inMonth: date.getMonth() === hakMonthIndex,
+      packDay: pillNumber(key),
+    };
+  });
+
+  const hakMonthLabel = hakMonth.toLocaleDateString("en-GB", {
+    month: "long",
+    year: "numeric",
+  });
+
+  const moveHakCalendarMonth = (delta: number) => {
+    setHakMonth(
+      (current) => new Date(current.getFullYear(), current.getMonth() + delta, 1),
     );
   };
 
-  const save = () => {
-    updateDayLog(update, date, (dayLog) => ({
-      ...dayLog,
-      postpartum: {
-        ...(dayLog.postpartum ?? {}),
-        symptoms: symptoms.length ? symptoms : undefined,
-        note: note.trim() || undefined,
-      },
+  // TRUE mathematical 28-day ring.
+  // Every adjacent bubble is the next pill number:
+  // 1 → 2 → … → 24 → 25 → 26 → 27 → 28 → back to 1.
+  // Rotation keeps placebo 25–28 across the bottom of the wheel.
+  const WHEEL_STEP = 360 / PACK_DAYS;
+  const WHEEL_DAY1_ANGLE = 57;
+  const wheelAngleForDay = (day: number) =>
+    WHEEL_DAY1_ANGLE - (day - 1) * WHEEL_STEP;
+
+  return (
+    <section className="flex min-h-0 flex-col">
+      <div className="flex shrink-0 items-start justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-surface/65 ring-1 ring-border/50">
+            <Ico e="🫐" size={25} />
+          </span>
+          <div className="min-w-0">
+            <h2 className="whitespace-nowrap font-serif text-xl font-bold text-foreground">Blueberry cycle</h2>
+            <p className="whitespace-nowrap text-[11px] text-muted-foreground">Birth control overview</p>
+          </div>
+        </div>
+
+        <div className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-surface/30 p-0.5 ring-1 ring-border/40">
+          <button
+            type="button"
+            onClick={() => moveHakCalendarMonth(-1)}
+            className="grid h-7 w-7 place-items-center rounded-full transition hover:bg-tint"
+            aria-label="Previous calendar month"
+          >
+            <ChevronLeft className="h-3.5 w-3.5" />
+          </button>
+
+          <span className="min-w-[88px] px-1 text-center text-[10px] font-semibold text-foreground">
+            {hakMonthLabel}
+          </span>
+
+          <button
+            type="button"
+            onClick={() => moveHakCalendarMonth(1)}
+            className="grid h-7 w-7 place-items-center rounded-full transition hover:bg-tint"
+            aria-label="Next calendar month"
+          >
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Circular HAK overview — only wheel pills open the dose popup. */}
+      <div className="relative left-1/2 mt-1 w-[calc(100%+2rem)] max-w-[390px] -translate-x-1/2 shrink-0">
+        <div className="relative aspect-square w-full">
+          <div
+            className="absolute inset-[5.5%] rounded-full"
+            style={{
+              background: "rgba(255,255,255,.12)",
+              boxShadow: "inset 0 0 0 9px rgba(255,255,255,.24)",
+            }}
+          />
+          <div
+            className="absolute inset-[16.5%] rounded-full"
+            style={{
+              backgroundColor: HAK_CARD_BG,
+              boxShadow: "0 0 0 1px rgba(255,255,255,.12)",
+            }}
+          />
+
+          <div className="pointer-events-none absolute inset-0 z-[1]">
+            {Array.from({ length: PACK_DAYS }).map((_, i) => {
+              const day = i + 1;
+              const angle = (wheelAngleForDay(day) * Math.PI) / 180;
+              const radius = 44.5;
+              return (
+                <span
+                  key={`wheel-track-${i}`}
+                  className="absolute h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/70"
+                  style={{
+                    left: `${50 + Math.cos(angle) * radius}%`,
+                    top: `${50 + Math.sin(angle) * radius}%`,
+                  }}
+                />
+              );
+            })}
+          </div>
+
+          {wheelDays.map((day) => {
+            const angle = (wheelAngleForDay(day) * Math.PI) / 180;
+            const radius = 44.5;
+            const left = 50 + Math.cos(angle) * radius;
+            const top = 50 + Math.sin(angle) * radius;
+            const dateKey = dateForPackDay(day);
+            const loggedTaken = !!takenAt(dateKey);
+            const missed = missedAt(dateKey);
+            const isCurrent = day === currentDay;
+            const isPlacebo = day > ACTIVE_DAYS;
+
+            // The user confirmed continuous on-time Drovelis use from `since`.
+            // Therefore historical active pills are visually treated as taken
+            // unless that exact date was explicitly marked missed. This prevents
+            // old packs from showing pale/empty circles only because dose logging
+            // was added to the app later.
+            const assumedHistoricalTaken =
+              !isPlacebo && dateKey >= since && dateKey < todayK && !missed;
+            const takenForStatus = loggedTaken || assumedHistoricalTaken;
+
+            // Soft 3D "pill bubble" styling matched to the visual reference.
+            // Keep the wheel math/layout untouched; only visual treatment changes.
+            let bubbleBackground = isPlacebo
+              ? "radial-gradient(circle at 30% 24%, #FFF7FA 0%, #F9DDE7 38%, #F2C3D4 72%, #E9AFC6 100%)"
+              : "radial-gradient(circle at 30% 24%, #F7F2FF 0%, #E7DDF8 38%, #D4C3F0 72%, #C1A9E7 100%)";
+            let color = isPlacebo ? "#B92E60" : "#51309A";
+            let bubbleBorder = isPlacebo
+              ? "rgba(255,255,255,.76)"
+              : "rgba(255,255,255,.72)";
+            let bubbleShadow = isPlacebo
+              ? "inset 1.5px 1.5px 3px rgba(255,255,255,.92), inset -1.5px -2px 3px rgba(177,52,98,.12), 0 2px 7px rgba(110,72,88,.14), 0 0 0 1px rgba(217,87,130,.18)"
+              : "inset 1.5px 1.5px 3px rgba(255,255,255,.92), inset -1.5px -2px 3px rgba(91,50,174,.12), 0 2px 7px rgba(76,54,112,.14), 0 0 0 1px rgba(122,83,200,.16)";
+
+            // Explicitly logged tablets become a richer version of the same bubble,
+            // rather than switching to a flat solid fill.
+            if (loggedTaken && !isCurrent) {
+              if (isPlacebo) {
+                bubbleBackground =
+                  "radial-gradient(circle at 30% 24%, #FFEAF1 0%, #F4BFD2 42%, #E990B0 78%, #D96F98 100%)";
+                color = "#8F234B";
+                bubbleBorder = "rgba(255,255,255,.72)";
+                bubbleShadow =
+                  "inset 1.5px 1.5px 3px rgba(255,255,255,.78), inset -1.5px -2px 3px rgba(143,35,75,.16), 0 2px 8px rgba(110,54,78,.16), 0 0 0 1px rgba(185,46,96,.22)";
+              } else {
+                bubbleBackground =
+                  "radial-gradient(circle at 30% 24%, #EEE6FC 0%, #CFBDF0 42%, #AF91DF 78%, #9270D1 100%)";
+                color = "#47258D";
+                bubbleBorder = "rgba(255,255,255,.72)";
+                bubbleShadow =
+                  "inset 1.5px 1.5px 3px rgba(255,255,255,.78), inset -1.5px -2px 3px rgba(71,37,141,.16), 0 2px 8px rgba(73,50,113,.17), 0 0 0 1px rgba(91,50,174,.22)";
+              }
+            }
+
+            if (isCurrent) {
+              if (isPlacebo) {
+                bubbleBackground = loggedTaken
+                  ? "radial-gradient(circle at 30% 24%, #F7BFD2 0%, #E982A7 48%, #C94977 100%)"
+                  : "radial-gradient(circle at 30% 24%, #FFF4F8 0%, #F9D9E5 45%, #F0B8CD 100%)";
+                color = loggedTaken ? "#fff" : HAK_PINK_DARK;
+                bubbleBorder = "rgba(255,255,255,.88)";
+                bubbleShadow =
+                  `inset 1.5px 1.5px 3px rgba(255,255,255,.72), inset -1.5px -2px 3px rgba(143,35,75,.13), 0 0 0 3px ${HAK_CARD_BG}, 0 0 0 6px rgba(217,87,130,.30), 0 3px 10px rgba(110,54,78,.18)`;
+              } else {
+                bubbleBackground =
+                  "radial-gradient(circle at 30% 24%, #A98CE6 0%, #7D58C8 48%, #5B32AE 100%)";
+                color = "#fff";
+                bubbleBorder = "rgba(255,255,255,.88)";
+                bubbleShadow =
+                  `inset 1.5px 1.5px 3px rgba(255,255,255,.42), inset -1.5px -2px 3px rgba(57,28,112,.20), 0 0 0 3px ${HAK_CARD_BG}, 0 0 0 6px rgba(122,83,200,.30), 0 3px 10px rgba(73,50,113,.20)`;
+              }
+            }
+
+            if (missed) {
+              bubbleBorder = "#C94A55";
+              bubbleShadow =
+                "inset 1.5px 1.5px 3px rgba(255,255,255,.75), 0 0 0 2px rgba(201,74,85,.22), 0 2px 8px rgba(120,55,61,.16)";
+            }
+
+            return (
+              <button
+                key={day}
+                type="button"
+                onClick={() => {
+                  setSel(dateKey);
+                }}
+                className="absolute z-10 grid h-[38px] w-[38px] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[11px] font-bold transition active:scale-95"
+                style={{
+                  left: `${left}%`,
+                  top: `${top}%`,
+                  background: bubbleBackground,
+                  color,
+                  border: `1px solid ${bubbleBorder}`,
+                  boxShadow: bubbleShadow,
+                  textShadow: isCurrent
+                    ? "0 1px 1px rgba(50,30,80,.12)"
+                    : "0 1px 0 rgba(255,255,255,.45)",
+                }}
+                aria-label={`HAK day ${day}, ${fmtFullDate(dateKey)}${missed ? ", missed" : takenForStatus ? ", taken on schedule" : ""}`}
+              >
+                {day}
+              </button>
+            );
+          })}
+
+          {/* Current day status — kept clear of the top pill bubbles. */}
+          <div className="pointer-events-none absolute left-[25%] right-[25%] top-[20%] z-20 text-center">
+            <p className="text-[9px] font-semibold leading-none text-foreground">Day</p>
+            <p
+              className="mt-0.5 font-serif text-[clamp(1.85rem,7.5vw,2.45rem)] font-bold leading-none"
+              style={{ color: currentDay <= ACTIVE_DAYS ? HAK_PURPLE_DARK : HAK_PINK_DARK }}
+            >
+              {currentDay} / {PACK_DAYS}
+            </p>
+
+            {currentDay > ACTIVE_DAYS && (
+              <p
+                className="mt-1 text-[10px] font-semibold leading-none"
+                style={{ color: HAK_PINK_DARK }}
+              >
+                Placebo / break
+              </p>
+            )}
+          </div>
+
+          {/* Calendar — actual date stays large; HAK pill number stays as small Pxx. */}
+          <div className="pointer-events-none absolute left-[16.5%] right-[16.5%] top-[34.5%] z-20 text-center">
+            <p className="text-[14px] font-bold leading-none text-foreground">
+              {hakMonthLabel}
+            </p>
+
+            <div className="mt-1.5 grid grid-cols-7 text-center text-[7.5px] font-semibold leading-none text-foreground/75">
+              {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((weekday) => (
+                <span key={weekday}>{weekday}</span>
+              ))}
+            </div>
+
+            <div className="mt-1 grid grid-cols-7 gap-x-[2px] gap-y-[1px]">
+              {hakMonthCells.map((cell) => {
+                if (!cell.inMonth) {
+                  return <span key={cell.key} className="h-[20px]" aria-hidden="true" />;
+                }
+
+                const packDay = cell.packDay;
+                const loggedTaken = !!takenAt(cell.key);
+                const missed = missedAt(cell.key);
+                const isToday = cell.key === todayK;
+                const isPlacebo = packDay != null && packDay > ACTIVE_DAYS;
+                const isNewPack = packDay === 1;
+
+                const chipBg =
+                  packDay == null
+                    ? "transparent"
+                    : isPlacebo
+                      ? "rgba(239,154,184,.72)"
+                      : isNewPack
+                        ? "rgba(176,185,81,.72)"
+                        : "rgba(170,145,229,.72)";
+
+                const chipColor =
+                  packDay == null
+                    ? "transparent"
+                    : isPlacebo
+                      ? HAK_PINK_DARK
+                      : isNewPack
+                        ? HAK_GREEN_DARK
+                        : HAK_PURPLE_DARK;
+
+                return (
+                  <span
+                    key={cell.key}
+                    className="flex h-[20px] min-w-0 flex-col items-center justify-start"
+                    aria-label={
+                      packDay == null
+                        ? fmtFullDate(cell.key)
+                        : `${fmtFullDate(cell.key)}, HAK day ${packDay}${loggedTaken ? ", taken" : missed ? ", missed" : ""}`
+                    }
+                  >
+                    <span
+                      className="grid h-[10px] min-w-[16px] place-items-center rounded-full px-[1px] text-[8px] font-bold leading-none tabular-nums"
+                      style={{
+                        color: "var(--foreground)",
+                        boxShadow: isToday ? "0 0 0 1px rgba(65,76,18,.68)" : undefined,
+                      }}
+                    >
+                      {cell.date.getDate()}
+                    </span>
+
+                    {packDay != null && (
+                      <span
+                        className="mt-[1px] max-w-[30px] truncate rounded-[3px] px-[2px] py-[1px] text-[5.7px] font-bold leading-none tabular-nums"
+                        style={{
+                          backgroundColor: chipBg,
+                          color: chipColor,
+                        }}
+                      >
+                        P{packDay}{loggedTaken ? " ✓" : missed ? " ×" : ""}
+                      </span>
+                    )}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Keep Current HAK pack exactly in the previous compact timeline style. */}
+      <div className="mt-4">
+        <h3 className="font-serif text-lg font-bold text-foreground">Current HAK pack</h3>
+        <div
+          className="mt-3 rounded-[1.75rem] px-4 py-4 ring-1"
+          style={{
+            backgroundColor: "rgba(255,255,255,.20)",
+            borderColor: "rgba(122,83,200,.16)",
+          }}
+        >
+          <div className="grid grid-cols-[1.35fr_1fr_.9fr] items-start gap-2 text-center">
+            <div>
+              <p className="text-[9px] font-bold leading-tight" style={{ color: HAK_PURPLE_DARK }}>Active HAK days</p>
+              <p className="mt-0.5 text-[9px] font-semibold leading-tight" style={{ color: HAK_PURPLE_DARK }}>1–{ACTIVE_DAYS}</p>
+            </div>
+            <div>
+              <p className="text-[9px] font-bold leading-tight" style={{ color: HAK_PINK_DARK }}>Placebo / break</p>
+              <p className="mt-0.5 text-[9px] font-semibold leading-tight" style={{ color: HAK_PINK_DARK }}>{ACTIVE_DAYS + 1}–{PACK_DAYS}</p>
+            </div>
+            <div>
+              <p className="text-[9px] font-bold leading-tight" style={{ color: HAK_GREEN_DARK }}>New cycle</p>
+              <p className="mt-0.5 text-[9px] font-semibold leading-tight" style={{ color: HAK_GREEN_DARK }}>Day 1</p>
+            </div>
+          </div>
+
+          <div className="relative mt-4 px-1 pb-8">
+            <div
+              className="rounded-full px-2 py-2 ring-1"
+              style={{
+                backgroundColor: "rgba(255,255,255,.30)",
+                borderColor: "rgba(122,83,200,.18)",
+              }}
+            >
+              <div
+                className="grid items-center gap-[2px]"
+                style={{ gridTemplateColumns: `repeat(${timelineItems.length}, minmax(0, 1fr))` }}
+              >
+                {timelineItems.map((item, index) => {
+                  const isCurrent = index === timelineCurrentIndex;
+                  const itemColor =
+                    item.kind === "active"
+                      ? HAK_PURPLE_DOT
+                      : item.kind === "placebo"
+                        ? HAK_PINK
+                        : item.kind === "next"
+                          ? HAK_GREEN
+                          : HAK_TRACK;
+
+                  return (
+                    <span
+                      key={`${item.kind}-${index}`}
+                      className="mx-auto block aspect-square w-full max-w-[10px] rounded-full"
+                      style={{
+                        backgroundColor: itemColor,
+                        boxShadow: isCurrent
+                          ? `0 0 0 3px ${HAK_CARD_BG}, 0 0 0 5px ${
+                              item.kind === "placebo" ? HAK_PINK_DARK : HAK_PURPLE_DARK
+                            }`
+                          : item.kind === "next"
+                            ? `0 0 0 2px ${HAK_GREEN_SOFT}`
+                            : undefined,
+                      }}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+
+            <div
+              className="absolute bottom-[22px] h-4 w-px"
+              style={{
+                left: `${timelineMarkerLeft}%`,
+                backgroundColor: currentDay <= ACTIVE_DAYS ? HAK_PURPLE : HAK_PINK,
+              }}
+            />
+            <p
+              className="absolute bottom-0 whitespace-nowrap text-[11px] font-bold"
+              style={{
+                left: `${timelineMarkerLeft}%`,
+                transform: "translateX(-50%)",
+                color: currentDay <= ACTIVE_DAYS ? HAK_PURPLE_DARK : HAK_PINK_DARK,
+              }}
+            >
+              Day {currentDay} / {PACK_DAYS}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* ŠukŠuk Insights summary — added inside the HAK calendar only. */}
+      <SukSukPeriodChart data={data} anchorKey={todayKey()} />
+
+      {/* Compact dose editor — only circular HAK wheel pills open this popup. */}
+      {sel && selectedDay != null && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30 p-5"
+              style={{
+                paddingTop: "max(1rem, env(safe-area-inset-top))",
+                paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
+              }}
+              onClick={() => setSel(null)}
+            >
+              <div
+                className="w-full max-w-[300px] rounded-[1.55rem] p-4 shadow-2xl ring-1"
+                style={{
+                  backgroundColor: popupSoft,
+                  borderColor: popupAccent,
+                  boxShadow: `0 18px 45px color-mix(in srgb, ${popupAccent} 22%, transparent)`,
+                }}
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p
+                      className="text-[10px] font-bold uppercase tracking-[0.14em]"
+                      style={{ color: popupAccent }}
+                    >
+                      HAK day {selectedDay}
+                    </p>
+                    <h3 className="mt-1 font-serif text-[1.05rem] font-bold leading-tight text-foreground">
+                      {fmtFullDate(sel)}
+                    </h3>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setSel(null)}
+                    className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm font-bold ring-1"
+                    style={{
+                      backgroundColor: "rgba(255,255,255,.42)",
+                      borderColor: `color-mix(in srgb, ${popupAccent} 35%, transparent)`,
+                      color: popupAccent,
+                    }}
+                    aria-label="Close"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                {selectedTaken ? (
+                  <div
+                    className="mt-4 flex min-h-12 items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold"
+                    style={{
+                      backgroundColor: "rgba(255,255,255,.38)",
+                      border: `1.5px solid ${popupAccent}`,
+                      color: popupAccent,
+                    }}
+                    aria-label="Tablet already taken"
+                  >
+                    <span
+                      className="grid h-6 w-6 place-items-center rounded-full text-xs font-black text-white"
+                      style={{ backgroundColor: popupAccent }}
+                    >
+                      ✓
+                    </span>
+                    Taken
+                  </div>
+                ) : (
+                  <>
+                    <div className="mt-4 grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          markTaken(sel, "");
+                          setSel(null);
+                        }}
+                        className="min-h-11 rounded-xl px-3 py-2.5 text-xs font-bold text-white shadow-sm"
+                        style={{ backgroundColor: popupAccent }}
+                      >
+                        Mark taken
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          markMissed(sel);
+                          setSel(null);
+                        }}
+                        className="min-h-11 rounded-xl bg-white/35 px-3 py-2.5 text-xs font-bold"
+                        style={{
+                          border: `1.5px solid ${popupAccent}`,
+                          color: popupAccent,
+                        }}
+                      >
+                        Mark missed
+                      </button>
+                    </div>
+
+                    {selectedMissed && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          clearRecord(sel);
+                          setSel(null);
+                        }}
+                        className="mt-2 min-h-9 w-full rounded-xl bg-white/30 px-3 py-2 text-[10px] font-semibold"
+                        style={{
+                          border: `1px solid color-mix(in srgb, ${popupAccent} 32%, transparent)`,
+                          color: popupAccent,
+                        }}
+                      >
+                        Clear missed status
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
+
+    </section>
+  );
+}
+
+
+function VitalTile({
+  emoji,
+  label,
+  value,
+  onClick,
+}: {
+  emoji: string;
+  label: string;
+  value: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex flex-col items-center justify-center gap-0.5 rounded-2xl bg-surface p-2 ring-1 ring-border hover:bg-tint"
+    >
+      <Ico e={emoji} size={16} />
+      <span className="font-serif text-base font-bold leading-tight">{value}</span>
+      <span className="text-[10px] font-medium text-muted-foreground">{label}</span>
+    </button>
+  );
+}
+
+function MedsProgress({ data }: { data: BixboData }) {
+  const k = todayKey();
+  const scheduled = data.meds.filter((m) => !m.asNeeded);
+  const total = scheduled.reduce((s, m) => s + m.times.length, 0);
+  const taken = scheduled.reduce((s, m) => s + m.times.filter((t) => data.medLog[k]?.[`${m.id}@${t}`]).length, 0);
+  return (
+    <div className="flex items-center justify-between rounded-2xl bg-surface p-3 ring-1 ring-border">
+      <div>
+        <p className="text-xs text-muted-foreground">Meds today</p>
+        <p className="font-serif text-lg font-bold">
+          {taken}/{total || 0}
+        </p>
+      </div>
+      <div className="grid h-10 w-10 place-items-center rounded-full bg-primary/15 text-primary">
+        <PillIcon size={20} />
+      </div>
+    </div>
+  );
+}
+
+/* ------------------- Day preview ------------------- */
+
+type SukSukRange = {
+  label: "Week" | "Month" | "Year";
+  start: Date;
+  end: Date;
+  count: number;
+};
+
+function startOfSelectedWeek(date: Date): Date {
+  const start = new Date(date);
+  start.setHours(0, 0, 0, 0);
+  const mondayOffset = (start.getDay() + 6) % 7;
+  start.setDate(start.getDate() - mondayOffset);
+  return start;
+}
+
+function countIntercourseBetween(data: BixboData, start: Date, end: Date): number {
+  return daysBetweenInclusive(start, end).reduce(
+    (total, key) =>
+      total +
+      (data.dayLogs[key]?.sex?.filter((entry) => isIntercourseKind(entry.kind)).length ?? 0),
+    0,
+  );
+}
+
+function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: string }) {
+  const HAK_PURPLE = "#7A53C8";
+  const HAK_PURPLE_DARK = "#5B32AE";
+  const HAK_PURPLE_SOFT = "#DCCFF3";
+  const HAK_CARD_BG = "color-mix(in srgb, var(--background) 94%, #7A53C8 6%)";
+
+  const anchor = useMemo(() => {
+    const date = fromKey(anchorKey);
+    date.setHours(0, 0, 0, 0);
+    return date;
+  }, [anchorKey]);
+
+  const week = useMemo(() => {
+    const start = startOfSelectedWeek(anchor);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+
+    const previousStart = new Date(start);
+    previousStart.setDate(start.getDate() - 7);
+    const previousEnd = new Date(end);
+    previousEnd.setDate(end.getDate() - 7);
+
+    const daily = daysBetweenInclusive(start, end).map((key, index) => ({
+      label: ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"][index],
+      count: data.dayLogs[key]?.sex?.filter((entry) => isIntercourseKind(entry.kind)).length ?? 0,
     }));
 
-    onDone();
+    return {
+      start,
+      end,
+      count: daily.reduce((sum, item) => sum + item.count, 0),
+      previousCount: countIntercourseBetween(data, previousStart, previousEnd),
+      bars: daily,
+    };
+  }, [anchor, data]);
+
+  const month = useMemo(() => {
+    const start = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+    const end = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0);
+
+    const previousStart = new Date(anchor.getFullYear(), anchor.getMonth() - 1, 1);
+    const previousEnd = new Date(anchor.getFullYear(), anchor.getMonth(), 0);
+
+    const daysInMonth = end.getDate();
+    const bars = [
+      [1, Math.min(7, daysInMonth)],
+      [8, Math.min(14, daysInMonth)],
+      [15, Math.min(21, daysInMonth)],
+      [22, Math.min(28, daysInMonth)],
+      [29, daysInMonth],
+    ]
+      .filter(([bucketStart]) => bucketStart <= daysInMonth)
+      .map(([bucketStart, bucketEnd]) => {
+        const bucketStartDate = new Date(anchor.getFullYear(), anchor.getMonth(), bucketStart);
+        const bucketEndDate = new Date(anchor.getFullYear(), anchor.getMonth(), bucketEnd);
+
+        return {
+          label: `${bucketStart}–${bucketEnd}`,
+          count: countIntercourseBetween(data, bucketStartDate, bucketEndDate),
+        };
+      });
+
+    return {
+      start,
+      end,
+      count: countIntercourseBetween(data, start, end),
+      previousCount: countIntercourseBetween(data, previousStart, previousEnd),
+      bars,
+    };
+  }, [anchor, data]);
+
+  const year = useMemo(() => {
+    const start = new Date(anchor.getFullYear(), 0, 1);
+    const end = new Date(anchor.getFullYear(), 11, 31);
+
+    const previousStart = new Date(anchor.getFullYear() - 1, 0, 1);
+    const previousEnd = new Date(anchor.getFullYear() - 1, 11, 31);
+
+    const monthLabels = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
+    const bars = monthLabels.map((label, monthIndex) => {
+      const monthStart = new Date(anchor.getFullYear(), monthIndex, 1);
+      const monthEnd = new Date(anchor.getFullYear(), monthIndex + 1, 0);
+
+      return {
+        label,
+        count: countIntercourseBetween(data, monthStart, monthEnd),
+      };
+    });
+
+    return {
+      start,
+      end,
+      count: countIntercourseBetween(data, start, end),
+      previousCount: countIntercourseBetween(data, previousStart, previousEnd),
+      bars,
+    };
+  }, [anchor, data]);
+
+  const comparison = (current: number, previous: number, label: string) => {
+    const diff = current - previous;
+    const symbol = diff > 0 ? "↑" : diff < 0 ? "↓" : "—";
+    const value = diff === 0 ? "0" : `${diff > 0 ? "+" : ""}${diff}`;
+
+    return (
+      <p className="mt-1.5 text-center text-[8px] leading-none text-muted-foreground">
+        vs last {label}{" "}
+        <span
+          className="font-bold"
+          style={{ color: diff === 0 ? "var(--muted-foreground)" : HAK_PURPLE_DARK }}
+        >
+          {symbol}{value}
+        </span>
+      </p>
+    );
+  };
+
+  const MiniBars = ({
+    items,
+    dense = false,
+  }: {
+    items: { label: string; count: number }[];
+    dense?: boolean;
+  }) => {
+    const max = Math.max(1, ...items.map((item) => item.count));
+
+    return (
+      <div
+        className="mt-2 grid items-end gap-[2px]"
+        style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
+      >
+        {items.map((item, index) => {
+          const height = item.count > 0 ? Math.max(5, Math.round((item.count / max) * 42)) : 1;
+
+          return (
+            <div key={`${item.label}-${index}`} className="flex min-w-0 flex-col items-center justify-end">
+              <span className={`${dense ? "text-[6px]" : "text-[7px]"} mb-0.5 h-2.5 tabular-nums text-foreground/75`}>
+                {item.count}
+              </span>
+              <div className="flex h-[42px] w-full items-end justify-center border-b border-border/55">
+                <span
+                  className={`${dense ? "w-[72%]" : "w-[78%]"} rounded-t-[3px]`}
+                  style={{
+                    height: `${height}px`,
+                    background:
+                      item.count > 0
+                        ? `linear-gradient(180deg, ${HAK_PURPLE} 0%, ${HAK_PURPLE_DARK} 100%)`
+                        : HAK_PURPLE_SOFT,
+                    opacity: item.count > 0 ? 1 : 0.35,
+                  }}
+                />
+              </div>
+              <span
+                className={`${dense ? "text-[5.5px]" : "text-[6.5px]"} mt-1 truncate text-muted-foreground`}
+              >
+                {item.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
   return (
-    <div className="space-y-5">
-      <SaveBar onCancel={onDone} onSave={save} />
-      <div className="flex items-start gap-3 rounded-3xl bg-tint p-4 ring-1 ring-border/50">
-        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-surface ring-1 ring-border/50">
-          <Ico e="🤱" size={30} />
+    <section
+      className="mt-4 rounded-3xl p-4 ring-1 ring-border"
+      style={{ backgroundColor: HAK_CARD_BG }}
+    >
+      <div className="flex items-start gap-3">
+        <span
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl ring-1"
+          style={{
+            backgroundColor: HAK_PURPLE_SOFT,
+            color: HAK_PURPLE_DARK,
+            borderColor: `${HAK_PURPLE}33`,
+          }}
+        >
+          <Ico e="❤️" size={22} />
         </span>
 
-        <div>
-          <h3 className="text-sm font-semibold text-foreground">Postpartum recovery</h3>
-          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-            Select every symptom you experienced today. The BIXBO icon is used instead of an Apple emoji.
+        <div className="min-w-0 flex-1">
+          <h2 className="font-serif text-lg font-semibold leading-none text-foreground">ŠukŠuk!</h2>
+          <p className="mt-1 text-[10px] leading-snug text-muted-foreground">
+            Logged intimacy · actual intercourse only
           </p>
         </div>
       </div>
 
-      <Field label="Symptoms today">
-        <div className="mt-2 flex flex-wrap gap-2">
-          {POSTPARTUM_SYMPTOMS.map((symptom) => (
-            <Chip key={symptom} active={symptoms.includes(symptom)} onClick={() => toggleSymptom(symptom)}>
-              {symptom}
-            </Chip>
-          ))}
+      <div className="mt-3 border-t border-border/55 pt-3">
+        <div className="grid grid-cols-3 divide-x divide-border/55">
+          <div className="min-w-0 px-1.5">
+            <p className="text-center text-[10px] font-bold text-foreground">Week</p>
+            <p className="mt-0.5 truncate text-center text-[6.5px] tabular-nums text-muted-foreground">
+              {toKey(week.start)} → {toKey(week.end)}
+            </p>
+            <p className="mt-1.5 text-center font-serif text-2xl font-bold leading-none text-foreground">
+              {week.count}
+              <span className="ml-1 font-sans text-[8px] font-medium text-muted-foreground">times</span>
+            </p>
+            {comparison(week.count, week.previousCount, "week")}
+            <MiniBars items={week.bars} />
+          </div>
+
+          <div className="min-w-0 px-1.5">
+            <p className="text-center text-[10px] font-bold text-foreground">Month</p>
+            <p className="mt-0.5 truncate text-center text-[6.5px] text-muted-foreground">
+              {anchor.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+            </p>
+            <p className="mt-1.5 text-center font-serif text-2xl font-bold leading-none text-foreground">
+              {month.count}
+              <span className="ml-1 font-sans text-[8px] font-medium text-muted-foreground">times</span>
+            </p>
+            {comparison(month.count, month.previousCount, "month")}
+            <MiniBars items={month.bars} />
+          </div>
+
+          <div className="min-w-0 px-1.5">
+            <p className="text-center text-[10px] font-bold text-foreground">Year</p>
+            <p className="mt-0.5 text-center text-[6.5px] tabular-nums text-muted-foreground">
+              {anchor.getFullYear()}
+            </p>
+            <p className="mt-1.5 text-center font-serif text-2xl font-bold leading-none text-foreground">
+              {year.count}
+              <span className="ml-1 font-sans text-[8px] font-medium text-muted-foreground">times</span>
+            </p>
+            {comparison(year.count, year.previousCount, "year")}
+            <MiniBars items={year.bars} dense />
+          </div>
         </div>
-      </Field>
+      </div>
+    </section>
+  );
+}
 
-      <Field label="Recovery note (optional)">
-        <Textarea
-          rows={4}
-          value={note}
-          onChange={(event) => setNote(event.target.value)}
-          placeholder="Add anything important about recovery, bleeding, feeding or how you feel."
-        />
-      </Field>
+function DayPreview({
+  date,
+  data,
+  update,
+  onEditPain,
+  onEdit,
+}: {
+  date: string;
+  data: BixboData;
+  update: (u: (d: BixboData) => BixboData) => void;
+  onEditPain?: (p: import("@/lib/storage").PainEntry) => void;
+  onEdit?: (cat: string, entry: unknown) => void;
+}) {
+  const log = data.dayLogs[date];
+  const temperatureEntries = overviewVitalEntries(log, "temperature");
+  const weightEntries = overviewVitalEntries(log, "weight");
+  const rawNotes = data.dayNotes[date] ?? [];
+  const notes: { text: string; time?: string }[] = (rawNotes as (string | { text: string; time?: string })[]).map(
+    (n) => (typeof n === "string" ? { text: n } : n),
+  );
+  const todos = data.todos[date] ?? [];
+  const events = data.events.filter((e) => date >= e.startDate && date <= e.endDate);
+  const tasks = data.tasks.filter((t) => date >= t.startDate && date <= t.endDate);
 
-      {current.symptoms?.length || current.note ? (
-        <button
-          type="button"
-          onClick={() => {
-            updateDayLog(update, date, (dayLog) => ({
-              ...dayLog,
-              postpartum: {
-                ...(dayLog.postpartum ?? {}),
-                symptoms: undefined,
-                note: undefined,
-              },
-            }));
-            onDone();
-          }}
-          className="w-full rounded-2xl bg-destructive/10 py-2.5 text-sm font-medium text-destructive ring-1 ring-destructive/30"
-        >
-          Clear postpartum symptoms
-        </button>
+  const k = todayKey();
+  const isToday = date === k;
+  const nowHHMM = new Date().toTimeString().slice(0, 5);
+  const meds = data.meds;
+  const scheduled = data.meds
+    .filter((m) => !m.asNeeded)
+    .flatMap((m) =>
+      m.times.map((t) => ({ key: `${m.id}@${t}`, med: m, time: t, taken: !!data.medLog[date]?.[`${m.id}@${t}`] })),
+    );
+  const takenList = scheduled.filter((x) => x.taken);
+  const missedList = scheduled.filter((x) => !x.taken && (date < k || (date === k && x.time < nowHHMM)));
+  const extraMeds = log?.extraMeds ?? [];
+  const cycleTrackingHidden = isCycleTrackingHidden(data);
+  const flowLabel = (level?: string | null): string => {
+    switch (level) {
+      case "spotting":
+        return "Spotting";
+      case "light":
+        return "Light";
+      case "medium":
+        return "Medium";
+      case "heavy":
+        return "Heavy";
+      case "very-heavy":
+        return "Very heavy";
+      default:
+        return "";
+    }
+  };
+
+  const anything =
+    !!(
+      log &&
+      (log.pain?.length ||
+        log.tetany?.length ||
+        log.panic?.length ||
+        log.period ||
+        log.periodInfo?.level ||
+        log.food?.length ||
+        log.bowel?.length ||
+        log.sex?.length ||
+        log.heat?.length ||
+        log.workout?.length ||
+        temperatureEntries.length ||
+        weightEntries.length ||
+        log.temperature != null ||
+        log.weight != null ||
+        log.sleepHours != null ||
+        extraMeds.length)
+    ) ||
+    notes.length ||
+    todos.length ||
+    events.length ||
+    tasks.length ||
+    takenList.length ||
+    missedList.length;
+
+  if (!anything)
+    return (
+      <div className="mx-5 mt-4 rounded-3xl bg-surface p-6 text-center ring-1 ring-border">
+        <p className="text-sm text-muted-foreground">Nothing logged {isToday ? "today" : "this day"} yet.</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Tap the <span className="font-bold">+ Log</span> button below.
+        </p>
+      </div>
+    );
+
+  const markMissedTaken = (medKey: string) =>
+    update((d) => ({
+      ...d,
+      medLog: { ...d.medLog, [date]: { ...(d.medLog[date] ?? {}), [medKey]: true } },
+      medLogTimes: {
+        ...(d.medLogTimes ?? {}),
+        [date]: {
+          ...(d.medLogTimes?.[date] ?? {}),
+          [medKey]: (() => {
+            const n = new Date();
+            return `${String(n.getHours()).padStart(2, "0")}:${String(n.getMinutes()).padStart(2, "0")}`;
+          })(),
+        },
+      },
+    }));
+
+  return (
+    <div className="space-y-3 px-5 pt-3 pb-32">
+      {(takenList.length > 0 || extraMeds.length > 0 || missedList.length > 0) && (
+        <Card title="Meds" icon="💊">
+          <ul className="space-y-1 text-sm">
+            {takenList.map((x) => {
+              const actual = data.medLogTimes?.[date]?.[x.key];
+              const shifted = actual && actual !== x.time;
+              return (
+                <li key={x.key}>
+                  <button
+                    onClick={() =>
+                      update((d) => {
+                        const day = { ...(d.medLog[date] ?? {}) };
+                        delete day[x.key];
+                        const times = { ...(d.medLogTimes?.[date] ?? {}) };
+                        delete times[x.key];
+                        return {
+                          ...d,
+                          medLog: { ...d.medLog, [date]: day },
+                          medLogTimes: { ...(d.medLogTimes ?? {}), [date]: times },
+                        };
+                      })
+                    }
+                    className="text-left text-green-700 hover:underline"
+                    title="Tap to uncheck"
+                  >
+                    Taken · {actual ?? x.time} — {x.med.name}
+                    {x.med.dose ? ` (${x.med.dose})` : ""}
+                    {shifted && <span className="text-[10px] text-muted-foreground"> · scheduled {x.time}</span>}
+                    <span className="text-[10px] text-muted-foreground"> · tap to uncheck</span>
+                  </button>
+                </li>
+              );
+            })}
+            {missedList.map((x) => (
+              <li key={x.key} className="flex items-start gap-2">
+                <button
+                  onClick={() => markMissedTaken(x.key)}
+                  className="flex-1 text-left text-destructive/90"
+                  title="Tap to mark taken"
+                >
+                  Missed · {x.time} — {x.med.name}
+                  {x.med.dose ? ` (${x.med.dose})` : ""}{" "}
+                  <span className="text-[10px] text-muted-foreground">· missed (tap if taken)</span>
+                </button>
+              </li>
+            ))}
+            {extraMeds.map((e) => (
+              <li key={e.id} className="flex items-start gap-2">
+                <button onClick={() => onEdit?.("meds", e)} className="flex-1 text-left">
+                  • {e.time} — {e.name}
+                  {e.dose ? ` (${e.dose})` : ""}
+                  {e.note ? ` — ${e.note}` : ""}
+                </button>
+                <button
+                  onClick={() =>
+                    update((d) => ({
+                      ...d,
+                      dayLogs: {
+                        ...d.dayLogs,
+                        [date]: {
+                          ...d.dayLogs[date],
+                          extraMeds: (d.dayLogs[date]?.extraMeds ?? []).filter((x) => x.id !== e.id),
+                        },
+                      },
+                    }))
+                  }
+                  aria-label="Delete"
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
+      {(log?.pain?.length && (
+        <Card title="Pain" icon="🔥">
+          <ul className="space-y-2">
+            {log.pain.map((p) => (
+              <li key={p.id} className="flex items-start gap-3">
+                <button
+                  onClick={() => onEditPain?.(p)}
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-sm font-bold text-white"
+                  style={{ background: painColor(p.score) }}
+                  aria-label="Edit pain entry"
+                >
+                  {Number.isInteger(p.score) ? p.score : p.score.toFixed(1)}
+                </button>
+                <button onClick={() => onEditPain?.(p)} className="min-w-0 flex-1 text-left">
+                  <p className="text-xs text-muted-foreground">
+                    {p.time} · {PAIN_DESCRIPTIONS[Math.round(p.score)]}
+                  </p>
+                  {p.parts.length > 0 && <p className="text-sm">{p.parts.join(", ")}</p>}
+                  {p.quality.length > 0 && <p className="text-xs text-muted-foreground">{p.quality.join(", ")}</p>}
+                  {p.symptoms.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      + {p.symptoms.join(", ")}
+                      {p.symptoms.includes("Flu") && p.fluNote ? ` (Flu: ${p.fluNote})` : ""}
+                    </p>
+                  )}
+                  {p.pressureTypes?.length || p.pressureIntensity != null ? (
+                    <p className="text-xs text-muted-foreground">
+                      Pressure: {p.pressureTypes?.join(", ")}
+                      {p.pressureIntensity != null
+                        ? `${p.pressureTypes?.length ? " " : ""}${p.pressureIntensity}/10`
+                        : ""}
+                    </p>
+                  ) : null}
+                  {p.nausea || p.nauseaTypes?.length || p.nauseaSeverity != null ? (
+                    <p className="text-xs text-muted-foreground">
+                      Nausea: {p.nauseaTypes?.join(", ")}
+                      {p.nauseaSeverity != null ? `${p.nauseaTypes?.length ? " " : ""}${p.nauseaSeverity}/10` : ""}
+                      {p.nauseaOngoing ? " · ongoing" : p.nauseaMinutes != null ? ` · ${p.nauseaMinutes} min` : ""}
+                      {p.nauseaTriggers?.length ? ` · triggers: ${p.nauseaTriggers.join(", ")}` : ""}
+                      {p.nauseaSymptoms?.length ? ` · symptoms: ${p.nauseaSymptoms.join(", ")}` : ""}
+                      {p.nauseaHelped?.length ? ` · relieved by: ${p.nauseaHelped.join(", ")}` : ""}
+                    </p>
+                  ) : null}
+                  {p.hotFlashes != null && (
+                    <p className="text-xs text-muted-foreground">
+                      <Ico e="🥵" size={13} /> Hot flashes intensity {p.hotFlashes}/5
+                    </p>
+                  )}
+                  {p.headacheTypes?.length ? (
+                    <p className="text-xs text-muted-foreground">
+                      <Ico e="🤕" size={13} /> Headache: {p.headacheTypes.join(", ")}
+                      {p.headacheIntensity != null ? ` · ${p.headacheIntensity}/10` : ""}
+                    </p>
+                  ) : p.headacheIntensity != null ? (
+                    <p className="text-xs text-muted-foreground">
+                      <Ico e="🤕" size={13} /> Headache intensity {p.headacheIntensity}/10
+                    </p>
+                  ) : null}
+                  {p.headacheMed ? (
+                    <p className="text-xs text-muted-foreground">
+                      <Ico e="💊" size={13} /> Headache med: {p.headacheMed}
+                      {p.headacheMedTime ? ` at ${p.headacheMedTime}` : ""}
+                    </p>
+                  ) : null}
+                  {p.pcosSymptoms?.length ? (
+                    <p className="text-xs text-muted-foreground">PCOS: {p.pcosSymptoms.join(", ")}</p>
+                  ) : null}
+                  {p.mood?.length ? (
+                    <p className="text-xs text-muted-foreground">
+                      Mood: <IcoText text={p.mood.join(", ")} size={13} />
+                    </p>
+                  ) : null}
+                  {p.stress != null && <p className="text-xs text-muted-foreground">Stress {p.stress}/10</p>}
+                  {p.bodyBattery != null && <p className="text-xs text-muted-foreground">Battery {p.bodyBattery}/5</p>}
+                  {p.note && <p className="mt-1 text-sm whitespace-pre-line">"{p.note}"</p>}
+                  <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
+                </button>
+                <DeleteBtn
+                  onClick={() =>
+                    update((d) => ({
+                      ...d,
+                      dayLogs: {
+                        ...d.dayLogs,
+                        [date]: {
+                          ...d.dayLogs[date],
+                          pain: (d.dayLogs[date]?.pain ?? []).filter((x) => x.id !== p.id),
+                        },
+                      },
+                    }))
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )) ||
+        null}
+
+      {log?.panic?.length ? (
+        <Card title="Panic episode" icon="🫯">
+          <ul className="space-y-2">
+            {log.panic.map((p) => (
+              <li key={p.id} className="flex items-start gap-2">
+                <button onClick={() => onEdit?.("panic", p)} className="flex-1 text-left">
+                  <p className="text-sm font-medium">
+                    {p.time} · intensity {p.intensity}/10 · {p.minutes == null ? "ongoing" : `${p.minutes} min`}
+                  </p>
+                  {p.trigger && <p className="text-xs text-muted-foreground">Trigger: {p.trigger}</p>}
+                  {p.physical.length > 0 && <p className="text-xs">Physical: {p.physical.join(", ")}</p>}
+                  {p.cognitive.length > 0 && <p className="text-xs">Cognitive: {p.cognitive.join(", ")}</p>}
+                  <p className="text-[11px] text-muted-foreground">
+                    Hyperventilation: {p.hyperventilation}
+                    {p.tetanyPresent ? " · tetany present" : ""}
+                  </p>
+                  {p.helped.length > 0 && (
+                    <p className="text-[11px] text-muted-foreground">Helped: {p.helped.join(", ")}</p>
+                  )}
+                  {p.rescueMed ? (
+                    <p className="text-xs text-muted-foreground">
+                      <Ico e="💊" size={13} /> Rescue: {p.rescueMed}
+                    </p>
+                  ) : null}
+                  {p.note && <p className="mt-1 text-sm whitespace-pre-line">"{p.note}"</p>}
+                  <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
+                </button>
+                <DeleteBtn
+                  onClick={() =>
+                    update((d) => ({
+                      ...d,
+                      dayLogs: {
+                        ...d.dayLogs,
+                        [date]: {
+                          ...d.dayLogs[date],
+                          panic: (d.dayLogs[date]?.panic ?? []).filter((x) => x.id !== p.id),
+                        },
+                      },
+                    }))
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+        </Card>
       ) : null}
+
+      {log?.tetany?.length ? (
+        <Card title="Tetany episode" icon="⚡">
+          <ul className="space-y-2 text-sm">
+            {log.tetany.map((t) => (
+              <li key={t.id} className="flex items-start gap-2">
+                <button onClick={() => onEdit?.("tetany", t)} className="flex-1 text-left">
+                  <p>
+                    {t.time} · {t.types.join(", ") || "Tetany"} · {t.intensity}/5 ·{" "}
+                    {t.minutes == null ? "ongoing" : `${t.minutes}min`}
+                    {t.triggers.length ? ` — ${t.triggers.join(", ")}` : ""}
+                  </p>
+                  {t.location?.length ? (
+                    <p className="text-xs text-muted-foreground">Location: {t.location.join(", ")}</p>
+                  ) : null}
+                  {t.helped?.length ? (
+                    <p className="text-xs text-muted-foreground">Helped: {t.helped.join(", ")}</p>
+                  ) : null}
+                  {t.rescueMed ? (
+                    <p className="text-xs text-muted-foreground">
+                      <Ico e="💊" size={13} /> Rescue: {t.rescueMed}
+                    </p>
+                  ) : null}
+                  {t.note && <p className="mt-1 text-sm whitespace-pre-line">"{t.note}"</p>}
+                  <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
+                </button>
+                <DeleteBtn
+                  onClick={() =>
+                    update((d) => ({
+                      ...d,
+                      dayLogs: {
+                        ...d.dayLogs,
+                        [date]: {
+                          ...d.dayLogs[date],
+                          tetany: (d.dayLogs[date]?.tetany ?? []).filter((x) => x.id !== t.id),
+                        },
+                      },
+                    }))
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+
+      {!cycleTrackingHidden &&
+        !!(
+          log?.period ||
+          log?.periodInfo?.level ||
+          log?.periodInfo?.discharge ||
+          log?.periodInfo?.dischargeNote ||
+          log?.periodInfo?.cramps != null ||
+          log?.periodInfo?.note
+        ) && (
+          <Card title="Blueberry" icon="🫐">
+            <button onClick={() => onEdit?.("period", undefined)} className="w-full text-left">
+              {(log?.periodInfo?.level || log?.period) && (
+                <p className="text-sm">Flow: {flowLabel(log?.periodInfo?.level ?? log?.period)}</p>
+              )}
+              {log?.periodInfo?.cramps != null && (
+                <p className="text-xs" style={{ color: painColor(log.periodInfo.cramps) }}>
+                  Cramp pain:{" "}
+                  <span className="font-semibold">
+                    {Number.isInteger(log.periodInfo.cramps) ? log.periodInfo.cramps : log.periodInfo.cramps.toFixed(1)}
+                    /10
+                  </span>{" "}
+                  — {PAIN_DESCRIPTIONS[Math.round(log.periodInfo.cramps)]}
+                </p>
+              )}
+              {log?.periodInfo?.discharge && (
+                <p className="text-xs text-muted-foreground">
+                  Discharge: {log.periodInfo.discharge}
+                  {log.periodInfo.dischargeNote ? ` — ${log.periodInfo.dischargeNote}` : ""}
+                </p>
+              )}
+              {log?.periodInfo?.note && <p className="mt-1 text-sm whitespace-pre-line">"{log.periodInfo.note}"</p>}
+              <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
+            </button>
+          </Card>
+        )}
+
+      {log?.sex?.length ? (
+        <Card title="ŠukŠuk!" icon="❤️">
+          <ul className="space-y-1 text-sm">
+            {log.sex.map((s: SexEntry) => (
+              <li key={s.id} className="flex items-start gap-2">
+                <button onClick={() => onEdit?.("sex", s)} className="flex-1 text-left">
+                  {s.time} · {String(s.kind).replace(/_/g, " ")}
+                  {asArr(s.feelingAfter).length ? (
+                    <>
+                      {" "}
+                      · <IcoText text={asArr(s.feelingAfter).join(", ")} size={13} />
+                    </>
+                  ) : (
+                    ""
+                  )}
+                  {s.painful && s.painful !== "no" ? ` · painful ${s.painful}` : ""}
+                  {s.note ? ` — ${s.note}` : ""}
+                </button>
+                <DeleteBtn
+                  onClick={() =>
+                    update((d) => ({
+                      ...d,
+                      dayLogs: {
+                        ...d.dayLogs,
+                        [date]: { ...d.dayLogs[date], sex: (d.dayLogs[date]?.sex ?? []).filter((x) => x.id !== s.id) },
+                      },
+                    }))
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+
+      {log?.heat?.length ? (
+        <Card title="Heat / Cold / TENS" icon="♨️">
+          <ul className="space-y-1 text-sm">
+            {log.heat.map((h) => (
+              <li key={h.id} className="flex items-start gap-2">
+                <button onClick={() => onEdit?.("heat", h)} className="flex-1 text-left">
+                  <Ico e={h.kind === "heat" ? "♨️" : h.kind === "cold" ? "🧊" : "⭐"} size={14} /> {h.start} ·{" "}
+                  {h.ongoing ? "ongoing" : `${h.minutes ?? 0} min`}
+                  {h.note ? ` — ${h.note}` : ""}
+                </button>
+                <DeleteBtn
+                  onClick={() =>
+                    update((d) => ({
+                      ...d,
+                      dayLogs: {
+                        ...d.dayLogs,
+                        [date]: {
+                          ...d.dayLogs[date],
+                          heat: (d.dayLogs[date]?.heat ?? []).filter((x) => x.id !== h.id),
+                        },
+                      },
+                    }))
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+
+      {log?.food?.length ? (
+        <Card title="Food" icon="🍽️">
+          <ul className="space-y-1 text-sm">
+            {log.food.map((f) => (
+              <li key={f.id} className="flex items-start gap-2">
+                <button onClick={() => onEdit?.("food", f)} className="flex-1 text-left">
+                  <div>
+                    {f.time} · <IcoText text={f.what || (f.histamineFlare ? "(histamine flare)" : "—")} size={14} />
+                    {f.highHistamine ? " · high histamine" : ""}
+                    {f.hydrationMl != null ? ` · ${f.hydrationMl}ml` : ""}
+                    {f.caffeineMg != null ? ` · ${f.caffeineMg}mg` : ""}
+                    {f.alcoholDrinks != null ? ` · ${f.alcoholDrinks}` : ""}
+                  </div>
+                  {f.feelings.length ? (
+                    <div className="text-xs text-muted-foreground">
+                      Feel: <IcoText text={f.feelings.join(", ")} size={13} />
+                    </div>
+                  ) : null}
+                  {f.symptomsAfter?.length ? (
+                    <div className="text-xs text-muted-foreground">
+                      After: <IcoText text={f.symptomsAfter.join(", ")} size={13} />
+                    </div>
+                  ) : null}
+                  {f.histamineFlare ? (
+                    <div className="text-xs text-destructive">
+                      <Ico e="🔥" size={13} /> Histamine flare
+                      {f.histamineSymptoms?.length ? `: ${f.histamineSymptoms.join(", ")}` : ""}
+                    </div>
+                  ) : null}
+                  {f.after ? <div className="mt-1 text-sm whitespace-pre-line">"{f.after}"</div> : null}
+                </button>
+                <DeleteBtn
+                  onClick={() =>
+                    update((d) => ({
+                      ...d,
+                      dayLogs: {
+                        ...d.dayLogs,
+                        [date]: {
+                          ...d.dayLogs[date],
+                          food: (d.dayLogs[date]?.food ?? []).filter((x) => x.id !== f.id),
+                        },
+                      },
+                    }))
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+
+      {log?.bowel?.length ? (
+        <Card title="Bowel" icon="💩">
+          <ul className="space-y-1 text-sm">
+            {log.bowel.map((b: BowelEntry) => {
+              const bristol = b.bristol >= 0 ? BRISTOL.find((x) => x.n === b.bristol) : null;
+              const label = bristol
+                ? `Type ${bristol.n} — ${bristol.sub}`
+                : b.bristol === 0
+                  ? "Type 0 — Mystery"
+                  : "No bowel movement";
+              return (
+                <li key={b.id} className="flex items-start gap-2">
+                  <button onClick={() => onEdit?.("bowel", b)} className="flex-1 text-left">
+                    {b.time} · <IcoText text={label} size={14} />
+                    {b.feelings?.length ? (
+                      <>
+                        {" "}
+                        · <IcoText text={b.feelings.join(", ")} size={13} />
+                      </>
+                    ) : (
+                      ""
+                    )}
+                    {b.symptoms?.length ? (
+                      <>
+                        {" "}
+                        · <IcoText text={b.symptoms.join(", ")} size={13} />
+                      </>
+                    ) : (
+                      ""
+                    )}
+                    {b.note ? ` — ${b.note}` : ""}
+                  </button>
+                  <DeleteBtn
+                    onClick={() =>
+                      update((d) => ({
+                        ...d,
+                        dayLogs: {
+                          ...d.dayLogs,
+                          [date]: {
+                            ...d.dayLogs[date],
+                            bowel: (d.dayLogs[date]?.bowel ?? []).filter((x) => x.id !== b.id),
+                          },
+                        },
+                      }))
+                    }
+                  />
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+      ) : null}
+
+      {log?.workout?.length ? (
+        <Card title="Workout" icon="👟">
+          <ul className="space-y-1 text-sm">
+            {log.workout.map((w) => (
+              <li key={w.id} className="flex items-start gap-2">
+                <button onClick={() => onEdit?.("workout", w)} className="flex-1 text-left">
+                  <span className="font-medium">
+                    {w.time} · <IcoText text={w.kind} size={14} /> · {w.minutes} min
+                  </span>
+                  {(w.distanceKm != null || w.elevationM != null || w.rpe != null || w.magnesiumBefore) && (
+                    <span className="block text-xs text-muted-foreground">
+                      {[
+                        w.distanceKm != null ? `${w.distanceKm} km` : null,
+                        w.elevationM != null ? `↑ ${w.elevationM} m` : null,
+                        w.rpe != null ? `RPE ${w.rpe}/10` : null,
+                        w.magnesiumBefore ? "Mg before" : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </span>
+                  )}
+                  {w.exercises?.length ? (
+                    <span className="block text-xs text-muted-foreground">
+                      {w.exercises
+                        .map(
+                          (ex) =>
+                            `${ex.name || "Exercise"}${ex.sets ? ` ${ex.sets}×${ex.reps ?? "?"}` : ""}${ex.weightKg ? ` @ ${ex.weightKg} kg` : ""}`,
+                        )
+                        .join(" · ")}
+                    </span>
+                  ) : null}
+                  {w.weightKg != null && (
+                    <span className="block text-xs text-muted-foreground">Weight after: {w.weightKg} kg</span>
+                  )}
+                  {w.triggeredSymptom && (
+                    <span className="block text-xs text-muted-foreground">
+                      <Ico e="⚠️" size={13} /> Triggered: {w.triggeredSymptom.label ?? w.triggeredSymptom.type}
+                    </span>
+                  )}
+                  {asArr(w.feeling).length ? (
+                    <span className="block text-xs text-muted-foreground">
+                      <IcoText text={asArr(w.feeling).join(", ")} size={13} />
+                    </span>
+                  ) : null}
+                  {w.note ? (
+                    <span className="block whitespace-pre-line text-xs text-muted-foreground">{w.note}</span>
+                  ) : null}
+                </button>
+                <DeleteBtn
+                  onClick={() =>
+                    update((d) => ({
+                      ...d,
+                      dayLogs: {
+                        ...d.dayLogs,
+                        [date]: {
+                          ...d.dayLogs[date],
+                          workout: (d.dayLogs[date]?.workout ?? []).filter((x) => x.id !== w.id),
+                        },
+                      },
+                    }))
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+
+      {(temperatureEntries.length ||
+        weightEntries.length ||
+        log?.temperature != null ||
+        log?.weight != null ||
+        log?.sleepHours != null ||
+        log?.sleepQuality) && (
+        <Card title="Temp / Sleep / Weight" icon="🌡️">
+          <button onClick={() => onEdit?.("temp", undefined)} className="w-full text-left">
+            {temperatureEntries.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Temperature
+                </p>
+                {temperatureEntries.map((entry) => (
+                  <p key={entry.id} className="text-sm">
+                    {entry.time ? `${entry.time} · ` : ""}
+                    {entry.value.toFixed(1)}°C
+                  </p>
+                ))}
+              </div>
+            )}
+
+            {weightEntries.length > 0 && (
+              <div className={temperatureEntries.length > 0 ? "mt-3 space-y-1" : "space-y-1"}>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Weight</p>
+                {weightEntries.map((entry) => (
+                  <p key={entry.id} className="text-sm">
+                    {entry.time ? `${entry.time} · ` : ""}
+                    {entry.value.toFixed(1)} kg
+                  </p>
+                ))}
+              </div>
+            )}
+
+            {log?.sleepHours != null && (
+              <p className={`${temperatureEntries.length || weightEntries.length ? "mt-3 " : ""}text-sm`}>
+                Sleep: {log.sleepHours} h <IcoText text={asArr(log.sleepQuality).join(", ")} size={14} />
+              </p>
+            )}
+            {asArr(log?.sleepQuality).length > 0 && log?.sleepHours == null && (
+              <p className={`${temperatureEntries.length || weightEntries.length ? "mt-3 " : ""}text-sm`}>
+                Sleep quality: <IcoText text={asArr(log.sleepQuality).join(", ")} size={14} />
+              </p>
+            )}
+            <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
+          </button>
+        </Card>
+      )}
+
+      {tasks.length > 0 && (
+        <Card title="Tasks" icon="✅">
+          <ul className="space-y-1 text-sm">
+            {tasks.map((t) => (
+              <li key={t.id} className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={t.done}
+                  onChange={() =>
+                    update((d) => ({ ...d, tasks: d.tasks.map((x) => (x.id === t.id ? { ...x, done: !x.done } : x)) }))
+                  }
+                />
+                <button
+                  onClick={() => onEdit?.("task", t)}
+                  className={`flex-1 text-left ${t.done ? "line-through text-muted-foreground" : ""}`}
+                >
+                  {t.title}
+                  {t.time ? ` · ${t.time}${t.timeEnd ? `–${t.timeEnd}` : ""}` : ""}
+                  {t.note ? ` — ${t.note}` : ""}
+                </button>
+                <DeleteBtn onClick={() => update((d) => ({ ...d, tasks: d.tasks.filter((x) => x.id !== t.id) }))} />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
+      {events.length > 0 && (
+        <Card title="Events" icon="📅">
+          <ul className="space-y-1 text-sm">
+            {events.map((e) => (
+              <li key={e.id} className="flex items-start gap-2">
+                <span className="mt-1 h-2 w-2 rounded-full" style={{ background: e.color ?? "var(--primary)" }} />
+                <button onClick={() => onEdit?.("event", e)} className="flex-1 text-left">
+                  {e.title}
+                  {e.time ? ` · ${e.time}${e.timeEnd ? `–${e.timeEnd}` : ""}` : ""}
+                  {e.startDate !== e.endDate ? ` (${e.startDate}→${e.endDate})` : ""}
+                  {e.note ? ` — ${e.note}` : ""}
+                </button>
+                <DeleteBtn onClick={() => update((d) => ({ ...d, events: d.events.filter((x) => x.id !== e.id) }))} />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
+      {notes.length > 0 && (
+        <Card title="Notes" icon="📝">
+          <ul className="space-y-1 text-sm">
+            {notes.map((n, i) => (
+              <li key={i} className="flex items-start gap-2">
+                <span className="flex-1">
+                  {n.time ? `${n.time} · ` : ""}
+                  {n.text}
+                </span>
+                <button
+                  onClick={() =>
+                    update((d) => {
+                      const list = (d.dayNotes[date] ?? []) as (string | { text: string; time?: string })[];
+                      const next = list.filter((_, j) => j !== i);
+                      return { ...d, dayNotes: { ...d.dayNotes, [date]: next as { text: string; time?: string }[] } };
+                    })
+                  }
+                  className="text-muted-foreground hover:text-destructive"
+                  aria-label="Delete"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
     </div>
+  );
+}
+
+function DeleteBtn({ onClick }: { onClick: () => void }) {
+  return (
+    <button onClick={onClick} className="text-muted-foreground hover:text-destructive" aria-label="Delete">
+      <Trash2 className="h-3.5 w-3.5" />
+    </button>
+  );
+}
+
+function Card({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-3xl bg-surface p-4 ring-1 ring-border">
+      <div className="mb-2 flex items-center gap-2">
+        <Ico e={icon} size={22} />
+        <h3 className="font-serif text-lg font-semibold">{title}</h3>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+const stripEmoji = (value: string) =>
+  value.replace(/^[\p{Extended_Pictographic}\u200d\ufe0f\p{Emoji_Modifier}]+\s*/u, "").trim();
+
+function ShareDayButton({ date, view }: { date: string; view: BixboData }) {
+  const flowLabel = (level?: string | null): string => {
+    switch (level) {
+      case "spotting":
+        return "Spotting";
+      case "light":
+        return "Light";
+      case "medium":
+        return "Medium";
+      case "heavy":
+        return "Heavy";
+      case "very-heavy":
+        return "Very heavy";
+      default:
+        return "";
+    }
+  };
+
+  const share = async () => {
+    const log = view.dayLogs[date] ?? {};
+    const dateLabel = fromKey(date).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+    const lines: string[] = [`BIXBO — ${dateLabel}`, ""];
+
+    if (log.pain?.length) {
+      const avg = log.pain.reduce((s, p) => s + p.score, 0) / log.pain.length;
+      lines.push(`Pain — avg ${avg.toFixed(1)}/10 · ${log.pain.length} entr${log.pain.length === 1 ? "y" : "ies"}`);
+      for (const p of log.pain) {
+        const bits = [`${p.time}`, `${p.score}/10 (${PAIN_DESCRIPTIONS[Math.round(p.score)]})`];
+        if (p.parts.length) bits.push(p.parts.join(", "));
+        if (p.quality.length) bits.push(`[${p.quality.join(", ")}]`);
+        lines.push(`  • ${bits.join(" · ")}`);
+        if (p.note) lines.push(`    "${p.note}"`);
+      }
+      lines.push("");
+    }
+    if (log.panic?.length) {
+      lines.push(`Panic episode — ${log.panic.length}`);
+      for (const p of log.panic)
+        lines.push(
+          `  • ${p.time} · ${p.intensity}/10 · ${p.minutes == null ? "ongoing" : `${p.minutes}min`}${p.trigger ? ` — ${p.trigger}` : ""}`,
+        );
+      lines.push("");
+    }
+    if (log.tetany?.length) {
+      lines.push(`Tetany episode — ${log.tetany.length}`);
+      for (const t of log.tetany)
+        lines.push(
+          `  • ${t.time} · ${t.types.join(", ")} · ${t.intensity}/5 · ${t.minutes == null ? "ongoing" : `${t.minutes}min`}`,
+        );
+      lines.push("");
+    }
+    if (log.periodInfo?.level || log.period) lines.push(`Period: ${flowLabel(log.periodInfo?.level ?? log.period!)}`);
+    if (log.sleepHours != null)
+      lines.push(`Sleep: ${log.sleepHours}h ${asArr(log.sleepQuality).map(stripEmoji).join(", ")}`);
+    if (log.temperature != null) lines.push(`Temperature: ${log.temperature}°C`);
+    if (log.weight != null) lines.push(`Weight: ${log.weight}kg`);
+    if (log.food?.length) lines.push(`Food: ${log.food.length} entries`);
+    if (log.workout?.length)
+      lines.push(`Workout: ${log.workout.map((w) => `${stripEmoji(w.kind)} ${w.minutes}min`).join(", ")}`);
+
+    lines.push("", "— sent from BIXBO");
+    const text = lines.join("\n");
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: `How I feel · ${dateLabel}`, text });
+        return;
+      } catch {}
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      alert("Copied to clipboard");
+    } catch {
+      alert(text);
+    }
+  };
+  return (
+    <Button size="sm" variant="outline" className="rounded-full" onClick={share}>
+      <Share2 className="h-3.5 w-3.5" /> Share day
+    </Button>
   );
 }
