@@ -1876,9 +1876,6 @@ function BirthControlCalendar({
               </div>
             </div>
 
-            <p className="mt-3 max-w-[165px] text-[10px] leading-snug text-muted-foreground">
-              Mark taken / missed
-            </p>
           </div>
         </div>
       </div>
