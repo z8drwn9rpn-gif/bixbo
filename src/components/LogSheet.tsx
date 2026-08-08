@@ -269,7 +269,11 @@ export function LogSheet({
           </>
         ) : (
           <div className="flex h-full min-h-0 flex-col">
-            <SheetHeader className="h-14 shrink-0 flex-row items-center justify-between gap-0 border-b border-border px-5 py-0">
+            <SheetHeader
+              className={`shrink-0 flex-row items-center justify-between gap-0 border-b border-border px-5 py-0 ${
+                active === "pain" ? "h-14" : "h-12"
+              }`}
+            >
               <button onClick={back} className="flex items-center gap-1 text-sm text-muted-foreground">
                 <ChevronLeft className="h-4 w-4" /> Back to Log
               </button>
@@ -281,7 +285,7 @@ export function LogSheet({
             <div
               key={`${active}-${openToken}-${(edit as { id?: string } | undefined)?.id ?? initialPain?.id ?? "new"}`}
               className={`min-h-0 flex-1 overflow-y-auto ${
-                active === "pain" ? "pt-[60px]" : "mt-[36px] px-5 pb-4"
+                active === "pain" ? "pt-[60px]" : "mt-[32px] px-5 pb-4"
               }`}
             >
               {active === "postpartum" && (
@@ -421,13 +425,13 @@ function Chip({
 function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave: () => void; disabled?: boolean }) {
   return (
     <SheetFooter
-      className="fixed inset-x-0 z-30 h-[36px] flex-row items-center justify-between gap-2 border-b border-border/50 bg-background px-5 py-0"
-      style={{ top: "56px" }}
+      className="fixed inset-x-0 z-30 h-[32px] flex-row items-center justify-between gap-2 border-b border-border/50 bg-background px-5 py-0"
+      style={{ top: "48px" }}
     >
       <button
         type="button"
         onClick={onCancel}
-        className="flex min-w-[50px] items-center gap-1 text-[11px] font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="flex min-w-[48px] items-center gap-1 text-[11px] font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <span aria-hidden="true" className="text-sm leading-none">←</span>
         <span>Back</span>
@@ -439,7 +443,7 @@ function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave:
         type="button"
         onClick={onSave}
         disabled={disabled}
-        className="inline-flex h-7 min-w-[62px] items-center justify-center gap-1 rounded-full bg-primary px-2.5 text-[11px] font-semibold text-primary-foreground shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        className="inline-flex h-7 min-w-[60px] items-center justify-center gap-1 rounded-full bg-primary px-2.5 text-[11px] font-semibold text-primary-foreground shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
         <span>Save</span>
         <span aria-hidden="true" className="text-sm leading-none">✓</span>
