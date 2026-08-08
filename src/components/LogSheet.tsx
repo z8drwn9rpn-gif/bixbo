@@ -270,8 +270,10 @@ export function LogSheet({
         ) : (
           <div className="flex h-full min-h-0 flex-col">
             <SheetHeader
-              className={`shrink-0 flex-row items-center justify-between gap-0 border-b border-border px-5 py-0 ${
-                active === "pain" ? "h-14" : "h-12"
+              className={`shrink-0 flex-row items-center justify-between gap-0 border-b border-border px-5 pb-0 ${
+                active === "pain"
+                  ? "h-14 pt-0"
+                  : "h-[calc(48px+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)]"
               }`}
             >
               <button onClick={back} className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -3156,11 +3158,11 @@ function TempForm({
   };
 
   const save = () => {
-    const temperatureValue = temperature.trim() === "" ? undefined : Number(temperature);
+    const temperatureValue = temperature.trim() === "" ? undefined : Number(temperature.replace(",", "."));
 
-    const weightValue = weight.trim() === "" ? undefined : Number(weight);
+    const weightValue = weight.trim() === "" ? undefined : Number(weight.replace(",", "."));
 
-    const sleepValue = sleep.trim() === "" ? undefined : Number(sleep);
+    const sleepValue = sleep.trim() === "" ? undefined : Number(sleep.replace(",", "."));
 
     updateDayLog(update, date, (log) => {
       const currentTemperatures = existingVitals(log.temperatureEntries, log.temperature, `${date}-legacy-temperature`);
@@ -3219,14 +3221,11 @@ function TempForm({
       <Field label="New temperature measurement">
         <div className="grid grid-cols-[1fr_120px] gap-2">
           <Input
-            type="number"
+            type="text"
             inputMode="decimal"
-            min="30"
-            max="45"
-            step="0.1"
             value={temperature}
-            onChange={(e) => setTemperature(e.target.value)}
-            placeholder="36.6 °C"
+            onChange={(e) => setTemperature(e.target.value.replace(/[^0-9.,]/g, "").replace(/([.,].*)[.,]/g, "$1"))}
+            placeholder="36,6 °C"
           />
 
           <Input type="time" value={temperatureTime} onChange={(e) => setTemperatureTime(e.target.value)} />
@@ -3248,7 +3247,7 @@ function TempForm({
                 </span>
 
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold">{entry.value.toFixed(1)} °C</p>
+                  <p className="text-sm font-semibold">{entry.value.toFixed(1).replace(".", ",")} °C</p>
 
                   <p className="text-xs text-muted-foreground">{entry.time}</p>
                 </div>
@@ -3270,13 +3269,11 @@ function TempForm({
       <Field label="New weight measurement">
         <div className="grid grid-cols-[1fr_120px] gap-2">
           <Input
-            type="number"
+            type="text"
             inputMode="decimal"
-            min="0"
-            step="0.1"
             value={weight}
-            onChange={(e) => setWeight(e.target.value)}
-            placeholder="62.5 kg"
+            onChange={(e) => setWeight(e.target.value.replace(/[^0-9.,]/g, "").replace(/([.,].*)[.,]/g, "$1"))}
+            placeholder="62,5 kg"
           />
 
           <Input type="time" value={weightTime} onChange={(e) => setWeightTime(e.target.value)} />
@@ -3298,7 +3295,7 @@ function TempForm({
                 </span>
 
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold">{entry.value.toFixed(1)} kg</p>
+                  <p className="text-sm font-semibold">{entry.value.toFixed(1).replace(".", ",")} kg</p>
 
                   <p className="text-xs text-muted-foreground">{entry.time}</p>
                 </div>
@@ -3319,13 +3316,10 @@ function TempForm({
 
       <Field label="Sleep (hours)">
         <Input
-          type="number"
+          type="text"
           inputMode="decimal"
-          min="0"
-          max="24"
-          step="0.5"
           value={sleep}
-          onChange={(e) => setSleep(e.target.value)}
+          onChange={(e) => setSleep(e.target.value.replace(/[^0-9.,]/g, "").replace(/([.,].*)[.,]/g, "$1"))}
           placeholder="8"
         />
       </Field>
