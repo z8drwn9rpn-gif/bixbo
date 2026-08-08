@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { CHART_COLORS } from "@/components/ui/chart";
-import { ChartCard, ChartEmpty, CHART_AXIS, CHART_GRID, useDismissTapTooltip } from "@/components/charts";
+import { ChartEmpty, CHART_AXIS, CHART_GRID, useDismissTapTooltip } from "@/components/charts";
 import { Ico } from "@/components/icons/BixboIcons";
 import {
   useBixbo,
@@ -392,15 +392,13 @@ function InsightsPage() {
 
   return (
     <AppShell title="Health of Bixbo">
-      <div className="space-y-5 px-5 pt-3 pb-[calc(96px+env(safe-area-inset-bottom))]">
+      <div className="space-y-3 px-5 pb-[calc(96px+env(safe-area-inset-bottom))] pt-2">
         <div
-          className={`mx-auto grid w-full gap-0.5 rounded-xl bg-primary/20 p-0.5 ring-1 ring-primary/15 ${
-            cycleTrackingHidden ? "max-w-[340px] grid-cols-3" : "max-w-[390px] grid-cols-4"
-          }`}
+          className="mx-auto grid w-full max-w-[340px] grid-cols-3 gap-0.5 rounded-xl bg-primary/20 p-0.5 ring-1 ring-primary/15 lg:max-w-sm"
           role="tablist"
           aria-label="Insights period"
         >
-          {((cycleTrackingHidden ? ["W", "M", "Y"] : ["W", "M", "Y", "P"]) as Period[]).map((p) => {
+          {(["W", "M", "Y"] as Period[]).map((p) => {
             const active = period === p;
 
             return (
@@ -416,81 +414,86 @@ function InsightsPage() {
                     : "text-foreground/80 hover:bg-surface/45 hover:text-foreground"
                 }`}
               >
-                {p === "W" ? "Week" : p === "M" ? "Month" : p === "Y" ? "Year" : "Period"}
+                {p === "W" ? "Week" : p === "M" ? "Month" : "Year"}
               </button>
             );
           })}
         </div>
 
-        {!cycleTrackingHidden && period === "P" && (
-          <BirthControlCalendar
-            data={view}
-            anchor={anchor}
-            monthLabel={label}
-            onPrevMonth={goPrev}
-            onNextMonth={goNext}
-          />
-        )}
-
-        {period !== "P" && (
-          <>
+        <>
             <div className="flex items-center justify-between">
               <button
                 onClick={goPrev}
-                className="grid h-8 w-8 place-items-center rounded-full transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="grid h-7 w-7 place-items-center rounded-full transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 aria-label="Previous period"
               >
-                <ChevronLeft className="h-3.5 w-3.5" />
+                <ChevronLeft className="h-3 w-3" />
               </button>
-              <span className="text-xs font-medium">{label}</span>
+              <span className="text-[11px] font-medium leading-none">{label}</span>
               <button
                 onClick={goNext}
-                className="grid h-8 w-8 place-items-center rounded-full transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="grid h-7 w-7 place-items-center rounded-full transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 aria-label="Next period"
               >
-                <ChevronRight className="h-3.5 w-3.5" />
+                <ChevronRight className="h-3 w-3" />
               </button>
             </div>
 
-            <section
-              className="rounded-3xl p-5 ring-1"
-              style={{
-                backgroundColor: GREEN_SOFT,
-                boxShadow: `inset 0 0 0 1px ${GREEN_BORDER}`,
-              }}
-            >
-              <p className="text-xs uppercase tracking-wider" style={{ color: PAIN_ACCENT }}>
-                Pain scale
-              </p>
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="font-serif text-5xl leading-none">{painAvg != null ? painAvg.toFixed(1) : "–"}</span>
-                <span className="text-sm text-muted-foreground">
-                  avg · {painSeries.filter((n) => n != null).length}{" "}
-                  {painSeries.filter((n) => n != null).length === 1 ? "entry" : "entries"}
+            <section className="rounded-3xl bg-tint p-4 ring-1 ring-border">
+              <div className="flex items-start gap-3">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-surface">
+                  <Ico e="💗" size={22} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-sm font-semibold text-foreground">Average pain</h2>
+                  <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
+                    Average intensity of logged pain entries
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-3 flex items-end justify-between gap-3">
+                <span className="text-[11px] font-medium text-muted-foreground">You</span>
+                <span className="text-sm font-bold tabular-nums text-foreground">
+                  {painAvg != null ? `${painAvg.toFixed(1)}/10` : "—"}
                 </span>
               </div>
+
               <PainChart period={period} days={days} series={painSeries} anchor={anchor} />
             </section>
 
-            <section
-              className="rounded-3xl p-5 ring-1"
-              style={{
-                backgroundColor: GREEN_SOFT,
-                boxShadow: `inset 0 0 0 1px ${GREEN_BORDER}`,
-              }}
-            >
-              <p className="text-xs uppercase tracking-wider" style={{ color: GREEN_ACCENT }}></p>
-              <p className="mt-2 font-serif text-5xl leading-none">{sexCount}</p>
-              <Ico e="❤️" size={16} /> ŠukŠuk!
-              <p className="mt-2 text-sm text-muted-foreground">
-                {sexCount === 1 ? "entry" : "entries"} in this{" "}
-                {period === "W" ? "week" : period === "M" ? "month" : "year"}
-              </p>
+            <section className="mx-auto w-full max-w-[250px] rounded-3xl bg-tint p-4 ring-1 ring-border">
+              <div className="flex items-start gap-3">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-surface">
+                  <Ico e="❤️" size={22} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-sm font-semibold text-foreground">ŠukŠuk!</h2>
+                  <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
+                    Logged intimacy in this {period === "W" ? "week" : period === "M" ? "month" : "year"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <span className="text-[11px] font-medium text-muted-foreground">You</span>
+                <span className="text-sm font-bold tabular-nums text-foreground">{sexCount}</span>
+              </div>
+
+              <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-surface ring-1 ring-border/40">
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    width: `${sexCount > 0 ? Math.min(100, Math.max(12, sexCount * 12)) : 0}%`,
+                    backgroundColor: "#ef4770",
+                  }}
+                />
+              </div>
             </section>
 
             <BristolChart bowelCounts={bowelCounts} />
 
-            <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
+            <section className="rounded-3xl bg-tint p-4 ring-1 ring-border">
               <p className="text-xs uppercase tracking-wider text-muted-foreground">Hot flashes</p>
               {hfTotal ? (
                 <>
@@ -545,8 +548,7 @@ function InsightsPage() {
             <TimeOfDayPatternChart data={view} days={days} period={period} />
 
             <MedsAdherence data={view} period={period} anchor={anchor} />
-          </>
-        )}
+        </>
       </div>
     </AppShell>
   );
@@ -1884,7 +1886,7 @@ function MedsAdherence({
   if (data.meds.length === 0 && removedCounts.length === 0) return null;
 
   return (
-    <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
+    <section className="rounded-3xl bg-tint p-4 ring-1 ring-border">
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
@@ -2328,11 +2330,11 @@ function PainChart({
       bars={bars}
       yLabels={[10, 8, 6, 4, 2, 0]}
       yMax={10}
-      colorFor={(value) => vividPainChartColor(value)}
+      colorFor={() => "#ef4770"}
       tooltipDetails={(i, value) => {
         const heading = period === "Y" ? fmtTapMonth(i, anchor.getFullYear()) : fmtCoupleTooltipDay(days[i]);
         const description = PAIN_DESCRIPTIONS[Math.max(0, Math.min(10, Math.round(value)))] ?? "Pain";
-        const color = vividPainChartColor(value);
+        const color = "#ef4770";
 
         return {
           owner: "You",
@@ -2365,7 +2367,10 @@ function BristolChart({ bowelCounts }: { bowelCounts: number[] }) {
     ...BRISTOL,
   ];
   return (
-    <ChartCard title="Bowel — Bristol distribution">
+    <section className="rounded-3xl bg-tint p-4 ring-1 ring-border">
+      <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        Bowel — Bristol distribution
+      </h2>
       <div className={`relative mt-3 flex items-end gap-2 transition-[padding] ${active != null ? "pt-20" : ""}`}>
         {chartTypes.map((b) => {
           const count = bowelCounts[b.n] ?? 0;
@@ -2419,7 +2424,7 @@ function BristolChart({ bowelCounts }: { bowelCounts: number[] }) {
           : null}
       </div>
 
-    </ChartCard>
+    </section>
   );
 }
 
@@ -2512,7 +2517,6 @@ type HeatmapDatum = {
 
 const HEATMAP_OPTIONS: { id: HeatmapMetric; label: string }[] = [
   { id: "pain", label: "Pain" },
-  { id: "period", label: "Period" },
   { id: "bowel", label: "Bowel" },
   { id: "panic", label: "Panic episode" },
   { id: "tetany", label: "Tetany episode" },
@@ -2773,7 +2777,10 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
   })();
 
   return (
-    <ChartCard title={`Year heatmap — ${year}`}>
+    <section className="rounded-3xl bg-tint p-4 ring-1 ring-border">
+      <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        {`Year heatmap — ${year}`}
+      </h2>
       <p className="mt-1 text-xs text-muted-foreground">Choose a metric, then tap a coloured day for its saved details and notes.</p>
 
       <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1">
@@ -2918,7 +2925,7 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
           </section>
         </div>
       ) : null}
-    </ChartCard>
+    </section>
   );
 }
 
@@ -2971,7 +2978,7 @@ function TimeOfDayPatternChart({
   })();
 
   return (
-    <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
+    <section className="rounded-3xl bg-tint p-4 ring-1 ring-border">
       <p className="text-xs uppercase tracking-wider text-muted-foreground">Time of Day Pattern</p>
       {!tetanyTotal && !panicTotal ? (
         <p className="mt-2 text-sm text-muted-foreground">Not enough data yet</p>
