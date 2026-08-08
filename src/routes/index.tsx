@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { createPortal } from "react-dom";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Share2, Trash2 } from "lucide-react";
 
 import {
@@ -1377,6 +1377,13 @@ function BirthControlOverlay({
   onAnchorChange: (date: Date) => void;
   onClose: () => void;
 }) {
+  const overlayRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    // Always open HAK detail at the very top so the title/back button are visible.
+    overlayRef.current?.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, []);
+
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -1403,8 +1410,11 @@ function BirthControlOverlay({
   };
 
   return (
-    <div className="fixed inset-0 z-[80] overflow-y-auto overscroll-contain bg-background">
-      <div className="relative z-40 border-b border-border/70 bg-background px-4 py-2">
+    <div
+      ref={overlayRef}
+      className="fixed inset-0 z-[120] overflow-y-auto overscroll-contain bg-background"
+    >
+      <div className="relative z-40 border-b border-border/70 bg-background px-4 pb-2 pt-[max(.5rem,env(safe-area-inset-top))]">
         <div className="mx-auto flex w-full max-w-xl items-center justify-between gap-2">
           <button
             type="button"
@@ -1512,6 +1522,14 @@ function BirthControlCalendar({
   const referenceK = toKey(anchor);
   const currentDay = pillNumber(referenceK) ?? 1;
   const currentPackStart = addDays(referenceK, -(currentDay - 1));
+
+  // The month/date being viewed controls the cycle number shown in the centre,
+  // but dark highlighting means TODAY only.
+  const todayPackDay = pillNumber(todayK);
+  const todayDate = fromKey(todayK);
+  const isViewingCurrentMonth =
+    anchor.getFullYear() === todayDate.getFullYear() &&
+    anchor.getMonth() === todayDate.getMonth();
 
   const dateForPackDay = (day: number) => addDays(currentPackStart, day - 1);
 
@@ -1938,7 +1956,7 @@ function BirthControlCalendar({
             const dateKey = dateForPackDay(day);
             const loggedTaken = !!takenAt(dateKey);
             const missed = missedAt(dateKey);
-            const isCurrent = day === currentDay;
+            const isCurrent = isViewingCurrentMonth && todayPackDay != null && day === todayPackDay;
             const isPlacebo = day > ACTIVE_DAYS;
 
             // The user confirmed continuous on-time Drovelis use from `since`.
@@ -2014,7 +2032,6 @@ function BirthControlCalendar({
                 type="button"
                 onClick={() => {
                   setSel(dateKey);
-                  // selection reset
                 }}
                 className="absolute z-10 grid h-8 w-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[10px] font-bold transition active:scale-95"
                 style={{
