@@ -855,9 +855,7 @@ function PainWizard({
   // Quick update: copy the latest state, use the current time and jump to symptoms.
   const [quickSymptomUpdate, setQuickSymptomUpdate] = useState(false);
   const [copiedFromTime, setCopiedFromTime] = useState<string | undefined>();
-  const headacheSectionRef = useRef<HTMLDivElement | null>(null);
-
-  const startHeadacheUpdate = () => {
+  const startSymptomUpdate = () => {
     if (!latestPain) return;
 
     // Core pain state.
@@ -889,8 +887,8 @@ function PainWizard({
     setNauseaSymptoms([...(latestPain.nauseaSymptoms ?? [])]);
     setNauseaHelped([...(latestPain.nauseaHelped ?? [])]);
 
-    // Open headache immediately. Existing headache details are preserved if present.
-    setHeadache(true);
+    // Preserve the previous headache state; this shortcut is for adding any symptoms.
+    setHeadache(!!latestPain.headache);
     setHeadacheTypes([...(latestPain.headacheTypes ?? [])]);
     setHeadacheIntensity(latestPain.headacheIntensity);
     setHeadacheMedOn(!!latestPain.headacheMed);
@@ -910,13 +908,6 @@ function PainWizard({
     setStep(3);
   };
 
-  useEffect(() => {
-    if (!quickSymptomUpdate || step !== 3) return;
-    const frame = window.requestAnimationFrame(() => {
-      headacheSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [quickSymptomUpdate, step]);
 
   type CKey =
     | "bodyParts"
@@ -1098,15 +1089,15 @@ function PainWizard({
                 <div>
                   <p className="text-sm font-semibold">Pain still feels the same?</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    Last log: {latestPain.time} · pain {latestPain.score}/10. Reuse it and add only the new headache.
+                    Last log: {latestPain.time} · pain {latestPain.score}/10. Reuse it and add only the new symptoms.
                   </p>
                 </div>
                 <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10">
                   <Ico e="🤕" size={22} />
                 </span>
               </div>
-              <Button type="button" onClick={startHeadacheUpdate} className="w-full">
-                {latestPain.headache ? "Same pain — update headache" : "Same pain — add headache"}
+              <Button type="button" onClick={startSymptomUpdate} className="w-full">
+                Same pain — add symptoms
               </Button>
             </div>
           )}
@@ -1226,8 +1217,7 @@ function PainWizard({
                 Pain {score}/10 copied from {copiedFromTime ?? "the latest log"}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                This saves a new entry at {time}; the older log stays unchanged. Add or adjust the headache details
-                below.
+                This saves a new entry at {time}; the older log stays unchanged. Add or adjust the symptoms below.
               </p>
             </div>
           )}
@@ -1358,14 +1348,7 @@ function PainWizard({
               </Field>
             </div>
           )}
-          <div
-            ref={headacheSectionRef}
-            className={
-              quickSymptomUpdate
-                ? "scroll-mt-4 rounded-2xl ring-2 ring-primary/40 ring-offset-2 ring-offset-background"
-                : ""
-            }
-          >
+          <div>
             <Field label="Headache?">
               <div className="mt-1 flex gap-2">
                 <Chip active={!headache} onClick={() => setHeadache(false)}>
