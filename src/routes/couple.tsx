@@ -238,7 +238,7 @@ function formatValue(value: number | null, decimals = 0, unit = "") {
 
 function SectionCard({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
   return (
-    <section className="rounded-3xl bg-surface-elevated/70 p-5 ring-1 ring-border/60">
+    <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
       <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{title}</h2>
 
       {description ? <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{description}</p> : null}
@@ -264,7 +264,7 @@ function StatCard({
   const palette = TONES[tone];
 
   return (
-    <article className="rounded-3xl bg-surface-sunken/34 p-4 ring-1 ring-border/38">
+    <article className="rounded-2xl bg-tint p-4 ring-1 ring-border/50">
       <div
         className="grid h-9 w-9 place-items-center rounded-2xl"
         style={{
@@ -320,7 +320,7 @@ function ComparisonBarCard({
   const theirsPercent = theirs == null ? 0 : clampPercent((Math.max(0, theirs) / calculatedMax) * 100);
 
   return (
-    <article className="rounded-3xl bg-surface-sunken/34 p-4 ring-1 ring-border/38">
+    <article className="rounded-2xl bg-tint p-4 ring-1 ring-border/50">
       <div className="flex items-start gap-3">
         <span
           className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl"
@@ -410,8 +410,8 @@ function SimilarityCard({ score, partnerName }: { score: number; partnerName: st
   const safeScore = clampPercent(score);
 
   return (
-    <section className="rounded-3xl bg-surface-elevated/70 p-5 ring-1 ring-border/60">
-      <div className="flex items-center gap-4 rounded-3xl bg-surface-sunken/34 p-4 ring-1 ring-border/38">
+    <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
+      <div className="flex items-center gap-4 rounded-2xl bg-tint p-4 ring-1 ring-border/50">
         <div
           className="grid h-24 w-24 shrink-0 place-items-center rounded-full p-2"
           style={{
@@ -452,7 +452,7 @@ function PainList({ title, entries }: { title: string; entries: (PainEntry & { d
 
   return (
     <div className="space-y-3">
-      <p className="text-xs uppercase tracking-wider text-muted-foreground">{title}</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{title}</p>
 
       <ul className="space-y-2">
         {entries.map((pain) => (
@@ -509,7 +509,7 @@ function TetanyList({ title, entries }: { title: string; entries: (TetanyEpisode
 
   return (
     <div className="space-y-2">
-      <p className="text-xs uppercase tracking-wider text-muted-foreground">{title}</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{title}</p>
 
       <ul className="space-y-2">
         {entries.map((episode) => (
@@ -546,7 +546,7 @@ function PanicList({ title, entries }: { title: string; entries: (PanicAttack & 
 
   return (
     <div className="space-y-2">
-      <p className="text-xs uppercase tracking-wider text-muted-foreground">{title}</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{title}</p>
 
       <ul className="space-y-2">
         {entries.map((attack) => (
@@ -600,7 +600,7 @@ function MedsList({
 
   return (
     <div className="space-y-2">
-      <p className="text-xs uppercase tracking-wider text-muted-foreground">{title}</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{title}</p>
 
       <ul className="space-y-2">
         {nonEmpty.slice(0, 14).map((day) => (
@@ -783,7 +783,7 @@ function CouplePainChart({
   };
 
   return (
-    <section className="rounded-3xl bg-surface-elevated/70 p-5 ring-1 ring-border/60">
+    <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
       <div>
         <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
           {`Pain — ${periodLabel}`}
@@ -794,7 +794,7 @@ function CouplePainChart({
         </p>
       </div>
 
-      <div className="mt-3 overflow-x-auto overscroll-x-contain">
+      <div className="mt-3 overflow-x-auto overscroll-x-contain rounded-2xl bg-background/55 px-2 py-3 ring-1 ring-border/40">
         <svg
           viewBox={`0 0 ${width} ${height}`}
           className="h-[206px] max-w-none"
@@ -1466,7 +1466,7 @@ function CouplePage() {
     <AppShell title="Bixbo Couple">
       <div className="space-y-3 px-5 pb-[calc(96px+env(safe-area-inset-bottom))] pt-2 lg:grid lg:grid-cols-2 lg:items-start lg:gap-3 lg:space-y-0 lg:px-0 lg:pb-12 [&>*:first-child]:lg:col-span-2">
         <div
-          className="mx-auto grid w-full max-w-[340px] grid-cols-3 gap-0.5 rounded-xl bg-surface-sunken/50 p-0.5 ring-1 ring-border/50 lg:max-w-sm"
+          className="mx-auto grid w-full max-w-[340px] grid-cols-3 gap-0.5 rounded-xl bg-primary/20 p-0.5 ring-1 ring-primary/15 lg:max-w-sm"
           role="tablist"
           aria-label="Couple period"
         >
@@ -1497,7 +1497,7 @@ function CouplePage() {
         {partner ? (
           <nav
             aria-label="Couple sections"
-            className="mx-auto grid w-full max-w-[340px] grid-cols-3 gap-0.5 rounded-xl bg-surface-sunken/50 p-0.5 ring-1 ring-border/50 lg:max-w-sm"
+            className="mx-auto grid w-full max-w-[340px] grid-cols-3 gap-0.5 rounded-xl bg-primary/20 p-0.5 ring-1 ring-primary/15 lg:max-w-sm"
           >
             {tabs.map((tab) => {
               const active = activeTab === tab.id;
