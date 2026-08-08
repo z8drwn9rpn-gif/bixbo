@@ -420,7 +420,7 @@ function mergeDeletedCustom(
   const out: Partial<Record<keyof CustomLists, string[]>> = {};
   const keys = new Set([...Object.keys(local ?? {}), ...Object.keys(remote ?? {})]) as Set<keyof CustomLists>;
   for (const k of keys) {
-    const values = Array.from(new Set([...safeStrings(local?.[k]), ...safeStrings(remote?.[k])]));
+    const values = Array.from(new Set([...safeStringArray(local?.[k]), ...safeStringArray(remote?.[k])]));
     if (values.length) out[k] = values;
   }
   return out;
@@ -460,6 +460,7 @@ export function mergeBixbo(local: BixboData, remote: BixboData | null | undefine
     ? remote.deletedIds.filter((id): id is string => typeof id === "string")
     : [];
   const deletedIds = Array.from(new Set([...localDeleted, ...remoteDeleted])).slice(-2000);
+  const deletedCustom = mergeDeletedCustom(local.deletedCustom, remote.deletedCustom);
   _deleted = new Set(deletedIds);
   try {
     return {
@@ -480,8 +481,9 @@ export function mergeBixbo(local: BixboData, remote: BixboData | null | undefine
       docs: unionById(local.docs, remote.docs) ?? [],
       diagnoses: unionById(local.diagnoses, remote.diagnoses) ?? [],
       deletedIds,
+      deletedCustom,
       cycle: { ...EMPTY.cycle, ...(remote.cycle ?? {}), ...(local.cycle ?? {}) },
-      custom: mergeCustom(local.custom, remote.custom),
+      custom: mergeCustom(local.custom, remote.custom, deletedCustom),
       settings: { ...EMPTY.settings, ...(remote.settings ?? {}), ...(local.settings ?? {}) },
       postpartum: mergePostpartumState(local.postpartum, remote.postpartum),
       // partner is a local-only projection of the other user's data — always keep local's.
