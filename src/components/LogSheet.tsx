@@ -188,7 +188,9 @@ export function LogSheet({
         side="bottom"
         className={
           (active
-            ? "flex h-[100dvh] max-h-[100dvh] flex-col rounded-t-none bg-background p-0 pt-[env(safe-area-inset-top)]"
+            ? `flex h-[100dvh] max-h-[100dvh] flex-col rounded-t-none bg-background p-0 ${
+                active === "pain" ? "pt-[env(safe-area-inset-top)]" : "pt-0"
+              }`
             : "flex h-[88vh] max-h-[88vh] flex-col rounded-t-3xl bg-background p-0") + " [&>button.absolute]:hidden"
         }
       >
@@ -267,7 +269,13 @@ export function LogSheet({
           </>
         ) : (
           <div className="flex h-full min-h-0 flex-col">
-            <SheetHeader className="h-14 shrink-0 flex-row items-center justify-between gap-0 border-b border-border px-5 py-0">
+            <SheetHeader
+              className={`shrink-0 flex-row items-end justify-between gap-0 border-b border-border px-5 pb-2 ${
+                active === "pain"
+                  ? "h-14 pt-0"
+                  : "h-[calc(40px+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)]"
+              }`}
+            >
               <button onClick={back} className="flex items-center gap-1 text-sm text-muted-foreground">
                 <ChevronLeft className="h-4 w-4" /> Back to Log
               </button>
@@ -278,7 +286,9 @@ export function LogSheet({
             </SheetHeader>
             <div
               key={`${active}-${openToken}-${(edit as { id?: string } | undefined)?.id ?? initialPain?.id ?? "new"}`}
-              className={`min-h-0 flex-1 overflow-y-auto pt-[60px] ${active === "pain" ? "" : "px-5 pb-4"}`}
+              className={`min-h-0 flex-1 overflow-y-auto ${
+                active === "pain" ? "pt-[60px]" : "px-5 pb-4"
+              }`}
             >
               {active === "postpartum" && (
                 <PostpartumSymptomsForm date={date} data={data} update={update} onDone={close} />
@@ -416,16 +426,13 @@ function Chip({
 }
 function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave: () => void; disabled?: boolean }) {
   return (
-    <SheetFooter
-      className="fixed inset-x-0 z-30 h-[60px] flex-row items-center justify-between gap-2 border-b border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur"
-      style={{ top: "calc(env(safe-area-inset-top) + 56px)" }}
-    >
+    <SheetFooter className="sticky top-0 z-30 -mx-5 flex-row items-center justify-between gap-2 border-b border-border/50 bg-background px-5 py-1.5">
       <button
         type="button"
         onClick={onCancel}
-        className="flex min-w-[68px] items-center gap-1 text-sm font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="flex min-w-[58px] items-center gap-1 text-xs font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        <span aria-hidden="true" className="text-base leading-none">←</span>
+        <span aria-hidden="true" className="text-sm leading-none">←</span>
         <span>Back</span>
       </button>
 
@@ -435,10 +442,10 @@ function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave:
         type="button"
         onClick={onSave}
         disabled={disabled}
-        className="flex h-[52px] min-w-[64px] flex-col items-center justify-center rounded-[1.15rem] bg-primary px-3 text-primary-foreground shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        className="inline-flex h-8 min-w-[68px] items-center justify-center gap-1 rounded-full bg-primary px-3 text-xs font-semibold text-primary-foreground shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
-        <span className="text-sm font-semibold leading-none">Save</span>
-        <span aria-hidden="true" className="mt-0.5 text-base leading-none">✓</span>
+        <span>Save</span>
+        <span aria-hidden="true" className="text-sm leading-none">✓</span>
       </button>
     </SheetFooter>
   );
