@@ -267,7 +267,7 @@ export function LogSheet({
           </>
         ) : (
           <div className="flex h-full min-h-0 flex-col">
-            <SheetHeader className="shrink-0 flex-row items-center justify-between border-b border-border px-5 py-3">
+            <SheetHeader className="h-14 shrink-0 flex-row items-center justify-between gap-0 border-b border-border px-5 py-0">
               <button onClick={back} className="flex items-center gap-1 text-sm text-muted-foreground">
                 <ChevronLeft className="h-4 w-4" /> Back to Log
               </button>
@@ -278,7 +278,7 @@ export function LogSheet({
             </SheetHeader>
             <div
               key={`${active}-${openToken}-${(edit as { id?: string } | undefined)?.id ?? initialPain?.id ?? "new"}`}
-              className={`min-h-0 flex-1 overflow-y-auto ${active === "pain" ? "" : "px-5 pb-4"}`}
+              className={`min-h-0 flex-1 overflow-y-auto pt-[60px] ${active === "pain" ? "" : "px-5 pb-4"}`}
             >
               {active === "postpartum" && (
                 <PostpartumSymptomsForm date={date} data={data} update={update} onDone={close} />
@@ -417,7 +417,8 @@ function Chip({
 function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave: () => void; disabled?: boolean }) {
   return (
     <SheetFooter
-      className="sticky top-0 z-30 -mx-5 mb-3 flex-row items-center justify-between gap-3 border-y border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur"
+      className="fixed inset-x-0 z-30 h-[60px] flex-row items-center justify-between gap-3 border-b border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur"
+      style={{ top: "calc(env(safe-area-inset-top) + 56px)" }}
     >
       <button
         type="button"
@@ -1042,7 +1043,10 @@ function PainWizard({
           <span className="text-xs text-muted-foreground">New entry · {time}</span>
         </div>
       ) : (
-        <div className="sticky top-0 z-20 -mx-5 mb-0 flex min-h-[60px] items-center justify-between gap-2 border-y border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur">
+        <div
+          className="fixed inset-x-0 z-30 h-[60px] flex items-center justify-between gap-2 border-b border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur"
+          style={{ top: "calc(env(safe-area-inset-top) + 56px)" }}
+        >
           {step > 0 ? (
             <button
               type="button"
@@ -1772,7 +1776,7 @@ function PainWizard({
       )}
 
       {quickSymptomUpdate && step === 3 && (
-        <SheetFooter className="sticky top-0 z-20 -mx-5 mb-3 min-h-[60px] flex-row items-center justify-between gap-3 border-y border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur">
+        <SheetFooter className="fixed inset-x-0 z-30 h-[60px] flex-row items-center justify-between gap-3 border-b border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur" style={{ top: "calc(env(safe-area-inset-top) + 56px)" }}>
           <button
             type="button"
             onClick={() => {
