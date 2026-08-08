@@ -1901,19 +1901,6 @@ function BirthControlCalendar({
 
       {/* Circular HAK overview — only wheel pills open the dose popup. */}
       <div className="mx-auto mt-4 w-full max-w-[336px]">
-        <div className="mb-3 flex justify-center">
-          <div
-            className="rounded-full px-4 py-1.5 text-[11px] font-bold ring-1"
-            style={{
-              backgroundColor: "rgba(229,219,248,.92)",
-              color: HAK_PURPLE_DARK,
-              borderColor: "rgba(122,83,200,.18)",
-            }}
-          >
-            Active HAK days · 1–24
-          </div>
-        </div>
-
         <div className="relative aspect-square w-full">
           <div
             className="absolute inset-[9%] rounded-full"
@@ -2060,12 +2047,14 @@ function BirthControlCalendar({
             >
               {currentDay} / {PACK_DAYS}
             </p>
-            <p
-              className="mt-2 text-[12px] font-semibold"
-              style={{ color: currentDay <= ACTIVE_DAYS ? HAK_PURPLE_DARK : HAK_PINK_DARK }}
-            >
-              {currentDay <= ACTIVE_DAYS ? "Active HAK days" : "Placebo / break"}
-            </p>
+            {currentDay > ACTIVE_DAYS && (
+              <p
+                className="mt-2 text-[12px] font-semibold"
+                style={{ color: HAK_PINK_DARK }}
+              >
+                Placebo / break
+              </p>
+            )}
 
             <div className="relative mt-3 h-[62px] w-[50px] rotate-[8deg]" aria-hidden="true">
               <div
@@ -2336,50 +2325,72 @@ function BirthControlCalendar({
                   </button>
                 </div>
 
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      markTaken(sel, "");
-                      setSel(null);
-                    }}
-                    className="min-h-11 rounded-xl px-3 py-2.5 text-xs font-bold text-white shadow-sm"
-                    style={{ backgroundColor: popupAccent }}
-                  >
-                    Mark taken
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      markMissed(sel);
-                      setSel(null);
-                    }}
-                    className="min-h-11 rounded-xl bg-white/35 px-3 py-2.5 text-xs font-bold"
+                {selectedTaken ? (
+                  <div
+                    className="mt-4 flex min-h-12 items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold"
                     style={{
+                      backgroundColor: "rgba(255,255,255,.38)",
                       border: `1.5px solid ${popupAccent}`,
                       color: popupAccent,
                     }}
+                    aria-label="Tablet already taken"
                   >
-                    Mark missed
-                  </button>
-                </div>
+                    <span
+                      className="grid h-6 w-6 place-items-center rounded-full text-xs font-black text-white"
+                      style={{ backgroundColor: popupAccent }}
+                    >
+                      ✓
+                    </span>
+                    Taken
+                  </div>
+                ) : (
+                  <>
+                    <div className="mt-4 grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          markTaken(sel, "");
+                          setSel(null);
+                        }}
+                        className="min-h-11 rounded-xl px-3 py-2.5 text-xs font-bold text-white shadow-sm"
+                        style={{ backgroundColor: popupAccent }}
+                      >
+                        Mark taken
+                      </button>
 
-                {(selectedTaken || selectedMissed) && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      clearRecord(sel);
-                      setSel(null);
-                    }}
-                    className="mt-2 min-h-9 w-full rounded-xl bg-white/30 px-3 py-2 text-[10px] font-semibold"
-                    style={{
-                      border: `1px solid color-mix(in srgb, ${popupAccent} 32%, transparent)`,
-                      color: popupAccent,
-                    }}
-                  >
-                    Clear saved status
-                  </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          markMissed(sel);
+                          setSel(null);
+                        }}
+                        className="min-h-11 rounded-xl bg-white/35 px-3 py-2.5 text-xs font-bold"
+                        style={{
+                          border: `1.5px solid ${popupAccent}`,
+                          color: popupAccent,
+                        }}
+                      >
+                        Mark missed
+                      </button>
+                    </div>
+
+                    {selectedMissed && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          clearRecord(sel);
+                          setSel(null);
+                        }}
+                        className="mt-2 min-h-9 w-full rounded-xl bg-white/30 px-3 py-2 text-[10px] font-semibold"
+                        style={{
+                          border: `1px solid color-mix(in srgb, ${popupAccent} 32%, transparent)`,
+                          color: popupAccent,
+                        }}
+                      >
+                        Clear missed status
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             </div>,
