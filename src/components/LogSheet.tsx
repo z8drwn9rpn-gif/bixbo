@@ -278,7 +278,7 @@ export function LogSheet({
             </SheetHeader>
             <div
               key={`${active}-${openToken}-${(edit as { id?: string } | undefined)?.id ?? initialPain?.id ?? "new"}`}
-              className={`min-h-0 flex-1 overflow-y-auto ${active === "pain" ? "pt-[60px]" : "pt-[44px] px-5 pb-4"}`}
+              className={`min-h-0 flex-1 overflow-y-auto ${active === "pain" ? "pt-[60px]" : "pt-[36px] px-5 pb-4"}`}
             >
               {active === "postpartum" && (
                 <PostpartumSymptomsForm date={date} data={data} update={update} onDone={close} />
@@ -417,13 +417,13 @@ function Chip({
 function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave: () => void; disabled?: boolean }) {
   return (
     <SheetFooter
-      className="fixed inset-x-0 z-30 h-[44px] flex-row items-center justify-between gap-2 border-b border-border/50 bg-background/95 px-5 py-1 backdrop-blur"
+      className="fixed inset-x-0 z-30 h-[36px] flex-row items-center justify-between gap-2 border-b border-border/50 bg-background/95 px-5 py-0 backdrop-blur"
       style={{ top: "calc(env(safe-area-inset-top) + 56px)" }}
     >
       <button
         type="button"
         onClick={onCancel}
-        className="flex min-w-[54px] items-center gap-1 text-xs font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="flex min-w-[50px] items-center gap-1 text-[11px] font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <span aria-hidden="true" className="text-sm leading-none">←</span>
         <span>Back</span>
@@ -435,7 +435,7 @@ function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave:
         type="button"
         onClick={onSave}
         disabled={disabled}
-        className="inline-flex h-8 min-w-[68px] items-center justify-center gap-1 rounded-full bg-primary px-3 text-xs font-semibold text-primary-foreground shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        className="inline-flex h-7 min-w-[62px] items-center justify-center gap-1 rounded-full bg-primary px-2.5 text-[11px] font-semibold text-primary-foreground shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
         <span>Save</span>
         <span aria-hidden="true" className="text-sm leading-none">✓</span>
