@@ -1838,7 +1838,7 @@ function BirthControlCalendar({
             );
           })}
 
-          <div className="pointer-events-none absolute left-[18%] right-[18%] top-[15.5%] bottom-[12%] z-20 flex flex-col items-center overflow-visible text-center">
+          <div className="pointer-events-none absolute left-[17%] right-[17%] top-[14.5%] bottom-[14%] z-20 flex flex-col items-center overflow-visible text-center">
             <p className="text-[10px] font-semibold leading-none text-foreground">Day</p>
             <p
               className="mt-0.5 font-serif text-[clamp(2rem,8vw,2.7rem)] font-bold leading-none"
@@ -1856,21 +1856,21 @@ function BirthControlCalendar({
               </p>
             )}
 
-            <div className="mt-2 w-full">
-              <p className="text-[12px] font-bold leading-none text-foreground">
+            <div className="mt-1.5 w-[82%]">
+              <p className="text-[11px] font-bold leading-none text-foreground">
                 {hakMonthLabel}
               </p>
 
-              <div className="mt-1.5 grid grid-cols-7 text-center text-[6.8px] font-semibold leading-none text-foreground/75">
+              <div className="mt-1 grid grid-cols-7 text-center text-[6.2px] font-semibold leading-none text-foreground/75">
                 {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((weekday) => (
                   <span key={weekday}>{weekday}</span>
                 ))}
               </div>
 
-              <div className="mt-1 grid grid-cols-7 gap-x-[1px] gap-y-[1px]">
+              <div className="mt-0.5 grid grid-cols-7 gap-x-[1px] gap-y-0">
                 {hakMonthCells.map((cell) => {
                   if (!cell.inMonth) {
-                    return <span key={cell.key} className="h-[19px]" aria-hidden="true" />;
+                    return <span key={cell.key} className="h-[17px]" aria-hidden="true" />;
                   }
 
                   const packDay = cell.packDay;
@@ -1901,7 +1901,7 @@ function BirthControlCalendar({
                   return (
                     <span
                       key={cell.key}
-                      className="flex h-[19px] min-w-0 flex-col items-center justify-start"
+                      className="flex h-[17px] min-w-0 flex-col items-center justify-start"
                       aria-label={
                         packDay == null
                           ? fmtFullDate(cell.key)
@@ -1909,7 +1909,7 @@ function BirthControlCalendar({
                       }
                     >
                       <span
-                        className="grid h-[9px] min-w-[15px] place-items-center rounded-full px-[1px] text-[7.3px] font-bold leading-none tabular-nums"
+                        className="grid h-[8px] min-w-[13px] place-items-center rounded-full px-[1px] text-[6.7px] font-bold leading-none tabular-nums"
                         style={{
                           color: "var(--foreground)",
                           boxShadow: isToday ? "0 0 0 1px rgba(65,76,18,.68)" : undefined,
@@ -1920,7 +1920,7 @@ function BirthControlCalendar({
 
                       {packDay != null && (
                         <span
-                          className="mt-[1px] max-w-[28px] truncate rounded-[3px] px-[2px] py-[1px] text-[5.3px] font-bold leading-none tabular-nums"
+                          className="mt-[1px] max-w-[24px] truncate rounded-[3px] px-[2px] py-[1px] text-[4.8px] font-bold leading-none tabular-nums"
                           style={{
                             backgroundColor: chipBg,
                             color: chipColor,
