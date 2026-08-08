@@ -381,9 +381,9 @@ function InsightsPage() {
 
   return (
     <AppShell title="Health of Bixbo">
-      <div className="space-y-5 px-5 pt-3 pb-[calc(96px+env(safe-area-inset-bottom))] lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0 lg:px-0 lg:pb-12 [&>*:first-child]:lg:col-span-2">
+      <div className="space-y-3 px-5 pt-2 pb-[calc(96px+env(safe-area-inset-bottom))] lg:grid lg:grid-cols-2 lg:items-start lg:gap-3 lg:space-y-0 lg:px-0 lg:pb-12 [&>*:first-child]:lg:col-span-2">
         <div
-          className="mx-auto grid w-full max-w-sm grid-cols-3 gap-1 rounded-2xl bg-primary/20 p-1 ring-1 ring-primary/15 lg:max-w-md"
+          className="mx-auto grid w-full max-w-[340px] grid-cols-3 gap-0.5 rounded-xl bg-primary/20 p-0.5 ring-1 ring-primary/15 lg:max-w-sm"
           role="tablist"
           aria-label="Insights period"
         >
@@ -397,7 +397,7 @@ function InsightsPage() {
                 role="tab"
                 aria-selected={active}
                 onClick={() => setPeriod(p)}
-                className={`min-w-0 rounded-xl px-2 py-2 text-xs font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+                className={`min-w-0 rounded-[10px] px-2 py-1.5 text-[11px] font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
                   active
                     ? "bg-primary text-primary-foreground shadow-md"
                     : "text-foreground/80 hover:bg-surface/45 hover:text-foreground"
@@ -412,18 +412,18 @@ function InsightsPage() {
             <div className="flex items-center justify-between">
               <button
                 onClick={goPrev}
-                className="grid h-8 w-8 place-items-center rounded-full transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="grid h-7 w-7 place-items-center rounded-full transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 aria-label="Previous period"
               >
-                <ChevronLeft className="h-3.5 w-3.5" />
+                <ChevronLeft className="h-3 w-3" />
               </button>
-              <span className="text-xs font-medium">{label}</span>
+              <span className="text-[11px] font-medium leading-none">{label}</span>
               <button
                 onClick={goNext}
-                className="grid h-8 w-8 place-items-center rounded-full transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="grid h-7 w-7 place-items-center rounded-full transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 aria-label="Next period"
               >
-                <ChevronRight className="h-3.5 w-3.5" />
+                <ChevronRight className="h-3 w-3" />
               </button>
             </div>
 
@@ -1701,7 +1701,7 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
     // Keep the popup floating over the heatmap instead of pushing the entire grid down.
     // The rows are intentionally spaced farther apart vertically so the year graph is taller
     // without making it any wider than the current desktop/mobile layout.
-    const rowStep = 22;
+    const rowStep = 34;
     const gridTop = 28;
     const dotCenterOffset = 7;
     const tooltipTotalHeight = 70;
@@ -1799,7 +1799,7 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
                 {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((weekday) => (
                   <div
                     key={weekday}
-                    className="flex h-[22px] items-center text-[9px] font-medium text-muted-foreground"
+                    className="flex h-[34px] items-center text-[9px] font-medium text-muted-foreground"
                   >
                     {weekday}
                   </div>
@@ -1832,7 +1832,7 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
                     return (
                       <div
                         key={weekIndex}
-                        className={`relative grid shrink-0 grid-rows-7 gap-x-[3px] gap-y-[8px] ${
+                        className={`relative grid shrink-0 grid-rows-7 gap-x-[3px] gap-y-[20px] ${
                           isMonthBoundary ? "ml-[9px]" : ""
                         }`}
                       >
