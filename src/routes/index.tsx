@@ -1368,8 +1368,8 @@ function BirthControlSummaryCard({
 
 function BirthControlOverlay({
   data,
-  anchor,
-  onAnchorChange,
+  anchor: _anchor,
+  onAnchorChange: _onAnchorChange,
   onClose,
 }: {
   data: BixboData;
@@ -1391,23 +1391,6 @@ function BirthControlOverlay({
       document.body.style.overflow = previousOverflow;
     };
   }, []);
-
-  const label = anchor.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
-
-  const moveMonth = (delta: number) => {
-    const referenceDay = anchor.getDate();
-    const targetMonth = new Date(anchor.getFullYear(), anchor.getMonth() + delta, 1);
-    const lastDayOfTargetMonth = new Date(
-      targetMonth.getFullYear(),
-      targetMonth.getMonth() + 1,
-      0,
-    ).getDate();
-    const targetDay = Math.min(referenceDay, lastDayOfTargetMonth);
-
-    onAnchorChange(
-      new Date(targetMonth.getFullYear(), targetMonth.getMonth(), targetDay),
-    );
-  };
 
   return (
     <div
@@ -1435,13 +1418,7 @@ function BirthControlOverlay({
       </div>
 
       <main className="mx-auto w-full max-w-[42rem] px-3 pb-[calc(110px+env(safe-area-inset-bottom))] pt-1">
-        <BirthControlCalendar
-          data={data}
-          anchor={anchor}
-          monthLabel={label}
-          onPrevMonth={() => moveMonth(-1)}
-          onNextMonth={() => moveMonth(1)}
-        />
+        <BirthControlCalendar data={data} />
       </main>
     </div>
   );
@@ -1449,24 +1426,18 @@ function BirthControlOverlay({
 
 function BirthControlCalendar({
   data,
-  anchor,
-  monthLabel,
-  onPrevMonth,
-  onNextMonth,
 }: {
   data: ReturnType<typeof useBixbo>["data"];
-  anchor: Date;
-  monthLabel: string;
-  onPrevMonth: () => void;
-  onNextMonth: () => void;
 }) {
   const { update } = useBixbo();
   const [sel, setSel] = useState<string | null>(null);
-  const [hakMonth, setHakMonth] = useState(() => new Date(anchor.getFullYear(), anchor.getMonth(), 1));
 
-  useEffect(() => {
-    setHakMonth(new Date(anchor.getFullYear(), anchor.getMonth(), 1));
-  }, [anchor]);
+  // Calendar preview has its own month navigation.
+  // It never changes the 28-day HAK wheel above.
+  const [hakMonth, setHakMonth] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
 
   // Personal Drovelis schedule. Keep Settings as the source of truth when present,
   // with the confirmed start date as a safe fallback for this build.
@@ -1515,21 +1486,10 @@ function BirthControlCalendar({
     return (diff % PACK_DAYS) + 1;
   };
 
-  // The circular HAK wheel and Current HAK pack represent the reference date
-  // in the month currently being viewed. Month navigation preserves the same
-  // day-of-month, so changing July/August/September changes the HAK pack position
-  // without incorrectly resetting to the 1st of the month.
-  const referenceK = toKey(anchor);
-  const currentDay = pillNumber(referenceK) ?? 1;
-  const currentPackStart = addDays(referenceK, -(currentDay - 1));
-
-  // The month/date being viewed controls the cycle number shown in the centre,
-  // but dark highlighting means TODAY only.
-  const todayPackDay = pillNumber(todayK);
-  const todayDate = fromKey(todayK);
-  const isViewingCurrentMonth =
-    anchor.getFullYear() === todayDate.getFullYear() &&
-    anchor.getMonth() === todayDate.getMonth();
+  // One fixed 28-day HAK wheel: always the pack that contains TODAY.
+  // Calendar months (28/29/30/31 days) must never move or redefine this wheel.
+  const currentDay = pillNumber(todayK) ?? 1;
+  const currentPackStart = addDays(todayK, -(currentDay - 1));
 
   const dateForPackDay = (day: number) => addDays(currentPackStart, day - 1);
 
@@ -1675,177 +1635,10 @@ function BirthControlCalendar({
     year: "numeric",
   });
 
-  type ProtectionState = "protected" | "backup" | "review" | "starting" | "unknown";
-
-  const activeKeysBefore = (key: string, count: number): string[] => {
-    const out: string[] = [];
-    let cursor = addDays(key, -1);
-
-    while (out.length < count && cursor >= since) {
-      const d = pillNumber(cursor);
-      if (d != null && d <= ACTIVE_DAYS) out.unshift(cursor);
-      cursor = addDays(cursor, -1);
-    }
-
-    return out;
-  };
-
-  const activeDaysAfterMissThrough = (missKey: string, key: string): number => {
-    let cursor = addDays(missKey, 1);
-    let consecutive = 0;
-
-    while (cursor <= key) {
-      const d = pillNumber(cursor);
-      if (d != null && d <= ACTIVE_DAYS) {
-        if (missedAt(cursor)) consecutive = 0;
-        else consecutive++;
-      }
-      cursor = addDays(cursor, 1);
-    }
-
-    return consecutive;
-  };
-
-  const explicitMissesThrough = (key: string): string[] => {
-    // 40 days is enough to carry a late-pack miss across placebo and into the
-    // following pack until seven uninterrupted active tablets have elapsed.
-    const start = fromKey(key).getTime() - fromKey(since).getTime() > 40 * 86400000 ? addDays(key, -40) : since;
-    const misses: string[] = [];
-    let cursor = start;
-
-    while (cursor <= key) {
-      const d = pillNumber(cursor);
-      if (d != null && d <= ACTIVE_DAYS && missedAt(cursor)) misses.push(cursor);
-      cursor = addDays(cursor, 1);
-    }
-
-    return misses;
-  };
-
-  /**
-   * Drovelis pregnancy-protection indicator.
-   *
-   * Important modelling rule: an empty medication log is NOT treated as a missed
-   * pill. This calendar is a schedule + exception tracker; only an explicit
-   * "missed" record reduces the status. That prevents old, unlogged packs from
-   * being shown as falsely "Unknown".
-   *
-   * Official Drovelis rules represented here:
-   * - all 24 pink tablets are the same full dose;
-   * - the four placebo days are part of the protected regimen when the preceding
-   *   active tablets were taken correctly and the next pack starts on time;
-   * - <24 h late does not reduce protection (a normal "taken" record stays green);
-   * - days 1-7: an explicit missed active pill triggers backup until seven
-   *   uninterrupted active pills have followed;
-   * - days 8-17: one missed pill can remain protected when the preceding seven
-   *   active pills were correct; repeated/recent misses trigger backup;
-   * - days 18-24: special schedule action is required to avoid extending the
-   *   hormone-free interval, so the app shows REVIEW rather than a false green.
-   */
-  const protectionStateFor = (key: string): ProtectionState => {
-    const day = pillNumber(key);
-    if (day == null) return "unknown";
-
-    const daysFromStart = Math.round((fromKey(key).getTime() - fromKey(since).getTime()) / 86400000);
-    const misses = explicitMissesThrough(key);
-
-    // During the first seven calendar days we do not know whether the first pill
-    // was started on menstrual day 1 (immediate protection) or days 2-5 (backup
-    // needed for seven active pills). An explicit miss is stronger and is handled
-    // by the missed-pill rules below.
-    if (!misses.length && daysFromStart >= 0 && daysFromStart < 7) return "starting";
-    if (!misses.length) return "protected";
-
-    let strongest: ProtectionState = "protected";
-
-    for (const missKey of misses) {
-      const missDay = pillNumber(missKey);
-      if (missDay == null || missDay > ACTIVE_DAYS) continue;
-
-      const recovered = activeDaysAfterMissThrough(missKey, key) >= 7;
-      if (recovered) continue;
-
-      if (missDay <= 7) return "backup";
-
-      if (missDay <= 17) {
-        const previousSeven = activeKeysBefore(missKey, 7);
-        const previousSevenClear = previousSeven.length === 7 && previousSeven.every((k) => !missedAt(k));
-
-        const missPackStart = addDays(missKey, -(missDay - 1));
-        let missesInThisPack = 0;
-        let cursor = missPackStart;
-        while (cursor <= missKey) {
-          const d = pillNumber(cursor);
-          if (d != null && d <= ACTIVE_DAYS && missedAt(cursor)) missesInThisPack++;
-          cursor = addDays(cursor, 1);
-        }
-
-        if (!previousSevenClear || missesInThisPack > 1) return "backup";
-        continue;
-      }
-
-      // Days 18-24 need a deliberate schedule adjustment (e.g. skipping the
-      // placebo phase) to preserve protection. This fixed 28-day calendar cannot
-      // safely infer that adjustment, so surface an action/review state.
-      strongest = "review";
-    }
-
-    return strongest;
-  };
-
-  const protectionMeta = (state: ProtectionState) => {
-    if (state === "protected") {
-      return {
-        label: "Pregnancy protection expected",
-        short: "Protected",
-        color: HAK_GREEN,
-        bg: "rgba(220,235,210,.72)",
-        text: HAK_GREEN_DARK,
-        symbol: "✓",
-      };
-    }
-
-    if (state === "backup") {
-      return {
-        label: "Use a condom / avoid unprotected sex",
-        short: "Use backup",
-        color: "#C94A55",
-        bg: "rgba(248,215,218,.72)",
-        text: "#8E2832",
-        symbol: "!",
-      };
-    }
-
-    if (state === "review") {
-      return {
-        label: "HAK schedule action needed",
-        short: "Check schedule",
-        color: "#D58A22",
-        bg: "rgba(251,232,199,.78)",
-        text: "#8A5511",
-        symbol: "!",
-      };
-    }
-
-    if (state === "starting") {
-      return {
-        label: "Start-up protection depends on cycle-day start",
-        short: "Start-up",
-        color: HAK_PURPLE,
-        bg: "rgba(220,207,243,.62)",
-        text: HAK_PURPLE_DARK,
-        symbol: "i",
-      };
-    }
-
-    return {
-      label: "Outside configured HAK schedule",
-      short: "Unknown",
-      color: "#9A9A82",
-      bg: "rgba(230,230,210,.55)",
-      text: "var(--muted-foreground)",
-      symbol: "?",
-    };
+  const moveHakCalendarMonth = (delta: number) => {
+    setHakMonth(
+      (current) => new Date(current.getFullYear(), current.getMonth() + delta, 1),
+    );
   };
 
   // TRUE mathematical 28-day ring.
@@ -1876,26 +1669,15 @@ function BirthControlCalendar({
           </div>
         </div>
 
-        <div className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-surface/35 p-0.5 ring-1 ring-border/35">
-          <button
-            type="button"
-            onClick={onPrevMonth}
-            className="grid h-7 w-7 place-items-center rounded-full transition hover:bg-tint"
-            aria-label="Previous month"
-          >
-            <ChevronLeft className="h-3.5 w-3.5" />
-          </button>
-          <span className="min-w-[88px] px-1 text-center text-[10px] font-semibold text-foreground/80">
-            {monthLabel}
-          </span>
-          <button
-            type="button"
-            onClick={onNextMonth}
-            className="grid h-7 w-7 place-items-center rounded-full transition hover:bg-tint"
-            aria-label="Next month"
-          >
-            <ChevronRight className="h-3.5 w-3.5" />
-          </button>
+        <div
+          className="shrink-0 rounded-full px-3 py-1.5 text-[10px] font-semibold ring-1"
+          style={{
+            backgroundColor: "rgba(255,255,255,.28)",
+            borderColor: "rgba(129,135,67,.20)",
+            color: "var(--foreground)",
+          }}
+        >
+          Current pack
         </div>
       </div>
 
@@ -1943,7 +1725,7 @@ function BirthControlCalendar({
             const dateKey = dateForPackDay(day);
             const loggedTaken = !!takenAt(dateKey);
             const missed = missedAt(dateKey);
-            const isCurrent = isViewingCurrentMonth && todayPackDay != null && day === todayPackDay;
+            const isCurrent = day === currentDay;
             const isPlacebo = day > ACTIVE_DAYS;
 
             // The user confirmed continuous on-time Drovelis use from `since`.
@@ -2185,9 +1967,35 @@ function BirthControlCalendar({
         </div>
       </div>
 
-      {/* Calendar is always visible on this page; dates are informational only. */}
+      {/* HAK calendar preview — month navigation lives ONLY here. */}
       <div className="mt-4 rounded-[1.75rem] bg-surface/25 p-4 ring-1 ring-border/35">
-        <h3 className="font-serif text-lg font-bold text-foreground">Calendar preview</h3>
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="font-serif text-lg font-bold text-foreground">Calendar preview</h3>
+
+          <div className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-surface/35 p-0.5 ring-1 ring-border/35">
+            <button
+              type="button"
+              onClick={() => moveHakCalendarMonth(-1)}
+              className="grid h-7 w-7 place-items-center rounded-full transition hover:bg-tint"
+              aria-label="Previous calendar month"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </button>
+
+            <span className="min-w-[88px] px-1 text-center text-[10px] font-semibold text-foreground/80">
+              {hakMonthLabel}
+            </span>
+
+            <button
+              type="button"
+              onClick={() => moveHakCalendarMonth(1)}
+              className="grid h-7 w-7 place-items-center rounded-full transition hover:bg-tint"
+              aria-label="Next calendar month"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
 
         <div className="mt-3 grid grid-cols-7 gap-y-2 text-center text-[9px] font-semibold text-muted-foreground">
           {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((weekday) => (
@@ -2198,30 +2006,42 @@ function BirthControlCalendar({
         <div className="mt-2 grid grid-cols-7 gap-y-2 text-center">
           {hakMonthCells.map((cell) => {
             const packDay = cell.packDay;
-            const state: ProtectionState = cell.inMonth && packDay != null ? protectionStateFor(cell.key) : "unknown";
             const isToday = cell.key === todayK;
 
-            let backgroundColor = "rgba(225,225,205,.72)";
-            let color = "rgba(70,70,55,.48)";
+            let backgroundColor = "rgba(225,225,205,.68)";
+            let color = "rgba(70,70,55,.42)";
             let borderColor = "rgba(145,145,120,.18)";
 
             if (cell.inMonth && packDay != null) {
-              if (state === "protected") {
+              if (packDay === 1) {
                 backgroundColor = HAK_GREEN;
                 color = "#fff";
                 borderColor = HAK_GREEN_DARK;
-              } else if (state === "backup") {
-                backgroundColor = "#C94A55";
-                color = "#fff";
-                borderColor = "#8E2832";
-              } else if (state === "review") {
-                backgroundColor = "#D58A22";
-                color = "#fff";
-                borderColor = "#8A5511";
-              } else if (state === "starting") {
+              } else if (packDay <= ACTIVE_DAYS) {
                 backgroundColor = HAK_PURPLE_SOFT;
                 color = HAK_PURPLE_DARK;
-                borderColor = HAK_PURPLE;
+                borderColor = "rgba(122,83,200,.38)";
+              } else {
+                backgroundColor = HAK_PINK_SOFT;
+                color = HAK_PINK_DARK;
+                borderColor = "rgba(217,87,130,.42)";
+              }
+
+              // Logged taken tablets stay in the same HAK phase color,
+              // only with a slightly richer shade.
+              if (takenAt(cell.key)) {
+                if (packDay === 1) {
+                  backgroundColor = HAK_GREEN;
+                  color = "#fff";
+                } else if (packDay <= ACTIVE_DAYS) {
+                  backgroundColor = "#BDA9E7";
+                  color = "#4E2B98";
+                  borderColor = "rgba(91,50,174,.48)";
+                } else {
+                  backgroundColor = "#E99AB5";
+                  color = "#8F234B";
+                  borderColor = "rgba(185,46,96,.48)";
+                }
               }
             }
 
@@ -2232,11 +2052,21 @@ function BirthControlCalendar({
                   style={{
                     backgroundColor,
                     color,
-                    border: `1.5px solid ${isToday ? HAK_GREEN_DARK : borderColor}`,
+                    border: `1.5px solid ${isToday ? "#3E470C" : borderColor}`,
                     boxShadow: isToday ? `0 0 0 2px ${HAK_CARD_BG}` : undefined,
-                    opacity: cell.inMonth ? 1 : 0.55,
+                    opacity: cell.inMonth ? 1 : 0.48,
                   }}
-                  aria-label={`${fmtFullDate(cell.key)} — ${protectionMeta(state).label}`}
+                  aria-label={
+                    packDay == null
+                      ? fmtFullDate(cell.key)
+                      : `${fmtFullDate(cell.key)} — ${
+                          packDay === 1
+                            ? "New cycle"
+                            : packDay <= ACTIVE_DAYS
+                              ? "Active HAK day"
+                              : "Placebo / break day"
+                        }`
+                  }
                 >
                   {cell.date.getDate()}
                 </div>
@@ -2245,30 +2075,21 @@ function BirthControlCalendar({
           })}
         </div>
 
-        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-[9px] text-foreground">
-          <div className="flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-full" style={{ backgroundColor: HAK_GREEN }} />
-            Protected
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-full" style={{ backgroundColor: "#C94A55" }} />
-            Use backup
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-full" style={{ backgroundColor: "#D58A22" }} />
-            Check schedule
-          </div>
+        <div className="mt-3 flex flex-wrap gap-x-3 gap-y-2 text-[9px] text-foreground">
           <div className="flex items-center gap-1.5">
             <span className="h-3 w-3 rounded-full" style={{ backgroundColor: HAK_PURPLE_SOFT, border: `1px solid ${HAK_PURPLE}` }} />
-            Start-up
+            Active HAK days
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="h-3 w-3 rounded-full" style={{ backgroundColor: HAK_PINK_SOFT, border: `1px solid ${HAK_PINK}` }} />
+            Placebo / break days
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="h-3 w-3 rounded-full" style={{ backgroundColor: HAK_GREEN }} />
+            New cycle
           </div>
         </div>
-
-        <p className="mt-3 text-[9px] leading-relaxed text-muted-foreground">
-          Drovelis: all 24 pink pills are the same full dose. The 4 white placebo days remain part of the protected regimen when active pills are taken correctly and the next pack starts on time. An empty dose log is treated as not recorded, not as a missed pill; mark a pill “missed” when an actual miss occurs. Calendar dates are informational only and do not open the dose editor.
-        </p>
       </div>
-
 
 
       {!bcMed && (
