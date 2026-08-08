@@ -2058,4 +2058,31 @@ function TimeOfDayPatternChart({
             {active &&
               (() => {
                 const isTetany = active[0] === "t";
-                const i = Number(activ
+                const i = Number(active.slice(1));
+                const count = isTetany ? tetanyBlocks[i] : panicBlocks[i];
+                const total = isTetany ? tetanyTotal : panicTotal;
+                const percentage = total ? Math.round((count / total) * 100) : 0;
+                const color = isTetany ? TETANY_COLOR : PANIC_COLOR;
+                const details: InsightTooltipDetails = {
+                  owner: "You",
+                  heading: TIME_BLOCK_LABELS[i],
+                  value: `${isTetany ? "Tetany" : "Panic"} ${count}×`,
+                  description: `${percentage}% of entries in the selected period`,
+                  color,
+                  summary: `${TIME_BLOCK_LABELS[i]} · ${isTetany ? "Tetany" : "Panic"} ${count}× · ${percentage}%`,
+                };
+
+                return <InsightFloatingTooltip leftPct={(i + 0.5) * 25} details={details} />;
+              })()}
+          </div>
+          <div className="mt-1 grid grid-cols-4 gap-3 text-center text-[8px] text-muted-foreground">
+            {TIME_BLOCK_SHORT.map((l) => (
+              <span key={l}>{l}</span>
+            ))}
+          </div>
+          {sentence && <p className="mt-3 text-sm text-muted-foreground">{sentence}</p>}
+        </>
+      )}
+    </section>
+  );
+}
