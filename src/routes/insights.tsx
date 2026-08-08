@@ -1691,9 +1691,9 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
   const activeTooltipLayout = useMemo(() => {
     if (!activePosition) return null;
 
-    const rowStep = 24;
+    const rowStep = 25;
     const gridTop = 24;
-    const dotCenterOffset = 5;
+    const dotCenterOffset = 5.5;
     const tooltipTotalHeight = 70;
     const connectorGap = 5;
     const selectedCenterY = gridTop + dotCenterOffset + activePosition.weekdayIndex * rowStep;
@@ -1789,7 +1789,7 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
                     {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((weekday) => (
                       <div
                         key={weekday}
-                        className="flex h-[24px] items-center text-[8.5px] font-medium text-muted-foreground"
+                        className="flex h-[25px] items-center text-[8.5px] font-medium text-muted-foreground"
                       >
                         {weekday}
                       </div>
@@ -1812,7 +1812,7 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
                     <div
                       className="grid w-full"
                       style={{
-                        gridTemplateColumns: `repeat(${half.weekCount}, 9px)`,
+                        gridTemplateColumns: `repeat(${half.weekCount}, 10px)`,
                         columnGap: "1px",
                         justifyContent: "space-between",
                       }}
@@ -1821,7 +1821,7 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
                         const isMonthBoundary = boundaryWeeks.has(weekIndex);
 
                         return (
-                          <div key={weekIndex} className="relative grid shrink-0 grid-rows-7 gap-y-[15px]">
+                          <div key={weekIndex} className="relative grid shrink-0 grid-rows-7 gap-y-[14px]">
                             {isMonthBoundary ? (
                               <span
                                 aria-hidden="true"
@@ -1839,7 +1839,7 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
                                 return (
                                   <span
                                     key={date.toISOString()}
-                                    className="h-[10px] w-[10px] -translate-x-[0.5px] rounded-full bg-transparent"
+                                    className="h-[11px] w-[11px] -translate-x-[0.5px] rounded-full bg-transparent"
                                   />
                                 );
                               }
@@ -1862,7 +1862,7 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
                                     datum ? ` · ${datum.value}` : " · no data"
                                   }`}
                                   aria-pressed={isActive}
-                                  className={`h-[10px] w-[10px] -translate-x-[0.5px] rounded-full transition-transform ${
+                                  className={`h-[11px] w-[11px] -translate-x-[0.5px] rounded-full transition-transform ${
                                     datum ? "touch-manipulation active:scale-125" : "cursor-default"
                                   } ${isActive ? "ring-2 ring-foreground ring-offset-1 ring-offset-background" : ""}`}
                                   style={{ background: datum?.color ?? "var(--tint)" }}
