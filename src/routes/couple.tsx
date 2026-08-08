@@ -1265,6 +1265,14 @@ function CouplePage() {
 
   const selectedMonth = useMemo(() => startOfMonth(anchor), [anchor]);
   const selectedMonthLabel = monthLabel(selectedMonth);
+
+  // Pain comparison is intentionally always monthly.
+  // The main Couple Week / Month / Year selector still controls every
+  // other comparison; only the Pain chart uses this month range.
+  const painMonthRange = useMemo(() => coupleRangeFor("M", anchor), [anchor]);
+  const painMonthDays = painMonthRange.days;
+  const painMonthLabel = painMonthRange.label;
+
   const currentMonth = startOfMonth(new Date());
   const isCurrentMonth = isSameMonth(selectedMonth, currentMonth);
 
@@ -1608,12 +1616,12 @@ function CouplePage() {
             {activeTab === "compare" ? (
               <>
                 <CouplePainChart
-                  days={periodDays}
+                  days={painMonthDays}
                   mine={view.dayLogs}
                   theirs={partner.dayLogs}
                   partnerName={partnerName}
-                  periodLabel={periodDisplayLabel}
-                  period={period}
+                  periodLabel={painMonthLabel}
+                  period="M"
                 />
 
                 <SectionCard
