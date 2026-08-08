@@ -2230,91 +2230,234 @@ function countIntercourseBetween(data: BixboData, start: Date, end: Date): numbe
 }
 
 function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: string }) {
-  const ranges = useMemo<SukSukRange[]>(() => {
-    const anchor = fromKey(anchorKey);
-    anchor.setHours(0, 0, 0, 0);
+  const HAK_PURPLE = "#7A53C8";
+  const HAK_PURPLE_DARK = "#5B32AE";
+  const HAK_PURPLE_SOFT = "#DCCFF3";
+  const HAK_CARD_BG = "color-mix(in srgb, var(--background) 94%, #7C8900 6%)";
 
-    const weekStart = startOfSelectedWeek(anchor);
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekStart.getDate() + 6);
+  const anchor = useMemo(() => {
+    const date = fromKey(anchorKey);
+    date.setHours(0, 0, 0, 0);
+    return date;
+  }, [anchorKey]);
 
-    const monthStart = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
-    const monthEnd = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0);
+  const week = useMemo(() => {
+    const start = startOfSelectedWeek(anchor);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
 
-    const yearStart = new Date(anchor.getFullYear(), 0, 1);
-    const yearEnd = new Date(anchor.getFullYear(), 11, 31);
+    const previousStart = new Date(start);
+    previousStart.setDate(start.getDate() - 7);
+    const previousEnd = new Date(end);
+    previousEnd.setDate(end.getDate() - 7);
 
-    return [
-      {
-        label: "Week",
-        start: weekStart,
-        end: weekEnd,
-        count: countIntercourseBetween(data, weekStart, weekEnd),
-      },
-      {
-        label: "Month",
-        start: monthStart,
-        end: monthEnd,
+    const daily = daysBetweenInclusive(start, end).map((key, index) => ({
+      label: ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"][index],
+      count: data.dayLogs[key]?.sex?.filter((entry) => isIntercourseKind(entry.kind)).length ?? 0,
+    }));
+
+    return {
+      start,
+      end,
+      count: daily.reduce((sum, item) => sum + item.count, 0),
+      previousCount: countIntercourseBetween(data, previousStart, previousEnd),
+      bars: daily,
+    };
+  }, [anchor, data]);
+
+  const month = useMemo(() => {
+    const start = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+    const end = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0);
+
+    const previousStart = new Date(anchor.getFullYear(), anchor.getMonth() - 1, 1);
+    const previousEnd = new Date(anchor.getFullYear(), anchor.getMonth(), 0);
+
+    const daysInMonth = end.getDate();
+    const bars = [
+      [1, Math.min(7, daysInMonth)],
+      [8, Math.min(14, daysInMonth)],
+      [15, Math.min(21, daysInMonth)],
+      [22, Math.min(28, daysInMonth)],
+      [29, daysInMonth],
+    ]
+      .filter(([bucketStart]) => bucketStart <= daysInMonth)
+      .map(([bucketStart, bucketEnd]) => {
+        const bucketStartDate = new Date(anchor.getFullYear(), anchor.getMonth(), bucketStart);
+        const bucketEndDate = new Date(anchor.getFullYear(), anchor.getMonth(), bucketEnd);
+
+        return {
+          label: `${bucketStart}–${bucketEnd}`,
+          count: countIntercourseBetween(data, bucketStartDate, bucketEndDate),
+        };
+      });
+
+    return {
+      start,
+      end,
+      count: countIntercourseBetween(data, start, end),
+      previousCount: countIntercourseBetween(data, previousStart, previousEnd),
+      bars,
+    };
+  }, [anchor, data]);
+
+  const year = useMemo(() => {
+    const start = new Date(anchor.getFullYear(), 0, 1);
+    const end = new Date(anchor.getFullYear(), 11, 31);
+
+    const previousStart = new Date(anchor.getFullYear() - 1, 0, 1);
+    const previousEnd = new Date(anchor.getFullYear() - 1, 11, 31);
+
+    const monthLabels = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
+    const bars = monthLabels.map((label, monthIndex) => {
+      const monthStart = new Date(anchor.getFullYear(), monthIndex, 1);
+      const monthEnd = new Date(anchor.getFullYear(), monthIndex + 1, 0);
+
+      return {
+        label,
         count: countIntercourseBetween(data, monthStart, monthEnd),
-      },
-      {
-        label: "Year",
-        start: yearStart,
-        end: yearEnd,
-        count: countIntercourseBetween(data, yearStart, yearEnd),
-      },
-    ];
-  }, [anchorKey, data]);
+      };
+    });
 
-  const maxCount = Math.max(1, ...ranges.map((range) => range.count));
-  const anchor = fromKey(anchorKey);
-  const anchorLabel = anchor.toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+    return {
+      start,
+      end,
+      count: countIntercourseBetween(data, start, end),
+      previousCount: countIntercourseBetween(data, previousStart, previousEnd),
+      bars,
+    };
+  }, [anchor, data]);
 
-  return (
-    <section className="mt-4 rounded-3xl bg-tint p-4 ring-1 ring-border">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-surface">
-            <Ico e="❤️" size={22} />
-          </span>
-          <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-foreground">ŠukŠuk!</h2>
-            <p className="mt-0.5 text-[11px] text-muted-foreground">
-              Week · Month · Year together
-            </p>
-          </div>
-        </div>
-        <span className="shrink-0 text-[10px] font-medium text-muted-foreground">{anchorLabel}</span>
-      </div>
+  const comparison = (current: number, previous: number, label: string) => {
+    const diff = current - previous;
+    const symbol = diff > 0 ? "↑" : diff < 0 ? "↓" : "—";
+    const value = diff === 0 ? "0" : `${diff > 0 ? "+" : ""}${diff}`;
 
-      <div className="mt-4 grid grid-cols-3 items-end gap-3">
-        {ranges.map((range) => {
-          const heightPct = range.count > 0 ? Math.max(12, (range.count / maxCount) * 100) : 0;
+    return (
+      <p className="mt-1.5 text-center text-[8px] leading-none text-muted-foreground">
+        vs last {label}{" "}
+        <span
+          className="font-bold"
+          style={{ color: diff === 0 ? "var(--muted-foreground)" : HAK_PURPLE_DARK }}
+        >
+          {symbol}{value}
+        </span>
+      </p>
+    );
+  };
+
+  const MiniBars = ({
+    items,
+    dense = false,
+  }: {
+    items: { label: string; count: number }[];
+    dense?: boolean;
+  }) => {
+    const max = Math.max(1, ...items.map((item) => item.count));
+
+    return (
+      <div
+        className="mt-2 grid items-end gap-[2px]"
+        style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
+      >
+        {items.map((item, index) => {
+          const height = item.count > 0 ? Math.max(5, Math.round((item.count / max) * 42)) : 1;
 
           return (
-            <div key={range.label} className="flex min-w-0 flex-col items-center">
-              <span className="mb-1 text-sm font-bold tabular-nums text-foreground">{range.count}</span>
-              <div className="flex h-24 w-full max-w-[58px] items-end overflow-hidden rounded-2xl bg-surface ring-1 ring-border/40">
-                <div
-                  className="w-full rounded-2xl transition-[height] duration-300"
+            <div key={`${item.label}-${index}`} className="flex min-w-0 flex-col items-center justify-end">
+              <span className={`${dense ? "text-[6px]" : "text-[7px]"} mb-0.5 h-2.5 tabular-nums text-foreground/75`}>
+                {item.count}
+              </span>
+              <div className="flex h-[42px] w-full items-end justify-center border-b border-border/55">
+                <span
+                  className={`${dense ? "w-[72%]" : "w-[78%]"} rounded-t-[3px]`}
                   style={{
-                    height: `${heightPct}%`,
-                    backgroundColor: "#ef4770",
+                    height: `${height}px`,
+                    background:
+                      item.count > 0
+                        ? `linear-gradient(180deg, ${HAK_PURPLE} 0%, ${HAK_PURPLE_DARK} 100%)`
+                        : HAK_PURPLE_SOFT,
+                    opacity: item.count > 0 ? 1 : 0.35,
                   }}
-                  aria-hidden="true"
                 />
               </div>
-              <span className="mt-2 text-[10px] font-semibold text-foreground">{range.label}</span>
-              <span className="mt-0.5 text-[9px] text-muted-foreground">
-                {range.count === 1 ? "1 entry" : `${range.count} entries`}
+              <span
+                className={`${dense ? "text-[5.5px]" : "text-[6.5px]"} mt-1 truncate text-muted-foreground`}
+              >
+                {item.label}
               </span>
             </div>
           );
         })}
+      </div>
+    );
+  };
+
+  return (
+    <section
+      className="mt-4 rounded-3xl p-4 ring-1 ring-border"
+      style={{ backgroundColor: HAK_CARD_BG }}
+    >
+      <div className="flex items-start gap-3">
+        <span
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl ring-1"
+          style={{
+            backgroundColor: HAK_PURPLE_SOFT,
+            color: HAK_PURPLE_DARK,
+            borderColor: `${HAK_PURPLE}33`,
+          }}
+        >
+          <Ico e="💜" size={22} />
+        </span>
+
+        <div className="min-w-0 flex-1">
+          <h2 className="font-serif text-lg font-semibold leading-none text-foreground">ŠukŠuk!</h2>
+          <p className="mt-1 text-[10px] leading-snug text-muted-foreground">
+            Logged intimacy · actual intercourse only
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-3 border-t border-border/55 pt-3">
+        <div className="grid grid-cols-3 divide-x divide-border/55">
+          <div className="min-w-0 px-1.5">
+            <p className="text-center text-[10px] font-bold text-foreground">Week</p>
+            <p className="mt-0.5 truncate text-center text-[6.5px] tabular-nums text-muted-foreground">
+              {toKey(week.start)} → {toKey(week.end)}
+            </p>
+            <p className="mt-1.5 text-center font-serif text-2xl font-bold leading-none text-foreground">
+              {week.count}
+              <span className="ml-1 font-sans text-[8px] font-medium text-muted-foreground">times</span>
+            </p>
+            {comparison(week.count, week.previousCount, "week")}
+            <MiniBars items={week.bars} />
+          </div>
+
+          <div className="min-w-0 px-1.5">
+            <p className="text-center text-[10px] font-bold text-foreground">Month</p>
+            <p className="mt-0.5 truncate text-center text-[6.5px] text-muted-foreground">
+              {anchor.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+            </p>
+            <p className="mt-1.5 text-center font-serif text-2xl font-bold leading-none text-foreground">
+              {month.count}
+              <span className="ml-1 font-sans text-[8px] font-medium text-muted-foreground">times</span>
+            </p>
+            {comparison(month.count, month.previousCount, "month")}
+            <MiniBars items={month.bars} />
+          </div>
+
+          <div className="min-w-0 px-1.5">
+            <p className="text-center text-[10px] font-bold text-foreground">Year</p>
+            <p className="mt-0.5 text-center text-[6.5px] tabular-nums text-muted-foreground">
+              {anchor.getFullYear()}
+            </p>
+            <p className="mt-1.5 text-center font-serif text-2xl font-bold leading-none text-foreground">
+              {year.count}
+              <span className="ml-1 font-sans text-[8px] font-medium text-muted-foreground">times</span>
+            </p>
+            {comparison(year.count, year.previousCount, "year")}
+            <MiniBars items={year.bars} dense />
+          </div>
+        </div>
       </div>
     </section>
   );
