@@ -289,7 +289,21 @@ function SleepTrendBars({
   period: VitalTrendPeriod;
 }) {
   const yLabels = [12, 10, 8, 6, 4, 2, 0];
-  const height = 120;
+  const height = 128;
+
+  // Keep every bar, but only print X-axis ticks that can physically fit.
+  // Week: every day. Month: 1, 5, 10, 15, 20, 25 and the last day.
+  // Year: all 12 months fit in this popup.
+  const visibleXLabelIndexes = new Set<number>();
+  if (period === "W" || period === "Y") {
+    points.forEach((_, index) => visibleXLabelIndexes.add(index));
+  } else {
+    const lastIndex = Math.max(0, points.length - 1);
+    [0, 4, 9, 14, 19, 24, lastIndex].forEach((index) => {
+      if (index >= 0 && index < points.length) visibleXLabelIndexes.add(index);
+    });
+  }
+
   const activePoint = activeIndex != null ? points[activeIndex] : undefined;
   const activeColumnLeft =
     activeIndex != null && points.length
@@ -309,10 +323,10 @@ function SleepTrendBars({
   return (
     <div className="pt-1">
       <div className="flex gap-1.5">
-        <div className="flex flex-col items-end pr-1" style={{ height }}>
-          <div className="flex h-full flex-col justify-between text-[8px] font-medium text-muted-foreground">
+        <div className="w-7 shrink-0 pr-1" style={{ height }}>
+          <div className="flex h-full flex-col items-end justify-between text-[8px] font-medium text-muted-foreground">
             {yLabels.map((value) => (
-              <span key={value} className="leading-none tabular-nums">
+              <span key={value} className="w-full text-right leading-none tabular-nums">
                 {value}
               </span>
             ))}
@@ -327,8 +341,12 @@ function SleepTrendBars({
           </div>
 
           <div
-            className="relative grid items-end gap-[2px]"
-            style={{ gridTemplateColumns: `repeat(${Math.max(1, points.length)}, minmax(0, 1fr))`, height }}
+            className="relative grid items-end"
+            style={{
+              gridTemplateColumns: `repeat(${Math.max(1, points.length)}, minmax(0, 1fr))`,
+              columnGap: period === "M" ? "1px" : "2px",
+              height,
+            }}
           >
             {points.map((point, index) =>
               point.value != null ? (
@@ -373,14 +391,17 @@ function SleepTrendBars({
         </div>
       </div>
 
-      <div className="mt-1 flex pl-5">
+      <div className="mt-1 flex pl-[34px]">
         <div
-          className="grid flex-1 gap-[2px] text-center text-[7px] text-muted-foreground"
-          style={{ gridTemplateColumns: `repeat(${Math.max(1, points.length)}, minmax(0, 1fr))` }}
+          className="grid flex-1 text-center text-[7px] font-medium tabular-nums text-muted-foreground"
+          style={{
+            gridTemplateColumns: `repeat(${Math.max(1, points.length)}, minmax(0, 1fr))`,
+            columnGap: period === "M" ? "1px" : "2px",
+          }}
         >
-          {points.map((point) => (
-            <span key={point.key} className="truncate">
-              {point.label}
+          {points.map((point, index) => (
+            <span key={point.key} className="min-w-0 whitespace-nowrap leading-none">
+              {visibleXLabelIndexes.has(index) ? point.label : ""}
             </span>
           ))}
         </div>
@@ -2722,6 +2743,17 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
     };
   }, [viewAnchor, data]);
 
+  const weekRangeLabel = (() => {
+    const startDay = week.start.getDate();
+    const endDay = week.end.getDate();
+    const startMonth = week.start.toLocaleDateString("en-GB", { month: "short" });
+    const endMonth = week.end.toLocaleDateString("en-GB", { month: "short" });
+
+    return week.start.getMonth() === week.end.getMonth()
+      ? `${startDay}–${endDay} ${startMonth}`
+      : `${startDay} ${startMonth}–${endDay} ${endMonth}`;
+  })();
+
   const comparison = (current: number, previous: number, label: string) => {
     const diff = current - previous;
     const symbol = diff > 0 ? "↑" : diff < 0 ? "↓" : "—";
@@ -2748,23 +2780,53 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
     dense?: boolean;
   }) => {
     const max = Math.max(1, ...items.map((item) => item.count));
+    const maxDigits = Math.max(1, ...items.map((item) => String(Math.abs(item.count)).length));
+    const itemCount = Math.max(1, items.length);
+
+    // The annual chart has 12 columns in one narrow panel.
+    // Use a 1px gap and a font derived from the number of digits so
+    // two-digit monthly counts cannot collide with their neighbours.
+    const columnGap = dense ? 1 : itemCount >= 5 ? 2 : 3;
+    const countFontSize = dense
+      ? maxDigits >= 3
+        ? 4.5
+        : maxDigits === 2
+          ? 5.5
+          : 6.5
+      : 8;
+    const axisFontSize = dense ? 6.5 : itemCount >= 5 ? 7 : 8;
 
     return (
       <div
-        className="mt-3 grid items-end gap-[3px]"
-        style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
+        className="mt-3 grid items-end"
+        style={{
+          gridTemplateColumns: `repeat(${itemCount}, minmax(0, 1fr))`,
+          columnGap: `${columnGap}px`,
+        }}
       >
         {items.map((item, index) => {
           const height = item.count > 0 ? Math.max(7, Math.round((item.count / max) * 64)) : 1;
+          const showCount = !dense || item.count > 0;
 
           return (
-            <div key={`${item.label}-${index}`} className="flex min-w-0 flex-col items-center justify-end">
-              <span className={`${dense ? "text-[7px]" : "text-[8px]"} mb-1 h-3 tabular-nums font-medium text-foreground/80`}>
-                {item.count}
+            <div
+              key={`${item.label}-${index}`}
+              className="flex min-w-0 flex-col items-center justify-end"
+              aria-label={`${item.label}: ${item.count}`}
+            >
+              <span
+                className="mb-1 flex h-3 w-full items-end justify-center whitespace-nowrap text-center font-medium leading-none tabular-nums text-foreground/80"
+                style={{
+                  fontSize: `${countFontSize}px`,
+                  letterSpacing: dense ? "-0.04em" : undefined,
+                }}
+              >
+                {showCount ? item.count : ""}
               </span>
+
               <div className="flex h-[64px] w-full items-end justify-center border-b border-border/55">
                 <span
-                  className={`${dense ? "w-[74%]" : "w-[80%]"} rounded-t-[4px]`}
+                  className={`${dense ? "w-[78%]" : "w-[80%]"} rounded-t-[4px]`}
                   style={{
                     height: `${height}px`,
                     background:
@@ -2775,8 +2837,10 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
                   }}
                 />
               </div>
+
               <span
-                className={`${dense ? "text-[6.5px]" : "text-[8px]"} mt-1.5 truncate font-medium text-muted-foreground`}
+                className="mt-1.5 w-full whitespace-nowrap text-center font-medium leading-none text-muted-foreground"
+                style={{ fontSize: `${axisFontSize}px` }}
               >
                 {item.label}
               </span>
@@ -2839,11 +2903,11 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
       </div>
 
       <div className="mt-4 border-t border-border/55 pt-4">
-        <div className="grid grid-cols-3 divide-x divide-border/55">
+        <div className="grid grid-cols-[0.92fr_1.02fr_1.06fr] divide-x divide-border/55">
           <div className="min-w-0 px-2">
             <p className="text-center text-xs font-bold text-foreground">Week</p>
-            <p className="mt-1 truncate text-center text-[8px] tabular-nums text-muted-foreground">
-              {toKey(week.start)} → {toKey(week.end)}
+            <p className="mt-1 whitespace-nowrap text-center text-[8px] tabular-nums text-muted-foreground">
+              {weekRangeLabel}
             </p>
             <p className="mt-2 text-center font-serif text-3xl font-bold leading-none text-foreground">
               {week.count}
