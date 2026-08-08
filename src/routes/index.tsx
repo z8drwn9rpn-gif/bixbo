@@ -557,7 +557,7 @@ function VitalTrendPopup({
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="text-[10px] font-semibold text-muted-foreground">{active.heading}</p>
-                        <p className="mt-0.5 text-[10px] text-muted-foreground">
+                        <p className="mt-1 text-[11px] text-muted-foreground">
                           {period === "Y" ? "Monthly average from saved entries" : "Saved entry"}
                         </p>
                       </div>
@@ -1699,17 +1699,17 @@ function BirthControlCalendar({
       </div>
 
       {/* Circular HAK overview — only wheel pills open the dose popup. */}
-      <div className="mx-auto mt-1 w-full max-w-[392px] shrink-0">
+      <div className="mx-auto mt-1 w-full max-w-[424px] shrink-0">
         <div className="relative aspect-square w-full">
           <div
-            className="absolute inset-[9%] rounded-full"
+            className="absolute inset-[7.5%] rounded-full"
             style={{
               background: "rgba(255,255,255,.12)",
               boxShadow: "inset 0 0 0 9px rgba(255,255,255,.24)",
             }}
           />
           <div
-            className="absolute inset-[22%] rounded-full"
+            className="absolute inset-[18.5%] rounded-full"
             style={{
               backgroundColor: HAK_CARD_BG,
               boxShadow: "0 0 0 1px rgba(255,255,255,.12)",
@@ -1720,7 +1720,7 @@ function BirthControlCalendar({
             {Array.from({ length: PACK_DAYS }).map((_, i) => {
               const day = i + 1;
               const angle = (wheelAngleForDay(day) * Math.PI) / 180;
-              const radius = 41;
+              const radius = 42.5;
               return (
                 <span
                   key={`wheel-track-${i}`}
@@ -1736,7 +1736,7 @@ function BirthControlCalendar({
 
           {wheelDays.map((day) => {
             const angle = (wheelAngleForDay(day) * Math.PI) / 180;
-            const radius = 41;
+            const radius = 42.5;
             const left = 50 + Math.cos(angle) * radius;
             const top = 50 + Math.sin(angle) * radius;
             const dateKey = dateForPackDay(day);
@@ -1819,7 +1819,7 @@ function BirthControlCalendar({
                 onClick={() => {
                   setSel(dateKey);
                 }}
-                className="absolute z-10 grid h-9 w-9 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[11px] font-bold transition active:scale-95"
+                className="absolute z-10 grid h-10 w-10 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[12px] font-bold transition active:scale-95"
                 style={{
                   left: `${left}%`,
                   top: `${top}%`,
@@ -1838,10 +1838,10 @@ function BirthControlCalendar({
             );
           })}
 
-          <div className="pointer-events-none absolute left-[13.5%] right-[13.5%] top-[17.5%] bottom-[8.5%] z-20 flex flex-col items-center overflow-visible text-center">
-            <p className="text-[9px] font-semibold leading-none text-foreground">Day</p>
+          <div className="pointer-events-none absolute left-[11.5%] right-[11.5%] top-[15.5%] bottom-[6.5%] z-20 flex flex-col items-center overflow-visible text-center">
+            <p className="text-[10px] font-semibold leading-none text-foreground">Day</p>
             <p
-              className="mt-0.5 font-serif text-[clamp(1.8rem,7.4vw,2.4rem)] font-bold leading-none"
+              className="mt-0.5 font-serif text-[clamp(2rem,8vw,2.7rem)] font-bold leading-none"
               style={{ color: currentDay <= ACTIVE_DAYS ? HAK_PURPLE_DARK : HAK_PINK_DARK }}
             >
               {currentDay} / {PACK_DAYS}
@@ -1856,12 +1856,12 @@ function BirthControlCalendar({
               </p>
             )}
 
-            <div className="mt-2 w-full">
-              <p className="text-[13px] font-bold leading-none text-foreground">
+            <div className="mt-2.5 w-full">
+              <p className="text-[14px] font-bold leading-none text-foreground">
                 {hakMonthLabel}
               </p>
 
-              <div className="mt-1.5 grid grid-cols-7 text-center text-[7.5px] font-semibold leading-none text-foreground/75">
+              <div className="mt-1.5 grid grid-cols-7 text-center text-[8px] font-semibold leading-none text-foreground/75">
                 {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((weekday) => (
                   <span key={weekday}>{weekday}</span>
                 ))}
@@ -1870,7 +1870,7 @@ function BirthControlCalendar({
               <div className="mt-1 grid grid-cols-7 gap-x-[2px] gap-y-[2px]">
                 {hakMonthCells.map((cell) => {
                   if (!cell.inMonth) {
-                    return <span key={cell.key} className="h-[23px]" aria-hidden="true" />;
+                    return <span key={cell.key} className="h-[25px]" aria-hidden="true" />;
                   }
 
                   const packDay = cell.packDay;
@@ -1901,7 +1901,7 @@ function BirthControlCalendar({
                   return (
                     <span
                       key={cell.key}
-                      className="flex h-[23px] min-w-0 flex-col items-center justify-start"
+                      className="flex h-[25px] min-w-0 flex-col items-center justify-start"
                       aria-label={
                         packDay == null
                           ? fmtFullDate(cell.key)
@@ -1909,7 +1909,7 @@ function BirthControlCalendar({
                       }
                     >
                       <span
-                        className="grid h-[11px] min-w-[17px] place-items-center rounded-full px-[2px] text-[8.4px] font-bold leading-none tabular-nums"
+                        className="grid h-[11px] min-w-[17px] place-items-center rounded-full px-[2px] text-[8.8px] font-bold leading-none tabular-nums"
                         style={{
                           color: "var(--foreground)",
                           boxShadow: isToday ? "0 0 0 1px rgba(65,76,18,.68)" : undefined,
@@ -1920,7 +1920,7 @@ function BirthControlCalendar({
 
                       {packDay != null && (
                         <span
-                          className="mt-[1px] max-w-[33px] truncate rounded-[4px] px-[3px] py-[1px] text-[6.2px] font-bold leading-none tabular-nums"
+                          className="mt-[1px] max-w-[36px] truncate rounded-[4px] px-[3px] py-[1px] text-[6.6px] font-bold leading-none tabular-nums"
                           style={{
                             backgroundColor: chipBg,
                             color: chipColor,
