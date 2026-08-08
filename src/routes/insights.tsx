@@ -1,10 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { createPortal } from "react-dom";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { CHART_COLORS } from "@/components/ui/chart";
-import { ChartCard, ChartEmpty, CHART_AXIS, CHART_GRID, useDismissTapTooltip } from "@/components/charts";
+import { ChartCard, CHART_GRID, useDismissTapTooltip } from "@/components/charts";
 import { Ico } from "@/components/icons/BixboIcons";
 import {
   useBixbo,
@@ -18,7 +17,6 @@ import {
   painColor,
   avgDayPain,
   isIntercourseKind,
-  type DayLog,
 } from "@/lib/storage";
 
 const WD_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -181,8 +179,6 @@ const TETANY_COLOR = INSIGHT_COLORS.pinkLight;
 const PANIC_COLOR = INSIGHT_COLORS.pinkDeep;
 
 const PAIN_ACCENT = "#DC2626";
-const PAIN_SOFT = "rgba(220, 38, 38, 0.08)";
-const PAIN_BORDER = "rgba(220, 38, 38, 0.22)";
 
 const GREEN_ACCENT = INSIGHT_COLORS.olive;
 const GREEN_SOFT = "rgba(83, 102, 0, 0.08)";
@@ -321,7 +317,6 @@ function InsightsPage() {
   );
   // Year view aggregates to 12 monthly buckets so the bars stay readable,
   // keeping the yearly hot-flash chart readable.
-  const monthLabels = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
   const aggregateMonthly = (keys: string[], series: (number | undefined)[]) => {
     const sums = new Array(12).fill(0) as number[];
     const counts = new Array(12).fill(0) as number[];
@@ -429,101 +424,353 @@ function InsightsPage() {
               </button>
             </div>
 
-            {period === "Y" && <YearHealthHeatmap data={view} anchor={anchor} />}
-
-            <section
-              className="rounded-3xl p-5 ring-1"
-              style={{
-                backgroundColor: GREEN_SOFT,
-                boxShadow: `inset 0 0 0 1px ${GREEN_BORDER}`,
-              }}
-            >
-              <p className="text-xs uppercase tracking-wider" style={{ color: PAIN_ACCENT }}>
-                Pain scale
-              </p>
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="font-serif text-5xl leading-none">{painAvg != null ? painAvg.toFixed(1) : "–"}</span>
-                <span className="text-sm text-muted-foreground">
-                  avg · {painSeries.filter((n) => n != null).length}{" "}
-                  {painSeries.filter((n) => n != null).length === 1 ? "entry" : "entries"}
-                </span>
-              </div>
-              <PainChart period={period} days={days} series={painSeries} anchor={anchor} />
-            </section>
-
-            <section
-              className="rounded-3xl p-5 ring-1"
-              style={{
-                backgroundColor: GREEN_SOFT,
-                boxShadow: `inset 0 0 0 1px ${GREEN_BORDER}`,
-              }}
-            >
-              <p className="text-xs uppercase tracking-wider" style={{ color: GREEN_ACCENT }}></p>
-              <p className="mt-2 font-serif text-5xl leading-none">{sexCount}</p>
-              <Ico e="❤️" size={16} /> ŠukŠuk!
-              <p className="mt-2 text-sm text-muted-foreground">
-                {sexCount === 1 ? "entry" : "entries"} in this{" "}
-                {period === "W" ? "week" : period === "M" ? "month" : "year"}
-              </p>
-            </section>
-
-            <BristolChart bowelCounts={bowelCounts} />
-
-            <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">Hot flashes</p>
-              {hfTotal ? (
-                <>
+            {period === "Y" ? (
+              <>
+                <YearHealthHeatmap data={view} anchor={anchor} />
+                <YearPatternOfDayChart data={view} days={days} anchor={anchor} />
+                <YearMedsOverview data={view} days={days} anchor={anchor} />
+              </>
+            ) : (
+              <>
+                <section
+                  className="rounded-3xl p-5 ring-1"
+                  style={{
+                    backgroundColor: GREEN_SOFT,
+                    boxShadow: `inset 0 0 0 1px ${GREEN_BORDER}`,
+                  }}
+                >
+                  <p className="text-xs uppercase tracking-wider" style={{ color: PAIN_ACCENT }}>
+                    Pain scale
+                  </p>
                   <div className="mt-2 flex items-baseline gap-2">
-                    <span className="font-serif text-4xl leading-none">{hfTotal}</span>
+                    <span className="font-serif text-5xl leading-none">
+                      {painAvg != null ? painAvg.toFixed(1) : "–"}
+                    </span>
                     <span className="text-sm text-muted-foreground">
-                      {hfTotal === 1 ? "episode" : "episodes"} · avg {hfAvg!.toFixed(1)}/5 · most often L{hfTop}
+                      avg · {painSeries.filter((n) => n != null).length}{" "}
+                      {painSeries.filter((n) => n != null).length === 1 ? "entry" : "entries"}
                     </span>
                   </div>
-                  <HfBars bars={hfBars} period={period} days={days} anchor={anchor} />
-                  {period === "Y" && (
-                    <div
-                      className="mt-1 grid gap-1 text-center text-[8px] text-muted-foreground"
-                      style={{ gridTemplateColumns: "repeat(12, minmax(0, 1fr))" }}
-                    >
-                      {monthLabels.map((l, i) => (
-                        <span key={i}>{l}</span>
-                      ))}
-                    </div>
+                  <PainChart period={period} days={days} series={painSeries} anchor={anchor} />
+                </section>
+
+                <section
+                  className="rounded-3xl p-5 ring-1"
+                  style={{
+                    backgroundColor: GREEN_SOFT,
+                    boxShadow: `inset 0 0 0 1px ${GREEN_BORDER}`,
+                  }}
+                >
+                  <p className="text-xs uppercase tracking-wider" style={{ color: GREEN_ACCENT }}></p>
+                  <p className="mt-2 font-serif text-5xl leading-none">{sexCount}</p>
+                  <Ico e="❤️" size={16} /> ŠukŠuk!
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {sexCount === 1 ? "entry" : "entries"} in this {period === "W" ? "week" : "month"}
+                  </p>
+                </section>
+
+                <BristolChart bowelCounts={bowelCounts} />
+
+                <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground">Hot flashes</p>
+                  {hfTotal ? (
+                    <>
+                      <div className="mt-2 flex items-baseline gap-2">
+                        <span className="font-serif text-4xl leading-none">{hfTotal}</span>
+                        <span className="text-sm text-muted-foreground">
+                          {hfTotal === 1 ? "episode" : "episodes"} · avg {hfAvg!.toFixed(1)}/5 · most often L{hfTop}
+                        </span>
+                      </div>
+                      <HfBars bars={hfBars} period={period} days={days} anchor={anchor} />
+                      <div className="mt-3 space-y-1">
+                        {[1, 2, 3, 4, 5].map((n) => {
+                          const c = hfCounts[n];
+                          const pct = hfTotal ? (c / hfTotal) * 100 : 0;
+                          const color = HOT_FLASH_COLORS[n];
+                          return (
+                            <div key={n} className="flex items-center gap-2 text-[10px]">
+                              <span
+                                className="grid h-4 w-4 shrink-0 place-items-center rounded-full text-[9px] font-bold text-white"
+                                style={{ background: color }}
+                              >
+                                {n}
+                              </span>
+                              <span className="w-16 shrink-0 text-muted-foreground">
+                                {HOT_FLASH_DESCRIPTIONS[n]}
+                              </span>
+                              <div className="h-2 flex-1 overflow-hidden rounded-full bg-tint">
+                                <div
+                                  className="h-full rounded-full"
+                                  style={{ width: `${pct}%`, background: color }}
+                                />
+                              </div>
+                              <span className="w-6 text-right tabular-nums text-muted-foreground">{c}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  ) : (
+                    <p className="mt-1 text-sm text-muted-foreground">No hot flashes logged</p>
                   )}
-                  <div className="mt-3 space-y-1">
-                    {[1, 2, 3, 4, 5].map((n) => {
-                      const c = hfCounts[n];
-                      const pct = hfTotal ? (c / hfTotal) * 100 : 0;
-                      const color = HOT_FLASH_COLORS[n];
-                      return (
-                        <div key={n} className="flex items-center gap-2 text-[10px]">
-                          <span
-                            className="grid h-4 w-4 place-items-center rounded-full text-[9px] font-bold text-white shrink-0"
-                            style={{ background: color }}
-                          >
-                            {n}
-                          </span>
-                          <span className="w-16 shrink-0 text-muted-foreground">{HOT_FLASH_DESCRIPTIONS[n]}</span>
-                          <div className="h-2 flex-1 overflow-hidden rounded-full bg-tint">
-                            <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
-                          </div>
-                          <span className="w-6 text-right tabular-nums text-muted-foreground">{c}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              ) : (
-                <p className="mt-1 text-sm text-muted-foreground">No hot flashes logged</p>
-              )}
-            </section>
+                </section>
 
-
-            <TimeOfDayPatternChart data={view} days={days} period={period} />
-
-            <MedsAdherence data={view} period={period} anchor={anchor} />
+                <TimeOfDayPatternChart data={view} days={days} period={period} />
+                <MedsAdherence data={view} period={period} anchor={anchor} />
+              </>
+            )}
       </div>
     </AppShell>
+  );
+}
+
+function YearPatternOfDayChart({
+  data,
+  days,
+  anchor,
+}: {
+  data: ReturnType<typeof useBixbo>["data"];
+  days: string[];
+  anchor: Date;
+}) {
+  const buckets = useMemo(() => {
+    const totals = new Array(6).fill(0) as number[];
+    const counts = new Array(6).fill(0) as number[];
+
+    days.forEach((key) => {
+      (data.dayLogs[key]?.pain ?? []).forEach((entry) => {
+        if (!Number.isFinite(entry.score) || !entry.time) return;
+
+        const match = /^(\d{1,2}):(\d{2})/.exec(entry.time);
+        if (!match) return;
+
+        const hour = Number(match[1]);
+        if (!Number.isFinite(hour) || hour < 0 || hour > 23) return;
+
+        const bucket = Math.min(5, Math.floor(hour / 4));
+        totals[bucket] += Number(entry.score);
+        counts[bucket] += 1;
+      });
+    });
+
+    return totals.map((total, index) => ({
+      label: ["00", "04", "08", "12", "16", "20"][index],
+      value: counts[index] ? total / counts[index] : null,
+      count: counts[index],
+    }));
+  }, [data.dayLogs, days]);
+
+  const timedEntries = buckets.reduce((sum, bucket) => sum + bucket.count, 0);
+  const points = buckets
+    .map((bucket, index) => {
+      if (bucket.value == null) return null;
+      const x = 36 + index * 50;
+      const y = 132 - (bucket.value / 10) * 100;
+      return { ...bucket, x, y };
+    })
+    .filter((point): point is NonNullable<typeof point> => point != null);
+
+  const polyline = points.map((point) => `${point.x},${point.y}`).join(" ");
+
+  return (
+    <ChartCard title="Pattern of Day (avg)">
+      <div className="mt-1 flex items-center justify-between gap-3">
+        <p className="text-[10px] text-muted-foreground">Average pain by time of day</p>
+        <p className="shrink-0 text-[9px] text-muted-foreground">{anchor.getFullYear()}</p>
+      </div>
+
+      {timedEntries ? (
+        <>
+          <div className="mt-3 overflow-hidden rounded-2xl bg-background/45 px-1 py-2 ring-1 ring-border/50">
+            <svg
+              viewBox="0 0 320 164"
+              className="h-auto w-full"
+              role="img"
+              aria-label={`Pattern of Day average pain chart for ${anchor.getFullYear()}, based on ${timedEntries} timed pain ${
+                timedEntries === 1 ? "entry" : "entries"
+              }`}
+            >
+              {[10, 8, 6, 4, 2, 0].map((value) => {
+                const y = 132 - (value / 10) * 100;
+                return (
+                  <g key={value}>
+                    <line
+                      x1="34"
+                      x2="306"
+                      y1={y}
+                      y2={y}
+                      stroke={CHART_GRID}
+                      strokeWidth="0.8"
+                      strokeDasharray={value === 0 ? undefined : "3 3"}
+                    />
+                    <text
+                      x="3"
+                      y={y + 3}
+                      fontSize="8"
+                      fill="var(--muted-foreground)"
+                    >
+                      {value}
+                    </text>
+                  </g>
+                );
+              })}
+
+              {points.length > 1 ? (
+                <polyline
+                  points={polyline}
+                  fill="none"
+                  stroke={GREEN_ACCENT}
+                  strokeWidth="2.3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              ) : null}
+
+              {buckets.map((bucket, index) => {
+                const x = 36 + index * 50;
+                return (
+                  <text
+                    key={bucket.label}
+                    x={x}
+                    y="153"
+                    textAnchor="middle"
+                    fontSize="8"
+                    fill="var(--muted-foreground)"
+                  >
+                    {bucket.label}
+                  </text>
+                );
+              })}
+
+              {points.map((point) => (
+                <g key={point.label}>
+                  <circle
+                    cx={point.x}
+                    cy={point.y}
+                    r="4.2"
+                    fill={vividPainChartColor(point.value)}
+                    stroke={GREEN_ACCENT}
+                    strokeWidth="1.3"
+                  />
+                  <text
+                    x={point.x}
+                    y={Math.max(10, point.y - 8)}
+                    textAnchor="middle"
+                    fontSize="8"
+                    fontWeight="600"
+                    fill="var(--foreground)"
+                  >
+                    {point.value.toFixed(1)}
+                  </text>
+                </g>
+              ))}
+            </svg>
+          </div>
+
+          <p className="mt-2 text-[10px] text-muted-foreground">
+            {timedEntries} timed pain {timedEntries === 1 ? "entry" : "entries"} · multiple entries in the same
+            time block are averaged.
+          </p>
+        </>
+      ) : (
+        <p className="mt-3 text-sm text-muted-foreground">Not enough timed pain entries yet.</p>
+      )}
+    </ChartCard>
+  );
+}
+
+function YearMedsOverview({
+  data,
+  days,
+  anchor,
+}: {
+  data: ReturnType<typeof useBixbo>["data"];
+  days: string[];
+  anchor: Date;
+}) {
+  const stats = useMemo(() => {
+    const useCounts: Record<string, number> = {};
+    let daysWithMeds = 0;
+
+    days.forEach((date) => {
+      const dayLog = data.medLog[date] ?? {};
+      let dayHasMed = false;
+
+      Object.entries(dayLog).forEach(([key, taken]) => {
+        if (!taken) return;
+
+        dayHasMed = true;
+        const medId = key.split("@")[0];
+        useCounts[medId] = (useCounts[medId] ?? 0) + 1;
+      });
+
+      if (dayHasMed) daysWithMeds += 1;
+    });
+
+    const mostUsed = Object.entries(useCounts).sort((a, b) => b[1] - a[1])[0];
+    const currentNames = new Map(data.meds.map((med) => [med.id, med.name]));
+
+    const scheduled = data.meds.filter((med) => !med.asNeeded);
+    const expectedPerDay = scheduled.reduce((sum, med) => sum + med.times.length, 0);
+    const totalExpected = expectedPerDay * days.length;
+
+    let totalTaken = 0;
+    if (totalExpected) {
+      days.forEach((date) => {
+        scheduled.forEach((med) => {
+          med.times.forEach((time) => {
+            if (data.medLog[date]?.[`${med.id}@${time}`]) totalTaken += 1;
+          });
+        });
+      });
+    }
+
+    const adherence = totalExpected ? Math.round((totalTaken / totalExpected) * 100) : null;
+
+    return {
+      daysWithMeds,
+      mostUsedName: mostUsed
+        ? currentNames.get(mostUsed[0]) ?? data.medNames?.[mostUsed[0]] ?? "Removed medication"
+        : "—",
+      mostUsedCount: mostUsed?.[1] ?? 0,
+      adherence,
+      totalTaken,
+      totalExpected,
+    };
+  }, [data.medLog, data.medNames, data.meds, days]);
+
+  return (
+    <ChartCard title="Meds Overview">
+      <p className="mt-1 text-[10px] text-muted-foreground">Year · {anchor.getFullYear()}</p>
+
+      <div className="mt-4 grid grid-cols-3 divide-x divide-border/70">
+        <div className="min-w-0 px-2 first:pl-0">
+          <p className="text-[9px] uppercase tracking-wide text-muted-foreground">Days with meds</p>
+          <p className="mt-1 font-serif text-3xl leading-none text-foreground">{stats.daysWithMeds}</p>
+          <p className="mt-1 text-[9px] text-muted-foreground">
+            {days.length ? `${Math.round((stats.daysWithMeds / days.length) * 100)}% of days` : "—"}
+          </p>
+        </div>
+
+        <div className="min-w-0 px-2">
+          <p className="text-[9px] uppercase tracking-wide text-muted-foreground">Most used</p>
+          <p className="mt-1 truncate text-sm font-semibold text-foreground">{stats.mostUsedName}</p>
+          <p className="mt-1 text-[9px] text-muted-foreground">
+            {stats.mostUsedCount ? `${stats.mostUsedCount} taken doses/logs` : "No medication logs"}
+          </p>
+        </div>
+
+        <div className="min-w-0 px-2 pr-0">
+          <p className="text-[9px] uppercase tracking-wide text-muted-foreground">Adherence</p>
+          <p className="mt-1 font-serif text-3xl leading-none text-foreground">
+            {stats.adherence == null ? "—" : `${stats.adherence}%`}
+          </p>
+          <p className="mt-1 text-[9px] text-muted-foreground">
+            {stats.totalExpected ? `${stats.totalTaken}/${stats.totalExpected} scheduled` : "No scheduled meds"}
+          </p>
+        </div>
+      </div>
+    </ChartCard>
   );
 }
 
@@ -1401,9 +1648,18 @@ function HfBars({
 type HeatmapMetric = "pain" | "period" | "bowel" | "panic" | "tetany" | "hotFlashes" | "sleep";
 
 type HeatmapDatum = {
+  /** CSS background for the heatmap mark. May be a gradient (Bowel Type 0). */
   color: string;
+  /** Solid colour used by the SVG popup border/dot. */
+  tooltipColor: string;
+  /** Compact value used by accessibility labels/legend context. */
   value: string;
-  details: string[];
+  /** Main value text shown inside the small floating popup. */
+  popupValue: string;
+  /** Short secondary line shown inside the small floating popup. */
+  description: string;
+  /** Number of source entries represented by the daily value. */
+  entryCount: number;
 };
 
 const HEATMAP_OPTIONS: { id: HeatmapMetric; label: string }[] = [
@@ -1452,171 +1708,157 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
   const [active, setActive] = useState<string | null>(null);
   const year = anchor.getFullYear();
 
-  // Do not use the global "tap outside" dismiss hook here. On iOS it fired while
-  // the user was scrolling the year grid and made the heatmap feel frozen.
-  // The detail card stays open until another cell/metric is chosen or Close is tapped.
   useEffect(() => {
     setActive(null);
   }, [metric, year]);
 
-  const dayNotesFor = useCallback(
-    (key: string): string[] =>
-      (data.dayNotes[key] ?? [])
-        .map((note) => {
-          if (typeof note === "string") return note.trim();
-          const text = note?.text?.trim();
-          if (!text) return "";
-          return `${note.time ? `${note.time} · ` : ""}${text}`;
-        })
-        .filter(Boolean),
-    [data.dayNotes],
+  const datumFor = useCallback(
+    (key: string, selectedMetric: HeatmapMetric): HeatmapDatum | null => {
+      const log = data.dayLogs[key];
+      if (!log) return null;
+
+      if (selectedMetric === "pain") {
+        const entries = (log.pain ?? []).filter((entry) => Number.isFinite(entry.score));
+        if (!entries.length) return null;
+
+        const value = entries.reduce((sum, entry) => sum + Number(entry.score), 0) / entries.length;
+        const rounded = Math.max(0, Math.min(10, Math.round(value)));
+
+        return {
+          color: vividPainChartColor(value),
+          tooltipColor: vividPainChartColor(value),
+          value: `${value.toFixed(1)}/10`,
+          popupValue: entries.length > 1 ? `Pain avg ${value.toFixed(1)}/10` : `Pain ${value.toFixed(1)}/10`,
+          description: PAIN_DESCRIPTIONS[rounded] ?? "Pain",
+          entryCount: entries.length,
+        };
+      }
+
+      if (selectedMetric === "period") {
+        const level = log.periodInfo?.level ?? log.period;
+        if (!level) return null;
+
+        return {
+          color: heatmapPeriodColor(level),
+          tooltipColor: heatmapPeriodColor(level),
+          value: periodLabel(level) || String(level),
+          popupValue: `Period · ${periodLabel(level) || String(level)}`,
+          description: "Logged period flow",
+          entryCount: 1,
+        };
+      }
+
+      if (selectedMetric === "bowel") {
+        const entries = (log.bowel ?? []).filter((entry) => {
+          const type = Number(entry.bristol);
+          return Number.isInteger(type) && type >= 0 && type <= 7;
+        });
+        if (!entries.length) return null;
+
+        const latest = entries[entries.length - 1];
+        const type = Number(latest.bristol);
+        const bristol = BRISTOL.find((item) => item.n === type);
+        const typeZero = type === 0;
+
+        return {
+          // Type 0 uses exactly the same rainbow treatment as the Bristol gauge.
+          color: typeZero ? BRISTOL_MYSTERY_COLOR : bristol?.color ?? INSIGHT_COLORS.sage,
+          // SVG tooltip borders cannot use a CSS gradient, so keep a solid fallback only for the border/dot.
+          tooltipColor: typeZero ? "#8B5CF6" : bristol?.color ?? INSIGHT_COLORS.sage,
+          value: `Type ${type}`,
+          popupValue: `Bowel · Type ${type}`,
+          description: typeZero ? "Type 0" : bristol?.sub ?? "Bowel entry",
+          entryCount: entries.length,
+        };
+      }
+
+      if (selectedMetric === "panic") {
+        const entries = (log.panic ?? []).filter((entry) => Number.isFinite(entry.intensity));
+        if (!entries.length) return null;
+
+        const value = entries.reduce((sum, entry) => sum + Number(entry.intensity), 0) / entries.length;
+        const firstTrigger = entries.find((entry) => entry.trigger?.trim())?.trigger?.trim();
+
+        return {
+          color: vividPainChartColor(value),
+          tooltipColor: vividPainChartColor(value),
+          value: `${value.toFixed(1)}/10 avg`,
+          popupValue: entries.length > 1 ? `Panic avg ${value.toFixed(1)}/10` : `Panic ${value.toFixed(1)}/10`,
+          description: firstTrigger ? `Trigger: ${firstTrigger}` : "Panic episode",
+          entryCount: entries.length,
+        };
+      }
+
+      if (selectedMetric === "tetany") {
+        const entries = (log.tetany ?? []).filter((entry) => Number.isFinite(entry.intensity));
+        if (!entries.length) return null;
+
+        const value = entries.reduce((sum, entry) => sum + Number(entry.intensity), 0) / entries.length;
+        const firstType = entries.find((entry) => entry.types?.length)?.types?.join(", ");
+
+        return {
+          color: fiveLevelSeverityColor(value),
+          tooltipColor: fiveLevelSeverityColor(value),
+          value: `${value.toFixed(1)}/5 avg`,
+          popupValue: entries.length > 1 ? `Tetany avg ${value.toFixed(1)}/5` : `Tetany ${value.toFixed(1)}/5`,
+          description: firstType ? `Type: ${firstType}` : "Tetany episode",
+          entryCount: entries.length,
+        };
+      }
+
+      if (selectedMetric === "hotFlashes") {
+        const entries = (log.pain ?? []).filter(
+          (entry) => entry.hotFlashes != null && Number.isFinite(entry.hotFlashes) && entry.hotFlashes > 0,
+        );
+        if (!entries.length) return null;
+
+        const value = entries.reduce((sum, entry) => sum + Number(entry.hotFlashes), 0) / entries.length;
+        const rounded = Math.max(1, Math.min(5, Math.round(value)));
+
+        return {
+          color: fiveLevelSeverityColor(value),
+          tooltipColor: fiveLevelSeverityColor(value),
+          value: `${value.toFixed(1)}/5 avg`,
+          popupValue:
+            entries.length > 1 ? `Hot flashes avg ${value.toFixed(1)}/5` : `Hot flashes ${value.toFixed(1)}/5`,
+          description: HOT_FLASH_DESCRIPTIONS[rounded] ?? "Hot flashes",
+          entryCount: entries.length,
+        };
+      }
+
+      const hours = log.sleepHours ?? log.pregnancy?.sleepHours ?? log.postpartum?.sleepHours;
+      if (hours == null || !Number.isFinite(hours)) return null;
+
+      const quality = log.sleepQuality
+        ? Array.isArray(log.sleepQuality)
+          ? log.sleepQuality.join(", ")
+          : String(log.sleepQuality)
+        : "";
+
+      return {
+        color: sleepHeatmapColor(hours),
+        tooltipColor: sleepHeatmapColor(hours),
+        value: `${hours.toFixed(1)} h`,
+        popupValue: `Sleep ${hours.toFixed(1)} h`,
+        description: quality ? `Quality: ${quality}` : "Sleep duration",
+        entryCount: 1,
+      };
+    },
+    [data.dayLogs],
   );
 
-  const datumFor = useCallback((key: string, selectedMetric: HeatmapMetric): HeatmapDatum | null => {
-    const log = data.dayLogs[key];
-    if (!log) return null;
-
-    if (selectedMetric === "pain") {
-      const entries = (log.pain ?? []).filter((entry) => Number.isFinite(entry.score));
-      const value = avgDayPain(log);
-      if (value == null || !entries.length) return null;
-      return {
-        color: vividPainChartColor(value),
-        value: `${value.toFixed(1)}/10`,
-        details: entries.map((entry) => {
-          const pieces = [`${entry.time || "—"} · Pain ${entry.score}/10`];
-          if (entry.parts?.length) pieces.push(`Locations: ${entry.parts.join(", ")}`);
-          if (entry.quality?.length) pieces.push(`Quality: ${entry.quality.join(", ")}`);
-          if (entry.symptoms?.length) pieces.push(`Symptoms: ${entry.symptoms.join(", ")}`);
-          if (entry.note?.trim()) pieces.push(`Note: ${entry.note.trim()}`);
-          return pieces.join(" · ");
-        }),
-      };
-    }
-
-    if (selectedMetric === "period") {
-      const level = log.periodInfo?.level ?? log.period;
-      if (!level) return null;
-      const info = log.periodInfo;
-      const details = ["Logged period flow"];
-      if (info?.cramps != null) details.push(`Cramps: ${info.cramps}/10`);
-      if (info?.discharge) details.push(`Discharge: ${info.discharge}`);
-      if (info?.dischargeNote?.trim()) details.push(`Discharge note: ${info.dischargeNote.trim()}`);
-      if (info?.note?.trim()) details.push(`Note: ${info.note.trim()}`);
-      return {
-        color: heatmapPeriodColor(level),
-        value: periodLabel(level) || String(level),
-        details,
-      };
-    }
-
-    if (selectedMetric === "bowel") {
-      const entries = (log.bowel ?? []).filter((entry) => {
-        const type = Number(entry.bristol);
-        return Number.isInteger(type) && type >= 0 && type <= 7;
-      });
-      if (!entries.length) return null;
-      const latest = entries[entries.length - 1];
-      const type = Number(latest.bristol);
-      const bristol = BRISTOL.find((item) => item.n === type);
-      return {
-        color: type === 0 ? "#64748B" : bristol?.color ?? INSIGHT_COLORS.sage,
-        value: `Type ${type}`,
-        details: entries.map((entry) => {
-          const parts = [`${entry.time || "—"} · Type ${Number(entry.bristol)}`];
-          if (entry.feelings?.length) parts.push(`Feelings: ${entry.feelings.join(", ")}`);
-          if (entry.symptoms?.length) parts.push(`Symptoms: ${entry.symptoms.join(", ")}`);
-          if (entry.note?.trim()) parts.push(`Note: ${entry.note.trim()}`);
-          return parts.join(" · ");
-        }),
-      };
-    }
-
-    if (selectedMetric === "panic") {
-      const entries = log.panic ?? [];
-      if (!entries.length) return null;
-      const highest = Math.max(...entries.map((entry) => entry.intensity));
-      return {
-        color: vividPainChartColor(highest),
-        value: `${highest}/10 highest`,
-        details: entries.map((entry) => {
-          const parts = [
-            `${entry.time || "—"} · ${entry.intensity}/10${entry.minutes != null ? ` · ${entry.minutes} min` : " · ongoing"}`,
-          ];
-          if (entry.trigger?.trim()) parts.push(`Trigger: ${entry.trigger.trim()}`);
-          if (entry.physical?.length) parts.push(`Physical: ${entry.physical.join(", ")}`);
-          if (entry.cognitive?.length) parts.push(`Cognitive: ${entry.cognitive.join(", ")}`);
-          if (entry.note?.trim()) parts.push(`Note: ${entry.note.trim()}`);
-          return parts.join(" · ");
-        }),
-      };
-    }
-
-    if (selectedMetric === "tetany") {
-      const entries = log.tetany ?? [];
-      if (!entries.length) return null;
-      const highest = Math.max(...entries.map((entry) => entry.intensity));
-      return {
-        color: fiveLevelSeverityColor(highest),
-        value: `${highest}/5 highest`,
-        details: entries.map((entry) => {
-          const parts = [
-            `${entry.time || "—"} · ${entry.intensity}/5${entry.minutes != null ? ` · ${entry.minutes} min` : " · ongoing"}`,
-          ];
-          if (entry.types?.length) parts.push(`Type: ${entry.types.join(", ")}`);
-          if (entry.location?.length) parts.push(`Location: ${entry.location.join(", ")}`);
-          if (entry.triggers?.length) parts.push(`Triggers: ${entry.triggers.join(", ")}`);
-          if (entry.note?.trim()) parts.push(`Note: ${entry.note.trim()}`);
-          return parts.join(" · ");
-        }),
-      };
-    }
-
-    if (selectedMetric === "hotFlashes") {
-      const entries = (log.pain ?? []).filter(
-        (entry) => entry.hotFlashes != null && Number.isFinite(entry.hotFlashes) && entry.hotFlashes > 0,
-      );
-      if (!entries.length) return null;
-      const highest = Math.max(...entries.map((entry) => entry.hotFlashes!));
-      return {
-        color: fiveLevelSeverityColor(highest),
-        value: `${highest}/5 highest`,
-        details: entries.map((entry) => {
-          const parts = [`${entry.time || "—"} · Hot flashes ${entry.hotFlashes}/5`];
-          if (entry.note?.trim()) parts.push(`Note: ${entry.note.trim()}`);
-          return parts.join(" · ");
-        }),
-      };
-    }
-
-    const hours = log.sleepHours ?? log.pregnancy?.sleepHours ?? log.postpartum?.sleepHours;
-    if (hours == null || !Number.isFinite(hours)) return null;
-    const details: string[] = [];
-    if (log.sleepQuality) {
-      details.push(`Quality: ${Array.isArray(log.sleepQuality) ? log.sleepQuality.join(", ") : log.sleepQuality}`);
-    }
-    if (log.pregnancy?.note?.trim()) details.push(`Pregnancy note: ${log.pregnancy.note.trim()}`);
-    if (log.postpartum?.note?.trim()) details.push(`Postpartum note: ${log.postpartum.note.trim()}`);
-    if (!details.length) details.push("Sleep duration");
-    return {
-      color: sleepHeatmapColor(hours),
-      value: `${hours.toFixed(1)} h`,
-      details,
-    };
-  }, [data.dayLogs]);
-
-  // Precompute the selected metric once per year/metric. Previously datumFor() was
-  // called from every one of the 372 cells on every render, which was noticeably
-  // expensive on iPhone when scrolling the Insights page.
   const heatmapData = useMemo<Record<string, HeatmapDatum | null>>(() => {
     const result: Record<string, HeatmapDatum | null> = {};
+
     for (let month = 0; month < 12; month++) {
       const daysInMonth = new Date(year, month + 1, 0).getDate();
+
       for (let day = 1; day <= daysInMonth; day++) {
         const key = toKey(new Date(year, month, day));
         result[key] = datumFor(key, metric);
       }
     }
+
     return result;
   }, [datumFor, metric, year]);
 
@@ -1649,61 +1891,39 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
     return { weeks, months, weekCount };
   }, [year]);
 
-  const painYearSummary = useMemo(() => {
-    if (metric !== "pain") return null;
+  const activeMetricLabel = HEATMAP_OPTIONS.find((option) => option.id === metric)?.label ?? "Heatmap";
+  const activeDatum = active ? heatmapData[active] ?? null : null;
 
-    const counts = {
-      low: 0,
-      mild: 0,
-      moderate: 0,
-      high: 0,
-      severe: 0,
-      noData: 0,
-    };
+  const activePosition = useMemo(() => {
+    if (!active) return null;
 
-    for (let month = 0; month < 12; month++) {
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
-      for (let day = 1; day <= daysInMonth; day++) {
-        const key = toKey(new Date(year, month, day));
-        const value = avgDayPain(data.dayLogs[key]);
-        if (value == null) {
-          counts.noData++;
-        } else if (value <= 2) {
-          counts.low++;
-        } else if (value <= 4) {
-          counts.mild++;
-        } else if (value <= 6) {
-          counts.moderate++;
-        } else if (value <= 8) {
-          counts.high++;
-        } else {
-          counts.severe++;
-        }
-      }
+    for (let weekIndex = 0; weekIndex < yearGrid.weeks.length; weekIndex++) {
+      const weekdayIndex = yearGrid.weeks[weekIndex].findIndex((date) => toKey(date) === active);
+      if (weekdayIndex >= 0) return { weekIndex, weekdayIndex };
     }
 
-    return [
-      { label: "Low", count: counts.low, color: vividPainChartColor(1) },
-      { label: "Mild", count: counts.mild, color: vividPainChartColor(3) },
-      { label: "Moderate", count: counts.moderate, color: vividPainChartColor(5) },
-      { label: "High", count: counts.high, color: vividPainChartColor(8) },
-      { label: "Severe", count: counts.severe, color: vividPainChartColor(10) },
-      { label: "No data", count: counts.noData, color: "var(--tint)" },
-    ];
-  }, [data.dayLogs, metric, year]);
+    return null;
+  }, [active, yearGrid.weeks]);
 
-  const activeDatum = active ? heatmapData[active] ?? null : null;
-  const activeMetricLabel = HEATMAP_OPTIONS.find((option) => option.id === metric)?.label ?? "Heatmap";
-  const activeDayNotes = active ? dayNotesFor(active) : [];
+  const activeTooltip = useMemo<InsightTooltipDetails | null>(() => {
+    if (!active || !activeDatum) return null;
 
-  useEffect(() => {
-    if (!active || typeof document === "undefined") return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previousOverflow;
+    const entryText =
+      activeDatum.entryCount > 1
+        ? `${activeDatum.entryCount} entries`
+        : activeDatum.entryCount === 1
+          ? "1 entry"
+          : "";
+
+    return {
+      owner: "You",
+      heading: fmtTapDay(active),
+      value: activeDatum.popupValue,
+      description: [entryText, activeDatum.description].filter(Boolean).join(" · "),
+      color: activeDatum.tooltipColor,
+      summary: `You · ${fmtTapDay(active)} · ${activeDatum.popupValue}${entryText ? ` · ${entryText}` : ""}`,
     };
-  }, [active]);
+  }, [active, activeDatum]);
 
   const legend = (() => {
     if (metric === "period") {
@@ -1717,7 +1937,7 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
     }
 
     if (metric === "bowel") {
-      return [["T0", "#64748B"], ...BRISTOL.map((item) => [`T${item.n}`, item.color] as const)];
+      return [["T0", BRISTOL_MYSTERY_COLOR], ...BRISTOL.map((item) => [`T${item.n}`, item.color] as const)];
     }
 
     if (metric === "sleep") {
@@ -1742,7 +1962,9 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
 
   return (
     <ChartCard title={`Year heatmap — ${year}`}>
-      <p className="mt-1 text-xs text-muted-foreground">Choose a metric, then tap a coloured day for its saved details and notes.</p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Choose a metric, then tap a coloured day for its saved average/details.
+      </p>
 
       <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1">
         {HEATMAP_OPTIONS.map((option) => (
@@ -1762,71 +1984,107 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
       </div>
 
       <div className="mt-4 rounded-[1.5rem] bg-background/55 p-3 ring-1 ring-border/60 sm:p-4">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-semibold text-foreground">{year} Overview</p>
-          <span className="rounded-full bg-primary px-3 py-1 text-[10px] font-semibold text-primary-foreground">Year</span>
-        </div>
+        <div className="min-w-0 overflow-x-auto overscroll-x-contain pb-1 touch-pan-x">
+          <div className={`relative w-max pr-1 ${activeTooltip && activePosition ? "pt-[74px]" : ""}`}>
+            {activeTooltip && activePosition ? (
+              <InsightFloatingTooltip
+                leftPct={
+                  ((36 + activePosition.weekIndex * 14 + 5.5) /
+                    Math.max(1, 36 + yearGrid.weekCount * 14)) *
+                  100
+                }
+                details={activeTooltip}
+                top={30 + activePosition.weekdayIndex * 14}
+              />
+            ) : null}
 
-        <div className="mt-3 flex gap-2">
-          <div className="shrink-0 pt-5">
-            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((weekday) => (
-              <div key={weekday} className="flex h-[14px] items-center text-[9px] font-medium text-muted-foreground">
-                {weekday}
-              </div>
-            ))}
-          </div>
-
-          <div className="min-w-0 flex-1 overflow-x-auto overscroll-x-contain pb-1 touch-pan-x">
-            <div className="w-max pr-1">
-              <div
-                className="relative mb-1 h-4"
-                style={{ width: `${yearGrid.weekCount * 14}px` }}
-                aria-hidden="true"
-              >
-                {yearGrid.months.map(({ label, weekIndex }) => (
-                  <span
-                    key={label}
-                    className="absolute top-0 text-[9px] font-semibold text-muted-foreground"
-                    style={{ left: `${weekIndex * 14}px` }}
+            <div className="flex gap-2">
+              <div className="w-7 shrink-0 pt-5">
+                {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((weekday) => (
+                  <div
+                    key={weekday}
+                    className="flex h-[14px] items-center text-[9px] font-medium text-muted-foreground"
                   >
-                    {label}
-                  </span>
-                ))}
-              </div>
-
-              <div className="flex gap-[3px]">
-                {yearGrid.weeks.map((week, weekIndex) => (
-                  <div key={weekIndex} className="grid shrink-0 grid-rows-7 gap-[3px]">
-                    {week.map((date) => {
-                      const inYear = date.getFullYear() === year;
-                      if (!inYear) {
-                        return <span key={date.toISOString()} className="h-[11px] w-[11px] rounded-full bg-transparent" />;
-                      }
-
-                      const key = toKey(date);
-                      const datum = heatmapData[key] ?? null;
-                      const isActive = active === key;
-
-                      return (
-                        <button
-                          key={key}
-                          type="button"
-                          disabled={!datum}
-                          onClick={() => {
-                            if (!datum) return;
-                            setActive((current) => (current === key ? null : key));
-                          }}
-                          aria-label={`${fmtTapDay(key)} · ${activeMetricLabel}${datum ? ` · ${datum.value}` : " · no data"}`}
-                          aria-pressed={isActive}
-                          className={`h-[11px] w-[11px] rounded-full transition-transform ${
-                            datum ? "touch-manipulation active:scale-90" : "cursor-default"
-                          } ${isActive ? "ring-2 ring-foreground ring-offset-1 ring-offset-background" : ""}`}
-                          style={{ background: datum?.color ?? "var(--tint)" }}
-                        />
-                      );
-                    })}
+                    {weekday}
                   </div>
                 ))}
+              </div>
+
+              <div>
+                <div
+                  className="relative mb-1 h-4"
+                  style={{ width: `${yearGrid.weekCount * 14}px` }}
+                  aria-hidden="true"
+                >
+                  {yearGrid.months.map(({ label, weekIndex }) => (
+                    <span
+                      key={label}
+                      className="absolute top-0 text-[9px] font-semibold text-muted-foreground"
+                      style={{ left: `${weekIndex * 14}px` }}
+                    >
+                      {label}
+                    </span>
+                  ))}
+                </div>
+
+                <div className="flex gap-[3px]">
+                  {yearGrid.weeks.map((week, weekIndex) => (
+                    <div key={weekIndex} className="grid shrink-0 grid-rows-7 gap-[3px]">
+                      {week.map((date) => {
+                        const inYear = date.getFullYear() === year;
+
+                        if (!inYear) {
+                          return (
+                            <span
+                              key={date.toISOString()}
+                              className="h-[11px] w-[11px] rounded-full bg-transparent"
+                            />
+                          );
+                        }
+
+                        const key = toKey(date);
+                        const datum = heatmapData[key] ?? null;
+                        const isActive = active === key;
+
+                        return (
+                          <button
+                            key={key}
+                            type="button"
+                            disabled={!datum}
+                            onClick={(event) => {
+                              if (!datum) return;
+
+                              const target = event.currentTarget;
+                              setActive((current) => (current === key ? null : key));
+
+                              if (active !== key) {
+                                requestAnimationFrame(() => {
+                                  target.scrollIntoView({
+                                    behavior: "smooth",
+                                    block: "nearest",
+                                    inline: "center",
+                                  });
+                                });
+                              }
+                            }}
+                            aria-label={`${fmtTapDay(key)} · ${activeMetricLabel}${
+                              datum ? ` · ${datum.value}` : " · no data"
+                            }`}
+                            aria-pressed={isActive}
+                            className={`h-[11px] w-[11px] rounded-full transition-transform ${
+                              datum ? "touch-manipulation active:scale-90" : "cursor-default"
+                            } ${
+                              isActive
+                                ? "ring-2 ring-foreground ring-offset-1 ring-offset-background"
+                                : ""
+                            }`}
+                            style={{ background: datum?.color ?? "var(--tint)" }}
+                          />
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -1834,8 +2092,10 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
 
         <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5 text-[9px] text-muted-foreground">
           <span className="flex items-center gap-1">
-            <span className="h-3 w-3 rounded-full bg-tint" /> No data
+            <span className="h-3 w-3 rounded-full bg-tint" />
+            No data
           </span>
+
           {legend.map(([label, color]) => (
             <span key={label} className="flex items-center gap-1">
               <span className="h-3 w-3 rounded-full" style={{ background: color }} />
@@ -1844,81 +2104,27 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
           ))}
         </div>
 
-        <p className="mt-3 text-center text-[10px] text-muted-foreground">Tap any coloured day for details.</p>
-
-        {painYearSummary ? (
-          <div className="mt-4 rounded-2xl bg-tint/45 p-3 ring-1 ring-border/50">
-            <p className="text-[11px] font-semibold text-foreground">{year} at a glance (Pain)</p>
-            <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-6">
-              {painYearSummary.map((item) => (
-                <div key={item.label} className="min-w-0 text-center">
-                  <span className="mx-auto block h-3 w-3 rounded-full" style={{ background: item.color }} />
-                  <p className="mt-1 text-sm font-bold tabular-nums text-foreground">{item.count}</p>
-                  <p className="text-[9px] leading-tight text-muted-foreground">{item.label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : null}
+        {activeTooltip ? (
+          <button
+            type="button"
+            onClick={() => setActive(null)}
+            className="mt-3 flex w-full items-center justify-between gap-3 rounded-2xl bg-primary/15 px-3 py-2.5 text-left ring-1 ring-primary/10"
+          >
+            <span className="min-w-0 truncate text-[10px] font-medium text-foreground">
+              {activeTooltip.summary}
+            </span>
+            <span className="shrink-0 text-[9px] text-muted-foreground">Tap to close</span>
+          </button>
+        ) : (
+          <p className="mt-3 text-center text-[10px] text-muted-foreground">
+            Tap any coloured day for details.
+          </p>
+        )}
       </div>
-
-
-      {active && activeDatum ? (
-        <div className="fixed inset-0 z-[120] flex items-start justify-center px-4 pb-6 pt-[calc(env(safe-area-inset-top)+5.75rem)]">
-          <div className="absolute inset-0 bg-black/30" aria-hidden="true" />
-
-          <section className="relative z-10 w-full max-w-sm overflow-hidden rounded-[1.75rem] bg-surface shadow-2xl ring-1 ring-border">
-            <div className="flex items-start justify-between gap-3 border-b border-border/70 px-4 pb-3 pt-4">
-              <div className="min-w-0">
-                <p className="font-serif text-xl font-bold text-foreground">{fmtTapDay(active)}</p>
-                <p className="mt-0.5 text-[11px] font-medium text-muted-foreground">{activeMetricLabel}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setActive(null)}
-                className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-tint text-base font-semibold text-foreground ring-1 ring-border"
-                aria-label="Close heatmap detail"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="max-h-[58dvh] overflow-y-auto overscroll-contain touch-pan-y p-4">
-              <div className="flex items-center justify-between gap-3 rounded-2xl bg-tint/70 p-3 ring-1 ring-border/50">
-                <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Saved value</span>
-                <span
-                  className="rounded-full px-3 py-1.5 text-xs font-bold text-white shadow-sm"
-                  style={{ background: activeDatum.color }}
-                >
-                  {activeDatum.value}
-                </span>
-              </div>
-
-              <div className="mt-3 space-y-2">
-                {activeDatum.details.map((detail, index) => (
-                  <div key={index} className="rounded-2xl bg-background/80 px-3 py-2.5 ring-1 ring-border/50">
-                    <p className="break-words text-[11px] leading-relaxed text-foreground">{detail}</p>
-                  </div>
-                ))}
-
-                {activeDayNotes.length ? (
-                  <div className="rounded-2xl bg-primary/10 px-3 py-2.5 ring-1 ring-primary/20">
-                    <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Day notes</p>
-                    {activeDayNotes.map((note, index) => (
-                      <p key={index} className="mt-1 break-words text-[11px] leading-relaxed text-foreground">
-                        {note}
-                      </p>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          </section>
-        </div>
-      ) : null}
     </ChartCard>
   );
 }
+
 
 function TimeOfDayPatternChart({
   data,
@@ -2065,4 +2271,4 @@ function TimeOfDayPatternChart({
       )}
     </section>
   );
-} 
+}
