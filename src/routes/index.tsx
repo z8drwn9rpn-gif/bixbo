@@ -1392,35 +1392,40 @@ function BirthControlOverlay({
     };
   }, []);
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-[120] overflow-y-auto overscroll-contain bg-background"
+      className="fixed inset-0 z-[900] min-h-[100dvh] overflow-y-auto overscroll-contain bg-background"
     >
-      <div className="relative z-40 border-b border-border/70 bg-background px-4 pb-2 pt-[max(.5rem,env(safe-area-inset-top))]">
+      <div className="sticky top-0 z-[910] border-b border-border/70 bg-background px-4 pb-3 pt-[max(.75rem,env(safe-area-inset-top))]">
         <div className="mx-auto flex w-full max-w-xl items-center justify-between gap-2">
           <button
             type="button"
             onClick={onClose}
-            className="grid h-9 w-9 place-items-center rounded-full bg-tint ring-1 ring-border"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-tint ring-1 ring-border"
             aria-label="Back to calendar"
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
 
-          <div className="min-w-0 text-center">
-            <h1 className="font-serif text-[1.2rem] font-bold leading-tight text-foreground">Birth control overview</h1>
-            <p className="mt-0.5 text-[10px] leading-none text-muted-foreground">Drovelis</p>
+          <div className="min-w-0 flex-1 px-2 text-center">
+            <h1 className="whitespace-nowrap font-serif text-[1.2rem] font-bold leading-tight text-foreground">
+              Birth control overview
+            </h1>
+            <p className="mt-1 text-[10px] leading-none text-muted-foreground">Drovelis</p>
           </div>
 
-          <span className="h-9 w-9 shrink-0" aria-hidden="true" />
+          <span className="h-10 w-10 shrink-0" aria-hidden="true" />
         </div>
       </div>
 
       <main className="mx-auto w-full max-w-[42rem] px-3 pb-[calc(110px+env(safe-area-inset-bottom))] pt-1">
         <BirthControlCalendar data={data} />
       </main>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
