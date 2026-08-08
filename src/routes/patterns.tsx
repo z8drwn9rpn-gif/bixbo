@@ -244,13 +244,13 @@ const PHASE_COLORS = [
   },
   {
     label: "During",
-    solid: "#ef4770",
-    soft: "rgba(239, 71, 112, 0.10)",
+    solid: CHART_COLORS.period,
+    soft: CHART_TINTS.period,
   },
   {
     label: "After",
-    solid: "#6f9d16",
-    soft: "rgba(111, 157, 22, 0.10)",
+    solid: CHART_COLORS.workout,
+    soft: CHART_TINTS.workout,
   },
 ] as const;
 
@@ -260,7 +260,7 @@ const PHASE_COLORS = [
 
 function Card({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
   return (
-    <section className="overflow-hidden rounded-3xl bg-surface p-5 ring-1 ring-border">
+    <section className="overflow-hidden rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
       <div>
         <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{title}</h2>
 
@@ -274,7 +274,7 @@ function Card({ title, description, children }: { title: string; description?: s
 
 function Empty({ text = "Log at least 7 days to unlock this analysis." }: { text?: string }) {
   return (
-    <div className="mt-3 rounded-2xl bg-surface px-4 py-5 text-center ring-1 ring-border/35">
+    <div className="mt-3 rounded-2xl bg-tint px-4 py-5 text-center ring-1 ring-border/40">
       <p className="text-sm font-medium text-foreground">More data needed</p>
       <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{text}</p>
     </div>
@@ -337,9 +337,9 @@ function PhaseBarChart({
   const hasData = bars.some((bar) => bar.value != null);
 
   return (
-    <article className="rounded-3xl bg-tint p-4 ring-1 ring-border">
+    <div className="rounded-3xl bg-tint p-4 ring-1 ring-border/50">
       <div>
-        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+        <p className="text-sm font-semibold text-foreground">{title}</p>
         {description && <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">{description}</p>}
       </div>
 
@@ -348,38 +348,44 @@ function PhaseBarChart({
           Log at least one complete menstrual cycle to unlock this analysis.
         </p>
       ) : (
-        <div className="mt-3 space-y-2.5">
-          {bars.map((bar, index) => {
-            const palette = PHASE_COLORS[index] ?? PHASE_COLORS[0];
-            const percentage =
-              bar.value == null ? 0 : clampPercent((Math.max(0, bar.value) / Math.max(1, max)) * 100);
+        <div className="mt-4 rounded-2xl bg-background/55 px-3 py-4 ring-1 ring-border/35">
+          <div className="flex h-24 items-end gap-3">
+            {bars.map((bar, index) => {
+              const color = PHASE_COLORS[index] ?? PHASE_COLORS[0];
+              const percentage = bar.value == null ? 0 : clampPercent((Math.max(0, bar.value) / max) * 100);
+              const miniBars = [0.72, 0.84, 0.94, 1, 0.9, 0.78];
 
-            return (
-              <div key={`${title}-${bar.label}`}>
-                <div className="flex items-center justify-between gap-3">
-                  <span className="truncate text-[11px] font-medium text-muted-foreground">{bar.label}</span>
-                  <span className="shrink-0 text-sm font-bold tabular-nums text-foreground">
+              return (
+                <div key={`${title}-${bar.label}`} className="flex min-w-0 flex-1 flex-col items-center">
+                  <span className="mb-2 text-xs font-bold tabular-nums text-foreground">
                     {formatMetricValue(bar.value, decimals, unit)}
                   </span>
-                </div>
 
-                <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-surface ring-1 ring-border/40">
-                  <div
-                    className="h-full rounded-full transition-[width] duration-500 ease-out"
-                    style={{
-                      width: `${percentage}%`,
-                      backgroundColor: palette.solid,
-                    }}
-                  />
+                  <div className="flex h-14 w-full items-end justify-center gap-1 border-b border-border/50 pb-1">
+                    {miniBars.map((factor, miniIndex) => (
+                      <span
+                        key={miniIndex}
+                        className="w-1.5 rounded-full transition-[height] duration-500"
+                        style={{
+                          height: bar.value == null ? "3px" : `${Math.max(6, percentage * factor * 0.55)}px`,
+                          backgroundColor: color.solid,
+                          opacity: 0.62 + miniIndex * 0.065,
+                        }}
+                      />
+                    ))}
+                  </div>
+
+                  <span className="mt-2 text-[10px] font-medium text-muted-foreground">{bar.label}</span>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       )}
-    </article>
+    </div>
   );
 }
+
 
 function monthLabelFromPrefix(prefix: string): string {
   const match = /^(\d{4})-(\d{2})$/.exec(prefix);
@@ -451,11 +457,11 @@ function ComparisonMetric({
   const relativeChange = percentageChange(previous, current);
 
   return (
-    <article className="rounded-3xl bg-tint p-4 ring-1 ring-border">
+    <article className="rounded-2xl bg-tint p-3.5 ring-1 ring-border/60">
       <div className="flex items-start gap-3">
         {icon && (
           <span
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl"
             style={{
               backgroundColor: "var(--surface)",
               color: palette.text,
@@ -467,7 +473,7 @@ function ComparisonMetric({
         )}
 
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-semibold text-foreground">
+          <h3 className="text-sm font-semibold" style={{ color: palette.text }}>
             {title}
           </h3>
 
@@ -554,7 +560,7 @@ function MetricColumn({
         {formatMetricValue(value, decimals, unit)}
       </p>
 
-      <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-surface ring-1 ring-border/40">
+      <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-surface/75 ring-1 ring-border/40">
         <div
           className="h-full rounded-full transition-[width] duration-500 ease-out"
           style={{
@@ -569,7 +575,7 @@ function MetricColumn({
 }
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between rounded-2xl bg-surface px-4 py-3 ring-1 ring-border/35">
+    <div className="flex items-center justify-between rounded-2xl bg-tint px-4 py-3 ring-1 ring-border/40">
       <span className="text-sm text-muted-foreground">{label}</span>
 
       <span className="font-semibold text-foreground">{value}</span>
@@ -594,7 +600,7 @@ function ConfidenceBadge({ level, detail }: { level: ConfidenceLevel; detail: st
         : "bg-muted text-muted-foreground";
 
   return (
-    <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-surface px-4 py-3 ring-1 ring-border/35">
+    <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-background/60 px-4 py-3 ring-1 ring-border/40">
       <div>
         <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Confidence</p>
         <p className="mt-0.5 text-[11px] text-muted-foreground">{detail}</p>
@@ -614,7 +620,7 @@ function SummaryPanel({
   confidence?: { level: ConfidenceLevel; detail: string };
 }) {
   return (
-    <div className="mt-4 rounded-3xl bg-card p-4 ring-1 ring-border/60">
+    <div className="mt-4 rounded-3xl bg-background p-4 ring-1 ring-border">
       <h3 className="text-sm font-semibold text-foreground">{title}</h3>
       <div className="mt-3 space-y-2.5">
         {items.map((item) => {
@@ -627,7 +633,7 @@ function SummaryPanel({
           return (
             <div
               key={`${title}-${item.label}`}
-              className="flex items-center justify-between gap-4 rounded-2xl bg-surface px-4 py-3 ring-1 ring-border/35"
+              className="flex items-center justify-between gap-4 rounded-2xl bg-tint px-4 py-3 ring-1 ring-border/40"
             >
               <span className="text-sm text-muted-foreground">{item.label}</span>
               <span className={`text-right font-semibold ${valueClass}`}>{item.value}</span>
@@ -739,12 +745,12 @@ function CollapsibleSection({
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <section className="overflow-hidden rounded-3xl bg-card shadow-sm ring-1 ring-border/70">
+    <section className="overflow-hidden rounded-3xl bg-surface shadow-sm ring-1 ring-border/80">
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
         aria-expanded={open}
-        className="flex min-h-14 w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+        className="flex min-h-14 w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-tint/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
       >
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-semibold text-foreground">{title}</h2>
@@ -1833,7 +1839,7 @@ function PatternsPage() {
                 </div>
 
                 {cycles.length > 0 ? (
-                  <div className="mt-3 rounded-2xl bg-surface px-4 py-3 ring-1 ring-border/35">
+                  <div className="mt-3 rounded-2xl bg-tint px-4 py-3 ring-1 ring-border/40">
                     <div className="flex items-center justify-between gap-3">
                       <div>
                         <p className="text-xs font-medium text-foreground">Most common period flow</p>
@@ -1852,7 +1858,7 @@ function PatternsPage() {
                 ) : (
                   <Empty text="Log more periods to see your cycle pattern." />
                 )}
-                <div className="mt-4 rounded-3xl bg-card p-4 ring-1 ring-border/60">
+                <div className="mt-4 rounded-3xl bg-background p-4 ring-1 ring-border">
                   <h3 className="text-sm font-semibold text-foreground">Cycle Summary</h3>
 
                   <div className="mt-3 space-y-2.5">
@@ -1932,7 +1938,7 @@ function PatternsPage() {
               description={`${monthlyComparisonLabel} · compared over the same number of days.`}
             >
               <div className="mt-3 grid grid-cols-2 gap-2">
-                <div className="rounded-2xl bg-surface p-3 ring-1 ring-border/35">
+                <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     Most improved
                   </p>
@@ -1940,7 +1946,7 @@ function PatternsPage() {
                     {formatChange(mostImproved)}
                   </p>
                 </div>
-                <div className="rounded-2xl bg-surface p-3 ring-1 ring-border/35">
+                <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     Needs attention
                   </p>
@@ -1948,13 +1954,13 @@ function PatternsPage() {
                     {formatChange(mostWorsened)}
                   </p>
                 </div>
-                <div className="rounded-2xl bg-surface p-3 ring-1 ring-border/35">
+                <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     Most stable
                   </p>
                   <p className="mt-1 text-sm font-semibold text-foreground">{formatChange(mostStable)}</p>
                 </div>
-                <div className="rounded-2xl bg-surface p-3 ring-1 ring-border/35">
+                <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Confidence</p>
                   <p className="mt-1 text-sm font-semibold text-foreground">{monthlyConfidence}</p>
                   <p className="mt-0.5 text-[10px] text-muted-foreground">{monthlyLoggedDays} logged days</p>
@@ -2943,7 +2949,7 @@ function TriggerResult({
   const safePercentage = percentage == null ? 0 : clampPercent(percentage);
 
   return (
-    <div className="rounded-2xl bg-surface p-3 text-center ring-1 ring-border/35">
+    <div className="rounded-2xl bg-tint p-3 text-center ring-1 ring-border/40">
       <p className="text-[11px] font-semibold text-muted-foreground">{label}</p>
 
       <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">
