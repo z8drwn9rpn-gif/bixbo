@@ -191,7 +191,7 @@ export function LogSheet({
             ? `flex h-[100dvh] max-h-[100dvh] flex-col rounded-t-none bg-background p-0 ${
                 active === "pain" ? "pt-[env(safe-area-inset-top)]" : "pt-0"
               }`
-            : "fixed !left-auto !right-3 !bottom-1 !top-auto flex !h-[484px] !max-h-[94dvh] !w-[67vw] !max-w-[320px] min-h-0 flex-col overflow-hidden rounded-[1.5rem] border border-border/70 bg-background/95 p-0 shadow-2xl backdrop-blur-xl") + " [&>button.absolute]:hidden"
+            : "fixed !left-auto !right-3 !bottom-4 !top-auto flex !h-[466px] !max-h-[94dvh] !w-[67vw] !max-w-[320px] min-h-0 flex-col overflow-hidden rounded-[1.5rem] border border-border/70 bg-background/95 p-0 shadow-2xl backdrop-blur-xl") + " [&>button.absolute]:hidden"
         }
       >
         {!active ? (
@@ -220,7 +220,7 @@ export function LogSheet({
                 <X className="h-4 w-4" />
               </button>
             </SheetHeader>
-            <ul className="m-0 min-h-0 flex-1 list-none overflow-y-auto divide-y divide-border/70 bg-surface/55 px-2 py-0">
+            <ul className="-mt-2 m-0 min-h-0 flex-1 list-none overflow-y-auto divide-y divide-border/70 bg-surface/55 px-2 py-0">
               {orderedCats.map((c, i) => (
                 <li key={c.id}>
                   {editingOrder ? (
@@ -4025,5 +4025,3 @@ function PostpartumSymptomsForm({
         </button>
       ) : null}
     </div>
-  );
-}
