@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
@@ -232,6 +232,7 @@ export const Route = createFileRoute("/insights")({
 });
 
 type Period = "W" | "M" | "Y";
+type HeatmapPeriod = "7D" | "30D" | "Y";
 
 function rangeFor(period: Period, anchor: Date) {
   // Always derive purely from `period` + `anchor` (no mutation of shared objects,
@@ -512,21 +513,51 @@ function InsightsPage() {
     return bestLevel;
   })();
 
-  const shiftHeatmapYear = (delta: -1 | 1) =>
+  const shiftHeatmapPeriod = (period: HeatmapPeriod, delta: -1 | 1) =>
     setAnchor((current) => {
       const next = new Date(current);
-      next.setFullYear(next.getFullYear() + delta);
+      next.setHours(0, 0, 0, 0);
+
+      if (period === "Y") {
+        next.setFullYear(next.getFullYear() + delta);
+        return next;
+      }
+
+      if (period === "7D") {
+        next.setDate(next.getDate() + delta * 7);
+        return next;
+      }
+
+      // "30 days" navigates by calendar month, so August -> July -> June,
+      // without accidental skipping on dates such as the 31st.
+      next.setDate(1);
+      next.setMonth(next.getMonth() + delta);
       return next;
     });
 
   return (
     <AppShell title="Health of Bixbo">
+      <div className="px-5 pt-2 lg:px-0">
+        <div className="grid grid-cols-2 rounded-2xl bg-tint p-1 ring-1 ring-border/70">
+          <Link
+            to="/insights"
+            className="rounded-xl bg-primary px-4 py-2 text-center text-sm font-semibold text-primary-foreground shadow-sm"
+          >
+            Insights
+          </Link>
+          <Link
+            to="/patterns"
+            className="rounded-xl px-4 py-2 text-center text-sm font-semibold text-muted-foreground transition hover:bg-surface/70 hover:text-foreground"
+          >
+            Patterns
+          </Link>
+        </div>
+      </div>
       <div className="space-y-3 px-5 pt-2 pb-[calc(96px+env(safe-area-inset-bottom))] lg:grid lg:grid-cols-2 lg:items-start lg:gap-3 lg:space-y-0 lg:px-0 lg:pb-12 [&>*:first-child]:lg:col-span-2">
         <YearHealthHeatmap
           data={view}
           anchor={anchor}
-          onPrevYear={() => shiftHeatmapYear(-1)}
-          onNextYear={() => shiftHeatmapYear(1)}
+          onShiftPeriod={(period, delta) => shiftHeatmapPeriod(period, delta)}
         />
 
         <section
@@ -1646,21 +1677,22 @@ function sleepHeatmapColor(hours: number): string {
 function YearHealthHeatmap({
   data,
   anchor,
-  onPrevYear,
-  onNextYear,
+  onShiftPeriod,
 }: {
   data: ReturnType<typeof useBixbo>["data"];
   anchor: Date;
-  onPrevYear: () => void;
-  onNextYear: () => void;
+  onShiftPeriod: (period: HeatmapPeriod, delta: -1 | 1) => void;
 }) {
   const [metric, setMetric] = useState<HeatmapMetric>("pain");
   const [active, setActive] = useState<string | null>(null);
+
+  // Heatmap always opens on Year, exactly as requested.
+  const [heatmapPeriod, setHeatmapPeriod] = useState<HeatmapPeriod>("Y");
   const year = anchor.getFullYear();
 
   useEffect(() => {
     setActive(null);
-  }, [metric, year]);
+  }, [anchor, heatmapPeriod, metric]);
 
   const datumFor = useCallback(
     (key: string, selectedMetric: HeatmapMetric): HeatmapDatum | null => {
@@ -1795,19 +1827,70 @@ function YearHealthHeatmap({
     [data.dayLogs],
   );
 
+  const compactDays = useMemo(() => {
+    if (heatmapPeriod === "Y") return [] as string[];
+
+    if (heatmapPeriod === "7D") {
+      const { startK, endK } = rangeFor("W", anchor);
+      return eachDay(startK, endK);
+    }
+
+    const { startK, endK } = rangeFor("M", anchor);
+    return eachDay(startK, endK);
+  }, [anchor, heatmapPeriod]);
+
+  const heatmapNavigationLabel = useMemo(() => {
+    if (heatmapPeriod === "Y") return String(year);
+
+    if (heatmapPeriod === "30D") {
+      return anchor.toLocaleDateString("en-GB", {
+        month: "long",
+        year: "numeric",
+      });
+    }
+
+    if (!compactDays.length) return "";
+
+    const start = fromKey(compactDays[0]);
+    const end = fromKey(compactDays[compactDays.length - 1]);
+
+    const startDay = start.getDate();
+    const endDay = end.getDate();
+    const startMonth = start.toLocaleDateString("en-GB", { month: "short" });
+    const endMonth = end.toLocaleDateString("en-GB", { month: "short" });
+
+    if (start.getFullYear() !== end.getFullYear()) {
+      return `${startDay} ${startMonth} ${start.getFullYear()} – ${endDay} ${endMonth} ${end.getFullYear()}`;
+    }
+
+    if (start.getMonth() !== end.getMonth()) {
+      return `${startDay} ${startMonth} – ${endDay} ${endMonth} ${end.getFullYear()}`;
+    }
+
+    return `${startDay}–${endDay} ${endMonth} ${end.getFullYear()}`;
+  }, [anchor, compactDays, heatmapPeriod, year]);
+
   const heatmapData = useMemo<Record<string, HeatmapDatum | null>>(() => {
     const result: Record<string, HeatmapDatum | null> = {};
 
-    for (let month = 0; month < 12; month++) {
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
-      for (let day = 1; day <= daysInMonth; day++) {
-        const key = toKey(new Date(year, month, day));
-        result[key] = datumFor(key, metric);
+    if (heatmapPeriod === "Y") {
+      for (let month = 0; month < 12; month++) {
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        for (let day = 1; day <= daysInMonth; day++) {
+          const key = toKey(new Date(year, month, day));
+          result[key] = datumFor(key, metric);
+        }
       }
+
+      return result;
     }
 
+    compactDays.forEach((key) => {
+      result[key] = datumFor(key, metric);
+    });
+
     return result;
-  }, [datumFor, metric, year]);
+  }, [compactDays, datumFor, heatmapPeriod, metric, year]);
 
   // On a phone, 53 weekly columns cannot be both large enough to read and fit in one row.
   // Split the same full-year heatmap into two stacked half-year strips so every daily dot
@@ -1853,7 +1936,7 @@ function YearHealthHeatmap({
   const activeDatum = active ? heatmapData[active] ?? null : null;
 
   const activePosition = useMemo(() => {
-    if (!active) return null;
+    if (!active || heatmapPeriod !== "Y") return null;
 
     for (let halfIndex = 0; halfIndex < halfYearGrids.length; halfIndex++) {
       const half = halfYearGrids[halfIndex];
@@ -1864,7 +1947,35 @@ function YearHealthHeatmap({
     }
 
     return null;
-  }, [active, halfYearGrids]);
+  }, [active, halfYearGrids, heatmapPeriod]);
+
+  const compactActivePosition = useMemo(() => {
+    if (!active || heatmapPeriod === "Y") return null;
+
+    const index = compactDays.indexOf(active);
+    if (index < 0) return null;
+
+    return {
+      index,
+      row: Math.floor(index / 7),
+      column: index % 7,
+    };
+  }, [active, compactDays, heatmapPeriod]);
+
+  const compactTooltipLayout = useMemo(() => {
+    if (!compactActivePosition) return null;
+
+    const rowHeight = 49;
+    const gridTop = 78;
+    const selectedCenterY = gridTop + compactActivePosition.row * rowHeight + 22;
+    const showBelow = compactActivePosition.row === 0;
+
+    return {
+      leftPct: ((compactActivePosition.column + 0.5) / 7) * 100,
+      top: showBelow ? selectedCenterY + 5 : Math.max(2, selectedCenterY - 72),
+      connectorSide: (showBelow ? "top" : "bottom") as "top" | "bottom",
+    };
+  }, [compactActivePosition]);
 
   const activeTooltip = useMemo<InsightTooltipDetails | null>(() => {
     if (!active || !activeDatum) return null;
@@ -1941,23 +2052,36 @@ function YearHealthHeatmap({
   })();
 
   return (
-    <ChartCard title={`Year heatmap — ${year}`}>
-      <div className="-mt-6 mb-1 flex justify-end">
-        <div className="inline-flex items-center rounded-xl bg-background/70 p-0.5 ring-1 ring-border/60">
+    <ChartCard title="Heatmap">
+      <div className="-mt-6 mb-1 flex flex-col items-end gap-1">
+        <select
+          value={heatmapPeriod}
+          onChange={(event) => setHeatmapPeriod(event.target.value as HeatmapPeriod)}
+          className="h-7 rounded-xl border border-border/60 bg-background/70 px-2 text-[10px] font-semibold text-foreground outline-none"
+          aria-label="Heatmap period"
+        >
+          <option value="7D">7 days</option>
+          <option value="30D">30 days</option>
+          <option value="Y">Year</option>
+        </select>
+
+        <div className="inline-flex h-7 items-center rounded-xl bg-background/70 p-0.5 ring-1 ring-border/60">
           <button
             type="button"
-            onClick={onPrevYear}
-            className="grid h-7 w-7 place-items-center rounded-lg transition hover:bg-tint"
-            aria-label="Previous heatmap year"
+            onClick={() => onShiftPeriod(heatmapPeriod, -1)}
+            className="grid h-6 w-6 place-items-center rounded-lg transition hover:bg-tint"
+            aria-label={`Previous ${heatmapPeriod === "Y" ? "year" : heatmapPeriod === "7D" ? "week" : "month"}`}
           >
             <ChevronLeft className="h-3.5 w-3.5" />
           </button>
-          <span className="min-w-[44px] px-1 text-center text-[10px] font-semibold tabular-nums">{year}</span>
+          <span className="min-w-[94px] max-w-[148px] whitespace-nowrap px-1 text-center text-[9px] font-semibold tabular-nums">
+            {heatmapNavigationLabel}
+          </span>
           <button
             type="button"
-            onClick={onNextYear}
-            className="grid h-7 w-7 place-items-center rounded-lg transition hover:bg-tint"
-            aria-label="Next heatmap year"
+            onClick={() => onShiftPeriod(heatmapPeriod, 1)}
+            className="grid h-6 w-6 place-items-center rounded-lg transition hover:bg-tint"
+            aria-label={`Next ${heatmapPeriod === "Y" ? "year" : heatmapPeriod === "7D" ? "week" : "month"}`}
           >
             <ChevronRight className="h-3.5 w-3.5" />
           </button>
@@ -1986,8 +2110,9 @@ function YearHealthHeatmap({
       </div>
 
       <div className="mt-3 -mx-3 rounded-[1.5rem] bg-background/55 px-2.5 py-3 ring-1 ring-border/60 sm:mx-0 sm:p-3">
-        <div className="space-y-6">
-          {halfYearGrids.map((half, halfIndex) => {
+        {heatmapPeriod === "Y" ? (
+          <div className="space-y-6">
+            {halfYearGrids.map((half, halfIndex) => {
             const boundaryWeeks = new Set(
               half.months.map(({ weekIndex }) => weekIndex).filter((weekIndex) => weekIndex > 0),
             );
@@ -2097,8 +2222,57 @@ function YearHealthHeatmap({
                 </div>
               </div>
             );
-          })}
-        </div>
+            })}
+          </div>
+        ) : (
+          <div className="relative min-h-[158px] pt-[78px]">
+            {activeTooltip && compactTooltipLayout ? (
+              <InsightFloatingTooltip
+                leftPct={compactTooltipLayout.leftPct}
+                details={activeTooltip}
+                top={compactTooltipLayout.top}
+                connectorSide={compactTooltipLayout.connectorSide}
+              />
+            ) : null}
+
+            <div className="grid grid-cols-7 gap-x-2 gap-y-3">
+              {compactDays.map((key) => {
+                const date = fromKey(key);
+                const datum = heatmapData[key] ?? null;
+                const isActive = active === key;
+
+                return (
+                  <div key={key} className="flex min-w-0 flex-col items-center">
+                    <span className="text-[7.5px] font-medium text-muted-foreground">
+                      {date.toLocaleDateString("en-GB", { weekday: "short" })}
+                    </span>
+                    <span className="mt-0.5 text-[8px] font-semibold tabular-nums text-foreground/80">
+                      {date.getDate()}
+                    </span>
+
+                    <button
+                      type="button"
+                      disabled={!datum}
+                      onClick={(event) => {
+                        if (!datum) return;
+                        event.stopPropagation();
+                        setActive((current) => (current === key ? null : key));
+                      }}
+                      aria-label={`${fmtTapDay(key)} · ${activeMetricLabel}${
+                        datum ? ` · ${datum.value}` : " · no data"
+                      }`}
+                      aria-pressed={isActive}
+                      className={`mt-1 h-[14px] w-[14px] rounded-full transition-transform ${
+                        datum ? "touch-manipulation active:scale-125" : "cursor-default"
+                      } ${isActive ? "ring-2 ring-foreground ring-offset-1 ring-offset-background" : ""}`}
+                      style={{ background: datum?.color ?? "var(--tint)" }}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5 text-[8.5px] text-muted-foreground">
           <span className="flex items-center gap-1">
