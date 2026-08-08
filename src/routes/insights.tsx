@@ -16,7 +16,6 @@ import {
   PAIN_DESCRIPTIONS,
   painColor,
   avgDayPain,
-  isIntercourseKind,
 } from "@/lib/storage";
 
 const WD_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -183,7 +182,6 @@ const PANIC_COLOR = INSIGHT_COLORS.pinkDeep;
 
 const PAIN_ACCENT = "#DC2626";
 
-const GREEN_ACCENT = INSIGHT_COLORS.olive;
 const GREEN_SOFT = "rgba(83, 102, 0, 0.08)";
 const GREEN_BORDER = "rgba(83, 102, 0, 0.22)";
 
@@ -288,12 +286,6 @@ function InsightsPage() {
     if (!nums.length) return null;
     return nums.reduce((a, b) => a + b, 0) / nums.length;
   })();
-
-  // ŠukŠuk! — count only actual sex/intercourse entries, not oral/fingering/other touch entries.
-  const sexCount = days.reduce(
-    (s, k) => s + (view.dayLogs[k]?.sex?.filter((e) => isIntercourseKind(e.kind)).length ?? 0),
-    0,
-  );
 
   // Bowel by type
   const bowelCounts = new Array(8).fill(0) as number[];
@@ -455,21 +447,6 @@ function InsightsPage() {
                     </span>
                   </div>
                   <PainChart period={period} days={days} series={painSeries} anchor={anchor} />
-                </section>
-
-                <section
-                  className="rounded-3xl p-5 ring-1"
-                  style={{
-                    backgroundColor: GREEN_SOFT,
-                    boxShadow: `inset 0 0 0 1px ${GREEN_BORDER}`,
-                  }}
-                >
-                  <p className="text-xs uppercase tracking-wider" style={{ color: GREEN_ACCENT }}></p>
-                  <p className="mt-2 font-serif text-5xl leading-none">{sexCount}</p>
-                  <Ico e="❤️" size={16} /> ŠukŠuk!
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    {sexCount === 1 ? "entry" : "entries"} in this {period === "W" ? "week" : "month"}
-                  </p>
                 </section>
 
                 <BristolChart bowelCounts={bowelCounts} />
