@@ -434,7 +434,7 @@ function InsightsPage() {
                     boxShadow: `inset 0 0 0 1px ${GREEN_BORDER}`,
                   }}
                 >
-                  <p className="text-xs uppercase tracking-wider" style={{ color: PAIN_ACCENT }}>
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: PAIN_ACCENT }}>
                     Pain scale
                   </p>
                   <div className="mt-2 flex items-baseline gap-2">
@@ -452,7 +452,7 @@ function InsightsPage() {
                 <BristolChart bowelCounts={bowelCounts} />
 
                 <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground">Hot flashes</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Hot flashes</p>
                   {hfTotal ? (
                     <>
                       <div className="mt-2 flex items-baseline gap-2">
@@ -764,7 +764,7 @@ function MedsAdherence({
         className="flex w-full items-center justify-between"
       >
         <div className="text-left">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">Meds adherence</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Meds adherence</p>
           <p className="mt-1 text-[11px] font-medium text-foreground">
             {range.title} · {range.label}
           </p>
@@ -1066,7 +1066,7 @@ function InsightBarChartFrame({
     active != null && bars[active]?.value != null ? tooltipDetails(active, bars[active].value!) : null;
 
   return (
-    <div className="mt-4">
+    <div className="mt-4 rounded-2xl bg-background/55 px-3 py-3 ring-1 ring-border/40">
       <div className="flex gap-1">
         <div className="flex flex-col items-end pr-1" style={{ height }}>
           <div className="flex h-full flex-col justify-between text-[10px] font-medium text-muted-foreground">
@@ -1943,7 +1943,7 @@ function TimeOfDayPatternChart({
 
   return (
     <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
-      <p className="text-xs uppercase tracking-wider text-muted-foreground">Time of Day Pattern</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Time of Day Pattern</p>
       {!tetanyTotal && !panicTotal ? (
         <p className="mt-2 text-sm text-muted-foreground">Not enough data yet</p>
       ) : (
