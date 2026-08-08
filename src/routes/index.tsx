@@ -2406,7 +2406,7 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
             borderColor: `${HAK_PURPLE}33`,
           }}
         >
-          <Ico e="💜" size={22} />
+          <Ico e="❤️" size={22} />
         </span>
 
         <div className="min-w-0 flex-1">
