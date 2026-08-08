@@ -278,7 +278,7 @@ export function LogSheet({
             </SheetHeader>
             <div
               key={`${active}-${openToken}-${(edit as { id?: string } | undefined)?.id ?? initialPain?.id ?? "new"}`}
-              className={`min-h-0 flex-1 overflow-y-auto ${active === "pain" ? "" : "px-5 pb-4 pt-[72px]"}`}
+              className={`min-h-0 flex-1 overflow-y-auto ${active === "pain" ? "" : "px-5 pb-4"}`}
             >
               {active === "postpartum" && (
                 <PostpartumSymptomsForm date={date} data={data} update={update} onDone={close} />
@@ -417,8 +417,7 @@ function Chip({
 function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave: () => void; disabled?: boolean }) {
   return (
     <SheetFooter
-      className="fixed inset-x-0 z-30 flex-row items-center justify-between gap-3 border-y border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur"
-      style={{ top: "calc(env(safe-area-inset-top) + 57px)" }}
+      className="sticky top-0 z-30 -mx-5 mb-3 flex-row items-center justify-between gap-3 border-y border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur"
     >
       <button
         type="button"
