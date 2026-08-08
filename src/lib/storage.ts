@@ -775,15 +775,6 @@ export interface BixboData {
   /** Ids of entries the user deleted — used by cloud merge so a union merge
    * doesn't resurrect them from another device. */
   deletedIds?: string[];
-  /**
-   * Values the user removed from a `custom` option list. These are permanent
-   * tombstones: option lists are filtered against them on every load and on
-   * every cloud merge, so a deleted option can never be resurrected by a
-   * stale remote copy, a migration or a new deployment. Re-adding the same
-   * value clears its tombstone.
-   */
-  deletedCustom?: Partial<Record<keyof CustomLists, string[]>>;
-
   /** Full health profile (personal, medical, lifestyle, emergency contacts). */
   profile?: HealthProfile;
   pregnancy?: PregnancyState;
@@ -857,8 +848,6 @@ export const EMPTY: BixboData = {
   docs: [],
   diagnoses: [],
   deletedIds: [],
-  deletedCustom: {},
-
   profile: {},
   pregnancy: { active: false, hospitalBag: [], vaccinations: [], supplements: [], appointments: [] },
   postpartum: { active: false, visits: [] },
@@ -974,6 +963,22 @@ function normalizePostpartumDayLogForStorage(value: unknown): PostpartumDayLog |
     babySleepHours: numberOrUndefined(value.babySleepHours),
     note: typeof value.note === "string" ? value.note : undefined,
   };
+}
+
+const LEGACY_EVENT_COLOR_MAP: Record<string, string> = {
+  "#22c55e": "#93A66A", // bright green -> sage
+  "#3b82f6": "#7895B2", // blue -> dusty blue
+  "#f97316": "#D89B72", // orange -> muted apricot
+  "#eab308": "#C9A94D", // yellow -> soft mustard
+  "#ec4899": "#C97D91", // pink -> dusty rose
+  "#a855f7": "#9A82C4", // purple -> lavender
+  "#06b6d4": "#76A9B7", // cyan -> muted sky
+  "#ef4444": "#B96752", // red -> terracotta
+};
+
+function normalizeEventColor(color?: string): string {
+  if (!color) return "#93A66A";
+  return LEGACY_EVENT_COLOR_MAP[color.toLowerCase()] ?? color;
 }
 
 function migrate(raw: unknown): BixboData {
@@ -1096,26 +1101,14 @@ function migrate(raw: unknown): BixboData {
   }
 
   const rawCustom = safeRecord<Partial<CustomLists>>(parsed.custom);
-  const rawDeletedCustom = safeRecord<Partial<Record<string, unknown>>>(parsed.deletedCustom);
   const custom = { ...EMPTY.custom } as CustomLists;
-  const deletedCustom: Partial<Record<keyof CustomLists, string[]>> = {};
 
   for (const key of Object.keys(EMPTY.custom) as Array<keyof CustomLists>) {
-    const tombstones = Array.isArray(rawDeletedCustom[key])
-      ? (rawDeletedCustom[key] as unknown[]).filter((item): item is string => typeof item === "string")
-      : [];
-    if (tombstones.length) deletedCustom[key] = Array.from(new Set(tombstones));
-
     const value = rawCustom[key];
-    const list = Array.isArray(value)
+    (custom as unknown as Record<string, unknown>)[key] = Array.isArray(value)
       ? value.filter((item): item is string => typeof item === "string")
       : [];
-    // A deleted option stays deleted, no matter where the value came from.
-    (custom as unknown as Record<string, unknown>)[key] = tombstones.length
-      ? list.filter((item) => !tombstones.includes(item))
-      : list;
   }
-
 
   const rawSettings = safeRecord<Partial<Settings>>(parsed.settings);
   const rawCycle = safeRecord<Partial<CyclePrefs>>(parsed.cycle);
@@ -1198,7 +1191,10 @@ function migrate(raw: unknown): BixboData {
       customQuickTags: safeIdArray<CustomQuickTag>(rawSettings.customQuickTags),
     },
     tasks: safeIdArray<TaskEntry>(parsed.tasks),
-    events: safeIdArray<EventEntry>(parsed.events),
+    events: safeIdArray<EventEntry>(parsed.events).map((event) => ({
+      ...event,
+      color: normalizeEventColor(event.color),
+    })),
     meds: safeIdArray<Med>(parsed.meds).map((med) => ({
       ...med,
       times: safeArray<unknown>(med.times).filter((item): item is string => typeof item === "string"),
@@ -1211,8 +1207,6 @@ function migrate(raw: unknown): BixboData {
     docs: safeIdArray<DocEntry>(parsed.docs),
     diagnoses: safeIdArray<Diagnosis>(parsed.diagnoses),
     deletedIds: safeArray<unknown>(parsed.deletedIds).filter((item): item is string => typeof item === "string"),
-    deletedCustom,
-
     profile: rawProfile,
     pregnancy: {
       ...EMPTY.pregnancy!,
@@ -1271,44 +1265,13 @@ function persist() {
   }
 }
 
-/**
- * Records tombstones for option values that disappeared from a `custom` list
- * and clears tombstones for values the user added back. Runs on every local
- * update, so every delete call-site is covered without touching the UI code.
- */
-function trackCustomDeletions(prev: BixboData, next: BixboData): BixboData {
-  const tombstones: Partial<Record<keyof CustomLists, string[]>> = { ...(next.deletedCustom ?? {}) };
-  let changed = false;
-
-  for (const key of Object.keys(EMPTY.custom) as Array<keyof CustomLists>) {
-    const before = prev.custom?.[key] ?? [];
-    const after = next.custom?.[key] ?? [];
-    const afterSet = new Set(after);
-    const existing = new Set(tombstones[key] ?? []);
-    const size = existing.size;
-
-    for (const value of before) if (!afterSet.has(value)) existing.add(value);
-    for (const value of after) existing.delete(value);
-
-    if (existing.size !== size) {
-      changed = true;
-      if (existing.size) tombstones[key] = Array.from(existing);
-      else delete tombstones[key];
-    }
-  }
-
-  return changed ? { ...next, deletedCustom: tombstones } : next;
-}
-
 export function setBixbo(updater: (d: BixboData) => BixboData) {
   hydrate();
-  const prev = _state;
-  _state = migrate(trackCustomDeletions(prev, updater(prev)));
+  _state = migrate(updater(_state));
   persist();
   emit();
   changeListeners.forEach((l) => l(_state, "local"));
 }
-
 export function replaceBixbo(d: BixboData, reason: "local" | "remote" = "local") {
   hydrate();
   _state = migrate(d);
@@ -1739,7 +1702,17 @@ export const BOWEL_SYMPTOMS_DEFAULT = [
   "Urgency",
 ];
 
-export const EVENT_COLORS = ["#22c55e", "#3b82f6", "#f97316", "#eab308", "#ec4899", "#a855f7", "#06b6d4", "#ef4444"];
+export const EVENT_COLORS = [
+  "#93A66A", // sage
+  "#7F8A45", // olive
+  "#7895B2", // dusty blue
+  "#D89B72", // muted apricot
+  "#C9A94D", // soft mustard
+  "#C97D91", // dusty rose
+  "#9A82C4", // lavender
+  "#76A9B7", // muted sky
+  "#B96752", // terracotta
+];
 
 export const BODY_BATTERY: { n: number; label: string; color: string; emoji: string }[] = [
   { n: 1, label: "Drained", color: "#ef4444", emoji: "😴" },
