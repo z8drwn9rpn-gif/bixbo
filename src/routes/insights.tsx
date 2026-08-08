@@ -51,14 +51,17 @@ function InsightFloatingTooltip({
   leftPct,
   details,
   top = 4,
+  connectorSide = "bottom",
 }: {
   leftPct: number;
   details: InsightTooltipDetails;
   top?: number;
+  connectorSide?: "top" | "bottom";
 }) {
   const tooltipWidth = 138;
   const tooltipHeight = 58;
   const connectorHeight = 12;
+  const bodyOffsetY = connectorSide === "top" ? connectorHeight : 0;
   const clampedLeft = Math.max(0, Math.min(100, leftPct));
   const placement = clampedLeft < 24 ? "left" : clampedLeft > 76 ? "right" : "center";
 
@@ -100,15 +103,15 @@ function InsightFloatingTooltip({
       <line
         x1={connectorX}
         x2={connectorX}
-        y1={tooltipHeight}
-        y2={tooltipHeight + connectorHeight}
+        y1={connectorSide === "top" ? connectorHeight : tooltipHeight}
+        y2={connectorSide === "top" ? 0 : tooltipHeight + connectorHeight}
         stroke={details.color}
         strokeWidth="1.25"
       />
 
       <rect
         x="0"
-        y="0"
+        y={bodyOffsetY}
         width={tooltipWidth}
         height={tooltipHeight}
         rx="9"
@@ -117,18 +120,18 @@ function InsightFloatingTooltip({
         strokeWidth="1.4"
       />
 
-      <circle cx="11" cy="12" r="3.5" fill={details.color} />
+      <circle cx="11" cy={bodyOffsetY + 12} r="3.5" fill={details.color} />
 
-      <text x="19" y="15" fontSize="8.5" fontWeight="600" fill="var(--foreground)">
+      <text x="19" y={bodyOffsetY + 15} fontSize="8.5" fontWeight="600" fill="var(--foreground)">
         {heading}
       </text>
 
-      <text x="10" y="34" fontSize={valueFontSize} fontWeight="700" fill="var(--foreground)">
+      <text x="10" y={bodyOffsetY + 34} fontSize={valueFontSize} fontWeight="700" fill="var(--foreground)">
         {details.value}
       </text>
 
       {visibleDescription ? (
-        <text x="10" y="49" fontSize={descriptionFontSize} fill="var(--muted-foreground)">
+        <text x="10" y={bodyOffsetY + 49} fontSize={descriptionFontSize} fill="var(--muted-foreground)">
           {visibleDescription}
         </text>
       ) : null}
@@ -1675,6 +1678,28 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
     };
   }, [active, activeDatum]);
 
+  const activeTooltipLayout = useMemo(() => {
+    if (!activePosition) return null;
+
+    // Keep the popup floating over the heatmap instead of pushing the entire grid down.
+    // The rows are intentionally spaced farther apart vertically so the year graph is taller
+    // without making it any wider than the current desktop/mobile layout.
+    const rowStep = 22;
+    const gridTop = 28;
+    const dotCenterOffset = 7;
+    const tooltipTotalHeight = 70;
+    const connectorGap = 6;
+    const selectedCenterY = gridTop + dotCenterOffset + activePosition.weekdayIndex * rowStep;
+    const showBelow = activePosition.weekdayIndex <= 2;
+
+    return {
+      top: showBelow
+        ? selectedCenterY + connectorGap
+        : Math.max(0, selectedCenterY - tooltipTotalHeight - connectorGap),
+      connectorSide: (showBelow ? "top" : "bottom") as "top" | "bottom",
+    };
+  }, [activePosition]);
+
   const legend = (() => {
     if (metric === "period") {
       return [
@@ -1735,8 +1760,8 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
 
       <div className="mt-4 -mx-2 rounded-[1.5rem] bg-background/55 p-2.5 ring-1 ring-border/60 sm:mx-0 sm:p-4">
         <div className="min-w-0 overflow-x-auto overscroll-x-contain pb-1 touch-pan-x">
-          <div className={`relative w-max pr-1 ${activeTooltip && activePosition ? "pt-[78px]" : ""}`}>
-            {activeTooltip && activePosition ? (
+          <div className="relative w-max pr-1">
+            {activeTooltip && activePosition && activeTooltipLayout ? (
               <InsightFloatingTooltip
                 leftPct={
                   ((36 + activePosition.weekIndex * 17 + 7) /
@@ -1744,16 +1769,17 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
                   100
                 }
                 details={activeTooltip}
-                top={30 + activePosition.weekdayIndex * 17}
+                top={activeTooltipLayout.top}
+                connectorSide={activeTooltipLayout.connectorSide}
               />
             ) : null}
 
             <div className="flex gap-2">
-              <div className="w-7 shrink-0 pt-5">
+              <div className="w-7 shrink-0 pt-7">
                 {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((weekday) => (
                   <div
                     key={weekday}
-                    className="flex h-[17px] items-center text-[9px] font-medium text-muted-foreground"
+                    className="flex h-[22px] items-center text-[9px] font-medium text-muted-foreground"
                   >
                     {weekday}
                   </div>
@@ -1762,7 +1788,7 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
 
               <div>
                 <div
-                  className="relative mb-1 h-4"
+                  className="relative mb-2 h-5"
                   style={{ width: `${yearGrid.weekCount * 17}px` }}
                   aria-hidden="true"
                 >
@@ -1779,7 +1805,7 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
 
                 <div className="flex gap-[3px]">
                   {yearGrid.weeks.map((week, weekIndex) => (
-                    <div key={weekIndex} className="grid shrink-0 grid-rows-7 gap-[3px]">
+                    <div key={weekIndex} className="grid shrink-0 grid-rows-7 gap-x-[3px] gap-y-[8px]">
                       {week.map((date) => {
                         const inYear = date.getFullYear() === year;
 
