@@ -1438,8 +1438,9 @@ function BristolChart({
     ...BRISTOL,
   ];
   return (
-    <ChartCard title="Bowel — Bristol distribution">
-      <div className="-mt-6 mb-1 flex justify-end">
+    <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Bowel</p>
         <InsightPeriodControl
           value={period}
           onChange={onPeriodChange}
@@ -1449,7 +1450,7 @@ function BristolChart({
         />
       </div>
 
-      <div className={`relative mt-3 flex items-end gap-2 transition-[padding] ${active != null ? "pt-20" : ""}`}>
+      <div className="relative mt-3 flex items-end gap-2">
         {chartTypes.map((b) => {
           const count = bowelCounts[b.n] ?? 0;
           const selected = active === b.n;
@@ -1502,7 +1503,7 @@ function BristolChart({
           : null}
       </div>
 
-    </ChartCard>
+    </section>
   );
 }
 
@@ -1524,10 +1525,10 @@ function HfBars({
   return (
     <div>
       <div
-        className={`relative grid items-end gap-1 transition-[padding,height] ${active != null ? "pt-20" : "pt-5"}`}
+        className="relative grid items-end gap-1 pt-5"
         style={{
           gridTemplateColumns: `repeat(${Math.max(1, bars.length)}, minmax(0, 1fr))`,
-          height: active != null ? 146 : 82,
+          height: 82,
         }}
       >
         {bars.map((value, index) =>
@@ -2219,10 +2220,8 @@ function TimeOfDayPatternChart({
             </span>
           </div>
           <div
-            className={`relative mt-4 grid grid-cols-4 items-end gap-3 transition-[padding,height] ${
-              active ? "pt-20" : ""
-            }`}
-            style={{ height: active ? 168 : 110 }}
+            className="relative mt-4 grid grid-cols-4 items-end gap-3"
+            style={{ height: 110 }}
           >
             {[0, 1, 2, 3].map((i) => (
               <div key={i} className="flex h-full items-end justify-center gap-1">
