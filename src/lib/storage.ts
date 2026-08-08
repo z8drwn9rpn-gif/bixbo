@@ -1096,14 +1096,26 @@ function migrate(raw: unknown): BixboData {
   }
 
   const rawCustom = safeRecord<Partial<CustomLists>>(parsed.custom);
+  const rawDeletedCustom = safeRecord<Partial<Record<string, unknown>>>(parsed.deletedCustom);
   const custom = { ...EMPTY.custom } as CustomLists;
+  const deletedCustom: Partial<Record<keyof CustomLists, string[]>> = {};
 
   for (const key of Object.keys(EMPTY.custom) as Array<keyof CustomLists>) {
+    const tombstones = Array.isArray(rawDeletedCustom[key])
+      ? (rawDeletedCustom[key] as unknown[]).filter((item): item is string => typeof item === "string")
+      : [];
+    if (tombstones.length) deletedCustom[key] = Array.from(new Set(tombstones));
+
     const value = rawCustom[key];
-    (custom as unknown as Record<string, unknown>)[key] = Array.isArray(value)
+    const list = Array.isArray(value)
       ? value.filter((item): item is string => typeof item === "string")
       : [];
+    // A deleted option stays deleted, no matter where the value came from.
+    (custom as unknown as Record<string, unknown>)[key] = tombstones.length
+      ? list.filter((item) => !tombstones.includes(item))
+      : list;
   }
+
 
   const rawSettings = safeRecord<Partial<Settings>>(parsed.settings);
   const rawCycle = safeRecord<Partial<CyclePrefs>>(parsed.cycle);
