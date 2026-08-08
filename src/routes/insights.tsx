@@ -1,10 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { createPortal } from "react-dom";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { CHART_COLORS } from "@/components/ui/chart";
-import { ChartEmpty, CHART_AXIS, CHART_GRID, useDismissTapTooltip } from "@/components/charts";
+import { ChartCard, CHART_GRID, useDismissTapTooltip } from "@/components/charts";
 import { Ico } from "@/components/icons/BixboIcons";
 import {
   useBixbo,
@@ -18,8 +17,6 @@ import {
   painColor,
   avgDayPain,
   isIntercourseKind,
-  isCycleTrackingHidden,
-  type DayLog,
 } from "@/lib/storage";
 
 const WD_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -54,14 +51,17 @@ function InsightFloatingTooltip({
   leftPct,
   details,
   top = 4,
+  connectorSide = "bottom",
 }: {
   leftPct: number;
   details: InsightTooltipDetails;
   top?: number;
+  connectorSide?: "top" | "bottom";
 }) {
   const tooltipWidth = 138;
   const tooltipHeight = 58;
   const connectorHeight = 12;
+  const bodyOffsetY = connectorSide === "top" ? connectorHeight : 0;
   const clampedLeft = Math.max(0, Math.min(100, leftPct));
   const placement = clampedLeft < 24 ? "left" : clampedLeft > 76 ? "right" : "center";
 
@@ -103,15 +103,15 @@ function InsightFloatingTooltip({
       <line
         x1={connectorX}
         x2={connectorX}
-        y1={tooltipHeight}
-        y2={tooltipHeight + connectorHeight}
+        y1={connectorSide === "top" ? connectorHeight : tooltipHeight}
+        y2={connectorSide === "top" ? 0 : tooltipHeight + connectorHeight}
         stroke={details.color}
         strokeWidth="1.25"
       />
 
       <rect
         x="0"
-        y="0"
+        y={bodyOffsetY}
         width={tooltipWidth}
         height={tooltipHeight}
         rx="9"
@@ -120,18 +120,18 @@ function InsightFloatingTooltip({
         strokeWidth="1.4"
       />
 
-      <circle cx="11" cy="12" r="3.5" fill={details.color} />
+      <circle cx="11" cy={bodyOffsetY + 12} r="3.5" fill={details.color} />
 
-      <text x="19" y="15" fontSize="8.5" fontWeight="600" fill="var(--foreground)">
+      <text x="19" y={bodyOffsetY + 15} fontSize="8.5" fontWeight="600" fill="var(--foreground)">
         {heading}
       </text>
 
-      <text x="10" y="34" fontSize={valueFontSize} fontWeight="700" fill="var(--foreground)">
+      <text x="10" y={bodyOffsetY + 34} fontSize={valueFontSize} fontWeight="700" fill="var(--foreground)">
         {details.value}
       </text>
 
       {visibleDescription ? (
-        <text x="10" y="49" fontSize={descriptionFontSize} fill="var(--muted-foreground)">
+        <text x="10" y={bodyOffsetY + 49} fontSize={descriptionFontSize} fill="var(--muted-foreground)">
           {visibleDescription}
         </text>
       ) : null}
@@ -160,17 +160,17 @@ const INSIGHT_COLORS = {
 } as const;
 
 const VIVID_PAIN_CHART_COLORS = [
-  "#8DBF3A",
-  "#A8C93A",
-  "#C4D63A",
-  "#E0D93A",
-  "#F0C43A",
-  "#F3A83A",
-  "#F28A3A",
-  "#EF6E42",
-  "#E9534F",
-  "#D93F55",
-  "#C92F5A",
+  "#72C64A", // 0 — green
+  "#91CD3A", // 1
+  "#B7D12F", // 2
+  "#DFD11F", // 3
+  "#F3C30D", // 4 — yellow
+  "#F5A20B", // 5 — amber
+  "#F47B16", // 6 — orange
+  "#F05A28", // 7 — red-orange
+  "#EF4444", // 8 — red
+  "#DC2626", // 9 — dark red
+  "#B91C1C", // 10 — deepest red
 ] as const;
 
 function vividPainChartColor(value: number): string {
@@ -178,16 +178,14 @@ function vividPainChartColor(value: number): string {
   return VIVID_PAIN_CHART_COLORS[index];
 }
 
-const TETANY_COLOR = CHART_COLORS.tetany;
-const PANIC_COLOR = CHART_COLORS.panic;
+const TETANY_COLOR = INSIGHT_COLORS.pinkLight;
+const PANIC_COLOR = INSIGHT_COLORS.pinkDeep;
 
-const PAIN_ACCENT = "#ef4770";
-const PAIN_SOFT = "rgba(239, 71, 112, 0.08)";
-const PAIN_BORDER = "rgba(239, 71, 112, 0.22)";
+const PAIN_ACCENT = "#DC2626";
 
-const GREEN_ACCENT = "#6f9d16";
-const GREEN_SOFT = "rgba(111, 157, 22, 0.08)";
-const GREEN_BORDER = "rgba(111, 157, 22, 0.22)";
+const GREEN_ACCENT = INSIGHT_COLORS.olive;
+const GREEN_SOFT = "rgba(83, 102, 0, 0.08)";
+const GREEN_BORDER = "rgba(83, 102, 0, 0.22)";
 
 const HOT_FLASH_COLORS = [
   VIVID_PAIN_CHART_COLORS[0], // unused index 0
@@ -235,7 +233,7 @@ export const Route = createFileRoute("/insights")({
   component: InsightsPage,
 });
 
-type Period = "W" | "M" | "Y" | "P";
+type Period = "W" | "M" | "Y";
 
 function rangeFor(period: Period, anchor: Date) {
   // Always derive purely from `period` + `anchor` (no mutation of shared objects,
@@ -256,7 +254,7 @@ function rangeFor(period: Period, anchor: Date) {
     end.setDate(start.getDate() + 6);
     return { startK: toKey(start), endK: toKey(end) };
   }
-  if (period === "M" || period === "P") {
+  if (period === "M") {
     const start = new Date(base.getFullYear(), base.getMonth(), 1);
     const end = new Date(base.getFullYear(), base.getMonth() + 1, 0);
     return { startK: toKey(start), endK: toKey(end) };
@@ -281,14 +279,6 @@ function InsightsPage() {
   const view = hydrated ? data : EMPTY;
   const [period, setPeriod] = useState<Period>("W");
   const [anchor, setAnchor] = useState<Date>(new Date());
-  const cycleTrackingHidden = isCycleTrackingHidden(view);
-
-  useEffect(() => {
-    if (cycleTrackingHidden && period === "P") {
-      setPeriod("M");
-    }
-  }, [cycleTrackingHidden, period]);
-
   const { startK, endK } = useMemo(() => rangeFor(period, anchor), [period, anchor]);
   const days = useMemo(() => eachDay(startK, endK), [startK, endK]);
 
@@ -330,7 +320,6 @@ function InsightsPage() {
   );
   // Year view aggregates to 12 monthly buckets so the bars stay readable,
   // keeping the yearly hot-flash chart readable.
-  const monthLabels = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
   const aggregateMonthly = (keys: string[], series: (number | undefined)[]) => {
     const sums = new Array(12).fill(0) as number[];
     const counts = new Array(12).fill(0) as number[];
@@ -366,7 +355,7 @@ function InsightsPage() {
     setAnchor((d) => {
       const n = new Date(d);
       if (period === "W") n.setDate(n.getDate() - 7);
-      else if (period === "M" || period === "P") {
+      else if (period === "M") {
         n.setDate(1);
         n.setMonth(n.getMonth() - 1);
       } else n.setFullYear(n.getFullYear() - 1);
@@ -376,7 +365,7 @@ function InsightsPage() {
     setAnchor((d) => {
       const n = new Date(d);
       if (period === "W") n.setDate(n.getDate() + 7);
-      else if (period === "M" || period === "P") {
+      else if (period === "M") {
         n.setDate(1);
         n.setMonth(n.getMonth() + 1);
       } else n.setFullYear(n.getFullYear() + 1);
@@ -386,13 +375,13 @@ function InsightsPage() {
   const label =
     period === "Y"
       ? String(anchor.getFullYear())
-      : period === "M" || period === "P"
+      : period === "M"
         ? anchor.toLocaleDateString("en-GB", { month: "long", year: "numeric" })
         : `${startK} → ${endK}`;
 
   return (
     <AppShell title="Health of Bixbo">
-      <div className="space-y-3 px-5 pb-[calc(96px+env(safe-area-inset-bottom))] pt-2">
+      <div className="space-y-3 px-5 pt-2 pb-[calc(96px+env(safe-area-inset-bottom))] lg:grid lg:grid-cols-2 lg:items-start lg:gap-3 lg:space-y-0 lg:px-0 lg:pb-12 [&>*:first-child]:lg:col-span-2">
         <div
           className="mx-auto grid w-full max-w-[340px] grid-cols-3 gap-0.5 rounded-xl bg-primary/20 p-0.5 ring-1 ring-primary/15 lg:max-w-sm"
           role="tablist"
@@ -420,7 +409,6 @@ function InsightsPage() {
           })}
         </div>
 
-        <>
             <div className="flex items-center justify-between">
               <button
                 onClick={goPrev}
@@ -439,1197 +427,103 @@ function InsightsPage() {
               </button>
             </div>
 
-            <section className="rounded-3xl bg-tint p-4 ring-1 ring-border">
-              <div className="flex items-start gap-3">
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-surface">
-                  <Ico e="💗" size={22} />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <h2 className="text-sm font-semibold text-foreground">Average pain</h2>
-                  <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
-                    Average intensity of logged pain entries
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-3 flex items-end justify-between gap-3">
-                <span className="text-[11px] font-medium text-muted-foreground">You</span>
-                <span className="text-sm font-bold tabular-nums text-foreground">
-                  {painAvg != null ? `${painAvg.toFixed(1)}/10` : "—"}
-                </span>
-              </div>
-
-              <PainChart period={period} days={days} series={painSeries} anchor={anchor} />
-            </section>
-
-            <section className="mx-auto w-full max-w-[250px] rounded-3xl bg-tint p-4 ring-1 ring-border">
-              <div className="flex items-start gap-3">
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-surface">
-                  <Ico e="❤️" size={22} />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <h2 className="text-sm font-semibold text-foreground">ŠukŠuk!</h2>
-                  <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
-                    Logged intimacy in this {period === "W" ? "week" : period === "M" ? "month" : "year"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-3 flex items-center justify-between gap-3">
-                <span className="text-[11px] font-medium text-muted-foreground">You</span>
-                <span className="text-sm font-bold tabular-nums text-foreground">{sexCount}</span>
-              </div>
-
-              <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-surface ring-1 ring-border/40">
-                <div
-                  className="h-full rounded-full"
+            {period === "Y" ? (
+              <>
+                <YearHealthHeatmap data={view} anchor={anchor} />
+                <TimeOfDayPatternChart data={view} days={days} period={period} />
+                <MedsAdherence data={view} period={period} anchor={anchor} />
+              </>
+            ) : (
+              <>
+                <section
+                  className="rounded-3xl p-5 ring-1"
                   style={{
-                    width: `${sexCount > 0 ? Math.min(100, Math.max(12, sexCount * 12)) : 0}%`,
-                    backgroundColor: "#ef4770",
+                    backgroundColor: GREEN_SOFT,
+                    boxShadow: `inset 0 0 0 1px ${GREEN_BORDER}`,
                   }}
-                />
-              </div>
-            </section>
-
-            <BristolChart bowelCounts={bowelCounts} />
-
-            <section className="rounded-3xl bg-tint p-4 ring-1 ring-border">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">Hot flashes</p>
-              {hfTotal ? (
-                <>
+                >
+                  <p className="text-xs uppercase tracking-wider" style={{ color: PAIN_ACCENT }}>
+                    Pain scale
+                  </p>
                   <div className="mt-2 flex items-baseline gap-2">
-                    <span className="font-serif text-4xl leading-none">{hfTotal}</span>
+                    <span className="font-serif text-5xl leading-none">
+                      {painAvg != null ? painAvg.toFixed(1) : "–"}
+                    </span>
                     <span className="text-sm text-muted-foreground">
-                      {hfTotal === 1 ? "episode" : "episodes"} · avg {hfAvg!.toFixed(1)}/5 · most often L{hfTop}
+                      avg · {painSeries.filter((n) => n != null).length}{" "}
+                      {painSeries.filter((n) => n != null).length === 1 ? "entry" : "entries"}
                     </span>
                   </div>
-                  <HfBars bars={hfBars} period={period} days={days} anchor={anchor} />
-                  {period === "Y" && (
-                    <div
-                      className="mt-1 grid gap-1 text-center text-[8px] text-muted-foreground"
-                      style={{ gridTemplateColumns: "repeat(12, minmax(0, 1fr))" }}
-                    >
-                      {monthLabels.map((l, i) => (
-                        <span key={i}>{l}</span>
-                      ))}
-                    </div>
-                  )}
-                  <div className="mt-3 space-y-1">
-                    {[1, 2, 3, 4, 5].map((n) => {
-                      const c = hfCounts[n];
-                      const pct = hfTotal ? (c / hfTotal) * 100 : 0;
-                      const color = HOT_FLASH_COLORS[n];
-                      return (
-                        <div key={n} className="flex items-center gap-2 text-[10px]">
-                          <span
-                            className="grid h-4 w-4 place-items-center rounded-full text-[9px] font-bold text-white shrink-0"
-                            style={{ background: color }}
-                          >
-                            {n}
-                          </span>
-                          <span className="w-16 shrink-0 text-muted-foreground">{HOT_FLASH_DESCRIPTIONS[n]}</span>
-                          <div className="h-2 flex-1 overflow-hidden rounded-full bg-tint">
-                            <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
-                          </div>
-                          <span className="w-6 text-right tabular-nums text-muted-foreground">{c}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              ) : (
-                <p className="mt-1 text-sm text-muted-foreground">No hot flashes logged</p>
-              )}
-            </section>
-
-
-            {period === "Y" && <YearHealthHeatmap data={view} anchor={anchor} />}
-
-            <TimeOfDayPatternChart data={view} days={days} period={period} />
-
-            <MedsAdherence data={view} period={period} anchor={anchor} />
-        </>
-      </div>
-    </AppShell>
-  );
-}
-
-/**
- * Birth-control (HAK) monthly calendar.
- * 28-day pack: pills #1–#24 active, #25–#28 inactive placebo.
- * Pill number counts continuously from settings.birthControlSince.
- */
-function BirthControlCalendar({
-  data,
-  anchor,
-  monthLabel,
-  onPrevMonth,
-  onNextMonth,
-}: {
-  data: ReturnType<typeof useBixbo>["data"];
-  anchor: Date;
-  monthLabel: string;
-  onPrevMonth: () => void;
-  onNextMonth: () => void;
-}) {
-  const { update } = useBixbo();
-  const [sel, setSel] = useState<string | null>(null);
-  const [pickTime, setPickTime] = useState<string>("");
-  const [hakMonth, setHakMonth] = useState(() => new Date(anchor.getFullYear(), anchor.getMonth(), 1));
-
-  useEffect(() => {
-    setHakMonth(new Date(anchor.getFullYear(), anchor.getMonth(), 1));
-  }, [anchor]);
-
-  // Personal Drovelis schedule. Keep Settings as the source of truth when present,
-  // with the confirmed start date as a safe fallback for this build.
-  const DROVELIS_START = "2026-04-22";
-  const since = data.settings.birthControlSince || DROVELIS_START;
-
-  useEffect(() => {
-    if (!sel) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [sel]);
-
-  if (data.settings.gender === "male") return null;
-
-  // Drovelis is monophasic: every pink active tablet has the same full dose.
-  // 24 pink active tablets + 4 white placebo tablets = one 28-day pack.
-  const ACTIVE_DAYS = 24;
-  const PACK_DAYS = 28;
-  const DROVELIS_ACTIVE_DOSE = "3 mg drospirenone + 14.2 mg estetrol";
-
-  const HAK_PURPLE = "#7A53C8";
-  const HAK_PURPLE_DARK = "#5B32AE";
-  const HAK_PURPLE_SOFT = "#DCCFF3";
-  const HAK_PURPLE_DOT = "#8C67D4";
-  const HAK_PINK = "#D95782";
-  const HAK_PINK_DARK = "#B92E60";
-  const HAK_PINK_SOFT = "#F7CBD9";
-  const HAK_GREEN = "#8A962D";
-  const HAK_GREEN_DARK = "#596313";
-  const HAK_GREEN_SOFT = "#E7E9B8";
-  const HAK_TRACK = "#E4E4D3";
-  const HAK_CARD_BG = "color-mix(in srgb, var(--background) 94%, #7C8900 6%)";
-
-  const bcMed = data.meds.find((m) =>
-    /antikonc|birth\s*control|contracept|hak|pill/i.test(`${m.name} ${m.dose ?? ""}`),
-  );
-  const bcId = bcMed?.id ?? "hak-default";
-
-  const todayK = toKey(new Date());
-  const referenceK = toKey(anchor);
-
-  const pillNumber = (k: string) => {
-    const diff = Math.round((fromKey(k).getTime() - fromKey(since).getTime()) / 86400000);
-    if (diff < 0) return null;
-    return (diff % PACK_DAYS) + 1;
-  };
-
-  const currentDay = pillNumber(referenceK) ?? 1;
-  const currentPackStart = addDays(referenceK, -(currentDay - 1));
-
-  const dateForPackDay = (day: number) => addDays(currentPackStart, day - 1);
-
-  const takenAt = (k: string): string | null => {
-    const log = data.medLog[k] ?? {};
-    const times = data.medLogTimes?.[k] ?? {};
-    const keys = Object.keys(log).filter(
-      (key) => log[key] && key !== `${bcId}@missed` && key.startsWith(`${bcId}@`),
-    );
-    if (!keys.length) return null;
-    return times[keys[0]] ?? keys[0].split("@")[1] ?? "";
-  };
-
-  const missedAt = (k: string): boolean => !!data.medLog[k]?.[`${bcId}@missed`];
-
-  const markTaken = (k: string, time: string) =>
-    update((d) => {
-      const t = time || new Date().toTimeString().slice(0, 5);
-      const day = { ...(d.medLog[k] ?? {}) };
-      Object.keys(day).forEach((key) => {
-        if (key.startsWith(`${bcId}@`)) delete day[key];
-      });
-      day[`${bcId}@${t}`] = true;
-
-      const dayTimes = { ...(d.medLogTimes[k] ?? {}) };
-      Object.keys(dayTimes).forEach((key) => {
-        if (key.startsWith(`${bcId}@`)) delete dayTimes[key];
-      });
-      dayTimes[`${bcId}@${t}`] = t;
-
-      return {
-        ...d,
-        medLog: { ...d.medLog, [k]: day },
-        medLogTimes: { ...d.medLogTimes, [k]: dayTimes },
-        medNames: bcMed ? d.medNames : { ...d.medNames, [bcId]: "Birth control" },
-      };
-    });
-
-  const markMissed = (k: string) =>
-    update((d) => {
-      const day = { ...(d.medLog[k] ?? {}) };
-      Object.keys(day).forEach((key) => {
-        if (key.startsWith(`${bcId}@`)) delete day[key];
-      });
-      day[`${bcId}@missed`] = true;
-
-      const dayTimes = { ...(d.medLogTimes[k] ?? {}) };
-      Object.keys(dayTimes).forEach((key) => {
-        if (key.startsWith(`${bcId}@`)) delete dayTimes[key];
-      });
-
-      return {
-        ...d,
-        medLog: { ...d.medLog, [k]: day },
-        medLogTimes: { ...d.medLogTimes, [k]: dayTimes },
-        medNames: bcMed ? d.medNames : { ...d.medNames, [bcId]: "Birth control" },
-      };
-    });
-
-  const clearRecord = (k: string) =>
-    update((d) => {
-      const day = { ...(d.medLog[k] ?? {}) };
-      Object.keys(day).forEach((key) => {
-        if (key.startsWith(`${bcId}@`)) delete day[key];
-      });
-
-      const dayTimes = { ...(d.medLogTimes[k] ?? {}) };
-      Object.keys(dayTimes).forEach((key) => {
-        if (key.startsWith(`${bcId}@`)) delete dayTimes[key];
-      });
-
-      return {
-        ...d,
-        medLog: { ...d.medLog, [k]: day },
-        medLogTimes: { ...d.medLogTimes, [k]: dayTimes },
-      };
-    });
-
-  const selectedDay = sel ? pillNumber(sel) : null;
-  const selectedTaken = sel ? takenAt(sel) : null;
-  const selectedMissed = sel ? missedAt(sel) : false;
-  const selectedAssumedTaken =
-    !!sel &&
-    selectedDay != null &&
-    selectedDay <= ACTIVE_DAYS &&
-    sel >= since &&
-    sel < todayK &&
-    !selectedMissed &&
-    !selectedTaken;
-
-  const placeboStart = addDays(currentPackStart, ACTIVE_DAYS);
-  const placeboEnd = addDays(currentPackStart, PACK_DAYS - 1);
-  const nextPackStart = addDays(currentPackStart, PACK_DAYS);
-
-  const fmtDate = (key: string) =>
-    fromKey(key).toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "short",
-    });
-
-  const fmtFullDate = (key: string) =>
-    fromKey(key).toLocaleDateString("en-GB", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-
-  const wheelDays = Array.from({ length: PACK_DAYS }, (_, i) => i + 1);
-
-  // 24 purple dots, a subtle separator, 4 pink dots, a second separator,
-  // then one green dot for the next pack. This matches the detailed reference.
-  const timelineItems: Array<{
-    kind: "active" | "placebo" | "separator" | "next";
-    day?: number;
-  }> = [
-    ...Array.from({ length: ACTIVE_DAYS }, (_, i) => ({ kind: "active" as const, day: i + 1 })),
-    { kind: "separator" as const },
-    ...Array.from({ length: PACK_DAYS - ACTIVE_DAYS }, (_, i) => ({
-      kind: "placebo" as const,
-      day: ACTIVE_DAYS + i + 1,
-    })),
-    { kind: "separator" as const },
-    { kind: "next" as const, day: 1 },
-  ];
-
-  const timelineCurrentIndex =
-    currentDay <= ACTIVE_DAYS
-      ? currentDay - 1
-      : ACTIVE_DAYS + 1 + (currentDay - ACTIVE_DAYS - 1);
-
-  const timelineMarkerLeft = Math.max(
-    6,
-    Math.min(88, ((timelineCurrentIndex + 0.5) / timelineItems.length) * 100),
-  );
-
-  const hakMonthYear = hakMonth.getFullYear();
-  const hakMonthIndex = hakMonth.getMonth();
-  const hakMonthOffset = (new Date(hakMonthYear, hakMonthIndex, 1).getDay() + 6) % 7;
-  const hakMonthDays = new Date(hakMonthYear, hakMonthIndex + 1, 0).getDate();
-  const hakMonthCellCount = Math.ceil((hakMonthOffset + hakMonthDays) / 7) * 7;
-  const hakMonthCells = Array.from({ length: hakMonthCellCount }, (_, index) => {
-    const dayNumber = index - hakMonthOffset + 1;
-    const date = new Date(hakMonthYear, hakMonthIndex, dayNumber);
-    const key = toKey(date);
-    return {
-      key,
-      date,
-      inMonth: date.getMonth() === hakMonthIndex,
-      packDay: pillNumber(key),
-    };
-  });
-
-  const hakMonthLabel = hakMonth.toLocaleDateString("en-GB", {
-    month: "long",
-    year: "numeric",
-  });
-
-  type ProtectionState = "protected" | "backup" | "review" | "starting" | "unknown";
-
-  const activeKeysBefore = (key: string, count: number): string[] => {
-    const out: string[] = [];
-    let cursor = addDays(key, -1);
-
-    while (out.length < count && cursor >= since) {
-      const d = pillNumber(cursor);
-      if (d != null && d <= ACTIVE_DAYS) out.unshift(cursor);
-      cursor = addDays(cursor, -1);
-    }
-
-    return out;
-  };
-
-  const activeDaysAfterMissThrough = (missKey: string, key: string): number => {
-    let cursor = addDays(missKey, 1);
-    let consecutive = 0;
-
-    while (cursor <= key) {
-      const d = pillNumber(cursor);
-      if (d != null && d <= ACTIVE_DAYS) {
-        if (missedAt(cursor)) consecutive = 0;
-        else consecutive++;
-      }
-      cursor = addDays(cursor, 1);
-    }
-
-    return consecutive;
-  };
-
-  const explicitMissesThrough = (key: string): string[] => {
-    // 40 days is enough to carry a late-pack miss across placebo and into the
-    // following pack until seven uninterrupted active tablets have elapsed.
-    const start = fromKey(key).getTime() - fromKey(since).getTime() > 40 * 86400000 ? addDays(key, -40) : since;
-    const misses: string[] = [];
-    let cursor = start;
-
-    while (cursor <= key) {
-      const d = pillNumber(cursor);
-      if (d != null && d <= ACTIVE_DAYS && missedAt(cursor)) misses.push(cursor);
-      cursor = addDays(cursor, 1);
-    }
-
-    return misses;
-  };
-
-  /**
-   * Drovelis pregnancy-protection indicator.
-   *
-   * Important modelling rule: an empty medication log is NOT treated as a missed
-   * pill. This calendar is a schedule + exception tracker; only an explicit
-   * "missed" record reduces the status. That prevents old, unlogged packs from
-   * being shown as falsely "Unknown".
-   *
-   * Official Drovelis rules represented here:
-   * - all 24 pink tablets are the same full dose;
-   * - the four placebo days are part of the protected regimen when the preceding
-   *   active tablets were taken correctly and the next pack starts on time;
-   * - <24 h late does not reduce protection (a normal "taken" record stays green);
-   * - days 1-7: an explicit missed active pill triggers backup until seven
-   *   uninterrupted active pills have followed;
-   * - days 8-17: one missed pill can remain protected when the preceding seven
-   *   active pills were correct; repeated/recent misses trigger backup;
-   * - days 18-24: special schedule action is required to avoid extending the
-   *   hormone-free interval, so the app shows REVIEW rather than a false green.
-   */
-  const protectionStateFor = (key: string): ProtectionState => {
-    const day = pillNumber(key);
-    if (day == null) return "unknown";
-
-    const daysFromStart = Math.round((fromKey(key).getTime() - fromKey(since).getTime()) / 86400000);
-    const misses = explicitMissesThrough(key);
-
-    // During the first seven calendar days we do not know whether the first pill
-    // was started on menstrual day 1 (immediate protection) or days 2-5 (backup
-    // needed for seven active pills). An explicit miss is stronger and is handled
-    // by the missed-pill rules below.
-    if (!misses.length && daysFromStart >= 0 && daysFromStart < 7) return "starting";
-    if (!misses.length) return "protected";
-
-    let strongest: ProtectionState = "protected";
-
-    for (const missKey of misses) {
-      const missDay = pillNumber(missKey);
-      if (missDay == null || missDay > ACTIVE_DAYS) continue;
-
-      const recovered = activeDaysAfterMissThrough(missKey, key) >= 7;
-      if (recovered) continue;
-
-      if (missDay <= 7) return "backup";
-
-      if (missDay <= 17) {
-        const previousSeven = activeKeysBefore(missKey, 7);
-        const previousSevenClear = previousSeven.length === 7 && previousSeven.every((k) => !missedAt(k));
-
-        const missPackStart = addDays(missKey, -(missDay - 1));
-        let missesInThisPack = 0;
-        let cursor = missPackStart;
-        while (cursor <= missKey) {
-          const d = pillNumber(cursor);
-          if (d != null && d <= ACTIVE_DAYS && missedAt(cursor)) missesInThisPack++;
-          cursor = addDays(cursor, 1);
-        }
-
-        if (!previousSevenClear || missesInThisPack > 1) return "backup";
-        continue;
-      }
-
-      // Days 18-24 need a deliberate schedule adjustment (e.g. skipping the
-      // placebo phase) to preserve protection. This fixed 28-day calendar cannot
-      // safely infer that adjustment, so surface an action/review state.
-      strongest = "review";
-    }
-
-    return strongest;
-  };
-
-  const protectionMeta = (state: ProtectionState) => {
-    if (state === "protected") {
-      return {
-        label: "Pregnancy protection expected",
-        short: "Protected",
-        color: HAK_GREEN,
-        bg: "rgba(220,235,210,.72)",
-        text: HAK_GREEN_DARK,
-        symbol: "✓",
-      };
-    }
-
-    if (state === "backup") {
-      return {
-        label: "Use a condom / avoid unprotected sex",
-        short: "Use backup",
-        color: "#C94A55",
-        bg: "rgba(248,215,218,.72)",
-        text: "#8E2832",
-        symbol: "!",
-      };
-    }
-
-    if (state === "review") {
-      return {
-        label: "HAK schedule action needed",
-        short: "Check schedule",
-        color: "#D58A22",
-        bg: "rgba(251,232,199,.78)",
-        text: "#8A5511",
-        symbol: "!",
-      };
-    }
-
-    if (state === "starting") {
-      return {
-        label: "Start-up protection depends on cycle-day start",
-        short: "Start-up",
-        color: HAK_PURPLE,
-        bg: "rgba(220,207,243,.62)",
-        text: HAK_PURPLE_DARK,
-        symbol: "i",
-      };
-    }
-
-    return {
-      label: "Outside configured HAK schedule",
-      short: "Unknown",
-      color: "#9A9A82",
-      bg: "rgba(230,230,210,.55)",
-      text: "var(--muted-foreground)",
-      symbol: "?",
-    };
-  };
-
-  const missedPillAdvice = (day: number): string => {
-    if (day <= 7) {
-      return "Take the last missed pink pill as soon as possible and use a condom until 7 uninterrupted active pills have been taken. If unprotected sex happened in the previous 7 days, review pregnancy risk.";
-    }
-    if (day <= 17) {
-      return "Take the last missed pink pill as soon as possible. If this was the only missed pill and the previous 7 active pills were taken correctly, extra contraception is usually not needed; otherwise use backup until 7 uninterrupted active pills.";
-    }
-    if (day <= ACTIVE_DAYS) {
-      return "Late-pack rule: avoid extending the hormone-free interval. Drovelis guidance uses a schedule adjustment such as skipping the 4 placebo tablets and starting the next pack immediately. Review the missed-pill instructions before relying on protection.";
-    }
-    return "White tablets are placebo. Missing a placebo tablet does not reduce contraceptive protection; discard it so the placebo phase is not accidentally extended.";
-  };
-
-  // One mathematical 28-step wheel. Days always run in one uninterrupted
-  // sequence: 1 → 2 → … → 24 → 25 → 26 → 27 → 28 → 1.
-  // Day 1 starts at the lower-right so placebo 25–28 stays across the bottom,
-  // matching the approved visual reference without breaking the number order.
-  const WHEEL_STEP = 360 / PACK_DAYS;
-  const WHEEL_DAY1_ANGLE = 57;
-  const wheelAngleForDay = (day: number) => WHEEL_DAY1_ANGLE - (day - 1) * WHEEL_STEP;
-
-  return (
-    <section
-      className="rounded-[2rem] p-4 shadow-sm ring-1"
-      style={{
-        backgroundColor: HAK_CARD_BG,
-        boxShadow: `inset 0 0 0 1px ${GREEN_BORDER}`,
-      }}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-surface/65 ring-1 ring-border/50">
-            <Ico e="🫐" size={25} />
-          </span>
-          <div className="min-w-0">
-            <h2 className="font-serif text-xl font-bold text-foreground">Blueberry cycle</h2>
-            <p className="text-[11px] text-muted-foreground">Birth control overview</p>
-          </div>
-        </div>
-
-        <div className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-surface/35 p-0.5 ring-1 ring-border/35">
-          <button
-            type="button"
-            onClick={onPrevMonth}
-            className="grid h-7 w-7 place-items-center rounded-full transition hover:bg-tint"
-            aria-label="Previous month"
-          >
-            <ChevronLeft className="h-3.5 w-3.5" />
-          </button>
-          <span className="min-w-[88px] px-1 text-center text-[10px] font-semibold text-foreground/80">
-            {monthLabel}
-          </span>
-          <button
-            type="button"
-            onClick={onNextMonth}
-            className="grid h-7 w-7 place-items-center rounded-full transition hover:bg-tint"
-            aria-label="Next month"
-          >
-            <ChevronRight className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      </div>
-
-      {/* Circular HAK overview — only wheel pills open the dose popup. */}
-      <div className="mx-auto mt-5 w-full max-w-[340px]">
-        <div className="mb-3 flex justify-center">
-          <div
-            className="rounded-full px-4 py-2 text-[11px] font-bold ring-1"
-            style={{
-              backgroundColor: "rgba(229,219,248,.92)",
-              color: HAK_PURPLE_DARK,
-              borderColor: "rgba(122,83,200,.18)",
-            }}
-          >
-            Active HAK days · 1–24
-          </div>
-        </div>
-
-        <div className="relative aspect-square w-full">
-          <div
-            className="absolute inset-[8%] rounded-full"
-            style={{
-              background: "rgba(255,255,255,.12)",
-              boxShadow: "inset 0 0 0 9px rgba(255,255,255,.24)",
-            }}
-          />
-          <div
-            className="absolute inset-[18%] rounded-full"
-            style={{
-              backgroundColor: HAK_CARD_BG,
-              boxShadow: "0 0 0 1px rgba(255,255,255,.12)",
-            }}
-          />
-
-          <div className="pointer-events-none absolute inset-0 z-[1]">
-            {Array.from({ length: PACK_DAYS }).map((_, i) => {
-              const day = i + 1;
-              const angle = (wheelAngleForDay(day) * Math.PI) / 180;
-              const radius = 42;
-              return (
-                <span
-                  key={`wheel-track-${i}`}
-                  className="absolute h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/70"
+                  <PainChart period={period} days={days} series={painSeries} anchor={anchor} />
+                </section>
+
+                <section
+                  className="rounded-3xl p-5 ring-1"
                   style={{
-                    left: `${50 + Math.cos(angle) * radius}%`,
-                    top: `${50 + Math.sin(angle) * radius}%`,
+                    backgroundColor: GREEN_SOFT,
+                    boxShadow: `inset 0 0 0 1px ${GREEN_BORDER}`,
                   }}
-                />
-              );
-            })}
-          </div>
-
-          {wheelDays.map((day) => {
-            const angle = (wheelAngleForDay(day) * Math.PI) / 180;
-            const radius = 42;
-            const left = 50 + Math.cos(angle) * radius;
-            const top = 50 + Math.sin(angle) * radius;
-            const dateKey = dateForPackDay(day);
-            const loggedTaken = !!takenAt(dateKey);
-            const missed = missedAt(dateKey);
-            const isCurrent = day === currentDay;
-            const isPlacebo = day > ACTIVE_DAYS;
-
-            // The user confirmed continuous on-time Drovelis use from `since`.
-            // Therefore historical active pills are visually treated as taken
-            // unless that exact date was explicitly marked missed. This prevents
-            // old packs from showing pale/empty circles only because dose logging
-            // was added to the app later.
-            const assumedHistoricalTaken =
-              !isPlacebo && dateKey >= since && dateKey < todayK && !missed;
-            const takenForStatus = loggedTaken || assumedHistoricalTaken;
-
-            let backgroundColor = isPlacebo ? HAK_PINK_SOFT : "#DED2F3";
-            let color = isPlacebo ? HAK_PINK_DARK : HAK_PURPLE_DARK;
-            let borderColor = isPlacebo ? HAK_PINK : "rgba(122,83,200,.40)";
-
-            // Only a pill explicitly marked taken becomes darker. Historical pills
-            // remain soft lavender while still counting as on-schedule for protection.
-            if (loggedTaken && !isCurrent) {
-              if (isPlacebo) {
-                backgroundColor = "#E99AB5";
-                color = "#8F234B";
-                borderColor = HAK_PINK_DARK;
-              } else {
-                backgroundColor = "#BDA9E7";
-                color = "#4E2B98";
-                borderColor = "rgba(91,50,174,.58)";
-              }
-            }
-
-            if (isCurrent) {
-              if (isPlacebo) {
-                backgroundColor = loggedTaken ? HAK_PINK_DARK : HAK_PINK_SOFT;
-                color = loggedTaken ? "#fff" : HAK_PINK_DARK;
-                borderColor = HAK_PINK_DARK;
-              } else {
-                backgroundColor = HAK_PURPLE_DARK;
-                color = "#fff";
-                borderColor = HAK_PURPLE_DARK;
-              }
-            }
-
-            if (missed) {
-              borderColor = "#C94A55";
-            }
-
-            return (
-              <button
-                key={day}
-                type="button"
-                onClick={() => {
-                  setSel(dateKey);
-                  setPickTime("");
-                }}
-                className="absolute z-10 grid h-8 w-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[11px] font-bold shadow-sm transition active:scale-95"
-                style={{
-                  left: `${left}%`,
-                  top: `${top}%`,
-                  backgroundColor,
-                  color,
-                  border: `1.5px solid ${borderColor}`,
-                  boxShadow: isCurrent
-                    ? `0 0 0 3px ${HAK_CARD_BG}, 0 0 0 6px ${isPlacebo ? HAK_PINK : HAK_PURPLE}66`
-                    : "0 1px 5px rgba(58,61,30,.08)",
-                }}
-                aria-label={`HAK day ${day}, ${fmtFullDate(dateKey)}${missed ? ", missed" : takenForStatus ? ", taken on schedule" : ""}`}
-              >
-                {day}
-              </button>
-            );
-          })}
-
-          <div className="pointer-events-none absolute inset-[25%] z-20 flex flex-col items-center justify-center text-center">
-            <p className="text-[11px] font-semibold text-foreground">Day</p>
-            <p
-              className="mt-1 font-serif text-[clamp(2rem,9vw,2.8rem)] font-bold leading-none"
-              style={{ color: currentDay <= ACTIVE_DAYS ? HAK_PURPLE_DARK : HAK_PINK_DARK }}
-            >
-              {currentDay} / {PACK_DAYS}
-            </p>
-            <p
-              className="mt-2 text-[13px] font-semibold"
-              style={{ color: currentDay <= ACTIVE_DAYS ? HAK_PURPLE_DARK : HAK_PINK_DARK }}
-            >
-              {currentDay <= ACTIVE_DAYS ? "Active HAK days" : "Placebo / break"}
-            </p>
-
-            <div className="relative mt-3 h-[70px] w-[56px] rotate-[8deg]" aria-hidden="true">
-              <div
-                className="absolute inset-x-1 bottom-[-6px] h-3 rounded-full opacity-20 blur-[2px]"
-                style={{ backgroundColor: "#4E3E6D" }}
-              />
-              <div
-                className="relative grid h-full w-full grid-cols-2 gap-x-2 gap-y-2 rounded-[12px] p-[8px] shadow-lg ring-1"
-                style={{
-                  background: "linear-gradient(145deg, #F1ECFA 0%, #D7C6EE 48%, #B99BD9 100%)",
-                  borderColor: "#B89AD8",
-                  boxShadow:
-                    "inset 2px 2px 4px rgba(255,255,255,.82), inset -2px -2px 4px rgba(92,55,145,.16), 0 7px 12px rgba(63,48,89,.16)",
-                }}
-              >
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <span
-                    key={i}
-                    className="relative rounded-full"
-                    style={{
-                      background:
-                        i % 2 === 0
-                          ? "radial-gradient(circle at 32% 28%, #B9A2E9 0%, #8A68CF 45%, #5B39A8 100%)"
-                          : "radial-gradient(circle at 32% 28%, #C4B2EE 0%, #9677D5 45%, #6745B0 100%)",
-                      boxShadow:
-                        "inset 1px 1px 2px rgba(255,255,255,.75), inset -1px -2px 2px rgba(57,31,103,.28), 0 1px 2px rgba(67,45,105,.28)",
-                    }}
-                  >
-                    <span className="absolute left-[22%] top-[18%] h-[28%] w-[28%] rounded-full bg-white/35" />
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <p className="mt-3 max-w-[165px] text-[10px] leading-snug text-muted-foreground">
-              {currentDay <= ACTIVE_DAYS ? "Continue taking your tablet" : "Placebo / break days"}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-1 grid grid-cols-2 gap-2">
-        <div
-          className="rounded-[1.65rem] px-4 py-3 ring-1"
-          style={{
-            backgroundColor: "rgba(251,224,233,.58)",
-            borderColor: "rgba(129,135,67,.18)",
-          }}
-        >
-          <p className="text-[10px] font-bold" style={{ color: HAK_PINK_DARK }}>Placebo / break</p>
-          <p className="mt-0.5 text-[10px] font-semibold" style={{ color: HAK_PINK_DARK }}>
-            {ACTIVE_DAYS + 1}–{PACK_DAYS}
-          </p>
-        </div>
-
-        <div
-          className="rounded-[1.65rem] px-4 py-3 text-right ring-1"
-          style={{
-            backgroundColor: "rgba(231,233,184,.60)",
-            borderColor: "rgba(129,135,67,.18)",
-          }}
-        >
-          <p className="text-[10px] font-bold" style={{ color: HAK_GREEN_DARK }}>New cycle</p>
-          <p className="mt-0.5 text-[10px] font-semibold" style={{ color: HAK_GREEN_DARK }}>Day 1</p>
-        </div>
-      </div>
-
-      {/* Keep Current HAK pack exactly in the previous compact timeline style. */}
-      <div className="mt-4">
-        <h3 className="font-serif text-lg font-bold text-foreground">Current HAK pack</h3>
-        <div
-          className="mt-3 rounded-[1.75rem] px-4 py-4 ring-1"
-          style={{
-            backgroundColor: "rgba(255,255,255,.20)",
-            borderColor: "rgba(129,135,67,.16)",
-          }}
-        >
-          <div className="grid grid-cols-[1.35fr_1fr_.9fr] items-start gap-2 text-center">
-            <div>
-              <p className="text-[9px] font-bold leading-tight" style={{ color: HAK_PURPLE_DARK }}>Active HAK days</p>
-              <p className="mt-0.5 text-[9px] font-semibold leading-tight" style={{ color: HAK_PURPLE_DARK }}>1–{ACTIVE_DAYS}</p>
-            </div>
-            <div>
-              <p className="text-[9px] font-bold leading-tight" style={{ color: HAK_PINK_DARK }}>Placebo / break</p>
-              <p className="mt-0.5 text-[9px] font-semibold leading-tight" style={{ color: HAK_PINK_DARK }}>{ACTIVE_DAYS + 1}–{PACK_DAYS}</p>
-            </div>
-            <div>
-              <p className="text-[9px] font-bold leading-tight" style={{ color: HAK_GREEN_DARK }}>New cycle</p>
-              <p className="mt-0.5 text-[9px] font-semibold leading-tight" style={{ color: HAK_GREEN_DARK }}>Day 1</p>
-            </div>
-          </div>
-
-          <div className="relative mt-4 px-1 pb-8">
-            <div
-              className="rounded-full px-2 py-2 ring-1"
-              style={{
-                backgroundColor: "rgba(255,255,255,.30)",
-                borderColor: "rgba(129,135,67,.18)",
-              }}
-            >
-              <div
-                className="grid items-center gap-[2px]"
-                style={{ gridTemplateColumns: `repeat(${timelineItems.length}, minmax(0, 1fr))` }}
-              >
-                {timelineItems.map((item, index) => {
-                  const isCurrent = index === timelineCurrentIndex;
-                  const itemColor =
-                    item.kind === "active"
-                      ? HAK_PURPLE_DOT
-                      : item.kind === "placebo"
-                        ? HAK_PINK
-                        : item.kind === "next"
-                          ? HAK_GREEN
-                          : HAK_TRACK;
-
-                  return (
-                    <span
-                      key={`${item.kind}-${index}`}
-                      className="mx-auto block aspect-square w-full max-w-[10px] rounded-full"
-                      style={{
-                        backgroundColor: itemColor,
-                        boxShadow: isCurrent
-                          ? `0 0 0 3px ${HAK_CARD_BG}, 0 0 0 5px ${
-                              item.kind === "placebo" ? HAK_PINK_DARK : HAK_PURPLE_DARK
-                            }`
-                          : item.kind === "next"
-                            ? `0 0 0 2px ${HAK_GREEN_SOFT}`
-                            : undefined,
-                      }}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-
-            <div
-              className="absolute bottom-[22px] h-4 w-px"
-              style={{
-                left: `${timelineMarkerLeft}%`,
-                backgroundColor: currentDay <= ACTIVE_DAYS ? HAK_PURPLE : HAK_PINK,
-              }}
-            />
-            <p
-              className="absolute bottom-0 whitespace-nowrap text-[11px] font-bold"
-              style={{
-                left: `${timelineMarkerLeft}%`,
-                transform: "translateX(-50%)",
-                color: currentDay <= ACTIVE_DAYS ? HAK_PURPLE_DARK : HAK_PINK_DARK,
-              }}
-            >
-              Day {currentDay} / {PACK_DAYS}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Calendar is always visible on this page; dates are informational only. */}
-      <div className="mt-4 rounded-[1.75rem] bg-surface/25 p-4 ring-1 ring-border/35">
-        <h3 className="font-serif text-lg font-bold text-foreground">Calendar preview</h3>
-
-        <div className="mt-3 grid grid-cols-7 gap-y-2 text-center text-[9px] font-semibold text-muted-foreground">
-          {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((weekday) => (
-            <div key={weekday}>{weekday}</div>
-          ))}
-        </div>
-
-        <div className="mt-2 grid grid-cols-7 gap-y-2 text-center">
-          {hakMonthCells.map((cell) => {
-            const packDay = cell.packDay;
-            const state: ProtectionState = cell.inMonth && packDay != null ? protectionStateFor(cell.key) : "unknown";
-            const isToday = cell.key === todayK;
-
-            let backgroundColor = "rgba(225,225,205,.72)";
-            let color = "rgba(70,70,55,.48)";
-            let borderColor = "rgba(145,145,120,.18)";
-
-            if (cell.inMonth && packDay != null) {
-              if (state === "protected") {
-                backgroundColor = HAK_GREEN;
-                color = "#fff";
-                borderColor = HAK_GREEN_DARK;
-              } else if (state === "backup") {
-                backgroundColor = "#C94A55";
-                color = "#fff";
-                borderColor = "#8E2832";
-              } else if (state === "review") {
-                backgroundColor = "#D58A22";
-                color = "#fff";
-                borderColor = "#8A5511";
-              } else if (state === "starting") {
-                backgroundColor = HAK_PURPLE_SOFT;
-                color = HAK_PURPLE_DARK;
-                borderColor = HAK_PURPLE;
-              }
-            }
-
-            return (
-              <div key={cell.key} className="grid place-items-center">
-                <div
-                  className="grid h-8 w-8 place-items-center rounded-full text-[11px] font-semibold"
-                  style={{
-                    backgroundColor,
-                    color,
-                    border: `1.5px solid ${isToday ? HAK_GREEN_DARK : borderColor}`,
-                    boxShadow: isToday ? `0 0 0 2px ${HAK_CARD_BG}` : undefined,
-                    opacity: cell.inMonth ? 1 : 0.55,
-                  }}
-                  aria-label={`${fmtFullDate(cell.key)} — ${protectionMeta(state).label}`}
                 >
-                  {cell.date.getDate()}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-[9px] text-foreground">
-          <div className="flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-full" style={{ backgroundColor: HAK_GREEN }} />
-            Protected
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-full" style={{ backgroundColor: "#C94A55" }} />
-            Use backup
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-full" style={{ backgroundColor: "#D58A22" }} />
-            Check schedule
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-full" style={{ backgroundColor: HAK_PURPLE_SOFT, border: `1px solid ${HAK_PURPLE}` }} />
-            Start-up
-          </div>
-        </div>
-
-        <p className="mt-3 text-[9px] leading-relaxed text-muted-foreground">
-          Drovelis: all 24 pink pills are the same full dose. The 4 white placebo days remain part of the protected regimen when active pills are taken correctly and the next pack starts on time. An empty dose log is treated as not recorded, not as a missed pill; mark a pill “missed” when an actual miss occurs. Calendar dates are informational only and do not open the dose editor.
-        </p>
-      </div>
-
-      <div className="mt-4">
-        <h3 className="font-serif text-lg font-bold text-foreground">Important dates</h3>
-        <div className="mt-2 grid grid-cols-2 gap-2">
-          <div
-            className="rounded-2xl p-3 ring-1"
-            style={{ backgroundColor: "rgba(251,224,233,.68)", borderColor: "rgba(217,87,130,.18)" }}
-          >
-            <div className="flex gap-2">
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl" style={{ backgroundColor: HAK_PINK_SOFT }}>
-                <Ico e="🗓️" size={18} />
-              </span>
-              <div className="min-w-0">
-                <p className="text-[9px] leading-tight text-muted-foreground">Expected withdrawal bleeding</p>
-                <p className="mt-1 text-xs font-bold text-foreground">{fmtDate(placeboStart)} – {fmtDate(placeboEnd)}</p>
-                <p className="mt-0.5 text-[9px] text-muted-foreground">May vary</p>
-              </div>
-            </div>
-          </div>
-
-          <div
-            className="rounded-2xl p-3 ring-1"
-            style={{ backgroundColor: "rgba(231,233,184,.72)", borderColor: "rgba(138,150,45,.18)" }}
-          >
-            <div className="flex gap-2">
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl" style={{ backgroundColor: HAK_GREEN_SOFT }}>
-                <Ico e="📅" size={18} />
-              </span>
-              <div className="min-w-0">
-                <p className="text-[9px] leading-tight" style={{ color: HAK_GREEN_DARK }}>Start of new pack</p>
-                <p className="mt-1 text-xs font-bold text-foreground">{fmtDate(nextPackStart)}</p>
-                <p className="mt-0.5 text-[9px] text-muted-foreground">New cycle</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {!bcMed && (
-        <p className="mt-3 text-[10px] leading-snug text-muted-foreground">
-          Add your contraceptive pill in Medications so taken and missed doses can be detected precisely.
-        </p>
-      )}
-
-      {/* Dose editor popup exists only for clicks on the circular HAK wheel. */}
-      {sel && selectedDay != null && typeof document !== "undefined"
-        ? createPortal(
-            <div
-              className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-black/30 p-4"
-              style={{
-                paddingTop: "max(1rem, env(safe-area-inset-top))",
-                paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
-              }}
-              onClick={() => setSel(null)}
-            >
-              <div
-                className="my-auto max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto overscroll-contain rounded-[1.75rem] bg-background p-4 shadow-2xl ring-1 ring-border"
-                onClick={(event) => event.stopPropagation()}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                      HAK day {selectedDay}
-                    </p>
-                    <h3 className="mt-1 font-serif text-lg font-bold text-foreground">{fmtFullDate(sel)}</h3>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setSel(null)}
-                    className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-tint text-sm font-bold ring-1 ring-border"
-                    aria-label="Close"
-                  >
-                    ×
-                  </button>
-                </div>
-
-                <div className="mt-3 rounded-2xl bg-tint p-3">
-                  <p className="text-xs text-muted-foreground">Status</p>
-                  <p className="mt-1 text-sm font-semibold text-foreground">
-                    {selectedTaken
-                      ? `Taken at ${selectedTaken}`
-                      : selectedMissed
-                        ? "Marked missed"
-                        : selectedDay > ACTIVE_DAYS
-                          ? "Placebo / break day"
-                          : selectedAssumedTaken
-                            ? "Taken on schedule"
-                            : "Not recorded"}
+                  <p className="text-xs uppercase tracking-wider" style={{ color: GREEN_ACCENT }}></p>
+                  <p className="mt-2 font-serif text-5xl leading-none">{sexCount}</p>
+                  <Ico e="❤️" size={16} /> ŠukŠuk!
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {sexCount === 1 ? "entry" : "entries"} in this {period === "W" ? "week" : "month"}
                   </p>
-                </div>
+                </section>
 
-                <div
-                  className="mt-3 rounded-2xl p-3 ring-1"
-                  style={{
-                    backgroundColor: protectionMeta(protectionStateFor(sel)).bg,
-                    borderColor: protectionMeta(protectionStateFor(sel)).color,
-                  }}
-                >
-                  <div className="flex items-start gap-2.5">
-                    <span
-                      className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-black"
-                      style={{
-                        backgroundColor: protectionMeta(protectionStateFor(sel)).color,
-                        color: "#fff",
-                      }}
-                    >
-                      {protectionMeta(protectionStateFor(sel)).symbol}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                        Pregnancy protection
-                      </p>
-                      <p
-                        className="mt-0.5 text-sm font-bold"
-                        style={{ color: protectionMeta(protectionStateFor(sel)).text }}
-                      >
-                        {protectionMeta(protectionStateFor(sel)).label}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                <BristolChart bowelCounts={bowelCounts} />
 
-                <div className="mt-3 rounded-2xl bg-surface/70 p-3 ring-1 ring-border/60">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Drovelis</p>
-                  {selectedDay <= ACTIVE_DAYS ? (
+                <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground">Hot flashes</p>
+                  {hfTotal ? (
                     <>
-                      <p className="mt-1 text-sm font-bold text-foreground">Active pill {selectedDay}/24 · full dose</p>
-                      <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
-                        {DROVELIS_ACTIVE_DOSE}. Pink pill 24 is not weaker than pink pill 1 — all 24 active tablets contain the same dose.
-                      </p>
+                      <div className="mt-2 flex items-baseline gap-2">
+                        <span className="font-serif text-4xl leading-none">{hfTotal}</span>
+                        <span className="text-sm text-muted-foreground">
+                          {hfTotal === 1 ? "episode" : "episodes"} · avg {hfAvg!.toFixed(1)}/5 · most often L{hfTop}
+                        </span>
+                      </div>
+                      <HfBars bars={hfBars} period={period} days={days} anchor={anchor} />
+                      <div className="mt-3 space-y-1">
+                        {[1, 2, 3, 4, 5].map((n) => {
+                          const c = hfCounts[n];
+                          const pct = hfTotal ? (c / hfTotal) * 100 : 0;
+                          const color = HOT_FLASH_COLORS[n];
+                          return (
+                            <div key={n} className="flex items-center gap-2 text-[10px]">
+                              <span
+                                className="grid h-4 w-4 shrink-0 place-items-center rounded-full text-[9px] font-bold text-white"
+                                style={{ background: color }}
+                              >
+                                {n}
+                              </span>
+                              <span className="w-16 shrink-0 text-muted-foreground">
+                                {HOT_FLASH_DESCRIPTIONS[n]}
+                              </span>
+                              <div className="h-2 flex-1 overflow-hidden rounded-full bg-tint">
+                                <div
+                                  className="h-full rounded-full"
+                                  style={{ width: `${pct}%`, background: color }}
+                                />
+                              </div>
+                              <span className="w-6 text-right tabular-nums text-muted-foreground">{c}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </>
                   ) : (
-                    <>
-                      <p className="mt-1 text-sm font-bold text-foreground">Placebo {selectedDay - ACTIVE_DAYS}/4 · no hormones</p>
-                      <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
-                        Protection continues through the planned 4 placebo days when the preceding active pills were taken correctly and the next pack is started on time.
-                      </p>
-                    </>
+                    <p className="mt-1 text-sm text-muted-foreground">No hot flashes logged</p>
                   )}
-                </div>
+                </section>
 
-                {selectedMissed && (
-                  <div
-                    className="mt-3 rounded-2xl p-3 ring-1"
-                    style={{ backgroundColor: "rgba(251,232,199,.58)", borderColor: "rgba(213,138,34,.35)" }}
-                  >
-                    <p className="text-[10px] font-bold uppercase tracking-[0.12em]" style={{ color: "#8A5511" }}>
-                      Missed-pill guidance
-                    </p>
-                    <p className="mt-1 text-[10px] leading-relaxed text-foreground/80">
-                      {missedPillAdvice(selectedDay)}
-                    </p>
-                  </div>
-                )}
-
-                <div className="mt-3 space-y-2">
-                  <div className="grid grid-cols-[1fr_auto] gap-2">
-                    <input
-                      type="time"
-                      value={pickTime}
-                      onChange={(event) => setPickTime(event.target.value)}
-                      className="min-w-0 rounded-xl bg-tint px-3 py-2 text-sm text-foreground ring-1 ring-border"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        markTaken(sel, pickTime);
-                        setSel(null);
-                      }}
-                      className="rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
-                    >
-                      Mark taken
-                    </button>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        markMissed(sel);
-                        setSel(null);
-                      }}
-                      className="flex-1 rounded-xl px-3 py-2 text-xs font-semibold"
-                      style={{ border: "1.5px solid #C94A55", color: "#C94A55" }}
-                    >
-                      Mark missed
-                    </button>
-
-                    {(selectedTaken || selectedMissed) && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          clearRecord(sel);
-                          setSel(null);
-                        }}
-                        className="rounded-xl bg-tint px-3 py-2 text-xs font-semibold text-muted-foreground ring-1 ring-border"
-                      >
-                        Clear
-                      </button>
-                    )}
-                  </div>
-
-                  {selectedDay > ACTIVE_DAYS && (
-                    <p className="text-[9px] leading-relaxed text-muted-foreground">
-                      Placebo logging is for routine tracking only. Missing a placebo tablet does not reduce pregnancy protection as long as the next pack is started on time.
-                    </p>
-                  )}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setSel(null)}
-                  className="mt-4 w-full rounded-xl bg-tint px-3 py-2.5 text-xs font-semibold text-foreground ring-1 ring-border"
-                >
-                  Close
-                </button>
-              </div>
-            </div>,
-            document.body,
-          )
-        : null}
-    </section>
+                <TimeOfDayPatternChart data={view} days={days} period={period} />
+                <MedsAdherence data={view} period={period} anchor={anchor} />
+              </>
+            )}
+      </div>
+    </AppShell>
   );
 }
 
@@ -1639,7 +533,7 @@ function MedsAdherence({
   anchor,
 }: {
   data: ReturnType<typeof useBixbo>["data"];
-  period: Exclude<Period, "P">;
+  period: Period;
   anchor: Date;
 }) {
   const { update } = useBixbo();
@@ -1696,7 +590,7 @@ function MedsAdherence({
     return {
       start,
       end,
-      label: String(base.getFullYear()),
+      label: `1 Jan – 31 Dec ${base.getFullYear()}`,
       title: "Year",
     };
   }, [anchor, period]);
@@ -1886,7 +780,7 @@ function MedsAdherence({
   if (data.meds.length === 0 && removedCounts.length === 0) return null;
 
   return (
-    <section className="rounded-3xl bg-tint p-4 ring-1 ring-border">
+    <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
@@ -2196,7 +1090,7 @@ function InsightBarChartFrame({
 
   return (
     <div className="mt-4">
-      <div className="flex gap-1.5">
+      <div className="flex gap-1">
         <div className="flex flex-col items-end pr-1" style={{ height }}>
           <div className="flex h-full flex-col justify-between text-[10px] font-medium text-muted-foreground">
             {yLabels.map((value) => (
@@ -2330,11 +1224,11 @@ function PainChart({
       bars={bars}
       yLabels={[10, 8, 6, 4, 2, 0]}
       yMax={10}
-      colorFor={() => "#ef4770"}
+      colorFor={(value) => vividPainChartColor(value)}
       tooltipDetails={(i, value) => {
         const heading = period === "Y" ? fmtTapMonth(i, anchor.getFullYear()) : fmtCoupleTooltipDay(days[i]);
         const description = PAIN_DESCRIPTIONS[Math.max(0, Math.min(10, Math.round(value)))] ?? "Pain";
-        const color = "#ef4770";
+        const color = vividPainChartColor(value);
 
         return {
           owner: "You",
@@ -2367,10 +1261,7 @@ function BristolChart({ bowelCounts }: { bowelCounts: number[] }) {
     ...BRISTOL,
   ];
   return (
-    <section className="rounded-3xl bg-tint p-4 ring-1 ring-border">
-      <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-        Bowel — Bristol distribution
-      </h2>
+    <ChartCard title="Bowel — Bristol distribution">
       <div className={`relative mt-3 flex items-end gap-2 transition-[padding] ${active != null ? "pt-20" : ""}`}>
         {chartTypes.map((b) => {
           const count = bowelCounts[b.n] ?? 0;
@@ -2424,7 +1315,7 @@ function BristolChart({ bowelCounts }: { bowelCounts: number[] }) {
           : null}
       </div>
 
-    </section>
+    </ChartCard>
   );
 }
 
@@ -2510,13 +1401,23 @@ function HfBars({
 type HeatmapMetric = "pain" | "period" | "bowel" | "panic" | "tetany" | "hotFlashes" | "sleep";
 
 type HeatmapDatum = {
+  /** CSS background for the heatmap mark. May be a gradient (Bowel Type 0). */
   color: string;
+  /** Solid colour used by the SVG popup border/dot. */
+  tooltipColor: string;
+  /** Compact value used by accessibility labels/legend context. */
   value: string;
-  details: string[];
+  /** Main value text shown inside the small floating popup. */
+  popupValue: string;
+  /** Short secondary line shown inside the small floating popup. */
+  description: string;
+  /** Number of source entries represented by the daily value. */
+  entryCount: number;
 };
 
 const HEATMAP_OPTIONS: { id: HeatmapMetric; label: string }[] = [
   { id: "pain", label: "Pain" },
+  { id: "period", label: "Period" },
   { id: "bowel", label: "Bowel" },
   { id: "panic", label: "Panic episode" },
   { id: "tetany", label: "Tetany episode" },
@@ -2560,164 +1461,146 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
   const [active, setActive] = useState<string | null>(null);
   const year = anchor.getFullYear();
 
-  // Do not use the global "tap outside" dismiss hook here. On iOS it fired while
-  // the user was scrolling the year grid and made the heatmap feel frozen.
-  // The detail card stays open until another cell/metric is chosen or Close is tapped.
   useEffect(() => {
     setActive(null);
   }, [metric, year]);
 
-  const dayNotesFor = useCallback(
-    (key: string): string[] =>
-      (data.dayNotes[key] ?? [])
-        .map((note) => {
-          if (typeof note === "string") return note.trim();
-          const text = note?.text?.trim();
-          if (!text) return "";
-          return `${note.time ? `${note.time} · ` : ""}${text}`;
-        })
-        .filter(Boolean),
-    [data.dayNotes],
+  const datumFor = useCallback(
+    (key: string, selectedMetric: HeatmapMetric): HeatmapDatum | null => {
+      const log = data.dayLogs[key];
+      if (!log) return null;
+
+      if (selectedMetric === "pain") {
+        const entries = (log.pain ?? []).filter((entry) => Number.isFinite(entry.score));
+        if (!entries.length) return null;
+
+        const value = entries.reduce((sum, entry) => sum + Number(entry.score), 0) / entries.length;
+        const rounded = Math.max(0, Math.min(10, Math.round(value)));
+
+        return {
+          color: vividPainChartColor(value),
+          tooltipColor: vividPainChartColor(value),
+          value: `${value.toFixed(1)}/10`,
+          popupValue: entries.length > 1 ? `Pain avg ${value.toFixed(1)}/10` : `Pain ${value.toFixed(1)}/10`,
+          description: PAIN_DESCRIPTIONS[rounded] ?? "Pain",
+          entryCount: entries.length,
+        };
+      }
+
+      if (selectedMetric === "period") {
+        const level = log.periodInfo?.level ?? log.period;
+        if (!level) return null;
+
+        return {
+          color: heatmapPeriodColor(level),
+          tooltipColor: heatmapPeriodColor(level),
+          value: periodLabel(level) || String(level),
+          popupValue: `Period · ${periodLabel(level) || String(level)}`,
+          description: "Logged period flow",
+          entryCount: 1,
+        };
+      }
+
+      if (selectedMetric === "bowel") {
+        const entries = (log.bowel ?? []).filter((entry) => {
+          const type = Number(entry.bristol);
+          return Number.isInteger(type) && type >= 0 && type <= 7;
+        });
+        if (!entries.length) return null;
+
+        const latest = entries[entries.length - 1];
+        const type = Number(latest.bristol);
+        const bristol = BRISTOL.find((item) => item.n === type);
+        const typeZero = type === 0;
+
+        return {
+          color: typeZero ? BRISTOL_MYSTERY_COLOR : bristol?.color ?? INSIGHT_COLORS.sage,
+          tooltipColor: typeZero ? "#8B5CF6" : bristol?.color ?? INSIGHT_COLORS.sage,
+          value: `Type ${type}`,
+          popupValue: `Bowel · Type ${type}`,
+          description: typeZero ? "Type 0" : bristol?.sub ?? "Bowel entry",
+          entryCount: entries.length,
+        };
+      }
+
+      if (selectedMetric === "panic") {
+        const entries = (log.panic ?? []).filter((entry) => Number.isFinite(entry.intensity));
+        if (!entries.length) return null;
+
+        const value = entries.reduce((sum, entry) => sum + Number(entry.intensity), 0) / entries.length;
+        const firstTrigger = entries.find((entry) => entry.trigger?.trim())?.trigger?.trim();
+
+        return {
+          color: vividPainChartColor(value),
+          tooltipColor: vividPainChartColor(value),
+          value: `${value.toFixed(1)}/10 avg`,
+          popupValue: entries.length > 1 ? `Panic avg ${value.toFixed(1)}/10` : `Panic ${value.toFixed(1)}/10`,
+          description: firstTrigger ? `Trigger: ${firstTrigger}` : "Panic episode",
+          entryCount: entries.length,
+        };
+      }
+
+      if (selectedMetric === "tetany") {
+        const entries = (log.tetany ?? []).filter((entry) => Number.isFinite(entry.intensity));
+        if (!entries.length) return null;
+
+        const value = entries.reduce((sum, entry) => sum + Number(entry.intensity), 0) / entries.length;
+        const firstType = entries.find((entry) => entry.types?.length)?.types?.join(", ");
+
+        return {
+          color: fiveLevelSeverityColor(value),
+          tooltipColor: fiveLevelSeverityColor(value),
+          value: `${value.toFixed(1)}/5 avg`,
+          popupValue: entries.length > 1 ? `Tetany avg ${value.toFixed(1)}/5` : `Tetany ${value.toFixed(1)}/5`,
+          description: firstType ? `Type: ${firstType}` : "Tetany episode",
+          entryCount: entries.length,
+        };
+      }
+
+      if (selectedMetric === "hotFlashes") {
+        const entries = (log.pain ?? []).filter(
+          (entry) => entry.hotFlashes != null && Number.isFinite(entry.hotFlashes) && entry.hotFlashes > 0,
+        );
+        if (!entries.length) return null;
+
+        const value = entries.reduce((sum, entry) => sum + Number(entry.hotFlashes), 0) / entries.length;
+        const rounded = Math.max(1, Math.min(5, Math.round(value)));
+
+        return {
+          color: fiveLevelSeverityColor(value),
+          tooltipColor: fiveLevelSeverityColor(value),
+          value: `${value.toFixed(1)}/5 avg`,
+          popupValue:
+            entries.length > 1 ? `Hot flashes avg ${value.toFixed(1)}/5` : `Hot flashes ${value.toFixed(1)}/5`,
+          description: HOT_FLASH_DESCRIPTIONS[rounded] ?? "Hot flashes",
+          entryCount: entries.length,
+        };
+      }
+
+      const hours = log.sleepHours ?? log.pregnancy?.sleepHours ?? log.postpartum?.sleepHours;
+      if (hours == null || !Number.isFinite(hours)) return null;
+
+      const quality = log.sleepQuality
+        ? Array.isArray(log.sleepQuality)
+          ? log.sleepQuality.join(", ")
+          : String(log.sleepQuality)
+        : "";
+
+      return {
+        color: sleepHeatmapColor(hours),
+        tooltipColor: sleepHeatmapColor(hours),
+        value: `${hours.toFixed(1)} h`,
+        popupValue: `Sleep ${hours.toFixed(1)} h`,
+        description: quality ? `Quality: ${quality}` : "Sleep duration",
+        entryCount: 1,
+      };
+    },
+    [data.dayLogs],
   );
 
-  const datumFor = useCallback((key: string, selectedMetric: HeatmapMetric): HeatmapDatum | null => {
-    const log = data.dayLogs[key];
-    if (!log) return null;
-
-    if (selectedMetric === "pain") {
-      const entries = (log.pain ?? []).filter((entry) => Number.isFinite(entry.score));
-      const value = avgDayPain(log);
-      if (value == null || !entries.length) return null;
-      return {
-        color: vividPainChartColor(value),
-        value: `${value.toFixed(1)}/10`,
-        details: entries.map((entry) => {
-          const pieces = [`${entry.time || "—"} · Pain ${entry.score}/10`];
-          if (entry.parts?.length) pieces.push(`Locations: ${entry.parts.join(", ")}`);
-          if (entry.quality?.length) pieces.push(`Quality: ${entry.quality.join(", ")}`);
-          if (entry.symptoms?.length) pieces.push(`Symptoms: ${entry.symptoms.join(", ")}`);
-          if (entry.note?.trim()) pieces.push(`Note: ${entry.note.trim()}`);
-          return pieces.join(" · ");
-        }),
-      };
-    }
-
-    if (selectedMetric === "period") {
-      const level = log.periodInfo?.level ?? log.period;
-      if (!level) return null;
-      const info = log.periodInfo;
-      const details = ["Logged period flow"];
-      if (info?.cramps != null) details.push(`Cramps: ${info.cramps}/10`);
-      if (info?.discharge) details.push(`Discharge: ${info.discharge}`);
-      if (info?.dischargeNote?.trim()) details.push(`Discharge note: ${info.dischargeNote.trim()}`);
-      if (info?.note?.trim()) details.push(`Note: ${info.note.trim()}`);
-      return {
-        color: heatmapPeriodColor(level),
-        value: periodLabel(level) || String(level),
-        details,
-      };
-    }
-
-    if (selectedMetric === "bowel") {
-      const entries = (log.bowel ?? []).filter((entry) => {
-        const type = Number(entry.bristol);
-        return Number.isInteger(type) && type >= 0 && type <= 7;
-      });
-      if (!entries.length) return null;
-      const latest = entries[entries.length - 1];
-      const type = Number(latest.bristol);
-      const bristol = BRISTOL.find((item) => item.n === type);
-      return {
-        color: type === 0 ? "#64748B" : bristol?.color ?? INSIGHT_COLORS.sage,
-        value: `Type ${type}`,
-        details: entries.map((entry) => {
-          const parts = [`${entry.time || "—"} · Type ${Number(entry.bristol)}`];
-          if (entry.feelings?.length) parts.push(`Feelings: ${entry.feelings.join(", ")}`);
-          if (entry.symptoms?.length) parts.push(`Symptoms: ${entry.symptoms.join(", ")}`);
-          if (entry.note?.trim()) parts.push(`Note: ${entry.note.trim()}`);
-          return parts.join(" · ");
-        }),
-      };
-    }
-
-    if (selectedMetric === "panic") {
-      const entries = log.panic ?? [];
-      if (!entries.length) return null;
-      const highest = Math.max(...entries.map((entry) => entry.intensity));
-      return {
-        color: vividPainChartColor(highest),
-        value: `${highest}/10 highest`,
-        details: entries.map((entry) => {
-          const parts = [
-            `${entry.time || "—"} · ${entry.intensity}/10${entry.minutes != null ? ` · ${entry.minutes} min` : " · ongoing"}`,
-          ];
-          if (entry.trigger?.trim()) parts.push(`Trigger: ${entry.trigger.trim()}`);
-          if (entry.physical?.length) parts.push(`Physical: ${entry.physical.join(", ")}`);
-          if (entry.cognitive?.length) parts.push(`Cognitive: ${entry.cognitive.join(", ")}`);
-          if (entry.note?.trim()) parts.push(`Note: ${entry.note.trim()}`);
-          return parts.join(" · ");
-        }),
-      };
-    }
-
-    if (selectedMetric === "tetany") {
-      const entries = log.tetany ?? [];
-      if (!entries.length) return null;
-      const highest = Math.max(...entries.map((entry) => entry.intensity));
-      return {
-        color: fiveLevelSeverityColor(highest),
-        value: `${highest}/5 highest`,
-        details: entries.map((entry) => {
-          const parts = [
-            `${entry.time || "—"} · ${entry.intensity}/5${entry.minutes != null ? ` · ${entry.minutes} min` : " · ongoing"}`,
-          ];
-          if (entry.types?.length) parts.push(`Type: ${entry.types.join(", ")}`);
-          if (entry.location?.length) parts.push(`Location: ${entry.location.join(", ")}`);
-          if (entry.triggers?.length) parts.push(`Triggers: ${entry.triggers.join(", ")}`);
-          if (entry.note?.trim()) parts.push(`Note: ${entry.note.trim()}`);
-          return parts.join(" · ");
-        }),
-      };
-    }
-
-    if (selectedMetric === "hotFlashes") {
-      const entries = (log.pain ?? []).filter(
-        (entry) => entry.hotFlashes != null && Number.isFinite(entry.hotFlashes) && entry.hotFlashes > 0,
-      );
-      if (!entries.length) return null;
-      const highest = Math.max(...entries.map((entry) => entry.hotFlashes!));
-      return {
-        color: fiveLevelSeverityColor(highest),
-        value: `${highest}/5 highest`,
-        details: entries.map((entry) => {
-          const parts = [`${entry.time || "—"} · Hot flashes ${entry.hotFlashes}/5`];
-          if (entry.note?.trim()) parts.push(`Note: ${entry.note.trim()}`);
-          return parts.join(" · ");
-        }),
-      };
-    }
-
-    const hours = log.sleepHours ?? log.pregnancy?.sleepHours ?? log.postpartum?.sleepHours;
-    if (hours == null || !Number.isFinite(hours)) return null;
-    const details: string[] = [];
-    if (log.sleepQuality) {
-      details.push(`Quality: ${Array.isArray(log.sleepQuality) ? log.sleepQuality.join(", ") : log.sleepQuality}`);
-    }
-    if (log.pregnancy?.note?.trim()) details.push(`Pregnancy note: ${log.pregnancy.note.trim()}`);
-    if (log.postpartum?.note?.trim()) details.push(`Postpartum note: ${log.postpartum.note.trim()}`);
-    if (!details.length) details.push("Sleep duration");
-    return {
-      color: sleepHeatmapColor(hours),
-      value: `${hours.toFixed(1)} h`,
-      details,
-    };
-  }, [data.dayLogs]);
-
-  // Precompute the selected metric once per year/metric. Previously datumFor() was
-  // called from every one of the 372 cells on every render, which was noticeably
-  // expensive on iPhone when scrolling the Insights page.
   const heatmapData = useMemo<Record<string, HeatmapDatum | null>>(() => {
     const result: Record<string, HeatmapDatum | null> = {};
+
     for (let month = 0; month < 12; month++) {
       const daysInMonth = new Date(year, month + 1, 0).getDate();
       for (let day = 1; day <= daysInMonth; day++) {
@@ -2725,21 +1608,105 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
         result[key] = datumFor(key, metric);
       }
     }
+
     return result;
   }, [datumFor, metric, year]);
 
-  const activeDatum = active ? heatmapData[active] ?? null : null;
-  const activeMetricLabel = HEATMAP_OPTIONS.find((option) => option.id === metric)?.label ?? "Heatmap";
-  const activeDayNotes = active ? dayNotesFor(active) : [];
+  // On a phone, 53 weekly columns cannot be both large enough to read and fit in one row.
+  // Split the same full-year heatmap into two stacked half-year strips so every daily dot
+  // stays visible while all Jan–Dec data remains on the same Year screen.
+  const halfYearGrids = useMemo(() => {
+    const makeHalf = (startMonth: number, endMonth: number) => {
+      const periodStart = new Date(year, startMonth, 1);
+      periodStart.setHours(0, 0, 0, 0);
+      const periodEnd = new Date(year, endMonth + 1, 0);
+      periodEnd.setHours(0, 0, 0, 0);
 
-  useEffect(() => {
-    if (!active || typeof document === "undefined") return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previousOverflow;
+      const first = new Date(periodStart);
+      first.setDate(first.getDate() - ((first.getDay() + 6) % 7));
+
+      const last = new Date(periodEnd);
+      last.setDate(last.getDate() + (6 - ((last.getDay() + 6) % 7)));
+
+      const utcDay = (date: Date) => Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+      const weekCount = Math.round((utcDay(last) - utcDay(first)) / 86400000 / 7) + 1;
+
+      const weeks = Array.from({ length: weekCount }, (_, weekIndex) =>
+        Array.from({ length: 7 }, (_, weekdayIndex) => {
+          const date = new Date(first);
+          date.setDate(first.getDate() + weekIndex * 7 + weekdayIndex);
+          return date;
+        }),
+      );
+
+      const months = Array.from({ length: endMonth - startMonth + 1 }, (_, offset) => {
+        const monthIndex = startMonth + offset;
+        const monthStart = new Date(year, monthIndex, 1);
+        const weekIndex = Math.floor((utcDay(monthStart) - utcDay(first)) / 86400000 / 7);
+        return { label: MON_SHORT3[monthIndex], weekIndex, monthIndex };
+      });
+
+      return { startMonth, endMonth, weeks, months, weekCount };
     };
-  }, [active]);
+
+    return [makeHalf(0, 5), makeHalf(6, 11)];
+  }, [year]);
+
+  const activeMetricLabel = HEATMAP_OPTIONS.find((option) => option.id === metric)?.label ?? "Heatmap";
+  const activeDatum = active ? heatmapData[active] ?? null : null;
+
+  const activePosition = useMemo(() => {
+    if (!active) return null;
+
+    for (let halfIndex = 0; halfIndex < halfYearGrids.length; halfIndex++) {
+      const half = halfYearGrids[halfIndex];
+      for (let weekIndex = 0; weekIndex < half.weeks.length; weekIndex++) {
+        const weekdayIndex = half.weeks[weekIndex].findIndex((date) => toKey(date) === active);
+        if (weekdayIndex >= 0) return { halfIndex, weekIndex, weekdayIndex };
+      }
+    }
+
+    return null;
+  }, [active, halfYearGrids]);
+
+  const activeTooltip = useMemo<InsightTooltipDetails | null>(() => {
+    if (!active || !activeDatum) return null;
+
+    const entryText =
+      activeDatum.entryCount > 1
+        ? `${activeDatum.entryCount} entries`
+        : activeDatum.entryCount === 1
+          ? "1 entry"
+          : "";
+
+    return {
+      owner: "You",
+      heading: fmtTapDay(active),
+      value: activeDatum.popupValue,
+      description: [entryText, activeDatum.description].filter(Boolean).join(" · "),
+      color: activeDatum.tooltipColor,
+      summary: `You · ${fmtTapDay(active)} · ${activeDatum.popupValue}${entryText ? ` · ${entryText}` : ""}`,
+    };
+  }, [active, activeDatum]);
+
+  const activeTooltipLayout = useMemo(() => {
+    if (!activePosition) return null;
+
+    const rowStep = 17;
+    const gridTop = 24;
+    const dotCenterOffset = 4.5;
+    const tooltipTotalHeight = 70;
+    const connectorGap = 5;
+    const selectedCenterY = gridTop + dotCenterOffset + activePosition.weekdayIndex * rowStep;
+    const showBelow = activePosition.weekdayIndex <= 2;
+
+    return {
+      top: showBelow
+        ? selectedCenterY + connectorGap
+        : Math.max(0, selectedCenterY - tooltipTotalHeight - connectorGap),
+      connectorSide: (showBelow ? "top" : "bottom") as "top" | "bottom",
+    };
+  }, [activePosition]);
 
   const legend = (() => {
     if (metric === "period") {
@@ -2753,7 +1720,7 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
     }
 
     if (metric === "bowel") {
-      return [["T0", "#64748B"], ...BRISTOL.map((item) => [`T${item.n}`, item.color] as const)];
+      return [["T0", BRISTOL_MYSTERY_COLOR], ...BRISTOL.filter((item) => item.n !== 0).map((item) => [`T${item.n}`, item.color] as const)];
     }
 
     if (metric === "sleep") {
@@ -2777,19 +1744,18 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
   })();
 
   return (
-    <section className="rounded-3xl bg-tint p-4 ring-1 ring-border">
-      <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-        {`Year heatmap — ${year}`}
-      </h2>
-      <p className="mt-1 text-xs text-muted-foreground">Choose a metric, then tap a coloured day for its saved details and notes.</p>
+    <ChartCard title={`Year heatmap — ${year}`}>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Choose a metric, then tap a coloured day for its saved average/details.
+      </p>
 
-      <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1">
+      <div className="mt-2.5 flex gap-1 overflow-x-auto pb-0.5">
         {HEATMAP_OPTIONS.map((option) => (
           <button
             key={option.id}
             type="button"
             onClick={() => setMetric(option.id)}
-            className={`shrink-0 rounded-full px-3 py-1.5 text-[10px] font-semibold transition ${
+            className={`shrink-0 rounded-full px-2.5 py-1 text-[9px] font-semibold transition ${
               metric === option.id
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "bg-tint text-muted-foreground ring-1 ring-border/60"
@@ -2800,134 +1766,156 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
         ))}
       </div>
 
-      <div className="mt-4 overflow-x-auto overscroll-x-contain pb-2 touch-auto">
-        <div
-          className="grid w-max items-center gap-1"
-          style={{ gridTemplateColumns: "30px repeat(12, 24px)" }}
-        >
-          <div />
-          {MON_SHORT3.map((month) => (
-            <div key={month} className="text-center text-[9px] font-semibold text-muted-foreground">
-              {month.slice(0, 1)}
-            </div>
-          ))}
+      <div className="mt-3 -mx-3 rounded-[1.5rem] bg-background/55 px-2.5 py-3 ring-1 ring-border/60 sm:mx-0 sm:p-3">
+        <div className="space-y-4">
+          {halfYearGrids.map((half, halfIndex) => {
+            const boundaryWeeks = new Set(
+              half.months.map(({ weekIndex }) => weekIndex).filter((weekIndex) => weekIndex > 0),
+            );
+            const hasActive = activePosition?.halfIndex === halfIndex;
 
-          {Array.from({ length: 31 }, (_, dayIndex) => dayIndex + 1).flatMap((day) => {
-            const row: ReactNode[] = [
-              <div key={`day-${day}`} className="pr-1 text-right text-[10px] tabular-nums text-muted-foreground">
-                {day}
-              </div>,
-            ];
+            return (
+              <div key={`${half.startMonth}-${half.endMonth}`} className="relative min-w-0 overflow-visible">
+                {hasActive && activeTooltip && activePosition && activeTooltipLayout ? (
+                  <InsightFloatingTooltip
+                    leftPct={10 + ((activePosition.weekIndex + 0.5) / Math.max(1, half.weekCount)) * 88}
+                    details={activeTooltip}
+                    top={activeTooltipLayout.top}
+                    connectorSide={activeTooltipLayout.connectorSide}
+                  />
+                ) : null}
 
-            for (let month = 0; month < 12; month++) {
-              const date = new Date(year, month, day);
-              const valid = date.getFullYear() === year && date.getMonth() === month && date.getDate() === day;
-
-              if (!valid) {
-                row.push(<div key={`${month}-${day}`} className="h-6 w-6 rounded-[6px] bg-transparent" />);
-                continue;
-              }
-
-              const key = toKey(date);
-              const datum = heatmapData[key] ?? null;
-              const isActive = active === key;
-
-              row.push(
-                <button
-                  key={key}
-                  type="button"
-                  disabled={!datum}
-                  onClick={() => {
-                    if (!datum) return;
-                    setActive((current) => (current === key ? null : key));
-                  }}
-                  aria-label={`${fmtTapDay(key)} · ${activeMetricLabel}${datum ? ` · ${datum.value}` : " · no data"}`}
-                  aria-pressed={isActive}
-                  className={`h-6 w-6 rounded-[6px] transition-transform ${
-                    datum ? "touch-auto active:scale-95" : "cursor-default"
-                  } ${isActive ? "ring-2 ring-foreground ring-offset-1 ring-offset-background" : ""}`}
-                  style={{ background: datum?.color ?? "var(--tint)" }}
-                />,
-              );
-            }
-
-            return row;
-          })}
-        </div>
-      </div>
-
-      <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[9px] text-muted-foreground">
-        <span className="flex items-center gap-1">
-          <span className="h-3 w-3 rounded-[3px] bg-tint" /> No data
-        </span>
-        {legend.map(([label, color]) => (
-          <span key={label} className="flex items-center gap-1">
-            <span className="h-3 w-3 rounded-[3px]" style={{ background: color }} />
-            {label}
-          </span>
-        ))}
-      </div>
-
-      <p className="mt-3 text-center text-[10px] text-muted-foreground">
-        {active && activeDatum ? "Detail stays open while you scroll. Tap Close when finished." : "Tap a coloured square for details."}
-      </p>
-
-      {active && activeDatum ? (
-        <div className="fixed inset-0 z-[120] flex items-start justify-center px-4 pb-6 pt-[calc(env(safe-area-inset-top)+5.75rem)]">
-          <div className="absolute inset-0 bg-black/30" aria-hidden="true" />
-
-          <section className="relative z-10 w-full max-w-sm overflow-hidden rounded-[1.75rem] bg-surface shadow-2xl ring-1 ring-border">
-            <div className="flex items-start justify-between gap-3 border-b border-border/70 px-4 pb-3 pt-4">
-              <div className="min-w-0">
-                <p className="font-serif text-xl font-bold text-foreground">{fmtTapDay(active)}</p>
-                <p className="mt-0.5 text-[11px] font-medium text-muted-foreground">{activeMetricLabel}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setActive(null)}
-                className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-tint text-base font-semibold text-foreground ring-1 ring-border"
-                aria-label="Close heatmap detail"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="max-h-[58dvh] overflow-y-auto overscroll-contain touch-pan-y p-4">
-              <div className="flex items-center justify-between gap-3 rounded-2xl bg-tint/70 p-3 ring-1 ring-border/50">
-                <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Saved value</span>
-                <span
-                  className="rounded-full px-3 py-1.5 text-xs font-bold text-white shadow-sm"
-                  style={{ background: activeDatum.color }}
-                >
-                  {activeDatum.value}
-                </span>
-              </div>
-
-              <div className="mt-3 space-y-2">
-                {activeDatum.details.map((detail, index) => (
-                  <div key={index} className="rounded-2xl bg-background/80 px-3 py-2.5 ring-1 ring-border/50">
-                    <p className="break-words text-[11px] leading-relaxed text-foreground">{detail}</p>
-                  </div>
-                ))}
-
-                {activeDayNotes.length ? (
-                  <div className="rounded-2xl bg-primary/10 px-3 py-2.5 ring-1 ring-primary/20">
-                    <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Day notes</p>
-                    {activeDayNotes.map((note, index) => (
-                      <p key={index} className="mt-1 break-words text-[11px] leading-relaxed text-foreground">
-                        {note}
-                      </p>
+                <div className="flex gap-2">
+                  <div className="w-[28px] shrink-0 pt-[24px]">
+                    {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((weekday) => (
+                      <div
+                        key={weekday}
+                        className="flex h-[17px] items-center text-[8.5px] font-medium text-muted-foreground"
+                      >
+                        {weekday}
+                      </div>
                     ))}
                   </div>
-                ) : null}
+
+                  <div className="min-w-0 flex-1">
+                    <div className="relative mb-1.5 h-[18px]" aria-hidden="true">
+                      {half.months.map(({ label, weekIndex }) => (
+                        <span
+                          key={label}
+                          className="absolute top-0 -translate-x-1/2 whitespace-nowrap text-[9px] font-semibold text-foreground/80"
+                          style={{ left: `${((weekIndex + 0.5) / Math.max(1, half.weekCount)) * 100}%` }}
+                        >
+                          {label}
+                        </span>
+                      ))}
+                    </div>
+
+                    <div
+                      className="grid w-full"
+                      style={{
+                        gridTemplateColumns: `repeat(${half.weekCount}, 9px)`,
+                        columnGap: "1px",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      {half.weeks.map((week, weekIndex) => {
+                        const isMonthBoundary = boundaryWeeks.has(weekIndex);
+
+                        return (
+                          <div key={weekIndex} className="relative grid shrink-0 grid-rows-7 gap-y-[8px]">
+                            {isMonthBoundary ? (
+                              <span
+                                aria-hidden="true"
+                                className="pointer-events-none absolute -left-[2px] inset-y-[-3px] w-px rounded-full bg-primary/30"
+                              />
+                            ) : null}
+
+                            {week.map((date) => {
+                              const inHalf =
+                                date.getFullYear() === year &&
+                                date.getMonth() >= half.startMonth &&
+                                date.getMonth() <= half.endMonth;
+
+                              if (!inHalf) {
+                                return (
+                                  <span
+                                    key={date.toISOString()}
+                                    className="h-[9px] w-[9px] rounded-full bg-transparent"
+                                  />
+                                );
+                              }
+
+                              const key = toKey(date);
+                              const datum = heatmapData[key] ?? null;
+                              const isActive = active === key;
+
+                              return (
+                                <button
+                                  key={key}
+                                  type="button"
+                                  disabled={!datum}
+                                  onClick={(event) => {
+                                    if (!datum) return;
+                                    event.stopPropagation();
+                                    setActive((current) => (current === key ? null : key));
+                                  }}
+                                  aria-label={`${fmtTapDay(key)} · ${activeMetricLabel}${
+                                    datum ? ` · ${datum.value}` : " · no data"
+                                  }`}
+                                  aria-pressed={isActive}
+                                  className={`h-[9px] w-[9px] rounded-full transition-transform ${
+                                    datum ? "touch-manipulation active:scale-125" : "cursor-default"
+                                  } ${isActive ? "ring-2 ring-foreground ring-offset-1 ring-offset-background" : ""}`}
+                                  style={{ background: datum?.color ?? "var(--tint)" }}
+                                />
+                              );
+                            })}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-          </section>
+            );
+          })}
         </div>
-      ) : null}
-    </section>
+
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5 text-[8.5px] text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <span className="h-3 w-3 rounded-full bg-tint" />
+            No data
+          </span>
+
+          {legend.map(([label, color]) => (
+            <span key={label} className="flex items-center gap-1">
+              <span className="h-3 w-3 rounded-full" style={{ background: color }} />
+              {label}
+            </span>
+          ))}
+        </div>
+
+        {activeTooltip ? (
+          <button
+            type="button"
+            onClick={() => setActive(null)}
+            className="mt-3 flex w-full items-center justify-between gap-3 rounded-2xl bg-primary/15 px-3 py-2.5 text-left ring-1 ring-primary/10"
+          >
+            <span className="min-w-0 truncate text-[10px] font-medium text-foreground">
+              {activeTooltip.summary}
+            </span>
+            <span className="shrink-0 text-[9px] text-muted-foreground">Tap to close</span>
+          </button>
+        ) : (
+          <p className="mt-2.5 text-center text-[9px] text-muted-foreground">
+            Tap any coloured day for details.
+          </p>
+        )}
+      </div>
+    </ChartCard>
   );
 }
+
 
 function TimeOfDayPatternChart({
   data,
@@ -2978,7 +1966,7 @@ function TimeOfDayPatternChart({
   })();
 
   return (
-    <section className="rounded-3xl bg-tint p-4 ring-1 ring-border">
+    <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
       <p className="text-xs uppercase tracking-wider text-muted-foreground">Time of Day Pattern</p>
       {!tetanyTotal && !panicTotal ? (
         <p className="mt-2 text-sm text-muted-foreground">Not enough data yet</p>
