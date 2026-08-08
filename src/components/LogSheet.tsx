@@ -4024,3 +4024,5 @@ function PostpartumSymptomsForm({
           Clear postpartum symptoms
         </button>
       ) : null}
+    </div>
+  );
