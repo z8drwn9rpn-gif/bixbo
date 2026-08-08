@@ -1728,15 +1728,6 @@ function CouplePage() {
               </SectionCard>
             ) : null}
 
-            {activeTab === "health" && partner.gender !== "male" ? (
-              <BlueberrySection
-                partner={partner}
-                selectedMonth={selectedMonth}
-                selectedMonthLabel={selectedMonthLabel}
-                isCurrentMonth={isCurrentMonth}
-              />
-            ) : null}
-
             {activeTab === "health" ? (
               <SectionCard
                 title="My shared details"
