@@ -1699,7 +1699,7 @@ function BirthControlCalendar({
       </div>
 
       {/* Circular HAK overview — only wheel pills open the dose popup. */}
-      <div className="mx-auto mt-2 w-full max-w-[350px] shrink-0">
+      <div className="mx-auto mt-2 w-full max-w-[368px] shrink-0">
         <div className="relative aspect-square w-full">
           <div
             className="absolute inset-[9%] rounded-full"
@@ -1838,10 +1838,10 @@ function BirthControlCalendar({
             );
           })}
 
-          <div className="pointer-events-none absolute left-[17%] right-[17%] top-[20%] bottom-[18%] z-20 flex flex-col items-center overflow-visible text-center">
-            <p className="text-[8px] font-semibold leading-none text-foreground">Day</p>
+          <div className="pointer-events-none absolute left-[14.5%] right-[14.5%] top-[18.5%] bottom-[10.5%] z-20 flex flex-col items-center overflow-visible text-center">
+            <p className="text-[9px] font-semibold leading-none text-foreground">Day</p>
             <p
-              className="mt-0.5 font-serif text-[clamp(1.5rem,6.4vw,2rem)] font-bold leading-none"
+              className="mt-0.5 font-serif text-[clamp(1.7rem,7vw,2.25rem)] font-bold leading-none"
               style={{ color: currentDay <= ACTIVE_DAYS ? HAK_PURPLE_DARK : HAK_PINK_DARK }}
             >
               {currentDay} / {PACK_DAYS}
@@ -1849,28 +1849,28 @@ function BirthControlCalendar({
 
             {currentDay > ACTIVE_DAYS && (
               <p
-                className="mt-0.5 text-[9px] font-semibold leading-none"
+                className="mt-0.5 text-[10px] font-semibold leading-none"
                 style={{ color: HAK_PINK_DARK }}
               >
                 Placebo / break
               </p>
             )}
 
-            <div className="mt-1.5 w-full">
-              <p className="text-[10px] font-bold leading-none text-foreground">
+            <div className="mt-2 w-full">
+              <p className="text-[12px] font-bold leading-none text-foreground">
                 {hakMonthLabel}
               </p>
 
-              <div className="mt-1 grid grid-cols-7 text-center text-[6px] font-semibold leading-none text-foreground/75">
+              <div className="mt-1.5 grid grid-cols-7 text-center text-[7px] font-semibold leading-none text-foreground/75">
                 {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((weekday) => (
                   <span key={weekday}>{weekday}</span>
                 ))}
               </div>
 
-              <div className="mt-0.5 grid grid-cols-7 gap-x-[1px] gap-y-[1px]">
+              <div className="mt-1 grid grid-cols-7 gap-x-[2px] gap-y-[2px]">
                 {hakMonthCells.map((cell) => {
                   if (!cell.inMonth) {
-                    return <span key={cell.key} className="h-[18px]" aria-hidden="true" />;
+                    return <span key={cell.key} className="h-[21px]" aria-hidden="true" />;
                   }
 
                   const packDay = cell.packDay;
@@ -1901,7 +1901,7 @@ function BirthControlCalendar({
                   return (
                     <span
                       key={cell.key}
-                      className="flex h-[18px] min-w-0 flex-col items-center justify-start"
+                      className="flex h-[21px] min-w-0 flex-col items-center justify-start"
                       aria-label={
                         packDay == null
                           ? fmtFullDate(cell.key)
@@ -1909,7 +1909,7 @@ function BirthControlCalendar({
                       }
                     >
                       <span
-                        className="grid h-[9px] min-w-[14px] place-items-center rounded-full px-[2px] text-[6.8px] font-bold leading-none tabular-nums"
+                        className="grid h-[10px] min-w-[16px] place-items-center rounded-full px-[2px] text-[7.8px] font-bold leading-none tabular-nums"
                         style={{
                           color: "var(--foreground)",
                           boxShadow: isToday ? "0 0 0 1px rgba(65,76,18,.68)" : undefined,
@@ -1920,7 +1920,7 @@ function BirthControlCalendar({
 
                       {packDay != null && (
                         <span
-                          className="mt-[1px] max-w-[27px] truncate rounded-[3px] px-[2px] py-[1px] text-[5px] font-bold leading-none tabular-nums"
+                          className="mt-[1px] max-w-[31px] truncate rounded-[4px] px-[3px] py-[1px] text-[5.8px] font-bold leading-none tabular-nums"
                           style={{
                             backgroundColor: chipBg,
                             color: chipColor,
@@ -1935,32 +1935,6 @@ function BirthControlCalendar({
               </div>
             </div>
 
-            <div className="absolute bottom-[-13%] left-1/2 h-[32px] w-[27px] -translate-x-1/2 rotate-[8deg]" aria-hidden="true">
-              <div
-                className="absolute inset-x-1 bottom-[-4px] h-2 rounded-full opacity-20 blur-[2px]"
-                style={{ backgroundColor: "#4E3E6D" }}
-              />
-              <div
-                className="relative grid h-full w-full grid-cols-2 gap-x-[3px] gap-y-[3px] rounded-[7px] p-[4px] shadow-md ring-1"
-                style={{
-                  background: "linear-gradient(145deg, #F1ECFA 0%, #D7C6EE 48%, #B99BD9 100%)",
-                  borderColor: "rgba(122,83,200,.18)",
-                }}
-              >
-                {Array.from({ length: 6 }).map((_, index) => (
-                  <span
-                    key={index}
-                    className="relative rounded-full"
-                    style={{
-                      background: "radial-gradient(circle at 30% 25%, #A88BE0 0%, #7D5BC2 50%, #5B3A9E 100%)",
-                      boxShadow: "inset 1px 1px 2px rgba(255,255,255,.42), 0 1px 2px rgba(61,38,99,.18)",
-                    }}
-                  >
-                    <span className="absolute left-[22%] top-[18%] h-[28%] w-[28%] rounded-full bg-white/35" />
-                  </span>
-                ))}
-              </div>
-            </div>
           </div>
         </div>
       </div>
