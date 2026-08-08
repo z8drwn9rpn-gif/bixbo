@@ -2014,7 +2014,7 @@ function BirthControlCalendar({
                 type="button"
                 onClick={() => {
                   setSel(dateKey);
-                  setPickTime("");
+                  // selection reset
                 }}
                 className="absolute z-10 grid h-8 w-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[10px] font-bold transition active:scale-95"
                 style={{
