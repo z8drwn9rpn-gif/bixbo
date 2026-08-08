@@ -2967,3 +2967,8 @@ function TriggerResult({
           }}
         />
       </div>
+
+      <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">{detail}</p>
+    </div>
+  );
+}
