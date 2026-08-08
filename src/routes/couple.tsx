@@ -238,7 +238,7 @@ function formatValue(value: number | null, decimals = 0, unit = "") {
 
 function SectionCard({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
   return (
-    <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
+    <section className="rounded-3xl bg-surface-elevated/70 p-5 ring-1 ring-border/60">
       <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{title}</h2>
 
       {description ? <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{description}</p> : null}
@@ -264,7 +264,7 @@ function StatCard({
   const palette = TONES[tone];
 
   return (
-    <article className="rounded-3xl bg-tint p-4 ring-1 ring-border">
+    <article className="rounded-3xl bg-surface-sunken/34 p-4 ring-1 ring-border/38">
       <div
         className="grid h-9 w-9 place-items-center rounded-2xl"
         style={{
@@ -320,7 +320,7 @@ function ComparisonBarCard({
   const theirsPercent = theirs == null ? 0 : clampPercent((Math.max(0, theirs) / calculatedMax) * 100);
 
   return (
-    <article className="rounded-3xl bg-tint p-4 ring-1 ring-border">
+    <article className="rounded-3xl bg-surface-sunken/34 p-4 ring-1 ring-border/38">
       <div className="flex items-start gap-3">
         <span
           className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl"
@@ -410,8 +410,8 @@ function SimilarityCard({ score, partnerName }: { score: number; partnerName: st
   const safeScore = clampPercent(score);
 
   return (
-    <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
-      <div className="flex items-center gap-4 rounded-3xl bg-tint p-4 ring-1 ring-border/60">
+    <section className="rounded-3xl bg-surface-elevated/70 p-5 ring-1 ring-border/60">
+      <div className="flex items-center gap-4 rounded-3xl bg-surface-sunken/34 p-4 ring-1 ring-border/38">
         <div
           className="grid h-24 w-24 shrink-0 place-items-center rounded-full p-2"
           style={{
@@ -456,7 +456,7 @@ function PainList({ title, entries }: { title: string; entries: (PainEntry & { d
 
       <ul className="space-y-2">
         {entries.map((pain) => (
-          <li key={`${pain.dateKey}-${pain.id}`} className="flex items-start gap-3 rounded-2xl bg-tint p-3">
+          <li key={`${pain.dateKey}-${pain.id}`} className="flex items-start gap-3 rounded-2xl bg-surface-sunken/32 p-3 ring-1 ring-border/25">
             <div
               className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-sm font-bold text-white"
               style={{ background: painColor(pain.score) }}
@@ -513,7 +513,7 @@ function TetanyList({ title, entries }: { title: string; entries: (TetanyEpisode
 
       <ul className="space-y-2">
         {entries.map((episode) => (
-          <li key={`${episode.dateKey}-${episode.id}`} className="rounded-2xl bg-tint p-3 text-sm">
+          <li key={`${episode.dateKey}-${episode.id}`} className="rounded-2xl bg-surface-sunken/32 p-3 text-sm ring-1 ring-border/25">
             <p className="text-xs text-muted-foreground">
               {episode.dateKey} · {episode.time} · intensity {episode.intensity}/5 ·{" "}
               {episode.minutes == null ? "ongoing" : `${episode.minutes} min`}
@@ -550,7 +550,7 @@ function PanicList({ title, entries }: { title: string; entries: (PanicAttack & 
 
       <ul className="space-y-2">
         {entries.map((attack) => (
-          <li key={`${attack.dateKey}-${attack.id}`} className="rounded-2xl bg-tint p-3 text-sm">
+          <li key={`${attack.dateKey}-${attack.id}`} className="rounded-2xl bg-surface-sunken/32 p-3 text-sm ring-1 ring-border/25">
             <p className="text-xs text-muted-foreground">
               {attack.dateKey} · {attack.time} · intensity {attack.intensity}/10 ·{" "}
               {attack.minutes == null ? "ongoing" : `${attack.minutes} min`}
@@ -604,7 +604,7 @@ function MedsList({
 
       <ul className="space-y-2">
         {nonEmpty.slice(0, 14).map((day) => (
-          <li key={day.dateKey} className="rounded-2xl bg-tint p-3 text-sm">
+          <li key={day.dateKey} className="rounded-2xl bg-surface-sunken/32 p-3 text-sm ring-1 ring-border/25">
             <p className="mb-1 text-xs text-muted-foreground">{day.dateKey}</p>
 
             {day.meds.map((med) =>
@@ -650,7 +650,7 @@ function CurrentAndHistory({
   historyContent: ReactNode;
 }) {
   return (
-    <section className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
+    <section className="rounded-2xl bg-surface-sunken/34 p-3 ring-1 ring-border/32">
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-sm font-semibold text-foreground">{title}</h3>
         <span className="rounded-full bg-surface px-2.5 py-1 text-[10px] font-semibold text-muted-foreground ring-1 ring-border/40">
@@ -783,7 +783,7 @@ function CouplePainChart({
   };
 
   return (
-    <section className="rounded-3xl bg-surface p-5 ring-1 ring-border">
+    <section className="rounded-3xl bg-surface-elevated/70 p-5 ring-1 ring-border/60">
       <div>
         <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
           {`Pain — ${periodLabel}`}
@@ -1044,7 +1044,7 @@ function CouplePainChart({
       </div>
 
       {selectedBar ? (
-        <div className="mt-2 rounded-[1.25rem] bg-primary/20 px-2.5 py-2 text-[11px] text-foreground ring-1 ring-primary/20">
+        <div className="mt-2 rounded-[1.25rem] bg-surface-sunken/40 px-2.5 py-2 text-[11px] text-foreground ring-1 ring-border/35">
           <button
             type="button"
             onClick={() => setSelectedBar(null)}
@@ -1168,7 +1168,7 @@ function BlueberrySection({
       </h3>
 
       {next ? (
-        <div className="space-y-1 rounded-2xl bg-tint p-3 text-sm">
+        <div className="space-y-1 rounded-2xl bg-surface-sunken/32 p-3 text-sm ring-1 ring-border/25">
           <p className="flex items-center gap-2">
             <WaterIcon size={18} />
             <span>
@@ -1188,7 +1188,7 @@ function BlueberrySection({
         </p>
       ) : null}
 
-      <div className="rounded-2xl bg-tint p-3">
+      <div className="rounded-2xl bg-surface-sunken/32 p-3 ring-1 ring-border/25">
         <p className="mb-2 text-center text-xs font-medium">{selectedMonthLabel}</p>
 
         <div className="mb-1 grid grid-cols-7 gap-1 text-center text-[10px] text-muted-foreground">
@@ -1466,7 +1466,7 @@ function CouplePage() {
     <AppShell title="Bixbo Couple">
       <div className="space-y-3 px-5 pb-[calc(96px+env(safe-area-inset-bottom))] pt-2 lg:grid lg:grid-cols-2 lg:items-start lg:gap-3 lg:space-y-0 lg:px-0 lg:pb-12 [&>*:first-child]:lg:col-span-2">
         <div
-          className="mx-auto grid w-full max-w-[340px] grid-cols-3 gap-0.5 rounded-xl bg-primary/20 p-0.5 ring-1 ring-primary/15 lg:max-w-sm"
+          className="mx-auto grid w-full max-w-[340px] grid-cols-3 gap-0.5 rounded-xl bg-surface-sunken/50 p-0.5 ring-1 ring-border/50 lg:max-w-sm"
           role="tablist"
           aria-label="Couple period"
         >
@@ -1533,7 +1533,7 @@ function CouplePage() {
           <>
             <nav
               aria-label="Couple sections"
-              className="mx-auto grid w-full max-w-[340px] grid-cols-3 gap-0.5 rounded-xl bg-primary/20 p-0.5 ring-1 ring-primary/15 lg:max-w-sm"
+              className="mx-auto grid w-full max-w-[340px] grid-cols-3 gap-0.5 rounded-xl bg-surface-sunken/50 p-0.5 ring-1 ring-border/50 lg:max-w-sm"
             >
               {tabs.map((tab) => {
                 const active = activeTab === tab.id;
