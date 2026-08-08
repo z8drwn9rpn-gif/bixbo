@@ -272,233 +272,399 @@ function eachDay(startK: string, endK: string): string[] {
   return out;
 }
 
+
+function InsightPeriodSelect({
+  value,
+  onChange,
+  ariaLabel,
+}: {
+  value: Period;
+  onChange: (period: Period) => void;
+  ariaLabel: string;
+}) {
+  return (
+    <select
+      aria-label={ariaLabel}
+      value={value}
+      onChange={(event) => onChange(event.target.value as Period)}
+      className="h-8 min-w-[86px] shrink-0 rounded-xl border border-border/70 bg-background/80 px-2 text-[10px] font-semibold text-foreground outline-none"
+    >
+      <option value="W">Week</option>
+      <option value="M">Month</option>
+      <option value="Y">Year</option>
+    </select>
+  );
+}
+
+
+function shiftInsightPeriodAnchor(anchor: Date, period: Period, delta: -1 | 1): Date {
+  const next = new Date(anchor);
+  next.setHours(0, 0, 0, 0);
+
+  if (period === "W") {
+    next.setDate(next.getDate() + delta * 7);
+    return next;
+  }
+
+  if (period === "M") {
+    // Use day 1 before changing month so dates like the 31st can never skip a month.
+    next.setDate(1);
+    next.setMonth(next.getMonth() + delta);
+    return next;
+  }
+
+  next.setFullYear(next.getFullYear() + delta);
+  return next;
+}
+
+function insightPeriodNavigationLabel(period: Period, anchor: Date): string {
+  if (period === "Y") return String(anchor.getFullYear());
+
+  if (period === "M") {
+    return anchor.toLocaleDateString("en-GB", {
+      month: "long",
+      year: "numeric",
+    });
+  }
+
+  const { startK, endK } = rangeFor("W", anchor);
+  const start = fromKey(startK);
+  const end = fromKey(endK);
+
+  const startDay = start.getDate();
+  const endDay = end.getDate();
+  const startMonth = start.toLocaleDateString("en-GB", { month: "short" });
+  const endMonth = end.toLocaleDateString("en-GB", { month: "short" });
+
+  if (start.getFullYear() !== end.getFullYear()) {
+    return `${startDay} ${startMonth} ${start.getFullYear()} – ${endDay} ${endMonth} ${end.getFullYear()}`;
+  }
+
+  if (start.getMonth() !== end.getMonth()) {
+    return `${startDay} ${startMonth} – ${endDay} ${endMonth} ${end.getFullYear()}`;
+  }
+
+  return `${startDay}–${endDay} ${endMonth} ${end.getFullYear()}`;
+}
+
+function InsightPeriodControl({
+  value,
+  onChange,
+  anchor,
+  onShift,
+  ariaLabel,
+}: {
+  value: Period;
+  onChange: (period: Period) => void;
+  anchor: Date;
+  onShift: (delta: -1 | 1) => void;
+  ariaLabel: string;
+}) {
+  const unit = value === "W" ? "week" : value === "M" ? "month" : "year";
+
+  return (
+    <div className="flex shrink-0 flex-col items-end gap-1">
+      <InsightPeriodSelect value={value} onChange={onChange} ariaLabel={ariaLabel} />
+
+      <div className="inline-flex h-7 items-center rounded-xl border border-border/60 bg-background/65 px-0.5">
+        <button
+          type="button"
+          onClick={() => onShift(-1)}
+          className="grid h-6 w-6 shrink-0 place-items-center rounded-lg text-muted-foreground transition hover:bg-tint hover:text-foreground"
+          aria-label={`Previous ${unit}`}
+        >
+          <ChevronLeft className="h-3.5 w-3.5" />
+        </button>
+
+        <span className="min-w-[104px] max-w-[154px] whitespace-nowrap px-1 text-center text-[9px] font-semibold tabular-nums text-foreground">
+          {insightPeriodNavigationLabel(value, anchor)}
+        </span>
+
+        <button
+          type="button"
+          onClick={() => onShift(1)}
+          className="grid h-6 w-6 shrink-0 place-items-center rounded-lg text-muted-foreground transition hover:bg-tint hover:text-foreground"
+          aria-label={`Next ${unit}`}
+        >
+          <ChevronRight className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function InsightsPage() {
   const { data, hydrated } = useBixbo();
   const view = hydrated ? data : EMPTY;
-  const [period, setPeriod] = useState<Period>("W");
-  const [anchor, setAnchor] = useState<Date>(new Date());
-  const { startK, endK } = useMemo(() => rangeFor(period, anchor), [period, anchor]);
-  const days = useMemo(() => eachDay(startK, endK), [startK, endK]);
+  const [anchor, setAnchor] = useState<Date>(() => new Date());
 
-  const painSeries = days.map((k) => avgDayPain(view.dayLogs[k]));
-  const painAvg = (() => {
+  // One Insights page. Every chart keeps its own Week / Month / Year range
+  // AND its own independent date anchor for previous/next navigation.
+  const [painPeriod, setPainPeriod] = useState<Period>("Y");
+  const [hotFlashPeriod, setHotFlashPeriod] = useState<Period>("Y");
+  const [bowelPeriod, setBowelPeriod] = useState<Period>("Y");
+  const [timeOfDayPeriod, setTimeOfDayPeriod] = useState<Period>("Y");
+  const [medsPeriod, setMedsPeriod] = useState<Period>("Y");
+
+  const [painAnchor, setPainAnchor] = useState<Date>(() => new Date());
+  const [hotFlashAnchor, setHotFlashAnchor] = useState<Date>(() => new Date());
+  const [bowelAnchor, setBowelAnchor] = useState<Date>(() => new Date());
+  const [timeOfDayAnchor, setTimeOfDayAnchor] = useState<Date>(() => new Date());
+  const [medsAnchor, setMedsAnchor] = useState<Date>(() => new Date());
+
+  const periodDays = useCallback((selectedPeriod: Period, selectedAnchor: Date) => {
+    const { startK, endK } = rangeFor(selectedPeriod, selectedAnchor);
+    return eachDay(startK, endK);
+  }, []);
+
+  const painDays = useMemo(
+    () => periodDays(painPeriod, painAnchor),
+    [painAnchor, painPeriod, periodDays],
+  );
+  const hotFlashDays = useMemo(
+    () => periodDays(hotFlashPeriod, hotFlashAnchor),
+    [hotFlashAnchor, hotFlashPeriod, periodDays],
+  );
+  const bowelDays = useMemo(
+    () => periodDays(bowelPeriod, bowelAnchor),
+    [bowelAnchor, bowelPeriod, periodDays],
+  );
+  const timeOfDayDays = useMemo(
+    () => periodDays(timeOfDayPeriod, timeOfDayAnchor),
+    [periodDays, timeOfDayAnchor, timeOfDayPeriod],
+  );
+
+  const painSeries = useMemo(() => painDays.map((k) => avgDayPain(view.dayLogs[k])), [painDays, view.dayLogs]);
+  const painAvg = useMemo(() => {
     const nums = painSeries.filter((n): n is number => n != null);
     if (!nums.length) return null;
     return nums.reduce((a, b) => a + b, 0) / nums.length;
-  })();
+  }, [painSeries]);
 
-  // Bowel by type
-  const bowelCounts = new Array(8).fill(0) as number[];
-  days.forEach((k) =>
-    view.dayLogs[k]?.bowel?.forEach((b) => {
-      const bristol = Number(b.bristol);
-      if (Number.isInteger(bristol) && bristol >= 0 && bristol <= 7) {
-        bowelCounts[bristol] = (bowelCounts[bristol] ?? 0) + 1;
-      }
-    }),
+  // Bowel by Bristol type for the selected local period.
+  const bowelCounts = useMemo(() => {
+    const counts = new Array(8).fill(0) as number[];
+    bowelDays.forEach((k) =>
+      view.dayLogs[k]?.bowel?.forEach((b) => {
+        const bristol = Number(b.bristol);
+        if (Number.isInteger(bristol) && bristol >= 0 && bristol <= 7) {
+          counts[bristol] = (counts[bristol] ?? 0) + 1;
+        }
+      }),
+    );
+    return counts;
+  }, [bowelDays, view.dayLogs]);
+
+  // Hot flashes — same values, scale and colours as before, now with its own local period.
+  const hfSeries = useMemo(
+    () =>
+      hotFlashDays.map((k) => {
+        const vals = (view.dayLogs[k]?.pain ?? [])
+          .map((p) => p.hotFlashes)
+          .filter((n): n is number => n != null);
+        return vals.length ? Math.max(...vals) : undefined;
+      }),
+    [hotFlashDays, view.dayLogs],
   );
 
+  const hfCounts = useMemo(() => {
+    const counts = [0, 0, 0, 0, 0, 0] as number[];
+    hotFlashDays.forEach((k) =>
+      (view.dayLogs[k]?.pain ?? []).forEach((p) => {
+        if (p.hotFlashes && p.hotFlashes >= 1 && p.hotFlashes <= 5) counts[p.hotFlashes]++;
+      }),
+    );
+    return counts;
+  }, [hotFlashDays, view.dayLogs]);
 
-  // Hot flashes — collect per-day max intensity + distribution across levels 1–5
-  const hfSeries = days.map((k) => {
-    const vals = (view.dayLogs[k]?.pain ?? []).map((p) => p.hotFlashes).filter((n): n is number => n != null);
-    return vals.length ? Math.max(...vals) : undefined;
-  });
-  const hfCounts = [0, 0, 0, 0, 0, 0] as number[];
-  days.forEach((k) =>
-    (view.dayLogs[k]?.pain ?? []).forEach((p) => {
-      if (p.hotFlashes && p.hotFlashes >= 1 && p.hotFlashes <= 5) hfCounts[p.hotFlashes]++;
-    }),
-  );
-  // Year view aggregates to 12 monthly buckets so the bars stay readable,
-  // keeping the yearly hot-flash chart readable.
-  const aggregateMonthly = (keys: string[], series: (number | undefined)[]) => {
+  const aggregateMonthly = useCallback((keys: string[], series: (number | undefined)[]) => {
     const sums = new Array(12).fill(0) as number[];
     const counts = new Array(12).fill(0) as number[];
     keys.forEach((k, i) => {
-      const v = series[i];
-      if (v == null) return;
-      const mi = Number(k.slice(5, 7)) - 1;
-      sums[mi] += v;
-      counts[mi]++;
+      const value = series[i];
+      if (value == null) return;
+      const monthIndex = Number(k.slice(5, 7)) - 1;
+      sums[monthIndex] += value;
+      counts[monthIndex]++;
     });
-    return sums.map((s, i) => (counts[i] ? s / counts[i] : undefined));
-  };
-  const hfBars = period === "Y" ? aggregateMonthly(days, hfSeries) : hfSeries;
+    return sums.map((sum, index) => (counts[index] ? sum / counts[index] : undefined));
+  }, []);
+
+  const hfBars = useMemo(
+    () => (hotFlashPeriod === "Y" ? aggregateMonthly(hotFlashDays, hfSeries) : hfSeries),
+    [aggregateMonthly, hfSeries, hotFlashDays, hotFlashPeriod],
+  );
+
   const hfTotal = hfCounts.reduce((a, b) => a + b, 0);
   const hfAvg = (() => {
-    const s = hfCounts.reduce((sum, c, i) => sum + c * i, 0);
-    return hfTotal ? s / hfTotal : null;
+    const sum = hfCounts.reduce((acc, count, index) => acc + count * index, 0);
+    return hfTotal ? sum / hfTotal : null;
   })();
   const hfTop = (() => {
-    let bestN = 0,
-      bestC = 0;
-    for (let i = 1; i <= 5; i++)
-      if (hfCounts[i] > bestC) {
-        bestC = hfCounts[i];
-        bestN = i;
+    let bestLevel = 0;
+    let bestCount = 0;
+    for (let level = 1; level <= 5; level++) {
+      if (hfCounts[level] > bestCount) {
+        bestCount = hfCounts[level];
+        bestLevel = level;
       }
-    return bestN;
+    }
+    return bestLevel;
   })();
 
-  // Cycle summary (last 6 months)
-
-  const goPrev = () =>
-    setAnchor((d) => {
-      const n = new Date(d);
-      if (period === "W") n.setDate(n.getDate() - 7);
-      else if (period === "M") {
-        n.setDate(1);
-        n.setMonth(n.getMonth() - 1);
-      } else n.setFullYear(n.getFullYear() - 1);
-      return n;
+  const shiftHeatmapYear = (delta: -1 | 1) =>
+    setAnchor((current) => {
+      const next = new Date(current);
+      next.setFullYear(next.getFullYear() + delta);
+      return next;
     });
-  const goNext = () =>
-    setAnchor((d) => {
-      const n = new Date(d);
-      if (period === "W") n.setDate(n.getDate() + 7);
-      else if (period === "M") {
-        n.setDate(1);
-        n.setMonth(n.getMonth() + 1);
-      } else n.setFullYear(n.getFullYear() + 1);
-      return n;
-    });
-
-  const label =
-    period === "Y"
-      ? String(anchor.getFullYear())
-      : period === "M"
-        ? anchor.toLocaleDateString("en-GB", { month: "long", year: "numeric" })
-        : `${startK} → ${endK}`;
 
   return (
     <AppShell title="Health of Bixbo">
       <div className="space-y-3 px-5 pt-2 pb-[calc(96px+env(safe-area-inset-bottom))] lg:grid lg:grid-cols-2 lg:items-start lg:gap-3 lg:space-y-0 lg:px-0 lg:pb-12 [&>*:first-child]:lg:col-span-2">
-        <div
-          className="mx-auto grid w-full max-w-[340px] grid-cols-3 gap-0.5 rounded-xl bg-primary/20 p-0.5 ring-1 ring-primary/15 lg:max-w-sm"
-          role="tablist"
-          aria-label="Insights period"
+        <YearHealthHeatmap
+          data={view}
+          anchor={anchor}
+          onPrevYear={() => shiftHeatmapYear(-1)}
+          onNextYear={() => shiftHeatmapYear(1)}
+        />
+
+        <section
+          className="rounded-3xl p-5 ring-1"
+          style={{
+            backgroundColor: GREEN_SOFT,
+            boxShadow: `inset 0 0 0 1px ${GREEN_BORDER}`,
+          }}
         >
-          {(["W", "M", "Y"] as Period[]).map((p) => {
-            const active = period === p;
+          <div className="flex items-start justify-between gap-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: PAIN_ACCENT }}>
+              Pain scale
+            </p>
+            <InsightPeriodControl
+              value={painPeriod}
+              onChange={setPainPeriod}
+              anchor={painAnchor}
+              onShift={(delta) =>
+                setPainAnchor((current) => shiftInsightPeriodAnchor(current, painPeriod, delta))
+              }
+              ariaLabel="Pain scale period"
+            />
+          </div>
 
-            return (
-              <button
-                key={p}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                onClick={() => setPeriod(p)}
-                className={`min-w-0 rounded-[10px] px-2 py-1.5 text-[11px] font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
-                  active
-                    ? "bg-primary text-primary-foreground shadow-md"
-                    : "text-foreground/80 hover:bg-surface/45 hover:text-foreground"
-                }`}
-              >
-                {p === "W" ? "Week" : p === "M" ? "Month" : "Year"}
-              </button>
-            );
-          })}
-        </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="font-serif text-5xl leading-none">
+              {painAvg != null ? painAvg.toFixed(1) : "–"}
+            </span>
+            <span className="text-sm text-muted-foreground">
+              avg · {painSeries.filter((n) => n != null).length}{" "}
+              {painSeries.filter((n) => n != null).length === 1 ? "entry" : "entries"}
+            </span>
+          </div>
 
-            <div className="flex items-center justify-between">
-              <button
-                onClick={goPrev}
-                className="grid h-7 w-7 place-items-center rounded-full transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                aria-label="Previous period"
-              >
-                <ChevronLeft className="h-3 w-3" />
-              </button>
-              <span className="text-[11px] font-medium leading-none">{label}</span>
-              <button
-                onClick={goNext}
-                className="grid h-7 w-7 place-items-center rounded-full transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                aria-label="Next period"
-              >
-                <ChevronRight className="h-3 w-3" />
-              </button>
-            </div>
+          <PainChart
+            key={`pain-${painPeriod}-${toKey(painAnchor)}`}
+            period={painPeriod}
+            days={painDays}
+            series={painSeries}
+            anchor={painAnchor}
+          />
+        </section>
 
-            {period === "Y" ? (
-              <>
-                <YearHealthHeatmap data={view} anchor={anchor} />
-                <TimeOfDayPatternChart data={view} days={days} period={period} />
-                <MedsAdherence data={view} period={period} anchor={anchor} />
-              </>
-            ) : (
-              <>
-                <section
-                  className="rounded-3xl p-5 ring-1"
-                  style={{
-                    backgroundColor: GREEN_SOFT,
-                    boxShadow: `inset 0 0 0 1px ${GREEN_BORDER}`,
-                  }}
-                >
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: PAIN_ACCENT }}>
-                    Pain scale
-                  </p>
-                  <div className="mt-2 flex items-baseline gap-2">
-                    <span className="font-serif text-5xl leading-none">
-                      {painAvg != null ? painAvg.toFixed(1) : "–"}
-                    </span>
-                    <span className="text-sm text-muted-foreground">
-                      avg · {painSeries.filter((n) => n != null).length}{" "}
-                      {painSeries.filter((n) => n != null).length === 1 ? "entry" : "entries"}
-                    </span>
-                  </div>
-                  <PainChart period={period} days={days} series={painSeries} anchor={anchor} />
-                </section>
+        <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
+          <div className="flex items-start justify-between gap-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Hot flashes</p>
+            <InsightPeriodControl
+              value={hotFlashPeriod}
+              onChange={setHotFlashPeriod}
+              anchor={hotFlashAnchor}
+              onShift={(delta) =>
+                setHotFlashAnchor((current) => shiftInsightPeriodAnchor(current, hotFlashPeriod, delta))
+              }
+              ariaLabel="Hot flashes period"
+            />
+          </div>
 
-                <BristolChart bowelCounts={bowelCounts} />
+          {hfTotal ? (
+            <>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="font-serif text-4xl leading-none">{hfTotal}</span>
+                <span className="text-sm text-muted-foreground">
+                  {hfTotal === 1 ? "episode" : "episodes"} · avg {hfAvg!.toFixed(1)}/5 · most often L{hfTop}
+                </span>
+              </div>
 
-                <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Hot flashes</p>
-                  {hfTotal ? (
-                    <>
-                      <div className="mt-2 flex items-baseline gap-2">
-                        <span className="font-serif text-4xl leading-none">{hfTotal}</span>
-                        <span className="text-sm text-muted-foreground">
-                          {hfTotal === 1 ? "episode" : "episodes"} · avg {hfAvg!.toFixed(1)}/5 · most often L{hfTop}
-                        </span>
+              <HfBars
+                key={`hot-flashes-${hotFlashPeriod}-${toKey(hotFlashAnchor)}`}
+                bars={hfBars}
+                period={hotFlashPeriod}
+                days={hotFlashDays}
+                anchor={hotFlashAnchor}
+              />
+
+              <div className="mt-3 space-y-1">
+                {[1, 2, 3, 4, 5].map((n) => {
+                  const count = hfCounts[n];
+                  const pct = hfTotal ? (count / hfTotal) * 100 : 0;
+                  const color = HOT_FLASH_COLORS[n];
+
+                  return (
+                    <div key={n} className="flex items-center gap-2 text-[10px]">
+                      <span
+                        className="grid h-4 w-4 shrink-0 place-items-center rounded-full text-[9px] font-bold text-white"
+                        style={{ background: color }}
+                      >
+                        {n}
+                      </span>
+                      <span className="w-16 shrink-0 text-muted-foreground">
+                        {HOT_FLASH_DESCRIPTIONS[n]}
+                      </span>
+                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-tint">
+                        <div
+                          className="h-full rounded-full"
+                          style={{ width: `${pct}%`, background: color }}
+                        />
                       </div>
-                      <HfBars bars={hfBars} period={period} days={days} anchor={anchor} />
-                      <div className="mt-3 space-y-1">
-                        {[1, 2, 3, 4, 5].map((n) => {
-                          const c = hfCounts[n];
-                          const pct = hfTotal ? (c / hfTotal) * 100 : 0;
-                          const color = HOT_FLASH_COLORS[n];
-                          return (
-                            <div key={n} className="flex items-center gap-2 text-[10px]">
-                              <span
-                                className="grid h-4 w-4 shrink-0 place-items-center rounded-full text-[9px] font-bold text-white"
-                                style={{ background: color }}
-                              >
-                                {n}
-                              </span>
-                              <span className="w-16 shrink-0 text-muted-foreground">
-                                {HOT_FLASH_DESCRIPTIONS[n]}
-                              </span>
-                              <div className="h-2 flex-1 overflow-hidden rounded-full bg-tint">
-                                <div
-                                  className="h-full rounded-full"
-                                  style={{ width: `${pct}%`, background: color }}
-                                />
-                              </div>
-                              <span className="w-6 text-right tabular-nums text-muted-foreground">{c}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </>
-                  ) : (
-                    <p className="mt-1 text-sm text-muted-foreground">No hot flashes logged</p>
-                  )}
-                </section>
+                      <span className="w-6 text-right tabular-nums text-muted-foreground">{count}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <p className="mt-2 text-sm text-muted-foreground">No hot flashes logged</p>
+          )}
+        </section>
 
-                <TimeOfDayPatternChart data={view} days={days} period={period} />
-                <MedsAdherence data={view} period={period} anchor={anchor} />
-              </>
-            )}
+        <BristolChart
+          bowelCounts={bowelCounts}
+          period={bowelPeriod}
+          anchor={bowelAnchor}
+          onPeriodChange={setBowelPeriod}
+          onPeriodShift={(delta) =>
+            setBowelAnchor((current) => shiftInsightPeriodAnchor(current, bowelPeriod, delta))
+          }
+        />
+
+        <TimeOfDayPatternChart
+          data={view}
+          days={timeOfDayDays}
+          period={timeOfDayPeriod}
+          anchor={timeOfDayAnchor}
+          onPeriodChange={setTimeOfDayPeriod}
+          onPeriodShift={(delta) =>
+            setTimeOfDayAnchor((current) => shiftInsightPeriodAnchor(current, timeOfDayPeriod, delta))
+          }
+        />
+
+        <MedsAdherence
+          data={view}
+          period={medsPeriod}
+          anchor={medsAnchor}
+          onPeriodChange={setMedsPeriod}
+          onPeriodShift={(delta) =>
+            setMedsAnchor((current) => shiftInsightPeriodAnchor(current, medsPeriod, delta))
+          }
+        />
       </div>
     </AppShell>
   );
@@ -508,14 +674,22 @@ function MedsAdherence({
   data,
   period,
   anchor,
+  onPeriodChange,
+  onPeriodShift,
 }: {
   data: ReturnType<typeof useBixbo>["data"];
   period: Period;
   anchor: Date;
+  onPeriodChange: (period: Period) => void;
+  onPeriodShift: (delta: -1 | 1) => void;
 }) {
   const { update } = useBixbo();
   const [open, setOpen] = useState(true);
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    setExpandedKey(null);
+  }, [period, anchor]);
 
   const scheduled = data.meds.filter((med) => !med.asNeeded);
   const asNeeded = data.meds.filter((med) => med.asNeeded);
@@ -758,20 +932,30 @@ function MedsAdherence({
 
   return (
     <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
-      <button
-        type="button"
-        onClick={() => setOpen((value) => !value)}
-        className="flex w-full items-center justify-between"
-      >
-        <div className="text-left">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Meds adherence</p>
-          <p className="mt-1 text-[11px] font-medium text-foreground">
-            {range.title} · {range.label}
-          </p>
-        </div>
+      <div className="flex items-start gap-3">
+        <button
+          type="button"
+          onClick={() => setOpen((value) => !value)}
+          className="flex min-w-0 flex-1 items-start justify-between text-left"
+        >
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Meds adherence</p>
+            <p className="mt-1 truncate text-[11px] font-medium text-foreground">
+              {range.title} · {range.label}
+            </p>
+          </div>
 
-        <span className="text-xs text-muted-foreground">{open ? "▾" : "▸"}</span>
-      </button>
+          <span className="ml-2 shrink-0 pt-0.5 text-xs text-muted-foreground">{open ? "▾" : "▸"}</span>
+        </button>
+
+        <InsightPeriodControl
+          value={period}
+          onChange={onPeriodChange}
+          anchor={anchor}
+          onShift={onPeriodShift}
+          ariaLabel="Meds adherence period"
+        />
+      </div>
 
       {open && (
         <>
@@ -1223,9 +1407,25 @@ function PainChart({
   );
 }
 
-function BristolChart({ bowelCounts }: { bowelCounts: number[] }) {
+function BristolChart({
+  bowelCounts,
+  period,
+  anchor,
+  onPeriodChange,
+  onPeriodShift,
+}: {
+  bowelCounts: number[];
+  period: Period;
+  anchor: Date;
+  onPeriodChange: (period: Period) => void;
+  onPeriodShift: (delta: -1 | 1) => void;
+}) {
   const [active, setActive] = useState<number | null>(null);
   useDismissTapTooltip(() => setActive(null));
+
+  useEffect(() => {
+    setActive(null);
+  }, [anchor, period]);
   const max = Math.max(1, ...bowelCounts);
   const chartTypes = [
     {
@@ -1239,6 +1439,16 @@ function BristolChart({ bowelCounts }: { bowelCounts: number[] }) {
   ];
   return (
     <ChartCard title="Bowel — Bristol distribution">
+      <div className="-mt-6 mb-1 flex justify-end">
+        <InsightPeriodControl
+          value={period}
+          onChange={onPeriodChange}
+          anchor={anchor}
+          onShift={onPeriodShift}
+          ariaLabel="Bowel period"
+        />
+      </div>
+
       <div className={`relative mt-3 flex items-end gap-2 transition-[padding] ${active != null ? "pt-20" : ""}`}>
         {chartTypes.map((b) => {
           const count = bowelCounts[b.n] ?? 0;
@@ -1432,7 +1642,17 @@ function sleepHeatmapColor(hours: number): string {
   return INSIGHT_COLORS.teal;
 }
 
-function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>["data"]; anchor: Date }) {
+function YearHealthHeatmap({
+  data,
+  anchor,
+  onPrevYear,
+  onNextYear,
+}: {
+  data: ReturnType<typeof useBixbo>["data"];
+  anchor: Date;
+  onPrevYear: () => void;
+  onNextYear: () => void;
+}) {
   const [metric, setMetric] = useState<HeatmapMetric>("pain");
   const [active, setActive] = useState<string | null>(null);
   const year = anchor.getFullYear();
@@ -1721,6 +1941,28 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
 
   return (
     <ChartCard title={`Year heatmap — ${year}`}>
+      <div className="-mt-6 mb-1 flex justify-end">
+        <div className="inline-flex items-center rounded-xl bg-background/70 p-0.5 ring-1 ring-border/60">
+          <button
+            type="button"
+            onClick={onPrevYear}
+            className="grid h-7 w-7 place-items-center rounded-lg transition hover:bg-tint"
+            aria-label="Previous heatmap year"
+          >
+            <ChevronLeft className="h-3.5 w-3.5" />
+          </button>
+          <span className="min-w-[44px] px-1 text-center text-[10px] font-semibold tabular-nums">{year}</span>
+          <button
+            type="button"
+            onClick={onNextYear}
+            className="grid h-7 w-7 place-items-center rounded-lg transition hover:bg-tint"
+            aria-label="Next heatmap year"
+          >
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+
       <p className="mt-1 text-xs text-muted-foreground">
         Choose a metric, then tap a coloured day for its saved average/details.
       </p>
@@ -1897,13 +2139,23 @@ function TimeOfDayPatternChart({
   data,
   days,
   period,
+  anchor,
+  onPeriodChange,
+  onPeriodShift,
 }: {
   data: ReturnType<typeof useBixbo>["data"];
   days: string[];
   period: Period;
+  anchor: Date;
+  onPeriodChange: (period: Period) => void;
+  onPeriodShift: (delta: -1 | 1) => void;
 }) {
   const [active, setActive] = useState<string | null>(null);
   useDismissTapTooltip(() => setActive(null));
+
+  useEffect(() => {
+    setActive(null);
+  }, [anchor, period]);
 
   const tetanyBlocks = [0, 0, 0, 0];
   const panicBlocks = [0, 0, 0, 0];
@@ -1943,7 +2195,17 @@ function TimeOfDayPatternChart({
 
   return (
     <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Time of Day Pattern</p>
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Time of Day Pattern</p>
+        <InsightPeriodControl
+          value={period}
+          onChange={onPeriodChange}
+          anchor={anchor}
+          onShift={onPeriodShift}
+          ariaLabel="Time of day pattern period"
+        />
+      </div>
+
       {!tetanyTotal && !panicTotal ? (
         <p className="mt-2 text-sm text-muted-foreground">Not enough data yet</p>
       ) : (
