@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { createPortal } from "react-dom";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { ChevronLeft, ChevronRight, Share2, Trash2 } from "lucide-react";
 
 import {
@@ -1478,7 +1478,35 @@ function BirthControlCalendar({
   const HAK_GREEN_DARK = "#596313";
   const HAK_GREEN_SOFT = "#E7E9B8";
   const HAK_TRACK = "#E4E4D3";
-  const HAK_CARD_BG = "color-mix(in srgb, var(--background) 94%, #7C8900 6%)";
+  const HAK_CARD_BG = "color-mix(in srgb, var(--background) 94%, #7A53C8 6%)";
+
+  // Local HAK-only lavender theme.
+  // These CSS variables are inherited only by this HAK panel, so the rest of BIXBO stays olive.
+  const HAK_LOCAL_THEME = {
+    "--background": "#E7DCF5",
+    "--foreground": "#251A34",
+    "--surface": "#EDE5F8",
+    "--surface-elevated": "#F5F0FB",
+    "--surface-sunken": "#D7C6EC",
+    "--tint": "#DDCFF0",
+    "--card": "#EDE5F8",
+    "--card-foreground": "#251A34",
+    "--popover": "#F6F1FB",
+    "--popover-foreground": "#251A34",
+    "--secondary": "#E0D3F1",
+    "--secondary-foreground": "#2F2140",
+    "--muted": "#E2D6F1",
+    "--muted-foreground": "#685B78",
+    "--accent": "#D5C2EC",
+    "--accent-foreground": "#30203F",
+    "--border": "#BDA4DB",
+    "--input": "#BDA4DB",
+    "--ring": HAK_PURPLE,
+    "--chart-grid": "#D0BDE7",
+    "--chart-axis": "#554466",
+    "--chart-tooltip-bg": "#F7F2FC",
+    "--chart-tooltip-fg": "#251A34",
+  } as CSSProperties;
 
   const bcMed = data.meds.find((m) =>
     /antikonc|birth\s*control|contracept|hak|pill/i.test(`${m.name} ${m.dose ?? ""}`),
@@ -1660,8 +1688,9 @@ function BirthControlCalendar({
     <section
       className="flex h-full min-h-0 flex-col overflow-y-auto overscroll-contain rounded-[2rem] p-3 shadow-sm ring-1"
       style={{
+        ...HAK_LOCAL_THEME,
         backgroundColor: HAK_CARD_BG,
-        boxShadow: "inset 0 0 0 1px rgba(83, 102, 0, 0.22)",
+        boxShadow: "inset 0 0 0 1px rgba(122, 83, 200, 0.24)",
       }}
     >
       <div className="flex shrink-0 items-start justify-between gap-2">
@@ -1949,7 +1978,7 @@ function BirthControlCalendar({
           className="mt-3 rounded-[1.75rem] px-4 py-4 ring-1"
           style={{
             backgroundColor: "rgba(255,255,255,.20)",
-            borderColor: "rgba(129,135,67,.16)",
+            borderColor: "rgba(122,83,200,.18)",
           }}
         >
           <div className="grid grid-cols-[1.35fr_1fr_.9fr] items-start gap-2 text-center">
@@ -1972,7 +2001,7 @@ function BirthControlCalendar({
               className="rounded-full px-2 py-2 ring-1"
               style={{
                 backgroundColor: "rgba(255,255,255,.30)",
-                borderColor: "rgba(129,135,67,.18)",
+                borderColor: "rgba(122,83,200,.20)",
               }}
             >
               <div
@@ -2233,7 +2262,7 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
   const HAK_PURPLE = "#7A53C8";
   const HAK_PURPLE_DARK = "#5B32AE";
   const HAK_PURPLE_SOFT = "#DCCFF3";
-  const HAK_CARD_BG = "color-mix(in srgb, var(--background) 94%, #7C8900 6%)";
+  const HAK_CARD_BG = "color-mix(in srgb, var(--background) 94%, #7A53C8 6%)";
 
   const anchor = useMemo(() => {
     const date = fromKey(anchorKey);
