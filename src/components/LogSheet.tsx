@@ -278,7 +278,7 @@ export function LogSheet({
             </SheetHeader>
             <div
               key={`${active}-${openToken}-${(edit as { id?: string } | undefined)?.id ?? initialPain?.id ?? "new"}`}
-              className={`min-h-0 flex-1 overflow-y-auto ${active === "pain" ? "" : "px-5 pb-4 pt-[104px]"}`}
+              className={`min-h-0 flex-1 overflow-y-auto ${active === "pain" ? "" : "px-5 pb-4 pt-[72px]"}`}
             >
               {active === "postpartum" && (
                 <PostpartumSymptomsForm date={date} data={data} update={update} onDone={close} />
@@ -417,15 +417,15 @@ function Chip({
 function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave: () => void; disabled?: boolean }) {
   return (
     <SheetFooter
-      className="fixed inset-x-0 z-30 flex-row items-center justify-between gap-3 border-y border-border/50 bg-background/95 px-5 py-3 shadow-sm backdrop-blur"
+      className="fixed inset-x-0 z-30 flex-row items-center justify-between gap-3 border-y border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur"
       style={{ top: "calc(env(safe-area-inset-top) + 57px)" }}
     >
       <button
         type="button"
         onClick={onCancel}
-        className="flex min-w-[82px] items-center gap-1.5 text-base font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="flex min-w-[68px] items-center gap-1 text-sm font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        <span aria-hidden="true" className="text-xl leading-none">←</span>
+        <span aria-hidden="true" className="text-base leading-none">←</span>
         <span>Back</span>
       </button>
 
@@ -435,10 +435,10 @@ function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave:
         type="button"
         onClick={onSave}
         disabled={disabled}
-        className="flex min-h-[72px] min-w-[92px] flex-col items-center justify-center rounded-[1.65rem] bg-primary px-5 py-3 text-primary-foreground shadow-md transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        className="inline-flex h-10 min-w-[78px] items-center justify-center gap-1.5 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
-        <span className="text-lg font-semibold leading-none">Save</span>
-        <span aria-hidden="true" className="mt-1 text-xl leading-none">✓</span>
+        <span>Save</span>
+        <span aria-hidden="true" className="text-base leading-none">✓</span>
       </button>
     </SheetFooter>
   );
@@ -1043,39 +1043,39 @@ function PainWizard({
           <span className="text-xs text-muted-foreground">New entry · {time}</span>
         </div>
       ) : (
-        <div className="sticky top-0 z-20 -mx-5 mb-3 flex items-center justify-between gap-3 border-y border-border/50 bg-background/95 px-5 py-3 shadow-sm backdrop-blur">
+        <div className="sticky top-0 z-20 -mx-5 mb-3 flex min-h-[60px] items-center justify-between gap-2 border-y border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur">
           {step > 0 ? (
             <button
               type="button"
               onClick={() => setStep(step - 1)}
-              className="flex min-w-[82px] items-center gap-1.5 text-base font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex min-w-[68px] items-center gap-1 text-sm font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <span aria-hidden="true" className="text-xl leading-none">←</span>
+              <span aria-hidden="true" className="text-base leading-none">←</span>
               <span>Back</span>
             </button>
           ) : (
-            <span className="min-w-[82px]" aria-hidden="true" />
+            <span className="min-w-[68px]" aria-hidden="true" />
           )}
 
-          <div className="flex min-w-0 flex-1 items-center justify-center gap-3">
-            <div className="flex gap-1.5">
+          <div className="flex min-w-0 flex-1 items-center justify-center gap-2">
+            <div className="flex gap-1">
               {[0, 1, 2, 3, 4].map((i) => (
                 <span
                   key={i}
-                  className={`h-1.5 w-7 rounded-full transition-colors ${i <= step ? "bg-primary" : "bg-tint"}`}
+                  className={`h-1.5 w-5 rounded-full transition-colors ${i <= step ? "bg-primary" : "bg-tint"}`}
                 />
               ))}
             </div>
-            <span className="shrink-0 text-sm font-semibold text-foreground/75">{step + 1}/5</span>
+            <span className="shrink-0 text-xs font-semibold text-foreground/75">{step + 1}/5</span>
           </div>
 
           <button
             type="button"
             onClick={step < 4 ? () => setStep(step + 1) : save}
-            className="flex min-h-[72px] min-w-[92px] flex-col items-center justify-center rounded-[1.65rem] bg-primary px-5 py-3 text-primary-foreground shadow-md transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="flex h-[52px] min-w-[64px] flex-col items-center justify-center rounded-[1.15rem] bg-primary px-3 text-primary-foreground shadow-sm transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
-            <span className="text-lg font-semibold leading-none">{step < 4 ? "Next" : "Save"}</span>
-            <span aria-hidden="true" className="mt-1 text-xl leading-none">{step < 4 ? "→" : "✓"}</span>
+            <span className="text-sm font-semibold leading-none">{step < 4 ? "Next" : "Save"}</span>
+            <span aria-hidden="true" className="mt-0.5 text-base leading-none">{step < 4 ? "→" : "✓"}</span>
           </button>
         </div>
       )}
@@ -1773,7 +1773,7 @@ function PainWizard({
       )}
 
       {quickSymptomUpdate && step === 3 && (
-        <SheetFooter className="sticky top-0 z-20 -mx-5 mb-3 flex-row items-center justify-between gap-4 border-y border-border/50 bg-background/95 px-5 py-3 shadow-sm backdrop-blur">
+        <SheetFooter className="sticky top-0 z-20 -mx-5 mb-3 min-h-[60px] flex-row items-center justify-between gap-3 border-y border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur">
           <button
             type="button"
             onClick={() => {
@@ -1781,7 +1781,7 @@ function PainWizard({
               setCopiedFromTime(undefined);
               setStep(0);
             }}
-            className="flex min-h-12 items-center gap-1.5 px-1 text-base font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="flex items-center gap-1 px-1 text-sm font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <span aria-hidden="true" className="text-xl leading-none">←</span>
             <span>Edit full log</span>
@@ -1790,10 +1790,10 @@ function PainWizard({
           <button
             type="button"
             onClick={save}
-            className="flex min-h-[72px] min-w-[104px] flex-col items-center justify-center rounded-[1.65rem] bg-primary px-5 py-3 text-primary-foreground shadow-md transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="inline-flex h-10 min-w-[104px] items-center justify-center gap-1.5 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
-            <span className="text-base font-semibold leading-none">Save update</span>
-            <span aria-hidden="true" className="mt-1 text-xl leading-none">✓</span>
+            <span>Save update</span>
+            <span aria-hidden="true" className="text-base leading-none">✓</span>
           </button>
         </SheetFooter>
       )}
@@ -3499,10 +3499,10 @@ function MedsForm({
           <button
             type="button"
             onClick={onDone}
-            className="flex min-h-[72px] min-w-[92px] flex-col items-center justify-center rounded-[1.65rem] bg-primary px-5 py-3 text-primary-foreground shadow-md transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="inline-flex h-10 min-w-[78px] items-center justify-center gap-1.5 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
-            <span className="text-lg font-semibold leading-none">Done</span>
-            <span aria-hidden="true" className="mt-1 text-xl leading-none">✓</span>
+            <span>Done</span>
+            <span aria-hidden="true" className="text-base leading-none">✓</span>
           </button>
         </div>
       </SheetFooter>
