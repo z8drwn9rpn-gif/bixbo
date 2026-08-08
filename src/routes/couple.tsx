@@ -1596,6 +1596,15 @@ function CouplePage() {
               </div>
             ) : null}
 
+            {activeTab === "overview" && partner.gender !== "male" ? (
+              <BlueberrySection
+                partner={partner}
+                selectedMonth={selectedMonth}
+                selectedMonthLabel={selectedMonthLabel}
+                isCurrentMonth={isCurrentMonth}
+              />
+            ) : null}
+
             {activeTab === "compare" ? (
               <>
                 <CouplePainChart
