@@ -188,7 +188,9 @@ export function LogSheet({
         side="bottom"
         className={
           (active
-            ? "flex h-[100dvh] max-h-[100dvh] flex-col rounded-t-none bg-background p-0 pt-[env(safe-area-inset-top)]"
+            ? `flex h-[100dvh] max-h-[100dvh] flex-col rounded-t-none bg-background p-0 ${
+                active === "pain" ? "pt-[env(safe-area-inset-top)]" : "pt-0"
+              }`
             : "flex h-[88vh] max-h-[88vh] flex-col rounded-t-3xl bg-background p-0") + " [&>button.absolute]:hidden"
         }
       >
@@ -418,7 +420,7 @@ function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave:
   return (
     <SheetFooter
       className="fixed inset-x-0 z-30 h-[36px] flex-row items-center justify-between gap-2 border-b border-border/50 bg-background/95 px-5 py-0 backdrop-blur"
-      style={{ top: "calc(env(safe-area-inset-top) + 56px)" }}
+      style={{ top: "56px" }}
     >
       <button
         type="button"
