@@ -1417,7 +1417,6 @@ type HeatmapDatum = {
 
 const HEATMAP_OPTIONS: { id: HeatmapMetric; label: string }[] = [
   { id: "pain", label: "Pain" },
-  { id: "period", label: "Period" },
   { id: "bowel", label: "Bowel" },
   { id: "panic", label: "Panic episode" },
   { id: "tetany", label: "Tetany episode" },
@@ -1692,9 +1691,9 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
   const activeTooltipLayout = useMemo(() => {
     if (!activePosition) return null;
 
-    const rowStep = 22;
+    const rowStep = 24;
     const gridTop = 24;
-    const dotCenterOffset = 6;
+    const dotCenterOffset = 5;
     const tooltipTotalHeight = 70;
     const connectorGap = 5;
     const selectedCenterY = gridTop + dotCenterOffset + activePosition.weekdayIndex * rowStep;
@@ -1767,7 +1766,7 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
       </div>
 
       <div className="mt-3 -mx-3 rounded-[1.5rem] bg-background/55 px-2.5 py-3 ring-1 ring-border/60 sm:mx-0 sm:p-3">
-        <div className="space-y-5">
+        <div className="space-y-6">
           {halfYearGrids.map((half, halfIndex) => {
             const boundaryWeeks = new Set(
               half.months.map(({ weekIndex }) => weekIndex).filter((weekIndex) => weekIndex > 0),
@@ -1790,7 +1789,7 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
                     {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((weekday) => (
                       <div
                         key={weekday}
-                        className="flex h-[22px] items-center text-[8.5px] font-medium text-muted-foreground"
+                        className="flex h-[24px] items-center text-[8.5px] font-medium text-muted-foreground"
                       >
                         {weekday}
                       </div>
@@ -1813,7 +1812,7 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
                     <div
                       className="grid w-full"
                       style={{
-                        gridTemplateColumns: `repeat(${half.weekCount}, 12px)`,
+                        gridTemplateColumns: `repeat(${half.weekCount}, 9px)`,
                         columnGap: "1px",
                         justifyContent: "space-between",
                       }}
@@ -1822,7 +1821,7 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
                         const isMonthBoundary = boundaryWeeks.has(weekIndex);
 
                         return (
-                          <div key={weekIndex} className="relative grid shrink-0 grid-rows-7 gap-y-[10px]">
+                          <div key={weekIndex} className="relative grid shrink-0 grid-rows-7 gap-y-[15px]">
                             {isMonthBoundary ? (
                               <span
                                 aria-hidden="true"
@@ -1840,7 +1839,7 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
                                 return (
                                   <span
                                     key={date.toISOString()}
-                                    className="h-[12px] w-[12px] rounded-full bg-transparent"
+                                    className="h-[10px] w-[10px] -translate-x-[0.5px] rounded-full bg-transparent"
                                   />
                                 );
                               }
@@ -1863,7 +1862,7 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
                                     datum ? ` · ${datum.value}` : " · no data"
                                   }`}
                                   aria-pressed={isActive}
-                                  className={`h-[12px] w-[12px] rounded-full transition-transform ${
+                                  className={`h-[10px] w-[10px] -translate-x-[0.5px] rounded-full transition-transform ${
                                     datum ? "touch-manipulation active:scale-125" : "cursor-default"
                                   } ${isActive ? "ring-2 ring-foreground ring-offset-1 ring-offset-background" : ""}`}
                                   style={{ background: datum?.color ?? "var(--tint)" }}
