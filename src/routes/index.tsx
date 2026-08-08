@@ -697,7 +697,7 @@ function VitalTrendPopup({
   }
 
   return (
-    <div className="fixed inset-0 z-[95] flex items-center justify-center px-7">
+    <div className="fixed inset-0 z-[95] flex items-center justify-center px-6">
       <button
         type="button"
         aria-label={`Close ${vitalTrendTitle(metric)} graph`}
@@ -705,7 +705,7 @@ function VitalTrendPopup({
         onClick={onClose}
       />
 
-      <section className="relative z-10 w-full max-w-[320px] overflow-hidden rounded-[1.65rem] bg-background shadow-2xl ring-1 ring-border">
+      <section className="relative z-10 w-full max-w-[350px] max-h-[330px] overflow-hidden rounded-[1.4rem] bg-background shadow-2xl ring-1 ring-border">
         <div className="flex items-start justify-between gap-2 border-b border-border/70 px-4 pb-3 pt-4">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Trend</p>
@@ -721,7 +721,7 @@ function VitalTrendPopup({
           </button>
         </div>
 
-        <div className="max-h-[48dvh] overflow-y-auto overscroll-contain touch-pan-y p-3">
+        <div className="max-h-[270px] overflow-y-auto overscroll-contain touch-pan-y p-3">
           <div className="grid grid-cols-3 gap-1 rounded-2xl bg-tint p-1 ring-1 ring-border/50">
             {(["W", "M", "Y"] as const).map((value) => (
               <button
