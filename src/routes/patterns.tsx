@@ -260,7 +260,7 @@ const PHASE_COLORS = [
 
 function Card({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
   return (
-    <section className="overflow-hidden rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
+    <section className="overflow-hidden rounded-3xl bg-surface-elevated/72 p-5 shadow-sm ring-1 ring-border/65">
       <div>
         <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{title}</h2>
 
@@ -274,7 +274,7 @@ function Card({ title, description, children }: { title: string; description?: s
 
 function Empty({ text = "Log at least 7 days to unlock this analysis." }: { text?: string }) {
   return (
-    <div className="mt-3 rounded-2xl bg-tint px-4 py-5 text-center ring-1 ring-border/40">
+    <div className="mt-3 rounded-2xl bg-surface-sunken/34 px-4 py-5 text-center ring-1 ring-border/35">
       <p className="text-sm font-medium text-foreground">More data needed</p>
       <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{text}</p>
     </div>
@@ -337,7 +337,7 @@ function PhaseBarChart({
   const hasData = bars.some((bar) => bar.value != null);
 
   return (
-    <div className="rounded-3xl bg-tint p-4 ring-1 ring-border/50">
+    <div className="rounded-3xl bg-surface-sunken/34 p-4 ring-1 ring-border/40">
       <div>
         <p className="text-sm font-semibold text-foreground">{title}</p>
         {description && <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">{description}</p>}
@@ -348,7 +348,7 @@ function PhaseBarChart({
           Log at least one complete menstrual cycle to unlock this analysis.
         </p>
       ) : (
-        <div className="mt-4 rounded-2xl bg-background/55 px-3 py-4 ring-1 ring-border/35">
+        <div className="mt-4 rounded-2xl bg-surface-elevated/78 px-3 py-4 ring-1 ring-border/30">
           <div className="flex h-24 items-end gap-3">
             {bars.map((bar, index) => {
               const color = PHASE_COLORS[index] ?? PHASE_COLORS[0];
@@ -457,7 +457,7 @@ function ComparisonMetric({
   const relativeChange = percentageChange(previous, current);
 
   return (
-    <article className="rounded-2xl bg-tint p-3.5 ring-1 ring-border/60">
+    <article className="rounded-2xl bg-surface-elevated/66 p-3.5 ring-1 ring-border/45">
       <div className="flex items-start gap-3">
         {icon && (
           <span
@@ -575,7 +575,7 @@ function MetricColumn({
 }
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between rounded-2xl bg-tint px-4 py-3 ring-1 ring-border/40">
+    <div className="flex items-center justify-between rounded-2xl bg-surface-sunken/34 px-4 py-3 ring-1 ring-border/32">
       <span className="text-sm text-muted-foreground">{label}</span>
 
       <span className="font-semibold text-foreground">{value}</span>
@@ -600,7 +600,7 @@ function ConfidenceBadge({ level, detail }: { level: ConfidenceLevel; detail: st
         : "bg-muted text-muted-foreground";
 
   return (
-    <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-background/60 px-4 py-3 ring-1 ring-border/40">
+    <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-surface-elevated/72 px-4 py-3 ring-1 ring-border/32">
       <div>
         <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Confidence</p>
         <p className="mt-0.5 text-[11px] text-muted-foreground">{detail}</p>
@@ -620,7 +620,7 @@ function SummaryPanel({
   confidence?: { level: ConfidenceLevel; detail: string };
 }) {
   return (
-    <div className="mt-4 rounded-3xl bg-background p-4 ring-1 ring-border">
+    <div className="mt-4 rounded-3xl bg-surface-elevated/64 p-4 ring-1 ring-border/60">
       <h3 className="text-sm font-semibold text-foreground">{title}</h3>
       <div className="mt-3 space-y-2.5">
         {items.map((item) => {
@@ -633,7 +633,7 @@ function SummaryPanel({
           return (
             <div
               key={`${title}-${item.label}`}
-              className="flex items-center justify-between gap-4 rounded-2xl bg-tint px-4 py-3 ring-1 ring-border/40"
+              className="flex items-center justify-between gap-4 rounded-2xl bg-surface-sunken/34 px-4 py-3 ring-1 ring-border/32"
             >
               <span className="text-sm text-muted-foreground">{item.label}</span>
               <span className={`text-right font-semibold ${valueClass}`}>{item.value}</span>
@@ -659,7 +659,7 @@ function PatternTabs({
 
   return (
     <div
-      className="mx-auto grid w-full max-w-[390px] gap-0.5 rounded-xl bg-primary/20 p-0.5 ring-1 ring-primary/15"
+      className="mx-auto grid w-full max-w-[390px] gap-0.5 rounded-xl bg-surface-sunken/50 p-0.5 ring-1 ring-border/50"
       style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}
       role="tablist"
       aria-label="Pattern sections"
@@ -712,7 +712,7 @@ function AnalysisRangeSelector({
         </div>
       </div>
 
-      <div className="mx-auto mt-3 grid w-full max-w-[340px] grid-cols-3 gap-0.5 rounded-xl bg-primary/20 p-0.5 ring-1 ring-primary/15">
+      <div className="mx-auto mt-3 grid w-full max-w-[340px] grid-cols-3 gap-0.5 rounded-xl bg-surface-sunken/50 p-0.5 ring-1 ring-border/50">
         {options.map((option) => (
           <button
             key={String(option.value)}
@@ -747,12 +747,12 @@ function CollapsibleSection({
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <section className="overflow-hidden rounded-3xl bg-surface shadow-sm ring-1 ring-border/80">
+    <section className="overflow-hidden rounded-3xl bg-surface-elevated/68 shadow-sm ring-1 ring-border/65">
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
         aria-expanded={open}
-        className="flex min-h-14 w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-tint/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+        className="flex min-h-14 w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-surface-sunken/26 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
       >
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-semibold text-foreground">{title}</h2>
@@ -1841,7 +1841,7 @@ function PatternsPage() {
                 </div>
 
                 {cycles.length > 0 ? (
-                  <div className="mt-3 rounded-2xl bg-tint px-4 py-3 ring-1 ring-border/40">
+                  <div className="mt-3 rounded-2xl bg-surface-sunken/34 px-4 py-3 ring-1 ring-border/32">
                     <div className="flex items-center justify-between gap-3">
                       <div>
                         <p className="text-xs font-medium text-foreground">Most common period flow</p>
@@ -1860,7 +1860,7 @@ function PatternsPage() {
                 ) : (
                   <Empty text="Log more periods to see your cycle pattern." />
                 )}
-                <div className="mt-4 rounded-3xl bg-background p-4 ring-1 ring-border">
+                <div className="mt-4 rounded-3xl bg-surface-elevated/64 p-4 ring-1 ring-border/60">
                   <h3 className="text-sm font-semibold text-foreground">Cycle Summary</h3>
 
                   <div className="mt-3 space-y-2.5">
@@ -1940,7 +1940,7 @@ function PatternsPage() {
               description={`${monthlyComparisonLabel} · compared over the same number of days.`}
             >
               <div className="mt-3 grid grid-cols-2 gap-2">
-                <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
+                <div className="rounded-2xl bg-surface-sunken/34 p-3 ring-1 ring-border/32">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     Most improved
                   </p>
@@ -1948,7 +1948,7 @@ function PatternsPage() {
                     {formatChange(mostImproved)}
                   </p>
                 </div>
-                <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
+                <div className="rounded-2xl bg-surface-sunken/34 p-3 ring-1 ring-border/32">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     Needs attention
                   </p>
@@ -1956,13 +1956,13 @@ function PatternsPage() {
                     {formatChange(mostWorsened)}
                   </p>
                 </div>
-                <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
+                <div className="rounded-2xl bg-surface-sunken/34 p-3 ring-1 ring-border/32">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     Most stable
                   </p>
                   <p className="mt-1 text-sm font-semibold text-foreground">{formatChange(mostStable)}</p>
                 </div>
-                <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
+                <div className="rounded-2xl bg-surface-sunken/34 p-3 ring-1 ring-border/32">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Confidence</p>
                   <p className="mt-1 text-sm font-semibold text-foreground">{monthlyConfidence}</p>
                   <p className="mt-0.5 text-[10px] text-muted-foreground">{monthlyLoggedDays} logged days</p>
@@ -2609,7 +2609,7 @@ function PatternsPage() {
                 }).format(new Date(`${archived.archivedAt}T12:00:00`));
 
                 return (
-                  <article key={archived.id} className="rounded-2xl bg-tint p-3.5 ring-1 ring-border/50">
+                  <article key={archived.id} className="rounded-2xl bg-surface-elevated/66 p-3.5 ring-1 ring-border/40">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold text-foreground">{archived.name}</p>
@@ -2967,8 +2967,3 @@ function TriggerResult({
           }}
         />
       </div>
-
-      <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">{detail}</p>
-    </div>
-  );
-}
