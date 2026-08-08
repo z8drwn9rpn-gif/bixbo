@@ -132,6 +132,54 @@ function dailyVitalDetails(metric: VitalTrendMetric, key: string, data: BixboDat
   return legacy != null && Number.isFinite(legacy) ? [`Saved value · ${legacy.toFixed(1)} ${unit}`] : [];
 }
 
+type OverviewVitalEntry = {
+  id: string;
+  time: string;
+  value: number;
+};
+
+function overviewVitalEntries(
+  log: import("@/lib/storage").DayLog | undefined,
+  metric: "temperature" | "weight",
+): OverviewVitalEntry[] {
+  if (!log) return [];
+
+  const raw = metric === "temperature" ? log.temperatureEntries ?? [] : log.weightEntries ?? [];
+  const entries = raw
+    .filter((entry) => Number.isFinite(Number(entry.value)))
+    .map((entry) => ({
+      id: entry.id,
+      time: entry.time || "",
+      value: Number(entry.value),
+    }))
+    .sort((a, b) => a.time.localeCompare(b.time) || a.id.localeCompare(b.id));
+
+  if (entries.length) return entries;
+
+  const legacy = metric === "temperature" ? log.temperature : log.weight;
+  if (legacy == null || !Number.isFinite(legacy)) return [];
+
+  return [
+    {
+      id: `legacy-${metric}`,
+      time: "",
+      value: legacy,
+    },
+  ];
+}
+
+function vitalOverviewSummary(
+  log: import("@/lib/storage").DayLog | undefined,
+  metric: "temperature" | "weight",
+): string {
+  const entries = overviewVitalEntries(log, metric);
+  if (!entries.length) return "—";
+
+  const latest = entries[entries.length - 1];
+  const value = latest.value.toFixed(1).replace(/\.0$/, "");
+  return entries.length > 1 ? `${value} · ${entries.length}×` : value;
+}
+
 function monthlyVitalRecords(metric: VitalTrendMetric, start: Date, end: Date, data: BixboData) {
   const values: number[] = [];
   const details: string[] = [];
@@ -985,14 +1033,14 @@ function HomePage() {
         <VitalTile
           emoji="🌡️"
           label="Temp"
-          value={view.dayLogs[selected]?.temperature != null ? String(view.dayLogs[selected]!.temperature) : "—"}
+          value={vitalOverviewSummary(view.dayLogs[selected], "temperature")}
           onClick={() => setVitalTrendOpen("temperature")}
         />
 
         <VitalTile
           emoji="⚖️"
           label="Weight"
-          value={view.dayLogs[selected]?.weight != null ? String(view.dayLogs[selected]!.weight) : "—"}
+          value={vitalOverviewSummary(view.dayLogs[selected], "weight")}
           onClick={() => setVitalTrendOpen("weight")}
         />
       </div>
@@ -1074,6 +1122,8 @@ function HomePage() {
           const todayPanic = todayLog?.panic?.length ?? 0;
           const todayBowelEntries = todayLog?.bowel ?? [];
           const latestBowel = todayBowelEntries.length ? todayBowelEntries[todayBowelEntries.length - 1] : undefined;
+          const todayTemperatureEntries = overviewVitalEntries(todayLog, "temperature");
+          const todayWeightEntries = overviewVitalEntries(todayLog, "weight");
           const noteValue = view.dayNotes[todayDateKey]?.[0];
           const noteText =
             typeof noteValue === "string"
@@ -1123,13 +1173,21 @@ function HomePage() {
               key: "temperature",
               icon: <ThermometerIcon size={22} />,
               label: "Temperature",
-              value: todayLog?.temperature != null ? `${todayLog.temperature} °C` : "Not logged",
+              value: todayTemperatureEntries.length
+                ? `${todayTemperatureEntries[todayTemperatureEntries.length - 1].value.toFixed(1)} °C${
+                    todayTemperatureEntries.length > 1 ? ` · ${todayTemperatureEntries.length} records` : ""
+                  }`
+                : "Not logged",
             },
             {
               key: "weight",
               icon: <WeightIcon size={22} />,
               label: "Weight",
-              value: todayLog?.weight != null ? `${todayLog.weight} kg` : "Not logged",
+              value: todayWeightEntries.length
+                ? `${todayWeightEntries[todayWeightEntries.length - 1].value.toFixed(1)} kg${
+                    todayWeightEntries.length > 1 ? ` · ${todayWeightEntries.length} records` : ""
+                  }`
+                : "Not logged",
             },
           ];
 
@@ -2617,6 +2675,8 @@ function DayPreview({
   onEdit?: (cat: string, entry: unknown) => void;
 }) {
   const log = data.dayLogs[date];
+  const temperatureEntries = overviewVitalEntries(log, "temperature");
+  const weightEntries = overviewVitalEntries(log, "weight");
   const rawNotes = data.dayNotes[date] ?? [];
   const notes: { text: string; time?: string }[] = (rawNotes as (string | { text: string; time?: string })[]).map(
     (n) => (typeof n === "string" ? { text: n } : n),
@@ -2668,6 +2728,8 @@ function DayPreview({
         log.sex?.length ||
         log.heat?.length ||
         log.workout?.length ||
+        temperatureEntries.length ||
+        weightEntries.length ||
         log.temperature != null ||
         log.weight != null ||
         log.sleepHours != null ||
@@ -3248,18 +3310,47 @@ function DayPreview({
         </Card>
       ) : null}
 
-      {(log?.temperature != null || log?.weight != null || log?.sleepHours != null || log?.sleepQuality) && (
+      {(temperatureEntries.length ||
+        weightEntries.length ||
+        log?.temperature != null ||
+        log?.weight != null ||
+        log?.sleepHours != null ||
+        log?.sleepQuality) && (
         <Card title="Temp / Sleep / Weight" icon="🌡️">
           <button onClick={() => onEdit?.("temp", undefined)} className="w-full text-left">
-            {log?.temperature != null && <p className="text-sm">Temperature: {log.temperature}°C</p>}
-            {log?.weight != null && <p className="text-sm">Weight: {log.weight} kg</p>}
+            {temperatureEntries.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Temperature
+                </p>
+                {temperatureEntries.map((entry) => (
+                  <p key={entry.id} className="text-sm">
+                    {entry.time ? `${entry.time} · ` : ""}
+                    {entry.value.toFixed(1)}°C
+                  </p>
+                ))}
+              </div>
+            )}
+
+            {weightEntries.length > 0 && (
+              <div className={temperatureEntries.length > 0 ? "mt-3 space-y-1" : "space-y-1"}>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Weight</p>
+                {weightEntries.map((entry) => (
+                  <p key={entry.id} className="text-sm">
+                    {entry.time ? `${entry.time} · ` : ""}
+                    {entry.value.toFixed(1)} kg
+                  </p>
+                ))}
+              </div>
+            )}
+
             {log?.sleepHours != null && (
-              <p className="text-sm">
+              <p className={`${temperatureEntries.length || weightEntries.length ? "mt-3 " : ""}text-sm`}>
                 Sleep: {log.sleepHours} h <IcoText text={asArr(log.sleepQuality).join(", ")} size={14} />
               </p>
             )}
             {asArr(log?.sleepQuality).length > 0 && log?.sleepHours == null && (
-              <p className="text-sm">
+              <p className={`${temperatureEntries.length || weightEntries.length ? "mt-3 " : ""}text-sm`}>
                 Sleep quality: <IcoText text={asArr(log.sleepQuality).join(", ")} size={14} />
               </p>
             )}
