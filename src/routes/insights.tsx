@@ -1647,6 +1647,23 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
   const activeMetricLabel = HEATMAP_OPTIONS.find((option) => option.id === metric)?.label ?? "Heatmap";
   const activeDatum = active ? heatmapData[active] ?? null : null;
 
+  // Add a clear visual break before the first week that contains each new month.
+  // The heatmap still follows real calendar weeks; the extra gap + divider only
+  // improves readability and does not change date placement or calculations.
+  const monthBoundaryWeeks = useMemo(
+    () =>
+      Array.from(new Set<number>(yearGrid.months.map(({ weekIndex }) => Number(weekIndex)))).filter(
+        (weekIndex) => weekIndex > 0,
+      ),
+    [yearGrid.months],
+  );
+  const monthBoundaryWeekSet = useMemo(() => new Set(monthBoundaryWeeks), [monthBoundaryWeeks]);
+  const monthGapPx = 9;
+  const weekStepPx = 17;
+  const monthGapBeforeOrAtWeek = (weekIndex: number) =>
+    monthBoundaryWeeks.reduce((count, boundaryWeek) => count + (boundaryWeek <= weekIndex ? 1 : 0), 0) * monthGapPx;
+  const heatmapGridWidth = yearGrid.weekCount * weekStepPx + monthBoundaryWeeks.length * monthGapPx;
+
   const activePosition = useMemo(() => {
     if (!active) return null;
 
@@ -1764,8 +1781,11 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
             {activeTooltip && activePosition && activeTooltipLayout ? (
               <InsightFloatingTooltip
                 leftPct={
-                  ((36 + activePosition.weekIndex * 17 + 7) /
-                    Math.max(1, 36 + yearGrid.weekCount * 17)) *
+                  ((36 +
+                    activePosition.weekIndex * weekStepPx +
+                    monthGapBeforeOrAtWeek(activePosition.weekIndex) +
+                    7) /
+                    Math.max(1, 36 + heatmapGridWidth)) *
                   100
                 }
                 details={activeTooltip}
@@ -1789,14 +1809,16 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
               <div>
                 <div
                   className="relative mb-2 h-5"
-                  style={{ width: `${yearGrid.weekCount * 17}px` }}
+                  style={{ width: `${heatmapGridWidth}px` }}
                   aria-hidden="true"
                 >
                   {yearGrid.months.map(({ label, weekIndex }) => (
                     <span
                       key={label}
-                      className="absolute top-0 text-[9px] font-semibold text-muted-foreground"
-                      style={{ left: `${weekIndex * 17}px` }}
+                      className="absolute top-0 text-[9px] font-semibold text-foreground/75"
+                      style={{
+                        left: `${weekIndex * weekStepPx + monthGapBeforeOrAtWeek(weekIndex)}px`,
+                      }}
                     >
                       {label}
                     </span>
@@ -1804,9 +1826,24 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
                 </div>
 
                 <div className="flex gap-[3px]">
-                  {yearGrid.weeks.map((week, weekIndex) => (
-                    <div key={weekIndex} className="grid shrink-0 grid-rows-7 gap-x-[3px] gap-y-[8px]">
-                      {week.map((date) => {
+                  {yearGrid.weeks.map((week, weekIndex) => {
+                    const isMonthBoundary = monthBoundaryWeekSet.has(weekIndex);
+
+                    return (
+                      <div
+                        key={weekIndex}
+                        className={`relative grid shrink-0 grid-rows-7 gap-x-[3px] gap-y-[8px] ${
+                          isMonthBoundary ? "ml-[9px]" : ""
+                        }`}
+                      >
+                        {isMonthBoundary ? (
+                          <span
+                            aria-hidden="true"
+                            className="pointer-events-none absolute -left-[5px] inset-y-0 w-[2px] rounded-full bg-primary/25"
+                          />
+                        ) : null}
+
+                        {week.map((date) => {
                         const inYear = date.getFullYear() === year;
 
                         if (!inYear) {
@@ -1857,9 +1894,10 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
                             style={{ background: datum?.color ?? "var(--tint)" }}
                           />
                         );
-                      })}
-                    </div>
-                  ))}
+                        })}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -2020,31 +2058,4 @@ function TimeOfDayPatternChart({
             {active &&
               (() => {
                 const isTetany = active[0] === "t";
-                const i = Number(active.slice(1));
-                const count = isTetany ? tetanyBlocks[i] : panicBlocks[i];
-                const total = isTetany ? tetanyTotal : panicTotal;
-                const percentage = total ? Math.round((count / total) * 100) : 0;
-                const color = isTetany ? TETANY_COLOR : PANIC_COLOR;
-                const details: InsightTooltipDetails = {
-                  owner: "You",
-                  heading: TIME_BLOCK_LABELS[i],
-                  value: `${isTetany ? "Tetany" : "Panic"} ${count}×`,
-                  description: `${percentage}% of entries in the selected period`,
-                  color,
-                  summary: `${TIME_BLOCK_LABELS[i]} · ${isTetany ? "Tetany" : "Panic"} ${count}× · ${percentage}%`,
-                };
-
-                return <InsightFloatingTooltip leftPct={(i + 0.5) * 25} details={details} />;
-              })()}
-          </div>
-          <div className="mt-1 grid grid-cols-4 gap-3 text-center text-[8px] text-muted-foreground">
-            {TIME_BLOCK_SHORT.map((l) => (
-              <span key={l}>{l}</span>
-            ))}
-          </div>
-          {sentence && <p className="mt-3 text-sm text-muted-foreground">{sentence}</p>}
-        </>
-      )}
-    </section>
-  );
-}
+                const i = Number(activ
