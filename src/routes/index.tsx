@@ -3058,3 +3058,15 @@ function ShareDayButton({ date, view }: { date: string; view: BixboData }) {
       } catch {}
     }
     try {
+      await navigator.clipboard.writeText(text);
+      alert("Copied to clipboard");
+    } catch {
+      alert(text);
+    }
+  };
+  return (
+    <Button size="sm" variant="outline" className="rounded-full" onClick={share}>
+      <Share2 className="h-3.5 w-3.5" /> Share day
+    </Button>
+  );
+}
