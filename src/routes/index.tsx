@@ -1699,17 +1699,17 @@ function BirthControlCalendar({
       </div>
 
       {/* Circular HAK overview — only wheel pills open the dose popup. */}
-      <div className="mx-auto mt-1 w-full max-w-[360px] shrink-0">
+      <div className="relative left-1/2 mt-1 w-[calc(100%+2rem)] max-w-[390px] -translate-x-1/2 shrink-0">
         <div className="relative aspect-square w-full">
           <div
-            className="absolute inset-[7.5%] rounded-full"
+            className="absolute inset-[5.5%] rounded-full"
             style={{
               background: "rgba(255,255,255,.12)",
               boxShadow: "inset 0 0 0 9px rgba(255,255,255,.24)",
             }}
           />
           <div
-            className="absolute inset-[18.5%] rounded-full"
+            className="absolute inset-[16.5%] rounded-full"
             style={{
               backgroundColor: HAK_CARD_BG,
               boxShadow: "0 0 0 1px rgba(255,255,255,.12)",
@@ -1720,7 +1720,7 @@ function BirthControlCalendar({
             {Array.from({ length: PACK_DAYS }).map((_, i) => {
               const day = i + 1;
               const angle = (wheelAngleForDay(day) * Math.PI) / 180;
-              const radius = 38.5;
+              const radius = 44.5;
               return (
                 <span
                   key={`wheel-track-${i}`}
@@ -1736,7 +1736,7 @@ function BirthControlCalendar({
 
           {wheelDays.map((day) => {
             const angle = (wheelAngleForDay(day) * Math.PI) / 180;
-            const radius = 38.5;
+            const radius = 44.5;
             const left = 50 + Math.cos(angle) * radius;
             const top = 50 + Math.sin(angle) * radius;
             const dateKey = dateForPackDay(day);
@@ -1819,7 +1819,7 @@ function BirthControlCalendar({
                 onClick={() => {
                   setSel(dateKey);
                 }}
-                className="absolute z-10 grid h-8 w-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[10px] font-bold transition active:scale-95"
+                className="absolute z-10 grid h-[38px] w-[38px] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[11px] font-bold transition active:scale-95"
                 style={{
                   left: `${left}%`,
                   top: `${top}%`,
@@ -1838,10 +1838,11 @@ function BirthControlCalendar({
             );
           })}
 
-          <div className="pointer-events-none absolute left-[18%] right-[18%] top-[15.5%] bottom-[12%] z-20 flex flex-col items-center overflow-visible text-center">
-            <p className="text-[10px] font-semibold leading-none text-foreground">Day</p>
+          {/* Current day status — kept clear of the top pill bubbles. */}
+          <div className="pointer-events-none absolute left-[25%] right-[25%] top-[20%] z-20 text-center">
+            <p className="text-[9px] font-semibold leading-none text-foreground">Day</p>
             <p
-              className="mt-0.5 font-serif text-[clamp(2rem,8vw,2.7rem)] font-bold leading-none"
+              className="mt-0.5 font-serif text-[clamp(1.85rem,7.5vw,2.45rem)] font-bold leading-none"
               style={{ color: currentDay <= ACTIVE_DAYS ? HAK_PURPLE_DARK : HAK_PINK_DARK }}
             >
               {currentDay} / {PACK_DAYS}
@@ -1849,92 +1850,92 @@ function BirthControlCalendar({
 
             {currentDay > ACTIVE_DAYS && (
               <p
-                className="mt-0.5 text-[10px] font-semibold leading-none"
+                className="mt-1 text-[10px] font-semibold leading-none"
                 style={{ color: HAK_PINK_DARK }}
               >
                 Placebo / break
               </p>
             )}
+          </div>
 
-            <div className="mt-2 w-full">
-              <p className="text-[12px] font-bold leading-none text-foreground">
-                {hakMonthLabel}
-              </p>
+          {/* Calendar — actual date stays large; HAK pill number stays as small Pxx. */}
+          <div className="pointer-events-none absolute left-[16.5%] right-[16.5%] top-[34.5%] z-20 text-center">
+            <p className="text-[14px] font-bold leading-none text-foreground">
+              {hakMonthLabel}
+            </p>
 
-              <div className="mt-1.5 grid grid-cols-7 text-center text-[6.8px] font-semibold leading-none text-foreground/75">
-                {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((weekday) => (
-                  <span key={weekday}>{weekday}</span>
-                ))}
-              </div>
-
-              <div className="mt-1 grid grid-cols-7 gap-x-[1px] gap-y-[1px]">
-                {hakMonthCells.map((cell) => {
-                  if (!cell.inMonth) {
-                    return <span key={cell.key} className="h-[19px]" aria-hidden="true" />;
-                  }
-
-                  const packDay = cell.packDay;
-                  const loggedTaken = !!takenAt(cell.key);
-                  const missed = missedAt(cell.key);
-                  const isToday = cell.key === todayK;
-                  const isPlacebo = packDay != null && packDay > ACTIVE_DAYS;
-                  const isNewPack = packDay === 1;
-
-                  const chipBg =
-                    packDay == null
-                      ? "transparent"
-                      : isPlacebo
-                        ? "rgba(239,154,184,.72)"
-                        : isNewPack
-                          ? "rgba(176,185,81,.72)"
-                          : "rgba(170,145,229,.72)";
-
-                  const chipColor =
-                    packDay == null
-                      ? "transparent"
-                      : isPlacebo
-                        ? HAK_PINK_DARK
-                        : isNewPack
-                          ? HAK_GREEN_DARK
-                          : HAK_PURPLE_DARK;
-
-                  return (
-                    <span
-                      key={cell.key}
-                      className="flex h-[19px] min-w-0 flex-col items-center justify-start"
-                      aria-label={
-                        packDay == null
-                          ? fmtFullDate(cell.key)
-                          : `${fmtFullDate(cell.key)}, HAK day ${packDay}${loggedTaken ? ", taken" : missed ? ", missed" : ""}`
-                      }
-                    >
-                      <span
-                        className="grid h-[9px] min-w-[15px] place-items-center rounded-full px-[1px] text-[7.3px] font-bold leading-none tabular-nums"
-                        style={{
-                          color: "var(--foreground)",
-                          boxShadow: isToday ? "0 0 0 1px rgba(65,76,18,.68)" : undefined,
-                        }}
-                      >
-                        {cell.date.getDate()}
-                      </span>
-
-                      {packDay != null && (
-                        <span
-                          className="mt-[1px] max-w-[28px] truncate rounded-[3px] px-[2px] py-[1px] text-[5.3px] font-bold leading-none tabular-nums"
-                          style={{
-                            backgroundColor: chipBg,
-                            color: chipColor,
-                          }}
-                        >
-                          P{packDay}{loggedTaken ? " ✓" : missed ? " ×" : ""}
-                        </span>
-                      )}
-                    </span>
-                  );
-                })}
-              </div>
+            <div className="mt-1.5 grid grid-cols-7 text-center text-[7.5px] font-semibold leading-none text-foreground/75">
+              {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((weekday) => (
+                <span key={weekday}>{weekday}</span>
+              ))}
             </div>
 
+            <div className="mt-1 grid grid-cols-7 gap-x-[2px] gap-y-[1px]">
+              {hakMonthCells.map((cell) => {
+                if (!cell.inMonth) {
+                  return <span key={cell.key} className="h-[20px]" aria-hidden="true" />;
+                }
+
+                const packDay = cell.packDay;
+                const loggedTaken = !!takenAt(cell.key);
+                const missed = missedAt(cell.key);
+                const isToday = cell.key === todayK;
+                const isPlacebo = packDay != null && packDay > ACTIVE_DAYS;
+                const isNewPack = packDay === 1;
+
+                const chipBg =
+                  packDay == null
+                    ? "transparent"
+                    : isPlacebo
+                      ? "rgba(239,154,184,.72)"
+                      : isNewPack
+                        ? "rgba(176,185,81,.72)"
+                        : "rgba(170,145,229,.72)";
+
+                const chipColor =
+                  packDay == null
+                    ? "transparent"
+                    : isPlacebo
+                      ? HAK_PINK_DARK
+                      : isNewPack
+                        ? HAK_GREEN_DARK
+                        : HAK_PURPLE_DARK;
+
+                return (
+                  <span
+                    key={cell.key}
+                    className="flex h-[20px] min-w-0 flex-col items-center justify-start"
+                    aria-label={
+                      packDay == null
+                        ? fmtFullDate(cell.key)
+                        : `${fmtFullDate(cell.key)}, HAK day ${packDay}${loggedTaken ? ", taken" : missed ? ", missed" : ""}`
+                    }
+                  >
+                    <span
+                      className="grid h-[10px] min-w-[16px] place-items-center rounded-full px-[1px] text-[8px] font-bold leading-none tabular-nums"
+                      style={{
+                        color: "var(--foreground)",
+                        boxShadow: isToday ? "0 0 0 1px rgba(65,76,18,.68)" : undefined,
+                      }}
+                    >
+                      {cell.date.getDate()}
+                    </span>
+
+                    {packDay != null && (
+                      <span
+                        className="mt-[1px] max-w-[30px] truncate rounded-[3px] px-[2px] py-[1px] text-[5.7px] font-bold leading-none tabular-nums"
+                        style={{
+                          backgroundColor: chipBg,
+                          color: chipColor,
+                        }}
+                      >
+                        P{packDay}{loggedTaken ? " ✓" : missed ? " ×" : ""}
+                      </span>
+                    )}
+                  </span>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
@@ -2263,8 +2264,6 @@ function DayPreview({
         log.sex?.length ||
         log.heat?.length ||
         log.workout?.length ||
-        (log.temperatureEntries?.length ?? 0) > 0 ||
-        (log.weightEntries?.length ?? 0) > 0 ||
         log.temperature != null ||
         log.weight != null ||
         log.sleepHours != null ||
@@ -2845,72 +2844,25 @@ function DayPreview({
         </Card>
       ) : null}
 
-      {(() => {
-        const temperatureEntries = (log?.temperatureEntries ?? [])
-          .filter((entry) => Number.isFinite(Number(entry.value)))
-          .slice()
-          .sort((a, b) => (a.time ?? "").localeCompare(b.time ?? ""));
-        const weightEntries = (log?.weightEntries ?? [])
-          .filter((entry) => Number.isFinite(Number(entry.value)))
-          .slice()
-          .sort((a, b) => (a.time ?? "").localeCompare(b.time ?? ""));
-
-        const hasVitals =
-          temperatureEntries.length > 0 ||
-          weightEntries.length > 0 ||
-          log?.temperature != null ||
-          log?.weight != null ||
-          log?.sleepHours != null ||
-          asArr(log?.sleepQuality).length > 0;
-
-        if (!hasVitals) return null;
-
-        return (
-          <Card title="Temp / Sleep / Weight" icon="🌡️">
-            <button onClick={() => onEdit?.("temp", undefined)} className="w-full text-left">
-              {temperatureEntries.length > 0 ? (
-                <div className="space-y-1">
-                  {temperatureEntries.map((entry, index) => (
-                    <p key={entry.id || `temperature-${index}`} className="text-sm">
-                      <span className="text-muted-foreground">{entry.time || "—"}</span>
-                      {" · "}Temperature: {Number(entry.value).toFixed(1)}°C
-                    </p>
-                  ))}
-                </div>
-              ) : log?.temperature != null ? (
-                <p className="text-sm">Temperature: {Number(log.temperature).toFixed(1)}°C</p>
-              ) : null}
-
-              {weightEntries.length > 0 ? (
-                <div className={temperatureEntries.length > 0 ? "mt-2 space-y-1" : "space-y-1"}>
-                  {weightEntries.map((entry, index) => (
-                    <p key={entry.id || `weight-${index}`} className="text-sm">
-                      <span className="text-muted-foreground">{entry.time || "—"}</span>
-                      {" · "}Weight: {Number(entry.value).toFixed(1)} kg
-                    </p>
-                  ))}
-                </div>
-              ) : log?.weight != null ? (
-                <p className={temperatureEntries.length > 0 ? "mt-2 text-sm" : "text-sm"}>
-                  Weight: {Number(log.weight).toFixed(1)} kg
-                </p>
-              ) : null}
-
-              {log?.sleepHours != null && (
-                <p className="mt-2 text-sm">
-                  Sleep: {log.sleepHours} h <IcoText text={asArr(log.sleepQuality).join(", ")} size={14} />
-                </p>
-              )}
-              {asArr(log?.sleepQuality).length > 0 && log?.sleepHours == null && (
-                <p className="mt-2 text-sm">
-                  Sleep quality: <IcoText text={asArr(log.sleepQuality).join(", ")} size={14} />
-                </p>
-              )}
-              <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
-            </button>
-          </Card>
-        );
-      })()}
+      {(log?.temperature != null || log?.weight != null || log?.sleepHours != null || log?.sleepQuality) && (
+        <Card title="Temp / Sleep / Weight" icon="🌡️">
+          <button onClick={() => onEdit?.("temp", undefined)} className="w-full text-left">
+            {log?.temperature != null && <p className="text-sm">Temperature: {log.temperature}°C</p>}
+            {log?.weight != null && <p className="text-sm">Weight: {log.weight} kg</p>}
+            {log?.sleepHours != null && (
+              <p className="text-sm">
+                Sleep: {log.sleepHours} h <IcoText text={asArr(log.sleepQuality).join(", ")} size={14} />
+              </p>
+            )}
+            {asArr(log?.sleepQuality).length > 0 && log?.sleepHours == null && (
+              <p className="text-sm">
+                Sleep quality: <IcoText text={asArr(log.sleepQuality).join(", ")} size={14} />
+              </p>
+            )}
+            <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
+          </button>
+        </Card>
+      )}
 
       {tasks.length > 0 && (
         <Card title="Tasks" icon="✅">
