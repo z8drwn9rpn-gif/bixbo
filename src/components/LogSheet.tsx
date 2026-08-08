@@ -191,76 +191,76 @@ export function LogSheet({
             ? `flex h-[100dvh] max-h-[100dvh] flex-col rounded-t-none bg-background p-0 ${
                 active === "pain" ? "pt-[env(safe-area-inset-top)]" : "pt-0"
               }`
-            : "flex h-[88vh] max-h-[88vh] flex-col rounded-t-3xl bg-background p-0") + " [&>button.absolute]:hidden"
+            : "fixed !left-auto !right-3 !bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] !top-auto flex !h-[60dvh] !max-h-[540px] !w-[67vw] !max-w-[320px] min-h-0 flex-col overflow-hidden rounded-[1.5rem] border border-border/70 bg-background/95 p-0 shadow-2xl backdrop-blur-xl") + " [&>button.absolute]:hidden"
         }
       >
         {!active ? (
           <>
-            <SheetHeader className="shrink-0 relative px-5 pt-5 pb-2">
-              <SheetTitle className="text-center font-serif text-2xl">Log</SheetTitle>
+            <SheetHeader className="relative h-12 shrink-0 border-b border-border/60 px-3 py-0">
+              <SheetTitle className="flex h-full items-center justify-center text-center font-serif text-xl">Log</SheetTitle>
               <button
                 onClick={() => setEditingOrder((v) => !v)}
-                className="absolute left-4 top-4 flex items-center gap-1 rounded-full px-2 py-1 text-xs text-muted-foreground hover:bg-tint"
+                className="absolute left-2 top-1/2 flex -translate-y-1/2 items-center gap-0.5 rounded-full px-1.5 py-1 text-[9px] text-muted-foreground hover:bg-tint"
               >
                 {editingOrder ? (
                   <>
-                    <Check className="h-4 w-4" /> Done
+                    <Check className="h-3 w-3" /> Done
                   </>
                 ) : (
                   <>
-                    <GripVertical className="h-4 w-4" /> Reorder
+                    <GripVertical className="h-3 w-3" /> Reorder
                   </>
                 )}
               </button>
               <button
                 onClick={close}
                 aria-label="Close"
-                className="absolute right-4 top-4 rounded-full p-1 hover:bg-tint"
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 hover:bg-tint"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4" />
               </button>
             </SheetHeader>
-            <ul className="min-h-0 flex-1 overflow-y-auto divide-y divide-border border-t border-border">
+            <ul className="min-h-0 flex-1 overflow-y-auto divide-y divide-border/70 bg-surface/55 px-2 py-1">
               {orderedCats.map((c, i) => (
                 <li key={c.id}>
                   {editingOrder ? (
-                    <div className="flex w-full items-center gap-3 bg-surface px-5 py-3">
-                      <span className="grid h-10 w-10 place-items-center rounded-full bg-tint">
-                        <Ico e={c.emoji} size={26} />
+                    <div className="flex h-[38px] w-full items-center gap-2 bg-surface/70 px-2">
+                      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-tint">
+                        <Ico e={c.emoji} size={20} />
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="text-base font-semibold">{c.label}</p>
+                        <p className="truncate text-[13px] font-semibold leading-none">{c.label}</p>
                       </div>
                       <button
                         onClick={() => moveCat(i, -1)}
                         disabled={i === 0}
-                        className="rounded-full p-2 hover:bg-tint disabled:opacity-30"
+                        className="rounded-full p-1 hover:bg-tint disabled:opacity-30"
                         aria-label="Move up"
                       >
-                        <ChevronUp className="h-5 w-5" />
+                        <ChevronUp className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => moveCat(i, 1)}
                         disabled={i === orderedCats.length - 1}
-                        className="rounded-full p-2 hover:bg-tint disabled:opacity-30"
+                        className="rounded-full p-1 hover:bg-tint disabled:opacity-30"
                         aria-label="Move down"
                       >
-                        <ChevronDown className="h-5 w-5" />
+                        <ChevronDown className="h-4 w-4" />
                       </button>
                     </div>
                   ) : (
                     <button
                       onClick={() => setCat(c.id)}
-                      className="flex w-full items-center gap-3 bg-surface px-5 py-3 text-left transition hover:bg-tint"
+                      className="flex h-[38px] w-full items-center gap-2 bg-surface/70 px-2 text-left transition hover:bg-tint"
                     >
-                      <span className="grid h-10 w-10 place-items-center rounded-full bg-tint">
-                        <Ico e={c.emoji} size={26} />
+                      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-tint">
+                        <Ico e={c.emoji} size={20} />
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="text-base font-semibold">{c.label}</p>
-                        <p className="truncate text-xs text-muted-foreground">{c.hint}</p>
+                        <p className="truncate text-[13px] font-semibold leading-none">{c.label}</p>
+                        <p className="hidden truncate text-xs text-muted-foreground">{c.hint}</p>
                       </div>
-                      <span className="text-muted-foreground">›</span>
+                      <span className="shrink-0 text-sm text-muted-foreground">›</span>
                     </button>
                   )}
                 </li>
