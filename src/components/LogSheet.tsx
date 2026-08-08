@@ -426,7 +426,7 @@ function Chip({
 }
 function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave: () => void; disabled?: boolean }) {
   return (
-    <SheetFooter className="sticky top-0 z-30 -mx-5 flex-row items-center justify-between gap-2 border-b border-border/50 bg-background px-5 py-1.5">
+    <SheetFooter className="sticky top-0 z-30 -mx-5 mt-0 flex-row items-center justify-between gap-2 border-b border-border/50 bg-background px-5 py-1.5">
       <button
         type="button"
         onClick={onCancel}
