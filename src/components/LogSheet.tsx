@@ -271,7 +271,7 @@ export function LogSheet({
           <div className="flex h-full min-h-0 flex-col">
             <SheetHeader
               className={`shrink-0 flex-row items-center justify-between gap-0 border-b border-border px-5 py-0 ${
-                active === "pain" ? "h-14" : "h-12"
+                active === "pain" ? "h-14" : "h-11"
               }`}
             >
               <button onClick={back} className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -285,7 +285,7 @@ export function LogSheet({
             <div
               key={`${active}-${openToken}-${(edit as { id?: string } | undefined)?.id ?? initialPain?.id ?? "new"}`}
               className={`min-h-0 flex-1 overflow-y-auto ${
-                active === "pain" ? "pt-[60px]" : "mt-[32px] px-5 pb-4"
+                active === "pain" ? "pt-[60px]" : "mt-[28px] px-5 pb-4"
               }`}
             >
               {active === "postpartum" && (
@@ -425,8 +425,8 @@ function Chip({
 function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave: () => void; disabled?: boolean }) {
   return (
     <SheetFooter
-      className="fixed inset-x-0 z-30 h-[32px] flex-row items-center justify-between gap-2 border-b border-border/50 bg-background px-5 py-0"
-      style={{ top: "48px" }}
+      className="fixed inset-x-0 z-30 h-[28px] flex-row items-center justify-between gap-2 border-b border-border/50 bg-background px-5 py-0"
+      style={{ top: "44px" }}
     >
       <button
         type="button"
