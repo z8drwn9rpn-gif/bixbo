@@ -1042,7 +1042,7 @@ function PainWizard({
           <span className="text-xs text-muted-foreground">New entry · {time}</span>
         </div>
       ) : (
-        <div className="sticky top-0 z-20 -mx-5 mb-3 flex min-h-[60px] items-center justify-between gap-2 border-y border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur">
+        <div className="sticky top-0 z-20 -mx-5 mb-0 flex min-h-[60px] items-center justify-between gap-2 border-y border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur">
           {step > 0 ? (
             <button
               type="button"
