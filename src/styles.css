@@ -96,30 +96,30 @@
   --radius: 1rem;
 
   /* Main light palette — soft creamy olive inspired by the BIXBO reference UI */
-  --background: #EEF0CB;
+  --background: #E4E7B8;
   --foreground: #171A0E;
 
-  --surface: #F2F1CE;
-  --surface-elevated: #F8F4D8;
-  --surface-sunken: #E3E6B4;
-  --tint: #D9DEA0;
+  --surface: #EBEABF;
+  --surface-elevated: #F2EFCB;
+  --surface-sunken: #D9DDA3;
+  --tint: #CDD486;
 
-  --card: #F2F1CE;
+  --card: #EBEABF;
   --card-foreground: #171A0E;
 
-  --popover: #FAF6D9;
+  --popover: #F4F0CC;
   --popover-foreground: #171A0E;
 
   --primary: #66720B;
   --primary-foreground: #FFFDEB;
 
-  --secondary: #E0E3AC;
+  --secondary: #D4DA92;
   --secondary-foreground: #20250F;
 
-  --muted: #E7E8BA;
+  --muted: #DDE1A8;
   --muted-foreground: #515832;
 
-  --accent: #CDD482;
+  --accent: #C1CB6C;
   --accent-foreground: #20250F;
 
   --destructive: oklch(0.5 0.22 25);
@@ -137,13 +137,13 @@
   --info: oklch(0.45 0.13 240);
   --info-foreground: oklch(1 0 0);
 
-  --border: #B8BD7A;
-  --input: #B8BD7A;
+  --border: #A9B164;
+  --input: #A9B164;
   --ring: #66720B;
 
-  --chart-grid: #D1D49F;
+  --chart-grid: #C5CA8A;
   --chart-axis: #424826;
-  --chart-tooltip-bg: #FBF7DD;
+  --chart-tooltip-bg: #F3EFCA;
   --chart-tooltip-fg: #171A0E;
 
   /* Period intensity - readable text always dark on light swatches, adjusted for contrast/step separation */
@@ -421,9 +421,9 @@ body {
   overflow-x: hidden;
   background: linear-gradient(
     180deg,
-    #F3F2D3 0%,
+    #EBEBC2 0%,
     var(--background) 46%,
-    #E9EBBE 100%
+    #DEE2AD 100%
   );
   color: var(--foreground);
   overscroll-behavior-y: none;
@@ -541,4 +541,4 @@ select:-webkit-autofill {
   box-shadow: 0 0 0 1000px var(--surface) inset;
   caret-color: var(--foreground);
 }
-/* BIXBO soft creamy olive theme revision: 2026-08-08 */
+/* BIXBO slightly deeper soft olive theme revision: 2026-08-08 */
