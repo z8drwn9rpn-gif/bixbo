@@ -19,12 +19,14 @@ import { CHART_COLORS, CHART_TINTS } from "@/components/ui/chart";
 import {
   EMPTY,
   PAIN_DESCRIPTIONS,
+  addDays,
   avgDayPain,
   fromKey,
   nextPredictedPeriod,
   painColor,
   predictPeriods,
   setPartner,
+  toKey,
   todayKey,
   useBixbo,
   type ExtraMed,
@@ -137,10 +139,6 @@ function average(values: number[]) {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
-function monthPrefix(date: Date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-}
-
 function monthLabel(date: Date) {
   return date.toLocaleDateString("en-US", {
     month: "long",
@@ -152,25 +150,59 @@ function startOfMonth(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), 1);
 }
 
-function shiftMonth(date: Date, amount: number) {
-  return new Date(date.getFullYear(), date.getMonth() + amount, 1);
-}
 
 function isSameMonth(a: Date, b: Date) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
 }
 
-function daysForMonth(date: Date) {
-  const prefix = monthPrefix(date);
+
+type CouplePeriod = "W" | "M" | "Y";
+
+function coupleRangeFor(period: CouplePeriod, anchor: Date) {
+  const base = new Date(anchor);
+  base.setHours(0, 0, 0, 0);
+
+  let start: Date;
+  let end: Date;
+
+  if (period === "W") {
+    const mondayOffset = (base.getDay() + 6) % 7;
+    start = new Date(base);
+    start.setDate(base.getDate() - mondayOffset);
+    end = new Date(start);
+    end.setDate(start.getDate() + 6);
+  } else if (period === "M") {
+    start = new Date(base.getFullYear(), base.getMonth(), 1);
+    end = new Date(base.getFullYear(), base.getMonth() + 1, 0);
+  } else {
+    start = new Date(base.getFullYear(), 0, 1);
+    end = new Date(base.getFullYear(), 11, 31);
+  }
+
   const today = new Date();
-  const current = isSameMonth(date, today);
+  today.setHours(0, 0, 0, 0);
+  if (end > today) end = today;
 
-  const totalDays = current ? today.getDate() : new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  const startK = toKey(start);
+  const endK = toKey(end);
+  const days: string[] = [];
+  let key = startK;
+  while (key <= endK) {
+    days.push(key);
+    key = addDays(key, 1);
+  }
 
-  return Array.from({ length: totalDays }, (_, index) => {
-    const day = String(index + 1).padStart(2, "0");
-    return `${prefix}-${day}`;
-  });
+  const label =
+    period === "Y"
+      ? String(base.getFullYear())
+      : period === "M"
+        ? base.toLocaleDateString("en-GB", { month: "long", year: "numeric" })
+        : `${start.toLocaleDateString("en-GB", { day: "numeric", month: "short" })} – ${end.toLocaleDateString(
+            "en-GB",
+            { day: "numeric", month: "short", year: "numeric" },
+          )}`;
+
+  return { start, end, days, label };
 }
 
 function hasSymptoms(log?: ComparableDayLog) {
@@ -307,7 +339,7 @@ function ComparisonBarCard({
         </div>
       </div>
 
-      <div className="mt-4 space-y-3">
+      <div className="mt-3 space-y-2.5">
         <ComparisonRow
           label={mineLabel}
           value={mine}
@@ -650,14 +682,46 @@ function CouplePainChart({
   theirs,
   partnerName,
   periodLabel,
+  period,
 }: {
   days: string[];
   mine: Record<string, { pain?: PainEntry[] }>;
   theirs: Record<string, { pain?: PainEntry[] }>;
   partnerName: string;
   periodLabel: string;
+  period: CouplePeriod;
 }) {
-  const width = Math.max(340, days.length * 22 + 34);
+  const chartItems = useMemo(() => {
+    if (period !== "Y") {
+      return days.map((day) => ({
+        key: day,
+        label: fromKey(day).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        shortTop: fromKey(day).toLocaleDateString("en-US", { weekday: "short" }).slice(0, 2),
+        shortBottom: String(fromKey(day).getDate()),
+        mine: avgDayPain(mine[day]),
+        theirs: avgDayPain(theirs[day]),
+      }));
+    }
+
+    const year = days[0] ? fromKey(days[0]).getFullYear() : new Date().getFullYear();
+    return Array.from({ length: 12 }, (_, monthIndex) => {
+      const monthDays = days.filter((day) => fromKey(day).getMonth() === monthIndex);
+      const mineValues = monthDays.map((day) => avgDayPain(mine[day])).filter((v): v is number => v != null);
+      const theirValues = monthDays.map((day) => avgDayPain(theirs[day])).filter((v): v is number => v != null);
+      const monthDate = new Date(year, monthIndex, 1);
+
+      return {
+        key: toKey(monthDate),
+        label: monthDate.toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+        shortTop: monthDate.toLocaleDateString("en-US", { month: "short" }),
+        shortBottom: "",
+        mine: average(mineValues),
+        theirs: average(theirValues),
+      };
+    });
+  }, [days, mine, period, theirs]);
+
+  const width = Math.max(340, chartItems.length * 22 + 34);
   const height = 206;
   const left = 24;
   const right = 10;
@@ -665,7 +729,7 @@ function CouplePainChart({
   const bottom = 40;
   const chartWidth = width - left - right;
   const chartHeight = height - top - bottom;
-  const count = Math.max(1, days.length);
+  const count = Math.max(1, chartItems.length);
   const slot = chartWidth / count;
   const barWidth = Math.max(5, (slot - 3) / 2);
 
@@ -674,12 +738,13 @@ function CouplePainChart({
   const baselineY = yFor(0);
   const yTicks = [10, 8, 6, 4, 2, 0];
 
-  const mySeries = days.map((day) => avgDayPain(mine[day]));
-  const partnerSeries = days.map((day) => avgDayPain(theirs[day]));
+  const mySeries = chartItems.map((item) => item.mine);
+  const partnerSeries = chartItems.map((item) => item.theirs);
 
   const [selectedBar, setSelectedBar] = useState<{
     owner: string;
     day: string;
+    label: string;
     value: number;
     color: string;
     centerX: number;
@@ -694,6 +759,7 @@ function CouplePainChart({
   const showBarDetails = (
     owner: string,
     day: string,
+    label: string,
     value: number,
     color: string,
     centerX: number,
@@ -706,6 +772,7 @@ function CouplePainChart({
         : {
             owner,
             day,
+            label,
             value,
             color,
             centerX,
@@ -723,7 +790,7 @@ function CouplePainChart({
         </h2>
 
         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-          Daily average pain. Tap a bar to see its value. Solid bars are yours; striped bars belong to {partnerName}.
+          {period === "Y" ? "Monthly average pain" : "Daily average pain"}. Tap a bar to see its value. Solid bars are yours; striped bars belong to {partnerName}.
         </p>
       </div>
 
@@ -767,20 +834,14 @@ function CouplePainChart({
             </g>
           ))}
 
-          {days.map((day, index) => {
-            const date = fromKey(day);
+          {chartItems.map((item, index) => {
+            const day = item.key;
             const centerX = left + slot * index + slot / 2;
             const myValue = mySeries[index];
             const partnerValue = partnerSeries[index];
 
             const myColor = myValue != null ? couplePainColor(myValue) : "transparent";
             const partnerColor = partnerValue != null ? couplePainColor(partnerValue) : "transparent";
-
-            const weekday = date
-              .toLocaleDateString("en-US", {
-                weekday: "short",
-              })
-              .slice(0, 2);
 
             return (
               <g key={day}>
@@ -813,7 +874,7 @@ function CouplePainChart({
                       aria-label={`You, ${day}, pain ${myValue.toFixed(1)} out of 10`}
                       className="cursor-pointer focus:outline-none"
                       onClick={() =>
-                        showBarDetails("You", day, myValue, myColor, centerX - barWidth / 2 - 1, yFor(myValue), "mine")
+                        showBarDetails("You", day, item.label, myValue, myColor, centerX - barWidth / 2 - 1, yFor(myValue), "mine")
                       }
                       onKeyDown={(event) => {
                         if (event.key === "Enter" || event.key === " ") {
@@ -821,6 +882,7 @@ function CouplePainChart({
                           showBarDetails(
                             "You",
                             day,
+                            item.label,
                             myValue,
                             myColor,
                             centerX - barWidth / 2 - 1,
@@ -888,6 +950,7 @@ function CouplePainChart({
                         showBarDetails(
                           partnerName,
                           day,
+                          item.label,
                           partnerValue,
                           partnerColor,
                           centerX + barWidth / 2 + 1,
@@ -901,6 +964,7 @@ function CouplePainChart({
                           showBarDetails(
                             partnerName,
                             day,
+                            item.label,
                             partnerValue,
                             partnerColor,
                             centerX + barWidth / 2 + 1,
@@ -914,11 +978,11 @@ function CouplePainChart({
                 ) : null}
 
                 <text x={centerX} y={height - 22} textAnchor="middle" fontSize="8" fill="var(--muted-foreground)">
-                  {weekday}
+                  {item.shortTop}
                 </text>
 
                 <text x={centerX} y={height - 12} textAnchor="middle" fontSize="8" fill="var(--muted-foreground)">
-                  {date.getDate()}
+                  {item.shortBottom}
                 </text>
               </g>
             );
@@ -933,10 +997,7 @@ function CouplePainChart({
                   Math.min(width - right - tooltipWidth - 2, selectedBar.centerX - tooltipWidth / 2),
                 );
                 const tooltipY = Math.max(4, selectedBar.barTopY - tooltipHeight - 8);
-                const dateLabel = fromKey(selectedBar.day).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                });
+                const dateLabel = selectedBar.label;
                 const description =
                   PAIN_DESCRIPTIONS[Math.max(0, Math.min(10, Math.round(selectedBar.value)))] ?? "Pain";
 
@@ -1176,8 +1237,8 @@ function CouplePage() {
   const view = hydrated ? data : EMPTY;
   const partner = view.partner;
 
-  const [selectedMonth, setSelectedMonth] = useState(() => startOfMonth(new Date()));
-
+  const [period, setPeriod] = useState<CouplePeriod>("M");
+  const [anchor, setAnchor] = useState<Date>(new Date());
   const [activeTab, setActiveTab] = useState<CoupleTab>("overview");
 
   useEffect(() => {
@@ -1198,31 +1259,45 @@ function CouplePage() {
     };
   }, []);
 
-  const monthDays = useMemo(() => daysForMonth(selectedMonth), [selectedMonth]);
+  const range = useMemo(() => coupleRangeFor(period, anchor), [anchor, period]);
+  const periodDays = range.days;
+  const periodDisplayLabel = range.label;
 
+  const selectedMonth = useMemo(() => startOfMonth(anchor), [anchor]);
   const selectedMonthLabel = monthLabel(selectedMonth);
   const currentMonth = startOfMonth(new Date());
-
   const isCurrentMonth = isSameMonth(selectedMonth, currentMonth);
 
-  const canGoNext = selectedMonth.getTime() < currentMonth.getTime();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const canGoNext = range.end.getTime() < today.getTime();
 
-  const goToPreviousMonth = () => {
-    setSelectedMonth((current) => shiftMonth(current, -1));
-  };
-
-  const goToNextMonth = () => {
-    setSelectedMonth((current) => {
-      const next = shiftMonth(current, 1);
-
-      return next.getTime() > currentMonth.getTime() ? current : next;
+  const goPrev = () =>
+    setAnchor((current) => {
+      const next = new Date(current);
+      if (period === "W") next.setDate(next.getDate() - 7);
+      else if (period === "M") {
+        next.setDate(1);
+        next.setMonth(next.getMonth() - 1);
+      } else next.setFullYear(next.getFullYear() - 1);
+      return next;
     });
-  };
+
+  const goNext = () =>
+    setAnchor((current) => {
+      const next = new Date(current);
+      if (period === "W") next.setDate(next.getDate() + 7);
+      else if (period === "M") {
+        next.setDate(1);
+        next.setMonth(next.getMonth() + 1);
+      } else next.setFullYear(next.getFullYear() + 1);
+      return next > today ? current : next;
+    });
 
   const collectPain = (dayLogs: Record<string, ComparableDayLog>) => {
     const output: (PainEntry & { dateKey: string })[] = [];
 
-    for (const day of monthDays) {
+    for (const day of periodDays) {
       for (const pain of dayLogs[day]?.pain ?? []) {
         output.push({
           ...pain,
@@ -1241,7 +1316,7 @@ function CouplePage() {
       dateKey: string;
     })[] = [];
 
-    for (const day of monthDays) {
+    for (const day of periodDays) {
       for (const episode of dayLogs[day]?.tetany ?? []) {
         output.push({
           ...episode,
@@ -1258,7 +1333,7 @@ function CouplePage() {
       dateKey: string;
     })[] = [];
 
-    for (const day of monthDays) {
+    for (const day of periodDays) {
       for (const attack of dayLogs[day]?.panic ?? []) {
         output.push({
           ...attack,
@@ -1275,7 +1350,7 @@ function CouplePage() {
     medLog: Record<string, Record<string, boolean>>,
     dayLogs: Record<string, ComparableDayLog>,
   ) =>
-    monthDays
+    periodDays
       .slice()
       .reverse()
       .map((day) => ({
@@ -1299,8 +1374,8 @@ function CouplePage() {
 
   const partnerMeds = partner ? collectMedDays(partner.meds ?? [], partner.medLog ?? {}, partner.dayLogs) : [];
 
-  const visibleHealthDay = isCurrentMonth ? todayKey() : (monthDays[monthDays.length - 1] ?? todayKey());
-  const visibleHealthDayLabel = isCurrentMonth ? "Today" : visibleHealthDay;
+  const visibleHealthDay = periodDays.includes(todayKey()) ? todayKey() : (periodDays[periodDays.length - 1] ?? todayKey());
+  const visibleHealthDayLabel = visibleHealthDay === todayKey() ? "Today" : visibleHealthDay;
 
   const splitEntriesByVisibleDay = <T extends { dateKey: string }>(entries: T[]) => ({
     current: entries.filter((entry) => entry.dateKey === visibleHealthDay),
@@ -1328,25 +1403,25 @@ function CouplePage() {
 
   const partnerPainAverage = average(partnerPain.map((pain) => pain.score));
 
-  const myPainDays = monthDays.filter((day) => (view.dayLogs[day]?.pain?.length ?? 0) > 0).length;
+  const myPainDays = periodDays.filter((day) => (view.dayLogs[day]?.pain?.length ?? 0) > 0).length;
 
-  const partnerPainDays = partner ? monthDays.filter((day) => (partner.dayLogs[day]?.pain?.length ?? 0) > 0).length : 0;
+  const partnerPainDays = partner ? periodDays.filter((day) => (partner.dayLogs[day]?.pain?.length ?? 0) > 0).length : 0;
 
   const sharedSymptomDays = partner
-    ? monthDays.filter((day) => hasSymptoms(view.dayLogs[day]) && hasSymptoms(partner.dayLogs[day])).length
+    ? periodDays.filter((day) => hasSymptoms(view.dayLogs[day]) && hasSymptoms(partner.dayLogs[day])).length
     : 0;
 
-  const mySymptomDays = monthDays.filter((day) => hasSymptoms(view.dayLogs[day])).length;
+  const mySymptomDays = periodDays.filter((day) => hasSymptoms(view.dayLogs[day])).length;
 
-  const partnerSymptomDays = partner ? monthDays.filter((day) => hasSymptoms(partner.dayLogs[day])).length : 0;
+  const partnerSymptomDays = partner ? periodDays.filter((day) => hasSymptoms(partner.dayLogs[day])).length : 0;
 
-  const myTakenDoses = countTakenScheduledDoses(monthDays, view.meds, view.medLog);
+  const myTakenDoses = countTakenScheduledDoses(periodDays, view.meds, view.medLog);
 
-  const partnerTakenDoses = partner ? countTakenScheduledDoses(monthDays, partner.meds ?? [], partner.medLog ?? {}) : 0;
+  const partnerTakenDoses = partner ? countTakenScheduledDoses(periodDays, partner.meds ?? [], partner.medLog ?? {}) : 0;
 
   const similarityScore = partner
     ? (() => {
-        const symptomDayGap = Math.abs(mySymptomDays - partnerSymptomDays) / Math.max(1, monthDays.length);
+        const symptomDayGap = Math.abs(mySymptomDays - partnerSymptomDays) / Math.max(1, periodDays.length);
 
         const painGap =
           myPainAverage == null || partnerPainAverage == null ? 0.5 : Math.abs(myPainAverage - partnerPainAverage) / 10;
@@ -1389,37 +1464,58 @@ function CouplePage() {
 
   return (
     <AppShell title="Bixbo Couple">
-      <div className="space-y-4 px-5 pb-24 pt-4">
-        <section className="rounded-3xl bg-surface p-3 ring-1 ring-border">
-          <div className="flex items-center justify-between gap-3">
-            <button
-              type="button"
-              onClick={goToPreviousMonth}
-              aria-label="Previous month"
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-tint text-foreground transition active:scale-95"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
+      <div className="space-y-3 px-5 pb-[calc(96px+env(safe-area-inset-bottom))] pt-2 lg:grid lg:grid-cols-2 lg:items-start lg:gap-3 lg:space-y-0 lg:px-0 lg:pb-12 [&>*:first-child]:lg:col-span-2">
+        <div
+          className="mx-auto grid w-full max-w-[340px] grid-cols-3 gap-0.5 rounded-xl bg-primary/20 p-0.5 ring-1 ring-primary/15 lg:max-w-sm"
+          role="tablist"
+          aria-label="Couple period"
+        >
+          {(["W", "M", "Y"] as CouplePeriod[]).map((option) => {
+            const active = period === option;
+            return (
+              <button
+                key={option}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => {
+                  setPeriod(option);
+                  setAnchor(new Date());
+                }}
+                className={`min-w-0 rounded-[10px] px-2 py-1.5 text-[11px] font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+                  active
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "text-foreground/80 hover:bg-surface/45 hover:text-foreground"
+                }`}
+              >
+                {option === "W" ? "Week" : option === "M" ? "Month" : "Year"}
+              </button>
+            );
+          })}
+        </div>
 
-            <div className="min-w-0 text-center">
-              <p className="font-serif text-lg font-semibold">{selectedMonthLabel}</p>
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            onClick={goPrev}
+            aria-label="Previous period"
+            className="grid h-7 w-7 place-items-center rounded-full transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <ChevronLeft className="h-3 w-3" />
+          </button>
 
-              <p className="text-[10px] text-muted-foreground">
-                {isCurrentMonth ? `Current month · ${monthDays.length} days so far` : `${monthDays.length} days`}
-              </p>
-            </div>
+          <span className="text-[11px] font-medium leading-none">{periodDisplayLabel}</span>
 
-            <button
-              type="button"
-              onClick={goToNextMonth}
-              disabled={!canGoNext}
-              aria-label="Next month"
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-tint text-foreground transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-30"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </button>
-          </div>
-        </section>
+          <button
+            type="button"
+            onClick={goNext}
+            disabled={!canGoNext}
+            aria-label="Next period"
+            className="grid h-7 w-7 place-items-center rounded-full transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-30"
+          >
+            <ChevronRight className="h-3 w-3" />
+          </button>
+        </div>
 
         {!partner ? (
           <div className="rounded-3xl bg-surface p-6 text-center ring-1 ring-border">
@@ -1437,39 +1533,33 @@ function CouplePage() {
           <>
             <nav
               aria-label="Couple sections"
-              className="sticky top-0 z-20 rounded-3xl bg-surface/95 p-1.5 shadow-sm ring-1 ring-border backdrop-blur"
+              className="mx-auto grid w-full max-w-[340px] grid-cols-3 gap-0.5 rounded-xl bg-primary/20 p-0.5 ring-1 ring-primary/15 lg:max-w-sm"
             >
-              <div className="grid grid-cols-3 gap-1">
-                {tabs.map((tab) => {
-                  const active = activeTab === tab.id;
+              {tabs.map((tab) => {
+                const active = activeTab === tab.id;
 
-                  return (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      onClick={() => setActiveTab(tab.id)}
-                      aria-pressed={active}
-                      className={`flex min-w-0 flex-col items-center justify-center rounded-2xl px-1 py-2 text-[10px] font-semibold transition ${
-                        active
-                          ? "bg-tint text-primary ring-1 ring-border"
-                          : "text-muted-foreground hover:bg-tint/60 hover:text-foreground"
-                      }`}
-                    >
-                      <span className="grid h-7 w-7 place-items-center" aria-hidden="true">
-                        {tab.icon}
-                      </span>
-
-                      <span className="mt-1 truncate">{tab.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveTab(tab.id)}
+                    aria-pressed={active}
+                    className={`min-w-0 rounded-[10px] px-2 py-1.5 text-[11px] font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                      active
+                        ? "bg-primary text-primary-foreground shadow-md"
+                        : "text-foreground/80 hover:bg-surface/45 hover:text-foreground"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
             </nav>
 
             {activeTab === "overview" ? <SimilarityCard score={similarityScore} partnerName={partnerName} /> : null}
 
             {activeTab === "overview" ? (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 <StatCard
                   icon={<ProfileIcon size={18} />}
                   label="Shared symptom days"
@@ -1507,18 +1597,19 @@ function CouplePage() {
             {activeTab === "compare" ? (
               <>
                 <CouplePainChart
-                  days={monthDays}
+                  days={periodDays}
                   mine={view.dayLogs}
                   theirs={partner.dayLogs}
                   partnerName={partnerName}
-                  periodLabel={selectedMonthLabel}
+                  periodLabel={periodDisplayLabel}
+                  period={period}
                 />
 
                 <SectionCard
                   title="Health comparison"
                   description="Solid bars are yours. Striped bars belong to your partner."
                 >
-                  <div className="mt-4 space-y-3">
+                  <div className="mt-3 space-y-2.5">
                     <ComparisonBarCard
                       title="Average pain"
                       subtitle="Average intensity of logged pain entries"
@@ -1590,7 +1681,7 @@ function CouplePage() {
                 title={`${partnerName} — shared details`}
                 description="Only the explicitly shared categories for the selected month."
               >
-                <div className="mt-4 space-y-3">
+                <div className="mt-3 space-y-2.5">
                   <CurrentAndHistory
                     title={`Pain (${partnerPain.length})`}
                     currentLabel={visibleHealthDayLabel}
@@ -1640,7 +1731,7 @@ function CouplePage() {
                 title="My shared details"
                 description="The same categories that your partner is allowed to receive."
               >
-                <div className="mt-4 space-y-3">
+                <div className="mt-3 space-y-2.5">
                   <CurrentAndHistory
                     title={`Pain (${myPain.length})`}
                     currentLabel={visibleHealthDayLabel}
