@@ -135,7 +135,7 @@ function latestWeightForDay(log: DayLog | undefined): number | null {
 }
 
 type PatternTab = "cycle" | "monthly" | "treatment" | "triggers";
-type AnalysisRange = 7 | 30 | 90 | "all";
+type AnalysisRange = 7 | 30 | 365;
 type TreatmentKind = "medication" | "supplement" | "diet" | "therapy" | "exercise" | "other";
 
 type ArchivedTreatment = {
@@ -500,7 +500,7 @@ function ComparisonMetric({
         </div>
       ) : (
         <>
-          <div className="mt-3 grid grid-cols-2 gap-3">
+          <div className="mt-3 grid grid-cols-2 gap-2">
             <MetricColumn
               label={resolvedPreviousLabel}
               value={previous}
@@ -658,31 +658,32 @@ function PatternTabs({
   const tabs = hideCycle ? PATTERN_TABS.filter((tab) => tab.id !== "cycle") : PATTERN_TABS;
 
   return (
-    <div className="-mx-4 border-y border-border/50 bg-background/92 px-5 py-2.5 shadow-sm backdrop-blur-xl sm:-mx-5">
-      <div
-        className="grid gap-1 rounded-2xl bg-tint p-1 ring-1 ring-border/50"
-        style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}
-      >
-        {tabs.map((tab) => {
-          const selected = active === tab.id;
+    <div
+      className="mx-auto grid w-full max-w-[390px] gap-0.5 rounded-xl bg-primary/20 p-0.5 ring-1 ring-primary/15"
+      style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}
+      role="tablist"
+      aria-label="Pattern sections"
+    >
+      {tabs.map((tab) => {
+        const selected = active === tab.id;
 
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => onChange(tab.id)}
-              aria-pressed={selected}
-              className={`min-h-10 min-w-0 rounded-xl px-2 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                selected
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
+        return (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            aria-selected={selected}
+            onClick={() => onChange(tab.id)}
+            className={`min-w-0 rounded-[10px] px-1.5 py-1.5 text-[11px] font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+              selected
+                ? "bg-primary text-primary-foreground shadow-md"
+                : "text-foreground/80 hover:bg-surface/45 hover:text-foreground"
+            }`}
+          >
+            {tab.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -695,10 +696,9 @@ function AnalysisRangeSelector({
   onChange: (value: AnalysisRange) => void;
 }) {
   const options: Array<{ value: AnalysisRange; label: string }> = [
-    { value: 7, label: "7 days" },
-    { value: 30, label: "30 days" },
-    { value: 90, label: "90 days" },
-    { value: "all", label: "All" },
+    { value: 7, label: "Week" },
+    { value: 30, label: "Month" },
+    { value: 365, label: "Year" },
   ];
 
   return (
@@ -712,17 +712,17 @@ function AnalysisRangeSelector({
         </div>
       </div>
 
-      <div className="mt-3 grid grid-cols-4 gap-1 rounded-2xl bg-tint p-1 ring-1 ring-border/50">
+      <div className="mx-auto mt-3 grid w-full max-w-[340px] grid-cols-3 gap-0.5 rounded-xl bg-primary/20 p-0.5 ring-1 ring-primary/15">
         {options.map((option) => (
           <button
             key={String(option.value)}
             type="button"
             onClick={() => onChange(option.value)}
             aria-pressed={value === option.value}
-            className={`rounded-xl px-2 py-2 text-xs font-semibold transition ${
+            className={`min-w-0 rounded-[10px] px-2 py-1.5 text-[11px] font-semibold transition-all duration-200 ${
               value === option.value
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+                ? "bg-primary text-primary-foreground shadow-md"
+                : "text-foreground/80 hover:bg-surface/45 hover:text-foreground"
             }`}
           >
             {option.label}
@@ -1692,8 +1692,6 @@ function PatternsPage() {
   const allLoggedDays = useMemo(() => Object.keys(dayLogs).sort(), [dayLogs]);
 
   const analysisDays = useMemo(() => {
-    if (analysisRange === "all") return allLoggedDays;
-
     const start = addDays(todayKey(), -(analysisRange - 1));
     return allLoggedDays.filter((day) => day >= start && day <= todayKey());
   }, [allLoggedDays, analysisRange]);
@@ -1812,13 +1810,13 @@ function PatternsPage() {
 
   return (
     <AppShell title="Bixbo Patterns">
-      <div className="space-y-4 px-4 pb-[calc(96px+env(safe-area-inset-bottom))] pt-3 sm:px-5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0 lg:px-0 lg:pb-12 [&>*:first-child]:lg:col-span-2">
+      <div className="space-y-3 px-5 pb-[calc(96px+env(safe-area-inset-bottom))] pt-2 lg:grid lg:grid-cols-2 lg:items-start lg:gap-3 lg:space-y-0 lg:px-0 lg:pb-12 [&>*:first-child]:lg:col-span-2">
         <PatternTabs active={activeTab} onChange={setActiveTab} hideCycle={cycleTrackingHidden} />
 
         {activeTab === "triggers" && <AnalysisRangeSelector value={analysisRange} onChange={setAnalysisRange} />}
 
         {!cycleTrackingHidden && activeTab === "cycle" && (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {/* ------------------------------------------------------------------ */}
             {/* Cycle phase                                                        */}
             {/* ------------------------------------------------------------------ */}
@@ -1889,7 +1887,7 @@ function PatternsPage() {
                 title="Cycle phase — other"
                 description="Mood, energy, hot flashes and bowel symptoms grouped by cycle phase."
               >
-                <div className="mt-4 space-y-4">
+                <div className="mt-3 space-y-2.5">
                   <PhaseBarChart
                     title="Negative mood"
                     description="Average number of negative mood tags logged per day."
@@ -1936,7 +1934,7 @@ function PatternsPage() {
         )}
 
         {activeTab === "monthly" && (
-          <div className="space-y-4">
+          <div className="space-y-3">
             <Card
               title="This month at a glance"
               description={`${monthlyComparisonLabel} · compared over the same number of days.`}
@@ -2243,12 +2241,12 @@ function PatternsPage() {
         )}
 
         {activeTab === "treatment" && (
-          <div className="space-y-4">
+          <div className="space-y-3">
             <Card
               title="Treatment comparison"
               description="Compare the four weeks before treatment with the first four weeks after its start."
             >
-              <div className="mt-4 space-y-4">
+              <div className="mt-3 space-y-2.5">
                 <div>
                   <label htmlFor="treatment-name" className="text-sm font-semibold text-foreground">
                     What did you start?
@@ -2656,7 +2654,7 @@ function PatternsPage() {
         )}
 
         {activeTab === "triggers" && (
-          <div className="space-y-4">
+          <div className="space-y-3">
             <Card
               title="Smart correlations"
               description="Automatically ranked associations calculated only from your own logs."
@@ -2664,7 +2662,7 @@ function PatternsPage() {
               {strongestAssociations.length === 0 ? (
                 <Empty text="Log at least 3 days with and 3 days without a trigger to unlock smart correlations." />
               ) : (
-                <div className="mt-3 space-y-3">
+                <div className="mt-3 space-y-2.5">
                   {strongestAssociations.slice(0, 5).map((association, index) => (
                     <article
                       key={`smart-${association.trigger}-${association.outcome}`}
@@ -2742,7 +2740,7 @@ function PatternsPage() {
                 </label>
               </div>
 
-              <div className="mt-4 grid grid-cols-2 gap-3">
+              <div className="mt-3 grid grid-cols-2 gap-2">
                 <TriggerResult
                   label="With trigger"
                   detail={`${daysWithTrigger.length} logged day${daysWithTrigger.length === 1 ? "" : "s"}`}
