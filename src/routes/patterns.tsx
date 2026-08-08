@@ -260,7 +260,7 @@ const PHASE_COLORS = [
 
 function Card({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
   return (
-    <section className="overflow-hidden rounded-3xl bg-card p-5 shadow-sm ring-1 ring-border/70">
+    <section className="overflow-hidden rounded-3xl bg-surface p-5 ring-1 ring-border">
       <div>
         <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{title}</h2>
 
@@ -337,9 +337,9 @@ function PhaseBarChart({
   const hasData = bars.some((bar) => bar.value != null);
 
   return (
-    <div className="rounded-3xl bg-card p-4 ring-1 ring-border/40">
+    <article className="rounded-3xl bg-tint p-4 ring-1 ring-border">
       <div>
-        <p className="text-sm font-semibold text-foreground">{title}</p>
+        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
         {description && <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">{description}</p>}
       </div>
 
@@ -348,44 +348,38 @@ function PhaseBarChart({
           Log at least one complete menstrual cycle to unlock this analysis.
         </p>
       ) : (
-        <div className="mt-4 rounded-2xl bg-surface px-3 py-4 ring-1 ring-border/30">
-          <div className="flex h-24 items-end gap-3">
-            {bars.map((bar, index) => {
-              const color = PHASE_COLORS[index] ?? PHASE_COLORS[0];
-              const percentage = bar.value == null ? 0 : clampPercent((Math.max(0, bar.value) / max) * 100);
-              const miniBars = [0.72, 0.84, 0.94, 1, 0.9, 0.78];
+        <div className="mt-3 space-y-2.5">
+          {bars.map((bar, index) => {
+            const palette = PHASE_COLORS[index] ?? PHASE_COLORS[0];
+            const percentage =
+              bar.value == null ? 0 : clampPercent((Math.max(0, bar.value) / Math.max(1, max)) * 100);
 
-              return (
-                <div key={`${title}-${bar.label}`} className="flex min-w-0 flex-1 flex-col items-center">
-                  <span className="mb-2 text-xs font-bold tabular-nums text-foreground">
+            return (
+              <div key={`${title}-${bar.label}`}>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="truncate text-[11px] font-medium text-muted-foreground">{bar.label}</span>
+                  <span className="shrink-0 text-sm font-bold tabular-nums text-foreground">
                     {formatMetricValue(bar.value, decimals, unit)}
                   </span>
-
-                  <div className="flex h-14 w-full items-end justify-center gap-1 border-b border-border/50 pb-1">
-                    {miniBars.map((factor, miniIndex) => (
-                      <span
-                        key={miniIndex}
-                        className="w-1.5 rounded-full transition-[height] duration-500"
-                        style={{
-                          height: bar.value == null ? "3px" : `${Math.max(6, percentage * factor * 0.55)}px`,
-                          backgroundColor: color.solid,
-                          opacity: 0.62 + miniIndex * 0.065,
-                        }}
-                      />
-                    ))}
-                  </div>
-
-                  <span className="mt-2 text-[10px] font-medium text-muted-foreground">{bar.label}</span>
                 </div>
-              );
-            })}
-          </div>
+
+                <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-surface ring-1 ring-border/40">
+                  <div
+                    className="h-full rounded-full transition-[width] duration-500 ease-out"
+                    style={{
+                      width: `${percentage}%`,
+                      backgroundColor: palette.solid,
+                    }}
+                  />
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
-    </div>
+    </article>
   );
 }
-
 
 function monthLabelFromPrefix(prefix: string): string {
   const match = /^(\d{4})-(\d{2})$/.exec(prefix);
@@ -457,11 +451,11 @@ function ComparisonMetric({
   const relativeChange = percentageChange(previous, current);
 
   return (
-    <article className="rounded-2xl bg-card p-3.5 ring-1 ring-border/45">
+    <article className="rounded-3xl bg-tint p-4 ring-1 ring-border">
       <div className="flex items-start gap-3">
         {icon && (
           <span
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl"
             style={{
               backgroundColor: "var(--surface)",
               color: palette.text,
@@ -473,7 +467,7 @@ function ComparisonMetric({
         )}
 
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-semibold" style={{ color: palette.text }}>
+          <h3 className="text-sm font-semibold text-foreground">
             {title}
           </h3>
 
@@ -560,7 +554,7 @@ function MetricColumn({
         {formatMetricValue(value, decimals, unit)}
       </p>
 
-      <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-surface/75 ring-1 ring-border/40">
+      <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-surface ring-1 ring-border/40">
         <div
           className="h-full rounded-full transition-[width] duration-500 ease-out"
           style={{
@@ -659,7 +653,7 @@ function PatternTabs({
 
   return (
     <div
-      className="mx-auto grid w-full max-w-[390px] gap-0.5 rounded-xl bg-surface p-0.5 ring-1 ring-border/55"
+      className="mx-auto grid w-full max-w-[340px] gap-0.5 rounded-xl bg-primary/20 p-0.5 ring-1 ring-primary/15 lg:max-w-sm"
       style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}
       role="tablist"
       aria-label="Pattern sections"
@@ -674,7 +668,7 @@ function PatternTabs({
             role="tab"
             aria-selected={selected}
             onClick={() => onChange(tab.id)}
-            className={`min-w-0 rounded-[10px] px-1.5 py-1.5 text-[11px] font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+            className={`min-w-0 rounded-[10px] px-2 py-1.5 text-[11px] font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
               selected
                 ? "bg-primary text-primary-foreground shadow-md"
                 : "text-foreground/80 hover:bg-surface/45 hover:text-foreground"
@@ -702,40 +696,32 @@ function AnalysisRangeSelector({
   ];
 
   return (
-    <section className="rounded-3xl bg-card p-4 ring-1 ring-border/60">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold text-foreground">Analysis range</p>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">
-            Used for trigger comparisons and strongest associations.
-          </p>
-        </div>
-      </div>
+    <div
+      className="mx-auto grid w-full max-w-[340px] grid-cols-3 gap-0.5 rounded-xl bg-primary/20 p-0.5 ring-1 ring-primary/15 lg:max-w-sm"
+      role="tablist"
+      aria-label="Patterns analysis period"
+    >
+      {options.map((option) => {
+        const active = value === option.value;
 
-      <div
-        className="mx-auto mt-3 grid w-full max-w-[340px] grid-cols-3 gap-0.5 rounded-xl bg-primary/20 p-0.5 ring-1 ring-primary/15 lg:max-w-sm"
-        role="tablist"
-        aria-label="Patterns analysis period"
-      >
-        {options.map((option) => (
+        return (
           <button
             key={String(option.value)}
             type="button"
-            onClick={() => onChange(option.value)}
             role="tab"
-            aria-selected={value === option.value}
-            aria-pressed={value === option.value}
+            aria-selected={active}
+            onClick={() => onChange(option.value)}
             className={`min-w-0 rounded-[10px] px-2 py-1.5 text-[11px] font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
-              value === option.value
+              active
                 ? "bg-primary text-primary-foreground shadow-md"
                 : "text-foreground/80 hover:bg-surface/45 hover:text-foreground"
             }`}
           >
             {option.label}
           </button>
-        ))}
-      </div>
-    </section>
+        );
+      })}
+    </div>
   );
 }
 
