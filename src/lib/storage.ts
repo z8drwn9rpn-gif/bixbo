@@ -775,6 +775,15 @@ export interface BixboData {
   /** Ids of entries the user deleted — used by cloud merge so a union merge
    * doesn't resurrect them from another device. */
   deletedIds?: string[];
+  /**
+   * Values the user removed from a `custom` option list. These are permanent
+   * tombstones: option lists are filtered against them on every load and on
+   * every cloud merge, so a deleted option can never be resurrected by a
+   * stale remote copy, a migration or a new deployment. Re-adding the same
+   * value clears its tombstone.
+   */
+  deletedCustom?: Partial<Record<keyof CustomLists, string[]>>;
+
   /** Full health profile (personal, medical, lifestyle, emergency contacts). */
   profile?: HealthProfile;
   pregnancy?: PregnancyState;
