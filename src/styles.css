@@ -96,30 +96,30 @@
   --radius: 1rem;
 
   /* Main light palette — soft creamy olive inspired by the BIXBO reference UI */
-  --background: #E4E7B8;
+  --background: #EEF0CB;
   --foreground: #171A0E;
 
-  --surface: #EBEABF;
-  --surface-elevated: #F2EFCB;
-  --surface-sunken: #D9DDA3;
-  --tint: #CDD486;
+  --surface: #F2F1CE;
+  --surface-elevated: #F8F4D8;
+  --surface-sunken: #E3E6B4;
+  --tint: #D9DEA0;
 
-  --card: #EBEABF;
+  --card: #F2F1CE;
   --card-foreground: #171A0E;
 
-  --popover: #F4F0CC;
+  --popover: #FAF6D9;
   --popover-foreground: #171A0E;
 
   --primary: #66720B;
   --primary-foreground: #FFFDEB;
 
-  --secondary: #D4DA92;
+  --secondary: #E0E3AC;
   --secondary-foreground: #20250F;
 
-  --muted: #DDE1A8;
+  --muted: #E7E8BA;
   --muted-foreground: #515832;
 
-  --accent: #C1CB6C;
+  --accent: #CDD482;
   --accent-foreground: #20250F;
 
   --destructive: oklch(0.5 0.22 25);
@@ -137,13 +137,13 @@
   --info: oklch(0.45 0.13 240);
   --info-foreground: oklch(1 0 0);
 
-  --border: #A9B164;
-  --input: #A9B164;
+  --border: #B8BD7A;
+  --input: #B8BD7A;
   --ring: #66720B;
 
-  --chart-grid: #C5CA8A;
+  --chart-grid: #D1D49F;
   --chart-axis: #424826;
-  --chart-tooltip-bg: #F3EFCA;
+  --chart-tooltip-bg: #FBF7DD;
   --chart-tooltip-fg: #171A0E;
 
   /* Period intensity - readable text always dark on light swatches, adjusted for contrast/step separation */
@@ -421,9 +421,9 @@ body {
   overflow-x: hidden;
   background: linear-gradient(
     180deg,
-    #EBEBC2 0%,
+    #F3F2D3 0%,
     var(--background) 46%,
-    #DEE2AD 100%
+    #E9EBBE 100%
   );
   color: var(--foreground);
   overscroll-behavior-y: none;
@@ -541,4 +541,93 @@ select:-webkit-autofill {
   box-shadow: 0 0 0 1000px var(--surface) inset;
   caret-color: var(--foreground);
 }
-/* BIXBO slightly deeper soft olive theme revision: 2026-08-08 */
+/* BIXBO soft creamy olive theme revision: 2026-08-08 */
+
+/* ==========================================================
+   BIXBO Olive Green full-app theme — #636B2F
+   Added as a non-destructive override. Existing theme code above is preserved.
+   ========================================================== */
+
+:root:not(.dark) {
+  /* Main app canvas */
+  --background: #636B2F;
+  --foreground: #FFFDF2;
+
+  /* Olive surfaces — whole app stays in the same #636B2F family */
+  --surface: #747C42;
+  --surface-elevated: #858D52;
+  --surface-sunken: #555C2A;
+  --tint: #8D9557;
+
+  --card: #747C42;
+  --card-foreground: #FFFDF2;
+
+  --popover: #7C8449;
+  --popover-foreground: #FFFDF2;
+
+  /* Controls / selected states */
+  --primary: #C0CB78;
+  --primary-foreground: #28300F;
+
+  --secondary: #7E874A;
+  --secondary-foreground: #FFFDF2;
+
+  --muted: #6D753A;
+  --muted-foreground: #E6E9CC;
+
+  --accent: #9DA65E;
+  --accent-foreground: #20260D;
+
+  /* Borders and focus */
+  --border: #969D66;
+  --input: #969D66;
+  --ring: #D1DB8B;
+
+  /* Charts / tooltips */
+  --chart-grid: #7F8750;
+  --chart-axis: #F0F2D8;
+  --chart-tooltip-bg: #4E5524;
+  --chart-tooltip-fg: #FFFDF2;
+
+  /* Reference-style olive glass */
+  --bixbo-glass: rgba(116, 124, 66, 0.72);
+  --bixbo-glass-strong: rgba(133, 141, 82, 0.86);
+}
+
+/* Full-page olive background, including the area behind AppShell/content. */
+:root:not(.dark),
+:root:not(.dark) body {
+  background-color: #636B2F;
+}
+
+:root:not(.dark) body {
+  background:
+    radial-gradient(circle at 50% -12%, rgba(193, 203, 120, 0.18) 0%, transparent 34%),
+    linear-gradient(
+      180deg,
+      #737B3D 0%,
+      #687034 26%,
+      #636B2F 58%,
+      #596027 100%
+    );
+}
+
+/* Keep elevated content readable while remaining olive rather than cream. */
+:root:not(.dark) .bg-surface,
+:root:not(.dark) .bg-card {
+  backdrop-filter: saturate(0.96);
+}
+
+/* Softer depth for the darker olive canvas. */
+:root:not(.dark) .shadow-sm {
+  --tw-shadow-color: color-mix(in srgb, #252A10 22%, transparent);
+}
+
+:root:not(.dark) .shadow-md,
+:root:not(.dark) .shadow-lg,
+:root:not(.dark) .shadow-xl {
+  --tw-shadow-color: color-mix(in srgb, #252A10 28%, transparent);
+}
+
+/* BIXBO Olive Green full-app theme revision: #636B2F */
+
