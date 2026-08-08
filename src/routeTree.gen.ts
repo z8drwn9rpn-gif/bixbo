@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CatchAllRouteImport } from './routes/$'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CoupleRouteImport } from './routes/couple'
 import { Route as InsightsRouteImport } from './routes/insights'
@@ -26,6 +27,11 @@ import { Route as ApiPublicHooksKeepaliveRouteImport } from './routes/api/public
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CatchAllRoute = CatchAllRouteImport.update({
+  id: '/$',
+  path: '/$',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -91,6 +97,7 @@ const ApiPublicHooksKeepaliveRoute = ApiPublicHooksKeepaliveRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/$': typeof CatchAllRoute
   '/auth': typeof AuthRoute
   '/couple': typeof CoupleRoute
   '/insights': typeof InsightsRoute
@@ -106,6 +113,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/$': typeof CatchAllRoute
   '/auth': typeof AuthRoute
   '/couple': typeof CoupleRoute
   '/insights': typeof InsightsRoute
@@ -122,6 +130,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/$': typeof CatchAllRoute
   '/auth': typeof AuthRoute
   '/couple': typeof CoupleRoute
   '/insights': typeof InsightsRoute
@@ -139,6 +148,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/$'
     | '/auth'
     | '/couple'
     | '/insights'
@@ -154,6 +164,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/$'
     | '/auth'
     | '/couple'
     | '/insights'
@@ -169,6 +180,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/$'
     | '/auth'
     | '/couple'
     | '/insights'
@@ -185,6 +197,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CatchAllRoute: typeof CatchAllRoute
   AuthRoute: typeof AuthRoute
   CoupleRoute: typeof CoupleRoute
   InsightsRoute: typeof InsightsRoute
@@ -206,6 +219,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$': {
+      id: '/$'
+      path: '/$'
+      fullPath: '/$'
+      preLoaderRoute: typeof CatchAllRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -297,6 +317,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CatchAllRoute: CatchAllRoute,
   AuthRoute: AuthRoute,
   CoupleRoute: CoupleRoute,
   InsightsRoute: InsightsRoute,
