@@ -590,7 +590,7 @@ function MedsAdherence({
     return {
       start,
       end,
-      label: String(base.getFullYear()),
+      label: `1 Jan – 31 Dec ${base.getFullYear()}`,
       title: "Year",
     };
   }, [anchor, period]);
@@ -1658,11 +1658,7 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
     [yearGrid.months],
   );
   const monthBoundaryWeekSet = useMemo(() => new Set(monthBoundaryWeeks), [monthBoundaryWeeks]);
-  const monthGapPx = 9;
-  const weekStepPx = 17;
-  const monthGapBeforeOrAtWeek = (weekIndex: number) =>
-    monthBoundaryWeeks.reduce((count, boundaryWeek) => count + (boundaryWeek <= weekIndex ? 1 : 0), 0) * monthGapPx;
-  const heatmapGridWidth = yearGrid.weekCount * weekStepPx + monthBoundaryWeeks.length * monthGapPx;
+  const heatmapWeekCount = Math.max(1, yearGrid.weekCount);
 
   const activePosition = useMemo(() => {
     if (!active) return null;
@@ -1698,12 +1694,11 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
   const activeTooltipLayout = useMemo(() => {
     if (!activePosition) return null;
 
-    // Keep the popup floating over the heatmap instead of pushing the entire grid down.
-    // The rows are intentionally spaced farther apart vertically so the year graph is taller
-    // without making it any wider than the current desktop/mobile layout.
-    const rowStep = 34;
-    const gridTop = 28;
-    const dotCenterOffset = 7;
+    // Compact year layout: all 12 months fit on one screen, like the reference mockup.
+    // Popup stays attached to the selected weekday row without changing card height.
+    const rowStep = 17;
+    const gridTop = 22;
+    const dotCenterOffset = 2;
     const tooltipTotalHeight = 70;
     const connectorGap = 6;
     const selectedCenterY = gridTop + dotCenterOffset + activePosition.weekdayIndex * rowStep;
@@ -1758,13 +1753,13 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
         Choose a metric, then tap a coloured day for its saved average/details.
       </p>
 
-      <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1">
+      <div className="mt-2.5 flex gap-1 overflow-x-auto pb-0.5">
         {HEATMAP_OPTIONS.map((option) => (
           <button
             key={option.id}
             type="button"
             onClick={() => setMetric(option.id)}
-            className={`shrink-0 rounded-full px-3 py-1.5 text-[10px] font-semibold transition ${
+            className={`shrink-0 rounded-full px-2.5 py-1 text-[9px] font-semibold transition ${
               metric === option.id
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "bg-tint text-muted-foreground ring-1 ring-border/60"
@@ -1775,82 +1770,66 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
         ))}
       </div>
 
-      <div className="mt-4 -mx-2 rounded-[1.5rem] bg-background/55 p-2.5 ring-1 ring-border/60 sm:mx-0 sm:p-4">
-        <div className="min-w-0 overflow-x-auto overscroll-x-contain pb-1 touch-pan-x">
-          <div className="relative w-max pr-1">
-            {activeTooltip && activePosition && activeTooltipLayout ? (
-              <InsightFloatingTooltip
-                leftPct={
-                  ((36 +
-                    activePosition.weekIndex * weekStepPx +
-                    monthGapBeforeOrAtWeek(activePosition.weekIndex) +
-                    7) /
-                    Math.max(1, 36 + heatmapGridWidth)) *
-                  100
-                }
-                details={activeTooltip}
-                top={activeTooltipLayout.top}
-                connectorSide={activeTooltipLayout.connectorSide}
-              />
-            ) : null}
+      <div className="mt-3 -mx-2 rounded-[1.5rem] bg-background/55 p-2.5 ring-1 ring-border/60 sm:mx-0 sm:p-3">
+        <div className="relative min-w-0 overflow-visible">
+          {activeTooltip && activePosition && activeTooltipLayout ? (
+            <InsightFloatingTooltip
+              leftPct={8 + ((activePosition.weekIndex + 0.5) / heatmapWeekCount) * 91}
+              details={activeTooltip}
+              top={activeTooltipLayout.top}
+              connectorSide={activeTooltipLayout.connectorSide}
+            />
+          ) : null}
 
-            <div className="flex gap-2">
-              <div className="w-7 shrink-0 pt-7">
-                {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((weekday) => (
-                  <div
-                    key={weekday}
-                    className="flex h-[34px] items-center text-[9px] font-medium text-muted-foreground"
+          <div className="flex gap-1.5">
+            <div className="w-6 shrink-0 pt-[22px]">
+              {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((weekday) => (
+                <div
+                  key={weekday}
+                  className="flex h-[17px] items-center text-[8px] font-medium text-muted-foreground"
+                >
+                  {weekday}
+                </div>
+              ))}
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <div className="relative mb-1.5 h-4" aria-hidden="true">
+                {yearGrid.months.map(({ label, weekIndex }) => (
+                  <span
+                    key={label}
+                    className="absolute top-0 -translate-x-1/2 whitespace-nowrap text-[7px] font-semibold text-foreground/75"
+                    style={{ left: `${((weekIndex + 0.5) / heatmapWeekCount) * 100}%` }}
                   >
-                    {weekday}
-                  </div>
+                    {label}
+                  </span>
                 ))}
               </div>
 
-              <div>
-                <div
-                  className="relative mb-2 h-5"
-                  style={{ width: `${heatmapGridWidth}px` }}
-                  aria-hidden="true"
-                >
-                  {yearGrid.months.map(({ label, weekIndex }) => (
-                    <span
-                      key={label}
-                      className="absolute top-0 text-[9px] font-semibold text-foreground/75"
-                      style={{
-                        left: `${weekIndex * weekStepPx + monthGapBeforeOrAtWeek(weekIndex)}px`,
-                      }}
+              <div className="flex w-full justify-between">
+                {yearGrid.weeks.map((week, weekIndex) => {
+                  const isMonthBoundary = monthBoundaryWeekSet.has(weekIndex);
+
+                  return (
+                    <div
+                      key={weekIndex}
+                      className="relative grid shrink-0 grid-rows-7 gap-y-[13px]"
                     >
-                      {label}
-                    </span>
-                  ))}
-                </div>
+                      {isMonthBoundary ? (
+                        <span
+                          aria-hidden="true"
+                          className="pointer-events-none absolute -left-[2px] inset-y-[-2px] w-px rounded-full bg-primary/25"
+                        />
+                      ) : null}
 
-                <div className="flex gap-[3px]">
-                  {yearGrid.weeks.map((week, weekIndex) => {
-                    const isMonthBoundary = monthBoundaryWeekSet.has(weekIndex);
-
-                    return (
-                      <div
-                        key={weekIndex}
-                        className={`relative grid shrink-0 grid-rows-7 gap-x-[3px] gap-y-[20px] ${
-                          isMonthBoundary ? "ml-[9px]" : ""
-                        }`}
-                      >
-                        {isMonthBoundary ? (
-                          <span
-                            aria-hidden="true"
-                            className="pointer-events-none absolute -left-[5px] inset-y-0 w-[2px] rounded-full bg-primary/25"
-                          />
-                        ) : null}
-
-                        {week.map((date) => {
+                      {week.map((date) => {
                         const inYear = date.getFullYear() === year;
 
                         if (!inYear) {
                           return (
                             <span
                               key={date.toISOString()}
-                              className="h-[14px] w-[14px] rounded-full bg-transparent"
+                              className="h-1 w-1 rounded-full bg-transparent"
                             />
                           );
                         }
@@ -1866,53 +1845,37 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
                             disabled={!datum}
                             onClick={(event) => {
                               if (!datum) return;
-
-                              const target = event.currentTarget;
+                              event.stopPropagation();
                               setActive((current) => (current === key ? null : key));
-
-                              if (active !== key) {
-                                requestAnimationFrame(() => {
-                                  target.scrollIntoView({
-                                    behavior: "smooth",
-                                    block: "nearest",
-                                    inline: "center",
-                                  });
-                                });
-                              }
                             }}
                             aria-label={`${fmtTapDay(key)} · ${activeMetricLabel}${
                               datum ? ` · ${datum.value}` : " · no data"
                             }`}
                             aria-pressed={isActive}
-                            className={`h-[14px] w-[14px] rounded-full transition-transform ${
-                              datum ? "touch-manipulation active:scale-90" : "cursor-default"
-                            } ${
-                              isActive
-                                ? "ring-2 ring-foreground ring-offset-1 ring-offset-background"
-                                : ""
-                            }`}
+                            className={`h-1 w-1 rounded-full transition-transform ${
+                              datum ? "touch-manipulation active:scale-125" : "cursor-default"
+                            } ${isActive ? "ring-1 ring-foreground ring-offset-1 ring-offset-background" : ""}`}
                             style={{ background: datum?.color ?? "var(--tint)" }}
                           />
                         );
-                        })}
-                      </div>
-                    );
-                  })}
-                </div>
+                      })}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5 text-[9px] text-muted-foreground">
+        <div className="mt-2.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[8px] text-muted-foreground">
           <span className="flex items-center gap-1">
-            <span className="h-3 w-3 rounded-full bg-tint" />
+            <span className="h-2.5 w-2.5 rounded-full bg-tint" />
             No data
           </span>
 
           {legend.map(([label, color]) => (
             <span key={label} className="flex items-center gap-1">
-              <span className="h-3 w-3 rounded-full" style={{ background: color }} />
+              <span className="h-2.5 w-2.5 rounded-full" style={{ background: color }} />
               {label}
             </span>
           ))}
@@ -1930,7 +1893,7 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
             <span className="shrink-0 text-[9px] text-muted-foreground">Tap to close</span>
           </button>
         ) : (
-          <p className="mt-3 text-center text-[10px] text-muted-foreground">
+          <p className="mt-2.5 text-center text-[9px] text-muted-foreground">
             Tap any coloured day for details.
           </p>
         )}
