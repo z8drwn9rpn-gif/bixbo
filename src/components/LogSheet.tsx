@@ -278,7 +278,7 @@ export function LogSheet({
             </SheetHeader>
             <div
               key={`${active}-${openToken}-${(edit as { id?: string } | undefined)?.id ?? initialPain?.id ?? "new"}`}
-              className={`min-h-0 flex-1 overflow-y-auto ${active === "pain" ? "pt-[60px]" : "pt-[48px] px-5 pb-4"}`}
+              className={`min-h-0 flex-1 overflow-y-auto ${active === "pain" ? "pt-[60px]" : "pt-[64px] px-5 pb-4"}`}
             >
               {active === "postpartum" && (
                 <PostpartumSymptomsForm date={date} data={data} update={update} onDone={close} />
