@@ -95,32 +95,32 @@
 :root {
   --radius: 1rem;
 
-  /* Main light palette — richer BIXBO olive, stronger separation, no washed-out yellow cast */
-  --background: oklch(0.84 0.085 112);
-  --foreground: oklch(0.18 0.06 116);
+  /* Main light palette — soft creamy olive inspired by the BIXBO reference UI */
+  --background: #EEF0CB;
+  --foreground: #171A0E;
 
-  --surface: oklch(0.89 0.072 111);
-  --surface-elevated: oklch(0.85 0.09 112);
-  --surface-sunken: oklch(0.76 0.08 113);
-  --tint: oklch(0.73 0.12 114);
+  --surface: #F2F1CE;
+  --surface-elevated: #F8F4D8;
+  --surface-sunken: #E3E6B4;
+  --tint: #D9DEA0;
 
-  --card: oklch(0.9 0.065 111);
-  --card-foreground: oklch(0.18 0.055 116);
+  --card: #F2F1CE;
+  --card-foreground: #171A0E;
 
-  --popover: oklch(0.91 0.06 111);
-  --popover-foreground: oklch(0.18 0.055 116);
+  --popover: #FAF6D9;
+  --popover-foreground: #171A0E;
 
-  --primary: oklch(0.36 0.135 116);
-  --primary-foreground: oklch(1 0 0);
+  --primary: #66720B;
+  --primary-foreground: #FFFDEB;
 
-  --secondary: oklch(0.79 0.095 114);
-  --secondary-foreground: oklch(0.2 0.075 116);
+  --secondary: #E0E3AC;
+  --secondary-foreground: #20250F;
 
-  --muted: oklch(0.82 0.065 113);
-  --muted-foreground: oklch(0.3 0.065 116);
+  --muted: #E7E8BA;
+  --muted-foreground: #515832;
 
-  --accent: oklch(0.74 0.12 114);
-  --accent-foreground: oklch(0.2 0.075 116);
+  --accent: #CDD482;
+  --accent-foreground: #20250F;
 
   --destructive: oklch(0.5 0.22 25);
   --destructive-foreground: oklch(1 0 0);
@@ -137,14 +137,14 @@
   --info: oklch(0.45 0.13 240);
   --info-foreground: oklch(1 0 0);
 
-  --border: oklch(0.61 0.07 114);
-  --input: oklch(0.61 0.07 114);
-  --ring: oklch(0.36 0.135 116);
+  --border: #B8BD7A;
+  --input: #B8BD7A;
+  --ring: #66720B;
 
-  --chart-grid: oklch(0.68 0.05 114);
-  --chart-axis: oklch(0.3 0.06 116);
-  --chart-tooltip-bg: oklch(0.91 0.06 111);
-  --chart-tooltip-fg: oklch(0.18 0.055 116);
+  --chart-grid: #D1D49F;
+  --chart-axis: #424826;
+  --chart-tooltip-bg: #FBF7DD;
+  --chart-tooltip-fg: #171A0E;
 
   /* Period intensity - readable text always dark on light swatches, adjusted for contrast/step separation */
   --period-spotting: oklch(0.86 0.05 275);
@@ -370,13 +370,28 @@
 
 /* Olive-tinted elevation for light mode */
 :root:not(.dark) .shadow-sm {
-  --tw-shadow-color: color-mix(in oklch, var(--primary) 20%, transparent);
+  --tw-shadow-color: color-mix(in srgb, #7C861B 14%, transparent);
 }
 
 :root:not(.dark) .shadow-md,
 :root:not(.dark) .shadow-lg,
 :root:not(.dark) .shadow-xl {
-  --tw-shadow-color: color-mix(in oklch, var(--primary) 24%, transparent);
+  --tw-shadow-color: color-mix(in srgb, #7C861B 18%, transparent);
+}
+
+/* Reference-style soft olive UI polish */
+:root:not(.dark) {
+  --bixbo-glass: rgba(248, 247, 218, 0.52);
+  --bixbo-glass-strong: rgba(250, 248, 220, 0.72);
+}
+
+:root:not(.dark) .bg-surface,
+:root:not(.dark) .bg-card {
+  backdrop-filter: saturate(0.92);
+}
+
+:root:not(.dark) .ring-border {
+  --tw-ring-color: color-mix(in srgb, var(--border) 78%, transparent);
 }
 
 /* Note editor placeholder */
@@ -406,9 +421,9 @@ body {
   overflow-x: hidden;
   background: linear-gradient(
     180deg,
-    color-mix(in oklch, var(--background) 94%, var(--primary) 6%) 0%,
+    #F3F2D3 0%,
     var(--background) 46%,
-    color-mix(in oklch, var(--background) 96%, var(--surface-sunken) 4%) 100%
+    #E9EBBE 100%
   );
   color: var(--foreground);
   overscroll-behavior-y: none;
@@ -526,4 +541,4 @@ select:-webkit-autofill {
   box-shadow: 0 0 0 1000px var(--surface) inset;
   caret-color: var(--foreground);
 }
-/* BIXBO deeper olive theme publish revision: 2026-08-06 */
+/* BIXBO soft creamy olive theme revision: 2026-08-08 */
