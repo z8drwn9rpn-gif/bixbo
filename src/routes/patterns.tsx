@@ -135,7 +135,7 @@ function latestWeightForDay(log: DayLog | undefined): number | null {
 }
 
 type PatternTab = "cycle" | "monthly" | "treatment" | "triggers";
-type AnalysisRange = 7 | 30 | 365;
+type AnalysisRange = 7 | 30 | 90;
 type TreatmentKind = "medication" | "supplement" | "diet" | "therapy" | "exercise" | "other";
 
 type ArchivedTreatment = {
@@ -696,9 +696,9 @@ function AnalysisRangeSelector({
   onChange: (value: AnalysisRange) => void;
 }) {
   const options: Array<{ value: AnalysisRange; label: string }> = [
-    { value: 7, label: "Week" },
-    { value: 30, label: "Month" },
-    { value: 365, label: "Year" },
+    { value: 7, label: "7 days" },
+    { value: 30, label: "30 days" },
+    { value: 90, label: "90 days" },
   ];
 
   return (
