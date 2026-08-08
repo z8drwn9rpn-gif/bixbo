@@ -2065,3 +2065,4 @@ function TimeOfDayPatternChart({
       )}
     </section>
   );
+} 
