@@ -1494,6 +1494,33 @@ function CouplePage() {
           })}
         </div>
 
+        {partner ? (
+          <nav
+            aria-label="Couple sections"
+            className="mx-auto grid w-full max-w-[340px] grid-cols-3 gap-0.5 rounded-xl bg-surface-sunken/50 p-0.5 ring-1 ring-border/50 lg:max-w-sm"
+          >
+            {tabs.map((tab) => {
+              const active = activeTab === tab.id;
+
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  aria-pressed={active}
+                  className={`min-w-0 rounded-[10px] px-2 py-1.5 text-[11px] font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                    active
+                      ? "bg-primary text-primary-foreground shadow-md"
+                      : "text-foreground/80 hover:bg-surface/45 hover:text-foreground"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </nav>
+        ) : null}
+
         <div className="flex items-center justify-between">
           <button
             type="button"
@@ -1531,31 +1558,6 @@ function CouplePage() {
           </div>
         ) : (
           <>
-            <nav
-              aria-label="Couple sections"
-              className="mx-auto grid w-full max-w-[340px] grid-cols-3 gap-0.5 rounded-xl bg-surface-sunken/50 p-0.5 ring-1 ring-border/50 lg:max-w-sm"
-            >
-              {tabs.map((tab) => {
-                const active = activeTab === tab.id;
-
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => setActiveTab(tab.id)}
-                    aria-pressed={active}
-                    className={`min-w-0 rounded-[10px] px-2 py-1.5 text-[11px] font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                      active
-                        ? "bg-primary text-primary-foreground shadow-md"
-                        : "text-foreground/80 hover:bg-surface/45 hover:text-foreground"
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </nav>
-
             {activeTab === "overview" ? <SimilarityCard score={similarityScore} partnerName={partnerName} /> : null}
 
             {activeTab === "overview" ? (
