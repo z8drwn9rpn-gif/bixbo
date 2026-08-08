@@ -1295,10 +1295,10 @@ function BirthControlSummaryCard({
       onClick={onOpen}
       className="mx-5 mt-2 block w-[calc(100%-2.5rem)] rounded-2xl px-3 py-2.5 text-left shadow-sm ring-1 transition active:scale-[0.99]"
       style={{
-        background: "color-mix(in srgb, #7467D8 11%, var(--background))",
+        background: "color-mix(in srgb, #7467D8 14%, transparent)",
         borderColor: "rgba(116,103,216,.48)",
         boxShadow:
-          "inset 0 0 0 1px rgba(116,103,216,.18), 0 2px 8px rgba(83,72,170,.08)",
+          "inset 0 0 0 1px color-mix(in srgb, #7467D8 34%, transparent), 0 2px 8px rgba(83,72,170,.08)",
       }}
       aria-label={`Open birth control overview. HAK day ${packDay} of ${PACK_DAYS}`}
     >
