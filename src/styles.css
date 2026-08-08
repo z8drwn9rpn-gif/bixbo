@@ -719,3 +719,91 @@ select:-webkit-autofill {
 
 /* BIXBO Light Olive full-app theme revision: #ACBF69 */
 
+/* ==========================================================
+   BIXBO — light olive palette matched to the FIRST mockup
+   Non-destructive override: everything above stays untouched.
+   ========================================================== */
+
+:root:not(.dark) {
+  /* Main page / app background — sampled toward the first mockup */
+  --background: #BCC285;
+  --foreground: #20250F;
+
+  /* Main cards and nested surfaces */
+  --surface: #D3D5A5;
+  --surface-elevated: #DADDB3;
+  --surface-sunken: #B7BD7A;
+  --tint: #C6CA94;
+
+  --card: #D3D5A5;
+  --card-foreground: #20250F;
+
+  --popover: #DADDB3;
+  --popover-foreground: #20250F;
+
+  /* Selected controls remain the darker BIXBO olive */
+  --primary: #66720B;
+  --primary-foreground: #FFFDEB;
+
+  --secondary: #CDD19D;
+  --secondary-foreground: #252A12;
+
+  --muted: #C4C98F;
+  --muted-foreground: #51582F;
+
+  --accent: #BFC778;
+  --accent-foreground: #242B10;
+
+  --border: #9DA365;
+  --input: #9DA365;
+  --ring: #66720B;
+
+  --chart-grid: #B7BC7E;
+  --chart-axis: #424826;
+  --chart-tooltip-bg: #E1E3BD;
+  --chart-tooltip-fg: #20250F;
+
+  --bixbo-glass: rgba(211, 213, 165, 0.74);
+  --bixbo-glass-strong: rgba(218, 221, 179, 0.90);
+}
+
+/* Exact first-mockup family across the whole app canvas. */
+:root:not(.dark),
+:root:not(.dark) body {
+  background-color: #BCC285;
+}
+
+:root:not(.dark) body {
+  background:
+    radial-gradient(circle at 50% -12%, rgba(234, 236, 198, 0.28) 0%, transparent 34%),
+    linear-gradient(
+      180deg,
+      #BDC285 0%,
+      #C6CA94 34%,
+      #D1D4A4 68%,
+      #D6D9AA 100%
+    );
+}
+
+/* Keep cards lighter than the page background, as in the first mockup. */
+:root:not(.dark) .bg-surface,
+:root:not(.dark) .bg-card {
+  backdrop-filter: saturate(0.94);
+}
+
+/* Softer borders and shadows from the reference. */
+:root:not(.dark) .ring-border {
+  --tw-ring-color: color-mix(in srgb, #9DA365 70%, transparent);
+}
+
+:root:not(.dark) .shadow-sm {
+  --tw-shadow-color: color-mix(in srgb, #59612D 11%, transparent);
+}
+
+:root:not(.dark) .shadow-md,
+:root:not(.dark) .shadow-lg,
+:root:not(.dark) .shadow-xl {
+  --tw-shadow-color: color-mix(in srgb, #59612D 16%, transparent);
+}
+
+/* BIXBO first-image light olive revision */
