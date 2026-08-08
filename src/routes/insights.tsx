@@ -400,11 +400,11 @@ function InsightsPage() {
 
   // One Insights page. Every chart keeps its own Week / Month / Year range
   // AND its own independent date anchor for previous/next navigation.
-  const [painPeriod, setPainPeriod] = useState<Period>("Y");
-  const [hotFlashPeriod, setHotFlashPeriod] = useState<Period>("Y");
-  const [bowelPeriod, setBowelPeriod] = useState<Period>("Y");
-  const [timeOfDayPeriod, setTimeOfDayPeriod] = useState<Period>("Y");
-  const [medsPeriod, setMedsPeriod] = useState<Period>("Y");
+  const [painPeriod, setPainPeriod] = useState<Period>("W");
+  const [hotFlashPeriod, setHotFlashPeriod] = useState<Period>("W");
+  const [bowelPeriod, setBowelPeriod] = useState<Period>("M");
+  const [timeOfDayPeriod, setTimeOfDayPeriod] = useState<Period>("W");
+  const [medsPeriod, setMedsPeriod] = useState<Period>("W");
 
   const [painAnchor, setPainAnchor] = useState<Date>(() => new Date());
   const [hotFlashAnchor, setHotFlashAnchor] = useState<Date>(() => new Date());
