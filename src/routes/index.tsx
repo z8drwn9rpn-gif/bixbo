@@ -1859,7 +1859,7 @@ function BirthControlCalendar({
           </div>
 
           {/* Calendar — actual date stays large; HAK pill number stays as small Pxx. */}
-          <div className="pointer-events-none absolute left-[16.5%] right-[16.5%] top-[39%] z-20 text-center">
+          <div className="pointer-events-none absolute left-[16.5%] right-[16.5%] top-[34.5%] z-20 text-center">
             <p className="text-[14px] font-bold leading-none text-foreground">
               {hakMonthLabel}
             </p>
