@@ -2310,33 +2310,33 @@ function BirthControlCalendar({
       </div>
 
       {/* Keep Current HAK pack exactly in the previous compact timeline style. */}
-      <div className="mt-4">
-        <h3 className="font-serif text-lg font-bold text-foreground">Current HAK pack</h3>
+      <div className="mt-2">
+        <h3 className="font-serif text-base font-bold leading-none text-foreground">Current HAK pack</h3>
         <div
-          className="mt-3 rounded-[1.75rem] px-4 py-4 ring-1"
+          className="mt-2 rounded-[1.45rem] px-3 py-3 ring-1"
           style={{
             backgroundColor: "rgba(255,255,255,.20)",
             borderColor: "rgba(122,83,200,.16)",
           }}
         >
-          <div className="grid grid-cols-[1.35fr_1fr_.9fr] items-start gap-2 text-center">
+          <div className="grid grid-cols-[1.35fr_1fr_.9fr] items-start gap-1.5 text-center">
             <div>
-              <p className="text-[9px] font-bold leading-tight" style={{ color: HAK_PURPLE_DARK }}>Active HAK days</p>
-              <p className="mt-0.5 text-[9px] font-semibold leading-tight" style={{ color: HAK_PURPLE_DARK }}>1–{ACTIVE_DAYS}</p>
+              <p className="text-[8px] font-bold leading-tight" style={{ color: HAK_PURPLE_DARK }}>Active HAK days</p>
+              <p className="mt-0.5 text-[8px] font-semibold leading-tight" style={{ color: HAK_PURPLE_DARK }}>1–{ACTIVE_DAYS}</p>
             </div>
             <div>
-              <p className="text-[9px] font-bold leading-tight" style={{ color: HAK_PINK_DARK }}>Placebo / break</p>
-              <p className="mt-0.5 text-[9px] font-semibold leading-tight" style={{ color: HAK_PINK_DARK }}>{ACTIVE_DAYS + 1}–{PACK_DAYS}</p>
+              <p className="text-[8px] font-bold leading-tight" style={{ color: HAK_PINK_DARK }}>Placebo / break</p>
+              <p className="mt-0.5 text-[8px] font-semibold leading-tight" style={{ color: HAK_PINK_DARK }}>{ACTIVE_DAYS + 1}–{PACK_DAYS}</p>
             </div>
             <div>
-              <p className="text-[9px] font-bold leading-tight" style={{ color: HAK_GREEN_DARK }}>New cycle</p>
-              <p className="mt-0.5 text-[9px] font-semibold leading-tight" style={{ color: HAK_GREEN_DARK }}>Day 1</p>
+              <p className="text-[8px] font-bold leading-tight" style={{ color: HAK_GREEN_DARK }}>New cycle</p>
+              <p className="mt-0.5 text-[8px] font-semibold leading-tight" style={{ color: HAK_GREEN_DARK }}>Day 1</p>
             </div>
           </div>
 
-          <div className="relative mt-4 px-1 pb-8">
+          <div className="relative mt-3 px-1 pb-6">
             <div
-              className="rounded-full px-2 py-2 ring-1"
+              className="rounded-full px-2 py-1.5 ring-1"
               style={{
                 backgroundColor: "rgba(255,255,255,.30)",
                 borderColor: "rgba(122,83,200,.18)",
@@ -2360,7 +2360,7 @@ function BirthControlCalendar({
                   return (
                     <span
                       key={`${item.kind}-${index}`}
-                      className="mx-auto block aspect-square w-full max-w-[10px] rounded-full"
+                      className="mx-auto block aspect-square w-full max-w-[8px] rounded-full"
                       style={{
                         backgroundColor: itemColor,
                         boxShadow: isCurrent
@@ -2378,14 +2378,14 @@ function BirthControlCalendar({
             </div>
 
             <div
-              className="absolute bottom-[22px] h-4 w-px"
+              className="absolute bottom-[18px] h-3 w-px"
               style={{
                 left: `${timelineMarkerLeft}%`,
                 backgroundColor: currentDay <= ACTIVE_DAYS ? HAK_PURPLE : HAK_PINK,
               }}
             />
             <p
-              className="absolute bottom-0 whitespace-nowrap text-[11px] font-bold"
+              className="absolute bottom-0 whitespace-nowrap text-[10px] font-bold"
               style={{
                 left: `${timelineMarkerLeft}%`,
                 transform: "translateX(-50%)",
@@ -2728,7 +2728,7 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
     const value = diff === 0 ? "0" : `${diff > 0 ? "+" : ""}${diff}`;
 
     return (
-      <p className="mt-1.5 text-center text-[8px] leading-none text-muted-foreground">
+      <p className="mt-2 text-center text-[9px] leading-none text-muted-foreground">
         vs last {label}{" "}
         <span
           className="font-bold"
@@ -2751,20 +2751,20 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
 
     return (
       <div
-        className="mt-2 grid items-end gap-[2px]"
+        className="mt-3 grid items-end gap-[3px]"
         style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
       >
         {items.map((item, index) => {
-          const height = item.count > 0 ? Math.max(5, Math.round((item.count / max) * 42)) : 1;
+          const height = item.count > 0 ? Math.max(7, Math.round((item.count / max) * 64)) : 1;
 
           return (
             <div key={`${item.label}-${index}`} className="flex min-w-0 flex-col items-center justify-end">
-              <span className={`${dense ? "text-[6px]" : "text-[7px]"} mb-0.5 h-2.5 tabular-nums text-foreground/75`}>
+              <span className={`${dense ? "text-[7px]" : "text-[8px]"} mb-1 h-3 tabular-nums font-medium text-foreground/80`}>
                 {item.count}
               </span>
-              <div className="flex h-[42px] w-full items-end justify-center border-b border-border/55">
+              <div className="flex h-[64px] w-full items-end justify-center border-b border-border/55">
                 <span
-                  className={`${dense ? "w-[72%]" : "w-[78%]"} rounded-t-[3px]`}
+                  className={`${dense ? "w-[74%]" : "w-[80%]"} rounded-t-[4px]`}
                   style={{
                     height: `${height}px`,
                     background:
@@ -2776,7 +2776,7 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
                 />
               </div>
               <span
-                className={`${dense ? "text-[5.5px]" : "text-[6.5px]"} mt-1 truncate text-muted-foreground`}
+                className={`${dense ? "text-[6.5px]" : "text-[8px]"} mt-1.5 truncate font-medium text-muted-foreground`}
               >
                 {item.label}
               </span>
@@ -2789,25 +2789,25 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
 
   return (
     <section
-      className="mt-4 rounded-3xl p-4 ring-1 ring-border"
+      className="mt-3 rounded-3xl p-5 ring-1 ring-border"
       style={{ backgroundColor: HAK_CARD_BG }}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 items-start gap-3">
           <span
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl ring-1"
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl ring-1"
             style={{
               backgroundColor: HAK_PURPLE_SOFT,
               color: HAK_PURPLE_DARK,
               borderColor: `${HAK_PURPLE}33`,
             }}
           >
-            <Ico e="❤️" size={22} />
+            <Ico e="❤️" size={24} />
           </span>
 
           <div className="min-w-0">
-            <h2 className="font-serif text-lg font-semibold leading-none text-foreground">ŠukŠuk!</h2>
-            <p className="mt-1 text-[10px] leading-snug text-muted-foreground">
+            <h2 className="font-serif text-xl font-semibold leading-none text-foreground">ŠukŠuk!</h2>
+            <p className="mt-1.5 text-[11px] leading-snug text-muted-foreground">
               Logged intimacy · actual intercourse only
             </p>
           </div>
@@ -2817,63 +2817,63 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
           <button
             type="button"
             onClick={() => moveSukMonth(-1)}
-            className="grid h-7 w-7 place-items-center rounded-full transition hover:bg-tint"
+            className="grid h-8 w-8 place-items-center rounded-full transition hover:bg-tint"
             aria-label="Previous ŠukŠuk month"
           >
-            <ChevronLeft className="h-3.5 w-3.5" />
+            <ChevronLeft className="h-4 w-4" />
           </button>
 
-          <span className="min-w-[88px] px-1 text-center text-[10px] font-semibold text-foreground">
+          <span className="min-w-[96px] px-1.5 text-center text-[11px] font-semibold text-foreground">
             {sukMonthLabel}
           </span>
 
           <button
             type="button"
             onClick={() => moveSukMonth(1)}
-            className="grid h-7 w-7 place-items-center rounded-full transition hover:bg-tint"
+            className="grid h-8 w-8 place-items-center rounded-full transition hover:bg-tint"
             aria-label="Next ŠukŠuk month"
           >
-            <ChevronRight className="h-3.5 w-3.5" />
+            <ChevronRight className="h-4 w-4" />
           </button>
         </div>
       </div>
 
-      <div className="mt-3 border-t border-border/55 pt-3">
+      <div className="mt-4 border-t border-border/55 pt-4">
         <div className="grid grid-cols-3 divide-x divide-border/55">
-          <div className="min-w-0 px-1.5">
-            <p className="text-center text-[10px] font-bold text-foreground">Week</p>
-            <p className="mt-0.5 truncate text-center text-[6.5px] tabular-nums text-muted-foreground">
+          <div className="min-w-0 px-2">
+            <p className="text-center text-xs font-bold text-foreground">Week</p>
+            <p className="mt-1 truncate text-center text-[8px] tabular-nums text-muted-foreground">
               {toKey(week.start)} → {toKey(week.end)}
             </p>
-            <p className="mt-1.5 text-center font-serif text-2xl font-bold leading-none text-foreground">
+            <p className="mt-2 text-center font-serif text-3xl font-bold leading-none text-foreground">
               {week.count}
-              <span className="ml-1 font-sans text-[8px] font-medium text-muted-foreground">times</span>
+              <span className="ml-1 font-sans text-[9px] font-medium text-muted-foreground">times</span>
             </p>
             {comparison(week.count, week.previousCount, "week")}
             <MiniBars items={week.bars} />
           </div>
 
-          <div className="min-w-0 px-1.5">
-            <p className="text-center text-[10px] font-bold text-foreground">Month</p>
-            <p className="mt-0.5 truncate text-center text-[6.5px] text-muted-foreground">
+          <div className="min-w-0 px-2">
+            <p className="text-center text-xs font-bold text-foreground">Month</p>
+            <p className="mt-1 truncate text-center text-[8px] text-muted-foreground">
               {viewAnchor.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
             </p>
-            <p className="mt-1.5 text-center font-serif text-2xl font-bold leading-none text-foreground">
+            <p className="mt-2 text-center font-serif text-3xl font-bold leading-none text-foreground">
               {month.count}
-              <span className="ml-1 font-sans text-[8px] font-medium text-muted-foreground">times</span>
+              <span className="ml-1 font-sans text-[9px] font-medium text-muted-foreground">times</span>
             </p>
             {comparison(month.count, month.previousCount, "month")}
             <MiniBars items={month.bars} />
           </div>
 
-          <div className="min-w-0 px-1.5">
-            <p className="text-center text-[10px] font-bold text-foreground">Year</p>
-            <p className="mt-0.5 text-center text-[6.5px] tabular-nums text-muted-foreground">
+          <div className="min-w-0 px-2">
+            <p className="text-center text-xs font-bold text-foreground">Year</p>
+            <p className="mt-1 text-center text-[8px] tabular-nums text-muted-foreground">
               {viewAnchor.getFullYear()}
             </p>
-            <p className="mt-1.5 text-center font-serif text-2xl font-bold leading-none text-foreground">
+            <p className="mt-2 text-center font-serif text-3xl font-bold leading-none text-foreground">
               {year.count}
-              <span className="ml-1 font-sans text-[8px] font-medium text-muted-foreground">times</span>
+              <span className="ml-1 font-sans text-[9px] font-medium text-muted-foreground">times</span>
             </p>
             {comparison(year.count, year.previousCount, "year")}
             <MiniBars items={year.bars} dense />
