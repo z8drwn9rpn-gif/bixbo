@@ -1699,7 +1699,7 @@ function BirthControlCalendar({
       </div>
 
       {/* Circular HAK overview — only wheel pills open the dose popup. */}
-      <div className="mx-auto mt-1 w-full max-w-[424px] shrink-0">
+      <div className="mx-auto mt-1 w-full max-w-[388px] shrink-0">
         <div className="relative aspect-square w-full">
           <div
             className="absolute inset-[7.5%] rounded-full"
@@ -1720,7 +1720,7 @@ function BirthControlCalendar({
             {Array.from({ length: PACK_DAYS }).map((_, i) => {
               const day = i + 1;
               const angle = (wheelAngleForDay(day) * Math.PI) / 180;
-              const radius = 42.5;
+              const radius = 40;
               return (
                 <span
                   key={`wheel-track-${i}`}
@@ -1736,7 +1736,7 @@ function BirthControlCalendar({
 
           {wheelDays.map((day) => {
             const angle = (wheelAngleForDay(day) * Math.PI) / 180;
-            const radius = 42.5;
+            const radius = 40;
             const left = 50 + Math.cos(angle) * radius;
             const top = 50 + Math.sin(angle) * radius;
             const dateKey = dateForPackDay(day);
@@ -1819,7 +1819,7 @@ function BirthControlCalendar({
                 onClick={() => {
                   setSel(dateKey);
                 }}
-                className="absolute z-10 grid h-10 w-10 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[12px] font-bold transition active:scale-95"
+                className="absolute z-10 grid h-9 w-9 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[11px] font-bold transition active:scale-95"
                 style={{
                   left: `${left}%`,
                   top: `${top}%`,
@@ -1838,7 +1838,7 @@ function BirthControlCalendar({
             );
           })}
 
-          <div className="pointer-events-none absolute left-[17%] right-[17%] top-[15.5%] bottom-[11.5%] z-20 flex flex-col items-center overflow-visible text-center">
+          <div className="pointer-events-none absolute left-[18.5%] right-[18.5%] top-[16%] bottom-[12.5%] z-20 flex flex-col items-center overflow-visible text-center">
             <p className="text-[10px] font-semibold leading-none text-foreground">Day</p>
             <p
               className="mt-0.5 font-serif text-[clamp(2rem,8vw,2.7rem)] font-bold leading-none"
