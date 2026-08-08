@@ -666,13 +666,25 @@ function HomePage() {
     return <div className="h-[360px]" />;
   }
 
-  const goToPrevMonth = () => {
-    setMonthAnchor((current) => new Date(current!.getFullYear(), current!.getMonth() - 1, 1));
+  const moveCalendarMonth = (delta: number) => {
+    const currentSelected = fromKey(selected);
+    const selectedDayOfMonth = currentSelected.getDate();
+
+    const targetMonth = new Date(monthAnchor.getFullYear(), monthAnchor.getMonth() + delta, 1);
+    const lastDayOfTargetMonth = new Date(
+      targetMonth.getFullYear(),
+      targetMonth.getMonth() + 1,
+      0,
+    ).getDate();
+    const targetDay = Math.min(selectedDayOfMonth, lastDayOfTargetMonth);
+    const nextSelected = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), targetDay);
+
+    setMonthAnchor(targetMonth);
+    setSelected(toKey(nextSelected));
   };
 
-  const goToNextMonth = () => {
-    setMonthAnchor((current) => new Date(current!.getFullYear(), current!.getMonth() + 1, 1));
-  };
+  const goToPrevMonth = () => moveCalendarMonth(-1);
+  const goToNextMonth = () => moveCalendarMonth(1);
 
   const pregnancyActive = isPregnancyActive(view);
   const postpartumActive = isPostpartumActive(view);
@@ -781,7 +793,7 @@ function HomePage() {
             selected={selected}
             onSelect={setSelected}
             onSwipeMonth={(delta) => {
-              setMonthAnchor((current) => new Date(current!.getFullYear(), current!.getMonth() + delta, 1));
+              moveCalendarMonth(delta);
             }}
           />
         ) : (
@@ -1279,7 +1291,7 @@ function BirthControlSummaryCard({
     <button
       type="button"
       onClick={onOpen}
-      className="mx-5 mt-2 block rounded-2xl px-3 py-2.5 text-left shadow-sm ring-1 transition active:scale-[0.99]"
+      className="mx-5 mt-2 block w-[calc(100%-2.5rem)] rounded-2xl px-3 py-2.5 text-left shadow-sm ring-1 transition active:scale-[0.99]"
       style={{
         background: "color-mix(in srgb, #7467D8 11%, var(--background))",
         borderColor: "rgba(116,103,216,.48)",
@@ -1376,10 +1388,18 @@ function BirthControlOverlay({
   const label = anchor.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
 
   const moveMonth = (delta: number) => {
-    const next = new Date(anchor);
-    next.setDate(1);
-    next.setMonth(next.getMonth() + delta);
-    onAnchorChange(next);
+    const referenceDay = anchor.getDate();
+    const targetMonth = new Date(anchor.getFullYear(), anchor.getMonth() + delta, 1);
+    const lastDayOfTargetMonth = new Date(
+      targetMonth.getFullYear(),
+      targetMonth.getMonth() + 1,
+      0,
+    ).getDate();
+    const targetDay = Math.min(referenceDay, lastDayOfTargetMonth);
+
+    onAnchorChange(
+      new Date(targetMonth.getFullYear(), targetMonth.getMonth(), targetDay),
+    );
   };
 
   return (
@@ -1485,10 +1505,13 @@ function BirthControlCalendar({
     return (diff % PACK_DAYS) + 1;
   };
 
-  // The circular HAK wheel and Current HAK pack always represent TODAY.
-  // Calendar month navigation is informational only and must not change the real pack day.
-  const currentDay = pillNumber(todayK) ?? 1;
-  const currentPackStart = addDays(todayK, -(currentDay - 1));
+  // The circular HAK wheel and Current HAK pack represent the reference date
+  // in the month currently being viewed. Month navigation preserves the same
+  // day-of-month, so changing July/August/September changes the HAK pack position
+  // without incorrectly resetting to the 1st of the month.
+  const referenceK = toKey(anchor);
+  const currentDay = pillNumber(referenceK) ?? 1;
+  const currentPackStart = addDays(referenceK, -(currentDay - 1));
 
   const dateForPackDay = (day: number) => addDays(currentPackStart, day - 1);
 
