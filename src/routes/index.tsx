@@ -281,13 +281,30 @@ function SleepTrendBars({
   points,
   activeIndex,
   onSelect,
+  period,
 }: {
   points: VitalTrendPoint[];
   activeIndex: number | null;
   onSelect: (index: number) => void;
+  period: VitalTrendPeriod;
 }) {
   const yLabels = [12, 10, 8, 6, 4, 2, 0];
-  const height = 132;
+  const height = 120;
+  const activePoint = activeIndex != null ? points[activeIndex] : undefined;
+  const activeColumnLeft =
+    activeIndex != null && points.length
+      ? ((activeIndex + 0.5) / Math.max(1, points.length)) * 100
+      : 50;
+  const activeBarTop =
+    activePoint?.value != null
+      ? Math.max(0, height - Math.max(5, (Math.min(12, activePoint.value) / 12) * height))
+      : 0;
+  const tooltipDate =
+    activePoint
+      ? period === "Y"
+        ? activePoint.label
+        : fromKey(activePoint.key).toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+      : "";
 
   return (
     <div className="pt-1">
@@ -335,6 +352,23 @@ function SleepTrendBars({
                 <div key={point.key} className="h-[2px] w-full self-end rounded bg-border/60" />
               ),
             )}
+
+            {activePoint?.value != null ? (
+              <div
+                className="pointer-events-none absolute z-20 w-[58px] -translate-x-1/2 rounded-md bg-primary px-1.5 py-1.5 text-center text-primary-foreground shadow-md"
+                style={{
+                  left: `${Math.max(10, Math.min(90, activeColumnLeft))}%`,
+                  top: `${Math.max(0, activeBarTop - 47)}px`,
+                }}
+              >
+                <p className="text-[10px] font-bold leading-none">{activePoint.value.toFixed(1)} h</p>
+                <p className="mt-1 text-[8.5px] leading-none opacity-90">{tooltipDate}</p>
+                <span
+                  className="absolute left-1/2 top-full h-2 w-px -translate-x-1/2 bg-primary"
+                  aria-hidden="true"
+                />
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
@@ -523,6 +557,11 @@ function VitalTrendPopup({
       active && period !== "Y"
         ? fromKey(active.key).toLocaleDateString("en-GB", { day: "numeric", month: "short" })
         : active?.label ?? "";
+    const showAllDailyReadings = period !== "Y" && (active?.details.length ?? 0) > 1;
+    const allReadingsDate =
+      active && period !== "Y"
+        ? fromKey(active.key).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })
+        : "";
 
     return (
       <div className="fixed inset-0 z-[95] flex items-center justify-center px-6">
@@ -691,177 +730,82 @@ function VitalTrendPopup({
               </div>
             )}
           </div>
+          {showAllDailyReadings ? (
+            <div className="mt-2 w-full rounded-xl border border-border/70 bg-background/65 px-3 py-2">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[10px] font-semibold text-foreground">All readings</p>
+                <p className="text-[9px] font-medium text-muted-foreground">{allReadingsDate}</p>
+              </div>
+              <div className="mt-1.5 space-y-1">
+                {active!.details.map((detail, index) => (
+                  <p
+                    key={`${active!.key}-reading-${index}`}
+                    className="rounded-lg bg-surface px-2 py-1.5 text-[10px] leading-none text-foreground ring-1 ring-border/40"
+                  >
+                    {detail}
+                  </p>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
         </section>
       </div>
     );
   }
 
+  const sleepAverageLabel = averageValue != null ? `Avg ${averageValue.toFixed(1)} h` : "Avg — h";
+
   return (
     <div className="fixed inset-0 z-[95] flex items-center justify-center px-6">
       <button
         type="button"
-        aria-label={`Close ${vitalTrendTitle(metric)} graph`}
+        aria-label="Close Sleep graph"
         className="absolute inset-0 bg-black/35"
         onClick={onClose}
       />
 
-      <section className="relative z-10 w-full max-w-[350px] max-h-[330px] overflow-hidden rounded-[1.4rem] bg-background shadow-2xl ring-1 ring-border">
-        <div className="flex items-start justify-between gap-2 border-b border-border/70 px-4 pb-3 pt-4">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Trend</p>
-            <h2 className="mt-0.5 font-serif text-lg font-bold text-foreground">{vitalTrendTitle(metric)}</h2>
+      <section className="relative z-10 w-full max-w-[350px] rounded-[1.4rem] bg-surface p-3 shadow-2xl ring-1 ring-border">
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute -right-2 -top-2 grid h-8 w-8 place-items-center rounded-full bg-background text-sm font-bold text-foreground shadow-md ring-1 ring-border"
+          aria-label="Close"
+        >
+          ×
+        </button>
+
+        <div className="flex items-start justify-between gap-3 px-1 pt-0.5">
+          <div className="min-w-0">
+            <h2 className="text-sm font-bold leading-tight text-foreground">Sleep</h2>
+            <p className="mt-1 text-[10px] font-medium text-muted-foreground">{sleepAverageLabel}</p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="grid h-8 w-8 place-items-center rounded-full bg-tint text-xs font-bold text-foreground ring-1 ring-border"
-            aria-label="Close"
+
+          <select
+            aria-label="Trend period"
+            value={period}
+            onChange={(event) => setPeriod(event.target.value as VitalTrendPeriod)}
+            className="h-8 shrink-0 rounded-lg border border-border bg-background px-2 text-[10px] font-medium text-foreground outline-none"
           >
-            ×
-          </button>
+            <option value="W">Week</option>
+            <option value="M">Month</option>
+            <option value="Y">Year</option>
+          </select>
         </div>
 
-        <div className="max-h-[270px] overflow-y-auto overscroll-contain touch-pan-y p-3">
-          <div className="grid grid-cols-3 gap-1 rounded-2xl bg-tint p-1 ring-1 ring-border/50">
-            {(["W", "M", "Y"] as const).map((value) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setPeriod(value)}
-                className={`rounded-xl px-2 py-1.5 text-[11px] font-semibold transition ${
-                  period === value ? "bg-surface text-foreground shadow-sm ring-1 ring-border" : "text-muted-foreground"
-                }`}
-              >
-                {value === "W" ? "Week" : value === "M" ? "Month" : "Year"}
-              </button>
-            ))}
-          </div>
-
-          <div className="mt-3 flex items-center justify-between gap-2">
-            <button
-              type="button"
-              onClick={() => setAnchor((current) => shiftTrendAnchor(current, period, -1))}
-              className="grid h-8 w-8 place-items-center rounded-full bg-tint ring-1 ring-border"
-              aria-label="Previous period"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <p className="text-center text-xs font-semibold text-foreground">{rangeLabel}</p>
-            <button
-              type="button"
-              onClick={() => setAnchor((current) => shiftTrendAnchor(current, period, 1))}
-              className="grid h-8 w-8 place-items-center rounded-full bg-tint ring-1 ring-border"
-              aria-label="Next period"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
-
-          <div className="mt-3 rounded-2xl bg-tint/70 p-2 ring-1 ring-border/50">
-            {values.length ? (
-              <>
-                {metric === "sleep" ? (
-                  <SleepTrendBars
-                    points={points}
-                    activeIndex={activeIndex}
-                    onSelect={(index) => setActiveIndex((current) => (current === index ? null : index))}
-                  />
-                ) : (
-                  <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="h-auto w-full overflow-visible" role="img">
-                    {[0, 0.5, 1].map((fraction) => {
-                      const y = top + fraction * chartH;
-                      const value = yMax - fraction * (yMax - yMin);
-                      return (
-                        <g key={fraction}>
-                          <line x1={left} x2={left + chartW} y1={y} y2={y} stroke="var(--border)" strokeDasharray="2 4" />
-                          <text x={chartWidth - 2} y={y + 3} textAnchor="end" fontSize="8" fill="var(--muted-foreground)">
-                            {value.toFixed(1)}
-                          </text>
-                        </g>
-                      );
-                    })}
-                    {path ? <path d={path} fill="none" stroke="var(--primary)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /> : null}
-                    {points.map((point, index) => {
-                      if (point.value == null) return null;
-                      const activePoint = activeIndex === index;
-                      return (
-                        <g key={point.key}>
-                          <circle
-                            cx={xFor(index)}
-                            cy={yFor(point.value)}
-                            r={activePoint ? 4.5 : 3.2}
-                            fill="var(--surface)"
-                            stroke="var(--primary)"
-                            strokeWidth={activePoint ? 2.5 : 1.8}
-                            pointerEvents="none"
-                          />
-                          <circle
-                            cx={xFor(index)}
-                            cy={yFor(point.value)}
-                            r="13"
-                            fill="transparent"
-                            className="cursor-pointer"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              setActiveIndex((current) => (current === index ? null : index));
-                            }}
-                          />
-                        </g>
-                      );
-                    })}
-                    {points.map((point, index) =>
-                      visibleLabelIndexes.has(index) ? (
-                        <text
-                          key={`label-${point.key}`}
-                          x={xFor(index)}
-                          y={chartHeight - 5}
-                          textAnchor="middle"
-                          fontSize={period === "Y" ? "6.5" : "7.5"}
-                          fill="var(--muted-foreground)"
-                        >
-                          {point.label}
-                        </text>
-                      ) : null,
-                    )}
-                  </svg>
-                )}
-
-                {active?.value != null ? (
-                  <div className="mt-2 rounded-2xl bg-surface/80 p-3 ring-1 ring-border/50">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-[10px] font-semibold text-muted-foreground">{active.heading}</p>
-                        <p className="mt-1 text-[11px] text-muted-foreground">
-                          {period === "Y" ? "Monthly average from saved entries" : "Saved entry"}
-                        </p>
-                      </div>
-                      <b className="shrink-0 tabular-nums text-sm text-foreground">
-                        {active.value.toFixed(1)} {unit}
-                      </b>
-                    </div>
-
-                    <div className="mt-2 space-y-1.5">
-                      {active.details.length ? (
-                        active.details.map((detail, index) => (
-                          <p key={index} className="rounded-xl bg-background/80 px-2.5 py-2 text-[10px] leading-snug text-foreground ring-1 ring-border/40">
-                            {detail}
-                          </p>
-                        ))
-                      ) : (
-                        <p className="text-[10px] text-muted-foreground">No underlying saved entry found.</p>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <p className="mt-2 text-center text-[10px] text-muted-foreground">Tap a point or bar to see the exact saved entry.</p>
-                )}
-              </>
-            ) : (
-              <div className="grid min-h-32 place-items-center text-center text-xs text-muted-foreground">
-                No {vitalTrendTitle(metric).toLowerCase()} data in this period.
-              </div>
-            )}
-          </div>
+        <div className="mt-2 overflow-hidden rounded-xl bg-surface">
+          {values.length ? (
+            <SleepTrendBars
+              points={points}
+              activeIndex={activeIndex}
+              period={period}
+              onSelect={(index) => setActiveIndex((current) => (current === index ? null : index))}
+            />
+          ) : (
+            <div className="grid min-h-36 place-items-center text-center text-xs text-muted-foreground">
+              No sleep data in this period.
+            </div>
+          )}
         </div>
       </section>
     </div>
