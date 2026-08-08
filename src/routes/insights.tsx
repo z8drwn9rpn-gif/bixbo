@@ -1514,9 +1514,7 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
         const typeZero = type === 0;
 
         return {
-          // Type 0 uses exactly the same rainbow treatment as the Bristol gauge.
           color: typeZero ? BRISTOL_MYSTERY_COLOR : bristol?.color ?? INSIGHT_COLORS.sage,
-          // SVG tooltip borders cannot use a CSS gradient, so keep a solid fallback only for the border/dot.
           tooltipColor: typeZero ? "#8B5CF6" : bristol?.color ?? INSIGHT_COLORS.sage,
           value: `Type ${type}`,
           popupValue: `Bowel · Type ${type}`,
@@ -1605,7 +1603,6 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
 
     for (let month = 0; month < 12; month++) {
       const daysInMonth = new Date(year, month + 1, 0).getDate();
-
       for (let day = 1; day <= daysInMonth; day++) {
         const key = toKey(new Date(year, month, day));
         result[key] = datumFor(key, metric);
@@ -1615,61 +1612,62 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
     return result;
   }, [datumFor, metric, year]);
 
-  const yearGrid = useMemo(() => {
-    const first = new Date(year, 0, 1);
-    first.setHours(0, 0, 0, 0);
-    first.setDate(first.getDate() - ((first.getDay() + 6) % 7));
+  // On a phone, 53 weekly columns cannot be both large enough to read and fit in one row.
+  // Split the same full-year heatmap into two stacked half-year strips so every daily dot
+  // stays visible while all Jan–Dec data remains on the same Year screen.
+  const halfYearGrids = useMemo(() => {
+    const makeHalf = (startMonth: number, endMonth: number) => {
+      const periodStart = new Date(year, startMonth, 1);
+      periodStart.setHours(0, 0, 0, 0);
+      const periodEnd = new Date(year, endMonth + 1, 0);
+      periodEnd.setHours(0, 0, 0, 0);
 
-    const last = new Date(year, 11, 31);
-    last.setHours(0, 0, 0, 0);
-    last.setDate(last.getDate() + (6 - ((last.getDay() + 6) % 7)));
+      const first = new Date(periodStart);
+      first.setDate(first.getDate() - ((first.getDay() + 6) % 7));
 
-    const utcDay = (date: Date) => Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
-    const weekCount = Math.round((utcDay(last) - utcDay(first)) / 86400000 / 7) + 1;
+      const last = new Date(periodEnd);
+      last.setDate(last.getDate() + (6 - ((last.getDay() + 6) % 7)));
 
-    const weeks = Array.from({ length: weekCount }, (_, weekIndex) =>
-      Array.from({ length: 7 }, (_, weekdayIndex) => {
-        const date = new Date(first);
-        date.setDate(first.getDate() + weekIndex * 7 + weekdayIndex);
-        return date;
-      }),
-    );
+      const utcDay = (date: Date) => Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+      const weekCount = Math.round((utcDay(last) - utcDay(first)) / 86400000 / 7) + 1;
 
-    const months = MON_SHORT3.map((label, monthIndex) => {
-      const monthStart = new Date(year, monthIndex, 1);
-      const weekIndex = Math.floor((utcDay(monthStart) - utcDay(first)) / 86400000 / 7);
-      return { label, weekIndex };
-    });
+      const weeks = Array.from({ length: weekCount }, (_, weekIndex) =>
+        Array.from({ length: 7 }, (_, weekdayIndex) => {
+          const date = new Date(first);
+          date.setDate(first.getDate() + weekIndex * 7 + weekdayIndex);
+          return date;
+        }),
+      );
 
-    return { weeks, months, weekCount };
+      const months = Array.from({ length: endMonth - startMonth + 1 }, (_, offset) => {
+        const monthIndex = startMonth + offset;
+        const monthStart = new Date(year, monthIndex, 1);
+        const weekIndex = Math.floor((utcDay(monthStart) - utcDay(first)) / 86400000 / 7);
+        return { label: MON_SHORT3[monthIndex], weekIndex, monthIndex };
+      });
+
+      return { startMonth, endMonth, weeks, months, weekCount };
+    };
+
+    return [makeHalf(0, 5), makeHalf(6, 11)];
   }, [year]);
 
   const activeMetricLabel = HEATMAP_OPTIONS.find((option) => option.id === metric)?.label ?? "Heatmap";
   const activeDatum = active ? heatmapData[active] ?? null : null;
 
-  // Add a clear visual break before the first week that contains each new month.
-  // The heatmap still follows real calendar weeks; the extra gap + divider only
-  // improves readability and does not change date placement or calculations.
-  const monthBoundaryWeeks = useMemo(
-    () =>
-      Array.from(new Set<number>(yearGrid.months.map(({ weekIndex }) => Number(weekIndex)))).filter(
-        (weekIndex) => weekIndex > 0,
-      ),
-    [yearGrid.months],
-  );
-  const monthBoundaryWeekSet = useMemo(() => new Set(monthBoundaryWeeks), [monthBoundaryWeeks]);
-  const heatmapWeekCount = Math.max(1, yearGrid.weekCount);
-
   const activePosition = useMemo(() => {
     if (!active) return null;
 
-    for (let weekIndex = 0; weekIndex < yearGrid.weeks.length; weekIndex++) {
-      const weekdayIndex = yearGrid.weeks[weekIndex].findIndex((date) => toKey(date) === active);
-      if (weekdayIndex >= 0) return { weekIndex, weekdayIndex };
+    for (let halfIndex = 0; halfIndex < halfYearGrids.length; halfIndex++) {
+      const half = halfYearGrids[halfIndex];
+      for (let weekIndex = 0; weekIndex < half.weeks.length; weekIndex++) {
+        const weekdayIndex = half.weeks[weekIndex].findIndex((date) => toKey(date) === active);
+        if (weekdayIndex >= 0) return { halfIndex, weekIndex, weekdayIndex };
+      }
     }
 
     return null;
-  }, [active, yearGrid.weeks]);
+  }, [active, halfYearGrids]);
 
   const activeTooltip = useMemo<InsightTooltipDetails | null>(() => {
     if (!active || !activeDatum) return null;
@@ -1694,13 +1692,11 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
   const activeTooltipLayout = useMemo(() => {
     if (!activePosition) return null;
 
-    // Compact year layout: all 12 months fit on one screen, like the reference mockup.
-    // Popup stays attached to the selected weekday row without changing card height.
-    const rowStep = 20.25;
-    const gridTop = 23;
-    const dotCenterOffset = 2.625;
+    const rowStep = 17;
+    const gridTop = 24;
+    const dotCenterOffset = 4.5;
     const tooltipTotalHeight = 70;
-    const connectorGap = 6;
+    const connectorGap = 5;
     const selectedCenterY = gridTop + dotCenterOffset + activePosition.weekdayIndex * rowStep;
     const showBelow = activePosition.weekdayIndex <= 2;
 
@@ -1770,120 +1766,130 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
         ))}
       </div>
 
-      <div className="mt-3 -mx-3 rounded-[1.5rem] bg-background/55 px-2 py-3 ring-1 ring-border/60 sm:mx-0 sm:p-3">
-        <div className="relative min-w-0 overflow-visible">
-          {activeTooltip && activePosition && activeTooltipLayout ? (
-            <InsightFloatingTooltip
-              leftPct={7 + ((activePosition.weekIndex + 0.5) / heatmapWeekCount) * 92}
-              details={activeTooltip}
-              top={activeTooltipLayout.top}
-              connectorSide={activeTooltipLayout.connectorSide}
-            />
-          ) : null}
+      <div className="mt-3 -mx-3 rounded-[1.5rem] bg-background/55 px-2.5 py-3 ring-1 ring-border/60 sm:mx-0 sm:p-3">
+        <div className="space-y-4">
+          {halfYearGrids.map((half, halfIndex) => {
+            const boundaryWeeks = new Set(
+              half.months.map(({ weekIndex }) => weekIndex).filter((weekIndex) => weekIndex > 0),
+            );
+            const hasActive = activePosition?.halfIndex === halfIndex;
 
-          <div className="flex gap-1.5">
-            <div className="w-[22px] shrink-0 pt-[23px]">
-              {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((weekday) => (
-                <div
-                  key={weekday}
-                  className="flex h-[20.25px] items-center text-[8px] font-medium text-muted-foreground"
-                >
-                  {weekday}
-                </div>
-              ))}
-            </div>
+            return (
+              <div key={`${half.startMonth}-${half.endMonth}`} className="relative min-w-0 overflow-visible">
+                {hasActive && activeTooltip && activePosition && activeTooltipLayout ? (
+                  <InsightFloatingTooltip
+                    leftPct={10 + ((activePosition.weekIndex + 0.5) / Math.max(1, half.weekCount)) * 88}
+                    details={activeTooltip}
+                    top={activeTooltipLayout.top}
+                    connectorSide={activeTooltipLayout.connectorSide}
+                  />
+                ) : null}
 
-            <div className="min-w-0 flex-1">
-              <div className="relative mb-1.5 h-[17px]" aria-hidden="true">
-                {yearGrid.months.map(({ label, weekIndex }) => (
-                  <span
-                    key={label}
-                    className="absolute top-0 -translate-x-1/2 whitespace-nowrap text-[8px] font-semibold text-foreground/80"
-                    style={{ left: `${((weekIndex + 0.5) / heatmapWeekCount) * 100}%` }}
-                  >
-                    {label}
-                  </span>
-                ))}
-              </div>
+                <div className="flex gap-2">
+                  <div className="w-[28px] shrink-0 pt-[24px]">
+                    {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((weekday) => (
+                      <div
+                        key={weekday}
+                        className="flex h-[17px] items-center text-[8.5px] font-medium text-muted-foreground"
+                      >
+                        {weekday}
+                      </div>
+                    ))}
+                  </div>
 
-              <div
-                className="grid w-full"
-                style={{
-                  gridTemplateColumns: `repeat(${heatmapWeekCount}, 5.25px)`,
-                  columnGap: "0.25px",
-                  justifyContent: "space-between",
-                }}
-              >
-                {yearGrid.weeks.map((week, weekIndex) => {
-                  const isMonthBoundary = monthBoundaryWeekSet.has(weekIndex);
-
-                  return (
-                    <div
-                      key={weekIndex}
-                      className="relative grid shrink-0 grid-rows-7 gap-y-[15px]"
-                    >
-                      {isMonthBoundary ? (
+                  <div className="min-w-0 flex-1">
+                    <div className="relative mb-1.5 h-[18px]" aria-hidden="true">
+                      {half.months.map(({ label, weekIndex }) => (
                         <span
-                          aria-hidden="true"
-                          className="pointer-events-none absolute -left-[1px] inset-y-[-3px] w-px rounded-full bg-primary/30"
-                        />
-                      ) : null}
+                          key={label}
+                          className="absolute top-0 -translate-x-1/2 whitespace-nowrap text-[9px] font-semibold text-foreground/80"
+                          style={{ left: `${((weekIndex + 0.5) / Math.max(1, half.weekCount)) * 100}%` }}
+                        >
+                          {label}
+                        </span>
+                      ))}
+                    </div>
 
-                      {week.map((date) => {
-                        const inYear = date.getFullYear() === year;
-
-                        if (!inYear) {
-                          return (
-                            <span
-                              key={date.toISOString()}
-                              className="rounded-full bg-transparent"
-                              style={{ width: 5.25, height: 5.25 }}
-                            />
-                          );
-                        }
-
-                        const key = toKey(date);
-                        const datum = heatmapData[key] ?? null;
-                        const isActive = active === key;
+                    <div
+                      className="grid w-full"
+                      style={{
+                        gridTemplateColumns: `repeat(${half.weekCount}, 9px)`,
+                        columnGap: "1px",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      {half.weeks.map((week, weekIndex) => {
+                        const isMonthBoundary = boundaryWeeks.has(weekIndex);
 
                         return (
-                          <button
-                            key={key}
-                            type="button"
-                            disabled={!datum}
-                            onClick={(event) => {
-                              if (!datum) return;
-                              event.stopPropagation();
-                              setActive((current) => (current === key ? null : key));
-                            }}
-                            aria-label={`${fmtTapDay(key)} · ${activeMetricLabel}${
-                              datum ? ` · ${datum.value}` : " · no data"
-                            }`}
-                            aria-pressed={isActive}
-                            className={`rounded-full transition-transform ${
-                              datum ? "touch-manipulation active:scale-125" : "cursor-default"
-                            } ${isActive ? "ring-1 ring-foreground ring-offset-1 ring-offset-background" : ""}`}
-                            style={{ width: 5.25, height: 5.25, background: datum?.color ?? "var(--tint)" }}
-                          />
+                          <div key={weekIndex} className="relative grid shrink-0 grid-rows-7 gap-y-[8px]">
+                            {isMonthBoundary ? (
+                              <span
+                                aria-hidden="true"
+                                className="pointer-events-none absolute -left-[2px] inset-y-[-3px] w-px rounded-full bg-primary/30"
+                              />
+                            ) : null}
+
+                            {week.map((date) => {
+                              const inHalf =
+                                date.getFullYear() === year &&
+                                date.getMonth() >= half.startMonth &&
+                                date.getMonth() <= half.endMonth;
+
+                              if (!inHalf) {
+                                return (
+                                  <span
+                                    key={date.toISOString()}
+                                    className="h-[9px] w-[9px] rounded-full bg-transparent"
+                                  />
+                                );
+                              }
+
+                              const key = toKey(date);
+                              const datum = heatmapData[key] ?? null;
+                              const isActive = active === key;
+
+                              return (
+                                <button
+                                  key={key}
+                                  type="button"
+                                  disabled={!datum}
+                                  onClick={(event) => {
+                                    if (!datum) return;
+                                    event.stopPropagation();
+                                    setActive((current) => (current === key ? null : key));
+                                  }}
+                                  aria-label={`${fmtTapDay(key)} · ${activeMetricLabel}${
+                                    datum ? ` · ${datum.value}` : " · no data"
+                                  }`}
+                                  aria-pressed={isActive}
+                                  className={`h-[9px] w-[9px] rounded-full transition-transform ${
+                                    datum ? "touch-manipulation active:scale-125" : "cursor-default"
+                                  } ${isActive ? "ring-2 ring-foreground ring-offset-1 ring-offset-background" : ""}`}
+                                  style={{ background: datum?.color ?? "var(--tint)" }}
+                                />
+                              );
+                            })}
+                          </div>
                         );
                       })}
                     </div>
-                  );
-                })}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            );
+          })}
         </div>
 
-        <div className="mt-2.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[8px] text-muted-foreground">
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5 text-[8.5px] text-muted-foreground">
           <span className="flex items-center gap-1">
-            <span className="h-2.5 w-2.5 rounded-full bg-tint" />
+            <span className="h-3 w-3 rounded-full bg-tint" />
             No data
           </span>
 
           {legend.map(([label, color]) => (
             <span key={label} className="flex items-center gap-1">
-              <span className="h-2.5 w-2.5 rounded-full" style={{ background: color }} />
+              <span className="h-3 w-3 rounded-full" style={{ background: color }} />
               {label}
             </span>
           ))}
