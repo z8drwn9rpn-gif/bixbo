@@ -1,22 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { createPortal } from "react-dom";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Share2, Trash2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ChevronLeft, ChevronRight, Settings as SettingsIcon, Share2, Trash2, UserRound } from "lucide-react";
 
-import {
-  ClockIcon,
-  FlameIcon,
-  HeartIcon,
-  Ico,
-  IcoText,
-  NoteIcon,
-  PanicIcon,
-  PillIcon,
-  PoopIcon,
-  StarIcon,
-  ThermometerIcon,
-  WeightIcon,
-} from "@/components/icons/BixboIcons";
+import { Ico, IcoText, PillIcon } from "@/components/icons/BixboIcons";
 import { AppShell } from "@/components/AppShell";
 import { pregnancyProgress, postpartumProgress } from "@/lib/health";
 import { Button } from "@/components/ui/button";
@@ -26,15 +12,11 @@ import { QuickTags } from "@/components/QuickTags";
 import {
   useBixbo,
   EMPTY,
-  addDays,
   toKey,
   fromKey,
   todayKey,
   PAIN_DESCRIPTIONS,
   painColor,
-  avgDayPain,
-  latestDayWeight,
-  averageDayTemperature,
   BRISTOL,
   nextPredictedPeriod,
   asArr,
@@ -42,9 +24,44 @@ import {
   isPregnancyActive,
   isPostpartumActive,
   type BixboData,
+  type DayLog,
   type BowelEntry,
   type SexEntry,
 } from "@/lib/storage";
+
+
+
+type VitalMeasurement = {
+  id: string;
+  time: string;
+  value: number;
+};
+
+type DayLogWithVitalEntries = DayLog & {
+  temperatureEntries?: VitalMeasurement[];
+  weightEntries?: VitalMeasurement[];
+};
+
+function dayVitalEntries(
+  log: DayLog | undefined,
+  field: "temperatureEntries" | "weightEntries",
+): VitalMeasurement[] {
+  const raw = (log as DayLogWithVitalEntries | undefined)?.[field] ?? [];
+
+  return raw
+    .filter(
+      (entry): entry is VitalMeasurement =>
+        Boolean(entry) &&
+        typeof entry === "object" &&
+        Number.isFinite(Number((entry as VitalMeasurement).value)),
+    )
+    .map((entry) => ({
+      ...entry,
+      value: Number(entry.value),
+      time: typeof entry.time === "string" ? entry.time : "",
+    }))
+    .sort((a, b) => a.time.localeCompare(b.time));
+}
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -61,543 +78,9 @@ export const Route = createFileRoute("/")({
   component: HomePage,
 });
 
-
-type VitalTrendMetric = "sleep" | "temperature" | "weight";
-type VitalTrendPeriod = "W" | "M" | "Y";
-
-type VitalTrendPoint = {
-  key: string;
-  label: string;
-  heading: string;
-  value?: number;
-  details: string[];
-};
-
-function averageNumbers(values: number[]): number | undefined {
-  if (!values.length) return undefined;
-  return values.reduce((sum, value) => sum + value, 0) / values.length;
-}
-
-function daysBetweenInclusive(start: Date, end: Date): string[] {
-  const out: string[] = [];
-  let key = toKey(start);
-  const endKey = toKey(end);
-  while (key <= endKey) {
-    out.push(key);
-    key = addDays(key, 1);
-  }
-  return out;
-}
-
-function trendDayHeading(key: string): string {
-  return fromKey(key).toLocaleDateString("en-GB", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function dailyVitalTrendValue(metric: VitalTrendMetric, log?: import("@/lib/storage").DayLog): number | undefined {
-  if (!log) return undefined;
-  if (metric === "sleep") return log.sleepHours ?? log.pregnancy?.sleepHours ?? log.postpartum?.sleepHours;
-  if (metric === "temperature") return averageDayTemperature(log);
-  return latestDayWeight(log);
-}
-
-function dailyVitalDetails(metric: VitalTrendMetric, key: string, data: BixboData): string[] {
-  const log = data.dayLogs[key];
-  if (!log) return [];
-
-  if (metric === "sleep") {
-    const hours = log.sleepHours ?? log.pregnancy?.sleepHours ?? log.postpartum?.sleepHours;
-    if (hours == null || !Number.isFinite(hours)) return [];
-    const details = [`Sleep ${hours.toFixed(1)} h`];
-    if (log.sleepQuality) {
-      details.push(`Quality: ${Array.isArray(log.sleepQuality) ? log.sleepQuality.join(", ") : log.sleepQuality}`);
-    }
-    return details;
-  }
-
-  const entries = metric === "temperature" ? log.temperatureEntries ?? [] : log.weightEntries ?? [];
-  const unit = metric === "temperature" ? "°C" : "kg";
-  if (entries.length) {
-    return entries
-      .filter((entry) => Number.isFinite(Number(entry.value)))
-      .map((entry) => `${entry.time || "—"} · ${Number(entry.value).toFixed(1)} ${unit}`);
-  }
-
-  const legacy = metric === "temperature" ? log.temperature : log.weight;
-  return legacy != null && Number.isFinite(legacy) ? [`Saved value · ${legacy.toFixed(1)} ${unit}`] : [];
-}
-
-function monthlyVitalRecords(metric: VitalTrendMetric, start: Date, end: Date, data: BixboData) {
-  const values: number[] = [];
-  const details: string[] = [];
-  const unit = vitalTrendUnit(metric);
-
-  daysBetweenInclusive(start, end).forEach((key) => {
-    const log = data.dayLogs[key];
-    if (!log) return;
-    const shortDate = fromKey(key).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-
-    if (metric === "sleep") {
-      const hours = log.sleepHours ?? log.pregnancy?.sleepHours ?? log.postpartum?.sleepHours;
-      if (hours == null || !Number.isFinite(hours)) return;
-      values.push(hours);
-      const quality = log.sleepQuality
-        ? ` · ${Array.isArray(log.sleepQuality) ? log.sleepQuality.join(", ") : log.sleepQuality}`
-        : "";
-      details.push(`${shortDate} · ${hours.toFixed(1)} ${unit}${quality}`);
-      return;
-    }
-
-    const entries = metric === "temperature" ? log.temperatureEntries ?? [] : log.weightEntries ?? [];
-    const validEntries = entries.filter((entry) => Number.isFinite(Number(entry.value)));
-    if (validEntries.length) {
-      validEntries.forEach((entry) => {
-        const value = Number(entry.value);
-        values.push(value);
-        details.push(`${shortDate} · ${entry.time || "—"} · ${value.toFixed(1)} ${unit}`);
-      });
-      return;
-    }
-
-    const legacy = metric === "temperature" ? log.temperature : log.weight;
-    if (legacy != null && Number.isFinite(legacy)) {
-      values.push(legacy);
-      details.push(`${shortDate} · ${legacy.toFixed(1)} ${unit}`);
-    }
-  });
-
-  return { values, details };
-}
-
-function trendRange(period: VitalTrendPeriod, anchor: Date) {
-  const base = new Date(anchor);
-  base.setHours(0, 0, 0, 0);
-
-  if (period === "W") {
-    const mondayOffset = (base.getDay() + 6) % 7;
-    const start = new Date(base);
-    start.setDate(base.getDate() - mondayOffset);
-    const end = new Date(start);
-    end.setDate(start.getDate() + 6);
-    return { start, end };
-  }
-
-  if (period === "M") {
-    return {
-      start: new Date(base.getFullYear(), base.getMonth(), 1),
-      end: new Date(base.getFullYear(), base.getMonth() + 1, 0),
-    };
-  }
-
-  return {
-    start: new Date(base.getFullYear(), 0, 1),
-    end: new Date(base.getFullYear(), 11, 31),
-  };
-}
-
-function shiftTrendAnchor(anchor: Date, period: VitalTrendPeriod, delta: -1 | 1): Date {
-  const next = new Date(anchor);
-  if (period === "W") next.setDate(next.getDate() + delta * 7);
-  if (period === "M") {
-    next.setDate(1);
-    next.setMonth(next.getMonth() + delta);
-  }
-  if (period === "Y") next.setFullYear(next.getFullYear() + delta);
-  return next;
-}
-
-function vitalTrendTitle(metric: VitalTrendMetric): string {
-  if (metric === "sleep") return "Sleep";
-  if (metric === "temperature") return "Body temperature";
-  return "Weight";
-}
-
-function vitalTrendUnit(metric: VitalTrendMetric): string {
-  if (metric === "sleep") return "h";
-  if (metric === "temperature") return "°C";
-  return "kg";
-}
-
-function sleepTrendColor(hours: number): string {
-  if (hours < 8) return "#EF4444";
-  if (Math.abs(hours - 8) < 0.05) return "#F3C30D";
-  return "#72C64A";
-}
-
-function SleepTrendBars({
-  points,
-  activeIndex,
-  onSelect,
-}: {
-  points: VitalTrendPoint[];
-  activeIndex: number | null;
-  onSelect: (index: number) => void;
-}) {
-  const yLabels = [12, 10, 8, 6, 4, 2, 0];
-  const height = 132;
-
-  return (
-    <div className="pt-1">
-      <div className="flex gap-1.5">
-        <div className="flex flex-col items-end pr-1" style={{ height }}>
-          <div className="flex h-full flex-col justify-between text-[8px] font-medium text-muted-foreground">
-            {yLabels.map((value) => (
-              <span key={value} className="leading-none tabular-nums">
-                {value}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        <div className="relative flex-1">
-          <div className="pointer-events-none absolute inset-0 flex flex-col justify-between">
-            {yLabels.map((value) => (
-              <div key={value} className="border-t border-dashed border-border/70" />
-            ))}
-          </div>
-
-          <div
-            className="relative grid items-end gap-[2px]"
-            style={{ gridTemplateColumns: `repeat(${Math.max(1, points.length)}, minmax(0, 1fr))`, height }}
-          >
-            {points.map((point, index) =>
-              point.value != null ? (
-                <button
-                  key={point.key}
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onSelect(index);
-                  }}
-                  aria-label={`${point.heading} · Sleep ${point.value.toFixed(1)} h`}
-                  className={`min-w-0 rounded-t transition active:scale-[0.98] ${
-                    activeIndex === index ? "ring-2 ring-foreground ring-offset-1 ring-offset-background" : ""
-                  }`}
-                  style={{
-                    height: `${Math.max(5, (Math.min(12, point.value) / 12) * 100)}%`,
-                    background: sleepTrendColor(point.value),
-                  }}
-                />
-              ) : (
-                <div key={point.key} className="h-[2px] w-full self-end rounded bg-border/60" />
-              ),
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-1 flex pl-5">
-        <div
-          className="grid flex-1 gap-[2px] text-center text-[7px] text-muted-foreground"
-          style={{ gridTemplateColumns: `repeat(${Math.max(1, points.length)}, minmax(0, 1fr))` }}
-        >
-          {points.map((point) => (
-            <span key={point.key} className="truncate">
-              {point.label}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-2 flex items-center justify-center gap-3 text-[9px] text-muted-foreground">
-        <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-[#EF4444]" /> &lt;8h</span>
-        <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-[#F3C30D]" /> 8h</span>
-        <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-[#72C64A]" /> &gt;8h</span>
-      </div>
-    </div>
-  );
-}
-
-function VitalTrendPopup({
-  metric,
-  data,
-  anchorKey,
-  onClose,
-}: {
-  metric: VitalTrendMetric;
-  data: BixboData;
-  anchorKey: string;
-  onClose: () => void;
-}) {
-  const [period, setPeriod] = useState<VitalTrendPeriod>("W");
-  const [anchor, setAnchor] = useState(() => fromKey(anchorKey));
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
-
-  // Lock the page behind the modal. iOS Safari/PWA can otherwise try to scroll
-  // both the Home page and the popup at the same time, which feels like a freeze.
-  useEffect(() => {
-    if (typeof document === "undefined") return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, []);
-
-  useEffect(() => {
-    setAnchor(fromKey(anchorKey));
-  }, [anchorKey, metric]);
-
-  const points = useMemo<VitalTrendPoint[]>(() => {
-    if (period === "Y") {
-      const year = anchor.getFullYear();
-      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-      return months.map((label, monthIndex) => {
-        const start = new Date(year, monthIndex, 1);
-        const end = new Date(year, monthIndex + 1, 0);
-        const records = monthlyVitalRecords(metric, start, end, data);
-        return {
-          key: `${year}-${String(monthIndex + 1).padStart(2, "0")}`,
-          label,
-          heading: start.toLocaleDateString("en-GB", { month: "long", year: "numeric" }),
-          value: averageNumbers(records.values),
-          details: records.details,
-        };
-      });
-    }
-
-    const { start, end } = trendRange(period, anchor);
-    return daysBetweenInclusive(start, end).map((key) => {
-      const d = fromKey(key);
-      return {
-        key,
-        label: period === "W" ? d.toLocaleDateString("en-GB", { weekday: "short" }).slice(0, 2) : String(d.getDate()),
-        heading: trendDayHeading(key),
-        value: dailyVitalTrendValue(metric, data.dayLogs[key]),
-        details: dailyVitalDetails(metric, key, data),
-      };
-    });
-  }, [anchor, data.dayLogs, metric, period]);
-
-  useEffect(() => {
-    // Keep the graph cheap to open: details are rendered only after the user taps a point/bar.
-    setActiveIndex(null);
-  }, [points]);
-
-  const values = points.map((point) => point.value).filter((value): value is number => value != null && Number.isFinite(value));
-  const unit = vitalTrendUnit(metric);
-  const { start, end } = trendRange(period, anchor);
-  const rangeLabel =
-    period === "Y"
-      ? String(anchor.getFullYear())
-      : period === "M"
-        ? anchor.toLocaleDateString("en-GB", { month: "long", year: "numeric" })
-        : `${start.toLocaleDateString("en-GB", { day: "numeric", month: "short" })} – ${end.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`;
-
-  const chartWidth = 278;
-  const chartHeight = 132;
-  const left = 10;
-  const right = 34;
-  const top = 12;
-  const bottom = 24;
-  const chartW = chartWidth - left - right;
-  const chartH = chartHeight - top - bottom;
-  const rawMin = values.length ? Math.min(...values) : 0;
-  const rawMax = values.length ? Math.max(...values) : 1;
-  const basePad = metric === "temperature" ? 0.3 : metric === "weight" ? 0.6 : 1;
-  const span = Math.max(basePad, rawMax - rawMin);
-  const yMin = rawMin - span * 0.25;
-  const yMax = rawMax + span * 0.25;
-  const denom = Math.max(1, points.length - 1);
-  const xFor = (index: number) => left + (index / denom) * chartW;
-  const yFor = (value: number) => top + ((yMax - value) / Math.max(0.001, yMax - yMin)) * chartH;
-  const path = points
-    .map((point, index) => (point.value == null ? null : { x: xFor(index), y: yFor(point.value), index }))
-    .filter((point): point is { x: number; y: number; index: number } => point != null)
-    .map((point, index) => `${index === 0 ? "M" : "L"}${point.x.toFixed(1)},${point.y.toFixed(1)}`)
-    .join(" ");
-
-  const visibleLabelIndexes = new Set<number>();
-  if (period === "W") points.forEach((_, index) => visibleLabelIndexes.add(index));
-  if (period === "M")
-    points.forEach((_, index) => {
-      if (index === 0 || index === points.length - 1 || index % 5 === 0) visibleLabelIndexes.add(index);
-    });
-  if (period === "Y") points.forEach((_, index) => visibleLabelIndexes.add(index));
-
-  const active = activeIndex != null ? points[activeIndex] : undefined;
-
-  return (
-    <div className="fixed inset-0 z-[95] flex items-center justify-center px-7">
-      <button
-        type="button"
-        aria-label={`Close ${vitalTrendTitle(metric)} graph`}
-        className="absolute inset-0 bg-black/35"
-        onClick={onClose}
-      />
-
-      <section className="relative z-10 w-full max-w-[320px] overflow-hidden rounded-[1.65rem] bg-background shadow-2xl ring-1 ring-border">
-        <div className="flex items-start justify-between gap-2 border-b border-border/70 px-4 pb-3 pt-4">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Trend</p>
-            <h2 className="mt-0.5 font-serif text-lg font-bold text-foreground">{vitalTrendTitle(metric)}</h2>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="grid h-8 w-8 place-items-center rounded-full bg-tint text-xs font-bold text-foreground ring-1 ring-border"
-            aria-label="Close"
-          >
-            ×
-          </button>
-        </div>
-
-        <div className="max-h-[48dvh] overflow-y-auto overscroll-contain touch-pan-y p-3">
-          <div className="grid grid-cols-3 gap-1 rounded-2xl bg-tint p-1 ring-1 ring-border/50">
-            {(["W", "M", "Y"] as const).map((value) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setPeriod(value)}
-                className={`rounded-xl px-2 py-1.5 text-[11px] font-semibold transition ${
-                  period === value ? "bg-surface text-foreground shadow-sm ring-1 ring-border" : "text-muted-foreground"
-                }`}
-              >
-                {value === "W" ? "Week" : value === "M" ? "Month" : "Year"}
-              </button>
-            ))}
-          </div>
-
-          <div className="mt-3 flex items-center justify-between gap-2">
-            <button
-              type="button"
-              onClick={() => setAnchor((current) => shiftTrendAnchor(current, period, -1))}
-              className="grid h-8 w-8 place-items-center rounded-full bg-tint ring-1 ring-border"
-              aria-label="Previous period"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <p className="text-center text-xs font-semibold text-foreground">{rangeLabel}</p>
-            <button
-              type="button"
-              onClick={() => setAnchor((current) => shiftTrendAnchor(current, period, 1))}
-              className="grid h-8 w-8 place-items-center rounded-full bg-tint ring-1 ring-border"
-              aria-label="Next period"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
-
-          <div className="mt-3 rounded-2xl bg-tint/70 p-2 ring-1 ring-border/50">
-            {values.length ? (
-              <>
-                {metric === "sleep" ? (
-                  <SleepTrendBars
-                    points={points}
-                    activeIndex={activeIndex}
-                    onSelect={(index) => setActiveIndex((current) => (current === index ? null : index))}
-                  />
-                ) : (
-                  <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="h-auto w-full overflow-visible" role="img">
-                    {[0, 0.5, 1].map((fraction) => {
-                      const y = top + fraction * chartH;
-                      const value = yMax - fraction * (yMax - yMin);
-                      return (
-                        <g key={fraction}>
-                          <line x1={left} x2={left + chartW} y1={y} y2={y} stroke="var(--border)" strokeDasharray="2 4" />
-                          <text x={chartWidth - 2} y={y + 3} textAnchor="end" fontSize="8" fill="var(--muted-foreground)">
-                            {value.toFixed(1)}
-                          </text>
-                        </g>
-                      );
-                    })}
-                    {path ? <path d={path} fill="none" stroke="var(--primary)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /> : null}
-                    {points.map((point, index) => {
-                      if (point.value == null) return null;
-                      const activePoint = activeIndex === index;
-                      return (
-                        <g key={point.key}>
-                          <circle
-                            cx={xFor(index)}
-                            cy={yFor(point.value)}
-                            r={activePoint ? 4.5 : 3.2}
-                            fill="var(--surface)"
-                            stroke="var(--primary)"
-                            strokeWidth={activePoint ? 2.5 : 1.8}
-                            pointerEvents="none"
-                          />
-                          <circle
-                            cx={xFor(index)}
-                            cy={yFor(point.value)}
-                            r="13"
-                            fill="transparent"
-                            className="cursor-pointer"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              setActiveIndex((current) => (current === index ? null : index));
-                            }}
-                          />
-                        </g>
-                      );
-                    })}
-                    {points.map((point, index) =>
-                      visibleLabelIndexes.has(index) ? (
-                        <text
-                          key={`label-${point.key}`}
-                          x={xFor(index)}
-                          y={chartHeight - 5}
-                          textAnchor="middle"
-                          fontSize={period === "Y" ? "6.5" : "7.5"}
-                          fill="var(--muted-foreground)"
-                        >
-                          {point.label}
-                        </text>
-                      ) : null,
-                    )}
-                  </svg>
-                )}
-
-                {active?.value != null ? (
-                  <div className="mt-2 rounded-2xl bg-surface/80 p-3 ring-1 ring-border/50">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-[10px] font-semibold text-muted-foreground">{active.heading}</p>
-                        <p className="mt-1 text-[11px] text-muted-foreground">
-                          {period === "Y" ? "Monthly average from saved entries" : "Saved entry"}
-                        </p>
-                      </div>
-                      <b className="shrink-0 tabular-nums text-sm text-foreground">
-                        {active.value.toFixed(1)} {unit}
-                      </b>
-                    </div>
-
-                    <div className="mt-2 space-y-1.5">
-                      {active.details.length ? (
-                        active.details.map((detail, index) => (
-                          <p key={index} className="rounded-xl bg-background/80 px-2.5 py-2 text-[10px] leading-snug text-foreground ring-1 ring-border/40">
-                            {detail}
-                          </p>
-                        ))
-                      ) : (
-                        <p className="text-[10px] text-muted-foreground">No underlying saved entry found.</p>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <p className="mt-2 text-center text-[10px] text-muted-foreground">Tap a point or bar to see the exact saved entry.</p>
-                )}
-              </>
-            ) : (
-              <div className="grid min-h-32 place-items-center text-center text-xs text-muted-foreground">
-                No {vitalTrendTitle(metric).toLowerCase()} data in this period.
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-    </div>
-  );
-}
-
 function HomePage() {
   const { data, update, hydrated } = useBixbo();
   const view = hydrated ? data : EMPTY;
-  const maleMode = String(view.settings.gender ?? "").trim().toLowerCase() === "male";
 
   /*
    * Dátum vytvárame až v prehliadači.
@@ -607,12 +90,7 @@ function HomePage() {
   const [monthAnchor, setMonthAnchor] = useState<Date | null>(null);
   const [selected, setSelected] = useState("");
 
-  const [hakOpen, setHakOpen] = useState(false);
-  const [hakAnchor, setHakAnchor] = useState<Date | null>(null);
-
   const [logOpen, setLogOpen] = useState(false);
-  const [todayOpen, setTodayOpen] = useState(false);
-  const [vitalTrendOpen, setVitalTrendOpen] = useState<VitalTrendMetric | null>(null);
   const [quickCat, setQuickCat] = useState<string | undefined>();
   const [editPain, setEditPain] = useState<import("@/lib/storage").PainEntry | undefined>();
   const [editEntry, setEditEntry] = useState<unknown>(undefined);
@@ -632,15 +110,6 @@ function HomePage() {
     setMonthAnchor(new Date());
     setSelected(todayKey());
   }, []);
-
-  // Male mode must never expose the HAK tracker. If gender is changed while
-  // the HAK detail is open, close it immediately as well.
-  useEffect(() => {
-    if (maleMode) {
-      setHakOpen(false);
-      setHakAnchor(null);
-    }
-  }, [maleMode]);
 
   // Listen for "open log" from bottom nav
   useEffect(() => {
@@ -666,25 +135,13 @@ function HomePage() {
     return <div className="h-[360px]" />;
   }
 
-  const moveCalendarMonth = (delta: number) => {
-    const currentSelected = fromKey(selected);
-    const selectedDayOfMonth = currentSelected.getDate();
-
-    const targetMonth = new Date(monthAnchor.getFullYear(), monthAnchor.getMonth() + delta, 1);
-    const lastDayOfTargetMonth = new Date(
-      targetMonth.getFullYear(),
-      targetMonth.getMonth() + 1,
-      0,
-    ).getDate();
-    const targetDay = Math.min(selectedDayOfMonth, lastDayOfTargetMonth);
-    const nextSelected = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), targetDay);
-
-    setMonthAnchor(targetMonth);
-    setSelected(toKey(nextSelected));
+  const goToPrevMonth = () => {
+    setMonthAnchor((current) => new Date(current!.getFullYear(), current!.getMonth() - 1, 1));
   };
 
-  const goToPrevMonth = () => moveCalendarMonth(-1);
-  const goToNextMonth = () => moveCalendarMonth(1);
+  const goToNextMonth = () => {
+    setMonthAnchor((current) => new Date(current!.getFullYear(), current!.getMonth() + 1, 1));
+  };
 
   const pregnancyActive = isPregnancyActive(view);
   const postpartumActive = isPostpartumActive(view);
@@ -711,14 +168,6 @@ function HomePage() {
     (pregnancyToday?.waterMl ?? 0) > 0 ? { icon: "💧", label: `${pregnancyToday!.waterMl} ml` } : null,
   ].filter((item): item is { icon: string; label: string } => item != null);
 
-  const todayDateKey = todayKey();
-  const todayLog = view.dayLogs[todayDateKey];
-  const todayPain = avgDayPain(todayLog);
-  const todayScheduled = view.meds
-    .filter((med) => !med.asNeeded)
-    .flatMap((med) => med.times.map((time) => `${med.id}@${time}`));
-  const todayMedsTaken = todayScheduled.filter((key) => view.medLog[todayDateKey]?.[key]).length;
-
   return (
     <AppShell
       big
@@ -733,28 +182,22 @@ function HomePage() {
       }
       right={
         <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => setTodayOpen(true)}
-            className="flex min-w-[82px] flex-col items-end justify-center rounded-2xl px-2 py-1 transition hover:bg-tint"
-            aria-label="Open today's summary"
-          >
-            <span className="text-[10px] font-semibold leading-none text-muted-foreground">Today</span>
-            <span className="mt-1 flex items-center gap-1 whitespace-nowrap text-[11px] font-semibold leading-none text-foreground">
-              <Ico name="flame" size={14} /> {todayPain != null ? todayPain.toFixed(1) : "—"}
-              <span className="text-muted-foreground">·</span>
-              <PillIcon size={14} /> {todayMedsTaken}/{todayScheduled.length}
-            </span>
-          </button>
-
           <Link
             to="/profile"
-            className="flex min-w-[52px] flex-col items-center justify-center rounded-2xl px-2 py-1.5 text-primary transition hover:bg-tint"
-            aria-label="Health"
-            title="Health"
+            className="rounded-full p-2 transition hover:bg-tint"
+            aria-label="Health profile"
+            title="Health profile"
           >
-            <HeartIcon size={24} />
-            <span className="mt-0.5 text-[10px] font-semibold leading-none">Health</span>
+            <UserRound className="h-5 w-5" />
+          </Link>
+
+          <Link
+            to="/settings"
+            className="rounded-full p-2 transition hover:bg-tint"
+            aria-label="Settings"
+            title="Settings"
+          >
+            <SettingsIcon className="h-5 w-5" />
           </Link>
         </div>
       }
@@ -785,7 +228,7 @@ function HomePage() {
         </div>
       </div>
 
-      <div className="mt-0.5" style={{ "--period-medium": "#7467D8" } as any}>
+      <div className="mt-0.5">
         {hydrated ? (
           <MonthCalendar
             month={monthAnchor}
@@ -793,24 +236,13 @@ function HomePage() {
             selected={selected}
             onSelect={setSelected}
             onSwipeMonth={(delta) => {
-              moveCalendarMonth(delta);
+              setMonthAnchor((current) => new Date(current!.getFullYear(), current!.getMonth() + delta, 1));
             }}
           />
         ) : (
           <div className="h-[360px]" />
         )}
       </div>
-
-      {!maleMode && (
-        <BirthControlSummaryCard
-          data={view}
-          dateKey={selected}
-          onOpen={() => {
-            setHakAnchor(fromKey(selected));
-            setHakOpen(true);
-          }}
-        />
-      )}
 
       {(() => {
         if (!pregnancyActive) return null;
@@ -952,16 +384,9 @@ function HomePage() {
             });
 
           return (
-            <div
-              className="mx-5 mt-3 rounded-full px-4 py-2 text-center text-xs ring-1"
-              style={{
-                background: "color-mix(in srgb, #7467D8 14%, transparent)",
-                color: "#7467D8",
-                boxShadow: "inset 0 0 0 1px color-mix(in srgb, #7467D8 34%, transparent)",
-              }}
-            >
+            <div className="mx-5 mt-3 rounded-full bg-tint px-4 py-2 text-center text-xs text-muted-foreground ring-1 ring-border">
               Next period predicted:{" "}
-              <span className="font-semibold">
+              <span className="font-semibold text-foreground">
                 {fmt(p.start)} – {fmt(p.end)}
               </span>
             </div>
@@ -978,26 +403,41 @@ function HomePage() {
           emoji="😴"
           label="Sleep"
           value={view.dayLogs[selected]?.sleepHours != null ? String(view.dayLogs[selected]!.sleepHours) : "—"}
-          onClick={() => setVitalTrendOpen("sleep")}
+          onClick={() => {
+            setQuickCat("temp");
+            setEditEntry(undefined);
+            setEditPain(undefined);
+            setLogOpen(true);
+          }}
         />
 
         <VitalTile
           emoji="🌡️"
           label="Temp"
           value={view.dayLogs[selected]?.temperature != null ? String(view.dayLogs[selected]!.temperature) : "—"}
-          onClick={() => setVitalTrendOpen("temperature")}
+          onClick={() => {
+            setQuickCat("temp");
+            setEditEntry(undefined);
+            setEditPain(undefined);
+            setLogOpen(true);
+          }}
         />
 
         <VitalTile
           emoji="⚖️"
           label="Weight"
           value={view.dayLogs[selected]?.weight != null ? String(view.dayLogs[selected]!.weight) : "—"}
-          onClick={() => setVitalTrendOpen("weight")}
+          onClick={() => {
+            setQuickCat("temp");
+            setEditEntry(undefined);
+            setEditPain(undefined);
+            setLogOpen(true);
+          }}
         />
       </div>
 
       {/* Quick log */}
-      <div className="px-5 [&_p.text-\[11px\].uppercase]:min-w-0 [&_p.text-\[11px\].uppercase]:flex-1 [&_p.text-\[11px\].uppercase]:truncate [&_p.text-\[11px\].uppercase]:text-[10px] [&_.mt-1.flex.flex-wrap.gap-1]:hidden">
+      <div className="[&_p.text-\[11px\].uppercase]:min-w-0 [&_p.text-\[11px\].uppercase]:flex-1 [&_p.text-\[11px\].uppercase]:truncate [&_p.text-\[11px\].uppercase]:text-[10px] [&_.mt-1.flex.flex-wrap.gap-1]:hidden">
         <QuickTags
           data={view}
           update={update}
@@ -1057,171 +497,6 @@ function HomePage() {
         onEdit={openEdit}
       />
 
-      {vitalTrendOpen && (
-        <VitalTrendPopup
-          metric={vitalTrendOpen}
-          data={view}
-          anchorKey={selected}
-          onClose={() => setVitalTrendOpen(null)}
-        />
-      )}
-
-      {todayOpen &&
-        (() => {
-          const todayTetany = todayLog?.tetany?.length ?? 0;
-          const todayPanic = todayLog?.panic?.length ?? 0;
-          const todayBowelEntries = todayLog?.bowel ?? [];
-          const latestBowel = todayBowelEntries.length ? todayBowelEntries[todayBowelEntries.length - 1] : undefined;
-          const noteValue = view.dayNotes[todayDateKey]?.[0];
-          const noteText =
-            typeof noteValue === "string"
-              ? noteValue
-              : noteValue && typeof noteValue === "object" && "text" in noteValue
-                ? String(noteValue.text)
-                : "";
-
-          const rows = [
-            {
-              key: "pain",
-              icon: <FlameIcon size={22} />,
-              label: "Pain",
-              value: todayPain != null ? `${todayPain.toFixed(1)} / 10` : "No pain logged",
-            },
-            {
-              key: "meds",
-              icon: <PillIcon size={22} />,
-              label: "Medication",
-              value: `${todayMedsTaken} of ${todayScheduled.length} taken`,
-            },
-            {
-              key: "sleep",
-              icon: <ClockIcon size={22} />,
-              label: "Sleep",
-              value: todayLog?.sleepHours != null ? `${todayLog.sleepHours} h` : "Not logged",
-            },
-            {
-              key: "tetany",
-              icon: <StarIcon size={22} />,
-              label: "Tetany episode",
-              value: todayTetany ? `${todayTetany} episode${todayTetany === 1 ? "" : "s"}` : "None",
-            },
-            {
-              key: "panic",
-              icon: <PanicIcon size={22} />,
-              label: "Panic episode",
-              value: todayPanic ? `${todayPanic}` : "None",
-            },
-            {
-              key: "bowel",
-              icon: <PoopIcon size={22} />,
-              label: "Bowel",
-              value: latestBowel ? `Type ${latestBowel.bristol}` : "Not logged",
-            },
-            {
-              key: "temperature",
-              icon: <ThermometerIcon size={22} />,
-              label: "Temperature",
-              value: todayLog?.temperature != null ? `${todayLog.temperature} °C` : "Not logged",
-            },
-            {
-              key: "weight",
-              icon: <WeightIcon size={22} />,
-              label: "Weight",
-              value: todayLog?.weight != null ? `${todayLog.weight} kg` : "Not logged",
-            },
-          ];
-
-          return (
-            <div className="fixed inset-0 z-[90] flex items-center justify-center px-7">
-              <button
-                type="button"
-                aria-label="Close today's summary"
-                className="absolute inset-0 bg-black/35"
-                onClick={() => setTodayOpen(false)}
-              />
-
-              <section className="relative z-10 w-full max-w-[320px] overflow-hidden rounded-[1.65rem] bg-background shadow-2xl ring-1 ring-border">
-                <div className="flex items-start justify-between gap-2 border-b border-border/70 px-4 pb-3 pt-4">
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Today</p>
-                    <h2 className="mt-0.5 font-serif text-lg font-bold text-foreground">
-                      {fromKey(todayDateKey).toLocaleDateString("en-GB", {
-                        weekday: "long",
-                        day: "numeric",
-                        month: "long",
-                      })}
-                    </h2>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => setTodayOpen(false)}
-                    className="grid h-8 w-8 place-items-center rounded-full bg-tint text-xs font-bold text-foreground ring-1 ring-border"
-                    aria-label="Close"
-                  >
-                    ×
-                  </button>
-                </div>
-
-                <div className="max-h-[48dvh] overflow-y-auto overscroll-contain touch-pan-y p-3">
-                  <div className="grid grid-cols-2 gap-2">
-                    {rows.map((row) => (
-                      <div key={row.key} className="min-w-0 rounded-2xl bg-tint px-2.5 py-2.5 ring-1 ring-border/50">
-                        <div className="flex items-center gap-2">
-                          <span className="grid h-8 w-8 shrink-0 place-items-center">{row.icon}</span>
-                          <span className="min-w-0">
-                            <span className="block truncate text-[10px] font-medium text-muted-foreground">
-                              {row.label}
-                            </span>
-                            <span className="mt-0.5 block truncate text-xs font-semibold text-foreground">
-                              {row.value}
-                            </span>
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {noteText && (
-                    <div className="mt-2 flex items-start gap-2 rounded-2xl bg-tint px-3 py-2.5 ring-1 ring-border/50">
-                      <span className="grid h-8 w-8 shrink-0 place-items-center">
-                        <NoteIcon size={20} />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-[10px] font-medium text-muted-foreground">Note</span>
-                        <span className="mt-0.5 line-clamp-1 block text-xs text-foreground">{noteText}</span>
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="border-t border-border/70 p-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelected(todayDateKey);
-                      setMonthAnchor(fromKey(todayDateKey));
-                      setTodayOpen(false);
-                    }}
-                    className="min-h-10 w-full rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground"
-                  >
-                    Open today on calendar
-                  </button>
-                </div>
-              </section>
-            </div>
-          );
-        })()}
-
-      {!maleMode && hakOpen && hakAnchor && (
-        <BirthControlOverlay
-          data={view}
-          anchor={hakAnchor}
-          onAnchorChange={setHakAnchor}
-          onClose={() => setHakOpen(false)}
-        />
-      )}
-
       <LogSheet
         open={logOpen}
         onOpenChange={(open) => {
@@ -1243,917 +518,6 @@ function HomePage() {
     </AppShell>
   );
 }
-
-
-function BirthControlSummaryCard({
-  data,
-  dateKey,
-  onOpen,
-}: {
-  data: BixboData;
-  dateKey: string;
-  onOpen: () => void;
-}) {
-  if (!dateKey || String(data.settings.gender ?? "").trim().toLowerCase() === "male") return null;
-
-  const DROVELIS_START = "2026-04-22";
-  const ACTIVE_DAYS = 24;
-  const PACK_DAYS = 28;
-  const since = data.settings.birthControlSince || DROVELIS_START;
-  const bcMed = data.meds.find((m) =>
-    /antikonc|birth\s*control|contracept|hak|pill/i.test(`${m.name} ${m.dose ?? ""}`),
-  );
-
-  // Do not show the card before HAK started unless a HAK medication is configured.
-  if (dateKey < since && !bcMed) return null;
-
-  const diff = Math.round((fromKey(dateKey).getTime() - fromKey(since).getTime()) / 86400000);
-  if (diff < 0) return null;
-
-  const packDay = (diff % PACK_DAYS) + 1;
-  const isPlacebo = packDay > ACTIVE_DAYS;
-  const bcId = bcMed?.id ?? "hak-default";
-  const log = data.medLog[dateKey] ?? {};
-  const times = data.medLogTimes?.[dateKey] ?? {};
-  const takenKey = Object.keys(log).find(
-    (key) => log[key] && key !== `${bcId}@missed` && key.startsWith(`${bcId}@`),
-  );
-  const takenTime = takenKey ? times[takenKey] ?? takenKey.split("@")[1] ?? "" : "";
-  const missed = !!log[`${bcId}@missed`];
-
-  const HAK_PURPLE = "#7A53C8";
-  const HAK_PURPLE_DARK = "#5B32AE";
-  const HAK_PINK = "#D95782";
-  const HAK_PINK_DARK = "#B92E60";
-  const HAK_PINK_SOFT = "#F7CBD9";
-
-  return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className="mx-5 mt-2 block w-[calc(100%-2.5rem)] rounded-2xl px-3 py-2.5 text-left shadow-sm ring-1 transition active:scale-[0.99]"
-      style={{
-        background: "color-mix(in srgb, #7467D8 11%, var(--background))",
-        borderColor: "rgba(116,103,216,.48)",
-        boxShadow:
-          "inset 0 0 0 1px rgba(116,103,216,.18), 0 2px 8px rgba(83,72,170,.08)",
-      }}
-      aria-label={`Open birth control overview. HAK day ${packDay} of ${PACK_DAYS}`}
-    >
-      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
-        <span
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-full ring-1"
-          style={{
-            backgroundColor: "rgba(229,219,248,.88)",
-            borderColor: "rgba(116,103,216,.34)",
-          }}
-        >
-          <Ico e="💊" size={20} />
-        </span>
-
-        <div className="min-w-0">
-          <div className="flex items-baseline gap-2">
-            <p className="truncate font-serif text-base font-bold text-foreground">Birth control</p>
-            <span className="text-[10px] text-muted-foreground">Drovelis</span>
-          </div>
-
-          <div className="mt-1 flex items-center gap-3">
-            <div className="flex items-baseline gap-1">
-              <span className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                Day
-              </span>
-              <span
-                className="font-serif text-lg font-bold leading-none"
-                style={{ color: isPlacebo ? HAK_PINK_DARK : HAK_PURPLE_DARK }}
-              >
-                {packDay}/{PACK_DAYS}
-              </span>
-            </div>
-
-            <span className="h-5 w-px bg-border/70" />
-
-            <div className="flex items-baseline gap-1">
-              <span className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                {isPlacebo ? "Placebo" : "Active"}
-              </span>
-              <span
-                className="text-xs font-bold"
-                style={{ color: isPlacebo ? HAK_PINK_DARK : HAK_PURPLE_DARK }}
-              >
-                {isPlacebo ? `${packDay - ACTIVE_DAYS}/4` : `${packDay}/24`}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-sm font-bold"
-            style={{
-              color: isPlacebo ? HAK_PINK_DARK : HAK_PURPLE_DARK,
-              backgroundColor: isPlacebo ? HAK_PINK_SOFT : "rgba(220,207,243,.72)",
-              boxShadow: `inset 0 0 0 4px ${
-                isPlacebo ? "rgba(217,87,130,.18)" : "rgba(122,83,200,.16)"
-              }`,
-            }}
-          >
-            {packDay}
-          </span>
-          <span className="text-lg leading-none" style={{ color: "#7467D8" }}>›</span>
-        </div>
-      </div>
-    </button>
-  );
-}
-
-function BirthControlOverlay({
-  data,
-  anchor: _anchor,
-  onAnchorChange: _onAnchorChange,
-  onClose,
-}: {
-  data: BixboData;
-  anchor: Date;
-  onAnchorChange: (date: Date) => void;
-  onClose: () => void;
-}) {
-  const overlayRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    // Always open HAK detail at the very top so the title/back button are visible.
-    overlayRef.current?.scrollTo({ top: 0, left: 0, behavior: "auto" });
-  }, []);
-
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, []);
-
-  if (typeof document === "undefined") return null;
-
-  return createPortal(
-    <div
-      ref={overlayRef}
-      className="fixed inset-0 z-[900] flex h-[100dvh] flex-col overflow-hidden bg-background"
-    >
-      <div className="relative z-[910] shrink-0 border-b border-border/70 bg-background px-4 pb-2 pt-[max(.65rem,env(safe-area-inset-top))]">
-        <div className="mx-auto flex w-full max-w-xl items-center justify-between gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-tint ring-1 ring-border"
-            aria-label="Back to calendar"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-
-          <div className="min-w-0 flex-1 px-2 text-center">
-            <h1 className="whitespace-nowrap font-serif text-[1.2rem] font-bold leading-tight text-foreground">
-              Birth control overview
-            </h1>
-            <p className="mt-1 text-[10px] leading-none text-muted-foreground">Drovelis</p>
-          </div>
-
-          <span className="h-10 w-10 shrink-0" aria-hidden="true" />
-        </div>
-      </div>
-
-      <main className="mx-auto min-h-0 w-full max-w-[42rem] flex-1 overflow-hidden px-3 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-1">
-        <BirthControlCalendar data={data} />
-      </main>
-    </div>,
-    document.body,
-  );
-}
-
-function BirthControlCalendar({
-  data,
-}: {
-  data: ReturnType<typeof useBixbo>["data"];
-}) {
-  const { update } = useBixbo();
-  const [sel, setSel] = useState<string | null>(null);
-
-  // The month selector controls only the calendar inside the ring.
-  // It never changes the one current 28-day HAK pack shown by the ring.
-  const [hakMonth, setHakMonth] = useState(() => {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), 1);
-  });
-
-  // Personal Drovelis schedule. Keep Settings as the source of truth when present,
-  // with the confirmed start date as a safe fallback for this build.
-  const DROVELIS_START = "2026-04-22";
-  const since = data.settings.birthControlSince || DROVELIS_START;
-
-  useEffect(() => {
-    if (!sel) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [sel]);
-
-  if (String(data.settings.gender ?? "").trim().toLowerCase() === "male") return null;
-
-  // Drovelis is monophasic: every pink active tablet has the same full dose.
-  // 24 pink active tablets + 4 white placebo tablets = one 28-day pack.
-  const ACTIVE_DAYS = 24;
-  const PACK_DAYS = 28;
-
-  const HAK_PURPLE = "#7A53C8";
-  const HAK_PURPLE_DARK = "#5B32AE";
-  const HAK_PURPLE_SOFT = "#DCCFF3";
-  const HAK_PURPLE_DOT = "#8C67D4";
-  const HAK_PINK = "#D95782";
-  const HAK_PINK_DARK = "#B92E60";
-  const HAK_PINK_SOFT = "#F7CBD9";
-  const HAK_GREEN = "#8A962D";
-  const HAK_GREEN_DARK = "#596313";
-  const HAK_GREEN_SOFT = "#E7E9B8";
-  const HAK_TRACK = "#E4E4D3";
-  const HAK_CARD_BG = "color-mix(in srgb, var(--background) 94%, #7C8900 6%)";
-
-  const bcMed = data.meds.find((m) =>
-    /antikonc|birth\s*control|contracept|hak|pill/i.test(`${m.name} ${m.dose ?? ""}`),
-  );
-  const bcId = bcMed?.id ?? "hak-default";
-
-  const todayK = toKey(new Date());
-
-  const pillNumber = (k: string) => {
-    const diff = Math.round((fromKey(k).getTime() - fromKey(since).getTime()) / 86400000);
-    if (diff < 0) return null;
-    return (diff % PACK_DAYS) + 1;
-  };
-
-  // One fixed 28-day HAK wheel: always the pack that contains TODAY.
-  // Calendar months (28/29/30/31 days) must never move or redefine this wheel.
-  const currentDay = pillNumber(todayK) ?? 1;
-  const currentPackStart = addDays(todayK, -(currentDay - 1));
-
-  const dateForPackDay = (day: number) => addDays(currentPackStart, day - 1);
-
-  const takenAt = (k: string): string | null => {
-    const log = data.medLog[k] ?? {};
-    const times = data.medLogTimes?.[k] ?? {};
-    const keys = Object.keys(log).filter(
-      (key) => log[key] && key !== `${bcId}@missed` && key.startsWith(`${bcId}@`),
-    );
-    if (!keys.length) return null;
-    return times[keys[0]] ?? keys[0].split("@")[1] ?? "";
-  };
-
-  const missedAt = (k: string): boolean => !!data.medLog[k]?.[`${bcId}@missed`];
-
-  const markTaken = (k: string, time: string) =>
-    update((d) => {
-      const t = time || new Date().toTimeString().slice(0, 5);
-      const day = { ...(d.medLog[k] ?? {}) };
-      Object.keys(day).forEach((key) => {
-        if (key.startsWith(`${bcId}@`)) delete day[key];
-      });
-      day[`${bcId}@${t}`] = true;
-
-      const dayTimes = { ...(d.medLogTimes[k] ?? {}) };
-      Object.keys(dayTimes).forEach((key) => {
-        if (key.startsWith(`${bcId}@`)) delete dayTimes[key];
-      });
-      dayTimes[`${bcId}@${t}`] = t;
-
-      return {
-        ...d,
-        medLog: { ...d.medLog, [k]: day },
-        medLogTimes: { ...d.medLogTimes, [k]: dayTimes },
-        medNames: bcMed ? d.medNames : { ...d.medNames, [bcId]: "Birth control" },
-      };
-    });
-
-  const markMissed = (k: string) =>
-    update((d) => {
-      const day = { ...(d.medLog[k] ?? {}) };
-      Object.keys(day).forEach((key) => {
-        if (key.startsWith(`${bcId}@`)) delete day[key];
-      });
-      day[`${bcId}@missed`] = true;
-
-      const dayTimes = { ...(d.medLogTimes[k] ?? {}) };
-      Object.keys(dayTimes).forEach((key) => {
-        if (key.startsWith(`${bcId}@`)) delete dayTimes[key];
-      });
-
-      return {
-        ...d,
-        medLog: { ...d.medLog, [k]: day },
-        medLogTimes: { ...d.medLogTimes, [k]: dayTimes },
-        medNames: bcMed ? d.medNames : { ...d.medNames, [bcId]: "Birth control" },
-      };
-    });
-
-  const clearRecord = (k: string) =>
-    update((d) => {
-      const day = { ...(d.medLog[k] ?? {}) };
-      Object.keys(day).forEach((key) => {
-        if (key.startsWith(`${bcId}@`)) delete day[key];
-      });
-
-      const dayTimes = { ...(d.medLogTimes[k] ?? {}) };
-      Object.keys(dayTimes).forEach((key) => {
-        if (key.startsWith(`${bcId}@`)) delete dayTimes[key];
-      });
-
-      return {
-        ...d,
-        medLog: { ...d.medLog, [k]: day },
-        medLogTimes: { ...d.medLogTimes, [k]: dayTimes },
-      };
-    });
-
-  const selectedDay = sel ? pillNumber(sel) : null;
-  const selectedTaken = sel ? takenAt(sel) : null;
-  const selectedMissed = sel ? missedAt(sel) : false;
-  const selectedIsPlacebo = selectedDay != null && selectedDay > ACTIVE_DAYS;
-  const popupAccent = selectedIsPlacebo ? HAK_PINK_DARK : HAK_PURPLE_DARK;
-  const popupSoft = selectedIsPlacebo ? "#F9DDE7" : "#E8DDF8";
-
-
-
-  const fmtFullDate = (key: string) =>
-    fromKey(key).toLocaleDateString("en-GB", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-
-  const wheelDays = Array.from({ length: PACK_DAYS }, (_, i) => i + 1);
-
-  // 24 purple dots, a subtle separator, 4 pink dots, a second separator,
-  // then one green dot for the next pack. This matches the detailed reference.
-  const timelineItems: Array<{
-    kind: "active" | "placebo" | "separator" | "next";
-    day?: number;
-  }> = [
-    ...Array.from({ length: ACTIVE_DAYS }, (_, i) => ({ kind: "active" as const, day: i + 1 })),
-    { kind: "separator" as const },
-    ...Array.from({ length: PACK_DAYS - ACTIVE_DAYS }, (_, i) => ({
-      kind: "placebo" as const,
-      day: ACTIVE_DAYS + i + 1,
-    })),
-    { kind: "separator" as const },
-    { kind: "next" as const, day: 1 },
-  ];
-
-  const timelineCurrentIndex =
-    currentDay <= ACTIVE_DAYS
-      ? currentDay - 1
-      : ACTIVE_DAYS + 1 + (currentDay - ACTIVE_DAYS - 1);
-
-  const timelineMarkerLeft = Math.max(
-    6,
-    Math.min(88, ((timelineCurrentIndex + 0.5) / timelineItems.length) * 100),
-  );
-
-  const hakMonthYear = hakMonth.getFullYear();
-  const hakMonthIndex = hakMonth.getMonth();
-  const hakMonthOffset = (new Date(hakMonthYear, hakMonthIndex, 1).getDay() + 6) % 7;
-  const hakMonthCellCount = 42;
-  const hakMonthCells = Array.from({ length: hakMonthCellCount }, (_, index) => {
-    const dayNumber = index - hakMonthOffset + 1;
-    const date = new Date(hakMonthYear, hakMonthIndex, dayNumber);
-    const key = toKey(date);
-    return {
-      key,
-      date,
-      inMonth: date.getMonth() === hakMonthIndex,
-      packDay: pillNumber(key),
-    };
-  });
-
-  const hakMonthLabel = hakMonth.toLocaleDateString("en-GB", {
-    month: "long",
-    year: "numeric",
-  });
-
-  const moveHakCalendarMonth = (delta: number) => {
-    setHakMonth(
-      (current) => new Date(current.getFullYear(), current.getMonth() + delta, 1),
-    );
-  };
-
-  // TRUE mathematical 28-day ring.
-  // Every adjacent bubble is the next pill number:
-  // 1 → 2 → … → 24 → 25 → 26 → 27 → 28 → back to 1.
-  // Rotation keeps placebo 25–28 across the bottom of the wheel.
-  const WHEEL_STEP = 360 / PACK_DAYS;
-  const WHEEL_DAY1_ANGLE = 57;
-  const wheelAngleForDay = (day: number) =>
-    WHEEL_DAY1_ANGLE - (day - 1) * WHEEL_STEP;
-
-  return (
-    <section
-      className="flex h-full min-h-0 flex-col rounded-[2rem] p-3 shadow-sm ring-1"
-      style={{
-        backgroundColor: HAK_CARD_BG,
-        boxShadow: "inset 0 0 0 1px rgba(83, 102, 0, 0.22)",
-      }}
-    >
-      <div className="flex shrink-0 items-start justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-surface/65 ring-1 ring-border/50">
-            <Ico e="🫐" size={25} />
-          </span>
-          <div className="min-w-0">
-            <h2 className="whitespace-nowrap font-serif text-xl font-bold text-foreground">Blueberry cycle</h2>
-            <p className="whitespace-nowrap text-[11px] text-muted-foreground">Birth control overview</p>
-          </div>
-        </div>
-
-        <div className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-surface/30 p-0.5 ring-1 ring-border/40">
-          <button
-            type="button"
-            onClick={() => moveHakCalendarMonth(-1)}
-            className="grid h-7 w-7 place-items-center rounded-full transition hover:bg-tint"
-            aria-label="Previous calendar month"
-          >
-            <ChevronLeft className="h-3.5 w-3.5" />
-          </button>
-
-          <span className="min-w-[88px] px-1 text-center text-[10px] font-semibold text-foreground">
-            {hakMonthLabel}
-          </span>
-
-          <button
-            type="button"
-            onClick={() => moveHakCalendarMonth(1)}
-            className="grid h-7 w-7 place-items-center rounded-full transition hover:bg-tint"
-            aria-label="Next calendar month"
-          >
-            <ChevronRight className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      </div>
-
-      {/* Circular HAK overview — only wheel pills open the dose popup. */}
-      <div className="relative left-1/2 mt-1 w-[calc(100%+2rem)] max-w-[390px] -translate-x-1/2 shrink-0">
-        <div className="relative aspect-square w-full">
-          <div
-            className="absolute inset-[5.5%] rounded-full"
-            style={{
-              background: "rgba(255,255,255,.12)",
-              boxShadow: "inset 0 0 0 9px rgba(255,255,255,.24)",
-            }}
-          />
-          <div
-            className="absolute inset-[16.5%] rounded-full"
-            style={{
-              backgroundColor: HAK_CARD_BG,
-              boxShadow: "0 0 0 1px rgba(255,255,255,.12)",
-            }}
-          />
-
-          <div className="pointer-events-none absolute inset-0 z-[1]">
-            {Array.from({ length: PACK_DAYS }).map((_, i) => {
-              const day = i + 1;
-              const angle = (wheelAngleForDay(day) * Math.PI) / 180;
-              const radius = 44.5;
-              return (
-                <span
-                  key={`wheel-track-${i}`}
-                  className="absolute h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/70"
-                  style={{
-                    left: `${50 + Math.cos(angle) * radius}%`,
-                    top: `${50 + Math.sin(angle) * radius}%`,
-                  }}
-                />
-              );
-            })}
-          </div>
-
-          {wheelDays.map((day) => {
-            const angle = (wheelAngleForDay(day) * Math.PI) / 180;
-            const radius = 44.5;
-            const left = 50 + Math.cos(angle) * radius;
-            const top = 50 + Math.sin(angle) * radius;
-            const dateKey = dateForPackDay(day);
-            const loggedTaken = !!takenAt(dateKey);
-            const missed = missedAt(dateKey);
-            const isCurrent = day === currentDay;
-            const isPlacebo = day > ACTIVE_DAYS;
-
-            // The user confirmed continuous on-time Drovelis use from `since`.
-            // Therefore historical active pills are visually treated as taken
-            // unless that exact date was explicitly marked missed. This prevents
-            // old packs from showing pale/empty circles only because dose logging
-            // was added to the app later.
-            const assumedHistoricalTaken =
-              !isPlacebo && dateKey >= since && dateKey < todayK && !missed;
-            const takenForStatus = loggedTaken || assumedHistoricalTaken;
-
-            // Soft 3D "pill bubble" styling matched to the visual reference.
-            // Keep the wheel math/layout untouched; only visual treatment changes.
-            let bubbleBackground = isPlacebo
-              ? "radial-gradient(circle at 30% 24%, #FFF7FA 0%, #F9DDE7 38%, #F2C3D4 72%, #E9AFC6 100%)"
-              : "radial-gradient(circle at 30% 24%, #F7F2FF 0%, #E7DDF8 38%, #D4C3F0 72%, #C1A9E7 100%)";
-            let color = isPlacebo ? "#B92E60" : "#51309A";
-            let bubbleBorder = isPlacebo
-              ? "rgba(255,255,255,.76)"
-              : "rgba(255,255,255,.72)";
-            let bubbleShadow = isPlacebo
-              ? "inset 1.5px 1.5px 3px rgba(255,255,255,.92), inset -1.5px -2px 3px rgba(177,52,98,.12), 0 2px 7px rgba(110,72,88,.14), 0 0 0 1px rgba(217,87,130,.18)"
-              : "inset 1.5px 1.5px 3px rgba(255,255,255,.92), inset -1.5px -2px 3px rgba(91,50,174,.12), 0 2px 7px rgba(76,54,112,.14), 0 0 0 1px rgba(122,83,200,.16)";
-
-            // Explicitly logged tablets become a richer version of the same bubble,
-            // rather than switching to a flat solid fill.
-            if (loggedTaken && !isCurrent) {
-              if (isPlacebo) {
-                bubbleBackground =
-                  "radial-gradient(circle at 30% 24%, #FFEAF1 0%, #F4BFD2 42%, #E990B0 78%, #D96F98 100%)";
-                color = "#8F234B";
-                bubbleBorder = "rgba(255,255,255,.72)";
-                bubbleShadow =
-                  "inset 1.5px 1.5px 3px rgba(255,255,255,.78), inset -1.5px -2px 3px rgba(143,35,75,.16), 0 2px 8px rgba(110,54,78,.16), 0 0 0 1px rgba(185,46,96,.22)";
-              } else {
-                bubbleBackground =
-                  "radial-gradient(circle at 30% 24%, #EEE6FC 0%, #CFBDF0 42%, #AF91DF 78%, #9270D1 100%)";
-                color = "#47258D";
-                bubbleBorder = "rgba(255,255,255,.72)";
-                bubbleShadow =
-                  "inset 1.5px 1.5px 3px rgba(255,255,255,.78), inset -1.5px -2px 3px rgba(71,37,141,.16), 0 2px 8px rgba(73,50,113,.17), 0 0 0 1px rgba(91,50,174,.22)";
-              }
-            }
-
-            if (isCurrent) {
-              if (isPlacebo) {
-                bubbleBackground = loggedTaken
-                  ? "radial-gradient(circle at 30% 24%, #F7BFD2 0%, #E982A7 48%, #C94977 100%)"
-                  : "radial-gradient(circle at 30% 24%, #FFF4F8 0%, #F9D9E5 45%, #F0B8CD 100%)";
-                color = loggedTaken ? "#fff" : HAK_PINK_DARK;
-                bubbleBorder = "rgba(255,255,255,.88)";
-                bubbleShadow =
-                  `inset 1.5px 1.5px 3px rgba(255,255,255,.72), inset -1.5px -2px 3px rgba(143,35,75,.13), 0 0 0 3px ${HAK_CARD_BG}, 0 0 0 6px rgba(217,87,130,.30), 0 3px 10px rgba(110,54,78,.18)`;
-              } else {
-                bubbleBackground =
-                  "radial-gradient(circle at 30% 24%, #A98CE6 0%, #7D58C8 48%, #5B32AE 100%)";
-                color = "#fff";
-                bubbleBorder = "rgba(255,255,255,.88)";
-                bubbleShadow =
-                  `inset 1.5px 1.5px 3px rgba(255,255,255,.42), inset -1.5px -2px 3px rgba(57,28,112,.20), 0 0 0 3px ${HAK_CARD_BG}, 0 0 0 6px rgba(122,83,200,.30), 0 3px 10px rgba(73,50,113,.20)`;
-              }
-            }
-
-            if (missed) {
-              bubbleBorder = "#C94A55";
-              bubbleShadow =
-                "inset 1.5px 1.5px 3px rgba(255,255,255,.75), 0 0 0 2px rgba(201,74,85,.22), 0 2px 8px rgba(120,55,61,.16)";
-            }
-
-            return (
-              <button
-                key={day}
-                type="button"
-                onClick={() => {
-                  setSel(dateKey);
-                }}
-                className="absolute z-10 grid h-[38px] w-[38px] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[11px] font-bold transition active:scale-95"
-                style={{
-                  left: `${left}%`,
-                  top: `${top}%`,
-                  background: bubbleBackground,
-                  color,
-                  border: `1px solid ${bubbleBorder}`,
-                  boxShadow: bubbleShadow,
-                  textShadow: isCurrent
-                    ? "0 1px 1px rgba(50,30,80,.12)"
-                    : "0 1px 0 rgba(255,255,255,.45)",
-                }}
-                aria-label={`HAK day ${day}, ${fmtFullDate(dateKey)}${missed ? ", missed" : takenForStatus ? ", taken on schedule" : ""}`}
-              >
-                {day}
-              </button>
-            );
-          })}
-
-          {/* Current day status — kept clear of the top pill bubbles. */}
-          <div className="pointer-events-none absolute left-[25%] right-[25%] top-[20%] z-20 text-center">
-            <p className="text-[9px] font-semibold leading-none text-foreground">Day</p>
-            <p
-              className="mt-0.5 font-serif text-[clamp(1.85rem,7.5vw,2.45rem)] font-bold leading-none"
-              style={{ color: currentDay <= ACTIVE_DAYS ? HAK_PURPLE_DARK : HAK_PINK_DARK }}
-            >
-              {currentDay} / {PACK_DAYS}
-            </p>
-
-            {currentDay > ACTIVE_DAYS && (
-              <p
-                className="mt-1 text-[10px] font-semibold leading-none"
-                style={{ color: HAK_PINK_DARK }}
-              >
-                Placebo / break
-              </p>
-            )}
-          </div>
-
-          {/* Calendar — actual date stays large; HAK pill number stays as small Pxx. */}
-          <div className="pointer-events-none absolute left-[16.5%] right-[16.5%] top-[34.5%] z-20 text-center">
-            <p className="text-[14px] font-bold leading-none text-foreground">
-              {hakMonthLabel}
-            </p>
-
-            <div className="mt-1.5 grid grid-cols-7 text-center text-[7.5px] font-semibold leading-none text-foreground/75">
-              {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((weekday) => (
-                <span key={weekday}>{weekday}</span>
-              ))}
-            </div>
-
-            <div className="mt-1 grid grid-cols-7 gap-x-[2px] gap-y-[1px]">
-              {hakMonthCells.map((cell) => {
-                if (!cell.inMonth) {
-                  return <span key={cell.key} className="h-[20px]" aria-hidden="true" />;
-                }
-
-                const packDay = cell.packDay;
-                const loggedTaken = !!takenAt(cell.key);
-                const missed = missedAt(cell.key);
-                const isToday = cell.key === todayK;
-                const isPlacebo = packDay != null && packDay > ACTIVE_DAYS;
-                const isNewPack = packDay === 1;
-
-                const chipBg =
-                  packDay == null
-                    ? "transparent"
-                    : isPlacebo
-                      ? "rgba(239,154,184,.72)"
-                      : isNewPack
-                        ? "rgba(176,185,81,.72)"
-                        : "rgba(170,145,229,.72)";
-
-                const chipColor =
-                  packDay == null
-                    ? "transparent"
-                    : isPlacebo
-                      ? HAK_PINK_DARK
-                      : isNewPack
-                        ? HAK_GREEN_DARK
-                        : HAK_PURPLE_DARK;
-
-                return (
-                  <span
-                    key={cell.key}
-                    className="flex h-[20px] min-w-0 flex-col items-center justify-start"
-                    aria-label={
-                      packDay == null
-                        ? fmtFullDate(cell.key)
-                        : `${fmtFullDate(cell.key)}, HAK day ${packDay}${loggedTaken ? ", taken" : missed ? ", missed" : ""}`
-                    }
-                  >
-                    <span
-                      className="grid h-[10px] min-w-[16px] place-items-center rounded-full px-[1px] text-[8px] font-bold leading-none tabular-nums"
-                      style={{
-                        color: "var(--foreground)",
-                        boxShadow: isToday ? "0 0 0 1px rgba(65,76,18,.68)" : undefined,
-                      }}
-                    >
-                      {cell.date.getDate()}
-                    </span>
-
-                    {packDay != null && (
-                      <span
-                        className="mt-[1px] max-w-[30px] truncate rounded-[3px] px-[2px] py-[1px] text-[5.7px] font-bold leading-none tabular-nums"
-                        style={{
-                          backgroundColor: chipBg,
-                          color: chipColor,
-                        }}
-                      >
-                        P{packDay}{loggedTaken ? " ✓" : missed ? " ×" : ""}
-                      </span>
-                    )}
-                  </span>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Keep Current HAK pack exactly in the previous compact timeline style. */}
-      <div className="mt-4">
-        <h3 className="font-serif text-lg font-bold text-foreground">Current HAK pack</h3>
-        <div
-          className="mt-3 rounded-[1.75rem] px-4 py-4 ring-1"
-          style={{
-            backgroundColor: "rgba(255,255,255,.20)",
-            borderColor: "rgba(129,135,67,.16)",
-          }}
-        >
-          <div className="grid grid-cols-[1.35fr_1fr_.9fr] items-start gap-2 text-center">
-            <div>
-              <p className="text-[9px] font-bold leading-tight" style={{ color: HAK_PURPLE_DARK }}>Active HAK days</p>
-              <p className="mt-0.5 text-[9px] font-semibold leading-tight" style={{ color: HAK_PURPLE_DARK }}>1–{ACTIVE_DAYS}</p>
-            </div>
-            <div>
-              <p className="text-[9px] font-bold leading-tight" style={{ color: HAK_PINK_DARK }}>Placebo / break</p>
-              <p className="mt-0.5 text-[9px] font-semibold leading-tight" style={{ color: HAK_PINK_DARK }}>{ACTIVE_DAYS + 1}–{PACK_DAYS}</p>
-            </div>
-            <div>
-              <p className="text-[9px] font-bold leading-tight" style={{ color: HAK_GREEN_DARK }}>New cycle</p>
-              <p className="mt-0.5 text-[9px] font-semibold leading-tight" style={{ color: HAK_GREEN_DARK }}>Day 1</p>
-            </div>
-          </div>
-
-          <div className="relative mt-4 px-1 pb-8">
-            <div
-              className="rounded-full px-2 py-2 ring-1"
-              style={{
-                backgroundColor: "rgba(255,255,255,.30)",
-                borderColor: "rgba(129,135,67,.18)",
-              }}
-            >
-              <div
-                className="grid items-center gap-[2px]"
-                style={{ gridTemplateColumns: `repeat(${timelineItems.length}, minmax(0, 1fr))` }}
-              >
-                {timelineItems.map((item, index) => {
-                  const isCurrent = index === timelineCurrentIndex;
-                  const itemColor =
-                    item.kind === "active"
-                      ? HAK_PURPLE_DOT
-                      : item.kind === "placebo"
-                        ? HAK_PINK
-                        : item.kind === "next"
-                          ? HAK_GREEN
-                          : HAK_TRACK;
-
-                  return (
-                    <span
-                      key={`${item.kind}-${index}`}
-                      className="mx-auto block aspect-square w-full max-w-[10px] rounded-full"
-                      style={{
-                        backgroundColor: itemColor,
-                        boxShadow: isCurrent
-                          ? `0 0 0 3px ${HAK_CARD_BG}, 0 0 0 5px ${
-                              item.kind === "placebo" ? HAK_PINK_DARK : HAK_PURPLE_DARK
-                            }`
-                          : item.kind === "next"
-                            ? `0 0 0 2px ${HAK_GREEN_SOFT}`
-                            : undefined,
-                      }}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-
-            <div
-              className="absolute bottom-[22px] h-4 w-px"
-              style={{
-                left: `${timelineMarkerLeft}%`,
-                backgroundColor: currentDay <= ACTIVE_DAYS ? HAK_PURPLE : HAK_PINK,
-              }}
-            />
-            <p
-              className="absolute bottom-0 whitespace-nowrap text-[11px] font-bold"
-              style={{
-                left: `${timelineMarkerLeft}%`,
-                transform: "translateX(-50%)",
-                color: currentDay <= ACTIVE_DAYS ? HAK_PURPLE_DARK : HAK_PINK_DARK,
-              }}
-            >
-              Day {currentDay} / {PACK_DAYS}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Compact dose editor — only circular HAK wheel pills open this popup. */}
-      {sel && selectedDay != null && typeof document !== "undefined"
-        ? createPortal(
-            <div
-              className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30 p-5"
-              style={{
-                paddingTop: "max(1rem, env(safe-area-inset-top))",
-                paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
-              }}
-              onClick={() => setSel(null)}
-            >
-              <div
-                className="w-full max-w-[300px] rounded-[1.55rem] p-4 shadow-2xl ring-1"
-                style={{
-                  backgroundColor: popupSoft,
-                  borderColor: popupAccent,
-                  boxShadow: `0 18px 45px color-mix(in srgb, ${popupAccent} 22%, transparent)`,
-                }}
-                onClick={(event) => event.stopPropagation()}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p
-                      className="text-[10px] font-bold uppercase tracking-[0.14em]"
-                      style={{ color: popupAccent }}
-                    >
-                      HAK day {selectedDay}
-                    </p>
-                    <h3 className="mt-1 font-serif text-[1.05rem] font-bold leading-tight text-foreground">
-                      {fmtFullDate(sel)}
-                    </h3>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => setSel(null)}
-                    className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm font-bold ring-1"
-                    style={{
-                      backgroundColor: "rgba(255,255,255,.42)",
-                      borderColor: `color-mix(in srgb, ${popupAccent} 35%, transparent)`,
-                      color: popupAccent,
-                    }}
-                    aria-label="Close"
-                  >
-                    ×
-                  </button>
-                </div>
-
-                {selectedTaken ? (
-                  <div
-                    className="mt-4 flex min-h-12 items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold"
-                    style={{
-                      backgroundColor: "rgba(255,255,255,.38)",
-                      border: `1.5px solid ${popupAccent}`,
-                      color: popupAccent,
-                    }}
-                    aria-label="Tablet already taken"
-                  >
-                    <span
-                      className="grid h-6 w-6 place-items-center rounded-full text-xs font-black text-white"
-                      style={{ backgroundColor: popupAccent }}
-                    >
-                      ✓
-                    </span>
-                    Taken
-                  </div>
-                ) : (
-                  <>
-                    <div className="mt-4 grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          markTaken(sel, "");
-                          setSel(null);
-                        }}
-                        className="min-h-11 rounded-xl px-3 py-2.5 text-xs font-bold text-white shadow-sm"
-                        style={{ backgroundColor: popupAccent }}
-                      >
-                        Mark taken
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          markMissed(sel);
-                          setSel(null);
-                        }}
-                        className="min-h-11 rounded-xl bg-white/35 px-3 py-2.5 text-xs font-bold"
-                        style={{
-                          border: `1.5px solid ${popupAccent}`,
-                          color: popupAccent,
-                        }}
-                      >
-                        Mark missed
-                      </button>
-                    </div>
-
-                    {selectedMissed && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          clearRecord(sel);
-                          setSel(null);
-                        }}
-                        className="mt-2 min-h-9 w-full rounded-xl bg-white/30 px-3 py-2 text-[10px] font-semibold"
-                        style={{
-                          border: `1px solid color-mix(in srgb, ${popupAccent} 32%, transparent)`,
-                          color: popupAccent,
-                        }}
-                      >
-                        Clear missed status
-                      </button>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>,
-            document.body,
-          )
-        : null}
-
-    </section>
-  );
-}
-
 
 function VitalTile({
   emoji,
@@ -2233,6 +597,8 @@ function DayPreview({
   const takenList = scheduled.filter((x) => x.taken);
   const missedList = scheduled.filter((x) => !x.taken && (date < k || (date === k && x.time < nowHHMM)));
   const extraMeds = log?.extraMeds ?? [];
+  const temperatureEntries = dayVitalEntries(log, "temperatureEntries");
+  const weightEntries = dayVitalEntries(log, "weightEntries");
   const cycleTrackingHidden = isCycleTrackingHidden(data);
   const flowLabel = (level?: string | null): string => {
     switch (level) {
@@ -2264,6 +630,8 @@ function DayPreview({
         log.sex?.length ||
         log.heat?.length ||
         log.workout?.length ||
+        temperatureEntries.length ||
+        weightEntries.length ||
         log.temperature != null ||
         log.weight != null ||
         log.sleepHours != null ||
@@ -2480,7 +848,7 @@ function DayPreview({
         null}
 
       {log?.panic?.length ? (
-        <Card title="Panic episode" icon="🫯">
+        <Card title="Panic attacks" icon="🫯">
           <ul className="space-y-2">
             {log.panic.map((p) => (
               <li key={p.id} className="flex items-start gap-2">
@@ -2527,7 +895,7 @@ function DayPreview({
       ) : null}
 
       {log?.tetany?.length ? (
-        <Card title="Tetany episode" icon="⚡">
+        <Card title="Tetany" icon="⚡">
           <ul className="space-y-2 text-sm">
             {log.tetany.map((t) => (
               <li key={t.id} className="flex items-start gap-2">
@@ -2844,22 +1212,53 @@ function DayPreview({
         </Card>
       ) : null}
 
-      {(log?.temperature != null || log?.weight != null || log?.sleepHours != null || log?.sleepQuality) && (
+      {(temperatureEntries.length > 0 ||
+        weightEntries.length > 0 ||
+        log?.temperature != null ||
+        log?.weight != null ||
+        log?.sleepHours != null ||
+        asArr(log?.sleepQuality).length > 0) && (
         <Card title="Temp / Sleep / Weight" icon="🌡️">
           <button onClick={() => onEdit?.("temp", undefined)} className="w-full text-left">
-            {log?.temperature != null && <p className="text-sm">Temperature: {log.temperature}°C</p>}
-            {log?.weight != null && <p className="text-sm">Weight: {log.weight} kg</p>}
+            {temperatureEntries.length > 0 ? (
+              <div className="space-y-1">
+                {temperatureEntries.map((entry, index) => (
+                  <p key={entry.id || `temperature-${index}`} className="text-sm">
+                    {entry.time ? <span className="text-muted-foreground">{entry.time} · </span> : null}
+                    Temperature: {entry.value}°C
+                  </p>
+                ))}
+              </div>
+            ) : log?.temperature != null ? (
+              <p className="text-sm">Temperature: {log.temperature}°C</p>
+            ) : null}
+
+            {weightEntries.length > 0 ? (
+              <div className={temperatureEntries.length > 0 ? "mt-2 space-y-1" : "space-y-1"}>
+                {weightEntries.map((entry, index) => (
+                  <p key={entry.id || `weight-${index}`} className="text-sm">
+                    {entry.time ? <span className="text-muted-foreground">{entry.time} · </span> : null}
+                    Weight: {entry.value} kg
+                  </p>
+                ))}
+              </div>
+            ) : log?.weight != null ? (
+              <p className={temperatureEntries.length > 0 ? "mt-2 text-sm" : "text-sm"}>
+                Weight: {log.weight} kg
+              </p>
+            ) : null}
+
             {log?.sleepHours != null && (
-              <p className="text-sm">
+              <p className={temperatureEntries.length > 0 || weightEntries.length > 0 || log?.temperature != null || log?.weight != null ? "mt-2 text-sm" : "text-sm"}>
                 Sleep: {log.sleepHours} h <IcoText text={asArr(log.sleepQuality).join(", ")} size={14} />
               </p>
             )}
             {asArr(log?.sleepQuality).length > 0 && log?.sleepHours == null && (
-              <p className="text-sm">
+              <p className={temperatureEntries.length > 0 || weightEntries.length > 0 || log?.temperature != null || log?.weight != null ? "mt-2 text-sm" : "text-sm"}>
                 Sleep quality: <IcoText text={asArr(log.sleepQuality).join(", ")} size={14} />
               </p>
             )}
-            <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
+            <p className="mt-2 text-[10px] text-primary">Tap to edit</p>
           </button>
         </Card>
       )}
@@ -3000,7 +1399,7 @@ function ShareDayButton({ date, view }: { date: string; view: BixboData }) {
       lines.push("");
     }
     if (log.panic?.length) {
-      lines.push(`Panic episode — ${log.panic.length}`);
+      lines.push(`Panic attacks — ${log.panic.length}`);
       for (const p of log.panic)
         lines.push(
           `  • ${p.time} · ${p.intensity}/10 · ${p.minutes == null ? "ongoing" : `${p.minutes}min`}${p.trigger ? ` — ${p.trigger}` : ""}`,
@@ -3008,7 +1407,7 @@ function ShareDayButton({ date, view }: { date: string; view: BixboData }) {
       lines.push("");
     }
     if (log.tetany?.length) {
-      lines.push(`Tetany episode — ${log.tetany.length}`);
+      lines.push(`Tetany — ${log.tetany.length}`);
       for (const t of log.tetany)
         lines.push(
           `  • ${t.time} · ${t.types.join(", ")} · ${t.intensity}/5 · ${t.minutes == null ? "ongoing" : `${t.minutes}min`}`,
