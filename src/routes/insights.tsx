@@ -381,9 +381,9 @@ function InsightsPage() {
 
   return (
     <AppShell title="Health of Bixbo">
-      <div className="space-y-3 px-5 pt-2 pb-[calc(96px+env(safe-area-inset-bottom))] lg:grid lg:grid-cols-2 lg:items-start lg:gap-3 lg:space-y-0 lg:px-0 lg:pb-12 [&>*:first-child]:lg:col-span-2">
+      <div className="space-y-5 px-5 pt-3 pb-[calc(96px+env(safe-area-inset-bottom))] lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0 lg:px-0 lg:pb-12 [&>*:first-child]:lg:col-span-2">
         <div
-          className="mx-auto grid w-full max-w-[340px] grid-cols-3 gap-0.5 rounded-xl bg-primary/20 p-0.5 ring-1 ring-primary/15 lg:max-w-sm"
+          className="mx-auto grid w-full max-w-sm grid-cols-3 gap-1 rounded-2xl bg-primary/20 p-1 ring-1 ring-primary/15 lg:max-w-md"
           role="tablist"
           aria-label="Insights period"
         >
@@ -397,7 +397,7 @@ function InsightsPage() {
                 role="tab"
                 aria-selected={active}
                 onClick={() => setPeriod(p)}
-                className={`min-w-0 rounded-[10px] px-2 py-1.5 text-[11px] font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+                className={`min-w-0 rounded-xl px-2 py-2 text-xs font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
                   active
                     ? "bg-primary text-primary-foreground shadow-md"
                     : "text-foreground/80 hover:bg-surface/45 hover:text-foreground"
@@ -412,18 +412,18 @@ function InsightsPage() {
             <div className="flex items-center justify-between">
               <button
                 onClick={goPrev}
-                className="grid h-7 w-7 place-items-center rounded-full transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="grid h-8 w-8 place-items-center rounded-full transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 aria-label="Previous period"
               >
-                <ChevronLeft className="h-3 w-3" />
+                <ChevronLeft className="h-3.5 w-3.5" />
               </button>
-              <span className="text-[11px] font-medium leading-none">{label}</span>
+              <span className="text-xs font-medium">{label}</span>
               <button
                 onClick={goNext}
-                className="grid h-7 w-7 place-items-center rounded-full transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="grid h-8 w-8 place-items-center rounded-full transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 aria-label="Next period"
               >
-                <ChevronRight className="h-3 w-3" />
+                <ChevronRight className="h-3.5 w-3.5" />
               </button>
             </div>
 
@@ -590,7 +590,7 @@ function MedsAdherence({
     return {
       start,
       end,
-      label: `1 Jan – 31 Dec ${base.getFullYear()}`,
+      label: String(base.getFullYear()),
       title: "Year",
     };
   }, [anchor, period]);
@@ -1090,7 +1090,7 @@ function InsightBarChartFrame({
 
   return (
     <div className="mt-4">
-      <div className="flex gap-1">
+      <div className="flex gap-1.5">
         <div className="flex flex-col items-end pr-1" style={{ height }}>
           <div className="flex h-full flex-col justify-between text-[10px] font-medium text-muted-foreground">
             {yLabels.map((value) => (
@@ -1514,7 +1514,9 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
         const typeZero = type === 0;
 
         return {
+          // Type 0 uses exactly the same rainbow treatment as the Bristol gauge.
           color: typeZero ? BRISTOL_MYSTERY_COLOR : bristol?.color ?? INSIGHT_COLORS.sage,
+          // SVG tooltip borders cannot use a CSS gradient, so keep a solid fallback only for the border/dot.
           tooltipColor: typeZero ? "#8B5CF6" : bristol?.color ?? INSIGHT_COLORS.sage,
           value: `Type ${type}`,
           popupValue: `Bowel · Type ${type}`,
@@ -1603,6 +1605,7 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
 
     for (let month = 0; month < 12; month++) {
       const daysInMonth = new Date(year, month + 1, 0).getDate();
+
       for (let day = 1; day <= daysInMonth; day++) {
         const key = toKey(new Date(year, month, day));
         result[key] = datumFor(key, metric);
@@ -1612,62 +1615,65 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
     return result;
   }, [datumFor, metric, year]);
 
-  // On a phone, 53 weekly columns cannot be both large enough to read and fit in one row.
-  // Split the same full-year heatmap into two stacked half-year strips so every daily dot
-  // stays visible while all Jan–Dec data remains on the same Year screen.
-  const halfYearGrids = useMemo(() => {
-    const makeHalf = (startMonth: number, endMonth: number) => {
-      const periodStart = new Date(year, startMonth, 1);
-      periodStart.setHours(0, 0, 0, 0);
-      const periodEnd = new Date(year, endMonth + 1, 0);
-      periodEnd.setHours(0, 0, 0, 0);
+  const yearGrid = useMemo(() => {
+    const first = new Date(year, 0, 1);
+    first.setHours(0, 0, 0, 0);
+    first.setDate(first.getDate() - ((first.getDay() + 6) % 7));
 
-      const first = new Date(periodStart);
-      first.setDate(first.getDate() - ((first.getDay() + 6) % 7));
+    const last = new Date(year, 11, 31);
+    last.setHours(0, 0, 0, 0);
+    last.setDate(last.getDate() + (6 - ((last.getDay() + 6) % 7)));
 
-      const last = new Date(periodEnd);
-      last.setDate(last.getDate() + (6 - ((last.getDay() + 6) % 7)));
+    const utcDay = (date: Date) => Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+    const weekCount = Math.round((utcDay(last) - utcDay(first)) / 86400000 / 7) + 1;
 
-      const utcDay = (date: Date) => Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
-      const weekCount = Math.round((utcDay(last) - utcDay(first)) / 86400000 / 7) + 1;
+    const weeks = Array.from({ length: weekCount }, (_, weekIndex) =>
+      Array.from({ length: 7 }, (_, weekdayIndex) => {
+        const date = new Date(first);
+        date.setDate(first.getDate() + weekIndex * 7 + weekdayIndex);
+        return date;
+      }),
+    );
 
-      const weeks = Array.from({ length: weekCount }, (_, weekIndex) =>
-        Array.from({ length: 7 }, (_, weekdayIndex) => {
-          const date = new Date(first);
-          date.setDate(first.getDate() + weekIndex * 7 + weekdayIndex);
-          return date;
-        }),
-      );
+    const months = MON_SHORT3.map((label, monthIndex) => {
+      const monthStart = new Date(year, monthIndex, 1);
+      const weekIndex = Math.floor((utcDay(monthStart) - utcDay(first)) / 86400000 / 7);
+      return { label, weekIndex };
+    });
 
-      const months = Array.from({ length: endMonth - startMonth + 1 }, (_, offset) => {
-        const monthIndex = startMonth + offset;
-        const monthStart = new Date(year, monthIndex, 1);
-        const weekIndex = Math.floor((utcDay(monthStart) - utcDay(first)) / 86400000 / 7);
-        return { label: MON_SHORT3[monthIndex], weekIndex, monthIndex };
-      });
-
-      return { startMonth, endMonth, weeks, months, weekCount };
-    };
-
-    return [makeHalf(0, 5), makeHalf(6, 11)];
+    return { weeks, months, weekCount };
   }, [year]);
 
   const activeMetricLabel = HEATMAP_OPTIONS.find((option) => option.id === metric)?.label ?? "Heatmap";
   const activeDatum = active ? heatmapData[active] ?? null : null;
 
+  // Add a clear visual break before the first week that contains each new month.
+  // The heatmap still follows real calendar weeks; the extra gap + divider only
+  // improves readability and does not change date placement or calculations.
+  const monthBoundaryWeeks = useMemo(
+    () =>
+      Array.from(new Set<number>(yearGrid.months.map(({ weekIndex }) => Number(weekIndex)))).filter(
+        (weekIndex) => weekIndex > 0,
+      ),
+    [yearGrid.months],
+  );
+  const monthBoundaryWeekSet = useMemo(() => new Set(monthBoundaryWeeks), [monthBoundaryWeeks]);
+  const monthGapPx = 10;
+  const weekStepPx = 22;
+  const monthGapBeforeOrAtWeek = (weekIndex: number) =>
+    monthBoundaryWeeks.reduce((count, boundaryWeek) => count + (boundaryWeek <= weekIndex ? 1 : 0), 0) * monthGapPx;
+  const heatmapGridWidth = yearGrid.weekCount * weekStepPx + monthBoundaryWeeks.length * monthGapPx;
+
   const activePosition = useMemo(() => {
     if (!active) return null;
 
-    for (let halfIndex = 0; halfIndex < halfYearGrids.length; halfIndex++) {
-      const half = halfYearGrids[halfIndex];
-      for (let weekIndex = 0; weekIndex < half.weeks.length; weekIndex++) {
-        const weekdayIndex = half.weeks[weekIndex].findIndex((date) => toKey(date) === active);
-        if (weekdayIndex >= 0) return { halfIndex, weekIndex, weekdayIndex };
-      }
+    for (let weekIndex = 0; weekIndex < yearGrid.weeks.length; weekIndex++) {
+      const weekdayIndex = yearGrid.weeks[weekIndex].findIndex((date) => toKey(date) === active);
+      if (weekdayIndex >= 0) return { weekIndex, weekdayIndex };
     }
 
     return null;
-  }, [active, halfYearGrids]);
+  }, [active, yearGrid.weeks]);
 
   const activeTooltip = useMemo<InsightTooltipDetails | null>(() => {
     if (!active || !activeDatum) return null;
@@ -1692,11 +1698,14 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
   const activeTooltipLayout = useMemo(() => {
     if (!activePosition) return null;
 
-    const rowStep = 17;
-    const gridTop = 24;
-    const dotCenterOffset = 4.5;
+    // Keep the popup floating over the heatmap instead of pushing the entire grid down.
+    // The rows are intentionally spaced farther apart vertically so the year graph is taller
+    // without making it any wider than the current desktop/mobile layout.
+    const rowStep = 40;
+    const gridTop = 28;
+    const dotCenterOffset = 9;
     const tooltipTotalHeight = 70;
-    const connectorGap = 5;
+    const connectorGap = 6;
     const selectedCenterY = gridTop + dotCenterOffset + activePosition.weekdayIndex * rowStep;
     const showBelow = activePosition.weekdayIndex <= 2;
 
@@ -1749,13 +1758,13 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
         Choose a metric, then tap a coloured day for its saved average/details.
       </p>
 
-      <div className="mt-2.5 flex gap-1 overflow-x-auto pb-0.5">
+      <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1">
         {HEATMAP_OPTIONS.map((option) => (
           <button
             key={option.id}
             type="button"
             onClick={() => setMetric(option.id)}
-            className={`shrink-0 rounded-full px-2.5 py-1 text-[9px] font-semibold transition ${
+            className={`shrink-0 rounded-full px-3 py-1.5 text-[10px] font-semibold transition ${
               metric === option.id
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "bg-tint text-muted-foreground ring-1 ring-border/60"
@@ -1766,300 +1775,13 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
         ))}
       </div>
 
-      <div className="mt-3 -mx-3 rounded-[1.5rem] bg-background/55 px-2.5 py-3 ring-1 ring-border/60 sm:mx-0 sm:p-3">
-        <div className="space-y-4">
-          {halfYearGrids.map((half, halfIndex) => {
-            const boundaryWeeks = new Set(
-              half.months.map(({ weekIndex }) => weekIndex).filter((weekIndex) => weekIndex > 0),
-            );
-            const hasActive = activePosition?.halfIndex === halfIndex;
-
-            return (
-              <div key={`${half.startMonth}-${half.endMonth}`} className="relative min-w-0 overflow-visible">
-                {hasActive && activeTooltip && activePosition && activeTooltipLayout ? (
-                  <InsightFloatingTooltip
-                    leftPct={10 + ((activePosition.weekIndex + 0.5) / Math.max(1, half.weekCount)) * 88}
-                    details={activeTooltip}
-                    top={activeTooltipLayout.top}
-                    connectorSide={activeTooltipLayout.connectorSide}
-                  />
-                ) : null}
-
-                <div className="flex gap-2">
-                  <div className="w-[28px] shrink-0 pt-[24px]">
-                    {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((weekday) => (
-                      <div
-                        key={weekday}
-                        className="flex h-[17px] items-center text-[8.5px] font-medium text-muted-foreground"
-                      >
-                        {weekday}
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <div className="relative mb-1.5 h-[18px]" aria-hidden="true">
-                      {half.months.map(({ label, weekIndex }) => (
-                        <span
-                          key={label}
-                          className="absolute top-0 -translate-x-1/2 whitespace-nowrap text-[9px] font-semibold text-foreground/80"
-                          style={{ left: `${((weekIndex + 0.5) / Math.max(1, half.weekCount)) * 100}%` }}
-                        >
-                          {label}
-                        </span>
-                      ))}
-                    </div>
-
-                    <div
-                      className="grid w-full"
-                      style={{
-                        gridTemplateColumns: `repeat(${half.weekCount}, 9px)`,
-                        columnGap: "1px",
-                        justifyContent: "space-between",
-                      }}
-                    >
-                      {half.weeks.map((week, weekIndex) => {
-                        const isMonthBoundary = boundaryWeeks.has(weekIndex);
-
-                        return (
-                          <div key={weekIndex} className="relative grid shrink-0 grid-rows-7 gap-y-[8px]">
-                            {isMonthBoundary ? (
-                              <span
-                                aria-hidden="true"
-                                className="pointer-events-none absolute -left-[2px] inset-y-[-3px] w-px rounded-full bg-primary/30"
-                              />
-                            ) : null}
-
-                            {week.map((date) => {
-                              const inHalf =
-                                date.getFullYear() === year &&
-                                date.getMonth() >= half.startMonth &&
-                                date.getMonth() <= half.endMonth;
-
-                              if (!inHalf) {
-                                return (
-                                  <span
-                                    key={date.toISOString()}
-                                    className="h-[9px] w-[9px] rounded-full bg-transparent"
-                                  />
-                                );
-                              }
-
-                              const key = toKey(date);
-                              const datum = heatmapData[key] ?? null;
-                              const isActive = active === key;
-
-                              return (
-                                <button
-                                  key={key}
-                                  type="button"
-                                  disabled={!datum}
-                                  onClick={(event) => {
-                                    if (!datum) return;
-                                    event.stopPropagation();
-                                    setActive((current) => (current === key ? null : key));
-                                  }}
-                                  aria-label={`${fmtTapDay(key)} · ${activeMetricLabel}${
-                                    datum ? ` · ${datum.value}` : " · no data"
-                                  }`}
-                                  aria-pressed={isActive}
-                                  className={`h-[9px] w-[9px] rounded-full transition-transform ${
-                                    datum ? "touch-manipulation active:scale-125" : "cursor-default"
-                                  } ${isActive ? "ring-2 ring-foreground ring-offset-1 ring-offset-background" : ""}`}
-                                  style={{ background: datum?.color ?? "var(--tint)" }}
-                                />
-                              );
-                            })}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5 text-[8.5px] text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <span className="h-3 w-3 rounded-full bg-tint" />
-            No data
-          </span>
-
-          {legend.map(([label, color]) => (
-            <span key={label} className="flex items-center gap-1">
-              <span className="h-3 w-3 rounded-full" style={{ background: color }} />
-              {label}
-            </span>
-          ))}
-        </div>
-
-        {activeTooltip ? (
-          <button
-            type="button"
-            onClick={() => setActive(null)}
-            className="mt-3 flex w-full items-center justify-between gap-3 rounded-2xl bg-primary/15 px-3 py-2.5 text-left ring-1 ring-primary/10"
-          >
-            <span className="min-w-0 truncate text-[10px] font-medium text-foreground">
-              {activeTooltip.summary}
-            </span>
-            <span className="shrink-0 text-[9px] text-muted-foreground">Tap to close</span>
-          </button>
-        ) : (
-          <p className="mt-2.5 text-center text-[9px] text-muted-foreground">
-            Tap any coloured day for details.
-          </p>
-        )}
-      </div>
-    </ChartCard>
-  );
-}
-
-
-function TimeOfDayPatternChart({
-  data,
-  days,
-  period,
-}: {
-  data: ReturnType<typeof useBixbo>["data"];
-  days: string[];
-  period: Period;
-}) {
-  const [active, setActive] = useState<string | null>(null);
-  useDismissTapTooltip(() => setActive(null));
-
-  const tetanyBlocks = [0, 0, 0, 0];
-  const panicBlocks = [0, 0, 0, 0];
-  days.forEach((k) => {
-    data.dayLogs[k]?.tetany?.forEach((t) => {
-      const b = timeBlockOf(t.time);
-      if (b != null) tetanyBlocks[b]++;
-    });
-    data.dayLogs[k]?.panic?.forEach((p) => {
-      const b = timeBlockOf(p.time);
-      if (b != null) panicBlocks[b]++;
-    });
-  });
-  const tetanyTotal = tetanyBlocks.reduce((a, b) => a + b, 0);
-  const panicTotal = panicBlocks.reduce((a, b) => a + b, 0);
-  const max = Math.max(1, ...tetanyBlocks, ...panicBlocks);
-
-  const sentence = (() => {
-    if (!tetanyTotal && !panicTotal) return null;
-    const topOf = (blocks: number[], total: number) => {
-      if (!total) return null;
-      let best = 0;
-      for (let i = 1; i < 4; i++) if (blocks[i] > blocks[best]) best = i;
-      return { i: best, pct: Math.round((blocks[best] / total) * 100) };
-    };
-    const t = topOf(tetanyBlocks, tetanyTotal);
-    const p = topOf(panicBlocks, panicTotal);
-    if (t && p) {
-      return `Tetany occurs most often in the ${TIME_BLOCK_SHORT[t.i].toLowerCase()} (${TIME_BLOCK_LABELS[t.i].split(" ")[1]}, ${t.pct}% of cases), while panic attacks peak in the ${TIME_BLOCK_SHORT[p.i].toLowerCase()} (${TIME_BLOCK_LABELS[p.i].split(" ")[1]}, ${p.pct}% of cases).`;
-    }
-    if (t)
-      return `Tetany occurs most often in the ${TIME_BLOCK_SHORT[t.i].toLowerCase()} (${TIME_BLOCK_LABELS[t.i].split(" ")[1]}, ${t.pct}% of cases).`;
-    if (p)
-      return `Panic attacks occur most often in the ${TIME_BLOCK_SHORT[p.i].toLowerCase()} (${TIME_BLOCK_LABELS[p.i].split(" ")[1]}, ${p.pct}% of cases).`;
-    return null;
-  })();
-
-  return (
-    <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
-      <p className="text-xs uppercase tracking-wider text-muted-foreground">Time of Day Pattern</p>
-      {!tetanyTotal && !panicTotal ? (
-        <p className="mt-2 text-sm text-muted-foreground">Not enough data yet</p>
-      ) : (
-        <>
-          <div className="mt-2 flex gap-4 text-[10px]">
-            <span className="flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full" style={{ background: TETANY_COLOR }} /> Tetany ({tetanyTotal})
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full" style={{ background: PANIC_COLOR }} /> Panic ({panicTotal})
-            </span>
-          </div>
-          <div
-            className={`relative mt-4 grid grid-cols-4 items-end gap-3 transition-[padding,height] ${
-              active ? "pt-20" : ""
-            }`}
-            style={{ height: active ? 168 : 110 }}
-          >
-            {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="flex h-full items-end justify-center gap-1">
-                <div className="flex flex-col items-center justify-end" style={{ height: "100%" }}>
-                  {tetanyBlocks[i] > 0 && (
-                    <span className="mb-0.5 text-[10px] tabular-nums text-muted-foreground">{tetanyBlocks[i]}</span>
-                  )}
-                  <button
-                    type="button"
-                    aria-label={`${TIME_BLOCK_LABELS[i]}. Tetany ${tetanyBlocks[i]} times`}
-                    aria-pressed={active === `t${i}`}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      setActive((current) => (current === `t${i}` ? null : `t${i}`));
-                    }}
-                    className={`w-4 rounded-t focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                      active === `t${i}` ? "ring-2 ring-foreground/70" : ""
-                    }`}
-                    style={{
-                      height: `${Math.max(4, (tetanyBlocks[i] / max) * 100)}%`,
-                      background: TETANY_COLOR,
-                    }}
-                  />
-                </div>
-                <div className="flex flex-col items-center justify-end" style={{ height: "100%" }}>
-                  {panicBlocks[i] > 0 && (
-                    <span className="mb-0.5 text-[10px] tabular-nums text-muted-foreground">{panicBlocks[i]}</span>
-                  )}
-                  <button
-                    type="button"
-                    aria-label={`${TIME_BLOCK_LABELS[i]}. Panic ${panicBlocks[i]} times`}
-                    aria-pressed={active === `p${i}`}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      setActive((current) => (current === `p${i}` ? null : `p${i}`));
-                    }}
-                    className={`w-4 rounded-t focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                      active === `p${i}` ? "ring-2 ring-foreground/70" : ""
-                    }`}
-                    style={{
-                      height: `${Math.max(4, (panicBlocks[i] / max) * 100)}%`,
-                      background: PANIC_COLOR,
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-            {active &&
-              (() => {
-                const isTetany = active[0] === "t";
-                const i = Number(active.slice(1));
-                const count = isTetany ? tetanyBlocks[i] : panicBlocks[i];
-                const total = isTetany ? tetanyTotal : panicTotal;
-                const percentage = total ? Math.round((count / total) * 100) : 0;
-                const color = isTetany ? TETANY_COLOR : PANIC_COLOR;
-                const details: InsightTooltipDetails = {
-                  owner: "You",
-                  heading: TIME_BLOCK_LABELS[i],
-                  value: `${isTetany ? "Tetany" : "Panic"} ${count}×`,
-                  description: `${percentage}% of entries in the selected period`,
-                  color,
-                  summary: `${TIME_BLOCK_LABELS[i]} · ${isTetany ? "Tetany" : "Panic"} ${count}× · ${percentage}%`,
-                };
-
-                return <InsightFloatingTooltip leftPct={(i + 0.5) * 25} details={details} />;
-              })()}
-          </div>
-          <div className="mt-1 grid grid-cols-4 gap-3 text-center text-[8px] text-muted-foreground">
-            {TIME_BLOCK_SHORT.map((l) => (
-              <span key={l}>{l}</span>
-            ))}
-          </div>
-          {sentence && <p className="mt-3 text-sm text-muted-foreground">{sentence}</p>}
-        </>
-      )}
-    </section>
-  );
-}
+      <div className="mt-4 -mx-2 rounded-[1.5rem] bg-background/55 p-3 ring-1 ring-border/60 sm:mx-0 sm:p-4">
+        <div className="min-w-0 overflow-x-auto overscroll-x-contain pb-1 touch-pan-x">
+          <div className="relative w-max pr-1">
+            {activeTooltip && activePosition && activeTooltipLayout ? (
+              <InsightFloatingTooltip
+                leftPct={
+                  ((36 +
+                    activePosition.weekIndex * weekStepPx +
+                    monthGapBeforeOrAtWeek(activePosition.weekIndex) +
+                    9) /
