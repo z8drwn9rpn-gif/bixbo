@@ -1394,8 +1394,18 @@ function BirthControlOverlay({
     const body = document.body;
     const html = document.documentElement;
     const previousOverflow = body.style.overflow;
-    const previousBodyBg = body.style.backgroundColor;
-    const previousHtmlBg = html.style.backgroundColor;
+
+    // Save the complete inline background state. BIXBO's global light theme uses
+    // a green background gradient, so changing only backgroundColor is not enough:
+    // the old green background-image can remain visible in the iOS safe-area/status bar.
+    const previousBodyBackground = body.style.getPropertyValue("background");
+    const previousBodyBackgroundPriority = body.style.getPropertyPriority("background");
+    const previousHtmlBackground = html.style.getPropertyValue("background");
+    const previousHtmlBackgroundPriority = html.style.getPropertyPriority("background");
+    const previousBodyThemeBackground = body.style.getPropertyValue("--background");
+    const previousBodyThemeBackgroundPriority = body.style.getPropertyPriority("--background");
+    const previousHtmlThemeBackground = html.style.getPropertyValue("--background");
+    const previousHtmlThemeBackgroundPriority = html.style.getPropertyPriority("--background");
 
     let themeMeta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
     const createdThemeMeta = !themeMeta;
@@ -1407,14 +1417,40 @@ function BirthControlOverlay({
     const previousThemeColor = themeMeta.content;
 
     body.style.overflow = "hidden";
-    body.style.backgroundColor = "#E7DCF5";
-    html.style.backgroundColor = "#E7DCF5";
+
+    // Force the full document canvas — including the iOS safe area — to the same
+    // lavender as Birth Control. Using the background shorthand also removes the
+    // global olive gradient while this overlay is open.
+    body.style.setProperty("--background", "#E7DCF5", "important");
+    html.style.setProperty("--background", "#E7DCF5", "important");
+    body.style.setProperty("background", "#E7DCF5", "important");
+    html.style.setProperty("background", "#E7DCF5", "important");
     themeMeta.content = "#E7DCF5";
 
     return () => {
       body.style.overflow = previousOverflow;
-      body.style.backgroundColor = previousBodyBg;
-      html.style.backgroundColor = previousHtmlBg;
+
+      if (previousBodyBackground) {
+        body.style.setProperty("background", previousBodyBackground, previousBodyBackgroundPriority);
+      } else {
+        body.style.removeProperty("background");
+      }
+      if (previousHtmlBackground) {
+        html.style.setProperty("background", previousHtmlBackground, previousHtmlBackgroundPriority);
+      } else {
+        html.style.removeProperty("background");
+      }
+
+      if (previousBodyThemeBackground) {
+        body.style.setProperty("--background", previousBodyThemeBackground, previousBodyThemeBackgroundPriority);
+      } else {
+        body.style.removeProperty("--background");
+      }
+      if (previousHtmlThemeBackground) {
+        html.style.setProperty("--background", previousHtmlThemeBackground, previousHtmlThemeBackgroundPriority);
+      } else {
+        html.style.removeProperty("--background");
+      }
 
       if (createdThemeMeta) {
         themeMeta?.remove();
@@ -1491,6 +1527,14 @@ function BirthControlOverlay({
         backgroundColor: "#E7DCF5",
       }}
     >
+      {/* Explicit iOS safe-area backdrop. The document background is also forced
+          purple above, so no olive strip can bleed through behind the status bar. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-x-0 top-0 z-[905] bg-[#E7DCF5]"
+        style={{ height: "max(env(safe-area-inset-top), 1px)" }}
+      />
+
       <div className="relative z-[910] shrink-0 border-b border-border/70 bg-background px-4 pb-2 pt-[max(.65rem,env(safe-area-inset-top))]">
         <div className="mx-auto flex w-full max-w-xl items-center justify-between gap-2">
           <button
