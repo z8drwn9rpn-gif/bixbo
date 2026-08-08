@@ -1030,7 +1030,7 @@ function PainWizard({
 
   return (
     <div
-      className="flex min-h-full flex-col px-5 py-4 transition-colors touch-pan-y"
+      className="flex min-h-full flex-col px-5 pb-4 pt-0 transition-colors touch-pan-y"
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
