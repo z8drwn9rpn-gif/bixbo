@@ -278,7 +278,7 @@ export function LogSheet({
             </SheetHeader>
             <div
               key={`${active}-${openToken}-${(edit as { id?: string } | undefined)?.id ?? initialPain?.id ?? "new"}`}
-              className={`min-h-0 flex-1 overflow-y-auto pt-[60px] ${active === "pain" ? "" : "px-5 pb-4"}`}
+              className={`min-h-0 flex-1 overflow-y-auto ${active === "pain" ? "pt-[60px]" : "pt-[48px] px-5 pb-4"}`}
             >
               {active === "postpartum" && (
                 <PostpartumSymptomsForm date={date} data={data} update={update} onDone={close} />
@@ -417,15 +417,15 @@ function Chip({
 function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave: () => void; disabled?: boolean }) {
   return (
     <SheetFooter
-      className="fixed inset-x-0 z-30 h-[60px] flex-row items-center justify-between gap-3 border-b border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur"
+      className="fixed inset-x-0 z-30 h-[48px] flex-row items-center justify-between gap-2 border-b border-border/50 bg-background/95 px-5 py-1.5 shadow-sm backdrop-blur"
       style={{ top: "calc(env(safe-area-inset-top) + 56px)" }}
     >
       <button
         type="button"
         onClick={onCancel}
-        className="flex min-w-[68px] items-center gap-1 text-sm font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="flex min-w-[58px] items-center gap-1 text-[13px] font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        <span aria-hidden="true" className="text-base leading-none">←</span>
+        <span aria-hidden="true" className="text-sm leading-none">←</span>
         <span>Back</span>
       </button>
 
@@ -435,10 +435,10 @@ function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave:
         type="button"
         onClick={onSave}
         disabled={disabled}
-        className="inline-flex h-10 min-w-[78px] items-center justify-center gap-1.5 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        className="inline-flex h-9 min-w-[72px] items-center justify-center gap-1 rounded-full bg-primary px-3.5 text-[13px] font-semibold text-primary-foreground shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
         <span>Save</span>
-        <span aria-hidden="true" className="text-base leading-none">✓</span>
+        <span aria-hidden="true" className="text-sm leading-none">✓</span>
       </button>
     </SheetFooter>
   );
