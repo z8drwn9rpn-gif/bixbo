@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createPortal } from "react-dom";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { CHART_COLORS } from "@/components/ui/chart";
@@ -385,7 +385,7 @@ function InsightsPage() {
     <AppShell title="Health of Bixbo">
       <div className="space-y-5 px-5 pt-3 pb-[calc(96px+env(safe-area-inset-bottom))] lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0 lg:px-0 lg:pb-12 [&>*:first-child]:lg:col-span-2">
         <div
-          className="grid grid-cols-3 gap-1 rounded-[2rem] bg-primary/20 p-1.5 ring-1 ring-primary/15"
+          className="mx-auto grid w-full max-w-sm grid-cols-3 gap-1 rounded-2xl bg-primary/20 p-1 ring-1 ring-primary/15 lg:max-w-md"
           role="tablist"
           aria-label="Insights period"
         >
@@ -399,7 +399,7 @@ function InsightsPage() {
                 role="tab"
                 aria-selected={active}
                 onClick={() => setPeriod(p)}
-                className={`min-w-0 rounded-[1.65rem] px-2 py-3 text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+                className={`min-w-0 rounded-xl px-2 py-2 text-xs font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
                   active
                     ? "bg-primary text-primary-foreground shadow-md"
                     : "text-foreground/80 hover:bg-surface/45 hover:text-foreground"
@@ -428,6 +428,8 @@ function InsightsPage() {
                 <ChevronRight className="h-3.5 w-3.5" />
               </button>
             </div>
+
+            {period === "Y" && <YearHealthHeatmap data={view} anchor={anchor} />}
 
             <section
               className="rounded-3xl p-5 ring-1"
@@ -516,8 +518,6 @@ function InsightsPage() {
               )}
             </section>
 
-
-            {period === "Y" && <YearHealthHeatmap data={view} anchor={anchor} />}
 
             <TimeOfDayPatternChart data={view} days={days} period={period} />
 
@@ -1620,6 +1620,78 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
     return result;
   }, [datumFor, metric, year]);
 
+  const yearGrid = useMemo(() => {
+    const first = new Date(year, 0, 1);
+    first.setHours(0, 0, 0, 0);
+    first.setDate(first.getDate() - ((first.getDay() + 6) % 7));
+
+    const last = new Date(year, 11, 31);
+    last.setHours(0, 0, 0, 0);
+    last.setDate(last.getDate() + (6 - ((last.getDay() + 6) % 7)));
+
+    const utcDay = (date: Date) => Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+    const weekCount = Math.round((utcDay(last) - utcDay(first)) / 86400000 / 7) + 1;
+
+    const weeks = Array.from({ length: weekCount }, (_, weekIndex) =>
+      Array.from({ length: 7 }, (_, weekdayIndex) => {
+        const date = new Date(first);
+        date.setDate(first.getDate() + weekIndex * 7 + weekdayIndex);
+        return date;
+      }),
+    );
+
+    const months = MON_SHORT3.map((label, monthIndex) => {
+      const monthStart = new Date(year, monthIndex, 1);
+      const weekIndex = Math.floor((utcDay(monthStart) - utcDay(first)) / 86400000 / 7);
+      return { label, weekIndex };
+    });
+
+    return { weeks, months, weekCount };
+  }, [year]);
+
+  const painYearSummary = useMemo(() => {
+    if (metric !== "pain") return null;
+
+    const counts = {
+      low: 0,
+      mild: 0,
+      moderate: 0,
+      high: 0,
+      severe: 0,
+      noData: 0,
+    };
+
+    for (let month = 0; month < 12; month++) {
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      for (let day = 1; day <= daysInMonth; day++) {
+        const key = toKey(new Date(year, month, day));
+        const value = avgDayPain(data.dayLogs[key]);
+        if (value == null) {
+          counts.noData++;
+        } else if (value <= 2) {
+          counts.low++;
+        } else if (value <= 4) {
+          counts.mild++;
+        } else if (value <= 6) {
+          counts.moderate++;
+        } else if (value <= 8) {
+          counts.high++;
+        } else {
+          counts.severe++;
+        }
+      }
+    }
+
+    return [
+      { label: "Low", count: counts.low, color: vividPainChartColor(1) },
+      { label: "Mild", count: counts.mild, color: vividPainChartColor(3) },
+      { label: "Moderate", count: counts.moderate, color: vividPainChartColor(5) },
+      { label: "High", count: counts.high, color: vividPainChartColor(8) },
+      { label: "Severe", count: counts.severe, color: vividPainChartColor(10) },
+      { label: "No data", count: counts.noData, color: "var(--tint)" },
+    ];
+  }, [data.dayLogs, metric, year]);
+
   const activeDatum = active ? heatmapData[active] ?? null : null;
   const activeMetricLabel = HEATMAP_OPTIONS.find((option) => option.id === metric)?.label ?? "Heatmap";
   const activeDayNotes = active ? dayNotesFor(active) : [];
@@ -1689,77 +1761,107 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
         ))}
       </div>
 
-      <div className="mt-4 overflow-x-auto overscroll-x-contain pb-2 touch-auto">
-        <div
-          className="grid w-max items-center gap-1"
-          style={{ gridTemplateColumns: "30px repeat(12, 24px)" }}
-        >
-          <div />
-          {MON_SHORT3.map((month) => (
-            <div key={month} className="text-center text-[9px] font-semibold text-muted-foreground">
-              {month.slice(0, 1)}
-            </div>
-          ))}
-
-          {Array.from({ length: 31 }, (_, dayIndex) => dayIndex + 1).flatMap((day) => {
-            const row: ReactNode[] = [
-              <div key={`day-${day}`} className="pr-1 text-right text-[10px] tabular-nums text-muted-foreground">
-                {day}
-              </div>,
-            ];
-
-            for (let month = 0; month < 12; month++) {
-              const date = new Date(year, month, day);
-              const valid = date.getFullYear() === year && date.getMonth() === month && date.getDate() === day;
-
-              if (!valid) {
-                row.push(<div key={`${month}-${day}`} className="h-6 w-6 rounded-[6px] bg-transparent" />);
-                continue;
-              }
-
-              const key = toKey(date);
-              const datum = heatmapData[key] ?? null;
-              const isActive = active === key;
-
-              row.push(
-                <button
-                  key={key}
-                  type="button"
-                  disabled={!datum}
-                  onClick={() => {
-                    if (!datum) return;
-                    setActive((current) => (current === key ? null : key));
-                  }}
-                  aria-label={`${fmtTapDay(key)} · ${activeMetricLabel}${datum ? ` · ${datum.value}` : " · no data"}`}
-                  aria-pressed={isActive}
-                  className={`h-6 w-6 rounded-[6px] transition-transform ${
-                    datum ? "touch-auto active:scale-95" : "cursor-default"
-                  } ${isActive ? "ring-2 ring-foreground ring-offset-1 ring-offset-background" : ""}`}
-                  style={{ background: datum?.color ?? "var(--tint)" }}
-                />,
-              );
-            }
-
-            return row;
-          })}
+      <div className="mt-4 rounded-[1.5rem] bg-background/55 p-3 ring-1 ring-border/60 sm:p-4">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm font-semibold text-foreground">{year} Overview</p>
+          <span className="rounded-full bg-primary px-3 py-1 text-[10px] font-semibold text-primary-foreground">Year</span>
         </div>
-      </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[9px] text-muted-foreground">
-        <span className="flex items-center gap-1">
-          <span className="h-3 w-3 rounded-[3px] bg-tint" /> No data
-        </span>
-        {legend.map(([label, color]) => (
-          <span key={label} className="flex items-center gap-1">
-            <span className="h-3 w-3 rounded-[3px]" style={{ background: color }} />
-            {label}
+        <div className="mt-3 flex gap-2">
+          <div className="shrink-0 pt-5">
+            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((weekday) => (
+              <div key={weekday} className="flex h-[14px] items-center text-[9px] font-medium text-muted-foreground">
+                {weekday}
+              </div>
+            ))}
+          </div>
+
+          <div className="min-w-0 flex-1 overflow-x-auto overscroll-x-contain pb-1 touch-pan-x">
+            <div className="w-max pr-1">
+              <div
+                className="relative mb-1 h-4"
+                style={{ width: `${yearGrid.weekCount * 14}px` }}
+                aria-hidden="true"
+              >
+                {yearGrid.months.map(({ label, weekIndex }) => (
+                  <span
+                    key={label}
+                    className="absolute top-0 text-[9px] font-semibold text-muted-foreground"
+                    style={{ left: `${weekIndex * 14}px` }}
+                  >
+                    {label}
+                  </span>
+                ))}
+              </div>
+
+              <div className="flex gap-[3px]">
+                {yearGrid.weeks.map((week, weekIndex) => (
+                  <div key={weekIndex} className="grid shrink-0 grid-rows-7 gap-[3px]">
+                    {week.map((date) => {
+                      const inYear = date.getFullYear() === year;
+                      if (!inYear) {
+                        return <span key={date.toISOString()} className="h-[11px] w-[11px] rounded-full bg-transparent" />;
+                      }
+
+                      const key = toKey(date);
+                      const datum = heatmapData[key] ?? null;
+                      const isActive = active === key;
+
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          disabled={!datum}
+                          onClick={() => {
+                            if (!datum) return;
+                            setActive((current) => (current === key ? null : key));
+                          }}
+                          aria-label={`${fmtTapDay(key)} · ${activeMetricLabel}${datum ? ` · ${datum.value}` : " · no data"}`}
+                          aria-pressed={isActive}
+                          className={`h-[11px] w-[11px] rounded-full transition-transform ${
+                            datum ? "touch-manipulation active:scale-90" : "cursor-default"
+                          } ${isActive ? "ring-2 ring-foreground ring-offset-1 ring-offset-background" : ""}`}
+                          style={{ background: datum?.color ?? "var(--tint)" }}
+                        />
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5 text-[9px] text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <span className="h-3 w-3 rounded-full bg-tint" /> No data
           </span>
-        ))}
+          {legend.map(([label, color]) => (
+            <span key={label} className="flex items-center gap-1">
+              <span className="h-3 w-3 rounded-full" style={{ background: color }} />
+              {label}
+            </span>
+          ))}
+        </div>
+
+        <p className="mt-3 text-center text-[10px] text-muted-foreground">Tap any coloured day for details.</p>
+
+        {painYearSummary ? (
+          <div className="mt-4 rounded-2xl bg-tint/45 p-3 ring-1 ring-border/50">
+            <p className="text-[11px] font-semibold text-foreground">{year} at a glance (Pain)</p>
+            <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-6">
+              {painYearSummary.map((item) => (
+                <div key={item.label} className="min-w-0 text-center">
+                  <span className="mx-auto block h-3 w-3 rounded-full" style={{ background: item.color }} />
+                  <p className="mt-1 text-sm font-bold tabular-nums text-foreground">{item.count}</p>
+                  <p className="text-[9px] leading-tight text-muted-foreground">{item.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
 
-      <p className="mt-3 text-center text-[10px] text-muted-foreground">
-        {active && activeDatum ? "Detail stays open while you scroll. Tap Close when finished." : "Tap a coloured square for details."}
-      </p>
 
       {active && activeDatum ? (
         <div className="fixed inset-0 z-[120] flex items-start justify-center px-4 pb-6 pt-[calc(env(safe-area-inset-top)+5.75rem)]">
@@ -1963,4 +2065,3 @@ function TimeOfDayPatternChart({
       )}
     </section>
   );
-}
