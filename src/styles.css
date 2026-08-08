@@ -726,7 +726,7 @@ select:-webkit-autofill {
 
 :root:not(.dark) {
   /* Main page / app background — sampled toward the first mockup */
-  --background: #BCC285;
+  --background: #C5CA94;
   --foreground: #20250F;
 
   /* Main cards and nested surfaces */
@@ -770,7 +770,7 @@ select:-webkit-autofill {
 /* Exact first-mockup family across the whole app canvas. */
 :root:not(.dark),
 :root:not(.dark) body {
-  background-color: #BCC285;
+  background-color: #C5CA94;
 }
 
 :root:not(.dark) body {
@@ -778,10 +778,10 @@ select:-webkit-autofill {
     radial-gradient(circle at 50% -12%, rgba(234, 236, 198, 0.28) 0%, transparent 34%),
     linear-gradient(
       180deg,
-      #BDC285 0%,
-      #C6CA94 34%,
-      #D1D4A4 68%,
-      #D6D9AA 100%
+      #C7CC96 0%,
+      #CDD1A0 34%,
+      #D4D7AA 68%,
+      #D9DBB0 100%
     );
 }
 
@@ -806,4 +806,4 @@ select:-webkit-autofill {
   --tw-shadow-color: color-mix(in srgb, #59612D 16%, transparent);
 }
 
-/* BIXBO first-image light olive revision */
+/* BIXBO first-image light olive revision — slightly paler background */
