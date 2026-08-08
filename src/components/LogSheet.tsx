@@ -95,26 +95,6 @@ type Category =
   | "event"
   | "note";
 
-/**
- * More vivid pain palette used only for pain/intensity visuals.
- * Period colors are intentionally untouched.
- */
-function vividPainColor(value: number): string {
-  const n = Math.max(0, Math.min(10, value));
-
-  if (n <= 0.5) return "#82C45B";
-  if (n <= 1.5) return "#9DCC58";
-  if (n <= 2.5) return "#B8C93C";
-  if (n <= 3.5) return "#D3BC24";
-  if (n <= 4.5) return "#E7A915";
-  if (n <= 5.5) return "#F19412";
-  if (n <= 6.5) return "#EF7718";
-  if (n <= 7.5) return "#E95824";
-  if (n <= 8.5) return "#DF3F32";
-  if (n <= 9.5) return "#CF2444";
-  return "#B80F3D";
-}
-
 const CATEGORIES: { id: Category; label: string; emoji: string; hint: string }[] = [
   { id: "postpartum", label: "Postpartum symptoms", emoji: "🤱", hint: "Recovery symptoms · notes" },
   { id: "pain", label: "Pain", emoji: "🔥", hint: "0–10, body, quality" },
@@ -162,23 +142,11 @@ export function LogSheet({
     onOpenChange(false);
   };
   const back = () => setCat(null);
-  const requestedActive = cat ?? initial;
+  const active = cat ?? initial;
   const edit = editEntry;
 
-  const postpartumActive = Boolean(data.postpartum?.active);
   const cycleTrackingHidden = isCycleTrackingHidden(data);
-
-  const active =
-    requestedActive === "period" && cycleTrackingHidden
-      ? null
-      : requestedActive === "postpartum" && !postpartumActive
-        ? null
-        : requestedActive;
-
-  useEffect(() => {
-    if (cat === "period" && cycleTrackingHidden) setCat(null);
-    if (cat === "postpartum" && !postpartumActive) setCat(null);
-  }, [cat, cycleTrackingHidden, postpartumActive]);
+  const postpartumActive = Boolean(data.postpartum?.active);
 
   const orderedCats = useMemo(() => {
     const saved = data.settings.logOrder ?? [];
@@ -220,20 +188,17 @@ export function LogSheet({
         side="bottom"
         className={
           (active
-            ? "flex h-[100dvh] max-h-[100dvh] flex-col rounded-t-none bg-background p-0 pt-[env(safe-area-inset-top)]"
-            : "flex h-[88dvh] max-h-[88dvh] flex-col rounded-t-3xl bg-background p-0") +
-          " [&>button.absolute]:hidden" +
-          " lg:inset-x-auto lg:left-1/2 lg:right-auto lg:bottom-auto lg:top-1/2 lg:w-[720px] lg:max-w-[92vw] lg:-translate-x-1/2 lg:-translate-y-1/2 lg:h-[86vh] lg:max-h-[86vh] lg:rounded-3xl lg:border lg:pt-0 lg:shadow-2xl"
+            ? "flex h-[100dvh] max-h-[100dvh] flex-col rounded-t-none bg-background p-0"
+            : "flex h-[88vh] max-h-[88vh] flex-col rounded-t-3xl bg-background p-0") + " [&>button.absolute]:hidden"
         }
       >
-
         {!active ? (
           <>
             <SheetHeader className="shrink-0 relative px-5 pt-5 pb-2">
               <SheetTitle className="text-center font-serif text-2xl">Log</SheetTitle>
               <button
                 onClick={() => setEditingOrder((v) => !v)}
-                className="absolute left-3 top-3 flex min-h-11 items-center gap-1 rounded-full px-3 text-xs font-medium text-muted-foreground transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="absolute left-4 top-4 flex items-center gap-1 rounded-full px-2 py-1 text-xs text-muted-foreground hover:bg-tint"
               >
                 {editingOrder ? (
                   <>
@@ -248,7 +213,7 @@ export function LogSheet({
               <button
                 onClick={close}
                 aria-label="Close"
-                className="absolute right-3 top-3 grid h-11 w-11 place-items-center rounded-full transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="absolute right-4 top-4 rounded-full p-1 hover:bg-tint"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -267,7 +232,7 @@ export function LogSheet({
                       <button
                         onClick={() => moveCat(i, -1)}
                         disabled={i === 0}
-                        className="grid h-11 w-11 place-items-center rounded-full transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-30"
+                        className="rounded-full p-2 hover:bg-tint disabled:opacity-30"
                         aria-label="Move up"
                       >
                         <ChevronUp className="h-5 w-5" />
@@ -275,7 +240,7 @@ export function LogSheet({
                       <button
                         onClick={() => moveCat(i, 1)}
                         disabled={i === orderedCats.length - 1}
-                        className="grid h-11 w-11 place-items-center rounded-full transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-30"
+                        className="rounded-full p-2 hover:bg-tint disabled:opacity-30"
                         aria-label="Move down"
                       >
                         <ChevronDown className="h-5 w-5" />
@@ -303,18 +268,11 @@ export function LogSheet({
         ) : (
           <div className="flex h-full min-h-0 flex-col">
             <SheetHeader className="shrink-0 flex-row items-center justify-between border-b border-border px-5 py-3">
-              <button
-                onClick={back}
-                className="flex min-h-11 items-center gap-1 rounded-full px-2 text-sm font-medium text-foreground/80 transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
+              <button onClick={back} className="flex items-center gap-1 text-sm text-muted-foreground">
                 <ChevronLeft className="h-4 w-4" /> Back to Log
               </button>
               <SheetTitle className="font-serif text-lg">{CATEGORIES.find((c) => c.id === active)?.label}</SheetTitle>
-              <button
-                onClick={close}
-                aria-label="Close"
-                className="grid h-11 w-11 place-items-center rounded-full text-foreground transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
+              <button onClick={close} aria-label="Close" className="rounded-full p-1 hover:bg-tint">
                 <X className="h-5 w-5" />
               </button>
             </SheetHeader>
@@ -353,9 +311,7 @@ export function LogSheet({
                   initialEntry={edit as TetanyEpisode | undefined}
                 />
               )}
-              {active === "period" && !cycleTrackingHidden && (
-                <PeriodForm date={date} data={data} update={update} onDone={close} />
-              )}
+              {active === "period" && <PeriodForm date={date} data={data} update={update} onDone={close} />}
               {active === "sex" && (
                 <SexForm
                   date={date}
@@ -424,7 +380,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   // manifested as chips getting "auto-selected" in the Pain wizard.
   return (
     <div className="block">
-      <span className="text-xs font-semibold text-foreground/80">{label}</span>
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
       <div className="mt-1">{children}</div>
     </div>
   );
@@ -450,7 +406,7 @@ function Chip({
       className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
         active
           ? "text-white shadow-md ring-2 ring-foreground/70 ring-offset-2 ring-offset-background scale-[1.03]"
-          : "bg-surface text-foreground shadow-sm ring-1 ring-border"
+          : "bg-tint text-foreground ring-1 ring-border"
       }`}
       style={active && color ? { background: color } : active ? { background: "var(--primary)" } : undefined}
     >
@@ -460,13 +416,25 @@ function Chip({
 }
 function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave: () => void; disabled?: boolean }) {
   return (
-    <SheetFooter className="mt-4 gap-2 sm:flex-row">
-      <Button variant="outline" onClick={onCancel} className="flex-1">
-        Cancel
-      </Button>
-      <Button onClick={onSave} disabled={disabled} className="flex-1">
-        Save
-      </Button>
+    <SheetFooter className="mt-5 flex-row items-center justify-between gap-4 border-t border-border/50 pt-4">
+      <button
+        type="button"
+        onClick={onCancel}
+        className="flex min-h-12 items-center gap-1.5 px-1 text-base font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <span aria-hidden="true" className="text-xl leading-none">←</span>
+        <span>Back</span>
+      </button>
+
+      <button
+        type="button"
+        onClick={onSave}
+        disabled={disabled}
+        className="flex min-h-[72px] min-w-[92px] flex-col items-center justify-center rounded-[1.65rem] bg-primary px-5 py-3 text-primary-foreground shadow-md transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      >
+        <span className="text-lg font-semibold leading-none">Save</span>
+        <span aria-hidden="true" className="mt-1 text-xl leading-none">✓</span>
+      </button>
     </SheetFooter>
   );
 }
@@ -536,7 +504,7 @@ function CustomChipList({
             <button
               type="button"
               onClick={() => setAdding(true)}
-              className="flex min-h-9 items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground shadow-sm transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary hover:bg-primary/20"
             >
               <Plus className="h-3 w-3" /> Add custom
             </button>
@@ -545,7 +513,7 @@ function CustomChipList({
             <button
               type="button"
               onClick={() => setEditMode((v) => !v)}
-              className={`flex min-h-9 items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${editMode ? "bg-primary text-primary-foreground" : "bg-surface text-foreground ring-1 ring-border hover:bg-tint"}`}
+              className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${editMode ? "bg-primary text-primary-foreground" : "bg-tint text-muted-foreground hover:text-foreground"}`}
             >
               <Pencil className="h-3 w-3" /> {editMode ? "Done" : "Edit"}
             </button>
@@ -620,11 +588,10 @@ const stripEmoji = (v: string) => v.replace(/^[\p{Extended_Pictographic}\u200d\u
 
 import { getScaleDesc } from "@/lib/scaleDescriptions";
 
-
-function intensityScaleColor(value: number, max: number, from = 1): string {
-  if (max <= from) return vividPainColor(10);
-  const normalized = ((value - from) / (max - from)) * 10;
-  return vividPainColor(normalized);
+function scaleColor(value: number, from: number, max: number): string {
+  const span = Math.max(0.5, max - from);
+  const normalized = ((value - from) / span) * 10;
+  return painColor(Math.max(0, Math.min(10, normalized)));
 }
 
 function ScaleLegend({
@@ -632,7 +599,7 @@ function ScaleLegend({
   descriptions,
   value,
   title,
-  from = 1,
+  from = 0,
 }: {
   max: number;
   descriptions: Record<number, string>;
@@ -641,27 +608,26 @@ function ScaleLegend({
   from?: number;
 }) {
   const items: number[] = [];
-  for (let i = from; i <= max; i++) items.push(i);
+  for (let i = Math.ceil(from); i <= max; i++) items.push(i);
+  const activeLegendValue = value == null || value < from ? undefined : Math.round(value);
+
   return (
-    <div className="mt-2 rounded-xl border border-border bg-surface/95 p-3 shadow-sm">
-      <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-foreground/75">{title}</p>
+    <div className="mt-2 rounded-xl border border-border/60 bg-surface/50 p-2.5">
+      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>
       <div className="space-y-1 text-[11px] leading-tight">
-        {items.map((n) => {
-          const bg = intensityScaleColor(n, max, from);
-          return (
-            <div key={n} className="flex items-start gap-2">
-              <span
-                className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full text-[9px] font-bold text-white"
-                style={{ background: bg }}
-              >
-                {n}
-              </span>
-              <span className={value === n ? "font-bold text-foreground" : "text-foreground/75"}>
-                {descriptions[n]}
-              </span>
-            </div>
-          );
-        })}
+        {items.map((n) => (
+          <div key={n} className="flex items-start gap-2">
+            <span
+              className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full text-[9px] font-bold text-white"
+              style={{ background: scaleColor(n, from, max) }}
+            >
+              {n}
+            </span>
+            <span className={activeLegendValue === n ? "font-semibold text-foreground" : "text-muted-foreground"}>
+              {descriptions[n]}
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -673,7 +639,7 @@ function IntensityScale({
   max,
   descriptions,
   legendTitle,
-  from = 1,
+  from = 0,
 }: {
   value: number;
   onChange: (n: number) => void;
@@ -682,50 +648,57 @@ function IntensityScale({
   legendTitle?: string;
   from?: number;
 }) {
-  const nums: number[] = [];
-  for (let i = from; i <= max; i++) nums.push(i);
+  const nums = Array.from(
+    { length: Math.round((max - from) * 2) + 1 },
+    (_, i) => Number((from + i / 2).toFixed(1)),
+  );
+
+  const roundedValue = Math.round(value);
+  const selectedDescription = descriptions?.[roundedValue];
+
   return (
     <div className="mt-2 space-y-1.5">
-      <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${nums.length}, minmax(0, 1fr))` }}>
+      <div className="flex flex-wrap justify-center gap-1.5 px-1">
         {nums.map((n) => {
-          const bg = intensityScaleColor(n, max, from);
           const active = value === n;
+          const description = descriptions?.[Math.round(n)];
+          const bg = scaleColor(n, from, max);
+
           return (
             <button
               key={n}
               type="button"
               onClick={() => onChange(n)}
-              title={descriptions?.[n] ? `${n} — ${descriptions[n]}` : String(n)}
-              aria-label={descriptions?.[n] ? `${n} — ${descriptions[n]}` : `Intensity ${n}`}
-              className={`aspect-square w-full rounded-full text-[11px] font-bold transition text-white ${active ? "ring-2 ring-foreground scale-110" : ""}`}
-              style={{ background: bg, opacity: active ? 1 : 0.55 }}
+              title={description ? `${n} — ${description}` : String(n)}
+              aria-label={description ? `${n} — ${description}` : `Intensity ${n}`}
+              className={`h-8 w-8 rounded-full text-[11px] font-semibold transition ${
+                active ? "text-white ring-2 ring-foreground" : "text-foreground"
+              }`}
+              style={{ background: bg }}
             >
-              {n}
+              {Number.isInteger(n) ? n : n.toFixed(1)}
             </button>
           );
         })}
       </div>
-      <div className="flex items-center justify-between px-0.5 text-[10px] font-medium text-foreground/75">
-        <span className="flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full" style={{ background: intensityScaleColor(from, max, from) }} />
-          Mild
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full" style={{ background: intensityScaleColor(Math.round((from + max) / 2), max, from) }} />
-          Moderate
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full" style={{ background: intensityScaleColor(max, max, from) }} />
-          Severe
-        </span>
-      </div>
-      {descriptions && value >= from && descriptions[value] && (
-        <div className="mt-1 rounded-lg bg-tint px-2.5 py-1.5 text-[11px] leading-snug text-foreground">
-          <span className="font-semibold">Level {value}:</span> {descriptions[value]}
+
+      {descriptions && value >= from && selectedDescription && (
+        <div className="mt-2 rounded-lg bg-tint px-2.5 py-1.5 text-[11px] leading-snug text-foreground">
+          <span className="font-semibold">
+            Level {Number.isInteger(value) ? value : value.toFixed(1)}:
+          </span>{" "}
+          {selectedDescription}
         </div>
       )}
+
       {descriptions && legendTitle && (
-        <ScaleLegend max={max} from={from} descriptions={descriptions} value={value} title={legendTitle} />
+        <ScaleLegend
+          max={max}
+          from={from}
+          descriptions={descriptions}
+          value={value}
+          title={legendTitle}
+        />
       )}
     </div>
   );
@@ -744,7 +717,7 @@ function DurationField({
 }) {
   return (
     <div className="space-y-1">
-      <span className="text-xs font-semibold text-foreground/80">Duration (min)</span>
+      <span className="text-xs font-medium text-muted-foreground">Duration (min)</span>
       <div className="flex items-center gap-2">
         <Input
           type="number"
@@ -1019,7 +992,8 @@ function PainWizard({
     onDone();
   };
 
-  const bg = vividPainColor(score);
+  const bg = painColor(score);
+  const bgFill = `color-mix(in oklab, ${bg} 35%, white)`;
 
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const onTouchStart = (e: React.TouchEvent) => {
@@ -1042,69 +1016,55 @@ function PainWizard({
 
   return (
     <div
-      className="flex min-h-full flex-col bg-background px-5 py-4 text-foreground touch-pan-y"
+      className="flex min-h-full flex-col px-5 py-4 transition-colors touch-pan-y"
+      style={{ background: bgFill }}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      <div className="sticky top-0 z-20 -mx-5 mb-3 border-y border-border/60 bg-background/92 px-5 py-1.5 shadow-sm backdrop-blur-xl">
-        {quickSymptomUpdate && step === 3 ? (
-          <div className="grid min-h-10 grid-cols-[1fr_auto] items-center gap-3">
+      {quickSymptomUpdate ? (
+        <div className="flex items-center justify-between px-1 pb-3">
+          <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+            Quick symptom update
+          </span>
+          <span className="text-xs text-muted-foreground">New entry · {time}</span>
+        </div>
+      ) : (
+        <div className="sticky top-0 z-20 -mx-5 mb-3 flex items-center justify-between gap-3 border-y border-border/50 bg-background/95 px-5 py-3 shadow-sm backdrop-blur">
+          {step > 0 ? (
             <button
               type="button"
-              onClick={() => {
-                setQuickSymptomUpdate(false);
-                setCopiedFromTime(undefined);
-                setStep(0);
-              }}
-              className="justify-self-start rounded-lg px-2 py-1.5 text-sm font-semibold text-foreground/75 transition hover:bg-tint hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              onClick={() => setStep(step - 1)}
+              className="flex min-w-[82px] items-center gap-1.5 text-base font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              Edit full log
+              <span aria-hidden="true" className="text-xl leading-none">←</span>
+              <span>Back</span>
             </button>
+          ) : (
+            <span className="min-w-[82px]" aria-hidden="true" />
+          )}
 
-            <button
-              type="button"
-              onClick={save}
-              className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              Save update
-            </button>
-          </div>
-        ) : (
-          <div className="grid min-h-10 grid-cols-[72px_1fr_72px] items-center gap-2">
-            <div className="justify-self-start">
-              {step > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setStep(step - 1)}
-                  className="rounded-lg px-2 py-1.5 text-sm font-semibold text-foreground/75 transition hover:bg-tint hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  ← Back
-                </button>
-              )}
+          <div className="flex min-w-0 flex-1 items-center justify-center gap-3">
+            <div className="flex gap-1.5">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <span
+                  key={i}
+                  className={`h-1.5 w-7 rounded-full transition-colors ${i <= step ? "bg-primary" : "bg-tint"}`}
+                />
+              ))}
             </div>
-
-            <div className="flex min-w-0 items-center justify-center gap-2">
-              <div className="flex gap-1">
-                {[0, 1, 2, 3, 4].map((i) => (
-                  <span key={i} className={`h-1.5 w-5 rounded-full ${i <= step ? "bg-primary" : "bg-tint"}`} />
-                ))}
-              </div>
-              <span className="shrink-0 text-xs font-semibold text-foreground/70">{step + 1}/5</span>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                if (step < 4) setStep(step + 1);
-                else save();
-              }}
-              className="justify-self-end rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              {step < 4 ? "Next →" : "Save"}
-            </button>
+            <span className="shrink-0 text-sm font-semibold text-foreground/75">{step + 1}/5</span>
           </div>
-        )}
-      </div>
+
+          <button
+            type="button"
+            onClick={step < 4 ? () => setStep(step + 1) : save}
+            className="flex min-h-[72px] min-w-[92px] flex-col items-center justify-center rounded-[1.65rem] bg-primary px-5 py-3 text-primary-foreground shadow-md transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            <span className="text-lg font-semibold leading-none">{step < 4 ? "Next" : "Save"}</span>
+            <span aria-hidden="true" className="mt-1 text-xl leading-none">{step < 4 ? "→" : "✓"}</span>
+          </button>
+        </div>
+      )}
 
       {step === 0 && (
         <div className="flex flex-col items-center gap-4 py-6">
@@ -1133,9 +1093,7 @@ function PainWizard({
           >
             {Number.isInteger(score) ? score : score.toFixed(1)}
           </div>
-          <p className="text-center text-lg font-semibold text-foreground">
-            {getScaleDesc(data, "pain")[Math.round(score)]}
-          </p>
+          <p className="text-center font-medium">{getScaleDesc(data, "pain")[Math.round(score)]}</p>
           <div className="w-full px-4">
             <Slider value={[score * 2]} min={0} max={20} step={1} onValueChange={([v]) => setScore(v / 2)} />
           </div>
@@ -1146,13 +1104,10 @@ function PainWizard({
                 type="button"
                 onClick={() => setScore(n)}
                 title={`${n} — ${getScaleDesc(data, "pain")[Math.round(n)]}`}
-                className={`h-8 w-8 rounded-full text-[11px] font-semibold transition ${
-                  score === n ? "text-white ring-2 ring-foreground shadow-sm scale-105" : "text-foreground/90"
+                className={`h-8 w-8 rounded-full text-[11px] font-semibold ${
+                  score === n ? "text-white ring-2 ring-foreground" : "bg-tint text-foreground"
                 }`}
-                style={{
-                  background: vividPainColor(n),
-                  opacity: score === n ? 1 : 0.72,
-                }}
+                style={score === n ? { background: painColor(n) } : undefined}
               >
                 {Number.isInteger(n) ? n : n.toFixed(1)}
               </button>
@@ -1748,33 +1703,14 @@ function PainWizard({
             const STRESS_DESC = getScaleDesc(data, "stress");
             return (
               <Field label={`Stress ${stress ?? "-"} / 10`}>
-                <div className="mt-2 grid gap-1" style={{ gridTemplateColumns: "repeat(11, minmax(0, 1fr))" }}>
-                  {Array.from({ length: 11 }, (_, n) => {
-                    const bg = vividPainColor(n);
-                    const active = stress === n;
-                    return (
-                      <button
-                        key={n}
-                        type="button"
-                        onClick={() => setStress(stress === n ? undefined : n)}
-                        title={`${n} — ${STRESS_DESC[n]}`}
-                        aria-label={`Stress ${n} — ${STRESS_DESC[n]}`}
-                        className={`aspect-square w-full rounded-full text-[11px] font-bold transition ${
-                          active ? "text-white ring-2 ring-foreground scale-110" : "text-white/90"
-                        }`}
-                        style={{ background: bg, opacity: active || stress == null ? 1 : 0.55 }}
-                      >
-                        {n}
-                      </button>
-                    );
-                  })}
-                </div>
-                {stress != null && (
-                  <div className="mt-2 rounded-lg bg-tint px-2.5 py-1.5 text-[11px] leading-snug text-foreground">
-                    <span className="font-semibold">Level {stress}:</span> {STRESS_DESC[stress]}
-                  </div>
-                )}
-                <ScaleLegend max={10} from={0} descriptions={STRESS_DESC} value={stress} title="Stress scale" />
+                <IntensityScale
+                  value={stress ?? -1}
+                  onChange={(n) => setStress(stress === n ? undefined : n)}
+                  max={10}
+                  from={0}
+                  descriptions={STRESS_DESC}
+                  legendTitle="Stress scale"
+                />
               </Field>
             );
           })()}
@@ -1819,6 +1755,32 @@ function PainWizard({
             <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Anything else…" />
           </Field>
         </div>
+      )}
+
+      {quickSymptomUpdate && step === 3 && (
+        <SheetFooter className="mt-5 flex-row items-center justify-between gap-4 border-t border-border/50 pt-4">
+          <button
+            type="button"
+            onClick={() => {
+              setQuickSymptomUpdate(false);
+              setCopiedFromTime(undefined);
+              setStep(0);
+            }}
+            className="flex min-h-12 items-center gap-1.5 px-1 text-base font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <span aria-hidden="true" className="text-xl leading-none">←</span>
+            <span>Edit full log</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={save}
+            className="flex min-h-[72px] min-w-[104px] flex-col items-center justify-center rounded-[1.65rem] bg-primary px-5 py-3 text-primary-foreground shadow-md transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            <span className="text-base font-semibold leading-none">Save update</span>
+            <span aria-hidden="true" className="mt-1 text-xl leading-none">✓</span>
+          </button>
+        </SheetFooter>
       )}
     </div>
   );
@@ -2233,7 +2195,7 @@ function PeriodForm({
         <div className="mt-2 flex items-center gap-3">
           <div
             className="grid h-14 w-14 shrink-0 place-items-center rounded-full text-lg font-bold text-white"
-            style={{ background: cramps == null ? "var(--muted-foreground)" : vividPainColor(cramps) }}
+            style={{ background: cramps == null ? "hsl(var(--muted-foreground))" : painColor(cramps) }}
           >
             {cramps == null ? "—" : Number.isInteger(cramps) ? cramps : cramps.toFixed(1)}
           </div>
@@ -2251,7 +2213,7 @@ function PeriodForm({
               className={`h-7 w-7 rounded-full text-[10px] font-semibold ${
                 cramps === n ? "text-white ring-2 ring-foreground" : "bg-tint text-foreground"
               }`}
-              style={cramps === n ? { background: vividPainColor(n) } : undefined}
+              style={cramps === n ? { background: painColor(n) } : undefined}
             >
               {Number.isInteger(n) ? n : n.toFixed(1)}
             </button>
@@ -2326,7 +2288,7 @@ function PeriodForm({
         </div>
         {data.settings.pregnantSince && (
           <div className="mt-2">
-            <span className="text-xs font-semibold text-foreground/80">Since when</span>
+            <span className="text-xs font-medium text-muted-foreground">Since when</span>
             <Input
               type="date"
               className="mt-1"
@@ -3101,20 +3063,6 @@ function TempForm({
 
   const [quality, setQuality] = useState<string[]>(asArr(cur.sleepQuality));
 
-  const normalizeDecimalInput = (value: string): string => {
-    const normalized = value.replace(",", ".").replace(/[^0-9.]/g, "");
-    const [whole = "", ...fractionParts] = normalized.split(".");
-    const fraction = fractionParts.join("");
-    return fractionParts.length > 0 ? `${whole}.${fraction}` : whole;
-  };
-
-  const parseDecimalInput = (value: string): number | undefined => {
-    const normalized = value.trim().replace(",", ".");
-    if (!normalized) return undefined;
-    const parsed = Number.parseFloat(normalized);
-    return Number.isFinite(parsed) ? parsed : undefined;
-  };
-
   const sortVitals = (entries: VitalRow[]): VitalRow[] =>
     entries.slice().sort((a, b) => a.time.localeCompare(b.time) || a.id.localeCompare(b.id));
 
@@ -3185,11 +3133,11 @@ function TempForm({
   };
 
   const save = () => {
-    const temperatureValue = parseDecimalInput(temperature);
+    const temperatureValue = temperature.trim() === "" ? undefined : Number(temperature);
 
-    const weightValue = parseDecimalInput(weight);
+    const weightValue = weight.trim() === "" ? undefined : Number(weight);
 
-    const sleepValue = parseDecimalInput(sleep);
+    const sleepValue = sleep.trim() === "" ? undefined : Number(sleep);
 
     updateDayLog(update, date, (log) => {
       const currentTemperatures = existingVitals(log.temperatureEntries, log.temperature, `${date}-legacy-temperature`);
@@ -3197,7 +3145,7 @@ function TempForm({
       const currentWeights = existingVitals(log.weightEntries, log.weight, `${date}-legacy-weight`);
 
       const nextTemperatures =
-        temperatureValue != null && temperatureValue >= 30 && temperatureValue <= 45
+        temperatureValue != null && Number.isFinite(temperatureValue)
           ? sortVitals([
               ...currentTemperatures,
               {
@@ -3209,7 +3157,7 @@ function TempForm({
           : currentTemperatures;
 
       const nextWeights =
-        weightValue != null && weightValue > 0 && weightValue <= 500
+        weightValue != null && Number.isFinite(weightValue)
           ? sortVitals([
               ...currentWeights,
               {
@@ -3233,8 +3181,7 @@ function TempForm({
 
         weight: latestVitalValue(nextWeights),
 
-        sleepHours:
-          sleepValue != null && sleepValue >= 0 && sleepValue <= 24 ? Math.round(sleepValue * 10) / 10 : undefined,
+        sleepHours: sleepValue != null && Number.isFinite(sleepValue) ? sleepValue : undefined,
 
         sleepQuality: quality.length ? quality : undefined,
       };
@@ -3246,25 +3193,19 @@ function TempForm({
   return (
     <div className="space-y-5">
       <Field label="New temperature measurement">
-        <div className="grid w-full grid-cols-[minmax(0,1fr)_minmax(96px,120px)] gap-2">
+        <div className="grid grid-cols-[1fr_120px] gap-2">
           <Input
-            type="text"
+            type="number"
             inputMode="decimal"
-            enterKeyHint="next"
+            min="30"
+            max="45"
+            step="0.1"
             value={temperature}
-            onChange={(e) => setTemperature(normalizeDecimalInput(e.target.value))}
-            placeholder="36,6 °C"
-            aria-label="Temperature in degrees Celsius"
-            className="min-w-0 w-full"
+            onChange={(e) => setTemperature(e.target.value)}
+            placeholder="36.6 °C"
           />
 
-          <Input
-            type="time"
-            value={temperatureTime}
-            onChange={(e) => setTemperatureTime(e.target.value)}
-            aria-label="Temperature measurement time"
-            className="min-w-0 w-full"
-          />
+          <Input type="time" value={temperatureTime} onChange={(e) => setTemperatureTime(e.target.value)} />
         </div>
 
         {temperatureEntries.length > 0 && (
@@ -3303,25 +3244,18 @@ function TempForm({
       </Field>
 
       <Field label="New weight measurement">
-        <div className="grid w-full grid-cols-[minmax(0,1fr)_minmax(96px,120px)] gap-2">
+        <div className="grid grid-cols-[1fr_120px] gap-2">
           <Input
-            type="text"
+            type="number"
             inputMode="decimal"
-            enterKeyHint="next"
+            min="0"
+            step="0.1"
             value={weight}
-            onChange={(e) => setWeight(normalizeDecimalInput(e.target.value))}
-            placeholder="62,5 kg"
-            aria-label="Weight in kilograms"
-            className="min-w-0 w-full"
+            onChange={(e) => setWeight(e.target.value)}
+            placeholder="62.5 kg"
           />
 
-          <Input
-            type="time"
-            value={weightTime}
-            onChange={(e) => setWeightTime(e.target.value)}
-            aria-label="Weight measurement time"
-            className="min-w-0 w-full"
-          />
+          <Input type="time" value={weightTime} onChange={(e) => setWeightTime(e.target.value)} />
         </div>
 
         {weightEntries.length > 0 && (
@@ -3361,14 +3295,14 @@ function TempForm({
 
       <Field label="Sleep (hours)">
         <Input
-          type="text"
+          type="number"
           inputMode="decimal"
-          enterKeyHint="done"
+          min="0"
+          max="24"
+          step="0.5"
           value={sleep}
-          onChange={(e) => setSleep(normalizeDecimalInput(e.target.value))}
-          placeholder="8,5"
-          aria-label="Sleep duration in hours"
-          className="w-full"
+          onChange={(e) => setSleep(e.target.value)}
+          placeholder="8"
         />
       </Field>
 
@@ -3546,9 +3480,16 @@ function MedsForm({
         )}
       </div>
       <SheetFooter className="mt-2">
-        <Button className="w-full" onClick={onDone}>
-          Done
-        </Button>
+        <div className="mt-5 flex justify-end border-t border-border/50 pt-4">
+          <button
+            type="button"
+            onClick={onDone}
+            className="flex min-h-[72px] min-w-[92px] flex-col items-center justify-center rounded-[1.65rem] bg-primary px-5 py-3 text-primary-foreground shadow-md transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            <span className="text-lg font-semibold leading-none">Done</span>
+            <span aria-hidden="true" className="mt-1 text-xl leading-none">✓</span>
+          </button>
+        </div>
       </SheetFooter>
     </div>
   );
@@ -3735,7 +3676,7 @@ function WorkoutForm({
       )}
 
       <Field label={`Intensity (RPE) ${rpe ?? "-"} / 10`}>
-        <div className="mt-2 grid gap-1" style={{ gridTemplateColumns: "repeat(10, minmax(0, 1fr))" }}>
+        <div className="mt-2 flex flex-wrap justify-center gap-1.5 px-1">
           {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => {
             const active = rpe === n;
             return (
@@ -3744,8 +3685,10 @@ function WorkoutForm({
                 type="button"
                 onClick={() => setRpe(rpe === n ? undefined : n)}
                 aria-label={`RPE ${n}`}
-                className={`aspect-square w-full rounded-full text-[11px] font-bold transition ${active ? "text-white ring-2 ring-foreground scale-110" : "text-white/90"}`}
-                style={{ background: vividPainColor(n), opacity: active || rpe == null ? 1 : 0.55 }}
+                className={`h-8 w-8 rounded-full text-[11px] font-semibold transition ${
+                  active ? "text-white ring-2 ring-foreground" : "text-foreground"
+                }`}
+                style={{ background: painColor(n) }}
               >
                 {n}
               </button>
