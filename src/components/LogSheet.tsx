@@ -191,7 +191,7 @@ export function LogSheet({
             ? `flex h-[100dvh] max-h-[100dvh] flex-col rounded-t-none bg-background p-0 ${
                 active === "pain" ? "pt-[env(safe-area-inset-top)]" : "pt-0"
               }`
-            : "fixed !left-auto !right-3 !bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] !top-auto flex !h-[60dvh] !max-h-[540px] !w-[67vw] !max-w-[320px] min-h-0 flex-col overflow-hidden rounded-[1.5rem] border border-border/70 bg-background/95 p-0 shadow-2xl backdrop-blur-xl") + " [&>button.absolute]:hidden"
+            : "fixed !left-auto !right-3 !bottom-[calc(env(safe-area-inset-bottom)+0.1rem)] !top-auto flex !h-[68dvh] !max-h-[640px] !w-[67vw] !max-w-[320px] min-h-0 flex-col overflow-hidden rounded-[1.5rem] border border-border/70 bg-background/95 p-0 shadow-2xl backdrop-blur-xl") + " [&>button.absolute]:hidden"
         }
       >
         {!active ? (
@@ -220,7 +220,7 @@ export function LogSheet({
                 <X className="h-4 w-4" />
               </button>
             </SheetHeader>
-            <ul className="min-h-0 flex-1 overflow-y-auto divide-y divide-border/70 bg-surface/55 px-2 py-1">
+            <ul className="min-h-0 flex-1 overflow-y-auto divide-y divide-border/70 bg-surface/55 px-2 py-1 pb-2">
               {orderedCats.map((c, i) => (
                 <li key={c.id}>
                   {editingOrder ? (
