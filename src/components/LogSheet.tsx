@@ -654,6 +654,7 @@ function IntensityScale({
   legendTitle,
   from = 0,
   compactSingleRow = false,
+  step = 0.5,
 }: {
   value: number;
   onChange: (n: number) => void;
@@ -662,10 +663,11 @@ function IntensityScale({
   legendTitle?: string;
   from?: number;
   compactSingleRow?: boolean;
+  step?: number;
 }) {
   const nums = Array.from(
-    { length: Math.round((max - from) * 2) + 1 },
-    (_, i) => Number((from + i / 2).toFixed(1)),
+    { length: Math.floor((max - from) / step) + 1 },
+    (_, i) => Number((from + i * step).toFixed(1)),
   );
 
   const roundedValue = Math.round(value);
@@ -1284,9 +1286,11 @@ function PainWizard({
                   value={nauseaSeverity ?? -1}
                   onChange={(n) => setNauseaSeverity(nauseaSeverity === n ? undefined : n)}
                   max={10}
-                  from={0}
+                  from={1}
+                  step={1}
                   descriptions={NAUSEA_SEVERITY_DESC}
                   legendTitle="Nausea severity scale"
+                  compactSingleRow
                 />
               </Field>
               <DurationField
@@ -1384,8 +1388,11 @@ function PainWizard({
                     value={headacheIntensity ?? 0}
                     onChange={(n) => setHeadacheIntensity(headacheIntensity === n ? undefined : n)}
                     max={10}
+                    from={1}
+                    step={1}
                     descriptions={getScaleDesc(data, "headache")}
                     legendTitle="Headache scale"
+                    compactSingleRow
                   />
                 </Field>
                 <Field label="Medication taken">
@@ -1443,6 +1450,8 @@ function PainWizard({
                 value={hotFlashes ?? 0}
                 onChange={(n) => setHotFlashes(hotFlashes === n ? undefined : n)}
                 max={5}
+                from={1}
+                step={1}
                 descriptions={getScaleDesc(data, "hotFlashes")}
                 legendTitle="Hot flashes scale"
                 compactSingleRow
@@ -1518,8 +1527,11 @@ function PainWizard({
                   value={tetanyIntensity}
                   onChange={setTetanyIntensity}
                   max={5}
+                  from={1}
+                  step={1}
                   descriptions={getScaleDesc(data, "tetany")}
                   legendTitle="Tetany intensity scale"
+                  compactSingleRow
                 />
               </Field>
               <DurationField
@@ -1593,8 +1605,11 @@ function PainWizard({
                   value={panicIntensity}
                   onChange={setPanicIntensity}
                   max={10}
+                  from={1}
+                  step={1}
                   descriptions={getScaleDesc(data, "panic")}
                   legendTitle="Panic intensity scale"
+                  compactSingleRow
                 />
               </Field>
               <Field label="Physical symptoms">
