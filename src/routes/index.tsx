@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { createPortal } from "react-dom";
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { ChevronLeft, ChevronRight, Share2, Trash2 } from "lucide-react";
 
 import {
@@ -1386,11 +1386,73 @@ function BirthControlOverlay({
     overlayRef.current?.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, []);
 
+  const mainRef = useRef<HTMLElement | null>(null);
+  const fitRef = useRef<HTMLDivElement | null>(null);
+  const [fitScale, setFitScale] = useState(1);
+
   useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const body = document.body;
+    const html = document.documentElement;
+    const previousOverflow = body.style.overflow;
+    const previousBodyBg = body.style.backgroundColor;
+    const previousHtmlBg = html.style.backgroundColor;
+
+    let themeMeta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
+    const createdThemeMeta = !themeMeta;
+    if (!themeMeta) {
+      themeMeta = document.createElement("meta");
+      themeMeta.name = "theme-color";
+      document.head.appendChild(themeMeta);
+    }
+    const previousThemeColor = themeMeta.content;
+
+    body.style.overflow = "hidden";
+    body.style.backgroundColor = "#E7DCF5";
+    html.style.backgroundColor = "#E7DCF5";
+    themeMeta.content = "#E7DCF5";
+
     return () => {
-      document.body.style.overflow = previousOverflow;
+      body.style.overflow = previousOverflow;
+      body.style.backgroundColor = previousBodyBg;
+      html.style.backgroundColor = previousHtmlBg;
+
+      if (createdThemeMeta) {
+        themeMeta?.remove();
+      } else if (themeMeta) {
+        themeMeta.content = previousThemeColor;
+      }
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    const fit = () => {
+      const main = mainRef.current;
+      const content = fitRef.current;
+      if (!main || !content) return;
+
+      // Measure the original, correct calendar + ŠukŠuk at natural size,
+      // then scale the whole composition uniformly only when needed.
+      // This preserves all internal proportions instead of shrinking
+      // individual calendar/chart pieces.
+      const availableHeight = main.clientHeight;
+      const naturalHeight = content.scrollHeight;
+      if (!availableHeight || !naturalHeight) return;
+
+      const next = Math.min(1, Math.max(0.82, availableHeight / naturalHeight));
+      setFitScale((current) => (Math.abs(current - next) > 0.005 ? next : current));
+    };
+
+    fit();
+    const frame = requestAnimationFrame(fit);
+    const observer =
+      typeof ResizeObserver !== "undefined" ? new ResizeObserver(fit) : null;
+
+    if (mainRef.current) observer?.observe(mainRef.current);
+    if (fitRef.current) observer?.observe(fitRef.current);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      observer?.disconnect();
     };
   }, []);
 
@@ -1451,8 +1513,20 @@ function BirthControlOverlay({
         </div>
       </div>
 
-      <main className="mx-auto min-h-0 w-full max-w-[42rem] flex-1 overflow-hidden px-3 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-1">
-        <BirthControlCalendar data={data} />
+      <main
+        ref={mainRef}
+        className="mx-auto min-h-0 w-full max-w-[42rem] flex-1 overflow-hidden px-3 pb-[max(.35rem,env(safe-area-inset-bottom))] pt-1"
+      >
+        <div
+          ref={fitRef}
+          className="mx-auto w-full"
+          style={{
+            transform: `scale(${fitScale})`,
+            transformOrigin: "top center",
+          }}
+        >
+          <BirthControlCalendar data={data} />
+        </div>
       </main>
     </div>,
     document.body,
@@ -1507,34 +1581,6 @@ function BirthControlCalendar({
   const HAK_GREEN_SOFT = "#E7E9B8";
   const HAK_TRACK = "#E4E4D3";
   const HAK_CARD_BG = "color-mix(in srgb, var(--background) 94%, #7A53C8 6%)";
-
-  // Local HAK-only lavender theme.
-  // These CSS variables are inherited only by this HAK panel, so the rest of BIXBO stays olive.
-  const HAK_LOCAL_THEME = {
-    "--background": "#E7DCF5",
-    "--foreground": "#251A34",
-    "--surface": "#EDE5F8",
-    "--surface-elevated": "#F5F0FB",
-    "--surface-sunken": "#D7C6EC",
-    "--tint": "#DDCFF0",
-    "--card": "#EDE5F8",
-    "--card-foreground": "#251A34",
-    "--popover": "#F6F1FB",
-    "--popover-foreground": "#251A34",
-    "--secondary": "#E0D3F1",
-    "--secondary-foreground": "#2F2140",
-    "--muted": "#E2D6F1",
-    "--muted-foreground": "#685B78",
-    "--accent": "#D5C2EC",
-    "--accent-foreground": "#30203F",
-    "--border": "#BDA4DB",
-    "--input": "#BDA4DB",
-    "--ring": HAK_PURPLE,
-    "--chart-grid": "#D0BDE7",
-    "--chart-axis": "#554466",
-    "--chart-tooltip-bg": "#F7F2FC",
-    "--chart-tooltip-fg": "#251A34",
-  } as CSSProperties;
 
   const bcMed = data.meds.find((m) =>
     /antikonc|birth\s*control|contracept|hak|pill/i.test(`${m.name} ${m.dose ?? ""}`),
@@ -1713,14 +1759,7 @@ function BirthControlCalendar({
     WHEEL_DAY1_ANGLE - (day - 1) * WHEEL_STEP;
 
   return (
-    <section
-      className="flex h-full min-h-0 flex-col overflow-hidden rounded-[2rem] p-2.5 shadow-sm ring-1"
-      style={{
-        ...HAK_LOCAL_THEME,
-        backgroundColor: HAK_CARD_BG,
-        boxShadow: "inset 0 0 0 1px rgba(122, 83, 200, 0.24)",
-      }}
-    >
+    <section className="flex min-h-0 flex-col">
       <div className="flex shrink-0 items-start justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2.5">
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-surface/65 ring-1 ring-border/50">
@@ -1758,7 +1797,7 @@ function BirthControlCalendar({
       </div>
 
       {/* Circular HAK overview — only wheel pills open the dose popup. */}
-      <div className="relative left-1/2 mt-0.5 w-[calc(100%+1.5rem)] max-w-[350px] -translate-x-1/2 shrink-0">
+      <div className="relative left-1/2 mt-1 w-[calc(100%+2rem)] max-w-[390px] -translate-x-1/2 shrink-0">
         <div className="relative aspect-square w-full">
           <div
             className="absolute inset-[5.5%] rounded-full"
@@ -1878,7 +1917,7 @@ function BirthControlCalendar({
                 onClick={() => {
                   setSel(dateKey);
                 }}
-                className="absolute z-10 grid h-[34px] w-[34px] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[10px] font-bold transition active:scale-95"
+                className="absolute z-10 grid h-[38px] w-[38px] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[11px] font-bold transition active:scale-95"
                 style={{
                   left: `${left}%`,
                   top: `${top}%`,
@@ -2000,13 +2039,13 @@ function BirthControlCalendar({
       </div>
 
       {/* Keep Current HAK pack exactly in the previous compact timeline style. */}
-      <div className="mt-2">
-        <h3 className="font-serif text-base font-bold text-foreground">Current HAK pack</h3>
+      <div className="mt-4">
+        <h3 className="font-serif text-lg font-bold text-foreground">Current HAK pack</h3>
         <div
-          className="mt-1.5 rounded-[1.5rem] px-3 py-2.5 ring-1"
+          className="mt-3 rounded-[1.75rem] px-4 py-4 ring-1"
           style={{
             backgroundColor: "rgba(255,255,255,.20)",
-            borderColor: "rgba(122,83,200,.18)",
+            borderColor: "rgba(122,83,200,.16)",
           }}
         >
           <div className="grid grid-cols-[1.35fr_1fr_.9fr] items-start gap-2 text-center">
@@ -2024,12 +2063,12 @@ function BirthControlCalendar({
             </div>
           </div>
 
-          <div className="relative mt-2 px-1 pb-6">
+          <div className="relative mt-4 px-1 pb-8">
             <div
-              className="rounded-full px-2 py-1.5 ring-1"
+              className="rounded-full px-2 py-2 ring-1"
               style={{
                 backgroundColor: "rgba(255,255,255,.30)",
-                borderColor: "rgba(122,83,200,.20)",
+                borderColor: "rgba(122,83,200,.18)",
               }}
             >
               <div
@@ -2390,7 +2429,7 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
     const value = diff === 0 ? "0" : `${diff > 0 ? "+" : ""}${diff}`;
 
     return (
-      <p className="mt-1 text-center text-[7.5px] leading-none text-muted-foreground">
+      <p className="mt-1.5 text-center text-[8px] leading-none text-muted-foreground">
         vs last {label}{" "}
         <span
           className="font-bold"
@@ -2413,18 +2452,18 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
 
     return (
       <div
-        className="mt-1 grid items-end gap-[2px]"
+        className="mt-2 grid items-end gap-[2px]"
         style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
       >
         {items.map((item, index) => {
-          const height = item.count > 0 ? Math.max(4, Math.round((item.count / max) * 28)) : 1;
+          const height = item.count > 0 ? Math.max(5, Math.round((item.count / max) * 42)) : 1;
 
           return (
             <div key={`${item.label}-${index}`} className="flex min-w-0 flex-col items-center justify-end">
               <span className={`${dense ? "text-[6px]" : "text-[7px]"} mb-0.5 h-2.5 tabular-nums text-foreground/75`}>
                 {item.count}
               </span>
-              <div className="flex h-[28px] w-full items-end justify-center border-b border-border/55">
+              <div className="flex h-[42px] w-full items-end justify-center border-b border-border/55">
                 <span
                   className={`${dense ? "w-[72%]" : "w-[78%]"} rounded-t-[3px]`}
                   style={{
@@ -2451,37 +2490,37 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
 
   return (
     <section
-      className="mt-2 rounded-[1.5rem] p-2.5 ring-1 ring-border"
+      className="mt-4 rounded-3xl p-4 ring-1 ring-border"
       style={{ backgroundColor: HAK_CARD_BG }}
     >
-      <div className="flex items-start gap-2">
+      <div className="flex items-start gap-3">
         <span
-          className="grid h-8 w-8 shrink-0 place-items-center rounded-xl ring-1"
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl ring-1"
           style={{
             backgroundColor: HAK_PURPLE_SOFT,
             color: HAK_PURPLE_DARK,
             borderColor: `${HAK_PURPLE}33`,
           }}
         >
-          <Ico e="❤️" size={18} />
+          <Ico e="❤️" size={22} />
         </span>
 
         <div className="min-w-0 flex-1">
-          <h2 className="font-serif text-base font-semibold leading-none text-foreground">ŠukŠuk!</h2>
+          <h2 className="font-serif text-lg font-semibold leading-none text-foreground">ŠukŠuk!</h2>
           <p className="mt-1 text-[10px] leading-snug text-muted-foreground">
             Logged intimacy · actual intercourse only
           </p>
         </div>
       </div>
 
-      <div className="mt-2 border-t border-border/55 pt-2">
+      <div className="mt-3 border-t border-border/55 pt-3">
         <div className="grid grid-cols-3 divide-x divide-border/55">
           <div className="min-w-0 px-1.5">
             <p className="text-center text-[10px] font-bold text-foreground">Week</p>
             <p className="mt-0.5 truncate text-center text-[6.5px] tabular-nums text-muted-foreground">
               {toKey(week.start)} → {toKey(week.end)}
             </p>
-            <p className="mt-1 text-center font-serif text-xl font-bold leading-none text-foreground">
+            <p className="mt-1.5 text-center font-serif text-2xl font-bold leading-none text-foreground">
               {week.count}
               <span className="ml-1 font-sans text-[8px] font-medium text-muted-foreground">times</span>
             </p>
@@ -2494,7 +2533,7 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
             <p className="mt-0.5 truncate text-center text-[6.5px] text-muted-foreground">
               {anchor.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
             </p>
-            <p className="mt-1 text-center font-serif text-xl font-bold leading-none text-foreground">
+            <p className="mt-1.5 text-center font-serif text-2xl font-bold leading-none text-foreground">
               {month.count}
               <span className="ml-1 font-sans text-[8px] font-medium text-muted-foreground">times</span>
             </p>
@@ -2507,7 +2546,7 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
             <p className="mt-0.5 text-center text-[6.5px] tabular-nums text-muted-foreground">
               {anchor.getFullYear()}
             </p>
-            <p className="mt-1 text-center font-serif text-xl font-bold leading-none text-foreground">
+            <p className="mt-1.5 text-center font-serif text-2xl font-bold leading-none text-foreground">
               {year.count}
               <span className="ml-1 font-sans text-[8px] font-medium text-muted-foreground">times</span>
             </p>
