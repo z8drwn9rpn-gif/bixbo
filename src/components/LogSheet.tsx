@@ -270,10 +270,10 @@ export function LogSheet({
         ) : (
           <div className="flex h-full min-h-0 flex-col">
             <SheetHeader
-              className={`shrink-0 flex-row items-center justify-between gap-0 border-b border-border px-5 pb-0 ${
+              className={`shrink-0 flex-row items-end justify-between gap-0 border-b border-border px-5 pb-2 ${
                 active === "pain"
                   ? "h-14 pt-0"
-                  : "h-[calc(48px+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)]"
+                  : "h-[calc(40px+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)]"
               }`}
             >
               <button onClick={back} className="flex items-center gap-1 text-sm text-muted-foreground">
