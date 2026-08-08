@@ -191,12 +191,12 @@ export function LogSheet({
             ? `flex h-[100dvh] max-h-[100dvh] flex-col rounded-t-none bg-background p-0 ${
                 active === "pain" ? "pt-[env(safe-area-inset-top)]" : "pt-0"
               }`
-            : "fixed !left-auto !right-3 !bottom-[calc(env(safe-area-inset-bottom)+0.1rem)] !top-auto flex !h-auto !max-h-[94dvh] !w-[67vw] !max-w-[320px] min-h-0 flex-col gap-0 overflow-hidden rounded-[1.5rem] border border-border/70 bg-background/95 p-0 shadow-2xl backdrop-blur-xl") + " [&>button.absolute]:hidden"
+            : "fixed !left-auto !right-3 !bottom-1 !top-auto flex !h-[484px] !max-h-[94dvh] !w-[67vw] !max-w-[320px] min-h-0 flex-col overflow-hidden rounded-[1.5rem] border border-border/70 bg-background/95 p-0 shadow-2xl backdrop-blur-xl") + " [&>button.absolute]:hidden"
         }
       >
         {!active ? (
           <>
-            <SheetHeader className="relative h-12 shrink-0 border-b border-border/60 px-3 py-0">
+            <SheetHeader className="relative h-10 shrink-0 border-b border-border/60 px-3 py-0">
               <SheetTitle className="flex h-full items-center justify-center text-center font-serif text-xl">Log</SheetTitle>
               <button
                 onClick={() => setEditingOrder((v) => !v)}
@@ -220,11 +220,11 @@ export function LogSheet({
                 <X className="h-4 w-4" />
               </button>
             </SheetHeader>
-            <ul className="min-h-0 flex-none overflow-y-auto divide-y divide-border/70 bg-surface/55 px-2 py-0">
+            <ul className="m-0 min-h-0 flex-1 list-none overflow-y-auto divide-y divide-border/70 bg-surface/55 px-2 py-0">
               {orderedCats.map((c, i) => (
                 <li key={c.id}>
                   {editingOrder ? (
-                    <div className="flex h-[38px] w-full items-center gap-2 bg-surface/70 px-2">
+                    <div className="flex h-9 w-full items-center gap-2 bg-surface/70 px-2">
                       <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-tint">
                         <Ico e={c.emoji} size={20} />
                       </span>
@@ -251,7 +251,7 @@ export function LogSheet({
                   ) : (
                     <button
                       onClick={() => setCat(c.id)}
-                      className="flex h-[38px] w-full items-center gap-2 bg-surface/70 px-2 text-left transition hover:bg-tint"
+                      className="flex h-9 w-full items-center gap-2 bg-surface/70 px-2 text-left transition hover:bg-tint"
                     >
                       <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-tint">
                         <Ico e={c.emoji} size={20} />
@@ -4026,3 +4026,4 @@ function PostpartumSymptomsForm({
       ) : null}
     </div>
   );
+}
