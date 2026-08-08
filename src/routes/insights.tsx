@@ -1090,7 +1090,7 @@ function InsightBarChartFrame({
 
   return (
     <div className="mt-4">
-      <div className="flex gap-1.5">
+      <div className="flex gap-1">
         <div className="flex flex-col items-end pr-1" style={{ height }}>
           <div className="flex h-full flex-col justify-between text-[10px] font-medium text-muted-foreground">
             {yLabels.map((value) => (
@@ -1696,9 +1696,9 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
 
     // Compact year layout: all 12 months fit on one screen, like the reference mockup.
     // Popup stays attached to the selected weekday row without changing card height.
-    const rowStep = 17;
-    const gridTop = 22;
-    const dotCenterOffset = 2;
+    const rowStep = 20.25;
+    const gridTop = 23;
+    const dotCenterOffset = 2.625;
     const tooltipTotalHeight = 70;
     const connectorGap = 6;
     const selectedCenterY = gridTop + dotCenterOffset + activePosition.weekdayIndex * rowStep;
@@ -1770,11 +1770,11 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
         ))}
       </div>
 
-      <div className="mt-3 -mx-2 rounded-[1.5rem] bg-background/55 p-2.5 ring-1 ring-border/60 sm:mx-0 sm:p-3">
+      <div className="mt-3 -mx-3 rounded-[1.5rem] bg-background/55 px-2 py-3 ring-1 ring-border/60 sm:mx-0 sm:p-3">
         <div className="relative min-w-0 overflow-visible">
           {activeTooltip && activePosition && activeTooltipLayout ? (
             <InsightFloatingTooltip
-              leftPct={8 + ((activePosition.weekIndex + 0.5) / heatmapWeekCount) * 91}
+              leftPct={7 + ((activePosition.weekIndex + 0.5) / heatmapWeekCount) * 92}
               details={activeTooltip}
               top={activeTooltipLayout.top}
               connectorSide={activeTooltipLayout.connectorSide}
@@ -1782,11 +1782,11 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
           ) : null}
 
           <div className="flex gap-1.5">
-            <div className="w-6 shrink-0 pt-[22px]">
+            <div className="w-[22px] shrink-0 pt-[23px]">
               {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((weekday) => (
                 <div
                   key={weekday}
-                  className="flex h-[17px] items-center text-[8px] font-medium text-muted-foreground"
+                  className="flex h-[20.25px] items-center text-[8px] font-medium text-muted-foreground"
                 >
                   {weekday}
                 </div>
@@ -1794,11 +1794,11 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
             </div>
 
             <div className="min-w-0 flex-1">
-              <div className="relative mb-1.5 h-4" aria-hidden="true">
+              <div className="relative mb-1.5 h-[17px]" aria-hidden="true">
                 {yearGrid.months.map(({ label, weekIndex }) => (
                   <span
                     key={label}
-                    className="absolute top-0 -translate-x-1/2 whitespace-nowrap text-[7px] font-semibold text-foreground/75"
+                    className="absolute top-0 -translate-x-1/2 whitespace-nowrap text-[8px] font-semibold text-foreground/80"
                     style={{ left: `${((weekIndex + 0.5) / heatmapWeekCount) * 100}%` }}
                   >
                     {label}
@@ -1806,19 +1806,26 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
                 ))}
               </div>
 
-              <div className="flex w-full justify-between">
+              <div
+                className="grid w-full"
+                style={{
+                  gridTemplateColumns: `repeat(${heatmapWeekCount}, 5.25px)`,
+                  columnGap: "0.25px",
+                  justifyContent: "space-between",
+                }}
+              >
                 {yearGrid.weeks.map((week, weekIndex) => {
                   const isMonthBoundary = monthBoundaryWeekSet.has(weekIndex);
 
                   return (
                     <div
                       key={weekIndex}
-                      className="relative grid shrink-0 grid-rows-7 gap-y-[13px]"
+                      className="relative grid shrink-0 grid-rows-7 gap-y-[15px]"
                     >
                       {isMonthBoundary ? (
                         <span
                           aria-hidden="true"
-                          className="pointer-events-none absolute -left-[2px] inset-y-[-2px] w-px rounded-full bg-primary/25"
+                          className="pointer-events-none absolute -left-[1px] inset-y-[-3px] w-px rounded-full bg-primary/30"
                         />
                       ) : null}
 
@@ -1829,7 +1836,8 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
                           return (
                             <span
                               key={date.toISOString()}
-                              className="h-1 w-1 rounded-full bg-transparent"
+                              className="rounded-full bg-transparent"
+                              style={{ width: 5.25, height: 5.25 }}
                             />
                           );
                         }
@@ -1852,10 +1860,10 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
                               datum ? ` · ${datum.value}` : " · no data"
                             }`}
                             aria-pressed={isActive}
-                            className={`h-1 w-1 rounded-full transition-transform ${
+                            className={`rounded-full transition-transform ${
                               datum ? "touch-manipulation active:scale-125" : "cursor-default"
                             } ${isActive ? "ring-1 ring-foreground ring-offset-1 ring-offset-background" : ""}`}
-                            style={{ background: datum?.color ?? "var(--tint)" }}
+                            style={{ width: 5.25, height: 5.25, background: datum?.color ?? "var(--tint)" }}
                           />
                         );
                       })}
