@@ -372,7 +372,7 @@ function VitalTrendPopup({
   anchorKey: string;
   onClose: () => void;
 }) {
-  const [period, setPeriod] = useState<VitalTrendPeriod>("W");
+  const [period, setPeriod] = useState<VitalTrendPeriod>(() => (metric === "sleep" ? "W" : "M"));
   const [anchor, setAnchor] = useState(() => fromKey(anchorKey));
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
@@ -389,6 +389,7 @@ function VitalTrendPopup({
 
   useEffect(() => {
     setAnchor(fromKey(anchorKey));
+    setPeriod(metric === "sleep" ? "W" : "M");
   }, [anchorKey, metric]);
 
   const points = useMemo<VitalTrendPoint[]>(() => {
@@ -438,20 +439,32 @@ function VitalTrendPopup({
         ? anchor.toLocaleDateString("en-GB", { month: "long", year: "numeric" })
         : `${start.toLocaleDateString("en-GB", { day: "numeric", month: "short" })} – ${end.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`;
 
-  const chartWidth = 278;
-  const chartHeight = 132;
-  const left = 10;
-  const right = 34;
-  const top = 12;
-  const bottom = 24;
+  const chartWidth = metric === "sleep" ? 278 : 300;
+  const chartHeight = metric === "sleep" ? 132 : 162;
+  const left = metric === "sleep" ? 10 : 36;
+  const right = metric === "sleep" ? 34 : 10;
+  const top = metric === "sleep" ? 12 : 24;
+  const bottom = metric === "sleep" ? 24 : 30;
   const chartW = chartWidth - left - right;
   const chartH = chartHeight - top - bottom;
   const rawMin = values.length ? Math.min(...values) : 0;
   const rawMax = values.length ? Math.max(...values) : 1;
-  const basePad = metric === "temperature" ? 0.3 : metric === "weight" ? 0.6 : 1;
-  const span = Math.max(basePad, rawMax - rawMin);
-  const yMin = rawMin - span * 0.25;
-  const yMax = rawMax + span * 0.25;
+  const averageValue = values.length ? averageNumbers(values) : undefined;
+  const referenceMiddle = averageValue ?? (rawMin + rawMax) / 2;
+  const roundedMiddle =
+    metric === "temperature"
+      ? Math.round(referenceMiddle * 2) / 2
+      : metric === "weight"
+        ? Math.round(referenceMiddle)
+        : referenceMiddle;
+  const baseTickStep = metric === "temperature" ? 1.5 : metric === "weight" ? 3 : 1;
+  const requiredHalfSpan = Math.max(Math.abs(rawMax - roundedMiddle), Math.abs(rawMin - roundedMiddle));
+  const tickStep =
+    metric === "sleep"
+      ? Math.max(1, rawMax - rawMin)
+      : Math.max(baseTickStep, Math.ceil(requiredHalfSpan / baseTickStep) * baseTickStep);
+  const yMin = metric === "sleep" ? rawMin - 0.25 : roundedMiddle - tickStep;
+  const yMax = metric === "sleep" ? rawMax + 0.25 : roundedMiddle + tickStep;
   const denom = Math.max(1, points.length - 1);
   const xFor = (index: number) => left + (index / denom) * chartW;
   const yFor = (value: number) => top + ((yMax - value) / Math.max(0.001, yMax - yMin)) * chartH;
@@ -470,6 +483,218 @@ function VitalTrendPopup({
   if (period === "Y") points.forEach((_, index) => visibleLabelIndexes.add(index));
 
   const active = activeIndex != null ? points[activeIndex] : undefined;
+
+  // Temperature + weight use the same olive BIXBO chart language as the reference:
+  // title + average, compact period select, hollow olive points, dashed average line,
+  // left-side Y labels and an in-chart value/date tooltip.
+  if (metric === "temperature" || metric === "weight") {
+    const chartTitle = metric === "temperature" ? "Body temperature (°C)" : "Weight (kg)";
+    const averageLabel = averageValue != null ? `Avg ${averageValue.toFixed(1)} ${unit}` : `Avg — ${unit}`;
+    const yTicks = [yMax, roundedMiddle, yMin];
+
+    const axisLabel = (point: VitalTrendPoint) => {
+      if (period === "Y") return point.label;
+      const d = fromKey(point.key);
+      if (period === "W") return d.toLocaleDateString("en-GB", { weekday: "short" }).slice(0, 2);
+      return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+    };
+
+    const oliveLabelIndexes = new Set<number>();
+    if (period === "W") points.forEach((_, index) => oliveLabelIndexes.add(index));
+    if (period === "M") {
+      points.forEach((_, index) => {
+        if (index === 0 || index === points.length - 1 || index % 7 === 0) oliveLabelIndexes.add(index);
+      });
+    }
+    if (period === "Y") {
+      points.forEach((_, index) => {
+        if (index % 2 === 0 || index === points.length - 1) oliveLabelIndexes.add(index);
+      });
+    }
+
+    const activeX = activeIndex != null ? xFor(activeIndex) : null;
+    const activeY = active?.value != null ? yFor(active.value) : null;
+    const tooltipWidth = 58;
+    const tooltipHeight = 39;
+    const tooltipX =
+      activeX == null ? 0 : Math.max(left, Math.min(left + chartW - tooltipWidth, activeX - tooltipWidth / 2));
+    const tooltipY = activeY == null ? 0 : Math.max(2, activeY - tooltipHeight - 14);
+    const tooltipDate =
+      active && period !== "Y"
+        ? fromKey(active.key).toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+        : active?.label ?? "";
+
+    return (
+      <div className="fixed inset-0 z-[95] flex items-center justify-center px-6">
+        <button
+          type="button"
+          aria-label={`Close ${vitalTrendTitle(metric)} graph`}
+          className="absolute inset-0 bg-black/35"
+          onClick={onClose}
+        />
+
+        <section className="relative z-10 w-full max-w-[350px] rounded-[1.4rem] bg-surface p-3 shadow-2xl ring-1 ring-border">
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute -right-2 -top-2 grid h-8 w-8 place-items-center rounded-full bg-background text-sm font-bold text-foreground shadow-md ring-1 ring-border"
+            aria-label="Close"
+          >
+            ×
+          </button>
+
+          <div className="flex items-start justify-between gap-3 px-1 pt-0.5">
+            <div className="min-w-0">
+              <h2 className="text-sm font-bold leading-tight text-foreground">{chartTitle}</h2>
+              <p className="mt-1 text-[10px] font-medium text-muted-foreground">{averageLabel}</p>
+            </div>
+
+            <select
+              aria-label="Trend period"
+              value={period}
+              onChange={(event) => setPeriod(event.target.value as VitalTrendPeriod)}
+              className="h-8 shrink-0 rounded-lg border border-border bg-background px-2 text-[10px] font-medium text-foreground outline-none"
+            >
+              <option value="W">Week</option>
+              <option value="M">Month</option>
+              <option value="Y">Year</option>
+            </select>
+          </div>
+
+          <div className="mt-2 overflow-hidden rounded-xl bg-surface">
+            {values.length ? (
+              <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="h-auto w-full overflow-visible" role="img">
+                {yTicks.map((value, index) => {
+                  const y = yFor(value);
+                  return (
+                    <g key={`${value}-${index}`}>
+                      <line x1={left} x2={left + chartW} y1={y} y2={y} stroke="var(--border)" strokeWidth="0.8" />
+                      <text x={2} y={y + 3} fontSize="8" fill="var(--muted-foreground)">
+                        {metric === "temperature" ? value.toFixed(1) : value.toFixed(0)}
+                      </text>
+                    </g>
+                  );
+                })}
+
+                {averageValue != null ? (
+                  <line
+                    x1={left}
+                    x2={left + chartW}
+                    y1={yFor(averageValue)}
+                    y2={yFor(averageValue)}
+                    stroke="var(--primary)"
+                    strokeWidth="1"
+                    strokeDasharray="4 4"
+                    opacity="0.55"
+                  />
+                ) : null}
+
+                {path ? (
+                  <path
+                    d={path}
+                    fill="none"
+                    stroke="var(--primary)"
+                    strokeWidth="1.7"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                ) : null}
+
+                {points.map((point, index) => {
+                  if (point.value == null) return null;
+                  const activePoint = activeIndex === index;
+                  return (
+                    <g key={point.key}>
+                      <circle
+                        cx={xFor(index)}
+                        cy={yFor(point.value)}
+                        r={activePoint ? 3.6 : 2.6}
+                        fill="var(--surface)"
+                        stroke="var(--primary)"
+                        strokeWidth={activePoint ? 2 : 1.5}
+                        pointerEvents="none"
+                      />
+                      <circle
+                        cx={xFor(index)}
+                        cy={yFor(point.value)}
+                        r="11"
+                        fill="transparent"
+                        className="cursor-pointer"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setActiveIndex((current) => (current === index ? null : index));
+                        }}
+                      />
+                    </g>
+                  );
+                })}
+
+                {points.map((point, index) =>
+                  oliveLabelIndexes.has(index) ? (
+                    <text
+                      key={`olive-label-${point.key}`}
+                      x={xFor(index)}
+                      y={chartHeight - 7}
+                      textAnchor="middle"
+                      fontSize="7.5"
+                      fill="var(--muted-foreground)"
+                    >
+                      {axisLabel(point)}
+                    </text>
+                  ) : null,
+                )}
+
+                {active?.value != null && activeX != null && activeY != null ? (
+                  <g className="pointer-events-none">
+                    <line
+                      x1={activeX}
+                      x2={activeX}
+                      y1={tooltipY + tooltipHeight}
+                      y2={Math.max(tooltipY + tooltipHeight, activeY - 4)}
+                      stroke="var(--primary)"
+                      strokeWidth="1.1"
+                    />
+                    <rect
+                      x={tooltipX}
+                      y={tooltipY}
+                      width={tooltipWidth}
+                      height={tooltipHeight}
+                      rx="6"
+                      fill="var(--primary)"
+                    />
+                    <text
+                      x={tooltipX + tooltipWidth / 2}
+                      y={tooltipY + 16}
+                      textAnchor="middle"
+                      fontSize="10"
+                      fontWeight="700"
+                      fill="var(--primary-foreground)"
+                    >
+                      {active.value.toFixed(1)} {unit}
+                    </text>
+                    <text
+                      x={tooltipX + tooltipWidth / 2}
+                      y={tooltipY + 29}
+                      textAnchor="middle"
+                      fontSize="8.5"
+                      fill="var(--primary-foreground)"
+                      opacity="0.92"
+                    >
+                      {tooltipDate}
+                    </text>
+                  </g>
+                ) : null}
+              </svg>
+            ) : (
+              <div className="grid min-h-36 place-items-center text-center text-xs text-muted-foreground">
+                No {vitalTrendTitle(metric).toLowerCase()} data in this period.
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-[95] flex items-center justify-center px-7">
