@@ -631,3 +631,91 @@ select:-webkit-autofill {
 
 /* BIXBO Olive Green full-app theme revision: #636B2F */
 
+/* ==========================================================
+   BIXBO Light Olive full-app theme — #ACBF69
+   Added as a non-destructive override. Everything above is preserved.
+   ========================================================== */
+
+:root:not(.dark) {
+  /* Main app canvas — exact requested Light Olive */
+  --background: #ACBF69;
+  --foreground: #1B210E;
+
+  /* Layered olive surfaces */
+  --surface: #B8C87C;
+  --surface-elevated: #C6D391;
+  --surface-sunken: #9FB35A;
+  --tint: #C1CF87;
+
+  --card: #B8C87C;
+  --card-foreground: #1B210E;
+
+  --popover: #CFD99D;
+  --popover-foreground: #1B210E;
+
+  /* Controls / selected states */
+  --primary: #636B2F;
+  --primary-foreground: #FFFDF2;
+
+  --secondary: #BDCC82;
+  --secondary-foreground: #242B12;
+
+  --muted: #B3C477;
+  --muted-foreground: #4A5529;
+
+  --accent: #C9D58F;
+  --accent-foreground: #273013;
+
+  /* Borders and focus */
+  --border: #8FA04F;
+  --input: #8FA04F;
+  --ring: #636B2F;
+
+  /* Charts / tooltips */
+  --chart-grid: #9EAF5D;
+  --chart-axis: #39431D;
+  --chart-tooltip-bg: #E4E8BF;
+  --chart-tooltip-fg: #1B210E;
+
+  /* Olive glass */
+  --bixbo-glass: rgba(184, 200, 124, 0.72);
+  --bixbo-glass-strong: rgba(198, 211, 145, 0.88);
+}
+
+/* Full Light Olive background everywhere in light mode. */
+:root:not(.dark),
+:root:not(.dark) body {
+  background-color: #ACBF69;
+}
+
+:root:not(.dark) body {
+  background:
+    radial-gradient(circle at 50% -14%, rgba(242, 245, 210, 0.22) 0%, transparent 34%),
+    linear-gradient(
+      180deg,
+      #B9C979 0%,
+      #B1C36F 26%,
+      #ACBF69 58%,
+      #A1B35C 100%
+    );
+}
+
+/* Keep all existing cards olive rather than reverting to cream. */
+:root:not(.dark) .bg-surface,
+:root:not(.dark) .bg-card {
+  backdrop-filter: saturate(0.96);
+}
+
+/* Light Olive elevation. */
+:root:not(.dark) .shadow-sm {
+  --tw-shadow-color: color-mix(in srgb, #59652B 15%, transparent);
+}
+
+:root:not(.dark) .shadow-md,
+:root:not(.dark) .shadow-lg,
+:root:not(.dark) .shadow-xl {
+  --tw-shadow-color: color-mix(in srgb, #59652B 20%, transparent);
+}
+
+/* BIXBO Light Olive full-app theme revision: #ACBF69 */
+
