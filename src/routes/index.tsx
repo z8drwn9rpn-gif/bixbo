@@ -1699,7 +1699,7 @@ function BirthControlCalendar({
       </div>
 
       {/* Circular HAK overview — only wheel pills open the dose popup. */}
-      <div className="mx-auto mt-1 w-full max-w-[360px] shrink-0">
+      <div className="mx-auto mt-1 w-full max-w-[392px] shrink-0">
         <div className="relative aspect-square w-full">
           <div
             className="absolute inset-[7.5%] rounded-full"
@@ -1720,7 +1720,7 @@ function BirthControlCalendar({
             {Array.from({ length: PACK_DAYS }).map((_, i) => {
               const day = i + 1;
               const angle = (wheelAngleForDay(day) * Math.PI) / 180;
-              const radius = 38.5;
+              const radius = 41;
               return (
                 <span
                   key={`wheel-track-${i}`}
@@ -1736,7 +1736,7 @@ function BirthControlCalendar({
 
           {wheelDays.map((day) => {
             const angle = (wheelAngleForDay(day) * Math.PI) / 180;
-            const radius = 38.5;
+            const radius = 41;
             const left = 50 + Math.cos(angle) * radius;
             const top = 50 + Math.sin(angle) * radius;
             const dateKey = dateForPackDay(day);
@@ -1819,7 +1819,7 @@ function BirthControlCalendar({
                 onClick={() => {
                   setSel(dateKey);
                 }}
-                className="absolute z-10 grid h-8 w-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[10px] font-bold transition active:scale-95"
+                className="absolute z-10 grid h-9 w-9 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[11px] font-bold transition active:scale-95"
                 style={{
                   left: `${left}%`,
                   top: `${top}%`,
@@ -1838,10 +1838,11 @@ function BirthControlCalendar({
             );
           })}
 
-          <div className="pointer-events-none absolute left-[17%] right-[17%] top-[14.5%] bottom-[14%] z-20 flex flex-col items-center overflow-visible text-center">
-            <p className="text-[10px] font-semibold leading-none text-foreground">Day</p>
+          {/* Current day status — kept clear of the top pill bubbles. */}
+          <div className="pointer-events-none absolute left-[24%] right-[24%] top-[18%] z-20 text-center">
+            <p className="text-[9px] font-semibold leading-none text-foreground">Day</p>
             <p
-              className="mt-0.5 font-serif text-[clamp(2rem,8vw,2.7rem)] font-bold leading-none"
+              className="mt-0.5 font-serif text-[clamp(1.8rem,7.3vw,2.35rem)] font-bold leading-none"
               style={{ color: currentDay <= ACTIVE_DAYS ? HAK_PURPLE_DARK : HAK_PINK_DARK }}
             >
               {currentDay} / {PACK_DAYS}
@@ -1849,92 +1850,92 @@ function BirthControlCalendar({
 
             {currentDay > ACTIVE_DAYS && (
               <p
-                className="mt-0.5 text-[10px] font-semibold leading-none"
+                className="mt-1 text-[10px] font-semibold leading-none"
                 style={{ color: HAK_PINK_DARK }}
               >
                 Placebo / break
               </p>
             )}
+          </div>
 
-            <div className="mt-1.5 w-[82%]">
-              <p className="text-[11px] font-bold leading-none text-foreground">
-                {hakMonthLabel}
-              </p>
+          {/* Calendar — actual date stays large; HAK pill number stays as small Pxx. */}
+          <div className="pointer-events-none absolute left-[20%] right-[20%] top-[38%] z-20 text-center">
+            <p className="text-[13px] font-bold leading-none text-foreground">
+              {hakMonthLabel}
+            </p>
 
-              <div className="mt-1 grid grid-cols-7 text-center text-[6.2px] font-semibold leading-none text-foreground/75">
-                {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((weekday) => (
-                  <span key={weekday}>{weekday}</span>
-                ))}
-              </div>
-
-              <div className="mt-0.5 grid grid-cols-7 gap-x-[1px] gap-y-0">
-                {hakMonthCells.map((cell) => {
-                  if (!cell.inMonth) {
-                    return <span key={cell.key} className="h-[17px]" aria-hidden="true" />;
-                  }
-
-                  const packDay = cell.packDay;
-                  const loggedTaken = !!takenAt(cell.key);
-                  const missed = missedAt(cell.key);
-                  const isToday = cell.key === todayK;
-                  const isPlacebo = packDay != null && packDay > ACTIVE_DAYS;
-                  const isNewPack = packDay === 1;
-
-                  const chipBg =
-                    packDay == null
-                      ? "transparent"
-                      : isPlacebo
-                        ? "rgba(239,154,184,.72)"
-                        : isNewPack
-                          ? "rgba(176,185,81,.72)"
-                          : "rgba(170,145,229,.72)";
-
-                  const chipColor =
-                    packDay == null
-                      ? "transparent"
-                      : isPlacebo
-                        ? HAK_PINK_DARK
-                        : isNewPack
-                          ? HAK_GREEN_DARK
-                          : HAK_PURPLE_DARK;
-
-                  return (
-                    <span
-                      key={cell.key}
-                      className="flex h-[17px] min-w-0 flex-col items-center justify-start"
-                      aria-label={
-                        packDay == null
-                          ? fmtFullDate(cell.key)
-                          : `${fmtFullDate(cell.key)}, HAK day ${packDay}${loggedTaken ? ", taken" : missed ? ", missed" : ""}`
-                      }
-                    >
-                      <span
-                        className="grid h-[8px] min-w-[13px] place-items-center rounded-full px-[1px] text-[6.7px] font-bold leading-none tabular-nums"
-                        style={{
-                          color: "var(--foreground)",
-                          boxShadow: isToday ? "0 0 0 1px rgba(65,76,18,.68)" : undefined,
-                        }}
-                      >
-                        {cell.date.getDate()}
-                      </span>
-
-                      {packDay != null && (
-                        <span
-                          className="mt-[1px] max-w-[24px] truncate rounded-[3px] px-[2px] py-[1px] text-[4.8px] font-bold leading-none tabular-nums"
-                          style={{
-                            backgroundColor: chipBg,
-                            color: chipColor,
-                          }}
-                        >
-                          P{packDay}{loggedTaken ? " ✓" : missed ? " ×" : ""}
-                        </span>
-                      )}
-                    </span>
-                  );
-                })}
-              </div>
+            <div className="mt-1.5 grid grid-cols-7 text-center text-[7px] font-semibold leading-none text-foreground/75">
+              {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((weekday) => (
+                <span key={weekday}>{weekday}</span>
+              ))}
             </div>
 
+            <div className="mt-1 grid grid-cols-7 gap-x-[2px] gap-y-[1px]">
+              {hakMonthCells.map((cell) => {
+                if (!cell.inMonth) {
+                  return <span key={cell.key} className="h-[18px]" aria-hidden="true" />;
+                }
+
+                const packDay = cell.packDay;
+                const loggedTaken = !!takenAt(cell.key);
+                const missed = missedAt(cell.key);
+                const isToday = cell.key === todayK;
+                const isPlacebo = packDay != null && packDay > ACTIVE_DAYS;
+                const isNewPack = packDay === 1;
+
+                const chipBg =
+                  packDay == null
+                    ? "transparent"
+                    : isPlacebo
+                      ? "rgba(239,154,184,.72)"
+                      : isNewPack
+                        ? "rgba(176,185,81,.72)"
+                        : "rgba(170,145,229,.72)";
+
+                const chipColor =
+                  packDay == null
+                    ? "transparent"
+                    : isPlacebo
+                      ? HAK_PINK_DARK
+                      : isNewPack
+                        ? HAK_GREEN_DARK
+                        : HAK_PURPLE_DARK;
+
+                return (
+                  <span
+                    key={cell.key}
+                    className="flex h-[18px] min-w-0 flex-col items-center justify-start"
+                    aria-label={
+                      packDay == null
+                        ? fmtFullDate(cell.key)
+                        : `${fmtFullDate(cell.key)}, HAK day ${packDay}${loggedTaken ? ", taken" : missed ? ", missed" : ""}`
+                    }
+                  >
+                    <span
+                      className="grid h-[9px] min-w-[15px] place-items-center rounded-full px-[1px] text-[7.5px] font-bold leading-none tabular-nums"
+                      style={{
+                        color: "var(--foreground)",
+                        boxShadow: isToday ? "0 0 0 1px rgba(65,76,18,.68)" : undefined,
+                      }}
+                    >
+                      {cell.date.getDate()}
+                    </span>
+
+                    {packDay != null && (
+                      <span
+                        className="mt-[1px] max-w-[28px] truncate rounded-[3px] px-[2px] py-[1px] text-[5.2px] font-bold leading-none tabular-nums"
+                        style={{
+                          backgroundColor: chipBg,
+                          color: chipColor,
+                        }}
+                      >
+                        P{packDay}{loggedTaken ? " ✓" : missed ? " ×" : ""}
+                      </span>
+                    )}
+                  </span>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
