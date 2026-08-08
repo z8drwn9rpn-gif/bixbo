@@ -337,7 +337,7 @@ function PhaseBarChart({
   const hasData = bars.some((bar) => bar.value != null);
 
   return (
-    <div className="rounded-3xl bg-tint p-4 ring-1 ring-border/50">
+    <div className="rounded-2xl bg-tint p-4 ring-1 ring-border/50">
       <div>
         <p className="text-sm font-semibold text-foreground">{title}</p>
         {description && <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">{description}</p>}
@@ -348,7 +348,7 @@ function PhaseBarChart({
           Log at least one complete menstrual cycle to unlock this analysis.
         </p>
       ) : (
-        <div className="mt-4 rounded-2xl bg-background/55 px-3 py-4 ring-1 ring-border/35">
+        <div className="mt-3 rounded-2xl bg-background/55 px-3 py-3 ring-1 ring-border/40">
           <div className="flex h-24 items-end gap-3">
             {bars.map((bar, index) => {
               const color = PHASE_COLORS[index] ?? PHASE_COLORS[0];
@@ -457,7 +457,7 @@ function ComparisonMetric({
   const relativeChange = percentageChange(previous, current);
 
   return (
-    <article className="rounded-2xl bg-tint p-3.5 ring-1 ring-border/60">
+    <article className="rounded-2xl bg-tint p-4 ring-1 ring-border/50">
       <div className="flex items-start gap-3">
         {icon && (
           <span
