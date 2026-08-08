@@ -188,7 +188,7 @@ export function LogSheet({
         side="bottom"
         className={
           (active
-            ? "flex h-[100dvh] max-h-[100dvh] flex-col rounded-t-none bg-background p-0"
+            ? "flex h-[100dvh] max-h-[100dvh] flex-col rounded-t-none bg-background p-0 pt-[env(safe-area-inset-top)]"
             : "flex h-[88vh] max-h-[88vh] flex-col rounded-t-3xl bg-background p-0") + " [&>button.absolute]:hidden"
         }
       >
@@ -278,7 +278,7 @@ export function LogSheet({
             </SheetHeader>
             <div
               key={`${active}-${openToken}-${(edit as { id?: string } | undefined)?.id ?? initialPain?.id ?? "new"}`}
-              className={`min-h-0 flex-1 overflow-y-auto ${active === "pain" ? "" : "px-5 py-4"}`}
+              className={`min-h-0 flex-1 overflow-y-auto ${active === "pain" ? "" : "px-5 pb-4 pt-[104px]"}`}
             >
               {active === "postpartum" && (
                 <PostpartumSymptomsForm date={date} data={data} update={update} onDone={close} />
@@ -416,15 +416,20 @@ function Chip({
 }
 function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave: () => void; disabled?: boolean }) {
   return (
-    <SheetFooter className="mt-5 flex-row items-center justify-between gap-4 border-t border-border/50 pt-4">
+    <SheetFooter
+      className="fixed inset-x-0 z-30 flex-row items-center justify-between gap-3 border-y border-border/50 bg-background/95 px-5 py-3 shadow-sm backdrop-blur"
+      style={{ top: "calc(env(safe-area-inset-top) + 57px)" }}
+    >
       <button
         type="button"
         onClick={onCancel}
-        className="flex min-h-12 items-center gap-1.5 px-1 text-base font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="flex min-w-[82px] items-center gap-1.5 text-base font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <span aria-hidden="true" className="text-xl leading-none">←</span>
         <span>Back</span>
       </button>
+
+      <span className="min-w-0 flex-1" aria-hidden="true" />
 
       <button
         type="button"
@@ -438,6 +443,7 @@ function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave:
     </SheetFooter>
   );
 }
+
 function CustomChipList({
   base,
   custom,
@@ -640,6 +646,7 @@ function IntensityScale({
   descriptions,
   legendTitle,
   from = 0,
+  compactSingleRow = false,
 }: {
   value: number;
   onChange: (n: number) => void;
@@ -647,6 +654,7 @@ function IntensityScale({
   descriptions?: Record<number, string>;
   legendTitle?: string;
   from?: number;
+  compactSingleRow?: boolean;
 }) {
   const nums = Array.from(
     { length: Math.round((max - from) * 2) + 1 },
@@ -658,7 +666,13 @@ function IntensityScale({
 
   return (
     <div className="mt-2 space-y-1.5">
-      <div className="flex flex-wrap justify-center gap-1.5 px-1">
+      <div
+        className={
+          compactSingleRow
+            ? "flex flex-nowrap items-center justify-center gap-0.5 px-0"
+            : "flex flex-wrap justify-center gap-1.5 px-1"
+        }
+      >
         {nums.map((n) => {
           const active = value === n;
           const description = descriptions?.[Math.round(n)];
@@ -671,7 +685,9 @@ function IntensityScale({
               onClick={() => onChange(n)}
               title={description ? `${n} — ${description}` : String(n)}
               aria-label={description ? `${n} — ${description}` : `Intensity ${n}`}
-              className={`h-8 w-8 rounded-full text-[11px] font-semibold transition ${
+              className={`${
+                compactSingleRow ? "h-7 w-7 text-[10px]" : "h-8 w-8 text-[11px]"
+              } shrink-0 rounded-full font-semibold transition ${
                 active ? "text-white ring-2 ring-foreground" : "text-foreground"
               }`}
               style={{ background: bg }}
@@ -993,7 +1009,6 @@ function PainWizard({
   };
 
   const bg = painColor(score);
-  const bgFill = `color-mix(in oklab, ${bg} 35%, white)`;
 
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const onTouchStart = (e: React.TouchEvent) => {
@@ -1017,7 +1032,6 @@ function PainWizard({
   return (
     <div
       className="flex min-h-full flex-col px-5 py-4 transition-colors touch-pan-y"
-      style={{ background: bgFill }}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
@@ -1104,10 +1118,10 @@ function PainWizard({
                 type="button"
                 onClick={() => setScore(n)}
                 title={`${n} — ${getScaleDesc(data, "pain")[Math.round(n)]}`}
-                className={`h-8 w-8 rounded-full text-[11px] font-semibold ${
-                  score === n ? "text-white ring-2 ring-foreground" : "bg-tint text-foreground"
+                className={`h-8 w-8 rounded-full text-[11px] font-semibold transition ${
+                  score === n ? "text-white ring-2 ring-foreground" : "text-foreground"
                 }`}
-                style={score === n ? { background: painColor(n) } : undefined}
+                style={{ background: painColor(n) }}
               >
                 {Number.isInteger(n) ? n : n.toFixed(1)}
               </button>
@@ -1438,6 +1452,7 @@ function PainWizard({
                 max={5}
                 descriptions={getScaleDesc(data, "hotFlashes")}
                 legendTitle="Hot flashes scale"
+                compactSingleRow
               />
             </Field>
           )}
@@ -1758,7 +1773,7 @@ function PainWizard({
       )}
 
       {quickSymptomUpdate && step === 3 && (
-        <SheetFooter className="mt-5 flex-row items-center justify-between gap-4 border-t border-border/50 pt-4">
+        <SheetFooter className="sticky top-0 z-20 -mx-5 mb-3 flex-row items-center justify-between gap-4 border-y border-border/50 bg-background/95 px-5 py-3 shadow-sm backdrop-blur">
           <button
             type="button"
             onClick={() => {
@@ -2203,17 +2218,17 @@ function PeriodForm({
             <Slider value={[(cramps ?? 0) * 2]} min={0} max={20} step={1} onValueChange={([v]) => setCramps(v / 2)} />
           </div>
         </div>
-        <div className="mt-2 flex flex-wrap gap-1.5">
+        <div className="mt-2 flex flex-wrap justify-center gap-1.5 px-1">
           {Array.from({ length: 21 }, (_, i) => i / 2).map((n) => (
             <button
               key={n}
               type="button"
               onClick={() => setCramps(cramps === n ? undefined : n)}
               title={`${n} — ${painDesc[Math.round(n)]}`}
-              className={`h-7 w-7 rounded-full text-[10px] font-semibold ${
-                cramps === n ? "text-white ring-2 ring-foreground" : "bg-tint text-foreground"
+              className={`h-8 w-8 rounded-full text-[11px] font-semibold transition ${
+                cramps === n ? "text-white ring-2 ring-foreground" : "text-foreground"
               }`}
-              style={cramps === n ? { background: painColor(n) } : undefined}
+              style={{ background: painColor(n) }}
             >
               {Number.isInteger(n) ? n : n.toFixed(1)}
             </button>
