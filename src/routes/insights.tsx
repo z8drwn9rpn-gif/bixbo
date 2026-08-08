@@ -427,8 +427,8 @@ function InsightsPage() {
             {period === "Y" ? (
               <>
                 <YearHealthHeatmap data={view} anchor={anchor} />
-                <YearPatternOfDayChart data={view} days={days} anchor={anchor} />
-                <YearMedsOverview data={view} days={days} anchor={anchor} />
+                <TimeOfDayPatternChart data={view} days={days} period={period} />
+                <MedsAdherence data={view} period={period} anchor={anchor} />
               </>
             ) : (
               <>
@@ -521,256 +521,6 @@ function InsightsPage() {
             )}
       </div>
     </AppShell>
-  );
-}
-
-function YearPatternOfDayChart({
-  data,
-  days,
-  anchor,
-}: {
-  data: ReturnType<typeof useBixbo>["data"];
-  days: string[];
-  anchor: Date;
-}) {
-  const buckets = useMemo(() => {
-    const totals = new Array(6).fill(0) as number[];
-    const counts = new Array(6).fill(0) as number[];
-
-    days.forEach((key) => {
-      (data.dayLogs[key]?.pain ?? []).forEach((entry) => {
-        if (!Number.isFinite(entry.score) || !entry.time) return;
-
-        const match = /^(\d{1,2}):(\d{2})/.exec(entry.time);
-        if (!match) return;
-
-        const hour = Number(match[1]);
-        if (!Number.isFinite(hour) || hour < 0 || hour > 23) return;
-
-        const bucket = Math.min(5, Math.floor(hour / 4));
-        totals[bucket] += Number(entry.score);
-        counts[bucket] += 1;
-      });
-    });
-
-    return totals.map((total, index) => ({
-      label: ["00", "04", "08", "12", "16", "20"][index],
-      value: counts[index] ? total / counts[index] : null,
-      count: counts[index],
-    }));
-  }, [data.dayLogs, days]);
-
-  const timedEntries = buckets.reduce((sum, bucket) => sum + bucket.count, 0);
-  const points = buckets
-    .map((bucket, index) => {
-      if (bucket.value == null) return null;
-      const x = 36 + index * 50;
-      const y = 132 - (bucket.value / 10) * 100;
-      return { ...bucket, x, y };
-    })
-    .filter((point): point is NonNullable<typeof point> => point != null);
-
-  const polyline = points.map((point) => `${point.x},${point.y}`).join(" ");
-
-  return (
-    <ChartCard title="Pattern of Day (avg)">
-      <div className="mt-1 flex items-center justify-between gap-3">
-        <p className="text-[10px] text-muted-foreground">Average pain by time of day</p>
-        <p className="shrink-0 text-[9px] text-muted-foreground">{anchor.getFullYear()}</p>
-      </div>
-
-      {timedEntries ? (
-        <>
-          <div className="mt-3 overflow-hidden rounded-2xl bg-background/45 px-1 py-2 ring-1 ring-border/50">
-            <svg
-              viewBox="0 0 320 164"
-              className="h-auto w-full"
-              role="img"
-              aria-label={`Pattern of Day average pain chart for ${anchor.getFullYear()}, based on ${timedEntries} timed pain ${
-                timedEntries === 1 ? "entry" : "entries"
-              }`}
-            >
-              {[10, 8, 6, 4, 2, 0].map((value) => {
-                const y = 132 - (value / 10) * 100;
-                return (
-                  <g key={value}>
-                    <line
-                      x1="34"
-                      x2="306"
-                      y1={y}
-                      y2={y}
-                      stroke={CHART_GRID}
-                      strokeWidth="0.8"
-                      strokeDasharray={value === 0 ? undefined : "3 3"}
-                    />
-                    <text
-                      x="3"
-                      y={y + 3}
-                      fontSize="8"
-                      fill="var(--muted-foreground)"
-                    >
-                      {value}
-                    </text>
-                  </g>
-                );
-              })}
-
-              {points.length > 1 ? (
-                <polyline
-                  points={polyline}
-                  fill="none"
-                  stroke={GREEN_ACCENT}
-                  strokeWidth="2.3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              ) : null}
-
-              {buckets.map((bucket, index) => {
-                const x = 36 + index * 50;
-                return (
-                  <text
-                    key={bucket.label}
-                    x={x}
-                    y="153"
-                    textAnchor="middle"
-                    fontSize="8"
-                    fill="var(--muted-foreground)"
-                  >
-                    {bucket.label}
-                  </text>
-                );
-              })}
-
-              {points.map((point) => (
-                <g key={point.label}>
-                  <circle
-                    cx={point.x}
-                    cy={point.y}
-                    r="4.2"
-                    fill={vividPainChartColor(point.value)}
-                    stroke={GREEN_ACCENT}
-                    strokeWidth="1.3"
-                  />
-                  <text
-                    x={point.x}
-                    y={Math.max(10, point.y - 8)}
-                    textAnchor="middle"
-                    fontSize="8"
-                    fontWeight="600"
-                    fill="var(--foreground)"
-                  >
-                    {point.value.toFixed(1)}
-                  </text>
-                </g>
-              ))}
-            </svg>
-          </div>
-
-          <p className="mt-2 text-[10px] text-muted-foreground">
-            {timedEntries} timed pain {timedEntries === 1 ? "entry" : "entries"} · multiple entries in the same
-            time block are averaged.
-          </p>
-        </>
-      ) : (
-        <p className="mt-3 text-sm text-muted-foreground">Not enough timed pain entries yet.</p>
-      )}
-    </ChartCard>
-  );
-}
-
-function YearMedsOverview({
-  data,
-  days,
-  anchor,
-}: {
-  data: ReturnType<typeof useBixbo>["data"];
-  days: string[];
-  anchor: Date;
-}) {
-  const stats = useMemo(() => {
-    const useCounts: Record<string, number> = {};
-    let daysWithMeds = 0;
-
-    days.forEach((date) => {
-      const dayLog = data.medLog[date] ?? {};
-      let dayHasMed = false;
-
-      Object.entries(dayLog).forEach(([key, taken]) => {
-        if (!taken) return;
-
-        dayHasMed = true;
-        const medId = key.split("@")[0];
-        useCounts[medId] = (useCounts[medId] ?? 0) + 1;
-      });
-
-      if (dayHasMed) daysWithMeds += 1;
-    });
-
-    const mostUsed = Object.entries(useCounts).sort((a, b) => b[1] - a[1])[0];
-    const currentNames = new Map(data.meds.map((med) => [med.id, med.name]));
-
-    const scheduled = data.meds.filter((med) => !med.asNeeded);
-    const expectedPerDay = scheduled.reduce((sum, med) => sum + med.times.length, 0);
-    const totalExpected = expectedPerDay * days.length;
-
-    let totalTaken = 0;
-    if (totalExpected) {
-      days.forEach((date) => {
-        scheduled.forEach((med) => {
-          med.times.forEach((time) => {
-            if (data.medLog[date]?.[`${med.id}@${time}`]) totalTaken += 1;
-          });
-        });
-      });
-    }
-
-    const adherence = totalExpected ? Math.round((totalTaken / totalExpected) * 100) : null;
-
-    return {
-      daysWithMeds,
-      mostUsedName: mostUsed
-        ? currentNames.get(mostUsed[0]) ?? data.medNames?.[mostUsed[0]] ?? "Removed medication"
-        : "—",
-      mostUsedCount: mostUsed?.[1] ?? 0,
-      adherence,
-      totalTaken,
-      totalExpected,
-    };
-  }, [data.medLog, data.medNames, data.meds, days]);
-
-  return (
-    <ChartCard title="Meds Overview">
-      <p className="mt-1 text-[10px] text-muted-foreground">Year · {anchor.getFullYear()}</p>
-
-      <div className="mt-4 grid grid-cols-3 divide-x divide-border/70">
-        <div className="min-w-0 px-2 first:pl-0">
-          <p className="text-[9px] uppercase tracking-wide text-muted-foreground">Days with meds</p>
-          <p className="mt-1 font-serif text-3xl leading-none text-foreground">{stats.daysWithMeds}</p>
-          <p className="mt-1 text-[9px] text-muted-foreground">
-            {days.length ? `${Math.round((stats.daysWithMeds / days.length) * 100)}% of days` : "—"}
-          </p>
-        </div>
-
-        <div className="min-w-0 px-2">
-          <p className="text-[9px] uppercase tracking-wide text-muted-foreground">Most used</p>
-          <p className="mt-1 truncate text-sm font-semibold text-foreground">{stats.mostUsedName}</p>
-          <p className="mt-1 text-[9px] text-muted-foreground">
-            {stats.mostUsedCount ? `${stats.mostUsedCount} taken doses/logs` : "No medication logs"}
-          </p>
-        </div>
-
-        <div className="min-w-0 px-2 pr-0">
-          <p className="text-[9px] uppercase tracking-wide text-muted-foreground">Adherence</p>
-          <p className="mt-1 font-serif text-3xl leading-none text-foreground">
-            {stats.adherence == null ? "—" : `${stats.adherence}%`}
-          </p>
-          <p className="mt-1 text-[9px] text-muted-foreground">
-            {stats.totalExpected ? `${stats.totalTaken}/${stats.totalExpected} scheduled` : "No scheduled meds"}
-          </p>
-        </div>
-      </div>
-    </ChartCard>
   );
 }
 
@@ -1937,7 +1687,7 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
     }
 
     if (metric === "bowel") {
-      return [["T0", BRISTOL_MYSTERY_COLOR], ...BRISTOL.map((item) => [`T${item.n}`, item.color] as const)];
+      return [["T0", BRISTOL_MYSTERY_COLOR], ...BRISTOL.filter((item) => item.n !== 0).map((item) => [`T${item.n}`, item.color] as const)];
     }
 
     if (metric === "sleep") {
@@ -1983,18 +1733,18 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
         ))}
       </div>
 
-      <div className="mt-4 rounded-[1.5rem] bg-background/55 p-3 ring-1 ring-border/60 sm:p-4">
+      <div className="mt-4 -mx-2 rounded-[1.5rem] bg-background/55 p-2.5 ring-1 ring-border/60 sm:mx-0 sm:p-4">
         <div className="min-w-0 overflow-x-auto overscroll-x-contain pb-1 touch-pan-x">
-          <div className={`relative w-max pr-1 ${activeTooltip && activePosition ? "pt-[74px]" : ""}`}>
+          <div className={`relative w-max pr-1 ${activeTooltip && activePosition ? "pt-[78px]" : ""}`}>
             {activeTooltip && activePosition ? (
               <InsightFloatingTooltip
                 leftPct={
-                  ((36 + activePosition.weekIndex * 14 + 5.5) /
-                    Math.max(1, 36 + yearGrid.weekCount * 14)) *
+                  ((36 + activePosition.weekIndex * 17 + 7) /
+                    Math.max(1, 36 + yearGrid.weekCount * 17)) *
                   100
                 }
                 details={activeTooltip}
-                top={30 + activePosition.weekdayIndex * 14}
+                top={30 + activePosition.weekdayIndex * 17}
               />
             ) : null}
 
@@ -2003,7 +1753,7 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
                 {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((weekday) => (
                   <div
                     key={weekday}
-                    className="flex h-[14px] items-center text-[9px] font-medium text-muted-foreground"
+                    className="flex h-[17px] items-center text-[9px] font-medium text-muted-foreground"
                   >
                     {weekday}
                   </div>
@@ -2013,14 +1763,14 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
               <div>
                 <div
                   className="relative mb-1 h-4"
-                  style={{ width: `${yearGrid.weekCount * 14}px` }}
+                  style={{ width: `${yearGrid.weekCount * 17}px` }}
                   aria-hidden="true"
                 >
                   {yearGrid.months.map(({ label, weekIndex }) => (
                     <span
                       key={label}
                       className="absolute top-0 text-[9px] font-semibold text-muted-foreground"
-                      style={{ left: `${weekIndex * 14}px` }}
+                      style={{ left: `${weekIndex * 17}px` }}
                     >
                       {label}
                     </span>
@@ -2037,7 +1787,7 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
                           return (
                             <span
                               key={date.toISOString()}
-                              className="h-[11px] w-[11px] rounded-full bg-transparent"
+                              className="h-[14px] w-[14px] rounded-full bg-transparent"
                             />
                           );
                         }
@@ -2071,7 +1821,7 @@ function YearHealthHeatmap({ data, anchor }: { data: ReturnType<typeof useBixbo>
                               datum ? ` · ${datum.value}` : " · no data"
                             }`}
                             aria-pressed={isActive}
-                            className={`h-[11px] w-[11px] rounded-full transition-transform ${
+                            className={`h-[14px] w-[14px] rounded-full transition-transform ${
                               datum ? "touch-manipulation active:scale-90" : "cursor-default"
                             } ${
                               isActive
