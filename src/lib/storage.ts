@@ -1211,6 +1211,8 @@ function migrate(raw: unknown): BixboData {
     docs: safeIdArray<DocEntry>(parsed.docs),
     diagnoses: safeIdArray<Diagnosis>(parsed.diagnoses),
     deletedIds: safeArray<unknown>(parsed.deletedIds).filter((item): item is string => typeof item === "string"),
+    deletedCustom,
+
     profile: rawProfile,
     pregnancy: {
       ...EMPTY.pregnancy!,
