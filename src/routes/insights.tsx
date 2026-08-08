@@ -383,7 +383,7 @@ function InsightsPage() {
 
   return (
     <AppShell title="Health of Bixbo">
-      <div className="space-y-5 px-5 pt-3 pb-[calc(96px+env(safe-area-inset-bottom))]">
+      <div className="space-y-5 px-5 pt-3 pb-[calc(96px+env(safe-area-inset-bottom))] lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0 lg:px-0 lg:pb-12 [&>*:first-child]:lg:col-span-2">
         <div
           className="grid grid-cols-3 gap-1 rounded-[2rem] bg-primary/20 p-1.5 ring-1 ring-primary/15"
           role="tablist"

@@ -231,7 +231,7 @@ export function MonthCalendar({
       meta.set(cell.key, {
         hasMed,
         periodColor: cycleTrackingHidden ? null : (periodColorVar(periodLevel) ?? actualPeriodColor),
-        pAvg: avgDayPain(log),
+        pAvg: avgDayPain(log) ?? null,
         predictedPeriod: predictedKeys.has(cell.key),
         icons: iconsFor(log, hasMed),
         marked: hasAnyLog(log),

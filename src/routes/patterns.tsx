@@ -1812,7 +1812,7 @@ function PatternsPage() {
 
   return (
     <AppShell title="Bixbo Patterns">
-      <div className="space-y-4 px-4 pb-[calc(96px+env(safe-area-inset-bottom))] pt-3 sm:px-5">
+      <div className="space-y-4 px-4 pb-[calc(96px+env(safe-area-inset-bottom))] pt-3 sm:px-5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0 lg:px-0 lg:pb-12 [&>*:first-child]:lg:col-span-2">
         <PatternTabs active={activeTab} onChange={setActiveTab} hideCycle={cycleTrackingHidden} />
 
         {activeTab === "triggers" && <AnalysisRangeSelector value={analysisRange} onChange={setAnalysisRange} />}

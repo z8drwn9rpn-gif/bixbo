@@ -221,9 +221,12 @@ export function LogSheet({
         className={
           (active
             ? "flex h-[100dvh] max-h-[100dvh] flex-col rounded-t-none bg-background p-0 pt-[env(safe-area-inset-top)]"
-            : "flex h-[88dvh] max-h-[88dvh] flex-col rounded-t-3xl bg-background p-0") + " [&>button.absolute]:hidden"
+            : "flex h-[88dvh] max-h-[88dvh] flex-col rounded-t-3xl bg-background p-0") +
+          " [&>button.absolute]:hidden" +
+          " lg:inset-x-auto lg:left-1/2 lg:right-auto lg:bottom-auto lg:top-1/2 lg:w-[720px] lg:max-w-[92vw] lg:-translate-x-1/2 lg:-translate-y-1/2 lg:h-[86vh] lg:max-h-[86vh] lg:rounded-3xl lg:border lg:pt-0 lg:shadow-2xl"
         }
       >
+
         {!active ? (
           <>
             <SheetHeader className="shrink-0 relative px-5 pt-5 pb-2">
