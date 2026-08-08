@@ -220,7 +220,7 @@ export function LogSheet({
                 <X className="h-4 w-4" />
               </button>
             </SheetHeader>
-            <ul className="-mt-2 m-0 min-h-0 flex-1 list-none overflow-y-auto divide-y divide-border/70 bg-surface/55 px-2 py-0">
+            <ul className="-mt-3 m-0 min-h-0 flex-1 list-none overflow-y-auto divide-y divide-border/70 bg-surface/55 px-2 py-0">
               {orderedCats.map((c, i) => (
                 <li key={c.id}>
                   {editingOrder ? (
