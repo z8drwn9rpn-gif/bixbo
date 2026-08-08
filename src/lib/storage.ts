@@ -1271,13 +1271,44 @@ function persist() {
   }
 }
 
+/**
+ * Records tombstones for option values that disappeared from a `custom` list
+ * and clears tombstones for values the user added back. Runs on every local
+ * update, so every delete call-site is covered without touching the UI code.
+ */
+function trackCustomDeletions(prev: BixboData, next: BixboData): BixboData {
+  const tombstones: Partial<Record<keyof CustomLists, string[]>> = { ...(next.deletedCustom ?? {}) };
+  let changed = false;
+
+  for (const key of Object.keys(EMPTY.custom) as Array<keyof CustomLists>) {
+    const before = prev.custom?.[key] ?? [];
+    const after = next.custom?.[key] ?? [];
+    const afterSet = new Set(after);
+    const existing = new Set(tombstones[key] ?? []);
+    const size = existing.size;
+
+    for (const value of before) if (!afterSet.has(value)) existing.add(value);
+    for (const value of after) existing.delete(value);
+
+    if (existing.size !== size) {
+      changed = true;
+      if (existing.size) tombstones[key] = Array.from(existing);
+      else delete tombstones[key];
+    }
+  }
+
+  return changed ? { ...next, deletedCustom: tombstones } : next;
+}
+
 export function setBixbo(updater: (d: BixboData) => BixboData) {
   hydrate();
-  _state = migrate(updater(_state));
+  const prev = _state;
+  _state = migrate(trackCustomDeletions(prev, updater(prev)));
   persist();
   emit();
   changeListeners.forEach((l) => l(_state, "local"));
 }
+
 export function replaceBixbo(d: BixboData, reason: "local" | "remote" = "local") {
   hydrate();
   _state = migrate(d);
