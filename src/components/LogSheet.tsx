@@ -255,125 +255,190 @@ export function LogSheet({
                 </ul>
               </section>
             ) : (
-              <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
+              <>
+                {/* Soft olive glass overlay like the reference image.
+                    The app stays visible underneath, but the radial Log menu is the focus. */}
                 <div
-                  className="absolute left-1/2 h-[470px] w-[390px] max-w-[100vw] -translate-x-1/2"
-                  style={{ bottom: "calc(max(8px, env(safe-area-inset-bottom)) + 36px)" }}
-                >
-                  <svg
-                    aria-hidden="true"
-                    viewBox="-195 -450 390 470"
-                    className="pointer-events-none absolute bottom-0 left-1/2 h-[470px] w-[390px] max-w-[100vw] -translate-x-1/2 overflow-visible"
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 z-[5] bg-[#596330]/45 backdrop-blur-[2px]"
+                />
+
+                <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
+                  <div
+                    className="absolute left-1/2 h-[455px] w-[390px] max-w-[100vw] -translate-x-1/2"
+                    style={{ bottom: "calc(max(8px, env(safe-area-inset-bottom)) + 30px)" }}
                   >
-                    {orderedCats.slice(0, 13).map((c, index) => {
+                    {/*
+                      Reference layout:
+                      - one wide semicircle around the central + button
+                      - 11 main actions around the arc
+                      - optional 12th item remains available inside the arc
+                      - thin dotted spokes from the Log button to every action
+                    */}
+                    {(() => {
+                      /*
+                        Exact photo-style launcher geometry.
+                        Labels sit BESIDE the side buttons, not underneath them:
+                        left arc = text on the left, right arc = text on the right.
+                        The three top buttons use labels above/around the icon,
+                        matching the reference image.
+                      */
+                      const launcherCats = orderedCats.filter((c) => c.id !== "note").slice(0, 11);
+
                       const slots = [
-                      // True radial launcher: one continuous arc around Log.
-                      // 11 outer positions follow a single ellipse; the 12th visible
-                      // item (normally Note) sits inside the arc above the Log button.
-                      { x: -160, up: 150 },
-                      { x: -149, up: 220 },
-                      { x: -122, up: 286 },
-                      { x: -80, up: 338 },
-                      { x: -29, up: 368 },
-                      { x: 29, up: 368 },
-                      { x: 80, up: 338 },
-                      { x: 122, up: 286 },
-                      { x: 149, up: 220 },
-                      { x: 160, up: 150 },
-                      { x: 112, up: 105 },
-                      { x: 0, up: 145 },
-                      // Optional 13th slot, used only if Postpartum is active.
-                      { x: -112, up: 105 },
-                    ];
-                      const slot = slots[index] ?? { x: 0, up: 210 };
+                        // Default category order:
+                        // Pain, Blueberry, Heat, Food, Bowel, ŠukŠuk!, Workout,
+                        // Temp / Sleep / Weight, Meds, Event, Task
+                        { x: -142, up: 248, labelSide: "left" as const, labelW: 74 },
+                        { x: -93,  up: 338, labelSide: "top" as const, labelW: 86 },
+                        { x: 0,    up: 382, labelSide: "top" as const, labelW: 100 },
+                        { x: 93,   up: 338, labelSide: "top" as const, labelW: 74 },
+                        { x: 142,  up: 248, labelSide: "right" as const, labelW: 74 },
+                        { x: -154, up: 158, labelSide: "left" as const, labelW: 82 },
+                        { x: 154,  up: 158, labelSide: "right" as const, labelW: 82 },
+                        { x: 130,  up: 78,  labelSide: "right" as const, labelW: 108 },
+                        { x: -130, up: 78,  labelSide: "left" as const, labelW: 74 },
+                        { x: -70,  up: 28,  labelSide: "left" as const, labelW: 70 },
+                        { x: 70,   up: 28,  labelSide: "right" as const, labelW: 70 },
+                      ];
+
                       return (
-                        <line
-                          key={`line-${c.id}`}
-                          x1="0"
-                          y1="0"
-                          x2={slot.x}
-                          y2={-Math.max(34, slot.up - 26)}
-                          stroke="var(--muted-foreground)"
-                          strokeWidth="1"
-                          strokeDasharray="3 5"
-                          opacity="0.34"
-                        />
+                        <>
+                          <svg
+                            aria-hidden="true"
+                            viewBox="-195 -430 390 450"
+                            className="pointer-events-none absolute bottom-0 left-1/2 h-[450px] w-[390px] max-w-[100vw] -translate-x-1/2 overflow-visible"
+                          >
+                            {launcherCats.map((c, index) => {
+                              const slot = slots[index];
+                              if (!slot) return null;
+
+                              const dx = slot.x;
+                              const dy = -slot.up;
+                              const len = Math.hypot(dx, dy) || 1;
+                              const endPad = 32;
+
+                              return (
+                                <line
+                                  key={`line-${c.id}`}
+                                  x1="0"
+                                  y1="-14"
+                                  x2={dx - (dx / len) * endPad}
+                                  y2={dy - (dy / len) * endPad}
+                                  stroke="rgba(241,244,220,0.56)"
+                                  strokeWidth="1"
+                                  strokeDasharray="2.5 4.5"
+                                  opacity="0.62"
+                                />
+                              );
+                            })}
+                          </svg>
+
+                          {launcherCats.map((c, index) => {
+                            const slot = slots[index];
+                            if (!slot) return null;
+
+                            const isLeft = slot.labelSide === "left";
+                            const isRight = slot.labelSide === "right";
+                            const isTop = slot.labelSide === "top";
+
+                            return (
+                              <button
+                                key={c.id}
+                                type="button"
+                                onClick={() => {
+                                  setEditingOrder(false);
+                                  setCat(c.id);
+                                }}
+                                aria-label={`Log ${c.label}`}
+                                className="pointer-events-auto absolute z-20 h-[62px] w-[62px] outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#edf2cf]"
+                                style={{
+                                  left: "50%",
+                                  bottom: 0,
+                                  transform: `translate(calc(-50% + ${slot.x}px), -${slot.up}px)`,
+                                }}
+                              >
+                                <span
+                                  className="
+                                    absolute left-1/2 top-1/2 grid h-[54px] w-[54px]
+                                    -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full
+                                    border border-[#edf2cf]/65
+                                    bg-[#dce5b2]/38
+                                    shadow-[0_7px_18px_rgba(20,28,9,0.28),inset_0_1px_0_rgba(255,255,255,0.35)]
+                                    ring-[4px] ring-[#e8edc5]/38
+                                    backdrop-blur-[7px]
+                                  "
+                                >
+                                  <Ico e={c.emoji} size={29} />
+                                </span>
+
+                                <span
+                                  className="
+                                    absolute z-30 text-[12px] font-semibold leading-[1.08]
+                                    text-white drop-shadow-[0_1px_2px_rgba(31,37,16,0.95)]
+                                  "
+                                  style={{
+                                    width: `${slot.labelW}px`,
+                                    ...(isLeft
+                                      ? {
+                                          right: "calc(100% + 8px)",
+                                          top: "50%",
+                                          transform: "translateY(-50%)",
+                                          textAlign: "right" as const,
+                                        }
+                                      : isRight
+                                        ? {
+                                            left: "calc(100% + 8px)",
+                                            top: "50%",
+                                            transform: "translateY(-50%)",
+                                            textAlign: "left" as const,
+                                          }
+                                        : {
+                                            left: "50%",
+                                            bottom: "calc(100% + 7px)",
+                                            transform: "translateX(-50%)",
+                                            textAlign: "center" as const,
+                                          }),
+                                  }}
+                                >
+                                  {c.label}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </>
                       );
-                    })}
-                  </svg>
+                    })()}
 
-                  {orderedCats.slice(0, 13).map((c, index) => {
-                    const slots = [
-                      // True radial launcher: one continuous arc around Log.
-                      // 11 outer positions follow a single ellipse; the 12th visible
-                      // item (normally Note) sits inside the arc above the Log button.
-                      { x: -160, up: 150 },
-                      { x: -149, up: 220 },
-                      { x: -122, up: 286 },
-                      { x: -80, up: 338 },
-                      { x: -29, up: 368 },
-                      { x: 29, up: 368 },
-                      { x: 80, up: 338 },
-                      { x: 122, up: 286 },
-                      { x: 149, up: 220 },
-                      { x: 160, up: 150 },
-                      { x: 112, up: 105 },
-                      { x: 0, up: 145 },
-                      // Optional 13th slot, used only if Postpartum is active.
-                      { x: -112, up: 105 },
-                    ];
-                    const slot = slots[index] ?? { x: 0, up: 210 };
-                    return (
-                      <button
-                        key={c.id}
-                        type="button"
-                        onClick={() => {
-                          setEditingOrder(false);
-                          setCat(c.id);
-                        }}
-                        aria-label={`Log ${c.label}`}
-                        className="pointer-events-auto absolute z-20 flex w-[70px] flex-col items-center gap-1 text-center outline-none transition active:scale-95 focus-visible:ring-2 focus-visible:ring-ring"
-                        style={{
-                          left: "50%",
-                          bottom: 0,
-                          transform: `translate(calc(-50% + ${slot.x}px), -${slot.up}px)`,
-                        }}
-                      >
-                        <span className="grid h-[50px] w-[50px] place-items-center rounded-full border border-border/70 bg-surface/90 shadow-[0_6px_16px_rgba(0,0,0,0.22)] ring-[3px] ring-background/55 backdrop-blur-md">
-                          <Ico e={c.emoji} size={27} />
-                        </span>
-                        <span className="max-w-[70px] text-[10px] font-semibold leading-[1.03] text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
-                          {c.label}
-                        </span>
-                      </button>
-                    );
-                  })}
+                    <span
+                      aria-hidden="true"
+                      className="
+                        pointer-events-none absolute left-1/2 z-30 h-0 w-0 -translate-x-1/2
+                        border-x-[7px] border-b-0 border-t-[9px]
+                        border-x-transparent border-t-[#eef2d1]/90
+                      "
+                      style={{ bottom: "68px" }}
+                    />
 
-                  <button
-                    type="button"
-                    onClick={() => setEditingOrder(true)}
-                    className="pointer-events-auto absolute bottom-[-4px] left-3 z-30 flex items-center gap-1 rounded-full border border-white/20 bg-black/20 px-2.5 py-1.5 text-[9px] font-semibold text-white/85 shadow-sm backdrop-blur-md"
-                    aria-label="Reorder log categories"
-                  >
-                    <GripVertical className="h-3 w-3" /> Reorder
-                  </button>
-
-                  <span
-                    aria-hidden="true"
-                    className="pointer-events-none absolute left-1/2 z-30 h-0 w-0 -translate-x-1/2 border-x-[6px] border-b-0 border-t-[8px] border-x-transparent border-t-background/80"
-                    style={{ bottom: "38px" }}
-                  />
-
-                  <button
-                    type="button"
-                    onClick={close}
-                    aria-label="Close Log"
-                    className="pointer-events-auto absolute bottom-0 left-1/2 z-40 grid h-[62px] w-[62px] -translate-x-1/2 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_0_0_7px_rgba(235,240,210,0.42),0_8px_28px_rgba(0,0,0,0.32)] ring-2 ring-background/80 transition active:scale-95"
-                  >
-                    <Plus className="h-8 w-8" strokeWidth={2.5} />
-                  </button>
+                    <button
+                      type="button"
+                      onClick={close}
+                      aria-label="Close Log"
+                      className="
+                        pointer-events-auto absolute bottom-0 left-1/2 z-40
+                        grid h-[70px] w-[70px] -translate-x-1/2 place-items-center rounded-full
+                        border border-[#f1f4dc]/80
+                        bg-[#657632] text-white
+                        shadow-[0_0_0_7px_rgba(231,238,190,0.44),0_0_24px_rgba(232,238,190,0.48),0_10px_26px_rgba(20,28,9,0.36)]
+                        ring-2 ring-[#dfe7b4]/70
+                        transition-transform duration-150 active:scale-95
+                      "
+                    >
+                      <Plus className="h-9 w-9" strokeWidth={2.15} />
+                    </button>
+                  </div>
                 </div>
-              </div>
+              </>
             )}
           </>
         ) : (
