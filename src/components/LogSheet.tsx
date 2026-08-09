@@ -265,8 +265,8 @@ export function LogSheet({
 
                 <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
                   <div
-                    className="absolute left-1/2 h-[455px] w-[390px] max-w-[100vw] -translate-x-1/2"
-                    style={{ bottom: "calc(max(8px, env(safe-area-inset-bottom)) + 30px)" }}
+                    className="absolute left-1/2 h-[375px] w-[390px] max-w-[100vw] -translate-x-1/2"
+                    style={{ bottom: "calc(max(8px, env(safe-area-inset-bottom)) + 24px)" }}
                   >
                     {/*
                       Reference layout:
@@ -277,70 +277,113 @@ export function LogSheet({
                     */}
                     {(() => {
                       /*
-                        Exact photo-style launcher geometry.
-                        Labels sit BESIDE the side buttons, not underneath them:
-                        left arc = text on the left, right arc = text on the right.
-                        The three top buttons use labels above/around the icon,
-                        matching the reference image.
+                        Compact radial Log launcher matching the approved reference:
+                        - smaller circles and a tighter arc
+                        - labels beside the side circles
+                        - top labels above the three top circles
+                        - Notes restored as its own circle
+                        - Reorder restored as its own circle and still opens Reorder Log
                       */
-                      const launcherCats = orderedCats.filter((c) => c.id !== "note").slice(0, 11);
+                      const mainCats = orderedCats.filter((c) => c.id !== "note").slice(0, 11);
+                      const noteCat = orderedCats.find((c) => c.id === "note");
 
                       const slots = [
-                        // Default category order:
-                        // Pain, Blueberry, Heat, Food, Bowel, ŠukŠuk!, Workout,
-                        // Temp / Sleep / Weight, Meds, Event, Task
-                        { x: -142, up: 248, labelSide: "left" as const, labelW: 74 },
-                        { x: -93,  up: 338, labelSide: "top" as const, labelW: 86 },
-                        { x: 0,    up: 382, labelSide: "top" as const, labelW: 100 },
-                        { x: 93,   up: 338, labelSide: "top" as const, labelW: 74 },
-                        { x: 142,  up: 248, labelSide: "right" as const, labelW: 74 },
-                        { x: -154, up: 158, labelSide: "left" as const, labelW: 82 },
-                        { x: 154,  up: 158, labelSide: "right" as const, labelW: 82 },
-                        { x: 130,  up: 78,  labelSide: "right" as const, labelW: 108 },
-                        { x: -130, up: 78,  labelSide: "left" as const, labelW: 74 },
-                        { x: -70,  up: 28,  labelSide: "left" as const, labelW: 70 },
-                        { x: 70,   up: 28,  labelSide: "right" as const, labelW: 70 },
+                        // Pain
+                        { x: -126, up: 208, labelSide: "left" as const, labelW: 64 },
+                        // Blueberry
+                        { x: -76, up: 276, labelSide: "top" as const, labelW: 76 },
+                        // Heat / Cold / TENS
+                        { x: 0, up: 306, labelSide: "top" as const, labelW: 94 },
+                        // Food
+                        { x: 76, up: 276, labelSide: "top" as const, labelW: 62 },
+                        // Bowel
+                        { x: 126, up: 208, labelSide: "right" as const, labelW: 62 },
+                        // ŠukŠuk!
+                        { x: -139, up: 137, labelSide: "left" as const, labelW: 72 },
+                        // Workout
+                        { x: 139, up: 137, labelSide: "right" as const, labelW: 72 },
+                        // Temp / Sleep / Weight
+                        { x: 118, up: 72, labelSide: "right" as const, labelW: 96 },
+                        // Meds
+                        { x: -118, up: 72, labelSide: "left" as const, labelW: 58 },
+                        // Event
+                        { x: -78, up: 25, labelSide: "left" as const, labelW: 58 },
+                        // Task
+                        { x: 78, up: 25, labelSide: "right" as const, labelW: 58 },
                       ];
+
+                      const circleClass = `
+                        absolute left-1/2 top-1/2 grid h-[44px] w-[44px]
+                        -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full
+                        border border-[#edf2cf]/65
+                        bg-[#dce5b2]/36
+                        shadow-[0_5px_13px_rgba(20,28,9,0.25),inset_0_1px_0_rgba(255,255,255,0.32)]
+                        ring-[3px] ring-[#e8edc5]/36
+                        backdrop-blur-[6px]
+                      `;
 
                       return (
                         <>
                           <svg
                             aria-hidden="true"
-                            viewBox="-195 -430 390 450"
-                            className="pointer-events-none absolute bottom-0 left-1/2 h-[450px] w-[390px] max-w-[100vw] -translate-x-1/2 overflow-visible"
+                            viewBox="-195 -350 390 370"
+                            className="pointer-events-none absolute bottom-0 left-1/2 h-[370px] w-[390px] max-w-[100vw] -translate-x-1/2 overflow-visible"
                           >
-                            {launcherCats.map((c, index) => {
+                            {mainCats.map((c, index) => {
                               const slot = slots[index];
                               if (!slot) return null;
 
                               const dx = slot.x;
                               const dy = -slot.up;
                               const len = Math.hypot(dx, dy) || 1;
-                              const endPad = 32;
+                              const endPad = 27;
 
                               return (
                                 <line
                                   key={`line-${c.id}`}
                                   x1="0"
-                                  y1="-14"
+                                  y1="-12"
                                   x2={dx - (dx / len) * endPad}
                                   y2={dy - (dy / len) * endPad}
-                                  stroke="rgba(241,244,220,0.56)"
+                                  stroke="rgba(241,244,220,0.52)"
                                   strokeWidth="1"
                                   strokeDasharray="2.5 4.5"
-                                  opacity="0.62"
+                                  opacity="0.58"
                                 />
                               );
                             })}
+
+                            {noteCat && (
+                              <line
+                                x1="0"
+                                y1="-12"
+                                x2="-47"
+                                y2="-14"
+                                stroke="rgba(241,244,220,0.52)"
+                                strokeWidth="1"
+                                strokeDasharray="2.5 4.5"
+                                opacity="0.58"
+                              />
+                            )}
+
+                            <line
+                              x1="0"
+                              y1="-12"
+                              x2="47"
+                              y2="-14"
+                              stroke="rgba(241,244,220,0.52)"
+                              strokeWidth="1"
+                              strokeDasharray="2.5 4.5"
+                              opacity="0.58"
+                            />
                           </svg>
 
-                          {launcherCats.map((c, index) => {
+                          {mainCats.map((c, index) => {
                             const slot = slots[index];
                             if (!slot) return null;
 
                             const isLeft = slot.labelSide === "left";
                             const isRight = slot.labelSide === "right";
-                            const isTop = slot.labelSide === "top";
 
                             return (
                               <button
@@ -351,51 +394,41 @@ export function LogSheet({
                                   setCat(c.id);
                                 }}
                                 aria-label={`Log ${c.label}`}
-                                className="pointer-events-auto absolute z-20 h-[62px] w-[62px] outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#edf2cf]"
+                                className="pointer-events-auto absolute z-20 h-[50px] w-[50px] outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#edf2cf]"
                                 style={{
                                   left: "50%",
                                   bottom: 0,
                                   transform: `translate(calc(-50% + ${slot.x}px), -${slot.up}px)`,
                                 }}
                               >
-                                <span
-                                  className="
-                                    absolute left-1/2 top-1/2 grid h-[54px] w-[54px]
-                                    -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full
-                                    border border-[#edf2cf]/65
-                                    bg-[#dce5b2]/38
-                                    shadow-[0_7px_18px_rgba(20,28,9,0.28),inset_0_1px_0_rgba(255,255,255,0.35)]
-                                    ring-[4px] ring-[#e8edc5]/38
-                                    backdrop-blur-[7px]
-                                  "
-                                >
-                                  <Ico e={c.emoji} size={29} />
+                                <span className={circleClass}>
+                                  <Ico e={c.emoji} size={24} />
                                 </span>
 
                                 <span
                                   className="
-                                    absolute z-30 text-[12px] font-semibold leading-[1.08]
+                                    absolute z-30 text-[10px] font-semibold leading-[1.05]
                                     text-white drop-shadow-[0_1px_2px_rgba(31,37,16,0.95)]
                                   "
                                   style={{
                                     width: `${slot.labelW}px`,
                                     ...(isLeft
                                       ? {
-                                          right: "calc(100% + 8px)",
+                                          right: "calc(100% + 5px)",
                                           top: "50%",
                                           transform: "translateY(-50%)",
                                           textAlign: "right" as const,
                                         }
                                       : isRight
                                         ? {
-                                            left: "calc(100% + 8px)",
+                                            left: "calc(100% + 5px)",
                                             top: "50%",
                                             transform: "translateY(-50%)",
                                             textAlign: "left" as const,
                                           }
                                         : {
                                             left: "50%",
-                                            bottom: "calc(100% + 7px)",
+                                            bottom: "calc(100% + 5px)",
                                             transform: "translateX(-50%)",
                                             textAlign: "center" as const,
                                           }),
@@ -406,6 +439,43 @@ export function LogSheet({
                               </button>
                             );
                           })}
+
+                          {noteCat && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingOrder(false);
+                                setCat("note");
+                              }}
+                              aria-label="Log Note"
+                              className="pointer-events-auto absolute bottom-[3px] left-1/2 z-30 h-[48px] w-[48px] -translate-x-[calc(50%+58px)] outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#edf2cf]"
+                            >
+                              <span className={circleClass}>
+                                <Ico e={noteCat.emoji} size={23} />
+                              </span>
+                              <span className="absolute right-[calc(100%+5px)] top-1/2 w-[52px] -translate-y-1/2 text-right text-[10px] font-semibold leading-none text-white drop-shadow-[0_1px_2px_rgba(31,37,16,0.95)]">
+                                Notes
+                              </span>
+                            </button>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => setEditingOrder(true)}
+                            aria-label="Reorder log categories"
+                            className="pointer-events-auto absolute bottom-[3px] left-1/2 z-30 h-[48px] w-[48px] translate-x-[10px] outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#edf2cf]"
+                          >
+                            <span className={circleClass}>
+                              <span className="grid grid-cols-2 gap-[3px]" aria-hidden="true">
+                                {Array.from({ length: 6 }).map((_, i) => (
+                                  <span key={i} className="h-[4px] w-[4px] rounded-full bg-white/90" />
+                                ))}
+                              </span>
+                            </span>
+                            <span className="absolute left-[calc(100%+5px)] top-1/2 w-[58px] -translate-y-1/2 text-left text-[10px] font-semibold leading-none text-white drop-shadow-[0_1px_2px_rgba(31,37,16,0.95)]">
+                              Reorder
+                            </span>
+                          </button>
                         </>
                       );
                     })()}
@@ -414,10 +484,10 @@ export function LogSheet({
                       aria-hidden="true"
                       className="
                         pointer-events-none absolute left-1/2 z-30 h-0 w-0 -translate-x-1/2
-                        border-x-[7px] border-b-0 border-t-[9px]
+                        border-x-[6px] border-b-0 border-t-[8px]
                         border-x-transparent border-t-[#eef2d1]/90
                       "
-                      style={{ bottom: "68px" }}
+                      style={{ bottom: "58px" }}
                     />
 
                     <button
@@ -426,7 +496,7 @@ export function LogSheet({
                       aria-label="Close Log"
                       className="
                         pointer-events-auto absolute bottom-0 left-1/2 z-40
-                        grid h-[70px] w-[70px] -translate-x-1/2 place-items-center rounded-full
+                        grid h-[62px] w-[62px] -translate-x-1/2 place-items-center rounded-full
                         border border-[#f1f4dc]/80
                         bg-[#657632] text-white
                         shadow-[0_0_0_7px_rgba(231,238,190,0.44),0_0_24px_rgba(232,238,190,0.48),0_10px_26px_rgba(20,28,9,0.36)]
@@ -434,7 +504,7 @@ export function LogSheet({
                         transition-transform duration-150 active:scale-95
                       "
                     >
-                      <Plus className="h-9 w-9" strokeWidth={2.15} />
+                      <Plus className="h-8 w-8" strokeWidth={2.15} />
                     </button>
                   </div>
                 </div>
