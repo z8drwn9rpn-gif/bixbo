@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useRouterState } from "@tanstack/react-router";
 import { BottomNav } from "./BottomNav";
 
 export function AppShell({
@@ -12,6 +13,18 @@ export function AppShell({
   right?: ReactNode;
   big?: boolean;
 }) {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isFirst = useRef(true);
+  const [fadeKey, setFadeKey] = useState(0);
+
+  useEffect(() => {
+    if (isFirst.current) {
+      isFirst.current = false;
+      return;
+    }
+    setFadeKey((k) => k + 1);
+  }, [pathname]);
+
   return (
     <div className="min-h-dvh overflow-x-hidden bg-background text-foreground" style={{ overscrollBehaviorX: "none" }}>
       <div className="relative isolate mx-auto min-h-dvh w-full overflow-x-hidden bg-background/92 pb-[calc(6rem+env(safe-area-inset-bottom))] portrait:max-w-[430px] portrait:shadow-[0_0_40px_-24px_color-mix(in_oklch,var(--primary)_45%,transparent)] landscape:max-w-none">
@@ -43,11 +56,16 @@ export function AppShell({
           </header>
         )}
 
-        <main id="main-content" className="min-w-0 overflow-x-hidden">
+        <main
+          key={fadeKey}
+          id="main-content"
+          className={`min-w-0 overflow-x-hidden${fadeKey > 0 ? " bixbo-page-fade" : ""}`}
+        >
           {children}
         </main>
       </div>
 
+      {/* Bottom nav stays outside page fade — must remain stable on route change. */}
       <BottomNav />
     </div>
   );
