@@ -1,10 +1,11 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { CHART_COLORS } from "@/components/ui/chart";
 import { ChartCard, CHART_GRID, useDismissTapTooltip } from "@/components/charts";
 import { Ico } from "@/components/icons/BixboIcons";
+import { PatternsContent } from "./patterns";
 import {
   useBixbo,
   EMPTY,
@@ -398,6 +399,7 @@ function InsightsPage() {
   const { data, hydrated } = useBixbo();
   const view = hydrated ? data : EMPTY;
   const [anchor, setAnchor] = useState<Date>(() => new Date());
+  const [overviewView, setOverviewView] = useState<"insights" | "patterns">("insights");
 
   // One Insights page. Every chart keeps its own Week / Month / Year range
   // AND its own independent date anchor for previous/next navigation.
@@ -539,21 +541,37 @@ function InsightsPage() {
     <AppShell title="Health of Bixbo">
       <div className="px-5 pt-2 lg:px-0">
         <div className="grid grid-cols-2 rounded-2xl bg-tint p-1 ring-1 ring-border/70">
-          <Link
-            to="/insights"
-            className="rounded-xl bg-primary px-4 py-2 text-center text-sm font-semibold text-primary-foreground shadow-sm"
+          <button
+            type="button"
+            onClick={() => setOverviewView("insights")}
+            className={`rounded-xl px-4 py-2 text-center text-sm font-semibold transition ${
+              overviewView === "insights"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-surface/70 hover:text-foreground"
+            }`}
+            aria-pressed={overviewView === "insights"}
           >
             Insights
-          </Link>
-          <Link
-            to="/patterns"
-            className="rounded-xl px-4 py-2 text-center text-sm font-semibold text-muted-foreground transition hover:bg-surface/70 hover:text-foreground"
+          </button>
+          <button
+            type="button"
+            onClick={() => setOverviewView("patterns")}
+            className={`rounded-xl px-4 py-2 text-center text-sm font-semibold transition ${
+              overviewView === "patterns"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-surface/70 hover:text-foreground"
+            }`}
+            aria-pressed={overviewView === "patterns"}
           >
             Patterns
-          </Link>
+          </button>
         </div>
       </div>
-      <div className="space-y-3 px-5 pt-2 pb-[calc(96px+env(safe-area-inset-bottom))] lg:grid lg:grid-cols-2 lg:items-start lg:gap-3 lg:space-y-0 lg:px-0 lg:pb-12 [&>*:first-child]:lg:col-span-2">
+
+      {overviewView === "patterns" ? (
+        <PatternsContent />
+      ) : (
+        <div className="space-y-3 px-5 pt-2 pb-[calc(96px+env(safe-area-inset-bottom))] lg:grid lg:grid-cols-2 lg:items-start lg:gap-3 lg:space-y-0 lg:px-0 lg:pb-12 [&>*:first-child]:lg:col-span-2">
         <YearHealthHeatmap
           data={view}
           anchor={anchor}
@@ -696,7 +714,8 @@ function InsightsPage() {
             setMedsAnchor((current) => shiftInsightPeriodAnchor(current, medsPeriod, delta))
           }
         />
-      </div>
+        </div>
+      )}
     </AppShell>
   );
 }
