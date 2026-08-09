@@ -1369,6 +1369,67 @@ function BirthControlOverlay({
   const fitRef = useRef<HTMLDivElement | null>(null);
   const [fitScale, setFitScale] = useState(1);
 
+  // HAK follows the same BIXBO SOFT OLIVE DARK palette defined at the end of styles.css.
+  // Light mode keeps the existing Moss Green palette exactly as before.
+  const hakDarkMode =
+    typeof document !== "undefined" && document.documentElement.classList.contains("dark");
+
+  const hakTheme = hakDarkMode
+    ? {
+        background: "#4B5133",
+        foreground: "#F5F4E8",
+        surface: "#5A6040",
+        surfaceElevated: "#666D49",
+        surfaceSunken: "#41472D",
+        tint: "#626944",
+        card: "#5A6040",
+        cardForeground: "#F5F4E8",
+        popover: "#626844",
+        popoverForeground: "#F5F4E8",
+        primary: "#B6C28E",
+        primaryForeground: "#30351F",
+        secondary: "#686F49",
+        secondaryForeground: "#F4F2E5",
+        muted: "#626847",
+        mutedForeground: "#D5D7C2",
+        accent: "#77805A",
+        accentForeground: "#F8F7EC",
+        border: "#777D58",
+        input: "#777D58",
+        ring: "#C0CD98",
+        chartGrid: "#6C7350",
+        chartAxis: "#DDDCCB",
+        chartTooltipBg: "#555B3B",
+        chartTooltipFg: "#F7F5E9",
+      }
+    : {
+        background: "#98A86A",
+        foreground: "#18200F",
+        surface: "#B0BC89",
+        surfaceElevated: "#BEC8A0",
+        surfaceSunken: "#88975D",
+        tint: "#A7B47B",
+        card: "#B0BC89",
+        cardForeground: "#18200F",
+        popover: "#C3CCAA",
+        popoverForeground: "#18200F",
+        primary: "#5F7033",
+        primaryForeground: "#FFFDF3",
+        secondary: "#A9B57E",
+        secondaryForeground: "#202814",
+        muted: "#AAB77E",
+        mutedForeground: "#475234",
+        accent: "#97A969",
+        accentForeground: "#1F2812",
+        border: "#7D8D54",
+        input: "#7D8D54",
+        ring: "#5F7033",
+        chartGrid: "#95A56A",
+        chartAxis: "#37412B",
+        chartTooltipBg: "#D0D8BC",
+        chartTooltipFg: "#18200F",
+      };
+
   useEffect(() => {
     const body = document.body;
     const html = document.documentElement;
@@ -1400,11 +1461,11 @@ function BirthControlOverlay({
     // Force the full document canvas — including the iOS safe area — to the same
     // lavender as Birth Control. Using the background shorthand also removes the
     // global olive gradient while this overlay is open.
-    body.style.setProperty("--background", "#98A86A", "important");
-    html.style.setProperty("--background", "#98A86A", "important");
-    body.style.setProperty("background", "#98A86A", "important");
-    html.style.setProperty("background", "#98A86A", "important");
-    themeMeta.content = "#98A86A";
+    body.style.setProperty("--background", hakTheme.background, "important");
+    html.style.setProperty("--background", hakTheme.background, "important");
+    body.style.setProperty("background", hakTheme.background, "important");
+    html.style.setProperty("background", hakTheme.background, "important");
+    themeMeta.content = hakTheme.background;
 
     return () => {
       body.style.overflow = previousOverflow;
@@ -1453,34 +1514,34 @@ function BirthControlOverlay({
       className="fixed inset-0 z-[900] flex h-[100dvh] flex-col overflow-hidden bg-background text-foreground"
       style={{
         ...({
-          "--background": "#98A86A",
-          "--foreground": "#18200F",
-          "--surface": "#B0BC89",
-          "--surface-elevated": "#BEC8A0",
-          "--surface-sunken": "#88975D",
-          "--tint": "#A7B47B",
-          "--card": "#B0BC89",
-          "--card-foreground": "#18200F",
-          "--popover": "#C3CCAA",
-          "--popover-foreground": "#18200F",
-          "--primary": "#5F7033",
-          "--primary-foreground": "#FFFDF3",
-          "--secondary": "#A9B57E",
-          "--secondary-foreground": "#202814",
-          "--muted": "#AAB77E",
-          "--muted-foreground": "#475234",
-          "--accent": "#97A969",
-          "--accent-foreground": "#1F2812",
-          "--border": "#7D8D54",
-          "--input": "#7D8D54",
-          "--ring": "#5F7033",
-          "--chart-grid": "#95A56A",
-          "--chart-axis": "#37412B",
-          "--chart-tooltip-bg": "#D0D8BC",
-          "--chart-tooltip-fg": "#18200F",
+          "--background": hakTheme.background,
+          "--foreground": hakTheme.foreground,
+          "--surface": hakTheme.surface,
+          "--surface-elevated": hakTheme.surfaceElevated,
+          "--surface-sunken": hakTheme.surfaceSunken,
+          "--tint": hakTheme.tint,
+          "--card": hakTheme.card,
+          "--card-foreground": hakTheme.cardForeground,
+          "--popover": hakTheme.popover,
+          "--popover-foreground": hakTheme.popoverForeground,
+          "--primary": hakTheme.primary,
+          "--primary-foreground": hakTheme.primaryForeground,
+          "--secondary": hakTheme.secondary,
+          "--secondary-foreground": hakTheme.secondaryForeground,
+          "--muted": hakTheme.muted,
+          "--muted-foreground": hakTheme.mutedForeground,
+          "--accent": hakTheme.accent,
+          "--accent-foreground": hakTheme.accentForeground,
+          "--border": hakTheme.border,
+          "--input": hakTheme.input,
+          "--ring": hakTheme.ring,
+          "--chart-grid": hakTheme.chartGrid,
+          "--chart-axis": hakTheme.chartAxis,
+          "--chart-tooltip-bg": hakTheme.chartTooltipBg,
+          "--chart-tooltip-fg": hakTheme.chartTooltipFg,
         } as CSSProperties),
-        background: "#98A86A",
-        backgroundColor: "#98A86A",
+        background: hakTheme.background,
+        backgroundColor: hakTheme.background,
       }}
     >
       {/* Explicit iOS safe-area backdrop. The document background is also forced
@@ -1488,7 +1549,10 @@ function BirthControlOverlay({
       <div
         aria-hidden="true"
         className="pointer-events-none fixed inset-x-0 top-0 z-[905] bg-[#98A86A]"
-        style={{ height: "max(env(safe-area-inset-top), 1px)" }}
+        style={{
+          height: "max(env(safe-area-inset-top), 1px)",
+          backgroundColor: hakTheme.background,
+        }}
       />
 
       <div className="relative z-[910] shrink-0 border-b border-border/70 bg-background px-4 pb-2 pt-[max(.65rem,env(safe-area-inset-top))]">
@@ -1525,7 +1589,7 @@ function BirthControlOverlay({
             transformOrigin: "top center",
           }}
         >
-          <BirthControlCalendar data={data} />
+          <BirthControlCalendar data={data} darkMode={hakDarkMode} />
         </div>
       </main>
     </div>,
@@ -1535,8 +1599,10 @@ function BirthControlOverlay({
 
 function BirthControlCalendar({
   data,
+  darkMode,
 }: {
   data: ReturnType<typeof useBixbo>["data"];
+  darkMode: boolean;
 }) {
   const { update } = useBixbo();
   const [sel, setSel] = useState<string | null>(null);
@@ -1569,18 +1635,20 @@ function BirthControlCalendar({
   const ACTIVE_DAYS = 24;
   const PACK_DAYS = 28;
 
-  const HAK_PURPLE = "#647A32";
-  const HAK_PURPLE_DARK = "#455A20";
-  const HAK_PURPLE_SOFT = "#C5D1A0";
-  const HAK_PURPLE_DOT = "#607A2D";
-  const HAK_PINK = "#D95782";
-  const HAK_PINK_DARK = "#B92E60";
-  const HAK_PINK_SOFT = "#F7CBD9";
-  const HAK_GREEN = "#7FA33B";
-  const HAK_GREEN_DARK = "#526B24";
-  const HAK_GREEN_SOFT = "#D8E4B8";
-  const HAK_TRACK = "#E3E4C9";
-  const HAK_CARD_BG = "color-mix(in srgb, var(--background) 90%, #536A27 10%)";
+  const HAK_PURPLE = darkMode ? "#AFC17A" : "#647A32";
+  const HAK_PURPLE_DARK = darkMode ? "#D9E3BA" : "#455A20";
+  const HAK_PURPLE_SOFT = darkMode ? "#626944" : "#C5D1A0";
+  const HAK_PURPLE_DOT = darkMode ? "#A4B76D" : "#607A2D";
+  const HAK_PINK = darkMode ? "#E36F98" : "#D95782";
+  const HAK_PINK_DARK = darkMode ? "#F09AB8" : "#B92E60";
+  const HAK_PINK_SOFT = darkMode ? "#684653" : "#F7CBD9";
+  const HAK_GREEN = darkMode ? "#A9C76F" : "#7FA33B";
+  const HAK_GREEN_DARK = darkMode ? "#D4DFAA" : "#526B24";
+  const HAK_GREEN_SOFT = darkMode ? "#59653C" : "#D8E4B8";
+  const HAK_TRACK = darkMode ? "#747A5B" : "#E3E4C9";
+  const HAK_CARD_BG = darkMode
+    ? "color-mix(in srgb, var(--surface) 88%, #77805A 12%)"
+    : "color-mix(in srgb, var(--background) 90%, #536A27 10%)";
 
   const bcMed = data.meds.find((m) =>
     /antikonc|birth\s*control|contracept|hak|pill/i.test(`${m.name} ${m.dose ?? ""}`),
@@ -1682,7 +1750,9 @@ function BirthControlCalendar({
   const selectedMissed = sel ? missedAt(sel) : false;
   const selectedIsPlacebo = selectedDay != null && selectedDay > ACTIVE_DAYS;
   const popupAccent = selectedIsPlacebo ? HAK_PINK_DARK : HAK_PURPLE_DARK;
-  const popupSoft = selectedIsPlacebo ? "#F9DDE7" : "#D6DEBC";
+  const popupSoft = selectedIsPlacebo
+    ? darkMode ? "#5C3F4B" : "#F9DDE7"
+    : darkMode ? "#555B3B" : "#D6DEBC";
 
 
 
@@ -1814,8 +1884,10 @@ function BirthControlCalendar({
           <div
             className="absolute inset-[5.5%] rounded-full"
             style={{
-              background: "rgba(255,255,255,.12)",
-              boxShadow: "inset 0 0 0 9px rgba(255,255,255,.24)",
+              background: darkMode ? "rgba(102,109,73,.28)" : "rgba(255,255,255,.12)",
+              boxShadow: darkMode
+                ? "inset 0 0 0 9px rgba(119,125,88,.34)"
+                : "inset 0 0 0 9px rgba(255,255,255,.24)",
             }}
           />
           <div
@@ -1838,6 +1910,7 @@ function BirthControlCalendar({
                   style={{
                     left: `${50 + Math.cos(angle) * radius}%`,
                     top: `${50 + Math.sin(angle) * radius}%`,
+                    backgroundColor: darkMode ? "rgba(245,244,232,.42)" : "rgba(255,255,255,.70)",
                   }}
                 />
               );
@@ -1869,25 +1942,37 @@ function BirthControlCalendar({
             // Active HAK: lighter moss when not taken, darker moss when taken.
             // Placebo/break: pale pink when not taken, darker pink when taken.
             let bubbleBackground = isPlacebo
-              ? "radial-gradient(circle at 30% 24%, #FFF8FB 0%, #F7D9E6 42%, #EDB7CA 78%, #E39AB6 100%)"
-              : "radial-gradient(circle at 30% 24%, #F4F8E8 0%, #D8E4B8 42%, #B2C67A 78%, #8EA750 100%)";
-            let color = isPlacebo ? HAK_PINK_DARK : HAK_GREEN_DARK;
-            let bubbleBorder = "rgba(255,255,255,.8)";
+              ? darkMode
+                ? "radial-gradient(circle at 30% 24%, #F5D7E2 0%, #E9A8BE 42%, #D97B9D 78%, #C65D84 100%)"
+                : "radial-gradient(circle at 30% 24%, #FFF8FB 0%, #F7D9E6 42%, #EDB7CA 78%, #E39AB6 100%)"
+              : darkMode
+                ? "radial-gradient(circle at 30% 24%, #DDE5C4 0%, #BAC88C 42%, #96AA64 78%, #7A8F4D 100%)"
+                : "radial-gradient(circle at 30% 24%, #F4F8E8 0%, #D8E4B8 42%, #B2C67A 78%, #8EA750 100%)";
+            let color = isPlacebo
+              ? darkMode ? "#7F2748" : HAK_PINK_DARK
+              : darkMode ? "#30351F" : HAK_GREEN_DARK;
+            let bubbleBorder = darkMode ? "rgba(245,244,232,.56)" : "rgba(255,255,255,.8)";
             let bubbleShadow = isPlacebo
-              ? "inset 1.5px 1.5px 3px rgba(255,255,255,.95), inset -1.5px -2px 3px rgba(180,82,118,.12), 0 2px 7px rgba(173,85,117,.16), 0 0 0 1px rgba(217,87,130,.18)"
-              : "inset 1.5px 1.5px 3px rgba(255,255,255,.92), inset -1.5px -2px 3px rgba(82,107,36,.14), 0 2px 7px rgba(68,92,29,.16), 0 0 0 1px rgba(95,112,51,.20)";
+              ? darkMode
+                ? "inset 1.5px 1.5px 3px rgba(255,255,255,.55), inset -1.5px -2px 3px rgba(96,35,59,.22), 0 2px 8px rgba(31,34,20,.30), 0 0 0 1px rgba(240,154,184,.22)"
+                : "inset 1.5px 1.5px 3px rgba(255,255,255,.95), inset -1.5px -2px 3px rgba(180,82,118,.12), 0 2px 7px rgba(173,85,117,.16), 0 0 0 1px rgba(217,87,130,.18)"
+              : darkMode
+                ? "inset 1.5px 1.5px 3px rgba(255,255,255,.48), inset -1.5px -2px 3px rgba(48,53,31,.28), 0 2px 8px rgba(31,34,20,.30), 0 0 0 1px rgba(182,194,142,.24)"
+                : "inset 1.5px 1.5px 3px rgba(255,255,255,.92), inset -1.5px -2px 3px rgba(82,107,36,.14), 0 2px 7px rgba(68,92,29,.16), 0 0 0 1px rgba(95,112,51,.20)";
 
             if (takenForStatus && !isCurrent) {
               if (isPlacebo) {
-                bubbleBackground =
-                  "radial-gradient(circle at 30% 24%, #FFDDE9 0%, #F6AEC6 42%, #E977A0 78%, #D95782 100%)";
+                bubbleBackground = darkMode
+                  ? "radial-gradient(circle at 30% 24%, #E992B0 0%, #D9658D 42%, #C14573 78%, #A93460 100%)"
+                  : "radial-gradient(circle at 30% 24%, #FFDDE9 0%, #F6AEC6 42%, #E977A0 78%, #D95782 100%)";
                 color = "#FFF7FB";
                 bubbleBorder = "rgba(255,255,255,.72)";
                 bubbleShadow =
                   "inset 1.5px 1.5px 3px rgba(255,255,255,.65), inset -1.5px -2px 3px rgba(135,39,77,.20), 0 2px 8px rgba(154,58,95,.22), 0 0 0 1px rgba(185,46,96,.28)";
               } else {
-                bubbleBackground =
-                  "radial-gradient(circle at 30% 24%, #DDE7C3 0%, #A7B878 42%, #7C914B 78%, #5A6C31 100%)";
+                bubbleBackground = darkMode
+                  ? "radial-gradient(circle at 30% 24%, #AFC17A 0%, #849B52 42%, #667E3B 78%, #4F642D 100%)"
+                  : "radial-gradient(circle at 30% 24%, #DDE7C3 0%, #A7B878 42%, #7C914B 78%, #5A6C31 100%)";
                 color = "#FFFDF3";
                 bubbleBorder = "rgba(255,255,255,.72)";
                 bubbleShadow =
@@ -1898,17 +1983,25 @@ function BirthControlCalendar({
             if (isCurrent) {
               if (isPlacebo) {
                 bubbleBackground = takenForStatus
-                  ? "radial-gradient(circle at 30% 24%, #FFD7E5 0%, #F4A5BE 46%, #E46F99 100%)"
-                  : "radial-gradient(circle at 30% 24%, #FFF7FB 0%, #F6D8E6 46%, #E9B7CA 100%)";
-                color = takenForStatus ? "#FFF7FB" : HAK_PINK_DARK;
+                  ? darkMode
+                    ? "radial-gradient(circle at 30% 24%, #E992B0 0%, #D45F88 46%, #B93C68 100%)"
+                    : "radial-gradient(circle at 30% 24%, #FFD7E5 0%, #F4A5BE 46%, #E46F99 100%)"
+                  : darkMode
+                    ? "radial-gradient(circle at 30% 24%, #F5D7E2 0%, #E8A8BD 46%, #D77A9B 100%)"
+                    : "radial-gradient(circle at 30% 24%, #FFF7FB 0%, #F6D8E6 46%, #E9B7CA 100%)";
+                color = takenForStatus ? "#FFF7FB" : darkMode ? "#7F2748" : HAK_PINK_DARK;
                 bubbleBorder = "rgba(255,255,255,.88)";
                 bubbleShadow =
                   `inset 1.5px 1.5px 3px rgba(255,255,255,.78), inset -1.5px -2px 3px rgba(145,57,91,.16), 0 0 0 3px ${HAK_CARD_BG}, 0 0 0 6px rgba(217,87,130,.30), 0 3px 10px rgba(154,58,95,.18)`;
               } else {
                 bubbleBackground = takenForStatus
-                  ? "radial-gradient(circle at 30% 24%, #B8C988 0%, #7F9650 48%, #52652D 100%)"
-                  : "radial-gradient(circle at 30% 24%, #F2F7E2 0%, #D6E2B3 46%, #AFC573 100%)";
-                color = takenForStatus ? "#fff" : HAK_GREEN_DARK;
+                  ? darkMode
+                    ? "radial-gradient(circle at 30% 24%, #AFC17A 0%, #80984E 48%, #53682F 100%)"
+                    : "radial-gradient(circle at 30% 24%, #B8C988 0%, #7F9650 48%, #52652D 100%)"
+                  : darkMode
+                    ? "radial-gradient(circle at 30% 24%, #DCE5C1 0%, #B8C789 46%, #91A75E 100%)"
+                    : "radial-gradient(circle at 30% 24%, #F2F7E2 0%, #D6E2B3 46%, #AFC573 100%)";
+                color = takenForStatus ? "#fff" : darkMode ? "#30351F" : HAK_GREEN_DARK;
                 bubbleBorder = "rgba(255,255,255,.88)";
                 bubbleShadow = takenForStatus
                   ? `inset 1.5px 1.5px 3px rgba(255,255,255,.42), inset -1.5px -2px 3px rgba(49,62,27,.22), 0 0 0 3px ${HAK_CARD_BG}, 0 0 0 6px rgba(95,112,51,.30), 0 3px 10px rgba(52,65,30,.22)`
@@ -1997,10 +2090,10 @@ function BirthControlCalendar({
                   packDay == null
                     ? "transparent"
                     : isPlacebo
-                      ? "rgba(239,154,184,.72)"
+                      ? darkMode ? "rgba(227,111,152,.72)" : "rgba(239,154,184,.72)"
                       : isNewPack
-                        ? "rgba(176,185,81,.72)"
-                        : "rgba(101,119,58,.76)";
+                        ? darkMode ? "rgba(169,199,111,.68)" : "rgba(176,185,81,.72)"
+                        : darkMode ? "rgba(175,193,122,.68)" : "rgba(101,119,58,.76)";
 
                 const chipColor =
                   packDay == null
@@ -2025,7 +2118,7 @@ function BirthControlCalendar({
                       className="grid h-[10px] min-w-[16px] place-items-center rounded-full px-[1px] text-[8px] font-bold leading-none tabular-nums"
                       style={{
                         color: "var(--foreground)",
-                        boxShadow: isToday ? "0 0 0 1px rgba(65,76,18,.68)" : undefined,
+                        boxShadow: isToday ? (darkMode ? "0 0 0 1px rgba(221,220,203,.75)" : "0 0 0 1px rgba(65,76,18,.68)") : undefined,
                       }}
                     >
                       {cell.date.getDate()}
@@ -2056,8 +2149,8 @@ function BirthControlCalendar({
         <div
           className="mt-3 rounded-[1.75rem] px-4 py-4 ring-1"
           style={{
-            backgroundColor: "rgba(255,255,255,.20)",
-            borderColor: "rgba(95,112,51,.22)",
+            backgroundColor: darkMode ? "rgba(90,96,64,.72)" : "rgba(255,255,255,.20)",
+            borderColor: darkMode ? "rgba(119,125,88,.82)" : "rgba(95,112,51,.22)",
           }}
         >
           <div className="grid grid-cols-[1.35fr_1fr_.9fr] items-start gap-2 text-center">
@@ -2079,8 +2172,8 @@ function BirthControlCalendar({
             <div
               className="rounded-full px-2 py-2 ring-1"
               style={{
-                backgroundColor: "rgba(255,255,255,.30)",
-                borderColor: "rgba(95,112,51,.22)",
+                backgroundColor: darkMode ? "rgba(65,71,45,.76)" : "rgba(255,255,255,.30)",
+                borderColor: darkMode ? "rgba(119,125,88,.78)" : "rgba(95,112,51,.22)",
               }}
             >
               <div
@@ -2142,11 +2235,14 @@ function BirthControlCalendar({
       <div
         className="mt-3 rounded-[1.5rem] px-2 py-2 ring-1"
         style={{
-          backgroundColor: "rgba(255,255,255,.24)",
-          borderColor: "rgba(95,112,51,.18)",
+          backgroundColor: darkMode ? "rgba(90,96,64,.70)" : "rgba(255,255,255,.24)",
+          borderColor: darkMode ? "rgba(119,125,88,.76)" : "rgba(95,112,51,.18)",
         }}
       >
-        <div className="grid grid-cols-4 overflow-hidden rounded-[1.1rem] bg-white/25">
+        <div
+          className="grid grid-cols-4 overflow-hidden rounded-[1.1rem] bg-white/25"
+          style={{ backgroundColor: darkMode ? "rgba(65,71,45,.62)" : undefined }}
+        >
           <div className="px-2 py-3 text-center">
             <span className="mx-auto grid h-7 w-7 place-items-center rounded-full bg-pink-100/80 text-[13px]"><Ico e="🫐" size={18} /></span>
             <p className="mt-1 text-[9px] font-semibold text-foreground">Menstruation</p>
@@ -2186,7 +2282,7 @@ function BirthControlCalendar({
       </div>
 
       {/* ŠukŠuk Insights summary — added inside the HAK calendar only. */}
-      <SukSukPeriodChart data={data} anchorKey={todayKey()} />
+      <SukSukPeriodChart data={data} anchorKey={todayKey()} darkMode={darkMode} />
 
       {/* Compact dose editor — only circular HAK wheel pills open this popup. */}
       {sel && selectedDay != null && typeof document !== "undefined"
@@ -2226,7 +2322,7 @@ function BirthControlCalendar({
                     onClick={() => setSel(null)}
                     className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm font-bold ring-1"
                     style={{
-                      backgroundColor: "rgba(255,255,255,.42)",
+                      backgroundColor: darkMode ? "rgba(102,109,73,.72)" : "rgba(255,255,255,.42)",
                       borderColor: `color-mix(in srgb, ${popupAccent} 35%, transparent)`,
                       color: popupAccent,
                     }}
@@ -2240,7 +2336,7 @@ function BirthControlCalendar({
                   <div
                     className="mt-4 flex min-h-12 items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold"
                     style={{
-                      backgroundColor: "rgba(255,255,255,.38)",
+                      backgroundColor: darkMode ? "rgba(102,109,73,.62)" : "rgba(255,255,255,.38)",
                       border: `1.5px solid ${popupAccent}`,
                       color: popupAccent,
                     }}
@@ -2383,11 +2479,21 @@ function countIntercourseBetween(data: BixboData, start: Date, end: Date): numbe
   );
 }
 
-function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: string }) {
-  const HAK_PURPLE = "#647A32";
-  const HAK_PURPLE_DARK = "#455A20";
-  const HAK_PURPLE_SOFT = "#C5D1A0";
-  const HAK_CARD_BG = "color-mix(in srgb, var(--background) 90%, #536A27 10%)";
+function SukSukPeriodChart({
+  data,
+  anchorKey,
+  darkMode,
+}: {
+  data: BixboData;
+  anchorKey: string;
+  darkMode: boolean;
+}) {
+  const HAK_PURPLE = darkMode ? "#B6C28E" : "#647A32";
+  const HAK_PURPLE_DARK = darkMode ? "#D9E3BA" : "#455A20";
+  const HAK_PURPLE_SOFT = darkMode ? "#626944" : "#C5D1A0";
+  const HAK_CARD_BG = darkMode
+    ? "color-mix(in srgb, var(--surface) 90%, #77805A 10%)"
+    : "color-mix(in srgb, var(--background) 90%, #536A27 10%)";
 
   const anchor = useMemo(() => {
     const date = fromKey(anchorKey);
