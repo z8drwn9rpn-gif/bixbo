@@ -24,9 +24,9 @@ import {
 export const Route = createFileRoute("/notes")({
   head: () => ({
     meta: [
-      { title: "Notes — BIXBO" },
+      { title: "BIXBO — Notes" },
       { name: "description", content: "Personal notes, folders, checklists and search." },
-      { property: "og:title", content: "Notes — BIXBO" },
+      { property: "og:title", content: "BIXBO — Notes" },
       { property: "og:description", content: "Personal notes, folders, checklists and search." },
     ],
   }),
@@ -36,6 +36,7 @@ export const Route = createFileRoute("/notes")({
 type FolderIconComponent = (props: IconProps) => ReactElement;
 type NotesView = "all" | "folders" | "archived";
 type NoteColor = NonNullable<Note["color"]>;
+type FolderIconKey = "note" | "health" | "idea" | "food";
 
 const NOTE_COLORS: Record<NoteColor, string> = {
   default: "var(--surface)",
@@ -45,44 +46,66 @@ const NOTE_COLORS: Record<NoteColor, string> = {
   blue: "rgba(77, 135, 214, 0.11)",
 };
 
-function folderIconComponent(folder: Pick<NoteFolder, "name" | "icon">): FolderIconComponent {
+/**
+ * Notes folder icons must be BIXBO SVGs on every platform.
+ *
+ * Older BIXBO data stored folder icons as keyboard emoji (📓 / 💚 / 💡 / 🍳…).
+ * We still understand those legacy values, but normalize them to semantic
+ * BIXBO keys so iOS never renders an Apple emoji while desktop renders a
+ * different branded icon.
+ */
+function normalizeFolderIconKey(folder: Pick<NoteFolder, "name" | "icon">): FolderIconKey {
   const name = folder.name.trim().toLowerCase();
-  const legacyIcon = folder.icon?.trim().toLowerCase() ?? "";
+  const icon = folder.icon?.trim().toLowerCase() ?? "";
 
   if (
     name.includes("health") ||
     name.includes("medical") ||
-    legacyIcon === "💚" ||
-    legacyIcon === "❤️" ||
-    legacyIcon === "heart" ||
-    legacyIcon === "health"
+    icon === "💚" ||
+    icon === "❤️" ||
+    icon === "heart" ||
+    icon === "health"
   ) {
-    return HeartIcon;
+    return "health";
   }
 
   if (
     name.includes("cook") ||
     name.includes("food") ||
     name.includes("recipe") ||
-    legacyIcon.includes("🍳") ||
-    legacyIcon.includes("🍲") ||
-    legacyIcon === "food" ||
-    legacyIcon === "cooking"
+    icon.includes("🍳") ||
+    icon.includes("🍲") ||
+    icon.includes("🥘") ||
+    icon === "food" ||
+    icon === "cooking"
   ) {
-    return FoodIcon;
+    return "food";
   }
 
   if (
     name.includes("idea") ||
     name.includes("inspiration") ||
-    legacyIcon === "💡" ||
-    legacyIcon === "idea" ||
-    legacyIcon === "star"
+    icon === "💡" ||
+    icon === "idea" ||
+    icon === "star"
   ) {
-    return StarIcon;
+    return "idea";
   }
 
-  return NoteIcon;
+  return "note";
+}
+
+function folderIconComponent(folder: Pick<NoteFolder, "name" | "icon">): FolderIconComponent {
+  switch (normalizeFolderIconKey(folder)) {
+    case "health":
+      return HeartIcon;
+    case "food":
+      return FoodIcon;
+    case "idea":
+      return StarIcon;
+    default:
+      return NoteIcon;
+  }
 }
 
 function FolderBixboIcon({
@@ -198,14 +221,31 @@ function NotesPage() {
   useEffect(() => {
     if (!hydrated) return;
 
-    const sanitized = data.notebook.map((note) => ({
+    const sanitizedNotebook = data.notebook.map((note) => ({
       ...note,
       content: sanitizeNoteHtml(note.content ?? ""),
     }));
 
-    const changed = sanitized.some((note, index) => note.content !== data.notebook[index]?.content);
-    if (changed) update((current) => ({ ...current, notebook: sanitized }));
-  }, [hydrated, data.notebook, update]);
+    const normalizedFolders = data.folders.map((folder) => {
+      const semanticIcon = normalizeFolderIconKey(folder);
+      return folder.icon === semanticIcon ? folder : { ...folder, icon: semanticIcon };
+    });
+
+    const notebookChanged = sanitizedNotebook.some(
+      (note, index) => note.content !== data.notebook[index]?.content,
+    );
+    const foldersChanged = normalizedFolders.some(
+      (folder, index) => folder.icon !== data.folders[index]?.icon,
+    );
+
+    if (!notebookChanged && !foldersChanged) return;
+
+    update((current) => ({
+      ...current,
+      notebook: notebookChanged ? sanitizedNotebook : current.notebook,
+      folders: foldersChanged ? normalizedFolders : current.folders,
+    }));
+  }, [hydrated, data.folders, data.notebook, update]);
 
   const createNote = (folderId = openFolder ?? "general") => {
     const note: Note = {
@@ -292,7 +332,7 @@ function NotesPage() {
 
     if (!note) {
       return (
-        <AppShell title="Bixbo Notes">
+        <AppShell title="Notes">
           <div className="px-5 py-8 text-sm text-muted-foreground">
             This note could not be found.
             <button
