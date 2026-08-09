@@ -2467,7 +2467,7 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
     const value = diff === 0 ? "0" : `${diff > 0 ? "+" : ""}${diff}`;
 
     return (
-      <p className="mt-1.5 flex h-3 items-center justify-center text-center text-[8px] leading-none text-muted-foreground">
+      <p className="mt-2 flex h-4 items-center justify-center text-center text-[9px] leading-none text-muted-foreground">
         vs last {label}{" "}
         <span
           className="font-bold"
@@ -2490,20 +2490,20 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
 
     return (
       <div
-        className="mt-2 grid h-[64px] items-end gap-[2px]"
+        className="mt-3 grid h-[96px] items-end gap-[3px]"
         style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
       >
         {items.map((item, index) => {
-          const height = item.count > 0 ? Math.max(5, Math.round((item.count / max) * 42)) : 1;
+          const height = item.count > 0 ? Math.max(7, Math.round((item.count / max) * 68)) : 1;
 
           return (
             <div key={`${item.label}-${index}`} className="flex min-w-0 flex-col items-center justify-end">
-              <span className={`${dense ? "text-[6px]" : "text-[7px]"} mb-0.5 h-2.5 tabular-nums text-foreground/75`}>
+              <span className={`${dense ? "text-[7px]" : "text-[8px]"} mb-1 h-3 tabular-nums font-medium text-foreground/80`}>
                 {item.count}
               </span>
-              <div className="flex h-[42px] w-full items-end justify-center border-b border-border/55">
+              <div className="flex h-[68px] w-full items-end justify-center border-b border-border/65">
                 <span
-                  className="w-[76%] rounded-t-[3px]"
+                  className={`${dense ? "w-[76%]" : "w-[84%]"} rounded-t-[4px]`}
                   style={{
                     height: `${height}px`,
                     background:
@@ -2515,7 +2515,7 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
                 />
               </div>
               <span
-                className={`${dense ? "text-[5.5px]" : "text-[6.5px]"} mt-1 truncate text-muted-foreground`}
+                className={`${dense ? "text-[6.5px]" : "text-[8px]"} mt-1.5 truncate font-medium text-muted-foreground`}
               >
                 {item.label}
               </span>
@@ -2528,7 +2528,7 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
 
   return (
     <section
-      className="mt-4 rounded-3xl p-4 ring-1 ring-border"
+      className="mt-4 rounded-3xl p-4 pb-5 ring-1 ring-border"
       style={{ backgroundColor: HAK_CARD_BG }}
     >
       <div className="flex items-start gap-3">
@@ -2551,7 +2551,7 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
       <div className="mt-3 border-t border-border/55 pt-3">
         <div className="grid grid-cols-3 divide-x divide-border/55">
           <div className="flex min-w-0 flex-col px-1.5">
-            <p className="text-center text-[10px] font-bold text-foreground">Week</p>
+            <p className="text-center text-[11px] font-bold text-foreground">Week</p>
             <div className="mt-0.5 flex h-5 items-center justify-center gap-0.5">
               <button
                 type="button"
@@ -2566,7 +2566,7 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
               <button
                 type="button"
                 onClick={() => setWeekOffset(0)}
-                className="min-w-0 truncate rounded-md px-0.5 py-0.5 text-center text-[6.5px] tabular-nums text-muted-foreground transition hover:bg-tint hover:text-foreground"
+                className="min-w-0 truncate rounded-md px-0.5 py-0.5 text-center text-[7.5px] tabular-nums text-muted-foreground transition hover:bg-tint hover:text-foreground"
                 aria-label="Back to current week"
                 title={weekOffset === 0 ? "Current week" : "Back to current week"}
               >
@@ -2592,7 +2592,7 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
           </div>
 
           <div className="flex min-w-0 flex-col px-1.5">
-            <p className="text-center text-[10px] font-bold text-foreground">Month</p>
+            <p className="text-center text-[11px] font-bold text-foreground">Month</p>
             <div className="mt-0.5 flex h-5 items-center justify-center gap-0.5">
               <button
                 type="button"
@@ -2607,7 +2607,7 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
               <button
                 type="button"
                 onClick={() => setMonthOffset(0)}
-                className="min-w-0 truncate rounded-md px-0.5 py-0.5 text-center text-[6.5px] text-muted-foreground transition hover:bg-tint hover:text-foreground"
+                className="min-w-0 truncate rounded-md px-0.5 py-0.5 text-center text-[7.5px] text-muted-foreground transition hover:bg-tint hover:text-foreground"
                 aria-label="Back to current month"
                 title={monthOffset === 0 ? "Current month" : "Back to current month"}
               >
@@ -2636,7 +2636,7 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
           </div>
 
           <div className="flex min-w-0 flex-col px-1.5">
-            <p className="text-center text-[10px] font-bold text-foreground">Year</p>
+            <p className="text-center text-[11px] font-bold text-foreground">Year</p>
             <div className="mt-0.5 flex h-5 items-center justify-center gap-0.5">
               <button
                 type="button"
@@ -2651,7 +2651,7 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
               <button
                 type="button"
                 onClick={() => setYearOffset(0)}
-                className="min-w-0 rounded-md px-1 py-0.5 text-center text-[6.5px] tabular-nums text-muted-foreground transition hover:bg-tint hover:text-foreground"
+                className="min-w-0 rounded-md px-1 py-0.5 text-center text-[7.5px] tabular-nums text-muted-foreground transition hover:bg-tint hover:text-foreground"
                 aria-label="Back to current year"
                 title={yearOffset === 0 ? "Current year" : "Back to current year"}
               >
