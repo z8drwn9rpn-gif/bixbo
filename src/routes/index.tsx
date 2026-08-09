@@ -2148,7 +2148,7 @@ function BirthControlCalendar({
       >
         <div className="grid grid-cols-4 overflow-hidden rounded-[1.1rem] bg-white/25">
           <div className="px-2 py-3 text-center">
-            <span className="mx-auto grid h-7 w-7 place-items-center rounded-full bg-pink-100/80 text-[13px]"><Ico e="🫐" size={18} /></span>
+            <span className="mx-auto grid h-7 w-7 place-items-center rounded-full bg-pink-100/80 text-[13px]"><Ico e="🩸" size={18} /></span>
             <p className="mt-1 text-[9px] font-semibold text-foreground">Menstruation</p>
             <p className="text-[11px] font-bold text-foreground">{PACK_DAYS - ACTIVE_DAYS} days</p>
             <p className="mt-1 text-[8px] text-muted-foreground">
@@ -2157,7 +2157,7 @@ function BirthControlCalendar({
           </div>
 
           <div className="border-l border-border/50 px-2 py-3 text-center">
-            <span className="mx-auto grid h-7 w-7 place-items-center rounded-full bg-red-100/80 text-[13px] text-red-600"><Ico e="🩸" size={18} /></span>
+            <span className="mx-auto grid h-7 w-7 place-items-center rounded-full bg-primary/12 text-[13px] text-primary"><Ico e="🔄" size={18} /></span>
             <p className="mt-1 text-[9px] font-semibold text-foreground">Cycle</p>
             <p className="text-[11px] font-bold text-foreground">{PACK_DAYS} days</p>
             <p className="mt-1 text-[8px] text-muted-foreground">
@@ -2539,15 +2539,15 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
           return (
             <div key={`${item.label}-${index}`} className="flex min-w-0 flex-col items-center justify-end">
               <span
-                className={`${dense ? "text-[6px]" : "text-[8px]"} mb-1 h-3 tabular-nums font-medium text-foreground/80`}
+                className={`${dense ? "text-[5px]" : "text-[7px]"} mb-1 h-3 tabular-nums font-medium leading-none text-foreground/80`}
                 title={`${item.label}: ${item.count}`}
                 aria-label={`${item.label}: ${item.count}`}
               >
-                {dense ? (item.count > 0 ? "•" : "") : item.count}
+                {item.count}
               </span>
               <div className="flex h-[68px] w-full items-end justify-center border-b border-border/65">
                 <span
-                  className={`${dense ? "w-[64%]" : "w-[84%]"} rounded-t-[4px]`}
+                  className={`${dense ? "w-[58%]" : "w-[78%]"} rounded-t-[4px]`}
                   style={{
                     height: `${height}px`,
                     background:
@@ -2559,7 +2559,7 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
                 />
               </div>
               <span
-                className={`${dense ? "text-[6px]" : "text-[7.5px]"} mt-1.5 truncate font-medium text-muted-foreground`}
+                className={`${dense ? "text-[5px]" : "text-[6.5px]"} mt-1.5 w-full truncate text-center font-medium leading-none text-muted-foreground`}
               >
                 {item.label}
               </span>
