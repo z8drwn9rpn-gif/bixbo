@@ -2037,11 +2037,24 @@ function TetanyForm({
   const [note, setNote] = useState(initialEntry?.note ?? "");
 
   type CK = "tetanyTypes" | "tetanyLocations" | "tetanyTriggers" | "tetanyHelped";
-  const addC = (k: CK, v: string) => update((d) => ({ ...d, custom: { ...d.custom, [k]: [...d.custom[k], v] } }));
+  const addC = (k: CK, v: string) =>
+    update((d) => withoutCustomTombstones({ ...d, custom: { ...d.custom, [k]: [...d.custom[k], v] } }, k, [v]));
   const rmC = (k: CK, v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [k]: d.custom[k].filter((x) => x !== v) } }));
+    update((d) =>
+      withCustomTombstones({ ...d, custom: { ...d.custom, [k]: d.custom[k].filter((x) => x !== v) } }, k, [v]),
+    );
   const rnC = (k: CK, o: string, n: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [k]: d.custom[k].map((x) => (x === o ? n : x)) } }));
+    update((d) =>
+      withoutCustomTombstones(
+        withCustomTombstones(
+          { ...d, custom: { ...d.custom, [k]: d.custom[k].map((x) => (x === o ? n : x)) } },
+          k,
+          [o],
+        ),
+        k,
+        [n],
+      ),
+    );
 
   const save = () => {
     const editing = !!initialEntry;
