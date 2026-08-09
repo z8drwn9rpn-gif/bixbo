@@ -289,7 +289,7 @@ export function LogSheet({
 
                       const slots = [
                         // Pain
-                        { x: -126, up: 208, labelSide: "left" as const, labelW: 64 },
+                        { x: -116, up: 208, labelSide: "left" as const, labelW: 58 },
                         // Blueberry
                         { x: -76, up: 276, labelSide: "top" as const, labelW: 76 },
                         // Heat / Cold / TENS
@@ -297,23 +297,23 @@ export function LogSheet({
                         // Food
                         { x: 76, up: 276, labelSide: "top" as const, labelW: 62 },
                         // Bowel
-                        { x: 126, up: 208, labelSide: "right" as const, labelW: 62 },
+                        { x: 116, up: 208, labelSide: "right" as const, labelW: 58 },
                         // ŠukŠuk!
-                        { x: -139, up: 137, labelSide: "left" as const, labelW: 72 },
+                        { x: -124, up: 137, labelSide: "left" as const, labelW: 66 },
                         // Workout
-                        { x: 139, up: 137, labelSide: "right" as const, labelW: 72 },
+                        { x: 124, up: 137, labelSide: "right" as const, labelW: 66 },
                         // Temp / Sleep / Weight
-                        { x: 118, up: 72, labelSide: "right" as const, labelW: 96 },
+                        { x: 108, up: 72, labelSide: "right" as const, labelW: 82 },
                         // Meds
-                        { x: -118, up: 72, labelSide: "left" as const, labelW: 58 },
+                        { x: -108, up: 72, labelSide: "left" as const, labelW: 54 },
                         // Event
-                        { x: -78, up: 25, labelSide: "left" as const, labelW: 58 },
+                        { x: -72, up: 34, labelSide: "left" as const, labelW: 54 },
                         // Task
-                        { x: 78, up: 25, labelSide: "right" as const, labelW: 58 },
+                        { x: 72, up: 34, labelSide: "right" as const, labelW: 54 },
                       ];
 
                       const circleClass = `
-                        absolute left-1/2 top-1/2 grid h-[44px] w-[44px]
+                        absolute left-1/2 top-1/2 grid h-[41px] w-[41px]
                         -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full
                         border border-[#edf2cf]/65
                         bg-[#dce5b2]/36
@@ -402,7 +402,7 @@ export function LogSheet({
                                 }}
                               >
                                 <span className={circleClass}>
-                                  <Ico e={c.emoji} size={24} />
+                                  <Ico e={c.emoji} size={22} />
                                 </span>
 
                                 <span
@@ -414,14 +414,14 @@ export function LogSheet({
                                     width: `${slot.labelW}px`,
                                     ...(isLeft
                                       ? {
-                                          right: "calc(100% + 5px)",
+                                          right: "calc(100% + 4px)",
                                           top: "50%",
                                           transform: "translateY(-50%)",
                                           textAlign: "right" as const,
                                         }
                                       : isRight
                                         ? {
-                                            left: "calc(100% + 5px)",
+                                            left: "calc(100% + 4px)",
                                             top: "50%",
                                             transform: "translateY(-50%)",
                                             textAlign: "left" as const,
@@ -448,12 +448,12 @@ export function LogSheet({
                                 setCat("note");
                               }}
                               aria-label="Log Note"
-                              className="pointer-events-auto absolute bottom-[3px] left-1/2 z-30 h-[48px] w-[48px] -translate-x-[calc(50%+58px)] outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#edf2cf]"
+                              className="pointer-events-auto absolute bottom-[12px] left-1/2 z-30 h-[46px] w-[46px] -translate-x-[calc(50%+76px)] outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#edf2cf]"
                             >
                               <span className={circleClass}>
                                 <Ico e={noteCat.emoji} size={23} />
                               </span>
-                              <span className="absolute right-[calc(100%+5px)] top-1/2 w-[52px] -translate-y-1/2 text-right text-[10px] font-semibold leading-none text-white drop-shadow-[0_1px_2px_rgba(31,37,16,0.95)]">
+                              <span className="absolute right-[calc(100%+5px)] top-1/2 w-[48px] -translate-y-1/2 text-right text-[10px] font-semibold leading-none text-white drop-shadow-[0_1px_2px_rgba(31,37,16,0.95)]">
                                 Notes
                               </span>
                             </button>
@@ -463,7 +463,7 @@ export function LogSheet({
                             type="button"
                             onClick={() => setEditingOrder(true)}
                             aria-label="Reorder log categories"
-                            className="pointer-events-auto absolute bottom-[3px] left-1/2 z-30 h-[48px] w-[48px] translate-x-[10px] outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#edf2cf]"
+                            className="pointer-events-auto absolute bottom-[12px] left-1/2 z-30 h-[46px] w-[46px] translate-x-[30px] outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#edf2cf]"
                           >
                             <span className={circleClass}>
                               <span className="grid grid-cols-2 gap-[3px]" aria-hidden="true">
@@ -472,7 +472,7 @@ export function LogSheet({
                                 ))}
                               </span>
                             </span>
-                            <span className="absolute left-[calc(100%+5px)] top-1/2 w-[58px] -translate-y-1/2 text-left text-[10px] font-semibold leading-none text-white drop-shadow-[0_1px_2px_rgba(31,37,16,0.95)]">
+                            <span className="absolute left-[calc(100%+5px)] top-1/2 w-[52px] -translate-y-1/2 text-left text-[10px] font-semibold leading-none text-white drop-shadow-[0_1px_2px_rgba(31,37,16,0.95)]">
                               Reorder
                             </span>
                           </button>
@@ -496,7 +496,7 @@ export function LogSheet({
                       aria-label="Close Log"
                       className="
                         pointer-events-auto absolute bottom-0 left-1/2 z-40
-                        grid h-[62px] w-[62px] -translate-x-1/2 place-items-center rounded-full
+                        grid h-[58px] w-[58px] -translate-x-1/2 place-items-center rounded-full
                         border border-[#f1f4dc]/80
                         bg-[#657632] text-white
                         shadow-[0_0_0_7px_rgba(231,238,190,0.44),0_0_24px_rgba(232,238,190,0.48),0_10px_26px_rgba(20,28,9,0.36)]
@@ -504,7 +504,7 @@ export function LogSheet({
                         transition-transform duration-150 active:scale-95
                       "
                     >
-                      <Plus className="h-8 w-8" strokeWidth={2.15} />
+                      <Plus className="h-7 w-7" strokeWidth={2.15} />
                     </button>
                   </div>
                 </div>
