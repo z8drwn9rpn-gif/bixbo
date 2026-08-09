@@ -285,16 +285,35 @@ function InsightPeriodSelect({
   ariaLabel: string;
 }) {
   return (
-    <select
+    <div
+      className="grid h-8 w-[210px] grid-cols-3 rounded-xl bg-tint p-0.5 ring-1 ring-border/60"
+      role="group"
       aria-label={ariaLabel}
-      value={value}
-      onChange={(event) => onChange(event.target.value as Period)}
-      className="h-8 min-w-[86px] shrink-0 rounded-xl border border-border/70 bg-background/80 px-2 text-[10px] font-semibold text-foreground outline-none"
     >
-      <option value="W">Week</option>
-      <option value="M">Month</option>
-      <option value="Y">Year</option>
-    </select>
+      {([
+        ["W", "Week"],
+        ["M", "Month"],
+        ["Y", "Year"],
+      ] as const).map(([period, label]) => {
+        const selected = value === period;
+
+        return (
+          <button
+            key={period}
+            type="button"
+            onClick={() => onChange(period)}
+            aria-pressed={selected}
+            className={`min-w-0 rounded-[10px] px-2 py-1 text-[10px] font-semibold transition ${
+              selected
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -368,24 +387,24 @@ function InsightPeriodControl({
     <div className="flex shrink-0 flex-col items-end gap-1">
       <InsightPeriodSelect value={value} onChange={onChange} ariaLabel={ariaLabel} />
 
-      <div className="inline-flex h-7 items-center rounded-xl border border-border/60 bg-background/65 px-0.5">
+      <div className="grid h-8 w-[210px] grid-cols-[32px_minmax(0,1fr)_32px] items-center rounded-xl bg-background/70 p-0.5 ring-1 ring-border/60">
         <button
           type="button"
           onClick={() => onShift(-1)}
-          className="grid h-6 w-6 shrink-0 place-items-center rounded-lg text-muted-foreground transition hover:bg-tint hover:text-foreground"
+          className="grid h-7 w-7 place-self-center place-items-center rounded-lg text-muted-foreground transition hover:bg-tint hover:text-foreground"
           aria-label={`Previous ${unit}`}
         >
           <ChevronLeft className="h-3.5 w-3.5" />
         </button>
 
-        <span className="min-w-[104px] max-w-[154px] whitespace-nowrap px-1 text-center text-[9px] font-semibold tabular-nums text-foreground">
+        <span className="min-w-0 whitespace-nowrap px-1 text-center text-[9px] font-semibold tabular-nums text-foreground">
           {insightPeriodNavigationLabel(value, anchor)}
         </span>
 
         <button
           type="button"
           onClick={() => onShift(1)}
-          className="grid h-6 w-6 shrink-0 place-items-center rounded-lg text-muted-foreground transition hover:bg-tint hover:text-foreground"
+          className="grid h-7 w-7 place-self-center place-items-center rounded-lg text-muted-foreground transition hover:bg-tint hover:text-foreground"
           aria-label={`Next ${unit}`}
         >
           <ChevronRight className="h-3.5 w-3.5" />
@@ -2066,7 +2085,7 @@ function YearHealthHeatmap({
     <ChartCard title="Heatmap">
       <div className="-mt-6 mb-1 flex flex-col items-end gap-1">
         <div
-          className="inline-grid h-8 grid-cols-3 rounded-xl bg-tint p-0.5 ring-1 ring-border/60"
+          className="grid h-8 w-[210px] grid-cols-3 rounded-xl bg-tint p-0.5 ring-1 ring-border/60"
           role="group"
           aria-label="Heatmap period"
         >
@@ -2083,7 +2102,7 @@ function YearHealthHeatmap({
                 type="button"
                 onClick={() => setHeatmapPeriod(value)}
                 aria-pressed={selected}
-                className={`min-w-[54px] rounded-[10px] px-2 py-1 text-[10px] font-semibold transition ${
+                className={`min-w-0 rounded-[10px] px-2 py-1 text-[10px] font-semibold transition ${
                   selected
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
@@ -2095,22 +2114,22 @@ function YearHealthHeatmap({
           })}
         </div>
 
-        <div className="inline-flex h-7 items-center rounded-xl bg-background/70 p-0.5 ring-1 ring-border/60">
+        <div className="grid h-8 w-[210px] grid-cols-[32px_minmax(0,1fr)_32px] items-center rounded-xl bg-background/70 p-0.5 ring-1 ring-border/60">
           <button
             type="button"
             onClick={() => onShiftPeriod(heatmapPeriod, -1)}
-            className="grid h-6 w-6 place-items-center rounded-lg transition hover:bg-tint"
+            className="grid h-7 w-7 place-self-center place-items-center rounded-lg transition hover:bg-tint"
             aria-label={`Previous ${heatmapPeriod === "Y" ? "year" : heatmapPeriod === "7D" ? "week" : "month"}`}
           >
             <ChevronLeft className="h-3.5 w-3.5" />
           </button>
-          <span className="min-w-[94px] max-w-[148px] whitespace-nowrap px-1 text-center text-[9px] font-semibold tabular-nums">
+          <span className="min-w-0 whitespace-nowrap px-1 text-center text-[9px] font-semibold tabular-nums">
             {heatmapNavigationLabel}
           </span>
           <button
             type="button"
             onClick={() => onShiftPeriod(heatmapPeriod, 1)}
-            className="grid h-6 w-6 place-items-center rounded-lg transition hover:bg-tint"
+            className="grid h-7 w-7 place-self-center place-items-center rounded-lg transition hover:bg-tint"
             aria-label={`Next ${heatmapPeriod === "Y" ? "year" : heatmapPeriod === "7D" ? "week" : "month"}`}
           >
             <ChevronRight className="h-3.5 w-3.5" />
