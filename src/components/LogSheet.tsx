@@ -266,7 +266,7 @@ export function LogSheet({
                 <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
                   <div
                     className="absolute left-1/2 h-[375px] w-[390px] max-w-[100vw] -translate-x-1/2"
-                    style={{ bottom: "calc(max(8px, env(safe-area-inset-bottom)) + 24px)" }}
+                    style={{ bottom: "calc(max(8px, env(safe-area-inset-bottom)) + 30px)" }}
                   >
                     {/*
                       Reference layout:
@@ -288,28 +288,31 @@ export function LogSheet({
                       const noteCat = orderedCats.find((c) => c.id === "note");
 
                       const slots = [
+                        // One continuous SEMICIRCLE around the + button.
+                        // Left side climbs smoothly to the top, then mirrors on the right.
+
                         // Pain
-                        { x: -116, up: 208, labelSide: "left" as const, labelW: 58 },
+                        { x: -112, up: 238, labelSide: "left" as const, labelW: 58 },
                         // Blueberry
-                        { x: -76, up: 276, labelSide: "top" as const, labelW: 76 },
+                        { x: -68, up: 294, labelSide: "top" as const, labelW: 76 },
                         // Heat / Cold / TENS
-                        { x: 0, up: 306, labelSide: "top" as const, labelW: 94 },
+                        { x: 0, up: 324, labelSide: "top" as const, labelW: 94 },
                         // Food
-                        { x: 76, up: 276, labelSide: "top" as const, labelW: 62 },
+                        { x: 68, up: 294, labelSide: "top" as const, labelW: 62 },
                         // Bowel
-                        { x: 116, up: 208, labelSide: "right" as const, labelW: 58 },
+                        { x: 112, up: 238, labelSide: "right" as const, labelW: 58 },
                         // ŠukŠuk!
-                        { x: -124, up: 137, labelSide: "left" as const, labelW: 66 },
+                        { x: -132, up: 176, labelSide: "left" as const, labelW: 66 },
                         // Workout
-                        { x: 124, up: 137, labelSide: "right" as const, labelW: 66 },
+                        { x: 132, up: 176, labelSide: "right" as const, labelW: 66 },
                         // Temp / Sleep / Weight
-                        { x: 108, up: 72, labelSide: "right" as const, labelW: 82 },
+                        { x: 136, up: 112, labelSide: "right" as const, labelW: 82 },
                         // Meds
-                        { x: -108, up: 72, labelSide: "left" as const, labelW: 54 },
+                        { x: -136, up: 112, labelSide: "left" as const, labelW: 54 },
                         // Event
-                        { x: -82, up: 58, labelSide: "left" as const, labelW: 54 },
+                        { x: -116, up: 58, labelSide: "left" as const, labelW: 54 },
                         // Task
-                        { x: 82, up: 58, labelSide: "right" as const, labelW: 54 },
+                        { x: 116, up: 58, labelSide: "right" as const, labelW: 54 },
                       ];
 
                       const circleClass = `
@@ -357,8 +360,8 @@ export function LogSheet({
                               <line
                                 x1="0"
                                 y1="-12"
-                                x2="-47"
-                                y2="-14"
+                                x2="-72"
+                                y2="-24"
                                 stroke="rgba(241,244,220,0.52)"
                                 strokeWidth="1"
                                 strokeDasharray="2.5 4.5"
@@ -369,8 +372,8 @@ export function LogSheet({
                             <line
                               x1="0"
                               y1="-12"
-                              x2="47"
-                              y2="-14"
+                              x2="72"
+                              y2="-24"
                               stroke="rgba(241,244,220,0.52)"
                               strokeWidth="1"
                               strokeDasharray="2.5 4.5"
@@ -448,7 +451,7 @@ export function LogSheet({
                                 setCat("note");
                               }}
                               aria-label="Log Note"
-                              className="pointer-events-auto absolute bottom-[2px] left-1/2 z-30 h-[44px] w-[44px] -translate-x-[calc(50%+96px)] outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#edf2cf]"
+                              className="pointer-events-auto absolute bottom-[24px] left-1/2 z-30 h-[44px] w-[44px] -translate-x-[calc(50%+72px)] outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#edf2cf]"
                             >
                               <span className={`${circleClass} scale-[0.92]`}>
                                 <Ico e={noteCat.emoji} size={21} />
@@ -463,7 +466,7 @@ export function LogSheet({
                             type="button"
                             onClick={() => setEditingOrder(true)}
                             aria-label="Reorder log categories"
-                            className="pointer-events-auto absolute bottom-[2px] left-1/2 z-30 h-[44px] w-[44px] translate-x-[52px] outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#edf2cf]"
+                            className="pointer-events-auto absolute bottom-[24px] left-1/2 z-30 h-[44px] w-[44px] translate-x-[28px] outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#edf2cf]"
                           >
                             <span className={`${circleClass} scale-[0.92]`}>
                               <span className="grid grid-cols-2 gap-[3px]" aria-hidden="true">
