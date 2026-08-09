@@ -22,6 +22,7 @@ import {
   addDays,
   avgDayPain,
   fromKey,
+  getBixbo,
   nextPredictedPeriod,
   painColor,
   predictPeriods,
@@ -1243,19 +1244,65 @@ function CouplePage() {
 
   useEffect(() => {
     let cancelled = false;
+    let refreshInFlight = false;
 
-    fetchPartner()
-      .then((partnerData) => {
-        if (!cancelled) {
-          setPartner(partnerData ?? undefined);
+    const refreshPartnerView = async () => {
+      if (cancelled || refreshInFlight) return;
+      refreshInFlight = true;
+
+      try {
+        const partnerData = await fetchPartner();
+        if (cancelled) return;
+
+        const nextPartner = partnerData ?? undefined;
+        const currentPartner = getBixbo().partner;
+
+        // Avoid unnecessary store emits/renders when nothing actually changed.
+        if (JSON.stringify(currentPartner ?? null) !== JSON.stringify(nextPartner ?? null)) {
+          setPartner(nextPartner);
         }
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error("Couple fetchPartner", error);
-      });
+      } finally {
+        refreshInFlight = false;
+      }
+    };
+
+    // Load immediately when Couple opens.
+    void refreshPartnerView();
+
+    // Re-check while Couple stays open. This is a fallback for missed realtime
+    // UPDATE events, so edits appear without Home -> Couple or a hard refresh.
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        void refreshPartnerView();
+      }
+    }, 4000);
+
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") {
+        void refreshPartnerView();
+      }
+    };
+
+    const refreshOnFocus = () => {
+      void refreshPartnerView();
+    };
+
+    const refreshWhenOnline = () => {
+      void refreshPartnerView();
+    };
+
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    window.addEventListener("focus", refreshOnFocus);
+    window.addEventListener("online", refreshWhenOnline);
 
     return () => {
       cancelled = true;
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+      window.removeEventListener("focus", refreshOnFocus);
+      window.removeEventListener("online", refreshWhenOnline);
     };
   }, []);
 
