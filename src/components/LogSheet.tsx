@@ -193,81 +193,180 @@ export function LogSheet({
             ? `flex h-[100dvh] max-h-[100dvh] flex-col rounded-t-none bg-background p-0 ${
                 active === "pain" ? "pt-[env(safe-area-inset-top)]" : "pt-0"
               }`
-            : "fixed !left-1/2 !right-auto !bottom-4 !top-auto -translate-x-1/2 flex !h-[466px] !max-h-[94dvh] !w-[67vw] !max-w-[320px] min-h-0 flex-col gap-0 overflow-hidden rounded-[1.5rem] border border-border/70 bg-background/95 p-0 shadow-2xl backdrop-blur-xl") + " [&>button.absolute]:hidden"
+            : "fixed !inset-0 !left-0 !right-0 !top-0 !bottom-0 flex !h-[100dvh] !max-h-none !w-full !max-w-none min-h-0 flex-col overflow-hidden !rounded-none !border-0 !bg-transparent !p-0 !shadow-none") + " [&>button.absolute]:hidden"
         }
       >
         {!active ? (
           <>
-            <SheetHeader className="relative h-10 shrink-0 border-b border-border/60 px-3 py-0">
-              <SheetTitle className="flex h-full items-center justify-center text-center font-serif text-xl">Log</SheetTitle>
-              <button
-                onClick={() => setEditingOrder((v) => !v)}
-                className="absolute left-2 top-1/2 flex -translate-y-1/2 items-center gap-0.5 rounded-full px-1.5 py-1 text-[9px] text-muted-foreground hover:bg-tint"
+            <SheetTitle className="sr-only">Log</SheetTitle>
+
+            <button
+              type="button"
+              aria-label="Close log menu"
+              onClick={close}
+              className="absolute inset-0 z-0 cursor-default bg-transparent"
+            />
+
+            {editingOrder ? (
+              <section
+                className="absolute left-1/2 z-20 flex max-h-[70dvh] w-[min(88vw,340px)] -translate-x-1/2 flex-col overflow-hidden rounded-[1.6rem] border border-border/70 bg-background/95 shadow-2xl backdrop-blur-xl"
+                style={{ bottom: "calc(max(8px, env(safe-area-inset-bottom)) + 88px)" }}
               >
-                {editingOrder ? (
-                  <>
-                    <Check className="h-3 w-3" /> Done
-                  </>
-                ) : (
-                  <>
+                <div className="relative flex h-12 shrink-0 items-center justify-center border-b border-border/60 px-3">
+                  <SheetTitle className="font-serif text-lg">Reorder Log</SheetTitle>
+                  <button
+                    type="button"
+                    onClick={() => setEditingOrder(false)}
+                    className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-1 rounded-full bg-tint px-2.5 py-1 text-[10px] font-semibold text-foreground"
+                  >
+                    <Check className="h-3.5 w-3.5" /> Done
+                  </button>
+                </div>
+
+                <ul className="m-0 min-h-0 flex-1 list-none divide-y divide-border/60 overflow-y-auto bg-surface/65 p-2">
+                  {orderedCats.map((c, i) => (
+                    <li key={c.id} className="first:rounded-t-xl last:rounded-b-xl">
+                      <div className="flex min-h-11 w-full items-center gap-2 rounded-xl bg-surface/80 px-2.5">
+                        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-tint ring-1 ring-border/60">
+                          <Ico e={c.emoji} size={21} />
+                        </span>
+                        <p className="min-w-0 flex-1 truncate text-[13px] font-semibold">{c.label}</p>
+                        <button
+                          type="button"
+                          onClick={() => moveCat(i, -1)}
+                          disabled={i === 0}
+                          className="rounded-full p-1.5 hover:bg-tint disabled:opacity-30"
+                          aria-label={`Move ${c.label} up`}
+                        >
+                          <ChevronUp className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveCat(i, 1)}
+                          disabled={i === orderedCats.length - 1}
+                          className="rounded-full p-1.5 hover:bg-tint disabled:opacity-30"
+                          aria-label={`Move ${c.label} down`}
+                        >
+                          <ChevronDown className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : (
+              <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
+                <div
+                  className="absolute left-1/2 h-[410px] w-[390px] max-w-[100vw] -translate-x-1/2"
+                  style={{ bottom: "calc(max(8px, env(safe-area-inset-bottom)) + 36px)" }}
+                >
+                  <svg
+                    aria-hidden="true"
+                    viewBox="-195 -390 390 410"
+                    className="pointer-events-none absolute bottom-0 left-1/2 h-[410px] w-[390px] max-w-[100vw] -translate-x-1/2 overflow-visible"
+                  >
+                    {orderedCats.slice(0, 13).map((c, index) => {
+                      const slots = [
+                        { x: -132, up: 245 },
+                        { x: -78, up: 300 },
+                        { x: 0, up: 334 },
+                        { x: 78, up: 300 },
+                        { x: 132, up: 245 },
+                        { x: -153, up: 182 },
+                        { x: 153, up: 182 },
+                        { x: 137, up: 112 },
+                        { x: -137, up: 112 },
+                        { x: -84, up: 48 },
+                        { x: 84, up: 48 },
+                        { x: 0, up: 102 },
+                        { x: 0, up: 210 },
+                      ];
+                      const slot = slots[index] ?? { x: 0, up: 210 };
+                      return (
+                        <line
+                          key={`line-${c.id}`}
+                          x1="0"
+                          y1="0"
+                          x2={slot.x}
+                          y2={-Math.max(34, slot.up - 26)}
+                          stroke="var(--muted-foreground)"
+                          strokeWidth="1"
+                          strokeDasharray="3 5"
+                          opacity="0.34"
+                        />
+                      );
+                    })}
+                  </svg>
+
+                  {orderedCats.slice(0, 13).map((c, index) => {
+                    const slots = [
+                      { x: -132, up: 245 },
+                      { x: -78, up: 300 },
+                      { x: 0, up: 334 },
+                      { x: 78, up: 300 },
+                      { x: 132, up: 245 },
+                      { x: -153, up: 182 },
+                      { x: 153, up: 182 },
+                      { x: 137, up: 112 },
+                      { x: -137, up: 112 },
+                      { x: -84, up: 48 },
+                      { x: 84, up: 48 },
+                      { x: 0, up: 102 },
+                      { x: 0, up: 210 },
+                    ];
+                    const slot = slots[index] ?? { x: 0, up: 210 };
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => {
+                          setEditingOrder(false);
+                          setCat(c.id);
+                        }}
+                        aria-label={`Log ${c.label}`}
+                        className="pointer-events-auto absolute z-20 flex w-[76px] flex-col items-center gap-1.5 text-center outline-none transition active:scale-95 focus-visible:ring-2 focus-visible:ring-ring"
+                        style={{
+                          left: "50%",
+                          bottom: 0,
+                          transform: `translate(calc(-50% + ${slot.x}px), -${slot.up}px)`,
+                        }}
+                      >
+                        <span className="grid h-[54px] w-[54px] place-items-center rounded-full border border-border/70 bg-surface/90 shadow-[0_7px_18px_rgba(0,0,0,0.24)] ring-[3px] ring-background/55 backdrop-blur-md">
+                          <Ico e={c.emoji} size={30} />
+                        </span>
+                        <span className="max-w-[92px] text-[11px] font-semibold leading-[1.08] text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.75)]">
+                          {c.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+
+                  <button
+                    type="button"
+                    onClick={() => setEditingOrder(true)}
+                    className="pointer-events-auto absolute bottom-[-4px] left-3 z-30 flex items-center gap-1 rounded-full border border-white/20 bg-black/20 px-2.5 py-1.5 text-[9px] font-semibold text-white/85 shadow-sm backdrop-blur-md"
+                    aria-label="Reorder log categories"
+                  >
                     <GripVertical className="h-3 w-3" /> Reorder
-                  </>
-                )}
-              </button>
-              <button
-                onClick={close}
-                aria-label="Close"
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 hover:bg-tint"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </SheetHeader>
-            <ul className="m-0 min-h-0 flex-1 list-none overflow-y-auto divide-y divide-border/70 bg-surface/55 px-2 py-0">
-              {orderedCats.map((c, i) => (
-                <li key={c.id}>
-                  {editingOrder ? (
-                    <div className="flex h-9 w-full items-center gap-2 bg-surface/70 px-2">
-                      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-tint">
-                        <Ico e={c.emoji} size={20} />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-[13px] font-semibold leading-none">{c.label}</p>
-                      </div>
-                      <button
-                        onClick={() => moveCat(i, -1)}
-                        disabled={i === 0}
-                        className="rounded-full p-1 hover:bg-tint disabled:opacity-30"
-                        aria-label="Move up"
-                      >
-                        <ChevronUp className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => moveCat(i, 1)}
-                        disabled={i === orderedCats.length - 1}
-                        className="rounded-full p-1 hover:bg-tint disabled:opacity-30"
-                        aria-label="Move down"
-                      >
-                        <ChevronDown className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setCat(c.id)}
-                      className="flex h-9 w-full items-center gap-2 bg-surface/70 px-2 text-left transition hover:bg-tint"
-                    >
-                      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-tint">
-                        <Ico e={c.emoji} size={20} />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-[13px] font-semibold leading-none">{c.label}</p>
-                        <p className="hidden truncate text-xs text-muted-foreground">{c.hint}</p>
-                      </div>
-                      <span className="shrink-0 text-sm text-muted-foreground">›</span>
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ul>
+                  </button>
+
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute left-1/2 z-30 h-0 w-0 -translate-x-1/2 border-x-[6px] border-b-0 border-t-[8px] border-x-transparent border-t-background/80"
+                    style={{ bottom: "38px" }}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={close}
+                    aria-label="Close Log"
+                    className="pointer-events-auto absolute bottom-0 left-1/2 z-40 grid h-[62px] w-[62px] -translate-x-1/2 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_0_0_7px_rgba(235,240,210,0.42),0_8px_28px_rgba(0,0,0,0.32)] ring-2 ring-background/80 transition active:scale-95"
+                  >
+                    <Plus className="h-8 w-8" strokeWidth={2.5} />
+                  </button>
+                </div>
+              </div>
+            )}
           </>
         ) : (
           <div className="flex h-full min-h-0 flex-col">
