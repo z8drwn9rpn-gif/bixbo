@@ -278,6 +278,28 @@ function normalizeRemotePostpartumDayLog(value: unknown): PostpartumDayLog | und
   };
 }
 
+function normalizeRemoteSyncMeta(value: unknown): NonNullable<BixboData["syncMeta"]> {
+  const raw = safeObject(value);
+
+  const normalizeMap = (input: unknown): Record<string, number> => {
+    const source = safeObject(input);
+    const out: Record<string, number> = {};
+
+    for (const [path, rawTimestamp] of Object.entries(source)) {
+      const timestamp = Number(rawTimestamp);
+      if (!path || !Number.isFinite(timestamp) || timestamp <= 0) continue;
+      out[path] = timestamp;
+    }
+
+    return out;
+  };
+
+  return {
+    updatedAt: normalizeMap(raw.updatedAt),
+    deletedAt: normalizeMap(raw.deletedAt),
+  };
+}
+
 function normalizeRemotePayload(value: unknown): BixboData {
   const raw = safeObject(value);
   const rawDayLogs = safeObject(raw.dayLogs);
@@ -309,6 +331,7 @@ function normalizeRemotePayload(value: unknown): BixboData {
     docs: Array.isArray(raw.docs) ? (raw.docs as NonNullable<BixboData["docs"]>) : [],
     diagnoses: Array.isArray(raw.diagnoses) ? (raw.diagnoses as NonNullable<BixboData["diagnoses"]>) : [],
     deletedIds: Array.isArray(raw.deletedIds) ? (raw.deletedIds as NonNullable<BixboData["deletedIds"]>) : [],
+    syncMeta: normalizeRemoteSyncMeta(raw.syncMeta),
   };
 }
 
