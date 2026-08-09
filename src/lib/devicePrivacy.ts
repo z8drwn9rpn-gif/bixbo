@@ -197,6 +197,8 @@ export function migrateLegacyDevicePrivacy(raw: unknown): void {
   const current = readDevicePrivacy();
   writeDevicePrivacy({
     ...current,
+    // Old Face ID/PIN toggles were not real credentials, so do not silently
+    // enable a lock that the user cannot unlock. Privacy-screen can migrate.
     privacyScreen: typeof p.blurScreenshots === "boolean" ? p.blurScreenshots : current.privacyScreen,
   });
 }
