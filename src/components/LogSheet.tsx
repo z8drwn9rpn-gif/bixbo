@@ -257,32 +257,31 @@ export function LogSheet({
             ) : (
               <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
                 <div
-                  className="absolute left-1/2 h-[500px] w-[390px] max-w-[100vw] -translate-x-1/2"
+                  className="absolute left-1/2 h-[455px] w-[390px] max-w-[100vw] -translate-x-1/2"
                   style={{ bottom: "calc(max(8px, env(safe-area-inset-bottom)) + 36px)" }}
                 >
                   <svg
                     aria-hidden="true"
-                    viewBox="-195 -480 390 500"
-                    className="pointer-events-none absolute bottom-0 left-1/2 h-[500px] w-[390px] max-w-[100vw] -translate-x-1/2 overflow-visible"
+                    viewBox="-195 -435 390 455"
+                    className="pointer-events-none absolute bottom-0 left-1/2 h-[455px] w-[390px] max-w-[100vw] -translate-x-1/2 overflow-visible"
                   >
                     {orderedCats.slice(0, 13).map((c, index) => {
                       const slots = [
-                      // Circular radial ring around the central + button.
-                      // Positions follow an ellipse so the menu reads as a true circle
-                      // while staying inside an iPhone-width viewport.
-                      { x: 0, up: 420 },
-                      { x: -86, up: 397 },
-                      { x: 86, up: 397 },
-                      { x: -145, up: 338 },
-                      { x: 145, up: 338 },
-                      { x: -168, up: 255 },
-                      { x: 168, up: 255 },
-                      { x: -145, up: 172 },
-                      { x: 145, up: 172 },
-                      { x: -86, up: 113 },
-                      { x: 86, up: 113 },
-                      { x: 0, up: 90 },
-                      { x: 0, up: 255 },
+                      // Compact radial fan, matching the reference image:
+                      // highest in the middle, lower toward the sides, all converging to Log.
+                      { x: 0, up: 385 },
+                      { x: -82, up: 355 },
+                      { x: 82, up: 355 },
+                      { x: -132, up: 305 },
+                      { x: 132, up: 305 },
+                      { x: -158, up: 245 },
+                      { x: 158, up: 245 },
+                      { x: -166, up: 182 },
+                      { x: 166, up: 182 },
+                      { x: -138, up: 118 },
+                      { x: 138, up: 118 },
+                      { x: -78, up: 68 },
+                      { x: 0, up: 118 },
                     ];
                       const slot = slots[index] ?? { x: 0, up: 210 };
                       return (
@@ -303,22 +302,21 @@ export function LogSheet({
 
                   {orderedCats.slice(0, 13).map((c, index) => {
                     const slots = [
-                      // Circular radial ring around the central + button.
-                      // Positions follow an ellipse so the menu reads as a true circle
-                      // while staying inside an iPhone-width viewport.
-                      { x: 0, up: 420 },
-                      { x: -86, up: 397 },
-                      { x: 86, up: 397 },
-                      { x: -145, up: 338 },
-                      { x: 145, up: 338 },
-                      { x: -168, up: 255 },
-                      { x: 168, up: 255 },
-                      { x: -145, up: 172 },
-                      { x: 145, up: 172 },
-                      { x: -86, up: 113 },
-                      { x: 86, up: 113 },
-                      { x: 0, up: 90 },
-                      { x: 0, up: 255 },
+                      // Compact radial fan, matching the reference image:
+                      // highest in the middle, lower toward the sides, all converging to Log.
+                      { x: 0, up: 385 },
+                      { x: -82, up: 355 },
+                      { x: 82, up: 355 },
+                      { x: -132, up: 305 },
+                      { x: 132, up: 305 },
+                      { x: -158, up: 245 },
+                      { x: 158, up: 245 },
+                      { x: -166, up: 182 },
+                      { x: 166, up: 182 },
+                      { x: -138, up: 118 },
+                      { x: 138, up: 118 },
+                      { x: -78, up: 68 },
+                      { x: 0, up: 118 },
                     ];
                     const slot = slots[index] ?? { x: 0, up: 210 };
                     return (
@@ -337,10 +335,10 @@ export function LogSheet({
                           transform: `translate(calc(-50% + ${slot.x}px), -${slot.up}px)`,
                         }}
                       >
-                        <span className="grid h-[54px] w-[54px] place-items-center rounded-full border border-border/70 bg-surface/90 shadow-[0_7px_18px_rgba(0,0,0,0.24)] ring-[3px] ring-background/55 backdrop-blur-md">
-                          <Ico e={c.emoji} size={30} />
+                        <span className="grid h-[50px] w-[50px] place-items-center rounded-full border border-border/70 bg-surface/90 shadow-[0_6px_16px_rgba(0,0,0,0.22)] ring-[3px] ring-background/55 backdrop-blur-md">
+                          <Ico e={c.emoji} size={27} />
                         </span>
-                        <span className="max-w-[72px] text-[10px] font-semibold leading-[1.04] text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.75)]">
+                        <span className="max-w-[74px] text-[10px] font-semibold leading-[1.04] text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.78)]">
                           {c.label}
                         </span>
                       </button>
