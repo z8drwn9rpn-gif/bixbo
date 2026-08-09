@@ -292,7 +292,7 @@ export function LogSheet({
                         // Left side climbs smoothly to the top, then mirrors on the right.
 
                         // Pain
-                        { x: -112, up: 238, labelSide: "left" as const, labelW: 58 },
+                        { x: -106, up: 236, labelSide: "left" as const, labelW: 54 },
                         // Blueberry
                         { x: -68, up: 294, labelSide: "top" as const, labelW: 76 },
                         // Heat / Cold / TENS
@@ -300,19 +300,19 @@ export function LogSheet({
                         // Food
                         { x: 68, up: 294, labelSide: "top" as const, labelW: 62 },
                         // Bowel
-                        { x: 112, up: 238, labelSide: "right" as const, labelW: 58 },
+                        { x: 106, up: 236, labelSide: "right" as const, labelW: 54 },
                         // ŠukŠuk!
-                        { x: -132, up: 176, labelSide: "left" as const, labelW: 66 },
+                        { x: -120, up: 174, labelSide: "left" as const, labelW: 62 },
                         // Workout
-                        { x: 132, up: 176, labelSide: "right" as const, labelW: 66 },
+                        { x: 120, up: 174, labelSide: "right" as const, labelW: 62 },
                         // Temp / Sleep / Weight
-                        { x: 136, up: 112, labelSide: "right" as const, labelW: 82 },
+                        { x: 122, up: 112, labelSide: "right" as const, labelW: 78 },
                         // Meds
-                        { x: -136, up: 112, labelSide: "left" as const, labelW: 54 },
+                        { x: -122, up: 112, labelSide: "left" as const, labelW: 52 },
                         // Event
-                        { x: -116, up: 58, labelSide: "left" as const, labelW: 54 },
+                        { x: -104, up: 60, labelSide: "left" as const, labelW: 50 },
                         // Task
-                        { x: 116, up: 58, labelSide: "right" as const, labelW: 54 },
+                        { x: 104, up: 60, labelSide: "right" as const, labelW: 50 },
                       ];
 
                       const circleClass = `
@@ -417,14 +417,14 @@ export function LogSheet({
                                     width: `${slot.labelW}px`,
                                     ...(isLeft
                                       ? {
-                                          right: "calc(100% + 4px)",
+                                          right: "calc(100% + 3px)",
                                           top: "50%",
                                           transform: "translateY(-50%)",
                                           textAlign: "right" as const,
                                         }
                                       : isRight
                                         ? {
-                                            left: "calc(100% + 4px)",
+                                            left: "calc(100% + 3px)",
                                             top: "50%",
                                             transform: "translateY(-50%)",
                                             textAlign: "left" as const,
@@ -451,12 +451,12 @@ export function LogSheet({
                                 setCat("note");
                               }}
                               aria-label="Log Note"
-                              className="pointer-events-auto absolute bottom-[24px] left-1/2 z-30 h-[44px] w-[44px] -translate-x-[calc(50%+72px)] outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#edf2cf]"
+                              className="pointer-events-auto absolute bottom-[24px] left-1/2 z-30 h-[44px] w-[44px] -translate-x-[calc(50%+68px)] outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#edf2cf]"
                             >
                               <span className={`${circleClass} scale-[0.92]`}>
                                 <Ico e={noteCat.emoji} size={21} />
                               </span>
-                              <span className="absolute right-[calc(100%+4px)] top-1/2 w-[44px] -translate-y-1/2 text-right text-[10px] font-semibold leading-none text-white drop-shadow-[0_1px_2px_rgba(31,37,16,0.95)]">
+                              <span className="absolute right-[calc(100%+3px)] top-1/2 w-[42px] -translate-y-1/2 text-right text-[10px] font-semibold leading-none text-white drop-shadow-[0_1px_2px_rgba(31,37,16,0.95)]">
                                 Notes
                               </span>
                             </button>
@@ -466,7 +466,7 @@ export function LogSheet({
                             type="button"
                             onClick={() => setEditingOrder(true)}
                             aria-label="Reorder log categories"
-                            className="pointer-events-auto absolute bottom-[24px] left-1/2 z-30 h-[44px] w-[44px] translate-x-[28px] outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#edf2cf]"
+                            className="pointer-events-auto absolute bottom-[30px] left-1/2 z-30 h-[44px] w-[44px] translate-x-[44px] outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#edf2cf]"
                           >
                             <span className={`${circleClass} scale-[0.92]`}>
                               <span className="grid grid-cols-2 gap-[3px]" aria-hidden="true">
@@ -475,7 +475,7 @@ export function LogSheet({
                                 ))}
                               </span>
                             </span>
-                            <span className="absolute left-[calc(100%+4px)] top-1/2 w-[48px] -translate-y-1/2 text-left text-[10px] font-semibold leading-none text-white drop-shadow-[0_1px_2px_rgba(31,37,16,0.95)]">
+                            <span className="absolute left-[calc(100%+3px)] top-1/2 w-[46px] -translate-y-1/2 text-left text-[10px] font-semibold leading-none text-white drop-shadow-[0_1px_2px_rgba(31,37,16,0.95)]">
                               Reorder
                             </span>
                           </button>
