@@ -578,17 +578,9 @@ function InsightsPage() {
           onShiftPeriod={(period, delta) => shiftHeatmapPeriod(period, delta)}
         />
 
-        <section
-          className="rounded-3xl p-5 ring-1"
-          style={{
-            backgroundColor: GREEN_SOFT,
-            boxShadow: `inset 0 0 0 1px ${GREEN_BORDER}`,
-          }}
-        >
+        <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
           <div className="flex items-start justify-between gap-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: PAIN_ACCENT }}>
-              Pain scale
-            </p>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Pain scale</p>
             <InsightPeriodControl
               value={painPeriod}
               onChange={setPainPeriod}
@@ -601,7 +593,7 @@ function InsightsPage() {
           </div>
 
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="font-serif text-5xl leading-none">
+            <span className="font-serif text-4xl leading-none">
               {painAvg != null ? painAvg.toFixed(1) : "–"}
             </span>
             <span className="text-sm text-muted-foreground">
