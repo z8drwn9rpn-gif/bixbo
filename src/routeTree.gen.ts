@@ -10,7 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as CatchAllRouteImport } from './routes/$'
+import { Route as SplatRouteImport } from './routes/$'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CoupleRouteImport } from './routes/couple'
 import { Route as InsightsRouteImport } from './routes/insights'
@@ -29,7 +29,7 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CatchAllRoute = CatchAllRouteImport.update({
+const SplatRoute = SplatRouteImport.update({
   id: '/$',
   path: '/$',
   getParentRoute: () => rootRouteImport,
@@ -97,7 +97,7 @@ const ApiPublicHooksKeepaliveRoute = ApiPublicHooksKeepaliveRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/$': typeof CatchAllRoute
+  '/$': typeof SplatRoute
   '/auth': typeof AuthRoute
   '/couple': typeof CoupleRoute
   '/insights': typeof InsightsRoute
@@ -113,7 +113,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/$': typeof CatchAllRoute
+  '/$': typeof SplatRoute
   '/auth': typeof AuthRoute
   '/couple': typeof CoupleRoute
   '/insights': typeof InsightsRoute
@@ -130,7 +130,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/$': typeof CatchAllRoute
+  '/$': typeof SplatRoute
   '/auth': typeof AuthRoute
   '/couple': typeof CoupleRoute
   '/insights': typeof InsightsRoute
@@ -197,7 +197,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  CatchAllRoute: typeof CatchAllRoute
+  SplatRoute: typeof SplatRoute
   AuthRoute: typeof AuthRoute
   CoupleRoute: typeof CoupleRoute
   InsightsRoute: typeof InsightsRoute
@@ -225,7 +225,7 @@ declare module '@tanstack/react-router' {
       id: '/$'
       path: '/$'
       fullPath: '/$'
-      preLoaderRoute: typeof CatchAllRouteImport
+      preLoaderRoute: typeof SplatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -317,7 +317,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  CatchAllRoute: CatchAllRoute,
+  SplatRoute: SplatRoute,
   AuthRoute: AuthRoute,
   CoupleRoute: CoupleRoute,
   InsightsRoute: InsightsRoute,
