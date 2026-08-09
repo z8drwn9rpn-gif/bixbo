@@ -2065,16 +2065,35 @@ function YearHealthHeatmap({
   return (
     <ChartCard title="Heatmap">
       <div className="-mt-6 mb-1 flex flex-col items-end gap-1">
-        <select
-          value={heatmapPeriod}
-          onChange={(event) => setHeatmapPeriod(event.target.value as HeatmapPeriod)}
-          className="h-7 rounded-xl border border-border/60 bg-background/70 px-2 text-[10px] font-semibold text-foreground outline-none"
+        <div
+          className="inline-grid h-8 grid-cols-3 rounded-xl bg-tint p-0.5 ring-1 ring-border/60"
+          role="group"
           aria-label="Heatmap period"
         >
-          <option value="7D">7 days</option>
-          <option value="30D">30 days</option>
-          <option value="Y">Year</option>
-        </select>
+          {([
+            ["7D", "Week"],
+            ["30D", "Month"],
+            ["Y", "Year"],
+          ] as const).map(([value, label]) => {
+            const selected = heatmapPeriod === value;
+
+            return (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setHeatmapPeriod(value)}
+                aria-pressed={selected}
+                className={`min-w-[54px] rounded-[10px] px-2 py-1 text-[10px] font-semibold transition ${
+                  selected
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
 
         <div className="inline-flex h-7 items-center rounded-xl bg-background/70 p-0.5 ring-1 ring-border/60">
           <button
