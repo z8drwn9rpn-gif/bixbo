@@ -226,6 +226,138 @@ function mergeSyncMeta(local: BixboData["syncMeta"], remote: BixboData["syncMeta
   };
 }
 
+function syncMetaHasClock(meta: SyncMeta, path: string): boolean {
+  return Boolean(meta.updatedAt[path] || meta.deletedAt[path]);
+}
+
+/**
+ * One-time bridge for data created/deleted before per-path sync metadata existed.
+ *
+ * The current device is treated as the canonical snapshot ONLY when neither
+ * side has a modern clock for the affected legacy field. This prevents old
+ * cloud copies from resurrecting:
+ * - removed custom Quick Tags,
+ * - old Quick Tag visibility/order,
+ * - removed custom options used by Pain/Tetany/Panic/Nausea/etc.
+ *
+ * The synthetic clocks/tombstones are persisted in the merged payload, so this
+ * is not repeated once the field has been migrated to modern sync semantics.
+ */
+function withLegacyCanonicalBaseline(local: BixboData, remote: BixboData): BixboData {
+  const localMeta = normalizeMeta(local.syncMeta);
+  const remoteMeta = normalizeMeta(remote.syncMeta);
+
+  const updatedAt = { ...localMeta.updatedAt };
+  const deletedAt = { ...localMeta.deletedAt };
+  const deletedIds = new Set(local.deletedIds ?? []);
+  const deletedCustom: Partial<Record<keyof CustomLists, string[]>> = {
+    ...(local.deletedCustom ?? {}),
+  };
+
+  let changed = false;
+  const allKnownTimestamps = [
+    ...Object.values(localMeta.updatedAt),
+    ...Object.values(localMeta.deletedAt),
+    ...Object.values(remoteMeta.updatedAt),
+    ...Object.values(remoteMeta.deletedAt),
+  ];
+  const baselineTimestamp = Math.max(Date.now(), 1, ...allKnownTimestamps) + 1;
+
+  const hasEitherClock = (path: string) =>
+    syncMetaHasClock(localMeta, path) || syncMetaHasClock(remoteMeta, path);
+
+  const stampUpdate = (path: string) => {
+    if (hasEitherClock(path)) return;
+    updatedAt[path] = baselineTimestamp;
+    delete deletedAt[path];
+    changed = true;
+  };
+
+  const stampDelete = (path: string) => {
+    if (hasEitherClock(path)) return;
+    deletedAt[path] = baselineTimestamp;
+    delete updatedAt[path];
+    changed = true;
+  };
+
+  // Built-in Quick Tag visibility/order are plain string arrays. When both
+  // copies are legacy, keep exactly what this device currently shows.
+  for (const settingKey of ["hiddenQuickTags", "quickTagOrder"] as const) {
+    const path = childPath("settings", settingKey);
+    if (hasEitherClock(path)) continue;
+
+    const current = local.settings?.[settingKey];
+    if (current === undefined) stampDelete(path);
+    else stampUpdate(path);
+  }
+
+  // Custom Quick Tags are id-keyed. Convert remote-only legacy ids into real
+  // tombstones and stamp current local ids as authoritative.
+  const quickTagBasePath = childPath("settings", "customQuickTags");
+  const localQuickTags = Array.isArray(local.settings?.customQuickTags)
+    ? local.settings.customQuickTags.filter(isIdItem)
+    : [];
+  const remoteQuickTags = Array.isArray(remote.settings?.customQuickTags)
+    ? remote.settings.customQuickTags.filter(isIdItem)
+    : [];
+
+  const localQuickTagIds = new Set(localQuickTags.map((tag) => tag.id));
+  const remoteQuickTagIds = new Set(remoteQuickTags.map((tag) => tag.id));
+
+  for (const tag of localQuickTags) {
+    const path = childPath(quickTagBasePath, tag.id);
+    if (!hasEitherClock(path)) stampUpdate(path);
+  }
+
+  for (const id of remoteQuickTagIds) {
+    if (localQuickTagIds.has(id)) continue;
+    const path = childPath(quickTagBasePath, id);
+    if (hasEitherClock(path)) continue;
+
+    stampDelete(path);
+    deletedIds.add(id);
+  }
+
+  // Custom option lists are string arrays. In legacy-vs-legacy conflicts the
+  // current device becomes the canonical snapshot. Values found only in the
+  // old cloud copy are also recorded in deletedCustom so older clients cannot
+  // union them back later.
+  const customKeys = new Set([
+    ...Object.keys(local.custom ?? {}),
+    ...Object.keys(remote.custom ?? {}),
+  ]) as Set<keyof CustomLists>;
+
+  for (const key of customKeys) {
+    const path = childPath("custom", key as string);
+    if (hasEitherClock(path)) continue;
+
+    const localValues = safeStringArray(local.custom?.[key]);
+    const remoteValues = safeStringArray(remote.custom?.[key]);
+    stampUpdate(path);
+
+    const localSet = new Set(localValues);
+    const remoteOnly = remoteValues.filter((value) => !localSet.has(value));
+    if (!remoteOnly.length) continue;
+
+    deletedCustom[key] = Array.from(
+      new Set([...(deletedCustom[key] ?? []), ...remoteOnly]),
+    );
+    changed = true;
+  }
+
+  if (!changed) return local;
+
+  return {
+    ...local,
+    deletedIds: Array.from(deletedIds).slice(-2000),
+    deletedCustom,
+    syncMeta: {
+      updatedAt,
+      deletedAt,
+    },
+  };
+}
+
 let _localMeta: SyncMeta = { updatedAt: {}, deletedAt: {} };
 let _remoteMeta: SyncMeta = { updatedAt: {}, deletedAt: {} };
 let _legacyDeleted = new Set<string>();
@@ -717,17 +849,21 @@ function mergePostpartumState(local: unknown, remote: unknown): PostpartumState 
 export function mergeBixbo(local: BixboData, remote: BixboData | null | undefined): BixboData {
   if (!remote) return local;
 
-  const localDeleted = Array.isArray(local.deletedIds)
-    ? local.deletedIds.filter((id): id is string => typeof id === "string")
+  // Migrate legacy Quick Tags/custom-option deletions before the first merge.
+  // If either side already has modern clocks, this leaves the data untouched.
+  const effectiveLocal = withLegacyCanonicalBaseline(local, remote);
+
+  const localDeleted = Array.isArray(effectiveLocal.deletedIds)
+    ? effectiveLocal.deletedIds.filter((id): id is string => typeof id === "string")
     : [];
   const remoteDeleted = Array.isArray(remote.deletedIds)
     ? remote.deletedIds.filter((id): id is string => typeof id === "string")
     : [];
   const legacyDeletedIds = Array.from(new Set([...localDeleted, ...remoteDeleted])).slice(-2000);
-  const deletedCustom = mergeDeletedCustom(local.deletedCustom, remote.deletedCustom);
-  const syncMeta = mergeSyncMeta(local.syncMeta, remote.syncMeta);
+  const deletedCustom = mergeDeletedCustom(effectiveLocal.deletedCustom, remote.deletedCustom);
+  const syncMeta = mergeSyncMeta(effectiveLocal.syncMeta, remote.syncMeta);
 
-  _localMeta = normalizeMeta(local.syncMeta);
+  _localMeta = normalizeMeta(effectiveLocal.syncMeta);
   _remoteMeta = normalizeMeta(remote.syncMeta);
   _legacyDeleted = new Set(legacyDeletedIds);
   _restoredLegacyIds = new Set();
@@ -735,38 +871,38 @@ export function mergeBixbo(local: BixboData, remote: BixboData | null | undefine
   try {
     const result: BixboData = {
       ...remote,
-      ...local,
-      dayLogs: mergeDayLogs(local.dayLogs, remote.dayLogs),
-      dayNotes: mergeDayNotes(local.dayNotes, remote.dayNotes),
-      todos: mergeTodos(local.todos, remote.todos),
-      tasks: unionById<TaskEntry>(local.tasks, remote.tasks, "tasks"),
-      events: unionById<EventEntry>(local.events, remote.events, "events"),
-      meds: unionById<Med>(local.meds, remote.meds, "meds"),
-      medLog: mergeMedLog(local.medLog, remote.medLog),
-      medLogTimes: mergeMedLogTimes(local.medLogTimes, remote.medLogTimes),
-      medNames: mergeStringMap(local.medNames, remote.medNames, "medNames"),
-      folders: unionById<NoteFolder>(local.folders, remote.folders, "folders"),
-      notebook: unionById<Note>(local.notebook, remote.notebook, "notebook"),
-      labs: unionById(local.labs, remote.labs, "labs"),
-      docs: unionById(local.docs, remote.docs, "docs"),
-      diagnoses: unionById(local.diagnoses, remote.diagnoses, "diagnoses"),
+      ...effectiveLocal,
+      dayLogs: mergeDayLogs(effectiveLocal.dayLogs, remote.dayLogs),
+      dayNotes: mergeDayNotes(effectiveLocal.dayNotes, remote.dayNotes),
+      todos: mergeTodos(effectiveLocal.todos, remote.todos),
+      tasks: unionById<TaskEntry>(effectiveLocal.tasks, remote.tasks, "tasks"),
+      events: unionById<EventEntry>(effectiveLocal.events, remote.events, "events"),
+      meds: unionById<Med>(effectiveLocal.meds, remote.meds, "meds"),
+      medLog: mergeMedLog(effectiveLocal.medLog, remote.medLog),
+      medLogTimes: mergeMedLogTimes(effectiveLocal.medLogTimes, remote.medLogTimes),
+      medNames: mergeStringMap(effectiveLocal.medNames, remote.medNames, "medNames"),
+      folders: unionById<NoteFolder>(effectiveLocal.folders, remote.folders, "folders"),
+      notebook: unionById<Note>(effectiveLocal.notebook, remote.notebook, "notebook"),
+      labs: unionById(effectiveLocal.labs, remote.labs, "labs"),
+      docs: unionById(effectiveLocal.docs, remote.docs, "docs"),
+      diagnoses: unionById(effectiveLocal.diagnoses, remote.diagnoses, "diagnoses"),
       deletedIds: legacyDeletedIds,
       deletedCustom,
       syncMeta,
       cycle: {
         ...EMPTY.cycle,
-        ...(mergeStructured("cycle", local.cycle, remote.cycle) as BixboData["cycle"]),
+        ...(mergeStructured("cycle", effectiveLocal.cycle, remote.cycle) as BixboData["cycle"]),
       },
-      custom: mergeCustom(local.custom, remote.custom, deletedCustom),
+      custom: mergeCustom(effectiveLocal.custom, remote.custom, deletedCustom),
       settings: {
         ...EMPTY.settings,
-        ...(mergeStructured("settings", local.settings, remote.settings) as BixboData["settings"]),
+        ...(mergeStructured("settings", effectiveLocal.settings, remote.settings) as BixboData["settings"]),
       },
-      profile: mergeStructured("profile", local.profile, remote.profile) as BixboData["profile"],
-      pregnancy: mergePregnancyState(local.pregnancy, remote.pregnancy),
-      postpartum: mergePostpartumState(local.postpartum, remote.postpartum),
+      profile: mergeStructured("profile", effectiveLocal.profile, remote.profile) as BixboData["profile"],
+      pregnancy: mergePregnancyState(effectiveLocal.pregnancy, remote.pregnancy),
+      postpartum: mergePostpartumState(effectiveLocal.postpartum, remote.postpartum),
       // partner is a local-only projection of the other user's data — always keep local's.
-      partner: local.partner ?? remote.partner,
+      partner: effectiveLocal.partner ?? remote.partner,
     };
 
     if (_restoredLegacyIds.size) {
