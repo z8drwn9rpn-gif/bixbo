@@ -257,30 +257,46 @@ export function LogSheet({
             ) : (
               <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
                 <div
-                  className="absolute left-1/2 h-[410px] w-[390px] max-w-[100vw] -translate-x-1/2"
+                  className="absolute left-1/2 h-[520px] w-[390px] max-w-[100vw] -translate-x-1/2"
                   style={{ bottom: "calc(max(8px, env(safe-area-inset-bottom)) + 36px)" }}
                 >
                   <svg
                     aria-hidden="true"
-                    viewBox="-195 -390 390 410"
-                    className="pointer-events-none absolute bottom-0 left-1/2 h-[410px] w-[390px] max-w-[100vw] -translate-x-1/2 overflow-visible"
+                    viewBox="-195 -500 390 520"
+                    className="pointer-events-none absolute bottom-0 left-1/2 h-[520px] w-[390px] max-w-[100vw] -translate-x-1/2 overflow-visible"
                   >
                     {orderedCats.slice(0, 13).map((c, index) => {
-                      const slots = [
-                        { x: -132, up: 245 },
-                        { x: -78, up: 300 },
-                        { x: 0, up: 334 },
-                        { x: 78, up: 300 },
-                        { x: 132, up: 245 },
-                        { x: -153, up: 182 },
-                        { x: 153, up: 182 },
-                        { x: 137, up: 112 },
-                        { x: -137, up: 112 },
-                        { x: -84, up: 48 },
-                        { x: 84, up: 48 },
-                        { x: 0, up: 102 },
-                        { x: 0, up: 210 },
-                      ];
+                      const slots =
+                      orderedCats.length <= 12
+                        ? [
+                            { x: -120, up: 420 },
+                            { x: -40, up: 420 },
+                            { x: 40, up: 420 },
+                            { x: 120, up: 420 },
+                            { x: -150, up: 295 },
+                            { x: -50, up: 295 },
+                            { x: 50, up: 295 },
+                            { x: 150, up: 295 },
+                            { x: -135, up: 170 },
+                            { x: -45, up: 170 },
+                            { x: 45, up: 170 },
+                            { x: 135, up: 170 },
+                          ]
+                        : [
+                            { x: -120, up: 440 },
+                            { x: -40, up: 440 },
+                            { x: 40, up: 440 },
+                            { x: 120, up: 440 },
+                            { x: 0, up: 350 },
+                            { x: -150, up: 280 },
+                            { x: -50, up: 280 },
+                            { x: 50, up: 280 },
+                            { x: 150, up: 280 },
+                            { x: -135, up: 155 },
+                            { x: -45, up: 155 },
+                            { x: 45, up: 155 },
+                            { x: 135, up: 155 },
+                          ];
                       const slot = slots[index] ?? { x: 0, up: 210 };
                       return (
                         <line
@@ -299,21 +315,37 @@ export function LogSheet({
                   </svg>
 
                   {orderedCats.slice(0, 13).map((c, index) => {
-                    const slots = [
-                      { x: -132, up: 245 },
-                      { x: -78, up: 300 },
-                      { x: 0, up: 334 },
-                      { x: 78, up: 300 },
-                      { x: 132, up: 245 },
-                      { x: -153, up: 182 },
-                      { x: 153, up: 182 },
-                      { x: 137, up: 112 },
-                      { x: -137, up: 112 },
-                      { x: -84, up: 48 },
-                      { x: 84, up: 48 },
-                      { x: 0, up: 102 },
-                      { x: 0, up: 210 },
-                    ];
+                    const slots =
+                      orderedCats.length <= 12
+                        ? [
+                            { x: -120, up: 420 },
+                            { x: -40, up: 420 },
+                            { x: 40, up: 420 },
+                            { x: 120, up: 420 },
+                            { x: -150, up: 295 },
+                            { x: -50, up: 295 },
+                            { x: 50, up: 295 },
+                            { x: 150, up: 295 },
+                            { x: -135, up: 170 },
+                            { x: -45, up: 170 },
+                            { x: 45, up: 170 },
+                            { x: 135, up: 170 },
+                          ]
+                        : [
+                            { x: -120, up: 440 },
+                            { x: -40, up: 440 },
+                            { x: 40, up: 440 },
+                            { x: 120, up: 440 },
+                            { x: 0, up: 350 },
+                            { x: -150, up: 280 },
+                            { x: -50, up: 280 },
+                            { x: 50, up: 280 },
+                            { x: 150, up: 280 },
+                            { x: -135, up: 155 },
+                            { x: -45, up: 155 },
+                            { x: 45, up: 155 },
+                            { x: 135, up: 155 },
+                          ];
                     const slot = slots[index] ?? { x: 0, up: 210 };
                     return (
                       <button
@@ -324,17 +356,17 @@ export function LogSheet({
                           setCat(c.id);
                         }}
                         aria-label={`Log ${c.label}`}
-                        className="pointer-events-auto absolute z-20 flex w-[76px] flex-col items-center gap-1.5 text-center outline-none transition active:scale-95 focus-visible:ring-2 focus-visible:ring-ring"
+                        className="pointer-events-auto absolute z-20 flex w-[74px] flex-col items-center gap-1 text-center outline-none transition active:scale-95 focus-visible:ring-2 focus-visible:ring-ring"
                         style={{
                           left: "50%",
                           bottom: 0,
                           transform: `translate(calc(-50% + ${slot.x}px), -${slot.up}px)`,
                         }}
                       >
-                        <span className="grid h-[54px] w-[54px] place-items-center rounded-full border border-border/70 bg-surface/90 shadow-[0_7px_18px_rgba(0,0,0,0.24)] ring-[3px] ring-background/55 backdrop-blur-md">
+                        <span className="grid h-[52px] w-[52px] place-items-center rounded-full border border-border/70 bg-surface/90 shadow-[0_7px_18px_rgba(0,0,0,0.24)] ring-[3px] ring-background/55 backdrop-blur-md">
                           <Ico e={c.emoji} size={30} />
                         </span>
-                        <span className="max-w-[92px] text-[11px] font-semibold leading-[1.08] text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.75)]">
+                        <span className="max-w-[74px] text-[10px] font-semibold leading-[1.05] text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.75)]">
                           {c.label}
                         </span>
                       </button>
