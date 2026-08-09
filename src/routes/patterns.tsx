@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Activity,
@@ -773,7 +773,7 @@ function CollapsibleSection({
 /* Page                                                                       */
 /* -------------------------------------------------------------------------- */
 
-function PatternsPage() {
+export function PatternsContent() {
   const { data, update, hydrated } = useBixbo();
   const view = hydrated ? data : EMPTY;
   const dayLogs = view.dayLogs;
@@ -1807,8 +1807,7 @@ function PatternsPage() {
   };
 
   return (
-    <AppShell title="Bixbo Patterns">
-      <div className="space-y-3 px-5 pb-[calc(96px+env(safe-area-inset-bottom))] pt-2 lg:grid lg:grid-cols-2 lg:items-start lg:gap-3 lg:space-y-0 lg:px-0 lg:pb-12 [&>*:first-child]:lg:col-span-2">
+    <div className="space-y-3 px-5 pb-[calc(96px+env(safe-area-inset-bottom))] pt-2 lg:grid lg:grid-cols-2 lg:items-start lg:gap-3 lg:space-y-0 lg:px-0 lg:pb-12 [&>*:first-child]:lg:col-span-2">
         <PatternTabs active={activeTab} onChange={setActiveTab} hideCycle={cycleTrackingHidden} />
 
         {activeTab === "triggers" && <AnalysisRangeSelector value={analysisRange} onChange={setAnalysisRange} />}
@@ -2926,7 +2925,27 @@ function PatternsPage() {
             </Card>{" "}
           </div>
         )}
+    </div>
+  );
+}
+
+function PatternsPage() {
+  return (
+    <AppShell title="Health of Bixbo">
+      <div className="px-5 pt-2 lg:px-0">
+        <div className="grid grid-cols-2 rounded-2xl bg-tint p-1 ring-1 ring-border/70">
+          <Link
+            to="/insights"
+            className="rounded-xl px-4 py-2 text-center text-sm font-semibold text-muted-foreground transition hover:bg-surface/70 hover:text-foreground"
+          >
+            Insights
+          </Link>
+          <span className="rounded-xl bg-primary px-4 py-2 text-center text-sm font-semibold text-primary-foreground shadow-sm">
+            Patterns
+          </span>
+        </div>
       </div>
+      <PatternsContent />
     </AppShell>
   );
 }
