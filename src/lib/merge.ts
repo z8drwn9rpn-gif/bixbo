@@ -377,6 +377,16 @@ function mergeStructured(path: string, local: unknown, remote: unknown): unknown
     // Preserve both legacy sides until the first new edit gives the field an LWW timestamp.
     if (path.startsWith("dayLogs/")) return dedupArray([...(remote as unknown[]), ...(local as unknown[])]);
 
+    // Health Profile string lists (diagnoses, chronic illnesses, allergies,
+    // intolerances, surgeries, pregnancies, disabilities, reminderTimes)
+    // also existed before per-path sync clocks. In that legacy state an empty
+    // array can otherwise win the deterministic tie-break over a populated
+    // array and make saved profile chips appear to vanish after an app update.
+    // Preserve the union only while no sync clock exists. As soon as the user
+    // edits the field on a modern client, the LWW branch above becomes
+    // authoritative, so intentional removals/clears still sync correctly.
+    if (path.startsWith("profile/")) return dedupArray([...(remote as unknown[]), ...(local as unknown[])]);
+
     return chooseAtomic(path, local, remote);
   }
 
