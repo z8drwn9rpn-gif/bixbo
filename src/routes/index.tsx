@@ -1864,29 +1864,27 @@ function BirthControlCalendar({
               !isPlacebo && dateKey >= since && dateKey < todayK && !missed;
             const takenForStatus = loggedTaken || assumedHistoricalTaken;
 
-            // Soft 3D "pill bubble" styling matched to the visual reference.
-            // Keep the wheel math/layout untouched; only visual treatment changes.
+            // Soft 3D pill bubbles.
+            // Keep the wheel math/layout untouched; only color-state treatment changes.
+            // Active HAK: lighter moss when not taken, darker moss when taken.
+            // Placebo/break: pale pink when not taken, darker pink when taken.
             let bubbleBackground = isPlacebo
-              ? "radial-gradient(circle at 30% 24%, #FAF8E8 0%, #E7E6C7 38%, #D4D7AB 72%, #C4C99B 100%)"
-              : "radial-gradient(circle at 30% 24%, #EAF0D6 0%, #B8C58A 38%, #879A55 72%, #62753A 100%)";
-            let color = isPlacebo ? "#4D5D25" : "#FFFDF3";
-            let bubbleBorder = isPlacebo
-              ? "rgba(255,255,255,.78)"
-              : "rgba(255,255,255,.76)";
+              ? "radial-gradient(circle at 30% 24%, #FFF8FB 0%, #F7D9E6 42%, #EDB7CA 78%, #E39AB6 100%)"
+              : "radial-gradient(circle at 30% 24%, #F4F8E8 0%, #D8E4B8 42%, #B2C67A 78%, #8EA750 100%)";
+            let color = isPlacebo ? HAK_PINK_DARK : HAK_GREEN_DARK;
+            let bubbleBorder = "rgba(255,255,255,.8)";
             let bubbleShadow = isPlacebo
-              ? "inset 1.5px 1.5px 3px rgba(255,255,255,.92), inset -1.5px -2px 3px rgba(89,101,55,.12), 0 2px 7px rgba(72,82,45,.14), 0 0 0 1px rgba(95,112,51,.16)"
-              : "inset 1.5px 1.5px 3px rgba(255,255,255,.88), inset -1.5px -2px 3px rgba(64,78,34,.18), 0 2px 7px rgba(54,67,30,.18), 0 0 0 1px rgba(95,112,51,.24)";
+              ? "inset 1.5px 1.5px 3px rgba(255,255,255,.95), inset -1.5px -2px 3px rgba(180,82,118,.12), 0 2px 7px rgba(173,85,117,.16), 0 0 0 1px rgba(217,87,130,.18)"
+              : "inset 1.5px 1.5px 3px rgba(255,255,255,.92), inset -1.5px -2px 3px rgba(82,107,36,.14), 0 2px 7px rgba(68,92,29,.16), 0 0 0 1px rgba(95,112,51,.20)";
 
-            // Explicitly logged tablets become a richer version of the same bubble,
-            // rather than switching to a flat solid fill.
-            if (loggedTaken && !isCurrent) {
+            if (takenForStatus && !isCurrent) {
               if (isPlacebo) {
                 bubbleBackground =
-                  "radial-gradient(circle at 30% 24%, #F8F5DF 0%, #E6E4C3 42%, #D0D3A3 78%, #BCC38B 100%)";
-                color = "#4D5D25";
+                  "radial-gradient(circle at 30% 24%, #FFDDE9 0%, #F6AEC6 42%, #E977A0 78%, #D95782 100%)";
+                color = "#FFF7FB";
                 bubbleBorder = "rgba(255,255,255,.72)";
                 bubbleShadow =
-                  "inset 1.5px 1.5px 3px rgba(255,255,255,.82), inset -1.5px -2px 3px rgba(78,91,46,.13), 0 2px 8px rgba(69,81,42,.16), 0 0 0 1px rgba(95,112,51,.20)";
+                  "inset 1.5px 1.5px 3px rgba(255,255,255,.65), inset -1.5px -2px 3px rgba(135,39,77,.20), 0 2px 8px rgba(154,58,95,.22), 0 0 0 1px rgba(185,46,96,.28)";
               } else {
                 bubbleBackground =
                   "radial-gradient(circle at 30% 24%, #DDE7C3 0%, #A7B878 42%, #7C914B 78%, #5A6C31 100%)";
@@ -1899,20 +1897,22 @@ function BirthControlCalendar({
 
             if (isCurrent) {
               if (isPlacebo) {
-                bubbleBackground = loggedTaken
-                  ? "radial-gradient(circle at 30% 24%, #F4F2D8 0%, #D9DDB4 48%, #B7C189 100%)"
-                  : "radial-gradient(circle at 30% 24%, #FBF9E8 0%, #E8E6C9 45%, #D3D6AA 100%)";
-                color = "#4D5D25";
+                bubbleBackground = takenForStatus
+                  ? "radial-gradient(circle at 30% 24%, #FFD7E5 0%, #F4A5BE 46%, #E46F99 100%)"
+                  : "radial-gradient(circle at 30% 24%, #FFF7FB 0%, #F6D8E6 46%, #E9B7CA 100%)";
+                color = takenForStatus ? "#FFF7FB" : HAK_PINK_DARK;
                 bubbleBorder = "rgba(255,255,255,.88)";
                 bubbleShadow =
-                  `inset 1.5px 1.5px 3px rgba(255,255,255,.78), inset -1.5px -2px 3px rgba(72,84,41,.14), 0 0 0 3px ${HAK_CARD_BG}, 0 0 0 6px rgba(95,112,51,.28), 0 3px 10px rgba(57,70,34,.18)`;
+                  `inset 1.5px 1.5px 3px rgba(255,255,255,.78), inset -1.5px -2px 3px rgba(145,57,91,.16), 0 0 0 3px ${HAK_CARD_BG}, 0 0 0 6px rgba(217,87,130,.30), 0 3px 10px rgba(154,58,95,.18)`;
               } else {
-                bubbleBackground =
-                  "radial-gradient(circle at 30% 24%, #B8C988 0%, #7F9650 48%, #52652D 100%)";
-                color = "#fff";
+                bubbleBackground = takenForStatus
+                  ? "radial-gradient(circle at 30% 24%, #B8C988 0%, #7F9650 48%, #52652D 100%)"
+                  : "radial-gradient(circle at 30% 24%, #F2F7E2 0%, #D6E2B3 46%, #AFC573 100%)";
+                color = takenForStatus ? "#fff" : HAK_GREEN_DARK;
                 bubbleBorder = "rgba(255,255,255,.88)";
-                bubbleShadow =
-                  `inset 1.5px 1.5px 3px rgba(255,255,255,.42), inset -1.5px -2px 3px rgba(49,62,27,.22), 0 0 0 3px ${HAK_CARD_BG}, 0 0 0 6px rgba(95,112,51,.30), 0 3px 10px rgba(52,65,30,.22)`;
+                bubbleShadow = takenForStatus
+                  ? `inset 1.5px 1.5px 3px rgba(255,255,255,.42), inset -1.5px -2px 3px rgba(49,62,27,.22), 0 0 0 3px ${HAK_CARD_BG}, 0 0 0 6px rgba(95,112,51,.30), 0 3px 10px rgba(52,65,30,.22)`
+                  : `inset 1.5px 1.5px 3px rgba(255,255,255,.88), inset -1.5px -2px 3px rgba(88,111,39,.14), 0 0 0 3px ${HAK_CARD_BG}, 0 0 0 6px rgba(127,163,59,.22), 0 3px 10px rgba(79,101,34,.14)`;
               }
             }
 
@@ -2148,7 +2148,7 @@ function BirthControlCalendar({
       >
         <div className="grid grid-cols-4 overflow-hidden rounded-[1.1rem] bg-white/25">
           <div className="px-2 py-3 text-center">
-            <span className="mx-auto grid h-7 w-7 place-items-center rounded-full bg-pink-100/80 text-[13px]">🩸</span>
+            <span className="mx-auto grid h-7 w-7 place-items-center rounded-full bg-pink-100/80 text-[13px]"><Ico e="🩸" size={18} /></span>
             <p className="mt-1 text-[9px] font-semibold text-foreground">Menstruation</p>
             <p className="text-[11px] font-bold text-foreground">{PACK_DAYS - ACTIVE_DAYS} days</p>
             <p className="mt-1 text-[8px] text-muted-foreground">
@@ -2157,7 +2157,7 @@ function BirthControlCalendar({
           </div>
 
           <div className="border-l border-border/50 px-2 py-3 text-center">
-            <span className="mx-auto grid h-7 w-7 place-items-center rounded-full bg-primary/12 text-[13px] text-primary">↻</span>
+            <span className="mx-auto grid h-7 w-7 place-items-center rounded-full bg-primary/12 text-[13px] text-primary"><Ico e="🔄" size={18} /></span>
             <p className="mt-1 text-[9px] font-semibold text-foreground">Cycle</p>
             <p className="text-[11px] font-bold text-foreground">{PACK_DAYS} days</p>
             <p className="mt-1 text-[8px] text-muted-foreground">
@@ -2166,7 +2166,7 @@ function BirthControlCalendar({
           </div>
 
           <div className="border-l border-border/50 px-2 py-3 text-center">
-            <span className="mx-auto grid h-7 w-7 place-items-center rounded-full bg-primary/12 text-[13px] text-primary">💊</span>
+            <span className="mx-auto grid h-7 w-7 place-items-center rounded-full bg-primary/12 text-[13px] text-primary"><Ico e="💊" size={18} /></span>
             <p className="mt-1 text-[9px] font-semibold text-foreground">Taking HAK</p>
             <p className="text-[11px] font-bold text-foreground">{PACK_DAYS} days</p>
             <p className="mt-1 text-[8px] text-muted-foreground">
@@ -2175,7 +2175,7 @@ function BirthControlCalendar({
           </div>
 
           <div className="border-l border-border/50 px-2 py-3 text-center">
-            <span className="mx-auto grid h-7 w-7 place-items-center rounded-full bg-lime-100/80 text-[13px]">🛡️</span>
+            <span className="mx-auto grid h-7 w-7 place-items-center rounded-full bg-lime-100/80 text-[13px]"><Ico e="🛡️" size={18} /></span>
             <p className="mt-1 text-[9px] font-semibold text-foreground">Protection</p>
             <p className="text-[11px] font-bold" style={{ color: HAK_GREEN_DARK }}>
               {protectionActive ? "Active" : "Waiting"}
@@ -2584,7 +2584,7 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
             borderColor: `${HAK_PURPLE}33`,
           }}
         >
-          <Ico e="💚" size={22} />
+          <Ico e="❤️" size={22} />
         </span>
 
         <div className="min-w-0 flex-1">
