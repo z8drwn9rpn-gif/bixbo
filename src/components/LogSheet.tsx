@@ -257,31 +257,33 @@ export function LogSheet({
             ) : (
               <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
                 <div
-                  className="absolute left-1/2 h-[455px] w-[390px] max-w-[100vw] -translate-x-1/2"
+                  className="absolute left-1/2 h-[470px] w-[390px] max-w-[100vw] -translate-x-1/2"
                   style={{ bottom: "calc(max(8px, env(safe-area-inset-bottom)) + 36px)" }}
                 >
                   <svg
                     aria-hidden="true"
-                    viewBox="-195 -435 390 455"
-                    className="pointer-events-none absolute bottom-0 left-1/2 h-[455px] w-[390px] max-w-[100vw] -translate-x-1/2 overflow-visible"
+                    viewBox="-195 -450 390 470"
+                    className="pointer-events-none absolute bottom-0 left-1/2 h-[470px] w-[390px] max-w-[100vw] -translate-x-1/2 overflow-visible"
                   >
                     {orderedCats.slice(0, 13).map((c, index) => {
                       const slots = [
-                      // Compact radial fan, matching the reference image:
-                      // highest in the middle, lower toward the sides, all converging to Log.
-                      { x: 0, up: 385 },
-                      { x: -82, up: 355 },
-                      { x: 82, up: 355 },
-                      { x: -132, up: 305 },
-                      { x: 132, up: 305 },
-                      { x: -158, up: 245 },
-                      { x: 158, up: 245 },
-                      { x: -166, up: 182 },
-                      { x: 166, up: 182 },
-                      { x: -138, up: 118 },
-                      { x: 138, up: 118 },
-                      { x: -78, up: 68 },
-                      { x: 0, up: 118 },
+                      // True radial launcher: one continuous arc around Log.
+                      // 11 outer positions follow a single ellipse; the 12th visible
+                      // item (normally Note) sits inside the arc above the Log button.
+                      { x: -160, up: 150 },
+                      { x: -149, up: 220 },
+                      { x: -122, up: 286 },
+                      { x: -80, up: 338 },
+                      { x: -29, up: 368 },
+                      { x: 29, up: 368 },
+                      { x: 80, up: 338 },
+                      { x: 122, up: 286 },
+                      { x: 149, up: 220 },
+                      { x: 160, up: 150 },
+                      { x: 112, up: 105 },
+                      { x: 0, up: 145 },
+                      // Optional 13th slot, used only if Postpartum is active.
+                      { x: -112, up: 105 },
                     ];
                       const slot = slots[index] ?? { x: 0, up: 210 };
                       return (
@@ -302,21 +304,23 @@ export function LogSheet({
 
                   {orderedCats.slice(0, 13).map((c, index) => {
                     const slots = [
-                      // Compact radial fan, matching the reference image:
-                      // highest in the middle, lower toward the sides, all converging to Log.
-                      { x: 0, up: 385 },
-                      { x: -82, up: 355 },
-                      { x: 82, up: 355 },
-                      { x: -132, up: 305 },
-                      { x: 132, up: 305 },
-                      { x: -158, up: 245 },
-                      { x: 158, up: 245 },
-                      { x: -166, up: 182 },
-                      { x: 166, up: 182 },
-                      { x: -138, up: 118 },
-                      { x: 138, up: 118 },
-                      { x: -78, up: 68 },
-                      { x: 0, up: 118 },
+                      // True radial launcher: one continuous arc around Log.
+                      // 11 outer positions follow a single ellipse; the 12th visible
+                      // item (normally Note) sits inside the arc above the Log button.
+                      { x: -160, up: 150 },
+                      { x: -149, up: 220 },
+                      { x: -122, up: 286 },
+                      { x: -80, up: 338 },
+                      { x: -29, up: 368 },
+                      { x: 29, up: 368 },
+                      { x: 80, up: 338 },
+                      { x: 122, up: 286 },
+                      { x: 149, up: 220 },
+                      { x: 160, up: 150 },
+                      { x: 112, up: 105 },
+                      { x: 0, up: 145 },
+                      // Optional 13th slot, used only if Postpartum is active.
+                      { x: -112, up: 105 },
                     ];
                     const slot = slots[index] ?? { x: 0, up: 210 };
                     return (
@@ -328,7 +332,7 @@ export function LogSheet({
                           setCat(c.id);
                         }}
                         aria-label={`Log ${c.label}`}
-                        className="pointer-events-auto absolute z-20 flex w-[72px] flex-col items-center gap-1 text-center outline-none transition active:scale-95 focus-visible:ring-2 focus-visible:ring-ring"
+                        className="pointer-events-auto absolute z-20 flex w-[70px] flex-col items-center gap-1 text-center outline-none transition active:scale-95 focus-visible:ring-2 focus-visible:ring-ring"
                         style={{
                           left: "50%",
                           bottom: 0,
@@ -338,7 +342,7 @@ export function LogSheet({
                         <span className="grid h-[50px] w-[50px] place-items-center rounded-full border border-border/70 bg-surface/90 shadow-[0_6px_16px_rgba(0,0,0,0.22)] ring-[3px] ring-background/55 backdrop-blur-md">
                           <Ico e={c.emoji} size={27} />
                         </span>
-                        <span className="max-w-[74px] text-[10px] font-semibold leading-[1.04] text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.78)]">
+                        <span className="max-w-[70px] text-[10px] font-semibold leading-[1.03] text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
                           {c.label}
                         </span>
                       </button>
