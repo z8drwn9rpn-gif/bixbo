@@ -35,12 +35,6 @@ type PartnerSharedPayload = {
   cycle: BixboData["cycle"];
 };
 
-/**
- * partner_shared_data has the same row shape as user_data.
- * This alias keeps the current generated Supabase types compiling until
- * src/integrations/supabase/types.ts is regenerated with the new table.
- */
-const PARTNER_SHARED_DATA_TABLE = "partner_shared_data" as "user_data";
 
 export async function ensureProfile(displayName?: string): Promise<CloudProfile | null> {
   const { data, error } = await supabase.rpc("ensure_profile", {
@@ -381,7 +375,7 @@ export async function pushMyData(payload: BixboData): Promise<void> {
       data: privatePayload as never,
     }),
 
-    supabase.from(PARTNER_SHARED_DATA_TABLE).upsert({
+    supabase.from("partner_shared_data").upsert({
       user_id: user.id,
       data: partnerPayload as never,
     }),
