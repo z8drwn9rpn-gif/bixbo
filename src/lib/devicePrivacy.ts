@@ -25,11 +25,13 @@ function bytesToBase64Url(bytes: Uint8Array): string {
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
-function base64UrlToBytes(value: string): Uint8Array {
+function base64UrlToBytes(value: string): Uint8Array<ArrayBuffer> {
   const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
   const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
   const binary = atob(padded);
-  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  const out = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i);
+  return out;
 }
 
 export function readDevicePrivacy(): DevicePrivacyPreferences {
@@ -77,7 +79,7 @@ export function useDevicePrivacy() {
   };
 }
 
-async function derivePinHash(pin: string, salt: Uint8Array): Promise<string> {
+async function derivePinHash(pin: string, salt: Uint8Array<ArrayBuffer>): Promise<string> {
   if (!crypto.subtle) throw new Error("Secure PIN hashing is not supported on this device.");
   const keyMaterial = await crypto.subtle.importKey(
     "raw",
