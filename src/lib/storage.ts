@@ -775,6 +775,9 @@ export interface BixboData {
   /** Ids of entries the user deleted — used by cloud merge so a union merge
    * doesn't resurrect them from another device. */
   deletedIds?: string[];
+  /** Custom-list option values the user removed — kept so a cloud merge
+   * (or another device) can't resurrect them. */
+  deletedCustom?: Partial<Record<keyof CustomLists, string[]>>;
   /** Full health profile (personal, medical, lifestyle, emergency contacts). */
   profile?: HealthProfile;
   pregnancy?: PregnancyState;
