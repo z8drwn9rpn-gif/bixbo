@@ -34,7 +34,19 @@ export default tseslint.config(
       ],
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": "off",
+      "@typescript-eslint/no-explicit-any": "warn",
+      "no-constant-binary-expression": "warn",
+      "no-misleading-character-class": "warn",
+      "no-extra-boolean-cast": "warn",
+      "no-empty": "warn",
+      "react-hooks/rules-of-hooks": "warn",
     },
   },
   eslintPluginPrettier,
+  // Must come after prettier recommended so it overrides prettier/prettier: error
+  {
+    rules: {
+      "prettier/prettier": "off",
+    },
+  },
 );
