@@ -953,18 +953,18 @@ function HomePage() {
             });
 
           return (
-            <div className="mx-5 mt-3 flex items-center justify-between gap-3 rounded-2xl bg-surface px-4 py-3 text-left ring-1 ring-border shadow-sm">
-              <div className="flex min-w-0 items-center gap-3">
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/15 text-primary">
-                  <Ico e="🩸" size={18} />
-                </span>
-                <div className="min-w-0">
-                  <p className="text-xs text-muted-foreground">Next period predicted</p>
-                  <p className="truncate font-serif text-base font-bold text-foreground">
-                    {fmt(p.start)} – {fmt(p.end)}
-                  </p>
-                </div>
-              </div>
+            <div
+              className="mx-5 mt-3 rounded-full px-4 py-2 text-center text-xs ring-1"
+              style={{
+                background: "color-mix(in srgb, #5F7033 14%, transparent)",
+                color: "#5F7033",
+                boxShadow: "inset 0 0 0 1px color-mix(in srgb, #5F7033 34%, transparent)",
+              }}
+            >
+              Next period predicted:{" "}
+              <span className="font-semibold">
+                {fmt(p.start)} – {fmt(p.end)}
+              </span>
             </div>
           );
         })()}
@@ -1400,11 +1400,11 @@ function BirthControlOverlay({
     // Force the full document canvas — including the iOS safe area — to the same
     // lavender as Birth Control. Using the background shorthand also removes the
     // global olive gradient while this overlay is open.
-    body.style.setProperty("--background", "#E7DCF5", "important");
-    html.style.setProperty("--background", "#E7DCF5", "important");
-    body.style.setProperty("background", "#E7DCF5", "important");
-    html.style.setProperty("background", "#E7DCF5", "important");
-    themeMeta.content = "#E7DCF5";
+    body.style.setProperty("--background", "#98A86A", "important");
+    html.style.setProperty("--background", "#98A86A", "important");
+    body.style.setProperty("background", "#98A86A", "important");
+    html.style.setProperty("background", "#98A86A", "important");
+    themeMeta.content = "#98A86A";
 
     return () => {
       body.style.overflow = previousOverflow;
@@ -1453,38 +1453,41 @@ function BirthControlOverlay({
       className="fixed inset-0 z-[900] flex h-[100dvh] flex-col overflow-hidden bg-background text-foreground"
       style={{
         ...({
-          "--background": "#E7DCF5",
-          "--foreground": "#251A34",
-          "--surface": "#EDE5F8",
-          "--surface-elevated": "#F5F0FB",
-          "--surface-sunken": "#D7C6EC",
-          "--tint": "#DDCFF0",
-          "--card": "#EDE5F8",
-          "--card-foreground": "#251A34",
-          "--popover": "#F6F1FB",
-          "--popover-foreground": "#251A34",
-          "--secondary": "#E0D3F1",
-          "--secondary-foreground": "#2F2140",
-          "--muted": "#E2D6F1",
-          "--muted-foreground": "#685B78",
-          "--accent": "#D5C2EC",
-          "--accent-foreground": "#30203F",
-          "--border": "#BDA4DB",
-          "--input": "#BDA4DB",
-          "--ring": "#7A53C8",
-          "--chart-grid": "#D0BDE7",
-          "--chart-axis": "#554466",
-          "--chart-tooltip-bg": "#F7F2FC",
-          "--chart-tooltip-fg": "#251A34",
+          "--background": "#98A86A",
+          "--foreground": "#18200F",
+          "--surface": "#B0BC89",
+          "--surface-elevated": "#BEC8A0",
+          "--surface-sunken": "#88975D",
+          "--tint": "#A7B47B",
+          "--card": "#B0BC89",
+          "--card-foreground": "#18200F",
+          "--popover": "#C3CCAA",
+          "--popover-foreground": "#18200F",
+          "--primary": "#5F7033",
+          "--primary-foreground": "#FFFDF3",
+          "--secondary": "#A9B57E",
+          "--secondary-foreground": "#202814",
+          "--muted": "#AAB77E",
+          "--muted-foreground": "#475234",
+          "--accent": "#97A969",
+          "--accent-foreground": "#1F2812",
+          "--border": "#7D8D54",
+          "--input": "#7D8D54",
+          "--ring": "#5F7033",
+          "--chart-grid": "#95A56A",
+          "--chart-axis": "#37412B",
+          "--chart-tooltip-bg": "#D0D8BC",
+          "--chart-tooltip-fg": "#18200F",
         } as CSSProperties),
-        backgroundColor: "#E7DCF5",
+        background: "#98A86A",
+        backgroundColor: "#98A86A",
       }}
     >
       {/* Explicit iOS safe-area backdrop. The document background is also forced
           purple above, so no olive strip can bleed through behind the status bar. */}
       <div
         aria-hidden="true"
-        className="pointer-events-none fixed inset-x-0 top-0 z-[905] bg-[#E7DCF5]"
+        className="pointer-events-none fixed inset-x-0 top-0 z-[905] bg-[#98A86A]"
         style={{ height: "max(env(safe-area-inset-top), 1px)" }}
       />
 
@@ -1566,18 +1569,18 @@ function BirthControlCalendar({
   const ACTIVE_DAYS = 24;
   const PACK_DAYS = 28;
 
-  const HAK_PURPLE = "#7A53C8";
-  const HAK_PURPLE_DARK = "#5B32AE";
-  const HAK_PURPLE_SOFT = "#DCCFF3";
-  const HAK_PURPLE_DOT = "#8C67D4";
+  const HAK_PURPLE = "#647A32";
+  const HAK_PURPLE_DARK = "#455A20";
+  const HAK_PURPLE_SOFT = "#C5D1A0";
+  const HAK_PURPLE_DOT = "#607A2D";
   const HAK_PINK = "#D95782";
   const HAK_PINK_DARK = "#B92E60";
   const HAK_PINK_SOFT = "#F7CBD9";
-  const HAK_GREEN = "#8A962D";
-  const HAK_GREEN_DARK = "#596313";
-  const HAK_GREEN_SOFT = "#E7E9B8";
-  const HAK_TRACK = "#E4E4D3";
-  const HAK_CARD_BG = "color-mix(in srgb, var(--background) 94%, #7A53C8 6%)";
+  const HAK_GREEN = "#7FA33B";
+  const HAK_GREEN_DARK = "#526B24";
+  const HAK_GREEN_SOFT = "#D8E4B8";
+  const HAK_TRACK = "#E3E4C9";
+  const HAK_CARD_BG = "color-mix(in srgb, var(--background) 90%, #536A27 10%)";
 
   const bcMed = data.meds.find((m) =>
     /antikonc|birth\s*control|contracept|hak|pill/i.test(`${m.name} ${m.dose ?? ""}`),
@@ -1679,7 +1682,7 @@ function BirthControlCalendar({
   const selectedMissed = sel ? missedAt(sel) : false;
   const selectedIsPlacebo = selectedDay != null && selectedDay > ACTIVE_DAYS;
   const popupAccent = selectedIsPlacebo ? HAK_PINK_DARK : HAK_PURPLE_DARK;
-  const popupSoft = selectedIsPlacebo ? "#F9DDE7" : "#E8DDF8";
+  const popupSoft = selectedIsPlacebo ? "#F9DDE7" : "#D6DEBC";
 
 
 
@@ -1864,52 +1867,52 @@ function BirthControlCalendar({
             // Soft 3D "pill bubble" styling matched to the visual reference.
             // Keep the wheel math/layout untouched; only visual treatment changes.
             let bubbleBackground = isPlacebo
-              ? "radial-gradient(circle at 30% 24%, #FFF7FA 0%, #F9DDE7 38%, #F2C3D4 72%, #E9AFC6 100%)"
-              : "radial-gradient(circle at 30% 24%, #F7F2FF 0%, #E7DDF8 38%, #D4C3F0 72%, #C1A9E7 100%)";
-            let color = isPlacebo ? "#B92E60" : "#51309A";
+              ? "radial-gradient(circle at 30% 24%, #FAF8E8 0%, #E7E6C7 38%, #D4D7AB 72%, #C4C99B 100%)"
+              : "radial-gradient(circle at 30% 24%, #EAF0D6 0%, #B8C58A 38%, #879A55 72%, #62753A 100%)";
+            let color = isPlacebo ? "#4D5D25" : "#FFFDF3";
             let bubbleBorder = isPlacebo
-              ? "rgba(255,255,255,.76)"
-              : "rgba(255,255,255,.72)";
+              ? "rgba(255,255,255,.78)"
+              : "rgba(255,255,255,.76)";
             let bubbleShadow = isPlacebo
-              ? "inset 1.5px 1.5px 3px rgba(255,255,255,.92), inset -1.5px -2px 3px rgba(177,52,98,.12), 0 2px 7px rgba(110,72,88,.14), 0 0 0 1px rgba(217,87,130,.18)"
-              : "inset 1.5px 1.5px 3px rgba(255,255,255,.92), inset -1.5px -2px 3px rgba(91,50,174,.12), 0 2px 7px rgba(76,54,112,.14), 0 0 0 1px rgba(122,83,200,.16)";
+              ? "inset 1.5px 1.5px 3px rgba(255,255,255,.92), inset -1.5px -2px 3px rgba(89,101,55,.12), 0 2px 7px rgba(72,82,45,.14), 0 0 0 1px rgba(95,112,51,.16)"
+              : "inset 1.5px 1.5px 3px rgba(255,255,255,.88), inset -1.5px -2px 3px rgba(64,78,34,.18), 0 2px 7px rgba(54,67,30,.18), 0 0 0 1px rgba(95,112,51,.24)";
 
             // Explicitly logged tablets become a richer version of the same bubble,
             // rather than switching to a flat solid fill.
             if (loggedTaken && !isCurrent) {
               if (isPlacebo) {
                 bubbleBackground =
-                  "radial-gradient(circle at 30% 24%, #FFEAF1 0%, #F4BFD2 42%, #E990B0 78%, #D96F98 100%)";
-                color = "#8F234B";
+                  "radial-gradient(circle at 30% 24%, #F8F5DF 0%, #E6E4C3 42%, #D0D3A3 78%, #BCC38B 100%)";
+                color = "#4D5D25";
                 bubbleBorder = "rgba(255,255,255,.72)";
                 bubbleShadow =
-                  "inset 1.5px 1.5px 3px rgba(255,255,255,.78), inset -1.5px -2px 3px rgba(143,35,75,.16), 0 2px 8px rgba(110,54,78,.16), 0 0 0 1px rgba(185,46,96,.22)";
+                  "inset 1.5px 1.5px 3px rgba(255,255,255,.82), inset -1.5px -2px 3px rgba(78,91,46,.13), 0 2px 8px rgba(69,81,42,.16), 0 0 0 1px rgba(95,112,51,.20)";
               } else {
                 bubbleBackground =
-                  "radial-gradient(circle at 30% 24%, #EEE6FC 0%, #CFBDF0 42%, #AF91DF 78%, #9270D1 100%)";
-                color = "#47258D";
+                  "radial-gradient(circle at 30% 24%, #DDE7C3 0%, #A7B878 42%, #7C914B 78%, #5A6C31 100%)";
+                color = "#FFFDF3";
                 bubbleBorder = "rgba(255,255,255,.72)";
                 bubbleShadow =
-                  "inset 1.5px 1.5px 3px rgba(255,255,255,.78), inset -1.5px -2px 3px rgba(71,37,141,.16), 0 2px 8px rgba(73,50,113,.17), 0 0 0 1px rgba(91,50,174,.22)";
+                  "inset 1.5px 1.5px 3px rgba(255,255,255,.72), inset -1.5px -2px 3px rgba(61,75,31,.18), 0 2px 8px rgba(54,68,30,.20), 0 0 0 1px rgba(79,96,40,.28)";
               }
             }
 
             if (isCurrent) {
               if (isPlacebo) {
                 bubbleBackground = loggedTaken
-                  ? "radial-gradient(circle at 30% 24%, #F7BFD2 0%, #E982A7 48%, #C94977 100%)"
-                  : "radial-gradient(circle at 30% 24%, #FFF4F8 0%, #F9D9E5 45%, #F0B8CD 100%)";
-                color = loggedTaken ? "#fff" : HAK_PINK_DARK;
+                  ? "radial-gradient(circle at 30% 24%, #F4F2D8 0%, #D9DDB4 48%, #B7C189 100%)"
+                  : "radial-gradient(circle at 30% 24%, #FBF9E8 0%, #E8E6C9 45%, #D3D6AA 100%)";
+                color = "#4D5D25";
                 bubbleBorder = "rgba(255,255,255,.88)";
                 bubbleShadow =
-                  `inset 1.5px 1.5px 3px rgba(255,255,255,.72), inset -1.5px -2px 3px rgba(143,35,75,.13), 0 0 0 3px ${HAK_CARD_BG}, 0 0 0 6px rgba(217,87,130,.30), 0 3px 10px rgba(110,54,78,.18)`;
+                  `inset 1.5px 1.5px 3px rgba(255,255,255,.78), inset -1.5px -2px 3px rgba(72,84,41,.14), 0 0 0 3px ${HAK_CARD_BG}, 0 0 0 6px rgba(95,112,51,.28), 0 3px 10px rgba(57,70,34,.18)`;
               } else {
                 bubbleBackground =
-                  "radial-gradient(circle at 30% 24%, #A98CE6 0%, #7D58C8 48%, #5B32AE 100%)";
+                  "radial-gradient(circle at 30% 24%, #B8C988 0%, #7F9650 48%, #52652D 100%)";
                 color = "#fff";
                 bubbleBorder = "rgba(255,255,255,.88)";
                 bubbleShadow =
-                  `inset 1.5px 1.5px 3px rgba(255,255,255,.42), inset -1.5px -2px 3px rgba(57,28,112,.20), 0 0 0 3px ${HAK_CARD_BG}, 0 0 0 6px rgba(122,83,200,.30), 0 3px 10px rgba(73,50,113,.20)`;
+                  `inset 1.5px 1.5px 3px rgba(255,255,255,.42), inset -1.5px -2px 3px rgba(49,62,27,.22), 0 0 0 3px ${HAK_CARD_BG}, 0 0 0 6px rgba(95,112,51,.30), 0 3px 10px rgba(52,65,30,.22)`;
               }
             }
 
@@ -1997,7 +2000,7 @@ function BirthControlCalendar({
                       ? "rgba(239,154,184,.72)"
                       : isNewPack
                         ? "rgba(176,185,81,.72)"
-                        : "rgba(170,145,229,.72)";
+                        : "rgba(101,119,58,.76)";
 
                 const chipColor =
                   packDay == null
@@ -2054,7 +2057,7 @@ function BirthControlCalendar({
           className="mt-3 rounded-[1.75rem] px-4 py-4 ring-1"
           style={{
             backgroundColor: "rgba(255,255,255,.20)",
-            borderColor: "rgba(122,83,200,.16)",
+            borderColor: "rgba(95,112,51,.22)",
           }}
         >
           <div className="grid grid-cols-[1.35fr_1fr_.9fr] items-start gap-2 text-center">
@@ -2077,7 +2080,7 @@ function BirthControlCalendar({
               className="rounded-full px-2 py-2 ring-1"
               style={{
                 backgroundColor: "rgba(255,255,255,.30)",
-                borderColor: "rgba(122,83,200,.18)",
+                borderColor: "rgba(95,112,51,.22)",
               }}
             >
               <div
@@ -2140,7 +2143,7 @@ function BirthControlCalendar({
         className="mt-3 rounded-[1.5rem] px-2 py-2 ring-1"
         style={{
           backgroundColor: "rgba(255,255,255,.24)",
-          borderColor: "rgba(122,83,200,.14)",
+          borderColor: "rgba(95,112,51,.18)",
         }}
       >
         <div className="grid grid-cols-4 overflow-hidden rounded-[1.1rem] bg-white/25">
@@ -2381,10 +2384,10 @@ function countIntercourseBetween(data: BixboData, start: Date, end: Date): numbe
 }
 
 function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: string }) {
-  const HAK_PURPLE = "#7A53C8";
-  const HAK_PURPLE_DARK = "#5B32AE";
-  const HAK_PURPLE_SOFT = "#DCCFF3";
-  const HAK_CARD_BG = "color-mix(in srgb, var(--background) 94%, #7A53C8 6%)";
+  const HAK_PURPLE = "#647A32";
+  const HAK_PURPLE_DARK = "#455A20";
+  const HAK_PURPLE_SOFT = "#C5D1A0";
+  const HAK_CARD_BG = "color-mix(in srgb, var(--background) 90%, #536A27 10%)";
 
   const anchor = useMemo(() => {
     const date = fromKey(anchorKey);
@@ -2581,7 +2584,7 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
             borderColor: `${HAK_PURPLE}33`,
           }}
         >
-          <Ico e="❤️" size={22} />
+          <Ico e="💚" size={22} />
         </span>
 
         <div className="min-w-0 flex-1">
