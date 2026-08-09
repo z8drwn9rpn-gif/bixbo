@@ -785,6 +785,12 @@ function ProfilePage() {
         ...(d.postpartum ?? EMPTY.postpartum!),
         active: value === "postpartum",
         birthDate: d.postpartum?.birthDate,
+        endedAt:
+          value === "postpartum"
+            ? undefined
+            : d.postpartum?.active
+              ? (d.postpartum.endedAt ?? todayKey())
+              : d.postpartum?.endedAt,
       },
       settings: {
         ...d.settings,
