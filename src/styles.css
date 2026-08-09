@@ -635,3 +635,121 @@ html.dark body {
     border-radius: 9999px;
   }
 }
+
+/* ==========================================================
+   BIXBO Motion System — soft, calm, premium fades
+   Only opacity + transform. No layout properties.
+   ========================================================== */
+
+:root {
+  --bixbo-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --bixbo-dur-page: 200ms;
+  --bixbo-dur-panel: 180ms;
+  --bixbo-dur-popup: 200ms;
+  --bixbo-dur-micro: 160ms;
+}
+
+@keyframes bixbo-page-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 4px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes bixbo-panel-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 4px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes bixbo-popup-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 6px, 0) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes bixbo-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Page content fade (AppShell main). */
+.bixbo-page-fade {
+  animation: bixbo-page-in var(--bixbo-dur-page) var(--bixbo-ease) both;
+}
+
+/* Dynamic panels / sections that appear after user action. */
+.bixbo-panel-fade {
+  animation: bixbo-panel-in var(--bixbo-dur-panel) var(--bixbo-ease) both;
+}
+
+/* Shared popup/sheet content feel. */
+.bixbo-popup-fade {
+  animation: bixbo-popup-in var(--bixbo-dur-popup) var(--bixbo-ease) both;
+}
+
+/* Chart / heatmap wrapper only — never the series themselves. */
+.bixbo-chart-fade {
+  animation: bixbo-fade-in var(--bixbo-dur-panel) var(--bixbo-ease) both;
+}
+
+/* Soften default tw-animate enter/exit durations app-wide. */
+.animate-in {
+  animation-duration: var(--bixbo-dur-popup);
+  animation-timing-function: var(--bixbo-ease);
+  --tw-enter-opacity: 0;
+}
+
+.animate-out {
+  animation-duration: var(--bixbo-dur-micro);
+  animation-timing-function: var(--bixbo-ease);
+}
+
+/* Milder zoom than zoom-in-95 / zoom-out-95 (0.95 → ~0.98). */
+.zoom-in-95 {
+  --tw-enter-scale: 0.98;
+}
+.zoom-out-95 {
+  --tw-exit-scale: 0.98;
+}
+
+/* Backdrop fades stay short. */
+[data-slot="dialog-overlay"],
+[data-state].bg-black\/45,
+[data-state].bg-black\/80 {
+  transition: opacity var(--bixbo-dur-popup) var(--bixbo-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bixbo-page-fade,
+  .bixbo-panel-fade,
+  .bixbo-popup-fade,
+  .bixbo-chart-fade {
+    animation: bixbo-fade-in 80ms ease both;
+  }
+
+  .animate-in,
+  .animate-out {
+    animation-duration: 0.01ms !important;
+  }
+
+  .zoom-in-95,
+  .zoom-out-95 {
+    --tw-enter-scale: 1;
+    --tw-exit-scale: 1;
+  }
+}
