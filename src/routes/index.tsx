@@ -953,18 +953,18 @@ function HomePage() {
             });
 
           return (
-            <div
-              className="mx-5 mt-3 rounded-full px-4 py-2 text-center text-xs ring-1"
-              style={{
-                background: "color-mix(in srgb, #7467D8 14%, transparent)",
-                color: "#7467D8",
-                boxShadow: "inset 0 0 0 1px color-mix(in srgb, #7467D8 34%, transparent)",
-              }}
-            >
-              Next period predicted:{" "}
-              <span className="font-semibold">
-                {fmt(p.start)} – {fmt(p.end)}
-              </span>
+            <div className="mx-5 mt-3 flex items-center justify-between gap-3 rounded-2xl bg-surface px-4 py-3 text-left ring-1 ring-border shadow-sm">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/15 text-primary">
+                  <Ico e="🩸" size={18} />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground">Next period predicted</p>
+                  <p className="truncate font-serif text-base font-bold text-foreground">
+                    {fmt(p.start)} – {fmt(p.end)}
+                  </p>
+                </div>
+              </div>
             </div>
           );
         })()}
@@ -1293,23 +1293,11 @@ function BirthControlSummaryCard({
     <button
       type="button"
       onClick={onOpen}
-      className="mx-5 mt-2 block w-[calc(100%-2.5rem)] rounded-2xl px-3 py-2.5 text-left shadow-sm ring-1 transition active:scale-[0.99]"
-      style={{
-        background: "color-mix(in srgb, #7467D8 14%, transparent)",
-        borderColor: "rgba(116,103,216,.48)",
-        boxShadow:
-          "inset 0 0 0 1px color-mix(in srgb, #7467D8 34%, transparent), 0 2px 8px rgba(83,72,170,.08)",
-      }}
+      className="mx-5 mt-2 block w-[calc(100%-2.5rem)] rounded-2xl bg-surface px-3 py-2.5 text-left shadow-sm ring-1 ring-border transition active:scale-[0.99]"
       aria-label={`Open birth control overview. HAK day ${packDay} of ${PACK_DAYS}`}
     >
       <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
-        <span
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-full ring-1"
-          style={{
-            backgroundColor: "rgba(229,219,248,.88)",
-            borderColor: "rgba(116,103,216,.34)",
-          }}
-        >
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/15 text-primary">
           <Ico e="💊" size={20} />
         </span>
 
@@ -1324,10 +1312,7 @@ function BirthControlSummaryCard({
               <span className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                 Day
               </span>
-              <span
-                className="font-serif text-lg font-bold leading-none"
-                style={{ color: isPlacebo ? HAK_PINK_DARK : HAK_PURPLE_DARK }}
-              >
+              <span className="font-serif text-lg font-bold leading-none text-primary">
                 {packDay}/{PACK_DAYS}
               </span>
             </div>
@@ -1338,10 +1323,7 @@ function BirthControlSummaryCard({
               <span className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                 {isPlacebo ? "Placebo" : "Active"}
               </span>
-              <span
-                className="text-xs font-bold"
-                style={{ color: isPlacebo ? HAK_PINK_DARK : HAK_PURPLE_DARK }}
-              >
+              <span className="text-xs font-bold text-primary">
                 {isPlacebo ? `${packDay - ACTIVE_DAYS}/4` : `${packDay}/24`}
               </span>
             </div>
@@ -1350,18 +1332,15 @@ function BirthControlSummaryCard({
 
         <div className="flex items-center gap-2">
           <span
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-sm font-bold"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-sm font-bold text-primary"
             style={{
-              color: isPlacebo ? HAK_PINK_DARK : HAK_PURPLE_DARK,
-              backgroundColor: isPlacebo ? HAK_PINK_SOFT : "rgba(220,207,243,.72)",
-              boxShadow: `inset 0 0 0 4px ${
-                isPlacebo ? "rgba(217,87,130,.18)" : "rgba(122,83,200,.16)"
-              }`,
+              backgroundColor: "color-mix(in srgb, var(--primary) 16%, white)",
+              boxShadow: "inset 0 0 0 4px color-mix(in srgb, var(--primary) 14%, transparent)",
             }}
           >
             {packDay}
           </span>
-          <span className="text-lg leading-none" style={{ color: "#7467D8" }}>›</span>
+          <span className="text-lg leading-none text-primary">›</span>
         </div>
       </div>
     </button>
@@ -1711,6 +1690,18 @@ function BirthControlCalendar({
       month: "long",
       year: "numeric",
     });
+
+  const fmtShortDate = (key: string) =>
+    fromKey(key).toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+    });
+
+  const currentPackEnd = addDays(currentPackStart, PACK_DAYS - 1);
+  const currentPlaceboStart = addDays(currentPackStart, ACTIVE_DAYS);
+  const currentPlaceboEnd = addDays(currentPackStart, PACK_DAYS - 1);
+  const protectionStart = addDays(since, 3);
+  const protectionActive = todayK >= protectionStart;
 
   const wheelDays = Array.from({ length: PACK_DAYS }, (_, i) => i + 1);
 
@@ -2141,6 +2132,52 @@ function BirthControlCalendar({
             >
               Day {currentDay} / {PACK_DAYS}
             </p>
+          </div>
+        </div>
+      </div>
+
+      <div
+        className="mt-3 rounded-[1.5rem] px-2 py-2 ring-1"
+        style={{
+          backgroundColor: "rgba(255,255,255,.24)",
+          borderColor: "rgba(122,83,200,.14)",
+        }}
+      >
+        <div className="grid grid-cols-4 overflow-hidden rounded-[1.1rem] bg-white/25">
+          <div className="px-2 py-3 text-center">
+            <span className="mx-auto grid h-7 w-7 place-items-center rounded-full bg-pink-100/80 text-[13px]">🩸</span>
+            <p className="mt-1 text-[9px] font-semibold text-foreground">Menstruation</p>
+            <p className="text-[11px] font-bold text-foreground">{PACK_DAYS - ACTIVE_DAYS} days</p>
+            <p className="mt-1 text-[8px] text-muted-foreground">
+              {fmtShortDate(currentPlaceboStart)} – {fmtShortDate(currentPlaceboEnd)}
+            </p>
+          </div>
+
+          <div className="border-l border-border/50 px-2 py-3 text-center">
+            <span className="mx-auto grid h-7 w-7 place-items-center rounded-full bg-primary/12 text-[13px] text-primary">↻</span>
+            <p className="mt-1 text-[9px] font-semibold text-foreground">Cycle</p>
+            <p className="text-[11px] font-bold text-foreground">{PACK_DAYS} days</p>
+            <p className="mt-1 text-[8px] text-muted-foreground">
+              {fmtShortDate(currentPackStart)} – {fmtShortDate(currentPackEnd)}
+            </p>
+          </div>
+
+          <div className="border-l border-border/50 px-2 py-3 text-center">
+            <span className="mx-auto grid h-7 w-7 place-items-center rounded-full bg-primary/12 text-[13px] text-primary">💊</span>
+            <p className="mt-1 text-[9px] font-semibold text-foreground">Taking HAK</p>
+            <p className="text-[11px] font-bold text-foreground">{PACK_DAYS} days</p>
+            <p className="mt-1 text-[8px] text-muted-foreground">
+              {fmtShortDate(currentPackStart)} – {fmtShortDate(currentPackEnd)}
+            </p>
+          </div>
+
+          <div className="border-l border-border/50 px-2 py-3 text-center">
+            <span className="mx-auto grid h-7 w-7 place-items-center rounded-full bg-lime-100/80 text-[13px]">🛡️</span>
+            <p className="mt-1 text-[9px] font-semibold text-foreground">Protection</p>
+            <p className="text-[11px] font-bold" style={{ color: HAK_GREEN_DARK }}>
+              {protectionActive ? "Active" : "Waiting"}
+            </p>
+            <p className="mt-1 text-[8px] text-muted-foreground">From {fmtShortDate(protectionStart)}</p>
           </div>
         </div>
       </div>
