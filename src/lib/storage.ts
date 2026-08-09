@@ -1273,6 +1273,11 @@ function migrate(raw: unknown): BixboData {
       ...rawPostpartum,
       active: Boolean(rawPostpartum.active),
       visits: safeIdArray<PregnancyAppointment>(rawPostpartum.visits),
+      endedAt: Boolean(rawPostpartum.active)
+        ? undefined
+        : typeof rawPostpartum.endedAt === "string"
+          ? rawPostpartum.endedAt
+          : undefined,
     },
   };
 }
