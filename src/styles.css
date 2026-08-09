@@ -1015,4 +1015,108 @@ select:-webkit-autofill {
 }
 
 /* BIXBO Moss Green revision: #98A86A */
+/* ==========================================================
+   BIXBO Moss Green DARK theme — final override
+   Dark counterpart to the current #A6B48C Moss Green light theme.
+   Non-destructive: existing code above remains untouched.
+   HAK keeps its own local lavender variables.
+   ========================================================== */
+
+.dark {
+  /* Main dark moss canvas */
+  --background: #1E261B;
+  --foreground: #F2F4EA;
+
+  /* Layered moss/charcoal surfaces */
+  --surface: #2A3324;
+  --surface-elevated: #35402E;
+  --surface-sunken: #182016;
+  --tint: #3C4933;
+
+  --card: #2A3324;
+  --card-foreground: #F2F4EA;
+
+  --popover: #303A29;
+  --popover-foreground: #F2F4EA;
+
+  /* Same BIXBO identity as light mode */
+  --primary: #A6B48C;
+  --primary-foreground: #18200F;
+
+  --secondary: #394631;
+  --secondary-foreground: #EDF1E6;
+
+  --muted: #34402D;
+  --muted-foreground: #BEC8B2;
+
+  --accent: #4A5A3E;
+  --accent-foreground: #F4F6EE;
+
+  /* Borders and focus */
+  --border: #55624C;
+  --input: #55624C;
+  --ring: #A6B48C;
+
+  /* Charts / tooltips */
+  --chart-grid: #46523F;
+  --chart-axis: #C4CDBA;
+  --chart-tooltip-bg: #273021;
+  --chart-tooltip-fg: #F2F4EA;
+
+  /* Moss glass */
+  --bixbo-glass: rgba(42, 51, 36, 0.78);
+  --bixbo-glass-strong: rgba(53, 64, 46, 0.92);
+}
+
+/* One dark moss base behind app, desktop gutters and iOS safe-area. */
+html.dark,
+html.dark body {
+  background-color: #1E261B;
+}
+
+/* Subtle depth without turning the app black. */
+.dark body {
+  background:
+    radial-gradient(
+      circle at 50% -12%,
+      rgba(166, 180, 140, 0.10) 0%,
+      transparent 34%
+    ),
+    linear-gradient(
+      180deg,
+      #222B1E 0%,
+      #1E261B 38%,
+      #20291D 72%,
+      #1A2117 100%
+    );
+}
+
+/* Dark borders and elevation stay inside the moss family. */
+.dark .ring-border {
+  --tw-ring-color: color-mix(
+    in srgb,
+    #55624C 78%,
+    transparent
+  );
+}
+
+.dark .shadow-sm {
+  --tw-shadow-color: color-mix(
+    in srgb,
+    #080B07 30%,
+    transparent
+  );
+}
+
+.dark .shadow-md,
+.dark .shadow-lg,
+.dark .shadow-xl {
+  --tw-shadow-color: color-mix(
+    in srgb,
+    #080B07 42%,
+    transparent
+  );
+}
+
+/* BIXBO Moss Green dark revision */
 
