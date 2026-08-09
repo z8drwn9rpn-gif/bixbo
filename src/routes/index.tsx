@@ -2355,14 +2355,23 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
     return date;
   }, [anchorKey]);
 
-  // Week can be browsed independently without changing Month / Year.
+  // Week / Month / Year can each be browsed independently.
   const [weekOffset, setWeekOffset] = useState(0);
+  const [monthOffset, setMonthOffset] = useState(0);
+  const [yearOffset, setYearOffset] = useState(0);
 
   const selectedWeekAnchor = useMemo(() => {
     const date = new Date(anchor);
     date.setDate(date.getDate() + weekOffset * 7);
     return date;
   }, [anchor, weekOffset]);
+
+  const selectedMonthAnchor = useMemo(
+    () => new Date(anchor.getFullYear(), anchor.getMonth() + monthOffset, 1),
+    [anchor, monthOffset],
+  );
+
+  const selectedYear = anchor.getFullYear() + yearOffset;
 
   const week = useMemo(() => {
     const start = startOfSelectedWeek(selectedWeekAnchor);
@@ -2389,11 +2398,13 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
   }, [selectedWeekAnchor, data]);
 
   const month = useMemo(() => {
-    const start = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
-    const end = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0);
+    const year = selectedMonthAnchor.getFullYear();
+    const monthIndex = selectedMonthAnchor.getMonth();
+    const start = new Date(year, monthIndex, 1);
+    const end = new Date(year, monthIndex + 1, 0);
 
-    const previousStart = new Date(anchor.getFullYear(), anchor.getMonth() - 1, 1);
-    const previousEnd = new Date(anchor.getFullYear(), anchor.getMonth(), 0);
+    const previousStart = new Date(year, monthIndex - 1, 1);
+    const previousEnd = new Date(year, monthIndex, 0);
 
     const daysInMonth = end.getDate();
     const bars = [
@@ -2405,8 +2416,8 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
     ]
       .filter(([bucketStart]) => bucketStart <= daysInMonth)
       .map(([bucketStart, bucketEnd]) => {
-        const bucketStartDate = new Date(anchor.getFullYear(), anchor.getMonth(), bucketStart);
-        const bucketEndDate = new Date(anchor.getFullYear(), anchor.getMonth(), bucketEnd);
+        const bucketStartDate = new Date(year, monthIndex, bucketStart);
+        const bucketEndDate = new Date(year, monthIndex, bucketEnd);
 
         return {
           label: `${bucketStart}–${bucketEnd}`,
@@ -2421,19 +2432,19 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
       previousCount: countIntercourseBetween(data, previousStart, previousEnd),
       bars,
     };
-  }, [anchor, data]);
+  }, [selectedMonthAnchor, data]);
 
   const year = useMemo(() => {
-    const start = new Date(anchor.getFullYear(), 0, 1);
-    const end = new Date(anchor.getFullYear(), 11, 31);
+    const start = new Date(selectedYear, 0, 1);
+    const end = new Date(selectedYear, 11, 31);
 
-    const previousStart = new Date(anchor.getFullYear() - 1, 0, 1);
-    const previousEnd = new Date(anchor.getFullYear() - 1, 11, 31);
+    const previousStart = new Date(selectedYear - 1, 0, 1);
+    const previousEnd = new Date(selectedYear - 1, 11, 31);
 
     const monthLabels = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
     const bars = monthLabels.map((label, monthIndex) => {
-      const monthStart = new Date(anchor.getFullYear(), monthIndex, 1);
-      const monthEnd = new Date(anchor.getFullYear(), monthIndex + 1, 0);
+      const monthStart = new Date(selectedYear, monthIndex, 1);
+      const monthEnd = new Date(selectedYear, monthIndex + 1, 0);
 
       return {
         label,
@@ -2448,7 +2459,7 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
       previousCount: countIntercourseBetween(data, previousStart, previousEnd),
       bars,
     };
-  }, [anchor, data]);
+  }, [selectedYear, data]);
 
   const comparison = (current: number, previous: number, label: string) => {
     const diff = current - previous;
@@ -2456,7 +2467,7 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
     const value = diff === 0 ? "0" : `${diff > 0 ? "+" : ""}${diff}`;
 
     return (
-      <p className="mt-1.5 text-center text-[8px] leading-none text-muted-foreground">
+      <p className="mt-1.5 flex h-3 items-center justify-center text-center text-[8px] leading-none text-muted-foreground">
         vs last {label}{" "}
         <span
           className="font-bold"
@@ -2479,7 +2490,7 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
 
     return (
       <div
-        className="mt-2 grid items-end gap-[2px]"
+        className="mt-2 grid h-[64px] items-end gap-[2px]"
         style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
       >
         {items.map((item, index) => {
@@ -2492,7 +2503,7 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
               </span>
               <div className="flex h-[42px] w-full items-end justify-center border-b border-border/55">
                 <span
-                  className={`${dense ? "w-[72%]" : "w-[78%]"} rounded-t-[3px]`}
+                  className="w-[76%] rounded-t-[3px]"
                   style={{
                     height: `${height}px`,
                     background:
@@ -2539,9 +2550,9 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
 
       <div className="mt-3 border-t border-border/55 pt-3">
         <div className="grid grid-cols-3 divide-x divide-border/55">
-          <div className="min-w-0 px-1.5">
+          <div className="flex min-w-0 flex-col px-1.5">
             <p className="text-center text-[10px] font-bold text-foreground">Week</p>
-            <div className="mt-0.5 flex items-center justify-center gap-0.5">
+            <div className="mt-0.5 flex h-5 items-center justify-center gap-0.5">
               <button
                 type="button"
                 onClick={() => setWeekOffset((value) => value - 1)}
@@ -2572,7 +2583,7 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
                 <ChevronRight className="h-3 w-3" />
               </button>
             </div>
-            <p className="mt-1.5 text-center font-serif text-2xl font-bold leading-none text-foreground">
+            <p className="mt-1 flex h-7 items-end justify-center text-center font-serif text-2xl font-bold leading-none text-foreground">
               {week.count}
               <span className="ml-1 font-sans text-[8px] font-medium text-muted-foreground">times</span>
             </p>
@@ -2580,12 +2591,43 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
             <MiniBars items={week.bars} />
           </div>
 
-          <div className="min-w-0 px-1.5">
+          <div className="flex min-w-0 flex-col px-1.5">
             <p className="text-center text-[10px] font-bold text-foreground">Month</p>
-            <p className="mt-0.5 truncate text-center text-[6.5px] text-muted-foreground">
-              {anchor.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
-            </p>
-            <p className="mt-1.5 text-center font-serif text-2xl font-bold leading-none text-foreground">
+            <div className="mt-0.5 flex h-5 items-center justify-center gap-0.5">
+              <button
+                type="button"
+                onClick={() => setMonthOffset((value) => value - 1)}
+                className="grid h-5 w-5 shrink-0 place-items-center rounded-full text-muted-foreground transition hover:bg-tint hover:text-foreground"
+                aria-label="Previous month"
+                title="Previous month"
+              >
+                <ChevronLeft className="h-3 w-3" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setMonthOffset(0)}
+                className="min-w-0 truncate rounded-md px-0.5 py-0.5 text-center text-[6.5px] text-muted-foreground transition hover:bg-tint hover:text-foreground"
+                aria-label="Back to current month"
+                title={monthOffset === 0 ? "Current month" : "Back to current month"}
+              >
+                {selectedMonthAnchor.toLocaleDateString("en-US", {
+                  month: "long",
+                  year: "numeric",
+                })}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setMonthOffset((value) => value + 1)}
+                className="grid h-5 w-5 shrink-0 place-items-center rounded-full text-muted-foreground transition hover:bg-tint hover:text-foreground"
+                aria-label="Next month"
+                title="Next month"
+              >
+                <ChevronRight className="h-3 w-3" />
+              </button>
+            </div>
+            <p className="mt-1 flex h-7 items-end justify-center text-center font-serif text-2xl font-bold leading-none text-foreground">
               {month.count}
               <span className="ml-1 font-sans text-[8px] font-medium text-muted-foreground">times</span>
             </p>
@@ -2593,12 +2635,40 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
             <MiniBars items={month.bars} />
           </div>
 
-          <div className="min-w-0 px-1.5">
+          <div className="flex min-w-0 flex-col px-1.5">
             <p className="text-center text-[10px] font-bold text-foreground">Year</p>
-            <p className="mt-0.5 text-center text-[6.5px] tabular-nums text-muted-foreground">
-              {anchor.getFullYear()}
-            </p>
-            <p className="mt-1.5 text-center font-serif text-2xl font-bold leading-none text-foreground">
+            <div className="mt-0.5 flex h-5 items-center justify-center gap-0.5">
+              <button
+                type="button"
+                onClick={() => setYearOffset((value) => value - 1)}
+                className="grid h-5 w-5 shrink-0 place-items-center rounded-full text-muted-foreground transition hover:bg-tint hover:text-foreground"
+                aria-label="Previous year"
+                title="Previous year"
+              >
+                <ChevronLeft className="h-3 w-3" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setYearOffset(0)}
+                className="min-w-0 rounded-md px-1 py-0.5 text-center text-[6.5px] tabular-nums text-muted-foreground transition hover:bg-tint hover:text-foreground"
+                aria-label="Back to current year"
+                title={yearOffset === 0 ? "Current year" : "Back to current year"}
+              >
+                {selectedYear}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setYearOffset((value) => value + 1)}
+                className="grid h-5 w-5 shrink-0 place-items-center rounded-full text-muted-foreground transition hover:bg-tint hover:text-foreground"
+                aria-label="Next year"
+                title="Next year"
+              >
+                <ChevronRight className="h-3 w-3" />
+              </button>
+            </div>
+            <p className="mt-1 flex h-7 items-end justify-center text-center font-serif text-2xl font-bold leading-none text-foreground">
               {year.count}
               <span className="ml-1 font-sans text-[8px] font-medium text-muted-foreground">times</span>
             </p>
