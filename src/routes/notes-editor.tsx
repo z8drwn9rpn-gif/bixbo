@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { Ico } from "@/components/icons/BixboIcons";
 import { type Note, type NoteChecklistItem, type NoteFolder } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -258,17 +259,23 @@ export function NoteEditor({
         />
 
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <select
-            value={folderId}
-            onChange={(event) => setFolderId(event.target.value)}
-            className="rounded-full bg-tint px-3 py-1.5 text-xs text-foreground ring-1 ring-border/70"
-          >
+          <div className="flex flex-wrap gap-1.5">
             {folders.map((folder) => (
-              <option key={folder.id} value={folder.id}>
-                {folder.name}
-              </option>
+              <button
+                key={folder.id}
+                type="button"
+                onClick={() => setFolderId(folder.id)}
+                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-medium ring-1 transition ${
+                  folderId === folder.id
+                    ? "bg-primary text-primary-foreground ring-primary"
+                    : "bg-tint text-foreground ring-border/70 hover:bg-primary/10"
+                }`}
+              >
+                {folder.icon ? <Ico e={folder.icon} size={14} /> : <Ico name="note" size={14} />}
+                <span>{folder.name}</span>
+              </button>
             ))}
-          </select>
+          </div>
 
           <span>
             Edited{" "}
