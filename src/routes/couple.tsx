@@ -1238,7 +1238,7 @@ function CouplePage() {
   const view = hydrated ? data : EMPTY;
   const partner = view.partner;
 
-  const [period, setPeriod] = useState<CouplePeriod>("M");
+  const period: CouplePeriod = "M";
   const [anchor, setAnchor] = useState<Date>(new Date());
   const [activeTab, setActiveTab] = useState<CoupleTab>("overview");
 
@@ -1313,9 +1313,7 @@ function CouplePage() {
   const selectedMonth = useMemo(() => startOfMonth(anchor), [anchor]);
   const selectedMonthLabel = monthLabel(selectedMonth);
 
-  // Pain comparison is intentionally always monthly.
-  // The main Couple Week / Month / Year selector still controls every
-  // other comparison; only the Pain chart uses this month range.
+  // Couple comparisons use one monthly range throughout.
   const painMonthRange = useMemo(() => coupleRangeFor("M", anchor), [anchor]);
   const painMonthDays = painMonthRange.days;
   const painMonthLabel = painMonthRange.label;
@@ -1330,22 +1328,16 @@ function CouplePage() {
   const goPrev = () =>
     setAnchor((current) => {
       const next = new Date(current);
-      if (period === "W") next.setDate(next.getDate() - 7);
-      else if (period === "M") {
-        next.setDate(1);
-        next.setMonth(next.getMonth() - 1);
-      } else next.setFullYear(next.getFullYear() - 1);
+      next.setDate(1);
+      next.setMonth(next.getMonth() - 1);
       return next;
     });
 
   const goNext = () =>
     setAnchor((current) => {
       const next = new Date(current);
-      if (period === "W") next.setDate(next.getDate() + 7);
-      else if (period === "M") {
-        next.setDate(1);
-        next.setMonth(next.getMonth() + 1);
-      } else next.setFullYear(next.getFullYear() + 1);
+      next.setDate(1);
+      next.setMonth(next.getMonth() + 1);
       return next > today ? current : next;
     });
 
@@ -1521,32 +1513,12 @@ function CouplePage() {
     <AppShell title="Bixbo Couple">
       <div className="space-y-3 px-5 pb-[calc(96px+env(safe-area-inset-bottom))] pt-2 lg:grid lg:grid-cols-2 lg:items-start lg:gap-3 lg:space-y-0 lg:px-0 lg:pb-12 [&>*:first-child]:lg:col-span-2">
         <div
-          className="mx-auto grid w-full max-w-[340px] grid-cols-3 gap-0.5 rounded-xl bg-primary/20 p-0.5 ring-1 ring-primary/15 lg:max-w-sm"
-          role="tablist"
-          aria-label="Couple period"
+          className="mx-auto grid w-full max-w-[340px] grid-cols-1 gap-0.5 rounded-xl bg-primary/20 p-0.5 ring-1 ring-primary/15 lg:max-w-sm"
+          aria-label="Couple period: Month"
         >
-          {(["W", "M", "Y"] as CouplePeriod[]).map((option) => {
-            const active = period === option;
-            return (
-              <button
-                key={option}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                onClick={() => {
-                  setPeriod(option);
-                  setAnchor(new Date());
-                }}
-                className={`min-w-0 rounded-[10px] px-2 py-1.5 text-[11px] font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
-                  active
-                    ? "bg-primary text-primary-foreground shadow-md"
-                    : "text-foreground/80 hover:bg-surface/45 hover:text-foreground"
-                }`}
-              >
-                {option === "W" ? "Week" : option === "M" ? "Month" : "Year"}
-              </button>
-            );
-          })}
+          <div className="min-w-0 rounded-[10px] bg-primary px-2 py-1.5 text-center text-[11px] font-semibold text-primary-foreground shadow-md">
+            Month
+          </div>
         </div>
 
         {partner ? (
