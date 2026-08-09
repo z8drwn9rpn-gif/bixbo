@@ -499,7 +499,10 @@ function dedupArray<T>(arr: T[] | undefined): T[] {
 }
 
 function mergeStructured(path: string, local: unknown, remote: unknown): unknown {
-  if (local === undefined || remote === undefined) return chooseAtomic(path, local, remote);
+if (local === undefined || remote === undefined) {
+  if (arraysUseIds(local, remote)) return unionById(local as unknown, remote as unknown, path);
+  return chooseAtomic(path, local, remote);
+}
 
   if (Array.isArray(local) || Array.isArray(remote)) {
     if (!Array.isArray(local) || !Array.isArray(remote)) return chooseAtomic(path, local, remote);
