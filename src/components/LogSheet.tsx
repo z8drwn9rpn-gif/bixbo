@@ -110,7 +110,7 @@ const CATEGORIES: { id: Category; label: string; emoji: string; hint: string }[]
   { id: "meds", label: "Meds", emoji: "💊", hint: "Taken · extra dose" },
   { id: "event", label: "Event", emoji: "📅", hint: "Multi-day · time · note" },
   { id: "task", label: "Task", emoji: "✅", hint: "To-do with date & time" },
-  { id: "note", label: "Note", emoji: "📝", hint: "Any thought for today" },
+  { id: "note", label: "Notes", emoji: "📝", hint: "Any thought for today" },
 ];
 
 export function LogSheet({
@@ -276,8 +276,8 @@ export function LogSheet({
 
                 <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
                   <div
-                    className="absolute left-1/2 h-[375px] w-[390px] max-w-[100vw] -translate-x-1/2"
-                    style={{ bottom: "calc(max(8px, env(safe-area-inset-bottom)) + 36px)" }}
+                    className="absolute left-1/2 h-[338px] w-[390px] max-w-[100vw] -translate-x-1/2"
+                    style={{ bottom: "calc(max(8px, env(safe-area-inset-bottom)) + 30px)" }}
                   >
                     {/*
                       Reference layout:
@@ -301,41 +301,25 @@ export function LogSheet({
                       const radialCats = orderedCats.slice(0, 12);
 
                       const slots = [
-                        // Smooth semicircle, left-to-right, centered on +.
-                        // Keep side items farther inward so full labels remain visible.
-
-                        // Pain
-                        { x: -94, up: 224, labelSide: "left" as const, labelW: 52 },
-                        // Blueberry
-                        { x: -58, up: 276, labelSide: "top" as const, labelW: 72 },
-                        // Heat / Cold / TENS
-                        { x: 0, up: 298, labelSide: "top" as const, labelW: 88 },
-                        // Food
-                        { x: 58, up: 276, labelSide: "top" as const, labelW: 58 },
-                        // Bowel
-                        { x: 94, up: 224, labelSide: "right" as const, labelW: 52 },
-
-                        // ŠukŠuk!
-                        { x: -112, up: 164, labelSide: "left" as const, labelW: 58 },
-                        // Workout
-                        { x: 112, up: 164, labelSide: "right" as const, labelW: 58 },
-
-                        // Temp / Sleep / Weight
-                        { x: 118, up: 105, labelSide: "right" as const, labelW: 76 },
-                        // Meds
-                        { x: -118, up: 105, labelSide: "left" as const, labelW: 48 },
-
-                        // Event
-                        { x: -104, up: 54, labelSide: "left" as const, labelW: 48 },
-                        // Task
-                        { x: 104, up: 54, labelSide: "right" as const, labelW: 48 },
-
-                        // Notes
-                        { x: -68, up: 20, labelSide: "left" as const, labelW: 44 },
+                        // 12 equally spaced positions on one compact upper half-ellipse.
+                        // Because positions are geometric (not tied to category names),
+                        // direct drag reorder keeps the launcher a true semicircle.
+                        { x: -124, up: 71, labelSide: "left" as const, labelW: 58 },
+                        { x: -115, up: 132, labelSide: "left" as const, labelW: 58 },
+                        { x: -98, up: 186, labelSide: "left" as const, labelW: 58 },
+                        { x: -75, up: 229, labelSide: "left" as const, labelW: 64 },
+                        { x: -47, up: 260, labelSide: "top" as const, labelW: 78 },
+                        { x: -16, up: 276, labelSide: "top" as const, labelW: 78 },
+                        { x: 16, up: 276, labelSide: "top" as const, labelW: 78 },
+                        { x: 47, up: 260, labelSide: "top" as const, labelW: 78 },
+                        { x: 75, up: 229, labelSide: "right" as const, labelW: 64 },
+                        { x: 98, up: 186, labelSide: "right" as const, labelW: 58 },
+                        { x: 115, up: 132, labelSide: "right" as const, labelW: 58 },
+                        { x: 124, up: 71, labelSide: "right" as const, labelW: 58 },
                       ];
 
                       const circleClass = `
-                        absolute left-1/2 top-1/2 grid h-[41px] w-[41px]
+                        absolute left-1/2 top-1/2 grid h-[38px] w-[38px]
                         -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full
                         border border-[#edf2cf]/65
                         bg-[#dce5b2]/36
@@ -348,8 +332,8 @@ export function LogSheet({
                         <>
                           <svg
                             aria-hidden="true"
-                            viewBox="-195 -330 390 350"
-                            className="pointer-events-none absolute bottom-0 left-1/2 h-[350px] w-[390px] max-w-[100vw] -translate-x-1/2 overflow-visible"
+                            viewBox="-195 -305 390 325"
+                            className="pointer-events-none absolute bottom-0 left-1/2 h-[325px] w-[390px] max-w-[100vw] -translate-x-1/2 overflow-visible"
                           >
                             {radialCats.map((c, index) => {
                               const slot = slots[index];
@@ -412,7 +396,7 @@ export function LogSheet({
                                   setCat(c.id);
                                 }}
                                 aria-label={editingOrder ? `Drag ${c.label} to reorder` : `Log ${c.label}`}
-                                className={`pointer-events-auto absolute z-20 h-[50px] w-[50px] touch-none select-none outline-none transition-[transform,filter,opacity] duration-150 focus-visible:ring-2 focus-visible:ring-[#edf2cf] ${
+                                className={`pointer-events-auto absolute z-20 h-[44px] w-[44px] touch-none select-none outline-none transition-[transform,filter,opacity] duration-150 focus-visible:ring-2 focus-visible:ring-[#edf2cf] ${
                                   editingOrder ? "cursor-grab active:cursor-grabbing" : "active:scale-95"
                                 } ${draggingCat === c.id ? "z-50 scale-110 brightness-110 drop-shadow-[0_0_10px_rgba(238,243,207,0.8)]" : ""}`}
                                 style={{
@@ -422,26 +406,26 @@ export function LogSheet({
                                 }}
                               >
                                 <span className={circleClass}>
-                                  <Ico e={c.emoji} size={22} />
+                                  <Ico e={c.emoji} size={20} />
                                 </span>
 
                                 <span
                                   className="
-                                    absolute z-30 text-[9px] font-semibold leading-[1.05]
+                                    absolute z-30 text-[8.5px] font-semibold leading-[1.05]
                                     text-white drop-shadow-[0_1px_2px_rgba(31,37,16,0.95)]
                                   "
                                   style={{
                                     width: `${slot.labelW}px`,
                                     ...(isLeft
                                       ? {
-                                          right: "calc(100% + 2px)",
+                                          right: "calc(100% + 3px)",
                                           top: "50%",
                                           transform: "translateY(-50%)",
                                           textAlign: "right" as const,
                                         }
                                       : isRight
                                         ? {
-                                            left: "calc(100% + 2px)",
+                                            left: "calc(100% + 3px)",
                                             top: "50%",
                                             transform: "translateY(-50%)",
                                             textAlign: "left" as const,
@@ -467,7 +451,7 @@ export function LogSheet({
                               setEditingOrder((v) => !v);
                             }}
                             aria-label="Reorder log categories"
-                            className="pointer-events-auto absolute bottom-[34px] left-1/2 z-30 h-[44px] w-[44px] translate-x-[50px] outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#edf2cf]"
+                            className="pointer-events-auto absolute bottom-[38px] left-1/2 z-30 h-[42px] w-[42px] translate-x-[54px] outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#edf2cf]"
                           >
                             <span className={`${circleClass} scale-[0.92] ${editingOrder ? "ring-[#f3f6d8]/80 bg-[#748642]/70" : ""}`}>
                               {editingOrder ? (
@@ -480,7 +464,7 @@ export function LogSheet({
                                 </span>
                               )}
                             </span>
-                            <span className="absolute left-[calc(100%+2px)] top-1/2 w-[44px] -translate-y-1/2 text-left text-[10px] font-semibold leading-none text-white drop-shadow-[0_1px_2px_rgba(31,37,16,0.95)]">
+                            <span className="absolute left-[calc(100%+3px)] top-1/2 w-[46px] -translate-y-1/2 text-left text-[10px] font-semibold leading-none text-white drop-shadow-[0_1px_2px_rgba(31,37,16,0.95)]">
                               {editingOrder ? "Done" : "Reorder"}
                             </span>
                           </button>
@@ -513,7 +497,7 @@ export function LogSheet({
                       aria-label="Close Log"
                       className="
                         pointer-events-auto absolute bottom-0 left-1/2 z-40
-                        grid h-[54px] w-[54px] -translate-x-1/2 place-items-center rounded-full
+                        grid h-[52px] w-[52px] -translate-x-1/2 place-items-center rounded-full
                         border border-[#f1f4dc]/80
                         bg-[#657632] text-white
                         shadow-[0_0_0_7px_rgba(231,238,190,0.44),0_0_24px_rgba(232,238,190,0.48),0_10px_26px_rgba(20,28,9,0.36)]
