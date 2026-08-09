@@ -1906,4 +1906,31 @@ export const NAUSEA_HELPED = ["Lying down", "Ginger tea", "Fresh air", "Medicati
 export function markDeleted(update: (u: (d: BixboData) => BixboData) => void, ...ids: string[]) {
   update((d) => ({ ...d, deletedIds: Array.from(new Set([...(d.deletedIds ?? []), ...ids])).slice(-2000) }));
 }
+
+/** Add tombstones for removed custom-list options so merges can't restore them. */
+export function withCustomTombstones<K extends keyof CustomLists>(
+  d: BixboData,
+  key: K,
+  removed: string[],
+): BixboData {
+  if (!removed.length) return d;
+  const prev = d.deletedCustom?.[key] ?? [];
+  return {
+    ...d,
+    deletedCustom: { ...(d.deletedCustom ?? {}), [key]: Array.from(new Set([...prev, ...removed])) },
+  };
+}
+
+/** Drop tombstones for options the user deliberately re-added. */
+export function withoutCustomTombstones<K extends keyof CustomLists>(
+  d: BixboData,
+  key: K,
+  restored: string[],
+): BixboData {
+  const prev = d.deletedCustom?.[key];
+  if (!prev?.length || !restored.length) return d;
+  const next = prev.filter((v) => !restored.includes(v));
+  return { ...d, deletedCustom: { ...(d.deletedCustom ?? {}), [key]: next } };
+}
+
 // storage migration hardened for cloud data
