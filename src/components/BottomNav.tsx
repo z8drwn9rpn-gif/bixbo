@@ -1,10 +1,9 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { Home, StickyNote, Activity, Users, Plus, Brain } from "lucide-react";
+import { Home, StickyNote, Users, Plus, Brain } from "lucide-react";
 
 const items = [
   { to: "/", label: "Home", icon: Home },
-  { to: "/insights", label: "Insights", icon: Activity },
-  { to: "/patterns", label: "Patterns", icon: Brain },
+  { to: "/insights", label: "Overview", icon: Brain },
   { to: "/couple", label: "Couple", icon: Users },
   { to: "/notes", label: "Notes", icon: StickyNote },
 ] as const;
@@ -25,7 +24,12 @@ export function BottomNav() {
     <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[560px] border-t border-border/80 bg-surface/95 backdrop-blur-xl pb-[max(8px,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.22)] landscape:max-w-none lg:hidden">
       <ul className="flex items-stretch justify-around gap-1 px-2 pt-2 pb-2">
         {items.map(({ to, label, icon: Icon }) => {
-          const active = to === "/" ? pathname === "/" : pathname.startsWith(to);
+          const active =
+            label === "Overview"
+              ? pathname.startsWith("/insights") || pathname.startsWith("/patterns")
+              : to === "/"
+                ? pathname === "/"
+                : pathname.startsWith(to);
           return (
             <li key={to} className="flex-1">
               <Link
