@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
-import { X, Plus, ChevronLeft, ChevronUp, ChevronDown, GripVertical, Check, Pencil } from "lucide-react";
+import { X, Plus, ChevronLeft, Check, Pencil } from "lucide-react";
 import {
   PAIN_DESCRIPTIONS,
   painColor,
@@ -171,12 +171,71 @@ export function LogSheet({
     return out;
   }, [cycleTrackingHidden, data.settings.logOrder, postpartumActive]);
 
-  const moveCat = (idx: number, dir: -1 | 1) => {
-    const j = idx + dir;
-    if (j < 0 || j >= orderedCats.length) return;
-    const next = orderedCats.slice();
-    [next[idx], next[j]] = [next[j], next[idx]];
-    update((d) => ({ ...d, settings: { ...d.settings, logOrder: next.map((c) => c.id) } }));
+  const [draggingCat, setDraggingCat] = useState<Category | null>(null);
+  const draggingCatRef = useRef<Category | null>(null);
+  const lastDragTargetRef = useRef<Category | null>(null);
+
+  const reorderCatTo = (fromId: Category, toId: Category) => {
+    if (fromId === toId) return;
+
+    const next = orderedCats.map((c) => c.id);
+    const from = next.indexOf(fromId);
+    const to = next.indexOf(toId);
+    if (from < 0 || to < 0) return;
+
+    next.splice(from, 1);
+    next.splice(to, 0, fromId);
+
+    update((d) => ({
+      ...d,
+      settings: {
+        ...d.settings,
+        logOrder: next,
+      },
+    }));
+  };
+
+  const startDirectReorder = (e: React.PointerEvent<HTMLButtonElement>, id: Category) => {
+    if (!editingOrder) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    draggingCatRef.current = id;
+    lastDragTargetRef.current = id;
+    setDraggingCat(id);
+
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // Pointer capture is optional; touch dragging still works without it.
+    }
+  };
+
+  const moveDirectReorder = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const fromId = draggingCatRef.current;
+    if (!editingOrder || !fromId) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const hit = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+    const target = hit?.closest<HTMLElement>("[data-log-category]");
+    const toId = target?.dataset.logCategory as Category | undefined;
+
+    if (!toId || toId === lastDragTargetRef.current) return;
+
+    reorderCatTo(fromId, toId);
+    lastDragTargetRef.current = toId;
+  };
+
+  const endDirectReorder = (e?: React.PointerEvent<HTMLButtonElement>) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    draggingCatRef.current = null;
+    lastDragTargetRef.current = null;
+    setDraggingCat(null);
   };
 
   return (
@@ -207,55 +266,7 @@ export function LogSheet({
               className="absolute inset-0 z-0 cursor-default bg-transparent"
             />
 
-            {editingOrder ? (
-              <section
-                className="absolute left-1/2 z-20 flex max-h-[70dvh] w-[min(88vw,340px)] -translate-x-1/2 flex-col overflow-hidden rounded-[1.6rem] border border-border/70 bg-background/95 shadow-2xl backdrop-blur-xl"
-                style={{ bottom: "calc(max(8px, env(safe-area-inset-bottom)) + 88px)" }}
-              >
-                <div className="relative flex h-12 shrink-0 items-center justify-center border-b border-border/60 px-3">
-                  <SheetTitle className="font-serif text-lg">Reorder Log</SheetTitle>
-                  <button
-                    type="button"
-                    onClick={() => setEditingOrder(false)}
-                    className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-1 rounded-full bg-tint px-2.5 py-1 text-[10px] font-semibold text-foreground"
-                  >
-                    <Check className="h-3.5 w-3.5" /> Done
-                  </button>
-                </div>
-
-                <ul className="m-0 min-h-0 flex-1 list-none divide-y divide-border/60 overflow-y-auto bg-surface/65 p-2">
-                  {orderedCats.map((c, i) => (
-                    <li key={c.id} className="first:rounded-t-xl last:rounded-b-xl">
-                      <div className="flex min-h-11 w-full items-center gap-2 rounded-xl bg-surface/80 px-2.5">
-                        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-tint ring-1 ring-border/60">
-                          <Ico e={c.emoji} size={21} />
-                        </span>
-                        <p className="min-w-0 flex-1 truncate text-[13px] font-semibold">{c.label}</p>
-                        <button
-                          type="button"
-                          onClick={() => moveCat(i, -1)}
-                          disabled={i === 0}
-                          className="rounded-full p-1.5 hover:bg-tint disabled:opacity-30"
-                          aria-label={`Move ${c.label} up`}
-                        >
-                          <ChevronUp className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => moveCat(i, 1)}
-                          disabled={i === orderedCats.length - 1}
-                          className="rounded-full p-1.5 hover:bg-tint disabled:opacity-30"
-                          aria-label={`Move ${c.label} down`}
-                        >
-                          <ChevronDown className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ) : (
-              <>
+            <>
                 {/* Soft olive glass overlay like the reference image.
                     The app stays visible underneath, but the radial Log menu is the focus. */}
                 <div
@@ -284,8 +295,10 @@ export function LogSheet({
                         - Notes restored as its own circle
                         - Reorder restored as its own circle and still opens Reorder Log
                       */
-                      const mainCats = orderedCats.filter((c) => c.id !== "note").slice(0, 11);
-                      const noteCat = orderedCats.find((c) => c.id === "note");
+                      // Every visible category occupies a real radial slot.
+                      // In Reorder mode, dragging a circle onto another circle
+                      // immediately changes their order without opening another window.
+                      const radialCats = orderedCats.slice(0, 12);
 
                       const slots = [
                         // One continuous SEMICIRCLE around the + button.
@@ -313,6 +326,8 @@ export function LogSheet({
                         { x: -104, up: 60, labelSide: "left" as const, labelW: 50 },
                         // Task
                         { x: 104, up: 60, labelSide: "right" as const, labelW: 50 },
+                        // Bottom-left slot (Notes in the default order)
+                        { x: -68, up: 24, labelSide: "left" as const, labelW: 46 },
                       ];
 
                       const circleClass = `
@@ -332,7 +347,7 @@ export function LogSheet({
                             viewBox="-195 -350 390 370"
                             className="pointer-events-none absolute bottom-0 left-1/2 h-[370px] w-[390px] max-w-[100vw] -translate-x-1/2 overflow-visible"
                           >
-                            {mainCats.map((c, index) => {
+                            {radialCats.map((c, index) => {
                               const slot = slots[index];
                               if (!slot) return null;
 
@@ -356,19 +371,6 @@ export function LogSheet({
                               );
                             })}
 
-                            {noteCat && (
-                              <line
-                                x1="0"
-                                y1="-12"
-                                x2="-72"
-                                y2="-24"
-                                stroke="rgba(241,244,220,0.52)"
-                                strokeWidth="1"
-                                strokeDasharray="2.5 4.5"
-                                opacity="0.58"
-                              />
-                            )}
-
                             <line
                               x1="0"
                               y1="-12"
@@ -381,7 +383,7 @@ export function LogSheet({
                             />
                           </svg>
 
-                          {mainCats.map((c, index) => {
+                          {radialCats.map((c, index) => {
                             const slot = slots[index];
                             if (!slot) return null;
 
@@ -392,12 +394,23 @@ export function LogSheet({
                               <button
                                 key={c.id}
                                 type="button"
-                                onClick={() => {
-                                  setEditingOrder(false);
+                                data-log-category={c.id}
+                                onPointerDown={(e) => startDirectReorder(e, c.id)}
+                                onPointerMove={moveDirectReorder}
+                                onPointerUp={endDirectReorder}
+                                onPointerCancel={endDirectReorder}
+                                onClick={(e) => {
+                                  if (editingOrder) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    return;
+                                  }
                                   setCat(c.id);
                                 }}
-                                aria-label={`Log ${c.label}`}
-                                className="pointer-events-auto absolute z-20 h-[50px] w-[50px] outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#edf2cf]"
+                                aria-label={editingOrder ? `Drag ${c.label} to reorder` : `Log ${c.label}`}
+                                className={`pointer-events-auto absolute z-20 h-[50px] w-[50px] touch-none select-none outline-none transition-[transform,filter,opacity] duration-150 focus-visible:ring-2 focus-visible:ring-[#edf2cf] ${
+                                  editingOrder ? "cursor-grab active:cursor-grabbing" : "active:scale-95"
+                                } ${draggingCat === c.id ? "z-50 scale-110 brightness-110 drop-shadow-[0_0_10px_rgba(238,243,207,0.8)]" : ""}`}
                                 style={{
                                   left: "50%",
                                   bottom: 0,
@@ -443,45 +456,42 @@ export function LogSheet({
                             );
                           })}
 
-                          {noteCat && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingOrder(false);
-                                setCat("note");
-                              }}
-                              aria-label="Log Note"
-                              className="pointer-events-auto absolute bottom-[24px] left-1/2 z-30 h-[44px] w-[44px] -translate-x-[calc(50%+68px)] outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#edf2cf]"
-                            >
-                              <span className={`${circleClass} scale-[0.92]`}>
-                                <Ico e={noteCat.emoji} size={21} />
-                              </span>
-                              <span className="absolute right-[calc(100%+3px)] top-1/2 w-[42px] -translate-y-1/2 text-right text-[10px] font-semibold leading-none text-white drop-shadow-[0_1px_2px_rgba(31,37,16,0.95)]">
-                                Notes
-                              </span>
-                            </button>
-                          )}
-
                           <button
                             type="button"
-                            onClick={() => setEditingOrder(true)}
+                            onClick={() => {
+                              endDirectReorder();
+                              setEditingOrder((v) => !v);
+                            }}
                             aria-label="Reorder log categories"
                             className="pointer-events-auto absolute bottom-[30px] left-1/2 z-30 h-[44px] w-[44px] translate-x-[44px] outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#edf2cf]"
                           >
-                            <span className={`${circleClass} scale-[0.92]`}>
-                              <span className="grid grid-cols-2 gap-[3px]" aria-hidden="true">
-                                {Array.from({ length: 6 }).map((_, i) => (
-                                  <span key={i} className="h-[4px] w-[4px] rounded-full bg-white/90" />
-                                ))}
-                              </span>
+                            <span className={`${circleClass} scale-[0.92] ${editingOrder ? "ring-[#f3f6d8]/80 bg-[#748642]/70" : ""}`}>
+                              {editingOrder ? (
+                                <Check className="h-5 w-5 text-white" strokeWidth={2.7} />
+                              ) : (
+                                <span className="grid grid-cols-2 gap-[3px]" aria-hidden="true">
+                                  {Array.from({ length: 6 }).map((_, i) => (
+                                    <span key={i} className="h-[4px] w-[4px] rounded-full bg-white/90" />
+                                  ))}
+                                </span>
+                              )}
                             </span>
                             <span className="absolute left-[calc(100%+3px)] top-1/2 w-[46px] -translate-y-1/2 text-left text-[10px] font-semibold leading-none text-white drop-shadow-[0_1px_2px_rgba(31,37,16,0.95)]">
-                              Reorder
+                              {editingOrder ? "Done" : "Reorder"}
                             </span>
                           </button>
                         </>
                       );
                     })()}
+
+                    {editingOrder && (
+                      <div
+                        className="pointer-events-none absolute left-1/2 z-40 -translate-x-1/2 rounded-full border border-white/20 bg-black/20 px-3 py-1 text-[9px] font-semibold text-white/90 shadow-sm backdrop-blur-md"
+                        style={{ bottom: "72px" }}
+                      >
+                        Drag circles to reorder
+                      </div>
+                    )}
 
                     <span
                       aria-hidden="true"
@@ -512,7 +522,6 @@ export function LogSheet({
                   </div>
                 </div>
               </>
-            )}
           </>
         ) : (
           <div className="flex h-full min-h-0 flex-col">
