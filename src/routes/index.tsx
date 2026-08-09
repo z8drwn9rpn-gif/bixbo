@@ -2420,7 +2420,7 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
         const bucketEndDate = new Date(year, monthIndex, bucketEnd);
 
         return {
-          label: `${bucketStart}–${bucketEnd}`,
+          label: bucketStart === 29 ? "29+" : `${bucketStart}–${bucketEnd}`,
           count: countIntercourseBetween(data, bucketStartDate, bucketEndDate),
         };
       });
@@ -2467,7 +2467,7 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
     const value = diff === 0 ? "0" : `${diff > 0 ? "+" : ""}${diff}`;
 
     return (
-      <p className="mt-2 flex h-4 items-center justify-center text-center text-[9px] leading-none text-muted-foreground">
+      <p className="mt-2 flex h-4 items-center justify-center gap-1 whitespace-nowrap text-center text-[9px] leading-none text-muted-foreground">
         vs last {label}{" "}
         <span
           className="font-bold"
@@ -2498,12 +2498,16 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
 
           return (
             <div key={`${item.label}-${index}`} className="flex min-w-0 flex-col items-center justify-end">
-              <span className={`${dense ? "text-[7px]" : "text-[8px]"} mb-1 h-3 tabular-nums font-medium text-foreground/80`}>
-                {item.count}
+              <span
+                className={`${dense ? "text-[6px]" : "text-[8px]"} mb-1 h-3 tabular-nums font-medium text-foreground/80`}
+                title={`${item.label}: ${item.count}`}
+                aria-label={`${item.label}: ${item.count}`}
+              >
+                {dense ? (item.count > 0 ? "•" : "") : item.count}
               </span>
               <div className="flex h-[68px] w-full items-end justify-center border-b border-border/65">
                 <span
-                  className={`${dense ? "w-[76%]" : "w-[84%]"} rounded-t-[4px]`}
+                  className={`${dense ? "w-[64%]" : "w-[84%]"} rounded-t-[4px]`}
                   style={{
                     height: `${height}px`,
                     background:
@@ -2515,7 +2519,7 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
                 />
               </div>
               <span
-                className={`${dense ? "text-[6.5px]" : "text-[8px]"} mt-1.5 truncate font-medium text-muted-foreground`}
+                className={`${dense ? "text-[6px]" : "text-[7.5px]"} mt-1.5 truncate font-medium text-muted-foreground`}
               >
                 {item.label}
               </span>
@@ -2570,7 +2574,10 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
                 aria-label="Back to current week"
                 title={weekOffset === 0 ? "Current week" : "Back to current week"}
               >
-                {toKey(week.start)} → {toKey(week.end)}
+                {week.start.toLocaleDateString("en-GB", { day: "numeric" })}–{week.end.toLocaleDateString("en-GB", {
+                  day: "numeric",
+                  month: "short",
+                })}
               </button>
 
               <button
