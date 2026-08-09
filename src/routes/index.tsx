@@ -132,54 +132,6 @@ function dailyVitalDetails(metric: VitalTrendMetric, key: string, data: BixboDat
   return legacy != null && Number.isFinite(legacy) ? [`Saved value · ${legacy.toFixed(1)} ${unit}`] : [];
 }
 
-type OverviewVitalEntry = {
-  id: string;
-  time: string;
-  value: number;
-};
-
-function overviewVitalEntries(
-  log: import("@/lib/storage").DayLog | undefined,
-  metric: "temperature" | "weight",
-): OverviewVitalEntry[] {
-  if (!log) return [];
-
-  const raw = metric === "temperature" ? log.temperatureEntries ?? [] : log.weightEntries ?? [];
-  const entries = raw
-    .filter((entry) => Number.isFinite(Number(entry.value)))
-    .map((entry) => ({
-      id: entry.id,
-      time: entry.time || "",
-      value: Number(entry.value),
-    }))
-    .sort((a, b) => a.time.localeCompare(b.time) || a.id.localeCompare(b.id));
-
-  if (entries.length) return entries;
-
-  const legacy = metric === "temperature" ? log.temperature : log.weight;
-  if (legacy == null || !Number.isFinite(legacy)) return [];
-
-  return [
-    {
-      id: `legacy-${metric}`,
-      time: "",
-      value: legacy,
-    },
-  ];
-}
-
-function vitalOverviewSummary(
-  log: import("@/lib/storage").DayLog | undefined,
-  metric: "temperature" | "weight",
-): string {
-  const entries = overviewVitalEntries(log, metric);
-  if (!entries.length) return "—";
-
-  const latest = entries[entries.length - 1];
-  const value = latest.value.toFixed(1).replace(/\.0$/, "");
-  return entries.length > 1 ? `${value} · ${entries.length}×` : value;
-}
-
 function monthlyVitalRecords(metric: VitalTrendMetric, start: Date, end: Date, data: BixboData) {
   const values: number[] = [];
   const details: string[] = [];
@@ -281,52 +233,21 @@ function SleepTrendBars({
   points,
   activeIndex,
   onSelect,
-  period,
 }: {
   points: VitalTrendPoint[];
   activeIndex: number | null;
   onSelect: (index: number) => void;
-  period: VitalTrendPeriod;
 }) {
   const yLabels = [12, 10, 8, 6, 4, 2, 0];
-  const height = 128;
-
-  // Keep every bar, but only print X-axis ticks that can physically fit.
-  // Week: every day. Month: 1, 5, 10, 15, 20, 25 and the last day.
-  // Year: all 12 months fit in this popup.
-  const visibleXLabelIndexes = new Set<number>();
-  if (period === "W" || period === "Y") {
-    points.forEach((_, index) => visibleXLabelIndexes.add(index));
-  } else {
-    const lastIndex = Math.max(0, points.length - 1);
-    [0, 4, 9, 14, 19, 24, lastIndex].forEach((index) => {
-      if (index >= 0 && index < points.length) visibleXLabelIndexes.add(index);
-    });
-  }
-
-  const activePoint = activeIndex != null ? points[activeIndex] : undefined;
-  const activeColumnLeft =
-    activeIndex != null && points.length
-      ? ((activeIndex + 0.5) / Math.max(1, points.length)) * 100
-      : 50;
-  const activeBarTop =
-    activePoint?.value != null
-      ? Math.max(0, height - Math.max(5, (Math.min(12, activePoint.value) / 12) * height))
-      : 0;
-  const tooltipDate =
-    activePoint
-      ? period === "Y"
-        ? activePoint.label
-        : fromKey(activePoint.key).toLocaleDateString("en-GB", { day: "numeric", month: "short" })
-      : "";
+  const height = 132;
 
   return (
     <div className="pt-1">
       <div className="flex gap-1.5">
-        <div className="w-7 shrink-0 pr-1" style={{ height }}>
-          <div className="flex h-full flex-col items-end justify-between text-[8px] font-medium text-muted-foreground">
+        <div className="flex flex-col items-end pr-1" style={{ height }}>
+          <div className="flex h-full flex-col justify-between text-[8px] font-medium text-muted-foreground">
             {yLabels.map((value) => (
-              <span key={value} className="w-full text-right leading-none tabular-nums">
+              <span key={value} className="leading-none tabular-nums">
                 {value}
               </span>
             ))}
@@ -341,12 +262,8 @@ function SleepTrendBars({
           </div>
 
           <div
-            className="relative grid items-end"
-            style={{
-              gridTemplateColumns: `repeat(${Math.max(1, points.length)}, minmax(0, 1fr))`,
-              columnGap: period === "M" ? "1px" : "2px",
-              height,
-            }}
+            className="relative grid items-end gap-[2px]"
+            style={{ gridTemplateColumns: `repeat(${Math.max(1, points.length)}, minmax(0, 1fr))`, height }}
           >
             {points.map((point, index) =>
               point.value != null ? (
@@ -370,38 +287,18 @@ function SleepTrendBars({
                 <div key={point.key} className="h-[2px] w-full self-end rounded bg-border/60" />
               ),
             )}
-
-            {activePoint?.value != null ? (
-              <div
-                className="pointer-events-none absolute z-20 w-[58px] -translate-x-1/2 rounded-md bg-primary px-1.5 py-1.5 text-center text-primary-foreground shadow-md"
-                style={{
-                  left: `${Math.max(10, Math.min(90, activeColumnLeft))}%`,
-                  top: `${Math.max(0, activeBarTop - 47)}px`,
-                }}
-              >
-                <p className="text-[10px] font-bold leading-none">{activePoint.value.toFixed(1)} h</p>
-                <p className="mt-1 text-[8.5px] leading-none opacity-90">{tooltipDate}</p>
-                <span
-                  className="absolute left-1/2 top-full h-2 w-px -translate-x-1/2 bg-primary"
-                  aria-hidden="true"
-                />
-              </div>
-            ) : null}
           </div>
         </div>
       </div>
 
-      <div className="mt-1 flex pl-[34px]">
+      <div className="mt-1 flex pl-5">
         <div
-          className="grid flex-1 text-center text-[7px] font-medium tabular-nums text-muted-foreground"
-          style={{
-            gridTemplateColumns: `repeat(${Math.max(1, points.length)}, minmax(0, 1fr))`,
-            columnGap: period === "M" ? "1px" : "2px",
-          }}
+          className="grid flex-1 gap-[2px] text-center text-[7px] text-muted-foreground"
+          style={{ gridTemplateColumns: `repeat(${Math.max(1, points.length)}, minmax(0, 1fr))` }}
         >
-          {points.map((point, index) => (
-            <span key={point.key} className="min-w-0 whitespace-nowrap leading-none">
-              {visibleXLabelIndexes.has(index) ? point.label : ""}
+          {points.map((point) => (
+            <span key={point.key} className="truncate">
+              {point.label}
             </span>
           ))}
         </div>
@@ -427,7 +324,7 @@ function VitalTrendPopup({
   anchorKey: string;
   onClose: () => void;
 }) {
-  const [period, setPeriod] = useState<VitalTrendPeriod>(() => (metric === "sleep" ? "W" : "M"));
+  const [period, setPeriod] = useState<VitalTrendPeriod>("W");
   const [anchor, setAnchor] = useState(() => fromKey(anchorKey));
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
@@ -444,7 +341,6 @@ function VitalTrendPopup({
 
   useEffect(() => {
     setAnchor(fromKey(anchorKey));
-    setPeriod(metric === "sleep" ? "W" : "M");
   }, [anchorKey, metric]);
 
   const points = useMemo<VitalTrendPoint[]>(() => {
@@ -494,32 +390,20 @@ function VitalTrendPopup({
         ? anchor.toLocaleDateString("en-GB", { month: "long", year: "numeric" })
         : `${start.toLocaleDateString("en-GB", { day: "numeric", month: "short" })} – ${end.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`;
 
-  const chartWidth = metric === "sleep" ? 278 : 300;
-  const chartHeight = metric === "sleep" ? 132 : 162;
-  const left = metric === "sleep" ? 10 : 36;
-  const right = metric === "sleep" ? 34 : 10;
-  const top = metric === "sleep" ? 12 : 24;
-  const bottom = metric === "sleep" ? 24 : 30;
+  const chartWidth = 278;
+  const chartHeight = 132;
+  const left = 10;
+  const right = 34;
+  const top = 12;
+  const bottom = 24;
   const chartW = chartWidth - left - right;
   const chartH = chartHeight - top - bottom;
   const rawMin = values.length ? Math.min(...values) : 0;
   const rawMax = values.length ? Math.max(...values) : 1;
-  const averageValue = values.length ? averageNumbers(values) : undefined;
-  const referenceMiddle = averageValue ?? (rawMin + rawMax) / 2;
-  const roundedMiddle =
-    metric === "temperature"
-      ? Math.round(referenceMiddle * 2) / 2
-      : metric === "weight"
-        ? Math.round(referenceMiddle)
-        : referenceMiddle;
-  const baseTickStep = metric === "temperature" ? 1.5 : metric === "weight" ? 3 : 1;
-  const requiredHalfSpan = Math.max(Math.abs(rawMax - roundedMiddle), Math.abs(rawMin - roundedMiddle));
-  const tickStep =
-    metric === "sleep"
-      ? Math.max(1, rawMax - rawMin)
-      : Math.max(baseTickStep, Math.ceil(requiredHalfSpan / baseTickStep) * baseTickStep);
-  const yMin = metric === "sleep" ? rawMin - 0.25 : roundedMiddle - tickStep;
-  const yMax = metric === "sleep" ? rawMax + 0.25 : roundedMiddle + tickStep;
+  const basePad = metric === "temperature" ? 0.3 : metric === "weight" ? 0.6 : 1;
+  const span = Math.max(basePad, rawMax - rawMin);
+  const yMin = rawMin - span * 0.25;
+  const yMax = rawMax + span * 0.25;
   const denom = Math.max(1, points.length - 1);
   const xFor = (index: number) => left + (index / denom) * chartW;
   const yFor = (value: number) => top + ((yMax - value) / Math.max(0.001, yMax - yMin)) * chartH;
@@ -539,294 +423,172 @@ function VitalTrendPopup({
 
   const active = activeIndex != null ? points[activeIndex] : undefined;
 
-  // Temperature + weight use the same olive BIXBO chart language as the reference:
-  // title + average, compact period select, hollow olive points, dashed average line,
-  // left-side Y labels and an in-chart value/date tooltip.
-  if (metric === "temperature" || metric === "weight") {
-    const chartTitle = metric === "temperature" ? "Body temperature (°C)" : "Weight (kg)";
-    const averageLabel = averageValue != null ? `Avg ${averageValue.toFixed(1)} ${unit}` : `Avg — ${unit}`;
-    const yTicks = [yMax, roundedMiddle, yMin];
-
-    const axisLabel = (point: VitalTrendPoint) => {
-      if (period === "Y") return point.label;
-      const d = fromKey(point.key);
-      if (period === "W") return d.toLocaleDateString("en-GB", { weekday: "short" }).slice(0, 2);
-      return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-    };
-
-    const oliveLabelIndexes = new Set<number>();
-    if (period === "W") points.forEach((_, index) => oliveLabelIndexes.add(index));
-    if (period === "M") {
-      points.forEach((_, index) => {
-        if (index === 0 || index === points.length - 1 || index % 7 === 0) oliveLabelIndexes.add(index);
-      });
-    }
-    if (period === "Y") {
-      points.forEach((_, index) => {
-        if (index % 2 === 0 || index === points.length - 1) oliveLabelIndexes.add(index);
-      });
-    }
-
-    const activeX = activeIndex != null ? xFor(activeIndex) : null;
-    const activeY = active?.value != null ? yFor(active.value) : null;
-    const tooltipWidth = 58;
-    const tooltipHeight = 39;
-    const tooltipX =
-      activeX == null ? 0 : Math.max(left, Math.min(left + chartW - tooltipWidth, activeX - tooltipWidth / 2));
-    const tooltipY = activeY == null ? 0 : Math.max(2, activeY - tooltipHeight - 14);
-    const tooltipDate =
-      active && period !== "Y"
-        ? fromKey(active.key).toLocaleDateString("en-GB", { day: "numeric", month: "short" })
-        : active?.label ?? "";
-    const showAllDailyReadings = period !== "Y" && (active?.details.length ?? 0) > 1;
-    const allReadingsDate =
-      active && period !== "Y"
-        ? fromKey(active.key).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })
-        : "";
-
-    return (
-      <div className="fixed inset-0 z-[95] flex items-center justify-center px-6">
-        <button
-          type="button"
-          aria-label={`Close ${vitalTrendTitle(metric)} graph`}
-          className="absolute inset-0 bg-black/35"
-          onClick={onClose}
-        />
-
-        <section className="relative z-10 w-full max-w-[350px] rounded-[1.4rem] bg-surface p-3 shadow-2xl ring-1 ring-border">
-          <button
-            type="button"
-            onClick={onClose}
-            className="absolute -right-2 -top-2 grid h-8 w-8 place-items-center rounded-full bg-background text-sm font-bold text-foreground shadow-md ring-1 ring-border"
-            aria-label="Close"
-          >
-            ×
-          </button>
-
-          <div className="flex items-start justify-between gap-3 px-1 pt-0.5">
-            <div className="min-w-0">
-              <h2 className="text-sm font-bold leading-tight text-foreground">{chartTitle}</h2>
-              <p className="mt-1 text-[10px] font-medium text-muted-foreground">{averageLabel}</p>
-            </div>
-
-            <select
-              aria-label="Trend period"
-              value={period}
-              onChange={(event) => setPeriod(event.target.value as VitalTrendPeriod)}
-              className="h-8 shrink-0 rounded-lg border border-border bg-background px-2 text-[10px] font-medium text-foreground outline-none"
-            >
-              <option value="W">Week</option>
-              <option value="M">Month</option>
-              <option value="Y">Year</option>
-            </select>
-          </div>
-
-          <div className="mt-2 overflow-hidden rounded-xl bg-surface">
-            {values.length ? (
-              <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="h-auto w-full overflow-visible" role="img">
-                {yTicks.map((value, index) => {
-                  const y = yFor(value);
-                  return (
-                    <g key={`${value}-${index}`}>
-                      <line x1={left} x2={left + chartW} y1={y} y2={y} stroke="var(--border)" strokeWidth="0.8" />
-                      <text x={2} y={y + 3} fontSize="8" fill="var(--muted-foreground)">
-                        {metric === "temperature" ? value.toFixed(1) : value.toFixed(0)}
-                      </text>
-                    </g>
-                  );
-                })}
-
-                {averageValue != null ? (
-                  <line
-                    x1={left}
-                    x2={left + chartW}
-                    y1={yFor(averageValue)}
-                    y2={yFor(averageValue)}
-                    stroke="var(--primary)"
-                    strokeWidth="1"
-                    strokeDasharray="4 4"
-                    opacity="0.55"
-                  />
-                ) : null}
-
-                {path ? (
-                  <path
-                    d={path}
-                    fill="none"
-                    stroke="var(--primary)"
-                    strokeWidth="1.7"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                ) : null}
-
-                {points.map((point, index) => {
-                  if (point.value == null) return null;
-                  const activePoint = activeIndex === index;
-                  return (
-                    <g key={point.key}>
-                      <circle
-                        cx={xFor(index)}
-                        cy={yFor(point.value)}
-                        r={activePoint ? 3.6 : 2.6}
-                        fill="var(--surface)"
-                        stroke="var(--primary)"
-                        strokeWidth={activePoint ? 2 : 1.5}
-                        pointerEvents="none"
-                      />
-                      <circle
-                        cx={xFor(index)}
-                        cy={yFor(point.value)}
-                        r="11"
-                        fill="transparent"
-                        className="cursor-pointer"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          setActiveIndex((current) => (current === index ? null : index));
-                        }}
-                      />
-                    </g>
-                  );
-                })}
-
-                {points.map((point, index) =>
-                  oliveLabelIndexes.has(index) ? (
-                    <text
-                      key={`olive-label-${point.key}`}
-                      x={xFor(index)}
-                      y={chartHeight - 7}
-                      textAnchor="middle"
-                      fontSize="7.5"
-                      fill="var(--muted-foreground)"
-                    >
-                      {axisLabel(point)}
-                    </text>
-                  ) : null,
-                )}
-
-                {active?.value != null && activeX != null && activeY != null ? (
-                  <g className="pointer-events-none">
-                    <line
-                      x1={activeX}
-                      x2={activeX}
-                      y1={tooltipY + tooltipHeight}
-                      y2={Math.max(tooltipY + tooltipHeight, activeY - 4)}
-                      stroke="var(--primary)"
-                      strokeWidth="1.1"
-                    />
-                    <rect
-                      x={tooltipX}
-                      y={tooltipY}
-                      width={tooltipWidth}
-                      height={tooltipHeight}
-                      rx="6"
-                      fill="var(--primary)"
-                    />
-                    <text
-                      x={tooltipX + tooltipWidth / 2}
-                      y={tooltipY + 16}
-                      textAnchor="middle"
-                      fontSize="10"
-                      fontWeight="700"
-                      fill="var(--primary-foreground)"
-                    >
-                      {active.value.toFixed(1)} {unit}
-                    </text>
-                    <text
-                      x={tooltipX + tooltipWidth / 2}
-                      y={tooltipY + 29}
-                      textAnchor="middle"
-                      fontSize="8.5"
-                      fill="var(--primary-foreground)"
-                      opacity="0.92"
-                    >
-                      {tooltipDate}
-                    </text>
-                  </g>
-                ) : null}
-              </svg>
-            ) : (
-              <div className="grid min-h-36 place-items-center text-center text-xs text-muted-foreground">
-                No {vitalTrendTitle(metric).toLowerCase()} data in this period.
-              </div>
-            )}
-          </div>
-          {showAllDailyReadings ? (
-            <div className="mt-2 w-full rounded-xl border border-border/70 bg-background/65 px-3 py-2">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-[10px] font-semibold text-foreground">All readings</p>
-                <p className="text-[9px] font-medium text-muted-foreground">{allReadingsDate}</p>
-              </div>
-              <div className="mt-1.5 space-y-1">
-                {active!.details.map((detail, index) => (
-                  <p
-                    key={`${active!.key}-reading-${index}`}
-                    className="rounded-lg bg-surface px-2 py-1.5 text-[10px] leading-none text-foreground ring-1 ring-border/40"
-                  >
-                    {detail}
-                  </p>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
-        </section>
-      </div>
-    );
-  }
-
-  const sleepAverageLabel = averageValue != null ? `Avg ${averageValue.toFixed(1)} h` : "Avg — h";
-
   return (
-    <div className="fixed inset-0 z-[95] flex items-center justify-center overflow-hidden overscroll-none px-6">
+    <div className="fixed inset-0 z-[95] flex items-center justify-center px-7">
       <button
         type="button"
-        aria-label="Close Sleep graph"
+        aria-label={`Close ${vitalTrendTitle(metric)} graph`}
         className="absolute inset-0 bg-black/35"
         onClick={onClose}
       />
 
-      <section className="relative z-10 w-full max-w-[350px] overflow-hidden overscroll-none rounded-[1.4rem] bg-surface p-3 shadow-2xl ring-1 ring-border">
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute -right-2 -top-2 grid h-8 w-8 place-items-center rounded-full bg-background text-sm font-bold text-foreground shadow-md ring-1 ring-border"
-          aria-label="Close"
-        >
-          ×
-        </button>
-
-        <div className="flex items-start justify-between gap-3 px-1 pt-0.5">
-          <div className="min-w-0">
-            <h2 className="text-sm font-bold leading-tight text-foreground">Sleep</h2>
-            <p className="mt-1 text-[10px] font-medium text-muted-foreground">{sleepAverageLabel}</p>
+      <section className="relative z-10 w-full max-w-[320px] overflow-hidden rounded-[1.65rem] bg-background shadow-2xl ring-1 ring-border">
+        <div className="flex items-start justify-between gap-2 border-b border-border/70 px-4 pb-3 pt-4">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Trend</p>
+            <h2 className="mt-0.5 font-serif text-lg font-bold text-foreground">{vitalTrendTitle(metric)}</h2>
           </div>
-
-          <select
-            aria-label="Trend period"
-            value={period}
-            onChange={(event) => setPeriod(event.target.value as VitalTrendPeriod)}
-            className="h-8 shrink-0 rounded-lg border border-border bg-background px-2 text-[10px] font-medium text-foreground outline-none"
+          <button
+            type="button"
+            onClick={onClose}
+            className="grid h-8 w-8 place-items-center rounded-full bg-tint text-xs font-bold text-foreground ring-1 ring-border"
+            aria-label="Close"
           >
-            <option value="W">Week</option>
-            <option value="M">Month</option>
-            <option value="Y">Year</option>
-          </select>
+            ×
+          </button>
         </div>
 
-        <div className="mt-2 overflow-hidden overscroll-none rounded-xl bg-surface" style={{ touchAction: "none" }}>
-          {values.length ? (
-            <SleepTrendBars
-              points={points}
-              activeIndex={activeIndex}
-              period={period}
-              onSelect={(index) => setActiveIndex((current) => (current === index ? null : index))}
-            />
-          ) : (
-            <div className="grid min-h-36 place-items-center text-center text-xs text-muted-foreground">
-              No sleep data in this period.
-            </div>
-          )}
+        <div className="max-h-[48dvh] overflow-y-auto overscroll-contain touch-pan-y p-3">
+          <div className="grid grid-cols-3 gap-1 rounded-2xl bg-tint p-1 ring-1 ring-border/50">
+            {(["W", "M", "Y"] as const).map((value) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setPeriod(value)}
+                className={`rounded-xl px-2 py-1.5 text-[11px] font-semibold transition ${
+                  period === value ? "bg-surface text-foreground shadow-sm ring-1 ring-border" : "text-muted-foreground"
+                }`}
+              >
+                {value === "W" ? "Week" : value === "M" ? "Month" : "Year"}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-3 flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={() => setAnchor((current) => shiftTrendAnchor(current, period, -1))}
+              className="grid h-8 w-8 place-items-center rounded-full bg-tint ring-1 ring-border"
+              aria-label="Previous period"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <p className="text-center text-xs font-semibold text-foreground">{rangeLabel}</p>
+            <button
+              type="button"
+              onClick={() => setAnchor((current) => shiftTrendAnchor(current, period, 1))}
+              className="grid h-8 w-8 place-items-center rounded-full bg-tint ring-1 ring-border"
+              aria-label="Next period"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="mt-3 rounded-2xl bg-tint/70 p-2 ring-1 ring-border/50">
+            {values.length ? (
+              <>
+                {metric === "sleep" ? (
+                  <SleepTrendBars
+                    points={points}
+                    activeIndex={activeIndex}
+                    onSelect={(index) => setActiveIndex((current) => (current === index ? null : index))}
+                  />
+                ) : (
+                  <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="h-auto w-full overflow-visible" role="img">
+                    {[0, 0.5, 1].map((fraction) => {
+                      const y = top + fraction * chartH;
+                      const value = yMax - fraction * (yMax - yMin);
+                      return (
+                        <g key={fraction}>
+                          <line x1={left} x2={left + chartW} y1={y} y2={y} stroke="var(--border)" strokeDasharray="2 4" />
+                          <text x={chartWidth - 2} y={y + 3} textAnchor="end" fontSize="8" fill="var(--muted-foreground)">
+                            {value.toFixed(1)}
+                          </text>
+                        </g>
+                      );
+                    })}
+                    {path ? <path d={path} fill="none" stroke="var(--primary)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /> : null}
+                    {points.map((point, index) => {
+                      if (point.value == null) return null;
+                      const activePoint = activeIndex === index;
+                      return (
+                        <g key={point.key}>
+                          <circle
+                            cx={xFor(index)}
+                            cy={yFor(point.value)}
+                            r={activePoint ? 4.5 : 3.2}
+                            fill="var(--surface)"
+                            stroke="var(--primary)"
+                            strokeWidth={activePoint ? 2.5 : 1.8}
+                            pointerEvents="none"
+                          />
+                          <circle
+                            cx={xFor(index)}
+                            cy={yFor(point.value)}
+                            r="13"
+                            fill="transparent"
+                            className="cursor-pointer"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setActiveIndex((current) => (current === index ? null : index));
+                            }}
+                          />
+                        </g>
+                      );
+                    })}
+                    {points.map((point, index) =>
+                      visibleLabelIndexes.has(index) ? (
+                        <text
+                          key={`label-${point.key}`}
+                          x={xFor(index)}
+                          y={chartHeight - 5}
+                          textAnchor="middle"
+                          fontSize={period === "Y" ? "6.5" : "7.5"}
+                          fill="var(--muted-foreground)"
+                        >
+                          {point.label}
+                        </text>
+                      ) : null,
+                    )}
+                  </svg>
+                )}
+
+                {active?.value != null ? (
+                  <div className="mt-2 rounded-2xl bg-surface/80 p-3 ring-1 ring-border/50">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-semibold text-muted-foreground">{active.heading}</p>
+                        <p className="mt-1 text-[11px] text-muted-foreground">
+                          {period === "Y" ? "Monthly average from saved entries" : "Saved entry"}
+                        </p>
+                      </div>
+                      <b className="shrink-0 tabular-nums text-sm text-foreground">
+                        {active.value.toFixed(1)} {unit}
+                      </b>
+                    </div>
+
+                    <div className="mt-2 space-y-1.5">
+                      {active.details.length ? (
+                        active.details.map((detail, index) => (
+                          <p key={index} className="rounded-xl bg-background/80 px-2.5 py-2 text-[10px] leading-snug text-foreground ring-1 ring-border/40">
+                            {detail}
+                          </p>
+                        ))
+                      ) : (
+                        <p className="text-[10px] text-muted-foreground">No underlying saved entry found.</p>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mt-2 text-center text-[10px] text-muted-foreground">Tap a point or bar to see the exact saved entry.</p>
+                )}
+              </>
+            ) : (
+              <div className="grid min-h-32 place-items-center text-center text-xs text-muted-foreground">
+                No {vitalTrendTitle(metric).toLowerCase()} data in this period.
+              </div>
+            )}
+          </div>
         </div>
       </section>
     </div>
@@ -1223,14 +985,14 @@ function HomePage() {
         <VitalTile
           emoji="🌡️"
           label="Temp"
-          value={vitalOverviewSummary(view.dayLogs[selected], "temperature")}
+          value={view.dayLogs[selected]?.temperature != null ? String(view.dayLogs[selected]!.temperature) : "—"}
           onClick={() => setVitalTrendOpen("temperature")}
         />
 
         <VitalTile
           emoji="⚖️"
           label="Weight"
-          value={vitalOverviewSummary(view.dayLogs[selected], "weight")}
+          value={view.dayLogs[selected]?.weight != null ? String(view.dayLogs[selected]!.weight) : "—"}
           onClick={() => setVitalTrendOpen("weight")}
         />
       </div>
@@ -1312,8 +1074,6 @@ function HomePage() {
           const todayPanic = todayLog?.panic?.length ?? 0;
           const todayBowelEntries = todayLog?.bowel ?? [];
           const latestBowel = todayBowelEntries.length ? todayBowelEntries[todayBowelEntries.length - 1] : undefined;
-          const todayTemperatureEntries = overviewVitalEntries(todayLog, "temperature");
-          const todayWeightEntries = overviewVitalEntries(todayLog, "weight");
           const noteValue = view.dayNotes[todayDateKey]?.[0];
           const noteText =
             typeof noteValue === "string"
@@ -1363,21 +1123,13 @@ function HomePage() {
               key: "temperature",
               icon: <ThermometerIcon size={22} />,
               label: "Temperature",
-              value: todayTemperatureEntries.length
-                ? `${todayTemperatureEntries[todayTemperatureEntries.length - 1].value.toFixed(1)} °C${
-                    todayTemperatureEntries.length > 1 ? ` · ${todayTemperatureEntries.length} records` : ""
-                  }`
-                : "Not logged",
+              value: todayLog?.temperature != null ? `${todayLog.temperature} °C` : "Not logged",
             },
             {
               key: "weight",
               icon: <WeightIcon size={22} />,
               label: "Weight",
-              value: todayWeightEntries.length
-                ? `${todayWeightEntries[todayWeightEntries.length - 1].value.toFixed(1)} kg${
-                    todayWeightEntries.length > 1 ? ` · ${todayWeightEntries.length} records` : ""
-                  }`
-                : "Not logged",
+              value: todayLog?.weight != null ? `${todayLog.weight} kg` : "Not logged",
             },
           ];
 
@@ -1709,35 +1461,9 @@ function BirthControlOverlay({
   }, []);
 
   useLayoutEffect(() => {
-    const fit = () => {
-      const main = mainRef.current;
-      const content = fitRef.current;
-      if (!main || !content) return;
-
-      // Measure the original, correct calendar + ŠukŠuk at natural size,
-      // then scale the whole composition uniformly only when needed.
-      // This preserves all internal proportions instead of shrinking
-      // individual calendar/chart pieces.
-      const availableHeight = main.clientHeight;
-      const naturalHeight = content.scrollHeight;
-      if (!availableHeight || !naturalHeight) return;
-
-      const next = Math.min(1, Math.max(0.82, availableHeight / naturalHeight));
-      setFitScale((current) => (Math.abs(current - next) > 0.005 ? next : current));
-    };
-
-    fit();
-    const frame = requestAnimationFrame(fit);
-    const observer =
-      typeof ResizeObserver !== "undefined" ? new ResizeObserver(fit) : null;
-
-    if (mainRef.current) observer?.observe(mainRef.current);
-    if (fitRef.current) observer?.observe(fitRef.current);
-
-    return () => {
-      cancelAnimationFrame(frame);
-      observer?.disconnect();
-    };
+    // HAK now scrolls naturally at full 1:1 size on both mobile and desktop.
+    // Do not shrink the calendar / Current HAK pack / ŠukŠuk composition to fit.
+    setFitScale(1);
   }, []);
 
   if (typeof document === "undefined") return null;
@@ -1807,7 +1533,7 @@ function BirthControlOverlay({
 
       <main
         ref={mainRef}
-        className="mx-auto min-h-0 w-full max-w-[42rem] flex-1 overflow-hidden px-3 pb-[max(.35rem,env(safe-area-inset-bottom))] pt-1"
+        className="mx-auto min-h-0 w-full max-w-[42rem] flex-1 overflow-y-auto overscroll-contain px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-1 lg:max-w-[560px] lg:pb-24"
       >
         <div
           ref={fitRef}
@@ -2331,33 +2057,33 @@ function BirthControlCalendar({
       </div>
 
       {/* Keep Current HAK pack exactly in the previous compact timeline style. */}
-      <div className="mt-2">
-        <h3 className="font-serif text-base font-bold leading-none text-foreground">Current HAK pack</h3>
+      <div className="mt-4">
+        <h3 className="font-serif text-lg font-bold text-foreground">Current HAK pack</h3>
         <div
-          className="mt-2 rounded-[1.45rem] px-3 py-3 ring-1"
+          className="mt-3 rounded-[1.75rem] px-4 py-4 ring-1"
           style={{
             backgroundColor: "rgba(255,255,255,.20)",
             borderColor: "rgba(122,83,200,.16)",
           }}
         >
-          <div className="grid grid-cols-[1.35fr_1fr_.9fr] items-start gap-1.5 text-center">
+          <div className="grid grid-cols-[1.35fr_1fr_.9fr] items-start gap-2 text-center">
             <div>
-              <p className="text-[8px] font-bold leading-tight" style={{ color: HAK_PURPLE_DARK }}>Active HAK days</p>
-              <p className="mt-0.5 text-[8px] font-semibold leading-tight" style={{ color: HAK_PURPLE_DARK }}>1–{ACTIVE_DAYS}</p>
+              <p className="text-[9px] font-bold leading-tight" style={{ color: HAK_PURPLE_DARK }}>Active HAK days</p>
+              <p className="mt-0.5 text-[9px] font-semibold leading-tight" style={{ color: HAK_PURPLE_DARK }}>1–{ACTIVE_DAYS}</p>
             </div>
             <div>
-              <p className="text-[8px] font-bold leading-tight" style={{ color: HAK_PINK_DARK }}>Placebo / break</p>
-              <p className="mt-0.5 text-[8px] font-semibold leading-tight" style={{ color: HAK_PINK_DARK }}>{ACTIVE_DAYS + 1}–{PACK_DAYS}</p>
+              <p className="text-[9px] font-bold leading-tight" style={{ color: HAK_PINK_DARK }}>Placebo / break</p>
+              <p className="mt-0.5 text-[9px] font-semibold leading-tight" style={{ color: HAK_PINK_DARK }}>{ACTIVE_DAYS + 1}–{PACK_DAYS}</p>
             </div>
             <div>
-              <p className="text-[8px] font-bold leading-tight" style={{ color: HAK_GREEN_DARK }}>New cycle</p>
-              <p className="mt-0.5 text-[8px] font-semibold leading-tight" style={{ color: HAK_GREEN_DARK }}>Day 1</p>
+              <p className="text-[9px] font-bold leading-tight" style={{ color: HAK_GREEN_DARK }}>New cycle</p>
+              <p className="mt-0.5 text-[9px] font-semibold leading-tight" style={{ color: HAK_GREEN_DARK }}>Day 1</p>
             </div>
           </div>
 
-          <div className="relative mt-3 px-1 pb-6">
+          <div className="relative mt-4 px-1 pb-8">
             <div
-              className="rounded-full px-2 py-1.5 ring-1"
+              className="rounded-full px-2 py-2 ring-1"
               style={{
                 backgroundColor: "rgba(255,255,255,.30)",
                 borderColor: "rgba(122,83,200,.18)",
@@ -2381,7 +2107,7 @@ function BirthControlCalendar({
                   return (
                     <span
                       key={`${item.kind}-${index}`}
-                      className="mx-auto block aspect-square w-full max-w-[8px] rounded-full"
+                      className="mx-auto block aspect-square w-full max-w-[10px] rounded-full"
                       style={{
                         backgroundColor: itemColor,
                         boxShadow: isCurrent
@@ -2399,14 +2125,14 @@ function BirthControlCalendar({
             </div>
 
             <div
-              className="absolute bottom-[18px] h-3 w-px"
+              className="absolute bottom-[22px] h-4 w-px"
               style={{
                 left: `${timelineMarkerLeft}%`,
                 backgroundColor: currentDay <= ACTIVE_DAYS ? HAK_PURPLE : HAK_PINK,
               }}
             />
             <p
-              className="absolute bottom-0 whitespace-nowrap text-[10px] font-bold"
+              className="absolute bottom-0 whitespace-nowrap text-[11px] font-bold"
               style={{
                 left: `${timelineMarkerLeft}%`,
                 transform: "translateX(-50%)",
@@ -2629,36 +2355,17 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
     return date;
   }, [anchorKey]);
 
-  // Independent ŠukŠuk month selector.
-  // It changes only the ŠukŠuk summary and never changes the HAK calendar month.
-  const [sukMonth, setSukMonth] = useState(() => new Date(anchor.getFullYear(), anchor.getMonth(), 1));
+  // Week can be browsed independently without changing Month / Year.
+  const [weekOffset, setWeekOffset] = useState(0);
 
-  useEffect(() => {
-    setSukMonth(new Date(anchor.getFullYear(), anchor.getMonth(), 1));
-  }, [anchor]);
-
-  const viewAnchor = useMemo(() => {
-    const maxDay = new Date(sukMonth.getFullYear(), sukMonth.getMonth() + 1, 0).getDate();
-    return new Date(
-      sukMonth.getFullYear(),
-      sukMonth.getMonth(),
-      Math.min(anchor.getDate(), maxDay),
-    );
-  }, [anchor, sukMonth]);
-
-  const sukMonthLabel = sukMonth.toLocaleDateString("en-GB", {
-    month: "long",
-    year: "numeric",
-  });
-
-  const moveSukMonth = (delta: number) => {
-    setSukMonth(
-      (current) => new Date(current.getFullYear(), current.getMonth() + delta, 1),
-    );
-  };
+  const selectedWeekAnchor = useMemo(() => {
+    const date = new Date(anchor);
+    date.setDate(date.getDate() + weekOffset * 7);
+    return date;
+  }, [anchor, weekOffset]);
 
   const week = useMemo(() => {
-    const start = startOfSelectedWeek(viewAnchor);
+    const start = startOfSelectedWeek(selectedWeekAnchor);
     const end = new Date(start);
     end.setDate(start.getDate() + 6);
 
@@ -2679,14 +2386,14 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
       previousCount: countIntercourseBetween(data, previousStart, previousEnd),
       bars: daily,
     };
-  }, [viewAnchor, data]);
+  }, [selectedWeekAnchor, data]);
 
   const month = useMemo(() => {
-    const start = new Date(viewAnchor.getFullYear(), viewAnchor.getMonth(), 1);
-    const end = new Date(viewAnchor.getFullYear(), viewAnchor.getMonth() + 1, 0);
+    const start = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+    const end = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0);
 
-    const previousStart = new Date(viewAnchor.getFullYear(), viewAnchor.getMonth() - 1, 1);
-    const previousEnd = new Date(viewAnchor.getFullYear(), viewAnchor.getMonth(), 0);
+    const previousStart = new Date(anchor.getFullYear(), anchor.getMonth() - 1, 1);
+    const previousEnd = new Date(anchor.getFullYear(), anchor.getMonth(), 0);
 
     const daysInMonth = end.getDate();
     const bars = [
@@ -2698,8 +2405,8 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
     ]
       .filter(([bucketStart]) => bucketStart <= daysInMonth)
       .map(([bucketStart, bucketEnd]) => {
-        const bucketStartDate = new Date(viewAnchor.getFullYear(), viewAnchor.getMonth(), bucketStart);
-        const bucketEndDate = new Date(viewAnchor.getFullYear(), viewAnchor.getMonth(), bucketEnd);
+        const bucketStartDate = new Date(anchor.getFullYear(), anchor.getMonth(), bucketStart);
+        const bucketEndDate = new Date(anchor.getFullYear(), anchor.getMonth(), bucketEnd);
 
         return {
           label: `${bucketStart}–${bucketEnd}`,
@@ -2714,19 +2421,19 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
       previousCount: countIntercourseBetween(data, previousStart, previousEnd),
       bars,
     };
-  }, [viewAnchor, data]);
+  }, [anchor, data]);
 
   const year = useMemo(() => {
-    const start = new Date(viewAnchor.getFullYear(), 0, 1);
-    const end = new Date(viewAnchor.getFullYear(), 11, 31);
+    const start = new Date(anchor.getFullYear(), 0, 1);
+    const end = new Date(anchor.getFullYear(), 11, 31);
 
-    const previousStart = new Date(viewAnchor.getFullYear() - 1, 0, 1);
-    const previousEnd = new Date(viewAnchor.getFullYear() - 1, 11, 31);
+    const previousStart = new Date(anchor.getFullYear() - 1, 0, 1);
+    const previousEnd = new Date(anchor.getFullYear() - 1, 11, 31);
 
     const monthLabels = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
     const bars = monthLabels.map((label, monthIndex) => {
-      const monthStart = new Date(viewAnchor.getFullYear(), monthIndex, 1);
-      const monthEnd = new Date(viewAnchor.getFullYear(), monthIndex + 1, 0);
+      const monthStart = new Date(anchor.getFullYear(), monthIndex, 1);
+      const monthEnd = new Date(anchor.getFullYear(), monthIndex + 1, 0);
 
       return {
         label,
@@ -2741,18 +2448,7 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
       previousCount: countIntercourseBetween(data, previousStart, previousEnd),
       bars,
     };
-  }, [viewAnchor, data]);
-
-  const weekRangeLabel = (() => {
-    const startDay = week.start.getDate();
-    const endDay = week.end.getDate();
-    const startMonth = week.start.toLocaleDateString("en-GB", { month: "short" });
-    const endMonth = week.end.toLocaleDateString("en-GB", { month: "short" });
-
-    return week.start.getMonth() === week.end.getMonth()
-      ? `${startDay}–${endDay} ${startMonth}`
-      : `${startDay} ${startMonth}–${endDay} ${endMonth}`;
-  })();
+  }, [anchor, data]);
 
   const comparison = (current: number, previous: number, label: string) => {
     const diff = current - previous;
@@ -2760,7 +2456,7 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
     const value = diff === 0 ? "0" : `${diff > 0 ? "+" : ""}${diff}`;
 
     return (
-      <p className="mt-2 text-center text-[9px] leading-none text-muted-foreground">
+      <p className="mt-1.5 text-center text-[8px] leading-none text-muted-foreground">
         vs last {label}{" "}
         <span
           className="font-bold"
@@ -2780,53 +2476,23 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
     dense?: boolean;
   }) => {
     const max = Math.max(1, ...items.map((item) => item.count));
-    const maxDigits = Math.max(1, ...items.map((item) => String(Math.abs(item.count)).length));
-    const itemCount = Math.max(1, items.length);
-
-    // The annual chart has 12 columns in one narrow panel.
-    // Use a 1px gap and a font derived from the number of digits so
-    // two-digit monthly counts cannot collide with their neighbours.
-    const columnGap = dense ? 1 : itemCount >= 5 ? 2 : 3;
-    const countFontSize = dense
-      ? maxDigits >= 3
-        ? 4.5
-        : maxDigits === 2
-          ? 5.5
-          : 6.5
-      : 8;
-    const axisFontSize = dense ? 6.5 : itemCount >= 5 ? 7 : 8;
 
     return (
       <div
-        className="mt-3 grid items-end"
-        style={{
-          gridTemplateColumns: `repeat(${itemCount}, minmax(0, 1fr))`,
-          columnGap: `${columnGap}px`,
-        }}
+        className="mt-2 grid items-end gap-[2px]"
+        style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
       >
         {items.map((item, index) => {
-          const height = item.count > 0 ? Math.max(7, Math.round((item.count / max) * 64)) : 1;
-          const showCount = !dense || item.count > 0;
+          const height = item.count > 0 ? Math.max(5, Math.round((item.count / max) * 42)) : 1;
 
           return (
-            <div
-              key={`${item.label}-${index}`}
-              className="flex min-w-0 flex-col items-center justify-end"
-              aria-label={`${item.label}: ${item.count}`}
-            >
-              <span
-                className="mb-1 flex h-3 w-full items-end justify-center whitespace-nowrap text-center font-medium leading-none tabular-nums text-foreground/80"
-                style={{
-                  fontSize: `${countFontSize}px`,
-                  letterSpacing: dense ? "-0.04em" : undefined,
-                }}
-              >
-                {showCount ? item.count : ""}
+            <div key={`${item.label}-${index}`} className="flex min-w-0 flex-col items-center justify-end">
+              <span className={`${dense ? "text-[6px]" : "text-[7px]"} mb-0.5 h-2.5 tabular-nums text-foreground/75`}>
+                {item.count}
               </span>
-
-              <div className="flex h-[64px] w-full items-end justify-center border-b border-border/55">
+              <div className="flex h-[42px] w-full items-end justify-center border-b border-border/55">
                 <span
-                  className={`${dense ? "w-[78%]" : "w-[80%]"} rounded-t-[4px]`}
+                  className={`${dense ? "w-[72%]" : "w-[78%]"} rounded-t-[3px]`}
                   style={{
                     height: `${height}px`,
                     background:
@@ -2837,10 +2503,8 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
                   }}
                 />
               </div>
-
               <span
-                className="mt-1.5 w-full whitespace-nowrap text-center font-medium leading-none text-muted-foreground"
-                style={{ fontSize: `${axisFontSize}px` }}
+                className={`${dense ? "text-[5.5px]" : "text-[6.5px]"} mt-1 truncate text-muted-foreground`}
               >
                 {item.label}
               </span>
@@ -2853,91 +2517,90 @@ function SukSukPeriodChart({ data, anchorKey }: { data: BixboData; anchorKey: st
 
   return (
     <section
-      className="mt-3 rounded-3xl p-5 ring-1 ring-border"
+      className="mt-4 rounded-3xl p-4 ring-1 ring-border"
       style={{ backgroundColor: HAK_CARD_BG }}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex min-w-0 items-start gap-3">
-          <span
-            className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl ring-1"
-            style={{
-              backgroundColor: HAK_PURPLE_SOFT,
-              color: HAK_PURPLE_DARK,
-              borderColor: `${HAK_PURPLE}33`,
-            }}
-          >
-            <Ico e="❤️" size={24} />
-          </span>
+      <div className="flex items-start gap-3">
+        <span
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl ring-1"
+          style={{
+            backgroundColor: HAK_PURPLE_SOFT,
+            color: HAK_PURPLE_DARK,
+            borderColor: `${HAK_PURPLE}33`,
+          }}
+        >
+          <Ico e="❤️" size={22} />
+        </span>
 
-          <div className="min-w-0">
-            <h2 className="font-serif text-xl font-semibold leading-none text-foreground">ŠukŠuk!</h2>
-            <p className="mt-1.5 text-[11px] leading-snug text-muted-foreground">
-              Logged intimacy · actual intercourse only
-            </p>
-          </div>
-        </div>
-
-        <div className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-surface/30 p-0.5 ring-1 ring-border/40">
-          <button
-            type="button"
-            onClick={() => moveSukMonth(-1)}
-            className="grid h-8 w-8 place-items-center rounded-full transition hover:bg-tint"
-            aria-label="Previous ŠukŠuk month"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-
-          <span className="min-w-[96px] px-1.5 text-center text-[11px] font-semibold text-foreground">
-            {sukMonthLabel}
-          </span>
-
-          <button
-            type="button"
-            onClick={() => moveSukMonth(1)}
-            className="grid h-8 w-8 place-items-center rounded-full transition hover:bg-tint"
-            aria-label="Next ŠukŠuk month"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
+        <div className="min-w-0 flex-1">
+          <h2 className="font-serif text-lg font-semibold leading-none text-foreground">ŠukŠuk!</h2>
         </div>
       </div>
 
-      <div className="mt-4 border-t border-border/55 pt-4">
-        <div className="grid grid-cols-[0.92fr_1.02fr_1.06fr] divide-x divide-border/55">
-          <div className="min-w-0 px-2">
-            <p className="text-center text-xs font-bold text-foreground">Week</p>
-            <p className="mt-1 whitespace-nowrap text-center text-[8px] tabular-nums text-muted-foreground">
-              {weekRangeLabel}
-            </p>
-            <p className="mt-2 text-center font-serif text-3xl font-bold leading-none text-foreground">
+      <div className="mt-3 border-t border-border/55 pt-3">
+        <div className="grid grid-cols-3 divide-x divide-border/55">
+          <div className="min-w-0 px-1.5">
+            <p className="text-center text-[10px] font-bold text-foreground">Week</p>
+            <div className="mt-0.5 flex items-center justify-center gap-0.5">
+              <button
+                type="button"
+                onClick={() => setWeekOffset((value) => value - 1)}
+                className="grid h-5 w-5 shrink-0 place-items-center rounded-full text-muted-foreground transition hover:bg-tint hover:text-foreground"
+                aria-label="Previous week"
+                title="Previous week"
+              >
+                <ChevronLeft className="h-3 w-3" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setWeekOffset(0)}
+                className="min-w-0 truncate rounded-md px-0.5 py-0.5 text-center text-[6.5px] tabular-nums text-muted-foreground transition hover:bg-tint hover:text-foreground"
+                aria-label="Back to current week"
+                title={weekOffset === 0 ? "Current week" : "Back to current week"}
+              >
+                {toKey(week.start)} → {toKey(week.end)}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setWeekOffset((value) => value + 1)}
+                className="grid h-5 w-5 shrink-0 place-items-center rounded-full text-muted-foreground transition hover:bg-tint hover:text-foreground"
+                aria-label="Next week"
+                title="Next week"
+              >
+                <ChevronRight className="h-3 w-3" />
+              </button>
+            </div>
+            <p className="mt-1.5 text-center font-serif text-2xl font-bold leading-none text-foreground">
               {week.count}
-              <span className="ml-1 font-sans text-[9px] font-medium text-muted-foreground">times</span>
+              <span className="ml-1 font-sans text-[8px] font-medium text-muted-foreground">times</span>
             </p>
             {comparison(week.count, week.previousCount, "week")}
             <MiniBars items={week.bars} />
           </div>
 
-          <div className="min-w-0 px-2">
-            <p className="text-center text-xs font-bold text-foreground">Month</p>
-            <p className="mt-1 truncate text-center text-[8px] text-muted-foreground">
-              {viewAnchor.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+          <div className="min-w-0 px-1.5">
+            <p className="text-center text-[10px] font-bold text-foreground">Month</p>
+            <p className="mt-0.5 truncate text-center text-[6.5px] text-muted-foreground">
+              {anchor.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
             </p>
-            <p className="mt-2 text-center font-serif text-3xl font-bold leading-none text-foreground">
+            <p className="mt-1.5 text-center font-serif text-2xl font-bold leading-none text-foreground">
               {month.count}
-              <span className="ml-1 font-sans text-[9px] font-medium text-muted-foreground">times</span>
+              <span className="ml-1 font-sans text-[8px] font-medium text-muted-foreground">times</span>
             </p>
             {comparison(month.count, month.previousCount, "month")}
             <MiniBars items={month.bars} />
           </div>
 
-          <div className="min-w-0 px-2">
-            <p className="text-center text-xs font-bold text-foreground">Year</p>
-            <p className="mt-1 text-center text-[8px] tabular-nums text-muted-foreground">
-              {viewAnchor.getFullYear()}
+          <div className="min-w-0 px-1.5">
+            <p className="text-center text-[10px] font-bold text-foreground">Year</p>
+            <p className="mt-0.5 text-center text-[6.5px] tabular-nums text-muted-foreground">
+              {anchor.getFullYear()}
             </p>
-            <p className="mt-2 text-center font-serif text-3xl font-bold leading-none text-foreground">
+            <p className="mt-1.5 text-center font-serif text-2xl font-bold leading-none text-foreground">
               {year.count}
-              <span className="ml-1 font-sans text-[9px] font-medium text-muted-foreground">times</span>
+              <span className="ml-1 font-sans text-[8px] font-medium text-muted-foreground">times</span>
             </p>
             {comparison(year.count, year.previousCount, "year")}
             <MiniBars items={year.bars} dense />
@@ -2962,8 +2625,6 @@ function DayPreview({
   onEdit?: (cat: string, entry: unknown) => void;
 }) {
   const log = data.dayLogs[date];
-  const temperatureEntries = overviewVitalEntries(log, "temperature");
-  const weightEntries = overviewVitalEntries(log, "weight");
   const rawNotes = data.dayNotes[date] ?? [];
   const notes: { text: string; time?: string }[] = (rawNotes as (string | { text: string; time?: string })[]).map(
     (n) => (typeof n === "string" ? { text: n } : n),
@@ -3015,8 +2676,6 @@ function DayPreview({
         log.sex?.length ||
         log.heat?.length ||
         log.workout?.length ||
-        temperatureEntries.length ||
-        weightEntries.length ||
         log.temperature != null ||
         log.weight != null ||
         log.sleepHours != null ||
@@ -3597,47 +3256,18 @@ function DayPreview({
         </Card>
       ) : null}
 
-      {(temperatureEntries.length ||
-        weightEntries.length ||
-        log?.temperature != null ||
-        log?.weight != null ||
-        log?.sleepHours != null ||
-        log?.sleepQuality) && (
+      {(log?.temperature != null || log?.weight != null || log?.sleepHours != null || log?.sleepQuality) && (
         <Card title="Temp / Sleep / Weight" icon="🌡️">
           <button onClick={() => onEdit?.("temp", undefined)} className="w-full text-left">
-            {temperatureEntries.length > 0 && (
-              <div className="space-y-1">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Temperature
-                </p>
-                {temperatureEntries.map((entry) => (
-                  <p key={entry.id} className="text-sm">
-                    {entry.time ? `${entry.time} · ` : ""}
-                    {entry.value.toFixed(1)}°C
-                  </p>
-                ))}
-              </div>
-            )}
-
-            {weightEntries.length > 0 && (
-              <div className={temperatureEntries.length > 0 ? "mt-3 space-y-1" : "space-y-1"}>
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Weight</p>
-                {weightEntries.map((entry) => (
-                  <p key={entry.id} className="text-sm">
-                    {entry.time ? `${entry.time} · ` : ""}
-                    {entry.value.toFixed(1)} kg
-                  </p>
-                ))}
-              </div>
-            )}
-
+            {log?.temperature != null && <p className="text-sm">Temperature: {log.temperature}°C</p>}
+            {log?.weight != null && <p className="text-sm">Weight: {log.weight} kg</p>}
             {log?.sleepHours != null && (
-              <p className={`${temperatureEntries.length || weightEntries.length ? "mt-3 " : ""}text-sm`}>
+              <p className="text-sm">
                 Sleep: {log.sleepHours} h <IcoText text={asArr(log.sleepQuality).join(", ")} size={14} />
               </p>
             )}
             {asArr(log?.sleepQuality).length > 0 && log?.sleepHours == null && (
-              <p className={`${temperatureEntries.length || weightEntries.length ? "mt-3 " : ""}text-sm`}>
+              <p className="text-sm">
                 Sleep quality: <IcoText text={asArr(log.sleepQuality).join(", ")} size={14} />
               </p>
             )}
