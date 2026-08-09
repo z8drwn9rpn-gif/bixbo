@@ -1014,109 +1014,82 @@ select:-webkit-autofill {
   --tw-shadow-color: color-mix(in srgb, #4E5C31 16%, transparent);
 }
 
-/* BIXBO Moss Green revision: #98A86A */
 /* ==========================================================
-   BIXBO Moss Green DARK theme — final override
-   Dark counterpart to the current #A6B48C Moss Green light theme.
-   Non-destructive: existing code above remains untouched.
-   HAK keeps its own local lavender variables.
+   BIXBO — SOFT OLIVE DARK
    ========================================================== */
 
 .dark {
-  /* Main dark moss canvas */
-  --background: #1E261B;
-  --foreground: #F2F4EA;
+  --background: #4B5133;
+  --foreground: #F5F4E8;
 
-  /* Layered moss/charcoal surfaces */
-  --surface: #2A3324;
-  --surface-elevated: #35402E;
-  --surface-sunken: #182016;
-  --tint: #3C4933;
+  --surface: #5A6040;
+  --surface-elevated: #666D49;
+  --surface-sunken: #41472D;
+  --tint: #626944;
 
-  --card: #2A3324;
-  --card-foreground: #F2F4EA;
+  --card: #5A6040;
+  --card-foreground: #F5F4E8;
 
-  --popover: #303A29;
-  --popover-foreground: #F2F4EA;
+  --popover: #626844;
+  --popover-foreground: #F5F4E8;
 
-  /* Same BIXBO identity as light mode */
-  --primary: #A6B48C;
-  --primary-foreground: #18200F;
+  --primary: #B6C28E;
+  --primary-foreground: #30351F;
 
-  --secondary: #394631;
-  --secondary-foreground: #EDF1E6;
+  --secondary: #686F49;
+  --secondary-foreground: #F4F2E5;
 
-  --muted: #34402D;
-  --muted-foreground: #BEC8B2;
+  --muted: #626847;
+  --muted-foreground: #D5D7C2;
 
-  --accent: #4A5A3E;
-  --accent-foreground: #F4F6EE;
+  --accent: #77805A;
+  --accent-foreground: #F8F7EC;
 
-  /* Borders and focus */
-  --border: #55624C;
-  --input: #55624C;
-  --ring: #A6B48C;
+  --border: #777D58;
+  --input: #777D58;
+  --ring: #C0CD98;
 
-  /* Charts / tooltips */
-  --chart-grid: #46523F;
-  --chart-axis: #C4CDBA;
-  --chart-tooltip-bg: #273021;
-  --chart-tooltip-fg: #F2F4EA;
+  --chart-grid: #6C7350;
+  --chart-axis: #DDDCCB;
 
-  /* Moss glass */
-  --bixbo-glass: rgba(42, 51, 36, 0.78);
-  --bixbo-glass-strong: rgba(53, 64, 46, 0.92);
+  --chart-tooltip-bg: #555B3B;
+  --chart-tooltip-fg: #F7F5E9;
+
+  --bixbo-glass: rgba(90, 96, 64, 0.82);
+  --bixbo-glass-strong: rgba(102, 109, 73, 0.94);
 }
 
-/* One dark moss base behind app, desktop gutters and iOS safe-area. */
 html.dark,
 html.dark body {
-  background-color: #1E261B;
+  background-color: #4B5133;
 }
 
-/* Subtle depth without turning the app black. */
 .dark body {
   background:
     radial-gradient(
       circle at 50% -12%,
-      rgba(166, 180, 140, 0.10) 0%,
-      transparent 34%
+      rgba(202, 211, 164, 0.14) 0%,
+      transparent 35%
     ),
     linear-gradient(
       180deg,
-      #222B1E 0%,
-      #1E261B 38%,
-      #20291D 72%,
-      #1A2117 100%
+      #565C3A 0%,
+      #505637 30%,
+      #4B5133 62%,
+      #454B2F 100%
     );
 }
 
-/* Dark borders and elevation stay inside the moss family. */
 .dark .ring-border {
-  --tw-ring-color: color-mix(
-    in srgb,
-    #55624C 78%,
-    transparent
-  );
+  --tw-ring-color: rgba(130, 138, 96, 0.72);
 }
 
 .dark .shadow-sm {
-  --tw-shadow-color: color-mix(
-    in srgb,
-    #080B07 30%,
-    transparent
-  );
+  --tw-shadow-color: rgba(38, 42, 24, 0.18);
 }
 
 .dark .shadow-md,
 .dark .shadow-lg,
 .dark .shadow-xl {
-  --tw-shadow-color: color-mix(
-    in srgb,
-    #080B07 42%,
-    transparent
-  );
+  --tw-shadow-color: rgba(38, 42, 24, 0.26);
 }
-
-/* BIXBO Moss Green dark revision */
-
