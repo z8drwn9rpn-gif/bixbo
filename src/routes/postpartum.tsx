@@ -113,8 +113,10 @@ function normalizePostpartumState(value: unknown): PostpartumState {
     (visit) => typeof visit.id === "string" && typeof visit.date === "string" && typeof visit.title === "string",
   );
 
+  const active = Boolean(raw.active);
+
   return {
-    active: Boolean(raw.active),
+    active,
     birthDate: typeof raw.birthDate === "string" ? raw.birthDate : undefined,
     deliveryType:
       raw.deliveryType === "vaginal" ||
@@ -131,7 +133,7 @@ function normalizePostpartumState(value: unknown): PostpartumState {
         : undefined,
     visits,
     note: typeof raw.note === "string" ? raw.note : undefined,
-    endedAt: typeof raw.endedAt === "string" ? raw.endedAt : undefined,
+    endedAt: active ? undefined : typeof raw.endedAt === "string" ? raw.endedAt : undefined,
   };
 }
 
@@ -173,7 +175,7 @@ function PostpartumPage() {
 
       return {
         ...d,
-        postpartum: { active: false, visits: [] },
+        postpartum: { active: false, visits: [], endedAt: today },
         dayLogs,
       };
     });
