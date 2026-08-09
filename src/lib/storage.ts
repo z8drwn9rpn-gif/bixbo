@@ -753,6 +753,17 @@ export interface Diagnosis {
   docId?: string;
 }
 
+/**
+ * Conflict metadata used by cloud merge. Paths are encoded internal field paths;
+ * timestamps are monotonically increasing epoch milliseconds generated on the
+ * device that made the local edit. Keeping this separate from user-facing data
+ * lets legacy entry shapes remain fully compatible.
+ */
+export interface SyncMetadata {
+  updatedAt: Record<string, number>;
+  deletedAt: Record<string, number>;
+}
+
 export interface BixboData {
   dayLogs: Record<string, DayLog>;
   dayNotes: Record<string, DayNote[] | string[]>;
@@ -778,6 +789,8 @@ export interface BixboData {
   /** Custom-list option values the user removed — kept so a cloud merge
    * (or another device) can't resurrect them. */
   deletedCustom?: Partial<Record<keyof CustomLists, string[]>>;
+  /** Per-path last-write/delete metadata used by deterministic multi-device sync. */
+  syncMeta?: SyncMetadata;
   /** Full health profile (personal, medical, lifestyle, emergency contacts). */
   profile?: HealthProfile;
   pregnancy?: PregnancyState;
@@ -852,6 +865,7 @@ export const EMPTY: BixboData = {
   diagnoses: [],
   deletedIds: [],
   deletedCustom: {},
+  syncMeta: { updatedAt: {}, deletedAt: {} },
   profile: {},
   pregnancy: { active: false, hospitalBag: [], vaccinations: [], supplements: [], appointments: [] },
   postpartum: { active: false, visits: [] },
@@ -931,6 +945,27 @@ function safeIdArray<T extends { id: string }>(value: unknown): T[] {
   return safeArray<unknown>(value).filter(
     (item): item is T => isPlainRecord(item) && typeof item.id === "string" && item.id.trim().length > 0,
   );
+}
+
+function normalizeSyncTimestampMap(value: unknown): Record<string, number> {
+  const raw = safeRecord<Record<string, unknown>>(value);
+  const out: Record<string, number> = {};
+
+  for (const [path, timestamp] of Object.entries(raw)) {
+    const parsed = Number(timestamp);
+    if (!path || !Number.isFinite(parsed) || parsed <= 0) continue;
+    out[path] = parsed;
+  }
+
+  return out;
+}
+
+function normalizeSyncMetadata(value: unknown): SyncMetadata {
+  const raw = safeRecord<Record<string, unknown>>(value);
+  return {
+    updatedAt: normalizeSyncTimestampMap(raw.updatedAt),
+    deletedAt: normalizeSyncTimestampMap(raw.deletedAt),
+  };
 }
 
 function normalizePostpartumDayLogForStorage(value: unknown): PostpartumDayLog | undefined {
@@ -1222,6 +1257,7 @@ function migrate(raw: unknown): BixboData {
       }
       return out;
     })(),
+    syncMeta: normalizeSyncMetadata(parsed.syncMeta),
     profile: rawProfile,
     pregnancy: {
       ...EMPTY.pregnancy!,
@@ -1280,16 +1316,212 @@ function persist() {
   }
 }
 
+const SYNC_META_MAX_KEYS = 12000;
+let _lastLocalSyncTimestamp = 0;
+
+function encodeSyncSegment(value: string): string {
+  return encodeURIComponent(value);
+}
+
+function syncChildPath(base: string, key: string): string {
+  const segment = encodeSyncSegment(key);
+  return base ? `${base}/${segment}` : segment;
+}
+
+function syncValuesEqual(a: unknown, b: unknown): boolean {
+  if (Object.is(a, b)) return true;
+
+  if (Array.isArray(a) || Array.isArray(b)) {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+    return a.every((value, index) => syncValuesEqual(value, b[index]));
+  }
+
+  if (isPlainRecord(a) || isPlainRecord(b)) {
+    if (!isPlainRecord(a) || !isPlainRecord(b)) return false;
+    const aKeys = Object.keys(a).sort();
+    const bKeys = Object.keys(b).sort();
+    if (aKeys.length !== bKeys.length || aKeys.some((key, index) => key !== bKeys[index])) return false;
+    return aKeys.every((key) => syncValuesEqual(a[key], b[key]));
+  }
+
+  return false;
+}
+
+function isIdObject(value: unknown): value is { id: string } {
+  return isPlainRecord(value) && typeof value.id === "string" && Boolean(value.id.trim());
+}
+
+function arraysUseIds(previous: unknown, next: unknown): boolean {
+  const arrays = [previous, next].filter(Array.isArray) as unknown[][];
+  const populated = arrays.filter((items) => items.length > 0);
+  return populated.length > 0 && populated.every((items) => items.every(isIdObject));
+}
+
+function mergeSyncTimestampMaps(
+  previous: Record<string, number> | undefined,
+  next: Record<string, number> | undefined,
+): Record<string, number> {
+  const out: Record<string, number> = { ...(previous ?? {}) };
+  for (const [path, timestamp] of Object.entries(next ?? {})) {
+    const parsed = Number(timestamp);
+    if (!Number.isFinite(parsed) || parsed <= 0) continue;
+    out[path] = Math.max(out[path] ?? 0, parsed);
+  }
+  return out;
+}
+
+function nextLocalSyncTimestamp(meta: SyncMetadata): number {
+  let seen = 0;
+  for (const timestamp of Object.values(meta.updatedAt)) seen = Math.max(seen, timestamp);
+  for (const timestamp of Object.values(meta.deletedAt)) seen = Math.max(seen, timestamp);
+  const next = Math.max(Date.now(), _lastLocalSyncTimestamp + 1, seen + 1);
+  _lastLocalSyncTimestamp = next;
+  return next;
+}
+
+function pruneSyncTimestampMap(map: Record<string, number>): Record<string, number> {
+  const entries = Object.entries(map);
+  if (entries.length <= SYNC_META_MAX_KEYS) return map;
+  entries.sort((a, b) => b[1] - a[1]);
+  return Object.fromEntries(entries.slice(0, SYNC_META_MAX_KEYS));
+}
+
+type LocalSyncDiffContext = {
+  meta: SyncMetadata;
+  now: number;
+  deletedIds: Set<string>;
+  restoredIds: Set<string>;
+};
+
+function stampLocalUpdate(ctx: LocalSyncDiffContext, path: string): void {
+  if (!path) return;
+  ctx.meta.updatedAt[path] = ctx.now;
+  delete ctx.meta.deletedAt[path];
+}
+
+function stampLocalDelete(ctx: LocalSyncDiffContext, path: string): void {
+  if (!path) return;
+  ctx.meta.deletedAt[path] = ctx.now;
+  delete ctx.meta.updatedAt[path];
+}
+
+function recordLocalSyncDiff(
+  previous: unknown,
+  next: unknown,
+  path: string,
+  ctx: LocalSyncDiffContext,
+): void {
+  if (syncValuesEqual(previous, next)) return;
+
+  if (Array.isArray(previous) || Array.isArray(next)) {
+    if (arraysUseIds(previous, next)) {
+      const previousItems = new Map(
+        (Array.isArray(previous) ? previous : []).filter(isIdObject).map((item) => [item.id, item] as const),
+      );
+      const nextItems = new Map(
+        (Array.isArray(next) ? next : []).filter(isIdObject).map((item) => [item.id, item] as const),
+      );
+      const ids = new Set([...previousItems.keys(), ...nextItems.keys()]);
+
+      for (const id of ids) {
+        const before = previousItems.get(id);
+        const after = nextItems.get(id);
+        const itemPath = syncChildPath(path, id);
+
+        if (before && !after) {
+          stampLocalDelete(ctx, itemPath);
+          ctx.deletedIds.add(id);
+          continue;
+        }
+
+        if (!before && after) {
+          stampLocalUpdate(ctx, itemPath);
+          ctx.restoredIds.add(id);
+          continue;
+        }
+
+        if (before && after && !syncValuesEqual(before, after)) {
+          stampLocalUpdate(ctx, itemPath);
+          ctx.restoredIds.add(id);
+        }
+      }
+      return;
+    }
+
+    if (next === undefined) stampLocalDelete(ctx, path);
+    else stampLocalUpdate(ctx, path);
+    return;
+  }
+
+  const previousRecord = isPlainRecord(previous) ? previous : undefined;
+  const nextRecord = isPlainRecord(next) ? next : undefined;
+
+  if (previousRecord || nextRecord) {
+    if (!nextRecord) stampLocalDelete(ctx, path);
+    else if (!previousRecord) stampLocalUpdate(ctx, path);
+
+    const keys = new Set([...Object.keys(previousRecord ?? {}), ...Object.keys(nextRecord ?? {})]);
+
+    for (const key of keys) {
+      if (!path && (key === "syncMeta" || key === "deletedIds" || key === "deletedCustom" || key === "partner")) {
+        continue;
+      }
+
+      recordLocalSyncDiff(previousRecord?.[key], nextRecord?.[key], syncChildPath(path, key), ctx);
+    }
+    return;
+  }
+
+  if (next === undefined) stampLocalDelete(ctx, path);
+  else stampLocalUpdate(ctx, path);
+}
+
+function withLocalSyncMetadata(previous: BixboData, next: BixboData): BixboData {
+  const previousMeta = normalizeSyncMetadata(previous.syncMeta);
+  const nextMeta = normalizeSyncMetadata(next.syncMeta);
+  const meta: SyncMetadata = {
+    updatedAt: mergeSyncTimestampMaps(previousMeta.updatedAt, nextMeta.updatedAt),
+    deletedAt: mergeSyncTimestampMaps(previousMeta.deletedAt, nextMeta.deletedAt),
+  };
+  const deletedIds = new Set([...(previous.deletedIds ?? []), ...(next.deletedIds ?? [])]);
+  const restoredIds = new Set<string>();
+  const ctx: LocalSyncDiffContext = {
+    meta,
+    now: nextLocalSyncTimestamp(meta),
+    deletedIds,
+    restoredIds,
+  };
+
+  recordLocalSyncDiff(previous, next, "", ctx);
+
+  // A deliberate re-add/edit of an id after a tombstone is allowed to win.
+  // Path-level metadata remains authoritative; removing the legacy global id
+  // keeps older sync clients from immediately deleting the restored entry.
+  for (const id of restoredIds) deletedIds.delete(id);
+
+  return {
+    ...next,
+    deletedIds: Array.from(deletedIds).slice(-2000),
+    syncMeta: {
+      updatedAt: pruneSyncTimestampMap(meta.updatedAt),
+      deletedAt: pruneSyncTimestampMap(meta.deletedAt),
+    },
+  };
+}
+
 export function setBixbo(updater: (d: BixboData) => BixboData) {
   hydrate();
-  _state = migrate(updater(_state));
+  const previous = _state;
+  const next = migrate(updater(_state));
+  _state = migrate(withLocalSyncMetadata(previous, next));
   persist();
   emit();
   changeListeners.forEach((l) => l(_state, "local"));
 }
 export function replaceBixbo(d: BixboData, reason: "local" | "remote" = "local") {
   hydrate();
-  _state = migrate(d);
+  const next = migrate(d);
+  _state = reason === "local" ? migrate(withLocalSyncMetadata(_state, next)) : next;
   persist();
   emit();
   changeListeners.forEach((l) => l(_state, reason));
