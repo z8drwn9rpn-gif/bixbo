@@ -13,9 +13,9 @@ import { Switch } from "@/components/ui/switch";
 export const Route = createFileRoute("/meds")({
   head: () => ({
     meta: [
-      { title: "Medications — BIXBO" },
+      { title: "BIXBO — Medications" },
       { name: "description", content: "Manage your medications and daily schedule." },
-      { property: "og:title", content: "Medications — BIXBO" },
+      { property: "og:title", content: "BIXBO — Medications" },
       { property: "og:description", content: "Manage your medications and daily schedule." },
     ],
   }),
