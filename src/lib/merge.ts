@@ -102,8 +102,10 @@ function normalizePostpartumState(value: unknown): PostpartumState {
       isObj(visit) && typeof visit.id === "string" && typeof visit.date === "string" && typeof visit.title === "string",
   );
 
+  const active = Boolean(raw.active);
+
   return {
-    active: Boolean(raw.active),
+    active,
     birthDate: typeof raw.birthDate === "string" ? raw.birthDate : undefined,
     deliveryType,
     babyName: typeof raw.babyName === "string" ? raw.babyName : undefined,
@@ -111,7 +113,7 @@ function normalizePostpartumState(value: unknown): PostpartumState {
     feedingMode,
     visits,
     note: typeof raw.note === "string" ? raw.note : undefined,
-    endedAt: typeof raw.endedAt === "string" ? raw.endedAt : undefined,
+    endedAt: active ? undefined : typeof raw.endedAt === "string" ? raw.endedAt : undefined,
   };
 }
 
@@ -637,9 +639,23 @@ function mergeCustom(
     const lv = local?.[key];
     const rv = remote?.[key];
     if (!Array.isArray(lv) && !Array.isArray(rv)) continue;
+
+    const path = childPath("custom", key as string);
     const tombstones = new Set(deleted[key] ?? []);
-    const union = dedupArray([...(rv ?? []), ...(lv ?? [])] as unknown[]) as unknown[];
-    (merged as unknown as Record<string, unknown>)[key as string] = union.filter(
+
+    // Modern clients stamp the whole string-array path on add/remove/rename.
+    // Respect that LWW clock so an older cloud copy cannot union a deleted
+    // custom option back into the device. Legacy data without a clock keeps
+    // the conservative union behaviour, with deletedCustom as its tombstone.
+    const values = hasSyncClock(path)
+      ? (() => {
+          const chosen = chooseAtomic(path, lv, rv);
+          return Array.isArray(chosen) ? chosen : [];
+        })()
+      : (dedupArray([...(rv ?? []), ...(lv ?? [])] as unknown[]) as unknown[]);
+
+    const deduped = dedupArray(values as unknown[]);
+    (merged as unknown as Record<string, unknown>)[key as string] = deduped.filter(
       (value) => !(typeof value === "string" && tombstones.has(value)),
     );
   }
