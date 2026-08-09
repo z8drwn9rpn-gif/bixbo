@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { Ico } from "@/components/icons/BixboIcons";
+import { Ico, IcoText } from "@/components/icons/BixboIcons";
 import { useBixbo, EMPTY, type Note } from "@/lib/storage";
 import { Input } from "@/components/ui/input";
 import { MoreVertical, Pin, PinOff, Plus, Search, Trash2, Archive, X } from "lucide-react";
@@ -118,12 +118,12 @@ function NotesPage() {
               <article key={note.id} className="relative rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/70">
                 <button type="button" onClick={() => setOpenNote(note.id)} className="block w-full pr-8 text-left">
                   <div className="flex items-start justify-between gap-3">
-                    <h3 className="line-clamp-1 text-sm font-semibold">{note.title.trim() || "Untitled"}</h3>
+                    <h3 className="line-clamp-1 text-sm font-semibold"><IcoText text={note.title.trim() || "Untitled"} size={16} /></h3>
                     <span className="shrink-0 text-[10px] text-muted-foreground">
                       {new Date(note.updatedAt ?? note.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
                     </span>
                   </div>
-                  <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{stripHtml(note.content).trim() || "No additional text"}</p>
+                  <p className="mt-1 line-clamp-2 text-xs text-muted-foreground"><IcoText text={stripHtml(note.content).trim() || "No additional text"} size={14} /></p>
                 </button>
                 <button type="button" onClick={() => setMenuNoteId(menuNoteId === note.id ? null : note.id)} className="absolute right-2 top-8 rounded-full p-1.5 text-muted-foreground" aria-label="Options">
                   <MoreVertical className="h-4 w-4" />
