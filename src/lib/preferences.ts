@@ -109,31 +109,49 @@ export function volumeToDisplay(valueMl: number, units: UnitPreferences): number
 }
 
 export function volumeUnitLabel(units: UnitPreferences): string {
-  return units.volume === "oz" ? "oz" : "ml";
+  return units.volume === "oz" ? "fl oz" : "ml";
 }
 
-export function formatWeight(valueKg: number, units: UnitPreferences, digits = 1): string {
-  return `${weightToDisplay(valueKg, units).toFixed(digits)} ${weightUnitLabel(units)}`;
+export function formatWeight(valueKg: number | undefined | null, units: UnitPreferences, decimals = 1): string {
+  if (valueKg == null || !Number.isFinite(valueKg)) return "—";
+  return `${weightToDisplay(valueKg, units).toFixed(decimals).replace(/\.0$/, "")} ${weightUnitLabel(units)}`;
 }
 
-export function formatTemperature(valueC: number, units: UnitPreferences, digits = 1): string {
-  return `${temperatureToDisplay(valueC, units).toFixed(digits)}${temperatureUnitLabel(units)}`;
+export function formatTemperature(valueC: number | undefined | null, units: UnitPreferences, decimals = 1): string {
+  if (valueC == null || !Number.isFinite(valueC)) return "—";
+  return `${temperatureToDisplay(valueC, units).toFixed(decimals).replace(/\.0$/, "")} ${temperatureUnitLabel(units)}`;
 }
 
-export function formatVolume(valueMl: number, units: UnitPreferences, digits = 0): string {
-  return `${volumeToDisplay(valueMl, units).toFixed(digits)} ${volumeUnitLabel(units)}`;
+export function formatVolume(valueMl: number | undefined | null, units: UnitPreferences, decimals = 0): string {
+  if (valueMl == null || !Number.isFinite(valueMl)) return "—";
+  return `${volumeToDisplay(valueMl, units).toFixed(decimals).replace(/\.0$/, "")} ${volumeUnitLabel(units)}`;
 }
 
-/** Migrate old nested preference shapes that used to live under settings. */
+export function formatClockTime(value: string | undefined, units: UnitPreferences): string {
+  if (!value) return "";
+  if (units.time === "24h") return value;
+  const [rawHour, minute = "00"] = value.split(":");
+  const hour = Number(rawHour);
+  if (!Number.isFinite(hour)) return value;
+  const suffix = hour >= 12 ? "PM" : "AM";
+  const displayHour = hour % 12 || 12;
+  return `${displayHour}:${minute} ${suffix}`;
+}
+
+/**
+ * Maps the old Profile-only local preference object into the real synced
+ * Settings model. The caller should only apply this when the corresponding
+ * modern Settings field does not already exist.
+ */
 export function settingsFromLegacyHealthPreferences(raw: unknown): Partial<Settings> {
   if (!raw || typeof raw !== "object") return {};
   const legacy = raw as Record<string, unknown>;
   const result: Partial<Settings> = {};
 
+  const legacyTracking = legacy.trackingPrefs;
   const painScale = legacy.painScale;
-  const tracking = legacy.trackingPrefs;
-  if (tracking && typeof tracking === "object") {
-    const t = tracking as Record<string, unknown>;
+  if (legacyTracking && typeof legacyTracking === "object") {
+    const t = legacyTracking as Record<string, unknown>;
     result.tracking = {
       ...DEFAULT_TRACKING_PREFS,
       pain: typeof t.pain === "boolean" ? t.pain : true,
