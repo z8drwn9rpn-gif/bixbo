@@ -928,14 +928,29 @@ function PainWizard({
     | "nauseaSymptoms"
     | "nauseaHelped";
   const addCustom = (key: CKey, v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [key]: [...(d.custom[key] ?? []), v] } }));
+    update((d) =>
+      withoutCustomTombstones({ ...d, custom: { ...d.custom, [key]: [...(d.custom[key] ?? []), v] } }, key, [v]),
+    );
   const removeCustom = (key: CKey, v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [key]: (d.custom[key] ?? []).filter((x) => x !== v) } }));
+    update((d) =>
+      withCustomTombstones(
+        { ...d, custom: { ...d.custom, [key]: (d.custom[key] ?? []).filter((x) => x !== v) } },
+        key,
+        [v],
+      ),
+    );
   const renameCustom = (key: CKey, oldV: string, newV: string) =>
-    update((d) => ({
-      ...d,
-      custom: { ...d.custom, [key]: (d.custom[key] ?? []).map((x) => (x === oldV ? newV : x)) },
-    }));
+    update((d) =>
+      withoutCustomTombstones(
+        withCustomTombstones(
+          { ...d, custom: { ...d.custom, [key]: (d.custom[key] ?? []).map((x) => (x === oldV ? newV : x)) } },
+          key,
+          [oldV],
+        ),
+        key,
+        [newV],
+      ),
+    );
 
   const save = () => {
     const editing = !!initialEntry;
