@@ -101,7 +101,7 @@ const CATEGORIES: { id: Category; label: string; emoji: string; hint: string }[]
   { id: "postpartum", label: "Postpartum symptoms", emoji: "🤱", hint: "Recovery symptoms · notes" },
   { id: "pain", label: "Pain", emoji: "🔥", hint: "0–10, body, quality" },
   { id: "period", label: "Blueberry", emoji: "🫐", hint: "Flow · discharge · notes" },
-  { id: "heat", label: "Heat / Cold / TENS session", emoji: "♨️", hint: "Heating, ice or TENS session" },
+  { id: "heat", label: "Heat / Cold / TENS", emoji: "♨️", hint: "Heating, ice or TENS session" },
   { id: "food", label: "Food", emoji: "🍽️", hint: "What & how you feel" },
   { id: "bowel", label: "Bowel", emoji: "💩", hint: "Bristol type" },
   { id: "sex", label: "ŠukŠuk!", emoji: "❤️", hint: "All kinds of activity" },
@@ -277,7 +277,7 @@ export function LogSheet({
                 <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
                   <div
                     className="absolute left-1/2 h-[375px] w-[390px] max-w-[100vw] -translate-x-1/2"
-                    style={{ bottom: "calc(max(8px, env(safe-area-inset-bottom)) + 30px)" }}
+                    style={{ bottom: "calc(max(8px, env(safe-area-inset-bottom)) + 36px)" }}
                   >
                     {/*
                       Reference layout:
@@ -301,33 +301,37 @@ export function LogSheet({
                       const radialCats = orderedCats.slice(0, 12);
 
                       const slots = [
-                        // One continuous SEMICIRCLE around the + button.
-                        // Left side climbs smoothly to the top, then mirrors on the right.
+                        // Smooth semicircle, left-to-right, centered on +.
+                        // Keep side items farther inward so full labels remain visible.
 
                         // Pain
-                        { x: -106, up: 236, labelSide: "left" as const, labelW: 54 },
+                        { x: -94, up: 224, labelSide: "left" as const, labelW: 52 },
                         // Blueberry
-                        { x: -68, up: 294, labelSide: "top" as const, labelW: 76 },
+                        { x: -58, up: 276, labelSide: "top" as const, labelW: 72 },
                         // Heat / Cold / TENS
-                        { x: 0, up: 324, labelSide: "top" as const, labelW: 94 },
+                        { x: 0, up: 298, labelSide: "top" as const, labelW: 88 },
                         // Food
-                        { x: 68, up: 294, labelSide: "top" as const, labelW: 62 },
+                        { x: 58, up: 276, labelSide: "top" as const, labelW: 58 },
                         // Bowel
-                        { x: 106, up: 236, labelSide: "right" as const, labelW: 54 },
+                        { x: 94, up: 224, labelSide: "right" as const, labelW: 52 },
+
                         // ŠukŠuk!
-                        { x: -120, up: 174, labelSide: "left" as const, labelW: 62 },
+                        { x: -112, up: 164, labelSide: "left" as const, labelW: 58 },
                         // Workout
-                        { x: 120, up: 174, labelSide: "right" as const, labelW: 62 },
+                        { x: 112, up: 164, labelSide: "right" as const, labelW: 58 },
+
                         // Temp / Sleep / Weight
-                        { x: 122, up: 112, labelSide: "right" as const, labelW: 78 },
+                        { x: 118, up: 105, labelSide: "right" as const, labelW: 76 },
                         // Meds
-                        { x: -122, up: 112, labelSide: "left" as const, labelW: 52 },
+                        { x: -118, up: 105, labelSide: "left" as const, labelW: 48 },
+
                         // Event
-                        { x: -104, up: 60, labelSide: "left" as const, labelW: 50 },
+                        { x: -104, up: 54, labelSide: "left" as const, labelW: 48 },
                         // Task
-                        { x: 104, up: 60, labelSide: "right" as const, labelW: 50 },
-                        // Bottom-left slot (Notes in the default order)
-                        { x: -68, up: 24, labelSide: "left" as const, labelW: 46 },
+                        { x: 104, up: 54, labelSide: "right" as const, labelW: 48 },
+
+                        // Notes
+                        { x: -68, up: 20, labelSide: "left" as const, labelW: 44 },
                       ];
 
                       const circleClass = `
@@ -344,8 +348,8 @@ export function LogSheet({
                         <>
                           <svg
                             aria-hidden="true"
-                            viewBox="-195 -350 390 370"
-                            className="pointer-events-none absolute bottom-0 left-1/2 h-[370px] w-[390px] max-w-[100vw] -translate-x-1/2 overflow-visible"
+                            viewBox="-195 -330 390 350"
+                            className="pointer-events-none absolute bottom-0 left-1/2 h-[350px] w-[390px] max-w-[100vw] -translate-x-1/2 overflow-visible"
                           >
                             {radialCats.map((c, index) => {
                               const slot = slots[index];
@@ -423,21 +427,21 @@ export function LogSheet({
 
                                 <span
                                   className="
-                                    absolute z-30 text-[10px] font-semibold leading-[1.05]
+                                    absolute z-30 text-[9px] font-semibold leading-[1.05]
                                     text-white drop-shadow-[0_1px_2px_rgba(31,37,16,0.95)]
                                   "
                                   style={{
                                     width: `${slot.labelW}px`,
                                     ...(isLeft
                                       ? {
-                                          right: "calc(100% + 3px)",
+                                          right: "calc(100% + 2px)",
                                           top: "50%",
                                           transform: "translateY(-50%)",
                                           textAlign: "right" as const,
                                         }
                                       : isRight
                                         ? {
-                                            left: "calc(100% + 3px)",
+                                            left: "calc(100% + 2px)",
                                             top: "50%",
                                             transform: "translateY(-50%)",
                                             textAlign: "left" as const,
@@ -463,7 +467,7 @@ export function LogSheet({
                               setEditingOrder((v) => !v);
                             }}
                             aria-label="Reorder log categories"
-                            className="pointer-events-auto absolute bottom-[30px] left-1/2 z-30 h-[44px] w-[44px] translate-x-[44px] outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#edf2cf]"
+                            className="pointer-events-auto absolute bottom-[34px] left-1/2 z-30 h-[44px] w-[44px] translate-x-[50px] outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#edf2cf]"
                           >
                             <span className={`${circleClass} scale-[0.92] ${editingOrder ? "ring-[#f3f6d8]/80 bg-[#748642]/70" : ""}`}>
                               {editingOrder ? (
@@ -476,7 +480,7 @@ export function LogSheet({
                                 </span>
                               )}
                             </span>
-                            <span className="absolute left-[calc(100%+3px)] top-1/2 w-[46px] -translate-y-1/2 text-left text-[10px] font-semibold leading-none text-white drop-shadow-[0_1px_2px_rgba(31,37,16,0.95)]">
+                            <span className="absolute left-[calc(100%+2px)] top-1/2 w-[44px] -translate-y-1/2 text-left text-[10px] font-semibold leading-none text-white drop-shadow-[0_1px_2px_rgba(31,37,16,0.95)]">
                               {editingOrder ? "Done" : "Reorder"}
                             </span>
                           </button>
