@@ -191,7 +191,7 @@ export function LogSheet({
             ? `flex h-[100dvh] max-h-[100dvh] flex-col rounded-t-none bg-background p-0 ${
                 active === "pain" ? "pt-[env(safe-area-inset-top)]" : "pt-0"
               }`
-            : "fixed !left-auto !right-3 !bottom-4 !top-auto flex !h-[466px] !max-h-[94dvh] !w-[67vw] !max-w-[320px] min-h-0 flex-col gap-0 overflow-hidden rounded-[1.5rem] border border-border/70 bg-background/95 p-0 shadow-2xl backdrop-blur-xl") + " [&>button.absolute]:hidden"
+            : "fixed !left-1/2 !right-auto !bottom-4 !top-auto -translate-x-1/2 flex !h-[466px] !max-h-[94dvh] !w-[67vw] !max-w-[320px] min-h-0 flex-col gap-0 overflow-hidden rounded-[1.5rem] border border-border/70 bg-background/95 p-0 shadow-2xl backdrop-blur-xl") + " [&>button.absolute]:hidden"
         }
       >
         {!active ? (
