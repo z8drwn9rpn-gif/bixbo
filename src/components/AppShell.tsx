@@ -31,17 +31,29 @@ export function AppShell({
         {title !== undefined && (
           <header className="sticky top-0 z-30 flex min-h-14 items-center justify-between border-b border-border/70 bg-background/88 px-5 py-2 pt-[max(0.5rem,env(safe-area-inset-top))] shadow-[0_1px_0_0_var(--border)] backdrop-blur-xl supports-[backdrop-filter]:bg-background/82">
             <div className="flex min-w-0 items-center gap-3">
-              <img
-                src="/bixbo-mascot.png"
-                alt=""
-                aria-hidden="true"
-                draggable={false}
+              <span
                 className={
                   big
-                    ? "h-12 w-auto max-w-[52px] shrink-0 select-none object-contain object-center"
-                    : "h-9 w-auto max-w-[40px] shrink-0 select-none object-contain object-center"
+                    ? "relative block h-[52px] w-[52px] shrink-0 overflow-visible"
+                    : "relative block h-10 w-10 shrink-0 overflow-visible"
                 }
-              />
+                aria-hidden="true"
+              >
+                <img
+                  src="/bixbo-mascot.png?v=20260809"
+                  alt=""
+                  aria-hidden="true"
+                  draggable={false}
+                  className="block h-full w-full object-contain object-center opacity-100 visible"
+                  style={{ display: "block", opacity: 1, visibility: "visible", filter: "none", mixBlendMode: "normal" }}
+                  onError={(event) => {
+                    const image = event.currentTarget;
+                    if (!image.src.includes("/icon-192.png")) {
+                      image.src = "/icon-192.png?v=20260809";
+                    }
+                  }}
+                />
+              </span>
 
               <h1
                 className={`min-w-0 truncate font-serif font-bold leading-none text-foreground ${
