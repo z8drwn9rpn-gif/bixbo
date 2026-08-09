@@ -6,7 +6,9 @@
  * minute, and delivers them via Web Push. `push_delivery_log.dedupe_key` is a
  * unique key, so a reminder is only ever sent once even if cron double-fires.
  *
- * Auth: verify_jwt = false, protected by the shared CRON_SECRET header.
+ * Auth: verify_jwt = false, protected by a database-held cron secret.
+ * The secret is read through a service-role-only RPC so it never needs to be
+ * committed to source control.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.58.0";
 
@@ -364,9 +366,27 @@ Deno.serve(async (req) => {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
 
-  // PUSH_CRON_SECRET is the value pg_cron sends; CRON_SECRET stays as a fallback.
-  const expectedSecret = (Deno.env.get("PUSH_CRON_SECRET") ?? Deno.env.get("CRON_SECRET") ?? "").trim();
+  const db = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  // pg_cron and this function read the same secret from the database. The RPC
+  // is executable only by service_role, so browser clients cannot retrieve it.
+  const { data: storedCronSecret, error: cronSecretError } = await db.rpc(
+    "get_push_cron_secret_for_service",
+  );
+
+  // Environment fallback keeps deployments compatible during the one-time
+  // migration window. Once the migration is applied, the DB value is used.
+  const expectedSecret = String(
+    storedCronSecret ?? Deno.env.get("PUSH_CRON_SECRET") ?? Deno.env.get("CRON_SECRET") ?? "",
+  ).trim();
   const providedSecret = (req.headers.get("x-cron-secret") ?? "").trim();
+
+  if (cronSecretError) {
+    console.error("send-due-push cron secret read failed:", cronSecretError.message);
+  }
+
   if (!expectedSecret || !timingSafeEqual(expectedSecret, providedSecret)) {
     return json({ ok: false, error: "Forbidden." }, 403);
   }
@@ -383,10 +403,6 @@ Deno.serve(async (req) => {
     console.error("send-due-push configuration error:", message);
     return json({ ok: false, error: message }, 500);
   }
-
-  const db = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
 
   const { data: profiles, error: profileError } = await db
     .from("push_reminder_profiles")
