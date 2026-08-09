@@ -37,6 +37,7 @@ export type NotifCategory =
   | "appointments"
   | "mood"
   | "hydration"
+  | "sleep"
   | "marketing";
 
 export const DEFAULT_NOTIF_PREFS: Required<Omit<NotificationPrefs, "promptSnoozedAt" | "promptAnswered">> = {
@@ -49,6 +50,7 @@ export const DEFAULT_NOTIF_PREFS: Required<Omit<NotificationPrefs, "promptSnooze
   appointments: true,
   mood: false,
   hydration: false,
+  sleep: false,
   marketing: false,
   dailyLogTime: "20:00",
   symptomTime: "18:00",
@@ -56,6 +58,8 @@ export const DEFAULT_NOTIF_PREFS: Required<Omit<NotificationPrefs, "promptSnooze
   hydrationStart: "09:00",
   hydrationEnd: "20:00",
   hydrationEveryHours: 3,
+  sleepTime: "22:30",
+  quietHoursEnabled: false,
   quietStart: "22:00",
   quietEnd: "07:00",
 };
@@ -91,6 +95,7 @@ export const NOTIF_CATEGORY_LABELS: Record<NotifCategory, string> = {
   appointments: "Appointment reminders",
   mood: "Mood reminders",
   hydration: "Hydration reminders",
+  sleep: "Sleep reminders",
   marketing: "News & tips",
 };
 
@@ -544,6 +549,7 @@ function nowMinutes(date = new Date()): number {
 }
 
 export function inQuietHours(prefs: ResolvedPrefs, at = new Date()): boolean {
+  if (!prefs.quietHoursEnabled) return false;
   const start = minutesOf(prefs.quietStart);
   const end = minutesOf(prefs.quietEnd);
   const now = nowMinutes(at);
@@ -718,6 +724,20 @@ export async function runNotificationChecks(now = new Date()) {
         category: "mood",
       },
       `mood:${today}`,
+    );
+  }
+
+  if (prefs.sleep && dueNow(prefs.sleepTime, now)) {
+    await fire(
+      prefs,
+      {
+        title: "Time to wind down",
+        body: "A consistent sleep routine can make your health patterns easier to read.",
+        url: "/",
+        tag: `sleep-${today}`,
+        category: "sleep",
+      },
+      `sleep:${today}`,
     );
   }
 
