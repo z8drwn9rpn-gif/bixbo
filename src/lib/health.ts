@@ -136,7 +136,12 @@ export function isPostpartumMode(data: BixboData): boolean {
  * Cycle predictions must be hidden for male mode, pregnancy and postpartum.
  */
 export function showCyclePredictions(data: BixboData): boolean {
-  return data.settings.gender !== "male" && !isPregnancyMode(data) && !isPostpartumMode(data);
+  return (
+    data.settings.tracking?.cycle !== false &&
+    data.settings.gender !== "male" &&
+    !isPregnancyMode(data) &&
+    !isPostpartumMode(data)
+  );
 }
 
 /* ------------------- Default checklists ------------------- */
