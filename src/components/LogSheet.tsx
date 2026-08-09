@@ -2645,13 +2645,31 @@ function FoodForm({
   );
   const allergensBase = data.settings.allergens ?? ALLERGENS_DEFAULT;
   const addCustom = (v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, foodFeelings: [...d.custom.foodFeelings, v] } }));
+    update((d) =>
+      withoutCustomTombstones(
+        { ...d, custom: { ...d.custom, foodFeelings: [...d.custom.foodFeelings, v] } },
+        "foodFeelings",
+        [v],
+      ),
+    );
   const addCustomList = (k: "histamineSymptoms" | "foodSymptomsAfter", v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [k]: [...(d.custom[k] ?? []), v] } }));
+    update((d) => withoutCustomTombstones({ ...d, custom: { ...d.custom, [k]: [...(d.custom[k] ?? []), v] } }, k, [v]));
   const removeCustomList = (k: "histamineSymptoms" | "foodSymptomsAfter", v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [k]: (d.custom[k] ?? []).filter((x) => x !== v) } }));
+    update((d) =>
+      withCustomTombstones({ ...d, custom: { ...d.custom, [k]: (d.custom[k] ?? []).filter((x) => x !== v) } }, k, [v]),
+    );
   const renameCustomList = (k: "histamineSymptoms" | "foodSymptomsAfter", o: string, n: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [k]: (d.custom[k] ?? []).map((x) => (x === o ? n : x)) } }));
+    update((d) =>
+      withoutCustomTombstones(
+        withCustomTombstones(
+          { ...d, custom: { ...d.custom, [k]: (d.custom[k] ?? []).map((x) => (x === o ? n : x)) } },
+          k,
+          [o],
+        ),
+        k,
+        [n],
+      ),
+    );
   const save = () => {
     if (!what.trim() && !hydration && !caffeine && !alcohol && !histFlare && symptomsAfter.length === 0) return;
     const editing = !!initialEntry;
