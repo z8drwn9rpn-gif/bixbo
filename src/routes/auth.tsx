@@ -9,9 +9,9 @@ import { lovable } from "@/integrations/lovable";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Sign in — BIXBO" },
+      { title: "BIXBO — Sign in" },
       { name: "description", content: "Sign in to sync your BIXBO diary across devices and share with your partner." },
-      { property: "og:title", content: "Sign in — BIXBO" },
+      { property: "og:title", content: "BIXBO — Sign in" },
       { property: "og:description", content: "Sync BIXBO across devices and share with your partner." },
     ],
   }),
