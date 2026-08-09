@@ -40,7 +40,7 @@ export function AppShell({
                 aria-hidden="true"
               >
                 <img
-                  src="/bixbo-mascot.png?v=20260809"
+                  src="/bixbo-mascot.png?v=20260809b"
                   alt=""
                   aria-hidden="true"
                   draggable={false}
@@ -49,14 +49,14 @@ export function AppShell({
                     display: "block",
                     opacity: 1,
                     visibility: "visible",
-                    /* Home greeting (big): black-and-white mascot next to BIXBO / Hi, … */
-                    filter: big ? "grayscale(1) contrast(1.05)" : "none",
+                    /* Home greeting (big): full-color Bixbo penguin + chili next to BIXBO / Hi, … */
+                    filter: "none",
                     mixBlendMode: "normal",
                   }}
                   onError={(event) => {
                     const image = event.currentTarget;
                     if (!image.src.includes("/icon-192.png")) {
-                      image.src = "/icon-192.png?v=20260809";
+                      image.src = "/icon-192.png?v=20260809b";
                     }
                   }}
                 />
