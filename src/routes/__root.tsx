@@ -15,6 +15,7 @@ import { useCloudSync } from "../lib/cloudSync";
 import { useThemeSync } from "../lib/theme";
 import { useNotificationRuntime } from "../lib/notifications";
 import { NotificationPrompt } from "../components/NotificationPrompt";
+import { AppPrivacyGuard } from "../components/AppPrivacyGuard";
 import { Toaster } from "../components/ui/sonner";
 
 function NotFoundComponent() {
@@ -90,15 +91,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { name: "theme-color", content: "#98A86A" },
       { name: "color-scheme", content: "light dark" },
-      { title: "BIXBO 🌶️ — Health diary" },
+      { title: "BIXBO — Health diary" },
       { name: "description", content: "BIXBO — a calm diary for your cycle, pain, meds and notes." },
       { name: "author", content: "BIXBO" },
-      { name: "apple-mobile-web-app-title", content: "BIXBO 🌶️" },
-      { name: "application-name", content: "BIXBO 🌶️" },
+      { name: "apple-mobile-web-app-title", content: "BIXBO" },
+      { name: "application-name", content: "BIXBO" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { name: "mobile-web-app-capable", content: "yes" },
-      { property: "og:title", content: "BIXBO 🌶️ — Health diary" },
+      { property: "og:title", content: "BIXBO — Health diary" },
       { property: "og:description", content: "A calm diary for your cycle, pain, meds and notes." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -146,7 +147,9 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <AppPrivacyGuard>
+        <Outlet />
+      </AppPrivacyGuard>
       <NotificationPrompt />
       <Toaster />
     </QueryClientProvider>

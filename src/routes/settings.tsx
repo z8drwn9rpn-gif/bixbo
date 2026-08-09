@@ -6,12 +6,12 @@ export const Route = createFileRoute("/settings")({
   },
   head: () => ({
     meta: [
-      { title: "Health — BIXBO" },
+      { title: "BIXBO — Health" },
       {
         name: "description",
         content: "Health profile, preferences, privacy, backup and app settings in BIXBO.",
       },
-      { property: "og:title", content: "Health — BIXBO" },
+      { property: "og:title", content: "BIXBO — Health" },
       {
         property: "og:description",
         content: "Health profile and app preferences in one place.",
