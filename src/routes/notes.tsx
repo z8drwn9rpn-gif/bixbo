@@ -292,7 +292,7 @@ function NotesPage() {
 
     if (!note) {
       return (
-        <AppShell title="Notes">
+        <AppShell title="Bixbo Notes">
           <div className="px-5 py-8 text-sm text-muted-foreground">
             This note could not be found.
             <button
