@@ -75,6 +75,8 @@ import {
   type PanicAttack,
   type PainfulWhen,
   type PostpartumDayLog,
+  withCustomTombstones,
+  withoutCustomTombstones,
 } from "@/lib/storage";
 
 type UpdateFn = (u: (d: BixboData) => BixboData) => void;
@@ -928,14 +930,29 @@ function PainWizard({
     | "nauseaSymptoms"
     | "nauseaHelped";
   const addCustom = (key: CKey, v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [key]: [...(d.custom[key] ?? []), v] } }));
+    update((d) =>
+      withoutCustomTombstones({ ...d, custom: { ...d.custom, [key]: [...(d.custom[key] ?? []), v] } }, key, [v]),
+    );
   const removeCustom = (key: CKey, v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [key]: (d.custom[key] ?? []).filter((x) => x !== v) } }));
+    update((d) =>
+      withCustomTombstones(
+        { ...d, custom: { ...d.custom, [key]: (d.custom[key] ?? []).filter((x) => x !== v) } },
+        key,
+        [v],
+      ),
+    );
   const renameCustom = (key: CKey, oldV: string, newV: string) =>
-    update((d) => ({
-      ...d,
-      custom: { ...d.custom, [key]: (d.custom[key] ?? []).map((x) => (x === oldV ? newV : x)) },
-    }));
+    update((d) =>
+      withoutCustomTombstones(
+        withCustomTombstones(
+          { ...d, custom: { ...d.custom, [key]: (d.custom[key] ?? []).map((x) => (x === oldV ? newV : x)) } },
+          key,
+          [oldV],
+        ),
+        key,
+        [newV],
+      ),
+    );
 
   const save = () => {
     const editing = !!initialEntry;
@@ -2020,11 +2037,24 @@ function TetanyForm({
   const [note, setNote] = useState(initialEntry?.note ?? "");
 
   type CK = "tetanyTypes" | "tetanyLocations" | "tetanyTriggers" | "tetanyHelped";
-  const addC = (k: CK, v: string) => update((d) => ({ ...d, custom: { ...d.custom, [k]: [...d.custom[k], v] } }));
+  const addC = (k: CK, v: string) =>
+    update((d) => withoutCustomTombstones({ ...d, custom: { ...d.custom, [k]: [...d.custom[k], v] } }, k, [v]));
   const rmC = (k: CK, v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [k]: d.custom[k].filter((x) => x !== v) } }));
+    update((d) =>
+      withCustomTombstones({ ...d, custom: { ...d.custom, [k]: d.custom[k].filter((x) => x !== v) } }, k, [v]),
+    );
   const rnC = (k: CK, o: string, n: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [k]: d.custom[k].map((x) => (x === o ? n : x)) } }));
+    update((d) =>
+      withoutCustomTombstones(
+        withCustomTombstones(
+          { ...d, custom: { ...d.custom, [k]: d.custom[k].map((x) => (x === o ? n : x)) } },
+          k,
+          [o],
+        ),
+        k,
+        [n],
+      ),
+    );
 
   const save = () => {
     const editing = !!initialEntry;
@@ -2615,13 +2645,31 @@ function FoodForm({
   );
   const allergensBase = data.settings.allergens ?? ALLERGENS_DEFAULT;
   const addCustom = (v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, foodFeelings: [...d.custom.foodFeelings, v] } }));
+    update((d) =>
+      withoutCustomTombstones(
+        { ...d, custom: { ...d.custom, foodFeelings: [...d.custom.foodFeelings, v] } },
+        "foodFeelings",
+        [v],
+      ),
+    );
   const addCustomList = (k: "histamineSymptoms" | "foodSymptomsAfter", v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [k]: [...(d.custom[k] ?? []), v] } }));
+    update((d) => withoutCustomTombstones({ ...d, custom: { ...d.custom, [k]: [...(d.custom[k] ?? []), v] } }, k, [v]));
   const removeCustomList = (k: "histamineSymptoms" | "foodSymptomsAfter", v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [k]: (d.custom[k] ?? []).filter((x) => x !== v) } }));
+    update((d) =>
+      withCustomTombstones({ ...d, custom: { ...d.custom, [k]: (d.custom[k] ?? []).filter((x) => x !== v) } }, k, [v]),
+    );
   const renameCustomList = (k: "histamineSymptoms" | "foodSymptomsAfter", o: string, n: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [k]: (d.custom[k] ?? []).map((x) => (x === o ? n : x)) } }));
+    update((d) =>
+      withoutCustomTombstones(
+        withCustomTombstones(
+          { ...d, custom: { ...d.custom, [k]: (d.custom[k] ?? []).map((x) => (x === o ? n : x)) } },
+          k,
+          [o],
+        ),
+        k,
+        [n],
+      ),
+    );
   const save = () => {
     if (!what.trim() && !hydration && !caffeine && !alcohol && !histFlare && symptomsAfter.length === 0) return;
     const editing = !!initialEntry;

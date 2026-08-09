@@ -775,6 +775,9 @@ export interface BixboData {
   /** Ids of entries the user deleted — used by cloud merge so a union merge
    * doesn't resurrect them from another device. */
   deletedIds?: string[];
+  /** Custom-list option values the user removed — kept so a cloud merge
+   * (or another device) can't resurrect them. */
+  deletedCustom?: Partial<Record<keyof CustomLists, string[]>>;
   /** Full health profile (personal, medical, lifestyle, emergency contacts). */
   profile?: HealthProfile;
   pregnancy?: PregnancyState;
@@ -848,6 +851,7 @@ export const EMPTY: BixboData = {
   docs: [],
   diagnoses: [],
   deletedIds: [],
+  deletedCustom: {},
   profile: {},
   pregnancy: { active: false, hospitalBag: [], vaccinations: [], supplements: [], appointments: [] },
   postpartum: { active: false, visits: [] },
@@ -1207,6 +1211,17 @@ function migrate(raw: unknown): BixboData {
     docs: safeIdArray<DocEntry>(parsed.docs),
     diagnoses: safeIdArray<Diagnosis>(parsed.diagnoses),
     deletedIds: safeArray<unknown>(parsed.deletedIds).filter((item): item is string => typeof item === "string"),
+    deletedCustom: (() => {
+      const raw = safeRecord<Record<string, unknown>>(parsed.deletedCustom);
+      const out: Partial<Record<keyof CustomLists, string[]>> = {};
+      for (const key of Object.keys(EMPTY.custom) as Array<keyof CustomLists>) {
+        const value = raw[key];
+        if (!Array.isArray(value)) continue;
+        const list = value.filter((item): item is string => typeof item === "string");
+        if (list.length) out[key] = list;
+      }
+      return out;
+    })(),
     profile: rawProfile,
     pregnancy: {
       ...EMPTY.pregnancy!,
@@ -1891,4 +1906,31 @@ export const NAUSEA_HELPED = ["Lying down", "Ginger tea", "Fresh air", "Medicati
 export function markDeleted(update: (u: (d: BixboData) => BixboData) => void, ...ids: string[]) {
   update((d) => ({ ...d, deletedIds: Array.from(new Set([...(d.deletedIds ?? []), ...ids])).slice(-2000) }));
 }
+
+/** Add tombstones for removed custom-list options so merges can't restore them. */
+export function withCustomTombstones<K extends keyof CustomLists>(
+  d: BixboData,
+  key: K,
+  removed: string[],
+): BixboData {
+  if (!removed.length) return d;
+  const prev = d.deletedCustom?.[key] ?? [];
+  return {
+    ...d,
+    deletedCustom: { ...(d.deletedCustom ?? {}), [key]: Array.from(new Set([...prev, ...removed])) },
+  };
+}
+
+/** Drop tombstones for options the user deliberately re-added. */
+export function withoutCustomTombstones<K extends keyof CustomLists>(
+  d: BixboData,
+  key: K,
+  restored: string[],
+): BixboData {
+  const prev = d.deletedCustom?.[key];
+  if (!prev?.length || !restored.length) return d;
+  const next = prev.filter((v) => !restored.includes(v));
+  return { ...d, deletedCustom: { ...(d.deletedCustom ?? {}), [key]: next } };
+}
+
 // storage migration hardened for cloud data

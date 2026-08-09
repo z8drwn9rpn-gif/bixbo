@@ -21,8 +21,9 @@ export function BottomNav() {
   };
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[560px] border-t border-border/80 bg-surface/95 backdrop-blur-xl pb-[max(8px,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.22)] landscape:max-w-none lg:hidden">
-      <ul className="flex items-stretch justify-around gap-1 px-2 pt-2 pb-2">
+    <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[560px] border-t border-border/80 bg-surface/95 backdrop-blur-xl pb-[max(8px,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.22)] landscape:max-w-none">
+      <ul className="mx-auto flex items-stretch justify-around gap-1 px-2 pt-2 pb-2 lg:max-w-3xl">
+
         {items.slice(0, 2).map(({ to, label, icon: Icon }) => {
           const active =
             label === "Overview"
