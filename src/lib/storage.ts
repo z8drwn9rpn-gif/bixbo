@@ -851,6 +851,7 @@ export const EMPTY: BixboData = {
   docs: [],
   diagnoses: [],
   deletedIds: [],
+  deletedCustom: {},
   profile: {},
   pregnancy: { active: false, hospitalBag: [], vaccinations: [], supplements: [], appointments: [] },
   postpartum: { active: false, visits: [] },
