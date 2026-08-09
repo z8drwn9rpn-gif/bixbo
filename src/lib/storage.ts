@@ -1,4 +1,15 @@
 import { useEffect, useSyncExternalStore } from "react";
+import {
+  DEFAULT_ACCOUNT_PRIVACY_PREFS,
+  DEFAULT_BACKUP_PREFS,
+  DEFAULT_TRACKING_PREFS,
+  DEFAULT_UNIT_PREFS,
+  settingsFromLegacyHealthPreferences,
+  type AccountPrivacyPreferences,
+  type BackupPreferences,
+  type TrackingPreferences,
+  type UnitPreferences,
+} from "./preferences";
 
 /* ------------------- Types ------------------- */
 export type PeriodLevel = "" | "spotting" | "light" | "medium" | "heavy" | "very-heavy";
@@ -473,7 +484,12 @@ export function isPostpartumActive(data: Pick<BixboData, "postpartum">): boolean
  * Use this from Home, QuickTags, MonthCalendar, Insights and Patterns.
  */
 export function isCycleTrackingHidden(data: Pick<BixboData, "settings" | "pregnancy" | "postpartum">): boolean {
-  return userGender(data) === "male" || isPregnancyActive(data) || isPostpartumActive(data);
+  return (
+    data.settings.tracking?.cycle === false ||
+    userGender(data) === "male" ||
+    isPregnancyActive(data) ||
+    isPostpartumActive(data)
+  );
 }
 
 /**
@@ -667,6 +683,14 @@ export interface Settings {
   >;
   /** Saved Trigger Comparison combos on the Patterns tab. */
   savedTriggers?: { id: string; a: string; b: string }[];
+  /** Synced feature availability + pain-scale preference. */
+  tracking?: TrackingPreferences;
+  /** Synced display-unit preferences. Canonical data stays in kg/°C/ml. */
+  units?: UnitPreferences;
+  /** Account-wide diagnostics choices. Device lock stays device-only. */
+  privacy?: AccountPrivacyPreferences;
+  /** Historical backup preference/state. */
+  backup?: BackupPreferences;
   /**
    * Web-push / reminder preferences. Optional so older backups migrate safely:
    * missing values fall back to DEFAULT_NOTIF_PREFS in src/lib/notifications.ts.
@@ -693,6 +717,10 @@ export interface NotificationPrefs {
   hydrationStart?: string;
   hydrationEnd?: string;
   hydrationEveryHours?: number;
+  sleep?: boolean;
+  /** "HH:MM" sleep reminder time. */
+  sleepTime?: string;
+  quietHoursEnabled?: boolean;
   quietStart?: string;
   quietEnd?: string;
   /** Epoch ms of the last "Maybe later" dismissal of the permission card. */
@@ -816,8 +844,6 @@ export const EMPTY: BixboData = {
   folders: DEFAULT_FOLDERS,
   notebook: [],
   cycle: {
-    lastPeriodStart: "2026-07-15",
-    lastPeriodEnd: "2026-07-19",
     cycleLength: 28,
     periodLength: 5,
   },
@@ -859,6 +885,10 @@ export const EMPTY: BixboData = {
     gender: "female",
     theme: "system",
     savedTriggers: [],
+    tracking: { ...DEFAULT_TRACKING_PREFS },
+    units: { ...DEFAULT_UNIT_PREFS },
+    privacy: { ...DEFAULT_ACCOUNT_PRIVACY_PREFS },
+    backup: { ...DEFAULT_BACKUP_PREFS },
   },
   labs: [],
   docs: [],
@@ -876,6 +906,18 @@ export const BIXBO_LEGACY_STORAGE_KEY = "bixbo:v1";
 
 const KEY = BIXBO_STORAGE_KEY;
 const LEGACY_KEY = BIXBO_LEGACY_STORAGE_KEY;
+const LEGACY_HEALTH_PREFS_KEY = "bixbo:health-preferences";
+const INSTALL_ORIGIN_KEY = "bixbo:install-origin-v3";
+
+/** True only when this browser already has a persisted BIXBO data snapshot. */
+export function hasStoredBixboSnapshot(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return Boolean(window.localStorage.getItem(KEY) ?? window.localStorage.getItem(LEGACY_KEY));
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Clears only BIXBO's local data. Never call localStorage.clear(), because that
@@ -892,6 +934,14 @@ export const clearBixboLocalStorage = (): void => {
 
   window.localStorage.removeItem(BIXBO_STORAGE_KEY);
   window.localStorage.removeItem(BIXBO_LEGACY_STORAGE_KEY);
+  _snapshotWasPresentAtHydrate = false;
+  _legacyLocalCanonicalEligible = false;
+  _localEditedSinceHydrate = false;
+  try {
+    window.localStorage.setItem(INSTALL_ORIGIN_KEY, "fresh");
+  } catch {
+    // Ignore storage failures while clearing local BIXBO data.
+  }
 };
 
 type VitalField = "weightEntries" | "temperatureEntries";
@@ -1228,6 +1278,23 @@ function migrate(raw: unknown): BixboData {
         (item): item is string => typeof item === "string",
       ),
       customQuickTags: safeIdArray<CustomQuickTag>(rawSettings.customQuickTags),
+      tracking: {
+        ...DEFAULT_TRACKING_PREFS,
+        ...safeRecord(rawSettings.tracking),
+      },
+      units: {
+        ...DEFAULT_UNIT_PREFS,
+        ...safeRecord(rawSettings.units),
+      },
+      privacy: {
+        ...DEFAULT_ACCOUNT_PRIVACY_PREFS,
+        ...safeRecord(rawSettings.privacy),
+      },
+      backup: {
+        ...DEFAULT_BACKUP_PREFS,
+        ...safeRecord(rawSettings.backup),
+      },
+      notif: safeRecord(rawSettings.notif) as NotificationPrefs,
     },
     tasks: safeIdArray<TaskEntry>(parsed.tasks),
     events: safeIdArray<EventEntry>(parsed.events).map((event) => ({
@@ -1267,6 +1334,11 @@ function migrate(raw: unknown): BixboData {
       vaccinations: safeIdArray<ChecklistItem>(rawPregnancy.vaccinations),
       supplements: safeIdArray<ChecklistItem>(rawPregnancy.supplements),
       appointments: safeIdArray<PregnancyAppointment>(rawPregnancy.appointments),
+      endedAt: Boolean(rawPregnancy.active)
+        ? undefined
+        : typeof rawPregnancy.endedAt === "string"
+          ? rawPregnancy.endedAt
+          : undefined,
     },
     postpartum: {
       ...EMPTY.postpartum!,
@@ -1282,6 +1354,11 @@ function migrate(raw: unknown): BixboData {
   };
 }
 
+/** Normalize an imported backup through the same migration path used by local/cloud data. */
+export function normalizeBixboBackup(value: unknown): BixboData {
+  return migrate(value);
+}
+
 /* ------------------- Shared store ------------------- */
 function freshEmptyState(): BixboData {
   return migrate(structuredClone(EMPTY));
@@ -1289,6 +1366,74 @@ function freshEmptyState(): BixboData {
 
 let _state: BixboData = freshEmptyState();
 let _hydrated = false;
+
+function rawSnapshotHasMeaningfulUserData(raw: string | null): boolean {
+  if (!raw) return false;
+  try {
+    const value = JSON.parse(raw) as Record<string, unknown>;
+    const recordCount = (key: string) => {
+      const v = value[key];
+      return v && typeof v === "object" && !Array.isArray(v) ? Object.keys(v as Record<string, unknown>).length : 0;
+    };
+    const arrayCount = (key: string) => Array.isArray(value[key]) ? (value[key] as unknown[]).length : 0;
+
+    if (["dayLogs", "dayNotes", "todos", "medLog", "medLogTimes", "medNames"].some((key) => recordCount(key) > 0)) return true;
+    if (["tasks", "events", "meds", "notebook", "labs", "docs", "diagnoses", "deletedIds"].some((key) => arrayCount(key) > 0)) return true;
+
+    const custom = safeRecord(value.custom);
+    if (Object.values(custom).some((entry) => Array.isArray(entry) && entry.length > 0)) return true;
+
+    const deletedCustom = safeRecord(value.deletedCustom);
+    if (Object.values(deletedCustom).some((entry) => Array.isArray(entry) && entry.length > 0)) return true;
+
+    const syncMeta = safeRecord(value.syncMeta);
+    if (Object.keys(safeRecord(syncMeta.updatedAt)).length || Object.keys(safeRecord(syncMeta.deletedAt)).length) return true;
+
+    const cycle = safeRecord(value.cycle);
+    if (typeof cycle.lastPeriodStart === "string" || typeof cycle.lastPeriodEnd === "string") return true;
+
+    const profile = safeRecord(value.profile);
+    if (Object.values(profile).some((entry) => {
+      if (Array.isArray(entry)) return entry.length > 0;
+      if (entry && typeof entry === "object") return Object.keys(entry as Record<string, unknown>).length > 0;
+      return entry !== undefined && entry !== null && entry !== "";
+    })) return true;
+
+    const pregnancy = safeRecord(value.pregnancy);
+    if (pregnancy.active === true || typeof pregnancy.lmp === "string" || typeof pregnancy.dueDate === "string" || typeof pregnancy.endedAt === "string") return true;
+    if (["hospitalBag", "vaccinations", "supplements", "appointments"].some((key) => Array.isArray(pregnancy[key]) && (pregnancy[key] as unknown[]).length > 0)) return true;
+
+    const postpartum = safeRecord(value.postpartum);
+    if (postpartum.active === true || typeof postpartum.birthDate === "string" || typeof postpartum.endedAt === "string") return true;
+    if (Array.isArray(postpartum.visits) && postpartum.visits.length > 0) return true;
+
+    const settings = safeRecord(value.settings);
+    if (typeof settings.userName === "string" && settings.userName.trim()) return true;
+    if (typeof settings.birthControlSince === "string" && settings.birthControlSince) return true;
+    if (typeof settings.pairingCode === "string" && settings.pairingCode) return true;
+    if (Array.isArray(settings.customQuickTags) && settings.customQuickTags.length > 0) return true;
+    if (Array.isArray(settings.hiddenQuickTags) && settings.hiddenQuickTags.length > 0) return true;
+    if (Array.isArray(settings.quickTagOrder) && settings.quickTagOrder.length > 0) return true;
+
+    const rawTracking = safeRecord(settings.tracking);
+    const tracking = { ...DEFAULT_TRACKING_PREFS, ...rawTracking } as TrackingPreferences;
+    if (JSON.stringify(tracking) !== JSON.stringify(DEFAULT_TRACKING_PREFS)) return true;
+    const rawUnits = safeRecord(settings.units);
+    const units = { ...DEFAULT_UNIT_PREFS, ...rawUnits } as UnitPreferences;
+    if (JSON.stringify(units) !== JSON.stringify(DEFAULT_UNIT_PREFS)) return true;
+
+    const folders = Array.isArray(value.folders) ? value.folders : [];
+    if (folders.length && JSON.stringify(folders) !== JSON.stringify(DEFAULT_FOLDERS)) return true;
+
+    return false;
+  } catch {
+    // A malformed snapshot should never be trusted as the canonical copy.
+    return false;
+  }
+}
+let _snapshotWasPresentAtHydrate = false;
+let _legacyLocalCanonicalEligible = false;
+let _localEditedSinceHydrate = false;
 const listeners = new Set<() => void>();
 const changeListeners = new Set<(d: BixboData, reason: "local" | "remote") => void>();
 
@@ -1300,7 +1445,41 @@ function hydrate() {
   if (_hydrated || typeof window === "undefined") return;
   try {
     const raw = window.localStorage.getItem(KEY) ?? window.localStorage.getItem(LEGACY_KEY);
+    _snapshotWasPresentAtHydrate = Boolean(raw);
+
+    // v3 needs to distinguish a genuine pre-v3 installation from a brand-new
+    // browser that merely persisted an empty/default snapshot before sign-in.
+    // Persist the origin on the very first v3 hydrate so a later reload cannot
+    // accidentally turn a fresh install into the canonical legacy copy.
+    let installOrigin = window.localStorage.getItem(INSTALL_ORIGIN_KEY);
+    if (installOrigin !== "existing" && installOrigin !== "fresh") {
+      installOrigin = rawSnapshotHasMeaningfulUserData(raw) ? "existing" : "fresh";
+      window.localStorage.setItem(INSTALL_ORIGIN_KEY, installOrigin);
+    }
+    _legacyLocalCanonicalEligible = installOrigin === "existing";
+
     _state = raw ? migrate(JSON.parse(raw)) : freshEmptyState();
+
+    const legacyPrefsRaw = window.localStorage.getItem(LEGACY_HEALTH_PREFS_KEY);
+    if (legacyPrefsRaw) {
+      try {
+        const legacySettings = settingsFromLegacyHealthPreferences(JSON.parse(legacyPrefsRaw));
+        const rawStoredSettings = raw ? safeRecord(JSON.parse(raw).settings) : {};
+        _state = migrate({
+          ..._state,
+          settings: {
+            ..._state.settings,
+            tracking: rawStoredSettings.tracking ? _state.settings.tracking : legacySettings.tracking ?? _state.settings.tracking,
+            units: rawStoredSettings.units ? _state.settings.units : legacySettings.units ?? _state.settings.units,
+            privacy: rawStoredSettings.privacy ? _state.settings.privacy : legacySettings.privacy ?? _state.settings.privacy,
+            backup: rawStoredSettings.backup ? _state.settings.backup : legacySettings.backup ?? _state.settings.backup,
+            notif: rawStoredSettings.notif ? _state.settings.notif : legacySettings.notif ?? _state.settings.notif,
+          },
+        });
+      } catch {
+        // Malformed legacy preferences must never block the main health data.
+      }
+    }
   } catch (error) {
     console.error("BIXBO local data could not be loaded; using a safe empty state.", error);
     _state = freshEmptyState();
@@ -1514,8 +1693,25 @@ function withLocalSyncMetadata(previous: BixboData, next: BixboData): BixboData 
   };
 }
 
+/**
+ * Whether this device may safely be treated as the canonical legacy copy on
+ * the first cloud merge. Unlike checking localStorage directly, this is not
+ * fooled by an empty snapshot that BIXBO itself may persist after a fresh
+ * install opens/signs out before the first authenticated sync.
+ */
+export function hasAuthoritativeLocalSnapshot(): boolean {
+  hydrate();
+  // Only an installation that already had BIXBO data before the v3 migration
+  // may canonicalize clock-less legacy Quick Tags/custom lists. A fresh
+  // installation remains cloud-seeded even if it later writes an empty/default
+  // local snapshot and reloads. Normal post-v3 edits still carry path clocks
+  // and therefore do not require this legacy-only privilege.
+  return _legacyLocalCanonicalEligible;
+}
+
 export function setBixbo(updater: (d: BixboData) => BixboData) {
   hydrate();
+  _localEditedSinceHydrate = true;
   const previous = _state;
   const next = migrate(updater(_state));
   _state = migrate(withLocalSyncMetadata(previous, next));
@@ -1525,6 +1721,7 @@ export function setBixbo(updater: (d: BixboData) => BixboData) {
 }
 export function replaceBixbo(d: BixboData, reason: "local" | "remote" = "local") {
   hydrate();
+  if (reason === "local") _localEditedSinceHydrate = true;
   const next = migrate(d);
   _state = reason === "local" ? migrate(withLocalSyncMetadata(_state, next)) : next;
   persist();
