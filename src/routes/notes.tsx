@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { Ico } from "@/components/icons/BixboIcons";
 import { useBixbo, EMPTY, type Note } from "@/lib/storage";
 import { Input } from "@/components/ui/input";
 import { MoreVertical, Pin, PinOff, Plus, Search, Trash2, Archive, X } from "lucide-react";
@@ -106,6 +107,9 @@ function NotesPage() {
 
         {notes.length === 0 ? (
           <div className="rounded-3xl bg-surface px-4 py-8 text-center text-sm text-muted-foreground ring-1 ring-border/70">
+            <div className="mb-3 flex justify-center">
+              <Ico name="note" size={28} />
+            </div>
             {query ? "No notes match your search." : showArchived ? "No archived notes." : "No notes yet. Tap + to create one."}
           </div>
         ) : (
