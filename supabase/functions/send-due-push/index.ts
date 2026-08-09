@@ -38,6 +38,9 @@ type Prefs = {
   appointments?: boolean;
   mood?: boolean;
   hydration?: boolean;
+  sleep?: boolean;
+  sleepTime?: string;
+  quietHoursEnabled?: boolean;
   dailyLogTime?: string;
   symptomTime?: string;
   moodTime?: string;
@@ -115,6 +118,7 @@ function isDue(nowMinutes: number, target: number, windowMinutes = 2): boolean {
 }
 
 function inQuietHours(prefs: Prefs, nowMinutes: number): boolean {
+  if (prefs.quietHoursEnabled !== true) return false;
   const start = toMinutes(prefs.quietStart, 22 * 60);
   const end = toMinutes(prefs.quietEnd, 7 * 60);
   if (start === end) return false;
@@ -249,6 +253,20 @@ function planReminders(userId: string, snapshot: Snapshot, now: Date): Reminder[
         category: "mood",
       },
     });
+  }
+
+  /* Sleep ----------------------------------------------------------- */
+  if (prefs.sleep === true) {
+    const sleepTime = parseTime(prefs.sleepTime ?? "22:30");
+    if (sleepTime != null && minuteMatches(nowMinutes, sleepTime, 5)) {
+      due.push({
+        category: "sleep",
+        title: "Sleep reminder",
+        body: "Time to wind down and get ready for sleep.",
+        tag: `bixbo-sleep-${today}`,
+        url: "/",
+      });
+    }
   }
 
   /* Hydration ------------------------------------------------------- */

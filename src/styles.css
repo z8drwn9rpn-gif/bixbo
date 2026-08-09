@@ -95,32 +95,32 @@
 :root {
   --radius: 1rem;
 
-  /* Main light palette — soft creamy olive inspired by the BIXBO reference UI */
-  --background: #EEF0CB;
-  --foreground: #171A0E;
+  /* Final BIXBO Moss Green light palette */
+  --background: #98A86A;
+  --foreground: #18200F;
 
-  --surface: #F2F1CE;
-  --surface-elevated: #F8F4D8;
-  --surface-sunken: #E3E6B4;
-  --tint: #D9DEA0;
+  --surface: #B0BC89;
+  --surface-elevated: #BEC8A0;
+  --surface-sunken: #88975D;
+  --tint: #A7B47B;
 
-  --card: #F2F1CE;
-  --card-foreground: #171A0E;
+  --card: #B0BC89;
+  --card-foreground: #18200F;
 
-  --popover: #FAF6D9;
-  --popover-foreground: #171A0E;
+  --popover: #C3CCAA;
+  --popover-foreground: #18200F;
 
-  --primary: #66720B;
-  --primary-foreground: #FFFDEB;
+  --primary: #5F7033;
+  --primary-foreground: #FFFDF3;
 
-  --secondary: #E0E3AC;
-  --secondary-foreground: #20250F;
+  --secondary: #A9B57E;
+  --secondary-foreground: #202814;
 
-  --muted: #E7E8BA;
-  --muted-foreground: #515832;
+  --muted: #AAB77E;
+  --muted-foreground: #475234;
 
-  --accent: #CDD482;
-  --accent-foreground: #20250F;
+  --accent: #97A969;
+  --accent-foreground: #1F2812;
 
   --destructive: oklch(0.5 0.22 25);
   --destructive-foreground: oklch(1 0 0);
@@ -137,14 +137,17 @@
   --info: oklch(0.45 0.13 240);
   --info-foreground: oklch(1 0 0);
 
-  --border: #B8BD7A;
-  --input: #B8BD7A;
-  --ring: #66720B;
+  --border: #7D8D54;
+  --input: #7D8D54;
+  --ring: #5F7033;
 
-  --chart-grid: #D1D49F;
-  --chart-axis: #424826;
-  --chart-tooltip-bg: #FBF7DD;
-  --chart-tooltip-fg: #171A0E;
+  --chart-grid: #95A56A;
+  --chart-axis: #37412B;
+  --chart-tooltip-bg: #D0D8BC;
+  --chart-tooltip-fg: #18200F;
+
+  --bixbo-glass: rgba(176, 188, 137, 0.74);
+  --bixbo-glass-strong: rgba(190, 200, 160, 0.90);
 
   /* Period intensity - readable text always dark on light swatches, adjusted for contrast/step separation */
   --period-spotting: oklch(0.86 0.05 275);
@@ -187,32 +190,32 @@
 }
 
 .dark {
-  /* Main dark palette */
-  --background: oklch(0.25 0.026 123);
-  --foreground: oklch(0.965 0.02 101.2);
+  /* Final BIXBO Soft Olive dark palette */
+  --background: #4B5133;
+  --foreground: #F5F4E8;
 
-  --surface: oklch(0.31 0.032 123);
-  --surface-elevated: oklch(0.36 0.038 123);
-  --surface-sunken: oklch(0.22 0.024 123);
-  --tint: oklch(0.42 0.045 123);
+  --surface: #5A6040;
+  --surface-elevated: #666D49;
+  --surface-sunken: #41472D;
+  --tint: #626944;
 
-  --card: oklch(0.31 0.032 123);
-  --card-foreground: oklch(0.965 0.02 101.2);
+  --card: #5A6040;
+  --card-foreground: #F5F4E8;
 
-  --popover: oklch(0.31 0.032 123);
-  --popover-foreground: oklch(0.965 0.02 101.2);
+  --popover: #626844;
+  --popover-foreground: #F5F4E8;
 
-  --primary: oklch(0.82 0.13 122.9);
-  --primary-foreground: oklch(0.16 0.018 122.9);
+  --primary: #B6C28E;
+  --primary-foreground: #30351F;
 
-  --secondary: oklch(0.43 0.042 123);
-  --secondary-foreground: oklch(0.965 0.02 101.2);
+  --secondary: #686F49;
+  --secondary-foreground: #F4F2E5;
 
-  --muted: oklch(0.39 0.036 123);
-  --muted-foreground: oklch(0.86 0.03 101.7);
+  --muted: #626847;
+  --muted-foreground: #D5D7C2;
 
-  --accent: oklch(0.48 0.05 123);
-  --accent-foreground: oklch(0.965 0.02 101.2);
+  --accent: #77805A;
+  --accent-foreground: #F8F7EC;
 
   --destructive: oklch(0.72 0.2 25);
   --destructive-foreground: oklch(0.14 0.02 25);
@@ -229,14 +232,17 @@
   --info: oklch(0.78 0.11 235);
   --info-foreground: oklch(0.14 0.04 235);
 
-  --border: oklch(0.47 0.04 123);
-  --input: oklch(0.47 0.04 123);
-  --ring: oklch(0.82 0.13 122.9);
+  --border: #777D58;
+  --input: #777D58;
+  --ring: #C0CD98;
 
-  --chart-grid: oklch(0.4 0.03 122);
-  --chart-axis: oklch(0.75 0.03 115);
-  --chart-tooltip-bg: oklch(0.3 0.024 123);
-  --chart-tooltip-fg: oklch(0.965 0.02 101.2);
+  --chart-grid: #6C7350;
+  --chart-axis: #DDDCCB;
+  --chart-tooltip-bg: #555B3B;
+  --chart-tooltip-fg: #F7F5E9;
+
+  --bixbo-glass: rgba(90, 96, 64, 0.82);
+  --bixbo-glass-strong: rgba(102, 109, 73, 0.94);
 
   /* Period intensity in dark mode - separated + readable fg */
   --period-spotting: oklch(0.8 0.08 275);
@@ -368,30 +374,11 @@
   }
 }
 
-/* Olive-tinted elevation for light mode */
-:root:not(.dark) .shadow-sm {
-  --tw-shadow-color: color-mix(in srgb, #7C861B 14%, transparent);
-}
-
-:root:not(.dark) .shadow-md,
-:root:not(.dark) .shadow-lg,
-:root:not(.dark) .shadow-xl {
-  --tw-shadow-color: color-mix(in srgb, #7C861B 18%, transparent);
-}
-
-/* Reference-style soft olive UI polish */
-:root:not(.dark) {
-  --bixbo-glass: rgba(248, 247, 218, 0.52);
-  --bixbo-glass-strong: rgba(250, 248, 220, 0.72);
-}
-
+/* Reference-style soft olive UI polish. Palette, rings and shadows are
+   defined once in the final theme blocks below. */
 :root:not(.dark) .bg-surface,
 :root:not(.dark) .bg-card {
   backdrop-filter: saturate(0.92);
-}
-
-:root:not(.dark) .ring-border {
-  --tw-ring-color: color-mix(in srgb, var(--border) 78%, transparent);
 }
 
 /* Note editor placeholder */
@@ -543,442 +530,16 @@ select:-webkit-autofill {
 }
 /* BIXBO soft creamy olive theme revision: 2026-08-08 */
 
-/* ==========================================================
-   BIXBO Olive Green full-app theme — #636B2F
-   Added as a non-destructive override. Existing theme code above is preserved.
-   ========================================================== */
-
-:root:not(.dark) {
-  /* Main app canvas */
-  --background: #636B2F;
-  --foreground: #FFFDF2;
-
-  /* Olive surfaces — whole app stays in the same #636B2F family */
-  --surface: #747C42;
-  --surface-elevated: #858D52;
-  --surface-sunken: #555C2A;
-  --tint: #8D9557;
-
-  --card: #747C42;
-  --card-foreground: #FFFDF2;
-
-  --popover: #7C8449;
-  --popover-foreground: #FFFDF2;
-
-  /* Controls / selected states */
-  --primary: #C0CB78;
-  --primary-foreground: #28300F;
-
-  --secondary: #7E874A;
-  --secondary-foreground: #FFFDF2;
-
-  --muted: #6D753A;
-  --muted-foreground: #E6E9CC;
-
-  --accent: #9DA65E;
-  --accent-foreground: #20260D;
-
-  /* Borders and focus */
-  --border: #969D66;
-  --input: #969D66;
-  --ring: #D1DB8B;
-
-  /* Charts / tooltips */
-  --chart-grid: #7F8750;
-  --chart-axis: #F0F2D8;
-  --chart-tooltip-bg: #4E5524;
-  --chart-tooltip-fg: #FFFDF2;
-
-  /* Reference-style olive glass */
-  --bixbo-glass: rgba(116, 124, 66, 0.72);
-  --bixbo-glass-strong: rgba(133, 141, 82, 0.86);
-}
-
-/* Full-page olive background, including the area behind AppShell/content. */
-:root:not(.dark),
-:root:not(.dark) body {
-  background-color: #636B2F;
-}
-
-:root:not(.dark) body {
-  background:
-    radial-gradient(circle at 50% -12%, rgba(193, 203, 120, 0.18) 0%, transparent 34%),
-    linear-gradient(
-      180deg,
-      #737B3D 0%,
-      #687034 26%,
-      #636B2F 58%,
-      #596027 100%
-    );
-}
-
-/* Keep elevated content readable while remaining olive rather than cream. */
-:root:not(.dark) .bg-surface,
-:root:not(.dark) .bg-card {
-  backdrop-filter: saturate(0.96);
-}
-
-/* Softer depth for the darker olive canvas. */
-:root:not(.dark) .shadow-sm {
-  --tw-shadow-color: color-mix(in srgb, #252A10 22%, transparent);
-}
-
-:root:not(.dark) .shadow-md,
-:root:not(.dark) .shadow-lg,
-:root:not(.dark) .shadow-xl {
-  --tw-shadow-color: color-mix(in srgb, #252A10 28%, transparent);
-}
-
-/* BIXBO Olive Green full-app theme revision: #636B2F */
-
-/* ==========================================================
-   BIXBO Light Olive full-app theme — #ACBF69
-   Added as a non-destructive override. Everything above is preserved.
-   ========================================================== */
-
-:root:not(.dark) {
-  /* Main app canvas — exact requested Light Olive */
-  --background: #ACBF69;
-  --foreground: #1B210E;
-
-  /* Layered olive surfaces */
-  --surface: #B8C87C;
-  --surface-elevated: #C6D391;
-  --surface-sunken: #9FB35A;
-  --tint: #C1CF87;
-
-  --card: #B8C87C;
-  --card-foreground: #1B210E;
-
-  --popover: #CFD99D;
-  --popover-foreground: #1B210E;
-
-  /* Controls / selected states */
-  --primary: #636B2F;
-  --primary-foreground: #FFFDF2;
-
-  --secondary: #BDCC82;
-  --secondary-foreground: #242B12;
-
-  --muted: #B3C477;
-  --muted-foreground: #4A5529;
-
-  --accent: #C9D58F;
-  --accent-foreground: #273013;
-
-  /* Borders and focus */
-  --border: #8FA04F;
-  --input: #8FA04F;
-  --ring: #636B2F;
-
-  /* Charts / tooltips */
-  --chart-grid: #9EAF5D;
-  --chart-axis: #39431D;
-  --chart-tooltip-bg: #E4E8BF;
-  --chart-tooltip-fg: #1B210E;
-
-  /* Olive glass */
-  --bixbo-glass: rgba(184, 200, 124, 0.72);
-  --bixbo-glass-strong: rgba(198, 211, 145, 0.88);
-}
-
-/* Full Light Olive background everywhere in light mode. */
-:root:not(.dark),
-:root:not(.dark) body {
-  background-color: #ACBF69;
-}
-
-:root:not(.dark) body {
-  background:
-    radial-gradient(circle at 50% -14%, rgba(242, 245, 210, 0.22) 0%, transparent 34%),
-    linear-gradient(
-      180deg,
-      #B9C979 0%,
-      #B1C36F 26%,
-      #ACBF69 58%,
-      #A1B35C 100%
-    );
-}
-
-/* Keep all existing cards olive rather than reverting to cream. */
-:root:not(.dark) .bg-surface,
-:root:not(.dark) .bg-card {
-  backdrop-filter: saturate(0.96);
-}
-
-/* Light Olive elevation. */
-:root:not(.dark) .shadow-sm {
-  --tw-shadow-color: color-mix(in srgb, #59652B 15%, transparent);
-}
-
-:root:not(.dark) .shadow-md,
-:root:not(.dark) .shadow-lg,
-:root:not(.dark) .shadow-xl {
-  --tw-shadow-color: color-mix(in srgb, #59652B 20%, transparent);
-}
-
-/* BIXBO Light Olive full-app theme revision: #ACBF69 */
-
-/* ==========================================================
-   BIXBO — light olive palette matched to the FIRST mockup
-   Non-destructive override: everything above stays untouched.
-   ========================================================== */
-
-:root:not(.dark) {
-  /* Main page / app background — sampled toward the first mockup */
-  --background: #BCC285;
-  --foreground: #20250F;
-
-  /* Main cards and nested surfaces */
-  --surface: #D3D5A5;
-  --surface-elevated: #DADDB3;
-  --surface-sunken: #B7BD7A;
-  --tint: #C6CA94;
-
-  --card: #D3D5A5;
-  --card-foreground: #20250F;
-
-  --popover: #DADDB3;
-  --popover-foreground: #20250F;
-
-  /* Selected controls remain the darker BIXBO olive */
-  --primary: #66720B;
-  --primary-foreground: #FFFDEB;
-
-  --secondary: #CDD19D;
-  --secondary-foreground: #252A12;
-
-  --muted: #C4C98F;
-  --muted-foreground: #51582F;
-
-  --accent: #BFC778;
-  --accent-foreground: #242B10;
-
-  --border: #9DA365;
-  --input: #9DA365;
-  --ring: #66720B;
-
-  --chart-grid: #B7BC7E;
-  --chart-axis: #424826;
-  --chart-tooltip-bg: #E1E3BD;
-  --chart-tooltip-fg: #20250F;
-
-  --bixbo-glass: rgba(211, 213, 165, 0.74);
-  --bixbo-glass-strong: rgba(218, 221, 179, 0.90);
-}
-
-/* Exact first-mockup family across the whole app canvas. */
-:root:not(.dark),
-:root:not(.dark) body {
-  background-color: #BCC285;
-}
-
-:root:not(.dark) body {
-  background:
-    radial-gradient(circle at 50% -12%, rgba(234, 236, 198, 0.28) 0%, transparent 34%),
-    linear-gradient(
-      180deg,
-      #BDC285 0%,
-      #C6CA94 34%,
-      #D1D4A4 68%,
-      #D6D9AA 100%
-    );
-}
-
-/* Keep cards lighter than the page background, as in the first mockup. */
-:root:not(.dark) .bg-surface,
-:root:not(.dark) .bg-card {
-  backdrop-filter: saturate(0.94);
-}
-
-/* Softer borders and shadows from the reference. */
-:root:not(.dark) .ring-border {
-  --tw-ring-color: color-mix(in srgb, #9DA365 70%, transparent);
-}
-
-:root:not(.dark) .shadow-sm {
-  --tw-shadow-color: color-mix(in srgb, #59612D 11%, transparent);
-}
-
-:root:not(.dark) .shadow-md,
-:root:not(.dark) .shadow-lg,
-:root:not(.dark) .shadow-xl {
-  --tw-shadow-color: color-mix(in srgb, #59612D 16%, transparent);
-}
-
-/* BIXBO first-image light olive revision */
-
-/* ==========================================================
-   BIXBO lighter olive BACKGROUND only
-   Non-destructive override: everything above stays untouched.
-   This lightens only the app/page background family.
-   ========================================================== */
-
-:root:not(.dark) {
-  /* Lighter olive page background */
-  --background: #C8CE96;
-}
-
-/* Lighter olive canvas everywhere in light mode */
-:root:not(.dark),
-:root:not(.dark) body {
-  background-color: #C8CE96;
-}
-
-:root:not(.dark) body {
-  background:
-    radial-gradient(circle at 50% -12%, rgba(242, 244, 219, 0.30) 0%, transparent 34%),
-    linear-gradient(
-      180deg,
-      #CCD29D 0%,
-      #D2D7A8 34%,
-      #D8DCAF 68%,
-      #DEE2BA 100%
-    );
-}
-
-/* Keep existing cards/surfaces from previous theme intact */
-
-/* ==========================================================
-   BIXBO Moss Green light theme — #A6B48C
-   Non-destructive final override. Existing theme history above is preserved.
-   HAK uses its own local lavender theme and is not changed here.
-   ========================================================== */
-
-:root:not(.dark) {
-  /* Main Moss Green canvas */
-  --background: #A6B48C;
-  --foreground: #18200F;
-
-  /* Calm moss/sage surfaces */
-  --surface: #BBC5A7;
-  --surface-elevated: #C7D0B7;
-  --surface-sunken: #97A47C;
-  --tint: #B3BE9C;
-
-  --card: #BBC5A7;
-  --card-foreground: #18200F;
-
-  --popover: #CBD3BC;
-  --popover-foreground: #18200F;
-
-  /* Selected controls / BIXBO olive accent */
-  --primary: #66723B;
-  --primary-foreground: #FFFDF3;
-
-  --secondary: #B1BC98;
-  --secondary-foreground: #202814;
-
-  --muted: #AFBA96;
-  --muted-foreground: #4B563A;
-
-  --accent: #9EAC7F;
-  --accent-foreground: #1F2812;
-
-  /* Borders and focus */
-  --border: #87956D;
-  --input: #87956D;
-  --ring: #66723B;
-
-  /* Charts / tooltips */
-  --chart-grid: #9DAA83;
-  --chart-axis: #37412B;
-  --chart-tooltip-bg: #D4DBC7;
-  --chart-tooltip-fg: #18200F;
-
-  /* Moss glass */
-  --bixbo-glass: rgba(187, 197, 167, 0.74);
-  --bixbo-glass-strong: rgba(199, 208, 183, 0.90);
-}
-
-/* One Moss Green base behind html/body/safe-area. */
-:root:not(.dark),
-:root:not(.dark) body {
-  background-color: #A6B48C;
-}
-
-/* Cooler moss gradient: less yellow shift under True Tone / Night Shift. */
-:root:not(.dark) body {
-  background:
-    radial-gradient(circle at 50% -12%, rgba(226, 232, 216, 0.22) 0%, transparent 34%),
-    linear-gradient(
-      180deg,
-      #A9B78F 0%,
-      #A6B48C 34%,
-      #AFBB99 68%,
-      #B7C2A3 100%
-    );
-}
-
-/* Keep rings/shadows in the same moss family. */
-:root:not(.dark) .ring-border {
-  --tw-ring-color: color-mix(in srgb, #87956D 70%, transparent);
-}
-
-:root:not(.dark) .shadow-sm {
-  --tw-shadow-color: color-mix(in srgb, #52603D 11%, transparent);
-}
-
-:root:not(.dark) .shadow-md,
-:root:not(.dark) .shadow-lg,
-:root:not(.dark) .shadow-xl {
-  --tw-shadow-color: color-mix(in srgb, #52603D 16%, transparent);
-}
-
-/* BIXBO Moss Green revision: #A6B48C */
+/* Obsolete light-theme revision stack removed after consolidating the final BIXBO palette.
+   The active final light/dark palette begins below. */
 
 /* ==========================================================
    BIXBO Moss Green light theme — #98A86A
-   Final non-destructive override.
-   Existing palette history above is preserved.
+   Final consolidated palette.
    HAK keeps its own local lavender theme and is not changed here.
    ========================================================== */
 
-:root:not(.dark) {
-  /* Main Moss Green canvas */
-  --background: #98A86A;
-  --foreground: #18200F;
-
-  /* Softer moss/sage surfaces */
-  --surface: #B0BC89;
-  --surface-elevated: #BEC8A0;
-  --surface-sunken: #88975D;
-  --tint: #A7B47B;
-
-  --card: #B0BC89;
-  --card-foreground: #18200F;
-
-  --popover: #C3CCAA;
-  --popover-foreground: #18200F;
-
-  /* Selected controls / BIXBO olive accent */
-  --primary: #5F7033;
-  --primary-foreground: #FFFDF3;
-
-  --secondary: #A9B57E;
-  --secondary-foreground: #202814;
-
-  --muted: #AAB77E;
-  --muted-foreground: #475234;
-
-  --accent: #97A969;
-  --accent-foreground: #1F2812;
-
-  /* Borders and focus */
-  --border: #7D8D54;
-  --input: #7D8D54;
-  --ring: #5F7033;
-
-  /* Charts / tooltips */
-  --chart-grid: #95A56A;
-  --chart-axis: #37412B;
-  --chart-tooltip-bg: #D0D8BC;
-  --chart-tooltip-fg: #18200F;
-
-  /* Moss glass */
-  --bixbo-glass: rgba(176, 188, 137, 0.74);
-  --bixbo-glass-strong: rgba(190, 200, 160, 0.90);
-}
+/* Final light tokens are defined once in :root above. */
 
 /* One Moss Green base behind html/body/safe-area. */
 :root:not(.dark),
@@ -1018,46 +579,7 @@ select:-webkit-autofill {
    BIXBO — SOFT OLIVE DARK
    ========================================================== */
 
-.dark {
-  --background: #4B5133;
-  --foreground: #F5F4E8;
-
-  --surface: #5A6040;
-  --surface-elevated: #666D49;
-  --surface-sunken: #41472D;
-  --tint: #626944;
-
-  --card: #5A6040;
-  --card-foreground: #F5F4E8;
-
-  --popover: #626844;
-  --popover-foreground: #F5F4E8;
-
-  --primary: #B6C28E;
-  --primary-foreground: #30351F;
-
-  --secondary: #686F49;
-  --secondary-foreground: #F4F2E5;
-
-  --muted: #626847;
-  --muted-foreground: #D5D7C2;
-
-  --accent: #77805A;
-  --accent-foreground: #F8F7EC;
-
-  --border: #777D58;
-  --input: #777D58;
-  --ring: #C0CD98;
-
-  --chart-grid: #6C7350;
-  --chart-axis: #DDDCCB;
-
-  --chart-tooltip-bg: #555B3B;
-  --chart-tooltip-fg: #F7F5E9;
-
-  --bixbo-glass: rgba(90, 96, 64, 0.82);
-  --bixbo-glass-strong: rgba(102, 109, 73, 0.94);
-}
+/* Final dark tokens are defined once in .dark above. */
 
 html.dark,
 html.dark body {
@@ -1092,4 +614,24 @@ html.dark body {
 .dark .shadow-lg,
 .dark .shadow-xl {
   --tw-shadow-color: rgba(38, 42, 24, 0.26);
+}
+/* Mobile accessibility: keep compact arrow visuals, but give them a 44×44 px
+   interaction hit area without changing the approved layout dimensions. */
+@media (pointer: coarse) {
+  button[aria-label^="Previous"],
+  button[aria-label^="Next"] {
+    position: relative;
+  }
+
+  button[aria-label^="Previous"]::after,
+  button[aria-label^="Next"]::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 44px;
+    height: 44px;
+    transform: translate(-50%, -50%);
+    border-radius: 9999px;
+  }
 }
