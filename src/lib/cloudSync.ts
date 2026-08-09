@@ -221,8 +221,10 @@ function normalizeRemotePostpartumState(value: unknown): PostpartumState {
 
   const birthWeight = Number(raw.babyBirthWeightKg);
 
+  const active = Boolean(raw.active);
+
   return {
-    active: Boolean(raw.active),
+    active,
     birthDate: typeof raw.birthDate === "string" ? raw.birthDate : undefined,
     deliveryType,
     babyName: typeof raw.babyName === "string" ? raw.babyName : undefined,
@@ -230,7 +232,7 @@ function normalizeRemotePostpartumState(value: unknown): PostpartumState {
     feedingMode,
     visits,
     note: typeof raw.note === "string" ? raw.note : undefined,
-    endedAt: typeof raw.endedAt === "string" ? raw.endedAt : undefined,
+    endedAt: active ? undefined : typeof raw.endedAt === "string" ? raw.endedAt : undefined,
   };
 }
 
