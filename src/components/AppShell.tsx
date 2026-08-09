@@ -40,7 +40,7 @@ export function AppShell({
                 aria-hidden="true"
               >
                 <img
-                  src="/bixbo-mascot.png?v=20260809c"
+                  src="/bixbo-mascot.png?v=20260809d"
                   alt=""
                   aria-hidden="true"
                   draggable={false}
@@ -56,7 +56,7 @@ export function AppShell({
                   onError={(event) => {
                     const image = event.currentTarget;
                     if (!image.src.includes("/icon-192.png")) {
-                      image.src = "/icon-192.png?v=20260809c";
+                      image.src = "/icon-192.png?v=20260809d";
                     }
                   }}
                 />
