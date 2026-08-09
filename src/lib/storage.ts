@@ -1211,6 +1211,17 @@ function migrate(raw: unknown): BixboData {
     docs: safeIdArray<DocEntry>(parsed.docs),
     diagnoses: safeIdArray<Diagnosis>(parsed.diagnoses),
     deletedIds: safeArray<unknown>(parsed.deletedIds).filter((item): item is string => typeof item === "string"),
+    deletedCustom: (() => {
+      const raw = safeRecord<Record<string, unknown>>(parsed.deletedCustom);
+      const out: Partial<Record<keyof CustomLists, string[]>> = {};
+      for (const key of Object.keys(EMPTY.custom) as Array<keyof CustomLists>) {
+        const value = raw[key];
+        if (!Array.isArray(value)) continue;
+        const list = value.filter((item): item is string => typeof item === "string");
+        if (list.length) out[key] = list;
+      }
+      return out;
+    })(),
     profile: rawProfile,
     pregnancy: {
       ...EMPTY.pregnancy!,
