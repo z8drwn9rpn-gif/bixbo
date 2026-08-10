@@ -24,6 +24,7 @@ import {
   X,
 } from "@/components/icons/BixboIcons";
 import { NoteEditor } from "./notes-editor";
+import { useI18n } from "@/hooks/useI18n";
 
 export const Route = createFileRoute("/notes")({
   head: () => ({
@@ -281,6 +282,7 @@ function NoteRichText({ text, size = 16 }: { text: string; size?: number }) {
 }
 
 function NotesPage() {
+  const { t } = useI18n();
   const { data, update, hydrated } = useBixbo();
   const view = hydrated ? data : EMPTY;
 
@@ -512,7 +514,7 @@ function NotesPage() {
         {screen === "folders" && !openFolder ? (
           <section>
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="font-serif text-2xl">Folders</h2>
+              <h2 className="font-serif text-2xl">{t("Folders")}</h2>
               <Button size="sm" variant="outline" onClick={addFolder}>
                 <Plus className="h-4 w-4" />
                 Folder
