@@ -579,6 +579,24 @@ const SK: Record<string, string> = {
   "Most common flow": "Najčastejší priebeh",
   "Logged days": "Zaznamenané dni",
 
+  "as needed": "podľa potreby",
+  "Yesterday": "Včera",
+  "checklist items complete": "položiek zoznamu hotových",
+  "No additional text": "Žiadny ďalší text",
+  "Delete this note?": "Vymazať túto poznámku?",
+  "All Notes": "Všetky poznámky",
+  "New folder": "Nový priečinok",
+  "No notes yet": "Zatiaľ žiadne poznámky",
+  "No archived notes": "Žiadne archivované poznámky",
+  "No folders yet": "Zatiaľ žiadne priečinky",
+  "Pin note": "Pripnúť poznámku",
+  "Unpin note": "Odopnúť poznámku",
+  "Archive note": "Archivovať poznámku",
+  "Unarchive note": "Obnoviť poznámku z archívu",
+  "Delete note": "Vymazať poznámku",
+  "Search notes": "Hľadať poznámky",
+  "More options": "Ďalšie možnosti",
+
 };
 
 const TRANSLATIONS: Record<AppLanguage, Record<string, string>> = { en: EN, sk: SK };
