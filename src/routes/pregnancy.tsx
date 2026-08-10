@@ -243,6 +243,7 @@ function PregnancyPage() {
 /* ------------------------------------------------------------------ */
 
 function SetupForm({ view, update }: { view: BixboData; update: (u: (d: BixboData) => BixboData) => void }) {
+  const { t } = useI18n();
   const [lmp, setLmp] = useState(view.pregnancy?.lmp ?? "");
   const [dueDate, setDueDate] = useState(view.pregnancy?.dueDate ?? "");
   const [startWeight, setStartWeight] = useState(view.pregnancy?.startWeightKg != null ? String(view.pregnancy.startWeightKg) : "");
@@ -540,6 +541,7 @@ function AppointmentsSection({ view, update }: { view: BixboData; update: (u: (d
 }
 
 function SymptomsSection({ view, update }: { view: BixboData; update: (u: (d: BixboData) => BixboData) => void }) {
+  const { t } = useI18n();
   const today = todayKey();
   const log = view.dayLogs[today]?.pregnancy ?? {};
   const goal = view.profile?.hydrationGoalMl ?? 2000;
