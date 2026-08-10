@@ -1577,7 +1577,7 @@ function CouplePage() {
 
         {!partner ? (
           <div className="rounded-3xl bg-surface p-6 text-center ring-1 ring-border">
-            <p className="text-sm font-medium">No partner linked yet.</p>
+            <p className="text-sm font-medium">{t("No partner linked yet.")}</p>
 
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
               In Settings → Couple sharing, exchange pairing codes with your partner to compare selected health logs.
