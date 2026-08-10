@@ -412,6 +412,7 @@ function ComparisonRow({
 }
 
 function SimilarityCard({ score, partnerName }: { score: number; partnerName: string }) {
+  const { t } = useI18n();
   const safeScore = clampPercent(score);
 
   return (
@@ -427,18 +428,18 @@ function SimilarityCard({ score, partnerName }: { score: number; partnerName: st
             <div className="text-center">
               <p className="text-2xl font-bold tabular-nums">{safeScore.toFixed(0)}%</p>
 
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">similarity</p>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{t("similarity")}</p>
             </div>
           </div>
         </div>
 
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Health similarity</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t("Health similarity")}</p>
 
           <h2 className="mt-1 font-serif text-xl font-semibold">You + {partnerName}</h2>
 
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-            Based only on shared pain, panic and tetany data during the selected month.
+            {t("Based only on shared pain, panic and tetany data during the selected month.")}
           </p>
         </div>
       </div>
@@ -451,8 +452,9 @@ function SimilarityCard({ score, partnerName }: { score: number; partnerName: st
 /* -------------------------------------------------------------------------- */
 
 function PainList({ title, entries }: { title: string; entries: (PainEntry & { dateKey: string })[] }) {
+  const { t } = useI18n();
   if (!entries.length) {
-    return <p className="text-xs text-muted-foreground">No pain entries yet.</p>;
+    return <p className="text-xs text-muted-foreground">{t("No pain entries yet.")}</p>;
   }
 
   return (
@@ -508,8 +510,9 @@ function PainList({ title, entries }: { title: string; entries: (PainEntry & { d
 }
 
 function TetanyList({ title, entries }: { title: string; entries: (TetanyEpisode & { dateKey: string })[] }) {
+  const { t } = useI18n();
   if (!entries.length) {
-    return <p className="text-xs text-muted-foreground">No tetany episodes yet.</p>;
+    return <p className="text-xs text-muted-foreground">{t("No tetany episodes yet.")}</p>;
   }
 
   return (
@@ -545,8 +548,9 @@ function TetanyList({ title, entries }: { title: string; entries: (TetanyEpisode
 }
 
 function PanicList({ title, entries }: { title: string; entries: (PanicAttack & { dateKey: string })[] }) {
+  const { t } = useI18n();
   if (!entries.length) {
-    return <p className="text-xs text-muted-foreground">No panic attacks yet.</p>;
+    return <p className="text-xs text-muted-foreground">{t("No panic attacks yet.")}</p>;
   }
 
   return (
@@ -593,6 +597,7 @@ function MedsList({
     extra: ExtraMed[];
   }[];
 }) {
+  const { t } = useI18n();
   const nonEmpty = days.filter(
     (day) =>
       day.extra.length ||
@@ -600,7 +605,7 @@ function MedsList({
   );
 
   if (!nonEmpty.length) {
-    return <p className="text-xs text-muted-foreground">No medication logged yet.</p>;
+    return <p className="text-xs text-muted-foreground">{t("No medication logged yet.")}</p>;
   }
 
   return (
@@ -669,7 +674,7 @@ function CurrentAndHistory({
       {historyCount > 0 ? (
         <details className="mt-3 rounded-2xl bg-surface/75 p-3 ring-1 ring-border/40">
           <summary className="cursor-pointer text-xs font-semibold text-foreground">
-            Show earlier entries ({historyCount})
+            {t("Show earlier entries")} ({historyCount})
           </summary>
           <div className="mt-3">{historyContent}</div>
         </details>
@@ -1062,11 +1067,11 @@ function CouplePainChart({
               {PAIN_DESCRIPTIONS[Math.max(0, Math.min(10, Math.round(selectedBar.value)))] ?? "Pain"}
             </span>
 
-            <span className="shrink-0 text-[10px] text-muted-foreground">Tap to close</span>
+            <span className="shrink-0 text-[10px] text-muted-foreground">{t("Tap to close")}</span>
           </button>
         </div>
       ) : (
-        <p className="mt-2 text-center text-[10px] text-muted-foreground">Tap any pain bar to see the exact value.</p>
+        <p className="mt-2 text-center text-[10px] text-muted-foreground">{t("Tap any pain bar to see the exact value.")}</p>
       )}
 
       <div className="mt-2 flex flex-wrap gap-4 text-xs text-muted-foreground">
