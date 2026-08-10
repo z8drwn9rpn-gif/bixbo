@@ -242,7 +242,7 @@ function SectionCard({ title, description, children }: { title: string; descript
   const { t } = useI18n();
   return (
     <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
-      <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{title}</h2>
+      <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t(title)}</h2>
 
       {description ? <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t(description)}</p> : null}
 
@@ -340,7 +340,7 @@ function ComparisonBarCard({
         <div className="min-w-0 flex-1">
           <h3 className="text-sm font-semibold text-foreground">{t(title)}</h3>
 
-          <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">{subtitle}</p>
+          <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">{t(subtitle)}</p>
         </div>
       </div>
 
@@ -385,10 +385,11 @@ function ComparisonRow({
   unit: string;
   striped?: boolean;
 }) {
+  const { t } = useI18n();
   return (
     <div>
       <div className="flex items-center justify-between gap-3">
-        <span className="truncate text-[11px] font-medium text-muted-foreground">{label}</span>
+        <span className="truncate text-[11px] font-medium text-muted-foreground">{t(label)}</span>
 
         <span className="shrink-0 text-sm font-bold tabular-nums text-foreground">
           {formatValue(value, decimals, unit)}
@@ -1061,7 +1062,7 @@ function CouplePainChart({
             type="button"
             onClick={() => setSelectedBar(null)}
             className="flex w-full items-center justify-between gap-2 text-left"
-            aria-label="Close selected pain details"
+            aria-label={t("Close selected pain details")}
           >
             <span className="min-w-0 break-words leading-snug [overflow-wrap:anywhere]">
               <b>{selectedBar.owner}</b> · {selectedBar.day} · Pain <b>{selectedBar.value.toFixed(1)}/10</b> ·{" "}
@@ -1522,11 +1523,11 @@ function CouplePage() {
   ];
 
   return (
-    <AppShell title="Bixbo Couple">
+    <AppShell title={t("Bixbo Couple")}>
       <div className="space-y-3 px-5 pb-[calc(96px+env(safe-area-inset-bottom))] pt-2 lg:grid lg:grid-cols-2 lg:items-start lg:gap-3 lg:space-y-0 lg:px-0 lg:pb-12 [&>*:first-child]:lg:col-span-2">
         <div
           className="mx-auto grid w-full max-w-[340px] grid-cols-1 gap-0.5 rounded-xl bg-primary/20 p-0.5 ring-1 ring-primary/15 lg:max-w-sm"
-          aria-label="Couple period: Month"
+          aria-label={t("Couple period: Month")}
         >
           <div className="min-w-0 rounded-[10px] bg-primary px-2 py-1.5 text-center text-[11px] font-semibold text-primary-foreground shadow-md">
             Month
@@ -1535,7 +1536,7 @@ function CouplePage() {
 
         {partner ? (
           <nav
-            aria-label="Couple sections"
+            aria-label={t("Couple sections")}
             className="mx-auto grid w-full max-w-[340px] grid-cols-3 gap-0.5 rounded-xl bg-primary/20 p-0.5 ring-1 ring-primary/15 lg:max-w-sm"
           >
             {tabs.map((tab) => {
@@ -1564,7 +1565,7 @@ function CouplePage() {
           <button
             type="button"
             onClick={goPrev}
-            aria-label="Previous period"
+            aria-label={t("Previous period")}
             className="grid h-7 w-7 place-items-center rounded-full transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <ChevronLeft className="h-3 w-3" />
@@ -1576,7 +1577,7 @@ function CouplePage() {
             type="button"
             onClick={goNext}
             disabled={!canGoNext}
-            aria-label="Next period"
+            aria-label={t("Next period")}
             className="grid h-7 w-7 place-items-center rounded-full transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-30"
           >
             <ChevronRight className="h-3 w-3" />
