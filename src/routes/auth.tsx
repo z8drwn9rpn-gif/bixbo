@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useI18n } from "@/hooks/useI18n";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/auth")({
@@ -19,6 +20,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [mode, setMode] = useState<"in" | "up">("in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -56,7 +58,7 @@ function AuthPage() {
           options: { emailRedirectTo: `${window.location.origin}/`, data: { display_name: name || undefined } },
         });
         if (error) throw error;
-        setMsg("Account created. If email confirmation is on, check your inbox — otherwise you're signed in.");
+        setMsg(t("Account created. If email confirmation is on, check your inbox — otherwise you're signed in."));
         setTimeout(() => navigate({ to: "/settings" }), 400);
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -93,10 +95,10 @@ function AuthPage() {
   const apple = () => void startOAuth("apple");
 
   return (
-    <AppShell title="Sign in" big>
+    <AppShell title={t("Sign in")} big>
       <div className="mx-auto max-w-sm space-y-4 px-5 pt-6 pb-24">
         <p className="text-sm text-muted-foreground">
-          Sign in to keep your BIXBO diary safely in the cloud and share with your partner using a code.
+          {t("Sign in to keep your BIXBO diary safely in the cloud and share with your partner using a code.")}
         </p>
 
         <div className="flex gap-2">
@@ -104,51 +106,51 @@ function AuthPage() {
             onClick={() => setMode("in")}
             className={`flex-1 rounded-xl px-3 py-2 text-sm font-medium ${mode === "in" ? "bg-primary text-primary-foreground" : "bg-surface ring-1 ring-border"}`}
           >
-            Sign in
+            {t("Sign in")}
           </button>
           <button
             onClick={() => setMode("up")}
             className={`flex-1 rounded-xl px-3 py-2 text-sm font-medium ${mode === "up" ? "bg-primary text-primary-foreground" : "bg-surface ring-1 ring-border"}`}
           >
-            Create account
+            {t("Create account")}
           </button>
         </div>
 
         <form onSubmit={submit} className="space-y-3 rounded-3xl bg-surface p-4 ring-1 ring-border">
           {mode === "up" && (
-            <Input placeholder="Your name (optional)" value={name} onChange={(e) => setName(e.target.value)} />
+            <Input placeholder={t("Your name (optional)")} value={name} onChange={(e) => setName(e.target.value)} />
           )}
-          <Input type="email" placeholder="Email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+          <Input type="email" placeholder={t("Email")} required value={email} onChange={(e) => setEmail(e.target.value)} />
           <Input
             type="password"
-            placeholder="Password (min 6 chars)"
+            placeholder={t("Password (min 6 chars)")}
             required
             minLength={6}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
           <Button type="submit" disabled={busy} className="w-full">
-            {mode === "up" ? "Create account" : "Sign in"}
+            {mode === "up" ? t("Create account") : t("Sign in")}
           </Button>
         </form>
 
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span className="h-px flex-1 bg-border" /> or <span className="h-px flex-1 bg-border" />
+          <span className="h-px flex-1 bg-border" /> {t("or")} <span className="h-px flex-1 bg-border" />
         </div>
 
         <Button variant="outline" className="w-full" onClick={google} disabled={busy}>
-          Continue with Google
+          {t("Continue with Google")}
         </Button>
 
         <Button variant="outline" className="w-full" onClick={apple} disabled={busy}>
-          Continue with Apple / iCloud
+          {t("Continue with Apple / iCloud")}
         </Button>
 
         {msg && <p className="text-sm text-destructive">{msg}</p>}
 
         <div className="text-center">
           <Link to="/" className="text-xs text-muted-foreground underline">
-            Back to app
+            {t("Back to app")}
           </Link>
         </div>
       </div>
