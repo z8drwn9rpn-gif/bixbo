@@ -2048,10 +2048,14 @@ export function PatternsContent() {
     <div className="space-y-3 px-5 pb-[calc(96px+env(safe-area-inset-bottom))] pt-2 lg:grid lg:grid-cols-2 lg:items-start lg:gap-3 lg:space-y-0 lg:px-0 lg:pb-12 [&>*:first-child]:lg:col-span-2">
         <PatternTabs active={activeTab} onChange={setActiveTab} hideCycle={cycleTrackingHidden} />
 
-        {activeTab === "triggers" && <AnalysisRangeSelector value={analysisRange} onChange={setAnalysisRange} />}
+        {activeTab === "triggers" && (
+          <div className="lg:col-span-2">
+            <AnalysisRangeSelector value={analysisRange} onChange={setAnalysisRange} />
+          </div>
+        )}
 
         {!cycleTrackingHidden && activeTab === "cycle" && (
-          <div className="space-y-3">
+          <div className="space-y-3 lg:contents">
             {/* ------------------------------------------------------------------ */}
             {/* Cycle phase                                                        */}
             {/* ------------------------------------------------------------------ */}
@@ -2169,7 +2173,7 @@ export function PatternsContent() {
         )}
 
         {activeTab === "monthly" && (
-          <div className="space-y-3">
+          <div className="space-y-3 lg:contents">
             <Card
               title="This month at a glance"
               description={`${monthlyComparisonLabel} · compared over the same number of days.`}
@@ -2476,7 +2480,7 @@ export function PatternsContent() {
         )}
 
         {activeTab === "treatment" && (
-          <div className="space-y-3">
+          <div className="space-y-3 lg:contents">
             <Card
               title="Treatment comparison"
               description="Compare the four weeks before treatment with the first four weeks after its start."
@@ -3003,7 +3007,7 @@ export function PatternsContent() {
         )}
 
         {activeTab === "triggers" && (
-          <div className="space-y-3">
+          <div className="space-y-3 lg:contents">
             <Card
               title="Smart correlations"
               description="Automatically ranked associations calculated only from your own logs."

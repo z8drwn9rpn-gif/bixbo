@@ -811,8 +811,8 @@ function CouplePainChart({
       <div className="mt-3 overflow-x-auto overscroll-x-contain rounded-2xl bg-background/55 px-2 py-3 ring-1 ring-border/40">
         <svg
           viewBox={`0 0 ${width} ${height}`}
-          className="h-[206px] max-w-none"
-          style={{ width: `${width}px` }}
+          className="h-[206px] w-full max-w-none"
+          style={{ minWidth: `${width}px` }}
           role="img"
           aria-label={`Pain comparison between you and ${t(partnerName)} during ${periodLabel}`}
         >
