@@ -1237,10 +1237,10 @@ function MedsAdherence({
                                   type="button"
                                   onClick={() => toggleDose(day.date, med.key)}
                                   className="text-left hover:underline"
-                                  title="Tap to mark taken"
+                                  title={t("Tap to mark taken")}
                                 >
                                   Missed · {med.time} — {med.medName}
-                                  <span className="text-[10px]"> · tap to mark taken</span>
+                                  <span className="text-[10px]"> · {t("tap to mark taken")}</span>
                                 </button>
                               </li>
                             ))}
@@ -1313,7 +1313,7 @@ function MedsAdherence({
 
           {asNeededCounts.length > 0 && (
             <div className="mt-5">
-              <p className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">As-needed (frequency)</p>
+              <p className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">{t("As-needed (frequency)")}</p>
 
               <ul className="space-y-1 text-xs">
                 {asNeededCounts.map((med) => (
@@ -1331,7 +1331,7 @@ function MedsAdherence({
           {removedCounts.length > 0 && (
             <div className="mt-5">
               <p className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">
-                Discontinued meds (history)
+                {t("Discontinued meds (history)")}
               </p>
 
               <ul className="space-y-1 text-xs">
