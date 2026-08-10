@@ -6,7 +6,7 @@ import { Ico } from "@/components/icons/BixboIcons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useBixbo, EMPTY, todayKey, updateDayLog, type BixboData, type PregnancyAppointment } from "@/lib/storage";
+import { useBixbo, EMPTY, todayKey, fromKey, updateDayLog, type BixboData, type PregnancyAppointment } from "@/lib/storage";
 import {
   pregnancyProgress,
   dueDateOf,
@@ -241,10 +241,10 @@ function PregnancyPage() {
 /* ------------------------------------------------------------------ */
 
 function SetupForm({ view, update }: { view: BixboData; update: (u: (d: BixboData) => BixboData) => void }) {
-  const [lmp, setLmp] = useState("");
-  const [dueDate, setDueDate] = useState("");
-  const [startWeight, setStartWeight] = useState("");
-  const [multiples, setMultiples] = useState("1");
+  const [lmp, setLmp] = useState(view.pregnancy?.lmp ?? "");
+  const [dueDate, setDueDate] = useState(view.pregnancy?.dueDate ?? "");
+  const [startWeight, setStartWeight] = useState(view.pregnancy?.startWeightKg != null ? String(view.pregnancy.startWeightKg) : "");
+  const [multiples, setMultiples] = useState(String(view.pregnancy?.multiples ?? 1));
 
   const submit = () => {
     if (!lmp && !dueDate) return;
@@ -329,7 +329,7 @@ function HeroSection({
       </p>
       <p className="mt-1 font-serif text-3xl">{progress.days} days pregnant</p>
       <p className="mt-1 text-sm text-muted-foreground">
-        Due {due ? new Date(due).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "—"}
+        Due {due ? fromKey(due).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "—"}
         {progress.daysLeft != null ? ` · ${progress.daysLeft} days left` : ""}
       </p>
       <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-tint">
