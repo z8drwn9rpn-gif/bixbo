@@ -646,39 +646,134 @@ function ProfilePage() {
   const [prefsLoaded, setPrefsLoaded] = useState(false);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const saved = window.localStorage.getItem("bixbo:health-preferences");
-      if (saved) {
-        const parsed = JSON.parse(saved) as {
-          trackingPrefs?: typeof trackingPrefs;
-          painScale?: "whole" | "half";
-          units?: typeof units;
-          privacyPrefs?: typeof privacyPrefs;
-          backupPrefs?: typeof backupPrefs;
-          reminderPrefs?: typeof reminderPrefs;
-        };
-        if (parsed.trackingPrefs) setTrackingPrefs((current) => ({ ...current, ...parsed.trackingPrefs }));
-        if (parsed.painScale) setPainScale(parsed.painScale);
-        if (parsed.units) setUnits((current) => ({ ...current, ...parsed.units }));
-        if (parsed.privacyPrefs) setPrivacyPrefs((current) => ({ ...current, ...parsed.privacyPrefs }));
-        if (parsed.backupPrefs) setBackupPrefs((current) => ({ ...current, ...parsed.backupPrefs }));
-        if (parsed.reminderPrefs) setReminderPrefs((current) => ({ ...current, ...parsed.reminderPrefs }));
+    if (!hydrated) return;
+
+    // Main BIXBO settings are the source of truth. The old profile-only
+    // localStorage object is read only for device-local lock/blur switches that
+    // do not belong to synced health settings.
+    let legacyDevicePrefs: Partial<typeof privacyPrefs> = {};
+    if (typeof window !== "undefined") {
+      try {
+        const saved = window.localStorage.getItem("bixbo:health-preferences");
+        if (saved) {
+          const parsed = JSON.parse(saved) as { privacyPrefs?: Partial<typeof privacyPrefs> };
+          legacyDevicePrefs = parsed.privacyPrefs ?? {};
+        }
+      } catch {
+        // Ignore malformed legacy device preferences.
       }
-    } catch {
-      // Ignore malformed local preference data and keep safe defaults.
-    } finally {
-      setPrefsLoaded(true);
     }
-  }, []);
+
+    const tracking = view.settings.tracking;
+    const canonicalUnits = view.settings.units;
+    const privacy = view.settings.privacy;
+    const backup = view.settings.backup;
+    const notif = view.settings.notif;
+
+    setTrackingPrefs((current) => ({
+      ...current,
+      pain: tracking?.pain ?? true,
+      tetany: tracking?.tetany ?? true,
+      panic: tracking?.panic ?? true,
+      bowel: tracking?.bowel ?? true,
+      cycle: tracking?.cycle ?? true,
+      pregnancy: Boolean(view.pregnancy?.active),
+      postpartum: Boolean(view.postpartum?.active),
+    }));
+    setPainScale(tracking?.painScale ?? "half");
+    setUnits({
+      weight: canonicalUnits?.weight ?? "kg",
+      temperature: canonicalUnits?.temperature ?? "c",
+      volume: canonicalUnits?.volume ?? "ml",
+      time: canonicalUnits?.time ?? "24h",
+    });
+    setPrivacyPrefs((current) => ({
+      ...current,
+      ...legacyDevicePrefs,
+      analytics: privacy?.analytics ?? false,
+      crashReports: privacy?.crashReports ?? true,
+    }));
+    setBackupPrefs({
+      autoBackup: backup?.autoBackup ?? false,
+      lastBackup: backup?.lastBackupAt ?? "",
+    });
+    setReminderPrefs((current) => ({
+      ...current,
+      medication: notif?.meds ?? true,
+      dailyCheckIn: notif?.dailyLog ?? false,
+      periodPrediction: notif?.period ?? true,
+      water: notif?.hydration ?? false,
+      sleep: notif?.sleep ?? false,
+      doctorAppointments: notif?.appointments ?? true,
+      quietHours: notif?.quietHoursEnabled ?? false,
+      dailyTime: notif?.dailyLogTime ?? "20:00",
+      waterIntervalHours: String(notif?.hydrationEveryHours ?? 3),
+      quietStart: notif?.quietStart ?? "22:00",
+      quietEnd: notif?.quietEnd ?? "08:00",
+    }));
+    setPrefsLoaded(true);
+  }, [hydrated]);
 
   useEffect(() => {
-    if (!prefsLoaded || typeof window === "undefined") return;
-    window.localStorage.setItem(
-      "bixbo:health-preferences",
-      JSON.stringify({ trackingPrefs, painScale, units, privacyPrefs, backupPrefs, reminderPrefs }),
-    );
-  }, [prefsLoaded, trackingPrefs, painScale, units, privacyPrefs, backupPrefs, reminderPrefs]);
+    if (!prefsLoaded) return;
+
+    // Every Profile change is written back to the canonical synced Settings
+    // model so Home, Calendar, Insights and logs immediately see the same value.
+    update((d) => ({
+      ...d,
+      settings: {
+        ...d.settings,
+        tracking: {
+          ...(d.settings.tracking ?? { pain: true, tetany: true, panic: true, bowel: true, cycle: true, painScale: "half" }),
+          pain: trackingPrefs.pain,
+          tetany: trackingPrefs.tetany,
+          panic: trackingPrefs.panic,
+          bowel: trackingPrefs.bowel,
+          cycle: trackingPrefs.cycle,
+          painScale,
+        },
+        units: { ...units },
+        privacy: {
+          analytics: privacyPrefs.analytics,
+          crashReports: privacyPrefs.crashReports,
+        },
+        backup: {
+          autoBackup: backupPrefs.autoBackup,
+          lastBackupAt: backupPrefs.lastBackup || undefined,
+        },
+        notif: {
+          ...(d.settings.notif ?? {}),
+          meds: reminderPrefs.medication,
+          dailyLog: reminderPrefs.dailyCheckIn,
+          period: reminderPrefs.periodPrediction,
+          hydration: reminderPrefs.water,
+          sleep: reminderPrefs.sleep,
+          appointments: reminderPrefs.doctorAppointments,
+          quietHoursEnabled: reminderPrefs.quietHours,
+          dailyLogTime: reminderPrefs.dailyTime || undefined,
+          hydrationEveryHours: Math.min(12, Math.max(1, Number(reminderPrefs.waterIntervalHours) || 3)),
+          quietStart: reminderPrefs.quietStart || undefined,
+          quietEnd: reminderPrefs.quietEnd || undefined,
+        },
+        pregnantSince: undefined,
+      },
+    }));
+
+    // Keep only device-local switches in the legacy key for backwards
+    // compatibility; synced health preferences no longer depend on this key.
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(
+        "bixbo:health-preferences",
+        JSON.stringify({
+          privacyPrefs: {
+            faceId: privacyPrefs.faceId,
+            pinLock: privacyPrefs.pinLock,
+            blurScreenshots: privacyPrefs.blurScreenshots,
+          },
+        }),
+      );
+    }
+  }, [prefsLoaded, trackingPrefs, painScale, units, privacyPrefs, backupPrefs, reminderPrefs, update]);
 
   const patch = (p: Partial<HealthProfile>) => update((d) => ({ ...d, profile: { ...d.profile, ...p } }));
   const setTheme = (theme: "light" | "dark" | "system") =>
@@ -769,39 +864,36 @@ function ProfilePage() {
       : (profile.pregnancyStatus ?? "none");
 
   const setReproductiveStatus = (value: NonNullable<HealthProfile["pregnancyStatus"]>) =>
-    update((d) => ({
-      ...d,
-      pregnancy: {
-        ...(d.pregnancy ?? EMPTY.pregnancy!),
-        active: value === "pregnant",
-        endedAt:
-          value === "postpartum"
-            ? (d.pregnancy?.endedAt ?? todayKey())
-            : value === "pregnant"
-              ? undefined
-              : d.pregnancy?.endedAt,
-      },
-      postpartum: {
-        ...(d.postpartum ?? EMPTY.postpartum!),
-        active: value === "postpartum",
-        birthDate: d.postpartum?.birthDate,
-        endedAt:
-          value === "postpartum"
-            ? undefined
-            : d.postpartum?.active
-              ? (d.postpartum.endedAt ?? todayKey())
-              : d.postpartum?.endedAt,
-      },
-      settings: {
-        ...d.settings,
-        pregnantSince: undefined,
-      },
-      profile: {
-        ...(d.profile ?? {}),
-        pregnancyStatus: value === "pregnant" || value === "postpartum" || value === "none" ? "none" : value,
-        postpartum: undefined,
-      },
-    }));
+    update((d) => {
+      const today = todayKey();
+      const wasPregnant = Boolean(d.pregnancy?.active);
+      const wasPostpartum = Boolean(d.postpartum?.active);
+      const nextPregnant = value === "pregnant";
+      const nextPostpartum = value === "postpartum";
+
+      return {
+        ...d,
+        pregnancy: {
+          ...(d.pregnancy ?? EMPTY.pregnancy!),
+          active: nextPregnant,
+          endedAt: nextPregnant ? undefined : wasPregnant ? today : d.pregnancy?.endedAt,
+        },
+        postpartum: {
+          ...(d.postpartum ?? EMPTY.postpartum!),
+          active: nextPostpartum,
+          endedAt: nextPostpartum ? undefined : wasPostpartum ? today : d.postpartum?.endedAt,
+        },
+        settings: {
+          ...d.settings,
+          pregnantSince: undefined,
+        },
+        profile: {
+          ...(d.profile ?? {}),
+          pregnancyStatus: nextPregnant || nextPostpartum || value === "none" ? "none" : value,
+          postpartum: undefined,
+        },
+      };
+    });
 
   const doctors = [
     { label: "GP", value: profile.gp },
