@@ -12,21 +12,21 @@ jobs:
       - run: bun install --frozen-lockfile
       - name: Find visible LogSheet strings missing from Slovak dictionary
         run: |
-          cat > /tmp/audit.ts <<'TS'
-          import * as ts from 'typescript';
-          import * as fs from 'fs';
+          cat > audit-logsheet.cjs <<'JS'
+          const ts=require('typescript');
+          const fs=require('fs');
           const logPath='src/components/LogSheet.tsx';
           const i18n=fs.readFileSync('src/lib/i18n.ts','utf8');
           const sf=ts.createSourceFile(logPath,fs.readFileSync(logPath,'utf8'),ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
           const skStart=i18n.indexOf('const sk');
           const skText=skStart>=0?i18n.slice(skStart):i18n;
-          const keys=new Set<string>();
+          const keys=new Set();
           for(const m of skText.matchAll(/^\s*["']([^"']+)["']\s*:/gm)) keys.add(m[1]);
-          const candidates=new Set<string>();
+          const candidates=new Set();
           const attrNames=new Set(['label','placeholder','title','aria-label','legendTitle','hint']);
           const arrayNames=/(_DEFAULT|_TYPES|_TRIGGERS|_SYMPTOMS|_HELPED|_LOCATIONS|_QUALITY|_MOODS|_LEVELS|_OPTIONS|_FEELINGS)$/;
-          function add(s:string){s=s.trim().replace(/\s+/g,' '); if(/[A-Za-z]/.test(s) && s.length>1) candidates.add(s)}
-          function walk(n:ts.Node){
+          function add(s){s=s.trim().replace(/\s+/g,' '); if(/[A-Za-z]/.test(s) && s.length>1) candidates.add(s)}
+          function walk(n){
             if(ts.isJsxText(n)) add(n.getText(sf));
             if(ts.isJsxAttribute(n) && attrNames.has(n.name.getText(sf)) && n.initializer && ts.isStringLiteral(n.initializer)) add(n.initializer.text);
             if(ts.isPropertyAssignment(n) && ts.isIdentifier(n.name) && ['label','hint'].includes(n.name.text) && ts.isStringLiteralLike(n.initializer)) add(n.initializer.text);
@@ -44,5 +44,5 @@ jobs:
           console.log('VISIBLE_CANDIDATES',candidates.size);
           console.log('MISSING_SK',missing.length);
           for(const x of missing) console.log('MISSING:',JSON.stringify(x));
-          TS
-          bun /tmp/audit.ts
+          JS
+          node audit-logsheet.cjs
