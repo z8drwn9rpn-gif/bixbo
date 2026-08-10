@@ -14,6 +14,7 @@ jobs:
         run: |
           python3 .github/scripts/final_ui_i18n_couple_fix.py
           python3 .github/scripts/final_ui_i18n_couple_fix_v2.py
+          nl -ba src/lib/i18n.ts | sed -n '948,966p'
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
