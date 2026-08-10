@@ -413,9 +413,9 @@ function ComparisonRow({
   );
 }
 
-function SimilarityCard({ score, partnerName }: { score: number; partnerName: string }) {
+function SimilarityCard({ score, partnerName }: { score: number | null; partnerName: string }) {
   const { t } = useI18n();
-  const safeScore = clampPercent(score);
+  const safeScore = score == null ? 0 : clampPercent(score);
 
   return (
     <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
@@ -428,7 +428,7 @@ function SimilarityCard({ score, partnerName }: { score: number; partnerName: st
         >
           <div className="grid h-full w-full place-items-center rounded-full bg-surface">
             <div className="text-center">
-              <p className="text-2xl font-bold tabular-nums">{safeScore.toFixed(0)}%</p>
+              <p className="text-2xl font-bold tabular-nums">{score == null ? "—" : `${safeScore.toFixed(0)}%`}</p>
 
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{t("similarity")}</p>
             </div>
@@ -441,7 +441,7 @@ function SimilarityCard({ score, partnerName }: { score: number; partnerName: st
           <h2 className="mt-1 font-serif text-xl font-semibold">{t("You")} + {t(partnerName)}</h2>
 
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-            {t("Based only on shared pain, panic and tetany data during the selected month.")}
+            {score == null ? t("No partner comparison data in this month.") : t("Based only on shared pain, panic and tetany data during the selected month.")}
           </p>
         </div>
       </div>
@@ -1323,15 +1323,15 @@ function CouplePage() {
 
   const range = useMemo(() => coupleRangeFor(period, anchor), [anchor, period]);
   const periodDays = range.days;
-  const periodDisplayLabel = range.label;
-
   const selectedMonth = useMemo(() => startOfMonth(anchor), [anchor]);
+  const periodDisplayLabel = period === "M" ? selectedMonth.toLocaleDateString(language === "sk" ? "sk-SK" : "en-US", { month: "long", year: "numeric" }) : range.label;
+
   const selectedMonthLabel = selectedMonth.toLocaleDateString(language === "sk" ? "sk-SK" : "en-US", { month: "long", year: "numeric" });
 
   // Couple comparisons use one monthly range throughout.
   const painMonthRange = useMemo(() => coupleRangeFor("M", anchor), [anchor]);
   const painMonthDays = painMonthRange.days;
-  const painMonthLabel = painMonthRange.label;
+  const painMonthLabel = selectedMonth.toLocaleDateString(language === "sk" ? "sk-SK" : "en-US", { month: "long", year: "numeric" });
 
   const currentMonth = startOfMonth(new Date());
   const isCurrentMonth = isSameMonth(selectedMonth, currentMonth);
@@ -1481,11 +1481,17 @@ function CouplePage() {
 
   const partnerTakenDoses = partner ? countTakenScheduledDoses(periodDays, partner.meds ?? [], partner.medLog ?? {}) : 0;
 
-  const loggedComparisonDays = partner
+  const partnerComparisonDays = partner
+    ? periodDays.filter((day) => hasSymptoms(partner.dayLogs[day]))
+    : [];
+
+  const hasPartnerComparisonData = partnerComparisonDays.length > 0;
+
+  const loggedComparisonDays = partner && hasPartnerComparisonData
     ? periodDays.filter((day) => hasSymptoms(view.dayLogs[day]) || hasSymptoms(partner.dayLogs[day])).length
     : 0;
 
-  const similarityScore = partner
+  const similarityScore = partner && hasPartnerComparisonData
     ? calculateCoupleSimilarity({
         mySymptomDays,
         partnerSymptomDays,
@@ -1497,7 +1503,7 @@ function CouplePage() {
         myTetanyCount: myTetany.length,
         partnerTetanyCount: partnerTetany.length,
       })
-    : 0;
+    : null;
 
   const partnerName = partner?.name || "Partner";
 
@@ -1601,7 +1607,7 @@ function CouplePage() {
           <>
             {activeTab === "overview" ? <SimilarityCard score={similarityScore} partnerName={t(partnerName)} /> : null}
 
-            {activeTab === "overview" ? (
+            {activeTab === "overview" && hasPartnerComparisonData ? (
               <div className="grid grid-cols-2 gap-2">
                 <StatCard
                   icon={<ProfileIcon size={18} />}

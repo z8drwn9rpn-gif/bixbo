@@ -1006,6 +1006,7 @@ const SK: Record<string, string> = {
   "Occasional BIXBO news and tips. Off by default.": "Občasné novinky a tipy BIXBO. Predvolene vypnuté.",
   "Open birth control overview": "Otvoriť prehľad antikoncepcie",
   "HAK day": "Deň HAK",
+  "No partner comparison data in this month.": "V tomto mesiaci partner nemá žiadne porovnateľné záznamy.",
 };
 
 const TRANSLATIONS: Record<AppLanguage, Record<string, string>> = { en: EN, sk: SK };
