@@ -20,8 +20,36 @@ jobs:
           bun-version: latest
       - name: Install dependencies
         run: bun install --frozen-lockfile
-      - name: Typecheck before commit
-        run: bun run typecheck
+      - name: Diagnose object duplicate keys
+        run: |
+          node - <<'JS'
+          const fs = require('fs');
+          const ts = require('typescript');
+          const file = 'src/lib/i18n.ts';
+          const source = fs.readFileSync(file, 'utf8');
+          const sf = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+          function propName(p) {
+            if (!p.name) return null;
+            if (ts.isStringLiteral(p.name) || ts.isNumericLiteral(p.name) || ts.isIdentifier(p.name)) return p.name.text;
+            return null;
+          }
+          function visit(node) {
+            if (ts.isObjectLiteralExpression(node)) {
+              const seen = new Map();
+              for (const p of node.properties) {
+                if (!ts.isPropertyAssignment(p) && !ts.isShorthandPropertyAssignment(p)) continue;
+                const name = propName(p);
+                if (!name) continue;
+                const line = sf.getLineAndCharacterOfPosition(p.getStart(sf)).line + 1;
+                if (seen.has(name)) console.log(`DUPLICATE ${JSON.stringify(name)} first=${seen.get(name)} second=${line}`);
+                else seen.set(name, line);
+              }
+            }
+            ts.forEachChild(node, visit);
+          }
+          visit(sf);
+          JS
+          bun run typecheck
       - name: Tests before commit
         run: bun test
       - name: Commit changes
