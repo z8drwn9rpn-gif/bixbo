@@ -11,13 +11,15 @@ export function dueDateOf(p?: PregnancyState): string | undefined {
   return undefined;
 }
 
-/** Conception-cycle start date implied by the due date. */
+/**
+ * Gestational start date. A manually entered due date is authoritative; when
+ * present, derive the matching LMP-equivalent date from it so week/progress and
+ * days-left can never describe two different pregnancies.
+ */
 export function pregnancyStart(p?: PregnancyState): string | undefined {
   if (!p) return undefined;
-  if (p.lmp) return p.lmp;
-
-  const due = dueDateOf(p);
-  return due ? addDays(due, -280) : undefined;
+  if (p.dueDate) return addDays(p.dueDate, -280);
+  return p.lmp;
 }
 
 export interface PregnancyProgress {
@@ -37,7 +39,7 @@ export function pregnancyProgress(p?: PregnancyState, on: string = todayKey()): 
   const days = Math.max(0, daysBetween(start, on));
   const week = Math.floor(days / 7);
   const dayOfWeek = days % 7;
-  const trimester: 1 | 2 | 3 = week < 13 ? 1 : week < 28 ? 2 : 3;
+  const trimester: 1 | 2 | 3 = week < 14 ? 1 : week < 28 ? 2 : 3;
   const due = dueDateOf(p);
 
   return {
