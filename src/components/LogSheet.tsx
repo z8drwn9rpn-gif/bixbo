@@ -268,11 +268,11 @@ export function LogSheet({
       >
         {!active ? (
           <>
-            <SheetTitle className="sr-only">Log</SheetTitle>
+            <SheetTitle className="sr-only">{t("Log")}</SheetTitle>
 
             <button
               type="button"
-              aria-label="Close log menu"
+              aria-label={t("Close log menu")}
               onClick={close}
               className="absolute inset-0 z-0 cursor-default bg-transparent"
             />
@@ -489,7 +489,7 @@ export function LogSheet({
                       <button
                         type="button"
                         onClick={close}
-                        aria-label="Close Log"
+                        aria-label={t("Close Log")}
                         className="
                           pointer-events-auto absolute left-1/2 z-40 grid h-[76px] w-[76px]
                           -translate-x-1/2 place-items-center rounded-full
@@ -1441,7 +1441,7 @@ function PainWizard({
               from={0}
               descriptions={getScaleDesc(data, "pain")}
               value={Math.round(score)}
-              title="Pain scale (Mankosky)"
+              title={t("Pain scale (Mankosky)")}
             />
           </div>
         </div>
@@ -1552,7 +1552,7 @@ function PainWizard({
                 rows={2}
                 value={fluNote}
                 onChange={(e) => setFluNote(e.target.value)}
-                placeholder="e.g. stuffy nose, sore throat"
+                placeholder={t("e.g. stuffy nose, sore throat")}
               />
             </Field>
           )}
@@ -1730,7 +1730,7 @@ function PainWizard({
                       <Input
                         value={headacheMed}
                         onChange={(e) => setHeadacheMed(e.target.value)}
-                        placeholder="Medication + dose"
+                        placeholder={t("Medication + dose")}
                       />
                       <Input type="time" value={headacheMedTime} onChange={(e) => setHeadacheMedTime(e.target.value)} />
                     </div>
@@ -2080,7 +2080,7 @@ function PainWizard({
             <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
           </Field>
           <Field label="Note (optional)">
-            <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Anything else…" />
+            <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder={t("Anything else…")} />
           </Field>
         </div>
       )}
@@ -2276,7 +2276,7 @@ function PanicForm({
         />
       </Field>
       <Field label="Rescue med (what you took)">
-        <Input value={rescueMed} onChange={(e) => setRescueMed(e.target.value)} placeholder="e.g. Frontin 0.25 mg" />
+        <Input value={rescueMed} onChange={(e) => setRescueMed(e.target.value)} placeholder={t("e.g. Frontin 0.25 mg")} />
         {data.meds.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1.5">
             {data.meds.map((m) => (
@@ -2452,7 +2452,7 @@ function TetanyForm({
         />
       </Field>
       <Field label="Rescue med (what you took)">
-        <Input value={rescueMed} onChange={(e) => setRescueMed(e.target.value)} placeholder="e.g. Magnesium 400 mg" />
+        <Input value={rescueMed} onChange={(e) => setRescueMed(e.target.value)} placeholder={t("e.g. Magnesium 400 mg")} />
         {data.meds.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1.5">
             {data.meds.map((m) => (
@@ -2573,7 +2573,7 @@ function PeriodForm({
           from={0}
           descriptions={painDesc}
           value={cramps == null ? undefined : Math.round(cramps)}
-          title="Pain scale (Mankosky)"
+          title={t("Pain scale (Mankosky)")}
         />
       </Field>
       <Field label="Discharge (optional)">
@@ -3027,7 +3027,7 @@ function FoodForm({
           rows={2}
           value={what}
           onChange={(e) => setWhat(e.target.value)}
-          placeholder="e.g. chicken, rice, tomato"
+          placeholder={t("e.g. chicken, rice, tomato")}
         />
       </Field>
       <Field label="Quick add">
@@ -3592,7 +3592,7 @@ function TempForm({
             inputMode="decimal"
             value={temperature}
             onChange={(e) => setTemperature(e.target.value.replace(/[^0-9.,]/g, "").replace(/([.,].*)[.,]/g, "$1"))}
-            placeholder="36,6 °C"
+            placeholder={t("36,6 °C")}
           />
 
           <Input type="time" value={temperatureTime} onChange={(e) => setTemperatureTime(e.target.value)} />
@@ -3640,7 +3640,7 @@ function TempForm({
             inputMode="decimal"
             value={weight}
             onChange={(e) => setWeight(e.target.value.replace(/[^0-9.,]/g, "").replace(/([.,].*)[.,]/g, "$1"))}
-            placeholder="62,5 kg"
+            placeholder={t("62,5 kg")}
           />
 
           <Input type="time" value={weightTime} onChange={(e) => setWeightTime(e.target.value)} />
@@ -3870,7 +3870,7 @@ function MedsForm({
             onClick={onDone}
             className="inline-flex h-10 min-w-[78px] items-center justify-center gap-1.5 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
-            <span>Done</span>
+            <span>{t("Done")}</span>
             <span aria-hidden="true" className="text-base leading-none">✓</span>
           </button>
         </div>
@@ -3991,14 +3991,14 @@ function WorkoutForm({
                 <div className="flex items-center gap-2">
                   <Input
                     value={ex.name}
-                    placeholder="Exercise name"
+                    placeholder={t("Exercise name")}
                     onChange={(e) =>
                       setExercises((a) => a.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))
                     }
                   />
                   <button
                     type="button"
-                    aria-label="Remove exercise"
+                    aria-label={t("Remove exercise")}
                     onClick={() => setExercises((a) => a.filter((_, j) => j !== i))}
                     className="rounded-full p-2 text-muted-foreground hover:text-destructive"
                   >
@@ -4009,7 +4009,7 @@ function WorkoutForm({
                   <Input
                     type="number"
                     min={0}
-                    placeholder="Sets"
+                    placeholder={t("Sets")}
                     value={ex.sets ?? ""}
                     onChange={(e) =>
                       setExercises((a) =>
@@ -4022,7 +4022,7 @@ function WorkoutForm({
                   <Input
                     type="number"
                     min={0}
-                    placeholder="Reps"
+                    placeholder={t("Reps")}
                     value={ex.reps ?? ""}
                     onChange={(e) =>
                       setExercises((a) =>
@@ -4036,7 +4036,7 @@ function WorkoutForm({
                     type="number"
                     min={0}
                     step="0.5"
-                    placeholder="kg"
+                    placeholder={t("kg")}
                     value={ex.weightKg ?? ""}
                     onChange={(e) =>
                       setExercises((a) =>
@@ -4178,7 +4178,7 @@ function EventForm({
     <div className="space-y-3">
       <SaveBar onCancel={onDone} onSave={save} disabled={!title.trim()} />
       <Field label="Title">
-        <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Doctor visit" />
+        <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("e.g. Doctor visit")} />
       </Field>
       <div className="grid grid-cols-2 gap-2">
         <Field label="From">
@@ -4253,7 +4253,7 @@ function TaskForm({
     <div className="space-y-3">
       <SaveBar onCancel={onDone} onSave={save} disabled={!title.trim()} />
       <Field label="Task">
-        <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="What to do…" />
+        <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("What to do…")} />
       </Field>
       <div className="grid grid-cols-2 gap-2">
         <Field label="From">
@@ -4298,7 +4298,7 @@ function NoteForm({ date, update, onDone }: { date: string; update: UpdateFn; on
       <Field label="Time (optional)">
         <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
       </Field>
-      <Textarea rows={6} value={t} onChange={(e) => setT(e.target.value)} placeholder="Anything about today…" />
+      <Textarea rows={6} value={t} onChange={(e) => setT(e.target.value)} placeholder={t("Anything about today…")} />
     </div>
   );
 }
@@ -4373,7 +4373,7 @@ function PostpartumSymptomsForm({
           rows={4}
           value={note}
           onChange={(event) => setNote(event.target.value)}
-          placeholder="Add anything important about recovery, bleeding, feeding or how you feel."
+          placeholder={t("Add anything important about recovery, bleeding, feeding or how you feel.")}
         />
       </Field>
 
