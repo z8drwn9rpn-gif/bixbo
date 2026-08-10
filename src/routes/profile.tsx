@@ -67,20 +67,22 @@ export const Route = createFileRoute("/profile")({
 /* ------------------------------ small primitives ------------------------------ */
 
 function Section({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
+  const { t } = useI18n();
   return (
     <section className="rounded-2xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
-      <p className="text-sm font-semibold">{title}</p>
-      {subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>}
+      <p className="text-sm font-semibold">{t(title)}</p>
+      {subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{t(subtitle)}</p>}
       <div className="mt-3 space-y-3">{children}</div>
     </section>
   );
 }
 
 function Field({ label, htmlFor, children }: { label: string; htmlFor?: string; children: ReactNode }) {
+  const { t } = useI18n();
   return (
     <div>
       <label htmlFor={htmlFor} className="mb-1 block text-xs font-medium text-muted-foreground">
-        {label}
+        {t(label)}
       </label>
       {children}
     </div>
@@ -221,7 +223,7 @@ function DoctorForm({
   const idBase = title.toLowerCase().replace(/\s+/g, "-");
   return (
     <div className="rounded-xl border border-border p-3">
-      <p className="mb-2 text-xs font-semibold text-foreground">{title}</p>
+      <p className="mb-2 text-xs font-semibold text-foreground">{t(title)}</p>
       <div className="grid grid-cols-2 gap-2">
         <Field label="Name" htmlFor={`${idBase}-name`}>
           <Input
@@ -289,7 +291,7 @@ function SummaryCard({
 
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-semibold text-foreground">{title}</h2>
-          {subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>}
+          {subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{t(subtitle)}</p>}
         </div>
       </div>
 
@@ -362,7 +364,6 @@ type HealthView =
   | "achievements"
   | "statistics"
   | "export"
-  | "language"
   | "appearance"
   | "privacy"
   | "backup"
@@ -381,6 +382,7 @@ function HubRow({
   subtitle: string;
   onClick: () => void;
 }) {
+  const { t } = useI18n();
   return (
     <button
       type="button"
@@ -392,8 +394,8 @@ function HubRow({
       </span>
 
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-semibold text-foreground">{title}</span>
-        <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">{subtitle}</span>
+        <span className="block text-sm font-semibold text-foreground">{t(title)}</span>
+        <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">{t(subtitle)}</span>
       </span>
 
       <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -473,13 +475,6 @@ function HealthHub({ onHome, onOpen }: { onHome: () => void; onOpen: (view: Heal
 
           <section className="overflow-hidden rounded-3xl bg-surface shadow-sm ring-1 ring-border/80">
             <HubRow
-              icon={<NoteIcon size={22} />}
-              title={t("profile.hub.languageTitle")}
-              subtitle={t("profile.hub.languageSubtitle")}
-              onClick={() => onOpen("language")}
-            />
-            <div className="ml-[4.5rem] border-t border-border/60" />
-            <HubRow
               icon={<LeafIcon size={22} />}
               title="Appearance"
               subtitle="Theme and display"
@@ -531,12 +526,13 @@ function HealthHub({ onHome, onOpen }: { onHome: () => void; onOpen: (view: Heal
 }
 
 function HealthSubpage({ title, onBack, children }: { title: string; onBack: () => void; children: ReactNode }) {
+  const { t } = useI18n();
   return (
     <AppShell
       title={
         <button type="button" onClick={onBack} className="flex items-center gap-2">
           <ArrowLeft className="h-5 w-5" />
-          {title}
+          {t(title)}
         </button>
       }
     >
@@ -556,14 +552,15 @@ function PreferenceOption({
   subtitle: string;
   onClick?: () => void;
 }) {
+  const { t } = useI18n();
   const content = (
     <>
       <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-tint ring-1 ring-border/50">
         {icon}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-semibold text-foreground">{title}</span>
-        <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">{subtitle}</span>
+        <span className="block text-sm font-semibold text-foreground">{t(title)}</span>
+        <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">{t(subtitle)}</span>
       </span>
       {onClick ? <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" /> : null}
     </>
@@ -1103,26 +1100,6 @@ function ProfilePage() {
     );
   }
 
-  if (healthView === "language") {
-    return (
-      <HealthSubpage title={t("profile.language.title")} onBack={() => setHealthView("hub")}>
-        <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
-          <p className="text-sm font-semibold text-foreground">{t("profile.language.appLanguage")}</p>
-          <p className="mt-1 text-xs text-muted-foreground">{t("profile.language.subtitle")}</p>
-          <select
-            className="mt-4 h-11 w-full rounded-xl border border-input bg-background px-3 text-sm"
-            value={language}
-            onChange={(event) => setLanguage(event.target.value as AppLanguage)}
-            aria-label={t("profile.language.appLanguage")}
-          >
-            <option value="en">{t("profile.language.english")}</option>
-            <option value="sk">{t("profile.language.slovak")}</option>
-          </select>
-        </section>
-      </HealthSubpage>
-    );
-  }
-
   if (healthView === "appearance") {
     const themes = ["light", "dark", "system"] as const;
     const sizes = [
@@ -1166,6 +1143,20 @@ function ProfilePage() {
               </button>
             ))}
           </div>
+        </section>
+
+        <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
+          <p className="text-sm font-semibold text-foreground">{t("profile.language.appLanguage")}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{t("profile.language.subtitle")}</p>
+          <select
+            className="mt-4 h-11 w-full rounded-xl border border-input bg-background px-3 text-sm"
+            value={language}
+            onChange={(event) => setLanguage(event.target.value as AppLanguage)}
+            aria-label={t("profile.language.appLanguage")}
+          >
+            <option value="en">{t("profile.language.english")}</option>
+            <option value="sk">{t("profile.language.slovak")}</option>
+          </select>
         </section>
       </HealthSubpage>
     );
