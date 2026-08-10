@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
+import { useI18n } from "@/hooks/useI18n";
 import {
   useBixbo,
   EMPTY,
@@ -138,6 +139,7 @@ function normalizePostpartumState(value: unknown): PostpartumState {
 }
 
 function PostpartumPage() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const { data, update, hydrated } = useBixbo();
   const view = hydrated ? data : EMPTY;
