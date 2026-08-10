@@ -137,6 +137,14 @@ function latestWeightForDay(log: DayLog | undefined): number | null {
 type PatternTab = "cycle" | "monthly" | "treatment" | "triggers";
 type AnalysisRange = 7 | 30 | 90;
 type TreatmentKind = "medication" | "supplement" | "diet" | "therapy" | "exercise" | "other";
+type TreatmentResult =
+  | "pain"
+  | "panicEpisodes"
+  | "tetanyEpisodes"
+  | "headache"
+  | "panicIntensity"
+  | "tetanyIntensity"
+  | "negativeMood";
 
 type ArchivedTreatment = {
   id: string;
@@ -146,6 +154,7 @@ type ArchivedTreatment = {
   startDate: string;
   archivedAt: string;
   custom: boolean;
+  result?: TreatmentResult;
 };
 
 const PATTERN_TABS: Array<{ id: PatternTab; label: string }> = [
@@ -996,11 +1005,8 @@ export function PatternsContent() {
           const key = `${med.id}@${time}`;
           const isTaken = !!view.medLog[day]?.[key];
 
-          // Both months use the same clock-time cutoff on their matched
-          // final day. Future doses on today's equivalent day are not missed.
           if (day === lastComparableDay && !isTaken) {
             const match = /^(\d{1,2}):(\d{2})/.exec(time.trim());
-
             if (!match) return;
 
             const scheduledMinutes = Number(match[1]) * 60 + Number(match[2]);
@@ -1163,6 +1169,7 @@ export function PatternsContent() {
   const [treatmentDate, setTreatmentDate] = useState("");
   const [treatmentName, setTreatmentName] = useState("");
   const [treatmentKind, setTreatmentKind] = useState<TreatmentKind>("medication");
+  const [treatmentResult, setTreatmentResult] = useState<TreatmentResult>("pain");
   const [treatmentNotes, setTreatmentNotes] = useState("");
   const [customTreatment, setCustomTreatment] = useState(false);
   const [archivedTreatments, setArchivedTreatments] = useState<ArchivedTreatment[]>([]);
@@ -1178,12 +1185,14 @@ export function PatternsContent() {
         date?: string;
         name?: string;
         kind?: TreatmentKind;
+        result?: TreatmentResult;
         notes?: string;
         custom?: boolean;
       };
       setTreatmentDate(saved.date ?? "");
       setTreatmentName(saved.name ?? "");
       setTreatmentKind(saved.kind ?? "medication");
+      setTreatmentResult(saved.result ?? "pain");
       setTreatmentNotes(saved.notes ?? "");
       setCustomTreatment(Boolean(saved.custom));
     } catch {
@@ -1213,11 +1222,12 @@ export function PatternsContent() {
         date: treatmentDate,
         name: treatmentName,
         kind: treatmentKind,
+        result: treatmentResult,
         notes: treatmentNotes,
         custom: customTreatment,
       }),
     );
-  }, [customTreatment, treatmentDate, treatmentKind, treatmentName, treatmentNotes]);
+  }, [customTreatment, treatmentDate, treatmentKind, treatmentName, treatmentNotes, treatmentResult]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1232,6 +1242,7 @@ export function PatternsContent() {
     setTreatmentDate("");
     setTreatmentName("");
     setTreatmentKind("medication");
+    setTreatmentResult("pain");
     setTreatmentNotes("");
     setCustomTreatment(false);
     if (typeof window !== "undefined") window.localStorage.removeItem(treatmentStorageKey);
@@ -1255,6 +1266,7 @@ export function PatternsContent() {
       id: `${Date.now()}`,
       name: treatmentName.trim() || "Unnamed treatment",
       kind: treatmentKind,
+      result: treatmentResult,
       notes: treatmentNotes.trim(),
       startDate: treatmentDate,
       archivedAt: todayKey(),
@@ -1290,6 +1302,7 @@ export function PatternsContent() {
     setTreatmentDate(archived.startDate);
     setTreatmentName(archived.name === "Unnamed treatment" ? "" : archived.name);
     setTreatmentKind(archived.kind);
+    setTreatmentResult(archived.result ?? "pain");
     setTreatmentNotes(archived.notes);
     setCustomTreatment(archived.custom);
     setArchivedTreatments((current) => current.filter((item) => item.id !== archived.id));
@@ -1333,8 +1346,6 @@ export function PatternsContent() {
     ),
   });
 
-  // Event-frequency metrics use average entries per calendar day instead of
-  // raw totals, because the "after" window may still be shorter than 28 days.
   const treatmentEventRate = (countFn: (log: DayLog) => number): TreatmentMetric => ({
     before: treatmentBeforeDays.length
       ? treatmentBeforeDays.reduce((sum, day) => sum + countFn(dayLogs[day] ?? {}), 0) / treatmentBeforeDays.length
@@ -1345,13 +1356,12 @@ export function PatternsContent() {
   });
 
   const treatmentPain = treatmentMetric((log) => avgDayPain(log) ?? null);
-
   const treatmentTetany = treatmentMetric(dayTetanyIntensity);
-  const treatmentTetanyEpisodes = treatmentEventRate((log) => log.tetany?.length ?? 0);
-
   const treatmentPanic = treatmentMetric(dayPanicIntensity);
-  const treatmentPanicEpisodes = treatmentEventRate((log) => log.panic?.length ?? 0);
+  const treatmentMood = treatmentMetric((log) => negativeMoodCount(log));
 
+  const treatmentTetanyEpisodes = treatmentEventRate((log) => log.tetany?.length ?? 0);
+  const treatmentPanicEpisodes = treatmentEventRate((log) => log.panic?.length ?? 0);
   const treatmentHeadache = treatmentEventRate(
     (log) =>
       (log.pain ?? []).filter(
@@ -1362,7 +1372,71 @@ export function PatternsContent() {
       ).length,
   );
 
-  const treatmentMood = treatmentMetric((log) => negativeMoodCount(log));
+  const treatmentResultOptions: Array<{
+    id: TreatmentResult;
+    label: string;
+    metric: TreatmentMetric;
+    decimals: number;
+    unit: string;
+    max?: number;
+    color: MetricColor;
+  }> = [
+    { id: "pain", label: "Pain", metric: treatmentPain, decimals: 1, unit: "/10", max: 10, color: "rose" },
+    {
+      id: "panicEpisodes",
+      label: "Panic episode",
+      metric: treatmentPanicEpisodes,
+      decimals: 2,
+      unit: "/day",
+      color: "purple",
+    },
+    {
+      id: "tetanyEpisodes",
+      label: "Tetany episode",
+      metric: treatmentTetanyEpisodes,
+      decimals: 2,
+      unit: "/day",
+      color: "blue",
+    },
+    {
+      id: "headache",
+      label: "Headache",
+      metric: treatmentHeadache,
+      decimals: 2,
+      unit: "/day",
+      color: "cyan",
+    },
+    {
+      id: "panicIntensity",
+      label: "Panic intensity",
+      metric: treatmentPanic,
+      decimals: 1,
+      unit: "/10",
+      max: 10,
+      color: "purple",
+    },
+    {
+      id: "tetanyIntensity",
+      label: "Tetany intensity",
+      metric: treatmentTetany,
+      decimals: 1,
+      unit: "/5",
+      max: 5,
+      color: "blue",
+    },
+    {
+      id: "negativeMood",
+      label: "Negative mood",
+      metric: treatmentMood,
+      decimals: 1,
+      unit: "",
+      max: 3,
+      color: "amber",
+    },
+  ];
+
+  const selectedTreatmentResult =
+    treatmentResultOptions.find((option) => option.id === treatmentResult) ?? treatmentResultOptions[0];
 
   const treatmentChanges = [
     { label: "Pain", metric: treatmentPain },
@@ -2365,6 +2439,26 @@ export function PatternsContent() {
                 </div>
 
                 <div>
+                  <label htmlFor="treatment-result" className="text-sm font-semibold text-foreground">
+                    Treatment result
+                  </label>
+                  <select
+                    id="treatment-result"
+                    value={treatmentResult}
+                    onChange={(event) => setTreatmentResult(event.target.value as TreatmentResult)}
+                    className="mt-2 min-h-12 w-full rounded-2xl bg-tint px-4 text-sm font-medium text-foreground outline-none ring-1 ring-border focus-visible:ring-2 focus-visible:ring-primary"
+                  >
+                    <option value="pain">Pain</option>
+                    <option value="panicEpisodes">Panic episode</option>
+                    <option value="tetanyEpisodes">Tetany episode</option>
+                    <option value="headache">Headache</option>
+                    <option value="panicIntensity">Panic intensity</option>
+                    <option value="tetanyIntensity">Tetany intensity</option>
+                    <option value="negativeMood">Negative mood</option>
+                  </select>
+                </div>
+
+                <div>
                   <span className="text-sm font-semibold text-foreground">Treatment start date</span>
                   <div className="relative mt-2 min-h-12 overflow-hidden rounded-2xl bg-tint ring-1 ring-border focus-within:ring-2 focus-within:ring-primary">
                     <div className="pointer-events-none flex min-h-12 items-center justify-between gap-3 px-4">
@@ -2407,7 +2501,7 @@ export function PatternsContent() {
                         {treatmentName || "Unnamed treatment"}
                       </p>
                       <p className="mt-0.5 text-[11px] text-muted-foreground">
-                        {treatmentKindLabel}
+                        {treatmentKindLabel} · Result: {selectedTreatmentResult.label}
                         {treatmentDate ? ` · Started ${formattedTreatmentDate}` : " · Start date not selected"}
                       </p>
                     </div>
@@ -2457,6 +2551,11 @@ export function PatternsContent() {
                       tone: "neutral",
                     },
                     {
+                      label: "Treatment result",
+                      value: selectedTreatmentResult.label,
+                      tone: "neutral",
+                    },
+                    {
                       label: "Logged data",
                       value: `${treatmentBeforeLoggedDays} before · ${treatmentAfterLoggedDays} after`,
                       tone: "neutral",
@@ -2489,110 +2588,40 @@ export function PatternsContent() {
 
                 <CollapsibleSection
                   title="Treatment results"
-                  subtitle="Pain, episodes, headache, intensity and mood before versus after"
+                  subtitle={`${selectedTreatmentResult.label} before versus after`}
                   defaultOpen={true}
                 >
                   <div className="space-y-3">
                     <ComparisonMetric
-                      title="Pain"
-                      subtitle="Average pain · 4 weeks before vs 4 weeks after"
-                      previous={treatmentPain.before}
-                      current={treatmentPain.after}
-                      max={10}
-                      decimals={1}
-                      unit="/10"
-                      color="rose"
+                      title={selectedTreatmentResult.label}
+                      subtitle={`Selected treatment result · average before vs after`}
+                      previous={selectedTreatmentResult.metric.before}
+                      current={selectedTreatmentResult.metric.after}
+                      max={selectedTreatmentResult.max}
+                      decimals={selectedTreatmentResult.decimals}
+                      unit={selectedTreatmentResult.unit}
+                      color={selectedTreatmentResult.color}
                       higherIsWorse
                       previousLabel="Before"
                       currentLabel="After"
-                      icon={<HeartPulse className="h-5 w-5" />}
+                      icon={
+                        selectedTreatmentResult.id === "panicEpisodes" ||
+                        selectedTreatmentResult.id === "panicIntensity" ? (
+                          <Sparkles className="h-5 w-5" />
+                        ) : selectedTreatmentResult.id === "tetanyEpisodes" ||
+                          selectedTreatmentResult.id === "tetanyIntensity" ? (
+                          <Activity className="h-5 w-5" />
+                        ) : selectedTreatmentResult.id === "headache" ? (
+                          <Brain className="h-5 w-5" />
+                        ) : (
+                          <HeartPulse className="h-5 w-5" />
+                        )
+                      }
                     />
 
-                    <ComparisonMetric
-                      title="Tetany intensity"
-                      subtitle="Average tetany intensity before and after treatment"
-                      previous={treatmentTetany.before}
-                      current={treatmentTetany.after}
-                      max={5}
-                      decimals={1}
-                      unit="/5"
-                      color="blue"
-                      higherIsWorse
-                      previousLabel="Before"
-                      currentLabel="After"
-                      icon={<Activity className="h-5 w-5" />}
-                    />
-
-                    <ComparisonMetric
-                      title="Tetany episodes"
-                      subtitle="Average number of tetany episodes per day"
-                      previous={treatmentTetanyEpisodes.before}
-                      current={treatmentTetanyEpisodes.after}
-                      decimals={2}
-                      unit="/day"
-                      color="blue"
-                      higherIsWorse
-                      previousLabel="Before"
-                      currentLabel="After"
-                      icon={<Activity className="h-5 w-5" />}
-                    />
-
-                    <ComparisonMetric
-                      title="Panic intensity"
-                      subtitle="Average panic intensity before and after treatment"
-                      previous={treatmentPanic.before}
-                      current={treatmentPanic.after}
-                      max={10}
-                      decimals={1}
-                      unit="/10"
-                      color="purple"
-                      higherIsWorse
-                      previousLabel="Before"
-                      currentLabel="After"
-                      icon={<Sparkles className="h-5 w-5" />}
-                    />
-
-                    <ComparisonMetric
-                      title="Panic episodes"
-                      subtitle="Average number of panic episodes per day"
-                      previous={treatmentPanicEpisodes.before}
-                      current={treatmentPanicEpisodes.after}
-                      decimals={2}
-                      unit="/day"
-                      color="purple"
-                      higherIsWorse
-                      previousLabel="Before"
-                      currentLabel="After"
-                      icon={<Sparkles className="h-5 w-5" />}
-                    />
-
-                    <ComparisonMetric
-                      title="Headache"
-                      subtitle="Average number of headache entries per day"
-                      previous={treatmentHeadache.before}
-                      current={treatmentHeadache.after}
-                      decimals={2}
-                      unit="/day"
-                      color="cyan"
-                      higherIsWorse
-                      previousLabel="Before"
-                      currentLabel="After"
-                      icon={<Brain className="h-5 w-5" />}
-                    />
-
-                    <ComparisonMetric
-                      title="Negative mood"
-                      subtitle="Average negative mood tags per day"
-                      previous={treatmentMood.before}
-                      current={treatmentMood.after}
-                      max={3}
-                      decimals={1}
-                      color="amber"
-                      higherIsWorse
-                      previousLabel="Before"
-                      currentLabel="After"
-                      icon={<Brain className="h-5 w-5" />}
-                    />
+                    <p className="px-1 text-[10px] leading-relaxed text-muted-foreground">
+                      Change “Treatment result” above to compare another outcome.
+                    </p>
                   </div>
                 </CollapsibleSection>
 
@@ -2693,7 +2722,25 @@ export function PatternsContent() {
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold text-foreground">{archived.name}</p>
                         <p className="mt-0.5 text-[11px] text-muted-foreground">
-                          {archivedKindLabel} · Started {startLabel}
+                          {archivedKindLabel}
+                          {archived.result
+                            ? ` · Result: ${
+                                archived.result === "panicEpisodes"
+                                  ? "Panic episode"
+                                  : archived.result === "tetanyEpisodes"
+                                    ? "Tetany episode"
+                                    : archived.result === "headache"
+                                      ? "Headache"
+                                      : archived.result === "panicIntensity"
+                                        ? "Panic intensity"
+                                        : archived.result === "tetanyIntensity"
+                                          ? "Tetany intensity"
+                                          : archived.result === "negativeMood"
+                                            ? "Negative mood"
+                                            : "Pain"
+                              }`
+                            : ""}
+                          · Started {startLabel}
                         </p>
                         <p className="mt-0.5 text-[10px] text-muted-foreground">Archived {archivedLabel}</p>
                         {archived.notes && (
