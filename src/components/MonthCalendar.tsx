@@ -14,7 +14,15 @@ import {
   type PeriodLevel,
 } from "@/lib/storage";
 
-const WEEKDAYS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
+const WEEKDAYS = [
+  { short: "Mo", desktop: "Mon" },
+  { short: "Tu", desktop: "Tue" },
+  { short: "We", desktop: "Wed" },
+  { short: "Th", desktop: "Thu" },
+  { short: "Fr", desktop: "Fri" },
+  { short: "Sa", desktop: "Sat" },
+  { short: "Su", desktop: "Sun" },
+];
 const MONTHS = [
   "January",
   "February",
@@ -304,7 +312,10 @@ export function MonthCalendar({
     <div className="px-1 landscape:px-2 lg:px-2" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       <div className="grid grid-cols-7 gap-0.5 pb-1 text-center text-[11px] font-semibold text-muted-foreground landscape:pb-0 landscape:text-[10px] lg:pb-2 lg:text-sm xl:text-[15px]">
         {WEEKDAYS.map((d) => (
-          <div key={d}>{d}</div>
+          <div key={d.short}>
+            <span className="lg:hidden">{d.short}</span>
+            <span className="hidden lg:inline">{d.desktop}</span>
+          </div>
         ))}
       </div>
       <div className="space-y-0.5 lg:space-y-1.5 xl:space-y-2">
@@ -369,38 +380,59 @@ export function MonthCalendar({
                       clearLong();
                     }}
                     onContextMenu={(e) => e.preventDefault()}
-                    className={`flex select-none flex-col items-stretch rounded-lg text-left transition ${
+                    className={`flex select-none flex-col items-stretch rounded-xl text-left transition ${
                       inMonth ? "" : "opacity-30"
-                    } ${isSel ? "ring-2 ring-primary" : ""}`}
+                    } ${isSel ? "bg-primary/5" : ""}`}
                   >
-                    <div className="relative flex h-[58px] items-center justify-center pt-0.5 landscape:h-8 landscape:pt-0 lg:h-[76px] lg:pt-1 xl:h-[82px]">
-                      {pAvg != null && (
-                        <span
-                          aria-hidden
-                          className="pointer-events-none absolute h-10 w-10 rounded-full lg:h-[50px] lg:w-[50px] xl:h-[54px] xl:w-[54px]"
-                          style={{ boxShadow: `0 0 0 4.75px ${calendarPainColor(pAvg)}` }}
-                        />
-                      )}
-                      {predictedPeriod && (
-                        <span
-                          aria-hidden
-                          className="pointer-events-none absolute inset-2 rounded-full lg:inset-[13px] xl:inset-[14px]"
-                          style={{ boxShadow: `0 0 0 2px var(--period-medium)` }}
-                        />
-                      )}
-                      <div
-                        className="relative flex h-8 w-8 items-center justify-center rounded-full lg:h-10 lg:w-10 xl:h-11 xl:w-11"
-                        style={{ background: periodColor ?? "transparent" }}
-                      >
-                        <span className={`text-sm lg:text-base xl:text-[17px] ${periodColor ? "font-semibold text-white" : "text-foreground"}`}>
-                          {date.getDate()}
-                        </span>
+                    <div className="flex min-h-[62px] flex-col items-center justify-start pt-1 landscape:min-h-[44px] landscape:pt-0 lg:min-h-[84px] lg:pt-2 xl:min-h-[90px]">
+                      {/*
+                       * Keep every calendar signal in its own layer/row:
+                       * - pain = outer coloured ring
+                       * - predicted period = inner purple ring
+                       * - date = centre
+                       * - ŠukŠuk heart = dedicated row below the date
+                       * This mirrors the mobile calendar and prevents overlaps on desktop.
+                       */}
+                      <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full lg:h-[52px] lg:w-[52px] xl:h-[56px] xl:w-[56px]">
+                        {pAvg != null && (
+                          <span
+                            aria-hidden
+                            className="pointer-events-none absolute inset-0 rounded-full"
+                            style={{ boxShadow: `0 0 0 4px ${calendarPainColor(pAvg)}` }}
+                          />
+                        )}
+
+                        {predictedPeriod && (
+                          <span
+                            aria-hidden
+                            className="pointer-events-none absolute inset-[4px] rounded-full lg:inset-[5px]"
+                            style={{ boxShadow: `inset 0 0 0 2.5px var(--period-medium)` }}
+                          />
+                        )}
+
+                        <div
+                          className={`relative z-[1] flex h-7 w-7 items-center justify-center rounded-full lg:h-10 lg:w-10 xl:h-11 xl:w-11 ${
+                            isSel ? "ring-2 ring-primary ring-offset-1 ring-offset-background" : ""
+                          }`}
+                          style={{ background: periodColor ?? "transparent" }}
+                        >
+                          <span
+                            className={`text-sm leading-none lg:text-base xl:text-[17px] ${
+                              periodColor ? "font-semibold text-white" : "text-foreground"
+                            }`}
+                          >
+                            {date.getDate()}
+                          </span>
+                        </div>
                       </div>
-                      {icons.length > 0 && (
-                        <span className="pointer-events-none absolute bottom-0.5 left-1/2 flex -translate-x-1/2 items-center justify-center leading-none drop-shadow-sm lg:bottom-1.5 xl:bottom-2">
-                          <Ico e="❤️" size={15} className="lg:h-[18px] lg:w-[18px] xl:h-5 xl:w-5" />
-                        </span>
-                      )}
+
+                      <div className="mt-0.5 flex h-4 items-center justify-center leading-none lg:mt-1 lg:h-5">
+                        {icons.length > 0 ? (
+                          <Ico e="❤️" size={14} className="h-[14px] w-[14px] lg:h-[17px] lg:w-[17px] xl:h-[18px] xl:w-[18px]" />
+                        ) : (
+                          <span aria-hidden className="block h-[14px] w-[14px] lg:h-[17px] lg:w-[17px]" />
+                        )}
+                      </div>
                     </div>
                   </button>
                 );
