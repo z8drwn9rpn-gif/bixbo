@@ -1,6 +1,7 @@
 import { Ico } from "@/components/icons/BixboIcons";
 import { POSTPARTUM_SYMPTOMS } from "@/lib/health";
 import { useEffect, useRef, useState } from "react";
+import { useI18n } from "@/hooks/useI18n";
 import { Check, Plus, X, Pencil, ChevronLeft, ChevronRight } from "@/components/icons/BixboIcons";
 import {
   todayKey,
@@ -414,6 +415,7 @@ export function QuickTags({
   update: (u: (d: BixboData) => BixboData) => void;
   onLongPress: (cat: string) => void;
 }) {
+  const { t } = useI18n();
   const [flash, setFlash] = useState<string | null>(null);
   const [periodOpen, setPeriodOpen] = useState(false);
   const [postpartumOpen, setPostpartumOpen] = useState(false);
@@ -616,7 +618,7 @@ export function QuickTags({
   return (
     <div className="mt-3">
       <div className="mb-2.5 flex items-center justify-between gap-3">
-        <p className="shrink-0 text-[11px] uppercase tracking-wider text-muted-foreground">Quick Log</p>
+        <p className="shrink-0 text-[11px] uppercase tracking-wider text-muted-foreground">{t("Quick Log")}</p>
 
         <div className="flex items-center gap-2">
           <button
@@ -629,7 +631,7 @@ export function QuickTags({
             }`}
           >
             <Pencil className="h-3 w-3" />
-            {editMode ? "Done" : "Edit"}
+            {editMode ? t("Done") : t("Edit")}
           </button>
 
           <button
@@ -773,7 +775,7 @@ export function QuickTags({
 
       {editMode && hidden.size > 0 && (
         <div className="mt-2">
-          <p className="text-[10px] font-medium leading-[1.05] text-muted-foreground">Hidden — tap to restore:</p>
+          <p className="text-[10px] font-medium leading-[1.05] text-muted-foreground">{t("Hidden — tap to restore:")}</p>
 
           <div className="mt-1 flex flex-wrap gap-1.5">
             {sortedTags
@@ -852,7 +854,7 @@ export function QuickTags({
           >
             <div className="mb-3 flex items-center justify-center gap-2">
               <Ico e="🤱" size={26} />
-              <p className="font-serif text-lg">Postpartum symptoms</p>
+              <p className="font-serif text-lg">{t("Postpartum symptoms")}</p>
             </div>
 
             <p className="mb-3 text-center text-xs leading-relaxed text-muted-foreground">
@@ -958,6 +960,7 @@ function QuickTagBuilder({
   update: (u: (d: BixboData) => BixboData) => void;
   onClose: () => void;
 }) {
+  const { t } = useI18n();
   const firstMed = data.meds[0];
 
   const [step, setStep] = useState(0);
@@ -1042,11 +1045,11 @@ function QuickTagBuilder({
         className="w-full max-w-sm rounded-3xl bg-background p-5 shadow-2xl ring-1 ring-border/80"
         onClick={(event) => event.stopPropagation()}
       >
-        <p className="mb-3 text-center font-serif text-lg">New quick log button</p>
+        <p className="mb-3 text-center font-serif text-lg">{t("New quick log button")}</p>
 
         {step === 0 && (
           <div className="space-y-2">
-            <p className="text-xs text-muted-foreground">1. Category</p>
+            <p className="text-xs text-muted-foreground">{t("1. Category")}</p>
 
             <div className="flex flex-wrap gap-2">
               {CATS.map((item) => (
@@ -1067,7 +1070,7 @@ function QuickTagBuilder({
 
         {step === 1 && (
           <div className="space-y-3">
-            <p className="text-xs text-muted-foreground">2. Preset values</p>
+            <p className="text-xs text-muted-foreground">{t("2. Preset values")}</p>
 
             {cat === "pain" && (
               <div>
@@ -1117,7 +1120,7 @@ function QuickTagBuilder({
                 {data.meds.length > 0 ? (
                   <>
                     <div>
-                      <p className="mb-1 text-xs text-muted-foreground">Medication</p>
+                      <p className="mb-1 text-xs text-muted-foreground">{t("Medication")}</p>
 
                       <select
                         className={inputCls}
@@ -1140,7 +1143,7 @@ function QuickTagBuilder({
                     </div>
 
                     <div className="space-y-2">
-                      <p className="text-xs">Logging mode</p>
+                      <p className="text-xs">{t("Logging mode")}</p>
 
                       <label className="flex items-center gap-2 text-sm">
                         <input
@@ -1171,7 +1174,7 @@ function QuickTagBuilder({
 
                     {medMode === "scheduled" && (
                       <div>
-                        <p className="mb-1 text-xs text-muted-foreground">Scheduled time</p>
+                        <p className="mb-1 text-xs text-muted-foreground">{t("Scheduled time")}</p>
 
                         {selectedMedTimes.length > 0 ? (
                           <select
@@ -1186,13 +1189,13 @@ function QuickTagBuilder({
                             ))}
                           </select>
                         ) : (
-                          <p className="text-xs text-muted-foreground">No schedule time saved for this medication.</p>
+                          <p className="text-xs text-muted-foreground">{t("No schedule time saved for this medication.")}</p>
                         )}
                       </div>
                     )}
                   </>
                 ) : (
-                  <p className="text-xs text-muted-foreground">No medications saved yet.</p>
+                  <p className="text-xs text-muted-foreground">{t("No medications saved yet.")}</p>
                 )}
               </div>
             )}
@@ -1312,7 +1315,7 @@ function QuickTagBuilder({
             {cat === "sleep" && (
               <div className="space-y-2">
                 <div>
-                  <p className="mb-1 text-xs text-muted-foreground">Hours</p>
+                  <p className="mb-1 text-xs text-muted-foreground">{t("Hours")}</p>
 
                   <input
                     className={inputCls}
@@ -1326,7 +1329,7 @@ function QuickTagBuilder({
                 </div>
 
                 <div>
-                  <p className="mb-1 text-xs text-muted-foreground">Quality</p>
+                  <p className="mb-1 text-xs text-muted-foreground">{t("Quality")}</p>
 
                   <select
                     className={inputCls}
@@ -1344,14 +1347,14 @@ function QuickTagBuilder({
             )}
 
             {cat === "sex" && (
-              <p className="text-xs text-muted-foreground">Logs a sex entry — details can be added later.</p>
+              <p className="text-xs text-muted-foreground">{t("Logs a sex entry — details can be added later.")}</p>
             )}
           </div>
         )}
 
         {step === 2 && (
           <div className="space-y-2">
-            <p className="text-xs text-muted-foreground">3. Icon and name</p>
+            <p className="text-xs text-muted-foreground">{t("3. Icon and name")}</p>
 
             <input
               className={inputCls}
