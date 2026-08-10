@@ -620,9 +620,6 @@ function ProfilePage() {
     time: "24h" as "24h" | "12h",
   });
   const [privacyPrefs, setPrivacyPrefs] = useState({
-    faceId: false,
-    pinLock: false,
-    blurScreenshots: false,
     analytics: false,
     crashReports: true,
   });
@@ -644,26 +641,20 @@ function ProfilePage() {
     quietEnd: "08:00",
   });
   const [prefsLoaded, setPrefsLoaded] = useState(false);
+  const prefsSignature = JSON.stringify({
+    tracking: view.settings.tracking,
+    units: view.settings.units,
+    privacy: view.settings.privacy,
+    backup: view.settings.backup,
+    notif: view.settings.notif,
+    pregnancyActive: Boolean(view.pregnancy?.active),
+    postpartumActive: Boolean(view.postpartum?.active),
+  });
 
   useEffect(() => {
     if (!hydrated) return;
 
-    // Main BIXBO settings are the source of truth. The old profile-only
-    // localStorage object is read only for device-local lock/blur switches that
-    // do not belong to synced health settings.
-    let legacyDevicePrefs: Partial<typeof privacyPrefs> = {};
-    if (typeof window !== "undefined") {
-      try {
-        const saved = window.localStorage.getItem("bixbo:health-preferences");
-        if (saved) {
-          const parsed = JSON.parse(saved) as { privacyPrefs?: Partial<typeof privacyPrefs> };
-          legacyDevicePrefs = parsed.privacyPrefs ?? {};
-        }
-      } catch {
-        // Ignore malformed legacy device preferences.
-      }
-    }
-
+    // Main BIXBO settings are the single source of truth for Profile preferences.
     const tracking = view.settings.tracking;
     const canonicalUnits = view.settings.units;
     const privacy = view.settings.privacy;
@@ -687,12 +678,10 @@ function ProfilePage() {
       volume: canonicalUnits?.volume ?? "ml",
       time: canonicalUnits?.time ?? "24h",
     });
-    setPrivacyPrefs((current) => ({
-      ...current,
-      ...legacyDevicePrefs,
+    setPrivacyPrefs({
       analytics: privacy?.analytics ?? false,
       crashReports: privacy?.crashReports ?? true,
-    }));
+    });
     setBackupPrefs({
       autoBackup: backup?.autoBackup ?? false,
       lastBackup: backup?.lastBackupAt ?? "",
@@ -712,7 +701,7 @@ function ProfilePage() {
       quietEnd: notif?.quietEnd ?? "08:00",
     }));
     setPrefsLoaded(true);
-  }, [hydrated]);
+  }, [hydrated, prefsSignature]);
 
   useEffect(() => {
     if (!prefsLoaded) return;
@@ -758,21 +747,6 @@ function ProfilePage() {
         pregnantSince: undefined,
       },
     }));
-
-    // Keep only device-local switches in the legacy key for backwards
-    // compatibility; synced health preferences no longer depend on this key.
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(
-        "bixbo:health-preferences",
-        JSON.stringify({
-          privacyPrefs: {
-            faceId: privacyPrefs.faceId,
-            pinLock: privacyPrefs.pinLock,
-            blurScreenshots: privacyPrefs.blurScreenshots,
-          },
-        }),
-      );
-    }
   }, [prefsLoaded, trackingPrefs, painScale, units, privacyPrefs, backupPrefs, reminderPrefs, update]);
 
   const patch = (p: Partial<HealthProfile>) => update((d) => ({ ...d, profile: { ...d.profile, ...p } }));
@@ -1188,24 +1162,6 @@ function ProfilePage() {
   if (healthView === "privacy") {
     return (
       <HealthSubpage title="Privacy" onBack={() => setHealthView("hub")}>
-        <Section title="App protection" subtitle="These preferences are stored on this device.">
-          <ToggleRow
-            label="Face ID / biometric lock"
-            checked={privacyPrefs.faceId}
-            onChange={(value) => setPrivacyPrefs((current) => ({ ...current, faceId: value }))}
-          />
-          <ToggleRow
-            label="PIN lock"
-            checked={privacyPrefs.pinLock}
-            onChange={(value) => setPrivacyPrefs((current) => ({ ...current, pinLock: value }))}
-          />
-          <ToggleRow
-            label="Blur app in screenshots / app switcher"
-            checked={privacyPrefs.blurScreenshots}
-            onChange={(value) => setPrivacyPrefs((current) => ({ ...current, blurScreenshots: value }))}
-          />
-        </Section>
-
         <Section title="Diagnostics">
           <ToggleRow
             label="Anonymous analytics"
@@ -2248,3 +2204,4 @@ function ProfilePage() {
     </AppShell>
   );
 }
+
