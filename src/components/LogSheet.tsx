@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useEffect, type ReactNode } from "react";
+import { useI18n } from "@/hooks/useI18n";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Ico, IcoText } from "@/components/icons/BixboIcons";
 import { POSTPARTUM_SYMPTOMS } from "@/lib/health";
@@ -132,6 +133,7 @@ export function LogSheet({
   initialPain?: PainEntry;
   editEntry?: unknown;
 }) {
+  const { t } = useI18n();
   const [cat, setCat] = useState<Category | null>(initial ?? null);
   const [openToken, setOpenToken] = useState(0);
   useEffect(() => {
@@ -665,6 +667,7 @@ export function LogSheet({
 
 /* ------------------- Primitives ------------------- */
 function Field({ label, children }: { label: string; children: ReactNode }) {
+  const { t } = useI18n();
   // Intentionally a <div>, not <label>. Wrapping chip/button groups in <label>
   // caused stray click activations on the first focusable descendant, which
   // manifested as chips getting "auto-selected" in the Pain wizard.
@@ -705,6 +708,7 @@ function Chip({
   );
 }
 function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave: () => void; disabled?: boolean }) {
+  const { t } = useI18n();
   return (
     <SheetFooter className="sticky top-0 z-30 -mx-5 mt-0 flex-row items-center justify-between gap-2 border-b border-border/50 bg-background px-5 py-1.5">
       <button
