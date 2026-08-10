@@ -1,6 +1,22 @@
 export type AppLanguage = "en" | "sk";
 
 const EN: Record<string, string> = {
+  "nav.home": "Home",
+  "nav.overview": "Overview",
+  "nav.log": "Log",
+  "nav.couple": "Couple",
+  "nav.note": "Note",
+  "nav.patterns": "Patterns",
+  "nav.medications": "Medications",
+  "nav.healthProfile": "Health profile",
+  "nav.settings": "Settings",
+  "profile.language.title": "Language",
+  "profile.language.subtitle": "Choose the language used by the BIXBO interface.",
+  "profile.language.appLanguage": "App language",
+  "profile.language.english": "English",
+  "profile.language.slovak": "Slovenčina",
+  "profile.hub.languageTitle": "Language",
+  "profile.hub.languageSubtitle": "App language",
 };
 
 const SK: Record<string, string> = {
