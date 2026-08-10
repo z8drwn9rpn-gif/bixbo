@@ -1128,7 +1128,7 @@ function ProfilePage() {
                 onClick={() => setTheme(theme)}
                 className={`min-h-11 rounded-xl border px-3 text-sm font-semibold capitalize ${(view.settings.theme ?? "system") === theme ? "border-primary bg-primary text-primary-foreground" : "border-border bg-tint"}`}
               >
-                {theme}
+                {t(theme)}
               </button>
             ))}
           </div>
@@ -1146,7 +1146,7 @@ function ProfilePage() {
                 <span className="block font-semibold" style={{ fontSize: size.px }}>
                   Aa
                 </span>
-                <span className="mt-1 block text-[10px] text-muted-foreground">{size.label}</span>
+                <span className="mt-1 block text-[10px] text-muted-foreground">{t(size.label)}</span>
               </button>
             ))}
           </div>
@@ -1183,7 +1183,7 @@ function ProfilePage() {
             className="flex min-h-12 w-full items-center justify-center gap-3 rounded-xl border border-input bg-background px-4 text-sm font-semibold text-foreground disabled:opacity-60"
           >
             <span className="text-base font-bold">G</span>
-            {accountAuthBusy === "google" ? "Opening Google…" : "Continue with Google"}
+            {accountAuthBusy === "google" ? t("Opening Google…") : t("Continue with Google")}
           </button>
 
           <button
@@ -1193,7 +1193,7 @@ function ProfilePage() {
             className="flex min-h-12 w-full items-center justify-center gap-3 rounded-xl border border-input bg-background px-4 text-sm font-semibold text-foreground disabled:opacity-60"
           >
             <span className="text-lg leading-none"></span>
-            {accountAuthBusy === "apple" ? "Opening Apple…" : "Continue with Apple / iCloud"}
+            {accountAuthBusy === "apple" ? t("Opening Apple…") : t("Continue with Apple / iCloud")}
           </button>
 
           {accountAuthError && (

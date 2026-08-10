@@ -640,7 +640,7 @@ export function QuickTags({
             className="flex min-h-9 items-center gap-1 rounded-full bg-tint/70 px-3 text-[11px] font-semibold text-muted-foreground transition hover:bg-tint hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             <Plus className="h-3.5 w-3.5" />
-            Add
+            {t("Add")}
           </button>
         </div>
       </div>

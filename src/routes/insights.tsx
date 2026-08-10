@@ -326,6 +326,7 @@ function InsightPeriodSelect({
   onChange: (period: Period) => void;
   ariaLabel: string;
 }) {
+  const { t } = useI18n();
   return (
     <div
       className="grid h-8 w-[210px] grid-cols-3 rounded-xl bg-tint p-0.5 ring-1 ring-border/60"
@@ -351,7 +352,7 @@ function InsightPeriodSelect({
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            {label}
+            {t(label)}
           </button>
         );
       })}
@@ -2187,7 +2188,7 @@ function YearHealthHeatmap({
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                {label}
+                {t(label)}
               </button>
             );
           })}
@@ -2405,7 +2406,7 @@ function YearHealthHeatmap({
         <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5 text-[10px] text-muted-foreground">
           <span className="flex items-center gap-1">
             <span className="h-3 w-3 rounded-full bg-tint" />
-            No data
+            {t("No data")}
           </span>
 
           {legend.map(([label, color]) => (

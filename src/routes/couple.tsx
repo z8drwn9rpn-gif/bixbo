@@ -39,6 +39,7 @@ import {
 } from "@/lib/storage";
 import { fetchPartner } from "@/lib/cloudSync";
 import { useI18n } from "@/hooks/useI18n";
+import { calculateCoupleSimilarity } from "@/lib/coupleSimilarity";
 
 export const Route = createFileRoute("/couple")({
   head: () => ({
@@ -1043,7 +1044,7 @@ function CouplePainChart({
                     </text>
 
                     <text x={tooltipX + 10} y={tooltipY + 34} fontSize="12" fontWeight="700" fill="var(--foreground)">
-                      Pain {selectedBar.value.toFixed(1)}/10
+                      {t("Pain")} {selectedBar.value.toFixed(1)}/10
                     </text>
 
                     <text x={tooltipX + 10} y={tooltipY + 49} fontSize="8" fill="var(--muted-foreground)">
@@ -1065,7 +1066,7 @@ function CouplePainChart({
             aria-label={t("Close selected pain details")}
           >
             <span className="min-w-0 break-words leading-snug [overflow-wrap:anywhere]">
-              <b>{selectedBar.owner}</b> · {selectedBar.day} · Pain <b>{selectedBar.value.toFixed(1)}/10</b> ·{" "}
+              <b>{selectedBar.owner}</b> · {selectedBar.day} · {t("Pain")} <b>{selectedBar.value.toFixed(1)}/10</b> ·{" "}
               {PAIN_DESCRIPTIONS[Math.max(0, Math.min(10, Math.round(selectedBar.value)))] ?? "Pain"}
             </span>
 
@@ -1096,7 +1097,7 @@ function CouplePainChart({
               border: `1px solid ${couplePainColor(6)}`,
             }}
           />
-          {t(partnerName)} — striped
+          {t(partnerName)} — {t("striped")}
         </span>
       </div>
     </section>
@@ -1126,6 +1127,7 @@ function BlueberrySection({
   selectedMonthLabel: string;
   isCurrentMonth: boolean;
 }) {
+  const { t, language } = useI18n();
   const cycle = partner.cycle;
 
   if (!cycle?.lastPeriodStart) {
@@ -1177,7 +1179,7 @@ function BlueberrySection({
     <section className="space-y-3 rounded-3xl bg-surface p-4 ring-1 ring-border">
       <h3 className="flex items-center gap-2 font-serif text-lg font-semibold">
         <BlueberryIcon size={21} />
-        <span>{partner.name || "Partner"} — Blueberry</span>
+        <span>{partner.name || t("Partner")} — {t("Blueberry")}</span>
       </h3>
 
       {next ? (
@@ -1185,19 +1187,19 @@ function BlueberrySection({
           <p className="flex items-center gap-2">
             <WaterIcon size={18} />
             <span>
-              Next period: <span className="font-semibold">{next.start}</span>
+              {t("Next period")}: <span className="font-semibold">{next.start}</span>
             </span>
           </p>
 
           <p className="text-xs text-muted-foreground">
-            Predicted window: {next.start} → {next.end}
+            {t("Predicted window")}: {next.start} → {next.end}
           </p>
         </div>
       ) : null}
 
       {cycle ? (
         <p className="text-xs text-muted-foreground">
-          Cycle {cycle.cycleLength}d · period {cycle.periodLength}d
+          {t("Cycle")} {cycle.cycleLength}d · {t("Period").toLowerCase()} {cycle.periodLength}d
         </p>
       ) : null}
 
@@ -1246,7 +1248,7 @@ function BlueberrySection({
 type CoupleTab = "overview" | "compare" | "health";
 
 function CouplePage() {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const { data, hydrated } = useBixbo();
   const view = hydrated ? data : EMPTY;
   const partner = view.partner;
@@ -1324,7 +1326,7 @@ function CouplePage() {
   const periodDisplayLabel = range.label;
 
   const selectedMonth = useMemo(() => startOfMonth(anchor), [anchor]);
-  const selectedMonthLabel = monthLabel(selectedMonth);
+  const selectedMonthLabel = selectedMonth.toLocaleDateString(language === "sk" ? "sk-SK" : "en-US", { month: "long", year: "numeric" });
 
   // Couple comparisons use one monthly range throughout.
   const painMonthRange = useMemo(() => coupleRangeFor("M", anchor), [anchor]);
@@ -1479,23 +1481,22 @@ function CouplePage() {
 
   const partnerTakenDoses = partner ? countTakenScheduledDoses(periodDays, partner.meds ?? [], partner.medLog ?? {}) : 0;
 
+  const loggedComparisonDays = partner
+    ? periodDays.filter((day) => hasSymptoms(view.dayLogs[day]) || hasSymptoms(partner.dayLogs[day])).length
+    : 0;
+
   const similarityScore = partner
-    ? (() => {
-        const symptomDayGap = Math.abs(mySymptomDays - partnerSymptomDays) / Math.max(1, periodDays.length);
-
-        const painGap =
-          myPainAverage == null || partnerPainAverage == null ? 0.5 : Math.abs(myPainAverage - partnerPainAverage) / 10;
-
-        const panicGap =
-          Math.abs(myPanic.length - partnerPanic.length) / Math.max(1, myPanic.length, partnerPanic.length);
-
-        const tetanyGap =
-          Math.abs(myTetany.length - partnerTetany.length) / Math.max(1, myTetany.length, partnerTetany.length);
-
-        const averageGap = (symptomDayGap + painGap + panicGap + tetanyGap) / 4;
-
-        return clampPercent((1 - averageGap) * 100);
-      })()
+    ? calculateCoupleSimilarity({
+        mySymptomDays,
+        partnerSymptomDays,
+        loggedComparisonDays,
+        myPainAverage,
+        partnerPainAverage,
+        myPanicCount: myPanic.length,
+        partnerPanicCount: partnerPanic.length,
+        myTetanyCount: myTetany.length,
+        partnerTetanyCount: partnerTetany.length,
+      })
     : 0;
 
   const partnerName = partner?.name || "Partner";
@@ -1530,7 +1531,7 @@ function CouplePage() {
           aria-label={t("Couple period: Month")}
         >
           <div className="min-w-0 rounded-[10px] bg-primary px-2 py-1.5 text-center text-[11px] font-semibold text-primary-foreground shadow-md">
-            Month
+            {t("Month")}
           </div>
         </div>
 
@@ -1554,7 +1555,7 @@ function CouplePage() {
                       : "text-foreground/80 hover:bg-surface/45 hover:text-foreground"
                   }`}
                 >
-                  {tab.label}
+                  {t(tab.label)}
                 </button>
               );
             })}
@@ -1589,11 +1590,11 @@ function CouplePage() {
             <p className="text-sm font-medium">{t("No partner linked yet.")}</p>
 
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-              In Settings → Couple sharing, exchange pairing codes with your partner to compare selected health logs.
+              {t("In Settings → Couple sharing, exchange pairing codes with your partner to compare selected health logs.")}
             </p>
 
             <Link to="/settings" className="mt-3 inline-block text-sm text-primary underline">
-              Open Couple sharing
+              {t("Open Couple sharing")}
             </Link>
           </div>
         ) : (

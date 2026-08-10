@@ -482,10 +482,10 @@ function ComparisonMetric({
 
         <div className="min-w-0 flex-1">
           <h3 className="text-sm font-semibold" style={{ color: palette.text }}>
-            {title}
+            {t(title)}
           </h3>
 
-          {subtitle && <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">{subtitle}</p>}
+          {subtitle && <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">{t(subtitle)}</p>}
         </div>
 
         {delta != null && (
@@ -534,7 +534,7 @@ function ComparisonMetric({
             style={{ color: trendColor }}
           >
             {t(trendText)}
-            {delta != null && !isUnchanged ? ` by ${formatMetricValue(Math.abs(delta), decimals, unit)}` : ""}
+            {delta != null && !isUnchanged ? ` ${t("by")} ${formatMetricValue(Math.abs(delta), decimals, unit)}` : ""}
             {relativeChange != null && !isUnchanged ? ` (${formatSignedPercent(relativeChange)})` : ""}
           </div>
         </>

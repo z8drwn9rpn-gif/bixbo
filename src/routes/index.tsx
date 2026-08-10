@@ -326,7 +326,7 @@ function VitalTrendPopup({
   const [period, setPeriod] = useState<VitalTrendPeriod>("W");
   const [anchor, setAnchor] = useState(() => fromKey(anchorKey));
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const { t } = useI18n();
+  const { t, language } = useI18n();
 
   // Lock the page behind the modal. iOS Safari/PWA can otherwise try to scroll
   // both the Home page and the popup at the same time, which feels like a freeze.
@@ -355,7 +355,7 @@ function VitalTrendPopup({
         return {
           key: `${year}-${String(monthIndex + 1).padStart(2, "0")}`,
           label,
-          heading: start.toLocaleDateString("en-GB", { month: "long", year: "numeric" }),
+          heading: start.toLocaleDateString(language === "sk" ? "sk-SK" : "en-GB", { month: "long", year: "numeric" }),
           value: averageNumbers(records.values),
           details: records.details,
         };
@@ -367,7 +367,7 @@ function VitalTrendPopup({
       const d = fromKey(key);
       return {
         key,
-        label: period === "W" ? d.toLocaleDateString("en-GB", { weekday: "short" }).slice(0, 2) : String(d.getDate()),
+        label: period === "W" ? d.toLocaleDateString(language === "sk" ? "sk-SK" : "en-GB", { weekday: "short" }).slice(0, 2) : String(d.getDate()),
         heading: trendDayHeading(key),
         value: dailyVitalTrendValue(metric, data.dayLogs[key]),
         details: dailyVitalDetails(metric, key, data),
@@ -387,8 +387,8 @@ function VitalTrendPopup({
     period === "Y"
       ? String(anchor.getFullYear())
       : period === "M"
-        ? anchor.toLocaleDateString("en-GB", { month: "long", year: "numeric" })
-        : `${start.toLocaleDateString("en-GB", { day: "numeric", month: "short" })} – ${end.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`;
+        ? anchor.toLocaleDateString(language === "sk" ? "sk-SK" : "en-GB", { month: "long", year: "numeric" })
+        : `${start.toLocaleDateString(language === "sk" ? "sk-SK" : "en-GB", { day: "numeric", month: "short" })} – ${end.toLocaleDateString(language === "sk" ? "sk-SK" : "en-GB", { day: "numeric", month: "short" })}`;
 
   const chartWidth = 278;
   const chartHeight = 132;
@@ -427,7 +427,7 @@ function VitalTrendPopup({
     <div className="fixed inset-0 z-[95] flex items-center justify-center px-7">
       <button
         type="button"
-        aria-label={`Close ${vitalTrendTitle(metric)} graph`}
+        aria-label={`${t("Close")} ${t(vitalTrendTitle(metric))} ${t("graph")}`}
         className="absolute inset-0 bg-black/35"
         onClick={onClose}
       />
@@ -436,7 +436,7 @@ function VitalTrendPopup({
         <div className="flex items-start justify-between gap-2 border-b border-border/70 px-4 pb-3 pt-4">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t("Trend")}</p>
-            <h2 className="mt-0.5 font-serif text-lg font-bold text-foreground">{vitalTrendTitle(metric)}</h2>
+            <h2 className="mt-0.5 font-serif text-lg font-bold text-foreground">{t(vitalTrendTitle(metric))}</h2>
           </div>
           <button
             type="button"
@@ -559,7 +559,7 @@ function VitalTrendPopup({
                       <div className="min-w-0">
                         <p className="text-[10px] font-semibold text-muted-foreground">{active.heading}</p>
                         <p className="mt-1 text-[11px] text-muted-foreground">
-                          {period === "Y" ? "Monthly average from saved entries" : "Saved entry"}
+                          {period === "Y" ? t("Monthly average from saved entries") : t("Saved entry")}
                         </p>
                       </div>
                       <b className="shrink-0 tabular-nums text-sm text-foreground">
@@ -585,7 +585,7 @@ function VitalTrendPopup({
               </>
             ) : (
               <div className="grid min-h-32 place-items-center text-center text-xs text-muted-foreground">
-                No {vitalTrendTitle(metric).toLowerCase()} data in this period.
+                {t("No data in this period for")} {t(vitalTrendTitle(metric)).toLowerCase()}.
               </div>
             )}
           </div>
@@ -596,7 +596,7 @@ function VitalTrendPopup({
 }
 
 function HomePage() {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const { data, update, hydrated } = useBixbo();
   const view = hydrated ? data : EMPTY;
   const maleMode = String(view.settings.gender ?? "").trim().toLowerCase() === "male";
@@ -958,7 +958,7 @@ function HomePage() {
           if (!p) return null;
 
           const fmt = (k: string) =>
-            fromKey(k).toLocaleDateString("en-GB", {
+            fromKey(k).toLocaleDateString(language === "sk" ? "sk-SK" : "en-GB", {
               day: "numeric",
               month: "short",
             });
@@ -972,7 +972,7 @@ function HomePage() {
                 boxShadow: "inset 0 0 0 1px color-mix(in srgb, #5F7033 34%, transparent)",
               }}
             >
-              Next period predicted:{" "}
+              {t("Next period predicted:")}{" "}
               <span className="font-semibold">
                 {fmt(p.start)} – {fmt(p.end)}
               </span>
@@ -1048,8 +1048,8 @@ function HomePage() {
       <div className="mt-4 flex items-center justify-between px-5 lg:mt-0 lg:px-0">
         <h2 className="font-serif text-xl font-bold">
           {selected === todayKey()
-            ? "Today"
-            : fromKey(selected).toLocaleDateString("en-GB", {
+            ? t("Today")
+            : fromKey(selected).toLocaleDateString(language === "sk" ? "sk-SK" : "en-GB", {
                 weekday: "long",
                 day: "numeric",
                 month: "long",
@@ -1102,39 +1102,39 @@ function HomePage() {
               key: "pain",
               icon: <FlameIcon size={22} />,
               label: "Pain",
-              value: todayPain != null ? `${todayPain.toFixed(1)} / 10` : "No pain logged",
+              value: todayPain != null ? `${todayPain.toFixed(1)} / 10` : t("No pain logged"),
             },
             {
               key: "meds",
               icon: <PillIcon size={22} />,
               label: "Medication",
-              value: `${todayMedsTaken} of ${todayScheduled.length} taken`,
+              value: `${todayMedsTaken} ${t("of")} ${todayScheduled.length} ${t("taken")}`,
             },
             {
               key: "sleep",
               icon: <ClockIcon size={22} />,
               label: "Sleep",
-              value: todayLog?.sleepHours != null ? `${todayLog.sleepHours} h` : "Not logged",
+              value: todayLog?.sleepHours != null ? `${todayLog.sleepHours} h` : t("Not logged"),
             },
             {
               key: "tetany",
               icon: <Ico e="⭐️" size={22} />,
               label: "Tetany episode",
-              value: todayTetany ? `${todayTetany} episode${todayTetany === 1 ? "" : "s"}` : "None",
+              value: todayTetany ? `${todayTetany} ${todayTetany === 1 ? t("episode") : t("episodes")}` : t("None"),
             },
             {
               key: "panic",
               icon: <Ico e="✨" size={22} />,
               label: "Panic episode",
-              value: todayPanic ? `${todayPanic}` : "None",
+              value: todayPanic ? `${todayPanic}` : t("None"),
             },
             {
               key: "bowel",
               icon: <PoopIcon size={22} />,
               label: "Bowel",
               value: todayBowelEntries.length
-                ? `${todayBowelEntries.length} entr${todayBowelEntries.length === 1 ? "y" : "ies"}`
-                : "None",
+                ? `${todayBowelEntries.length} ${todayBowelEntries.length === 1 ? t("entry") : t("entries")}`
+                : t("None"),
             },
             {
               key: "hotFlashes",
@@ -1142,7 +1142,7 @@ function HomePage() {
               label: "Hot flashes",
               value: (() => {
                 const entries = todayLog?.pain?.filter((entry) => (entry.hotFlashes ?? 0) > 0) ?? [];
-                return entries.length ? `${entries.length} entr${entries.length === 1 ? "y" : "ies"}` : "None";
+                return entries.length ? `${entries.length} ${entries.length === 1 ? t("entry") : t("entries")}` : t("None");
               })(),
             },
             {
@@ -1154,7 +1154,7 @@ function HomePage() {
                   todayLog?.pain?.filter(
                     (entry) => entry.headacheIntensity != null || (entry.headacheTypes?.length ?? 0) > 0,
                   ) ?? [];
-                return entries.length ? `${entries.length} entr${entries.length === 1 ? "y" : "ies"}` : "None";
+                return entries.length ? `${entries.length} ${entries.length === 1 ? t("entry") : t("entries")}` : t("None");
               })(),
             },
           ];
@@ -1194,12 +1194,12 @@ function HomePage() {
           const periodEnd = periodDays[periodDays.length - 1]?.key;
           const monthPeriodLabel =
             periodStart && periodEnd
-              ? `${fromKey(periodStart).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}${
+              ? `${fromKey(periodStart).toLocaleDateString(language === "sk" ? "sk-SK" : "en-GB", { day: "numeric", month: "short" })}${
                   periodEnd !== periodStart
-                    ? ` – ${fromKey(periodEnd).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`
+                    ? ` – ${fromKey(periodEnd).toLocaleDateString(language === "sk" ? "sk-SK" : "en-GB", { day: "numeric", month: "short" })}`
                     : ""
                 } · ${periodDays.length} day${periodDays.length === 1 ? "" : "s"}`
-              : "Not logged";
+              : t("Not logged");
 
           const monthSex = monthLogs.reduce(
             (sum, { log }) => sum + (log?.sex?.filter((entry) => isIntercourseKind(entry.kind)).length ?? 0),
@@ -1250,61 +1250,61 @@ function HomePage() {
               key: "pain",
               icon: <FlameIcon size={22} />,
               label: "Pain",
-              value: monthPainAvg != null ? `${monthPainAvg.toFixed(1)} / 10 avg` : "No pain logged",
+              value: monthPainAvg != null ? `${monthPainAvg.toFixed(1)} / 10 ${t("avg")}` : t("No pain logged"),
             },
             {
               key: "meds",
               icon: <PillIcon size={22} />,
               label: "Medication",
-              value: monthMedsPct != null ? `${monthMedsPct}% taken` : "No schedule",
+              value: monthMedsPct != null ? `${monthMedsPct}% ${t("taken")}` : t("No schedule"),
             },
             {
               key: "sleep",
               icon: <ClockIcon size={22} />,
               label: "Sleep",
-              value: monthSleepAvg != null ? `${monthSleepAvg.toFixed(1)} h avg` : "Not logged",
+              value: monthSleepAvg != null ? `${monthSleepAvg.toFixed(1)} h ${t("avg")}` : t("Not logged"),
             },
             {
               key: "tetany",
               icon: <Ico e="⭐️" size={22} />,
               label: "Tetany",
-              value: `${monthTetany} episode${monthTetany === 1 ? "" : "s"}`,
+              value: `${monthTetany} ${monthTetany === 1 ? t("episode") : t("episodes")}`,
             },
             {
               key: "panic",
               icon: <Ico e="✨" size={22} />,
               label: "Panic",
-              value: `${monthPanic} episode${monthPanic === 1 ? "" : "s"}`,
+              value: `${monthPanic} ${monthPanic === 1 ? t("episode") : t("episodes")}`,
             },
             {
               key: "bowel",
               icon: <PoopIcon size={22} />,
               label: "Bowel",
               value: monthBowelCount
-                ? `${monthBowelCount} entr${monthBowelCount === 1 ? "y" : "ies"}`
-                : "None",
+                ? `${monthBowelCount} ${monthBowelCount === 1 ? t("entry") : t("entries")}`
+                : t("None"),
             },
             {
               key: "sex",
               icon: <HeartIcon size={22} />,
               label: "ŠukŠuk",
-              value: `${monthSex}× this month`,
+              value: `${monthSex}× ${t("this month")}`,
             },
             {
               key: "hotFlashes",
               icon: <Ico e="🥵" size={22} />,
               label: "Hot flashes",
               value: monthHotFlashDays
-                ? `${monthHotFlashDays} day${monthHotFlashDays === 1 ? "" : "s"}`
-                : "None",
+                ? `${monthHotFlashDays} ${monthHotFlashDays === 1 ? t("day") : t("days")}`
+                : t("None"),
             },
             {
               key: "headache",
               icon: <Ico e="🤕" size={22} />,
               label: "Headache",
               value: monthHeadacheDays
-                ? `${monthHeadacheDays} day${monthHeadacheDays === 1 ? "" : "s"}`
-                : "None",
+                ? `${monthHeadacheDays} ${monthHeadacheDays === 1 ? t("day") : t("days")}`
+                : t("None"),
             },
             {
               key: "period",
@@ -1346,7 +1346,7 @@ function HomePage() {
                               : "text-muted-foreground"
                           }`}
                         >
-                          Today
+                          {t("Today")}
                         </button>
                         <button
                           type="button"
@@ -1360,13 +1360,13 @@ function HomePage() {
                               : "text-muted-foreground"
                           }`}
                         >
-                          Month
+                          {t("Month")}
                         </button>
                       </div>
 
                       {summaryMode === "today" ? (
                         <h2 className="mt-2 font-serif text-lg font-bold text-foreground">
-                          {fromKey(todayDateKey).toLocaleDateString("en-GB", {
+                          {fromKey(todayDateKey).toLocaleDateString(language === "sk" ? "sk-SK" : "en-GB", {
                             weekday: "long",
                             day: "numeric",
                             month: "long",
@@ -1385,10 +1385,10 @@ function HomePage() {
 
                           <div className="min-w-0 flex-1 text-center">
                             <h2 className="font-serif text-lg font-bold text-foreground">
-                              {activeMonth.toLocaleDateString("en-GB", { month: "long", year: "numeric" })}
+                              {activeMonth.toLocaleDateString(language === "sk" ? "sk-SK" : "en-GB", { month: "long", year: "numeric" })}
                             </h2>
                             <p className="mt-0.5 text-[10px] text-muted-foreground">
-                              {loggedDays} / {monthKeys.length} days logged
+                              {loggedDays} / {monthKeys.length} {t("days logged")}
                             </p>
                           </div>
 
@@ -1423,7 +1423,7 @@ function HomePage() {
                           <span className="grid h-8 w-8 shrink-0 place-items-center">{row.icon}</span>
                           <span className="min-w-0">
                             <span className="block truncate text-[10px] font-medium text-muted-foreground">
-                              {row.label}
+                              {t(row.label)}
                             </span>
                             <span className="mt-0.5 block truncate text-xs font-semibold text-foreground">
                               {row.value}
@@ -1463,7 +1463,7 @@ function HomePage() {
                     }}
                     className="min-h-10 w-full rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground"
                   >
-                    {summaryMode === "today" ? "Open today on calendar" : "Open month on calendar"}
+                    {summaryMode === "today" ? t("Open today on calendar") : t("Open month on calendar")}
                   </button>
                 </div>
               </section>
@@ -2686,6 +2686,7 @@ function VitalTile({
   value: string;
   onClick: () => void;
 }) {
+  const { t } = useI18n();
   return (
     <button
       onClick={onClick}
@@ -2693,7 +2694,7 @@ function VitalTile({
     >
       <Ico e={emoji} size={16} />
       <span className="font-serif text-base font-bold leading-tight">{value}</span>
-      <span className="text-[10px] font-medium text-muted-foreground">{label}</span>
+      <span className="text-[10px] font-medium text-muted-foreground">{t(label)}</span>
     </button>
   );
 }
@@ -3895,7 +3896,7 @@ function ShareDayButton({ date, view }: { date: string; view: BixboData }) {
 
     if (log.pain?.length) {
       const avg = log.pain.reduce((s, p) => s + p.score, 0) / log.pain.length;
-      lines.push(`Pain — avg ${avg.toFixed(1)}/10 · ${log.pain.length} entr${log.pain.length === 1 ? "y" : "ies"}`);
+      lines.push(`${t("Pain")} — ${t("avg")} ${avg.toFixed(1)}/10 · ${log.pain.length} ${log.pain.length === 1 ? t("entry") : t("entries")}`);
       for (const p of log.pain) {
         const bits = [`${p.time}`, `${p.score}/10 (${t(PAIN_DESCRIPTIONS[Math.round(p.score)])})`];
         if (p.parts.length) bits.push(p.parts.join(", "));
@@ -3906,48 +3907,48 @@ function ShareDayButton({ date, view }: { date: string; view: BixboData }) {
       lines.push("");
     }
     if (log.panic?.length) {
-      lines.push(`Panic episode — ${log.panic.length}`);
+      lines.push(`${t("Panic episode")} — ${log.panic.length}`);
       for (const p of log.panic)
         lines.push(
-          `  • ${p.time} · ${p.intensity}/10 · ${p.minutes == null ? "ongoing" : `${p.minutes}min`}${p.trigger ? ` — ${p.trigger}` : ""}`,
+          `  • ${p.time} · ${p.intensity}/10 · ${p.minutes == null ? t("ongoing") : `${p.minutes}min`}${p.trigger ? ` — ${p.trigger}` : ""}`,
         );
       lines.push("");
     }
     if (log.tetany?.length) {
-      lines.push(`Tetany episode — ${log.tetany.length}`);
-      for (const t of log.tetany)
+      lines.push(`${t("Tetany episode")} — ${log.tetany.length}`);
+      for (const tetanyEntry of log.tetany)
         lines.push(
-          `  • ${t.time} · ${t.types.join(", ")} · ${t.intensity}/5 · ${t.minutes == null ? "ongoing" : `${t.minutes}min`}`,
+          `  • ${tetanyEntry.time} · ${tetanyEntry.types.map(t).join(", ")} · ${tetanyEntry.intensity}/5 · ${tetanyEntry.minutes == null ? t("ongoing") : `${tetanyEntry.minutes}min`}`,
         );
       lines.push("");
     }
-    if (log.periodInfo?.level || log.period) lines.push(`Period: ${flowLabel(log.periodInfo?.level ?? log.period!)}`);
+    if (log.periodInfo?.level || log.period) lines.push(`${t("Period")}: ${flowLabel(log.periodInfo?.level ?? log.period!)}`);
     if (log.sleepHours != null)
-      lines.push(`Sleep: ${log.sleepHours}h ${asArr(log.sleepQuality).map(stripEmoji).join(", ")}`);
-    if (log.temperature != null) lines.push(`Temperature: ${log.temperature}°C`);
-    if (log.weight != null) lines.push(`Weight: ${log.weight}kg`);
-    if (log.food?.length) lines.push(`Food: ${log.food.length} entries`);
+      lines.push(`${t("Sleep")}: ${log.sleepHours}h ${asArr(log.sleepQuality).map(stripEmoji).join(", ")}`);
+    if (log.temperature != null) lines.push(`${t("Temperature")}: ${log.temperature}°C`);
+    if (log.weight != null) lines.push(`${t("Weight")}: ${log.weight}kg`);
+    if (log.food?.length) lines.push(`${t("Food")}: ${log.food.length} ${t("entries")}`);
     if (log.workout?.length)
-      lines.push(`Workout: ${log.workout.map((w) => `${stripEmoji(w.kind)} ${w.minutes}min`).join(", ")}`);
+      lines.push(`${t("Workout")}: ${log.workout.map((w) => `${stripEmoji(w.kind)} ${w.minutes}min`).join(", ")}`);
 
     lines.push("", "— sent from BIXBO");
     const text = lines.join("\n");
     if (navigator.share) {
       try {
-        await navigator.share({ title: `How I feel · ${dateLabel}`, text });
+        await navigator.share({ title: `${t("How I feel")} · ${dateLabel}`, text });
         return;
       } catch {}
     }
     try {
       await navigator.clipboard.writeText(text);
-      alert("Copied to clipboard");
+      alert(t("Copied to clipboard"));
     } catch {
       alert(text);
     }
   };
   return (
     <Button size="sm" variant="outline" className="rounded-full" onClick={share}>
-      <Share2 className="h-3.5 w-3.5" /> Share day
+      <Share2 className="h-3.5 w-3.5" /> {t("Share day")}
     </Button>
   );
 }
