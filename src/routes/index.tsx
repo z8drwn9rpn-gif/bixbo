@@ -326,6 +326,7 @@ function VitalTrendPopup({
   const [period, setPeriod] = useState<VitalTrendPeriod>("W");
   const [anchor, setAnchor] = useState(() => fromKey(anchorKey));
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const { t } = useI18n();
 
   // Lock the page behind the modal. iOS Safari/PWA can otherwise try to scroll
   // both the Home page and the popup at the same time, which feels like a freeze.
@@ -434,7 +435,7 @@ function VitalTrendPopup({
       <section className="relative z-10 w-full max-w-[320px] overflow-hidden rounded-[1.65rem] bg-background shadow-2xl ring-1 ring-border">
         <div className="flex items-start justify-between gap-2 border-b border-border/70 px-4 pb-3 pt-4">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Trend</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t("Trend")}</p>
             <h2 className="mt-0.5 font-serif text-lg font-bold text-foreground">{vitalTrendTitle(metric)}</h2>
           </div>
           <button
@@ -574,12 +575,12 @@ function VitalTrendPopup({
                           </p>
                         ))
                       ) : (
-                        <p className="text-[10px] text-muted-foreground">No underlying saved entry found.</p>
+                        <p className="text-[10px] text-muted-foreground">{t("No underlying saved entry found.")}</p>
                       )}
                     </div>
                   </div>
                 ) : (
-                  <p className="mt-2 text-center text-[10px] text-muted-foreground">Tap a point or bar to see the exact saved entry.</p>
+                  <p className="mt-2 text-center text-[10px] text-muted-foreground">{t("Tap a point or bar to see the exact saved entry.")}</p>
                 )}
               </>
             ) : (
@@ -1861,6 +1862,7 @@ function BirthControlCalendar({
   darkMode: boolean;
 }) {
   const { update } = useBixbo();
+  const { t } = useI18n();
   const [sel, setSel] = useState<string | null>(null);
 
   // The month selector controls only the calendar inside the ring.
@@ -2107,7 +2109,7 @@ function BirthControlCalendar({
           </span>
           <div className="min-w-0">
             <h2 className="whitespace-nowrap font-serif text-xl font-bold text-foreground">Blueberry cycle</h2>
-            <p className="whitespace-nowrap text-[11px] text-muted-foreground">Birth control overview</p>
+            <p className="whitespace-nowrap text-[11px] text-muted-foreground">{t("Birth control overview")}</p>
           </div>
         </div>
 
@@ -2403,7 +2405,7 @@ function BirthControlCalendar({
 
       {/* Keep Current HAK pack exactly in the previous compact timeline style. */}
       <div className="mt-4">
-        <h3 className="font-serif text-lg font-bold text-foreground">Current HAK pack</h3>
+        <h3 className="font-serif text-lg font-bold text-foreground">{t("Current HAK pack")}</h3>
         <div
           className="mt-3 rounded-[1.75rem] px-4 py-4 ring-1"
           style={{
@@ -2413,16 +2415,16 @@ function BirthControlCalendar({
         >
           <div className="grid grid-cols-[1.35fr_1fr_.9fr] items-start gap-2 text-center">
             <div>
-              <p className="text-[10px] font-bold leading-tight" style={{ color: HAK_PURPLE_DARK }}>Active HAK days</p>
+              <p className="text-[10px] font-bold leading-tight" style={{ color: HAK_PURPLE_DARK }}>{t("Active HAK days")}</p>
               <p className="mt-0.5 text-[10px] font-semibold leading-tight" style={{ color: HAK_PURPLE_DARK }}>1–{ACTIVE_DAYS}</p>
             </div>
             <div>
-              <p className="text-[10px] font-bold leading-tight" style={{ color: HAK_PINK_DARK }}>Placebo / break</p>
+              <p className="text-[10px] font-bold leading-tight" style={{ color: HAK_PINK_DARK }}>{t("Placebo / break")}</p>
               <p className="mt-0.5 text-[10px] font-semibold leading-tight" style={{ color: HAK_PINK_DARK }}>{ACTIVE_DAYS + 1}–{PACK_DAYS}</p>
             </div>
             <div>
-              <p className="text-[10px] font-bold leading-tight" style={{ color: HAK_GREEN_DARK }}>New cycle</p>
-              <p className="mt-0.5 text-[10px] font-semibold leading-tight" style={{ color: HAK_GREEN_DARK }}>Day 1</p>
+              <p className="text-[10px] font-bold leading-tight" style={{ color: HAK_GREEN_DARK }}>{t("New cycle")}</p>
+              <p className="mt-0.5 text-[10px] font-semibold leading-tight" style={{ color: HAK_GREEN_DARK }}>{t("Day 1")}</p>
             </div>
           </div>
 
@@ -2505,7 +2507,7 @@ function BirthControlCalendar({
         >
           <div className="px-2 py-3 text-center">
             <span className="mx-auto grid h-7 w-7 place-items-center rounded-full bg-pink-100/80 text-[13px]"><Ico e="🫐" size={18} /></span>
-            <p className="mt-1 text-[10px] font-semibold text-foreground">Menstruation</p>
+            <p className="mt-1 text-[10px] font-semibold text-foreground">{t("Menstruation")}</p>
             <p className="text-[11px] font-bold text-foreground">{PACK_DAYS - ACTIVE_DAYS} days</p>
             <p className="mt-1 text-[10px] text-muted-foreground">
               {fmtShortDate(currentPlaceboStart)} – {fmtShortDate(currentPlaceboEnd)}
@@ -2514,7 +2516,7 @@ function BirthControlCalendar({
 
           <div className="border-l border-border/50 px-2 py-3 text-center">
             <span className="mx-auto grid h-7 w-7 place-items-center rounded-full bg-primary/12 text-[13px] text-primary"><Ico e="🩸" size={18} /></span>
-            <p className="mt-1 text-[10px] font-semibold text-foreground">Cycle</p>
+            <p className="mt-1 text-[10px] font-semibold text-foreground">{t("Cycle")}</p>
             <p className="text-[11px] font-bold text-foreground">{PACK_DAYS} days</p>
             <p className="mt-1 text-[10px] text-muted-foreground">
               {fmtShortDate(currentPackStart)} – {fmtShortDate(currentPackEnd)}
@@ -2523,7 +2525,7 @@ function BirthControlCalendar({
 
           <div className="border-l border-border/50 px-2 py-3 text-center">
             <span className="mx-auto grid h-7 w-7 place-items-center rounded-full bg-primary/12 text-[13px] text-primary"><Ico e="💊" size={18} /></span>
-            <p className="mt-1 text-[10px] font-semibold text-foreground">Taking HAK</p>
+            <p className="mt-1 text-[10px] font-semibold text-foreground">{t("Taking HAK")}</p>
             <p className="text-[11px] font-bold text-foreground">{PACK_DAYS} days</p>
             <p className="mt-1 text-[10px] text-muted-foreground">
               {fmtShortDate(currentPackStart)} – {fmtShortDate(currentPackEnd)}
@@ -2532,7 +2534,7 @@ function BirthControlCalendar({
 
           <div className="border-l border-border/50 px-2 py-3 text-center">
             <span className="mx-auto grid h-7 w-7 place-items-center rounded-full bg-lime-100/80 text-[13px]"><Ico e="🛡️" size={18} /></span>
-            <p className="mt-1 text-[10px] font-semibold text-foreground">Protection</p>
+            <p className="mt-1 text-[10px] font-semibold text-foreground">{t("Protection")}</p>
             <p className="text-[11px] font-bold" style={{ color: HAK_GREEN_DARK }}>
               {protectionActive ? "Active" : "Waiting"}
             </p>
@@ -3111,6 +3113,7 @@ function DayPreview({
   onEditPain?: (p: import("@/lib/storage").PainEntry) => void;
   onEdit?: (cat: string, entry: unknown) => void;
 }) {
+  const { t } = useI18n();
   const log = data.dayLogs[date];
   const rawNotes = data.dayNotes[date] ?? [];
   const notes: { text: string; time?: string }[] = (rawNotes as (string | { text: string; time?: string })[]).map(
@@ -3231,7 +3234,7 @@ function DayPreview({
                     Taken · {actual ?? x.time} — {x.med.name}
                     {x.med.dose ? ` (${x.med.dose})` : ""}
                     {shifted && <span className="text-[10px] text-muted-foreground"> · scheduled {x.time}</span>}
-                    <span className="text-[10px] text-muted-foreground"> · tap to uncheck</span>
+                    <span className="text-[10px] text-muted-foreground"> · {t("tap to uncheck")}</span>
                   </button>
                 </li>
               );
@@ -3245,7 +3248,7 @@ function DayPreview({
                 >
                   Missed · {x.time} — {x.med.name}
                   {x.med.dose ? ` (${x.med.dose})` : ""}{" "}
-                  <span className="text-[10px] text-muted-foreground">· missed (tap if taken)</span>
+                  <span className="text-[10px] text-muted-foreground">· {t("missed (tap if taken)")}</span>
                 </button>
               </li>
             ))}
@@ -3355,7 +3358,7 @@ function DayPreview({
                   {p.stress != null && <p className="text-xs text-muted-foreground">Stress {p.stress}/10</p>}
                   {p.bodyBattery != null && <p className="text-xs text-muted-foreground">Battery {p.bodyBattery}/5</p>}
                   {p.note && <p className="mt-1 text-sm whitespace-pre-line">"{p.note}"</p>}
-                  <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
+                  <p className="mt-1 text-[10px] text-primary">{t("Tap to edit")}</p>
                 </button>
                 <DeleteBtn
                   onClick={() =>
@@ -3403,7 +3406,7 @@ function DayPreview({
                     </p>
                   ) : null}
                   {p.note && <p className="mt-1 text-sm whitespace-pre-line">"{p.note}"</p>}
-                  <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
+                  <p className="mt-1 text-[10px] text-primary">{t("Tap to edit")}</p>
                 </button>
                 <DeleteBtn
                   onClick={() =>
@@ -3448,7 +3451,7 @@ function DayPreview({
                     </p>
                   ) : null}
                   {t.note && <p className="mt-1 text-sm whitespace-pre-line">"{t.note}"</p>}
-                  <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
+                  <p className="mt-1 text-[10px] text-primary">{t("Tap to edit")}</p>
                 </button>
                 <DeleteBtn
                   onClick={() =>
@@ -3501,7 +3504,7 @@ function DayPreview({
                 </p>
               )}
               {log?.periodInfo?.note && <p className="mt-1 text-sm whitespace-pre-line">"{log.periodInfo.note}"</p>}
-              <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
+              <p className="mt-1 text-[10px] text-primary">{t("Tap to edit")}</p>
             </button>
           </Card>
         )}
@@ -3630,8 +3633,8 @@ function DayPreview({
               const label = bristol
                 ? `Type ${bristol.n} — ${bristol.sub}`
                 : b.bristol === 0
-                  ? "Type 0 — Mystery"
-                  : "No bowel movement";
+                  ? t("Type 0 — Mystery")
+                  : t("No bowel movement");
               return (
                 <li key={b.id} className="flex items-start gap-2">
                   <button onClick={() => onEdit?.("bowel", b)} className="flex-1 text-left">
@@ -3758,7 +3761,7 @@ function DayPreview({
                 Sleep quality: <IcoText text={asArr(log.sleepQuality).join(", ")} size={14} />
               </p>
             )}
-            <p className="mt-1 text-[10px] text-primary">Tap to edit</p>
+            <p className="mt-1 text-[10px] text-primary">{t("Tap to edit")}</p>
           </button>
         </Card>
       )}
