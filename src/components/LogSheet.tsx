@@ -673,7 +673,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   // manifested as chips getting "auto-selected" in the Pain wizard.
   return (
     <div className="block">
-      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      <span className="text-xs font-medium text-muted-foreground">{t(label)}</span>
       <div className="mt-1">{children}</div>
     </div>
   );
@@ -691,6 +691,7 @@ function Chip({
   color?: string;
   title?: string;
 }) {
+  const { t } = useI18n();
   return (
     <button
       type="button"
@@ -703,7 +704,7 @@ function Chip({
       }`}
       style={active && color ? { background: color } : active ? { background: "var(--primary)" } : undefined}
     >
-      {typeof children === "string" ? <IcoText text={children} size={14} /> : children}
+      {typeof children === "string" ? <IcoText text={t(children)} size={14} /> : children}
     </button>
   );
 }
@@ -848,7 +849,7 @@ function CustomChipList({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  const next = prompt(`Rename "${v}" to:`, v);
+                  const next = prompt(`${t("Rename")} "${v}" ${t("to")}:`, v);
                   if (next && next.trim() && next.trim() !== v) onRenameCustom(v, next.trim());
                 }}
                 aria-label={`Rename ${v}`}
@@ -861,7 +862,7 @@ function CustomChipList({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (confirm(`Remove "${v}" from your custom list?`)) onRemoveCustom(v);
+                  if (confirm(`${t("Remove")} "${v}" ${t("from your custom list?")}`)) onRemoveCustom(v);
                 }}
                 aria-label={`Remove ${v}`}
                 className="ml-1 grid h-5 w-5 place-items-center rounded-full bg-tint text-muted-foreground hover:bg-destructive/15 hover:text-destructive"
