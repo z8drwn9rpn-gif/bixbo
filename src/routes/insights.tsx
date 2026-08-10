@@ -600,7 +600,7 @@ function InsightsPage() {
     });
 
   return (
-    <AppShell title="Health of Bixbo">
+    <AppShell title={t("Health of Bixbo")}>
       <div className="px-5 pt-2 lg:px-0">
         <div className="grid grid-cols-2 rounded-2xl bg-tint p-1 ring-1 ring-border/70 lg:mx-auto lg:w-full lg:max-w-[420px]">
           <button
