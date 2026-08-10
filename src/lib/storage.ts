@@ -1206,11 +1206,14 @@ function migrate(raw: unknown): BixboData {
   // in settings.pregnantSince. Convert that marker into pregnancy.lmp once and
   // never use it as a runtime source again. Postpartum wins if legacy data has
   // both modes active, preventing an impossible simultaneous state.
-  const postpartumActive = Boolean(rawPostpartum.active);
+  const legacyPostpartumActive = rawProfile.postpartum === true || rawProfile.pregnancyStatus === "postpartum";
+  const postpartumActive = Boolean(rawPostpartum.active || legacyPostpartumActive);
   const legacyPregnancyLmp = typeof rawSettings.pregnantSince === "string" && rawSettings.pregnantSince
     ? rawSettings.pregnantSince
     : undefined;
-  const pregnancyActive = !postpartumActive && Boolean(rawPregnancy.active || legacyPregnancyLmp);
+  const legacyPregnancyActive = rawProfile.pregnancyStatus === "pregnant";
+  // Postpartum wins if an old backup contains conflicting reproductive flags.
+  const pregnancyActive = !postpartumActive && Boolean(rawPregnancy.active || legacyPregnancyLmp || legacyPregnancyActive);
   const pregnancyLmp = typeof rawPregnancy.lmp === "string" && rawPregnancy.lmp
     ? rawPregnancy.lmp
     : legacyPregnancyLmp;
@@ -1337,7 +1340,14 @@ function migrate(raw: unknown): BixboData {
       return out;
     })(),
     syncMeta: normalizeSyncMetadata(parsed.syncMeta),
-    profile: rawProfile,
+    profile: {
+      ...rawProfile,
+      pregnancyStatus:
+        rawProfile.pregnancyStatus === "trying" || rawProfile.pregnancyStatus === "unsure"
+          ? rawProfile.pregnancyStatus
+          : "none",
+      postpartum: undefined,
+    },
     pregnancy: {
       ...EMPTY.pregnancy!,
       ...rawPregnancy,
