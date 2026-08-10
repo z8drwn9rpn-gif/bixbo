@@ -14,7 +14,7 @@ p.write_text(s, encoding='utf-8')
 # layout registry: same browser-vs-test fallback.
 p = Path('src/lib/layoutRegistry.ts')
 s = p.read_text(encoding='utf-8')
-s = s.replace('getDeviceAdminConfig().layoutOrder?.[page]', '(typeof window === "undefined" ? data.settings.adminConfig : getDeviceAdminConfig()).layoutOrder?.[page]')
+s = s.replace('getDeviceAdminConfig().layoutOrder?.[page]', '(typeof window === "undefined" ? (data.settings.adminConfig ?? {}) : getDeviceAdminConfig()).layoutOrder?.[page]')
 p.write_text(s, encoding='utf-8')
 
 # Admin page: remove conditional useMemo and compute features directly after unlock.
