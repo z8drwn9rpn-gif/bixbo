@@ -11,14 +11,18 @@ import {
   type RegistryFeatureId,
   type RegistrySurface,
   type RegistryFeatureOverride,
+  BIXBO_LOG_FIELDS,
+  getRegistryField,
+  type RegistryFieldOverride,
 } from "@/lib/appRegistry";
 
 export const Route = createFileRoute("/admin")({ component: AdminPage });
 
-type AdminTab = "logs" | "quick" | "calendar" | "insights";
+type AdminTab = "logs" | "fields" | "quick" | "calendar" | "insights";
 
 const TAB_SURFACE: Record<AdminTab, RegistrySurface> = {
   logs: "log",
+  fields: "log",
   quick: "quickLog",
   calendar: "calendar",
   insights: "heatmap",
@@ -26,6 +30,7 @@ const TAB_SURFACE: Record<AdminTab, RegistrySurface> = {
 
 const TAB_LABEL: Record<AdminTab, string> = {
   logs: "Logs",
+  fields: "Log fields & scales",
   quick: "Quick Log",
   calendar: "Calendar",
   insights: "Insights & graphs",
@@ -62,6 +67,30 @@ function AdminPage() {
                 ...existing,
                 ...patch,
                 surfaces: patch.surfaces ? { ...(existing.surfaces ?? {}), ...patch.surfaces } : existing.surfaces,
+              },
+            },
+          },
+        },
+      };
+    });
+  };
+
+  const patchField = (featureId: RegistryFeatureId, fieldId: string, patch: RegistryFieldOverride) => {
+    update((current) => {
+      const feature = current.settings.adminConfig?.features?.[featureId] ?? {};
+      const existing = feature.fields?.[fieldId] ?? {};
+      return {
+        ...current,
+        settings: {
+          ...current.settings,
+          adminConfig: {
+            ...(current.settings.adminConfig ?? {}),
+            enabled: true,
+            features: {
+              ...(current.settings.adminConfig?.features ?? {}),
+              [featureId]: {
+                ...feature,
+                fields: { ...(feature.fields ?? {}), [fieldId]: { ...existing, ...patch, scale: patch.scale ? { ...(existing.scale ?? {}), ...patch.scale } : existing.scale } },
               },
             },
           },
@@ -137,6 +166,45 @@ function AdminPage() {
 
         <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
           {features.map((feature, index) => {
+            if (tab === "fields") {
+              const fields = BIXBO_LOG_FIELDS[feature.id] ?? [];
+              if (!fields.length) return null;
+              return (
+                <section key={feature.id} className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
+                  <div className="mb-3 flex items-center gap-2"><span className="text-xl">{feature.icon}</span><div><p className="text-sm font-bold">{t(feature.label)}</p><p className="text-[10px] text-muted-foreground">ID: {feature.id}</p></div></div>
+                  <div className="space-y-3">
+                    {fields.map((baseField) => {
+                      const field = getRegistryField(view, feature.id, baseField.id)!;
+                      return (
+                        <div key={field.id} className="rounded-2xl bg-tint p-3 ring-1 ring-border/70">
+                          <div className="flex items-center gap-2">
+                            <input value={field.label} onChange={(e) => patchField(feature.id, field.id, { label: e.target.value })} className="h-9 min-w-0 flex-1 rounded-xl bg-background px-3 text-xs font-semibold ring-1 ring-border" />
+                            <button type="button" onClick={() => patchField(feature.id, field.id, { enabled: field.enabled === false })} className={`rounded-full px-2.5 py-1.5 text-[10px] font-semibold ${field.enabled === false ? "bg-tint text-muted-foreground" : "bg-primary text-primary-foreground"}`}>{field.enabled === false ? t("Hidden") : t("Enabled")}</button>
+                          </div>
+                          <p className="mt-1 text-[10px] text-muted-foreground">Field ID: {field.id} · {field.kind}</p>
+                          {field.scale ? (
+                            <div className="mt-3 grid grid-cols-3 gap-2">
+                              {(["min", "max", "step"] as const).map((key) => (
+                                <label key={key} className="text-[10px] text-muted-foreground">{t(key === "min" ? "Minimum" : key === "max" ? "Maximum" : "Step")}<input type="number" step="0.5" value={field.scale?.[key] ?? ""} onChange={(e) => patchField(feature.id, field.id, { scale: { [key]: Number(e.target.value) } })} className="mt-1 h-9 w-full rounded-xl bg-background px-2 text-xs ring-1 ring-border" /></label>
+                              ))}
+                            </div>
+                          ) : null}
+                          {baseField.options?.length ? (
+                            <div className="mt-3 space-y-1.5">
+                              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{t("Options")}</p>
+                              {baseField.options.map((value, optionIndex) => {
+                                const option = view.settings.adminConfig?.features?.[feature.id]?.fields?.[field.id]?.options?.[value] ?? {};
+                                return <div key={value} className="flex items-center gap-2"><input defaultValue={option.label ?? value} onBlur={(e) => patchField(feature.id, field.id, { options: { ...(view.settings.adminConfig?.features?.[feature.id]?.fields?.[field.id]?.options ?? {}), [value]: { ...option, label: e.target.value, order: option.order ?? optionIndex } } })} className="h-8 min-w-0 flex-1 rounded-lg bg-background px-2 text-[11px] ring-1 ring-border"/><button type="button" onClick={() => patchField(feature.id, field.id, { options: { ...(view.settings.adminConfig?.features?.[feature.id]?.fields?.[field.id]?.options ?? {}), [value]: { ...option, enabled: option.enabled === false, order: option.order ?? optionIndex } } })} className="rounded-full bg-background px-2 py-1 text-[10px] ring-1 ring-border">{option.enabled === false ? t("Hidden") : t("Shown")}</button></div>;
+                              })}
+                            </div>
+                          ) : null}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            }
             const enabled = isRegistryFeatureEnabled(view, feature.id);
             const shownHere = enabled && feature.surfaces[surface];
             return (

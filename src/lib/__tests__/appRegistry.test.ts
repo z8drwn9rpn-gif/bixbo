@@ -37,3 +37,23 @@ describe("BIXBO admin registry", () => {
   });
 
 });
+
+
+import { registryFieldScale, registryFieldOptions, registryOptionLabel } from "../appRegistry";
+
+describe("BIXBO log schema registry", () => {
+  it("applies dynamic scale overrides without mutating stored health values", () => {
+    const data = structuredClone(EMPTY);
+    data.dayLogs["2026-08-10"] = { pain: [{ id: "p", time: "10:00", score: 9, parts: [], quality: [], symptoms: [] }] };
+    data.settings.adminConfig = { features: { pain: { fields: { score: { scale: { min: 1, max: 5, step: 1 } } } } } };
+    expect(registryFieldScale(data, "pain", "score", { min: 0, max: 10, step: 1 })).toEqual({ min: 1, max: 5, step: 1 });
+    expect(data.dayLogs["2026-08-10"]?.pain?.[0]?.score).toBe(9);
+  });
+
+  it("can rename/hide chip options while keeping their stored stable value", () => {
+    const data = structuredClone(EMPTY);
+    data.settings.adminConfig = { features: { pain: { fields: { parts: { options: { Pelvis: { label: "Lower pelvis" }, Head: { enabled: false } } } } } } };
+    expect(registryOptionLabel(data, "pain", "parts", "Pelvis")).toBe("Lower pelvis");
+    expect(registryFieldOptions(data, "pain", "parts", ["Head", "Pelvis"])).toEqual(["Pelvis"]);
+  });
+});

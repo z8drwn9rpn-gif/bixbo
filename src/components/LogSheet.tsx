@@ -1,9 +1,9 @@
-import { useState, useMemo, useRef, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useState, useMemo, useRef, useEffect, type ReactNode } from "react";
 import { useI18n } from "@/hooks/useI18n";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Ico, IcoText } from "@/components/icons/BixboIcons";
 import { POSTPARTUM_SYMPTOMS } from "@/lib/health";
-import { getRegistryFeature, isRegistrySurfaceEnabled, type RegistryFeatureId } from "@/lib/appRegistry";
+import { getRegistryFeature, isRegistrySurfaceEnabled, registryFieldLabel, registryFieldOptions, registryFieldScale, registryOptionLabel, type RegistryFeatureId } from "@/lib/appRegistry";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -142,6 +142,11 @@ function TrText({ value }: { value: unknown }) {
 }
 
 type UpdateFn = (u: (d: BixboData) => BixboData) => void;
+
+type LogSchemaContextValue = { data: BixboData; featureId: RegistryFeatureId } | null;
+const LogSchemaContext = createContext<LogSchemaContextValue>(null);
+function useLogSchema() { return useContext(LogSchemaContext); }
+
 type Category =
   | "postpartum"
   | "meds"
@@ -634,6 +639,7 @@ export function LogSheet({
                 <X className="h-5 w-5" />
               </button>
             </SheetHeader>
+            <LogSchemaContext.Provider value={active ? { data, featureId: active as RegistryFeatureId } : null}>
             <div
               key={`${active}-${openToken}-${(edit as { id?: string } | undefined)?.id ?? initialPain?.id ?? "new"}`}
               className={`min-h-0 flex-1 overflow-y-auto ${
@@ -726,6 +732,7 @@ export function LogSheet({
               )}
               {active === "note" && <NoteForm date={date} update={update} onDone={close} />}
             </div>
+            </LogSchemaContext.Provider>
           </div>
         )}
       </SheetContent>
@@ -736,12 +743,16 @@ export function LogSheet({
 /* ------------------- Primitives ------------------- */
 function Field({ label, children }: { label: string; children: ReactNode }) {
   const { t } = useI18n();
+  const schema = useLogSchema();
+  const fieldIdByLabel: Record<string, string> = { "Pain scale": "score", "Where does it hurt?": "parts", "How does it hurt?": "quality", "Other symptoms": "symptoms", "Intensity": "intensity", "Type": "types", "Location": "location", "Triggers": "triggers", "What helped?": "helped", "Bleeding": "flow", "Cramp pain": "cramps", "Discharge (optional)": "discharge", "Duration (minutes)": "minutes", "Intensity (RPE)": "rpe", "How you feel": "feel", "Urinary": "urinary" };
+  const fieldId = fieldIdByLabel[label];
+  const displayLabel = schema && fieldId ? registryFieldLabel(schema.data, schema.featureId, fieldId, label) : label;
   // Intentionally a <div>, not <label>. Wrapping chip/button groups in <label>
   // caused stray click activations on the first focusable descendant, which
   // manifested as chips getting "auto-selected" in the Pain wizard.
   return (
     <div className="block">
-      <span className="text-xs font-medium text-muted-foreground">{t(label)}</span>
+      <span className="text-xs font-medium text-muted-foreground">{t(displayLabel)}</span>
       <div className="mt-1">{children}</div>
     </div>
   );
@@ -813,6 +824,7 @@ function CustomChipList({
   selected,
   onToggle,
   descriptions,
+  schemaFieldId,
 }: {
   base: string[];
   custom: string[];
@@ -822,8 +834,12 @@ function CustomChipList({
   selected: string[];
   onToggle: (v: string) => void;
   descriptions?: Record<string, string>;
+  schemaFieldId?: string;
 }) {
   const { t } = useI18n();
+  const schema = useLogSchema();
+  const configuredBase = schema && schemaFieldId ? registryFieldOptions(schema.data, schema.featureId, schemaFieldId, base) : base;
+  const optionLabel = (value: string) => schema && schemaFieldId ? registryOptionLabel(schema.data, schema.featureId, schemaFieldId, value) : value;
   const [adding, setAdding] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [text, setText] = useState("");
@@ -886,10 +902,10 @@ function CustomChipList({
         </div>
       )}
       <div className="flex flex-wrap gap-2">
-        {base.map((v) => (
+        {configuredBase.map((v) => (
           <span key={v} className="inline-flex items-center gap-0.5">
             <Chip active={selected.includes(v)} onClick={() => onToggle(v)} title={descriptions?.[v] ? t(descriptions[v]) : undefined}>
-              {t(v)}
+              {t(optionLabel(v))}
             </Chip>
             {descriptions?.[v] && (
               <button
@@ -1008,6 +1024,7 @@ function IntensityScale({
   from = 0,
   compactSingleRow = false,
   step = 0.5,
+  schemaFieldId,
 }: {
   value: number;
   onChange: (n: number) => void;
@@ -1017,11 +1034,17 @@ function IntensityScale({
   from?: number;
   compactSingleRow?: boolean;
   step?: number;
+  schemaFieldId?: string;
 }) {
   const { t } = useI18n();
+  const schema = useLogSchema();
+  const effective = schema && schemaFieldId ? registryFieldScale(schema.data, schema.featureId, schemaFieldId, { min: from, max, step }) : { min: from, max, step };
+  const effectiveFrom = effective.min;
+  const effectiveMax = effective.max;
+  const effectiveStep = effective.step;
   const nums = Array.from(
-    { length: Math.floor((max - from) / step) + 1 },
-    (_, i) => Number((from + i * step).toFixed(1)),
+    { length: Math.floor((effectiveMax - effectiveFrom) / effectiveStep) + 1 },
+    (_, i) => Number((effectiveFrom + i * effectiveStep).toFixed(2)),
   );
 
   const roundedValue = Math.round(value);
@@ -1039,7 +1062,7 @@ function IntensityScale({
         {nums.map((n) => {
           const active = value === n;
           const description = descriptions?.[Math.round(n)];
-          const bg = scaleColor(n, from, max);
+          const bg = scaleColor(n, effectiveFrom, effectiveMax);
 
           return (
             <button
@@ -1061,7 +1084,7 @@ function IntensityScale({
         })}
       </div>
 
-      {descriptions && value >= from && selectedDescription && (
+      {descriptions && value >= effectiveFrom && selectedDescription && (
         <div className="mt-2 rounded-lg bg-tint px-2.5 py-1.5 text-[11px] leading-snug text-foreground">
           <span className="font-semibold">
             {t("Level")} {Number.isInteger(value) ? value : value.toFixed(1)}:
@@ -1072,8 +1095,8 @@ function IntensityScale({
 
       {descriptions && legendTitle && (
         <ScaleLegend
-          max={max}
-          from={from}
+          max={effectiveMax}
+          from={effectiveFrom}
           descriptions={descriptions}
           value={value}
           title={legendTitle}
@@ -1529,7 +1552,7 @@ function PainWizard({
             }}
             selected={parts}
             onToggle={(v) => setParts((a) => toggleIn(a, v))}
-          />
+           schemaFieldId="parts"/>
         </Field>
       )}
       {step === 2 && (
@@ -1549,7 +1572,7 @@ function PainWizard({
               }}
               selected={quality}
               onToggle={(v) => setQuality((a) => toggleIn(a, v))}
-            />
+             schemaFieldId="quality"/>
           </Field>
           {quality.includes("Pressure") && (
             <div className="rounded-2xl border border-border p-3 space-y-3">
@@ -1610,7 +1633,7 @@ function PainWizard({
               }}
               selected={symptoms}
               onToggle={(v) => setSymptoms((a) => toggleIn(a, v))}
-            />
+             schemaFieldId="symptoms"/>
           </Field>
           {symptoms.includes("Flu") && (
             <Field label="Flu symptoms note">
@@ -1899,7 +1922,7 @@ function PainWizard({
                   from={1}
                   step={1}
                   descriptions={getScaleDesc(data, "tetany")}
-                  legendTitle="Tetany intensity scale"
+                  legendTitle="Tetany intensity scale" schemaFieldId="intensity"
                   compactSingleRow
                 />
               </Field>
@@ -1977,7 +2000,7 @@ function PainWizard({
                   from={1}
                   step={1}
                   descriptions={getScaleDesc(data, "panic")}
-                  legendTitle="Panic intensity scale"
+                  legendTitle="Panic intensity scale" schemaFieldId="intensity"
                   compactSingleRow
                 />
               </Field>
@@ -2004,7 +2027,7 @@ function PainWizard({
                   }}
                   selected={panicPhysical}
                   onToggle={(v) => setPanicPhysical((a) => toggleIn(a, v))}
-                />
+                 schemaFieldId="physical"/>
               </Field>
               <Field label="Cognitive symptoms">
                 <CustomChipList
@@ -2029,7 +2052,7 @@ function PainWizard({
                   }}
                   selected={panicCognitive}
                   onToggle={(v) => setPanicCognitive((a) => toggleIn(a, v))}
-                />
+                 schemaFieldId="cognitive"/>
               </Field>
               <Field label="Trigger (or 'no obvious trigger')">
                 <Textarea rows={2} value={panicTrigger} onChange={(e) => setPanicTrigger(e.target.value)} />
@@ -2251,7 +2274,7 @@ function PanicForm({
           onChange={setIntensity}
           max={10}
           descriptions={getScaleDesc(data, "panic")}
-          legendTitle="Panic intensity scale"
+          legendTitle="Panic intensity scale" schemaFieldId="intensity"
         />
       </Field>
       <Field label="Physical symptoms">
@@ -2277,7 +2300,7 @@ function PanicForm({
           }}
           selected={physical}
           onToggle={(v) => setPhysical((a) => toggleIn(a, v))}
-        />
+         schemaFieldId="physical"/>
       </Field>
       <Field label="Cognitive symptoms">
         <CustomChipList
@@ -2302,7 +2325,7 @@ function PanicForm({
           }}
           selected={cognitive}
           onToggle={(v) => setCognitive((a) => toggleIn(a, v))}
-        />
+         schemaFieldId="cognitive"/>
       </Field>
       <Field label="Trigger (or 'no obvious trigger')">
         <Textarea rows={2} value={trigger} onChange={(e) => setTrigger(e.target.value)} />
@@ -2478,7 +2501,7 @@ function TetanyForm({
           onChange={setIntensity}
           max={5}
           descriptions={getScaleDesc(data, "tetany")}
-          legendTitle="Tetany intensity scale"
+          legendTitle="Tetany intensity scale" schemaFieldId="intensity"
         />
       </Field>
       <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} />

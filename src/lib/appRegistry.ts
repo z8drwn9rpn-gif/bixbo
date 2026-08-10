@@ -29,6 +29,27 @@ export interface RegistryScaleDefinition {
   step: number;
 }
 
+export type RegistryFieldKind = "chips" | "scale" | "text" | "number" | "toggle";
+
+export interface RegistryFieldDefinition {
+  id: string;
+  label: string;
+  kind: RegistryFieldKind;
+  order: number;
+  enabled?: boolean;
+  options?: string[];
+  scale?: RegistryScaleDefinition;
+}
+
+export interface RegistryFieldOverride {
+  label?: string;
+  enabled?: boolean;
+  order?: number;
+  options?: Record<string, { label?: string; enabled?: boolean; order?: number }>;
+  scale?: Partial<RegistryScaleDefinition>;
+  fields?: Record<string, RegistryFieldOverride>;
+}
+
 export interface RegistryFeatureDefinition {
   id: RegistryFeatureId;
   label: string;
@@ -37,6 +58,7 @@ export interface RegistryFeatureDefinition {
   order: number;
   surfaces: Record<RegistrySurface, boolean>;
   scale?: RegistryScaleDefinition;
+  fields?: RegistryFieldDefinition[];
 }
 
 export interface RegistryFeatureOverride {
@@ -47,6 +69,7 @@ export interface RegistryFeatureOverride {
   order?: number;
   surfaces?: Partial<Record<RegistrySurface, boolean>>;
   scale?: Partial<RegistryScaleDefinition>;
+  fields?: Record<string, RegistryFieldOverride>;
 }
 
 export interface AdminConfig {
@@ -84,6 +107,88 @@ export const BIXBO_REGISTRY: RegistryFeatureDefinition[] = [
   { id: "sleep", label: "Sleep", icon: "🌙", color: "#7567C8", order: 180, surfaces: s(false, false, false, true, true, true) },
   { id: "histamine", label: "Histamine flare", icon: "🔥", color: "#D95D4F", order: 190, surfaces: s(false, true, false, false, true, true) },
 ];
+
+
+export const BIXBO_LOG_FIELDS: Partial<Record<RegistryFeatureId, RegistryFieldDefinition[]>> = {
+  pain: [
+    { id: "score", label: "Pain scale", kind: "scale", order: 10, scale: { min: 0, max: 10, step: 1 } },
+    { id: "parts", label: "Where does it hurt?", kind: "chips", order: 20, options: ["Head", "Neck", "Shoulder", "Chest", "Upper back", "Lower back", "Abdomen", "Pelvis", "Hip", "Arm", "Hand", "Leg", "Knee", "Foot"] },
+    { id: "quality", label: "How does it hurt?", kind: "chips", order: 30, options: ["Sharp", "Dull", "Throbbing", "Burning", "Cramping", "Pressure", "Stabbing", "Aching"] },
+    { id: "symptoms", label: "Other symptoms", kind: "chips", order: 40 },
+  ],
+  tetany: [
+    { id: "intensity", label: "Intensity", kind: "scale", order: 10, scale: { min: 1, max: 5, step: 1 } },
+    { id: "types", label: "Type", kind: "chips", order: 20 },
+    { id: "location", label: "Location", kind: "chips", order: 30 },
+    { id: "triggers", label: "Triggers", kind: "chips", order: 40 },
+    { id: "helped", label: "What helped?", kind: "chips", order: 50 },
+  ],
+  panic: [
+    { id: "intensity", label: "Intensity", kind: "scale", order: 10, scale: { min: 1, max: 10, step: 1 } },
+    { id: "physical", label: "Physical symptoms", kind: "chips", order: 20 },
+    { id: "cognitive", label: "Cognitive symptoms", kind: "chips", order: 30 },
+    { id: "helped", label: "What helped?", kind: "chips", order: 40 },
+  ],
+  period: [
+    { id: "flow", label: "Bleeding", kind: "chips", order: 10, options: ["Spotting", "Light", "Medium", "Heavy", "Very heavy"] },
+    { id: "cramps", label: "Cramp pain", kind: "scale", order: 20, scale: { min: 1, max: 10, step: 1 } },
+    { id: "discharge", label: "Discharge (optional)", kind: "chips", order: 30 },
+  ],
+  workout: [
+    { id: "kind", label: "Type", kind: "chips", order: 10 },
+    { id: "minutes", label: "Duration (minutes)", kind: "number", order: 20 },
+    { id: "rpe", label: "Intensity (RPE)", kind: "scale", order: 30, scale: { min: 1, max: 10, step: 1 } },
+    { id: "feel", label: "How you feel", kind: "chips", order: 40, options: ["Great", "Good", "Ok", "Tired", "Sore"] },
+  ],
+  bowel: [
+    { id: "bristol", label: "Bristol type", kind: "scale", order: 10, scale: { min: 0, max: 7, step: 1 } },
+    { id: "urinary", label: "Urinary", kind: "chips", order: 20 },
+  ],
+};
+
+export function getRegistryField(data: Pick<BixboData, "settings">, featureId: RegistryFeatureId, fieldId: string): RegistryFieldDefinition | undefined {
+  const base = BIXBO_LOG_FIELDS[featureId]?.find((field) => field.id === fieldId);
+  if (!base) return undefined;
+  const override = data.settings.adminConfig?.features?.[featureId]?.fields?.[fieldId];
+  return {
+    ...base,
+    ...override,
+    id: base.id,
+    options: base.options,
+    scale: base.scale ? { ...base.scale, ...(override?.scale ?? {}) } : undefined,
+  };
+}
+
+export function registryFieldsForFeature(data: Pick<BixboData, "settings">, featureId: RegistryFeatureId): RegistryFieldDefinition[] {
+  return (BIXBO_LOG_FIELDS[featureId] ?? [])
+    .map((field) => getRegistryField(data, featureId, field.id)!)
+    .filter((field) => field.enabled !== false)
+    .sort((a, b) => a.order - b.order);
+}
+
+export function registryFieldLabel(data: Pick<BixboData, "settings">, featureId: RegistryFeatureId, fieldId: string, fallback: string): string {
+  return getRegistryField(data, featureId, fieldId)?.label ?? fallback;
+}
+
+export function registryFieldScale(data: Pick<BixboData, "settings">, featureId: RegistryFeatureId, fieldId: string, fallback: RegistryScaleDefinition): RegistryScaleDefinition {
+  const configured = getRegistryField(data, featureId, fieldId)?.scale;
+  if (!configured) return fallback;
+  const min = Number.isFinite(configured.min) ? configured.min : fallback.min;
+  const max = Number.isFinite(configured.max) ? configured.max : fallback.max;
+  const step = Number.isFinite(configured.step) && configured.step > 0 ? configured.step : fallback.step;
+  return { min: Math.min(min, max), max: Math.max(min, max), step };
+}
+
+export function registryFieldOptions(data: Pick<BixboData, "settings">, featureId: RegistryFeatureId, fieldId: string, base: string[]): string[] {
+  const overrides = data.settings.adminConfig?.features?.[featureId]?.fields?.[fieldId]?.options ?? {};
+  return base
+    .filter((value) => overrides[value]?.enabled !== false)
+    .sort((a, b) => (overrides[a]?.order ?? base.indexOf(a)) - (overrides[b]?.order ?? base.indexOf(b)));
+}
+
+export function registryOptionLabel(data: Pick<BixboData, "settings">, featureId: RegistryFeatureId, fieldId: string, value: string): string {
+  return data.settings.adminConfig?.features?.[featureId]?.fields?.[fieldId]?.options?.[value]?.label ?? value;
+}
 
 const byId = new Map(BIXBO_REGISTRY.map((feature) => [feature.id, feature]));
 
