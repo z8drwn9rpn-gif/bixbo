@@ -246,7 +246,7 @@ function PostpartumPage() {
                   <p className="font-serif text-2xl font-bold">
                     {progress ? `Week ${progress.week} + ${progress.dayOfWeek}` : "Postpartum"}
                   </p>
-                  <p className="text-xs text-muted-foreground">Postpartum recovery</p>
+                  <p className="text-xs text-muted-foreground">{t("Postpartum recovery")}</p>
                 </div>
               </div>
               <p className="text-xs text-muted-foreground">
@@ -255,7 +255,7 @@ function PostpartumPage() {
                 {pp.babyBirthWeightKg ? ` · ${pp.babyBirthWeightKg} kg at birth` : ""}
               </p>
               <details className="mt-3">
-                <summary className="cursor-pointer text-xs text-muted-foreground">Edit details</summary>
+                <summary className="cursor-pointer text-xs text-muted-foreground">{t("Edit details")}</summary>
                 <div className="mt-2">
                   <SetupForm pp={pp} updatePP={updatePP} compact />
                 </div>
@@ -277,7 +277,7 @@ function PostpartumPage() {
             <NotesSection log={log} updateLog={updateLog} />
 
             <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
-              <p className="text-sm font-medium">Finish postpartum mode</p>
+              <p className="text-sm font-medium">{t("Finish postpartum mode")}</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 When you're ready, you can turn off postpartum tracking. Your history is kept.
               </p>
@@ -294,7 +294,7 @@ function PostpartumPage() {
             </section>
 
             <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
-              <p className="text-sm font-medium">Reset</p>
+              <p className="text-sm font-medium">{t("Reset")}</p>
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                 Permanently delete all postpartum setup details and daily postpartum logs. Other BIXBO data will remain
                 unchanged.
@@ -362,7 +362,7 @@ function SetupForm({
         />
       </div>
       <div>
-        <p className="text-xs text-muted-foreground">Delivery type</p>
+        <p className="text-xs text-muted-foreground">{t("Delivery type")}</p>
         <div className="mt-1 grid grid-cols-4 gap-2">
           {types.map(({ v, label }) => (
             <button
@@ -393,7 +393,7 @@ function SetupForm({
         />
       </div>
       <div>
-        <p className="text-xs text-muted-foreground">Feeding mode</p>
+        <p className="text-xs text-muted-foreground">{t("Feeding mode")}</p>
         <div className="mt-1 grid grid-cols-3 gap-2">
           {feedings.map(({ v, label }) => (
             <button
@@ -432,8 +432,8 @@ function SymptomsSection({
       <div className="flex items-center gap-2">
         <Ico name="warning" size={22} />
         <div>
-          <p className="text-sm font-medium">Symptoms today</p>
-          <p className="text-xs text-muted-foreground">Select everything you noticed during recovery.</p>
+          <p className="text-sm font-medium">{t("Symptoms today")}</p>
+          <p className="text-xs text-muted-foreground">{t("Select everything you noticed during recovery.")}</p>
         </div>
       </div>
 
@@ -489,7 +489,7 @@ function BleedingSection({
           </button>
         ))}
       </div>
-      <p className="mt-4 mb-1 text-xs uppercase tracking-wider text-muted-foreground">6-week trend</p>
+      <p className="mt-4 mb-1 text-xs uppercase tracking-wider text-muted-foreground">{t("6-week trend")}</p>
       <div className="flex items-end gap-[2px]">
         {trend.map((k) => {
           const b = normalizePostpartumLog(view.dayLogs?.[k]?.postpartum).bleeding;
@@ -538,7 +538,7 @@ function RecoverySection({
 }) {
   return (
     <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80 space-y-4">
-      <p className="text-sm font-medium">Recovery</p>
+      <p className="text-sm font-medium">{t("Recovery")}</p>
       <LabeledSlider
         id="pp-recovery"
         label="Overall recovery"
@@ -584,7 +584,7 @@ function MoodSection({
   };
   return (
     <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
-      <p className="text-sm font-medium">Mood</p>
+      <p className="text-sm font-medium">{t("Mood")}</p>
       <div className="mt-3 flex flex-wrap gap-2">
         {POSTPARTUM_MOODS.map((m) => (
           <button
@@ -689,7 +689,7 @@ function SleepSection({
           />
         </div>
       </div>
-      <p className="mt-4 mb-1 text-xs uppercase tracking-wider text-muted-foreground">Last 14 days</p>
+      <p className="mt-4 mb-1 text-xs uppercase tracking-wider text-muted-foreground">{t("Last 14 days")}</p>
       <div className="flex items-end gap-1" style={{ height: 60 }}>
         {days.map((k) => {
           const p = normalizePostpartumLog(view.dayLogs?.[k]?.postpartum);
@@ -754,7 +754,7 @@ function FeedingSection({
       </p>
 
       <div>
-        <p className="text-xs font-medium">Breastfeeding</p>
+        <p className="text-xs font-medium">{t("Breastfeeding")}</p>
         <div className="mt-2 flex flex-wrap items-end gap-2">
           <Input
             type="number"
@@ -811,7 +811,7 @@ function FeedingSection({
       </div>
 
       <div>
-        <p className="text-xs font-medium">Pumping</p>
+        <p className="text-xs font-medium">{t("Pumping")}</p>
         <div className="mt-2 flex flex-wrap items-end gap-2">
           <Input
             type="number"
@@ -867,7 +867,7 @@ function FeedingSection({
       </div>
 
       <div>
-        <p className="text-xs font-medium">Bottle feeds</p>
+        <p className="text-xs font-medium">{t("Bottle feeds")}</p>
         <div className="mt-2 flex flex-wrap items-end gap-2">
           <Input
             type="number"
@@ -929,7 +929,7 @@ function DiaperSection({
 
   return (
     <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
-      <p className="text-sm font-medium">Diapers</p>
+      <p className="text-sm font-medium">{t("Diapers")}</p>
       <div className="mt-3 grid grid-cols-3 gap-2">
         <Button variant="outline" className="min-h-11" onClick={() => add("wet")}>
           Wet ({wet})
@@ -995,7 +995,7 @@ function VisitsSection({
   return (
     <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-medium">Doctor visits</p>
+        <p className="text-sm font-medium">{t("Doctor visits")}</p>
         <Button size="sm" onClick={openNew}>
           <Plus className="h-3.5 w-3.5" /> Add
         </Button>
@@ -1012,16 +1012,16 @@ function VisitsSection({
         />
       )}
 
-      <p className="mt-4 text-xs uppercase tracking-wider text-muted-foreground">Upcoming</p>
-      {upcoming.length === 0 && <p className="mt-1 text-xs text-muted-foreground">None scheduled.</p>}
+      <p className="mt-4 text-xs uppercase tracking-wider text-muted-foreground">{t("Upcoming")}</p>
+      {upcoming.length === 0 && <p className="mt-1 text-xs text-muted-foreground">{t("None scheduled.")}</p>}
       <ul className="mt-1 space-y-1">
         {upcoming.map((v) => (
           <VisitRow key={v.id} v={v} onEdit={() => openEdit(v)} onDelete={() => remove(v.id)} />
         ))}
       </ul>
 
-      <p className="mt-4 text-xs uppercase tracking-wider text-muted-foreground">Past</p>
-      {past.length === 0 && <p className="mt-1 text-xs text-muted-foreground">None yet.</p>}
+      <p className="mt-4 text-xs uppercase tracking-wider text-muted-foreground">{t("Past")}</p>
+      {past.length === 0 && <p className="mt-1 text-xs text-muted-foreground">{t("None yet.")}</p>}
       <ul className="mt-1 space-y-1">
         {past.map((v) => (
           <VisitRow key={v.id} v={v} onEdit={() => openEdit(v)} onDelete={() => remove(v.id)} />
