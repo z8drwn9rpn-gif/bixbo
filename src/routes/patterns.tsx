@@ -24,6 +24,7 @@ import {
 import { AppShell } from "@/components/AppShell";
 import { CHART_COLORS, CHART_TINTS } from "@/components/ui/chart";
 import { useI18n } from "@/hooks/useI18n";
+import { layoutOrder } from "@/lib/layoutRegistry";
 import {
   EMPTY,
   addDays,
@@ -322,10 +323,10 @@ const PHASE_COLORS = [
 /* Shared UI                                                                  */
 /* -------------------------------------------------------------------------- */
 
-function Card({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
+function Card({ title, description, children, layoutOrderValue }: { title: string; description?: string; children: ReactNode; layoutOrderValue?: number }) {
   const { t } = useI18n();
   return (
-    <section className="overflow-hidden rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
+    <section style={{ order: layoutOrderValue }} className="overflow-hidden rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
       <div>
         <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t(title)}</h2>
 
@@ -810,17 +811,19 @@ function CollapsibleSection({
   subtitle,
   children,
   defaultOpen = false,
+  layoutOrderValue,
 }: {
   title: string;
   subtitle?: string;
   children: ReactNode;
   defaultOpen?: boolean;
+  layoutOrderValue?: number;
 }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <section className="overflow-hidden rounded-3xl bg-surface shadow-sm ring-1 ring-border/80">
+    <section style={{ order: layoutOrderValue }} className="overflow-hidden rounded-3xl bg-surface shadow-sm ring-1 ring-border/80">
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
@@ -2055,12 +2058,13 @@ export function PatternsContent() {
         )}
 
         {!cycleTrackingHidden && activeTab === "cycle" && (
-          <div className="space-y-3 lg:contents">
+          <div className="flex flex-col gap-3 lg:contents">
             {/* ------------------------------------------------------------------ */}
             {/* Cycle phase                                                        */}
             {/* ------------------------------------------------------------------ */}
 
             <CollapsibleSection
+              layoutOrderValue={layoutOrder(view, "patterns.cycle", "painFlow", 10)}
               title="Pain & flow"
               subtitle="Average pain and menstrual flow by cycle phase"
               defaultOpen={true}
@@ -2118,6 +2122,7 @@ export function PatternsContent() {
             </CollapsibleSection>
 
             <CollapsibleSection
+              layoutOrderValue={layoutOrder(view, "patterns.cycle", "bodyChanges", 20)}
               title="Body changes"
               subtitle="Mood, energy, hot flashes, pressure and bowel symptoms"
               defaultOpen={false}
@@ -2173,7 +2178,7 @@ export function PatternsContent() {
         )}
 
         {activeTab === "monthly" && (
-          <div className="space-y-3 lg:contents">
+          <div className="flex flex-col gap-3 lg:contents">
             <Card
               title="This month at a glance"
               description={`${monthlyComparisonLabel} · compared over the same number of days.`}
@@ -2235,6 +2240,7 @@ export function PatternsContent() {
             {/* ------------------------------------------------------------------ */}
 
             <CollapsibleSection
+              layoutOrderValue={layoutOrder(view, "patterns.monthly", "panicTetany", 20)}
               title="Panic & tetany"
               subtitle="Monthly frequency and intensity comparison"
               defaultOpen={true}
@@ -2378,6 +2384,7 @@ export function PatternsContent() {
             </CollapsibleSection>
 
             <CollapsibleSection
+              layoutOrderValue={layoutOrder(view, "patterns.monthly", "lifestyle", 40)}
               title="Lifestyle & routines"
               subtitle="Sleep, weight, medication and workouts"
               defaultOpen={false}
@@ -2447,6 +2454,7 @@ export function PatternsContent() {
             </CollapsibleSection>
 
             <CollapsibleSection
+              layoutOrderValue={layoutOrder(view, "patterns.monthly", "hormones", 50)}
               title="Hormones"
               subtitle="PCOS and histamine changes"
               defaultOpen={false}
@@ -2480,7 +2488,7 @@ export function PatternsContent() {
         )}
 
         {activeTab === "treatment" && (
-          <div className="space-y-3 lg:contents">
+          <div className="flex flex-col gap-3 lg:contents">
             <Card
               title="Treatment comparison"
               description="Compare the four weeks before treatment with the first four weeks after its start."
@@ -3007,7 +3015,7 @@ export function PatternsContent() {
         )}
 
         {activeTab === "triggers" && (
-          <div className="space-y-3 lg:contents">
+          <div className="flex flex-col gap-3 lg:contents">
             <Card
               title="Smart correlations"
               description="Automatically ranked associations calculated only from your own logs."

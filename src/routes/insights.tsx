@@ -8,6 +8,7 @@ import { Ico } from "@/components/icons/BixboIcons";
 import { PatternsContent } from "./patterns";
 import { useI18n } from "@/hooks/useI18n";
 import { customLogDefinitions, getRegistryFeature, isRegistrySurfaceEnabled, type RegistryFeatureId } from "@/lib/appRegistry";
+import { layoutOrder } from "@/lib/layoutRegistry";
 import {
   useBixbo,
   EMPTY,
@@ -695,14 +696,16 @@ function InsightsPage() {
       {overviewView === "patterns" ? (
         <PatternsContent />
       ) : (
-        <div className="space-y-3 px-5 pt-2 pb-[calc(96px+env(safe-area-inset-bottom))] lg:grid lg:grid-cols-2 lg:items-start lg:gap-3 lg:space-y-0 lg:px-0 lg:pb-12 [&>*:first-child]:lg:col-span-2">
+        <div className="flex flex-col gap-3 px-5 pt-2 pb-[calc(96px+env(safe-area-inset-bottom))] lg:grid lg:grid-cols-2 lg:items-start lg:px-0 lg:pb-12">
+        <div className="lg:col-span-2" style={{ order: layoutOrder(view, "insights", "heatmap", 10) }}>
         <YearHealthHeatmap
           data={view}
           anchor={anchor}
           onShiftPeriod={(period, delta) => shiftHeatmapPeriod(period, delta)}
         />
+        </div>
 
-        <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
+        <section style={{ order: layoutOrder(view, "insights", "pain", 20) }} className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
           <div className="flex items-start justify-between gap-3">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t("Pain scale")}</p>
             <InsightPeriodControl
@@ -735,7 +738,7 @@ function InsightsPage() {
           />
         </section>
 
-        <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
+        <section style={{ order: layoutOrder(view, "insights", "hotFlashes", 30) }} className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
           <div className="flex items-start justify-between gap-3">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t("Hot flashes")}</p>
             <InsightPeriodControl
@@ -800,6 +803,7 @@ function InsightsPage() {
           )}
         </section>
 
+        <div style={{ order: layoutOrder(view, "insights", "bowel", 40) }}>
         <BristolChart
           bowelCounts={bowelCounts}
           period={bowelPeriod}
@@ -809,7 +813,9 @@ function InsightsPage() {
             setBowelAnchor((current) => shiftInsightPeriodAnchor(current, bowelPeriod, delta))
           }
         />
+        </div>
 
+        <div style={{ order: layoutOrder(view, "insights", "timeOfDay", 50) }}>
         <TimeOfDayPatternChart
           data={view}
           days={timeOfDayDays}
@@ -820,7 +826,9 @@ function InsightsPage() {
             setTimeOfDayAnchor((current) => shiftInsightPeriodAnchor(current, timeOfDayPeriod, delta))
           }
         />
+        </div>
 
+        <div style={{ order: layoutOrder(view, "insights", "meds", 60) }}>
         <MedsAdherence
           data={view}
           period={medsPeriod}
@@ -830,6 +838,7 @@ function InsightsPage() {
             setMedsAnchor((current) => shiftInsightPeriodAnchor(current, medsPeriod, delta))
           }
         />
+        </div>
         </div>
       )}
     </AppShell>

@@ -93,6 +93,10 @@ export interface AdminConfig {
   enabled?: boolean;
   features?: Partial<Record<RegistryFeatureId, RegistryFeatureOverride>>;
   customLogs?: CustomLogDefinition[];
+  /** Per-page whole-section ordering. IDs are stable layout section IDs. */
+  layoutOrder?: Record<string, string[]>;
+  /** Reserved for Google-account ownership once app authentication is enabled. */
+  ownerEmail?: string;
 }
 
 const s = (

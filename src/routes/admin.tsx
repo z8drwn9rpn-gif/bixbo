@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { CustomLogBuilder } from "@/components/CustomLogBuilder";
+import { LayoutOrderEditor } from "@/components/LayoutOrderEditor";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "@/components/icons/BixboIcons";
 import { useI18n } from "@/hooks/useI18n";
 import { EMPTY, useBixbo, type BixboData } from "@/lib/storage";
@@ -19,7 +20,7 @@ import {
 
 export const Route = createFileRoute("/admin")({ component: AdminPage });
 
-type AdminTab = "logs" | "fields" | "quick" | "calendar" | "insights";
+type AdminTab = "logs" | "fields" | "quick" | "calendar" | "insights" | "layout";
 
 const TAB_SURFACE: Record<AdminTab, RegistrySurface> = {
   logs: "log",
@@ -27,6 +28,7 @@ const TAB_SURFACE: Record<AdminTab, RegistrySurface> = {
   quick: "quickLog",
   calendar: "calendar",
   insights: "heatmap",
+  layout: "log",
 };
 
 const TAB_LABEL: Record<AdminTab, string> = {
@@ -35,6 +37,7 @@ const TAB_LABEL: Record<AdminTab, string> = {
   quick: "Quick Log",
   calendar: "Calendar",
   insights: "Insights & graphs",
+  layout: "Layout & order",
 };
 
 const iconChoices = ["🔥", "⚡", "✨", "🫐", "❤️", "♨️", "🍽️", "💩", "🧘🏼‍♀️", "🌡️", "💊", "📅", "✅", "📝", "🤱", "🤕", "🥵", "🌙"];
@@ -190,7 +193,7 @@ function AdminPage() {
           </p>
         </section>
 
-        <div className="grid grid-cols-2 gap-1 rounded-2xl bg-tint p-1 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-1 rounded-2xl bg-tint p-1 lg:grid-cols-6">
           {(Object.keys(TAB_LABEL) as AdminTab[]).map((key) => (
             <button
               key={key}
@@ -204,8 +207,9 @@ function AdminPage() {
         </div>
 
         {tab === "fields" && <CustomLogBuilder data={view} update={update} />}
+        {tab === "layout" && <LayoutOrderEditor data={view} update={update} />}
 
-        <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
+        <div className={`space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0 ${tab === "layout" ? "hidden" : ""}`}>
           {features.map((feature, index) => {
             if (tab === "fields") {
               const fields = BIXBO_LOG_FIELDS[feature.id] ?? [];

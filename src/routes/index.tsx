@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { ChevronLeft, ChevronRight, Share2, Trash2 } from "@/components/icons/BixboIcons";
 
+import { layoutOrder } from "@/lib/layoutRegistry";
 import {
   ClockIcon,
   FlameIcon,
@@ -768,8 +769,9 @@ function HomePage() {
       }
     >
       <div className="lg:mx-auto lg:grid lg:w-full lg:max-w-[1480px] lg:grid-cols-[minmax(0,1.62fr)_minmax(340px,0.95fr)] lg:items-start lg:gap-4 lg:px-0 xl:grid-cols-[minmax(0,1.72fr)_minmax(380px,1fr)] xl:gap-5">
-        <div className="min-w-0 lg:flex lg:flex-col">
-      <div className="px-5 pt-0.5 lg:order-1 lg:px-1">
+        <div className="flex min-w-0 flex-col">
+      <div style={{ order: layoutOrder(view, "home", "calendar", 10) }}>
+      <div className="px-5 pt-0.5 lg:px-1">
         <div className="flex items-center justify-between">
           <button
             type="button"
@@ -810,9 +812,10 @@ function HomePage() {
           <div className="h-[360px]" />
         )}
       </div>
+      </div>
 
       {!maleMode && (
-        <div className="lg:order-4">
+        <div style={{ order: layoutOrder(view, "home", "birthControl", 20) }}>
         <BirthControlSummaryCard
           data={view}
           dateKey={selected}
@@ -832,7 +835,8 @@ function HomePage() {
         return (
           <Link
             to={"/pregnancy" as never}
-            className="focus-ring mx-5 mt-3 block rounded-3xl bg-tint px-4 py-4 text-left ring-1 ring-border transition hover:bg-surface lg:order-6 lg:mx-0"
+            className="focus-ring mx-5 mt-3 block rounded-3xl bg-tint px-4 py-4 text-left ring-1 ring-border transition hover:bg-surface lg:mx-0"
+            style={{ order: layoutOrder(view, "home", "pregnancy", 30) }}
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
@@ -908,7 +912,8 @@ function HomePage() {
           return (
             <Link
               to={"/postpartum" as never}
-              className="focus-ring mx-5 mt-3 block rounded-3xl bg-primary/10 px-4 py-4 text-left ring-1 ring-primary/20 lg:order-6 lg:mx-0"
+              className="focus-ring mx-5 mt-3 block rounded-3xl bg-primary/10 px-4 py-4 text-left ring-1 ring-primary/20 lg:mx-0"
+              style={{ order: layoutOrder(view, "home", "postpartum", 40) }}
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-3">
@@ -965,8 +970,8 @@ function HomePage() {
 
           return (
             <div
-              className="mx-5 mt-3 rounded-full px-4 py-2 text-center text-xs ring-1 lg:order-3 lg:mx-1"
-              style={{
+              className="mx-5 mt-3 rounded-full px-4 py-2 text-center text-xs ring-1 lg:mx-1"
+              style={{ order: layoutOrder(view, "home", "nextPeriod", 50),
                 background: "color-mix(in srgb, #5F7033 14%, transparent)",
                 color: "#5F7033",
                 boxShadow: "inset 0 0 0 1px color-mix(in srgb, #5F7033 34%, transparent)",
@@ -981,7 +986,7 @@ function HomePage() {
         })()}
 
       {/* Top vitals row */}
-      <div className="mt-3 grid grid-cols-5 gap-2 px-5 lg:order-5 lg:grid-cols-4 lg:px-1">
+      <div className="mt-3 grid grid-cols-5 gap-2 px-5 lg:grid-cols-4 lg:px-1" style={{ order: layoutOrder(view, "home", "vitals", 60) }}>
         <div className="col-span-2 lg:col-span-1">
           <MedsProgress data={view} />
         </div>
@@ -1009,7 +1014,7 @@ function HomePage() {
       </div>
 
       {/* Quick log */}
-      <div className="px-5 lg:order-2 lg:mt-2 lg:px-1 [&_p.text-\[11px\].uppercase]:min-w-0 [&_p.text-\[11px\].uppercase]:flex-1 [&_p.text-\[11px\].uppercase]:truncate [&_p.text-\[11px\].uppercase]:text-[10px] [&_.mt-1.flex.flex-wrap.gap-1]:hidden">
+      <div style={{ order: layoutOrder(view, "home", "quickLog", 70) }} className="px-5 lg:mt-2 lg:px-1 [&_p.text-\[11px\].uppercase]:min-w-0 [&_p.text-\[11px\].uppercase]:flex-1 [&_p.text-\[11px\].uppercase]:truncate [&_p.text-\[11px\].uppercase]:text-[10px] [&_.mt-1.flex.flex-wrap.gap-1]:hidden">
         <QuickTags
           data={view}
           update={update}

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight } from "@/components/icons/BixboIcons";
 
+import { layoutOrder } from "@/lib/layoutRegistry";
 import { AppShell } from "@/components/AppShell";
 import {
   BlueberryIcon,
@@ -1565,8 +1566,9 @@ function CouplePage() {
 
   return (
     <AppShell title={t("Bixbo Couple")}>
-      <div className="space-y-3 px-5 pb-[calc(96px+env(safe-area-inset-bottom))] pt-2 lg:grid lg:grid-cols-2 lg:items-start lg:gap-3 lg:space-y-0 lg:px-0 lg:pb-12 [&>*:first-child]:lg:col-span-2">
+      <div className="flex flex-col gap-3 px-5 pb-[calc(96px+env(safe-area-inset-bottom))] pt-2 lg:grid lg:grid-cols-2 lg:items-start lg:gap-3 lg:space-y-0 lg:px-0 lg:pb-12 [&>*:first-child]:lg:col-span-2">
         <div
+          style={{ order: -30 }}
           className="mx-auto grid w-full max-w-[340px] grid-cols-1 gap-0.5 rounded-xl bg-primary/20 p-0.5 ring-1 ring-primary/15 lg:max-w-sm"
           aria-label={t("Couple period: Month")}
         >
@@ -1577,6 +1579,7 @@ function CouplePage() {
 
         {partner ? (
           <nav
+            style={{ order: -20 }}
             aria-label={t("Couple sections")}
             className="mx-auto grid w-full max-w-[340px] grid-cols-3 gap-0.5 rounded-xl bg-primary/20 p-0.5 ring-1 ring-primary/15 lg:max-w-sm"
           >
@@ -1602,7 +1605,7 @@ function CouplePage() {
           </nav>
         ) : null}
 
-        <div className="flex items-center justify-between">
+        <div style={{ order: -10 }} className="flex items-center justify-between">
           <button
             type="button"
             onClick={goPrev}
@@ -1639,10 +1642,10 @@ function CouplePage() {
           </div>
         ) : (
           <>
-            {activeTab === "overview" ? <SimilarityCard score={similarityScore} partnerName={t(partnerName)} /> : null}
+            {activeTab === "overview" ? <div style={{ order: layoutOrder(view, "couple.overview", "similarity", 10) }}><SimilarityCard score={similarityScore} partnerName={t(partnerName)} /></div> : null}
 
             {activeTab === "overview" && hasPartnerComparisonData ? (
-              <div className="grid grid-cols-2 gap-2">
+              <div style={{ order: layoutOrder(view, "couple.overview", "stats", 20) }} className="grid grid-cols-2 gap-2">
                 <StatCard
                   icon={<ProfileIcon size={18} />}
                   label="Shared symptom days"
@@ -1678,16 +1681,19 @@ function CouplePage() {
             ) : null}
 
             {activeTab === "overview" && partner.gender !== "male" ? (
+              <div style={{ order: layoutOrder(view, "couple.overview", "blueberry", 30) }}>
               <BlueberrySection
                 partner={partner}
                 selectedMonth={selectedMonth}
                 selectedMonthLabel={selectedMonthLabel}
                 isCurrentMonth={isCurrentMonth}
               />
+              </div>
             ) : null}
 
             {activeTab === "compare" ? (
               <>
+                <div style={{ order: layoutOrder(view, "couple.compare", "painChart", 10) }}>
                 <CouplePainChart
                   days={painMonthDays}
                   mine={view.dayLogs}
@@ -1696,7 +1702,9 @@ function CouplePage() {
                   periodLabel={painMonthLabel}
                   period="M"
                 />
+                </div>
 
+                <div style={{ order: layoutOrder(view, "couple.compare", "healthComparison", 20) }}>
                 <SectionCard
                   title="Health comparison"
                   description="Solid bars are yours. Striped bars belong to your partner."
@@ -1765,10 +1773,12 @@ function CouplePage() {
                     />
                   </div>
                 </SectionCard>
+                </div>
               </>
             ) : null}
 
             {activeTab === "health" ? (
+              <div style={{ order: layoutOrder(view, "couple.health", "partnerDetails", 10) }}>
               <SectionCard
                 title={`${t(partnerName)} — ${t("shared details")}`}
                 description="Only the explicitly shared categories for the selected month."
@@ -1807,9 +1817,11 @@ function CouplePage() {
                   />
                 </div>
               </SectionCard>
+              </div>
             ) : null}
 
             {activeTab === "health" ? (
+              <div style={{ order: layoutOrder(view, "couple.health", "myDetails", 20) }}>
               <SectionCard
                 title="My shared details"
                 description="The same categories that your partner is allowed to receive."
@@ -1848,6 +1860,7 @@ function CouplePage() {
                   />
                 </div>
               </SectionCard>
+              </div>
             ) : null}
           </>
         )}
