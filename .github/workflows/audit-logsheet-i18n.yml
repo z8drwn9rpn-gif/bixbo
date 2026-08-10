@@ -15,7 +15,7 @@ jobs:
           cat > audit-logsheet.cjs <<'JS'
           const ts=require('typescript'); const fs=require('fs');
           const i18n=fs.readFileSync('src/lib/i18n.ts','utf8');
-          const skStart=i18n.indexOf('const sk'); const skText=skStart>=0?i18n.slice(skStart):i18n;
+          const skStart=i18n.indexOf('const SK'); const skText=skStart>=0?i18n.slice(skStart):i18n;
           const keys=new Set(); for(const m of skText.matchAll(/^\s*["']([^"']+)["']\s*:/gm)) keys.add(m[1]);
           const candidates=new Set(); function add(s){s=s.trim().replace(/\s+/g,' '); if(/[A-Za-z]/.test(s)&&s.length>1)candidates.add(s)}
           function scan(path){
@@ -40,3 +40,4 @@ jobs:
           for(const x of missing) console.log('MISSING:',JSON.stringify(x));
           JS
           node audit-logsheet.cjs
+# final audit
