@@ -1,0 +1,34 @@
+name: Targeted i18n audit
+on:
+  push:
+    paths:
+      - '.github/workflows/i18n-target-audit.yml'
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan target UI files
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          files = [
+            'src/routes/profile.tsx','src/routes/index.tsx','src/components/QuickTags.tsx',
+            'src/routes/insights.tsx','src/routes/patterns.tsx','src/routes/couple.tsx'
+          ]
+          attr = re.compile(r'(placeholder|aria-label|title|data-placeholder)="([^"]*[A-Za-z][^"]*)"')
+          text = re.compile(r'>\s*([A-Za-z][A-Za-z0-9 /&+—().,:;!?\'%-]{1,120})\s*<')
+          for f in files:
+            print('\n###', f)
+            lines = Path(f).read_text().splitlines()
+            for i,line in enumerate(lines,1):
+              s=line.strip()
+              found=[]
+              for m in attr.finditer(s): found.append(f'{m.group(1)}={m.group(2)!r}')
+              for m in text.finditer(s):
+                val=m.group(1).strip()
+                if val and not val.startswith('http'): found.append(f'text={val!r}')
+              if found:
+                print(f'{i}: ' + ' | '.join(found))
+          PY
