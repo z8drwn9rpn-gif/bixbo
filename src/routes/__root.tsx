@@ -18,6 +18,7 @@ import { NotificationPrompt } from "../components/NotificationPrompt";
 import { AppPrivacyGuard } from "../components/AppPrivacyGuard";
 import { Toaster } from "../components/ui/sonner";
 import { useI18n } from "@/hooks/useI18n";
+import { useGlobalAdminConfigSync } from "@/lib/globalAdminConfig";
 
 function NotFoundComponent() {
   const { t } = useI18n();
@@ -145,6 +146,7 @@ function RootComponent() {
   useCloudSync();
   useThemeSync();
   useNotificationRuntime();
+  useGlobalAdminConfigSync();
 
   return (
     <QueryClientProvider client={queryClient}>

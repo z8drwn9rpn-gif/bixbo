@@ -1,9 +1,8 @@
 import type { BixboData } from "./storage";
-import { getDeviceAdminConfig } from "./deviceAdminConfig";
+import { getEffectiveAdminConfig } from "./effectiveAdminConfig";
 
 function activeAdminConfig(data: Pick<BixboData, "settings">): AdminConfig {
-  if (typeof window === "undefined") return data.settings.adminConfig ?? {};
-  return getDeviceAdminConfig();
+  return getEffectiveAdminConfig(data.settings.adminConfig ?? {});
 }
 
 export type RegistrySurface = "log" | "quickLog" | "calendar" | "heatmap" | "monthly" | "patterns";

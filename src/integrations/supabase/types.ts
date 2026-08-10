@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_global_config: {
+        Row: {
+          config: Json
+          id: string
+          published_at: string
+          version: number
+        }
+        Insert: {
+          config?: Json
+          id: string
+          published_at?: string
+          version?: number
+        }
+        Update: {
+          config?: Json
+          id?: string
+          published_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
       partner_link_requests: {
         Row: {
           created_at: string
@@ -217,6 +238,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      publish_global_admin_config: {
+        Args: { _config: Json; _pin: string }
+        Returns: number
+      }
       cleanup_push_delivery_log: { Args: never; Returns: undefined }
       ensure_profile: {
         Args: { _display_name?: string }

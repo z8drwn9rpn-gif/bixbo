@@ -1,5 +1,5 @@
 import type { BixboData } from "./storage";
-import { getDeviceAdminConfig } from "./deviceAdminConfig";
+import { getEffectiveAdminConfig } from "./effectiveAdminConfig";
 
 export type LayoutPageId =
   | "home"
@@ -75,7 +75,7 @@ export function layoutOrder(
   sectionId: string,
   fallback = 999,
 ): number {
-  const saved = (typeof window === "undefined" ? (data.settings.adminConfig ?? {}) : getDeviceAdminConfig()).layoutOrder?.[page];
+  const saved = getEffectiveAdminConfig(data.settings.adminConfig ?? {}).layoutOrder?.[page];
   if (saved?.length) {
     const index = saved.indexOf(sectionId);
     if (index >= 0) return (index + 1) * 10;

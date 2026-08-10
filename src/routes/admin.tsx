@@ -8,6 +8,7 @@ import { useI18n } from "@/hooks/useI18n";
 import { EMPTY, useBixbo, type BixboData } from "@/lib/storage";
 import { enableDeviceAdmin } from "@/lib/deviceAdmin";
 import { getDeviceAdminConfig, migrateLegacyAdminConfig, setDeviceAdminConfig } from "@/lib/deviceAdminConfig";
+import { getCachedGlobalAdminVersion, publishGlobalAdminConfig } from "@/lib/globalAdminConfig";
 import {
   BIXBO_REGISTRY,
   getRegistryFeature,
@@ -59,6 +60,10 @@ function AdminPage() {
   const [adminPin, setAdminPin] = useState("");
   const [pinError, setPinError] = useState(false);
   const [configRevision, setConfigRevision] = useState(0);
+  const [publishOpen, setPublishOpen] = useState(false);
+  const [publishPin, setPublishPin] = useState("");
+  const [publishing, setPublishing] = useState(false);
+  const [publishStatus, setPublishStatus] = useState("");
   const view = hydrated ? data : EMPTY;
   void configRevision;
   const adminView: BixboData = { ...view, settings: { ...view.settings, adminConfig: getDeviceAdminConfig() } };
@@ -186,6 +191,23 @@ function AdminPage() {
     if (targetId && targetId !== dragged) moveTo(targetId);
   };
 
+  const publishToAllDevices = async () => {
+    if (publishPin.length !== 4) return;
+    setPublishing(true);
+    setPublishStatus("");
+    try {
+      const version = await publishGlobalAdminConfig(getDeviceAdminConfig(), publishPin);
+      setPublishStatus(`${t("Published globally")} · v${version}`);
+      setPublishPin("");
+      setPublishOpen(false);
+    } catch (error) {
+      console.error("publishGlobalAdminConfig", error);
+      setPublishStatus(t("Global publish failed. Check the PIN and connection."));
+    } finally {
+      setPublishing(false);
+    }
+  };
+
   return (
     <AppShell
       title={
@@ -201,6 +223,34 @@ function AdminPage() {
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
             {t("Change labels, icons, visibility and placement without editing source code. Historical data always keeps its stable ID.")}
           </p>
+        </section>
+
+        <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-sm font-bold">{t("Device-local draft")}</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                {t("Changes here stay on this device. Publish globally only when you want every device to use this configuration as its new default.")}
+              </p>
+              <p className="mt-2 text-[10px] font-semibold text-muted-foreground">
+                {t("Published version")}: {getCachedGlobalAdminVersion() || "—"}
+              </p>
+            </div>
+            <button type="button" onClick={() => { setPublishOpen((value) => !value); setPublishStatus(""); }} className="shrink-0 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground">
+              {t("Publish globally")}
+            </button>
+          </div>
+          {publishOpen ? (
+            <div className="mt-3 rounded-2xl bg-tint p-3 ring-1 ring-border/70">
+              <p className="text-xs font-semibold">{t("Confirm global publish")}</p>
+              <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">{t("This will change the default configuration on every device. Local device overrides will still stay local and keep priority on that device.")}</p>
+              <div className="mt-3 flex gap-2">
+                <input type="password" inputMode="numeric" maxLength={4} value={publishPin} onChange={(event) => setPublishPin(event.target.value.replace(/\D/g, "").slice(0, 4))} placeholder={t("Admin PIN")} className="h-10 min-w-0 flex-1 rounded-xl bg-background px-3 text-center font-bold tracking-[0.35em] ring-1 ring-border" />
+                <button type="button" disabled={publishing || publishPin.length !== 4} onClick={() => void publishToAllDevices()} className="rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground disabled:opacity-40">{publishing ? t("Publishing…") : t("Confirm")}</button>
+              </div>
+            </div>
+          ) : null}
+          {publishStatus ? <p className="mt-2 text-xs font-semibold text-primary">{publishStatus}</p> : null}
         </section>
 
         <div className="grid grid-cols-2 gap-1 rounded-2xl bg-tint p-1 lg:grid-cols-6">
