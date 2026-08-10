@@ -1484,7 +1484,7 @@ function PainWizard({
                 type="button"
                 onClick={() => setScore(n)}
                 title={`${n} — ${getScaleDesc(data, "pain")[Math.round(n)]}`}
-                className={`h-8 w-8 rounded-full text-[11px] font-semibold transition ${
+                className={`h-7 w-7 shrink-0 rounded-full text-[10px] font-semibold transition ${
                   score === n ? "text-white ring-2 ring-foreground" : "text-foreground"
                 }`}
                 style={{ background: painColor(n) }}
@@ -2604,7 +2604,7 @@ function PeriodForm({
             <Slider value={[(cramps ?? 0) * 2]} min={0} max={20} step={1} onValueChange={([v]) => setCramps(v / 2)} />
           </div>
         </div>
-        <div className="mt-2 flex flex-wrap justify-center gap-1.5 px-1">
+        <div className="mt-2 flex flex-nowrap items-center justify-center gap-0.5 px-0">
           {Array.from({ length: 21 }, (_, i) => i / 2).map((n) => (
             <button
               key={n}
@@ -3709,9 +3709,7 @@ function TempForm({
 
         {weightEntries.length > 0 && (
           <div className="mt-3 space-y-2">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Saved weight measurements
-            </p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t("Saved weight measurements")}</p>
 
             {weightEntries.map((entry) => (
               <div
@@ -3830,7 +3828,7 @@ function MedsForm({
         <p className="text-sm text-muted-foreground">{t("No medications yet. Add them from Meds settings.")}</p>
       ) : (
         <div>
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">{today ? "Today" : date}</p>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">{today ? t("Today") : date}</p>
           <div className="mt-2 space-y-2">
             {meds.map((m) =>
               m.asNeeded ? (
@@ -3843,7 +3841,7 @@ function MedsForm({
                   />
                   <div className="flex-1">
                     <p className="text-sm font-medium">{m.name}</p>
-                    <p className="text-xs text-muted-foreground">As needed{m.dose ? ` · ${m.dose}` : ""}</p>
+                    <p className="text-xs text-muted-foreground">{t("As needed")}{m.dose ? ` · ${m.dose}` : ""}</p>
                     {m.note && (
                       <p className="text-[11px] text-muted-foreground">
                         <Ico e="📝" size={13} /> <IcoText text={m.note} size={12} />
@@ -4180,7 +4178,7 @@ function WorkoutForm({
       <Field label="Weight after (kg, optional)">
         <Input type="number" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} />
         <p className="mt-1 text-[11px] text-muted-foreground">
-          Saved with this workout only — it doesn't change your daily weight.
+          {t("Saved with this workout only — it doesn't change your daily weight.")}
         </p>
       </Field>
       <Field label="How you feel">
