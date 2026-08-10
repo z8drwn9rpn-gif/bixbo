@@ -1199,12 +1199,37 @@ function HomePage() {
             .filter((value): value is number => value != null && Number.isFinite(value));
           const monthSleepAvg = averageNumbers(monthSleepValues);
 
-          const monthScheduledTotal = todayScheduled.length * monthKeys.length;
-          const monthMedsTaken = monthKeys.reduce(
-            (sum, key) =>
-              sum + todayScheduled.filter((medKey) => view.medLog[key]?.[medKey]).length,
-            0,
-          );
+          const summaryNow = new Date();
+          const summaryTodayKey = toKey(summaryNow);
+          const summaryNowMinutes = summaryNow.getHours() * 60 + summaryNow.getMinutes();
+
+          let monthScheduledTotal = 0;
+          let monthMedsTaken = 0;
+
+          monthKeys.forEach((dateKey) => {
+            todayScheduled.forEach((medKey) => {
+              const atIndex = medKey.lastIndexOf("@");
+              const time = atIndex >= 0 ? medKey.slice(atIndex + 1) : "";
+              const isTaken = !!view.medLog[dateKey]?.[medKey];
+
+              // Never count future dates.
+              if (dateKey > summaryTodayKey) return;
+
+              // Today counts only doses whose scheduled time already passed,
+              // unless the dose was already marked taken.
+              if (dateKey === summaryTodayKey && !isTaken) {
+                const match = /^(\d{1,2}):(\d{2})/.exec(time);
+                if (!match) return;
+
+                const scheduledMinutes = Number(match[1]) * 60 + Number(match[2]);
+                if (scheduledMinutes > summaryNowMinutes) return;
+              }
+
+              monthScheduledTotal += 1;
+              if (isTaken) monthMedsTaken += 1;
+            });
+          });
+
           const monthMedsPct =
             monthScheduledTotal > 0 ? Math.round((monthMedsTaken / monthScheduledTotal) * 100) : undefined;
 
