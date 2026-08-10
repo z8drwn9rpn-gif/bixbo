@@ -2108,7 +2108,7 @@ function BirthControlCalendar({
             <Ico e="🫐" size={25} />
           </span>
           <div className="min-w-0">
-            <h2 className="whitespace-nowrap font-serif text-xl font-bold text-foreground">Blueberry cycle</h2>
+            <h2 className="whitespace-nowrap font-serif text-xl font-bold text-foreground">{t("Blueberry cycle")}</h2>
             <p className="whitespace-nowrap text-[11px] text-muted-foreground">{t("Birth control overview")}</p>
           </div>
         </div>
@@ -3244,7 +3244,7 @@ function DayPreview({
                 <button
                   onClick={() => markMissedTaken(x.key)}
                   className="flex-1 text-left text-destructive/90"
-                  title="Tap to mark taken"
+                  title={t("Tap to mark taken")}
                 >
                   Missed · {x.time} — {x.med.name}
                   {x.med.dose ? ` (${x.med.dose})` : ""}{" "}
