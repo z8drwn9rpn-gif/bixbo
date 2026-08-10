@@ -1,0 +1,34 @@
+name: Finalize BIXBO admin registry
+on:
+  push:
+    paths:
+      - '.github/workflows/finalize-admin-registry.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: python .github/scripts/finalize-admin-registry.py
+      - run: bun run build
+      - run: bun run typecheck
+      - run: bun run lint
+      - run: bun test
+      - name: Verify final admin UI
+        run: |
+          grep -q 'draggable' src/routes/admin.tsx
+          grep -q 'Režim správcu' src/lib/i18n.ts
+          grep -q 'Bezpečné mazanie' src/lib/i18n.ts
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src
+          git diff --cached --quiet && exit 0
+          git commit -m 'Finalize BIXBO Admin Registry UI'
+          git push
