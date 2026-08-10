@@ -80,39 +80,39 @@ function iconsFor(log: DayLog | undefined): string[] {
   return log?.sex?.some((e) => isIntercourseKind(e.kind)) ? ["❤️"] : [];
 }
 
-function daySummaryLines(log: DayLog | undefined, cycleTrackingHidden: boolean): string[] {
+function daySummaryLines(log: DayLog | undefined, cycleTrackingHidden: boolean, t: (key: string) => string): string[] {
   if (!log) return [];
   const out: string[] = [];
-  if (log.pain?.length) out.push(`🔥 Pain: ${log.pain.map((p) => `${p.time} ${p.score}/10`).join(", ")}`);
-  if (log.tetany?.length) out.push(`⚡ Tetany episode: ${log.tetany.map((t) => `${t.time} ${t.intensity}/5`).join(", ")}`);
-  if (log.panic?.length) out.push(`🫯 Panic episode: ${log.panic.map((p) => `${p.time} ${p.intensity}/10`).join(", ")}`);
+  if (log.pain?.length) out.push(`${"🔥"} ${t("Pain")}: ${log.pain.map((p) => `${p.time} ${p.score}/10`).join(", ")}`);
+  if (log.tetany?.length) out.push(`${"⚡"} ${t("Tetany episode")}: ${log.tetany.map((t) => `${t.time} ${t.intensity}/5`).join(", ")}`);
+  if (log.panic?.length) out.push(`${"🫯"} ${t("Panic episode")}: ${log.panic.map((p) => `${p.time} ${p.intensity}/10`).join(", ")}`);
   const hf = log.pain?.filter((p) => (p.hotFlashes ?? 0) > 0) ?? [];
-  if (hf.length) out.push(`🥵 Hot flashes: ${hf.map((p) => `${p.hotFlashes}/5`).join(", ")}`);
+  if (hf.length) out.push(`${"🥵"} ${t("Hot flashes")}: ${hf.map((p) => `${p.hotFlashes}/5`).join(", ")}`);
   const ha = log.pain?.filter((p) => p.headacheIntensity != null || (p.headacheTypes?.length ?? 0) > 0) ?? [];
   if (ha.length)
     out.push(
-      `🤕 Headache: ${ha.map((p) => `${p.headacheTypes?.join("/") ?? "yes"}${p.headacheIntensity != null ? ` ${p.headacheIntensity}/10` : ""}`).join(", ")}`,
+      `${"🤕"} ${t("Headache")}: ${ha.map((p) => `${p.headacheTypes?.join("/") ?? "yes"}${p.headacheIntensity != null ? ` ${p.headacheIntensity}/10` : ""}`).join(", ")}`,
     );
-  if (log.extraMeds?.length) out.push(`💊 Extra meds: ${log.extraMeds.map((m) => m.name).join(", ")}`);
+  if (log.extraMeds?.length) out.push(`${"💊"} ${t("Extra meds")}: ${log.extraMeds.map((m) => m.name).join(", ")}`);
   if (log.sex?.length) out.push(`❤️ ŠukŠuk: ${log.sex.length}×`);
   if (log.food?.length)
     out.push(
-      `🍽️ Food: ${
+      `${"🍽️"} ${t("Food")}: ${
         log.food
           .map((f) => f.what)
           .filter(Boolean)
-          .join(", ") || `${log.food.length} entries`
+          .join(", ") || `${log.food.length} ${t("entries")}`
       }`,
     );
-  if (log.bowel?.length) out.push(`💩 Bowel: ${log.bowel.map((b) => `type ${b.bristol}`).join(", ")}`);
+  if (log.bowel?.length) out.push(`${"💩"} ${t("Bowel")}: ${log.bowel.map((b) => `${t("type")} ${b.bristol}`).join(", ")}`);
   if (log.heat?.length)
-    out.push(`♨️ Heat/Cold/TENS: ${log.heat.map((h) => (h.kind === "tens" ? "⭐ TENS" : h.kind)).join(", ")}`);
-  if (log.workout?.length) out.push(`🧘🏼‍♀️ Workout: ${log.workout.map((w) => `${w.kind} ${w.minutes}min`).join(", ")}`);
-  if (log.weight != null) out.push(`⚖️ Weight: ${log.weight} kg`);
-  if (log.temperature != null) out.push(`🌡️ Temp: ${log.temperature} °C`);
-  if (log.sleepHours != null) out.push(`😴 Sleep: ${log.sleepHours} h`);
+    out.push(`${"♨️"} ${t("Heat / Cold / TENS")}: ${log.heat.map((h) => (h.kind === "tens" ? "⭐ TENS" : h.kind)).join(", ")}`);
+  if (log.workout?.length) out.push(`${"🧘🏼‍♀️"} ${t("Workout")}: ${log.workout.map((w) => `${w.kind} ${w.minutes}min`).join(", ")}`);
+  if (log.weight != null) out.push(`${"⚖️"} ${t("Weight")}: ${log.weight} kg`);
+  if (log.temperature != null) out.push(`${"🌡️"} ${t("Temp")}: ${log.temperature} °C`);
+  if (log.sleepHours != null) out.push(`${"😴"} ${t("Sleep")}: ${log.sleepHours} h`);
   if (!cycleTrackingHidden && (log.periodInfo?.level ?? log.period)) {
-    out.push(`🫐 Period: ${periodLabel(log.periodInfo?.level ?? log.period)}`);
+    out.push(`${"🫐"} ${t("Period")}: ${periodLabel(log.periodInfo?.level ?? log.period)}`);
   }
   return out;
 }
@@ -315,8 +315,8 @@ export function MonthCalendar({
       <div className="grid grid-cols-7 gap-0.5 pb-1 text-center text-[11px] font-semibold text-muted-foreground landscape:pb-0 landscape:text-[10px] lg:pb-2 lg:text-sm xl:text-[15px]">
         {WEEKDAYS.map((d) => (
           <div key={d.short}>
-            <span className="lg:hidden">{d.short}</span>
-            <span className="hidden lg:inline">{d.desktop}</span>
+            <span className="lg:hidden">{t(d.short)}</span>
+            <span className="hidden lg:inline">{t(d.desktop)}</span>
           </div>
         ))}
       </div>
