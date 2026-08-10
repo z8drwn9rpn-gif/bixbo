@@ -675,7 +675,7 @@ export function QuickTags({
                       type="button"
                       onClick={() => moveTag(tag.key, -1)}
                       disabled={index === 0}
-                      aria-label="Move left"
+                      aria-label={t("Move left")}
                       className="grid h-8 w-8 place-items-center rounded-full bg-tint text-muted-foreground transition hover:bg-primary/15 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-30"
                     >
                       <ChevronLeft className="h-3 w-3" />
@@ -685,7 +685,7 @@ export function QuickTags({
                       type="button"
                       onClick={() => moveTag(tag.key, 1)}
                       disabled={index === tags.length - 1}
-                      aria-label="Move right"
+                      aria-label={t("Move right")}
                       className="grid h-8 w-8 place-items-center rounded-full bg-tint text-muted-foreground transition hover:bg-primary/15 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-30"
                     >
                       <ChevronRight className="h-3 w-3" />
@@ -1111,7 +1111,7 @@ function QuickTagBuilder({
                 className={inputCls}
                 value={what}
                 onChange={(event) => setWhat(event.target.value)}
-                placeholder="e.g. Matcha"
+                placeholder={t("e.g. Matcha")}
               />
             )}
 
@@ -1206,7 +1206,7 @@ function QuickTagBuilder({
                   className={inputCls}
                   value={kind}
                   onChange={(event) => setKind(event.target.value)}
-                  placeholder="Workout type"
+                  placeholder={t("Workout type")}
                 />
 
                 <input
@@ -1215,7 +1215,7 @@ function QuickTagBuilder({
                   min={1}
                   value={minutes}
                   onChange={(event) => setMinutes(Number(event.target.value))}
-                  placeholder="Minutes"
+                  placeholder={t("Minutes")}
                 />
               </div>
             )}
@@ -1248,9 +1248,9 @@ function QuickTagBuilder({
                   value={thermoKind}
                   onChange={(event) => setThermoKind(event.target.value as ThermoKind)}
                 >
-                  <option value="heat">Heat</option>
-                  <option value="cold">Cold</option>
-                  <option value="tens">TENS</option>
+                  <option value="heat">{t("Heat")}</option>
+                  <option value="cold">{t("Cold")}</option>
+                  <option value="tens">{t("TENS")}</option>
                 </select>
 
                 <input
@@ -1259,7 +1259,7 @@ function QuickTagBuilder({
                   min={1}
                   value={thermoMinutes}
                   onChange={(event) => setThermoMinutes(Number(event.target.value))}
-                  placeholder="Minutes"
+                  placeholder={t("Minutes")}
                 />
               </div>
             )}
@@ -1324,7 +1324,7 @@ function QuickTagBuilder({
                     value={sleepHours}
                     onChange={(event) => setSleepHours(normalizeDecimalInput(event.target.value))}
                     placeholder="8,5"
-                    aria-label="Sleep hours"
+                    aria-label={t("Sleep hours")}
                   />
                 </div>
 
@@ -1360,7 +1360,7 @@ function QuickTagBuilder({
               className={inputCls}
               value={emoji}
               onChange={(event) => setEmoji(event.target.value)}
-              placeholder="Icon key"
+              placeholder={t("Icon key")}
               maxLength={8}
             />
 
@@ -1368,7 +1368,7 @@ function QuickTagBuilder({
               className={inputCls}
               value={label}
               onChange={(event) => setLabel(event.target.value)}
-              placeholder="Button name"
+              placeholder={t("Button name")}
             />
           </div>
         )}
