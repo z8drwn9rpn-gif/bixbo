@@ -675,6 +675,27 @@ const SK: Record<string, string> = {
   "November": "November",
   "December": "December",
 
+  "Mark as done": "Označiť ako hotové",
+  "Mark as not done": "Označiť ako nehotové",
+  "elapsed": "uplynulo",
+  "Tap to count a kick": "Ťukni pre započítanie pohybu",
+  "Save session": "Uložiť reláciu",
+  "kicks": "pohybov",
+  "in": "za",
+  "Delete session": "Vymazať reláciu",
+  "Stop": "Zastaviť",
+  "Delete contraction": "Vymazať kontrakciu",
+  "Kind": "Typ",
+  "Date": "Dátum",
+  "Doctor": "Lekár",
+  "Result / measurements": "Výsledok / merania",
+  "Note": "Poznámka",
+  "20-week scan": "Ultrazvuk v 20. týždni",
+  "Checkup": "Kontrola",
+  "Ultrasound": "Ultrazvuk",
+  "Test": "Vyšetrenie",
+  "Class": "Kurz",
+
 };
 
 const TRANSLATIONS: Record<AppLanguage, Record<string, string>> = { en: EN, sk: SK };
