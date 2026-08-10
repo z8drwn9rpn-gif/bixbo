@@ -1173,44 +1173,52 @@ export function PatternsContent() {
   const [treatmentNotes, setTreatmentNotes] = useState("");
   const [customTreatment, setCustomTreatment] = useState(false);
   const [archivedTreatments, setArchivedTreatments] = useState<ArchivedTreatment[]>([]);
+  const [treatmentsLoaded, setTreatmentsLoaded] = useState(false);
   const treatmentStorageKey = "bixbo:patterns:treatment";
   const treatmentArchiveStorageKey = "bixbo:patterns:treatment-archive";
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+
     try {
       const raw = window.localStorage.getItem(treatmentStorageKey);
-      if (!raw) return;
-      const saved = JSON.parse(raw) as {
-        date?: string;
-        name?: string;
-        kind?: TreatmentKind;
-        result?: TreatmentResult;
-        notes?: string;
-        custom?: boolean;
-      };
-      setTreatmentDate(saved.date ?? "");
-      setTreatmentName(saved.name ?? "");
-      setTreatmentKind(saved.kind ?? "medication");
-      setTreatmentResult(saved.result ?? "pain");
-      setTreatmentNotes(saved.notes ?? "");
-      setCustomTreatment(Boolean(saved.custom));
+      if (raw) {
+        const saved = JSON.parse(raw) as {
+          date?: string;
+          name?: string;
+          kind?: TreatmentKind;
+          result?: TreatmentResult;
+          notes?: string;
+          custom?: boolean;
+        };
+        setTreatmentDate(saved.date ?? "");
+        setTreatmentName(saved.name ?? "");
+        setTreatmentKind(saved.kind ?? "medication");
+        setTreatmentResult(saved.result ?? "pain");
+        setTreatmentNotes(saved.notes ?? "");
+        setCustomTreatment(Boolean(saved.custom));
+      }
     } catch {
-      // Ignore malformed local treatment drafts.
+      // Ignore malformed local treatment drafts without touching the saved key.
     }
 
     try {
       const rawArchive = window.localStorage.getItem(treatmentArchiveStorageKey);
-      if (!rawArchive) return;
-      const savedArchive = JSON.parse(rawArchive) as ArchivedTreatment[];
-      setArchivedTreatments(Array.isArray(savedArchive) ? savedArchive : []);
+      if (rawArchive) {
+        const savedArchive = JSON.parse(rawArchive) as ArchivedTreatment[];
+        if (Array.isArray(savedArchive)) setArchivedTreatments(savedArchive);
+      }
     } catch {
-      // Ignore malformed archive data.
+      // Ignore malformed archive data without deleting it automatically.
     }
+
+    // Autosave/remove effects must never run against the initial empty React
+    // state before the existing localStorage values have been loaded.
+    setTreatmentsLoaded(true);
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || !treatmentsLoaded) return;
     const hasTreatment = Boolean(treatmentDate || treatmentName || treatmentNotes);
     if (!hasTreatment) {
       window.localStorage.removeItem(treatmentStorageKey);
@@ -1227,16 +1235,16 @@ export function PatternsContent() {
         custom: customTreatment,
       }),
     );
-  }, [customTreatment, treatmentDate, treatmentKind, treatmentName, treatmentNotes, treatmentResult]);
+  }, [customTreatment, treatmentDate, treatmentKind, treatmentName, treatmentNotes, treatmentResult, treatmentsLoaded]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || !treatmentsLoaded) return;
     if (archivedTreatments.length === 0) {
       window.localStorage.removeItem(treatmentArchiveStorageKey);
       return;
     }
     window.localStorage.setItem(treatmentArchiveStorageKey, JSON.stringify(archivedTreatments));
-  }, [archivedTreatments]);
+  }, [archivedTreatments, treatmentsLoaded]);
 
   const clearActiveTreatment = () => {
     setTreatmentDate("");
