@@ -1461,34 +1461,68 @@ function CouplePage() {
   const myPanicSplit = splitEntriesByVisibleDay(myPanic);
   const myMedsSplit = splitMedDaysByVisibleDay(myMeds);
 
-  const myPainAverage = average(myPain.map((pain) => pain.score));
+  // Couple similarity starts only when the partner has their first comparable
+  // pain/panic/tetany log. Calendar days before that date must never dilute or
+  // penalize the comparison (for example 1–25 July when the partner starts on 26 July).
+  const partnerFirstComparisonDay = partner
+    ? (Object.keys(partner.dayLogs)
+        .filter((day) => hasSymptoms(partner.dayLogs[day]))
+        .sort()[0] ?? null)
+    : null;
 
-  const partnerPainAverage = average(partnerPain.map((pain) => pain.score));
+  const comparisonPeriodDays = partnerFirstComparisonDay
+    ? periodDays.filter((day) => day >= partnerFirstComparisonDay)
+    : [];
 
-  const myPainDays = periodDays.filter((day) => (view.dayLogs[day]?.pain?.length ?? 0) > 0).length;
+  const hasPartnerComparisonData = partner
+    ? comparisonPeriodDays.some((day) => hasSymptoms(partner.dayLogs[day]))
+    : false;
 
-  const partnerPainDays = partner ? periodDays.filter((day) => (partner.dayLogs[day]?.pain?.length ?? 0) > 0).length : 0;
+  const myPainAverage = average(
+    comparisonPeriodDays.flatMap((day) => view.dayLogs[day]?.pain ?? []).map((pain) => pain.score),
+  );
 
-  const sharedSymptomDays = partner
-    ? periodDays.filter((day) => hasSymptoms(view.dayLogs[day]) && hasSymptoms(partner.dayLogs[day])).length
+  const partnerPainAverage = partner
+    ? average(comparisonPeriodDays.flatMap((day) => partner.dayLogs[day]?.pain ?? []).map((pain) => pain.score))
+    : null;
+
+  const myPainDays = comparisonPeriodDays.filter((day) => (view.dayLogs[day]?.pain?.length ?? 0) > 0).length;
+
+  const partnerPainDays = partner
+    ? comparisonPeriodDays.filter((day) => (partner.dayLogs[day]?.pain?.length ?? 0) > 0).length
     : 0;
 
-  const mySymptomDays = periodDays.filter((day) => hasSymptoms(view.dayLogs[day])).length;
+  const sharedSymptomDays = partner
+    ? comparisonPeriodDays.filter((day) => hasSymptoms(view.dayLogs[day]) && hasSymptoms(partner.dayLogs[day])).length
+    : 0;
 
-  const partnerSymptomDays = partner ? periodDays.filter((day) => hasSymptoms(partner.dayLogs[day])).length : 0;
+  const mySymptomDays = comparisonPeriodDays.filter((day) => hasSymptoms(view.dayLogs[day])).length;
+
+  const partnerSymptomDays = partner
+    ? comparisonPeriodDays.filter((day) => hasSymptoms(partner.dayLogs[day])).length
+    : 0;
+
+  const myPanicCount = comparisonPeriodDays.reduce(
+    (sum, day) => sum + (view.dayLogs[day]?.panic?.length ?? 0),
+    0,
+  );
+  const partnerPanicCount = partner
+    ? comparisonPeriodDays.reduce((sum, day) => sum + (partner.dayLogs[day]?.panic?.length ?? 0), 0)
+    : 0;
+  const myTetanyCount = comparisonPeriodDays.reduce(
+    (sum, day) => sum + (view.dayLogs[day]?.tetany?.length ?? 0),
+    0,
+  );
+  const partnerTetanyCount = partner
+    ? comparisonPeriodDays.reduce((sum, day) => sum + (partner.dayLogs[day]?.tetany?.length ?? 0), 0)
+    : 0;
 
   const myTakenDoses = countTakenScheduledDoses(periodDays, view.meds, view.medLog);
 
   const partnerTakenDoses = partner ? countTakenScheduledDoses(periodDays, partner.meds ?? [], partner.medLog ?? {}) : 0;
 
-  const partnerComparisonDays = partner
-    ? periodDays.filter((day) => hasSymptoms(partner.dayLogs[day]))
-    : [];
-
-  const hasPartnerComparisonData = partnerComparisonDays.length > 0;
-
   const loggedComparisonDays = partner && hasPartnerComparisonData
-    ? periodDays.filter((day) => hasSymptoms(view.dayLogs[day]) || hasSymptoms(partner.dayLogs[day])).length
+    ? comparisonPeriodDays.filter((day) => hasSymptoms(view.dayLogs[day]) || hasSymptoms(partner.dayLogs[day])).length
     : 0;
 
   const similarityScore = partner && hasPartnerComparisonData
@@ -1498,10 +1532,10 @@ function CouplePage() {
         loggedComparisonDays,
         myPainAverage,
         partnerPainAverage,
-        myPanicCount: myPanic.length,
-        partnerPanicCount: partnerPanic.length,
-        myTetanyCount: myTetany.length,
-        partnerTetanyCount: partnerTetany.length,
+        myPanicCount,
+        partnerPanicCount,
+        myTetanyCount,
+        partnerTetanyCount,
       })
     : null;
 
@@ -1628,16 +1662,16 @@ function CouplePage() {
                 <StatCard
                   icon={<PanicIcon size={18} />}
                   label="Panic attacks"
-                  value={`${myPanic.length + partnerPanic.length}`}
-                  detail={`${t("You")} ${myPanic.length} · ${t(partnerName)} ${partnerPanic.length}`}
+                  value={`${myPanicCount + partnerPanicCount}`}
+                  detail={`${t("You")} ${myPanicCount} · ${t(partnerName)} ${partnerPanicCount}`}
                   tone="purple"
                 />
 
                 <StatCard
                   icon={<BoltIcon size={18} />}
                   label="Tetany episodes"
-                  value={`${myTetany.length + partnerTetany.length}`}
-                  detail={`${t("You")} ${myTetany.length} · ${t(partnerName)} ${partnerTetany.length}`}
+                  value={`${myTetanyCount + partnerTetanyCount}`}
+                  detail={`${t("You")} ${myTetanyCount} · ${t(partnerName)} ${partnerTetanyCount}`}
                   tone="blue"
                 />
               </div>
