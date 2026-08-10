@@ -778,6 +778,42 @@ export interface Diagnosis {
   docId?: string;
 }
 
+export type PatternTreatmentKind = "medication" | "supplement" | "diet" | "therapy" | "exercise" | "other";
+export type PatternTreatmentResult =
+  | "pain"
+  | "panicEpisodes"
+  | "tetanyEpisodes"
+  | "headache"
+  | "hotFlashes"
+  | "panicIntensity"
+  | "tetanyIntensity"
+  | "negativeMood";
+
+export interface PatternTreatment {
+  date: string;
+  name: string;
+  kind: PatternTreatmentKind;
+  result: PatternTreatmentResult;
+  notes: string;
+  custom: boolean;
+}
+
+export interface ArchivedPatternTreatment {
+  id: string;
+  name: string;
+  kind: PatternTreatmentKind;
+  notes: string;
+  startDate: string;
+  archivedAt: string;
+  custom: boolean;
+  result?: PatternTreatmentResult;
+}
+
+export interface PatternPersistenceState {
+  activeTreatment?: PatternTreatment;
+  treatmentArchive: ArchivedPatternTreatment[];
+}
+
 /**
  * Conflict metadata used by cloud merge. Paths are encoded internal field paths;
  * timestamps are monotonically increasing epoch milliseconds generated on the
@@ -820,6 +856,8 @@ export interface BixboData {
   profile?: HealthProfile;
   pregnancy?: PregnancyState;
   postpartum?: PostpartumState;
+  /** Pattern/treatment state lives in the main data model so backup + cloud sync protect it. */
+  patterns?: PatternPersistenceState;
 }
 
 export const DEFAULT_FOLDERS: NoteFolder[] = [
@@ -896,6 +934,7 @@ export const EMPTY: BixboData = {
   profile: {},
   pregnancy: { active: false, hospitalBag: [], vaccinations: [], supplements: [], appointments: [] },
   postpartum: { active: false, visits: [] },
+  patterns: { treatmentArchive: [] },
 };
 
 export const BIXBO_STORAGE_KEY = "bixbo:v2";
@@ -905,6 +944,8 @@ const KEY = BIXBO_STORAGE_KEY;
 const LEGACY_KEY = BIXBO_LEGACY_STORAGE_KEY;
 const LEGACY_HEALTH_PREFS_KEY = "bixbo:health-preferences";
 const INSTALL_ORIGIN_KEY = "bixbo:install-origin-v3";
+const SAFETY_BACKUP_KEY = "bixbo:safety-backup:v1";
+const SAFETY_BACKUP_MAX_BYTES = 2_000_000;
 
 /** True only when this browser already has a persisted BIXBO data snapshot. */
 export function hasStoredBixboSnapshot(): boolean {
@@ -992,6 +1033,75 @@ function safeIdArray<T extends { id: string }>(value: unknown): T[] {
   return safeArray<unknown>(value).filter(
     (item): item is T => isPlainRecord(item) && typeof item.id === "string" && item.id.trim().length > 0,
   );
+}
+
+const PATTERN_TREATMENT_KINDS = new Set<PatternTreatmentKind>([
+  "medication",
+  "supplement",
+  "diet",
+  "therapy",
+  "exercise",
+  "other",
+]);
+const PATTERN_TREATMENT_RESULTS = new Set<PatternTreatmentResult>([
+  "pain",
+  "panicEpisodes",
+  "tetanyEpisodes",
+  "headache",
+  "hotFlashes",
+  "panicIntensity",
+  "tetanyIntensity",
+  "negativeMood",
+]);
+
+function normalizePatternTreatment(value: unknown): PatternTreatment | undefined {
+  if (!isPlainRecord(value)) return undefined;
+  const kind = PATTERN_TREATMENT_KINDS.has(value.kind as PatternTreatmentKind)
+    ? (value.kind as PatternTreatmentKind)
+    : "medication";
+  const result = PATTERN_TREATMENT_RESULTS.has(value.result as PatternTreatmentResult)
+    ? (value.result as PatternTreatmentResult)
+    : "pain";
+
+  const date = typeof value.date === "string" ? value.date : "";
+  const name = typeof value.name === "string" ? value.name : "";
+  const notes = typeof value.notes === "string" ? value.notes : "";
+  const custom = Boolean(value.custom);
+
+  // A completely empty object is not an active treatment.
+  if (!date && !name.trim() && !notes.trim()) return undefined;
+  return { date, name, kind, result, notes, custom };
+}
+
+function normalizeArchivedPatternTreatment(value: unknown): ArchivedPatternTreatment | null {
+  if (!isPlainRecord(value) || typeof value.id !== "string" || !value.id.trim()) return null;
+  const kind = PATTERN_TREATMENT_KINDS.has(value.kind as PatternTreatmentKind)
+    ? (value.kind as PatternTreatmentKind)
+    : "medication";
+  const result = PATTERN_TREATMENT_RESULTS.has(value.result as PatternTreatmentResult)
+    ? (value.result as PatternTreatmentResult)
+    : undefined;
+
+  return {
+    id: value.id,
+    name: typeof value.name === "string" && value.name.trim() ? value.name : "Unnamed treatment",
+    kind,
+    notes: typeof value.notes === "string" ? value.notes : "",
+    startDate: typeof value.startDate === "string" ? value.startDate : "",
+    archivedAt: typeof value.archivedAt === "string" ? value.archivedAt : "",
+    custom: Boolean(value.custom),
+    result,
+  };
+}
+
+function normalizePatternPersistence(value: unknown): PatternPersistenceState {
+  const raw = safeRecord(value);
+  return {
+    activeTreatment: normalizePatternTreatment(raw.activeTreatment),
+    treatmentArchive: safeArray<unknown>(raw.treatmentArchive)
+      .map(normalizeArchivedPatternTreatment)
+      .filter((item): item is ArchivedPatternTreatment => item != null),
+  };
 }
 
 function normalizeSyncTimestampMap(value: unknown): Record<string, number> {
@@ -1201,6 +1311,7 @@ function migrate(raw: unknown): BixboData {
   const rawProfile = safeRecord(parsed.profile) as HealthProfile;
   const rawPregnancy = safeRecord<Partial<PregnancyState>>(parsed.pregnancy);
   const rawPostpartum = safeRecord<Partial<PostpartumState>>(parsed.postpartum);
+  const rawPatterns = normalizePatternPersistence(parsed.patterns);
 
   // Canonical reproductive mode migration. Older builds stored pregnancy only
   // in settings.pregnantSince. Convert that marker into pregnancy.lmp once and
@@ -1374,6 +1485,7 @@ function migrate(raw: unknown): BixboData {
           ? rawPostpartum.endedAt
           : undefined,
     },
+    patterns: rawPatterns,
   };
 }
 
@@ -1430,6 +1542,10 @@ function rawSnapshotHasMeaningfulUserData(raw: string | null): boolean {
     if (postpartum.active === true || typeof postpartum.birthDate === "string" || typeof postpartum.endedAt === "string") return true;
     if (Array.isArray(postpartum.visits) && postpartum.visits.length > 0) return true;
 
+    const patterns = safeRecord(value.patterns);
+    if (isPlainRecord(patterns.activeTreatment)) return true;
+    if (Array.isArray(patterns.treatmentArchive) && patterns.treatmentArchive.length > 0) return true;
+
     const settings = safeRecord(value.settings);
     if (typeof settings.userName === "string" && settings.userName.trim()) return true;
     if (typeof settings.birthControlSince === "string" && settings.birthControlSince) return true;
@@ -1460,6 +1576,102 @@ let _localEditedSinceHydrate = false;
 const listeners = new Set<() => void>();
 const changeListeners = new Set<(d: BixboData, reason: "local" | "remote") => void>();
 
+type SafetyBackupEnvelope = {
+  createdAt: string;
+  reason: string;
+  score: number;
+  data: BixboData;
+};
+
+function dataProtectionScore(data: BixboData): number {
+  const recordSize = (value: unknown) => (isPlainRecord(value) ? Object.keys(value).length : 0);
+  const arraySize = (value: unknown) => (Array.isArray(value) ? value.length : 0);
+  let score = 0;
+  score += recordSize(data.dayLogs) * 4;
+  score += recordSize(data.dayNotes) * 2;
+  score += recordSize(data.todos);
+  score += recordSize(data.medLog) * 2;
+  score += arraySize(data.meds) * 4;
+  score += arraySize(data.tasks) + arraySize(data.events);
+  score += arraySize(data.notebook) * 2;
+  score += arraySize(data.labs) * 3 + arraySize(data.docs) * 3 + arraySize(data.diagnoses) * 3;
+  score += arraySize(data.patterns?.treatmentArchive) * 5;
+  if (data.patterns?.activeTreatment) score += 5;
+  if (data.pregnancy?.active || data.pregnancy?.lmp || data.pregnancy?.dueDate) score += 5;
+  if (data.postpartum?.active || data.postpartum?.birthDate) score += 5;
+  const profile = safeRecord(data.profile);
+  score += Object.values(profile).filter((value) => {
+    if (Array.isArray(value)) return value.length > 0;
+    if (isPlainRecord(value)) return Object.keys(value).length > 0;
+    return value !== undefined && value !== null && value !== "";
+  }).length * 2;
+  return score;
+}
+
+function storeSafetyBackup(data: BixboData, reason: string, force = false): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const normalized = migrate(data);
+    const score = dataProtectionScore(normalized);
+    if (score <= 0) return false;
+
+    const existingRaw = window.localStorage.getItem(SAFETY_BACKUP_KEY);
+    if (!force && existingRaw) {
+      try {
+        const existing = JSON.parse(existingRaw) as Partial<SafetyBackupEnvelope>;
+        if (Number(existing.score ?? 0) >= score) return true;
+      } catch {
+        // Replace malformed backup with a valid snapshot below.
+      }
+    }
+
+    const envelope: SafetyBackupEnvelope = {
+      createdAt: new Date().toISOString(),
+      reason,
+      score,
+      data: normalized,
+    };
+    const serialized = JSON.stringify(envelope);
+    if (serialized.length > SAFETY_BACKUP_MAX_BYTES) return false;
+    window.localStorage.setItem(SAFETY_BACKUP_KEY, serialized);
+    return true;
+  } catch (error) {
+    console.error("BIXBO safety backup could not be saved.", error);
+    return false;
+  }
+}
+
+export function createBixboSafetyBackup(reason = "manual"): boolean {
+  hydrate();
+  return storeSafetyBackup(_state, reason, true);
+}
+
+export function getBixboSafetyBackup(): { createdAt: string; reason: string; data: BixboData } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(SAFETY_BACKUP_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<SafetyBackupEnvelope>;
+    if (!parsed.data || typeof parsed.createdAt !== "string") return null;
+    return {
+      createdAt: parsed.createdAt,
+      reason: typeof parsed.reason === "string" ? parsed.reason : "safety backup",
+      data: migrate(parsed.data),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function protectAgainstLargeDataLoss(previous: BixboData, next: BixboData, reason: string): void {
+  const before = dataProtectionScore(previous);
+  const after = dataProtectionScore(next);
+  const loss = before - after;
+  if (before > 0 && loss > 0 && (loss >= 5 || after <= before * 0.7)) {
+    storeSafetyBackup(previous, reason);
+  }
+}
+
 function emit() {
   listeners.forEach((l) => l());
 }
@@ -1480,6 +1692,14 @@ function hydrate() {
       window.localStorage.setItem(INSTALL_ORIGIN_KEY, installOrigin);
     }
     _legacyLocalCanonicalEligible = installOrigin === "existing";
+
+    if (raw && rawSnapshotHasMeaningfulUserData(raw)) {
+      try {
+        storeSafetyBackup(migrate(JSON.parse(raw)), "before-app-migration");
+      } catch {
+        // A malformed main snapshot must never overwrite an existing good safety backup.
+      }
+    }
 
     _state = raw ? migrate(JSON.parse(raw)) : freshEmptyState();
 
@@ -1737,6 +1957,7 @@ export function setBixbo(updater: (d: BixboData) => BixboData) {
   _localEditedSinceHydrate = true;
   const previous = _state;
   const next = migrate(updater(_state));
+  protectAgainstLargeDataLoss(previous, next, "before-local-data-reduction");
   _state = migrate(withLocalSyncMetadata(previous, next));
   persist();
   emit();
@@ -1746,6 +1967,7 @@ export function replaceBixbo(d: BixboData, reason: "local" | "remote" = "local")
   hydrate();
   if (reason === "local") _localEditedSinceHydrate = true;
   const next = migrate(d);
+  protectAgainstLargeDataLoss(_state, next, reason === "local" ? "before-local-replace" : "before-cloud-reconcile");
   _state = reason === "local" ? migrate(withLocalSyncMetadata(_state, next)) : next;
   persist();
   emit();
