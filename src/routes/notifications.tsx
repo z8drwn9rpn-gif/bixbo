@@ -172,17 +172,17 @@ function NotificationsPage() {
   const signedIn = Boolean(session);
 
   return (
-    <AppShell title="Notifications">
+    <AppShell title={t("Notifications")}>
       <div className="space-y-4 px-4 pb-24 pt-4">
         <Link to="/settings" className="inline-flex items-center gap-1 text-sm text-muted-foreground">
-          <ChevronLeft className="h-4 w-4" /> Settings
+          <ChevronLeft className="h-4 w-4" /> {t("Settings")}
         </Link>
 
-        <Card title="Push notifications" subtitle="Reminders arrive even when BIXBO is fully closed.">
+        <Card title={t("Push notifications")} subtitle={t("Reminders arrive even when BIXBO is fully closed.")}>
           {!ready ? (
             <p className="text-xs text-muted-foreground">{t("Checking your account…")}</p>
           ) : !signedIn ? (
-            <p className="text-xs text-destructive">Sign in to enable reminders when BIXBO is fully closed.</p>
+            <p className="text-xs text-destructive">{t("Sign in to enable reminders when BIXBO is fully closed.")}</p>
           ) : unsupported ? (
             <p className="flex items-center gap-2 text-xs text-destructive">
               <BellOff className="h-4 w-4" /> This browser doesn't support Web Push.
@@ -193,8 +193,8 @@ function NotificationsPage() {
             </p>
           ) : perm === "granted" ? (
             <ToggleRow
-              label="All reminders"
-              hint="Master switch for every category below."
+              label={t("All reminders")}
+              hint={t("Master switch for every category below.")}
               checked={Boolean(prefs.enabled)}
               disabled={busy}
               onChange={(enabled) => void toggleAll(enabled)}
@@ -206,7 +206,7 @@ function NotificationsPage() {
               disabled={busy}
               className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-60"
             >
-              <Bell className="h-4 w-4" /> {busy ? "Enabling…" : "Enable notifications"}
+              <Bell className="h-4 w-4" /> {busy ? t("Enabling…") : t("Enable notifications")}
             </button>
           )}
 
@@ -217,42 +217,42 @@ function NotificationsPage() {
           {error && <p className="rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>}
         </Card>
 
-        <Card title="Categories" subtitle="Pick exactly what you want to hear about.">
+        <Card title={t("Categories")} subtitle={t("Pick exactly what you want to hear about.")}>
           {CATEGORIES.map(({ key, hint }) => (
             <ToggleRow
               key={key}
-              label={NOTIF_CATEGORY_LABELS[key]}
-              hint={hint}
+              label={t(NOTIF_CATEGORY_LABELS[key])}
+              hint={t(hint)}
               checked={Boolean(prefs[key])}
               onChange={(v) => saveNotifPrefs({ [key]: v })}
             />
           ))}
         </Card>
 
-        <Card title="Times" subtitle="When the daily nudges are sent.">
+        <Card title={t("Times")} subtitle={t("When the daily nudges are sent.")}>
           <TimeRow
-            label="Symptom reminder"
+            label={t("Symptom reminder")}
             value={prefs.symptomTime}
             onChange={(v) => saveNotifPrefs({ symptomTime: v })}
           />
           <TimeRow
-            label="Daily log reminder"
+            label={t("Daily log reminder")}
             value={prefs.dailyLogTime}
             onChange={(v) => saveNotifPrefs({ dailyLogTime: v })}
           />
-          <TimeRow label="Mood check-in" value={prefs.moodTime} onChange={(v) => saveNotifPrefs({ moodTime: v })} />
+          <TimeRow label={t("Mood check-in")} value={prefs.moodTime} onChange={(v) => saveNotifPrefs({ moodTime: v })} />
           <TimeRow
-            label="Hydration from"
+            label={t("Hydration from")}
             value={prefs.hydrationStart}
             onChange={(v) => saveNotifPrefs({ hydrationStart: v })}
           />
           <TimeRow
-            label="Hydration until"
+            label={t("Hydration until")}
             value={prefs.hydrationEnd}
             onChange={(v) => saveNotifPrefs({ hydrationEnd: v })}
           />
           <label className="flex items-center justify-between gap-3">
-            <span className="text-sm text-foreground">Hydration every (hours)</span>
+            <span className="text-sm text-foreground">{t("Hydration every (hours)")}</span>
             <Input
               type="number"
               min={1}
@@ -266,15 +266,15 @@ function NotificationsPage() {
           </label>
         </Card>
 
-        <Card title="Quiet hours" subtitle="Only medication reminders are allowed to break quiet hours.">
+        <Card title={t("Quiet hours")} subtitle={t("Only medication reminders are allowed to break quiet hours.")}>
           <p className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Moon className="h-4 w-4 text-primary" /> Nothing else is sent between these times.
+            <Moon className="h-4 w-4 text-primary" /> {t("Nothing else is sent between these times.")}
           </p>
-          <TimeRow label="Start" value={prefs.quietStart} onChange={(v) => saveNotifPrefs({ quietStart: v })} />
-          <TimeRow label="End" value={prefs.quietEnd} onChange={(v) => saveNotifPrefs({ quietEnd: v })} />
+          <TimeRow label={t("Start")} value={prefs.quietStart} onChange={(v) => saveNotifPrefs({ quietStart: v })} />
+          <TimeRow label={t("End")} value={prefs.quietEnd} onChange={(v) => saveNotifPrefs({ quietEnd: v })} />
         </Card>
 
-        <Card title="Tests" subtitle="Local and server-originated tests are separate.">
+        <Card title={t("Tests")} subtitle={t("Local and server-originated tests are separate.")}>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
