@@ -39,13 +39,51 @@ const TAB_LABEL: Record<AdminTab, string> = {
 
 const iconChoices = ["🔥", "⚡", "✨", "🫐", "❤️", "♨️", "🍽️", "💩", "🧘🏼‍♀️", "🌡️", "💊", "📅", "✅", "📝", "🤱", "🤕", "🥵", "🌙"];
 
+const ADMIN_PIN_HASH = "dc4bc886825c446e6ae02d4d0c6a8787af0395079effcc3afc0f8bdc40cbd161";
+
+async function sha256Hex(value: string) {
+  const bytes = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
 function AdminPage() {
   const { data, update, hydrated } = useBixbo();
   const { t } = useI18n();
+  const [adminUnlocked, setAdminUnlocked] = useState(() => typeof window !== "undefined" && window.sessionStorage.getItem("bixbo-admin-unlocked") === "1");
+  const [adminPin, setAdminPin] = useState("");
+  const [pinError, setPinError] = useState(false);
   const view = hydrated ? data : EMPTY;
   const [tab, setTab] = useState<AdminTab>("logs");
   const [dragged, setDragged] = useState<RegistryFeatureId | null>(null);
   const surface = TAB_SURFACE[tab];
+
+  if (!adminUnlocked) {
+    const unlock = async () => {
+      if ((await sha256Hex(adminPin)) === ADMIN_PIN_HASH) {
+        window.sessionStorage.setItem("bixbo-admin-unlocked", "1");
+        setPinError(false);
+        setAdminUnlocked(true);
+      } else {
+        setPinError(true);
+        setAdminPin("");
+      }
+    };
+    return (
+      <AppShell title={<Link to="/profile" className="flex items-center gap-2"><ArrowLeft className="h-5 w-5" />{t("Admin mode")}</Link>}>
+        <div className="mx-auto max-w-sm px-5 pt-10">
+          <section className="rounded-3xl bg-surface p-6 text-center shadow-sm ring-1 ring-border/80">
+            <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-primary/10 text-2xl">🔒</div>
+            <p className="mt-4 font-serif text-xl font-bold">{t("Admin locked")}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{t("Enter the admin PIN to continue.")}</p>
+            <input type="password" inputMode="numeric" maxLength={4} autoFocus value={adminPin} onChange={(event) => { setAdminPin(event.target.value.replace(/\D/g, "").slice(0, 4)); setPinError(false); }} onKeyDown={(event) => { if (event.key === "Enter") void unlock(); }} className="mt-5 h-12 w-full rounded-2xl bg-tint px-4 text-center text-lg font-bold tracking-[0.45em] ring-1 ring-border focus:outline-none focus:ring-2 focus:ring-primary" aria-label={t("Admin PIN")} />
+            {pinError ? <p className="mt-2 text-xs font-semibold text-destructive">{t("Incorrect PIN")}</p> : null}
+            <button type="button" onClick={() => void unlock()} disabled={adminPin.length !== 4} className="mt-4 h-11 w-full rounded-2xl bg-primary text-sm font-semibold text-primary-foreground disabled:opacity-40">{t("Unlock admin")}</button>
+          </section>
+        </div>
+      </AppShell>
+    );
+  }
 
   const features = useMemo(
     () => BIXBO_REGISTRY.map((base) => getRegistryFeature(view, base.id)).sort((a, b) => a.order - b.order),

@@ -59,6 +59,10 @@ export interface CustomLogDefinition {
   enabled?: boolean;
   /** Show the custom log icon on calendar days that contain entries. */
   calendar?: boolean;
+  /** Show a shortcut in Quick Log. */
+  quickLog?: boolean;
+  /** Numeric/scale field exposed as a Heatmap metric. */
+  heatmapFieldId?: string;
   order: number;
   fields: RegistryFieldDefinition[];
 }

@@ -1,6 +1,6 @@
 import { Ico } from "@/components/icons/BixboIcons";
 import { POSTPARTUM_SYMPTOMS } from "@/lib/health";
-import { isRegistrySurfaceEnabled, type RegistryFeatureId } from "@/lib/appRegistry";
+import { customLogDefinitions, isRegistrySurfaceEnabled, type RegistryFeatureId } from "@/lib/appRegistry";
 import { useEffect, useRef, useState } from "react";
 import { useI18n } from "@/hooks/useI18n";
 import { Check, Plus, X, Pencil, ChevronLeft, ChevronRight } from "@/components/icons/BixboIcons";
@@ -19,7 +19,7 @@ import {
   type PeriodLevel,
 } from "@/lib/storage";
 
-type Cat = QuickTagCategory | "period" | "postpartum";
+type Cat = QuickTagCategory | "period" | "postpartum" | "custom";
 
 type Tag = {
   key: string;
@@ -27,6 +27,7 @@ type Tag = {
   label: string;
   cat: Cat;
   popup?: "period" | "postpartum";
+  customLogId?: string;
   apply?: (l: DayLog) => DayLog;
   scheduledMed?: {
     medId: string;
@@ -451,6 +452,7 @@ export function QuickTags({
     return null;
   };
   const registryAllowsQuickTag = (tag: Tag) => {
+    if (tag.cat === "custom") return true;
     const id = registryIdForTag(tag);
     return id ? isRegistrySurfaceEnabled(data, id, "quickLog") : true;
   };
@@ -465,12 +467,17 @@ export function QuickTags({
       }
     : null;
 
+  const customLogTags: Tag[] = customLogDefinitions(data)
+    .filter((log) => log.quickLog)
+    .map((log) => ({ key: `custom-log-${log.id}`, emoji: log.icon, label: log.label, cat: "custom", customLogId: log.id }));
+
   const allTags = [
     ...(postpartumTag ? [postpartumTag] : []),
     ...baseTags().filter((tag) => !(tag.cat === "period" && cycleTrackingHidden)),
     ...(data.settings.customQuickTags ?? [])
       .filter((tag) => !(tag.cat === "period" && cycleTrackingHidden))
       .map((tag) => customToTag(tag, data)),
+    ...customLogTags,
   ].filter(registryAllowsQuickTag);
 
   const order = data.settings.quickTagOrder ?? [];
@@ -545,6 +552,10 @@ export function QuickTags({
   };
 
   const doTap = (tag: Tag) => {
+    if (tag.customLogId) {
+      onLongPress(`custom:${tag.customLogId}`);
+      return;
+    }
     if (tag.popup === "period") {
       setPeriodOpen(true);
       return;

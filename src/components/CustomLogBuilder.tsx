@@ -46,6 +46,7 @@ export function CustomLogBuilder({ data, update }: { data: BixboData; update: Up
       color: "#788C45",
       enabled: true,
       calendar: true,
+      quickLog: false,
       order: (logs.at(-1)?.order ?? 0) + 10,
       fields: [],
     };
@@ -120,6 +121,25 @@ export function CustomLogBuilder({ data, update }: { data: BixboData; update: Up
               <div><p className="text-xs font-semibold">{t("Show in Calendar")}</p><p className="text-[10px] text-muted-foreground">{t("Display this log's icon on days with saved entries.")}</p></div>
               <button type="button" onClick={() => patchLog(log.id, { calendar: log.calendar === false })} className={`rounded-full px-3 py-1.5 text-[10px] font-semibold ${log.calendar === false ? "bg-background text-muted-foreground" : "bg-primary text-primary-foreground"}`}>{log.calendar === false ? t("Off") : t("On")}</button>
             </div>
+
+            <div className="mt-2 flex items-center justify-between rounded-2xl bg-tint px-3 py-2 ring-1 ring-border/70">
+              <div><p className="text-xs font-semibold">{t("Show in Quick Log")}</p><p className="text-[10px] text-muted-foreground">{t("Add a shortcut that opens this custom log form.")}</p></div>
+              <button type="button" onClick={() => patchLog(log.id, { quickLog: !log.quickLog })} className={`rounded-full px-3 py-1.5 text-[10px] font-semibold ${log.quickLog ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground"}`}>{log.quickLog ? t("On") : t("Off")}</button>
+            </div>
+
+            {(() => {
+              const metricFields = fields.filter((field) => field.enabled !== false && (field.kind === "number" || field.kind === "scale"));
+              return (
+                <div className="mt-2 rounded-2xl bg-tint px-3 py-2 ring-1 ring-border/70">
+                  <p className="text-xs font-semibold">{t("Heatmap metric")}</p>
+                  <p className="text-[10px] text-muted-foreground">{t("Choose a numeric or scale field to expose in Insights Heatmap.")}</p>
+                  <select value={log.heatmapFieldId ?? ""} onChange={(event) => patchLog(log.id, { heatmapFieldId: event.target.value || undefined })} className="mt-2 h-9 w-full rounded-xl bg-background px-3 text-xs ring-1 ring-border">
+                    <option value="">{t("Off")}</option>
+                    {metricFields.map((field) => <option key={field.id} value={field.id}>{field.label}</option>)}
+                  </select>
+                </div>
+              );
+            })()}
 
             <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
               <label className="text-[10px] text-muted-foreground">{t("Icon")}

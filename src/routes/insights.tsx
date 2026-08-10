@@ -7,7 +7,7 @@ import { ChartCard, CHART_GRID, useDismissTapTooltip } from "@/components/charts
 import { Ico } from "@/components/icons/BixboIcons";
 import { PatternsContent } from "./patterns";
 import { useI18n } from "@/hooks/useI18n";
-import { getRegistryFeature, isRegistrySurfaceEnabled } from "@/lib/appRegistry";
+import { customLogDefinitions, getRegistryFeature, isRegistrySurfaceEnabled, type RegistryFeatureId } from "@/lib/appRegistry";
 import {
   useBixbo,
   EMPTY,
@@ -1786,7 +1786,7 @@ function HfBars({
   );
 }
 
-type HeatmapMetric = "pain" | "period" | "bowel" | "panic" | "tetany" | "hotFlashes" | "sleep";
+type HeatmapMetric = "pain" | "period" | "bowel" | "panic" | "tetany" | "hotFlashes" | "sleep" | `custom:${string}:${string}`;
 
 type HeatmapDatum = {
   /** CSS background for the heatmap mark. May be a gradient (Bowel Type 0). */
@@ -1854,12 +1854,18 @@ function YearHealthHeatmap({
   onShiftPeriod: (period: HeatmapPeriod, delta: -1 | 1) => void;
 }) {
   const { t } = useI18n();
-  const availableHeatmapOptions = useMemo(
-    () => HEATMAP_OPTIONS
-      .filter((option) => isRegistrySurfaceEnabled(data, option.id, "heatmap"))
-      .map((option) => ({ ...option, label: getRegistryFeature(data, option.id).label })),
-    [data],
-  );
+  const availableHeatmapOptions = useMemo(() => {
+    const builtins = HEATMAP_OPTIONS
+      .filter((option) => isRegistrySurfaceEnabled(data, option.id as RegistryFeatureId, "heatmap"))
+      .map((option) => ({ ...option, label: getRegistryFeature(data, option.id as RegistryFeatureId).label }));
+    const customs = customLogDefinitions(data).flatMap((log) => {
+      if (!log.heatmapFieldId) return [];
+      const field = log.fields.find((item) => item.id === log.heatmapFieldId && item.enabled !== false && (item.kind === "number" || item.kind === "scale"));
+      if (!field) return [];
+      return [{ id: `custom:${log.id}:${field.id}` as HeatmapMetric, label: `${log.label} · ${field.label}` }];
+    });
+    return [...builtins, ...customs];
+  }, [data]);
   const [metric, setMetric] = useState<HeatmapMetric>("pain");
   const [active, setActive] = useState<string | null>(null);
 
@@ -1881,6 +1887,21 @@ function YearHealthHeatmap({
     (key: string, selectedMetric: HeatmapMetric): HeatmapDatum | null => {
       const log = data.dayLogs[key];
       if (!log) return null;
+
+      if (selectedMetric.startsWith("custom:")) {
+        const [, logId, fieldId] = selectedMetric.split(":");
+        const definition = customLogDefinitions(data).find((item) => item.id === logId);
+        const field = definition?.fields.find((item) => item.id === fieldId);
+        const entries = log.customLogs?.[logId] ?? [];
+        const values = entries.map((entry) => Number(entry.values[fieldId])).filter((value) => Number.isFinite(value));
+        if (!definition || !field || !values.length) return null;
+        const value = values.reduce((sum, item) => sum + item, 0) / values.length;
+        const min = field.scale?.min ?? Math.min(...values, 0);
+        const max = field.scale?.max ?? Math.max(...values, 10);
+        const span = Math.max(0.0001, max - min);
+        const normalized = Math.max(0, Math.min(10, ((value - min) / span) * 10));
+        return { color: vividPainChartColor(normalized), tooltipColor: vividPainChartColor(normalized), value: Number.isInteger(value) ? String(value) : value.toFixed(1), popupValue: `${field.label} · ${Number.isInteger(value) ? value : value.toFixed(1)}`, description: definition.label, entryCount: values.length };
+      }
 
       if (selectedMetric === "pain") {
         const entries = (log.pain ?? []).filter((entry) => Number.isFinite(entry.score));
@@ -2007,7 +2028,7 @@ function YearHealthHeatmap({
         entryCount: 1,
       };
     },
-    [data.dayLogs],
+    [data],
   );
 
   const compactDays = useMemo(() => {
@@ -2115,7 +2136,7 @@ function YearHealthHeatmap({
     return [makeHalf(0, 5), makeHalf(6, 11)];
   }, [year]);
 
-  const activeMetricLabel = HEATMAP_OPTIONS.find((option) => option.id === metric)?.label ?? "Heatmap";
+  const activeMetricLabel = availableHeatmapOptions.find((option) => option.id === metric)?.label ?? "Heatmap";
   const activeDatum = active ? heatmapData[active] ?? null : null;
 
   const activePosition = useMemo(() => {
@@ -2200,6 +2221,9 @@ function YearHealthHeatmap({
   }, [activePosition]);
 
   const legend = (() => {
+    if (metric.startsWith("custom:")) {
+      return [["Low", vividPainChartColor(0)], ["Mild", vividPainChartColor(2.5)], ["Moderate", vividPainChartColor(5)], ["High", vividPainChartColor(7.5)], ["Severe", vividPainChartColor(10)]] as const;
+    }
     if (metric === "period") {
       return [
         ["Spotting", "var(--period-spotting)"],
