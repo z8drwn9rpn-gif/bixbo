@@ -29,7 +29,7 @@ function fmtTapDay(k: string): string {
   return `${WD_SHORT[d.getDay()]} ${d.getDate()} ${MON_SHORT3[d.getMonth()]}`;
 }
 function fmtTapMonth(monthIndex: number, year: number): string {
-  return `${MON_SHORT3[monthIndex]} ${year}`;
+  return `$<TrText value={MON_SHORT3[monthIndex]} /> ${year}`;
 }
 
 function fmtCoupleTooltipDay(k: string): string {
@@ -220,6 +220,66 @@ function timeBlockOf(time?: string): number | null {
 }
 const TIME_BLOCK_LABELS = ["Night (0–6)", "Morning (6–12)", "Afternoon (12–18)", "Evening (18–24)"];
 const TIME_BLOCK_SHORT = ["Night", "Morning", "Afternoon", "Evening"];
+
+
+function TrText({ value }: { value: unknown }) {
+  const { t, language } = useI18n();
+  const raw = String(value ?? "");
+  const exact = t(raw);
+  if (exact !== raw) return <>{exact}</>;
+  if (language !== "sk") return <>{raw}</>;
+
+  let out = raw;
+  const exactSk: Record<string, string> = {
+    Before: "Pred",
+    During: "Počas",
+    After: "Po",
+    "Very-Heavy": "Veľmi silná",
+    "Very heavy": "Veľmi silná",
+    Heavy: "Silná",
+    Medium: "Stredná",
+    Light: "Slabá",
+    Spotting: "Špinenie",
+    "Overall improvement": "Celkové zlepšenie",
+    "Overall worsening": "Celkové zhoršenie",
+    "No clear change": "Bez jasnej zmeny",
+    "High caffeine (≥200 mg)": "Vysoký príjem kofeínu (≥200 mg)",
+    "Tetany episode": "Tetánická epizóda",
+    "Hot flash": "Nával tepla",
+    "Low energy": "Nízka energia",
+    Headache: "Bolesť hlavy",
+    "Daily adherence": "Denné dodržiavanie",
+    doses: "dávok",
+    "logged days": "zaznamenaných dní",
+  };
+  if (exactSk[out]) return <>{exactSk[out]}</>;
+
+  out = out
+    .replace(/^Panic attacks:/, "Panické záchvaty:")
+    .replace(/^Medication adherence:/, "Dodržiavanie liekov:")
+    .replace(/^Workouts:/, "Cvičenia:")
+    .replace(/^Pain: improved/, "Bolesť: zlepšenie")
+    .replace(/^Pain: worsened/, "Bolesť: zhoršenie")
+    .replace(/^(\d+) logged days$/, "$1 zaznamenaných dní")
+    .replace(/^Based on (\d+) logged days in (.+)$/i, "Na základe $1 zaznamenaných dní v $2")
+    .replace(/^Based on (\d+) days before and (\d+) days after$/i, "Na základe $1 dní pred a $2 dní po")
+    .replace(/^(\d+) before · (\d+) after$/, "$1 pred · $2 po")
+    .replace(/^0× in this month$/, "0× v tomto mesiaci")
+    .replace(/^(\d+)× in this month$/, "$1× v tomto mesiaci")
+    .replace(/^The outcome was (.+) percentage points more common on days with this trigger\.$/, "Výsledok bol o $1 percentuálnych bodov častejší v dňoch s týmto spúšťačom.")
+    .replace(/^Based on (\d+) days with and (\d+) days without the trigger\.$/, "Na základe $1 dní so spúšťačom a $2 dní bez spúšťača.")
+    .replace(/^Correlations show associations in your logs\. They do not prove that one factor caused another\.$/, "Korelácie ukazujú súvislosti v tvojich záznamoch. Nedokazujú, že jeden faktor spôsobil druhý.")
+    .replace(/^This shows an association in your logs, not proof that the selected trigger caused the outcome\.$/, "Toto ukazuje súvislosť v tvojich záznamoch, nie dôkaz, že vybraný spúšťač spôsobil výsledok.")
+    .replace(/^Compare how often an outcome occurred on days with and without a possible trigger\.$/, "Porovnaj, ako často sa výsledok objavil v dňoch s možným spúšťačom a bez neho.")
+    .replace(/^Automatically ranked associations calculated only from your own logs\.$/, "Automaticky zoradené súvislosti vypočítané iba z tvojich vlastných záznamov.");
+
+  if (out.includes(" → ")) {
+    const [a, b] = out.split(" → ");
+    return <>{t(a)} → {t(b)}</>;
+  }
+
+  return <>{out}</>;
+}
 
 export const Route = createFileRoute("/insights")({
   head: () => ({
@@ -1464,7 +1524,7 @@ function InsightBarChartFrame({
       {(axisLabel || periodLabel) && (
         <div className="mt-1 flex items-center justify-between text-[10px] text-muted-foreground">
           <span>{axisLabel}</span>
-          <span>{periodLabel}</span>
+          <span><TrText value={periodLabel} /></span>
         </div>
       )}
 
@@ -2217,9 +2277,7 @@ function YearHealthHeatmap({
         </div>
       </div>
 
-      <p className="mt-1 text-xs text-muted-foreground">
-        Choose a metric, then tap a coloured day for its saved average/details.
-      </p>
+      <p className="mt-1 text-xs text-muted-foreground"><TrText value="Choose a metric, then tap a coloured day for its saved average/details." /></p>
 
       <div className="mt-2.5 flex gap-1 overflow-x-auto pb-0.5">
         {HEATMAP_OPTIONS.map((option) => (
@@ -2277,9 +2335,7 @@ function YearHealthHeatmap({
                           key={label}
                           className="absolute top-0 -translate-x-1/2 whitespace-nowrap text-[10px] font-semibold text-foreground/80"
                           style={{ left: `${((weekIndex + 0.5) / Math.max(1, half.weekCount)) * 100}%` }}
-                        >
-                          {label}
-                        </span>
+                        ><TrText value={label} /></span>
                       ))}
                     </div>
 
@@ -2411,9 +2467,7 @@ function YearHealthHeatmap({
 
           {legend.map(([label, color]) => (
             <span key={label} className="flex items-center gap-1">
-              <span className="h-3 w-3 rounded-full" style={{ background: color }} />
-              {label}
-            </span>
+              <span className="h-3 w-3 rounded-full" style={{ background: color }} /><TrText value={label} /></span>
           ))}
         </div>
 
