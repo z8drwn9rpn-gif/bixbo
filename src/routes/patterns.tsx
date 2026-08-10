@@ -647,7 +647,7 @@ function SummaryPanel({
               className="flex items-center justify-between gap-4 rounded-2xl bg-tint px-4 py-3 ring-1 ring-border/40"
             >
               <span className="text-sm text-muted-foreground">{t(item.label)}</span>
-              <span className={`text-right font-semibold ${valueClass}`}>{item.value}</span>
+              <span className={`text-right font-semibold ${valueClass}`}>{t(String(item.value))}</span>
             </div>
           );
         })}
