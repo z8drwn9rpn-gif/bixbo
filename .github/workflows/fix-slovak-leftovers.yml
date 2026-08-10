@@ -1,0 +1,107 @@
+name: Fix Slovak leftovers
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/fix-slovak-leftovers.yml'
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Apply fixes
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          # i18n: add every visible leftover from screenshots + LogSheet common labels/options.
+          p=Path('src/lib/i18n.ts'); s=p.read_text()
+          marker='  "Today": "Dnes",'
+          entries={
+          'Only the explicitly shared categories for the selected month.':'Iba výslovne zdieľané kategórie za vybraný mesiac.',
+          'Daily average pain. Tap a bar to see its value. Solid bars are yours; striped bars belong to Partner.':'Denný priemer bolesti. Ťukni na stĺpec a zobrazí sa jeho hodnota. Plné stĺpce sú tvoje; pruhované patria partnerovi.',
+          'Tap any pain bar to see the exact value.':'Ťukni na ľubovoľný stĺpec bolesti a zobrazí sa presná hodnota.',
+          'You — solid':'Ty — plné','striped':'pruhované','Health comparison':'Porovnanie zdravia',
+          'Solid bars are yours. Striped bars belong to your partner.':'Plné stĺpce sú tvoje. Pruhované stĺpce patria tvojmu partnerovi.',
+          'Selected association':'Vybraná súvislosť','Not enough data':'Nedostatok údajov','Days with trigger':'Dni so spúšťačom','Days without trigger':'Dni bez spúšťača',
+          'Confidence depends on the number of days in both groups':'Spoľahlivosť závisí od počtu dní v oboch skupinách',
+          'Save this comparison':'Uložiť toto porovnanie','Possible trigger':'Možný spúšťač','Compare with outcome':'Porovnať s výsledkom',
+          'High caffeine (≥200 mg)':'Vysoký príjem kofeínu (≥200 mg)','Tetany episode':'Tetánická epizóda','Hot flash':'Nával tepla','Low energy':'Nízka energia','Headache':'Bolesť hlavy',
+          'Most improved':'Najväčšie zlepšenie','Needs attention':'Vyžaduje pozornosť','Most stable':'Najstabilnejšie','Medium':'Stredná',
+          'compared over the same number of days.':'porovnané za rovnaký počet dní.','Medication adherence':'Dodržiavanie liekov','Workouts':'Cvičenia',
+          'HAK at a glance':'HAK v skratke','Started':'Začiatok','Logged data':'Zaznamenané údaje','Overall':'Celkovo','Strongest change':'Najväčšia zmena',
+          'Based on 23 days before and 28 days after':'Na základe 23 dní pred a 28 dní po','Medication · Result: Pain · Started Apr 22, 2026':'Liek · Výsledok: Bolesť · Začiatok 22. apríla 2026',
+          'Type':'Typ','Duration (minutes)':'Trvanie (minúty)','Intensity':'Intenzita','Magnesium before workout?':'Magnézium pred cvičením?',
+          'Triggered a symptom? (optional)':'Vyvolalo cvičenie príznak? (voliteľné)','No tetany or pain entries logged for this day yet.':'Pre tento deň zatiaľ nie je zaznamenaná tetánia ani bolesť.',
+          'Weight after (kg, optional)':'Hmotnosť po cvičení (kg, voliteľné)','Saved with this workout only — it doesn’t change your daily weight.':'Uloží sa iba k tomuto cvičeniu — nezmení tvoju dennú hmotnosť.',
+          "Saved with this workout only — it doesn't change your daily weight.":'Uloží sa iba k tomuto cvičeniu — nezmení tvoju dennú hmotnosť.',
+          'How you feel':'Ako sa cítiš','Great':'Výborne','Good':'Dobre','Ok':'OK','Tired':'Unavená','Sore':'Boľavá',
+          'Yoga':'Joga','Walk':'Chôdza','Run':'Beh','Hike':'Turistika','Cycling':'Cyklistika','Strength':'Silový tréning','Stretching':'Strečing','Swim':'Plávanie','Meditation':'Meditácia','Pilates':'Pilates',
+          'Distance (km)':'Vzdialenosť (km)','Elevation gain (m)':'Prevýšenie (m)','Exercise name':'Názov cviku','Remove exercise':'Odstrániť cvik','Sets':'Série','Reps':'Opakovania',
+          'Pressure':'Tlak','Type of pressure':'Typ tlaku','Pressure intensity':'Intenzita tlaku','Flu symptoms note':'Poznámka k príznakom chrípky','Yes — log it':'Áno — zaznamenať',
+          'Type of nausea':'Typ nevoľnosti','Nausea severity':'Intenzita nevoľnosti','Nausea severity scale':'Stupnica nevoľnosti','Relieved by':'Čo pomohlo',
+          'Headache type':'Typ bolesti hlavy','Headache scale':'Stupnica bolesti hlavy','Medication + dose':'Liek + dávka','Hot flashes intensity':'Intenzita návalov tepla','Hot flashes scale':'Stupnica návalov tepla',
+          'Location':'Miesto','Tetany scale':'Stupnica tetánie','Panic scale':'Stupnica paniky','Physical symptoms':'Fyzické príznaky','Cognitive symptoms':'Kognitívne príznaky',
+          'Saved weight measurements':'Uložené merania hmotnosti','How I slept':'Ako som spala','As needed':'Podľa potreby','Add extra dose':'Pridať extra dávku',
+          'Event':'Udalosť','From':'Od','To':'Do','Time from':'Čas od','Time to':'Čas do','Color':'Farba','Task':'Úloha','What to do…':'Čo treba urobiť…',
+          'Clear postpartum symptoms':'Vymazať popôrodné príznaky','Add':'Pridať','Custom…':'Vlastné…','Reorder':'Zmeniť poradie','Drag circles to reorder':'Presúvaním kruhov zmeníš poradie',
+          'Level':'Úroveň','Ongoing':'Prebieha','Today':'Dnes'
+          }
+          block=''.join(f'  {k!r}: {v!r},\n'.replace("'",'"') for k,v in entries.items())
+          if '"Only the explicitly shared categories for the selected month."' not in s:
+              s=s.replace(marker, block+marker)
+          p.write_text(s)
+
+          # LogSheet: make workout RPE 1–10 a single row; translate raw text through t().
+          p=Path('src/components/LogSheet.tsx'); s=p.read_text()
+          s=s.replace('className="mt-2 flex flex-wrap justify-center gap-1.5 px-1"','className="mt-2 flex flex-nowrap items-center justify-center gap-0.5 px-0"',1)
+          s=s.replace('className={`h-8 w-8 rounded-full text-[11px] font-semibold transition ${','className={`h-7 w-7 shrink-0 rounded-full text-[10px] font-semibold transition ${',1)
+          # Workout strings/chips and remaining obvious raw primitives.
+          for a,b in {
+            '>No</Chip>':'>{t("No")}</Chip>', '>Yes</Chip>':'>{t("Yes")}</Chip>',
+            '>{f}</Chip>':'>{t(f)}</Chip>',
+            '<p className="mt-1 text-[11px] text-muted-foreground">\n          Saved with this workout only — it doesn\'t change your daily weight.\n        </p>':'<p className="mt-1 text-[11px] text-muted-foreground">{t("Saved with this workout only — it doesn\'t change your daily weight.")}</p>',
+            '<p className="text-[11px] text-muted-foreground">{t("No tetany or pain entries logged for this day yet.")}</p>':'<p className="text-[11px] text-muted-foreground">{t("No tetany or pain entries logged for this day yet.")}</p>',
+            '>Add\n              </Button>':'>{t("Add")}\n              </Button>',
+            '<p className="text-xs uppercase tracking-wider text-muted-foreground">{today ? "Today" : date}</p>':'<p className="text-xs uppercase tracking-wider text-muted-foreground">{today ? t("Today") : date}</p>',
+            '<p className="text-xs text-muted-foreground">As needed{m.dose ? ` · ${m.dose}` : ""}</p>':'<p className="text-xs text-muted-foreground">{t("As needed")}{m.dose ? ` · ${m.dose}` : ""}</p>',
+            '<p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">\n              Saved weight measurements\n            </p>':'<p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t("Saved weight measurements")}</p>',
+            '>{item}\n            </Chip>':'>{t(item)}\n            </Chip>',
+            '>Clear postpartum symptoms</button>':'>{t("Clear postpartum symptoms")}</button>'
+          }.items(): s=s.replace(a,b)
+          p.write_text(s)
+
+          # Patterns: broaden dynamic Slovak renderer for screenshot leftovers.
+          p=Path('src/routes/patterns.tsx'); s=p.read_text()
+          anchor='    "logged days": "zaznamenaných dní",\n'
+          extra='''    "Selected association": "Vybraná súvislosť",\n    "Not enough data": "Nedostatok údajov",\n    "Days with trigger": "Dni so spúšťačom",\n    "Days without trigger": "Dni bez spúšťača",\n    "Save this comparison": "Uložiť toto porovnanie",\n    "Medication": "Liek",\n    "Pain": "Bolesť",\n    "Workouts": "Cvičenia",\n'''
+          if '"Selected association": "Vybraná súvislosť"' not in s: s=s.replace(anchor,anchor+extra)
+          s=s.replace('.replace(/^Pain: improved/, "Bolesť: zlepšenie")', '.replace(/^Pain: improved/, "Bolesť: zlepšenie").replace(/^Panic attacks:/, "Panické záchvaty:").replace(/^Medication adherence:/, "Dodržiavanie liekov:").replace(/^Workouts:/, "Cvičenia:")')
+          s=s.replace('.replace(/^(\\d+) logged days$/, "$1 zaznamenaných dní")', '.replace(/^(\\d+) logged days$/, "$1 zaznamenaných dní").replace(/^(\\d+) percentage points higher$/, "$1 percentuálnych bodov viac").replace(/^Based on (\\d+) days with and (\\d+) days without the trigger$/, "Na základe $1 dní so spúšťačom a $2 dní bez spúšťača")')
+          p.write_text(s)
+
+          # Couple: localize month and raw legend text.
+          p=Path('src/routes/couple.tsx'); s=p.read_text()
+          s=s.replace('function monthLabel(date: Date) {\n  return date.toLocaleDateString("en-US", {','function monthLabel(date: Date, locale = "en-US") {\n  return date.toLocaleDateString(locale, {')
+          s=s.replace('          You — solid','          {t("You — solid")}')
+          s=s.replace('Only the explicitly shared categories for the selected month.','{t("Only the explicitly shared categories for the selected month.")}')
+          s=s.replace('Daily average pain. Tap a bar to see its value. Solid bars are yours; striped bars belong to Partner.','{t("Daily average pain. Tap a bar to see its value. Solid bars are yours; striped bars belong to Partner.")}')
+          s=s.replace('Solid bars are yours. Striped bars belong to your partner.','{t("Solid bars are yours. Striped bars belong to your partner.")}')
+          p.write_text(s)
+      - run: bun run typecheck
+      - run: bun run lint
+      - run: bun test
+      - run: bun run build
+      - name: Commit source fixes and remove temporary workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/fix-slovak-leftovers.yml
+          git add src/components/LogSheet.tsx src/lib/i18n.ts src/routes/patterns.tsx src/routes/couple.tsx
+          git commit -m "Translate remaining Slovak UI and compact workout RPE"
+          git push
