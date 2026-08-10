@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2 } from "@/components/icons/BixboIcons";
 import { AppShell } from "@/components/AppShell";
 import { Ico } from "@/components/icons/BixboIcons";
 import { Button } from "@/components/ui/button";
@@ -1122,3 +1122,4 @@ function NotesSection({
     </section>
   );
 }
+
