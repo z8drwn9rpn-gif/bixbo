@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { MonthCalendar, monthLabel } from "@/components/MonthCalendar";
 import { LogSheet } from "@/components/LogSheet";
 import { QuickTags } from "@/components/QuickTags";
+import { useI18n } from "@/hooks/useI18n";
 import {
   useBixbo,
   EMPTY,
@@ -594,6 +595,7 @@ function VitalTrendPopup({
 }
 
 function HomePage() {
+  const { t } = useI18n();
   const { data, update, hydrated } = useBixbo();
   const view = hydrated ? data : EMPTY;
   const maleMode = String(view.settings.gender ?? "").trim().toLowerCase() === "male";
@@ -744,7 +746,7 @@ function HomePage() {
             className="flex min-w-[82px] flex-col items-end justify-center rounded-2xl px-2 py-1 transition hover:bg-tint"
             aria-label="Open today's summary"
           >
-            <span className="text-[10px] font-semibold leading-none text-muted-foreground">Today</span>
+            <span className="text-[10px] font-semibold leading-none text-muted-foreground">{t("Today")}</span>
             <span className="mt-1 flex items-center gap-1 whitespace-nowrap text-[11px] font-semibold leading-none text-foreground">
               <Ico name="flame" size={14} /> {todayPain != null ? todayPain.toFixed(1) : "—"}
               <span className="text-muted-foreground">·</span>
@@ -759,7 +761,7 @@ function HomePage() {
             title="Health"
           >
             <HeartIcon size={24} />
-            <span className="mt-0.5 text-[10px] font-semibold leading-none">Health</span>
+            <span className="mt-0.5 text-[10px] font-semibold leading-none">{t("Health")}</span>
           </Link>
         </div>
       }
@@ -854,7 +856,7 @@ function HomePage() {
                 </div>
               </div>
 
-              <span className="shrink-0 text-xs font-semibold text-primary">Open</span>
+              <span className="shrink-0 text-xs font-semibold text-primary">{t("Open")}</span>
             </div>
 
             {pregnancySummaryItems.length > 0 ? (
@@ -870,7 +872,7 @@ function HomePage() {
             ) : (
               <div className="mt-3 flex items-center gap-2 rounded-2xl bg-surface/70 px-3 py-2 text-xs text-muted-foreground ring-1 ring-border/40">
                 <Ico name="pregnancy" size={15} />
-                <span>Nothing logged today</span>
+                <span>{t("Nothing logged today")}</span>
               </div>
             )}
           </Link>
@@ -923,7 +925,7 @@ function HomePage() {
                   </div>
                 </div>
 
-                <span className="shrink-0 text-xs font-semibold text-primary">Open</span>
+                <span className="shrink-0 text-xs font-semibold text-primary">{t("Open")}</span>
               </div>
 
               {postpartumSummaryItems.length > 0 ? (
@@ -941,7 +943,7 @@ function HomePage() {
               ) : (
                 <div className="mt-3 flex items-center gap-2 rounded-2xl bg-surface/70 px-3 py-2 text-xs text-muted-foreground ring-1 ring-border/40">
                   <Ico name="baby" size={15} />
-                  <span>Nothing logged today</span>
+                  <span>{t("Nothing logged today")}</span>
                 </div>
               )}
             </Link>
@@ -1509,6 +1511,7 @@ function BirthControlSummaryCard({
   dateKey: string;
   onOpen: () => void;
 }) {
+  const { t } = useI18n();
   if (!dateKey || String(data.settings.gender ?? "").trim().toLowerCase() === "male") return null;
 
   const DROVELIS_START = "2026-04-22";
@@ -1556,7 +1559,7 @@ function BirthControlSummaryCard({
 
         <div className="min-w-0">
           <div className="flex items-baseline gap-2">
-            <p className="truncate font-serif text-base font-bold text-foreground">Birth control</p>
+            <p className="truncate font-serif text-base font-bold text-foreground">{t("Birth control")}</p>
             <span className="text-[10px] text-muted-foreground">Drovelis</span>
           </div>
 
@@ -2693,6 +2696,7 @@ function VitalTile({
 }
 
 function MedsProgress({ data }: { data: BixboData }) {
+  const { t } = useI18n();
   const k = todayKey();
   const scheduled = data.meds.filter((m) => !m.asNeeded);
   const total = scheduled.reduce((s, m) => s + m.times.length, 0);
@@ -2700,7 +2704,7 @@ function MedsProgress({ data }: { data: BixboData }) {
   return (
     <div className="flex items-center justify-between rounded-2xl bg-surface p-3 ring-1 ring-border">
       <div>
-        <p className="text-xs text-muted-foreground">Meds today</p>
+        <p className="text-xs text-muted-foreground">{t("Meds today")}</p>
         <p className="font-serif text-lg font-bold">
           {taken}/{total || 0}
         </p>
@@ -2747,6 +2751,7 @@ function SukSukPeriodChart({
   anchorKey: string;
   darkMode: boolean;
 }) {
+  const { t } = useI18n();
   const HAK_PURPLE = darkMode ? "#B6C28E" : "#647A32";
   const HAK_PURPLE_DARK = darkMode ? "#D9E3BA" : "#455A20";
   const HAK_PURPLE_SOFT = darkMode ? "#626944" : "#C5D1A0";
@@ -2960,7 +2965,7 @@ function SukSukPeriodChart({
       <div className="mt-3 border-t border-border/55 pt-3">
         <div className="grid grid-cols-3 divide-x divide-border/55">
           <div className="flex min-w-0 flex-col px-1.5">
-            <p className="text-center text-[11px] font-bold text-foreground">Week</p>
+            <p className="text-center text-[11px] font-bold text-foreground">{t("Week")}</p>
             <div className="mt-0.5 flex h-5 items-center justify-center gap-0.5">
               <button
                 type="button"
@@ -3004,7 +3009,7 @@ function SukSukPeriodChart({
           </div>
 
           <div className="flex min-w-0 flex-col px-1.5">
-            <p className="text-center text-[11px] font-bold text-foreground">Month</p>
+            <p className="text-center text-[11px] font-bold text-foreground">{t("Month")}</p>
             <div className="mt-0.5 flex h-5 items-center justify-center gap-0.5">
               <button
                 type="button"
@@ -3048,7 +3053,7 @@ function SukSukPeriodChart({
           </div>
 
           <div className="flex min-w-0 flex-col px-1.5">
-            <p className="text-center text-[11px] font-bold text-foreground">Year</p>
+            <p className="text-center text-[11px] font-bold text-foreground">{t("Year")}</p>
             <div className="mt-0.5 flex h-5 items-center justify-center gap-0.5">
               <button
                 type="button"
