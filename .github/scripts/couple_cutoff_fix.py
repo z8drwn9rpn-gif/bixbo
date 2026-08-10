@@ -3,34 +3,135 @@ from pathlib import Path
 p = Path('src/routes/couple.tsx')
 s = p.read_text()
 
-# Localize monthly range label using current UI language by moving display labels to localized values.
-s = s.replace('  const periodDisplayLabel = range.label;\n', '  const periodDisplayLabel = period === "M" ? selectedMonth.toLocaleDateString(language === "sk" ? "sk-SK" : "en-US", { month: "long", year: "numeric" }) : range.label;\n')
-# The previous replacement references selectedMonth before declaration, so reorder if needed.
-s = s.replace('  const periodDays = range.days;\n  const periodDisplayLabel = period === "M" ? selectedMonth.toLocaleDateString(language === "sk" ? "sk-SK" : "en-US", { month: "long", year: "numeric" }) : range.label;\n\n  const selectedMonth = useMemo(() => startOfMonth(anchor), [anchor]);\n', '  const periodDays = range.days;\n  const selectedMonth = useMemo(() => startOfMonth(anchor), [anchor]);\n  const periodDisplayLabel = period === "M" ? selectedMonth.toLocaleDateString(language === "sk" ? "sk-SK" : "en-US", { month: "long", year: "numeric" }) : range.label;\n\n')
-s = s.replace('  const painMonthLabel = painMonthRange.label;\n', '  const painMonthLabel = selectedMonth.toLocaleDateString(language === "sk" ? "sk-SK" : "en-US", { month: "long", year: "numeric" });\n')
+old = '''  const myPainAverage = average(myPain.map((pain) => pain.score));
 
-old = '''  const loggedComparisonDays = partner\n    ? periodDays.filter((day) => hasSymptoms(view.dayLogs[day]) || hasSymptoms(partner.dayLogs[day])).length\n    : 0;\n\n  const similarityScore = partner\n    ? calculateCoupleSimilarity({\n        mySymptomDays,\n        partnerSymptomDays,\n        loggedComparisonDays,\n        myPainAverage,\n        partnerPainAverage,\n        myPanicCount: myPanic.length,\n        partnerPanicCount: partnerPanic.length,\n        myTetanyCount: myTetany.length,\n        partnerTetanyCount: partnerTetany.length,\n      })\n    : 0;\n'''
-new = '''  const partnerComparisonDays = partner\n    ? periodDays.filter((day) => hasSymptoms(partner.dayLogs[day]))\n    : [];\n\n  const hasPartnerComparisonData = partnerComparisonDays.length > 0;\n\n  const loggedComparisonDays = partner && hasPartnerComparisonData\n    ? periodDays.filter((day) => hasSymptoms(view.dayLogs[day]) || hasSymptoms(partner.dayLogs[day])).length\n    : 0;\n\n  const similarityScore = partner && hasPartnerComparisonData\n    ? calculateCoupleSimilarity({\n        mySymptomDays,\n        partnerSymptomDays,\n        loggedComparisonDays,\n        myPainAverage,\n        partnerPainAverage,\n        myPanicCount: myPanic.length,\n        partnerPanicCount: partnerPanic.length,\n        myTetanyCount: myTetany.length,\n        partnerTetanyCount: partnerTetany.length,\n      })\n    : null;\n'''
+  const partnerPainAverage = average(partnerPain.map((pain) => pain.score));
+
+  const myPainDays = periodDays.filter((day) => (view.dayLogs[day]?.pain?.length ?? 0) > 0).length;
+
+  const partnerPainDays = partner ? periodDays.filter((day) => (partner.dayLogs[day]?.pain?.length ?? 0) > 0).length : 0;
+
+  const sharedSymptomDays = partner
+    ? periodDays.filter((day) => hasSymptoms(view.dayLogs[day]) && hasSymptoms(partner.dayLogs[day])).length
+    : 0;
+
+  const mySymptomDays = periodDays.filter((day) => hasSymptoms(view.dayLogs[day])).length;
+
+  const partnerSymptomDays = partner ? periodDays.filter((day) => hasSymptoms(partner.dayLogs[day])).length : 0;
+
+  const myTakenDoses = countTakenScheduledDoses(periodDays, view.meds, view.medLog);
+
+  const partnerTakenDoses = partner ? countTakenScheduledDoses(periodDays, partner.meds ?? [], partner.medLog ?? {}) : 0;
+
+  const partnerComparisonDays = partner
+    ? periodDays.filter((day) => hasSymptoms(partner.dayLogs[day]))
+    : [];
+
+  const hasPartnerComparisonData = partnerComparisonDays.length > 0;
+
+  const loggedComparisonDays = partner && hasPartnerComparisonData
+    ? periodDays.filter((day) => hasSymptoms(view.dayLogs[day]) || hasSymptoms(partner.dayLogs[day])).length
+    : 0;
+
+  const similarityScore = partner && hasPartnerComparisonData
+    ? calculateCoupleSimilarity({
+        mySymptomDays,
+        partnerSymptomDays,
+        loggedComparisonDays,
+        myPainAverage,
+        partnerPainAverage,
+        myPanicCount: myPanic.length,
+        partnerPanicCount: partnerPanic.length,
+        myTetanyCount: myTetany.length,
+        partnerTetanyCount: partnerTetany.length,
+      })
+    : null;
+'''
+new = '''  // Couple similarity starts only when the partner has their first comparable
+  // pain/panic/tetany log. Calendar days before that date must never dilute or
+  // penalize the comparison (for example 1–25 July when the partner starts on 26 July).
+  const partnerFirstComparisonDay = partner
+    ? (Object.keys(partner.dayLogs)
+        .filter((day) => hasSymptoms(partner.dayLogs[day]))
+        .sort()[0] ?? null)
+    : null;
+
+  const comparisonPeriodDays = partnerFirstComparisonDay
+    ? periodDays.filter((day) => day >= partnerFirstComparisonDay)
+    : [];
+
+  const hasPartnerComparisonData = partner
+    ? comparisonPeriodDays.some((day) => hasSymptoms(partner.dayLogs[day]))
+    : false;
+
+  const myPainAverage = average(
+    comparisonPeriodDays.flatMap((day) => view.dayLogs[day]?.pain ?? []).map((pain) => pain.score),
+  );
+
+  const partnerPainAverage = partner
+    ? average(comparisonPeriodDays.flatMap((day) => partner.dayLogs[day]?.pain ?? []).map((pain) => pain.score))
+    : null;
+
+  const myPainDays = comparisonPeriodDays.filter((day) => (view.dayLogs[day]?.pain?.length ?? 0) > 0).length;
+
+  const partnerPainDays = partner
+    ? comparisonPeriodDays.filter((day) => (partner.dayLogs[day]?.pain?.length ?? 0) > 0).length
+    : 0;
+
+  const sharedSymptomDays = partner
+    ? comparisonPeriodDays.filter((day) => hasSymptoms(view.dayLogs[day]) && hasSymptoms(partner.dayLogs[day])).length
+    : 0;
+
+  const mySymptomDays = comparisonPeriodDays.filter((day) => hasSymptoms(view.dayLogs[day])).length;
+
+  const partnerSymptomDays = partner
+    ? comparisonPeriodDays.filter((day) => hasSymptoms(partner.dayLogs[day])).length
+    : 0;
+
+  const myPanicCount = comparisonPeriodDays.reduce(
+    (sum, day) => sum + (view.dayLogs[day]?.panic?.length ?? 0),
+    0,
+  );
+  const partnerPanicCount = partner
+    ? comparisonPeriodDays.reduce((sum, day) => sum + (partner.dayLogs[day]?.panic?.length ?? 0), 0)
+    : 0;
+  const myTetanyCount = comparisonPeriodDays.reduce(
+    (sum, day) => sum + (view.dayLogs[day]?.tetany?.length ?? 0),
+    0,
+  );
+  const partnerTetanyCount = partner
+    ? comparisonPeriodDays.reduce((sum, day) => sum + (partner.dayLogs[day]?.tetany?.length ?? 0), 0)
+    : 0;
+
+  const myTakenDoses = countTakenScheduledDoses(periodDays, view.meds, view.medLog);
+
+  const partnerTakenDoses = partner ? countTakenScheduledDoses(periodDays, partner.meds ?? [], partner.medLog ?? {}) : 0;
+
+  const loggedComparisonDays = partner && hasPartnerComparisonData
+    ? comparisonPeriodDays.filter((day) => hasSymptoms(view.dayLogs[day]) || hasSymptoms(partner.dayLogs[day])).length
+    : 0;
+
+  const similarityScore = partner && hasPartnerComparisonData
+    ? calculateCoupleSimilarity({
+        mySymptomDays,
+        partnerSymptomDays,
+        loggedComparisonDays,
+        myPainAverage,
+        partnerPainAverage,
+        myPanicCount,
+        partnerPanicCount,
+        myTetanyCount,
+        partnerTetanyCount,
+      })
+    : null;
+'''
 if old not in s:
-    raise RuntimeError('similarity block not found')
+    raise RuntimeError('current similarity block not found')
 s = s.replace(old, new, 1)
 
-s = s.replace('function SimilarityCard({ score, partnerName }: { score: number; partnerName: string }) {', 'function SimilarityCard({ score, partnerName }: { score: number | null; partnerName: string }) {')
-s = s.replace('  const safeScore = clampPercent(score);', '  const safeScore = score == null ? 0 : clampPercent(score);', 1)
-s = s.replace('<p className="text-2xl font-bold tabular-nums">{safeScore.toFixed(0)}%</p>', '<p className="text-2xl font-bold tabular-nums">{score == null ? "—" : `${safeScore.toFixed(0)}%`}</p>', 1)
-s = s.replace('{t("Based only on shared pain, panic and tetany data during the selected month.")}', '{score == null ? t("No partner comparison data in this month.") : t("Based only on shared pain, panic and tetany data during the selected month.")}', 1)
+s = s.replace('value={`${myPanic.length + partnerPanic.length}`}', 'value={`${myPanicCount + partnerPanicCount}`}')
+s = s.replace('detail={`${t("You")} ${myPanic.length} · ${t(partnerName)} ${partnerPanic.length}`}', 'detail={`${t("You")} ${myPanicCount} · ${t(partnerName)} ${partnerPanicCount}`}')
+s = s.replace('value={`${myTetany.length + partnerTetany.length}`}', 'value={`${myTetanyCount + partnerTetanyCount}`}')
+s = s.replace('detail={`${t("You")} ${myTetany.length} · ${t(partnerName)} ${partnerTetany.length}`}', 'detail={`${t("You")} ${myTetanyCount} · ${t(partnerName)} ${partnerTetanyCount}`}')
 
-# Hide calculated overview stats when the partner has no comparable logs in the selected month.
-s = s.replace('{activeTab === "overview" ? (\n              <div className="grid grid-cols-2 gap-2">', '{activeTab === "overview" && hasPartnerComparisonData ? (\n              <div className="grid grid-cols-2 gap-2">', 1)
-
-p.write_text(s)
-
-# Add Slovak translation key if absent.
-p = Path('src/lib/i18n.ts')
-s = p.read_text()
-start = s.find('const SK:')
-end = s.find('\n};\n\nconst TRANSLATIONS', start)
-key = 'No partner comparison data in this month.'
-if key not in s[start:end]:
-    s = s[:end] + '\n  "No partner comparison data in this month.": "V tomto mesiaci partner nemá žiadne porovnateľné záznamy.",' + s[end:]
 p.write_text(s)
