@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { postpartumProgress } from "@/lib/health";
-import { ArrowLeft, Plus, X, Pencil, ChevronRight, Check } from "lucide-react";
+import { ArrowLeft, Plus, X, Pencil, ChevronRight, Check } from "@/components/icons/BixboIcons";
 import { AppShell } from "@/components/AppShell";
 import {
   BabyIcon,
@@ -362,13 +362,10 @@ type HealthView =
   | "export"
   | "language"
   | "appearance"
-  | "notifications"
   | "privacy"
   | "backup"
   | "tracking"
   | "reminders"
-  | "units"
-  | "data"
   | "about";
 
 function HubRow({
@@ -460,7 +457,7 @@ function HealthHub({ onHome, onOpen }: { onHome: () => void; onOpen: (view: Heal
           <HubRow
             icon={<NoteIcon size={22} />}
             title="Export"
-            subtitle="Reports for your doctor — coming later"
+            subtitle="Export health data as JSON or CSV"
             onClick={() => onOpen("export")}
           />
         </section>
@@ -1233,24 +1230,6 @@ function ProfilePage() {
           </p>
         </Section>
 
-        <Section
-          title="Diagnostics"
-          subtitle="Optional technical data that can help improve app stability."
-        >
-          <ToggleRow
-            label="Anonymous analytics"
-            checked={privacyPrefs.analytics}
-            onChange={(value) => setPrivacyPrefs((current) => ({ ...current, analytics: value }))}
-          />
-          <ToggleRow
-            label="Crash reports"
-            checked={privacyPrefs.crashReports}
-            onChange={(value) => setPrivacyPrefs((current) => ({ ...current, crashReports: value }))}
-          />
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            Crash reports contain technical error information when the app fails. They are not your health diary entries.
-          </p>
-        </Section>
       </HealthSubpage>
     );
   }
@@ -1477,30 +1456,6 @@ function ProfilePage() {
           </div>
         </Section>
 
-        <Section title="Temperature unit">
-          <div className="grid grid-cols-2 gap-2">
-            {(
-              [
-                { value: "c", label: "Celsius", symbol: "°C" },
-                { value: "f", label: "Fahrenheit", symbol: "°F" },
-              ] as const
-            ).map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => setUnits((current) => ({ ...current, temperature: option.value }))}
-                className={`min-h-14 rounded-xl border p-3 ${
-                  units.temperature === option.value
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border bg-tint"
-                }`}
-              >
-                <span className="block text-sm font-semibold">{option.label}</span>
-                <span className="text-xs opacity-75">{option.symbol}</span>
-              </button>
-            ))}
-          </div>
-        </Section>
         <Section title="Measurement units" subtitle="Choose how measurements are displayed across BIXBO.">
           <div className="space-y-4">
             <div>
@@ -1728,21 +1683,45 @@ function ProfilePage() {
   }
 
   if (healthView === "export") {
+    const exportCsv = () => {
+      const escape = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+      const rows: string[][] = [["date", "pain_entries", "panic_episodes", "tetany_episodes", "bowel_entries", "sleep_hours", "temperature", "weight", "note"]];
+      const dates = Array.from(new Set([...Object.keys(view.dayLogs), ...Object.keys(view.dayNotes)])).sort();
+      dates.forEach((date) => {
+        const day = view.dayLogs[date] ?? {};
+        const notes = (view.dayNotes[date] ?? []).map((note) => typeof note === "string" ? note : note.text).join(" | ");
+        rows.push([
+          date,
+          String(day.pain?.length ?? 0),
+          String(day.panic?.length ?? 0),
+          String(day.tetany?.length ?? 0),
+          String(day.bowel?.length ?? 0),
+          day.sleepHours == null ? "" : String(day.sleepHours),
+          day.temperature == null ? "" : String(day.temperature),
+          day.weight == null ? "" : String(day.weight),
+          notes,
+        ]);
+      });
+      const csv = rows.map((row) => row.map(escape).join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `bixbo-health-${todayKey()}.csv`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    };
+
     return (
       <HealthSubpage title="Export" onBack={() => setHealthView("hub")}>
-        <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
-          <div className="flex items-start gap-3">
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-tint ring-1 ring-border/50">
-              <NoteIcon size={22} />
-            </span>
-            <div>
-              <p className="text-sm font-semibold text-foreground">Health reports</p>
-              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                PDF and CSV export will be completed later.
-              </p>
-            </div>
-          </div>
-        </section>
+        <Section title="Health data export" subtitle="Download a portable copy without changing any saved data.">
+          <button type="button" onClick={exportJson} className="min-h-11 w-full rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground">
+            Export complete JSON backup
+          </button>
+          <button type="button" onClick={exportCsv} className="min-h-11 w-full rounded-xl border border-input bg-background px-4 text-sm font-semibold text-foreground">
+            Export daily health CSV
+          </button>
+        </Section>
       </HealthSubpage>
     );
   }
