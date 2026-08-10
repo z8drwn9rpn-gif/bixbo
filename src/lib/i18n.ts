@@ -918,6 +918,8 @@ const SK: Record<string, string> = {
   "Bump": "Bruško",
   "Bump full size": "Bruško v plnej veľkosti",
 
+  "Placebo": "Placebo",
+  "Active": "Aktívna",
 };
 
 const TRANSLATIONS: Record<AppLanguage, Record<string, string>> = { en: EN, sk: SK };

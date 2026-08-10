@@ -1578,7 +1578,7 @@ function BirthControlSummaryCard({
 
             <div className="flex items-baseline gap-1">
               <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                {isPlacebo ? "Placebo" : "Active"}
+                {isPlacebo ? t("Placebo") : t("Active")}
               </span>
               <span className="text-xs font-bold text-primary">
                 {isPlacebo ? `${packDay - ACTIVE_DAYS}/4` : `${packDay}/24`}
@@ -1615,6 +1615,7 @@ function BirthControlOverlay({
   onAnchorChange: (date: Date) => void;
   onClose: () => void;
 }) {
+  const { t } = useI18n();
   const overlayRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -1825,7 +1826,7 @@ function BirthControlOverlay({
 
           <div className="min-w-0 flex-1 px-2 text-center">
             <h1 className="whitespace-nowrap font-serif text-[1.2rem] font-bold leading-tight text-foreground">
-              Birth control overview
+              {t("Birth control overview")}
             </h1>
             <p className="mt-1 text-[10px] leading-none text-muted-foreground">Drovelis</p>
           </div>
@@ -3869,6 +3870,7 @@ const stripEmoji = (value: string) =>
   value.replace(/^[\p{Extended_Pictographic}\u200d\ufe0f\p{Emoji_Modifier}]+\s*/u, "").trim();
 
 function ShareDayButton({ date, view }: { date: string; view: BixboData }) {
+  const { t, language } = useI18n();
   const flowLabel = (level?: string | null): string => {
     switch (level) {
       case "spotting":
@@ -3888,7 +3890,7 @@ function ShareDayButton({ date, view }: { date: string; view: BixboData }) {
 
   const share = async () => {
     const log = view.dayLogs[date] ?? {};
-    const dateLabel = fromKey(date).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+    const dateLabel = fromKey(date).toLocaleDateString(language === "sk" ? "sk-SK" : "en-GB", { weekday: "long", day: "numeric", month: "long" });
     const lines: string[] = [`BIXBO — ${dateLabel}`, ""];
 
     if (log.pain?.length) {
