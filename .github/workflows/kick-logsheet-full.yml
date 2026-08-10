@@ -1,0 +1,34 @@
+name: Kick full LogSheet Slovak
+on:
+  push:
+    paths:
+      - .github/workflows/kick-logsheet-full.yml
+jobs:
+  kick:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare full translation patch
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('src/lib/i18n.ts')
+          s=p.read_text()
+          if '// const sk compatibility marker' not in s:
+              s=s.replace('const SK: Record<string, string> = {','// const sk compatibility marker\nconst SK: Record<string, string> = {',1)
+              p.write_text(s)
+          w=Path('.github/workflows/fix-logsheet-all-sk.yml')
+          x=w.read_text()
+          if not x.endswith('\n# rerun full translation\n'):
+              w.write_text(x+'\n# rerun full translation\n')
+          PY
+      - name: Commit trigger
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/lib/i18n.ts .github/workflows/fix-logsheet-all-sk.yml
+          git rm .github/workflows/kick-logsheet-full.yml
+          git commit -m "Trigger full LogSheet Slovak pass"
+          git push
