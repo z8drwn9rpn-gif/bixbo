@@ -340,6 +340,7 @@ function PhaseBarChart({
   unit?: string;
   decimals?: number;
 }) {
+  const { t } = useI18n();
   const hasData = bars.some((bar) => bar.value != null);
 
   return (
@@ -626,6 +627,7 @@ function SummaryPanel({
   items: SummaryItem[];
   confidence?: { level: ConfidenceLevel; detail: string };
 }) {
+  const { t } = useI18n();
   return (
     <div className="mt-4 rounded-3xl bg-background p-4 ring-1 ring-border">
       <h3 className="text-sm font-semibold text-foreground">{t(title)}</h3>
