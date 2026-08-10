@@ -764,7 +764,7 @@ function HomePage() {
         </div>
       }
     >
-      <div className="lg:mx-auto lg:grid lg:w-full lg:max-w-[1420px] lg:grid-cols-[minmax(0,1.78fr)_minmax(320px,1fr)] lg:items-start lg:gap-5 lg:px-0 xl:grid-cols-[minmax(0,1.9fr)_minmax(340px,1fr)] xl:gap-6">
+      <div className="lg:mx-auto lg:grid lg:w-full lg:max-w-[1480px] lg:grid-cols-[minmax(0,1.62fr)_minmax(340px,0.95fr)] lg:items-start lg:gap-4 lg:px-0 xl:grid-cols-[minmax(0,1.72fr)_minmax(380px,1fr)] xl:gap-5">
         <div className="min-w-0 lg:flex lg:flex-col">
       <div className="px-5 pt-0.5 lg:order-1 lg:px-1">
         <div className="flex items-center justify-between">
@@ -1006,7 +1006,7 @@ function HomePage() {
       </div>
 
       {/* Quick log */}
-      <div className="px-5 lg:order-2 lg:mt-3 lg:px-1 [&_p.text-\[11px\].uppercase]:min-w-0 [&_p.text-\[11px\].uppercase]:flex-1 [&_p.text-\[11px\].uppercase]:truncate [&_p.text-\[11px\].uppercase]:text-[10px] [&_.mt-1.flex.flex-wrap.gap-1]:hidden">
+      <div className="px-5 lg:order-2 lg:mt-2 lg:px-1 [&_p.text-\[11px\].uppercase]:min-w-0 [&_p.text-\[11px\].uppercase]:flex-1 [&_p.text-\[11px\].uppercase]:truncate [&_p.text-\[11px\].uppercase]:text-[10px] [&_.mt-1.flex.flex-wrap.gap-1]:hidden">
         <QuickTags
           data={view}
           update={update}
