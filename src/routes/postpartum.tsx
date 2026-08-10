@@ -358,7 +358,7 @@ function SetupForm({
           className="mt-1"
           value={pp.babyName ?? ""}
           onChange={(e) => updatePP((p) => ({ ...p, babyName: e.target.value }))}
-          placeholder="Optional"
+          placeholder={t("Optional")}
         />
       </div>
       <div>
@@ -389,7 +389,7 @@ function SetupForm({
           onChange={(e) =>
             updatePP((p) => ({ ...p, babyBirthWeightKg: e.target.value ? Number(e.target.value) : undefined }))
           }
-          placeholder="e.g. 3.4"
+          placeholder={t("e.g. 3.4")}
         />
       </div>
       <div>
@@ -621,7 +621,7 @@ function MoodSection({
           onKeyDown={(e) => {
             if (e.key === "Enter") addCustom();
           }}
-          placeholder="Add your own..."
+          placeholder={t("Add your own...")}
         />
         <Button size="sm" onClick={addCustom}>
           <Plus className="h-3.5 w-3.5" />
@@ -765,7 +765,7 @@ function FeedingSection({
         <div className="mt-2 flex flex-wrap items-end gap-2">
           <Input
             type="number"
-            placeholder="Minutes"
+            placeholder={t("Minutes")}
             className="w-24"
             value={bfMin}
             onChange={(e) => setBfMin(e.target.value)}
@@ -795,7 +795,7 @@ function FeedingSection({
               setBfMin("");
             }}
           >
-            <Plus className="h-3.5 w-3.5" /> Add
+            <Plus className="h-3.5 w-3.5" /> {t("Add")}
           </Button>
         </div>
         <ul className="mt-2 space-y-1">
@@ -805,7 +805,7 @@ function FeedingSection({
                 {x.time} · {x.minutes ?? "?"} min · {x.side}
               </span>
               <button
-                aria-label="Delete breastfeeding entry"
+                aria-label={t("Delete breastfeeding entry")}
                 onClick={() =>
                   updateLog((l) => ({ ...l, breastfeeding: (l.breastfeeding ?? []).filter((y) => y.id !== x.id) }))
                 }
@@ -822,14 +822,14 @@ function FeedingSection({
         <div className="mt-2 flex flex-wrap items-end gap-2">
           <Input
             type="number"
-            placeholder="ml"
+            placeholder={t("ml")}
             className="w-20"
             value={pumpMl}
             onChange={(e) => setPumpMl(e.target.value)}
           />
           <Input
             type="number"
-            placeholder="Minutes"
+            placeholder={t("Minutes")}
             className="w-24"
             value={pumpMin}
             onChange={(e) => setPumpMin(e.target.value)}
@@ -853,7 +853,7 @@ function FeedingSection({
               setPumpMin("");
             }}
           >
-            <Plus className="h-3.5 w-3.5" /> Add
+            <Plus className="h-3.5 w-3.5" /> {t("Add")}
           </Button>
         </div>
         <ul className="mt-2 space-y-1">
@@ -863,7 +863,7 @@ function FeedingSection({
                 {x.time} · {x.ml ?? "?"} ml · {x.minutes ?? "?"} min
               </span>
               <button
-                aria-label="Delete pumping entry"
+                aria-label={t("Delete pumping entry")}
                 onClick={() => updateLog((l) => ({ ...l, pumping: (l.pumping ?? []).filter((y) => y.id !== x.id) }))}
               >
                 <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
@@ -878,7 +878,7 @@ function FeedingSection({
         <div className="mt-2 flex flex-wrap items-end gap-2">
           <Input
             type="number"
-            placeholder="ml"
+            placeholder={t("ml")}
             className="w-20"
             value={bottleMl}
             onChange={(e) => setBottleMl(e.target.value)}
@@ -896,7 +896,7 @@ function FeedingSection({
               setBottleMl("");
             }}
           >
-            <Plus className="h-3.5 w-3.5" /> Add
+            <Plus className="h-3.5 w-3.5" /> {t("Add")}
           </Button>
         </div>
         <ul className="mt-2 space-y-1">
@@ -906,7 +906,7 @@ function FeedingSection({
                 {x.time} · {x.ml ?? "?"} ml
               </span>
               <button
-                aria-label="Delete bottle entry"
+                aria-label={t("Delete bottle entry")}
                 onClick={() => updateLog((l) => ({ ...l, bottle: (l.bottle ?? []).filter((y) => y.id !== x.id) }))}
               >
                 <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
@@ -956,7 +956,7 @@ function DiaperSection({
               {x.time} · {x.kind}
             </span>
             <button
-              aria-label="Delete diaper entry"
+              aria-label={t("Delete diaper entry")}
               onClick={() => updateLog((l) => ({ ...l, diapers: (l.diapers ?? []).filter((y) => y.id !== x.id) }))}
             >
               <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
@@ -1006,7 +1006,7 @@ function VisitsSection({
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium">{t("Doctor visits")}</p>
         <Button size="sm" onClick={openNew}>
-          <Plus className="h-3.5 w-3.5" /> Add
+          <Plus className="h-3.5 w-3.5" /> {t("Add")}
         </Button>
       </div>
 
@@ -1041,6 +1041,7 @@ function VisitsSection({
 }
 
 function VisitRow({ v, onEdit, onDelete }: { v: PregnancyAppointment; onEdit: () => void; onDelete: () => void }) {
+  const { t } = useI18n();
   return (
     <li className="flex items-center justify-between rounded-lg bg-tint px-3 py-2 text-xs">
       <button className="min-h-11 flex-1 text-left" onClick={onEdit}>
@@ -1048,7 +1049,7 @@ function VisitRow({ v, onEdit, onDelete }: { v: PregnancyAppointment; onEdit: ()
         {v.time ? ` ${v.time}` : ""}
         {v.doctor ? ` · ${v.doctor}` : ""}
       </button>
-      <button aria-label="Delete visit" onClick={onDelete}>
+      <button aria-label={t("Delete visit")} onClick={onDelete}>
         <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
       </button>
     </li>
@@ -1096,10 +1097,10 @@ function VisitForm({
             })
           }
         >
-          Save
+          {t("Save")}
         </Button>
         <Button size="sm" variant="outline" onClick={onCancel}>
-          Cancel
+          {t("Cancel")}
         </Button>
       </div>
     </div>
@@ -1120,15 +1121,15 @@ function NotesSection({
         <Ico name="pill" size={20} /> {t("Medication & notes")}
       </p>
       <p className="mt-1 text-xs text-muted-foreground">
-        Track your postpartum vitamins or medications in{" "}
+        {t("Track your postpartum vitamins or medications in")}{" "}
         <Link to="/meds" className="underline">
-          Medications
+          {t("Medications")}
         </Link>
         .
       </p>
       <Textarea
         className="mt-3"
-        placeholder="How are you feeling today? Anything to remember..."
+        placeholder={t("How are you feeling today? Anything to remember...")}
         value={log.note ?? ""}
         onChange={(e) => updateLog((l) => ({ ...l, note: e.target.value }))}
       />
