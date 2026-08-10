@@ -3,6 +3,7 @@ import { useI18n } from "@/hooks/useI18n";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Ico, IcoText } from "@/components/icons/BixboIcons";
 import { POSTPARTUM_SYMPTOMS } from "@/lib/health";
+import { getRegistryFeature, isRegistrySurfaceEnabled, type RegistryFeatureId } from "@/lib/appRegistry";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -214,11 +215,18 @@ export function LogSheet({
 
   const orderedCats = useMemo(() => {
     const saved = data.settings.logOrder ?? [];
-    const source = CATEGORIES.filter((category) => {
-      if (category.id === "period" && cycleTrackingHidden) return false;
-      if (category.id === "postpartum" && !postpartumActive) return false;
-      return true;
-    });
+    const source = CATEGORIES
+      .map((category) => {
+        const feature = getRegistryFeature(data, category.id as RegistryFeatureId);
+        return { ...category, label: feature.label, emoji: feature.icon, registryOrder: feature.order };
+      })
+      .filter((category) => {
+        if (!isRegistrySurfaceEnabled(data, category.id as RegistryFeatureId, "log")) return false;
+        if (category.id === "period" && cycleTrackingHidden) return false;
+        if (category.id === "postpartum" && !postpartumActive) return false;
+        return true;
+      })
+      .sort((a, b) => a.registryOrder - b.registryOrder);
     const byId = new Map(source.map((c) => [c.id, c]));
     const seen = new Set<string>();
     const out: typeof CATEGORIES = [];
@@ -231,7 +239,7 @@ export function LogSheet({
     }
     for (const c of source) if (!seen.has(c.id)) out.push(c);
     return out;
-  }, [cycleTrackingHidden, data.settings.logOrder, postpartumActive]);
+  }, [cycleTrackingHidden, data, postpartumActive]);
 
   const [draggingCat, setDraggingCat] = useState<Category | null>(null);
   const draggingCatRef = useRef<Category | null>(null);

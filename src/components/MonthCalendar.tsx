@@ -1,6 +1,7 @@
 import { Ico, IcoText } from "@/components/icons/BixboIcons";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "@/hooks/useI18n";
+import { isRegistrySurfaceEnabled } from "@/lib/appRegistry";
 import {
   toKey,
   periodLabel,
@@ -75,8 +76,9 @@ function periodColorVar(level?: PeriodLevel) {
       return null;
   }
 }
-function iconsFor(log: DayLog | undefined): string[] {
-  // Month calendar shows only ŠukŠuk.
+function iconsFor(log: DayLog | undefined, data: BixboData): string[] {
+  // Month calendar shows only ŠukŠuk, controlled by the registry.
+  if (!isRegistrySurfaceEnabled(data, "sex", "calendar")) return [];
   return log?.sex?.some((e) => isIntercourseKind(e.kind)) ? ["❤️"] : [];
 }
 
@@ -226,10 +228,10 @@ export function MonthCalendar({
       }
 
       meta.set(cell.key, {
-        periodColor: cycleTrackingHidden ? null : (periodColorVar(periodLevel) ?? actualPeriodColor),
-        pAvg: avgDayPain(log) ?? null,
+        periodColor: cycleTrackingHidden || !isRegistrySurfaceEnabled(data, "period", "calendar") ? null : (periodColorVar(periodLevel) ?? actualPeriodColor),
+        pAvg: isRegistrySurfaceEnabled(data, "pain", "calendar") ? (avgDayPain(log) ?? null) : null,
         predictedPeriod: predictedKeys.has(cell.key),
-        icons: iconsFor(log),
+        icons: iconsFor(log, data),
       });
     }
 

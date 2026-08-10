@@ -472,10 +472,12 @@ function HealthHub({
   onHome,
   onOpen,
   onNotifications,
+  onAdmin,
 }: {
   onHome: () => void;
   onOpen: (view: HealthView) => void;
   onNotifications: () => void;
+  onAdmin: () => void;
 }) {
   const { t } = useI18n();
 
@@ -582,6 +584,14 @@ function HealthHub({
               title="Notifications"
               subtitle="All notification and reminder settings in one place"
               onClick={onNotifications}
+            />
+            <div className="ml-[4.5rem] border-t border-border/60" />
+
+            <HubRow
+              icon={<TaskIcon size={22} />}
+              title="Admin mode"
+              subtitle="Configure logs, calendar, Quick Log and Insights without editing code"
+              onClick={onAdmin}
             />
             <div className="ml-[4.5rem] border-t border-border/60" />
 
@@ -1033,6 +1043,7 @@ function ProfilePage() {
           setHealthView(next);
         }}
         onNotifications={() => navigate({ to: "/notifications" as never })}
+        onAdmin={() => navigate({ to: "/admin" as never })}
       />
     );
   }

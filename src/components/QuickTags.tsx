@@ -1,5 +1,6 @@
 import { Ico } from "@/components/icons/BixboIcons";
 import { POSTPARTUM_SYMPTOMS } from "@/lib/health";
+import { isRegistrySurfaceEnabled, type RegistryFeatureId } from "@/lib/appRegistry";
 import { useEffect, useRef, useState } from "react";
 import { useI18n } from "@/hooks/useI18n";
 import { Check, Plus, X, Pencil, ChevronLeft, ChevronRight } from "@/components/icons/BixboIcons";
@@ -438,6 +439,21 @@ export function QuickTags({
   const draggingRef = useRef(false);
 
   const cycleTrackingHidden = isCycleTrackingHidden(data);
+  const registryIdForTag = (tag: Tag): RegistryFeatureId | null => {
+    if (tag.cat === "postpartum") return "postpartum";
+    if (tag.cat === "thermo") return "heat";
+    if (tag.cat === "hotFlashes") return "hotFlashes";
+    if (tag.cat === "histamine") return "histamine";
+    if (tag.cat === "headache") return "headache";
+    if (["pain", "tetany", "panic", "sex", "food", "meds", "workout", "period", "bowel", "sleep"].includes(tag.cat)) {
+      return tag.cat as RegistryFeatureId;
+    }
+    return null;
+  };
+  const registryAllowsQuickTag = (tag: Tag) => {
+    const id = registryIdForTag(tag);
+    return id ? isRegistrySurfaceEnabled(data, id, "quickLog") : true;
+  };
 
   const postpartumTag: Tag | null = data.postpartum?.active
     ? {
@@ -455,7 +471,7 @@ export function QuickTags({
     ...(data.settings.customQuickTags ?? [])
       .filter((tag) => !(tag.cat === "period" && cycleTrackingHidden))
       .map((tag) => customToTag(tag, data)),
-  ];
+  ].filter(registryAllowsQuickTag);
 
   const order = data.settings.quickTagOrder ?? [];
   const hidden = new Set(data.settings.hiddenQuickTags ?? []);

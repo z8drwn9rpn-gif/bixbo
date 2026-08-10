@@ -7,6 +7,7 @@ import { ChartCard, CHART_GRID, useDismissTapTooltip } from "@/components/charts
 import { Ico } from "@/components/icons/BixboIcons";
 import { PatternsContent } from "./patterns";
 import { useI18n } from "@/hooks/useI18n";
+import { isRegistrySurfaceEnabled } from "@/lib/appRegistry";
 import {
   useBixbo,
   EMPTY,
@@ -1853,8 +1854,18 @@ function YearHealthHeatmap({
   onShiftPeriod: (period: HeatmapPeriod, delta: -1 | 1) => void;
 }) {
   const { t } = useI18n();
+  const availableHeatmapOptions = useMemo(
+    () => HEATMAP_OPTIONS.filter((option) => isRegistrySurfaceEnabled(data, option.id, "heatmap")),
+    [data],
+  );
   const [metric, setMetric] = useState<HeatmapMetric>("pain");
   const [active, setActive] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (availableHeatmapOptions.some((option) => option.id === metric)) return;
+    const fallback = availableHeatmapOptions[0]?.id;
+    if (fallback) setMetric(fallback);
+  }, [availableHeatmapOptions, metric]);
 
   // Heatmap always opens on Year, exactly as requested.
   const [heatmapPeriod, setHeatmapPeriod] = useState<HeatmapPeriod>("Y");
@@ -2280,7 +2291,7 @@ function YearHealthHeatmap({
       <p className="mt-1 text-xs text-muted-foreground"><TrText value="Choose a metric, then tap a coloured day for its saved average/details." /></p>
 
       <div className="mt-2.5 flex gap-1 overflow-x-auto pb-0.5">
-        {HEATMAP_OPTIONS.map((option) => (
+        {availableHeatmapOptions.map((option) => (
           <button
             key={option.id}
             type="button"

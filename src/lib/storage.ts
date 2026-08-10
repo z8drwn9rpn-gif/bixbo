@@ -695,6 +695,8 @@ export interface Settings {
    * missing values fall back to DEFAULT_NOTIF_PREFS in src/lib/notifications.ts.
    */
   notif?: NotificationPrefs;
+  /** Admin-editable registry overrides. Stable feature IDs protect historical data. */
+  adminConfig?: import("./appRegistry").AdminConfig;
 }
 
 /** Per-category reminder preferences. All fields optional for safe migration. */
