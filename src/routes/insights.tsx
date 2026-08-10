@@ -1219,7 +1219,7 @@ function MedsAdherence({
                                   onClick={() => toggleDose(day.date, med.key)}
                                   className="text-left hover:underline"
                                   style={{ color: "#28A85B" }}
-                                  title="Tap to uncheck"
+                                  title={t("Tap to uncheck")}
                                 >
                                   Taken · {med.time} — {med.medName}
                                   <span className="text-[10px] text-muted-foreground"> · {t("tap to uncheck")}</span>
@@ -2161,12 +2161,12 @@ function YearHealthHeatmap({
   })();
 
   return (
-    <ChartCard title="Heatmap">
+    <ChartCard title={t("Heatmap")}>
       <div className="-mt-6 mb-1 flex flex-col items-end gap-1">
         <div
           className="grid h-8 w-[210px] grid-cols-3 rounded-xl bg-tint p-0.5 ring-1 ring-border/60"
           role="group"
-          aria-label="Heatmap period"
+          aria-label={t("Heatmap period")}
         >
           {([
             ["7D", "Week"],
