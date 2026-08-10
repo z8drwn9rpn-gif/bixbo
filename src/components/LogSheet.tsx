@@ -276,8 +276,8 @@ export function LogSheet({
 
                 <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
                   <div
-                    className="absolute left-1/2 h-[338px] w-[390px] max-w-[100vw] -translate-x-1/2"
-                    style={{ bottom: "calc(max(8px, env(safe-area-inset-bottom)) + 30px)" }}
+                    className="absolute left-1/2 h-[310px] w-[390px] max-w-[100vw] -translate-x-1/2"
+                    style={{ bottom: "calc(max(8px, env(safe-area-inset-bottom)) + 26px)" }}
                   >
                     {/*
                       Reference layout:
@@ -301,25 +301,26 @@ export function LogSheet({
                       const radialCats = orderedCats.slice(0, 12);
 
                       const slots = [
-                        // 12 equally spaced positions on one compact upper half-ellipse.
-                        // Because positions are geometric (not tied to category names),
-                        // direct drag reorder keeps the launcher a true semicircle.
-                        { x: -124, up: 71, labelSide: "left" as const, labelW: 58 },
-                        { x: -115, up: 132, labelSide: "left" as const, labelW: 58 },
-                        { x: -98, up: 186, labelSide: "left" as const, labelW: 58 },
-                        { x: -75, up: 229, labelSide: "left" as const, labelW: 64 },
-                        { x: -47, up: 260, labelSide: "top" as const, labelW: 78 },
-                        { x: -16, up: 276, labelSide: "top" as const, labelW: 78 },
-                        { x: 16, up: 276, labelSide: "top" as const, labelW: 78 },
-                        { x: 47, up: 260, labelSide: "top" as const, labelW: 78 },
-                        { x: 75, up: 229, labelSide: "right" as const, labelW: 64 },
-                        { x: 98, up: 186, labelSide: "right" as const, labelW: 58 },
-                        { x: 115, up: 132, labelSide: "right" as const, labelW: 58 },
-                        { x: 124, up: 71, labelSide: "right" as const, labelW: 58 },
+                        // Fixed compact semicircle — spaced so circles/text never overlap.
+                        // Categories can still be reordered freely; only their slot changes.
+
+                        // lower-left -> upper-left -> top -> upper-right -> lower-right
+                        { x: -136, up: 76,  labelSide: "left"  as const, labelW: 54 },
+                        { x: -132, up: 132, labelSide: "left"  as const, labelW: 58 },
+                        { x: -114, up: 184, labelSide: "left"  as const, labelW: 60 },
+                        { x: -84,  up: 226, labelSide: "left"  as const, labelW: 64 },
+                        { x: -44,  up: 254, labelSide: "top"   as const, labelW: 76 },
+                        { x: 0,    up: 266, labelSide: "top"   as const, labelW: 88 },
+                        { x: 44,   up: 254, labelSide: "top"   as const, labelW: 76 },
+                        { x: 84,   up: 226, labelSide: "right" as const, labelW: 64 },
+                        { x: 114,  up: 184, labelSide: "right" as const, labelW: 60 },
+                        { x: 132,  up: 132, labelSide: "right" as const, labelW: 58 },
+                        { x: 136,  up: 76,  labelSide: "right" as const, labelW: 54 },
+                        { x: 78,   up: 34,  labelSide: "right" as const, labelW: 54 },
                       ];
 
                       const circleClass = `
-                        absolute left-1/2 top-1/2 grid h-[38px] w-[38px]
+                        absolute left-1/2 top-1/2 grid h-[36px] w-[36px]
                         -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full
                         border border-[#edf2cf]/65
                         bg-[#dce5b2]/36
@@ -332,8 +333,8 @@ export function LogSheet({
                         <>
                           <svg
                             aria-hidden="true"
-                            viewBox="-195 -305 390 325"
-                            className="pointer-events-none absolute bottom-0 left-1/2 h-[325px] w-[390px] max-w-[100vw] -translate-x-1/2 overflow-visible"
+                            viewBox="-195 -285 390 305"
+                            className="pointer-events-none absolute bottom-0 left-1/2 h-[305px] w-[390px] max-w-[100vw] -translate-x-1/2 overflow-visible"
                           >
                             {radialCats.map((c, index) => {
                               const slot = slots[index];
@@ -396,7 +397,7 @@ export function LogSheet({
                                   setCat(c.id);
                                 }}
                                 aria-label={editingOrder ? `Drag ${c.label} to reorder` : `Log ${c.label}`}
-                                className={`pointer-events-auto absolute z-20 h-[44px] w-[44px] touch-none select-none outline-none transition-[transform,filter,opacity] duration-150 focus-visible:ring-2 focus-visible:ring-[#edf2cf] ${
+                                className={`pointer-events-auto absolute z-20 h-[42px] w-[42px] touch-none select-none outline-none transition-[transform,filter,opacity] duration-150 focus-visible:ring-2 focus-visible:ring-[#edf2cf] ${
                                   editingOrder ? "cursor-grab active:cursor-grabbing" : "active:scale-95"
                                 } ${draggingCat === c.id ? "z-50 scale-110 brightness-110 drop-shadow-[0_0_10px_rgba(238,243,207,0.8)]" : ""}`}
                                 style={{
@@ -406,26 +407,26 @@ export function LogSheet({
                                 }}
                               >
                                 <span className={circleClass}>
-                                  <Ico e={c.emoji} size={20} />
+                                  <Ico e={c.emoji} size={19} />
                                 </span>
 
                                 <span
                                   className="
-                                    absolute z-30 text-[8.5px] font-semibold leading-[1.05]
+                                    absolute z-30 text-[8.5px] font-semibold leading-[1.08]
                                     text-white drop-shadow-[0_1px_2px_rgba(31,37,16,0.95)]
                                   "
                                   style={{
                                     width: `${slot.labelW}px`,
                                     ...(isLeft
                                       ? {
-                                          right: "calc(100% + 3px)",
+                                          right: "calc(100% + 2px)",
                                           top: "50%",
                                           transform: "translateY(-50%)",
                                           textAlign: "right" as const,
                                         }
                                       : isRight
                                         ? {
-                                            left: "calc(100% + 3px)",
+                                            left: "calc(100% + 2px)",
                                             top: "50%",
                                             transform: "translateY(-50%)",
                                             textAlign: "left" as const,
@@ -451,7 +452,7 @@ export function LogSheet({
                               setEditingOrder((v) => !v);
                             }}
                             aria-label="Reorder log categories"
-                            className="pointer-events-auto absolute bottom-[38px] left-1/2 z-30 h-[42px] w-[42px] translate-x-[54px] outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#edf2cf]"
+                            className="pointer-events-auto absolute bottom-[20px] left-1/2 z-30 h-[40px] w-[40px] translate-x-[50px] outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#edf2cf]"
                           >
                             <span className={`${circleClass} scale-[0.92] ${editingOrder ? "ring-[#f3f6d8]/80 bg-[#748642]/70" : ""}`}>
                               {editingOrder ? (
