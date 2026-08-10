@@ -161,7 +161,7 @@ function PostpartumPage() {
 
   const resetPostpartum = () => {
     const confirmed = window.confirm(
-      "This will permanently delete all postpartum tracking data — birth details, bleeding, recovery, mood, sleep, feeding, diapers and visits. This cannot be undone.",
+      t("This will permanently delete all postpartum tracking data — birth details, bleeding, recovery, mood, sleep, feeding, diapers and visits. This cannot be undone."),
     );
 
     if (!confirmed) return;
@@ -190,20 +190,20 @@ function PostpartumPage() {
       <AppShell
         title={
           <button onClick={() => navigate({ to: "/" })} className="flex items-center gap-2">
-            <ArrowLeft className="h-5 w-5" /> Postpartum
+            <ArrowLeft className="h-5 w-5" /> {t("Postpartum")}
           </button>
         }
       >
         <div className="px-5 pt-4 pb-[calc(6rem+env(safe-area-inset-bottom))]">
           <p className="text-sm text-muted-foreground">
-            Postpartum mode isn't active.{" "}
-            {pp?.endedAt ? "It was ended on " + pp.endedAt + "." : "Turn it on below to start tracking your recovery."}
+            {t("Postpartum mode isn't active.")}{" "}
+            {pp?.endedAt ? `${t("It was ended on")} ${pp.endedAt}.` : t("Turn it on below to start tracking your recovery.")}
           </p>
           <Button
             className="mt-4"
             onClick={() => updatePP((p) => ({ ...p, active: true, endedAt: undefined, visits: p.visits ?? [] }))}
           >
-            Start postpartum tracking
+            {t("Start postpartum tracking")}
           </Button>
         </div>
       </AppShell>
@@ -226,7 +226,7 @@ function PostpartumPage() {
     <AppShell
       title={
         <button onClick={() => navigate({ to: "/" })} className="flex items-center gap-2">
-          <ArrowLeft className="h-5 w-5" /> Postpartum
+          <ArrowLeft className="h-5 w-5" /> {t("Postpartum")}
         </button>
       }
     >
@@ -237,22 +237,22 @@ function PostpartumPage() {
             <SetupForm pp={pp} updatePP={updatePP} />
           ) : (
             <>
-              <p className="text-sm font-medium">{pp.babyName || "Baby"}</p>
+              <p className="text-sm font-medium">{pp.babyName || t("Baby")}</p>
               <div className="mt-2 flex items-center gap-3">
                 <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-tint ring-1 ring-border/50">
                   <Ico name="baby" size={30} />
                 </span>
                 <div>
                   <p className="font-serif text-2xl font-bold">
-                    {progress ? `Week ${progress.week} + ${progress.dayOfWeek}` : "Postpartum"}
+                    {progress ? `${t("Week")} ${progress.week} + ${progress.dayOfWeek}` : t("Postpartum")}
                   </p>
                   <p className="text-xs text-muted-foreground">{t("Postpartum recovery")}</p>
                 </div>
               </div>
               <p className="text-xs text-muted-foreground">
-                {days != null ? `${days} day${days === 1 ? "" : "s"} since birth` : ""}
-                {pp.deliveryType ? ` · ${deliveryLabel(pp.deliveryType)}` : ""}
-                {pp.babyBirthWeightKg ? ` · ${pp.babyBirthWeightKg} kg at birth` : ""}
+                {days != null ? `${days} ${days === 1 ? t("day since birth") : t("days since birth")}` : ""}
+                {pp.deliveryType ? ` · ${t(deliveryLabel(pp.deliveryType))}` : ""}
+                {pp.babyBirthWeightKg ? ` · ${pp.babyBirthWeightKg} ${t("kg at birth")}` : ""}
               </p>
               <details className="mt-3">
                 <summary className="cursor-pointer text-xs text-muted-foreground">{t("Edit details")}</summary>
@@ -279,28 +279,27 @@ function PostpartumPage() {
             <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
               <p className="text-sm font-medium">{t("Finish postpartum mode")}</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                When you're ready, you can turn off postpartum tracking. Your history is kept.
+                {t("When you're ready, you can turn off postpartum tracking. Your history is kept.")}
               </p>
               <Button
                 variant="outline"
                 className="mt-3"
                 onClick={() => {
-                  if (!window.confirm("Finish postpartum tracking? You can restart it any time.")) return;
+                  if (!window.confirm(t("Finish postpartum tracking? You can restart it any time."))) return;
                   updatePP((p) => ({ ...p, active: false, endedAt: today }));
                 }}
               >
-                Finish postpartum
+                {t("Finish postpartum")}
               </Button>
             </section>
 
             <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
               <p className="text-sm font-medium">{t("Reset")}</p>
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                Permanently delete all postpartum setup details and daily postpartum logs. Other BIXBO data will remain
-                unchanged.
+                {t("Permanently delete all postpartum setup details and daily postpartum logs. Other BIXBO data will remain unchanged.")}
               </p>
               <Button type="button" variant="destructive" className="mt-3 h-11 w-full" onClick={resetPostpartum}>
-                Delete all postpartum data
+                {t("Delete all postpartum data")}
               </Button>
             </section>
           </>
@@ -445,14 +444,14 @@ function SymptomsSection({
 
           return (
             <button
-              key={symptom}
+              key={t(symptom)}
               type="button"
               onClick={() => toggle(symptom)}
               className={`rounded-full px-3 py-1.5 text-xs font-semibold ring-1 transition ${
                 active ? "bg-primary text-primary-foreground ring-primary" : "bg-tint text-foreground ring-border"
               }`}
             >
-              {symptom}
+              {t(symptom)}
             </button>
           );
         })}
@@ -517,11 +516,12 @@ function LabeledSlider({
   value: number;
   onChange: (v: number) => void;
 }) {
+  const { t } = useI18n();
   return (
     <div>
       <div className="flex items-center justify-between">
         <label className="text-xs text-muted-foreground" htmlFor={id}>
-          {label}
+          {t(label)}
         </label>
         <span className="text-xs font-medium">{value}/10</span>
       </div>
@@ -593,24 +593,24 @@ function MoodSection({
       <div className="mt-3 flex flex-wrap gap-2">
         {POSTPARTUM_MOODS.map((m) => (
           <button
-            key={m}
+            key={t(m)}
             type="button"
             onClick={() => toggle(m)}
             className={`min-h-11 rounded-full border px-3 py-1.5 text-xs font-medium ${moods.includes(m) ? "border-primary bg-primary text-primary-foreground" : "border-border bg-tint"}`}
           >
-            {m}
+            {t(m)}
           </button>
         ))}
         {moods
           .filter((m) => !POSTPARTUM_MOODS.includes(m))
           .map((m) => (
             <button
-              key={m}
+              key={t(m)}
               type="button"
               onClick={() => toggle(m)}
               className="min-h-11 rounded-full border border-primary bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
             >
-              {m}
+              {t(m)}
             </button>
           ))}
       </div>
@@ -1064,6 +1064,7 @@ function VisitForm({
   onCancel: () => void;
   onSave: (v: PregnancyAppointment) => void;
 }) {
+  const { t } = useI18n();
   const [title, setTitle] = useState(initial?.title ?? "");
   const [date, setDate] = useState(initial?.date ?? todayKey());
   const [time, setTime] = useState(initial?.time ?? "");
@@ -1072,13 +1073,13 @@ function VisitForm({
 
   return (
     <div className="mt-3 space-y-2 rounded-xl border border-border p-3">
-      <Input placeholder="Title (e.g. 6-week checkup)" value={title} onChange={(e) => setTitle(e.target.value)} />
+      <Input placeholder={t("Title (e.g. 6-week checkup)")} value={title} onChange={(e) => setTitle(e.target.value)} />
       <div className="flex gap-2">
         <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
       </div>
-      <Input placeholder="Doctor / clinic" value={doctor} onChange={(e) => setDoctor(e.target.value)} />
-      <Textarea placeholder="Notes" value={note} onChange={(e) => setNote(e.target.value)} />
+      <Input placeholder={t("Doctor / clinic")} value={doctor} onChange={(e) => setDoctor(e.target.value)} />
+      <Textarea placeholder={t("Notes")} value={note} onChange={(e) => setNote(e.target.value)} />
       <div className="flex gap-2">
         <Button
           size="sm"
@@ -1112,10 +1113,11 @@ function NotesSection({
   log: PostpartumDayLog;
   updateLog: (p: (l: PostpartumDayLog) => PostpartumDayLog) => void;
 }) {
+  const { t } = useI18n();
   return (
     <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
       <p className="flex items-center gap-2 text-sm font-medium">
-        <Ico name="pill" size={20} /> Medication & notes
+        <Ico name="pill" size={20} /> {t("Medication & notes")}
       </p>
       <p className="mt-1 text-xs text-muted-foreground">
         Track your postpartum vitamins or medications in{" "}
