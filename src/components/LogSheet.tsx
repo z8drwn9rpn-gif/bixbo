@@ -2624,7 +2624,7 @@ function PeriodForm({
                 pregnancy: {
                   ...(d.pregnancy ?? { active: false, hospitalBag: [], vaccinations: [], supplements: [], appointments: [] }),
                   active: true,
-                  lmp: d.pregnancy?.lmp ?? todayKey(),
+                  lmp: d.pregnancy?.lmp,
                   endedAt: undefined,
                 },
                 postpartum: {
