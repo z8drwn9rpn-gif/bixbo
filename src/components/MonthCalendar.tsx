@@ -67,16 +67,14 @@ function periodColorVar(level?: PeriodLevel) {
       return null;
   }
 }
-function iconsFor(log: DayLog | undefined, hasMed: boolean): string[] {
+function iconsFor(log: DayLog | undefined): string[] {
+  // Month calendar deliberately shows only the four compact BIXBO day markers
+  // requested for quick scanning: ŠukŠuk, panic, tetany and bowel.
   const out: string[] = [];
   if (log?.sex?.some((e) => isIntercourseKind(e.kind))) out.push("❤️");
-  if (hasMed) out.push("💊");
-  if (log?.bowel?.some((b) => Number.isFinite(Number(b?.bristol)) && Number(b.bristol) >= 0)) out.push("💩⚪");
-  if (log?.heat?.some((h) => h.kind === "heat")) out.push("♨️");
-  if (log?.heat?.some((h) => h.kind === "cold")) out.push("🧊");
-  if (log?.heat?.some((h) => h.kind === "tens")) out.push("⭐");
+  if (log?.panic?.length) out.push("✨");
   if (log?.tetany?.length) out.push("⚡");
-  if (log?.panic?.length) out.push("🫯");
+  if (log?.bowel?.some((b) => Number.isFinite(Number(b?.bristol)) && Number(b.bristol) >= 0)) out.push("💩⚪");
   return out;
 }
 
@@ -206,7 +204,6 @@ export function MonthCalendar({
     const meta = new Map<
       string,
       {
-        hasMed: boolean;
         periodColor: string | null;
         pAvg: number | null;
         predictedPeriod: boolean;
@@ -217,8 +214,6 @@ export function MonthCalendar({
 
     for (const cell of cells) {
       const log = data.dayLogs[cell.key];
-      const takenToday = data.medLog[cell.key] ?? {};
-      const hasMed = Object.values(takenToday).some(Boolean) || !!log?.extraMeds?.length;
       const periodLevel = cycleTrackingHidden ? undefined : (log?.periodInfo?.level ?? log?.period);
 
       let actualPeriodColor: string | null = null;
@@ -229,17 +224,16 @@ export function MonthCalendar({
       }
 
       meta.set(cell.key, {
-        hasMed,
         periodColor: cycleTrackingHidden ? null : (periodColorVar(periodLevel) ?? actualPeriodColor),
         pAvg: avgDayPain(log) ?? null,
         predictedPeriod: predictedKeys.has(cell.key),
-        icons: iconsFor(log, hasMed),
+        icons: iconsFor(log),
         marked: hasAnyLog(log),
       });
     }
 
     return meta;
-  }, [cells, cycleTrackingHidden, data.cycle.lastPeriodEnd, data.cycle.lastPeriodStart, data.dayLogs, data.medLog, predictedKeys]);
+  }, [cells, cycleTrackingHidden, data.cycle.lastPeriodEnd, data.cycle.lastPeriodStart, data.dayLogs, predictedKeys]);
 
   const weekLayouts = useMemo(() => {
     return weeks.map((week) => {
@@ -413,13 +407,10 @@ export function MonthCalendar({
                         </span>
                       </div>
                       {icons.length > 0 && (
-                        <span className="pointer-events-none absolute bottom-0.5 left-1/2 flex -translate-x-1/2 items-center gap-[1px] text-[7px] leading-none drop-shadow-sm landscape:text-[6px]">
-                          {icons.slice(0, 3).map((ic, idx) => (
-                            <Ico key={idx} e={ic} size={15} />
+                        <span className="pointer-events-none absolute bottom-0.5 left-1/2 flex w-[44px] -translate-x-1/2 items-center justify-center gap-0 leading-none drop-shadow-sm">
+                          {icons.map((ic, idx) => (
+                            <Ico key={idx} e={ic} size={11} />
                           ))}
-                          {icons.length > 3 && (
-                            <span className="text-[9px] font-medium text-muted-foreground">+{icons.length - 3}</span>
-                          )}
                         </span>
                       )}
                       {icons.length === 0 && marked && (
