@@ -1892,6 +1892,7 @@ export function NavHomeIcon(p: IconProps) {
 
   return (
     <Svg {...p}>
+      <g transform="translate(32 32) scale(1.1) translate(-32 -32)" data-nav-scale="1.1">
       <defs>
         <linearGradient id={roof} x1="14" y1="12" x2="48" y2="42" gradientUnits="userSpaceOnUse">
           <stop stopColor="#b8cf68" />
@@ -1932,6 +1933,8 @@ export function NavHomeIcon(p: IconProps) {
       </g>
 
       <path d="M19 20c3-3.6 6.6-5.6 10-6.1" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" opacity="0.34" />
+    
+      </g>
     </Svg>
   );
 }
@@ -1943,6 +1946,7 @@ export function NavOverviewIcon(p: IconProps) {
 
   return (
     <Svg {...p}>
+      <g transform="translate(32 32) scale(1.17) translate(-32 -32)" data-nav-scale="1.17">
       <defs>
         <linearGradient id={left} x1="14" y1="13" x2="34" y2="52" gradientUnits="userSpaceOnUse">
           <stop stopColor="#d5e28d" />
@@ -1982,6 +1986,8 @@ export function NavOverviewIcon(p: IconProps) {
 
       <path d="M19 14.5c3-2.1 6.4-2.1 8.9-.6" stroke="#fff" strokeWidth="2.3" strokeLinecap="round" opacity="0.34" />
       <path d="M36.5 14c2.8-1.4 5.4-1.2 7.5.2" stroke="#fff" strokeWidth="2" strokeLinecap="round" opacity="0.26" />
+    
+      </g>
     </Svg>
   );
 }
@@ -1994,6 +2000,7 @@ export function NavCoupleIcon(p: IconProps) {
 
   return (
     <Svg {...p}>
+      <g transform="translate(32 32) scale(1.14) translate(-32 -32)" data-nav-scale="1.14">
       <defs>
         <linearGradient id={olive} x1="10" y1="15" x2="31" y2="55" gradientUnits="userSpaceOnUse">
           <stop stopColor="#b2c56b" />
@@ -2028,6 +2035,8 @@ export function NavCoupleIcon(p: IconProps) {
       <ellipse cx="18.5" cy="16.7" rx="3.3" ry="2" transform="rotate(-30 18.5 16.7)" fill="#fff" opacity="0.3" />
       <ellipse cx="40" cy="17.2" rx="3" ry="1.8" transform="rotate(-30 40 17.2)" fill="#fff" opacity="0.38" />
       <ellipse cx="31.5" cy="40" rx="2.8" ry="1.7" transform="rotate(-30 31.5 40)" fill="#fff" opacity="0.42" />
+    
+      </g>
     </Svg>
   );
 }
@@ -2039,6 +2048,7 @@ export function NavNoteIcon(p: IconProps) {
 
   return (
     <Svg {...p}>
+      <g transform="translate(32 32) scale(1.12) translate(-32 -32)" data-nav-scale="1.12">
       <defs>
         <linearGradient id={paper} x1="15" y1="8" x2="49" y2="56" gradientUnits="userSpaceOnUse">
           <stop stopColor="#fffef4" />
@@ -2077,6 +2087,8 @@ export function NavNoteIcon(p: IconProps) {
       </g>
 
       <path d="M23 13c4-2 9.5-2.4 14-.8" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" opacity="0.45" />
+    
+      </g>
     </Svg>
   );
 }
@@ -2087,6 +2099,7 @@ export function NavLogIcon(p: IconProps) {
 
   return (
     <Svg {...p}>
+      <g transform="translate(32 32) scale(1.05) translate(-32 -32)" data-nav-scale="1.05">
       <defs>
         <radialGradient id={circle} cx="0.32" cy="0.23" r="0.9">
           <stop stopColor="#8fa64e" />
@@ -2100,6 +2113,8 @@ export function NavLogIcon(p: IconProps) {
       <circle cx="32" cy="31" r="24" fill="none" stroke="#3f4e23" strokeWidth="1" opacity="0.5" />
       <path d="M32 19v24M20 31h24" stroke="#fffbea" strokeWidth="6" strokeLinecap="round" />
       <path d="M26 16c5-3 10-3.3 14-1.6" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" opacity="0.22" />
+    
+      </g>
     </Svg>
   );
 }
