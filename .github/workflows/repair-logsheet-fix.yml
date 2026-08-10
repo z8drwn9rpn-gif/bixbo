@@ -1,0 +1,54 @@
+name: Repair LogSheet translation workflow
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/repair-logsheet-fix.yml']
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    permissions: {contents: write}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Repair SK dictionary insertion
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('.github/workflows/fix-logsheet-all-sk.yml')
+          s=p.read_text()
+          old="""          start=s.index('const sk')
+          brace=s.index('{',start); depth=0; end=None
+          for i in range(brace,len(s)):
+              if s[i]=='{': depth+=1
+              elif s[i]=='}':
+                  depth-=1
+                  if depth==0: end=i; break
+          if end is None: raise RuntimeError('SK dictionary end not found')
+          sk=s[brace:end]
+          existing=set()
+          import re
+          for m in re.finditer(r'^\\s*[\"\\']([^\"\\']+)[\"\\']\\s*:',sk,re.M): existing.add(m.group(1))
+          add=''
+          for k,v in entries.items():
+              if k not in existing: add+=f'  {json.dumps(k,ensure_ascii=False)}: {json.dumps(v,ensure_ascii=False)},\\n'
+          s=s[:end]+add+s[end:]; p.write_text(s)
+"""
+          new="""          marker='  \"Pain still feels the same?\": \"Bolesť je stále rovnaká?\",'
+          if marker not in s: raise RuntimeError('SK insertion marker not found')
+          before=s.split(marker,1)[0]
+          add=''
+          for k,v in entries.items():
+              q=json.dumps(k,ensure_ascii=False)
+              if f'{q}:' not in before: add+=f'  {q}: {json.dumps(v,ensure_ascii=False)},\\n'
+          s=s.replace(marker,add+marker,1); p.write_text(s)
+"""
+          if old not in s:
+              raise RuntimeError('Old insertion block not found')
+          p.write_text(s.replace(old,new,1))
+      - name: Commit repair
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows/fix-logsheet-all-sk.yml
+          git rm .github/workflows/repair-logsheet-fix.yml
+          git commit -m "Repair LogSheet translation patch"
+          git push
