@@ -1440,7 +1440,7 @@ function HomePage() {
                         <NoteIcon size={20} />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block text-[10px] font-medium text-muted-foreground">Note</span>
+                        <span className="block text-[10px] font-medium text-muted-foreground">{t("Note")}</span>
                         <span className="mt-0.5 line-clamp-1 block text-xs text-foreground">{noteText}</span>
                       </span>
                     </div>
@@ -2303,7 +2303,7 @@ function BirthControlCalendar({
 
           {/* Current day status — kept clear of the top pill bubbles. */}
           <div className="pointer-events-none absolute left-[25%] right-[25%] top-[20%] z-20 text-center">
-            <p className="text-[10px] font-semibold leading-none text-foreground">Day</p>
+            <p className="text-[10px] font-semibold leading-none text-foreground">{t("Day")}</p>
             <p
               className="mt-0.5 font-serif text-[clamp(1.85rem,7.5vw,2.45rem)] font-bold leading-none"
               style={{ color: currentDay <= ACTIVE_DAYS ? HAK_PURPLE_DARK : HAK_PINK_DARK }}
@@ -2604,7 +2604,7 @@ function BirthControlCalendar({
                       border: `1.5px solid ${popupAccent}`,
                       color: popupAccent,
                     }}
-                    aria-label="Tablet already taken"
+                    aria-label={t("Tablet already taken")}
                   >
                     <span
                       className="grid h-6 w-6 place-items-center rounded-full text-xs font-black text-white"
@@ -3004,7 +3004,7 @@ function SukSukPeriodChart({
             </div>
             <p className="mt-1 flex h-7 items-end justify-center text-center font-serif text-2xl font-bold leading-none text-foreground">
               {week.count}
-              <span className="ml-1 font-sans text-[10px] font-medium text-muted-foreground">times</span>
+              <span className="ml-1 font-sans text-[10px] font-medium text-muted-foreground">{t("times")}</span>
             </p>
             {comparison(week.count, week.previousCount, "week")}
             <MiniBars items={week.bars} />
@@ -3048,7 +3048,7 @@ function SukSukPeriodChart({
             </div>
             <p className="mt-1 flex h-7 items-end justify-center text-center font-serif text-2xl font-bold leading-none text-foreground">
               {month.count}
-              <span className="ml-1 font-sans text-[10px] font-medium text-muted-foreground">times</span>
+              <span className="ml-1 font-sans text-[10px] font-medium text-muted-foreground">{t("times")}</span>
             </p>
             {comparison(month.count, month.previousCount, "month")}
             <MiniBars items={month.bars} />
@@ -3089,7 +3089,7 @@ function SukSukPeriodChart({
             </div>
             <p className="mt-1 flex h-7 items-end justify-center text-center font-serif text-2xl font-bold leading-none text-foreground">
               {year.count}
-              <span className="ml-1 font-sans text-[10px] font-medium text-muted-foreground">times</span>
+              <span className="ml-1 font-sans text-[10px] font-medium text-muted-foreground">{t("times")}</span>
             </p>
             {comparison(year.count, year.previousCount, "year")}
             <MiniBars items={year.bars} dense />
@@ -3229,7 +3229,7 @@ function DayPreview({
                       })
                     }
                     className="text-left text-green-700 hover:underline"
-                    title="Tap to uncheck"
+                    title={t("Tap to uncheck")}
                   >
                     Taken · {actual ?? x.time} — {x.med.name}
                     {x.med.dose ? ` (${x.med.dose})` : ""}
@@ -3292,7 +3292,7 @@ function DayPreview({
                   onClick={() => onEditPain?.(p)}
                   className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-sm font-bold text-white"
                   style={{ background: painColor(p.score) }}
-                  aria-label="Edit pain entry"
+                  aria-label={t("Edit pain entry")}
                 >
                   {Number.isInteger(p.score) ? p.score : p.score.toFixed(1)}
                 </button>
@@ -3852,11 +3852,12 @@ function DeleteBtn({ onClick }: { onClick: () => void }) {
 }
 
 function Card({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) {
+  const { t } = useI18n();
   return (
     <div className="rounded-3xl bg-surface p-4 ring-1 ring-border">
       <div className="mb-2 flex items-center gap-2">
         <Ico e={icon} size={22} />
-        <h3 className="font-serif text-lg font-semibold">{title}</h3>
+        <h3 className="font-serif text-lg font-semibold">{t(title)}</h3>
       </div>
       {children}
     </div>
