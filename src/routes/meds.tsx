@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
+import { useI18n } from "@/hooks/useI18n";
 
 export const Route = createFileRoute("/meds")({
   head: () => ({
@@ -23,6 +24,7 @@ export const Route = createFileRoute("/meds")({
 });
 
 function MedsPage() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const { data, update, hydrated } = useBixbo();
   const view = hydrated ? data : EMPTY;
@@ -66,7 +68,7 @@ function MedsPage() {
           Set up the meds you take on a schedule. One-off extra doses can be added from the Log button.
         </p>
         <section>
-          <h2 className="font-serif text-xl">My medications</h2>
+          <h2 className="font-serif text-xl">{t("My medications")}</h2>
           <div className="mt-2 space-y-2">
             {view.meds.length === 0 && <p className="text-sm text-muted-foreground">No medications yet. Tap "Add".</p>}
             {view.meds.map((m) => (
@@ -107,6 +109,7 @@ function MedsPage() {
 }
 
 function EditMedButton({ med, onSave }: { med: Med; onSave: (m: Med) => void }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -116,7 +119,7 @@ function EditMedButton({ med, onSave }: { med: Med; onSave: (m: Med) => void }) 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit medication</DialogTitle>
+            <DialogTitle>{t("Edit medication")}</DialogTitle>
           </DialogHeader>
           {open && (
             <MedFields
@@ -136,6 +139,7 @@ function EditMedButton({ med, onSave }: { med: Med; onSave: (m: Med) => void }) 
 }
 
 function MedFields({ initial, onSave, onCancel }: { initial?: Med; onSave: (m: Med) => void; onCancel: () => void }) {
+  const { t } = useI18n();
   const [name, setName] = useState(initial?.name ?? "");
   const [dose, setDose] = useState(initial?.dose ?? "");
   const [note, setNote] = useState(initial?.note ?? "");
@@ -158,15 +162,15 @@ function MedFields({ initial, onSave, onCancel }: { initial?: Med; onSave: (m: M
     <>
       <div className="space-y-3">
         <div>
-          <label className="text-xs font-medium">Name</label>
+          <label className="text-xs font-medium">{t("Name")}</label>
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Magnerot" />
         </div>
         <div>
-          <label className="text-xs font-medium">Dose (optional)</label>
+          <label className="text-xs font-medium">{t("Dose (optional)")}</label>
           <Input value={dose} onChange={(e) => setDose(e.target.value)} placeholder="500 mg" />
         </div>
         <div>
-          <label className="text-xs font-medium">Note (optional)</label>
+          <label className="text-xs font-medium">{t("Note (optional)")}</label>
           <Textarea
             rows={2}
             value={note}
@@ -175,12 +179,12 @@ function MedFields({ initial, onSave, onCancel }: { initial?: Med; onSave: (m: M
           />
         </div>
         <div className="flex items-center justify-between rounded-xl bg-tint p-3">
-          <span className="text-sm">As needed</span>
+          <span className="text-sm">{t("As needed")}</span>
           <Switch checked={asNeeded} onCheckedChange={setAsNeeded} />
         </div>
         {!asNeeded && (
           <div>
-            <label className="text-xs font-medium">Times</label>
+            <label className="text-xs font-medium">{t("Times")}</label>
             <div className="mt-2 space-y-2">
               {times.map((t, i) => (
                 <div key={i} className="flex gap-2">
@@ -205,13 +209,14 @@ function MedFields({ initial, onSave, onCancel }: { initial?: Med; onSave: (m: M
         <Button variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button onClick={save}>Save</Button>
+        <Button onClick={save}>{t("Save")}</Button>
       </DialogFooter>
     </>
   );
 }
 
 function AddMedButton({ onAdd }: { onAdd: (m: Med) => void }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -222,7 +227,7 @@ function AddMedButton({ onAdd }: { onAdd: (m: Med) => void }) {
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>New medication</DialogTitle>
+          <DialogTitle>{t("New medication")}</DialogTitle>
         </DialogHeader>
         {open && (
           <MedFields
