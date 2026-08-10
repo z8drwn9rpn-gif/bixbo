@@ -20,15 +20,25 @@ jobs:
           attr = re.compile(r'(placeholder|aria-label|title|data-placeholder)="([^"]*[A-Za-z][^"]*)"')
           text = re.compile(r'>\s*([A-Za-z][A-Za-z0-9 /&+—().,:;!?\'%-]{1,120})\s*<')
           for f in files:
-            print('\n###', f)
+            print('\n### HARDCODED', f)
             lines = Path(f).read_text().splitlines()
             for i,line in enumerate(lines,1):
-              s=line.strip()
-              found=[]
+              s=line.strip(); found=[]
               for m in attr.finditer(s): found.append(f'{m.group(1)}={m.group(2)!r}')
               for m in text.finditer(s):
                 val=m.group(1).strip()
                 if val and not val.startswith('http'): found.append(f'text={val!r}')
-              if found:
-                print(f'{i}: ' + ' | '.join(found))
+              if found: print(f'{i}: ' + ' | '.join(found))
+
+          i18n = Path('src/lib/i18n.ts').read_text()
+          sk_match = re.search(r'const SK: Record<string, string> = \{(.*?)\n\};', i18n, re.S)
+          sk = sk_match.group(1) if sk_match else ''
+          sk_keys = set(re.findall(r'^\s*"((?:[^"\\]|\\.)+)"\s*:', sk, re.M))
+          t_pat = re.compile(r'\bt\(\s*"((?:[^"\\]|\\.)+)"\s*\)')
+          for f in files:
+            src=Path(f).read_text()
+            keys=sorted(set(t_pat.findall(src)))
+            missing=[k for k in keys if k not in sk_keys]
+            print('\n### MISSING_SK', f, len(missing))
+            for k in missing: print(k)
           PY
