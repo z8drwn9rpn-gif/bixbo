@@ -443,7 +443,7 @@ function RecentBP({ view, update }: { view: BixboData; update: (u: (d: BixboData
           <button
             type="button"
             onClick={() => remove(e.date, e.id)}
-            aria-label="Delete blood pressure entry"
+            aria-label={t("Delete blood pressure entry")}
             className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-destructive hover:bg-destructive/10"
           >
             <Trash2 className="h-4 w-4" />
@@ -486,7 +486,7 @@ function RecentBS({ view, update }: { view: BixboData; update: (u: (d: BixboData
           <button
             type="button"
             onClick={() => remove(e.date, e.id)}
-            aria-label="Delete blood sugar entry"
+            aria-label={t("Delete blood sugar entry")}
             className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-destructive hover:bg-destructive/10"
           >
             <Trash2 className="h-4 w-4" />
@@ -685,7 +685,7 @@ function PhotosSection({ view, update }: { view: BixboData; update: (u: (d: Bixb
             <div key={i} className="relative aspect-square">
               <button
                 type="button"
-                aria-label="View photo"
+                aria-label={t("View photo")}
                 onClick={() => setViewing(photo)}
                 className="h-full w-full overflow-hidden rounded-lg ring-1 ring-border"
               >
@@ -693,7 +693,7 @@ function PhotosSection({ view, update }: { view: BixboData; update: (u: (d: Bixb
               </button>
               <button
                 type="button"
-                aria-label="Delete photo"
+                aria-label={t("Delete photo")}
                 onClick={() => remove(photo)}
                 className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-foreground text-background"
               >
