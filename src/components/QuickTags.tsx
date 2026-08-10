@@ -652,7 +652,7 @@ export function QuickTags({
               return (
                 <div
                   key={tag.key}
-                  className="relative flex aspect-square min-w-0 select-none flex-col lg:mx-auto lg:w-full lg:max-w-[86px] items-center justify-center gap-0.5 rounded-full bg-surface p-1.5 text-center shadow-sm ring-1 ring-border/80"
+                  className="relative flex aspect-square min-w-0 select-none flex-col lg:mx-auto lg:w-full lg:max-w-[94px] xl:max-w-[100px] items-center justify-center gap-0.5 rounded-full bg-surface p-1.5 text-center shadow-sm ring-1 ring-border/80"
                 >
                   <button
                     type="button"
@@ -664,7 +664,7 @@ export function QuickTags({
                   </button>
 
                   <Ico e={tag.emoji} size={22} />
-                  <span className="max-w-[58px] text-[10px] font-medium leading-[1.05] text-muted-foreground">
+                  <span className="max-w-[64px] lg:max-w-[70px] text-[10px] lg:text-[11px] font-medium leading-[1.05] text-muted-foreground">
                     {tag.label}
                   </span>
 
@@ -750,13 +750,13 @@ export function QuickTags({
                 onContextMenu={(event) => event.preventDefault()}
                 title={`${tag.label} — long-press for details`}
                 aria-label={tag.label}
-                className={`relative flex aspect-square min-w-0 select-none touch-manipulation flex-col lg:mx-auto lg:w-full lg:max-w-[86px] items-center justify-center gap-0.5 rounded-full bg-surface p-1.5 text-center shadow-sm ring-1 ring-border/80 transition-[transform,box-shadow,background-color,ring-color] duration-150 hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-95 ${
+                className={`relative flex aspect-square min-w-0 select-none touch-manipulation flex-col lg:mx-auto lg:w-full lg:max-w-[94px] xl:max-w-[100px] items-center justify-center gap-0.5 rounded-full bg-surface p-1.5 text-center shadow-sm ring-1 ring-border/80 transition-[transform,box-shadow,background-color,ring-color] duration-150 hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-95 ${
                   isFlash ? "scale-105 bg-primary/10 ring-2 ring-primary shadow-md" : ""
                 }`}
               >
                 <Ico e={tag.emoji} size={22} />
 
-                <span className="max-w-[58px] text-[10px] font-medium leading-[1.05] text-muted-foreground">
+                <span className="max-w-[64px] lg:max-w-[70px] text-[10px] lg:text-[11px] font-medium leading-[1.05] text-muted-foreground">
                   {tag.label}
                 </span>
 
