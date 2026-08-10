@@ -1358,8 +1358,6 @@ export function PatternsContent() {
   const treatmentPain = treatmentMetric((log) => avgDayPain(log) ?? null);
   const treatmentTetany = treatmentMetric(dayTetanyIntensity);
   const treatmentPanic = treatmentMetric(dayPanicIntensity);
-  const treatmentMood = treatmentMetric((log) => negativeMoodCount(log));
-
   const treatmentTetanyEpisodes = treatmentEventRate((log) => log.tetany?.length ?? 0);
   const treatmentPanicEpisodes = treatmentEventRate((log) => log.panic?.length ?? 0);
   const treatmentHeadache = treatmentEventRate(
@@ -1369,6 +1367,16 @@ export function PatternsContent() {
           entry.headache ||
           entry.headacheIntensity != null ||
           (entry.headacheTypes?.length ?? 0) > 0,
+      ).length,
+  );
+
+  const treatmentHeadacheIntensity = treatmentMetric(dayHeadacheIntensity);
+
+  const treatmentHotFlash = treatmentMetric(dayHotFlash);
+  const treatmentHotFlashEpisodes = treatmentEventRate(
+    (log) =>
+      (log.pain ?? []).filter(
+        (entry) => entry.hotFlashesOn || (entry.hotFlashes ?? 0) > 0,
       ).length,
   );
 
@@ -1424,15 +1432,6 @@ export function PatternsContent() {
       max: 5,
       color: "blue",
     },
-    {
-      id: "negativeMood",
-      label: "Negative mood",
-      metric: treatmentMood,
-      decimals: 1,
-      unit: "",
-      max: 3,
-      color: "amber",
-    },
   ];
 
   const selectedTreatmentResult =
@@ -1440,12 +1439,14 @@ export function PatternsContent() {
 
   const treatmentChanges = [
     { label: "Pain", metric: treatmentPain },
-    { label: "Tetany intensity", metric: treatmentTetany },
     { label: "Tetany episodes", metric: treatmentTetanyEpisodes },
-    { label: "Panic intensity", metric: treatmentPanic },
+    { label: "Tetany intensity", metric: treatmentTetany },
     { label: "Panic episodes", metric: treatmentPanicEpisodes },
+    { label: "Panic intensity", metric: treatmentPanic },
+    { label: "Hot flashes", metric: treatmentHotFlash },
+    { label: "Hot flash episodes", metric: treatmentHotFlashEpisodes },
     { label: "Headache", metric: treatmentHeadache },
-    { label: "Negative mood", metric: treatmentMood },
+    { label: "Headache intensity", metric: treatmentHeadacheIntensity },
   ]
     .filter((entry) => entry.metric.before != null && entry.metric.after != null)
     .map((entry) => {
@@ -2454,7 +2455,6 @@ export function PatternsContent() {
                     <option value="headache">Headache</option>
                     <option value="panicIntensity">Panic intensity</option>
                     <option value="tetanyIntensity">Tetany intensity</option>
-                    <option value="negativeMood">Negative mood</option>
                   </select>
                 </div>
 
@@ -2588,40 +2588,140 @@ export function PatternsContent() {
 
                 <CollapsibleSection
                   title="Treatment results"
-                  subtitle={`${selectedTreatmentResult.label} before versus after`}
+                  subtitle="Pain, tetany, panic, hot flashes and headache before versus after"
                   defaultOpen={true}
                 >
                   <div className="space-y-3">
                     <ComparisonMetric
-                      title={selectedTreatmentResult.label}
-                      subtitle={`Selected treatment result · average before vs after`}
-                      previous={selectedTreatmentResult.metric.before}
-                      current={selectedTreatmentResult.metric.after}
-                      max={selectedTreatmentResult.max}
-                      decimals={selectedTreatmentResult.decimals}
-                      unit={selectedTreatmentResult.unit}
-                      color={selectedTreatmentResult.color}
+                      title="Pain"
+                      subtitle="Average pain · 4 weeks before vs 4 weeks after"
+                      previous={treatmentPain.before}
+                      current={treatmentPain.after}
+                      max={10}
+                      decimals={1}
+                      unit="/10"
+                      color="rose"
                       higherIsWorse
                       previousLabel="Before"
                       currentLabel="After"
-                      icon={
-                        selectedTreatmentResult.id === "panicEpisodes" ||
-                        selectedTreatmentResult.id === "panicIntensity" ? (
-                          <Sparkles className="h-5 w-5" />
-                        ) : selectedTreatmentResult.id === "tetanyEpisodes" ||
-                          selectedTreatmentResult.id === "tetanyIntensity" ? (
-                          <Activity className="h-5 w-5" />
-                        ) : selectedTreatmentResult.id === "headache" ? (
-                          <Brain className="h-5 w-5" />
-                        ) : (
-                          <HeartPulse className="h-5 w-5" />
-                        )
-                      }
+                      icon={<HeartPulse className="h-5 w-5" />}
                     />
 
-                    <p className="px-1 text-[10px] leading-relaxed text-muted-foreground">
-                      Change “Treatment result” above to compare another outcome.
-                    </p>
+                    <ComparisonMetric
+                      title="Tetany episodes"
+                      subtitle="Average number of tetany episodes per day"
+                      previous={treatmentTetanyEpisodes.before}
+                      current={treatmentTetanyEpisodes.after}
+                      decimals={2}
+                      unit="/day"
+                      color="blue"
+                      higherIsWorse
+                      previousLabel="Before"
+                      currentLabel="After"
+                      icon={<Activity className="h-5 w-5" />}
+                    />
+
+                    <ComparisonMetric
+                      title="Tetany intensity"
+                      subtitle="Average tetany intensity before and after treatment"
+                      previous={treatmentTetany.before}
+                      current={treatmentTetany.after}
+                      max={5}
+                      decimals={1}
+                      unit="/5"
+                      color="blue"
+                      higherIsWorse
+                      previousLabel="Before"
+                      currentLabel="After"
+                      icon={<Activity className="h-5 w-5" />}
+                    />
+
+                    <ComparisonMetric
+                      title="Panic episodes"
+                      subtitle="Average number of panic episodes per day"
+                      previous={treatmentPanicEpisodes.before}
+                      current={treatmentPanicEpisodes.after}
+                      decimals={2}
+                      unit="/day"
+                      color="purple"
+                      higherIsWorse
+                      previousLabel="Before"
+                      currentLabel="After"
+                      icon={<Sparkles className="h-5 w-5" />}
+                    />
+
+                    <ComparisonMetric
+                      title="Panic intensity"
+                      subtitle="Average panic intensity before and after treatment"
+                      previous={treatmentPanic.before}
+                      current={treatmentPanic.after}
+                      max={10}
+                      decimals={1}
+                      unit="/10"
+                      color="purple"
+                      higherIsWorse
+                      previousLabel="Before"
+                      currentLabel="After"
+                      icon={<Sparkles className="h-5 w-5" />}
+                    />
+
+                    <ComparisonMetric
+                      title="Hot flashes"
+                      subtitle="Average hot flash intensity before and after treatment"
+                      previous={treatmentHotFlash.before}
+                      current={treatmentHotFlash.after}
+                      max={5}
+                      decimals={1}
+                      unit="/5"
+                      color="orange"
+                      higherIsWorse
+                      previousLabel="Before"
+                      currentLabel="After"
+                      icon={<Flame className="h-5 w-5" />}
+                    />
+
+                    <ComparisonMetric
+                      title="Hot flash episodes"
+                      subtitle="Average number of hot flash entries per day"
+                      previous={treatmentHotFlashEpisodes.before}
+                      current={treatmentHotFlashEpisodes.after}
+                      decimals={2}
+                      unit="/day"
+                      color="orange"
+                      higherIsWorse
+                      previousLabel="Before"
+                      currentLabel="After"
+                      icon={<Flame className="h-5 w-5" />}
+                    />
+
+                    <ComparisonMetric
+                      title="Headache"
+                      subtitle="Average number of headache entries per day"
+                      previous={treatmentHeadache.before}
+                      current={treatmentHeadache.after}
+                      decimals={2}
+                      unit="/day"
+                      color="cyan"
+                      higherIsWorse
+                      previousLabel="Before"
+                      currentLabel="After"
+                      icon={<Brain className="h-5 w-5" />}
+                    />
+
+                    <ComparisonMetric
+                      title="Headache intensity"
+                      subtitle="Average headache intensity before and after treatment"
+                      previous={treatmentHeadacheIntensity.before}
+                      current={treatmentHeadacheIntensity.after}
+                      max={10}
+                      decimals={1}
+                      unit="/10"
+                      color="cyan"
+                      higherIsWorse
+                      previousLabel="Before"
+                      currentLabel="After"
+                      icon={<Brain className="h-5 w-5" />}
+                    />
                   </div>
                 </CollapsibleSection>
 
