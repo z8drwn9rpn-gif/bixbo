@@ -419,7 +419,7 @@ export function MonthCalendar({
                         return (
                           <div
                             key={ci}
-                            className={`h-3 truncate px-1 text-[8px] font-medium leading-3 text-primary-foreground ${
+                            className={`h-3 truncate px-1 text-[10px] font-medium leading-3 text-primary-foreground ${
                               isStart ? "rounded-l" : ""
                             } ${isEnd ? "rounded-r" : ""}`}
                             style={{
@@ -442,7 +442,7 @@ export function MonthCalendar({
               {overflowByCell.some((n) => n > 0) && (
                 <div className="col-span-7 grid grid-cols-7 gap-0.5">
                   {overflowByCell.map((n, ci) => (
-                    <div key={ci} className="h-[10px] text-center text-[8px] leading-[10px] text-muted-foreground">
+                    <div key={ci} className="h-[10px] text-center text-[10px] leading-[10px] text-muted-foreground">
                       {n > 0 ? `+${n}` : ""}
                     </div>
                   ))}
