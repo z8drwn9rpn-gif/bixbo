@@ -1,0 +1,48 @@
+name: Audit LogSheet i18n
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/audit-logsheet-i18n.yml']
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Find visible LogSheet strings missing from Slovak dictionary
+        run: |
+          cat > /tmp/audit.ts <<'TS'
+          import ts from 'typescript';
+          import fs from 'fs';
+          const logPath='src/components/LogSheet.tsx';
+          const i18n=fs.readFileSync('src/lib/i18n.ts','utf8');
+          const sf=ts.createSourceFile(logPath,fs.readFileSync(logPath,'utf8'),ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
+          const skStart=i18n.indexOf('const sk');
+          const skText=skStart>=0?i18n.slice(skStart):i18n;
+          const keys=new Set<string>();
+          for(const m of skText.matchAll(/^\s*["']([^"']+)["']\s*:/gm)) keys.add(m[1]);
+          const candidates=new Set<string>();
+          const attrNames=new Set(['label','placeholder','title','aria-label','legendTitle','hint']);
+          const arrayNames=/(_DEFAULT|_TYPES|_TRIGGERS|_SYMPTOMS|_HELPED|_LOCATIONS|_QUALITY|_MOODS|_LEVELS|_OPTIONS|_FEELINGS)$/;
+          function add(s:string){s=s.trim().replace(/\s+/g,' '); if(/[A-Za-z]/.test(s) && s.length>1) candidates.add(s)}
+          function walk(n:ts.Node){
+            if(ts.isJsxText(n)) add(n.getText(sf));
+            if(ts.isJsxAttribute(n) && attrNames.has(n.name.getText(sf)) && n.initializer && ts.isStringLiteral(n.initializer)) add(n.initializer.text);
+            if(ts.isPropertyAssignment(n) && ts.isIdentifier(n.name) && ['label','hint'].includes(n.name.text) && ts.isStringLiteralLike(n.initializer)) add(n.initializer.text);
+            if(ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && arrayNames.test(n.name.text) && n.initializer && ts.isArrayLiteralExpression(n.initializer)){
+              for(const e of n.initializer.elements) if(ts.isStringLiteralLike(e)) add(e.text);
+            }
+            if(ts.isPropertyAssignment(n) && ts.isStringLiteralLike(n.initializer)){
+              const parent=n.parent?.parent;
+              if(parent && ts.isVariableDeclaration(parent) && ts.isIdentifier(parent.name) && /(DESC|DESCRIPTION)/.test(parent.name.text)) add(n.initializer.text);
+            }
+            ts.forEachChild(n,walk);
+          }
+          walk(sf);
+          const missing=[...candidates].filter(x=>!keys.has(x)).sort((a,b)=>a.localeCompare(b));
+          console.log('VISIBLE_CANDIDATES',candidates.size);
+          console.log('MISSING_SK',missing.length);
+          for(const x of missing) console.log('MISSING:',JSON.stringify(x));
+          TS
+          bun /tmp/audit.ts
