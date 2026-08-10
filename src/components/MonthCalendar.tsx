@@ -302,17 +302,17 @@ export function MonthCalendar({
 
   return (
     <div className="px-1 landscape:px-2 lg:px-2" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-      <div className="grid grid-cols-7 gap-0.5 pb-1 text-center text-[11px] font-semibold text-muted-foreground landscape:pb-0 landscape:text-[10px] lg:pb-2 lg:text-sm xl:text-[15px]">
+      <div className="grid grid-cols-7 gap-0.5 pb-1 text-center text-[11px] font-semibold text-muted-foreground landscape:pb-0 landscape:text-[10px] lg:pb-1.5 lg:text-[13px] xl:text-sm">
         {WEEKDAYS.map((d) => (
           <div key={d}>{d}</div>
         ))}
       </div>
-      <div className="space-y-0.5 lg:space-y-1.5 xl:space-y-2">
+      <div className="space-y-0.5 lg:space-y-1 xl:space-y-1.5">
         {weeks.map((week, wi) => {
           const { rows, overflowByCell } = weekLayouts[wi];
 
           return (
-            <div key={wi} className="grid grid-cols-7 gap-x-0.5 gap-y-0.5 lg:gap-x-1 lg:gap-y-1 xl:gap-x-1.5 xl:gap-y-1.5">
+            <div key={wi} className="grid grid-cols-7 gap-x-0.5 gap-y-0.5 lg:gap-x-1 lg:gap-y-0.5 xl:gap-x-1.5 xl:gap-y-1">
               {week.map(({ date, inMonth, key }, ci) => {
                 const meta = cellMeta.get(key);
                 const periodColor = meta?.periodColor ?? null;
@@ -373,26 +373,26 @@ export function MonthCalendar({
                       inMonth ? "" : "opacity-30"
                     } ${isSel ? "ring-2 ring-primary" : ""}`}
                   >
-                    <div className="relative flex h-[58px] items-center justify-center pt-0.5 landscape:h-8 landscape:pt-0 lg:h-[78px] lg:pt-1 xl:h-[84px]">
+                    <div className="relative flex h-[58px] items-center justify-center pt-0.5 landscape:h-8 landscape:pt-0 lg:h-[68px] lg:pt-1 xl:h-[74px]">
                       {pAvg != null && (
                         <span
                           aria-hidden
-                          className="pointer-events-none absolute h-10 w-10 rounded-full lg:h-12 lg:w-12 xl:h-[52px] xl:w-[52px]"
+                          className="pointer-events-none absolute h-10 w-10 rounded-full lg:h-[46px] lg:w-[46px] xl:h-12 xl:w-12"
                           style={{ boxShadow: `0 0 0 4.75px ${calendarPainColor(pAvg)}` }}
                         />
                       )}
                       {predictedPeriod && (
                         <span
                           aria-hidden
-                          className="pointer-events-none absolute inset-2 rounded-full lg:inset-[15px] xl:inset-[16px]"
+                          className="pointer-events-none absolute inset-2 rounded-full lg:inset-[12px] xl:inset-[13px]"
                           style={{ boxShadow: `0 0 0 2px var(--period-medium)` }}
                         />
                       )}
                       <div
-                        className="relative flex h-8 w-8 items-center justify-center rounded-full lg:h-10 lg:w-10 xl:h-11 xl:w-11"
+                        className="relative flex h-8 w-8 items-center justify-center rounded-full lg:h-9 lg:w-9 xl:h-10 xl:w-10"
                         style={{ background: periodColor ?? "transparent" }}
                       >
-                        <span className={`text-sm lg:text-base xl:text-[17px] ${periodColor ? "font-semibold text-white" : "text-foreground"}`}>
+                        <span className={`text-sm lg:text-[15px] xl:text-base ${periodColor ? "font-semibold text-white" : "text-foreground"}`}>
                           {date.getDate()}
                         </span>
                       </div>
