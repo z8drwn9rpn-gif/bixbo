@@ -22,7 +22,7 @@ const secondary = [
 ] as const;
 
 /** Desktop-only left navigation. Hidden below lg so the mobile UI is untouched. */
-export function SideNav() {
+export function SideNav({ mascotSrc }: { mascotSrc: string }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
 
@@ -56,7 +56,7 @@ export function SideNav() {
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-border/70 bg-surface/80 px-3 py-5 backdrop-blur-xl lg:flex">
       <Link to="/" className="mb-6 flex items-center gap-3 px-2">
         <img
-          src="/bixbo-mascot.png?v=20260810a"
+          src={mascotSrc}
           alt="BIXBO"
           draggable={false}
           className="h-11 w-auto max-w-[46px] select-none object-contain"
