@@ -313,6 +313,7 @@ function ComparisonBarCard({
   unit?: string;
   icon: ReactNode;
 }) {
+  const { t } = useI18n();
   const palette = TONES[tone];
 
   const calculatedMax =
@@ -653,6 +654,7 @@ function CurrentAndHistory({
   historyCount: number;
   historyContent: ReactNode;
 }) {
+  const { t } = useI18n();
   return (
     <section className="rounded-2xl bg-surface-sunken/34 p-3 ring-1 ring-border/32">
       <div className="flex items-center justify-between gap-3">
