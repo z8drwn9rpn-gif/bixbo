@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowLeft, Plus, Trash2, Pencil } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Pencil } from "@/components/icons/BixboIcons";
 import { AppShell } from "@/components/AppShell";
 import { Ico, IcoText } from "@/components/icons/BixboIcons";
 import { useBixbo, EMPTY, type Med } from "@/lib/storage";
