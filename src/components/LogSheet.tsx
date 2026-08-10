@@ -2601,36 +2601,66 @@ function PeriodForm({
       <Field label="Pregnant?">
         <div className="mt-1 flex gap-2">
           <Chip
-            active={!data.settings.pregnantSince}
-            onClick={() => update((d) => ({ ...d, settings: { ...d.settings, pregnantSince: undefined } }))}
+            active={!data.pregnancy?.active}
+            onClick={() =>
+              update((d) => ({
+                ...d,
+                pregnancy: {
+                  ...(d.pregnancy ?? { active: false, hospitalBag: [], vaccinations: [], supplements: [], appointments: [] }),
+                  active: false,
+                  endedAt: d.pregnancy?.active ? todayKey() : d.pregnancy?.endedAt,
+                },
+                settings: { ...d.settings, pregnantSince: undefined },
+              }))
+            }
           >
             No
           </Chip>
           <Chip
-            active={!!data.settings.pregnantSince}
+            active={!!data.pregnancy?.active}
             onClick={() =>
               update((d) => ({
                 ...d,
-                settings: { ...d.settings, pregnantSince: d.settings.pregnantSince ?? todayKey() },
+                pregnancy: {
+                  ...(d.pregnancy ?? { active: false, hospitalBag: [], vaccinations: [], supplements: [], appointments: [] }),
+                  active: true,
+                  lmp: d.pregnancy?.lmp ?? todayKey(),
+                  endedAt: undefined,
+                },
+                postpartum: {
+                  ...(d.postpartum ?? { active: false, visits: [] }),
+                  active: false,
+                  endedAt: d.postpartum?.active ? (d.postpartum.endedAt ?? todayKey()) : d.postpartum?.endedAt,
+                },
+                settings: { ...d.settings, pregnantSince: undefined },
               }))
             }
           >
             Yes
           </Chip>
         </div>
-        {data.settings.pregnantSince && (
+        {data.pregnancy?.active && (
           <div className="mt-2">
-            <span className="text-xs font-medium text-muted-foreground">Since when</span>
+            <span className="text-xs font-medium text-muted-foreground">First day of last menstrual period</span>
             <Input
               type="date"
               className="mt-1"
-              value={data.settings.pregnantSince}
+              value={data.pregnancy?.lmp ?? ""}
               onChange={(e) =>
-                update((d) => ({ ...d, settings: { ...d.settings, pregnantSince: e.target.value || undefined } }))
+                update((d) => ({
+                  ...d,
+                  pregnancy: {
+                    ...(d.pregnancy ?? { active: true, hospitalBag: [], vaccinations: [], supplements: [], appointments: [] }),
+                    active: true,
+                    lmp: e.target.value || undefined,
+                    endedAt: undefined,
+                  },
+                  settings: { ...d.settings, pregnantSince: undefined },
+                }))
               }
             />
             {(() => {
-              const p = pregnancyInfo(data.settings.pregnantSince);
+              const p = pregnancyInfo(data.pregnancy?.lmp);
               return p ? (
                 <p className="mt-1 text-[11px] text-muted-foreground">
                   Week {p.week} · Trimester {p.trimester} — cycle predictions are paused.
