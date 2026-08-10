@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Activity,
   Archive,
@@ -23,7 +23,18 @@ import {
 
 import { AppShell } from "@/components/AppShell";
 import { CHART_COLORS, CHART_TINTS } from "@/components/ui/chart";
-import { EMPTY, addDays, avgDayPain, isCycleTrackingHidden, todayKey, useBixbo, type DayLog } from "@/lib/storage";
+import {
+  EMPTY,
+  addDays,
+  avgDayPain,
+  isCycleTrackingHidden,
+  todayKey,
+  useBixbo,
+  type DayLog,
+  type PatternTreatmentKind,
+  type PatternTreatmentResult,
+  type ArchivedPatternTreatment,
+} from "@/lib/storage";
 import {
   avg,
   dayBowelSymptoms,
@@ -136,26 +147,9 @@ function latestWeightForDay(log: DayLog | undefined): number | null {
 
 type PatternTab = "cycle" | "monthly" | "treatment" | "triggers";
 type AnalysisRange = 7 | 30 | 90;
-type TreatmentKind = "medication" | "supplement" | "diet" | "therapy" | "exercise" | "other";
-type TreatmentResult =
-  | "pain"
-  | "panicEpisodes"
-  | "tetanyEpisodes"
-  | "headache"
-  | "panicIntensity"
-  | "tetanyIntensity"
-  | "negativeMood";
-
-type ArchivedTreatment = {
-  id: string;
-  name: string;
-  kind: TreatmentKind;
-  notes: string;
-  startDate: string;
-  archivedAt: string;
-  custom: boolean;
-  result?: TreatmentResult;
-};
+type TreatmentKind = PatternTreatmentKind;
+type TreatmentResult = PatternTreatmentResult;
+type ArchivedTreatment = ArchivedPatternTreatment;
 
 const PATTERN_TABS: Array<{ id: PatternTab; label: string }> = [
   { id: "cycle", label: "Cycle" },
@@ -1166,128 +1160,122 @@ export function PatternsContent() {
   /* Treatment comparison                                                     */
   /* ------------------------------------------------------------------------ */
 
-  const [treatmentDate, setTreatmentDate] = useState("");
-  const [treatmentName, setTreatmentName] = useState("");
-  const [treatmentKind, setTreatmentKind] = useState<TreatmentKind>("medication");
-  const [treatmentResult, setTreatmentResult] = useState<TreatmentResult>("pain");
-  const [treatmentNotes, setTreatmentNotes] = useState("");
-  const [customTreatment, setCustomTreatment] = useState(false);
-  const [archivedTreatments, setArchivedTreatments] = useState<ArchivedTreatment[]>([]);
-  const [treatmentsLoaded, setTreatmentsLoaded] = useState(false);
-  const treatmentStorageKey = "bixbo:patterns:treatment";
-  const treatmentStorageBackupKey = "bixbo:patterns:treatment:backup";
-  const treatmentArchiveStorageKey = "bixbo:patterns:treatment-archive";
-  const treatmentArchiveStorageBackupKey = "bixbo:patterns:treatment-archive:backup";
+  // Treatment data is part of BixboData so it is protected by the same
+  // local snapshot, JSON backup, cloud sync and merge logic as health logs.
+  const legacyTreatmentMigrationChecked = useRef(false);
+  const activeTreatment = view.patterns?.activeTreatment;
+  const archivedTreatments = view.patterns?.treatmentArchive ?? [];
+  const treatmentDate = activeTreatment?.date ?? "";
+  const treatmentName = activeTreatment?.name ?? "";
+  const treatmentKind: TreatmentKind = activeTreatment?.kind ?? "medication";
+  const treatmentResult: TreatmentResult = activeTreatment?.result ?? "pain";
+  const treatmentNotes = activeTreatment?.notes ?? "";
+  const customTreatment = activeTreatment?.custom ?? false;
 
+  const patchActiveTreatment = (patch: Partial<NonNullable<typeof activeTreatment>>) => {
+    update((d) => {
+      const current = d.patterns?.activeTreatment ?? {
+        date: "",
+        name: "",
+        kind: "medication" as TreatmentKind,
+        result: "pain" as TreatmentResult,
+        notes: "",
+        custom: false,
+      };
+      return {
+        ...d,
+        patterns: {
+          ...(d.patterns ?? { treatmentArchive: [] }),
+          activeTreatment: { ...current, ...patch },
+          treatmentArchive: d.patterns?.treatmentArchive ?? [],
+        },
+      };
+    });
+  };
+
+  const setTreatmentDate = (value: string) => patchActiveTreatment({ date: value });
+  const setTreatmentName = (value: string) => patchActiveTreatment({ name: value });
+  const setTreatmentKind = (value: TreatmentKind) => patchActiveTreatment({ kind: value });
+  const setTreatmentResult = (value: TreatmentResult) => patchActiveTreatment({ result: value });
+  const setTreatmentNotes = (value: string) => patchActiveTreatment({ notes: value });
+  const setCustomTreatment = (value: boolean) => patchActiveTreatment({ custom: value });
+
+  // One-time non-destructive bridge from older localStorage-only Treatments.
+  // The migration marker prevents an intentionally deleted treatment from
+  // being resurrected from an old emergency copy on a later reload.
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (!hydrated || legacyTreatmentMigrationChecked.current || typeof window === "undefined") return;
+    legacyTreatmentMigrationChecked.current = true;
 
-    const parseTreatment = (raw: string | null) => {
-      if (!raw) return null;
-      try {
-        return JSON.parse(raw) as {
-          date?: string;
-          name?: string;
-          kind?: TreatmentKind;
-          result?: TreatmentResult;
-          notes?: string;
-          custom?: boolean;
-        };
-      } catch {
-        return null;
-      }
-    };
+    const migrationKey = "bixbo:patterns:treatment:migrated-to-main-data";
+    if (window.localStorage.getItem(migrationKey) === "1") return;
 
-    const primaryTreatment = parseTreatment(window.localStorage.getItem(treatmentStorageKey));
-    const backupTreatment = parseTreatment(window.localStorage.getItem(treatmentStorageBackupKey));
-    const saved = primaryTreatment ?? backupTreatment;
-
-    if (saved) {
-      setTreatmentDate(saved.date ?? "");
-      setTreatmentName(saved.name ?? "");
-      setTreatmentKind(saved.kind ?? "medication");
-      setTreatmentResult(saved.result ?? "pain");
-      setTreatmentNotes(saved.notes ?? "");
-      setCustomTreatment(Boolean(saved.custom));
-
-      // Heal a missing/corrupt primary copy from the backup without deleting anything.
-      const serialized = JSON.stringify(saved);
-      window.localStorage.setItem(treatmentStorageKey, serialized);
-      window.localStorage.setItem(treatmentStorageBackupKey, serialized);
-    }
-
-    const parseArchive = (raw: string | null): ArchivedTreatment[] | null => {
+    const parseObject = (raw: string | null): Record<string, unknown> | null => {
       if (!raw) return null;
       try {
         const parsed = JSON.parse(raw);
-        return Array.isArray(parsed) ? (parsed as ArchivedTreatment[]) : null;
+        return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : null;
       } catch {
         return null;
       }
     };
+    const parseArray = (raw: string | null): ArchivedTreatment[] => {
+      if (!raw) return [];
+      try {
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? (parsed as ArchivedTreatment[]) : [];
+      } catch {
+        return [];
+      }
+    };
 
-    const primaryArchive = parseArchive(window.localStorage.getItem(treatmentArchiveStorageKey));
-    const backupArchive = parseArchive(window.localStorage.getItem(treatmentArchiveStorageBackupKey));
-    const savedArchive = primaryArchive ?? backupArchive;
+    const legacyActive =
+      parseObject(window.localStorage.getItem("bixbo:patterns:treatment")) ??
+      parseObject(window.localStorage.getItem("bixbo:patterns:treatment:backup"));
+    const legacyArchivePrimary = parseArray(window.localStorage.getItem("bixbo:patterns:treatment-archive"));
+    const legacyArchiveBackup = parseArray(window.localStorage.getItem("bixbo:patterns:treatment-archive:backup"));
+    const legacyArchive = legacyArchivePrimary.length ? legacyArchivePrimary : legacyArchiveBackup;
 
-    if (savedArchive) {
-      setArchivedTreatments(savedArchive);
-      const serializedArchive = JSON.stringify(savedArchive);
-      window.localStorage.setItem(treatmentArchiveStorageKey, serializedArchive);
-      window.localStorage.setItem(treatmentArchiveStorageBackupKey, serializedArchive);
+    if (legacyActive || legacyArchive.length) {
+      update((d) => {
+        const alreadyHasActive = Boolean(d.patterns?.activeTreatment);
+        const alreadyHasArchive = Boolean(d.patterns?.treatmentArchive?.length);
+        const importedActive = legacyActive
+          ? {
+              date: typeof legacyActive.date === "string" ? legacyActive.date : "",
+              name: typeof legacyActive.name === "string" ? legacyActive.name : "",
+              kind: (typeof legacyActive.kind === "string" ? legacyActive.kind : "medication") as TreatmentKind,
+              result: (typeof legacyActive.result === "string" ? legacyActive.result : "pain") as TreatmentResult,
+              notes: typeof legacyActive.notes === "string" ? legacyActive.notes : "",
+              custom: Boolean(legacyActive.custom),
+            }
+          : undefined;
+
+        return {
+          ...d,
+          patterns: {
+            ...(d.patterns ?? { treatmentArchive: [] }),
+            activeTreatment: alreadyHasActive ? d.patterns?.activeTreatment : importedActive,
+            treatmentArchive: alreadyHasArchive ? d.patterns!.treatmentArchive : legacyArchive,
+          },
+        };
+      });
     }
 
-    // From this point onward autosave is allowed, but autosave itself is
-    // never allowed to delete treatment data.
-    setTreatmentsLoaded(true);
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || !treatmentsLoaded) return;
-
-    const hasTreatment = Boolean(treatmentDate || treatmentName || treatmentNotes);
-    if (!hasTreatment) return;
-
-    const serialized = JSON.stringify({
-      date: treatmentDate,
-      name: treatmentName,
-      kind: treatmentKind,
-      result: treatmentResult,
-      notes: treatmentNotes,
-      custom: customTreatment,
-    });
-
-    window.localStorage.setItem(treatmentStorageKey, serialized);
-    window.localStorage.setItem(treatmentStorageBackupKey, serialized);
-  }, [
-    customTreatment,
-    treatmentDate,
-    treatmentKind,
-    treatmentName,
-    treatmentNotes,
-    treatmentResult,
-    treatmentsLoaded,
-  ]);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || !treatmentsLoaded) return;
-
-    const serialized = JSON.stringify(archivedTreatments);
-    window.localStorage.setItem(treatmentArchiveStorageKey, serialized);
-    window.localStorage.setItem(treatmentArchiveStorageBackupKey, serialized);
-  }, [archivedTreatments, treatmentsLoaded]);
+    // Keep the old keys as an emergency read-only copy for this migration,
+    // but never use them as the canonical source again.
+    window.localStorage.setItem(migrationKey, "1");
+  }, [hydrated, update]);
 
   const clearActiveTreatment = () => {
-    setTreatmentDate("");
-    setTreatmentName("");
-    setTreatmentKind("medication");
-    setTreatmentResult("pain");
-    setTreatmentNotes("");
-    setCustomTreatment(false);
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem(treatmentStorageKey);
-      window.localStorage.removeItem(treatmentStorageBackupKey);
-    }
+    update((d) => ({
+      ...d,
+      patterns: {
+        ...(d.patterns ?? { treatmentArchive: [] }),
+        activeTreatment: undefined,
+        treatmentArchive: d.patterns?.treatmentArchive ?? [],
+      },
+    }));
   };
 
   const archiveTreatmentComparison = () => {
@@ -1315,8 +1303,14 @@ export function PatternsContent() {
       custom: customTreatment,
     };
 
-    setArchivedTreatments((current) => [archived, ...current]);
-    clearActiveTreatment();
+    update((d) => ({
+      ...d,
+      patterns: {
+        ...(d.patterns ?? { treatmentArchive: [] }),
+        activeTreatment: undefined,
+        treatmentArchive: [archived, ...(d.patterns?.treatmentArchive ?? [])],
+      },
+    }));
   };
 
   const deleteTreatmentComparison = () => {
@@ -1341,13 +1335,21 @@ export function PatternsContent() {
       return;
     }
 
-    setTreatmentDate(archived.startDate);
-    setTreatmentName(archived.name === "Unnamed treatment" ? "" : archived.name);
-    setTreatmentKind(archived.kind);
-    setTreatmentResult(archived.result ?? "pain");
-    setTreatmentNotes(archived.notes);
-    setCustomTreatment(archived.custom);
-    setArchivedTreatments((current) => current.filter((item) => item.id !== archived.id));
+    update((d) => ({
+      ...d,
+      patterns: {
+        ...(d.patterns ?? { treatmentArchive: [] }),
+        activeTreatment: {
+          date: archived.startDate,
+          name: archived.name === "Unnamed treatment" ? "" : archived.name,
+          kind: archived.kind,
+          result: archived.result ?? "pain",
+          notes: archived.notes,
+          custom: archived.custom,
+        },
+        treatmentArchive: (d.patterns?.treatmentArchive ?? []).filter((item) => item.id !== archived.id),
+      },
+    }));
   };
 
   const deleteArchivedTreatment = (id: string) => {
@@ -1359,7 +1361,13 @@ export function PatternsContent() {
       return;
     }
 
-    setArchivedTreatments((current) => current.filter((item) => item.id !== id));
+    update((d) => ({
+      ...d,
+      patterns: {
+        ...(d.patterns ?? { treatmentArchive: [] }),
+        treatmentArchive: (d.patterns?.treatmentArchive ?? []).filter((item) => item.id !== id),
+      },
+    }));
   };
 
   const treatmentWindow = (before: boolean) => {
