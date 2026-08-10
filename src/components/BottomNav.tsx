@@ -5,7 +5,7 @@ const items = [
   { to: "/", label: "Home", icon: Home },
   { to: "/insights", label: "Overview", icon: Brain },
   { to: "/couple", label: "Couple", icon: Users },
-  { to: "/notes", label: "Bixbo Note", icon: StickyNote },
+  { to: "/notes", label: "Note", icon: StickyNote },
 ] as const;
 
 export function BottomNav() {
