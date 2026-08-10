@@ -23,10 +23,11 @@ import {
 /* ------------------------------------------------------------------ */
 
 export function Section({ title, icon, children }: { title: string; icon?: string; children: React.ReactNode }) {
+  const { t } = useI18n();
   return (
     <section className="rounded-3xl bg-surface p-4 ring-1 ring-border">
       <p className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
-        {icon && <Ico e={icon} size={16} />} {title}
+        {icon && <Ico e={icon} size={16} />} {t(title)}
       </p>
       <div className="mt-3">{children}</div>
     </section>
@@ -34,9 +35,10 @@ export function Section({ title, icon, children }: { title: string; icon?: strin
 }
 
 export function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  const { t } = useI18n();
   return (
     <label className="block text-xs font-medium text-muted-foreground">
-      <span className="mb-1 block">{label}</span>
+      <span className="mb-1 block">{t(label)}</span>
       {children}
     </label>
   );
@@ -51,10 +53,11 @@ export function Slider0to10({
   value: number | undefined;
   onChange: (v: number) => void;
 }) {
+  const { t } = useI18n();
   return (
     <div>
       <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>{label}</span>
+        <span>{t(label)}</span>
         <span className="tabular-nums font-medium text-foreground">{value ?? 0}</span>
       </div>
       <input
@@ -72,6 +75,7 @@ export function Slider0to10({
 }
 
 export function Chip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  const { t } = useI18n();
   return (
     <button
       type="button"
@@ -80,7 +84,7 @@ export function Chip({ label, active, onClick }: { label: string; active: boolea
         active ? "bg-primary text-primary-foreground ring-primary" : "bg-tint text-foreground ring-border"
       }`}
     >
-      {label}
+      {t(label)}
     </button>
   );
 }
@@ -301,7 +305,7 @@ export function Checklist({
           <li key={it.id} className="flex items-center gap-2 rounded-xl bg-tint px-3 py-2 ring-1 ring-border/40">
             <button
               type="button"
-              aria-label={it.done ? `Mark ${it.text} not done` : `Mark ${it.text} done`}
+              aria-label={it.done ? `Mark ${t(it.text)} not done` : `Mark ${t(it.text)} done`}
               onClick={() => onChange(items.map((x) => (x.id === it.id ? { ...x, done: !x.done } : x)))}
               className="flex h-11 w-11 shrink-0 items-center justify-center"
             >
@@ -311,10 +315,10 @@ export function Checklist({
                 {it.done ? t("Done") : ""}
               </span>
             </button>
-            <span className={`flex-1 text-sm ${it.done ? "text-muted-foreground line-through" : ""}`}>{it.text}</span>
+            <span className={`flex-1 text-sm ${it.done ? "text-muted-foreground line-through" : ""}`}>{t(it.text)}</span>
             <button
               type="button"
-              aria-label={`Remove ${it.text}`}
+              aria-label={`Remove ${t(it.text)}`}
               onClick={() => onChange(items.filter((x) => x.id !== it.id))}
               className="flex h-11 w-11 shrink-0 items-center justify-center text-muted-foreground"
             >
@@ -645,7 +649,7 @@ export function AppointmentForm({
       <Field label="Kind">
         <select
           className="h-11 w-full rounded-md border border-input bg-background px-2 text-sm"
-          value={kind}
+          value={t(kind)}
           onChange={(e) => setKind(e.target.value as PregnancyAppointment["kind"])}
         >
           {Object.entries(KIND_LABELS).map(([k, l]) => (
@@ -770,7 +774,7 @@ export function exportTimeline(data: BixboData): string {
     .sort((a, b) => a.date.localeCompare(b.date))
     .forEach((a) => {
       lines.push(
-        `- ${a.date}${a.time ? ` ${a.time}` : ""} — ${a.title} (${a.kind})${a.doctor ? ` w/ ${a.doctor}` : ""}${a.result ? ` — ${a.result}` : ""}`,
+        `- ${a.date}${a.time ? ` ${a.time}` : ""} — ${a.title} (${t(a.kind)})${a.doctor ? ` w/ ${a.doctor}` : ""}${a.result ? ` — ${a.result}` : ""}`,
       );
     });
   lines.push("");
