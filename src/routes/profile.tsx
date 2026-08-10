@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { postpartumProgress } from "@/lib/health";
 import { ArrowLeft, Plus, X, Pencil, ChevronRight, Check } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
@@ -30,6 +30,8 @@ import {
   userGender,
   isPregnancyActive,
   isPostpartumActive,
+  normalizeBixboBackup,
+  replaceBixbo,
   type HealthProfile,
   type Doctor,
   type EmergencyContact,
@@ -618,6 +620,7 @@ function ProfilePage() {
     quietEnd: "08:00",
   });
   const [prefsLoaded, setPrefsLoaded] = useState(false);
+  const syncingPrefsFromStoreRef = useRef(false);
   const prefsSignature = JSON.stringify({
     tracking: view.settings.tracking,
     units: view.settings.units,
@@ -630,6 +633,10 @@ function ProfilePage() {
 
   useEffect(() => {
     if (!hydrated) return;
+
+    // Prevent the autosave effect below from writing stale local form values
+    // back over a just-restored/cloud-synced settings snapshot.
+    syncingPrefsFromStoreRef.current = true;
 
     // Main BIXBO settings are the single source of truth for Profile preferences.
     const tracking = view.settings.tracking;
@@ -682,6 +689,10 @@ function ProfilePage() {
 
   useEffect(() => {
     if (!prefsLoaded) return;
+    if (syncingPrefsFromStoreRef.current) {
+      syncingPrefsFromStoreRef.current = false;
+      return;
+    }
 
     // Every Profile change is written back to the canonical synced Settings
     // model so Home, Calendar, Insights and logs immediately see the same value.
@@ -1190,8 +1201,16 @@ function ProfilePage() {
     const restoreBackup = async (file: File) => {
       try {
         const raw = await file.text();
-        JSON.parse(raw);
-        window.alert("Backup file is valid. Restore/merge can now be connected to the existing import logic.");
+        const parsed = JSON.parse(raw);
+        const restored = normalizeBixboBackup(parsed);
+
+        const confirmed = window.confirm(
+          "Restore this BIXBO backup? Your current local BIXBO data will be replaced by the selected backup. This action does not delete the backup file itself.",
+        );
+        if (!confirmed) return;
+
+        replaceBixbo(restored, "local");
+        window.alert("BIXBO backup restored successfully.");
       } catch {
         window.alert("This is not a valid BIXBO JSON backup.");
       }
