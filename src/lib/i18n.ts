@@ -339,7 +339,6 @@ const SK: Record<string, string> = {
   "Saved as today's dated weight entry.": "Uložené ako dnešný záznam hmotnosti.",
   "Download a plain-text timeline of your pregnancy.": "Stiahni si časovú os tehotenstva ako jednoduchý text.",
   "— or —": "— alebo —",
-  "Welcome — let's set things up": "Vitaj — nastavme to",
   "Select everything you noticed during recovery.": "Vyber všetko, čo si počas zotavovania zaznamenala.",
   "6-week trend": "6-týždňový trend",
   "Feeding": "Kŕmenie",
