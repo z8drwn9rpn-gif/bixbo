@@ -442,7 +442,7 @@ function VitalTrendPopup({
             type="button"
             onClick={onClose}
             className="grid h-8 w-8 place-items-center rounded-full bg-tint text-xs font-bold text-foreground ring-1 ring-border"
-            aria-label="Close"
+            aria-label={t("Close")}
           >
             ×
           </button>
@@ -459,7 +459,7 @@ function VitalTrendPopup({
                   period === value ? "bg-surface text-foreground shadow-sm ring-1 ring-border" : "text-muted-foreground"
                 }`}
               >
-                {value === "W" ? "Week" : value === "M" ? "Month" : "Year"}
+                {value === "W" ? t("Week") : value === "M" ? t("Month") : t("Year")}
               </button>
             ))}
           </div>
@@ -469,7 +469,7 @@ function VitalTrendPopup({
               type="button"
               onClick={() => setAnchor((current) => shiftTrendAnchor(current, period, -1))}
               className="grid h-8 w-8 place-items-center rounded-full bg-tint ring-1 ring-border"
-              aria-label="Previous period"
+              aria-label={t("Previous period")}
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -478,7 +478,7 @@ function VitalTrendPopup({
               type="button"
               onClick={() => setAnchor((current) => shiftTrendAnchor(current, period, 1))}
               className="grid h-8 w-8 place-items-center rounded-full bg-tint ring-1 ring-border"
-              aria-label="Next period"
+              aria-label={t("Next period")}
             >
               <ChevronRight className="h-4 w-4" />
             </button>
@@ -731,7 +731,7 @@ function HomePage() {
           <span>BIXBO</span>
 
           <span className="text-xs font-normal text-muted-foreground">
-            Hi, {view.settings.userName?.trim() || "there"} <Ico e="❤️" size={12} />
+            {t("Hi")}, {view.settings.userName?.trim() || t("there")} <Ico e="❤️" size={12} />
           </span>
         </div>
       }
@@ -745,7 +745,7 @@ function HomePage() {
               setTodayOpen(true);
             }}
             className="flex min-w-[82px] flex-col items-end justify-center rounded-2xl px-2 py-1 transition hover:bg-tint"
-            aria-label="Open today's summary"
+            aria-label={t("Open today's summary")}
           >
             <span className="text-[10px] font-semibold leading-none text-muted-foreground">{t("Today")}</span>
             <span className="mt-1 flex items-center gap-1 whitespace-nowrap text-[11px] font-semibold leading-none text-foreground">
@@ -758,8 +758,8 @@ function HomePage() {
           <Link
             to="/profile"
             className="flex min-w-[52px] flex-col items-center justify-center rounded-2xl px-2 py-1.5 text-primary transition hover:bg-tint"
-            aria-label="Health"
-            title="Health"
+            aria-label={t("Health")}
+            title={t("Health")}
           >
             <HeartIcon size={24} />
             <span className="mt-0.5 text-[10px] font-semibold leading-none">{t("Health")}</span>
@@ -774,7 +774,7 @@ function HomePage() {
           <button
             type="button"
             onClick={goToPrevMonth}
-            aria-label="Previous month"
+            aria-label={t("Previous month")}
             className="rounded-full p-1.5 hover:bg-tint"
           >
             <ChevronLeft className="h-5 w-5" />
@@ -787,7 +787,7 @@ function HomePage() {
           <button
             type="button"
             onClick={goToNextMonth}
-            aria-label="Next month"
+            aria-label={t("Next month")}
             className="rounded-full p-1.5 hover:bg-tint"
           >
             <ChevronRight className="h-5 w-5" />
@@ -1327,7 +1327,7 @@ function HomePage() {
             <div className="fixed inset-0 z-[90] flex items-center justify-center px-7">
               <button
                 type="button"
-                aria-label="Close summary"
+                aria-label={t("Close summary")}
                 className="absolute inset-0 bg-black/35"
                 onClick={() => setTodayOpen(false)}
               />
@@ -1378,7 +1378,7 @@ function HomePage() {
                             type="button"
                             onClick={() => shiftSummaryMonth(-1)}
                             className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-tint ring-1 ring-border"
-                            aria-label="Previous month"
+                            aria-label={t("Previous month")}
                           >
                             <ChevronLeft className="h-4 w-4" />
                           </button>
@@ -1396,7 +1396,7 @@ function HomePage() {
                             type="button"
                             onClick={() => shiftSummaryMonth(1)}
                             className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-tint ring-1 ring-border"
-                            aria-label="Next month"
+                            aria-label={t("Next month")}
                           >
                             <ChevronRight className="h-4 w-4" />
                           </button>
@@ -1408,7 +1408,7 @@ function HomePage() {
                       type="button"
                       onClick={() => setTodayOpen(false)}
                       className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-tint text-xs font-bold text-foreground ring-1 ring-border"
-                      aria-label="Close"
+                      aria-label={t("Close")}
                     >
                       ×
                     </button>
@@ -1818,7 +1818,7 @@ function BirthControlOverlay({
             type="button"
             onClick={onClose}
             className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-tint ring-1 ring-border"
-            aria-label="Back to calendar"
+            aria-label={t("Back to calendar")}
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
@@ -2118,7 +2118,7 @@ function BirthControlCalendar({
             type="button"
             onClick={() => moveHakCalendarMonth(-1)}
             className="grid h-7 w-7 place-items-center rounded-full transition hover:bg-tint"
-            aria-label="Previous calendar month"
+            aria-label={t("Previous calendar month")}
           >
             <ChevronLeft className="h-3.5 w-3.5" />
           </button>
@@ -2131,7 +2131,7 @@ function BirthControlCalendar({
             type="button"
             onClick={() => moveHakCalendarMonth(1)}
             className="grid h-7 w-7 place-items-center rounded-full transition hover:bg-tint"
-            aria-label="Next calendar month"
+            aria-label={t("Next calendar month")}
           >
             <ChevronRight className="h-3.5 w-3.5" />
           </button>
@@ -2590,7 +2590,7 @@ function BirthControlCalendar({
                       borderColor: `color-mix(in srgb, ${popupAccent} 35%, transparent)`,
                       color: popupAccent,
                     }}
-                    aria-label="Close"
+                    aria-label={t("Close")}
                   >
                     ×
                   </button>
@@ -2753,7 +2753,7 @@ function SukSukPeriodChart({
   anchorKey: string;
   darkMode: boolean;
 }) {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const HAK_PURPLE = darkMode ? "#B6C28E" : "#647A32";
   const HAK_PURPLE_DARK = darkMode ? "#D9E3BA" : "#455A20";
   const HAK_PURPLE_SOFT = darkMode ? "#626944" : "#C5D1A0";
@@ -2973,8 +2973,8 @@ function SukSukPeriodChart({
                 type="button"
                 onClick={() => setWeekOffset((value) => value - 1)}
                 className="grid h-5 w-5 shrink-0 place-items-center rounded-full text-muted-foreground transition hover:bg-tint hover:text-foreground"
-                aria-label="Previous week"
-                title="Previous week"
+                aria-label={t("Previous week")}
+                title={t("Previous week")}
               >
                 <ChevronLeft className="h-3 w-3" />
               </button>
@@ -2983,10 +2983,10 @@ function SukSukPeriodChart({
                 type="button"
                 onClick={() => setWeekOffset(0)}
                 className="min-w-0 truncate rounded-md px-0.5 py-0.5 text-center text-[10px] tabular-nums text-muted-foreground transition hover:bg-tint hover:text-foreground"
-                aria-label="Back to current week"
-                title={weekOffset === 0 ? "Current week" : "Back to current week"}
+                aria-label={t("Back to current week")}
+                title={weekOffset === 0 ? t("Current week") : t("Back to current week")}
               >
-                {week.start.toLocaleDateString("en-GB", { day: "numeric" })}–{week.end.toLocaleDateString("en-GB", {
+                {week.start.toLocaleDateString(language === "sk" ? "sk-SK" : "en-GB", { day: "numeric" })}–{week.end.toLocaleDateString(language === "sk" ? "sk-SK" : "en-GB", {
                   day: "numeric",
                   month: "short",
                 })}
@@ -2996,8 +2996,8 @@ function SukSukPeriodChart({
                 type="button"
                 onClick={() => setWeekOffset((value) => value + 1)}
                 className="grid h-5 w-5 shrink-0 place-items-center rounded-full text-muted-foreground transition hover:bg-tint hover:text-foreground"
-                aria-label="Next week"
-                title="Next week"
+                aria-label={t("Next week")}
+                title={t("Next week")}
               >
                 <ChevronRight className="h-3 w-3" />
               </button>
@@ -3017,8 +3017,8 @@ function SukSukPeriodChart({
                 type="button"
                 onClick={() => setMonthOffset((value) => value - 1)}
                 className="grid h-5 w-5 shrink-0 place-items-center rounded-full text-muted-foreground transition hover:bg-tint hover:text-foreground"
-                aria-label="Previous month"
-                title="Previous month"
+                aria-label={t("Previous month")}
+                title={t("Previous month")}
               >
                 <ChevronLeft className="h-3 w-3" />
               </button>
@@ -3027,10 +3027,10 @@ function SukSukPeriodChart({
                 type="button"
                 onClick={() => setMonthOffset(0)}
                 className="min-w-0 truncate rounded-md px-0.5 py-0.5 text-center text-[10px] text-muted-foreground transition hover:bg-tint hover:text-foreground"
-                aria-label="Back to current month"
-                title={monthOffset === 0 ? "Current month" : "Back to current month"}
+                aria-label={t("Back to current month")}
+                title={monthOffset === 0 ? t("Current month") : t("Back to current month")}
               >
-                {selectedMonthAnchor.toLocaleDateString("en-US", {
+                {selectedMonthAnchor.toLocaleDateString(language === "sk" ? "sk-SK" : "en-US", {
                   month: "long",
                   year: "numeric",
                 })}
@@ -3040,8 +3040,8 @@ function SukSukPeriodChart({
                 type="button"
                 onClick={() => setMonthOffset((value) => value + 1)}
                 className="grid h-5 w-5 shrink-0 place-items-center rounded-full text-muted-foreground transition hover:bg-tint hover:text-foreground"
-                aria-label="Next month"
-                title="Next month"
+                aria-label={t("Next month")}
+                title={t("Next month")}
               >
                 <ChevronRight className="h-3 w-3" />
               </button>
@@ -3061,8 +3061,8 @@ function SukSukPeriodChart({
                 type="button"
                 onClick={() => setYearOffset((value) => value - 1)}
                 className="grid h-5 w-5 shrink-0 place-items-center rounded-full text-muted-foreground transition hover:bg-tint hover:text-foreground"
-                aria-label="Previous year"
-                title="Previous year"
+                aria-label={t("Previous year")}
+                title={t("Previous year")}
               >
                 <ChevronLeft className="h-3 w-3" />
               </button>
@@ -3071,8 +3071,8 @@ function SukSukPeriodChart({
                 type="button"
                 onClick={() => setYearOffset(0)}
                 className="min-w-0 rounded-md px-1 py-0.5 text-center text-[10px] tabular-nums text-muted-foreground transition hover:bg-tint hover:text-foreground"
-                aria-label="Back to current year"
-                title={yearOffset === 0 ? "Current year" : "Back to current year"}
+                aria-label={t("Back to current year")}
+                title={yearOffset === 0 ? t("Current year") : t("Back to current year")}
               >
                 {selectedYear}
               </button>
@@ -3081,8 +3081,8 @@ function SukSukPeriodChart({
                 type="button"
                 onClick={() => setYearOffset((value) => value + 1)}
                 className="grid h-5 w-5 shrink-0 place-items-center rounded-full text-muted-foreground transition hover:bg-tint hover:text-foreground"
-                aria-label="Next year"
-                title="Next year"
+                aria-label={t("Next year")}
+                title={t("Next year")}
               >
                 <ChevronRight className="h-3 w-3" />
               </button>
@@ -3139,15 +3139,15 @@ function DayPreview({
   const flowLabel = (level?: string | null): string => {
     switch (level) {
       case "spotting":
-        return "Spotting";
+        return t("Spotting");
       case "light":
-        return "Light";
+        return t("Light");
       case "medium":
-        return "Medium";
+        return t("Medium");
       case "heavy":
-        return "Heavy";
+        return t("Heavy");
       case "very-heavy":
-        return "Very heavy";
+        return t("Very heavy");
       default:
         return "";
     }
@@ -3181,9 +3181,9 @@ function DayPreview({
   if (!anything)
     return (
       <div className="mx-5 mt-4 rounded-3xl bg-surface p-6 text-center ring-1 ring-border">
-        <p className="text-sm text-muted-foreground">Nothing logged {isToday ? "today" : "this day"} yet.</p>
+        <p className="text-sm text-muted-foreground">{isToday ? t("Nothing logged today yet.") : t("Nothing logged this day yet.")}</p>
         <p className="mt-1 text-xs text-muted-foreground">
-          Tap the <span className="font-bold">+ Log</span> button below.
+          {t("Tap the")} <span className="font-bold">+ {t("Log")}</span> {t("button below.")}
         </p>
       </div>
     );
@@ -3231,9 +3231,9 @@ function DayPreview({
                     className="text-left text-green-700 hover:underline"
                     title={t("Tap to uncheck")}
                   >
-                    Taken · {actual ?? x.time} — {x.med.name}
+                    {t("Taken")} · {actual ?? x.time} — {x.med.name}
                     {x.med.dose ? ` (${x.med.dose})` : ""}
-                    {shifted && <span className="text-[10px] text-muted-foreground"> · scheduled {x.time}</span>}
+                    {shifted && <span className="text-[10px] text-muted-foreground"> · {t("scheduled")} {x.time}</span>}
                     <span className="text-[10px] text-muted-foreground"> · {t("tap to uncheck")}</span>
                   </button>
                 </li>
@@ -3246,7 +3246,7 @@ function DayPreview({
                   className="flex-1 text-left text-destructive/90"
                   title={t("Tap to mark taken")}
                 >
-                  Missed · {x.time} — {x.med.name}
+                  {t("Missed")} · {x.time} — {x.med.name}
                   {x.med.dose ? ` (${x.med.dose})` : ""}{" "}
                   <span className="text-[10px] text-muted-foreground">· {t("missed (tap if taken)")}</span>
                 </button>
@@ -3272,7 +3272,7 @@ function DayPreview({
                       },
                     }))
                   }
-                  aria-label="Delete"
+                  aria-label={t("Delete")}
                   className="text-muted-foreground hover:text-destructive"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
@@ -3298,19 +3298,19 @@ function DayPreview({
                 </button>
                 <button onClick={() => onEditPain?.(p)} className="min-w-0 flex-1 text-left">
                   <p className="text-xs text-muted-foreground">
-                    {p.time} · {PAIN_DESCRIPTIONS[Math.round(p.score)]}
+                    {p.time} · {t(PAIN_DESCRIPTIONS[Math.round(p.score)])}
                   </p>
-                  {p.parts.length > 0 && <p className="text-sm">{p.parts.join(", ")}</p>}
-                  {p.quality.length > 0 && <p className="text-xs text-muted-foreground">{p.quality.join(", ")}</p>}
+                  {p.parts.length > 0 && <p className="text-sm">{p.parts.map(t).join(", ")}</p>}
+                  {p.quality.length > 0 && <p className="text-xs text-muted-foreground">{p.quality.map(t).join(", ")}</p>}
                   {p.symptoms.length > 0 && (
                     <p className="text-xs text-muted-foreground">
-                      + {p.symptoms.join(", ")}
+                      + {p.symptoms.map(t).join(", ")}
                       {p.symptoms.includes("Flu") && p.fluNote ? ` (Flu: ${p.fluNote})` : ""}
                     </p>
                   )}
                   {p.pressureTypes?.length || p.pressureIntensity != null ? (
                     <p className="text-xs text-muted-foreground">
-                      Pressure: {p.pressureTypes?.join(", ")}
+                      {t("Pressure")}: {p.pressureTypes?.map(t).join(", ")}
                       {p.pressureIntensity != null
                         ? `${p.pressureTypes?.length ? " " : ""}${p.pressureIntensity}/10`
                         : ""}
@@ -3318,45 +3318,45 @@ function DayPreview({
                   ) : null}
                   {p.nausea || p.nauseaTypes?.length || p.nauseaSeverity != null ? (
                     <p className="text-xs text-muted-foreground">
-                      Nausea: {p.nauseaTypes?.join(", ")}
+                      {t("Nausea")}: {p.nauseaTypes?.map(t).join(", ")}
                       {p.nauseaSeverity != null ? `${p.nauseaTypes?.length ? " " : ""}${p.nauseaSeverity}/10` : ""}
-                      {p.nauseaOngoing ? " · ongoing" : p.nauseaMinutes != null ? ` · ${p.nauseaMinutes} min` : ""}
-                      {p.nauseaTriggers?.length ? ` · triggers: ${p.nauseaTriggers.join(", ")}` : ""}
-                      {p.nauseaSymptoms?.length ? ` · symptoms: ${p.nauseaSymptoms.join(", ")}` : ""}
-                      {p.nauseaHelped?.length ? ` · relieved by: ${p.nauseaHelped.join(", ")}` : ""}
+                      {p.nauseaOngoing ? ` · ${t("ongoing")}` : p.nauseaMinutes != null ? ` · ${p.nauseaMinutes} min` : ""}
+                      {p.nauseaTriggers?.length ? ` · ${t("triggers")}: ${p.nauseaTriggers.map(t).join(", ")}` : ""}
+                      {p.nauseaSymptoms?.length ? ` · ${t("symptoms")}: ${p.nauseaSymptoms.map(t).join(", ")}` : ""}
+                      {p.nauseaHelped?.length ? ` · ${t("relieved by")}: ${p.nauseaHelped.map(t).join(", ")}` : ""}
                     </p>
                   ) : null}
                   {p.hotFlashes != null && (
                     <p className="text-xs text-muted-foreground">
-                      <Ico e="🥵" size={13} /> Hot flashes intensity {p.hotFlashes}/5
+                      <Ico e="🥵" size={13} /> {t("Hot flashes intensity")} {p.hotFlashes}/5
                     </p>
                   )}
                   {p.headacheTypes?.length ? (
                     <p className="text-xs text-muted-foreground">
-                      <Ico e="🤕" size={13} /> Headache: {p.headacheTypes.join(", ")}
+                      <Ico e="🤕" size={13} /> {t("Headache")}: {p.headacheTypes.map(t).join(", ")}
                       {p.headacheIntensity != null ? ` · ${p.headacheIntensity}/10` : ""}
                     </p>
                   ) : p.headacheIntensity != null ? (
                     <p className="text-xs text-muted-foreground">
-                      <Ico e="🤕" size={13} /> Headache intensity {p.headacheIntensity}/10
+                      <Ico e="🤕" size={13} /> {t("Headache intensity")} {p.headacheIntensity}/10
                     </p>
                   ) : null}
                   {p.headacheMed ? (
                     <p className="text-xs text-muted-foreground">
-                      <Ico e="💊" size={13} /> Headache med: {p.headacheMed}
-                      {p.headacheMedTime ? ` at ${p.headacheMedTime}` : ""}
+                      <Ico e="💊" size={13} /> {t("Headache med")}: {p.headacheMed}
+                      {p.headacheMedTime ? ` ${t("at")} ${p.headacheMedTime}` : ""}
                     </p>
                   ) : null}
                   {p.pcosSymptoms?.length ? (
-                    <p className="text-xs text-muted-foreground">PCOS: {p.pcosSymptoms.join(", ")}</p>
+                    <p className="text-xs text-muted-foreground">PCOS: {p.pcosSymptoms.map(t).join(", ")}</p>
                   ) : null}
                   {p.mood?.length ? (
                     <p className="text-xs text-muted-foreground">
-                      Mood: <IcoText text={p.mood.join(", ")} size={13} />
+                      {t("Mood")}: <IcoText text={p.mood.map(t).join(", ")} size={13} />
                     </p>
                   ) : null}
-                  {p.stress != null && <p className="text-xs text-muted-foreground">Stress {p.stress}/10</p>}
-                  {p.bodyBattery != null && <p className="text-xs text-muted-foreground">Battery {p.bodyBattery}/5</p>}
+                  {p.stress != null && <p className="text-xs text-muted-foreground">{t("Stress")} {p.stress}/10</p>}
+                  {p.bodyBattery != null && <p className="text-xs text-muted-foreground">{t("Battery")} {p.bodyBattery}/5</p>}
                   {p.note && <p className="mt-1 text-sm whitespace-pre-line">"{p.note}"</p>}
                   <p className="mt-1 text-[10px] text-primary">{t("Tap to edit")}</p>
                 </button>
@@ -3388,21 +3388,21 @@ function DayPreview({
               <li key={p.id} className="flex items-start gap-2">
                 <button onClick={() => onEdit?.("panic", p)} className="flex-1 text-left">
                   <p className="text-sm font-medium">
-                    {p.time} · intensity {p.intensity}/10 · {p.minutes == null ? "ongoing" : `${p.minutes} min`}
+                    {p.time} · {t("intensity")} {p.intensity}/10 · {p.minutes == null ? t("ongoing") : `${p.minutes} min`}
                   </p>
-                  {p.trigger && <p className="text-xs text-muted-foreground">Trigger: {p.trigger}</p>}
-                  {p.physical.length > 0 && <p className="text-xs">Physical: {p.physical.join(", ")}</p>}
-                  {p.cognitive.length > 0 && <p className="text-xs">Cognitive: {p.cognitive.join(", ")}</p>}
+                  {p.trigger && <p className="text-xs text-muted-foreground">{t("Trigger")}: {p.trigger}</p>}
+                  {p.physical.length > 0 && <p className="text-xs">{t("Physical")}: {p.physical.map(t).join(", ")}</p>}
+                  {p.cognitive.length > 0 && <p className="text-xs">{t("Cognitive")}: {p.cognitive.map(t).join(", ")}</p>}
                   <p className="text-[11px] text-muted-foreground">
-                    Hyperventilation: {p.hyperventilation}
-                    {p.tetanyPresent ? " · tetany present" : ""}
+                    {t("Hyperventilation")}: {t(p.hyperventilation)}
+                    {p.tetanyPresent ? ` · ${t("tetany present")}` : ""}
                   </p>
                   {p.helped.length > 0 && (
-                    <p className="text-[11px] text-muted-foreground">Helped: {p.helped.join(", ")}</p>
+                    <p className="text-[11px] text-muted-foreground">{t("Helped")}: {p.helped.map(t).join(", ")}</p>
                   )}
                   {p.rescueMed ? (
                     <p className="text-xs text-muted-foreground">
-                      <Ico e="💊" size={13} /> Rescue: {p.rescueMed}
+                      <Ico e="💊" size={13} /> {t("Rescue")}: {p.rescueMed}
                     </p>
                   ) : null}
                   {p.note && <p className="mt-1 text-sm whitespace-pre-line">"{p.note}"</p>}
@@ -3435,19 +3435,19 @@ function DayPreview({
               <li key={tetanyEntry.id} className="flex items-start gap-2">
                 <button onClick={() => onEdit?.("tetany", tetanyEntry)} className="flex-1 text-left">
                   <p>
-                    {tetanyEntry.time} · {tetanyEntry.types.join(", ") || "Tetany"} · {tetanyEntry.intensity}/5 ·{" "}
-                    {tetanyEntry.minutes == null ? "ongoing" : `${tetanyEntry.minutes}min`}
-                    {tetanyEntry.triggers.length ? ` — ${tetanyEntry.triggers.join(", ")}` : ""}
+                    {tetanyEntry.time} · {tetanyEntry.types.length ? tetanyEntry.types.map(t).join(", ") : t("Tetany")} · {tetanyEntry.intensity}/5 ·{" "}
+                    {tetanyEntry.minutes == null ? t("ongoing") : `${tetanyEntry.minutes}min`}
+                    {tetanyEntry.triggers.length ? ` — ${tetanyEntry.triggers.map(t).join(", ")}` : ""}
                   </p>
                   {tetanyEntry.location?.length ? (
-                    <p className="text-xs text-muted-foreground">Location: {tetanyEntry.location.join(", ")}</p>
+                    <p className="text-xs text-muted-foreground">{t("Location")}: {tetanyEntry.location.map(t).join(", ")}</p>
                   ) : null}
                   {tetanyEntry.helped?.length ? (
-                    <p className="text-xs text-muted-foreground">Helped: {tetanyEntry.helped.join(", ")}</p>
+                    <p className="text-xs text-muted-foreground">{t("Helped")}: {tetanyEntry.helped.map(t).join(", ")}</p>
                   ) : null}
                   {tetanyEntry.rescueMed ? (
                     <p className="text-xs text-muted-foreground">
-                      <Ico e="💊" size={13} /> Rescue: {tetanyEntry.rescueMed}
+                      <Ico e="💊" size={13} /> {t("Rescue")}: {tetanyEntry.rescueMed}
                     </p>
                   ) : null}
                   {tetanyEntry.note && <p className="mt-1 text-sm whitespace-pre-line">"{tetanyEntry.note}"</p>}
@@ -3485,21 +3485,21 @@ function DayPreview({
           <Card title="Blueberry" icon="🫐">
             <button onClick={() => onEdit?.("period", undefined)} className="w-full text-left">
               {(log?.periodInfo?.level || log?.period) && (
-                <p className="text-sm">Flow: {flowLabel(log?.periodInfo?.level ?? log?.period)}</p>
+                <p className="text-sm">{t("Flow")}: {flowLabel(log?.periodInfo?.level ?? log?.period)}</p>
               )}
               {log?.periodInfo?.cramps != null && (
                 <p className="text-xs" style={{ color: painColor(log.periodInfo.cramps) }}>
-                  Cramp pain:{" "}
+                  {t("Cramp pain")}:{" "}
                   <span className="font-semibold">
                     {Number.isInteger(log.periodInfo.cramps) ? log.periodInfo.cramps : log.periodInfo.cramps.toFixed(1)}
                     /10
                   </span>{" "}
-                  — {PAIN_DESCRIPTIONS[Math.round(log.periodInfo.cramps)]}
+                  — {t(PAIN_DESCRIPTIONS[Math.round(log.periodInfo.cramps)])}
                 </p>
               )}
               {log?.periodInfo?.discharge && (
                 <p className="text-xs text-muted-foreground">
-                  Discharge: {log.periodInfo.discharge}
+                  {t("Discharge")}: {t(log.periodInfo.discharge)}
                   {log.periodInfo.dischargeNote ? ` — ${log.periodInfo.dischargeNote}` : ""}
                 </p>
               )}
@@ -3515,7 +3515,7 @@ function DayPreview({
             {log.sex.map((s: SexEntry) => (
               <li key={s.id} className="flex items-start gap-2">
                 <button onClick={() => onEdit?.("sex", s)} className="flex-1 text-left">
-                  {s.time} · {String(s.kind).replace(/_/g, " ")}
+                  {s.time} · {t(String(s.kind).replace(/_/g, " "))}
                   {asArr(s.feelingAfter).length ? (
                     <>
                       {" "}
@@ -3524,7 +3524,7 @@ function DayPreview({
                   ) : (
                     ""
                   )}
-                  {s.painful && s.painful !== "no" ? ` · painful ${s.painful}` : ""}
+                  {s.painful && s.painful !== "no" ? ` · ${t("painful")} ${t(s.painful)}` : ""}
                   {s.note ? ` — ${s.note}` : ""}
                 </button>
                 <DeleteBtn
@@ -3551,7 +3551,7 @@ function DayPreview({
               <li key={h.id} className="flex items-start gap-2">
                 <button onClick={() => onEdit?.("heat", h)} className="flex-1 text-left">
                   <Ico e={h.kind === "heat" ? "♨️" : h.kind === "cold" ? "🧊" : "⭐"} size={14} /> {h.start} ·{" "}
-                  {h.ongoing ? "ongoing" : `${h.minutes ?? 0} min`}
+                  {h.ongoing ? t("ongoing") : `${h.minutes ?? 0} min`}
                   {h.note ? ` — ${h.note}` : ""}
                 </button>
                 <DeleteBtn
@@ -3581,25 +3581,25 @@ function DayPreview({
               <li key={f.id} className="flex items-start gap-2">
                 <button onClick={() => onEdit?.("food", f)} className="flex-1 text-left">
                   <div>
-                    {f.time} · <IcoText text={f.what || (f.histamineFlare ? "(histamine flare)" : "—")} size={14} />
-                    {f.highHistamine ? " · high histamine" : ""}
+                    {f.time} · <IcoText text={f.what || (f.histamineFlare ? t("(histamine flare)") : "—")} size={14} />
+                    {f.highHistamine ? ` · ${t("high histamine")}` : ""}
                     {f.hydrationMl != null ? ` · ${f.hydrationMl}ml` : ""}
                     {f.caffeineMg != null ? ` · ${f.caffeineMg}mg` : ""}
                     {f.alcoholDrinks != null ? ` · ${f.alcoholDrinks}` : ""}
                   </div>
                   {f.feelings.length ? (
                     <div className="text-xs text-muted-foreground">
-                      Feel: <IcoText text={f.feelings.join(", ")} size={13} />
+                      {t("Feel")}: <IcoText text={f.feelings.map(t).join(", ")} size={13} />
                     </div>
                   ) : null}
                   {f.symptomsAfter?.length ? (
                     <div className="text-xs text-muted-foreground">
-                      After: <IcoText text={f.symptomsAfter.join(", ")} size={13} />
+                      {t("After")}: <IcoText text={f.symptomsAfter.map(t).join(", ")} size={13} />
                     </div>
                   ) : null}
                   {f.histamineFlare ? (
                     <div className="text-xs text-destructive">
-                      <Ico e="🔥" size={13} /> Histamine flare
+                      <Ico e="🔥" size={13} /> {t("Histamine flare")}
                       {f.histamineSymptoms?.length ? `: ${f.histamineSymptoms.join(", ")}` : ""}
                     </div>
                   ) : null}
@@ -3693,7 +3693,7 @@ function DayPreview({
                         w.distanceKm != null ? `${w.distanceKm} km` : null,
                         w.elevationM != null ? `↑ ${w.elevationM} m` : null,
                         w.rpe != null ? `RPE ${w.rpe}/10` : null,
-                        w.magnesiumBefore ? "Mg before" : null,
+                        w.magnesiumBefore ? t("Mg before") : null,
                       ]
                         .filter(Boolean)
                         .join(" · ")}
@@ -3704,17 +3704,17 @@ function DayPreview({
                       {w.exercises
                         .map(
                           (ex) =>
-                            `${ex.name || "Exercise"}${ex.sets ? ` ${ex.sets}×${ex.reps ?? "?"}` : ""}${ex.weightKg ? ` @ ${ex.weightKg} kg` : ""}`,
+                            `${ex.name || t("Exercise")}${ex.sets ? ` ${ex.sets}×${ex.reps ?? "?"}` : ""}${ex.weightKg ? ` @ ${ex.weightKg} kg` : ""}`,
                         )
                         .join(" · ")}
                     </span>
                   ) : null}
                   {w.weightKg != null && (
-                    <span className="block text-xs text-muted-foreground">Weight after: {w.weightKg} kg</span>
+                    <span className="block text-xs text-muted-foreground">{t("Weight after")}: {w.weightKg} kg</span>
                   )}
                   {w.triggeredSymptom && (
                     <span className="block text-xs text-muted-foreground">
-                      <Ico e="⚠️" size={13} /> Triggered: {w.triggeredSymptom.label ?? w.triggeredSymptom.type}
+                      <Ico e="⚠️" size={13} /> {t("Triggered")}: {t(w.triggeredSymptom.label ?? w.triggeredSymptom.type)}
                     </span>
                   )}
                   {asArr(w.feeling).length ? (
@@ -3749,16 +3749,16 @@ function DayPreview({
       {(log?.temperature != null || log?.weight != null || log?.sleepHours != null || log?.sleepQuality) && (
         <Card title="Temp / Sleep / Weight" icon="🌡️">
           <button onClick={() => onEdit?.("temp", undefined)} className="w-full text-left">
-            {log?.temperature != null && <p className="text-sm">Temperature: {log.temperature}°C</p>}
-            {log?.weight != null && <p className="text-sm">Weight: {log.weight} kg</p>}
+            {log?.temperature != null && <p className="text-sm">{t("Temperature")}: {log.temperature}°C</p>}
+            {log?.weight != null && <p className="text-sm">{t("Weight")}: {log.weight} kg</p>}
             {log?.sleepHours != null && (
               <p className="text-sm">
-                Sleep: {log.sleepHours} h <IcoText text={asArr(log.sleepQuality).join(", ")} size={14} />
+                {t("Sleep")}: {log.sleepHours} h <IcoText text={asArr(log.sleepQuality).join(", ")} size={14} />
               </p>
             )}
             {asArr(log?.sleepQuality).length > 0 && log?.sleepHours == null && (
               <p className="text-sm">
-                Sleep quality: <IcoText text={asArr(log.sleepQuality).join(", ")} size={14} />
+                {t("Sleep quality")}: <IcoText text={asArr(log.sleepQuality).map(t).join(", ")} size={14} />
               </p>
             )}
             <p className="mt-1 text-[10px] text-primary">{t("Tap to edit")}</p>
@@ -3830,7 +3830,7 @@ function DayPreview({
                     })
                   }
                   className="text-muted-foreground hover:text-destructive"
-                  aria-label="Delete"
+                  aria-label={t("Delete")}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
@@ -3844,8 +3844,9 @@ function DayPreview({
 }
 
 function DeleteBtn({ onClick }: { onClick: () => void }) {
+  const { t } = useI18n();
   return (
-    <button onClick={onClick} className="text-muted-foreground hover:text-destructive" aria-label="Delete">
+    <button onClick={onClick} className="text-muted-foreground hover:text-destructive" aria-label={t("Delete")}>
       <Trash2 className="h-3.5 w-3.5" />
     </button>
   );
@@ -3871,15 +3872,15 @@ function ShareDayButton({ date, view }: { date: string; view: BixboData }) {
   const flowLabel = (level?: string | null): string => {
     switch (level) {
       case "spotting":
-        return "Spotting";
+        return t("Spotting");
       case "light":
-        return "Light";
+        return t("Light");
       case "medium":
-        return "Medium";
+        return t("Medium");
       case "heavy":
-        return "Heavy";
+        return t("Heavy");
       case "very-heavy":
-        return "Very heavy";
+        return t("Very heavy");
       default:
         return "";
     }
@@ -3894,9 +3895,9 @@ function ShareDayButton({ date, view }: { date: string; view: BixboData }) {
       const avg = log.pain.reduce((s, p) => s + p.score, 0) / log.pain.length;
       lines.push(`Pain — avg ${avg.toFixed(1)}/10 · ${log.pain.length} entr${log.pain.length === 1 ? "y" : "ies"}`);
       for (const p of log.pain) {
-        const bits = [`${p.time}`, `${p.score}/10 (${PAIN_DESCRIPTIONS[Math.round(p.score)]})`];
+        const bits = [`${p.time}`, `${p.score}/10 (${t(PAIN_DESCRIPTIONS[Math.round(p.score)])})`];
         if (p.parts.length) bits.push(p.parts.join(", "));
-        if (p.quality.length) bits.push(`[${p.quality.join(", ")}]`);
+        if (p.quality.length) bits.push(`[${p.quality.map(t).join(", ")}]`);
         lines.push(`  • ${bits.join(" · ")}`);
         if (p.note) lines.push(`    "${p.note}"`);
       }

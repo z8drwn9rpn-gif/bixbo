@@ -572,7 +572,7 @@ function NotesPage() {
           <>
             {pinnedNotes.length > 0 && (
               <NoteSection
-                title="Pinned"
+                title={t("Pinned")}
                 notes={pinnedNotes}
                 menuNoteId={menuNoteId}
                 setMenuNoteId={setMenuNoteId}

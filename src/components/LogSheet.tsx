@@ -2834,7 +2834,7 @@ function AddCustomInline({ onAdd }: { onAdd: (v: string) => void }) {
         onClick={() => setAdding(true)}
         className="flex items-center gap-1 rounded-full bg-tint px-3 py-1.5 text-xs font-medium text-muted-foreground"
       >
-        <Plus className="h-3 w-3" /> Add
+        <Plus className="h-3 w-3" /> {t("Add")}
       </button>
     );
   const commit = () => {
@@ -2860,7 +2860,7 @@ function AddCustomInline({ onAdd }: { onAdd: (v: string) => void }) {
         autoFocus
       />
       <Button type="button" size="sm" onClick={commit}>
-        Add
+        {t("Add")}
       </Button>
     </div>
   );
@@ -2878,6 +2878,7 @@ function ThermoForm({
   onDone: () => void;
   initialEntry?: ThermoSession;
 }) {
+  const { t } = useI18n();
   const [kind, setKind] = useState<ThermoKind>(initialEntry?.kind ?? "heat");
   const [start, setStart] = useState(initialEntry?.start ?? nowHHMM());
   const [minutes, setMinutes] = useState<string>(
@@ -2908,13 +2909,13 @@ function ThermoForm({
       <Field label="Type">
         <div className="mt-2 flex gap-2">
           <Chip active={kind === "heat"} onClick={() => setKind("heat")}>
-            <Ico e="♨️" size={16} /> Heat
+            <Ico e="♨️" size={16} /> {t("Heat")}
           </Chip>
           <Chip active={kind === "cold"} onClick={() => setKind("cold")}>
-            <Ico e="🧊" size={16} /> Cold
+            <Ico e="🧊" size={16} /> {t("Cold")}
           </Chip>
           <Chip active={kind === "tens"} onClick={() => setKind("tens")}>
-            <Ico e="⭐" size={16} /> TENS
+            <Ico e="⭐" size={16} /> {t("TENS")}
           </Chip>
         </div>
       </Field>

@@ -679,7 +679,7 @@ function PhotosSection({ view, update }: { view: BixboData; update: (u: (d: Bixb
           }}
         />
         <span className="inline-flex h-11 cursor-pointer items-center gap-1.5 rounded-md border border-input bg-background px-3 text-sm font-medium hover:bg-accent">
-          Add photo
+          {t("Add photo")}
         </span>
       </label>
       {(log.photos ?? []).length > 0 && (
@@ -692,7 +692,7 @@ function PhotosSection({ view, update }: { view: BixboData; update: (u: (d: Bixb
                 onClick={() => setViewing(photo)}
                 className="h-full w-full overflow-hidden rounded-lg ring-1 ring-border"
               >
-                <img src={photo} alt="Bump" className="h-full w-full object-cover" />
+                <img src={photo} alt={t("Bump")} className="h-full w-full object-cover" />
               </button>
               <button
                 type="button"
@@ -713,7 +713,7 @@ function PhotosSection({ view, update }: { view: BixboData; update: (u: (d: Bixb
           role="dialog"
           aria-modal="true"
         >
-          <img src={viewing} alt="Bump full size" className="max-h-full max-w-full rounded-2xl" />
+          <img src={viewing} alt={t("Bump full size")} className="max-h-full max-w-full rounded-2xl" />
         </div>
       )}
     </Section>
