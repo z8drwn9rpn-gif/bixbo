@@ -1884,115 +1884,122 @@ export function IcoText({ text, size = 16, className }: { text: string; size?: n
 
 /* ---------------------------------------------------------- BOTTOM NAV */
 
-/** Bottom navigation — Home: soft 3D BIXBO house. */
+/** BIXBO bottom-nav clay palette:
+ *  rounded masses, no thin line-art, strong top-left key light,
+ *  soft bottom-right ambient shade and a compact contact shadow.
+ */
+
 export function NavHomeIcon(p: IconProps) {
   const roof = useSvgId();
   const wall = useSvgId();
-  const grass = useSvgId();
+  const shrub = useSvgId();
+  const shade = useSvgId();
 
   return (
     <Svg {...p}>
-      <g transform="translate(32 32) scale(1.1) translate(-32 -32)" data-nav-scale="1.1">
       <defs>
-        <linearGradient id={roof} x1="14" y1="12" x2="48" y2="42" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#b8cf68" />
-          <stop offset="0.48" stopColor="#839b42" />
-          <stop offset="1" stopColor="#586b2e" />
+        <linearGradient id={roof} x1="12" y1="11" x2="51" y2="49" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#b8ca67" />
+          <stop offset="0.38" stopColor="#8ea44a" />
+          <stop offset="1" stopColor="#596c2e" />
         </linearGradient>
-        <linearGradient id={wall} x1="20" y1="23" x2="43" y2="54" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#fffced" />
-          <stop offset="1" stopColor="#d9d7ae" />
+        <linearGradient id={wall} x1="18" y1="22" x2="46" y2="56" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#fffdf0" />
+          <stop offset="0.58" stopColor="#e9e6c5" />
+          <stop offset="1" stopColor="#c9c594" />
         </linearGradient>
-        <linearGradient id={grass} x1="39" y1="42" x2="54" y2="56" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#a7bf58" />
-          <stop offset="1" stopColor="#6f8536" />
+        <linearGradient id={shrub} x1="42" y1="43" x2="55" y2="57" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#b7c96a" />
+          <stop offset="1" stopColor="#73883a" />
         </linearGradient>
+        <radialGradient id={shade} cx="0.35" cy="0.25" r="0.9">
+          <stop stopColor="#a5b95b" />
+          <stop offset="1" stopColor="#71823c" />
+        </radialGradient>
       </defs>
 
-      <Shadow cy={58} rx={20} ry={3.5} />
+      <ellipse cx="32" cy="57.4" rx="20.5" ry="4.1" fill="#38451f" opacity="0.16" />
 
       <path
-        d="M10 29.5 28.3 12c2.1-2 5.3-2 7.4 0L54 29.5c2 1.9.7 5.3-2.1 5.3h-2.3V51c0 3-2.4 5.4-5.4 5.4H19.8c-3 0-5.4-2.4-5.4-5.4V34.8H12c-2.8 0-4.1-3.4-2-5.3z"
+        d="M13.2 30.3 29 15.1c1.7-1.6 4.3-1.6 6 0l15.8 15.2v19.1c0 4-3.2 7.2-7.2 7.2H20.4c-4 0-7.2-3.2-7.2-7.2z"
         fill={`url(#${wall})`}
-        stroke="#c4c29b"
-        strokeWidth="1"
       />
+
       <path
-        d="M8.7 28.6 27.4 10.7c2.6-2.5 6.6-2.5 9.2 0l18.7 17.9c2.1 2 .7 5.6-2.2 5.6-1 0-1.8-.3-2.5-1L34.8 18.1a4 4 0 0 0-5.6 0L13.4 33.2c-.7.7-1.6 1-2.5 1-2.9 0-4.3-3.6-2.2-5.6z"
+        d="M7.8 27.8 27.7 8.9c2.4-2.3 6.2-2.3 8.6 0l19.9 18.9c2.5 2.4.8 6.7-2.7 6.7-1 0-2-.4-2.8-1.1L34.5 18.1a3.7 3.7 0 0 0-5 0L13.3 33.4c-.8.7-1.8 1.1-2.8 1.1-3.5 0-5.2-4.3-2.7-6.7z"
         fill={`url(#${roof})`}
       />
 
-      <rect x="20" y="34" width="7.2" height="7.2" rx="1.7" fill="#8fa247" />
-      <path d="M30.7 56V39.8c0-4.6 3.3-7.8 7.4-7.8s7.4 3.2 7.4 7.8V56z" fill="#7c8d45" />
-      <path d="M32.4 41c.8-3.4 2.7-5.2 5.7-5.2" stroke="#aebd70" strokeWidth="2.2" strokeLinecap="round" opacity="0.8" />
+      <rect x="20" y="35.1" width="7.1" height="7.1" rx="2" fill="#879a45" />
+      <path d="M30 56.4V40.6c0-5 3.3-8.2 7.6-8.2 4.2 0 7.5 3.2 7.5 8.2v15.8z" fill={`url(#${shade})`} />
 
-      <g fill={`url(#${grass})`}>
-        <circle cx="48.2" cy="49.8" r="6.4" />
-        <circle cx="54" cy="51.3" r="5" />
-        <circle cx="43.4" cy="52.1" r="4.7" />
+      <g fill={`url(#${shrub})`}>
+        <circle cx="46.7" cy="49.5" r="7.3" />
+        <circle cx="54.1" cy="51.2" r="5.6" />
+        <circle cx="41.3" cy="52.2" r="5.4" />
       </g>
 
-      <path d="M19 20c3-3.6 6.6-5.6 10-6.1" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" opacity="0.34" />
-    
-      </g>
+      <path d="M13.5 25.7c4.8-5.7 9.2-9.7 13.9-12" stroke="#fff" strokeWidth="3.2" strokeLinecap="round" opacity="0.35" />
+      <ellipse cx="22.1" cy="28" rx="7.2" ry="3.4" transform="rotate(-29 22.1 28)" fill="#fff" opacity="0.16" />
     </Svg>
   );
 }
 
-/** Bottom navigation — Overview: soft 3D BIXBO brain. */
 export function NavOverviewIcon(p: IconProps) {
-  const left = useSvgId();
-  const right = useSvgId();
+  const brain = useSvgId();
+  const brain2 = useSvgId();
 
   return (
     <Svg {...p}>
-      <g transform="translate(32 32) scale(1.17) translate(-32 -32)" data-nav-scale="1.17">
       <defs>
-        <linearGradient id={left} x1="14" y1="13" x2="34" y2="52" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#d5e28d" />
-          <stop offset="0.5" stopColor="#a8bd58" />
-          <stop offset="1" stopColor="#758b38" />
-        </linearGradient>
-        <linearGradient id={right} x1="31" y1="12" x2="50" y2="52" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#c7d97c" />
-          <stop offset="0.52" stopColor="#98ae4d" />
-          <stop offset="1" stopColor="#687e33" />
-        </linearGradient>
+        <radialGradient id={brain} cx="0.30" cy="0.22" r="0.88">
+          <stop stopColor="#d9e596" />
+          <stop offset="0.40" stopColor="#b6ca68" />
+          <stop offset="0.78" stopColor="#8da34a" />
+          <stop offset="1" stopColor="#6f8239" />
+        </radialGradient>
+        <radialGradient id={brain2} cx="0.30" cy="0.22" r="0.88">
+          <stop stopColor="#cddd83" />
+          <stop offset="0.45" stopColor="#a6bc59" />
+          <stop offset="1" stopColor="#687b34" />
+        </radialGradient>
       </defs>
 
-      <Shadow cy={57.5} rx={18} ry={3.5} />
+      <ellipse cx="32" cy="57.2" rx="19.2" ry="4" fill="#38451f" opacity="0.16" />
 
-      <path
-        d="M31.5 13.5c-2.2-4-8.8-4.8-12.1-.8-4.8-.5-8.8 3.4-8.8 8.1-4.4 1.5-6.6 6.5-4.5 10.6-2.5 4.5-.6 10.1 4.2 12.1-.2 5.1 4.3 9.1 9.3 8.4 2.8 4.4 9.6 4.2 12.1-.3z"
-        fill={`url(#${left})`}
-      />
-      <path
-        d="M32.5 13.5c2.2-4 8.8-4.8 12.1-.8 4.8-.5 8.8 3.4 8.8 8.1 4.4 1.5 6.6 6.5 4.5 10.6 2.5 4.5.6 10.1-4.2 12.1.2 5.1-4.3 9.1-9.3 8.4-2.8 4.4-9.6 4.2-12.1-.3z"
-        fill={`url(#${right})`}
-      />
-
-      <path d="M32 14v38" stroke="#6f8338" strokeWidth="2" strokeLinecap="round" opacity="0.48" />
-
-      <g fill="none" stroke="#71843b" strokeWidth="2.4" strokeLinecap="round" opacity="0.72">
-        <path d="M22 17c-3 1-4.8 3-4.7 6" />
-        <path d="M18 28c-4.2.5-6 3-5.4 6" />
-        <path d="M23 31c-3.6 1.1-4.8 4-3.4 7" />
-        <path d="M25 43c-3.1-.3-5.3 1.2-6 3.6" />
-        <path d="M42 17c3 1 4.8 3 4.7 6" />
-        <path d="M46 28c4.2.5 6 3 5.4 6" />
-        <path d="M41 31c3.6 1.1 4.8 4 3.4 7" />
-        <path d="M39 43c3.1-.3 5.3 1.2 6 3.6" />
+      <g>
+        <path
+          d="M31.7 12.6c-2.5-4.1-8.6-4.9-12.3-1.3-5.2-.4-9.2 3.7-9.1 8.7-4.6 1.8-6.7 7.3-4.1 11.6-2.6 4.8-.3 10.7 4.8 12.5-.1 5.3 4.7 9.3 9.8 8.3 3 4.2 9.2 4.1 11.1-.8z"
+          fill={`url(#${brain})`}
+        />
+        <path
+          d="M32.3 12.6c2.5-4.1 8.6-4.9 12.3-1.3 5.2-.4 9.2 3.7 9.1 8.7 4.6 1.8 6.7 7.3 4.1 11.6 2.6 4.8.3 10.7-4.8 12.5.1 5.3-4.7 9.3-9.8 8.3-3 4.2-9.2 4.1-11.1-.8z"
+          fill={`url(#${brain2})`}
+        />
       </g>
 
-      <path d="M19 14.5c3-2.1 6.4-2.1 8.9-.6" stroke="#fff" strokeWidth="2.3" strokeLinecap="round" opacity="0.34" />
-      <path d="M36.5 14c2.8-1.4 5.4-1.2 7.5.2" stroke="#fff" strokeWidth="2" strokeLinecap="round" opacity="0.26" />
-    
+      <path d="M32 13.5v38.5" stroke="#657934" strokeWidth="2.4" strokeLinecap="round" opacity="0.48" />
+
+      <g fill="none" stroke="#71843b" strokeWidth="2.8" strokeLinecap="round" opacity="0.72">
+        <path d="M20.5 16.7c-3.6 1.4-5.3 4-4.8 7" />
+        <path d="M16.8 28.2c-4.1.8-5.8 3.7-4.9 7.1" />
+        <path d="M23.6 26.2c-3 1.4-4.1 4.1-3 7" />
+        <path d="M20.6 39c-3.3.3-5.3 2.4-5.2 5.1" />
+        <path d="M25.4 43c-2.7.4-4.1 2.2-4 4.5" />
+
+        <path d="M43.5 16.7c3.6 1.4 5.3 4 4.8 7" />
+        <path d="M47.2 28.2c4.1.8 5.8 3.7 4.9 7.1" />
+        <path d="M40.4 26.2c3 1.4 4.1 4.1 3 7" />
+        <path d="M43.4 39c3.3.3 5.3 2.4 5.2 5.1" />
+        <path d="M38.6 43c2.7.4 4.1 2.2 4 4.5" />
       </g>
+
+      <path d="M16.6 15.6c4.1-3.7 8.7-4 11.3-2.2" stroke="#fff" strokeWidth="3" strokeLinecap="round" opacity="0.26" />
+      <ellipse cx="21.2" cy="20.2" rx="6.2" ry="3.1" transform="rotate(-30 21.2 20.2)" fill="#fff" opacity="0.12" />
     </Svg>
   );
 }
 
-/** Bottom navigation — Couple: two soft figures with a pink heart. */
 export function NavCoupleIcon(p: IconProps) {
   const olive = useSvgId();
   const cream = useSvgId();
@@ -2000,121 +2007,121 @@ export function NavCoupleIcon(p: IconProps) {
 
   return (
     <Svg {...p}>
-      <g transform="translate(32 32) scale(1.14) translate(-32 -32)" data-nav-scale="1.14">
       <defs>
-        <linearGradient id={olive} x1="10" y1="15" x2="31" y2="55" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#b2c56b" />
-          <stop offset="1" stopColor="#677b33" />
-        </linearGradient>
-        <linearGradient id={cream} x1="35" y1="15" x2="54" y2="54" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#fffdf0" />
-          <stop offset="1" stopColor="#d8d5ad" />
-        </linearGradient>
-        <linearGradient id={heart} x1="29" y1="34" x2="43" y2="56" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#ff9db2" />
-          <stop offset="0.52" stopColor="#ef5f7c" />
-          <stop offset="1" stopColor="#c93456" />
-        </linearGradient>
-      </defs>
-
-      <Shadow cy={58} rx={20} ry={3.4} />
-
-      <circle cx="22" cy="20" r="9" fill={`url(#${olive})`} />
-      <circle cx="43" cy="20.5" r="8.5" fill={`url(#${cream})`} />
-
-      <path d="M8.5 48.5c0-10.5 5.8-17 13.5-17s13.5 6.5 13.5 17v6H8.5z" fill={`url(#${olive})`} />
-      <path d="M31.5 48.5c0-10 5-16 11.5-16s12.5 6 12.5 16v6h-24z" fill={`url(#${cream})`} />
-
-      <path
-        d="M36 56C27.7 50.2 24 46.4 24 41.9c0-4 3-6.7 6.5-6.7 2.3 0 4.2 1.1 5.5 3 1.3-1.9 3.2-3 5.5-3 3.5 0 6.5 2.7 6.5 6.7 0 4.5-3.7 8.3-12 14.1z"
-        fill={`url(#${heart})`}
-        stroke="#d34b67"
-        strokeWidth="0.8"
-      />
-
-      <ellipse cx="18.5" cy="16.7" rx="3.3" ry="2" transform="rotate(-30 18.5 16.7)" fill="#fff" opacity="0.3" />
-      <ellipse cx="40" cy="17.2" rx="3" ry="1.8" transform="rotate(-30 40 17.2)" fill="#fff" opacity="0.38" />
-      <ellipse cx="31.5" cy="40" rx="2.8" ry="1.7" transform="rotate(-30 31.5 40)" fill="#fff" opacity="0.42" />
-    
-      </g>
-    </Svg>
-  );
-}
-
-/** Bottom navigation — Note: spiral notebook with pencil. */
-export function NavNoteIcon(p: IconProps) {
-  const paper = useSvgId();
-  const pencil = useSvgId();
-
-  return (
-    <Svg {...p}>
-      <g transform="translate(32 32) scale(1.12) translate(-32 -32)" data-nav-scale="1.12">
-      <defs>
-        <linearGradient id={paper} x1="15" y1="8" x2="49" y2="56" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#fffef4" />
-          <stop offset="1" stopColor="#d8d5ad" />
-        </linearGradient>
-        <linearGradient id={pencil} x1="38" y1="31" x2="55" y2="52" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#c9dc75" />
-          <stop offset="1" stopColor="#7d963f" />
-        </linearGradient>
-      </defs>
-
-      <Shadow cy={58} rx={17} ry={3.3} />
-
-      <rect x="15" y="8" width="35" height="49" rx="7" fill={`url(#${paper})`} stroke="#c9c59f" strokeWidth="1" />
-      <rect x="12" y="10" width="7" height="45" rx="3.5" fill="#7d913f" />
-
-      <g fill="#667932">
-        <rect x="10" y="15" width="12" height="3.2" rx="1.6" />
-        <rect x="10" y="24" width="12" height="3.2" rx="1.6" />
-        <rect x="10" y="33" width="12" height="3.2" rx="1.6" />
-        <rect x="10" y="42" width="12" height="3.2" rx="1.6" />
-      </g>
-
-      <g stroke="#b0b28f" strokeWidth="2.1" strokeLinecap="round">
-        <path d="M27 20h14" />
-        <path d="M27 27h14" />
-        <path d="M27 34h10" />
-      </g>
-
-      <g transform="rotate(-42 45 45)">
-        <rect x="41" y="29" width="8" height="24" rx="4" fill={`url(#${pencil})`} />
-        <rect x="41" y="29" width="8" height="5" rx="2.5" fill="#ee8fa1" />
-        <path d="M41 53h8l-4 7z" fill="#d3ae73" />
-        <path d="M43.4 57h3.2L45 60z" fill="#4b4a35" />
-        <rect x="42" y="35" width="2" height="12" rx="1" fill="#fff" opacity="0.34" />
-      </g>
-
-      <path d="M23 13c4-2 9.5-2.4 14-.8" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" opacity="0.45" />
-    
-      </g>
-    </Svg>
-  );
-}
-
-/** Bottom navigation — center Log action: glossy moss circle with cream plus. */
-export function NavLogIcon(p: IconProps) {
-  const circle = useSvgId();
-
-  return (
-    <Svg {...p}>
-      <g transform="translate(32 32) scale(1.05) translate(-32 -32)" data-nav-scale="1.05">
-      <defs>
-        <radialGradient id={circle} cx="0.32" cy="0.23" r="0.9">
-          <stop stopColor="#8fa64e" />
-          <stop offset="0.58" stopColor="#657a35" />
-          <stop offset="1" stopColor="#4c5e29" />
+        <radialGradient id={olive} cx="0.32" cy="0.22" r="0.9">
+          <stop stopColor="#c1d079" />
+          <stop offset="0.52" stopColor="#94aa4f" />
+          <stop offset="1" stopColor="#617431" />
+        </radialGradient>
+        <radialGradient id={cream} cx="0.32" cy="0.22" r="0.9">
+          <stop stopColor="#fffef2" />
+          <stop offset="0.62" stopColor="#e4e1bd" />
+          <stop offset="1" stopColor="#c6c198" />
+        </radialGradient>
+        <radialGradient id={heart} cx="0.30" cy="0.20" r="0.9">
+          <stop stopColor="#ffafbd" />
+          <stop offset="0.48" stopColor="#f56d88" />
+          <stop offset="1" stopColor="#ca3d5c" />
         </radialGradient>
       </defs>
 
-      <Shadow cy={59} rx={19} ry={3.8} />
-      <circle cx="32" cy="31" r="25" fill={`url(#${circle})`} />
-      <circle cx="32" cy="31" r="24" fill="none" stroke="#3f4e23" strokeWidth="1" opacity="0.5" />
-      <path d="M32 19v24M20 31h24" stroke="#fffbea" strokeWidth="6" strokeLinecap="round" />
-      <path d="M26 16c5-3 10-3.3 14-1.6" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" opacity="0.22" />
-    
-      </g>
+      <ellipse cx="32" cy="57.4" rx="20" ry="4.2" fill="#38451f" opacity="0.16" />
+
+      <circle cx="21.2" cy="19.2" r="9.4" fill={`url(#${olive})`} />
+      <circle cx="43.2" cy="19.7" r="9.1" fill={`url(#${cream})`} />
+
+      <path d="M7.7 52.8c0-12.2 5.4-20 13.5-20 8 0 13.2 7.8 13.2 20v3.2H7.7z" fill={`url(#${olive})`} />
+      <path d="M30.2 52.8c0-11.7 5-19.2 12.9-19.2 8.1 0 13.2 7.5 13.2 19.2V56H30.2z" fill={`url(#${cream})`} />
+
+      <path
+        d="M36 57C26.5 50.3 22.4 46 22.4 40.8c0-4.5 3.5-7.6 7.6-7.6 2.6 0 4.7 1.2 6 3.5 1.3-2.3 3.4-3.5 6-3.5 4.1 0 7.6 3.1 7.6 7.6 0 5.2-4.1 9.5-13.6 16.2z"
+        fill={`url(#${heart})`}
+      />
+
+      <ellipse cx="17.7" cy="15.2" rx="3.7" ry="2.2" transform="rotate(-30 17.7 15.2)" fill="#fff" opacity="0.33" />
+      <ellipse cx="39.7" cy="15.7" rx="3.5" ry="2" transform="rotate(-30 39.7 15.7)" fill="#fff" opacity="0.40" />
+      <ellipse cx="31.2" cy="39" rx="3.4" ry="1.8" transform="rotate(-30 31.2 39)" fill="#fff" opacity="0.33" />
     </Svg>
   );
 }
+
+export function NavNoteIcon(p: IconProps) {
+  const paper = useSvgId();
+  const pencil = useSvgId();
+  const eraser = useSvgId();
+
+  return (
+    <Svg {...p}>
+      <defs>
+        <linearGradient id={paper} x1="14" y1="8" x2="51" y2="57" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#fffef2" />
+          <stop offset="0.6" stopColor="#e9e5c4" />
+          <stop offset="1" stopColor="#c9c49b" />
+        </linearGradient>
+        <linearGradient id={pencil} x1="39" y1="30" x2="56" y2="53" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#cfe17a" />
+          <stop offset="0.55" stopColor="#9db653" />
+          <stop offset="1" stopColor="#6f8538" />
+        </linearGradient>
+        <linearGradient id={eraser} x1="41" y1="28" x2="49" y2="35" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#ffb3c1" />
+          <stop offset="1" stopColor="#e26d83" />
+        </linearGradient>
+      </defs>
+
+      <ellipse cx="32" cy="57.4" rx="18.5" ry="4" fill="#38451f" opacity="0.16" />
+
+      <rect x="16" y="7.5" width="36" height="50" rx="7.5" fill={`url(#${paper})`} />
+      <rect x="11.5" y="10" width="8.5" height="44.5" rx="4.2" fill="#72863a" />
+
+      <g fill="#647833">
+        <rect x="9" y="14" width="14" height="3.6" rx="1.8" />
+        <rect x="9" y="23" width="14" height="3.6" rx="1.8" />
+        <rect x="9" y="32" width="14" height="3.6" rx="1.8" />
+        <rect x="9" y="41" width="14" height="3.6" rx="1.8" />
+        <rect x="9" y="50" width="14" height="3.6" rx="1.8" />
+      </g>
+
+      <path d="M38 19c3-4 6.1-5.2 8.8-5.3-1.4 3.4-3.6 5.5-7.4 6.5z" fill="#86a64a" opacity="0.85" />
+
+      <g transform="rotate(-42 46 44)">
+        <rect x="42" y="27" width="8.8" height="27" rx="4.4" fill={`url(#${pencil})`} />
+        <rect x="42" y="27" width="8.8" height="6" rx="3" fill={`url(#${eraser})`} />
+        <path d="M42 54h8.8l-4.4 7z" fill="#d8b477" />
+        <path d="M44.7 58.1h3.4l-1.7 2.9z" fill="#41432e" />
+        <rect x="43.2" y="35" width="2" height="13" rx="1" fill="#fff" opacity="0.30" />
+      </g>
+
+      <path d="M24 12.5c6-2.6 12.2-2.2 16.7-.6" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" opacity="0.36" />
+    </Svg>
+  );
+}
+
+export function NavLogIcon(p: IconProps) {
+  const ball = useSvgId();
+  const plus = useSvgId();
+
+  return (
+    <Svg {...p}>
+      <defs>
+        <radialGradient id={ball} cx="0.30" cy="0.20" r="0.92">
+          <stop stopColor="#91a955" />
+          <stop offset="0.48" stopColor="#6f853d" />
+          <stop offset="1" stopColor="#4c5e2a" />
+        </radialGradient>
+        <linearGradient id={plus} x1="24" y1="20" x2="41" y2="45" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#fffef5" />
+          <stop offset="1" stopColor="#e5e1bd" />
+        </linearGradient>
+      </defs>
+
+      <ellipse cx="32" cy="58.5" rx="20" ry="4.2" fill="#263017" opacity="0.20" />
+      <circle cx="32" cy="30.5" r="26" fill={`url(#${ball})`} />
+      <circle cx="32" cy="30.5" r="25" fill="none" stroke="#3e4e23" strokeWidth="1.4" opacity="0.45" />
+
+      <path d="M32 18.7v23.6M20.2 30.5h23.6" stroke={`url(#${plus})`} strokeWidth="7" strokeLinecap="round" />
+      <path d="M22.5 15.2c5.6-3.3 12.3-3.8 17.5-1.4" stroke="#fff" strokeWidth="3.2" strokeLinecap="round" opacity="0.24" />
+    </Svg>
+  );
+}
+
