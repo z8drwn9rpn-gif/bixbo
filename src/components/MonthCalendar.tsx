@@ -1,5 +1,6 @@
 import { Ico, IcoText } from "@/components/icons/BixboIcons";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useI18n } from "@/hooks/useI18n";
 import {
   toKey,
   periodLabel,
@@ -129,6 +130,7 @@ export function MonthCalendar({
   onSelect: (k: string) => void;
   onSwipeMonth?: (delta: -1 | 1) => void;
 }) {
+  const { t } = useI18n();
   const isMale = data.settings.gender === "male";
   /** Shared rule: hide cycle UI for male, pregnancy and postpartum modes. */
   const cycleTrackingHidden = isCycleTrackingHidden(data);
