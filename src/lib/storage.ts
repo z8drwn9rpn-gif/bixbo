@@ -826,9 +826,9 @@ export interface BixboData {
 }
 
 export const DEFAULT_FOLDERS: NoteFolder[] = [
-  { id: "general", name: "General", icon: "📓" },
-  { id: "health", name: "Health", icon: "💚" },
-  { id: "ideas", name: "Ideas", icon: "💡" },
+  { id: "general", name: "General", icon: "note" },
+  { id: "health", name: "Health", icon: "heart" },
+  { id: "ideas", name: "Ideas", icon: "star" },
 ];
 
 export const EMPTY: BixboData = {
