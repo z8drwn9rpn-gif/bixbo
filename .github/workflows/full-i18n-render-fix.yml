@@ -14,13 +14,16 @@ jobs:
         with:
           bun-version: latest
       - run: bun install --frozen-lockfile
-      - name: Fix helper placement in patch script
+      - name: Make patch script type-safe
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p=Path('.github/scripts/full_i18n_render_fix.py')
           s=p.read_text()
           s=s.replace("        idx = s.find('type ')", "        idx = s.find('\\ntype UpdateFn') + 1")
+          s=s.replace("s = s.replace('toLocaleDateString(\"en-US\"', 'toLocaleDateString(language === \"sk\" ? \"sk-SK\" : \"en-US\"')", "# tooltip locale left unchanged here; visible heatmap labels are translated below")
+          s=s.replace("for expr in ['monthlySummary.improved','monthlySummary.attention','monthlySummary.stable','confidence.detail','phaseSummary.highestPain','phaseSummary.bestEnergy','phaseSummary.mostNegativeMood','phaseSummary.mostHotFlashes','phaseSummary.flow']:", "for expr in []:")
+          s=s.replace("s = s.replace('{value}', '<TrText value={value} />')", "s = re.sub(r'>\\s*\\{value\\}\\s*<', '><TrText value={value} /><', s)")
           p.write_text(s)
           PY
       - name: Apply render translation patch
