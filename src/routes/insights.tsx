@@ -734,7 +734,7 @@ function InsightsPage() {
               </div>
             </>
           ) : (
-            <p className="mt-2 text-sm text-muted-foreground">No hot flashes logged</p>
+            <p className="mt-2 text-sm text-muted-foreground">{t("No hot flashes logged")}</p>
           )}
         </section>
 
@@ -1118,7 +1118,7 @@ function MedsAdherence({
               </div>
             </div>
           ) : (
-            <p className="mt-4 text-sm text-muted-foreground">No scheduled meds in this period.</p>
+            <p className="mt-4 text-sm text-muted-foreground">{t("No scheduled meds in this period.")}</p>
           )}
 
           <div className="mt-5">
@@ -1222,7 +1222,7 @@ function MedsAdherence({
                                   title="Tap to uncheck"
                                 >
                                   Taken · {med.time} — {med.medName}
-                                  <span className="text-[10px] text-muted-foreground"> · tap to uncheck</span>
+                                  <span className="text-[10px] text-muted-foreground"> · {t("tap to uncheck")}</span>
                                 </button>
                               </li>
                             ))}
@@ -1655,6 +1655,7 @@ function HfBars({
   days: string[];
   anchor: Date;
 }) {
+  const { t } = useI18n();
   const [active, setActive] = useState<number | null>(null);
 
   useDismissTapTooltip(() => setActive(null));
@@ -1742,6 +1743,7 @@ type HeatmapDatum = {
 
 const HEATMAP_OPTIONS: { id: HeatmapMetric; label: string }[] = [
   { id: "pain", label: "Pain" },
+  { id: "period", label: "Period" },
   { id: "bowel", label: "Bowel" },
   { id: "panic", label: "Panic episode" },
   { id: "tetany", label: "Tetany episode" },
@@ -2230,7 +2232,7 @@ function YearHealthHeatmap({
                 : "bg-tint text-muted-foreground ring-1 ring-border/60"
             }`}
           >
-            {option.label}
+            {t(option.label)}
           </button>
         ))}
       </div>
