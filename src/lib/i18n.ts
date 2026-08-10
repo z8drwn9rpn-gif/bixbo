@@ -58,7 +58,6 @@ const SK: Record<string, string> = {
   "Tap to edit": "Ťukni pre úpravu",
   "Next period": "Ďalšia menštruácia",
   "Pain": "Bolesť",
-  "Period": "Menštruácia",
   "Panic episode": "Panická epizóda",
   "Tetany episode": "Tetánická epizóda",
   "Bowel": "Stolica",
@@ -314,6 +313,23 @@ const SK: Record<string, string> = {
   "Back to calendar": "Späť na kalendár",
   "Open day": "Otvoriť deň",
   "Nothing logged on this day.": "V tento deň nie je nič zaznamenané.",
+  "Previous": "Predchádzajúce",
+  "Current": "Aktuálne",
+  "No data yet": "Zatiaľ žiadne dáta",
+  "No entries yet.": "Zatiaľ žiadne záznamy.",
+  "No medications added yet.": "Zatiaľ nie sú pridané žiadne lieky.",
+  "No notes yet.": "Zatiaľ žiadne poznámky.",
+  "Checking your account…": "Kontrolujem tvoj účet…",
+  "Loading your preferences…": "Načítavam tvoje nastavenia…",
+  "Pain still feels the same?": "Bolesť je stále rovnaká?",
+  "Edit full log": "Upraviť celý záznam",
+  "Save update": "Uložiť úpravu",
+  "Unknown / mixed": "Neznáme / zmiešané",
+  "Choose medicine": "Vyber liek",
+  "Most common period flow": "Najčastejší priebeh menštruácie",
+  "Theme and display": "Téma a zobrazenie",
+  "Choose how BIXBO looks on this device.": "Vyber, ako bude BIXBO vyzerať na tomto zariadení.",
+
 };
 
 const TRANSLATIONS: Record<AppLanguage, Record<string, string>> = { en: EN, sk: SK };
