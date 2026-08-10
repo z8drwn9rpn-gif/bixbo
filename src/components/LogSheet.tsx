@@ -417,7 +417,7 @@ export function LogSheet({
                               height: `${categoryButtonSize}px`,
                               left: "50%",
                               bottom: 0,
-                              transform: `translate(calc(-50% + ${slot.x}px), -${slot.up}px)`,
+                              transform: `translate(calc(-50% + ${slot.x}px), -${slot.up - categoryButtonSize / 2}px)`,
                             }}
                           >
                             <span
