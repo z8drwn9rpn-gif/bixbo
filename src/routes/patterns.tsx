@@ -267,7 +267,7 @@ function Card({ title, description, children }: { title: string; description?: s
   return (
     <section className="overflow-hidden rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
       <div>
-        <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{title}</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t(title)}</h2>
 
         {description && <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t(description)}</p>}
       </div>
@@ -281,7 +281,7 @@ function Empty({ text = "Log at least 7 days to unlock this analysis." }: { text
   const { t } = useI18n();
   return (
     <div className="mt-3 rounded-2xl bg-tint px-4 py-5 text-center ring-1 ring-border/40">
-      <p className="text-sm font-medium text-foreground">More data needed</p>
+      <p className="text-sm font-medium text-foreground">{t("More data needed")}</p>
       <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t(text)}</p>
     </div>
   );
@@ -346,13 +346,13 @@ function PhaseBarChart({
   return (
     <div className="rounded-2xl bg-tint p-4 ring-1 ring-border/50">
       <div>
-        <p className="text-sm font-semibold text-foreground">{title}</p>
+        <p className="text-sm font-semibold text-foreground">{t(title)}</p>
         {description && <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">{t(description)}</p>}
       </div>
 
       {!hasData ? (
         <p className="mt-4 text-sm text-muted-foreground">
-          Log at least one complete menstrual cycle to unlock this analysis.
+          {t("Log at least one complete menstrual cycle to unlock this analysis.")}
         </p>
       ) : (
         <div className="mt-3 rounded-2xl bg-background/55 px-3 py-3 ring-1 ring-border/40">
@@ -382,7 +382,7 @@ function PhaseBarChart({
                     ))}
                   </div>
 
-                  <span className="mt-2 text-[10px] font-medium text-muted-foreground">{bar.label}</span>
+                  <span className="mt-2 text-[10px] font-medium text-muted-foreground">{t(bar.label)}</span>
                 </div>
               );
             })}
@@ -422,6 +422,7 @@ function ComparisonMetric({
   previousLabel,
   currentLabel,
 }: ComparisonMetricProps) {
+  const { t } = useI18n();
   const palette = METRIC_COLORS[color];
   const [defaultCurrentPrefix, defaultPreviousPrefix] = thisAndLastMonthPrefixes();
   const resolvedPreviousLabel = previousLabel ?? monthLabelFromPrefix(defaultPreviousPrefix);
@@ -502,8 +503,8 @@ function ComparisonMetric({
 
       {!hasAnyData ? (
         <div className="mt-3 rounded-xl bg-surface/75 px-3 py-3.5 text-center ring-1 ring-border/40">
-          <p className="text-xs font-medium text-foreground">No comparison yet</p>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">Log this metric in both periods to compare it.</p>
+          <p className="text-xs font-medium text-foreground">{t("No comparison yet")}</p>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">{t("Log this metric in both periods to compare it.")}</p>
         </div>
       ) : (
         <>
@@ -532,7 +533,7 @@ function ComparisonMetric({
             className="mt-3 rounded-xl bg-surface/75 px-3 py-2 text-center text-xs font-semibold ring-1 ring-border/40"
             style={{ color: trendColor }}
           >
-            {trendText}
+            {t(trendText)}
             {delta != null && !isUnchanged ? ` by ${formatMetricValue(Math.abs(delta), decimals, unit)}` : ""}
             {relativeChange != null && !isUnchanged ? ` (${formatSignedPercent(relativeChange)})` : ""}
           </div>
@@ -600,6 +601,7 @@ type SummaryItem = {
 };
 
 function ConfidenceBadge({ level, detail }: { level: ConfidenceLevel; detail: string }) {
+  const { t } = useI18n();
   const classes =
     level === "High"
       ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
@@ -610,10 +612,10 @@ function ConfidenceBadge({ level, detail }: { level: ConfidenceLevel; detail: st
   return (
     <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-background/60 px-4 py-3 ring-1 ring-border/40">
       <div>
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Confidence</p>
-        <p className="mt-0.5 text-[11px] text-muted-foreground">{detail}</p>
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("Confidence")}</p>
+        <p className="mt-0.5 text-[11px] text-muted-foreground">{t(detail)}</p>
       </div>
-      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${classes}`}>{level}</span>
+      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${classes}`}>{t(level)}</span>
     </div>
   );
 }
@@ -644,7 +646,7 @@ function SummaryPanel({
               key={`${title}-${item.label}`}
               className="flex items-center justify-between gap-4 rounded-2xl bg-tint px-4 py-3 ring-1 ring-border/40"
             >
-              <span className="text-sm text-muted-foreground">{item.label}</span>
+              <span className="text-sm text-muted-foreground">{t(item.label)}</span>
               <span className={`text-right font-semibold ${valueClass}`}>{item.value}</span>
             </div>
           );
@@ -664,6 +666,7 @@ function PatternTabs({
   onChange: (tab: PatternTab) => void;
   hideCycle: boolean;
 }) {
+  const { t } = useI18n();
   const tabs = hideCycle ? PATTERN_TABS.filter((tab) => tab.id !== "cycle") : PATTERN_TABS;
 
   return (
@@ -689,7 +692,7 @@ function PatternTabs({
                 : "text-foreground/80 hover:bg-surface/45 hover:text-foreground"
             }`}
           >
-            {tab.label}
+            {t(tab.label)}
           </button>
         );
       })}
@@ -704,6 +707,7 @@ function AnalysisRangeSelector({
   value: AnalysisRange;
   onChange: (value: AnalysisRange) => void;
 }) {
+  const { t } = useI18n();
   const options: Array<{ value: AnalysisRange; label: string }> = [
     { value: 7, label: "7 days" },
     { value: 30, label: "30 days" },
@@ -714,7 +718,7 @@ function AnalysisRangeSelector({
     <div
       className="mx-auto grid w-full max-w-[340px] grid-cols-3 gap-0.5 rounded-xl bg-primary/20 p-0.5 ring-1 ring-primary/15 lg:max-w-sm"
       role="tablist"
-      aria-label="Patterns analysis period"
+      aria-label={t("Patterns analysis period")}
     >
       {options.map((option) => {
         const active = value === option.value;
@@ -732,7 +736,7 @@ function AnalysisRangeSelector({
                 : "text-foreground/80 hover:bg-surface/45 hover:text-foreground"
             }`}
           >
-            {option.label}
+            {t(option.label)}
           </button>
         );
       })}
@@ -763,8 +767,8 @@ function CollapsibleSection({
         className="flex min-h-14 w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-tint/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
       >
         <div className="min-w-0 flex-1">
-          <h2 className="text-sm font-semibold text-foreground">{title}</h2>
-          {subtitle && <p className="mt-0.5 text-[11px] text-muted-foreground">{subtitle}</p>}
+          <h2 className="text-sm font-semibold text-foreground">{t(title)}</h2>
+          {subtitle && <p className="mt-0.5 text-[11px] text-muted-foreground">{t(subtitle)}</p>}
         </div>
         <ChevronDown
           className={`h-5 w-5 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
@@ -2014,7 +2018,7 @@ export function PatternsContent() {
                   <div className="mt-3 rounded-2xl bg-tint px-4 py-3 ring-1 ring-border/40">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <p className="text-xs font-medium text-foreground">Most common period flow</p>
+                        <p className="text-xs font-medium text-foreground">{t("Most common period flow")}</p>
 
                         <p className="mt-0.5 text-[11px] text-muted-foreground">
                           Based on {cycles.length} historic cycle
@@ -2031,7 +2035,7 @@ export function PatternsContent() {
                   <Empty text="Log more periods to see your cycle pattern." />
                 )}
                 <div className="mt-4 rounded-3xl bg-background p-4 ring-1 ring-border">
-                  <h3 className="text-sm font-semibold text-foreground">Cycle Summary</h3>
+                  <h3 className="text-sm font-semibold text-foreground">{t("Cycle Summary")}</h3>
 
                   <div className="mt-3 space-y-2.5">
                     <SummaryRow label="Highest pain" value={highestPainPhase} />
@@ -2419,10 +2423,10 @@ export function PatternsContent() {
               <div className="mt-3 space-y-2.5">
                 <div>
                   <label htmlFor="treatment-name" className="text-sm font-semibold text-foreground">
-                    What did you start?
+                    {t("What did you start?")}
                   </label>
                   <p className="mt-0.5 text-[11px] text-muted-foreground">
-                    Choose one of your medicines or enter another treatment.
+                    {t("Choose one of your medicines or enter another treatment.")}
                   </p>
 
                   {!customTreatment && view.meds.length > 0 ? (
@@ -2433,7 +2437,7 @@ export function PatternsContent() {
                         onChange={(event) => setTreatmentName(event.target.value)}
                         className="min-h-11 min-w-0 rounded-2xl bg-tint px-4 py-2.5 text-sm text-foreground outline-none ring-1 ring-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                       >
-                        <option value="">Choose medicine</option>
+                        <option value="">{t("Choose medicine")}</option>
                         {view.meds.map((med) => (
                           <option key={med.id} value={med.name}>
                             {med.name}
@@ -2449,7 +2453,7 @@ export function PatternsContent() {
                         }}
                         className="min-h-11 rounded-2xl bg-background px-3 text-xs font-semibold text-primary ring-1 ring-border"
                       >
-                        Other
+                        {t("Other")}
                       </button>
                     </div>
                   ) : (
@@ -2459,7 +2463,7 @@ export function PatternsContent() {
                         type="text"
                         value={treatmentName}
                         onChange={(event) => setTreatmentName(event.target.value)}
-                        placeholder="e.g. Elicea, physiotherapy, low-histamine diet"
+                        placeholder={t("e.g. Elicea, physiotherapy, low-histamine diet")}
                         className="min-h-11 min-w-0 rounded-2xl bg-tint px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none ring-1 ring-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                       />
                       {view.meds.length > 0 && (
@@ -2471,7 +2475,7 @@ export function PatternsContent() {
                           }}
                           className="min-h-11 rounded-2xl bg-background px-3 text-xs font-semibold text-primary ring-1 ring-border"
                         >
-                          Medicines
+                          {t("Medicines")}
                         </button>
                       )}
                     </div>
@@ -2480,7 +2484,7 @@ export function PatternsContent() {
 
                 <div>
                   <label htmlFor="treatment-kind" className="text-sm font-semibold text-foreground">
-                    Type
+                    {t("Type")}
                   </label>
                   <select
                     id="treatment-kind"
@@ -2488,18 +2492,18 @@ export function PatternsContent() {
                     onChange={(event) => setTreatmentKind(event.target.value as TreatmentKind)}
                     className="mt-2 min-h-11 w-full rounded-2xl bg-tint px-4 py-2.5 text-sm text-foreground outline-none ring-1 ring-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   >
-                    <option value="medication">Medication</option>
-                    <option value="supplement">Supplement</option>
-                    <option value="diet">Diet</option>
-                    <option value="therapy">Therapy</option>
-                    <option value="exercise">Exercise</option>
-                    <option value="other">Other</option>
+                    <option value="medication">{t("Medication")}</option>
+                    <option value="supplement">{t("Supplement")}</option>
+                    <option value="diet">{t("Diet")}</option>
+                    <option value="therapy">{t("Therapy")}</option>
+                    <option value="exercise">{t("Exercise")}</option>
+                    <option value="other">{t("Other")}</option>
                   </select>
                 </div>
 
                 <div>
                   <label htmlFor="treatment-result" className="text-sm font-semibold text-foreground">
-                    Treatment result
+                    {t("Treatment result")}
                   </label>
                   <select
                     id="treatment-result"
@@ -2507,17 +2511,17 @@ export function PatternsContent() {
                     onChange={(event) => setTreatmentResult(event.target.value as TreatmentResult)}
                     className="mt-2 min-h-12 w-full rounded-2xl bg-tint px-4 text-sm font-medium text-foreground outline-none ring-1 ring-border focus-visible:ring-2 focus-visible:ring-primary"
                   >
-                    <option value="pain">Pain</option>
-                    <option value="panicEpisodes">Panic episode</option>
-                    <option value="tetanyEpisodes">Tetany episode</option>
-                    <option value="headache">Headache</option>
-                    <option value="panicIntensity">Panic intensity</option>
-                    <option value="tetanyIntensity">Tetany intensity</option>
+                    <option value="pain">{t("Pain")}</option>
+                    <option value="panicEpisodes">{t("Panic episode")}</option>
+                    <option value="tetanyEpisodes">{t("Tetany episode")}</option>
+                    <option value="headache">{t("Headache")}</option>
+                    <option value="panicIntensity">{t("Panic intensity")}</option>
+                    <option value="tetanyIntensity">{t("Tetany intensity")}</option>
                   </select>
                 </div>
 
                 <div>
-                  <span className="text-sm font-semibold text-foreground">Treatment start date</span>
+                  <span className="text-sm font-semibold text-foreground">{t("Treatment start date")}</span>
                   <div className="relative mt-2 min-h-12 overflow-hidden rounded-2xl bg-tint ring-1 ring-border focus-within:ring-2 focus-within:ring-primary">
                     <div className="pointer-events-none flex min-h-12 items-center justify-between gap-3 px-4">
                       <span
@@ -2529,7 +2533,7 @@ export function PatternsContent() {
                     </div>
                     <input
                       type="date"
-                      aria-label="Treatment start date"
+                      aria-label={t("Treatment start date")}
                       max={todayKey()}
                       value={treatmentDate}
                       onChange={(event) => setTreatmentDate(event.target.value)}
@@ -2540,13 +2544,13 @@ export function PatternsContent() {
 
                 <div>
                   <label htmlFor="treatment-notes" className="text-sm font-semibold text-foreground">
-                    Notes <span className="font-normal text-muted-foreground">(optional)</span>
+                    {t("Notes")} <span className="font-normal text-muted-foreground">{t("(optional)")}</span>
                   </label>
                   <textarea
                     id="treatment-notes"
                     value={treatmentNotes}
                     onChange={(event) => setTreatmentNotes(event.target.value)}
-                    placeholder="Why you started it, dose change, or anything useful to remember"
+                    placeholder={t("Why you started it, dose change, or anything useful to remember")}
                     rows={3}
                     className="mt-2 w-full resize-none rounded-2xl bg-tint px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none ring-1 ring-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   />
@@ -2556,7 +2560,7 @@ export function PatternsContent() {
                   <div className="flex items-center justify-between gap-3 rounded-2xl bg-background p-3 ring-1 ring-border">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-foreground">
-                        {treatmentName || "Unnamed treatment"}
+                        {treatmentName || t("Unnamed treatment")}
                       </p>
                       <p className="mt-0.5 text-[11px] text-muted-foreground">
                         {treatmentKindLabel} · Result: {selectedTreatmentResult.label}
@@ -2574,7 +2578,7 @@ export function PatternsContent() {
                       className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-primary/10 px-3 text-sm font-semibold text-primary ring-1 ring-primary/20 hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <Archive className="h-4 w-4" />
-                      Archive
+                      {t("Archive")}
                     </button>
                     <button
                       type="button"
@@ -2582,7 +2586,7 @@ export function PatternsContent() {
                       className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-destructive/10 px-3 text-sm font-semibold text-destructive ring-1 ring-destructive/20 hover:bg-destructive/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <Trash2 className="h-4 w-4" />
-                      Delete
+                      {t("Delete")}
                     </button>
                   </div>
                 )}
