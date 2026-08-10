@@ -29,7 +29,7 @@ export function BottomNav() {
 
   return (
     <nav className="fixed inset-x-0 bottom-0 lg:hidden z-40 mx-auto w-full max-w-[560px] border-t border-border/80 bg-surface/95 backdrop-blur-xl pb-[max(8px,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.22)] landscape:max-w-none">
-      <ul className="mx-auto flex items-stretch justify-around gap-0.5 px-2 pt-2.5 pb-2 lg:max-w-3xl">
+      <ul className="mx-auto flex items-stretch justify-around gap-0.5 px-2 pt-2.5 pb-2.5 lg:max-w-3xl">
 
         {items.slice(0, 2).map(({ to, label, icon: Icon }) => {
           const active =
@@ -42,11 +42,11 @@ export function BottomNav() {
             <li key={to} className="flex-1">
               <Link
                 to={to as never}
-                className={`flex min-h-14 flex-col items-center justify-center gap-0 rounded-2xl px-1.5 py-1 text-[11px] font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                className={`flex min-h-14 flex-col items-center justify-center gap-0 rounded-2xl px-1.5 py-1 text-[11.5px] font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                   active ? "text-primary" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                <Icon size={38} className={`shrink-0 drop-shadow-sm transition-transform ${active ? "scale-[1.06]" : ""}`} />
+                <Icon size={42} className={`shrink-0 drop-shadow-sm transition-transform ${active ? "scale-[1.04]" : ""}`} />
                 <span className="mt-0.5 max-w-full truncate text-center leading-none">{label}</span>
               </Link>
             </li>
@@ -57,10 +57,10 @@ export function BottomNav() {
           <button
             type="button"
             onClick={openLog}
-            className="flex min-h-14 w-full -translate-y-1 flex-col items-center justify-center gap-0 rounded-2xl px-1.5 py-1 text-[11px] font-semibold text-primary transition-all hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="flex min-h-14 w-full -translate-y-1 flex-col items-center justify-center gap-0 rounded-2xl px-1.5 py-1 text-[11.5px] font-semibold text-primary transition-all hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-label="Log"
           >
-            <NavLogIcon size={58} className="drop-shadow-lg transition-transform active:scale-95" />
+            <NavLogIcon size={62} className="drop-shadow-lg transition-transform active:scale-95" />
             <span className="-mt-0.5 leading-none">Log</span>
           </button>
         </li>
@@ -71,11 +71,11 @@ export function BottomNav() {
             <li key={to} className="flex-1">
               <Link
                 to={to as never}
-                className={`flex min-h-14 flex-col items-center justify-center gap-0 rounded-2xl px-1.5 py-1 text-[11px] font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                className={`flex min-h-14 flex-col items-center justify-center gap-0 rounded-2xl px-1.5 py-1 text-[11.5px] font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                   active ? "text-primary" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                <Icon size={38} className={`shrink-0 drop-shadow-sm transition-transform ${active ? "scale-[1.06]" : ""}`} />
+                <Icon size={42} className={`shrink-0 drop-shadow-sm transition-transform ${active ? "scale-[1.04]" : ""}`} />
                 <span className="mt-0.5 max-w-full truncate text-center leading-none">{label}</span>
               </Link>
             </li>
