@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
-import { X, Plus, ChevronLeft, Check, Pencil } from "lucide-react";
+import { X, Plus, ChevronLeft, Check, Pencil } from "@/components/icons/BixboIcons";
 import {
   PAIN_DESCRIPTIONS,
   painColor,
@@ -538,7 +538,7 @@ export function LogSheet({
                   className="
                     pointer-events-none absolute bottom-[calc(max(12px,env(safe-area-inset-bottom))+18px)]
                     left-1/2 z-40 -translate-x-1/2 rounded-full border border-white/20
-                    bg-black/20 px-3 py-1 text-[9px] font-semibold text-white/90
+                    bg-black/20 px-3 py-1 text-[10px] font-semibold text-white/90
                     shadow-sm backdrop-blur-md
                   "
                 >
@@ -911,7 +911,7 @@ function ScaleLegend({
         {items.map((n) => (
           <div key={n} className="flex items-start gap-2">
             <span
-              className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full text-[9px] font-bold text-white"
+              className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full text-[10px] font-bold text-white"
               style={{ background: scaleColor(n, from, max) }}
             >
               {n}
