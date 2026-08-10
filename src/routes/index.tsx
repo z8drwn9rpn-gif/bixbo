@@ -764,9 +764,9 @@ function HomePage() {
         </div>
       }
     >
-      <div className="lg:mx-auto lg:grid lg:w-full lg:max-w-[1500px] lg:grid-cols-[minmax(0,2.35fr)_minmax(300px,0.95fr)] lg:items-start lg:gap-6 lg:px-0 xl:grid-cols-[minmax(0,2.5fr)_minmax(320px,0.9fr)]">
+      <div className="lg:mx-auto lg:grid lg:w-full lg:max-w-[1420px] lg:grid-cols-[minmax(0,1.78fr)_minmax(320px,1fr)] lg:items-start lg:gap-5 lg:px-0 xl:grid-cols-[minmax(0,1.9fr)_minmax(340px,1fr)] xl:gap-6">
         <div className="min-w-0 lg:flex lg:flex-col">
-      <div className="px-5 pt-0.5 lg:order-1 lg:px-0">
+      <div className="px-5 pt-0.5 lg:order-1 lg:px-1">
         <div className="flex items-center justify-between">
           <button
             type="button"
@@ -777,7 +777,7 @@ function HomePage() {
             <ChevronLeft className="h-5 w-5" />
           </button>
 
-          <h2 className="font-serif text-xl font-bold" suppressHydrationWarning>
+          <h2 className="font-serif text-xl font-bold lg:text-[22px]" suppressHydrationWarning>
             {hydrated ? monthLabel(monthAnchor) : ""}
           </h2>
 
@@ -792,7 +792,7 @@ function HomePage() {
         </div>
       </div>
 
-      <div className="mt-0.5 lg:order-1 lg:overflow-hidden lg:rounded-[1.75rem]" style={{ "--period-medium": "#7467D8" } as any}>
+      <div className="mt-1 lg:order-1 lg:overflow-hidden lg:rounded-[1.75rem] lg:bg-surface/28 lg:px-1 lg:pb-1 lg:ring-1 lg:ring-border/35" style={{ "--period-medium": "#7467D8" } as any}>
         {hydrated ? (
           <MonthCalendar
             month={monthAnchor}
@@ -962,7 +962,7 @@ function HomePage() {
 
           return (
             <div
-              className="mx-5 mt-3 rounded-full px-4 py-2 text-center text-xs ring-1 lg:order-3 lg:mx-0"
+              className="mx-5 mt-3 rounded-full px-4 py-2 text-center text-xs ring-1 lg:order-3 lg:mx-1"
               style={{
                 background: "color-mix(in srgb, #5F7033 14%, transparent)",
                 color: "#5F7033",
@@ -978,7 +978,7 @@ function HomePage() {
         })()}
 
       {/* Top vitals row */}
-      <div className="mt-4 grid grid-cols-5 gap-2 px-5 lg:order-5 lg:grid-cols-4 lg:px-0">
+      <div className="mt-3 grid grid-cols-5 gap-2 px-5 lg:order-5 lg:grid-cols-4 lg:px-1">
         <div className="col-span-2 lg:col-span-1">
           <MedsProgress data={view} />
         </div>
@@ -1006,7 +1006,7 @@ function HomePage() {
       </div>
 
       {/* Quick log */}
-      <div className="px-5 lg:order-2 lg:mt-4 lg:px-0 [&_p.text-\[11px\].uppercase]:min-w-0 [&_p.text-\[11px\].uppercase]:flex-1 [&_p.text-\[11px\].uppercase]:truncate [&_p.text-\[11px\].uppercase]:text-[10px] [&_.mt-1.flex.flex-wrap.gap-1]:hidden">
+      <div className="px-5 lg:order-2 lg:mt-3 lg:px-1 [&_p.text-\[11px\].uppercase]:min-w-0 [&_p.text-\[11px\].uppercase]:flex-1 [&_p.text-\[11px\].uppercase]:truncate [&_p.text-\[11px\].uppercase]:text-[10px] [&_.mt-1.flex.flex-wrap.gap-1]:hidden">
         <QuickTags
           data={view}
           update={update}
@@ -1041,7 +1041,7 @@ function HomePage() {
 
         </div>
 
-        <aside className="min-w-0 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto lg:rounded-[1.75rem] lg:bg-surface/35 lg:p-4 lg:ring-1 lg:ring-border/50 xl:p-5">
+        <aside className="min-w-0 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto lg:rounded-[1.75rem] lg:bg-surface/45 lg:p-4 lg:ring-1 lg:ring-border/55 xl:p-5">
       <div className="mt-4 flex items-center justify-between px-5 lg:mt-0 lg:px-0">
         <h2 className="font-serif text-xl font-bold">
           {selected === todayKey()
