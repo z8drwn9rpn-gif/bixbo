@@ -459,7 +459,7 @@ function PainList({ title, entries }: { title: string; entries: (PainEntry & { d
 
   return (
     <div className="space-y-3">
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{title}</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t(title)}</p>
 
       <ul className="space-y-2">
         {entries.map((pain) => (
@@ -473,7 +473,7 @@ function PainList({ title, entries }: { title: string; entries: (PainEntry & { d
 
             <div className="min-w-0 flex-1">
               <p className="text-xs text-muted-foreground">
-                {pain.dateKey} · {pain.time} · {PAIN_DESCRIPTIONS[Math.round(pain.score)]}
+                {pain.dateKey} · {pain.time} · {t(PAIN_DESCRIPTIONS[Math.round(pain.score)])}
               </p>
 
               {pain.parts?.length ? <p className="text-sm">{pain.parts.join(", ")}</p> : null}
@@ -517,28 +517,28 @@ function TetanyList({ title, entries }: { title: string; entries: (TetanyEpisode
 
   return (
     <div className="space-y-2">
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{title}</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t(title)}</p>
 
       <ul className="space-y-2">
         {entries.map((episode) => (
           <li key={`${episode.dateKey}-${episode.id}`} className="rounded-2xl bg-surface-sunken/32 p-3 text-sm ring-1 ring-border/25">
             <p className="text-xs text-muted-foreground">
-              {episode.dateKey} · {episode.time} · intensity {episode.intensity}/5 ·{" "}
-              {episode.minutes == null ? "ongoing" : `${episode.minutes} min`}
+              {episode.dateKey} · {episode.time} · {t("intensity")} {episode.intensity}/5 ·{" "}
+              {episode.minutes == null ? t("ongoing") : `${episode.minutes} min`}
             </p>
 
             {episode.types?.length ? <p>{episode.types.join(", ")}</p> : null}
 
             {episode.location?.length ? (
-              <p className="text-xs text-muted-foreground">Location: {episode.location.join(", ")}</p>
+              <p className="text-xs text-muted-foreground">{t("Location")}: {episode.location.map(t).join(", ")}</p>
             ) : null}
 
             {episode.triggers?.length ? (
-              <p className="text-xs text-muted-foreground">Triggers: {episode.triggers.join(", ")}</p>
+              <p className="text-xs text-muted-foreground">{t("Triggers")}: {episode.triggers.map(t).join(", ")}</p>
             ) : null}
 
             {episode.helped?.length ? (
-              <p className="text-xs text-muted-foreground">Helped by: {episode.helped.join(", ")}</p>
+              <p className="text-xs text-muted-foreground">{t("Helped by")}: {episode.helped.map(t).join(", ")}</p>
             ) : null}
           </li>
         ))}
@@ -555,28 +555,28 @@ function PanicList({ title, entries }: { title: string; entries: (PanicAttack & 
 
   return (
     <div className="space-y-2">
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{title}</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t(title)}</p>
 
       <ul className="space-y-2">
         {entries.map((attack) => (
           <li key={`${attack.dateKey}-${attack.id}`} className="rounded-2xl bg-surface-sunken/32 p-3 text-sm ring-1 ring-border/25">
             <p className="text-xs text-muted-foreground">
-              {attack.dateKey} · {attack.time} · intensity {attack.intensity}/10 ·{" "}
-              {attack.minutes == null ? "ongoing" : `${attack.minutes} min`}
+              {attack.dateKey} · {attack.time} · {t("intensity")} {attack.intensity}/10 ·{" "}
+              {attack.minutes == null ? t("ongoing") : `${attack.minutes} min`}
             </p>
 
             {attack.physical?.length ? (
-              <p className="text-xs text-muted-foreground">Physical: {attack.physical.join(", ")}</p>
+              <p className="text-xs text-muted-foreground">{t("Physical")}: {attack.physical.map(t).join(", ")}</p>
             ) : null}
 
             {attack.cognitive?.length ? (
-              <p className="text-xs text-muted-foreground">Cognitive: {attack.cognitive.join(", ")}</p>
+              <p className="text-xs text-muted-foreground">{t("Cognitive")}: {attack.cognitive.map(t).join(", ")}</p>
             ) : null}
 
-            {attack.trigger ? <p className="text-xs text-muted-foreground">Trigger: {attack.trigger}</p> : null}
+            {attack.trigger ? <p className="text-xs text-muted-foreground">{t("Trigger")}: {attack.trigger}</p> : null}
 
             {attack.helped?.length ? (
-              <p className="text-xs text-muted-foreground">Helped by: {attack.helped.join(", ")}</p>
+              <p className="text-xs text-muted-foreground">{t("Helped by")}: {attack.helped.map(t).join(", ")}</p>
             ) : null}
           </li>
         ))}
@@ -610,7 +610,7 @@ function MedsList({
 
   return (
     <div className="space-y-2">
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{title}</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t(title)}</p>
 
       <ul className="space-y-2">
         {nonEmpty.slice(0, 14).map((day) => (
