@@ -423,7 +423,7 @@ function HealthHub({ onHome, onOpen }: { onHome: () => void; onOpen: (view: Heal
             </span>
 
             <div className="min-w-0">
-              <p className="font-serif text-2xl font-bold text-foreground">Your health hub</p>
+              <p className="font-serif text-2xl font-bold text-foreground">{t("Your health hub")}</p>
               <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                 Your health profile, journey, milestones and app preferences.
               </p>
@@ -1111,8 +1111,8 @@ function ProfilePage() {
     return (
       <HealthSubpage title="Appearance" onBack={() => setHealthView("hub")}>
         <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
-          <p className="text-sm font-semibold text-foreground">Theme</p>
-          <p className="mt-1 text-xs text-muted-foreground">Choose how BIXBO looks on this device.</p>
+          <p className="text-sm font-semibold text-foreground">{t("Theme")}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{t("Choose how BIXBO looks on this device.")}</p>
           <div className="mt-3 grid grid-cols-3 gap-2">
             {themes.map((theme) => (
               <button
@@ -1127,7 +1127,7 @@ function ProfilePage() {
           </div>
         </section>
         <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
-          <p className="text-sm font-semibold text-foreground">Text size</p>
+          <p className="text-sm font-semibold text-foreground">{t("Text size")}</p>
           <div className="mt-3 grid grid-cols-4 gap-2">
             {sizes.map((size) => (
               <button
@@ -1287,7 +1287,7 @@ function ProfilePage() {
               </button>
             </>
           ) : (
-            <p className="text-xs leading-relaxed text-muted-foreground">No local safety copy has been created yet.</p>
+            <p className="text-xs leading-relaxed text-muted-foreground">{t("No local safety copy has been created yet.")}</p>
           )}
           <button
             type="button"
@@ -1601,10 +1601,10 @@ function ProfilePage() {
               onChange={(event) => setReminder("waterIntervalHours", event.target.value)}
               className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm disabled:opacity-50"
             >
-              <option value="1">Every hour</option>
-              <option value="2">Every 2 hours</option>
-              <option value="3">Every 3 hours</option>
-              <option value="4">Every 4 hours</option>
+              <option value="1">{t("Every hour")}</option>
+              <option value="2">{t("Every 2 hours")}</option>
+              <option value="3">{t("Every 3 hours")}</option>
+              <option value="4">{t("Every 4 hours")}</option>
             </select>
           </Field>
         </Section>
@@ -2022,7 +2022,7 @@ function ProfilePage() {
             </Field>
 
             <div className="rounded-xl border border-border p-3">
-              <p className="mb-2 text-xs font-semibold text-foreground">Emergency contact</p>
+              <p className="mb-2 text-xs font-semibold text-foreground">{t("Emergency contact")}</p>
               <div className="grid grid-cols-2 gap-2">
                 <Field label="Name" htmlFor="p-ec-name">
                   <Input
@@ -2197,7 +2197,7 @@ function ProfilePage() {
                 )}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">No medications added.</p>
+              <p className="text-sm text-muted-foreground">{t("No medications added.")}</p>
             )}
           </SummaryCard>
 
@@ -2262,7 +2262,7 @@ function ProfilePage() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">No doctors added.</p>
+              <p className="text-sm text-muted-foreground">{t("No doctors added.")}</p>
             )}
           </SummaryCard>
 
@@ -2284,7 +2284,7 @@ function ProfilePage() {
                 )}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">No emergency contact added.</p>
+              <p className="text-sm text-muted-foreground">{t("No emergency contact added.")}</p>
             )}
           </SummaryCard>
 
