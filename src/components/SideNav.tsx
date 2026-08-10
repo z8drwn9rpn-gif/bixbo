@@ -1,5 +1,6 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import type { ComponentType } from "react";
+import { useI18n } from "@/hooks/useI18n";
 import {
   NavHomeIcon,
   NavOverviewIcon,
@@ -11,20 +12,21 @@ import {
 } from "@/components/icons/BixboIcons";
 
 const main = [
-  { to: "/", label: "Home", icon: NavHomeIcon },
-  { to: "/insights", label: "Overview", icon: NavOverviewIcon },
-  { to: "/couple", label: "Couple", icon: NavCoupleIcon },
-  { to: "/notes", label: "Note", icon: NavNoteIcon },
+  { to: "/", labelKey: "nav.home", icon: NavHomeIcon },
+  { to: "/insights", labelKey: "nav.overview", icon: NavOverviewIcon },
+  { to: "/couple", labelKey: "nav.couple", icon: NavCoupleIcon },
+  { to: "/notes", labelKey: "nav.note", icon: NavNoteIcon },
 ] as const;
 
 const secondary = [
-  { to: "/profile", label: "Health profile", icon: User },
+  { to: "/profile", labelKey: "nav.healthProfile", icon: User },
 ] as const;
 
 /** Desktop-only left navigation. Hidden below lg so the mobile UI is untouched. */
 export function SideNav({ mascotSrc }: { mascotSrc: string }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
+  const { t } = useI18n();
 
   const openLog = () => {
     if (pathname === "/") {
@@ -36,7 +38,7 @@ export function SideNav({ mascotSrc }: { mascotSrc: string }) {
 
   const isActive = (to: string) => (to === "/" ? pathname === "/" : pathname.startsWith(to));
 
-  const item = (to: string, label: string, Icon: ComponentType<IconProps>) => (
+  const item = (to: string, labelKey: string, Icon: ComponentType<IconProps>) => (
     <li key={to}>
       <Link
         to={to as never}
@@ -47,7 +49,7 @@ export function SideNav({ mascotSrc }: { mascotSrc: string }) {
         }`}
       >
         <Icon size={40} className={`shrink-0 drop-shadow-sm transition-transform ${isActive(to) ? "scale-[1.04]" : ""}`} />
-        <span className="truncate">{label}</span>
+        <span className="truncate">{t(labelKey)}</span>
       </Link>
     </li>
   );
@@ -70,13 +72,13 @@ export function SideNav({ mascotSrc }: { mascotSrc: string }) {
         onClick={openLog}
         className="mb-5 flex min-h-[68px] items-center justify-center gap-2.5 rounded-2xl bg-tint px-4 py-2 text-sm font-semibold text-foreground shadow-sm ring-1 ring-border/70 transition hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        <NavLogIcon size={50} className="-my-3 shrink-0 drop-shadow-lg" /> <span>Log</span>
+        <NavLogIcon size={50} className="-my-3 shrink-0 drop-shadow-lg" /> <span>{t("nav.log")}</span>
       </button>
 
       <nav className="min-h-0 flex-1 overflow-y-auto">
-        <ul className="flex flex-col gap-1">{main.map((i) => item(i.to, i.label, i.icon))}</ul>
+        <ul className="flex flex-col gap-1">{main.map((i) => item(i.to, i.labelKey, i.icon))}</ul>
         <div className="my-4 border-t border-border/70" />
-        <ul className="flex flex-col gap-1">{secondary.map((i) => item(i.to, i.label, i.icon))}</ul>
+        <ul className="flex flex-col gap-1">{secondary.map((i) => item(i.to, i.labelKey, i.icon))}</ul>
       </nav>
     </aside>
   );
