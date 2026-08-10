@@ -501,7 +501,7 @@ export function MonthCalendar({
                   {d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}
                 </p>
                 {lines.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Nothing logged on this day.</p>
+                  <p className="text-sm text-muted-foreground">{t("Nothing logged on this day.")}</p>
                 ) : (
                   <ul className="space-y-1 text-sm">
                     {lines.map((l, i) => (
