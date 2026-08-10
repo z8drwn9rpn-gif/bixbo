@@ -753,3 +753,20 @@ html.dark body {
     --tw-exit-scale: 1;
   }
 }
+
+
+/* BIXBO UI consistency pass */
+@layer base {
+  button, a, input, select, textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
+  button, a {
+    text-underline-offset: 3px;
+  }
+}
+
+@layer utilities {
+  .bixbo-section-title { @apply font-serif text-lg font-bold leading-tight text-foreground; }
+  .bixbo-caption { @apply text-[11px] leading-relaxed text-muted-foreground; }
+  .bixbo-card { @apply rounded-3xl bg-surface shadow-sm ring-1 ring-border/80; }
+}
