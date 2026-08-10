@@ -6,25 +6,19 @@ import {
   NavCoupleIcon,
   NavNoteIcon,
   NavLogIcon,
-  Activity,
-  Pill,
   User,
-  Settings,
   type IconProps,
 } from "@/components/icons/BixboIcons";
 
 const main = [
   { to: "/", label: "Home", icon: NavHomeIcon },
   { to: "/insights", label: "Overview", icon: NavOverviewIcon },
-  { to: "/patterns", label: "Patterns", icon: Activity },
   { to: "/couple", label: "Couple", icon: NavCoupleIcon },
   { to: "/notes", label: "Note", icon: NavNoteIcon },
-  { to: "/meds", label: "Medications", icon: Pill },
 ] as const;
 
 const secondary = [
   { to: "/profile", label: "Health profile", icon: User },
-  { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
 /** Desktop-only left navigation. Hidden below lg so the mobile UI is untouched. */
