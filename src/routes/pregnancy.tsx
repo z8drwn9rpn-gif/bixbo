@@ -216,7 +216,7 @@ function PregnancyPage() {
         <PhotosSection view={view} update={update} />
 
         <Section title="Export" icon="📄">
-          <p className="mb-2 text-xs text-muted-foreground">Download a plain-text timeline of your pregnancy.</p>
+          <p className="mb-2 text-xs text-muted-foreground">{t("Download a plain-text timeline of your pregnancy.")}</p>
           <Button
             type="button"
             className="h-11 w-full"
@@ -284,7 +284,7 @@ function SetupForm({ view, update }: { view: BixboData; update: (u: (d: BixboDat
         <Field label="First day of last menstrual period">
           <Input type="date" className="h-11" value={lmp} onChange={(e) => setLmp(e.target.value)} />
         </Field>
-        <p className="text-center text-xs text-muted-foreground">— or —</p>
+        <p className="text-center text-xs text-muted-foreground">{t("— or —")}</p>
         <Field label="Estimated due date">
           <Input type="date" className="h-11" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
         </Field>
@@ -560,7 +560,7 @@ function SymptomsSection({ view, update }: { view: BixboData; update: (u: (d: Bi
     <Section title="Today's symptoms" icon="📝">
       <div className="space-y-4">
         <div>
-          <p className="mb-2 text-xs font-medium text-foreground">Symptoms</p>
+          <p className="mb-2 text-xs font-medium text-foreground">{t("Symptoms")}</p>
           <div className="flex flex-wrap gap-2">
             {PREGNANCY_SYMPTOMS.map((s) => (
               <Chip key={s} label={s} active={(log.symptoms ?? []).includes(s)} onClick={() => toggleSymptom(s)} />
@@ -568,7 +568,7 @@ function SymptomsSection({ view, update }: { view: BixboData; update: (u: (d: Bi
           </div>
         </div>
         <div>
-          <p className="mb-2 text-xs font-medium text-foreground">Mood</p>
+          <p className="mb-2 text-xs font-medium text-foreground">{t("Mood")}</p>
           <div className="flex flex-wrap gap-2">
             {MOOD_CHIPS.map((m) => (
               <Chip key={m} label={m} active={(log.mood ?? []).includes(m)} onClick={() => toggleMood(m)} />
@@ -597,7 +597,7 @@ function SymptomsSection({ view, update }: { view: BixboData; update: (u: (d: Bi
 
         <div>
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>Water intake</span>
+            <span>{t("Water intake")}</span>
             <span className="tabular-nums font-medium text-foreground">
               {log.waterMl ?? 0} / {goal} ml
             </span>
