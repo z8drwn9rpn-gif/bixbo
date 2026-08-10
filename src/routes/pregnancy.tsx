@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useBixbo, EMPTY, todayKey, fromKey, updateDayLog, type BixboData, type PregnancyAppointment } from "@/lib/storage";
+import { useI18n } from "@/hooks/useI18n";
 import {
   pregnancyProgress,
   dueDateOf,
@@ -49,6 +50,7 @@ export const Route = createFileRoute("/pregnancy")({
 const MOOD_CHIPS = ["Happy", "Anxious", "Emotional", "Calm", "Irritable", "Excited", "Tired", "Overwhelmed"];
 
 function PregnancyPage() {
+  const { t } = useI18n();
   const { data, update, hydrated } = useBixbo();
   const view = hydrated ? data : EMPTY;
   const p = view.pregnancy ?? EMPTY.pregnancy!;
