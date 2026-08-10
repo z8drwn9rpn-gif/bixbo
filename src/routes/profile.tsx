@@ -23,6 +23,7 @@ import {
 } from "@/components/icons/BixboIcons";
 import {
   useBixbo,
+  getBixbo,
   EMPTY,
   todayKey,
   latestRecordedWeight,
@@ -34,10 +35,12 @@ import {
   replaceBixbo,
   createBixboSafetyBackup,
   getBixboSafetyBackup,
+  type BixboData,
   type HealthProfile,
   type Doctor,
   type EmergencyContact,
 } from "@/lib/storage";
+import { mergeBixbo } from "@/lib/merge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -777,6 +780,26 @@ function ProfilePage() {
     }
   };
 
+  const protectRestoreFromDeletedData = (candidate: BixboData): BixboData => {
+    const current = getBixbo();
+
+    // Build a deletion-only local shield. It contains no current health values,
+    // only durable tombstones. Merging this shield over an old backup prevents
+    // intentionally deleted entries/fields/options from being resurrected,
+    // while still allowing the rest of the backup to restore normally.
+    const deletionShield: BixboData = {
+      ...EMPTY,
+      deletedIds: [...(current.deletedIds ?? [])],
+      deletedCustom: { ...(current.deletedCustom ?? {}) },
+      syncMeta: {
+        updatedAt: {},
+        deletedAt: { ...(current.syncMeta?.deletedAt ?? {}) },
+      },
+    };
+
+    return mergeBixbo(deletionShield, candidate, { legacyLocalCanonical: false });
+  };
+
   const age = ageFromBirthDate(profile.birthDate);
   const currentWeight = latestRecordedWeight(view);
   const gender = userGender(view);
@@ -1243,8 +1266,9 @@ function ProfilePage() {
       if (!confirmed) return;
 
       createBixboSafetyBackup("before-safety-restore");
-      replaceBixbo(safetyBackup.data, "local");
-      window.alert("BIXBO safety copy restored.");
+      const protectedRestore = protectRestoreFromDeletedData(safetyBackup.data);
+      replaceBixbo(protectedRestore, "local");
+      window.alert("BIXBO safety copy restored. Items you explicitly deleted later were kept deleted.");
     };
 
     const restoreBackup = async (file: File) => {
@@ -1267,8 +1291,9 @@ function ProfilePage() {
           console.warn("Pre-restore cloud backup unavailable; local safety backup is still kept.", error);
         }
 
-        replaceBixbo(restored, "local");
-        window.alert("BIXBO backup restored successfully.");
+        const protectedRestore = protectRestoreFromDeletedData(restored);
+        replaceBixbo(protectedRestore, "local");
+        window.alert("BIXBO backup restored successfully. Items you explicitly deleted later were kept deleted.");
       } catch {
         window.alert("This is not a valid BIXBO JSON backup.");
       }
