@@ -470,7 +470,7 @@ export function LogSheet({
                                         }),
                               }}
                             >
-                              {c.label}
+                              {t(c.label)}
                             </span>
                           </button>
                         );
@@ -531,7 +531,7 @@ export function LogSheet({
                   </span>
                 )}
                 <span className="absolute bottom-[calc(100%+5px)] left-1/2 w-[64px] -translate-x-1/2 text-center text-[10px] font-semibold text-white drop-shadow-[0_1px_2px_rgba(31,37,16,0.95)]">
-                  {editingOrder ? "Done" : "Reorder"}
+                  {editingOrder ? t("Done") : t("Reorder")}
                 </span>
               </button>
 
@@ -544,7 +544,7 @@ export function LogSheet({
                     shadow-sm backdrop-blur-md
                   "
                 >
-                  Drag circles to reorder
+                  {t("Drag circles to reorder")}
                 </div>
               )}
             </div>
@@ -559,10 +559,10 @@ export function LogSheet({
               }`}
             >
               <button onClick={back} className="flex items-center gap-1 text-sm text-muted-foreground">
-                <ChevronLeft className="h-4 w-4" /> Back to Log
+                <ChevronLeft className="h-4 w-4" /> {t("Back to Log")}
               </button>
-              <SheetTitle className="font-serif text-lg">{CATEGORIES.find((c) => c.id === active)?.label}</SheetTitle>
-              <button onClick={close} aria-label="Close" className="rounded-full p-1 hover:bg-tint">
+              <SheetTitle className="font-serif text-lg">{t(CATEGORIES.find((c) => c.id === active)?.label ?? "")}</SheetTitle>
+              <button onClick={close} aria-label={t("Close")} className="rounded-full p-1 hover:bg-tint">
                 <X className="h-5 w-5" />
               </button>
             </SheetHeader>
@@ -754,6 +754,7 @@ function CustomChipList({
   onToggle: (v: string) => void;
   descriptions?: Record<string, string>;
 }) {
+  const { t } = useI18n();
   const [adding, setAdding] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [text, setText] = useState("");
@@ -769,7 +770,7 @@ function CustomChipList({
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 className="h-8 flex-1"
-                placeholder="Custom…"
+                placeholder={t("Custom…")}
                 autoFocus
               />
               <Button
@@ -803,7 +804,7 @@ function CustomChipList({
               onClick={() => setAdding(true)}
               className="flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary hover:bg-primary/20"
             >
-              <Plus className="h-3 w-3" /> Add custom
+              <Plus className="h-3 w-3" /> {t("Add custom")}
             </button>
           )}
           {canEdit && !adding && (
@@ -812,7 +813,7 @@ function CustomChipList({
               onClick={() => setEditMode((v) => !v)}
               className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${editMode ? "bg-primary text-primary-foreground" : "bg-tint text-muted-foreground hover:text-foreground"}`}
             >
-              <Pencil className="h-3 w-3" /> {editMode ? "Done" : "Edit"}
+              <Pencil className="h-3 w-3" /> {editMode ? t("Done") : t("Edit")}
             </button>
           )}
         </div>
@@ -820,8 +821,8 @@ function CustomChipList({
       <div className="flex flex-wrap gap-2">
         {base.map((v) => (
           <span key={v} className="inline-flex items-center gap-0.5">
-            <Chip active={selected.includes(v)} onClick={() => onToggle(v)} title={descriptions?.[v]}>
-              {v}
+            <Chip active={selected.includes(v)} onClick={() => onToggle(v)} title={descriptions?.[v] ? t(descriptions[v]) : undefined}>
+              {t(v)}
             </Chip>
             {descriptions?.[v] && (
               <button
@@ -873,7 +874,7 @@ function CustomChipList({
       </div>
       {infoFor && descriptions?.[infoFor] && (
         <div className="mt-2 rounded-lg bg-tint px-2.5 py-1.5 text-[11px] leading-snug text-foreground">
-          <span className="font-semibold">{infoFor}:</span> {descriptions[infoFor]}
+          <span className="font-semibold">{t(infoFor)}:</span> {t(descriptions[infoFor])}
         </div>
       )}
     </div>
@@ -904,13 +905,14 @@ function ScaleLegend({
   title: string;
   from?: number;
 }) {
+  const { t } = useI18n();
   const items: number[] = [];
   for (let i = Math.ceil(from); i <= max; i++) items.push(i);
   const activeLegendValue = value == null || value < from ? undefined : Math.round(value);
 
   return (
     <div className="mt-2 rounded-xl border border-border/60 bg-surface/50 p-2.5">
-      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>
+      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{t(title)}</p>
       <div className="space-y-1 text-[11px] leading-tight">
         {items.map((n) => (
           <div key={n} className="flex items-start gap-2">
@@ -921,7 +923,7 @@ function ScaleLegend({
               {n}
             </span>
             <span className={activeLegendValue === n ? "font-semibold text-foreground" : "text-muted-foreground"}>
-              {descriptions[n]}
+              {t(descriptions[n])}
             </span>
           </div>
         ))}
@@ -949,6 +951,7 @@ function IntensityScale({
   compactSingleRow?: boolean;
   step?: number;
 }) {
+  const { t } = useI18n();
   const nums = Array.from(
     { length: Math.floor((max - from) / step) + 1 },
     (_, i) => Number((from + i * step).toFixed(1)),
@@ -996,7 +999,7 @@ function IntensityScale({
           <span className="font-semibold">
             Level {Number.isInteger(value) ? value : value.toFixed(1)}:
           </span>{" "}
-          {selectedDescription}
+          {t(selectedDescription)}
         </div>
       )}
 
@@ -2850,7 +2853,7 @@ function AddCustomInline({ onAdd }: { onAdd: (v: string) => void }) {
           }
         }}
         className="h-8 w-32"
-        placeholder="Custom…"
+        placeholder={t("Custom…")}
         autoFocus
       />
       <Button type="button" size="sm" onClick={commit}>
