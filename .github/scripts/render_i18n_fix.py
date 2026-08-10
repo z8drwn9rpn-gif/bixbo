@@ -15,6 +15,9 @@ s = s.replace('return new Date(Number(match[1]), Number(match[2]) - 1, 1).toLoca
 s = s.replace('const { t } = useI18n();\n  const palette = METRIC_COLORS[color];', 'const { t, language } = useI18n();\n  const palette = METRIC_COLORS[color];', 1)
 s = s.replace('const resolvedPreviousLabel = previousLabel ?? monthLabelFromPrefix(defaultPreviousPrefix);', 'const resolvedPreviousLabel = previousLabel ?? monthLabelFromPrefix(defaultPreviousPrefix, language);')
 s = s.replace('const resolvedCurrentLabel = currentLabel ?? monthLabelFromPrefix(defaultCurrentPrefix);', 'const resolvedCurrentLabel = currentLabel ?? monthLabelFromPrefix(defaultCurrentPrefix, language);')
+s = s.replace('export function PatternsContent() {\n  const { t } = useI18n();', 'export function PatternsContent() {\n  const { t, language } = useI18n();')
+s = s.replace('const currentMonthLabel = monthLabelFromPrefix(currentMonthPrefix);', 'const currentMonthLabel = monthLabelFromPrefix(currentMonthPrefix, language);')
+s = s.replace('const previousMonthLabel = monthLabelFromPrefix(previousMonthPrefix);', 'const previousMonthLabel = monthLabelFromPrefix(previousMonthPrefix, language);')
 old = '''function MetricColumn({\n  label,\n  value,\n  percentage,\n  decimals,\n  unit,\n  color,\n  muted = false,\n}: {\n  label: string;\n  value: number | null;\n  percentage: number;\n  decimals: number;\n  unit: string;\n  color: string;\n  muted?: boolean;\n}) {\n  return ('''
 new = '''function MetricColumn({\n  label,\n  value,\n  percentage,\n  decimals,\n  unit,\n  color,\n  muted = false,\n}: {\n  label: string;\n  value: number | null;\n  percentage: number;\n  decimals: number;\n  unit: string;\n  color: string;\n  muted?: boolean;\n}) {\n  const { t } = useI18n();\n  return ('''
 s = s.replace(old, new, 1)
