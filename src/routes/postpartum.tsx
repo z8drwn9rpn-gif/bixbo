@@ -323,6 +323,7 @@ function SetupForm({
   updatePP: (p: (x: PostpartumState) => PostpartumState) => void;
   compact?: boolean;
 }) {
+  const { t } = useI18n();
   const types: { v: NonNullable<PostpartumState["deliveryType"]>; label: string }[] = [
     { v: "vaginal", label: "Vaginal" },
     { v: "csection", label: "C-section" },
@@ -418,6 +419,7 @@ function SymptomsSection({
   log: PostpartumDayLog;
   updateLog: (patch: (value: PostpartumDayLog) => PostpartumDayLog) => void;
 }) {
+  const { t } = useI18n();
   const selected = log.symptoms ?? [];
 
   const toggle = (symptom: string) => {
@@ -470,6 +472,7 @@ function BleedingSection({
   updateLog: (p: (l: PostpartumDayLog) => PostpartumDayLog) => void;
   today: string;
 }) {
+  const { t } = useI18n();
   const trend = Array.from({ length: 42 }, (_, i) => addDays(today, i - 41));
   return (
     <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
@@ -536,6 +539,7 @@ function RecoverySection({
   log: PostpartumDayLog;
   updateLog: (p: (l: PostpartumDayLog) => PostpartumDayLog) => void;
 }) {
+  const { t } = useI18n();
   return (
     <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80 space-y-4">
       <p className="text-sm font-medium">{t("Recovery")}</p>
@@ -572,6 +576,7 @@ function MoodSection({
   log: PostpartumDayLog;
   updateLog: (p: (l: PostpartumDayLog) => PostpartumDayLog) => void;
 }) {
+  const { t } = useI18n();
   const [custom, setCustom] = useState("");
   const moods = log.mood ?? [];
   const toggle = (m: string) =>
@@ -642,6 +647,7 @@ function SleepSection({
   updateLog: (p: (l: PostpartumDayLog) => PostpartumDayLog) => void;
   today: string;
 }) {
+  const { t } = useI18n();
   const days = Array.from({ length: 14 }, (_, i) => addDays(today, i - 13));
   const maxH = Math.max(
     1,
@@ -730,6 +736,7 @@ function FeedingSection({
   log: PostpartumDayLog;
   updateLog: (p: (l: PostpartumDayLog) => PostpartumDayLog) => void;
 }) {
+  const { t } = useI18n();
   const bf = log.breastfeeding ?? [];
   const pumping = log.pumping ?? [];
   const bottle = log.bottle ?? [];
@@ -919,6 +926,7 @@ function DiaperSection({
   log: PostpartumDayLog;
   updateLog: (p: (l: PostpartumDayLog) => PostpartumDayLog) => void;
 }) {
+  const { t } = useI18n();
   const diapers = log.diapers ?? [];
   const wet = diapers.filter((d) => d.kind === "wet").length;
   const dirty = diapers.filter((d) => d.kind === "dirty").length;
@@ -967,6 +975,7 @@ function VisitsSection({
   pp: PostpartumState;
   updatePP: (p: (x: PostpartumState) => PostpartumState) => void;
 }) {
+  const { t } = useI18n();
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<PregnancyAppointment | null>(null);
   const visits = pp.visits ?? [];
