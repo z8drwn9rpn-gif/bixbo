@@ -180,7 +180,7 @@ function NotificationsPage() {
 
         <Card title="Push notifications" subtitle="Reminders arrive even when BIXBO is fully closed.">
           {!ready ? (
-            <p className="text-xs text-muted-foreground">Checking your account…</p>
+            <p className="text-xs text-muted-foreground">{t("Checking your account…")}</p>
           ) : !signedIn ? (
             <p className="text-xs text-destructive">Sign in to enable reminders when BIXBO is fully closed.</p>
           ) : unsupported ? (
@@ -292,7 +292,7 @@ function NotificationsPage() {
               {testBusy ? "Sending…" : "Send real test push"}
             </button>
           </div>
-          {!hydrated && <p className="text-xs text-muted-foreground">Loading your preferences…</p>}
+          {!hydrated && <p className="text-xs text-muted-foreground">{t("Loading your preferences…")}</p>}
           <p className="text-xs text-muted-foreground">
             For the real test, install BIXBO to the Home Screen on iPhone, close it completely, then tap the button
             before closing.
