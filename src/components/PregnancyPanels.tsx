@@ -67,7 +67,7 @@ export function Slider0to10({
         step={1}
         value={value ?? 0}
         onChange={(e) => onChange(Number(e.target.value))}
-        aria-label={label}
+        aria-label={t(label)}
         className="mt-1 h-11 w-full accent-primary"
       />
     </div>
@@ -118,8 +118,8 @@ export function TagList({
               add();
             }
           }}
-          placeholder={`${t("Add")} ${label.toLowerCase()}…`}
-          aria-label={label}
+          placeholder={`${t("Add")} ${t(label).toLowerCase()}…`}
+          aria-label={t(label)}
           className="h-11"
         />
         <Button type="button" className="h-11" onClick={add}>
@@ -136,7 +136,7 @@ export function TagList({
               {v}
               <button
                 type="button"
-                aria-label={`Remove ${v}`}
+                aria-label={`${t("Remove")} ${v}`}
                 onClick={() => onChange(values.filter((x) => x !== v))}
                 className="ml-1 -mr-1 rounded-full p-0.5 hover:bg-border/40"
               >
@@ -305,7 +305,7 @@ export function Checklist({
           <li key={it.id} className="flex items-center gap-2 rounded-xl bg-tint px-3 py-2 ring-1 ring-border/40">
             <button
               type="button"
-              aria-label={it.done ? `Mark ${t(it.text)} not done` : `Mark ${t(it.text)} done`}
+              aria-label={`${it.done ? t("Mark as not done") : t("Mark as done")} ${t(it.text)}`}
               onClick={() => onChange(items.map((x) => (x.id === it.id ? { ...x, done: !x.done } : x)))}
               className="flex h-11 w-11 shrink-0 items-center justify-center"
             >
@@ -318,7 +318,7 @@ export function Checklist({
             <span className={`flex-1 text-sm ${it.done ? "text-muted-foreground line-through" : ""}`}>{t(it.text)}</span>
             <button
               type="button"
-              aria-label={`Remove ${t(it.text)}`}
+              aria-label={`${t("Remove")} ${t(it.text)}`}
               onClick={() => onChange(items.filter((x) => x.id !== it.id))}
               className="flex h-11 w-11 shrink-0 items-center justify-center text-muted-foreground"
             >
@@ -457,11 +457,11 @@ export function KickCounter({
       ) : (
         <div className="rounded-2xl bg-tint p-4 text-center ring-1 ring-border/40">
           <p className="text-xs text-muted-foreground">
-            {Math.floor(elapsedSec / 60)}:{String(elapsedSec % 60).padStart(2, "0")} elapsed
+            {Math.floor(elapsedSec / 60)}:{String(elapsedSec % 60).padStart(2, "0")} {t("elapsed")}
           </p>
           <button
             type="button"
-            aria-label="Tap to count a kick"
+            aria-label={t("Tap to count a kick")}
             onClick={tap}
             className="mx-auto mt-3 flex h-32 w-32 items-center justify-center rounded-full bg-primary text-4xl font-serif text-primary-foreground shadow-lg active:scale-95"
           >
@@ -469,10 +469,10 @@ export function KickCounter({
           </button>
           <div className="mt-4 flex gap-2">
             <Button type="button" variant="outline" className="h-11 flex-1" onClick={cancel}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button type="button" className="h-11 flex-1" onClick={save}>
-              Save session
+              {t("Save session")}
             </Button>
           </div>
         </div>
@@ -485,11 +485,11 @@ export function KickCounter({
               className="flex items-center justify-between rounded-xl bg-tint px-3 py-2 text-sm ring-1 ring-border/40"
             >
               <span>
-                {s.time} · {s.count} kicks{s.minutes ? ` in ${s.minutes} min` : ""}
+                {s.time} · {s.count} {t("kicks")}{s.minutes ? ` ${t("in")} ${s.minutes} min` : ""}
               </span>
               <button
                 type="button"
-                aria-label="Delete session"
+                aria-label={t("Delete session")}
                 onClick={() => onDelete(s.id)}
                 className="flex h-11 w-11 items-center justify-center text-muted-foreground"
               >
@@ -555,7 +555,7 @@ export function ContractionTimer({
         </Button>
       ) : (
         <Button type="button" variant="destructive" className="h-11 w-full" onClick={stop}>
-          Stop — {elapsedSec}s
+          {t("Stop")} — {elapsedSec}s
         </Button>
       )}
       {sorted.length > 0 && (
@@ -585,7 +585,7 @@ export function ContractionTimer({
                   </span>
                   <button
                     type="button"
-                    aria-label="Delete contraction"
+                    aria-label={t("Delete contraction")}
                     onClick={() => onDelete(c.id)}
                     className="flex h-11 w-11 items-center justify-center text-muted-foreground"
                   >
@@ -649,12 +649,12 @@ export function AppointmentForm({
       <Field label="Kind">
         <select
           className="h-11 w-full rounded-md border border-input bg-background px-2 text-sm"
-          value={t(kind)}
+          value={kind}
           onChange={(e) => setKind(e.target.value as PregnancyAppointment["kind"])}
         >
           {Object.entries(KIND_LABELS).map(([k, l]) => (
             <option key={k} value={k}>
-              {l}
+              {t(l)}
             </option>
           ))}
         </select>
@@ -668,7 +668,7 @@ export function AppointmentForm({
         </Field>
       </div>
       <Field label="Title">
-        <Input className="h-11" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="20-week scan" />
+        <Input className="h-11" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("20-week scan")} />
       </Field>
       <Field label="Doctor">
         <Input className="h-11" value={doctor} onChange={(e) => setDoctor(e.target.value)} />
@@ -683,10 +683,10 @@ export function AppointmentForm({
       </Field>
       <div className="flex gap-2">
         <Button type="button" variant="outline" className="h-11 flex-1" onClick={onCancel}>
-          Cancel
+          {t("Cancel")}
         </Button>
         <Button type="button" className="h-11 flex-1" onClick={submit}>
-          Save
+          {t("Save")}
         </Button>
       </div>
     </div>
@@ -702,7 +702,7 @@ export function AppointmentList({
   onEdit: (a: PregnancyAppointment) => void;
   onDelete: (id: string) => void;
 }) {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const todayK = toKey(new Date());
   const upcoming = appointments.filter((a) => a.date >= todayK).sort((a, b) => a.date.localeCompare(b.date));
   const past = appointments.filter((a) => a.date < todayK).sort((a, b) => b.date.localeCompare(a.date));
@@ -713,7 +713,7 @@ export function AppointmentList({
         <span className="text-sm">
           <span className="font-medium">{a.title}</span>{" "}
           <span className="text-xs text-muted-foreground">
-            ({KIND_LABELS[a.kind]}) · {fromKey(a.date).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+            ({t(KIND_LABELS[a.kind])}) · {fromKey(a.date).toLocaleDateString(language === "sk" ? "sk-SK" : "en-GB", { day: "numeric", month: "short" })}
             {a.time ? ` ${a.time}` : ""}
           </span>
         </span>
@@ -724,7 +724,7 @@ export function AppointmentList({
       <div className="mt-1 flex justify-end">
         <button
           type="button"
-          aria-label={`Delete ${a.title}`}
+          aria-label={`${t("Delete")} ${a.title}`}
           onClick={() => onDelete(a.id)}
           className="flex h-11 w-11 items-center justify-center text-muted-foreground"
         >
@@ -774,7 +774,7 @@ export function exportTimeline(data: BixboData): string {
     .sort((a, b) => a.date.localeCompare(b.date))
     .forEach((a) => {
       lines.push(
-        `- ${a.date}${a.time ? ` ${a.time}` : ""} — ${a.title} (${t(a.kind)})${a.doctor ? ` w/ ${a.doctor}` : ""}${a.result ? ` — ${a.result}` : ""}`,
+        `- ${a.date}${a.time ? ` ${a.time}` : ""} — ${a.title} (${KIND_LABELS[a.kind]})${a.doctor ? ` w/ ${a.doctor}` : ""}${a.result ? ` — ${a.result}` : ""}`,
       );
     });
   lines.push("");
