@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { LockKeyhole, ShieldCheck } from "lucide-react";
+import { LockKeyhole, ShieldCheck } from "@/components/icons/BixboIcons";
 
 import {
   authenticateBiometric,
