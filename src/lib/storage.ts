@@ -1928,10 +1928,13 @@ function withLocalSyncMetadata(previous: BixboData, next: BixboData): BixboData 
 
   return {
     ...next,
-    deletedIds: Array.from(deletedIds).slice(-2000),
+    deletedIds: Array.from(deletedIds),
     syncMeta: {
+      // Updated clocks are bounded for storage size, but deletion tombstones are
+      // intentionally retained indefinitely. A very old cloud/device snapshot
+      // must never be able to resurrect something the user explicitly deleted.
       updatedAt: pruneSyncTimestampMap(meta.updatedAt),
-      deletedAt: pruneSyncTimestampMap(meta.deletedAt),
+      deletedAt: meta.deletedAt,
     },
   };
 }
@@ -2583,7 +2586,7 @@ export const NAUSEA_HELPED = ["Lying down", "Ginger tea", "Fresh air", "Medicati
 
 /* ------------------- Deletion tombstones ------------------- */
 export function markDeleted(update: (u: (d: BixboData) => BixboData) => void, ...ids: string[]) {
-  update((d) => ({ ...d, deletedIds: Array.from(new Set([...(d.deletedIds ?? []), ...ids])).slice(-2000) }));
+  update((d) => ({ ...d, deletedIds: Array.from(new Set([...(d.deletedIds ?? []), ...ids])) }));
 }
 
 /** Add tombstones for removed custom-list options so merges can't restore them. */
