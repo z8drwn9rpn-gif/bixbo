@@ -2485,22 +2485,22 @@ function TimeOfDayPatternChart({
       for (let i = 1; i < 4; i++) if (blocks[i] > blocks[best]) best = i;
       return { i: best, pct: Math.round((blocks[best] / total) * 100) };
     };
-    const t = topOf(tetanyBlocks, tetanyTotal);
-    const p = topOf(panicBlocks, panicTotal);
+    const tetanyTop = topOf(tetanyBlocks, tetanyTotal);
+    const panicTop = topOf(panicBlocks, panicTotal);
     const blockName = (i: number) => t(TIME_BLOCK_SHORT[i]);
     const blockHours = (i: number) => TIME_BLOCK_LABELS[i].split(" ")[1];
     if (language === "sk") {
-      if (t && p) {
-        return `Tetánia sa najčastejšie vyskytuje v časti dňa ${blockName(t.i).toLowerCase()} (${blockHours(t.i)}, ${t.pct} % prípadov), zatiaľ čo panické záchvaty vrcholia v časti dňa ${blockName(p.i).toLowerCase()} (${blockHours(p.i)}, ${p.pct} % prípadov).`;
+      if (tetanyTop && panicTop) {
+        return `Tetánia sa najčastejšie vyskytuje v časti dňa ${blockName(tetanyTop.i).toLowerCase()} (${blockHours(tetanyTop.i)}, ${tetanyTop.pct} % prípadov), zatiaľ čo panické záchvaty vrcholia v časti dňa ${blockName(panicTop.i).toLowerCase()} (${blockHours(panicTop.i)}, ${panicTop.pct} % prípadov).`;
       }
-      if (t) return `Tetánia sa najčastejšie vyskytuje v časti dňa ${blockName(t.i).toLowerCase()} (${blockHours(t.i)}, ${t.pct} % prípadov).`;
-      if (p) return `Panické záchvaty sa najčastejšie vyskytujú v časti dňa ${blockName(p.i).toLowerCase()} (${blockHours(p.i)}, ${p.pct} % prípadov).`;
+      if (tetanyTop) return `Tetánia sa najčastejšie vyskytuje v časti dňa ${blockName(tetanyTop.i).toLowerCase()} (${blockHours(tetanyTop.i)}, ${tetanyTop.pct} % prípadov).`;
+      if (panicTop) return `Panické záchvaty sa najčastejšie vyskytujú v časti dňa ${blockName(panicTop.i).toLowerCase()} (${blockHours(panicTop.i)}, ${panicTop.pct} % prípadov).`;
     }
-    if (t && p) {
-      return `Tetany occurs most often in the ${TIME_BLOCK_SHORT[t.i].toLowerCase()} (${blockHours(t.i)}, ${t.pct}% of cases), while panic attacks peak in the ${TIME_BLOCK_SHORT[p.i].toLowerCase()} (${blockHours(p.i)}, ${p.pct}% of cases).`;
+    if (tetanyTop && panicTop) {
+      return `Tetany occurs most often in the ${TIME_BLOCK_SHORT[t.i].toLowerCase()} (${blockHours(tetanyTop.i)}, ${tetanyTop.pct}% of cases), while panic attacks peak in the ${TIME_BLOCK_SHORT[p.i].toLowerCase()} (${blockHours(panicTop.i)}, ${panicTop.pct}% of cases).`;
     }
-    if (t) return `Tetany occurs most often in the ${TIME_BLOCK_SHORT[t.i].toLowerCase()} (${blockHours(t.i)}, ${t.pct}% of cases).`;
-    if (p) return `Panic attacks occur most often in the ${TIME_BLOCK_SHORT[p.i].toLowerCase()} (${blockHours(p.i)}, ${p.pct}% of cases).`;
+    if (tetanyTop) return `Tetany occurs most often in the ${TIME_BLOCK_SHORT[t.i].toLowerCase()} (${blockHours(tetanyTop.i)}, ${tetanyTop.pct}% of cases).`;
+    if (panicTop) return `Panic attacks occur most often in the ${TIME_BLOCK_SHORT[p.i].toLowerCase()} (${blockHours(panicTop.i)}, ${panicTop.pct}% of cases).`;
     return null;
   })();
 

@@ -3437,6 +3437,7 @@ function TempForm({
   update: UpdateFn;
   onDone: () => void;
 }) {
+  const { t } = useI18n();
   type VitalRow = {
     id: string;
     time: string;
@@ -4151,6 +4152,7 @@ function EventForm({
   onDone: () => void;
   initialEntry?: EventEntry;
 }) {
+  const { t } = useI18n();
   const [title, setTitle] = useState(initialEntry?.title ?? "");
   const [startDate, setStartDate] = useState(initialEntry?.startDate ?? date);
   const [endDate, setEndDate] = useState(initialEntry?.endDate ?? date);
@@ -4227,6 +4229,7 @@ function TaskForm({
   onDone: () => void;
   initialEntry?: TaskEntry;
 }) {
+  const { t } = useI18n();
   const [title, setTitle] = useState(initialEntry?.title ?? "");
   const [startDate, setStartDate] = useState(initialEntry?.startDate ?? date);
   const [endDate, setEndDate] = useState(initialEntry?.endDate ?? date);
@@ -4280,25 +4283,26 @@ function TaskForm({
 
 /* ------------------- NOTE ------------------- */
 function NoteForm({ date, update, onDone }: { date: string; update: UpdateFn; onDone: () => void }) {
-  const [t, setT] = useState("");
+  const { t } = useI18n();
+  const [text, setText] = useState("");
   const [time, setTime] = useState("");
   const save = () => {
-    if (!t.trim()) return;
+    if (!text.trim()) return;
     update((d) => {
       const list = (d.dayNotes[date] ?? []) as (string | { text: string; time?: string })[];
       const next: { text: string; time?: string }[] = list.map((x) => (typeof x === "string" ? { text: x } : x));
-      next.push({ text: t.trim(), time: time || undefined });
+      next.push({ text: text.trim(), time: time || undefined });
       return { ...d, dayNotes: { ...d.dayNotes, [date]: next } };
     });
     onDone();
   };
   return (
     <div className="space-y-3">
-      <SaveBar onCancel={onDone} onSave={save} disabled={!t.trim()} />
+      <SaveBar onCancel={onDone} onSave={save} disabled={!text.trim()} />
       <Field label="Time (optional)">
         <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
       </Field>
-      <Textarea rows={6} value={t} onChange={(e) => setT(e.target.value)} placeholder={t("Anything about today…")} />
+      <Textarea rows={6} value={text} onChange={(e) => setText(e.target.value)} placeholder={t("Anything about today…")} />
     </div>
   );
 }

@@ -652,7 +652,7 @@ function SummaryPanel({
           );
         })}
       </div>
-      {confidence && <ConfidenceBadge level={t(String(confidence.level))} detail={confidence.detail} />}
+      {confidence && <ConfidenceBadge level={confidence.level} detail={confidence.detail} />}
     </div>
   );
 }
@@ -3221,6 +3221,7 @@ export function PatternsContent() {
 }
 
 function PatternsPage() {
+  const { t } = useI18n();
   return (
     <AppShell title={t("Health of Bixbo")}>
       <div className="px-5 pt-2 lg:px-0">

@@ -489,7 +489,7 @@ export function MonthCalendar({
 
       {peek &&
         (() => {
-          const lines = daySummaryLines(data.dayLogs[peek], cycleTrackingHidden);
+          const lines = daySummaryLines(data.dayLogs[peek], cycleTrackingHidden, t);
           const d = new Date(`${peek}T00:00:00`);
           return (
             <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-6" onClick={() => setPeek(null)}>

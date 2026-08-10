@@ -411,6 +411,7 @@ function WeightSection({ view, update }: { view: BixboData; update: (u: (d: Bixb
 }
 
 function RecentBP({ view, update }: { view: BixboData; update: (u: (d: BixboData) => BixboData) => void }) {
+  const { t } = useI18n();
   const entries = Object.entries(view.dayLogs)
     .flatMap(([k, l]) => (l.pregnancy?.bloodPressure ?? []).map((e) => ({ ...e, date: k })))
     .sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time))
@@ -419,7 +420,7 @@ function RecentBP({ view, update }: { view: BixboData; update: (u: (d: BixboData
   if (!entries.length) return null;
 
   const remove = (date: string, id: string) => {
-    if (!window.confirm("Delete this blood pressure entry?")) return;
+    if (!window.confirm(t("Delete this blood pressure entry?"))) return;
     updateDayLog(update, date, (log) => ({
       ...log,
       pregnancy: {
@@ -455,6 +456,7 @@ function RecentBP({ view, update }: { view: BixboData; update: (u: (d: BixboData
 }
 
 function RecentBS({ view, update }: { view: BixboData; update: (u: (d: BixboData) => BixboData) => void }) {
+  const { t } = useI18n();
   const entries = Object.entries(view.dayLogs)
     .flatMap(([k, l]) => (l.pregnancy?.bloodSugar ?? []).map((e) => ({ ...e, date: k })))
     .sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time))
@@ -463,7 +465,7 @@ function RecentBS({ view, update }: { view: BixboData; update: (u: (d: BixboData
   if (!entries.length) return null;
 
   const remove = (date: string, id: string) => {
-    if (!window.confirm("Delete this blood sugar entry?")) return;
+    if (!window.confirm(t("Delete this blood sugar entry?"))) return;
     updateDayLog(update, date, (log) => ({
       ...log,
       pregnancy: {
