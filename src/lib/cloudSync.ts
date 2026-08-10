@@ -736,9 +736,13 @@ export function useCloudSync() {
 
         if (remote) {
           const safeRemote = normalizeRemotePayload(remote);
-          const merged = hadLocalSnapshot
-            ? mergeBixbo(currentLocal, safeRemote, { legacyLocalCanonical: true })
-            : safeRemote;
+          // Always merge the current local snapshot, even on a fresh browser.
+          // This preserves a log entered while the initial cloud request was in flight.
+          // legacyLocalCanonical=false prevents fresh-device defaults from tombstoning
+          // meaningful legacy cloud data.
+          const merged = mergeBixbo(currentLocal, safeRemote, {
+            legacyLocalCanonical: hadLocalSnapshot,
+          });
           const reconciled = { ...merged, partner: currentLocal.partner };
 
           // A remote reason prevents this replacement from being mistaken for
