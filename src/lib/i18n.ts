@@ -442,6 +442,14 @@ const SK: Record<string, string> = {
   "Choose one of your medicines or enter another treatment.": "Vyber jeden zo svojich liekov alebo zadaj inú liečbu.",
   "e.g. Elicea, physiotherapy, low-histamine diet": "napr. Elicea, fyzioterapia, nízkohistamínová strava",
 
+  "Add suggested items": "Pridať navrhované položky",
+  "Add item…": "Pridať položku…",
+  "Add checklist item": "Pridať položku zoznamu",
+  "Line chart": "Čiarový graf",
+  "Unlock with PIN": "Odomknúť pomocou PIN",
+  "PIN": "PIN",
+  "BIXBO PIN": "BIXBO PIN",
+
 };
 
 const TRANSLATIONS: Record<AppLanguage, Record<string, string>> = { en: EN, sk: SK };
