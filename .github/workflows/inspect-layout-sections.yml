@@ -1,0 +1,11 @@
+name: Inspect layout sections
+on:
+  push:
+    paths:
+      - '.github/workflows/inspect-layout-sections.yml'
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python .github/scripts/inspect-layout-sections.py
