@@ -337,7 +337,7 @@ function SetupForm({
   ];
   return (
     <div className="space-y-3">
-      {!compact && <p className="text-sm font-medium">Welcome — let's set things up</p>}
+      {!compact && <p className="text-sm font-medium">{t("Welcome — let's set things up")}</p>}
       <div>
         <label className="text-xs text-muted-foreground" htmlFor="pp-birthdate">
           Birth date
