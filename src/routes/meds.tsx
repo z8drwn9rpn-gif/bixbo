@@ -58,19 +58,19 @@ function MedsPage() {
     <AppShell
       title={
         <button onClick={() => navigate({ to: "/" })} className="flex items-center gap-2">
-          <ArrowLeft className="h-5 w-5" /> Medications
+          <ArrowLeft className="h-5 w-5" /> {t("Medications")}
         </button>
       }
       right={<AddMedButton onAdd={addMed} />}
     >
       <div className="space-y-4 px-5 pt-4 pb-24">
         <p className="text-xs text-muted-foreground">
-          Set up the meds you take on a schedule. One-off extra doses can be added from the Log button.
+          {t("Set up the meds you take on a schedule. One-off extra doses can be added from the Log button.")}
         </p>
         <section>
           <h2 className="font-serif text-xl">{t("My medications")}</h2>
           <div className="mt-2 space-y-2">
-            {view.meds.length === 0 && <p className="text-sm text-muted-foreground">No medications yet. Tap "Add".</p>}
+            {view.meds.length === 0 && <p className="text-sm text-muted-foreground">{t("No medications yet. Tap Add.")}</p>}
             {view.meds.map((m) => (
               <div
                 key={m.id}
@@ -163,7 +163,7 @@ function MedFields({ initial, onSave, onCancel }: { initial?: Med; onSave: (m: M
       <div className="space-y-3">
         <div>
           <label className="text-xs font-medium">{t("Name")}</label>
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Magnerot" />
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("e.g. Magnerot")} />
         </div>
         <div>
           <label className="text-xs font-medium">{t("Dose (optional)")}</label>
@@ -175,7 +175,7 @@ function MedFields({ initial, onSave, onCancel }: { initial?: Med; onSave: (m: M
             rows={2}
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="Take with food, side effects…"
+            placeholder={t("Take with food, side effects…")}
           />
         </div>
         <div className="flex items-center justify-between rounded-xl bg-tint p-3">
@@ -199,7 +199,7 @@ function MedFields({ initial, onSave, onCancel }: { initial?: Med; onSave: (m: M
                 </div>
               ))}
               <Button variant="outline" size="sm" onClick={() => setTimes([...times, "12:00"])}>
-                <Plus className="h-3 w-3" /> Add time
+                <Plus className="h-3 w-3" /> {t("Add time")}
               </Button>
             </div>
           </div>
@@ -207,7 +207,7 @@ function MedFields({ initial, onSave, onCancel }: { initial?: Med; onSave: (m: M
       </div>
       <DialogFooter>
         <Button variant="outline" onClick={onCancel}>
-          Cancel
+          {t("Cancel")}
         </Button>
         <Button onClick={save}>{t("Save")}</Button>
       </DialogFooter>
@@ -222,7 +222,7 @@ function AddMedButton({ onAdd }: { onAdd: (m: Med) => void }) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button size="sm" className="rounded-full">
-          <Plus className="h-4 w-4" /> Add
+          <Plus className="h-4 w-4" /> {t("Add")}
         </Button>
       </DialogTrigger>
       <DialogContent>
