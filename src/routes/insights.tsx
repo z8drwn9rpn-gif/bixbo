@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "@/components/icons/BixboIcons";
 import { AppShell } from "@/components/AppShell";
 import { CHART_COLORS } from "@/components/ui/chart";
 import { ChartCard, CHART_GRID, useDismissTapTooltip } from "@/components/charts";
@@ -438,7 +438,7 @@ function InsightPeriodControl({
           <ChevronLeft className="h-3.5 w-3.5" />
         </button>
 
-        <span className="min-w-0 whitespace-nowrap px-1 text-center text-[9px] font-semibold tabular-nums text-foreground">
+        <span className="min-w-0 whitespace-nowrap px-1 text-center text-[10px] font-semibold tabular-nums text-foreground">
           {insightPeriodNavigationLabel(value, anchor)}
         </span>
 
@@ -711,7 +711,7 @@ function InsightsPage() {
                   return (
                     <div key={n} className="flex items-center gap-2 text-[10px]">
                       <span
-                        className="grid h-4 w-4 shrink-0 place-items-center rounded-full text-[9px] font-bold text-white"
+                        className="grid h-4 w-4 shrink-0 place-items-center rounded-full text-[10px] font-bold text-white"
                         style={{ background: color }}
                       >
                         {n}
@@ -1255,14 +1255,14 @@ function MedsAdherence({
           {period === "Y" && (bestMonth || worstMonth) && (
             <div className="mt-4 grid grid-cols-2 gap-2">
               <div className="rounded-2xl bg-tint p-3">
-                <p className="text-[9px] uppercase tracking-wider text-muted-foreground">Best month</p>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Best month</p>
                 <p className="mt-1 text-sm font-semibold">
                   {bestMonth?.label ?? "—"} · {bestMonth?.pct ?? "—"}%
                 </p>
               </div>
 
               <div className="rounded-2xl bg-tint p-3">
-                <p className="text-[9px] uppercase tracking-wider text-muted-foreground">Lowest month</p>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Lowest month</p>
                 <p className="mt-1 text-sm font-semibold">
                   {worstMonth?.label ?? "—"} · {worstMonth?.pct ?? "—"}%
                 </p>
@@ -1445,13 +1445,13 @@ function InsightBarChartFrame({
 
       <div className="mt-1 flex pl-5">
         <div
-          className="grid flex-1 gap-[2px] text-center text-[8px] text-muted-foreground"
+          className="grid flex-1 gap-[2px] text-center text-[10px] text-muted-foreground"
           style={{ gridTemplateColumns: `repeat(${Math.max(1, bars.length)}, minmax(0, 1fr))` }}
         >
           {bars.map((bar, index) => (
             <div key={index} className="leading-tight">
               <div className="tabular-nums">{bar.label}</div>
-              {bar.sub ? <div className="text-[8px] tabular-nums opacity-70">{bar.sub}</div> : null}
+              {bar.sub ? <div className="text-[10px] tabular-nums opacity-70">{bar.sub}</div> : null}
             </div>
           ))}
         </div>
@@ -2195,7 +2195,7 @@ function YearHealthHeatmap({
           >
             <ChevronLeft className="h-3.5 w-3.5" />
           </button>
-          <span className="min-w-0 whitespace-nowrap px-1 text-center text-[9px] font-semibold tabular-nums">
+          <span className="min-w-0 whitespace-nowrap px-1 text-center text-[10px] font-semibold tabular-nums">
             {heatmapNavigationLabel}
           </span>
           <button
@@ -2219,7 +2219,7 @@ function YearHealthHeatmap({
             key={option.id}
             type="button"
             onClick={() => setMetric(option.id)}
-            className={`shrink-0 rounded-full px-2.5 py-1 text-[9px] font-semibold transition ${
+            className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold transition ${
               metric === option.id
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "bg-tint text-muted-foreground ring-1 ring-border/60"
@@ -2255,7 +2255,7 @@ function YearHealthHeatmap({
                     {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((weekday) => (
                       <div
                         key={weekday}
-                        className="flex h-[25px] items-center text-[8.5px] font-medium text-muted-foreground"
+                        className="flex h-[25px] items-center text-[10px] font-medium text-muted-foreground"
                       >
                         {weekday}
                       </div>
@@ -2267,7 +2267,7 @@ function YearHealthHeatmap({
                       {half.months.map(({ label, weekIndex }) => (
                         <span
                           key={label}
-                          className="absolute top-0 -translate-x-1/2 whitespace-nowrap text-[9px] font-semibold text-foreground/80"
+                          className="absolute top-0 -translate-x-1/2 whitespace-nowrap text-[10px] font-semibold text-foreground/80"
                           style={{ left: `${((weekIndex + 0.5) / Math.max(1, half.weekCount)) * 100}%` }}
                         >
                           {label}
@@ -2364,10 +2364,10 @@ function YearHealthHeatmap({
 
                 return (
                   <div key={key} className="flex min-w-0 flex-col items-center">
-                    <span className="text-[7.5px] font-medium text-muted-foreground">
+                    <span className="text-[10px] font-medium text-muted-foreground">
                       {date.toLocaleDateString("en-GB", { weekday: "short" })}
                     </span>
-                    <span className="mt-0.5 text-[8px] font-semibold tabular-nums text-foreground/80">
+                    <span className="mt-0.5 text-[10px] font-semibold tabular-nums text-foreground/80">
                       {date.getDate()}
                     </span>
 
@@ -2395,7 +2395,7 @@ function YearHealthHeatmap({
           </div>
         )}
 
-        <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5 text-[8.5px] text-muted-foreground">
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5 text-[10px] text-muted-foreground">
           <span className="flex items-center gap-1">
             <span className="h-3 w-3 rounded-full bg-tint" />
             No data
@@ -2418,10 +2418,10 @@ function YearHealthHeatmap({
             <span className="min-w-0 truncate text-[10px] font-medium text-foreground">
               {activeTooltip.summary}
             </span>
-            <span className="shrink-0 text-[9px] text-muted-foreground">Tap to close</span>
+            <span className="shrink-0 text-[10px] text-muted-foreground">Tap to close</span>
           </button>
         ) : (
-          <p className="mt-2.5 text-center text-[9px] text-muted-foreground">
+          <p className="mt-2.5 text-center text-[10px] text-muted-foreground">
             Tap any coloured day for details.
           </p>
         )}
@@ -2584,7 +2584,7 @@ function TimeOfDayPatternChart({
                 return <InsightFloatingTooltip leftPct={(i + 0.5) * 25} details={details} />;
               })()}
           </div>
-          <div className="mt-1 grid grid-cols-4 gap-3 text-center text-[8px] text-muted-foreground">
+          <div className="mt-1 grid grid-cols-4 gap-3 text-center text-[10px] text-muted-foreground">
             {TIME_BLOCK_SHORT.map((l) => (
               <span key={l}>{l}</span>
             ))}
