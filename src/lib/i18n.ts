@@ -696,6 +696,9 @@ const SK: Record<string, string> = {
   "Test": "Vyšetrenie",
   "Class": "Kurz",
 
+  "Start writing…": "Začni písať…",
+  "Delete checklist item": "Vymazať položku zoznamu",
+
 };
 
 const TRANSLATIONS: Record<AppLanguage, Record<string, string>> = { en: EN, sk: SK };
