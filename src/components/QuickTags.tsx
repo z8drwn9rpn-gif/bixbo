@@ -659,7 +659,7 @@ export function QuickTags({
                   <button
                     type="button"
                     onClick={() => hideTag(tag.key)}
-                    aria-label={`Remove ${tag.label}`}
+                    aria-label={`Remove ${t(tag.label)}`}
                     className="absolute -right-2 -top-2 grid h-7 w-7 place-items-center rounded-full bg-destructive text-destructive-foreground shadow-md transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <X className="h-3 w-3" strokeWidth={3} />
@@ -667,7 +667,7 @@ export function QuickTags({
 
                   <Ico e={tag.emoji} size={22} />
                   <span className="max-w-[64px] lg:max-w-[70px] text-[10px] lg:text-[11px] font-medium leading-[1.05] text-muted-foreground">
-                    {tag.label}
+                    {t(tag.label)}
                   </span>
 
                   <div className="mt-1 flex gap-1">
@@ -750,8 +750,8 @@ export function QuickTags({
                   }
                 }}
                 onContextMenu={(event) => event.preventDefault()}
-                title={`${tag.label} — long-press for details`}
-                aria-label={tag.label}
+                title={`${t(tag.label)} — long-press for details`}
+                aria-label={t(tag.label)}
                 className={`relative flex aspect-square min-w-0 select-none touch-manipulation flex-col lg:mx-auto lg:w-full lg:max-w-[94px] xl:max-w-[100px] items-center justify-center gap-0.5 rounded-full bg-surface p-1.5 text-center shadow-sm ring-1 ring-border/80 transition-[transform,box-shadow,background-color,ring-color] duration-150 hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-95 ${
                   isFlash ? "scale-105 bg-primary/10 ring-2 ring-primary shadow-md" : ""
                 }`}
@@ -759,7 +759,7 @@ export function QuickTags({
                 <Ico e={tag.emoji} size={22} />
 
                 <span className="max-w-[64px] lg:max-w-[70px] text-[10px] lg:text-[11px] font-medium leading-[1.05] text-muted-foreground">
-                  {tag.label}
+                  {t(tag.label)}
                 </span>
 
                 {isFlash && (
@@ -796,7 +796,7 @@ export function QuickTags({
                   className="flex min-h-8 items-center gap-1 rounded-full bg-tint px-2.5 text-[10px] font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <Ico e={tag.emoji} size={12} />
-                  {tag.label}
+                  {t(tag.label)}
                   <Plus className="h-3 w-3" />
                 </button>
               ))}
@@ -923,7 +923,7 @@ export function QuickTags({
               className="flex min-h-8 items-center gap-1 rounded-full bg-tint px-2.5 text-[10px] font-medium text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <Ico e={tag.emoji} size={14} />
-              {tag.label}
+              {t(tag.label)}
               <X className="h-3 w-3" />
             </button>
           ))}
@@ -1061,7 +1061,7 @@ function QuickTagBuilder({
                     cat === item.id ? "bg-primary text-primary-foreground" : "bg-tint text-foreground"
                   }`}
                 >
-                  {item.label}
+                  {t(item.label)}
                 </button>
               ))}
             </div>
