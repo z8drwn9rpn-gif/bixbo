@@ -173,41 +173,39 @@ export function LogSheet({
 
   const [draggingCat, setDraggingCat] = useState<Category | null>(null);
   const draggingCatRef = useRef<Category | null>(null);
+  const dragOrderRef = useRef<Category[]>([]);
   const lastDragTargetRef = useRef<Category | null>(null);
 
-  const reorderCatTo = (fromId: Category, toId: Category) => {
-    if (fromId === toId) return;
+  const persistVisibleOrder = (nextVisible: Category[]) => {
+    update((d) => {
+      const visible = new Set(nextVisible);
+      const hiddenSaved = (d.settings.logOrder ?? []).filter((id) => !visible.has(id as Category));
 
-    const next = orderedCats.map((c) => c.id);
-    const from = next.indexOf(fromId);
-    const to = next.indexOf(toId);
-    if (from < 0 || to < 0) return;
-
-    next.splice(from, 1);
-    next.splice(to, 0, fromId);
-
-    update((d) => ({
-      ...d,
-      settings: {
-        ...d.settings,
-        logOrder: next,
-      },
-    }));
+      return {
+        ...d,
+        settings: {
+          ...d.settings,
+          logOrder: [...nextVisible, ...hiddenSaved],
+        },
+      };
+    });
   };
 
   const startDirectReorder = (e: React.PointerEvent<HTMLButtonElement>, id: Category) => {
     if (!editingOrder) return;
+
     e.preventDefault();
     e.stopPropagation();
 
     draggingCatRef.current = id;
+    dragOrderRef.current = orderedCats.map((c) => c.id);
     lastDragTargetRef.current = id;
     setDraggingCat(id);
 
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {
-      // Pointer capture is optional; touch dragging still works without it.
+      // Older WebKit may not support pointer capture here.
     }
   };
 
@@ -222,10 +220,19 @@ export function LogSheet({
     const target = hit?.closest<HTMLElement>("[data-log-category]");
     const toId = target?.dataset.logCategory as Category | undefined;
 
-    if (!toId || toId === lastDragTargetRef.current) return;
+    if (!toId || toId === fromId || toId === lastDragTargetRef.current) return;
 
-    reorderCatTo(fromId, toId);
+    const next = dragOrderRef.current.slice();
+    const from = next.indexOf(fromId);
+    const to = next.indexOf(toId);
+    if (from < 0 || to < 0) return;
+
+    next.splice(from, 1);
+    next.splice(to, 0, fromId);
+
+    dragOrderRef.current = next;
     lastDragTargetRef.current = toId;
+    persistVisibleOrder(next);
   };
 
   const endDirectReorder = (e?: React.PointerEvent<HTMLButtonElement>) => {
@@ -233,7 +240,9 @@ export function LogSheet({
       e.preventDefault();
       e.stopPropagation();
     }
+
     draggingCatRef.current = null;
+    dragOrderRef.current = [];
     lastDragTargetRef.current = null;
     setDraggingCat(null);
   };
@@ -266,288 +275,277 @@ export function LogSheet({
               className="absolute inset-0 z-0 cursor-default bg-transparent"
             />
 
-            <>
-                {/* Soft olive glass overlay like the reference image.
-                    The app stays visible underneath, but the radial Log menu is the focus. */}
-                <div
-                  aria-hidden="true"
-                  className="pointer-events-none absolute inset-0 z-[5] bg-[#596330]/45 backdrop-blur-[2px]"
-                />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 z-[5] bg-[#596330]/45 backdrop-blur-[2px]"
+            />
 
-                <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
-                  <div
-                    className="absolute left-1/2 h-[410px] w-[390px] max-w-[100vw] -translate-x-1/2"
-                    style={{ bottom: "calc(max(8px, env(safe-area-inset-bottom)) + 26px)" }}
-                  >
-                    {/*
-                      Reference layout:
-                      - one compact FULL CIRCLE around the central + button
-                      - 11 main actions around the arc
-                      - optional 12th item remains available inside the arc
-                      - thin dotted spokes from the Log button to every action
-                    */}
-                    {(() => {
-                      /*
-                        Compact radial Log launcher matching the approved reference:
-                        - compact circles evenly distributed around the +
-                        - labels beside the side circles
-                        - top labels above the three top circles
-                        - Notes restored as its own circle
-                        - Reorder stays beside the wheel and enables direct finger drag
-                      */
-                      // Every visible category occupies a real radial slot.
-                      // In Reorder mode, dragging a circle onto another circle
-                      // immediately changes their order without opening another window.
-                      const radialCats = orderedCats.slice(0, 12);
+            <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
+              <div
+                className="absolute left-1/2 h-[430px] w-[390px] max-w-[100vw] -translate-x-1/2"
+                style={{ bottom: "calc(max(8px, env(safe-area-inset-bottom)) + 22px)" }}
+              >
+                {(() => {
+                  const radialCats = orderedCats;
+                  const count = Math.max(1, radialCats.length);
 
-                      const slots = [
-                        // Larger full radial wheel, centered on the +.
-                        // Fixed slots keep the circle intact after drag reorder.
-                        { x: 0, up: 332, labelSide: "top" as const, labelW: 82 },
-                        { x: 60, up: 313, labelSide: "top" as const, labelW: 82 },
-                        { x: 104, up: 261, labelSide: "right" as const, labelW: 58 },
-                        { x: 120, up: 190, labelSide: "right" as const, labelW: 58 },
-                        { x: 104, up: 119, labelSide: "right" as const, labelW: 58 },
-                        { x: 60, up: 67, labelSide: "bottom" as const, labelW: 82 },
-                        { x: 0, up: 48, labelSide: "bottom" as const, labelW: 82 },
-                        { x: -60, up: 67, labelSide: "bottom" as const, labelW: 82 },
-                        { x: -104, up: 119, labelSide: "left" as const, labelW: 58 },
-                        { x: -120, up: 190, labelSide: "left" as const, labelW: 58 },
-                        { x: -104, up: 261, labelSide: "left" as const, labelW: 58 },
-                        { x: -60, up: 313, labelSide: "top" as const, labelW: 82 },
-                      ];
+                  const centerUp = 205;
+                  const radiusX = 112;
+                  const radiusY = 145;
+                  const categoryButtonSize = 54;
+                  const categoryCircleSize = 48;
 
-                      const circleClass = `
-                        absolute left-1/2 top-1/2 grid h-[48px] w-[48px]
-                        -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full
-                        border border-[#edf2cf]/65
-                        bg-[#dce5b2]/36
-                        shadow-[0_5px_13px_rgba(20,28,9,0.25),inset_0_1px_0_rgba(255,255,255,0.32)]
-                        ring-[3px] ring-[#e8edc5]/36
-                        backdrop-blur-[6px]
-                      `;
+                  const slots = radialCats.map((_, index) => {
+                    const angle = -Math.PI / 2 + (index * Math.PI * 2) / count;
+                    const cos = Math.cos(angle);
+                    const sin = Math.sin(angle);
 
-                      return (
-                        <>
-                          <svg
-                            aria-hidden="true"
-                            viewBox="-195 -400 390 410"
-                            className="pointer-events-none absolute bottom-0 left-1/2 h-[410px] w-[390px] max-w-[100vw] -translate-x-1/2 overflow-visible"
-                          >
-                            <circle
-                              cx="0"
-                              cy="-190"
-                              r="104"
-                              fill="none"
-                              stroke="rgba(241,244,220,0.22)"
-                              strokeWidth="1"
-                              strokeDasharray="3 5"
-                            />
-                            {Array.from({ length: 12 }).map((_, i) => {
-                              const angle = (-90 + i * 30) * (Math.PI / 180);
-                              const x1 = Math.cos(angle) * 110;
-                              const y1 = -190 + Math.sin(angle) * 110;
-                              const x2 = Math.cos(angle) * 124;
-                              const y2 = -190 + Math.sin(angle) * 124;
+                    const x = Math.round(radiusX * cos);
+                    const up = Math.round(centerUp - radiusY * sin);
 
-                              return (
-                                <g key={`arrow-${i}`}>
-                                  <line
-                                    x1={x1}
-                                    y1={y1}
-                                    x2={x2}
-                                    y2={y2}
-                                    stroke="rgba(241,244,220,0.50)"
-                                    strokeWidth="1.2"
-                                  />
-                                  <path
-                                    d={`M ${x2} ${y2} l ${-4 * Math.cos(angle - 0.55)} ${-4 * Math.sin(angle - 0.55)} M ${x2} ${y2} l ${-4 * Math.cos(angle + 0.55)} ${-4 * Math.sin(angle + 0.55)}`}
-                                    fill="none"
-                                    stroke="rgba(241,244,220,0.50)"
-                                    strokeWidth="1.2"
-                                    strokeLinecap="round"
-                                  />
-                                </g>
-                              );
-                            })}
-                          </svg>
+                    const labelSide =
+                      sin < -0.58
+                        ? ("top" as const)
+                        : sin > 0.58
+                          ? ("bottom" as const)
+                          : cos >= 0
+                            ? ("right" as const)
+                            : ("left" as const);
 
-                          <svg
-                            aria-hidden="true"
-                            viewBox="-195 -400 390 410"
-                            className="pointer-events-none absolute bottom-0 left-1/2 h-[410px] w-[390px] max-w-[100vw] -translate-x-1/2 overflow-visible"
-                          >
-                            {radialCats.map((c, index) => {
-                              const slot = slots[index];
-                              if (!slot) return null;
+                    return { x, up, labelSide };
+                  });
 
-                              const dx = slot.x;
-                              const dy = -(slot.up - 190);
-                              const len = Math.hypot(dx, dy) || 1;
-                              const endPad = 31;
+                  return (
+                    <>
+                      <svg
+                        aria-hidden="true"
+                        viewBox="-195 -430 390 430"
+                        className="pointer-events-none absolute bottom-0 left-1/2 h-[430px] w-[390px] max-w-[100vw] -translate-x-1/2 overflow-visible"
+                      >
+                        <ellipse
+                          cx="0"
+                          cy={-centerUp}
+                          rx="88"
+                          ry="88"
+                          fill="none"
+                          stroke="rgba(241,244,220,0.20)"
+                          strokeWidth="1"
+                          strokeDasharray="3 5"
+                        />
 
-                              return (
-                                <line
-                                  key={`line-${c.id}`}
-                                  x1="0"
-                                  y1="-190"
-                                  x2={dx - (dx / len) * endPad}
-                                  y2={-190 + dy - (dy / len) * endPad}
-                                  stroke="rgba(241,244,220,0.52)"
-                                  strokeWidth="1"
-                                  strokeDasharray="2.5 4.5"
-                                  opacity="0.58"
-                                />
-                              );
-                            })}
-                          </svg>
+                        {slots.map((slot, index) => {
+                          const dx = slot.x;
+                          const dy = -(slot.up - centerUp);
+                          const len = Math.hypot(dx, dy) || 1;
+                          const ux = dx / len;
+                          const uy = dy / len;
 
-                          {radialCats.map((c, index) => {
-                            const slot = slots[index];
-                            if (!slot) return null;
+                          const startPad = 44;
+                          const endPad = categoryCircleSize / 2 + 5;
 
-                            const isLeft = slot.labelSide === "left";
-                            const isRight = slot.labelSide === "right";
+                          const x1 = ux * startPad;
+                          const y1 = -centerUp + uy * startPad;
+                          const x2 = dx - ux * endPad;
+                          const y2 = -centerUp + dy - uy * endPad;
 
-                            return (
-                              <button
-                                key={c.id}
-                                type="button"
-                                data-log-category={c.id}
-                                onPointerDown={(e) => startDirectReorder(e, c.id)}
-                                onPointerMove={moveDirectReorder}
-                                onPointerUp={endDirectReorder}
-                                onPointerCancel={endDirectReorder}
-                                onClick={(e) => {
-                                  if (editingOrder) {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    return;
-                                  }
-                                  setCat(c.id);
-                                }}
-                                aria-label={editingOrder ? `Drag ${c.label} to reorder` : `Log ${c.label}`}
-                                className={`pointer-events-auto absolute z-20 h-[54px] w-[54px] touch-none select-none outline-none transition-[transform,filter,opacity] duration-150 focus-visible:ring-2 focus-visible:ring-[#edf2cf] ${
-                                  editingOrder ? "cursor-grab active:cursor-grabbing" : "active:scale-95"
-                                } ${draggingCat === c.id ? "z-50 scale-110 brightness-110 drop-shadow-[0_0_10px_rgba(238,243,207,0.8)]" : ""}`}
-                                style={{
-                                  left: "50%",
-                                  bottom: 0,
-                                  transform: `translate(calc(-50% + ${slot.x}px), -${slot.up}px)`,
-                                }}
-                              >
-                                <span className={circleClass}>
-                                  <Ico e={c.emoji} size={25} />
-                                </span>
+                          const arrowT = 0.78;
+                          const ax = x1 + (x2 - x1) * arrowT;
+                          const ay = y1 + (y2 - y1) * arrowT;
+                          const back = 6;
+                          const wing = 3.5;
+                          const px = -uy;
+                          const py = ux;
 
-                                <span
-                                  className="
-                                    absolute z-30 whitespace-normal break-words text-[10px] font-semibold leading-[1.08]
-                                    text-white drop-shadow-[0_1px_2px_rgba(31,37,16,0.95)]
-                                  "
-                                  style={{
-                                    width: `${Math.min(slot.labelW, c.label.length > 14 ? 62 : slot.labelW)}px`,
-                                    ...(isLeft
-                                      ? {
-                                          right: "calc(100% + 4px)",
-                                          top: "50%",
-                                          transform: "translateY(-50%)",
-                                          textAlign: "right" as const,
-                                        }
-                                      : isRight
-                                        ? {
-                                            left: "calc(100% + 4px)",
-                                            top: "50%",
-                                            transform: "translateY(-50%)",
-                                            textAlign: "left" as const,
-                                          }
-                                        : slot.labelSide === "bottom"
-                                        ? {
-                                            left: "50%",
-                                            top: "calc(100% + 6px)",
-                                            transform: "translateX(-50%)",
-                                            textAlign: "center" as const,
-                                          }
-                                        : {
-                                            left: "50%",
-                                            bottom: "calc(100% + 6px)",
-                                            transform: "translateX(-50%)",
-                                            textAlign: "center" as const,
-                                          }),
-                                  }}
-                                >
-                                  {c.label}
-                                </span>
-                              </button>
-                            );
-                          })}
+                          const a1x = ax - ux * back + px * wing;
+                          const a1y = ay - uy * back + py * wing;
+                          const a2x = ax - ux * back - px * wing;
+                          const a2y = ay - uy * back - py * wing;
 
+                          return (
+                            <g key={`spoke-${index}`}>
+                              <line
+                                x1={x1}
+                                y1={y1}
+                                x2={x2}
+                                y2={y2}
+                                stroke="rgba(241,244,220,0.52)"
+                                strokeWidth="1"
+                                strokeDasharray="3 5"
+                              />
+                              <path
+                                d={`M ${a1x} ${a1y} L ${ax} ${ay} L ${a2x} ${a2y}`}
+                                fill="none"
+                                stroke="rgba(241,244,220,0.58)"
+                                strokeWidth="1.25"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </g>
+                          );
+                        })}
+                      </svg>
+
+                      {radialCats.map((c, index) => {
+                        const slot = slots[index];
+                        if (!slot) return null;
+
+                        const side = slot.labelSide;
+
+                        return (
                           <button
+                            key={c.id}
                             type="button"
-                            onClick={() => {
-                              endDirectReorder();
-                              setEditingOrder((v) => !v);
+                            data-log-category={c.id}
+                            onPointerDown={(e) => startDirectReorder(e, c.id)}
+                            onPointerMove={moveDirectReorder}
+                            onPointerUp={endDirectReorder}
+                            onPointerCancel={endDirectReorder}
+                            onClick={(e) => {
+                              if (editingOrder) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                return;
+                              }
+                              setCat(c.id);
                             }}
-                            aria-label="Reorder log categories"
-                            className="pointer-events-auto absolute bottom-[8px] right-[10px] z-30 h-[48px] w-[48px] outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#edf2cf]"
+                            aria-label={editingOrder ? `Drag ${c.label} to reorder` : `Log ${c.label}`}
+                            className={`pointer-events-auto absolute z-20 touch-none select-none outline-none transition-[filter,opacity] duration-150 focus-visible:ring-2 focus-visible:ring-[#edf2cf] ${
+                              editingOrder ? "cursor-grab active:cursor-grabbing" : ""
+                            } ${draggingCat === c.id ? "z-50 brightness-110 drop-shadow-[0_0_10px_rgba(238,243,207,0.8)]" : ""}`}
+                            style={{
+                              width: `${categoryButtonSize}px`,
+                              height: `${categoryButtonSize}px`,
+                              left: "50%",
+                              bottom: 0,
+                              transform: `translate(calc(-50% + ${slot.x}px), -${slot.up}px)`,
+                            }}
                           >
-                            <span className={`${circleClass} scale-[0.96] ${editingOrder ? "ring-[#f3f6d8]/80 bg-[#748642]/70" : ""}`}>
-                              {editingOrder ? (
-                                <Check className="h-5 w-5 text-white" strokeWidth={2.7} />
-                              ) : (
-                                <span className="grid grid-cols-2 gap-[3px]" aria-hidden="true">
-                                  {Array.from({ length: 6 }).map((_, i) => (
-                                    <span key={i} className="h-[4px] w-[4px] rounded-full bg-white/90" />
-                                  ))}
-                                </span>
-                              )}
+                            <span
+                              className="
+                                absolute left-1/2 top-1/2 grid -translate-x-1/2 -translate-y-1/2
+                                place-items-center rounded-full border border-[#edf2cf]/65
+                                bg-[#dce5b2]/38
+                                shadow-[0_6px_16px_rgba(20,28,9,0.28),inset_0_1px_0_rgba(255,255,255,0.35)]
+                                ring-[3px] ring-[#e8edc5]/38 backdrop-blur-[7px]
+                              "
+                              style={{ width: `${categoryCircleSize}px`, height: `${categoryCircleSize}px` }}
+                            >
+                              <Ico e={c.emoji} size={26} />
                             </span>
-                            <span className="absolute bottom-[calc(100%+3px)] left-1/2 w-[58px] -translate-x-1/2 text-center text-[10px] font-semibold leading-none text-white drop-shadow-[0_1px_2px_rgba(31,37,16,0.95)]">
-                              {editingOrder ? "Done" : "Reorder"}
+
+                            <span
+                              className="
+                                absolute z-30 w-[64px] whitespace-normal text-[10px] font-semibold leading-[1.08]
+                                text-white drop-shadow-[0_1px_2px_rgba(31,37,16,0.95)]
+                              "
+                              style={{
+                                ...(side === "left"
+                                  ? {
+                                      right: "calc(100% + 3px)",
+                                      top: "50%",
+                                      transform: "translateY(-50%)",
+                                      textAlign: "right" as const,
+                                    }
+                                  : side === "right"
+                                    ? {
+                                        left: "calc(100% + 3px)",
+                                        top: "50%",
+                                        transform: "translateY(-50%)",
+                                        textAlign: "left" as const,
+                                      }
+                                    : side === "bottom"
+                                      ? {
+                                          left: "50%",
+                                          top: "calc(100% + 5px)",
+                                          transform: "translateX(-50%)",
+                                          textAlign: "center" as const,
+                                        }
+                                      : {
+                                          left: "50%",
+                                          bottom: "calc(100% + 5px)",
+                                          transform: "translateX(-50%)",
+                                          textAlign: "center" as const,
+                                        }),
+                              }}
+                            >
+                              {c.label}
                             </span>
                           </button>
-                        </>
-                      );
-                    })()}
+                        );
+                      })}
 
-                    {editingOrder && (
-                      <div
-                        className="pointer-events-none absolute left-1/2 z-40 -translate-x-1/2 rounded-full border border-white/20 bg-black/20 px-3 py-1 text-[9px] font-semibold text-white/90 shadow-sm backdrop-blur-md"
-                        style={{ bottom: "260px" }}
+                      <span
+                        aria-hidden="true"
+                        className="
+                          pointer-events-none absolute left-1/2 z-30 h-0 w-0 -translate-x-1/2
+                          border-x-[7px] border-b-0 border-t-[9px]
+                          border-x-transparent border-t-[#eef2d1]/90
+                        "
+                        style={{ bottom: `${centerUp + 43}px` }}
+                      />
+
+                      <button
+                        type="button"
+                        onClick={close}
+                        aria-label="Close Log"
+                        className="
+                          pointer-events-auto absolute left-1/2 z-40 grid h-[76px] w-[76px]
+                          -translate-x-1/2 place-items-center rounded-full
+                          border border-[#f1f4dc]/80 bg-[#657632] text-white
+                          shadow-[0_0_0_7px_rgba(231,238,190,0.44),0_0_24px_rgba(232,238,190,0.48),0_10px_26px_rgba(20,28,9,0.36)]
+                          ring-2 ring-[#dfe7b4]/70 transition-transform duration-150 active:scale-95
+                        "
+                        style={{ bottom: `${centerUp - 38}px` }}
                       >
-                        Drag circles to reorder
-                      </div>
-                    )}
+                        <Plus className="h-9 w-9" strokeWidth={2.15} />
+                      </button>
+                    </>
+                  );
+                })()}
+              </div>
 
-                    <span
-                      aria-hidden="true"
-                      className="
-                        pointer-events-none absolute left-1/2 z-30 h-0 w-0 -translate-x-1/2
-                        border-x-[6px] border-b-0 border-t-[8px]
-                        border-x-transparent border-t-[#eef2d1]/90
-                      "
-                      style={{ bottom: "232px" }}
-                    />
+              <button
+                type="button"
+                onClick={() => {
+                  endDirectReorder();
+                  setEditingOrder((v) => !v);
+                }}
+                aria-label={editingOrder ? "Finish reordering log categories" : "Reorder log categories"}
+                className="
+                  pointer-events-auto absolute bottom-[calc(max(12px,env(safe-area-inset-bottom))+14px)] right-4 z-40
+                  flex h-[52px] w-[52px] items-center justify-center rounded-full
+                  border border-[#edf2cf]/65 bg-[#dce5b2]/38
+                  shadow-[0_6px_16px_rgba(20,28,9,0.28)] ring-[3px] ring-[#e8edc5]/38
+                  backdrop-blur-[7px] transition active:scale-95
+                "
+              >
+                {editingOrder ? (
+                  <Check className="h-6 w-6 text-white" strokeWidth={2.6} />
+                ) : (
+                  <span className="grid grid-cols-2 gap-[3px]" aria-hidden="true">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <span key={i} className="h-[5px] w-[5px] rounded-full bg-white/90" />
+                    ))}
+                  </span>
+                )}
+                <span className="absolute bottom-[calc(100%+5px)] left-1/2 w-[64px] -translate-x-1/2 text-center text-[10px] font-semibold text-white drop-shadow-[0_1px_2px_rgba(31,37,16,0.95)]">
+                  {editingOrder ? "Done" : "Reorder"}
+                </span>
+              </button>
 
-                    <button
-                      type="button"
-                      onClick={close}
-                      aria-label="Close Log"
-                      className="
-                        pointer-events-auto absolute bottom-[153px] left-1/2 z-40
-                        grid h-[74px] w-[74px] -translate-x-1/2 place-items-center rounded-full
-                        border border-[#f1f4dc]/80
-                        bg-[#657632] text-white
-                        shadow-[0_0_0_7px_rgba(231,238,190,0.44),0_0_24px_rgba(232,238,190,0.48),0_10px_26px_rgba(20,28,9,0.36)]
-                        ring-2 ring-[#dfe7b4]/70
-                        transition-transform duration-150 active:scale-95
-                      "
-                    >
-                      <Plus className="h-9 w-9" strokeWidth={2.15} />
-                    </button>
-                  </div>
+              {editingOrder && (
+                <div
+                  className="
+                    pointer-events-none absolute bottom-[calc(max(12px,env(safe-area-inset-bottom))+18px)]
+                    left-1/2 z-40 -translate-x-1/2 rounded-full border border-white/20
+                    bg-black/20 px-3 py-1 text-[9px] font-semibold text-white/90
+                    shadow-sm backdrop-blur-md
+                  "
+                >
+                  Drag circles to reorder
                 </div>
-              </>
+              )}
+            </div>
           </>
         ) : (
           <div className="flex h-full min-h-0 flex-col">
