@@ -477,13 +477,6 @@ function HealthHub({ onHome, onOpen }: { onHome: () => void; onOpen: (view: Heal
             />
             <div className="ml-[4.5rem] border-t border-border/60" />
             <HubRow
-              icon={<WarningIcon size={22} />}
-              title="Notifications"
-              subtitle="Reminders and alerts"
-              onClick={() => onOpen("notifications")}
-            />
-            <div className="ml-[4.5rem] border-t border-border/60" />
-            <HubRow
               icon={<HeartIcon size={22} />}
               title="Privacy"
               subtitle="Privacy and data control"
@@ -492,41 +485,25 @@ function HealthHub({ onHome, onOpen }: { onHome: () => void; onOpen: (view: Heal
             <div className="ml-[4.5rem] border-t border-border/60" />
             <HubRow
               icon={<DropIcon size={22} />}
-              title="Backup & Sync"
-              subtitle="Backup and restore your data"
+              title="Backup, Sync & Storage"
+              subtitle="Backup, restore, export and local data"
               onClick={() => onOpen("backup")}
             />
             <div className="ml-[4.5rem] border-t border-border/60" />
 
             <HubRow
               icon={<TaskIcon size={22} />}
-              title="Tracking"
-              subtitle="Cycle, symptoms and health tracking"
+              title="Tracking & Units"
+              subtitle="Tracking categories, pain scale and measurement units"
               onClick={() => onOpen("tracking")}
             />
             <div className="ml-[4.5rem] border-t border-border/60" />
 
             <HubRow
               icon={<ClockIcon size={22} />}
-              title="Reminders"
-              subtitle="Medication and reminder settings"
+              title="Medications & Reminders"
+              subtitle="Medication schedule, reminders and notification settings"
               onClick={() => onOpen("reminders")}
-            />
-            <div className="ml-[4.5rem] border-t border-border/60" />
-
-            <HubRow
-              icon={<WeightIcon size={22} />}
-              title="Units"
-              subtitle="Weight, temperature and measurements"
-              onClick={() => onOpen("units")}
-            />
-            <div className="ml-[4.5rem] border-t border-border/60" />
-
-            <HubRow
-              icon={<DropIcon size={22} />}
-              title="Data & Storage"
-              subtitle="Manage local app data"
-              onClick={() => onOpen("data")}
             />
             <div className="ml-[4.5rem] border-t border-border/60" />
 
@@ -1162,7 +1139,35 @@ function ProfilePage() {
   if (healthView === "privacy") {
     return (
       <HealthSubpage title="Privacy" onBack={() => setHealthView("hub")}>
-        <Section title="Diagnostics">
+        <Section
+          title="Account"
+          subtitle="Sign in to connect your BIXBO account and cloud data."
+        >
+          <Link
+            to={"/auth" as never}
+            className="flex min-h-12 w-full items-center justify-center gap-3 rounded-xl border border-input bg-background px-4 text-sm font-semibold text-foreground"
+          >
+            <span className="text-base font-bold">G</span>
+            Continue with Google
+          </Link>
+
+          <Link
+            to={"/auth" as never}
+            className="flex min-h-12 w-full items-center justify-center gap-3 rounded-xl border border-input bg-background px-4 text-sm font-semibold text-foreground"
+          >
+            <span className="text-lg leading-none"></span>
+            Continue with Apple / iCloud
+          </Link>
+
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            These buttons open BIXBO&apos;s existing sign-in screen. Provider-specific OAuth remains handled by the auth flow.
+          </p>
+        </Section>
+
+        <Section
+          title="Diagnostics"
+          subtitle="Optional technical data that can help improve app stability."
+        >
           <ToggleRow
             label="Anonymous analytics"
             checked={privacyPrefs.analytics}
@@ -1173,15 +1178,9 @@ function ProfilePage() {
             checked={privacyPrefs.crashReports}
             onChange={(value) => setPrivacyPrefs((current) => ({ ...current, crashReports: value }))}
           />
-        </Section>
-
-        <Section title="Account">
-          <Link
-            to={"/auth" as never}
-            className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-input px-4 text-sm font-semibold"
-          >
-            Account and cloud controls
-          </Link>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Crash reports contain technical error information when the app fails. They are not your health diary entries.
+          </p>
         </Section>
       </HealthSubpage>
     );
@@ -1204,7 +1203,7 @@ function ProfilePage() {
     };
 
     return (
-      <HealthSubpage title="Backup & Sync" onBack={() => setHealthView("hub")}>
+      <HealthSubpage title="Backup, Sync & Storage" onBack={() => setHealthView("hub")}>
         <Section title="Automatic backup">
           <ToggleRow
             label="Auto backup"
@@ -1252,6 +1251,22 @@ function ProfilePage() {
             Export JSON
           </button>
         </Section>
+
+        <Section
+          title="Data & storage"
+          subtitle="Manage the local copy of your BIXBO data from the same place as backup and sync."
+        >
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Export JSON downloads a complete copy of the data currently stored by BIXBO on this device.
+          </p>
+          <button
+            type="button"
+            onClick={exportJson}
+            className="min-h-11 w-full rounded-xl border border-input px-4 text-sm font-semibold"
+          >
+            Download local data
+          </button>
+        </Section>
       </HealthSubpage>
     );
   }
@@ -1269,7 +1284,7 @@ function ProfilePage() {
     };
 
     return (
-      <HealthSubpage title="Tracking" onBack={() => setHealthView("hub")}>
+      <HealthSubpage title="Tracking & Units" onBack={() => setHealthView("hub")}>
         <Section title="Tracked categories" subtitle="Choose which categories you want available in BIXBO.">
           <ToggleRow label="Pain" checked={trackingPrefs.pain} onChange={(value) => toggleTracking("pain", value)} />
           <ToggleRow
@@ -1352,6 +1367,101 @@ function ProfilePage() {
             ))}
           </div>
         </Section>
+        <Section title="Measurement units" subtitle="Choose how measurements are displayed across BIXBO.">
+          <div className="space-y-4">
+            <div>
+              <p className="mb-2 text-xs font-medium text-muted-foreground">Weight</p>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { value: "kg", label: "Kilograms (kg)" },
+                  { value: "lb", label: "Pounds (lb)" },
+                ].map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setUnits((current) => ({ ...current, weight: option.value as "kg" | "lb" }))}
+                    className={`min-h-12 rounded-xl border px-3 text-sm font-semibold ${
+                      units.weight === option.value
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-tint"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-2 text-xs font-medium text-muted-foreground">Temperature</p>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { value: "c", label: "Celsius (°C)" },
+                  { value: "f", label: "Fahrenheit (°F)" },
+                ].map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setUnits((current) => ({ ...current, temperature: option.value as "c" | "f" }))}
+                    className={`min-h-12 rounded-xl border px-3 text-sm font-semibold ${
+                      units.temperature === option.value
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-tint"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-2 text-xs font-medium text-muted-foreground">Volume</p>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { value: "ml", label: "Millilitres (ml)" },
+                  { value: "oz", label: "Fluid ounces (oz)" },
+                ].map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setUnits((current) => ({ ...current, volume: option.value as "ml" | "oz" }))}
+                    className={`min-h-12 rounded-xl border px-3 text-sm font-semibold ${
+                      units.volume === option.value
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-tint"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-2 text-xs font-medium text-muted-foreground">Time</p>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { value: "24h", label: "24-hour" },
+                  { value: "12h", label: "12-hour" },
+                ].map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setUnits((current) => ({ ...current, time: option.value as "24h" | "12h" }))}
+                    className={`min-h-12 rounded-xl border px-3 text-sm font-semibold ${
+                      units.time === option.value
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-tint"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </Section>
       </HealthSubpage>
     );
   }
@@ -1361,7 +1471,25 @@ function ProfilePage() {
       setReminderPrefs((current) => ({ ...current, [key]: value }));
 
     return (
-      <HealthSubpage title="Reminders" onBack={() => setHealthView("hub")}>
+      <HealthSubpage title="Medications & Reminders" onBack={() => setHealthView("hub")}>
+        <Section title="Medication">
+          <Link
+            to="/meds"
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
+          >
+            Manage medications & times
+          </Link>
+        </Section>
+
+        <Section title="Notification controls">
+          <Link
+            to={"/notifications" as never}
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-input px-4 text-sm font-semibold"
+          >
+            Open notification controls
+          </Link>
+        </Section>
+
         <Section title="Health reminders" subtitle="Choose which reminders BIXBO should show.">
           <ToggleRow
             label="Medication reminders"
@@ -1450,105 +1578,6 @@ function ProfilePage() {
             </Field>
           </div>
         </Section>
-
-        <Section title="Medication schedule">
-          <Link
-            to="/meds"
-            className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-input px-4 text-sm font-semibold"
-          >
-            Manage medication times
-          </Link>
-        </Section>
-      </HealthSubpage>
-    );
-  }
-
-  if (healthView === "units") {
-    const UnitChoice = ({
-      title,
-      value,
-      options,
-      onChange,
-    }: {
-      title: string;
-      value: string;
-      options: { value: string; label: string }[];
-      onChange: (value: string) => void;
-    }) => (
-      <Section title={title}>
-        <div className="grid grid-cols-2 gap-2">
-          {options.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => onChange(option.value)}
-              className={`min-h-12 rounded-xl border px-3 text-sm font-semibold ${
-                value === option.value ? "border-primary bg-primary text-primary-foreground" : "border-border bg-tint"
-              }`}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      </Section>
-    );
-
-    return (
-      <HealthSubpage title="Units" onBack={() => setHealthView("hub")}>
-        <UnitChoice
-          title="Weight"
-          value={units.weight}
-          options={[
-            { value: "kg", label: "Kilograms (kg)" },
-            { value: "lb", label: "Pounds (lb)" },
-          ]}
-          onChange={(value) => setUnits((current) => ({ ...current, weight: value as "kg" | "lb" }))}
-        />
-        <UnitChoice
-          title="Temperature"
-          value={units.temperature}
-          options={[
-            { value: "c", label: "Celsius (°C)" },
-            { value: "f", label: "Fahrenheit (°F)" },
-          ]}
-          onChange={(value) => setUnits((current) => ({ ...current, temperature: value as "c" | "f" }))}
-        />
-        <UnitChoice
-          title="Volume"
-          value={units.volume}
-          options={[
-            { value: "ml", label: "Millilitres (ml)" },
-            { value: "oz", label: "Fluid ounces (oz)" },
-          ]}
-          onChange={(value) => setUnits((current) => ({ ...current, volume: value as "ml" | "oz" }))}
-        />
-        <UnitChoice
-          title="Time format"
-          value={units.time}
-          options={[
-            { value: "24h", label: "24-hour" },
-            { value: "12h", label: "12-hour" },
-          ]}
-          onChange={(value) => setUnits((current) => ({ ...current, time: value as "24h" | "12h" }))}
-        />
-      </HealthSubpage>
-    );
-  }
-
-  if (healthView === "data") {
-    return (
-      <HealthSubpage title="Data & Storage" onBack={() => setHealthView("hub")}>
-        <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
-          <p className="text-sm font-semibold text-foreground">Local data</p>
-          <p className="mt-1 text-xs text-muted-foreground">Download a complete copy of your local BIXBO data.</p>
-          <button
-            type="button"
-            onClick={exportJson}
-            className="mt-4 min-h-11 w-full rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
-          >
-            Export JSON
-          </button>
-        </section>
       </HealthSubpage>
     );
   }
@@ -1707,7 +1736,7 @@ function ProfilePage() {
           {/* ---------------- Medical ---------------- */}
           <Section title="Medical" subtitle="Diagnoses, conditions and history.">
             <TagListField
-              label="Diagnoses"
+              label="Diagnosed conditions"
               values={profile.diagnoses ?? []}
               onChange={(v) => patch({ diagnoses: v })}
             />
@@ -2036,7 +2065,7 @@ function ProfilePage() {
             title="Medical"
             subtitle={`${medicalTags.length} saved condition${medicalTags.length === 1 ? "" : "s"}`}
           >
-            <SummaryChips values={medicalTags} emptyText="No diagnoses or chronic conditions added." />
+            <SummaryChips values={medicalTags} emptyText="No diagnosed or chronic conditions added." />
 
             {(profile.surgeries?.length ?? 0) > 0 && (
               <div className="mt-4 border-t border-border/60 pt-4">
