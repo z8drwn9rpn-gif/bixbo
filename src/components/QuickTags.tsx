@@ -1,7 +1,7 @@
 import { Ico } from "@/components/icons/BixboIcons";
 import { POSTPARTUM_SYMPTOMS } from "@/lib/health";
 import { useEffect, useRef, useState } from "react";
-import { Check, Plus, X, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
+import { Check, Plus, X, Pencil, ChevronLeft, ChevronRight } from "@/components/icons/BixboIcons";
 import {
   todayKey,
   nowHHMM,
@@ -664,7 +664,7 @@ export function QuickTags({
                   </button>
 
                   <Ico e={tag.emoji} size={22} />
-                  <span className="max-w-[58px] text-[9px] font-medium leading-[1.05] text-muted-foreground">
+                  <span className="max-w-[58px] text-[10px] font-medium leading-[1.05] text-muted-foreground">
                     {tag.label}
                   </span>
 
@@ -756,7 +756,7 @@ export function QuickTags({
               >
                 <Ico e={tag.emoji} size={22} />
 
-                <span className="max-w-[58px] text-[9px] font-medium leading-[1.05] text-muted-foreground">
+                <span className="max-w-[58px] text-[10px] font-medium leading-[1.05] text-muted-foreground">
                   {tag.label}
                 </span>
 
@@ -773,7 +773,7 @@ export function QuickTags({
 
       {editMode && hidden.size > 0 && (
         <div className="mt-2">
-          <p className="text-[9px] font-medium leading-[1.05] text-muted-foreground">Hidden — tap to restore:</p>
+          <p className="text-[10px] font-medium leading-[1.05] text-muted-foreground">Hidden — tap to restore:</p>
 
           <div className="mt-1 flex flex-wrap gap-1.5">
             {sortedTags
