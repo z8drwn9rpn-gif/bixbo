@@ -39,6 +39,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -581,6 +582,8 @@ function ProfilePage() {
   const profile: HealthProfile = view.profile ?? {};
   const [editing, setEditing] = useState(false);
   const [healthView, setHealthView] = useState<HealthView>("hub");
+  const [accountAuthBusy, setAccountAuthBusy] = useState<"google" | "apple" | null>(null);
+  const [accountAuthError, setAccountAuthError] = useState<string | null>(null);
 
   const [trackingPrefs, setTrackingPrefs] = useState({
     pain: true,
@@ -750,6 +753,30 @@ function ProfilePage() {
     anchor.download = `bixbo-backup-${todayKey()}.json`;
     anchor.click();
     URL.revokeObjectURL(url);
+  };
+
+  const startAccountOAuth = async (provider: "google" | "apple") => {
+    setAccountAuthBusy(provider);
+    setAccountAuthError(null);
+
+    try {
+      const redirectTo = `${window.location.origin}/auth`;
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo,
+          skipBrowserRedirect: true,
+        },
+      });
+
+      if (error) throw error;
+      if (!data?.url) throw new Error(`${provider === "google" ? "Google" : "Apple"} sign-in URL was not returned.`);
+
+      window.location.assign(data.url);
+    } catch (error) {
+      setAccountAuthError(error instanceof Error ? error.message : String(error));
+      setAccountAuthBusy(null);
+    }
   };
 
   const age = ageFromBirthDate(profile.birthDate);
@@ -1154,24 +1181,34 @@ function ProfilePage() {
           title="Account"
           subtitle="Sign in to connect your BIXBO account and cloud data."
         >
-          <Link
-            to={"/auth" as never}
-            className="flex min-h-12 w-full items-center justify-center gap-3 rounded-xl border border-input bg-background px-4 text-sm font-semibold text-foreground"
+          <button
+            type="button"
+            onClick={() => void startAccountOAuth("google")}
+            disabled={accountAuthBusy != null}
+            className="flex min-h-12 w-full items-center justify-center gap-3 rounded-xl border border-input bg-background px-4 text-sm font-semibold text-foreground disabled:opacity-60"
           >
             <span className="text-base font-bold">G</span>
-            Continue with Google
-          </Link>
+            {accountAuthBusy === "google" ? "Opening Google…" : "Continue with Google"}
+          </button>
 
-          <Link
-            to={"/auth" as never}
-            className="flex min-h-12 w-full items-center justify-center gap-3 rounded-xl border border-input bg-background px-4 text-sm font-semibold text-foreground"
+          <button
+            type="button"
+            onClick={() => void startAccountOAuth("apple")}
+            disabled={accountAuthBusy != null}
+            className="flex min-h-12 w-full items-center justify-center gap-3 rounded-xl border border-input bg-background px-4 text-sm font-semibold text-foreground disabled:opacity-60"
           >
             <span className="text-lg leading-none"></span>
-            Continue with Apple / iCloud
-          </Link>
+            {accountAuthBusy === "apple" ? "Opening Apple…" : "Continue with Apple / iCloud"}
+          </button>
+
+          {accountAuthError && (
+            <p className="rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive ring-1 ring-destructive/20">
+              {accountAuthError}
+            </p>
+          )}
 
           <p className="text-xs leading-relaxed text-muted-foreground">
-            These buttons open BIXBO&apos;s existing sign-in screen. Provider-specific OAuth remains handled by the auth flow.
+            Sign-in opens the configured OAuth provider directly. If a provider is not enabled in Supabase, BIXBO will show the provider error here.
           </p>
         </Section>
 
