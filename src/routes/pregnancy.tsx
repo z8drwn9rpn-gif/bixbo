@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2 } from "@/components/icons/BixboIcons";
 import { AppShell } from "@/components/AppShell";
 import { Ico } from "@/components/icons/BixboIcons";
 import { Button } from "@/components/ui/button";
