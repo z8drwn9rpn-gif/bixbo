@@ -46,6 +46,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { createCloudBackup } from "@/lib/cloudSync";
+import { useI18n } from "@/hooks/useI18n";
+import type { AppLanguage } from "@/lib/i18n";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -400,6 +402,8 @@ function HubRow({
 }
 
 function HealthHub({ onHome, onOpen }: { onHome: () => void; onOpen: (view: HealthView) => void }) {
+  const { t } = useI18n();
+
   return (
     <AppShell
       title={
@@ -470,8 +474,8 @@ function HealthHub({ onHome, onOpen }: { onHome: () => void; onOpen: (view: Heal
           <section className="overflow-hidden rounded-3xl bg-surface shadow-sm ring-1 ring-border/80">
             <HubRow
               icon={<NoteIcon size={22} />}
-              title="Language"
-              subtitle="App language"
+              title={t("profile.hub.languageTitle")}
+              subtitle={t("profile.hub.languageSubtitle")}
               onClick={() => onOpen("language")}
             />
             <div className="ml-[4.5rem] border-t border-border/60" />
@@ -581,6 +585,7 @@ function PreferenceOption({
 function ProfilePage() {
   const navigate = useNavigate();
   const { data, update, hydrated } = useBixbo();
+  const { language, setLanguage, t } = useI18n();
   const view = hydrated ? data : EMPTY;
   const profile: HealthProfile = view.profile ?? {};
   const [editing, setEditing] = useState(false);
@@ -1100,18 +1105,18 @@ function ProfilePage() {
 
   if (healthView === "language") {
     return (
-      <HealthSubpage title="Language" onBack={() => setHealthView("hub")}>
+      <HealthSubpage title={t("profile.language.title")} onBack={() => setHealthView("hub")}>
         <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
-          <p className="text-sm font-semibold text-foreground">App language</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            English is currently active. More languages will be added with translation.
-          </p>
+          <p className="text-sm font-semibold text-foreground">{t("profile.language.appLanguage")}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{t("profile.language.subtitle")}</p>
           <select
             className="mt-4 h-11 w-full rounded-xl border border-input bg-background px-3 text-sm"
-            value="en"
-            disabled
+            value={language}
+            onChange={(event) => setLanguage(event.target.value as AppLanguage)}
+            aria-label={t("profile.language.appLanguage")}
           >
-            <option value="en">English</option>
+            <option value="en">{t("profile.language.english")}</option>
+            <option value="sk">{t("profile.language.slovak")}</option>
           </select>
         </section>
       </HealthSubpage>
