@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "@/components/icons/BixboIcons";
 
 import { AppShell } from "@/components/AppShell";
 import {
@@ -423,7 +423,7 @@ function SimilarityCard({ score, partnerName }: { score: number; partnerName: st
             <div className="text-center">
               <p className="text-2xl font-bold tabular-nums">{safeScore.toFixed(0)}%</p>
 
-              <p className="text-[9px] uppercase tracking-wider text-muted-foreground">similarity</p>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">similarity</p>
             </div>
           </div>
         </div>
@@ -1057,7 +1057,7 @@ function CouplePainChart({
               {PAIN_DESCRIPTIONS[Math.max(0, Math.min(10, Math.round(selectedBar.value)))] ?? "Pain"}
             </span>
 
-            <span className="shrink-0 text-[9px] text-muted-foreground">Tap to close</span>
+            <span className="shrink-0 text-[10px] text-muted-foreground">Tap to close</span>
           </button>
         </div>
       ) : (
