@@ -1176,9 +1176,9 @@ function MedsAdherence({
                 { label: "0–39%", color: "#D84343" },
                 { label: "n/a", color: INSIGHT_COLORS.oliveLight },
               ].map((item) => (
-                <span key={item.label} className="flex items-center gap-1">
+                <span key={t(item.label)} className="flex items-center gap-1">
                   <span className="h-2.5 w-2.5 rounded" style={{ background: item.color }} />
-                  {item.label}
+                  {t(item.label)}
                 </span>
               ))}
             </div>
@@ -1632,7 +1632,7 @@ function BristolChart({
                 value: `${count} ${count === 1 ? "entry" : "entries"}`,
                 description: item.sub,
                 color: item.n === 0 ? "#8b5cf6" : item.color,
-                summary: `${item.label} · ${count} ${count === 1 ? "entry" : "entries"} · ${item.sub}`,
+                summary: `${t(item.label)} · ${count} ${count === 1 ? "entry" : "entries"} · ${item.sub}`,
               };
 
               return <InsightFloatingTooltip leftPct={((active + 0.5) / chartTypes.length) * 100} details={details} />;
@@ -2453,7 +2453,7 @@ function TimeOfDayPatternChart({
   onPeriodChange: (period: Period) => void;
   onPeriodShift: (delta: -1 | 1) => void;
 }) {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const [active, setActive] = useState<string | null>(null);
   useDismissTapTooltip(() => setActive(null));
 
@@ -2487,13 +2487,20 @@ function TimeOfDayPatternChart({
     };
     const t = topOf(tetanyBlocks, tetanyTotal);
     const p = topOf(panicBlocks, panicTotal);
-    if (t && p) {
-      return `Tetany occurs most often in the ${TIME_BLOCK_SHORT[t.i].toLowerCase()} (${TIME_BLOCK_LABELS[t.i].split(" ")[1]}, ${t.pct}% of cases), while panic attacks peak in the ${TIME_BLOCK_SHORT[p.i].toLowerCase()} (${TIME_BLOCK_LABELS[p.i].split(" ")[1]}, ${p.pct}% of cases).`;
+    const blockName = (i: number) => t(TIME_BLOCK_SHORT[i]);
+    const blockHours = (i: number) => TIME_BLOCK_LABELS[i].split(" ")[1];
+    if (language === "sk") {
+      if (t && p) {
+        return `Tetánia sa najčastejšie vyskytuje v časti dňa ${blockName(t.i).toLowerCase()} (${blockHours(t.i)}, ${t.pct} % prípadov), zatiaľ čo panické záchvaty vrcholia v časti dňa ${blockName(p.i).toLowerCase()} (${blockHours(p.i)}, ${p.pct} % prípadov).`;
+      }
+      if (t) return `Tetánia sa najčastejšie vyskytuje v časti dňa ${blockName(t.i).toLowerCase()} (${blockHours(t.i)}, ${t.pct} % prípadov).`;
+      if (p) return `Panické záchvaty sa najčastejšie vyskytujú v časti dňa ${blockName(p.i).toLowerCase()} (${blockHours(p.i)}, ${p.pct} % prípadov).`;
     }
-    if (t)
-      return `Tetany occurs most often in the ${TIME_BLOCK_SHORT[t.i].toLowerCase()} (${TIME_BLOCK_LABELS[t.i].split(" ")[1]}, ${t.pct}% of cases).`;
-    if (p)
-      return `Panic attacks occur most often in the ${TIME_BLOCK_SHORT[p.i].toLowerCase()} (${TIME_BLOCK_LABELS[p.i].split(" ")[1]}, ${p.pct}% of cases).`;
+    if (t && p) {
+      return `Tetany occurs most often in the ${TIME_BLOCK_SHORT[t.i].toLowerCase()} (${blockHours(t.i)}, ${t.pct}% of cases), while panic attacks peak in the ${TIME_BLOCK_SHORT[p.i].toLowerCase()} (${blockHours(p.i)}, ${p.pct}% of cases).`;
+    }
+    if (t) return `Tetany occurs most often in the ${TIME_BLOCK_SHORT[t.i].toLowerCase()} (${blockHours(t.i)}, ${t.pct}% of cases).`;
+    if (p) return `Panic attacks occur most often in the ${TIME_BLOCK_SHORT[p.i].toLowerCase()} (${blockHours(p.i)}, ${p.pct}% of cases).`;
     return null;
   })();
 
