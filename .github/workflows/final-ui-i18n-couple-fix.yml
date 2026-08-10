@@ -14,12 +14,7 @@ jobs:
         run: |
           python3 .github/scripts/final_ui_i18n_couple_fix.py
           python3 .github/scripts/final_ui_i18n_couple_fix_v2.py
-          echo '--- Type 0 occurrences ---'
-          grep -nF 'Type 0 — Mystery' src/lib/i18n.ts || true
-          echo '--- by occurrences ---'
-          grep -nF '"by":' src/lib/i18n.ts || true
-          echo '--- surrounding lines ---'
-          nl -ba src/lib/i18n.ts | sed -n '940,965p'
+          python3 .github/scripts/final_ui_i18n_couple_fix_v3.py
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
