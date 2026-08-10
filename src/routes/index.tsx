@@ -764,7 +764,7 @@ function HomePage() {
         </div>
       }
     >
-      <div className="lg:mx-auto lg:grid lg:w-full lg:max-w-[1440px] lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)] lg:items-start lg:gap-7 lg:px-5">
+      <div className="lg:mx-auto lg:grid lg:w-full lg:max-w-[1500px] lg:grid-cols-[minmax(0,2.35fr)_minmax(300px,0.95fr)] lg:items-start lg:gap-6 lg:px-0 xl:grid-cols-[minmax(0,2.5fr)_minmax(320px,0.9fr)]">
         <div className="min-w-0 lg:flex lg:flex-col">
       <div className="px-5 pt-0.5 lg:order-1 lg:px-0">
         <div className="flex items-center justify-between">
@@ -1041,7 +1041,7 @@ function HomePage() {
 
         </div>
 
-        <aside className="min-w-0 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto lg:rounded-[1.75rem] lg:bg-surface/35 lg:p-4 lg:ring-1 lg:ring-border/50">
+        <aside className="min-w-0 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto lg:rounded-[1.75rem] lg:bg-surface/35 lg:p-4 lg:ring-1 lg:ring-border/50 xl:p-5">
       <div className="mt-4 flex items-center justify-between px-5 lg:mt-0 lg:px-0">
         <h2 className="font-serif text-xl font-bold">
           {selected === todayKey()
