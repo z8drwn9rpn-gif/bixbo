@@ -921,6 +921,7 @@ export function mergeBixbo(
       profile: mergeStructured("profile", effectiveLocal.profile, remote.profile) as BixboData["profile"],
       pregnancy: mergePregnancyState(effectiveLocal.pregnancy, remote.pregnancy),
       postpartum: mergePostpartumState(effectiveLocal.postpartum, remote.postpartum),
+      patterns: mergeStructured("patterns", effectiveLocal.patterns, remote.patterns) as BixboData["patterns"],
       // partner is a local-only projection of the other user's data — always keep local's.
       partner: effectiveLocal.partner ?? remote.partner,
     };
