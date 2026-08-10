@@ -61,7 +61,7 @@ function PregnancyPage() {
 
   const resetPregnancy = () => {
     const confirmed = window.confirm(
-      "This will permanently delete all pregnancy tracking data — due date, weight log, blood pressure, blood sugar, kicks, contractions, appointments, checklists, symptoms and daily pregnancy logs. This cannot be undone.",
+      t("This will permanently delete all pregnancy tracking data — due date, weight log, blood pressure, blood sugar, kicks, contractions, appointments, checklists, symptoms and daily pregnancy logs. This cannot be undone."),
     );
 
     if (!confirmed) return;
@@ -99,7 +99,7 @@ function PregnancyPage() {
 
   if (!p.active || (!p.lmp && !p.dueDate)) {
     return (
-      <AppShell title="Pregnancy">
+      <AppShell title={t("Pregnancy")}>
         <div className="px-5 pt-4 pb-[calc(6rem+env(safe-area-inset-bottom))]">
           <SetupForm view={view} update={update} />
         </div>
@@ -108,7 +108,7 @@ function PregnancyPage() {
   }
 
   return (
-    <AppShell title="Pregnancy">
+    <AppShell title={t("Pregnancy")}>
       <div className="space-y-4 px-5 pt-2 pb-[calc(6rem+env(safe-area-inset-bottom))]">
         <HeroSection view={view} update={update} progress={progress} />
 
@@ -222,17 +222,16 @@ function PregnancyPage() {
             className="h-11 w-full"
             onClick={() => downloadTextFile(`pregnancy-timeline-${today}.txt`, exportTimeline(view))}
           >
-            Export timeline (.txt)
+            {t("Export timeline (.txt)")}
           </Button>
         </Section>
 
         <Section title="Reset" icon="⚠️">
           <p className="mb-3 text-xs leading-relaxed text-muted-foreground">
-            Permanently delete all pregnancy setup details and daily pregnancy logs. Other BIXBO data will remain
-            unchanged.
+            {t("Permanently delete all pregnancy setup details and daily pregnancy logs. Other BIXBO data will remain unchanged.")}
           </p>
           <Button type="button" variant="destructive" className="h-11 w-full" onClick={resetPregnancy}>
-            Delete all pregnancy data
+            {t("Delete all pregnancy data")}
           </Button>
         </Section>
       </div>
@@ -306,7 +305,7 @@ function SetupForm({ view, update }: { view: BixboData; update: (u: (d: BixboDat
           />
         </Field>
         <Button type="button" className="h-11 w-full" onClick={submit}>
-          Start tracking
+          {t("Start tracking")}
         </Button>
       </div>
     </Section>
@@ -322,18 +321,19 @@ function HeroSection({
   update: (u: (d: BixboData) => BixboData) => void;
   progress: ReturnType<typeof pregnancyProgress>;
 }) {
+  const { t, language } = useI18n();
   const p = view.pregnancy ?? EMPTY.pregnancy!;
   const due = dueDateOf(p);
   if (!progress) return null;
   return (
     <section className="rounded-3xl bg-primary/10 p-5 ring-1 ring-primary/20 dark:bg-primary/20">
       <p className="text-xs uppercase tracking-wider text-primary">
-        Week {progress.week} + {progress.dayOfWeek} · Trimester {progress.trimester}
+        {t("Week")} {progress.week} + {progress.dayOfWeek} · {t("Trimester")} {progress.trimester}
       </p>
-      <p className="mt-1 font-serif text-3xl">{progress.days} days pregnant</p>
+      <p className="mt-1 font-serif text-3xl">{progress.days} {t("days pregnant")}</p>
       <p className="mt-1 text-sm text-muted-foreground">
-        Due {due ? fromKey(due).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "—"}
-        {progress.daysLeft != null ? ` · ${progress.daysLeft} days left` : ""}
+        {t("Due")} {due ? fromKey(due).toLocaleDateString(language === "sk" ? "sk-SK" : "en-GB", { day: "numeric", month: "long", year: "numeric" }) : "—"}
+        {progress.daysLeft != null ? ` · ${progress.daysLeft} ${t("days left")}` : ""}
       </p>
       <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-tint">
         <div className="h-full rounded-full bg-primary" style={{ width: `${progress.percent}%` }} />
@@ -344,11 +344,12 @@ function HeroSection({
 }
 
 function BabySizeCard({ week }: { week: number }) {
+  const { t } = useI18n();
   const size = babySize(week);
   if (!size) return null;
   return (
     <Section title="Baby size this week" icon="🍼">
-      <p className="font-serif text-2xl">{size.size}</p>
+      <p className="font-serif text-2xl">{t(size.size)}</p>
       <div className="mt-2 flex gap-4 text-sm text-muted-foreground">
         {size.lengthCm != null && <span>{size.lengthCm} cm</span>}
         {size.weightG != null && <span>{size.weightG} g</span>}
@@ -358,6 +359,7 @@ function BabySizeCard({ week }: { week: number }) {
 }
 
 function WeightSection({ view, update }: { view: BixboData; update: (u: (d: BixboData) => BixboData) => void }) {
+  const { t } = useI18n();
   const p = view.pregnancy ?? EMPTY.pregnancy!;
   const today = todayKey();
   const todayWeight = view.dayLogs[today]?.pregnancy?.weightKg;
@@ -383,10 +385,10 @@ function WeightSection({ view, update }: { view: BixboData; update: (u: (d: Bixb
         <Input
           inputMode="decimal"
           className="h-11"
-          placeholder="Weight (kg)"
+          placeholder={t("Weight (kg)")}
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          aria-label="Today's weight"
+          aria-label={t("Today's weight")}
         />
         <Button type="button" className="h-11" onClick={save}>
           Log
