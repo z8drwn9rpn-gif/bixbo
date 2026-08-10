@@ -702,6 +702,7 @@ function CouplePainChart({
   periodLabel: string;
   period: CouplePeriod;
 }) {
+  const { t } = useI18n();
   const chartItems = useMemo(() => {
     if (period !== "Y") {
       return days.map((day) => ({
