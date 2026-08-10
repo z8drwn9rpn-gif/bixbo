@@ -717,7 +717,7 @@ function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave:
         className="flex min-w-[58px] items-center gap-1 text-xs font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <span aria-hidden="true" className="text-sm leading-none">←</span>
-        <span>Back</span>
+        <span>{t("Back")}</span>
       </button>
 
       <span className="min-w-0 flex-1" aria-hidden="true" />
@@ -728,7 +728,7 @@ function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave:
         disabled={disabled}
         className="inline-flex h-8 min-w-[68px] items-center justify-center gap-1 rounded-full bg-primary px-3 text-xs font-semibold text-primary-foreground shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
-        <span>Save</span>
+        <span>{t("Save")}</span>
         <span aria-hidden="true" className="text-sm leading-none">✓</span>
       </button>
     </SheetFooter>
@@ -1024,9 +1024,10 @@ function DurationField({
   ongoing: boolean;
   setOngoing: (b: boolean) => void;
 }) {
+  const { t } = useI18n();
   return (
     <div className="space-y-1">
-      <span className="text-xs font-medium text-muted-foreground">Duration (min)</span>
+      <span className="text-xs font-medium text-muted-foreground">{t("Duration (min)")}</span>
       <div className="flex items-center gap-2">
         <Input
           type="number"
@@ -1043,7 +1044,7 @@ function DurationField({
           onClick={() => setOngoing(!ongoing)}
           className={`rounded-full px-3 py-1.5 text-xs font-semibold ring-1 ring-border ${ongoing ? "bg-primary text-white" : "bg-tint text-foreground"}`}
         >
-          Ongoing
+          {t("Ongoing")}
         </button>
       </div>
     </div>
@@ -1353,7 +1354,7 @@ function PainWizard({
               className="flex min-w-[68px] items-center gap-1 text-sm font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <span aria-hidden="true" className="text-base leading-none">←</span>
-              <span>Back</span>
+              <span>{t("Back")}</span>
             </button>
           ) : (
             <span className="min-w-[68px]" aria-hidden="true" />
@@ -1388,7 +1389,7 @@ function PainWizard({
             <div className="w-full rounded-2xl border border-primary/30 bg-surface/90 p-3 shadow-sm">
               <div className="mb-3 flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold">Pain still feels the same?</p>
+                  <p className="text-sm font-semibold">{t("Pain still feels the same?")}</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
                     Last log: {latestPain.time} · pain {latestPain.score}/10. Reuse it and add only the new symptoms.
                   </p>
@@ -2091,7 +2092,7 @@ function PainWizard({
             className="flex items-center gap-1 px-1 text-sm font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <span aria-hidden="true" className="text-xl leading-none">←</span>
-            <span>Edit full log</span>
+            <span>{t("Edit full log")}</span>
           </button>
 
           <button
@@ -2099,7 +2100,7 @@ function PainWizard({
             onClick={save}
             className="inline-flex h-10 min-w-[104px] items-center justify-center gap-1.5 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
-            <span>Save update</span>
+            <span>{t("Save update")}</span>
             <span aria-hidden="true" className="text-base leading-none">✓</span>
           </button>
         </SheetFooter>
@@ -2122,6 +2123,7 @@ function PanicForm({
   onDone: () => void;
   initialEntry?: PanicAttack;
 }) {
+  const { t } = useI18n();
   const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
   const [minutes, setMinutes] = useState(initialEntry?.minutes != null ? String(initialEntry.minutes) : "10");
   const [ongoing, setOngoing] = useState(initialEntry?.minutes == null && !!initialEntry);
@@ -2481,6 +2483,7 @@ function PeriodForm({
   update: UpdateFn;
   onDone: () => void;
 }) {
+  const { t } = useI18n();
   const cur = data.dayLogs[date]?.periodInfo;
   const [level, setLevel] = useState<PeriodLevel>(cur?.level ?? "");
   const [discharge, setDischarge] = useState<string>(cur?.discharge ?? "");
@@ -2645,7 +2648,7 @@ function PeriodForm({
         </div>
         {data.pregnancy?.active && (
           <div className="mt-2">
-            <span className="text-xs font-medium text-muted-foreground">First day of last menstrual period</span>
+            <span className="text-xs font-medium text-muted-foreground">{t("First day of last menstrual period")}</span>
             <Input
               type="date"
               className="mt-1"
@@ -3327,9 +3330,9 @@ function BowelForm({
               ∅
             </span>
             <span className="flex-1">
-              <span className="font-medium">No bowel movement</span>
+              <span className="font-medium">{t("No bowel movement")}</span>
               <br />
-              <span className="text-[11px] text-muted-foreground">Didn't go today</span>
+              <span className="text-[11px] text-muted-foreground">{t("Didn't go today")}</span>
             </span>
           </button>
           <button
@@ -3345,9 +3348,9 @@ function BowelForm({
               0
             </span>
             <span className="flex-1">
-              <span className="font-medium">Type 0 — Mystery</span>
+              <span className="font-medium">{t("Type 0 — Mystery")}</span>
               <br />
-              <span className="text-[11px] text-muted-foreground">Unknown / mixed</span>
+              <span className="text-[11px] text-muted-foreground">{t("Unknown / mixed")}</span>
             </span>
           </button>
 
@@ -3711,6 +3714,7 @@ function MedsForm({
   update: UpdateFn;
   onDone: () => void;
 }) {
+  const { t } = useI18n();
   const meds = data.meds;
   const taken = data.medLog[date] ?? {};
   const takenTimes = data.medLogTimes?.[date] ?? {};
@@ -3756,7 +3760,7 @@ function MedsForm({
   return (
     <div className="space-y-4">
       {meds.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No medications yet. Add them from Meds settings.</p>
+        <p className="text-sm text-muted-foreground">{t("No medications yet. Add them from Meds settings.")}</p>
       ) : (
         <div>
           <p className="text-xs uppercase tracking-wider text-muted-foreground">{today ? "Today" : date}</p>
@@ -3812,7 +3816,7 @@ function MedsForm({
                           value={takenTimes[k] ?? t}
                           onChange={(e) => setTakenTime(k, e.target.value)}
                           className="h-8 w-24"
-                          title="Actual time taken"
+                          title={t("Actual time taken")}
                         />
                       )}
                     </label>
@@ -3824,10 +3828,10 @@ function MedsForm({
         </div>
       )}
       <div>
-        <p className="text-xs uppercase tracking-wider text-muted-foreground">Extra dose (one-off)</p>
+        <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("Extra dose (one-off)")}</p>
         <div className="mt-2 grid grid-cols-3 gap-2">
           <Input
-            placeholder="Name"
+            placeholder={t("Name")}
             value={extraName}
             onChange={(e) => setExtraName(e.target.value)}
             className="col-span-2"
@@ -3835,11 +3839,11 @@ function MedsForm({
           <Input type="time" value={extraTime} onChange={(e) => setExtraTime(e.target.value)} />
         </div>
         <div className="mt-2 grid grid-cols-2 gap-2">
-          <Input placeholder="Dose (optional)" value={extraDose} onChange={(e) => setExtraDose(e.target.value)} />
-          <Input placeholder="Note (optional)" value={extraNote} onChange={(e) => setExtraNote(e.target.value)} />
+          <Input placeholder={t("Dose (optional)")} value={extraDose} onChange={(e) => setExtraDose(e.target.value)} />
+          <Input placeholder={t("Note (optional)")} value={extraNote} onChange={(e) => setExtraNote(e.target.value)} />
         </div>
         <Button className="mt-2 w-full" onClick={addExtra} disabled={!extraName.trim()}>
-          Add extra dose
+          {t("Add extra dose")}
         </Button>
         {extras.length > 0 && (
           <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
@@ -4085,7 +4089,7 @@ function WorkoutForm({
 
       <Field label="Triggered a symptom? (optional)">
         {symptomOptions.length === 0 ? (
-          <p className="text-[11px] text-muted-foreground">No tetany or pain entries logged for this day yet.</p>
+          <p className="text-[11px] text-muted-foreground">{t("No tetany or pain entries logged for this day yet.")}</p>
         ) : (
           <div className="mt-1 flex flex-wrap gap-2">
             <Chip active={!trigger} onClick={() => setTrigger(undefined)}>
@@ -4305,6 +4309,7 @@ function PostpartumSymptomsForm({
   update: UpdateFn;
   onDone: () => void;
 }) {
+  const { t } = useI18n();
   const current: PostpartumDayLog = data.dayLogs[date]?.postpartum ?? {};
   const [symptoms, setSymptoms] = useState<string[]>(current.symptoms ?? []);
   const [note, setNote] = useState(current.note ?? "");
@@ -4339,14 +4344,14 @@ function PostpartumSymptomsForm({
         </span>
 
         <div>
-          <h3 className="text-sm font-semibold text-foreground">Postpartum recovery</h3>
+          <h3 className="text-sm font-semibold text-foreground">{t("Postpartum recovery")}</h3>
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-            Select every symptom you experienced today. The BIXBO icon is used instead of an Apple emoji.
+            {t("Select every symptom you experienced today.")}
           </p>
         </div>
       </div>
 
-      <Field label="Symptoms today">
+      <Field label={t("Symptoms today")}>
         <div className="mt-2 flex flex-wrap gap-2">
           {POSTPARTUM_SYMPTOMS.map((symptom) => (
             <Chip key={symptom} active={symptoms.includes(symptom)} onClick={() => toggleSymptom(symptom)}>
@@ -4356,7 +4361,7 @@ function PostpartumSymptomsForm({
         </div>
       </Field>
 
-      <Field label="Recovery note (optional)">
+      <Field label={t("Recovery note (optional)")}>
         <Textarea
           rows={4}
           value={note}
