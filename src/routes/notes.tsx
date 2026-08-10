@@ -172,36 +172,36 @@ function stripHtml(html: string) {
   return el.textContent ?? "";
 }
 
-function formatNoteDate(note: Note): string {
+function formatNoteDate(note: Note, t: (key: string) => string, locale: string): string {
   const stamp = note.updatedAt ?? note.createdAt;
   const date = new Date(stamp);
   const now = new Date();
 
   if (date.toDateString() === now.toDateString()) {
-    return date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+    return date.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
   }
 
   const yesterday = new Date(now);
   yesterday.setDate(now.getDate() - 1);
-  if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+  if (date.toDateString() === yesterday.toDateString()) return t("Yesterday");
 
-  return date.toLocaleDateString("en-GB", {
+  return date.toLocaleDateString(locale, {
     day: "numeric",
     month: "short",
     year: date.getFullYear() === now.getFullYear() ? undefined : "numeric",
   });
 }
 
-function notePreview(note: Note): string {
+function notePreview(note: Note, t: (key: string) => string): string {
   const text = stripHtml(note.content).trim();
   if (text) return text;
 
   if (note.checklist?.length) {
     const complete = note.checklist.filter((item) => item.done).length;
-    return `${complete}/${note.checklist.length} checklist items complete`;
+    return `${complete}/${note.checklist.length} ${t("checklist items complete")}`;
   }
 
-  return "No additional text";
+  return t("No additional text");
 }
 
 function NoteFoodGlyph({
@@ -282,8 +282,9 @@ function NoteRichText({ text, size = 16 }: { text: string; size?: number }) {
 }
 
 function NotesPage() {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const { data, update, hydrated } = useBixbo();
+  const locale = language === "sk" ? "sk-SK" : "en-GB";
   const view = hydrated ? data : EMPTY;
 
   const [screen, setScreen] = useState<NotesView>("all");
@@ -358,7 +359,7 @@ function NotesPage() {
   };
 
   const deleteNote = (id: string) => {
-    if (!confirm("Delete this note?")) return;
+    if (!confirm(t("Delete this note?"))) return;
     update((current) => ({
       ...current,
       notebook: current.notebook.filter((note) => note.id !== id),
@@ -463,7 +464,7 @@ function NotesPage() {
           type="button"
           onClick={() => createNote()}
           className="grid h-10 w-10 place-items-center rounded-full bg-primary text-primary-foreground shadow-sm transition active:scale-95"
-          aria-label="New note"
+          aria-label={t("New note")}
         >
           <Plus className="h-5 w-5" />
         </button>
@@ -475,7 +476,7 @@ function NotesPage() {
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search notes…"
+            placeholder={t("Search notes…")}
             className="h-11 rounded-2xl bg-surface pl-10 pr-10 ring-1 ring-border/70"
           />
           {query && (
@@ -651,11 +652,11 @@ function NoteSection({
                   <h3 className="line-clamp-1 text-sm font-semibold">
                     <NoteRichText text={note.title.trim() || "Untitled"} size={16} />
                   </h3>
-                  <span className="shrink-0 text-[10px] text-muted-foreground">{formatNoteDate(note)}</span>
+                  <span className="shrink-0 text-[10px] text-muted-foreground">{formatNoteDate(note, t, locale)}</span>
                 </div>
 
                 <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-                  <NoteRichText text={notePreview(note)} size={14} />
+                  <NoteRichText text={notePreview(note, t)} size={14} />
                 </p>
               </button>
 
