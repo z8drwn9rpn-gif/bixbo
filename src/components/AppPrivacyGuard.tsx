@@ -110,8 +110,8 @@ export function AppPrivacyGuard({ children }: { children: ReactNode }) {
                     onKeyDown={(event) => {
                       if (event.key === "Enter") void unlockPin();
                     }}
-                    placeholder="PIN"
-                    aria-label="BIXBO PIN"
+                    placeholder={t("PIN")}
+                    aria-label={t("BIXBO PIN")}
                     className="h-11 w-full rounded-xl border border-input bg-background px-3 text-center text-lg tracking-[0.25em]"
                   />
                   <button
@@ -120,7 +120,7 @@ export function AppPrivacyGuard({ children }: { children: ReactNode }) {
                     disabled={pin.length < 4}
                     className="min-h-11 w-full rounded-xl border border-input px-4 text-sm font-semibold disabled:opacity-50"
                   >
-                    Unlock with PIN
+                    {t("Unlock with PIN")}
                   </button>
                 </div>
               )}
