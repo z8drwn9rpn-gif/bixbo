@@ -16,7 +16,7 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
       - name: Apply profile and notifications patch
-        run: python3 .github/scripts/profile_notifications_i18n_fix.py
+        run: python3 .github/scripts/profile_notifications_i18n_fix_v2.py
       - name: Typecheck
         run: bun run typecheck
       - name: Tests
