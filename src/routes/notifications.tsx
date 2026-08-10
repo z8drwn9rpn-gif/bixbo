@@ -69,10 +69,10 @@ function ToggleRow({
   return (
     <div className="flex items-center justify-between gap-3">
       <div className="min-w-0">
-        <p className="text-sm text-foreground">{label}</p>
-        {hint && <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>}
+        <p className="text-sm text-foreground">{t(label)}</p>
+        {hint && <p className="mt-0.5 text-xs text-muted-foreground">{t(hint)}</p>}
       </div>
-      <Switch checked={checked} disabled={disabled} onCheckedChange={onChange} aria-label={label} />
+      <Switch checked={checked} disabled={disabled} onCheckedChange={onChange} aria-label={t(label)} />
     </div>
   );
 }
@@ -124,7 +124,7 @@ function NotificationsPage() {
     setError(null);
     try {
       await enableRemotePush();
-      setMessage("Remote reminders are enabled on this device.");
+      setMessage(t("Remote reminders are enabled on this device."));
     } catch (cause) {
       setError(messageOf(cause));
     } finally {
@@ -140,10 +140,10 @@ function NotificationsPage() {
     try {
       if (enabled) {
         await enableRemotePush();
-        setMessage("Remote reminders are enabled on this device.");
+        setMessage(t("Remote reminders are enabled on this device."));
       } else {
         await disableRemotePush();
-        setMessage("Remote reminders are disabled on this device.");
+        setMessage(t("Remote reminders are disabled on this device."));
       }
     } catch (cause) {
       setError(messageOf(cause));
@@ -159,7 +159,7 @@ function NotificationsPage() {
     setError(null);
     try {
       const result = await sendTestPush();
-      setMessage(`Test push delivered to ${result.delivered} active device${result.delivered === 1 ? "" : "s"}.`);
+      setMessage(`${t("Test push delivered to")} ${result.delivered} ${result.delivered === 1 ? t("active device") : t("active devices")}.`);
     } catch (cause) {
       setError(messageOf(cause));
     } finally {
@@ -289,7 +289,7 @@ function NotificationsPage() {
               disabled={testBusy || !signedIn || !prefs.enabled || perm !== "granted"}
               className="min-h-11 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
             >
-              {testBusy ? "Sending…" : "Send real test push"}
+              {testBusy ? t("Sending…") : t("Send real test push")}
             </button>
           </div>
           {!hydrated && <p className="text-xs text-muted-foreground">{t("Loading your preferences…")}</p>}
