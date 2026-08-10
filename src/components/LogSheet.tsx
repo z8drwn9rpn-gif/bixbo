@@ -276,12 +276,12 @@ export function LogSheet({
 
                 <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
                   <div
-                    className="absolute left-1/2 h-[360px] w-[390px] max-w-[100vw] -translate-x-1/2"
+                    className="absolute left-1/2 h-[340px] w-[360px] max-w-[100vw] -translate-x-1/2"
                     style={{ bottom: "calc(max(8px, env(safe-area-inset-bottom)) + 42px)" }}
                   >
                     {/*
                       Reference layout:
-                      - one wide semicircle around the central + button
+                      - one compact FULL CIRCLE around the central + button
                       - 11 main actions around the arc
                       - optional 12th item remains available inside the arc
                       - thin dotted spokes from the Log button to every action
@@ -289,11 +289,11 @@ export function LogSheet({
                     {(() => {
                       /*
                         Compact radial Log launcher matching the approved reference:
-                        - smaller circles and a tighter arc
+                        - compact circles evenly distributed around the +
                         - labels beside the side circles
                         - top labels above the three top circles
                         - Notes restored as its own circle
-                        - Reorder restored as its own circle and still opens Reorder Log
+                        - Reorder stays beside the wheel and enables direct finger drag
                       */
                       // Every visible category occupies a real radial slot.
                       // In Reorder mode, dragging a circle onto another circle
@@ -301,25 +301,24 @@ export function LogSheet({
                       const radialCats = orderedCats.slice(0, 12);
 
                       const slots = [
-                        // 12 fixed positions around one compact full circle.
-                        // Reordering swaps categories between these positions,
-                        // so the circular shape always stays intact.
-                        { x: 0, up: 305, labelSide: "top" as const, labelW: 86 },
-                        { x: 61, up: 285, labelSide: "right" as const, labelW: 66 },
-                        { x: 106, up: 230, labelSide: "right" as const, labelW: 66 },
-                        { x: 122, up: 155, labelSide: "right" as const, labelW: 66 },
-                        { x: 106, up: 80, labelSide: "right" as const, labelW: 66 },
-                        { x: 61, up: 25, labelSide: "right" as const, labelW: 66 },
-                        { x: 0, up: 5, labelSide: "bottom" as const, labelW: 86 },
-                        { x: -61, up: 25, labelSide: "left" as const, labelW: 66 },
-                        { x: -106, up: 80, labelSide: "left" as const, labelW: 66 },
-                        { x: -122, up: 155, labelSide: "left" as const, labelW: 66 },
-                        { x: -106, up: 230, labelSide: "left" as const, labelW: 66 },
-                        { x: -61, up: 285, labelSide: "left" as const, labelW: 66 },
+                        // REAL radial wheel: 12 fixed slots around the central +.
+                        // Reorder swaps categories between slots; geometry never changes.
+                        { x: 0, up: 277, labelSide: "top" as const, labelW: 86 },
+                        { x: 54, up: 262, labelSide: "top" as const, labelW: 86 },
+                        { x: 94, up: 221, labelSide: "right" as const, labelW: 72 },
+                        { x: 108, up: 165, labelSide: "right" as const, labelW: 72 },
+                        { x: 94, up: 109, labelSide: "right" as const, labelW: 72 },
+                        { x: 54, up: 68, labelSide: "bottom" as const, labelW: 86 },
+                        { x: 0, up: 53, labelSide: "bottom" as const, labelW: 86 },
+                        { x: -54, up: 68, labelSide: "bottom" as const, labelW: 86 },
+                        { x: -94, up: 109, labelSide: "left" as const, labelW: 72 },
+                        { x: -108, up: 165, labelSide: "left" as const, labelW: 72 },
+                        { x: -94, up: 221, labelSide: "left" as const, labelW: 72 },
+                        { x: -54, up: 262, labelSide: "top" as const, labelW: 86 },
                       ];
 
                       const circleClass = `
-                        absolute left-1/2 top-1/2 grid h-[36px] w-[36px]
+                        absolute left-1/2 top-1/2 grid h-[35px] w-[35px]
                         -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full
                         border border-[#edf2cf]/65
                         bg-[#dce5b2]/36
@@ -332,12 +331,12 @@ export function LogSheet({
                         <>
                           <svg
                             aria-hidden="true"
-                            viewBox="-195 -340 390 360"
-                            className="pointer-events-none absolute bottom-0 left-1/2 h-[360px] w-[390px] max-w-[100vw] -translate-x-1/2 overflow-visible"
+                            viewBox="-180 -330 360 340"
+                            className="pointer-events-none absolute bottom-0 left-1/2 h-[340px] w-[360px] max-w-[100vw] -translate-x-1/2 overflow-visible"
                           >
                             <circle
                               cx="0"
-                              cy="-155"
+                              cy="-165"
                               r="82"
                               fill="none"
                               stroke="rgba(241,244,220,0.22)"
@@ -347,9 +346,9 @@ export function LogSheet({
                             {Array.from({ length: 12 }).map((_, i) => {
                               const angle = (-90 + i * 30) * (Math.PI / 180);
                               const x1 = Math.cos(angle) * 88;
-                              const y1 = -155 + Math.sin(angle) * 88;
+                              const y1 = -165 + Math.sin(angle) * 88;
                               const x2 = Math.cos(angle) * 100;
-                              const y2 = -155 + Math.sin(angle) * 100;
+                              const y2 = -165 + Math.sin(angle) * 100;
 
                               return (
                                 <g key={`arrow-${i}`}>
@@ -375,15 +374,15 @@ export function LogSheet({
 
                           <svg
                             aria-hidden="true"
-                            viewBox="-195 -340 390 360"
-                            className="pointer-events-none absolute bottom-0 left-1/2 h-[360px] w-[390px] max-w-[100vw] -translate-x-1/2 overflow-visible"
+                            viewBox="-180 -330 360 340"
+                            className="pointer-events-none absolute bottom-0 left-1/2 h-[340px] w-[360px] max-w-[100vw] -translate-x-1/2 overflow-visible"
                           >
                             {radialCats.map((c, index) => {
                               const slot = slots[index];
                               if (!slot) return null;
 
                               const dx = slot.x;
-                              const dy = -(slot.up - 155);
+                              const dy = -(slot.up - 165);
                               const len = Math.hypot(dx, dy) || 1;
                               const endPad = 25;
 
@@ -391,9 +390,9 @@ export function LogSheet({
                                 <line
                                   key={`line-${c.id}`}
                                   x1="0"
-                                  y1="-155"
+                                  y1="-165"
                                   x2={dx - (dx / len) * endPad}
-                                  y2={-155 + dy - (dy / len) * endPad}
+                                  y2={-165 + dy - (dy / len) * endPad}
                                   stroke="rgba(241,244,220,0.52)"
                                   strokeWidth="1"
                                   strokeDasharray="2.5 4.5"
@@ -439,7 +438,7 @@ export function LogSheet({
                                   setCat(c.id);
                                 }}
                                 aria-label={editingOrder ? `Drag ${c.label} to reorder` : `Log ${c.label}`}
-                                className={`pointer-events-auto absolute z-20 h-[42px] w-[42px] touch-none select-none outline-none transition-[transform,filter,opacity] duration-150 focus-visible:ring-2 focus-visible:ring-[#edf2cf] ${
+                                className={`pointer-events-auto absolute z-20 h-[40px] w-[40px] touch-none select-none outline-none transition-[transform,filter,opacity] duration-150 focus-visible:ring-2 focus-visible:ring-[#edf2cf] ${
                                   editingOrder ? "cursor-grab active:cursor-grabbing" : "active:scale-95"
                                 } ${draggingCat === c.id ? "z-50 scale-110 brightness-110 drop-shadow-[0_0_10px_rgba(238,243,207,0.8)]" : ""}`}
                                 style={{
@@ -454,7 +453,7 @@ export function LogSheet({
 
                                 <span
                                   className="
-                                    absolute z-30 whitespace-normal break-words text-[8.5px] font-semibold leading-[1.08]
+                                    absolute z-30 whitespace-normal break-words text-[8px] font-semibold leading-[1.08]
                                     text-white drop-shadow-[0_1px_2px_rgba(31,37,16,0.95)]
                                   "
                                   style={{
@@ -501,7 +500,7 @@ export function LogSheet({
                               setEditingOrder((v) => !v);
                             }}
                             aria-label="Reorder log categories"
-                            className="pointer-events-auto absolute bottom-[22px] left-1/2 z-30 h-[40px] w-[40px] translate-x-[58px] outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#edf2cf]"
+                            className="pointer-events-auto absolute bottom-[56px] left-1/2 z-30 h-[38px] w-[38px] translate-x-[62px] outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#edf2cf]"
                           >
                             <span className={`${circleClass} scale-[0.84] ${editingOrder ? "ring-[#f3f6d8]/80 bg-[#748642]/70" : ""}`}>
                               {editingOrder ? (
@@ -525,7 +524,7 @@ export function LogSheet({
                     {editingOrder && (
                       <div
                         className="pointer-events-none absolute left-1/2 z-40 -translate-x-1/2 rounded-full border border-white/20 bg-black/20 px-3 py-1 text-[9px] font-semibold text-white/90 shadow-sm backdrop-blur-md"
-                        style={{ bottom: "6px" }}
+                        style={{ bottom: "198px" }}
                       >
                         Drag circles to reorder
                       </div>
@@ -546,7 +545,7 @@ export function LogSheet({
                       onClick={close}
                       aria-label="Close Log"
                       className="
-                        pointer-events-auto absolute bottom-[130px] left-1/2 z-40
+                        pointer-events-auto absolute bottom-[136px] left-1/2 z-40
                         grid h-[58px] w-[58px] -translate-x-1/2 place-items-center rounded-full
                         border border-[#f1f4dc]/80
                         bg-[#657632] text-white
