@@ -218,6 +218,7 @@ function DoctorForm({
   value: Doctor | undefined;
   onChange: (next: Doctor) => void;
 }) {
+  const { t } = useI18n();
   const v = value ?? {};
   const set = (patch: Partial<Doctor>) => onChange({ ...v, ...patch });
   const idBase = title.toLowerCase().replace(/\s+/g, "-");
@@ -282,6 +283,7 @@ function SummaryCard({
   subtitle?: string;
   children: ReactNode;
 }) {
+  const { t } = useI18n();
   return (
     <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
       <div className="flex items-start gap-3">
