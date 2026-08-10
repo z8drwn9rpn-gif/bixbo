@@ -1,0 +1,166 @@
+name: Complete LogSheet Slovak
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/fix-logsheet-all-sk.yml']
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    permissions: {contents: write}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Apply complete LogSheet translations
+        shell: python
+        run: |
+          from pathlib import Path
+          import json
+          entries=json.loads(r'''
+          {
+            "— cycle predictions are paused.": "— predikcie cyklu sú pozastavené.",
+            "; the older log stays unchanged. Add or adjust the symptoms below.": "; starší záznam zostane nezmenený. Nižšie pridaj alebo uprav príznaky.",
+            "· pain": "· bolesť",
+            "· scheduled": "· naplánované",
+            "· Trimester": "· trimester",
+            "“Ice-pick” — brief, sharp stabbing jabs of pain lasting seconds.": "„Bodavá“ — krátke ostré bodnutia bolesti trvajúce sekundy.",
+            "“Thunderclap” — sudden, extremely severe pain peaking within 1 minute. WARNING: seek medical help, can be serious.": "„Thunderclap“ — náhla extrémne silná bolesť s vrcholom do 1 minúty. UPOZORNENIE: vyhľadaj lekársku pomoc, môže ísť o vážny stav.",
+            "/10 copied from": "/10 skopírované z",
+            "/10. Reuse it and add only the new symptoms.": "/10. Použi ho znova a pridaj iba nové príznaky.",
+            "°C": "°C", "kg": "kg", "ŠukŠuk!": "ŠukŠuk!", "Frontin": "Frontin",
+            "⏰ Too short": "⏰ Príliš krátky", "☀️ Woke up early": "☀️ Zobudila som sa skoro", "⚡ Energy up": "⚡ Viac energie",
+            "🌀 All over the place": "🌀 Rozhádzaná", "🌙 Broken sleep": "🌙 Prerušovaný spánok", "🌡️ Sweaty night": "🌡️ Spotená noc", "🌩️ PMDD": "🌩️ PMDD",
+            "🏃 Busy": "🏃 Zaneprázdnená", "🐢 Hard to get up": "🐢 Ťažko sa vstávalo", "💤 Slept in": "💤 Dlhšie som spala", "💦 Sweaty": "💦 Spotená",
+            "💪 Energized": "💪 Plná energie", "💪 Productive": "💪 Produktívna", "💭 Vivid dreams": "💭 Živé sny", "📱 Fell asleep late": "📱 Zaspala som neskoro",
+            "🤕 In pain": "🤕 Mám bolesti", "🤕 Sore": "🤕 Boľavá", "🤕 Stomach pain": "🤕 Bolesť brucha", "🤕 Woke with headache": "🤕 Zobudila som sa s bolesťou hlavy",
+            "🤢 Nauseous": "🤢 Nevoľnosť", "🤩 Amazing": "🤩 Úžasne", "🤩 Excited": "🤩 Nadšená", "🤩 Perfect": "🤩 Perfektne", "🥰 In love": "🥰 Zamilovaná",
+            "🥰 Loved": "🥰 Milovaná", "🥱 Bored": "🥱 Znudená", "🥱 Restless": "🥱 Nepokojná", "🥱 Tired": "🥱 Unavená", "🥲 Lonely": "🥲 Osamelá",
+            "🥴 Groggy": "🥴 Omámená", "🥵 Flushed": "🥵 Začervenaná", "🥵 Hot": "🥵 Horúco", "🥶 Cold": "🥶 Zima", "🥶 Cold night": "🥶 Chladná noc",
+            "🥺 Clingy": "🥺 Potrebujem blízkosť", "🦵 Cramps at night": "🦵 Nočné kŕče", "🧘 Deep & calm": "🧘 Hlboký a pokojný", "🫠 Drained": "🫠 Vyčerpaná",
+            "🫥 Self-deprecating": "🫥 Sebakritická", "😀 Great": "😀 Výborne", "😊 Great": "😊 Výborne", "😊 Happy": "😊 Šťastná", "😌 Calm": "😌 Pokojná",
+            "😌 Refreshed": "😌 Oddýchnutá", "😌 Relaxed": "😌 Uvoľnená", "😎 Just chillin": "😎 Pohoda", "😐 Indifferent": "😐 Ľahostajná", "😐 Meh": "😐 Nijako",
+            "😐 Neutral": "😐 Neutrálne", "😐 Ok": "😐 OK", "😑 Apathetic": "😑 Apatická", "😒 Irritated": "😒 Podráždená", "😔 Depressed": "😔 Depresívna",
+            "😕 Meh": "😕 Nijako", "😕 Off": "😕 Nie vo svojej koži", "😖 Bloated": "😖 Nafúknutá", "😖 Stressed": "😖 V strese", "😞 Down": "😞 Sklíčená",
+            "😠 Angry": "😠 Nahnevaná", "😢 Sad": "😢 Smutná", "😤 Annoyed": "😤 Naštvaná", "😤 Frustrated": "😤 Frustrovaná", "😩 Awful": "😩 Hrozne",
+            "😪 Fatigued": "😪 Vyčerpaná", "😪 Woke up a lot": "😪 Často som sa budila", "😰 Anxious": "😰 Úzkostná", "😰 Nightmares": "😰 Nočné mory",
+            "😴 Restful": "😴 Oddychový", "😴 Sleepy": "😴 Ospalá", "😴 Terrible": "😴 Hrozný", "😵‍💫 Dizzy": "😵‍💫 Závrat", "😵‍💫 Foggy head": "😵‍💫 Zahmlená hlava",
+            "😻 Best sleep ever": "😻 Najlepší spánok", "😾 Cranky": "😾 Mrzutá", "🙁 Poor": "🙁 Slabý", "🙂 Fine": "🙂 Fajn", "🙂 Good": "🙂 Dobre", "🙏 Grateful": "🙏 Vďačná",
+            "🚽 Up to the toilet": "🚽 Vstávanie na toaletu", "🛌 Too long": "🛌 Príliš dlhý",
+            "Abdomen": "Brucho", "Abdominal": "Brušný", "Aching": "Boľavá", "Acne": "Akné", "Additional note (optional)": "Doplňujúca poznámka (voliteľné)",
+            "After food": "Po jedle", "Alcohol (drinks)": "Alkohol (nápoje)", "Allergens in this meal": "Alergény v tomto jedle", "Annoying, distracting": "Nepríjemná, rušivá",
+            "Around mouth": "Okolo úst", "Bearable if involved in work": "Znesiteľná pri sústredení na činnosť", "Birth control since (optional)": "Antikoncepcia od (voliteľné)",
+            "Blood": "Krv", "Blood in urine": "Krv v moči", "Breathe into bag/hands": "Dýchanie do vrecka/dlaní", "Brown / spotting": "Hnedý / špinenie", "Burning": "Pálenie",
+            "Caffeine (mg)": "Kofeín (mg)", "Caffeine withdrawal": "Vysadenie kofeínu", "Caffeine withdrawal — dull pain with fatigue after skipping coffee.": "Vysadenie kofeínu — tupá bolesť s únavou po vynechaní kávy.",
+            "Calf cramps": "Kŕče v lýtkach", "Calves": "Lýtka", "Can't be ignored > 30 min": "Nedá sa ignorovať dlhšie ako 30 min", "Can't be ignored for long": "Nedá sa dlho ignorovať",
+            "Car ride": "Jazda autom", "Carpopedal spasm": "Karpopedálny spazmus", "Casein / dairy": "Kazeín / mliečne výrobky", "Cervicogenic": "Cervikogénna",
+            "Cervicogenic — originates in the neck; pain rises from the nape up into the head, worse with neck movement.": "Cervikogénna — vychádza z krku; bolesť stúpa zo zátylku do hlavy a zhoršuje sa pohybom krku.",
+            "Chest": "Hrudník", "Chvostek sign": "Chvostekov príznak", "Clear / egg-white": "Číry / ako vaječný bielok", "Clearly unpleasant, but you can still eat and function.": "Výrazne nepríjemná, ale stále môžeš jesť a fungovať.",
+            "Cluster": "Clusterová", "Cluster — extremely severe pain behind/around one eye, in bouts; watery eye, blocked nose on that side.": "Clusterová — extrémne silná záchvatovitá bolesť za alebo okolo jedného oka; slzenie a upchatý nos na tej strane.",
+            "Cold sweat": "Studený pot", "Comes and goes in waves through the day.": "Počas dňa prichádza a odchádza vo vlnách.", "Constant nausea": "Neustála nevoľnosť",
+            "Cramp of hands/feet — fingers pulled into an “obstetrician's hand” or feet arched like a bow.": "Kŕč rúk/nôh — prsty stiahnuté do „pôrodníckej ruky“ alebo chodidlá prehnuté do oblúka.",
+            "Cramping": "Kŕčovitá", "Cramps": "Kŕče", "Cycle phase": "Fáza cyklu", "Cycle prediction is based on your last period and cycle length (edit in Settings later).": "Predikcia cyklu vychádza z poslednej menštruácie a dĺžky cyklu (neskôr upravíš v Nastaveniach).",
+            "Dark skin patches (acanthosis nigricans)": "Tmavé kožné škvrny (acanthosis nigricans)", "Day note (optional)": "Poznámka k dňu (voliteľné)", "Dehydration": "Dehydratácia",
+            "Dehydration — dull, whole-head pain from low fluid intake, worse with movement.": "Dehydratácia — tupá bolesť celej hlavy z nízkeho príjmu tekutín, horšia pri pohybe.", "Delete Blueberry entry": "Vymazať Blueberry záznam",
+            "Discharge (optional)": "Výtok (voliteľné)", "Discharge note (optional)": "Poznámka k výtoku (voliteľné)", "Drained": "Vyčerpaná", "Drenching — clothes/bedding wet, need to change": "Premočujúci — mokré oblečenie/posteľná bielizeň, treba sa prezliecť",
+            "Dull": "Tupá", "Eggs": "Vajcia", "Extra magnesium": "Extra magnézium", "Extreme — cannot cope, shutdown / panic": "Extrémny — nedá sa zvládnuť, vypnutie / panika",
+            "Extreme — constant vomiting or the worst nausea imaginable": "Extrémna — neustále vracanie alebo najhoršia predstaviteľná nevoľnosť", "Eye strain": "Namáhanie očí",
+            "Eye strain — after long screen time; pressure behind the eyes, blurred vision.": "Namáhanie očí — po dlhom čase pri obrazovke; tlak za očami, rozmazané videnie.", "Eyelid twitch — often with fatigue or low magnesium.": "Šklbanie viečka — často pri únave alebo nízkom magnéziu.",
+            "Eyelid twitching": "Šklbanie viečka", "Face": "Tvár", "Facial twitch when tapping the facial nerve (in front of the ear).": "Zášklb tváre pri poklepaní na tvárový nerv (pred uchom).", "Fasciculations": "Fascikulácie",
+            "Fatigue / low energy": "Únava / nízka energia", "Fatigue after food": "Únava po jedle", "Fine muscle rippling under the skin without limb movement.": "Jemné vlnenie svalov pod kožou bez pohybu končatiny.",
+            "Fingering": "Prstovanie", "Fingers": "Prsty", "Fish": "Ryby", "Flushing / redness": "Návaly / začervenanie", "Frequent urination": "Časté močenie", "Fresh air": "Čerstvý vzduch",
+            "Fully charged": "Plne nabitá", "Gassy": "Plynatosť", "GI issues": "Tráviace ťažkosti", "Ginger tea": "Zázvorový čaj", "Gluten": "Lepok", "Groin": "Slabiny", "Grounding": "Uzemnenie",
+            "Hair thinning / crown loss": "Rednutie vlasov / vypadávanie na temene", "Hand cramp after inflating a BP cuff above systolic pressure.": "Kŕč ruky po nafúknutí tlakovej manžety nad systolický tlak.", "Hands": "Ruky",
+            "Hangover": "Opica", "Hangover — throbbing pain with nausea after drinking alcohol.": "Opica — pulzujúca bolesť s nevoľnosťou po alkohole.", "Hard to concentrate": "Ťažké sústredenie",
+            "Hard to function; vomiting feels likely.": "Ťažko sa funguje; vracanie je pravdepodobné.", "Hard to think clearly, trembling": "Ťažko sa jasne premýšľa, tras", "Head": "Hlava", "Head / sinus": "Hlava / dutiny", "Headache (1–10)": "Bolesť hlavy (1–10)",
+            "Heavy sweating": "Silné potenie", "High — irritable, body feels tight": "Vysoký — podráždenosť, telo je napäté", "High histamine food?": "Jedlo s vysokým obsahom histamínu?", "Hirsutism (excess hair)": "Hirzutizmus (nadmerné ochlpenie)",
+            "Histamine flare symptoms": "Príznaky histamínovej reakcie", "Histamine flare?": "Histamínová reakcia?", "Hives / rash": "Žihľavka / vyrážka", "Hormonal": "Hormonálna",
+            "Hormonal — linked to the cycle (before/during period), ovulation, or contraception.": "Hormonálna — súvisí s cyklom (pred/počas menštruácie), ovuláciou alebo antikoncepciou.", "Hot flashes (1–5)": "Návaly tepla (1–5)",
+            "How do I feel after food?": "Ako sa cítim po jedle?", "How do you feel?": "Ako sa cítiš?", "How I feel after": "Ako sa cítim potom", "Hunger": "Hlad", "Hunger soon after eating": "Hlad krátko po jedle",
+            "Hyperventilation / stress": "Hyperventilácia / stres", "Ice-pick": "Bodavá", "Incomplete": "Neúplné", "Incomplete emptying": "Neúplné vyprázdnenie", "Intermittent nausea": "Prerušovaná nevoľnosť", "Itching": "Svrbenie",
+            "Jaw clenching": "Zatínanie čeľuste", "Jaw clenching, teeth grinding.": "Zatínanie čeľuste, škrípanie zubami.", "Last log:": "Posledný záznam:", "Legs": "Nohy", "Light — slight pressure, easy to ignore": "Ľahká — mierny tlak, ľahko sa ignoruje",
+            "Lips": "Pery", "Loss of control feeling, tingling / numbness": "Pocit straty kontroly, mravčenie / necitlivosť", "Low — slight background pressure": "Nízky — mierny tlak v pozadí", "Lower abdomen": "Podbruško", "Lower back": "Kríže", "Lower belly": "Spodná časť brucha",
+            "Lying down": "Ľahnutie si", "Migraine": "Migréna", "Migraine — throbbing pain (often one-sided), sensitivity to light/sound, nausea. May include aura (flashes, tingling).": "Migréna — pulzujúca bolesť (často jednostranná), citlivosť na svetlo/zvuk, nevoľnosť. Môže zahŕňať auru (záblesky, mravčenie).",
+            "Mild — a little on edge": "Mierny — trochu v napätí", "Mild — barely noticeable, no need for meds": "Mierna — sotva badateľná, bez potreby liekov", "Mild — occasional twitches or tingling, barely disruptive": "Mierna — občasné zášklby alebo mravčenie, takmer neobmedzuje",
+            "Mild — unpleasant, but I can function and eat normally": "Mierna — nepríjemná, ale môžem normálne fungovať a jesť", "Mild anxiety, aware of heartbeat": "Mierna úzkosť, vnímam tlkot srdca", "Mild nausea": "Mierna nevoľnosť", "Mild warmth — barely noticeable, no sweat": "Mierne teplo — sotva badateľné, bez potenia",
+            "Minor annoyance": "Menšia nepríjemnosť", "Moderate — clearly hurts, may take a pill": "Stredná — zreteľne bolí, možno si vezmem liek", "Moderate — clearly stressed, still coping": "Stredný — jasný stres, stále zvládnuteľný", "Moderate — cramps hurt, hard to relax the muscles": "Stredná — kŕče bolia, svaly sa ťažko uvoľňujú",
+            "Moderate — need to sit or rest, food is very unappealing": "Stredná — potrebujem si sadnúť alebo oddýchnuť, jedlo je veľmi nelákavé", "Moderate high — tense, harder to focus": "Stredne vysoký — napätie, horšie sústredenie", "Moderate high — throbbing, want to lie down": "Stredne silná — pulzuje, chcem si ľahnúť",
+            "Moderate low — annoying, hard to focus": "Stredne mierna — nepríjemná, ťažšie sa sústredí", "Moderate low — noticeable but manageable": "Stredne nízky — citeľný, ale zvládnuteľný", "Moderate nausea": "Stredná nevoľnosť", "Morning nausea": "Ranná nevoľnosť", "Motion-induced nausea": "Nevoľnosť z pohybu",
+            "Mucus": "Hlien", "Neutral": "Neutrálne", "New entry ·": "Nový záznam ·", "New temperature measurement": "Nové meranie teploty", "New weight measurement": "Nové meranie hmotnosti", "Night urination": "Nočné močenie",
+            "No nausea — feeling completely normal": "Bez nevoľnosti — úplne normálny pocit", "None — completely calm and relaxed": "Žiadny — úplne pokojná a uvoľnená", "Normal": "Normálne", "Nothing helped": "Nič nepomohlo",
+            "Noticeable — clear tingling or small cramps, still functional": "Citeľná — jasné mravčenie alebo malé kŕče, stále funkčná", "Noticeable — distracting but functional": "Citeľná — ruší, ale dá sa fungovať", "Noticeable worry, faster breathing": "Citeľné obavy, rýchlejšie dýchanie",
+            "Nuts": "Orechy", "Oily skin": "Mastná pleť", "Oral (receiving)": "Orálny sex (prijímanie)", "Ovaries": "Vaječníky", "Overwhelming fear, chest pressure": "Drvivý strach, tlak na hrudi", "Pain (0–10)": "Bolesť (0–10)",
+            "Pain free": "Bez bolesti", "Painful": "Bolestivé", "Painful cramps in the calves, often at night or after exertion.": "Bolestivé kŕče v lýtkach, často v noci alebo po námahe.", "Painful urination": "Bolestivé močenie", "Painful?": "Bolestivé?",
+            "Panic intensity (1–10)": "Intenzita paniky (1–10)", "Panic intensity scale": "Stupnica intenzity paniky", "Peanuts": "Arašidy", "Pelvic": "Panvová", "Pelvis": "Panva", "Physical activity limited": "Obmedzená fyzická aktivita",
+            "Pins and needles or numbness (lips, fingers, limbs).": "Mravčenie alebo necitlivosť (pery, prsty, končatiny).", "Place (optional)": "Miesto (voliteľné)", "Post-meal nausea": "Nevoľnosť po jedle", "Present all day without letting up.": "Prítomná celý deň bez ústupu.",
+            "Quick symptom update": "Rýchla aktualizácia príznakov", "Rapid heart rate": "Rýchly tep", "Reaction?": "Reakcia?", "Rectal": "Rektálny", "Relief": "Úľava", "Rescue med (what you took)": "Záchranný liek (čo si užila)", "Rest": "Oddych",
+            "Same pain — add symptoms": "Rovnaká bolesť — pridať príznaky", "Saved temperature measurements": "Uložené merania teploty", "Severe — cannot function, crying / vomiting": "Silná — nedá sa fungovať, plač / vracanie", "Severe — full-body cramps, unable to function, may need help": "Silná — kŕče celého tela, neschopnosť fungovať, môže byť potrebná pomoc",
+            "Severe — near breaking point": "Silný — blízko bodu zlomu", "Severe nausea": "Silná nevoľnosť", "Sex": "Sex", "Sharp": "Ostrá", "Shellfish": "Kôrovce a mäkkýše", "Shooting": "Vystreľujúca", "Sinus": "Dutiny",
+            "Sinus — pressure in the face/behind the eyes/forehead, worse when bending forward; typically with a cold or sinusitis.": "Dutiny — tlak v tvári/za očami/na čele, horší pri predklone; typicky pri nádche alebo zápale dutín.", "Skin tags": "Kožné výrastky",
+            "Slight queasiness you can easily ignore.": "Mierny pocit nevoľnosti, ktorý sa dá ľahko ignorovať.", "Slight unease, easy to ignore": "Mierny nepokoj, ľahko sa ignoruje", "Slow breathing": "Pomalé dýchanie", "Slow exhale": "Pomalý výdych", "Small twitches around the mouth or face.": "Malé zášklby okolo úst alebo tváre.",
+            "Smell": "Pach", "Someone with me": "Niekto pri mne", "Soy": "Sója", "Stabbing": "Bodavá", "Starts shortly after eating.": "Začína krátko po jedle.", "Straining": "Tlačenie", "Stress (0–10)": "Stres (0–10)", "Stress scale": "Stupnica stresu",
+            "Strong — hard to concentrate, feel like I'll vomit": "Silná — ťažko sa sústredím, mám pocit, že budem vracať", "Strong — painful spasms, hands/feet lock up, hard to move": "Silná — bolestivé spazmy, ruky/nohy sa sťahujú, ťažko sa hýbe", "Strong — sensitive to light/sound, hard to work": "Silná — citlivosť na svetlo/zvuk, ťažko sa pracuje",
+            "Strong fear, racing heart, dizziness": "Silný strach, búšenie srdca, závrat", "Strong wave — soaking sweat, heart racing": "Silná vlna — premočenie potom, búšenie srdca", "Stuffy nose": "Upchatý nos", "Suck dick": "Orálny sex (dávanie)",
+            "Sugar cravings / energy swings after meals": "Chuť na sladké / výkyvy energie po jedle", "Sweating — visible perspiration, need air/fan": "Potenie — viditeľný pot, potreba vzduchu/ventilátora", "Symptoms after food": "Príznaky po jedle", "Taking birth control since": "Antikoncepcia užívaná od",
+            "Tension": "Tenzná", "Tension headache — dull, pressing pain on both sides, like a band around the head. Often from stress, fatigue, or poor posture.": "Tenzná bolesť hlavy — tupá tlaková bolesť na oboch stranách, ako obruč okolo hlavy. Často zo stresu, únavy alebo zlého držania tela.",
+            "Terror — fear of dying or collapsing": "Hrôza — strach zo smrti alebo kolapsu", "Tetany intensity (1–5)": "Intenzita tetánie (1–5)", "Tetany intensity scale": "Stupnica intenzity tetánie", "Tetany present?": "Prítomná tetánia?", "This saves a new entry at": "Uloží sa nový záznam o",
+            "Throbbing": "Pulzujúca", "Thunderclap": "Thunderclap", "Time of entry": "Čas záznamu", "Tingling / numbness": "Mravčenie / necitlivosť", "Toes": "Prsty na nohách", "Total panic — unable to function": "Úplná panika — neschopnosť fungovať",
+            "Trigger (or 'no obvious trigger')": "Spúšťač (alebo „bez zjavného spúšťača“)", "Triggered by travel or movement (car, bus, boat).": "Vyvolaná cestovaním alebo pohybom (auto, autobus, loď).", "Trousseau sign": "Trousseauov príznak", "Twitches around mouth/face": "Zášklby okolo úst/tváre",
+            "Type 1 — Constipation": "Typ 1 — zápcha", "Type 2 — Constipation": "Typ 2 — zápcha", "Type 3 — Normal": "Typ 3 — normálna", "Type 4 — Normal": "Typ 4 — normálna", "Type 5 — Lacks fiber": "Typ 5 — nedostatok vlákniny", "Type 6 — Diarrhea": "Typ 6 — hnačka", "Type 7 — Diarrhea": "Typ 7 — hnačka",
+            "Unable to speak, crying out": "Neschopnosť hovoriť, výkriky", "Uncomfortable, restless, want to leave": "Nepríjemné, nepokoj, potreba odísť", "Unconscious — passes out": "Bezvedomie — odpadnutie", "Urgency": "Naliehavosť", "Urgent": "Urgentné", "Urinary": "Močové",
+            "Uterus": "Maternica", "Vagina": "Vagína", "Very high — overwhelmed, hard to relax": "Veľmi vysoký — zahltenie, ťažko sa uvoľňuje", "Very low — barely any tension": "Veľmi nízky — takmer žiadne napätie", "Very mild — occasionally noticeable, doesn't bother me": "Veľmi mierna — občas badateľná, neprekáža mi",
+            "Very minor annoyance": "Veľmi malá nepríjemnosť", "Very strong — almost unbearable, vomiting likely or already started": "Veľmi silná — takmer neznesiteľná, vracanie je pravdepodobné alebo už začalo", "Very strong — nauseous, need dark quiet room": "Veľmi silná — nevoľnosť, potrebujem tmavú tichú miestnosť",
+            "Warm flush — face/neck feels hot, no visible sweat": "Teplý nával — tvár/krk sú horúce, bez viditeľného potu", "Warmth": "Teplo", "Weakness": "Slabosť", "Weight gain / hard to lose": "Priberanie / ťažké chudnutie", "What did you eat?": "Čo si jedla?", "White / creamy": "Biely / krémový",
+            "Whole body tremor": "Tras celého tela", "Whole-body tremor or shaking from within.": "Tras celého tela alebo vnútorné chvenie.", "Worst ever — unbearable, emergency-level": "Najhoršia — neznesiteľná, urgentná úroveň", "Worst right after waking, before eating.": "Najhoršia hneď po zobudení, pred jedlom.", "Yellow": "Žltý",
+            "Quick symptom update": "Rýchla aktualizácia príznakov", "New entry ·": "Nový záznam ·", "Next": "Ďalej", "Level": "Úroveň", "Add": "Pridať",
+            "Where does it hurt?": "Kde to bolí?", "How does it hurt?": "Aká je bolesť?", "Other symptoms": "Ďalšie príznaky", "Nausea?": "Nevoľnosť?", "Headache?": "Bolesť hlavy?",
+            "Associated symptoms": "Sprievodné príznaky", "Triggers": "Spúšťače", "Pain still feels the same?": "Bolesť je stále rovnaká?", "Pain scale (Mankosky)": "Stupnica bolesti (Mankosky)"
+          }
+          ''')
+          p=Path('src/lib/i18n.ts'); s=p.read_text()
+          start=s.index('const sk')
+          brace=s.index('{',start); depth=0; end=None
+          for i in range(brace,len(s)):
+              if s[i]=='{': depth+=1
+              elif s[i]=='}':
+                  depth-=1
+                  if depth==0: end=i; break
+          if end is None: raise RuntimeError('SK dictionary end not found')
+          sk=s[brace:end]
+          existing=set()
+          import re
+          for m in re.finditer(r'^\s*["\']([^"\']+)["\']\s*:',sk,re.M): existing.add(m.group(1))
+          add=''
+          for k,v in entries.items():
+              if k not in existing: add+=f'  {json.dumps(k,ensure_ascii=False)}: {json.dumps(v,ensure_ascii=False)},\n'
+          s=s[:end]+add+s[end:]; p.write_text(s)
+
+          p=Path('src/components/LogSheet.tsx'); s=p.read_text()
+          replacements={
+            '>\n                Add\n              </Button>':'>\n                {t("Add")}\n              </Button>',
+            '<span className="text-sm font-semibold leading-none">{step < 4 ? "Next" : "Save"}</span>':'<span className="text-sm font-semibold leading-none">{t(step < 4 ? "Next" : "Save")}</span>',
+            '            Quick symptom update\n':'            {t("Quick symptom update")}\n',
+            '<span className="text-xs text-muted-foreground">New entry · {time}</span>':'<span className="text-xs text-muted-foreground">{t("New entry ·")} {time}</span>',
+            '                    Last log: {latestPain.time} · pain {latestPain.score}/10. Reuse it and add only the new symptoms.\n':'                    {t("Last log:")} {latestPain.time} {t("· pain")} {latestPain.score}{t("/10. Reuse it and add only the new symptoms.")}\n',
+            '                Same pain — add symptoms\n':'                {t("Same pain — add symptoms")}\n',
+            '                Pain {score}/10 copied from {copiedFromTime ?? "the latest log"}\n':'                {t("Pain")} {score}{t("/10 copied from")} {copiedFromTime ?? t("the latest log")}\n',
+            '                This saves a new entry at {time}; the older log stays unchanged. Add or adjust the symptoms below.\n':'                {t("This saves a new entry at")} {time}{t("; the older log stays unchanged. Add or adjust the symptoms below.")}\n',
+            '            Level {Number.isInteger(value) ? value : value.toFixed(1)}:\n':'            {t("Level")} {Number.isInteger(value) ? value : value.toFixed(1)}:\n',
+            'aria-label={editingOrder ? "Finish reordering log categories" : "Reorder log categories"}':'aria-label={t(editingOrder ? "Finish reordering log categories" : "Reorder log categories")}',
+            'aria-label={`Info ${v}`}':'aria-label={`${t("Info")} ${t(v)}`}',
+            'aria-label={`Rename ${v}`}':'aria-label={`${t("Rename")} ${v}`}',
+            'aria-label={`Remove ${v}`}':'aria-label={`${t("Remove")} ${v}`}'
+          }
+          for a,b in replacements.items(): s=s.replace(a,b)
+          p.write_text(s)
+      - run: bun run typecheck
+      - run: bun run lint
+      - run: bun test
+      - run: bun run build
+      - name: Commit complete LogSheet translation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/fix-logsheet-all-sk.yml .github/workflows/audit-logsheet-i18n.yml
+          git add src/components/LogSheet.tsx src/lib/i18n.ts
+          git commit -m "Complete Slovak translation for all LogSheet forms"
+          git push
