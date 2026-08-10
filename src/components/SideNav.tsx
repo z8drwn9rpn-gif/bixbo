@@ -1,12 +1,22 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { Home, StickyNote, Activity, Users, Plus, Brain, Pill, User, Settings } from "@/components/icons/BixboIcons";
+import {
+  NavHomeIcon,
+  NavOverviewIcon,
+  NavCoupleIcon,
+  NavNoteIcon,
+  NavLogIcon,
+  Activity,
+  Pill,
+  User,
+  Settings,
+} from "@/components/icons/BixboIcons";
 
 const main = [
-  { to: "/", label: "Home", icon: Home },
-  { to: "/insights", label: "Insights", icon: Activity },
-  { to: "/patterns", label: "Patterns", icon: Brain },
-  { to: "/couple", label: "Bixbo couple", icon: Users },
-  { to: "/notes", label: "Bixbo Note", icon: StickyNote },
+  { to: "/", label: "Home", icon: NavHomeIcon },
+  { to: "/insights", label: "Overview", icon: NavOverviewIcon },
+  { to: "/patterns", label: "Patterns", icon: Activity },
+  { to: "/couple", label: "Couple", icon: NavCoupleIcon },
+  { to: "/notes", label: "Note", icon: NavNoteIcon },
   { to: "/meds", label: "Medications", icon: Pill },
 ] as const;
 
@@ -30,7 +40,7 @@ export function SideNav() {
 
   const isActive = (to: string) => (to === "/" ? pathname === "/" : pathname.startsWith(to));
 
-  const item = (to: string, label: string, Icon: typeof Home) => (
+  const item = (to: string, label: string, Icon: typeof NavHomeIcon) => (
     <li key={to}>
       <Link
         to={to}
@@ -40,7 +50,7 @@ export function SideNav() {
             : "text-muted-foreground hover:bg-surface-elevated hover:text-foreground"
         }`}
       >
-        <Icon className={`h-5 w-5 ${isActive(to) ? "stroke-[2.4]" : ""}`} />
+        <Icon size={30} className={`shrink-0 transition-transform ${isActive(to) ? "scale-110" : ""}`} />
         <span className="truncate">{label}</span>
       </Link>
     </li>
@@ -61,9 +71,9 @@ export function SideNav() {
 
       <button
         onClick={openLog}
-        className="mb-5 flex items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-md transition hover:brightness-[1.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="mb-5 flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-tint px-4 py-2.5 text-sm font-semibold text-foreground shadow-sm ring-1 ring-border/70 transition hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        <Plus className="h-4 w-4" strokeWidth={2.8} /> Log
+        <NavLogIcon size={34} className="-my-2 shrink-0" /> <span>Log</span>
       </button>
 
       <nav className="min-h-0 flex-1 overflow-y-auto">
