@@ -1038,8 +1038,8 @@ function IntensityScale({
               key={n}
               type="button"
               onClick={() => onChange(n)}
-              title={description ? `${n} — ${description}` : String(n)}
-              aria-label={description ? `${n} — ${description}` : `Intensity ${n}`}
+              title={description ? `${n} — ${t(description)}` : String(n)}
+              aria-label={description ? `${n} — ${t(description)}` : `${t("Intensity")} ${n}`}
               className={`${
                 compactSingleRow ? "h-7 w-7 text-[10px]" : "h-8 w-8 text-[11px]"
               } shrink-0 rounded-full font-semibold transition ${
@@ -1056,7 +1056,7 @@ function IntensityScale({
       {descriptions && value >= from && selectedDescription && (
         <div className="mt-2 rounded-lg bg-tint px-2.5 py-1.5 text-[11px] leading-snug text-foreground">
           <span className="font-semibold">
-            Level {Number.isInteger(value) ? value : value.toFixed(1)}:
+            {t("Level")} {Number.isInteger(value) ? value : value.toFixed(1)}:
           </span>{" "}
           {t(selectedDescription)}
         </div>
@@ -1401,9 +1401,9 @@ function PainWizard({
       {quickSymptomUpdate ? (
         <div className="flex items-center justify-between px-1 pb-3">
           <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-            Quick symptom update
+            {t("Quick symptom update")}
           </span>
-          <span className="text-xs text-muted-foreground">New entry · {time}</span>
+          <span className="text-xs text-muted-foreground">{t("New entry ·")} {time}</span>
         </div>
       ) : (
         <div
@@ -1440,7 +1440,7 @@ function PainWizard({
             onClick={step < 4 ? () => setStep(step + 1) : save}
             className="flex h-[52px] min-w-[64px] flex-col items-center justify-center rounded-[1.15rem] bg-primary px-3 text-primary-foreground shadow-sm transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
-            <span className="text-sm font-semibold leading-none">{step < 4 ? "Next" : "Save"}</span>
+            <span className="text-sm font-semibold leading-none">{t(step < 4 ? "Next" : "Save")}</span>
             <span aria-hidden="true" className="mt-0.5 text-base leading-none">{step < 4 ? "→" : "✓"}</span>
           </button>
         </div>
@@ -1454,7 +1454,7 @@ function PainWizard({
                 <div>
                   <p className="text-sm font-semibold">{t("Pain still feels the same?")}</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    Last log: {latestPain.time} · pain {latestPain.score}/10. Reuse it and add only the new symptoms.
+                    {t("Last log:")} {latestPain.time} {t("· pain")} {latestPain.score}{t("/10. Reuse it and add only the new symptoms.")}
                   </p>
                 </div>
                 <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10">
@@ -1462,7 +1462,7 @@ function PainWizard({
                 </span>
               </div>
               <Button type="button" onClick={startSymptomUpdate} className="w-full">
-                Same pain — add symptoms
+                {t("Same pain — add symptoms")}
               </Button>
             </div>
           )}
@@ -1473,7 +1473,7 @@ function PainWizard({
           >
             {Number.isInteger(score) ? score : score.toFixed(1)}
           </div>
-          <p className="text-center font-medium">{getScaleDesc(data, "pain")[Math.round(score)]}</p>
+          <p className="text-center font-medium">{t(getScaleDesc(data, "pain")[Math.round(score)])}</p>
           <div className="w-full px-4">
             <Slider value={[score * 2]} min={0} max={20} step={1} onValueChange={([v]) => setScore(v / 2)} />
           </div>
@@ -1483,7 +1483,7 @@ function PainWizard({
                 key={n}
                 type="button"
                 onClick={() => setScore(n)}
-                title={`${n} — ${getScaleDesc(data, "pain")[Math.round(n)]}`}
+                title={`${n} — ${t(getScaleDesc(data, "pain")[Math.round(n)])}`}
                 className={`h-7 w-7 shrink-0 rounded-full text-[10px] font-semibold transition ${
                   score === n ? "text-white ring-2 ring-foreground" : "text-foreground"
                 }`}
@@ -1579,10 +1579,10 @@ function PainWizard({
           {quickSymptomUpdate && (
             <div className="rounded-2xl border border-primary/30 bg-primary/10 p-3 text-sm">
               <p className="font-semibold">
-                Pain {score}/10 copied from {copiedFromTime ?? "the latest log"}
+                {t("Pain")} {score}{t("/10 copied from")} {copiedFromTime ?? t("the latest log")}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                This saves a new entry at {time}; the older log stays unchanged. Add or adjust the symptoms below.
+                {t("This saves a new entry at")} {time}{t("; the older log stays unchanged. Add or adjust the symptoms below.")}
               </p>
             </div>
           )}
