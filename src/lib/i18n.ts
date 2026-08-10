@@ -696,7 +696,6 @@ const SK: Record<string, string> = {
   "Test": "Vyšetrenie",
   "Class": "Kurz",
 
-  "Start writing…": "Začni písať…",
   "Delete checklist item": "Vymazať položku zoznamu",
 
   "Close log menu": "Zavrieť menu záznamu",

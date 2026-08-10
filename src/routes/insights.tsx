@@ -2497,10 +2497,10 @@ function TimeOfDayPatternChart({
       if (panicTop) return `Panické záchvaty sa najčastejšie vyskytujú v časti dňa ${blockName(panicTop.i).toLowerCase()} (${blockHours(panicTop.i)}, ${panicTop.pct} % prípadov).`;
     }
     if (tetanyTop && panicTop) {
-      return `Tetany occurs most often in the ${TIME_BLOCK_SHORT[t.i].toLowerCase()} (${blockHours(tetanyTop.i)}, ${tetanyTop.pct}% of cases), while panic attacks peak in the ${TIME_BLOCK_SHORT[p.i].toLowerCase()} (${blockHours(panicTop.i)}, ${panicTop.pct}% of cases).`;
+      return `Tetany occurs most often in the ${TIME_BLOCK_SHORT[tetanyTop.i].toLowerCase()} (${blockHours(tetanyTop.i)}, ${tetanyTop.pct}% of cases), while panic attacks peak in the ${TIME_BLOCK_SHORT[panicTop.i].toLowerCase()} (${blockHours(panicTop.i)}, ${panicTop.pct}% of cases).`;
     }
-    if (tetanyTop) return `Tetany occurs most often in the ${TIME_BLOCK_SHORT[t.i].toLowerCase()} (${blockHours(tetanyTop.i)}, ${tetanyTop.pct}% of cases).`;
-    if (panicTop) return `Panic attacks occur most often in the ${TIME_BLOCK_SHORT[p.i].toLowerCase()} (${blockHours(panicTop.i)}, ${panicTop.pct}% of cases).`;
+    if (tetanyTop) return `Tetany occurs most often in the ${TIME_BLOCK_SHORT[tetanyTop.i].toLowerCase()} (${blockHours(tetanyTop.i)}, ${tetanyTop.pct}% of cases).`;
+    if (panicTop) return `Panic attacks occur most often in the ${TIME_BLOCK_SHORT[panicTop.i].toLowerCase()} (${blockHours(panicTop.i)}, ${panicTop.pct}% of cases).`;
     return null;
   })();
 

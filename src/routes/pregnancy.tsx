@@ -643,6 +643,7 @@ function SymptomsSection({ view, update }: { view: BixboData; update: (u: (d: Bi
 }
 
 function PhotosSection({ view, update }: { view: BixboData; update: (u: (d: BixboData) => BixboData) => void }) {
+  const { t } = useI18n();
   const today = todayKey();
   const log = view.dayLogs[today]?.pregnancy ?? {};
   const [viewing, setViewing] = useState<string | null>(null);

@@ -2314,6 +2314,7 @@ function TetanyForm({
   onDone: () => void;
   initialEntry?: TetanyEpisode;
 }) {
+  const { t } = useI18n();
   const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
   const [types, setTypes] = useState<string[]>(initialEntry?.types ?? []);
   const [loc, setLoc] = useState<string[]>(initialEntry?.location ?? []);
@@ -2823,6 +2824,7 @@ function SexForm({
   );
 }
 function AddCustomInline({ onAdd }: { onAdd: (v: string) => void }) {
+  const { t } = useI18n();
   const [adding, setAdding] = useState(false);
   const [text, setText] = useState("");
   if (!adding)
@@ -2941,6 +2943,7 @@ function FoodForm({
   onDone: () => void;
   initialEntry?: FoodEntry;
 }) {
+  const { t } = useI18n();
   const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
   const [what, setWhat] = useState(initialEntry?.what ?? "");
   const [feelings, setFeelings] = useState<string[]>(initialEntry?.feelings ?? []);
