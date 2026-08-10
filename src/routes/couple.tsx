@@ -436,7 +436,7 @@ function SimilarityCard({ score, partnerName }: { score: number; partnerName: st
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t("Health similarity")}</p>
 
-          <h2 className="mt-1 font-serif text-xl font-semibold">You + {partnerName}</h2>
+          <h2 className="mt-1 font-serif text-xl font-semibold">You + {t(partnerName)}</h2>
 
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
             {t("Based only on shared pain, panic and tetany data during the selected month.")}
@@ -802,7 +802,7 @@ function CouplePainChart({
         </h2>
 
         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-          {period === "Y" ? "Monthly average pain" : "Daily average pain"}. Tap a bar to see its value. Solid bars are yours; striped bars belong to {partnerName}.
+          {period === "Y" ? "Monthly average pain" : "Daily average pain"}. Tap a bar to see its value. Solid bars are yours; striped bars belong to {t(partnerName)}.
         </p>
       </div>
 
@@ -812,7 +812,7 @@ function CouplePainChart({
           className="h-[206px] max-w-none"
           style={{ width: `${width}px` }}
           role="img"
-          aria-label={`Pain comparison between you and ${partnerName} during ${periodLabel}`}
+          aria-label={`Pain comparison between you and ${t(partnerName)} during ${periodLabel}`}
         >
           <defs>
             <pattern
@@ -929,7 +929,7 @@ function CouplePainChart({
                       rx="2"
                       pointerEvents="none"
                     >
-                      <title>{`${partnerName} · ${day}: ${partnerValue.toFixed(1)}/10`}</title>
+                      <title>{`${t(partnerName)} · ${day}: ${partnerValue.toFixed(1)}/10`}</title>
                     </rect>
 
                     <rect
@@ -956,7 +956,7 @@ function CouplePainChart({
                       fill="transparent"
                       role="button"
                       tabIndex={0}
-                      aria-label={`${partnerName}, ${day}, pain ${partnerValue.toFixed(1)} out of 10`}
+                      aria-label={`${t(partnerName)}, ${day}, pain ${partnerValue.toFixed(1)} out of 10`}
                       className="cursor-pointer focus:outline-none"
                       onClick={() =>
                         showBarDetails(
@@ -1095,7 +1095,7 @@ function CouplePainChart({
               border: `1px solid ${couplePainColor(6)}`,
             }}
           />
-          {partnerName} — striped
+          {t(partnerName)} — striped
         </span>
       </div>
     </section>
@@ -1597,7 +1597,7 @@ function CouplePage() {
           </div>
         ) : (
           <>
-            {activeTab === "overview" ? <SimilarityCard score={similarityScore} partnerName={partnerName} /> : null}
+            {activeTab === "overview" ? <SimilarityCard score={similarityScore} partnerName={t(partnerName)} /> : null}
 
             {activeTab === "overview" ? (
               <div className="grid grid-cols-2 gap-2">
@@ -1613,7 +1613,7 @@ function CouplePage() {
                   icon={<HeartIcon size={18} />}
                   label="Your symptom days"
                   value={`${mySymptomDays}`}
-                  detail={`${partnerName}: ${partnerSymptomDays} days`}
+                  detail={`${t(partnerName)}: ${partnerSymptomDays} days`}
                   tone="rose"
                 />
 
@@ -1621,7 +1621,7 @@ function CouplePage() {
                   icon={<PanicIcon size={18} />}
                   label="Panic attacks"
                   value={`${myPanic.length + partnerPanic.length}`}
-                  detail={`You ${myPanic.length} · ${partnerName} ${partnerPanic.length}`}
+                  detail={`You ${myPanic.length} · ${t(partnerName)} ${partnerPanic.length}`}
                   tone="purple"
                 />
 
@@ -1629,7 +1629,7 @@ function CouplePage() {
                   icon={<BoltIcon size={18} />}
                   label="Tetany episodes"
                   value={`${myTetany.length + partnerTetany.length}`}
-                  detail={`You ${myTetany.length} · ${partnerName} ${partnerTetany.length}`}
+                  detail={`You ${myTetany.length} · ${t(partnerName)} ${partnerTetany.length}`}
                   tone="blue"
                 />
               </div>
@@ -1650,7 +1650,7 @@ function CouplePage() {
                   days={painMonthDays}
                   mine={view.dayLogs}
                   theirs={partner.dayLogs}
-                  partnerName={partnerName}
+                  partnerName={t(partnerName)}
                   periodLabel={painMonthLabel}
                   period="M"
                 />
@@ -1669,7 +1669,7 @@ function CouplePage() {
                       decimals={1}
                       unit="/10"
                       mineLabel="You"
-                      partnerLabel={partnerName}
+                      partnerLabel={t(partnerName)}
                       tone="rose"
                       icon={<HeartIcon size={22} />}
                     />
@@ -1681,7 +1681,7 @@ function CouplePage() {
                       theirs={partnerPainDays}
                       decimals={0}
                       mineLabel="You"
-                      partnerLabel={partnerName}
+                      partnerLabel={t(partnerName)}
                       tone="green"
                       icon={<SparkleIcon size={22} />}
                     />
@@ -1693,7 +1693,7 @@ function CouplePage() {
                       theirs={partnerPanic.length}
                       decimals={0}
                       mineLabel="You"
-                      partnerLabel={partnerName}
+                      partnerLabel={t(partnerName)}
                       tone="purple"
                       icon={<PanicIcon size={22} />}
                     />
@@ -1705,7 +1705,7 @@ function CouplePage() {
                       theirs={partnerTetany.length}
                       decimals={0}
                       mineLabel="You"
-                      partnerLabel={partnerName}
+                      partnerLabel={t(partnerName)}
                       tone="blue"
                       icon={<BoltIcon size={22} />}
                     />
@@ -1717,7 +1717,7 @@ function CouplePage() {
                       theirs={partnerTakenDoses}
                       decimals={0}
                       mineLabel="You"
-                      partnerLabel={partnerName}
+                      partnerLabel={t(partnerName)}
                       tone="emerald"
                       icon={<PillIcon size={22} />}
                     />
@@ -1728,7 +1728,7 @@ function CouplePage() {
 
             {activeTab === "health" ? (
               <SectionCard
-                title={`${partnerName} — shared details`}
+                title={`${t(partnerName)} — shared details`}
                 description="Only the explicitly shared categories for the selected month."
               >
                 <div className="mt-3 space-y-2.5">
