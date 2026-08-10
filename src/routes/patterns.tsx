@@ -674,7 +674,7 @@ function PatternTabs({
       className="mx-auto grid w-full max-w-[340px] gap-0.5 rounded-xl bg-primary/20 p-0.5 ring-1 ring-primary/15 lg:max-w-sm"
       style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}
       role="tablist"
-      aria-label="Pattern sections"
+      aria-label={t("Pattern sections")}
     >
       {tabs.map((tab) => {
         const selected = active === tab.id;
@@ -2137,7 +2137,7 @@ export function PatternsContent() {
                   <p className="mt-1 text-sm font-semibold text-foreground">{formatChange(mostStable)}</p>
                 </div>
                 <div className="rounded-2xl bg-tint p-3 ring-1 ring-border/40">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Confidence</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{t("Confidence")}</p>
                   <p className="mt-1 text-sm font-semibold text-foreground">{monthlyConfidence}</p>
                   <p className="mt-0.5 text-[10px] text-muted-foreground">{monthlyLoggedDays} logged days</p>
                 </div>
@@ -3201,7 +3201,7 @@ export function PatternsContent() {
 
                           <button
                             type="button"
-                            aria-label="Remove saved comparison"
+                            aria-label={t("Remove saved comparison")}
                             onClick={() => removeTriggerCombination(saved.id)}
                             className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm text-muted-foreground transition hover:bg-background hover:text-foreground"
                           >
@@ -3222,7 +3222,7 @@ export function PatternsContent() {
 
 function PatternsPage() {
   return (
-    <AppShell title="Health of Bixbo">
+    <AppShell title={t("Health of Bixbo")}>
       <div className="px-5 pt-2 lg:px-0">
         <div className="grid grid-cols-2 rounded-2xl bg-tint p-1 ring-1 ring-border/70 lg:mx-auto lg:w-full lg:max-w-[420px]">
           <Link
