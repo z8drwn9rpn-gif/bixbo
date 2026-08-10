@@ -14,6 +14,7 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
       - run: python .github/scripts/install-log-schema-editor.py
+      - run: python .github/scripts/repair-log-schema-provider.py
       - run: bun run build
       - run: bun run typecheck
       - run: bun run lint
