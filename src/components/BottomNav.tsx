@@ -1,5 +1,6 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import type { ComponentType } from "react";
+import { useI18n } from "@/hooks/useI18n";
 import { NavHomeIcon, NavOverviewIcon, NavCoupleIcon, NavNoteIcon, NavLogIcon, type IconProps } from "@/components/icons/BixboIcons";
 
 type NavItem = {
@@ -9,15 +10,16 @@ type NavItem = {
 };
 
 const items: NavItem[] = [
-  { to: "/", label: "Home", icon: NavHomeIcon },
-  { to: "/insights", label: "Overview", icon: NavOverviewIcon },
-  { to: "/couple", label: "Couple", icon: NavCoupleIcon },
-  { to: "/notes", label: "Note", icon: NavNoteIcon },
+  { to: "/", label: "nav.home", icon: NavHomeIcon },
+  { to: "/insights", label: "nav.overview", icon: NavOverviewIcon },
+  { to: "/couple", label: "nav.couple", icon: NavCoupleIcon },
+  { to: "/notes", label: "nav.note", icon: NavNoteIcon },
 ];
 
 export function BottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
+  const { t } = useI18n();
 
   const openLog = () => {
     if (pathname === "/") {
@@ -33,7 +35,7 @@ export function BottomNav() {
 
         {items.slice(0, 2).map(({ to, label, icon: Icon }) => {
           const active =
-            label === "Overview"
+            to === "/insights"
               ? pathname.startsWith("/insights") || pathname.startsWith("/patterns")
               : to === "/"
                 ? pathname === "/"
@@ -47,7 +49,7 @@ export function BottomNav() {
                 }`}
               >
                 <Icon size={42} className={`shrink-0 drop-shadow-sm transition-transform ${active ? "scale-[1.04]" : ""}`} />
-                <span className="mt-0.5 max-w-full truncate text-center leading-none">{label}</span>
+                <span className="mt-0.5 max-w-full truncate text-center leading-none">{t(label)}</span>
               </Link>
             </li>
           );
@@ -58,10 +60,10 @@ export function BottomNav() {
             type="button"
             onClick={openLog}
             className="flex min-h-14 w-full -translate-y-1 flex-col items-center justify-center gap-0 rounded-2xl px-1.5 py-1 text-[11.5px] font-semibold text-primary transition-all hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label="Log"
+            aria-label={t("nav.log")}
           >
             <NavLogIcon size={62} className="drop-shadow-lg transition-transform active:scale-95" />
-            <span className="-mt-0.5 leading-none">Log</span>
+            <span className="-mt-0.5 leading-none">{t("nav.log")}</span>
           </button>
         </li>
 
@@ -76,7 +78,7 @@ export function BottomNav() {
                 }`}
               >
                 <Icon size={42} className={`shrink-0 drop-shadow-sm transition-transform ${active ? "scale-[1.04]" : ""}`} />
-                <span className="mt-0.5 max-w-full truncate text-center leading-none">{label}</span>
+                <span className="mt-0.5 max-w-full truncate text-center leading-none">{t(label)}</span>
               </Link>
             </li>
           );
