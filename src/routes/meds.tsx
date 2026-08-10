@@ -80,7 +80,7 @@ function MedsPage() {
                   <p className="text-sm font-medium">{m.name}</p>
                   <p className="text-xs text-muted-foreground">
                     {m.dose ? `${m.dose} · ` : ""}
-                    {m.asNeeded ? "as needed" : m.times.join(", ")}
+                    {m.asNeeded ? t("as needed") : m.times.join(", ")}
                   </p>
                   {m.note && (
                     <p className="mt-1 flex items-start gap-1 text-xs whitespace-pre-wrap text-muted-foreground">
@@ -94,7 +94,7 @@ function MedsPage() {
                   <button
                     onClick={() => removeMed(m.id)}
                     className="text-muted-foreground hover:text-destructive"
-                    aria-label="Remove"
+                    aria-label={t("Remove")}
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -113,7 +113,7 @@ function EditMedButton({ med, onSave }: { med: Med; onSave: (m: Med) => void }) 
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button onClick={() => setOpen(true)} className="text-muted-foreground hover:text-primary" aria-label="Edit">
+      <button onClick={() => setOpen(true)} className="text-muted-foreground hover:text-primary" aria-label={t("Edit")}>
         <Pencil className="h-4 w-4" />
       </button>
       <Dialog open={open} onOpenChange={setOpen}>
