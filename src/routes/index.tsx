@@ -3431,26 +3431,26 @@ function DayPreview({
       {log?.tetany?.length ? (
         <Card title="Tetany episode" icon="⚡">
           <ul className="space-y-2 text-sm">
-            {log.tetany.map((t) => (
-              <li key={t.id} className="flex items-start gap-2">
-                <button onClick={() => onEdit?.("tetany", t)} className="flex-1 text-left">
+            {log.tetany.map((tetanyEntry) => (
+              <li key={tetanyEntry.id} className="flex items-start gap-2">
+                <button onClick={() => onEdit?.("tetany", tetanyEntry)} className="flex-1 text-left">
                   <p>
-                    {t.time} · {t.types.join(", ") || "Tetany"} · {t.intensity}/5 ·{" "}
-                    {t.minutes == null ? "ongoing" : `${t.minutes}min`}
-                    {t.triggers.length ? ` — ${t.triggers.join(", ")}` : ""}
+                    {tetanyEntry.time} · {tetanyEntry.types.join(", ") || "Tetany"} · {tetanyEntry.intensity}/5 ·{" "}
+                    {tetanyEntry.minutes == null ? "ongoing" : `${tetanyEntry.minutes}min`}
+                    {tetanyEntry.triggers.length ? ` — ${tetanyEntry.triggers.join(", ")}` : ""}
                   </p>
-                  {t.location?.length ? (
-                    <p className="text-xs text-muted-foreground">Location: {t.location.join(", ")}</p>
+                  {tetanyEntry.location?.length ? (
+                    <p className="text-xs text-muted-foreground">Location: {tetanyEntry.location.join(", ")}</p>
                   ) : null}
-                  {t.helped?.length ? (
-                    <p className="text-xs text-muted-foreground">Helped: {t.helped.join(", ")}</p>
+                  {tetanyEntry.helped?.length ? (
+                    <p className="text-xs text-muted-foreground">Helped: {tetanyEntry.helped.join(", ")}</p>
                   ) : null}
-                  {t.rescueMed ? (
+                  {tetanyEntry.rescueMed ? (
                     <p className="text-xs text-muted-foreground">
-                      <Ico e="💊" size={13} /> Rescue: {t.rescueMed}
+                      <Ico e="💊" size={13} /> Rescue: {tetanyEntry.rescueMed}
                     </p>
                   ) : null}
-                  {t.note && <p className="mt-1 text-sm whitespace-pre-line">"{t.note}"</p>}
+                  {tetanyEntry.note && <p className="mt-1 text-sm whitespace-pre-line">"{tetanyEntry.note}"</p>}
                   <p className="mt-1 text-[10px] text-primary">{t("Tap to edit")}</p>
                 </button>
                 <DeleteBtn
@@ -3461,7 +3461,7 @@ function DayPreview({
                         ...d.dayLogs,
                         [date]: {
                           ...d.dayLogs[date],
-                          tetany: (d.dayLogs[date]?.tetany ?? []).filter((x) => x.id !== t.id),
+                          tetany: (d.dayLogs[date]?.tetany ?? []).filter((x) => x.id !== tetanyEntry.id),
                         },
                       },
                     }))
