@@ -52,7 +52,7 @@ export function SideNav() {
             : "text-muted-foreground hover:bg-surface-elevated hover:text-foreground"
         }`}
       >
-        <Icon size={36} className={`shrink-0 drop-shadow-sm transition-transform ${isActive(to) ? "scale-[1.06]" : ""}`} />
+        <Icon size={40} className={`shrink-0 drop-shadow-sm transition-transform ${isActive(to) ? "scale-[1.04]" : ""}`} />
         <span className="truncate">{label}</span>
       </Link>
     </li>
@@ -74,9 +74,9 @@ export function SideNav() {
       <button
         type="button"
         onClick={openLog}
-        className="mb-5 flex min-h-16 items-center justify-center gap-2 rounded-2xl bg-tint px-4 py-2 text-sm font-semibold text-foreground shadow-sm ring-1 ring-border/70 transition hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="mb-5 flex min-h-[68px] items-center justify-center gap-2.5 rounded-2xl bg-tint px-4 py-2 text-sm font-semibold text-foreground shadow-sm ring-1 ring-border/70 transition hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        <NavLogIcon size={44} className="-my-3 shrink-0 drop-shadow-md" /> <span>Log</span>
+        <NavLogIcon size={50} className="-my-3 shrink-0 drop-shadow-lg" /> <span>Log</span>
       </button>
 
       <nav className="min-h-0 flex-1 overflow-y-auto">
