@@ -13,8 +13,8 @@ jobs:
       - name: Find visible LogSheet strings missing from Slovak dictionary
         run: |
           cat > /tmp/audit.ts <<'TS'
-          import ts from 'typescript';
-          import fs from 'fs';
+          import * as ts from 'typescript';
+          import * as fs from 'fs';
           const logPath='src/components/LogSheet.tsx';
           const i18n=fs.readFileSync('src/lib/i18n.ts','utf8');
           const sf=ts.createSourceFile(logPath,fs.readFileSync(logPath,'utf8'),ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
