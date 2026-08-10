@@ -1,0 +1,171 @@
+name: Fix screenshot UI scales and Slovak text
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-screenshots-ui.yml'
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Patch UI
+        shell: python
+        run: |
+          from pathlib import Path
+          import re, json
+
+          log = Path('src/components/LogSheet.tsx')
+          s = log.read_text()
+
+          # Blueberry/period: normalize legacy half-step cramps to whole 1-10 values.
+          s = s.replace(
+            'const [cramps, setCramps] = useState<number | undefined>(cur?.cramps);',
+            'const [cramps, setCramps] = useState<number | undefined>(cur?.cramps == null ? undefined : Math.max(1, Math.min(10, Math.round(cur.cramps))));',
+            1,
+          )
+          s = s.replace('{L.label}', '{t(L.label)}', 1)
+
+          start = s.index('      <Field label={`Cramp pain ')
+          end = s.index('      <Field label="Discharge (optional)">', start)
+          new_cramp = '''      <Field label={`${t("Cramp pain")} ${cramps ?? "—"} / 10`}>
+        <div className="mt-2 flex flex-nowrap items-center justify-center gap-0.5 px-0">
+          {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+            <button
+              key={n}
+              type="button"
+              onClick={() => setCramps(cramps === n ? undefined : n)}
+              title={`${n} — ${t(painDesc[n])}`}
+              aria-label={`${n} — ${t(painDesc[n])}`}
+              className={`h-7 w-7 shrink-0 rounded-full text-[10px] font-semibold transition ${
+                cramps === n ? "text-white ring-2 ring-foreground" : "text-foreground"
+              }`}
+              style={{ background: painColor(n) }}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+        <ScaleLegend
+          max={10}
+          from={1}
+          descriptions={painDesc}
+          value={cramps}
+          title={t("Pain scale (Mankosky)")}
+        />
+      </Field>
+'''
+          s = s[:start] + new_cramp + s[end:]
+
+          # Workout RPE: keep all 1-10 buttons on one row on iPhone.
+          s = s.replace(
+            '<Field label={`Intensity (RPE) ${rpe ?? "-"} / 10`}>',
+            '<Field label={`${t("Intensity (RPE)")} ${rpe ?? "—"} / 10`}>',
+            1,
+          )
+          s = s.replace(
+            '<div className="mt-2 flex flex-wrap justify-center gap-1.5 px-1">\n          {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => {',
+            '<div className="mt-2 flex flex-nowrap items-center justify-center gap-0.5 px-0">\n          {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => {',
+            1,
+          )
+          s = s.replace(
+            'className={`h-8 w-8 rounded-full text-[11px] font-semibold transition ${',
+            'className={`h-7 w-7 shrink-0 rounded-full text-[10px] font-semibold transition ${',
+            1,
+          )
+
+          # Bristol rows were bypassing i18n even though the form itself already has t().
+          s = s.replace('<IcoText text={b.label} size={14} />', '<IcoText text={t(b.label)} size={14} />', 1)
+          s = s.replace('<IcoText text={b.sub} size={12} />', '<IcoText text={t(b.sub)} size={12} />', 1)
+
+          log.write_text(s)
+
+          couple = Path('src/routes/couple.tsx')
+          c = couple.read_text()
+          c = c.replace('{`Pain — ${periodLabel}`}', '{`${t("Pain")} — ${periodLabel}`}', 1)
+          c = c.replace(
+            '{period === "Y" ? "Monthly average pain" : "Daily average pain"}. Tap a bar to see its value. Solid bars are yours; striped bars belong to {t(partnerName)}.',
+            '{t(period === "Y" ? "Monthly average pain" : "Daily average pain")}. {t("Tap a bar to see its value. Solid bars are yours; striped bars belong to")} {t(partnerName)}.',
+            1,
+          )
+          c = c.replace('You — solid', '{t("You")} — {t("solid")}', 1)
+          c = c.replace(
+            '{PAIN_DESCRIPTIONS[Math.max(0, Math.min(10, Math.round(selectedBar.value)))] ?? "Pain"}',
+            '{t(PAIN_DESCRIPTIONS[Math.max(0, Math.min(10, Math.round(selectedBar.value)))] ?? "Pain")}',
+            1,
+          )
+          c = c.replace(
+            'const visibleHealthDayLabel = visibleHealthDay === todayKey() ? "Today" : visibleHealthDay;',
+            'const visibleHealthDayLabel = visibleHealthDay === todayKey() ? t("Today") : visibleHealthDay;',
+            1,
+          )
+          c = c.replace('title={`${t(partnerName)} — shared details`}', 'title={`${t(partnerName)} — ${t("shared details")}`}', 1)
+          c = c.replace('title={`Pain (${partnerPain.length})`}', 'title={`${t("Pain")} (${partnerPain.length})`}', 1)
+          c = c.replace('title={`Tetany (${partnerTetany.length})`}', 'title={`${t("Tetany")} (${partnerTetany.length})`}', 1)
+          c = c.replace('title={`Panic attacks (${partnerPanic.length})`}', 'title={`${t("Panic attacks")} (${partnerPanic.length})`}', 1)
+          c = c.replace('title={`Pain (${myPain.length})`}', 'title={`${t("Pain")} (${myPain.length})`}', 1)
+          c = c.replace('title={`Tetany (${myTetany.length})`}', 'title={`${t("Tetany")} (${myTetany.length})`}', 1)
+          c = c.replace('title={`Panic attacks (${myPanic.length})`}', 'title={`${t("Panic attacks")} (${myPanic.length})`}', 1)
+          c = c.replace('mineLabel="You"', 'mineLabel={t("You")}', 5)
+          couple.write_text(c)
+
+          # Add only genuinely missing Slovak keys.
+          p = Path('src/lib/i18n.ts')
+          i = p.read_text()
+          sk_start = i.index('const SK:')
+          sk_end = i.index('\n};', sk_start)
+          sk = i[sk_start:sk_end]
+          entries = {
+            'Cramp pain': 'Kŕčová bolesť',
+            'Intensity (RPE)': 'Intenzita (RPE)',
+            'Monthly average pain': 'Mesačný priemer bolesti',
+            'Daily average pain': 'Denný priemer bolesti',
+            'Tap a bar to see its value. Solid bars are yours; striped bars belong to': 'Ťukni na stĺpec a zobrazí sa jeho hodnota. Plné stĺpce sú tvoje; pruhované patria',
+            'solid': 'plné',
+            'shared details': 'zdieľané údaje',
+            'Today': 'Dnes',
+            'Type 1 — Constipation': 'Typ 1 — Zápcha',
+            'Separate hard lumps': 'Tvrdé, oddelené hrudky',
+            'Type 2 — Constipation': 'Typ 2 — Zápcha',
+            'Sausage-shaped but firm and lumpy': 'Tvar klobásy, ale tuhý a hrudkovitý',
+            'Type 3 — Normal': 'Typ 3 — Normálna',
+            'Thicker but soft, with cracks': 'Tvar klobásy s prasklinami na povrchu',
+            'Type 4 — Normal': 'Typ 4 — Normálna',
+            'Smooth, soft, uniform': 'Hladká, mäkká, tvar klobásy',
+            'Type 5 — Lacks fiber': 'Typ 5 — Nedostatok vlákniny',
+            'Soft blobs with clear-cut edges': 'Mäkké hrudky s ostrými okrajmi',
+            'Type 6 — Diarrhea': 'Typ 6 — Hnačka',
+            'Fluffy, mushy, ragged edges': 'Kašovitá, nadýchaná, rozstrapkané okraje',
+            'Type 7 — Diarrhea': 'Typ 7 — Hnačka',
+            'Watery, no solid pieces': 'Tekutá, bez pevných častí',
+          }
+          additions = ''
+          for k, v in entries.items():
+            key = json.dumps(k, ensure_ascii=False)
+            if f'  {key}:' not in sk:
+              additions += f'  {key}: {json.dumps(v, ensure_ascii=False)},\n'
+          if additions:
+            i = i[:sk_end] + '\n' + additions + i[sk_end:]
+          p.write_text(i)
+
+      - run: bun run typecheck
+      - run: bun run lint
+      - run: bun test
+      - run: bun run build
+      - name: Verify requested UI changes
+        run: |
+          grep -q 'Array.from({ length: 10 }, (_, i) => i + 1)' src/components/LogSheet.tsx
+          ! grep -q 'Array.from({ length: 21 }, (_, i) => i / 2)' src/components/LogSheet.tsx
+          grep -q 'text={t(b.label)}' src/components/LogSheet.tsx
+          grep -q 'visibleHealthDay === todayKey() ? t("Today")' src/routes/couple.tsx
+      - name: Commit
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/components/LogSheet.tsx src/routes/couple.tsx src/lib/i18n.ts
+          git diff --cached --quiet && exit 0
+          git commit -m "Fix Blueberry and workout scales and remaining Slovak UI"
+          git push
