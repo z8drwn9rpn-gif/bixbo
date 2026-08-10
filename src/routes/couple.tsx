@@ -38,6 +38,7 @@ import {
   type TetanyEpisode,
 } from "@/lib/storage";
 import { fetchPartner } from "@/lib/cloudSync";
+import { useI18n } from "@/hooks/useI18n";
 
 export const Route = createFileRoute("/couple")({
   head: () => ({
@@ -238,11 +239,12 @@ function formatValue(value: number | null, decimals = 0, unit = "") {
 /* -------------------------------------------------------------------------- */
 
 function SectionCard({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
+  const { t } = useI18n();
   return (
     <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
       <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{title}</h2>
 
-      {description ? <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{description}</p> : null}
+      {description ? <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t(description)}</p> : null}
 
       {children}
     </section>
@@ -262,6 +264,7 @@ function StatCard({
   detail: string;
   tone: ComparisonTone;
 }) {
+  const { t } = useI18n();
   const palette = TONES[tone];
 
   return (
@@ -276,7 +279,7 @@ function StatCard({
         {icon}
       </div>
 
-      <p className="mt-3 text-[11px] font-medium text-muted-foreground">{label}</p>
+      <p className="mt-3 text-[11px] font-medium text-muted-foreground">{t(label)}</p>
 
       <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">{value}</p>
 
@@ -334,7 +337,7 @@ function ComparisonBarCard({
         </span>
 
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+          <h3 className="text-sm font-semibold text-foreground">{t(title)}</h3>
 
           <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">{subtitle}</p>
         </div>
@@ -653,7 +656,7 @@ function CurrentAndHistory({
   return (
     <section className="rounded-2xl bg-surface-sunken/34 p-3 ring-1 ring-border/32">
       <div className="flex items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+        <h3 className="text-sm font-semibold text-foreground">{t(title)}</h3>
         <span className="rounded-full bg-surface px-2.5 py-1 text-[10px] font-semibold text-muted-foreground ring-1 ring-border/40">
           {currentLabel}
         </span>
@@ -1234,6 +1237,7 @@ function BlueberrySection({
 type CoupleTab = "overview" | "compare" | "health";
 
 function CouplePage() {
+  const { t } = useI18n();
   const { data, hydrated } = useBixbo();
   const view = hydrated ? data : EMPTY;
   const partner = view.partner;
