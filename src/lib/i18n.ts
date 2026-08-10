@@ -450,6 +450,16 @@ const SK: Record<string, string> = {
   "PIN": "PIN",
   "BIXBO PIN": "BIXBO PIN",
 
+  "Sign in": "Prihlásiť sa",
+  "Create account": "Vytvoriť účet",
+  "Sign in to keep your BIXBO diary safely in the cloud and share with your partner using a code.": "Prihlás sa, aby bol tvoj BIXBO denník bezpečne uložený v cloude a mohla si ho zdieľať s partnerom pomocou kódu.",
+  "Your name (optional)": "Tvoje meno (voliteľné)",
+  "Email": "E-mail",
+  "Password (min 6 chars)": "Heslo (min. 6 znakov)",
+  "or": "alebo",
+  "Back to app": "Späť do aplikácie",
+  "Account created. If email confirmation is on, check your inbox — otherwise you're signed in.": "Účet bol vytvorený. Ak je zapnuté potvrdenie e-mailom, skontroluj doručenú poštu — inak si už prihlásená.",
+
 };
 
 const TRANSLATIONS: Record<AppLanguage, Record<string, string>> = { en: EN, sk: SK };
