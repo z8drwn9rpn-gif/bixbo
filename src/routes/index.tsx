@@ -764,7 +764,9 @@ function HomePage() {
         </div>
       }
     >
-      <div className="px-5 pt-0.5">
+      <div className="lg:mx-auto lg:grid lg:w-full lg:max-w-[1440px] lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)] lg:items-start lg:gap-7 lg:px-5">
+        <div className="min-w-0 lg:flex lg:flex-col">
+      <div className="px-5 pt-0.5 lg:order-1 lg:px-0">
         <div className="flex items-center justify-between">
           <button
             type="button"
@@ -790,7 +792,7 @@ function HomePage() {
         </div>
       </div>
 
-      <div className="mt-0.5" style={{ "--period-medium": "#7467D8" } as any}>
+      <div className="mt-0.5 lg:order-1 lg:overflow-hidden lg:rounded-[1.75rem]" style={{ "--period-medium": "#7467D8" } as any}>
         {hydrated ? (
           <MonthCalendar
             month={monthAnchor}
@@ -807,6 +809,7 @@ function HomePage() {
       </div>
 
       {!maleMode && (
+        <div className="lg:order-4">
         <BirthControlSummaryCard
           data={view}
           dateKey={selected}
@@ -815,6 +818,7 @@ function HomePage() {
             setHakOpen(true);
           }}
         />
+        </div>
       )}
 
       {(() => {
@@ -825,7 +829,7 @@ function HomePage() {
         return (
           <Link
             to={"/pregnancy" as never}
-            className="focus-ring mx-5 mt-3 block rounded-3xl bg-tint px-4 py-4 text-left ring-1 ring-border transition hover:bg-surface"
+            className="focus-ring mx-5 mt-3 block rounded-3xl bg-tint px-4 py-4 text-left ring-1 ring-border transition hover:bg-surface lg:order-6 lg:mx-0"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
@@ -901,7 +905,7 @@ function HomePage() {
           return (
             <Link
               to={"/postpartum" as never}
-              className="focus-ring mx-5 mt-3 block rounded-3xl bg-primary/10 px-4 py-4 text-left ring-1 ring-primary/20"
+              className="focus-ring mx-5 mt-3 block rounded-3xl bg-primary/10 px-4 py-4 text-left ring-1 ring-primary/20 lg:order-6 lg:mx-0"
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-3">
@@ -958,7 +962,7 @@ function HomePage() {
 
           return (
             <div
-              className="mx-5 mt-3 rounded-full px-4 py-2 text-center text-xs ring-1"
+              className="mx-5 mt-3 rounded-full px-4 py-2 text-center text-xs ring-1 lg:order-3 lg:mx-0"
               style={{
                 background: "color-mix(in srgb, #5F7033 14%, transparent)",
                 color: "#5F7033",
@@ -974,8 +978,8 @@ function HomePage() {
         })()}
 
       {/* Top vitals row */}
-      <div className="mt-4 grid grid-cols-5 gap-2 px-5">
-        <div className="col-span-2">
+      <div className="mt-4 grid grid-cols-5 gap-2 px-5 lg:order-5 lg:grid-cols-4 lg:px-0">
+        <div className="col-span-2 lg:col-span-1">
           <MedsProgress data={view} />
         </div>
 
@@ -1002,7 +1006,7 @@ function HomePage() {
       </div>
 
       {/* Quick log */}
-      <div className="px-5 [&_p.text-\[11px\].uppercase]:min-w-0 [&_p.text-\[11px\].uppercase]:flex-1 [&_p.text-\[11px\].uppercase]:truncate [&_p.text-\[11px\].uppercase]:text-[10px] [&_.mt-1.flex.flex-wrap.gap-1]:hidden">
+      <div className="px-5 lg:order-2 lg:mt-4 lg:px-0 [&_p.text-\[11px\].uppercase]:min-w-0 [&_p.text-\[11px\].uppercase]:flex-1 [&_p.text-\[11px\].uppercase]:truncate [&_p.text-\[11px\].uppercase]:text-[10px] [&_.mt-1.flex.flex-wrap.gap-1]:hidden">
         <QuickTags
           data={view}
           update={update}
@@ -1035,7 +1039,10 @@ function HomePage() {
         />
       </div>
 
-      <div className="mt-4 flex items-center justify-between px-5">
+        </div>
+
+        <aside className="min-w-0 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto lg:rounded-[1.75rem] lg:bg-surface/35 lg:p-4 lg:ring-1 lg:ring-border/50">
+      <div className="mt-4 flex items-center justify-between px-5 lg:mt-0 lg:px-0">
         <h2 className="font-serif text-xl font-bold">
           {selected === todayKey()
             ? "Today"
@@ -1061,6 +1068,8 @@ function HomePage() {
         }}
         onEdit={openEdit}
       />
+        </aside>
+      </div>
 
 
       {vitalTrendOpen && (
@@ -1823,7 +1832,7 @@ function BirthControlOverlay({
 
       <main
         ref={mainRef}
-        className="mx-auto min-h-0 w-full max-w-[42rem] flex-1 overflow-y-auto overscroll-contain px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-1 lg:max-w-[560px] lg:pb-24"
+        className="mx-auto min-h-0 w-full max-w-[42rem] flex-1 overflow-y-auto overscroll-contain px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-1 lg:max-w-[1180px] lg:px-6 lg:pb-24"
       >
         <div
           ref={fitRef}
@@ -2086,6 +2095,8 @@ function BirthControlCalendar({
 
   return (
     <section className="flex min-h-0 flex-col">
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.08fr)] lg:items-start lg:gap-8">
+        <div className="min-w-0">
       <div className="flex shrink-0 items-start justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2.5">
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-surface/65 ring-1 ring-border/50">
@@ -2476,8 +2487,10 @@ function BirthControlCalendar({
         </div>
       </div>
 
+        </div>
+        <div className="min-w-0 lg:pt-12">
       <div
-        className="mt-3 rounded-[1.5rem] px-2 py-2 ring-1"
+        className="mt-3 rounded-[1.5rem] px-2 py-2 ring-1 lg:mt-0"
         style={{
           backgroundColor: darkMode ? "rgba(90,96,64,.70)" : "rgba(255,255,255,.24)",
           borderColor: darkMode ? "rgba(119,125,88,.76)" : "rgba(95,112,51,.18)",
@@ -2527,6 +2540,8 @@ function BirthControlCalendar({
 
       {/* ŠukŠuk Insights summary — added inside the HAK calendar only. */}
       <SukSukPeriodChart data={data} anchorKey={todayKey()} darkMode={darkMode} />
+        </div>
+      </div>
 
       {/* Compact dose editor — only circular HAK wheel pills open this popup. */}
       {sel && selectedDay != null && typeof document !== "undefined"
