@@ -102,6 +102,7 @@ function SelectField({
   options: { value: string; label: string }[];
   placeholder?: string;
 }) {
+  const { t } = useI18n();
   return (
     <select
       id={id}
@@ -109,10 +110,10 @@ function SelectField({
       onChange={(e) => onChange(e.target.value)}
       className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <option value="">{placeholder ?? "— Select —"}</option>
+      <option value="">{placeholder ? t(placeholder) : t("— Select —")}</option>
       {options.map((o) => (
         <option key={o.value} value={o.value}>
-          {o.label}
+          {t(o.label)}
         </option>
       ))}
     </select>
@@ -120,6 +121,7 @@ function SelectField({
 }
 
 function ToggleRow({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+  const { t } = useI18n();
   return (
     <button
       type="button"
@@ -130,7 +132,7 @@ function ToggleRow({ label, checked, onChange }: { label: string; checked: boole
           : "border-border bg-tint"
       }`}
     >
-      {label}
+      {t(label)}
       <span
         className={`inline-flex h-5 w-9 shrink-0 items-center rounded-full transition ${checked ? "bg-primary justify-end" : "bg-muted justify-start"} p-0.5`}
       >
@@ -151,6 +153,7 @@ function TagListField({
   onChange: (next: string[]) => void;
   placeholder?: string;
 }) {
+  const { t } = useI18n();
   const [text, setText] = useState("");
   const add = () => {
     const v = text.trim();
@@ -166,10 +169,10 @@ function TagListField({
 
   return (
     <div>
-      <label className="mb-1 block text-xs font-medium text-muted-foreground">{label}</label>
+      <label className="mb-1 block text-xs font-medium text-muted-foreground">{t(label)}</label>
       <div className="flex gap-2">
         <Input
-          aria-label={`Add ${label}`}
+          aria-label={`${t("Add")} ${t(label)}`}
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => {
@@ -292,7 +295,7 @@ function SummaryCard({
         </span>
 
         <div className="min-w-0 flex-1">
-          <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+          <h2 className="text-sm font-semibold text-foreground">{t(title)}</h2>
           {subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{t(subtitle)}</p>}
         </div>
       </div>
@@ -303,11 +306,12 @@ function SummaryCard({
 }
 
 function SummaryStat({ icon, label, value }: { icon?: ReactNode; label: string; value: string }) {
+  const { t } = useI18n();
   return (
     <div className="rounded-2xl bg-tint px-3 py-3 ring-1 ring-border/40">
       <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
         {icon}
-        <span>{label}</span>
+        <span>{t(label)}</span>
       </div>
       <p className="mt-1 truncate text-sm font-semibold tabular-nums text-foreground">{value || "—"}</p>
     </div>
@@ -315,8 +319,9 @@ function SummaryStat({ icon, label, value }: { icon?: ReactNode; label: string; 
 }
 
 function SummaryChips({ values, emptyText = "Not added" }: { values: string[]; emptyText?: string }) {
+  const { t } = useI18n();
   if (values.length === 0) {
-    return <p className="text-sm text-muted-foreground">{emptyText}</p>;
+    return <p className="text-sm text-muted-foreground">{t(emptyText)}</p>;
   }
 
   return (
@@ -2318,5 +2323,4 @@ function ProfilePage() {
     </AppShell>
   );
 }
-
 
