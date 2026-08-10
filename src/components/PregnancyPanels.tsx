@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useI18n } from "@/hooks/useI18n";
 import { X } from "@/components/icons/BixboIcons";
 import { Ico } from "@/components/icons/BixboIcons";
 import { Button } from "@/components/ui/button";
@@ -157,6 +158,7 @@ export function SimpleLineChart({
   unit: string;
   color?: string;
 }) {
+  const { t } = useI18n();
   const [active, setActive] = useState<number | null>(null);
   const width = 320;
   const height = 160;
@@ -166,7 +168,7 @@ export function SimpleLineChart({
   const bottom = 22;
 
   if (points.length === 0) {
-    return <p className="text-xs text-muted-foreground">No data yet.</p>;
+    return <p className="text-xs text-muted-foreground">{t("No data yet.")}</p>;
   }
 
   const values = points.map((p) => p.value);
@@ -328,6 +330,7 @@ export function Checklist({
 /* ------------------------------------------------------------------ */
 
 export function BloodPressureForm({ onAdd }: { onAdd: (e: BloodPressureEntry) => void }) {
+  const { t } = useI18n();
   const [systolic, setSystolic] = useState("");
   const [diastolic, setDiastolic] = useState("");
   const [pulse, setPulse] = useState("");
@@ -348,23 +351,24 @@ export function BloodPressureForm({ onAdd }: { onAdd: (e: BloodPressureEntry) =>
   };
   return (
     <div className="grid grid-cols-3 gap-2">
-      <Field label="Systolic">
+      <Field label={t("Systolic")}>
         <Input inputMode="numeric" className="h-11" value={systolic} onChange={(e) => setSystolic(e.target.value)} />
       </Field>
-      <Field label="Diastolic">
+      <Field label={t("Diastolic")}>
         <Input inputMode="numeric" className="h-11" value={diastolic} onChange={(e) => setDiastolic(e.target.value)} />
       </Field>
-      <Field label="Pulse (opt.)">
+      <Field label={t("Pulse (opt.)")}>
         <Input inputMode="numeric" className="h-11" value={pulse} onChange={(e) => setPulse(e.target.value)} />
       </Field>
       <Button type="button" className="col-span-3 h-11" onClick={submit}>
-        Log blood pressure
+        {t("Log blood pressure")}
       </Button>
     </div>
   );
 }
 
 export function BloodSugarForm({ onAdd }: { onAdd: (e: BloodSugarEntry) => void }) {
+  const { t } = useI18n();
   const [value, setValue] = useState("");
   const [context, setContext] = useState<BloodSugarEntry["context"]>("fasting");
   const submit = () => {
@@ -376,24 +380,24 @@ export function BloodSugarForm({ onAdd }: { onAdd: (e: BloodSugarEntry) => void 
   return (
     <div className="space-y-2">
       <div className="grid grid-cols-2 gap-2">
-        <Field label="Value (mmol/L)">
+        <Field label={t("Value (mmol/L)")}>
           <Input inputMode="decimal" className="h-11" value={value} onChange={(e) => setValue(e.target.value)} />
         </Field>
-        <Field label="Context">
+        <Field label={t("Context")}>
           <select
             className="h-11 w-full rounded-md border border-input bg-background px-2 text-sm"
             value={context}
             onChange={(e) => setContext(e.target.value as BloodSugarEntry["context"])}
           >
-            <option value="fasting">Fasting</option>
-            <option value="before-meal">Before meal</option>
-            <option value="after-meal">After meal</option>
-            <option value="bedtime">Bedtime</option>
+            <option value="fasting">{t("Fasting")}</option>
+            <option value="before-meal">{t("Before meal")}</option>
+            <option value="after-meal">{t("After meal")}</option>
+            <option value="bedtime">{t("Bedtime")}</option>
           </select>
         </Field>
       </div>
       <Button type="button" className="h-11 w-full" onClick={submit}>
-        Log blood sugar
+        {t("Log blood sugar")}
       </Button>
     </div>
   );
@@ -412,6 +416,7 @@ export function KickCounter({
   onSave: (s: KickSession) => void;
   onDelete: (id: string) => void;
 }) {
+  const { t } = useI18n();
   const [active, setActive] = useState<{ startedAt: number; count: number } | null>(null);
   const [, forceTick] = useState(0);
 
@@ -441,7 +446,7 @@ export function KickCounter({
     <div>
       {!active ? (
         <Button type="button" className="h-11 w-full" onClick={start}>
-          Start kick session
+          {t("Start kick session")}
         </Button>
       ) : (
         <div className="rounded-2xl bg-tint p-4 text-center ring-1 ring-border/40">
@@ -505,6 +510,7 @@ export function ContractionTimer({
   onAdd: (c: Contraction) => void;
   onDelete: (id: string) => void;
 }) {
+  const { t } = useI18n();
   const [runningStart, setRunningStart] = useState<number | null>(null);
   const [, forceTick] = useState(0);
 
@@ -539,7 +545,7 @@ export function ContractionTimer({
     <div>
       {!runningStart ? (
         <Button type="button" className="h-11 w-full" onClick={start}>
-          Start contraction
+          {t("Start contraction")}
         </Button>
       ) : (
         <Button type="button" variant="destructive" className="h-11 w-full" onClick={stop}>
@@ -550,11 +556,11 @@ export function ContractionTimer({
         <>
           <div className="mt-3 grid grid-cols-2 gap-2 text-center">
             <div className="rounded-xl bg-tint p-2 ring-1 ring-border/40">
-              <p className="text-[10px] uppercase text-muted-foreground">Avg duration</p>
+              <p className="text-[10px] uppercase text-muted-foreground">{t("Avg duration")}</p>
               <p className="font-serif text-lg">{Math.round(avgDuration)}s</p>
             </div>
             <div className="rounded-xl bg-tint p-2 ring-1 ring-border/40">
-              <p className="text-[10px] uppercase text-muted-foreground">Avg interval</p>
+              <p className="text-[10px] uppercase text-muted-foreground">{t("Avg interval")}</p>
               <p className="font-serif text-lg">{avgInterval ? `${avgInterval.toFixed(1)}m` : "—"}</p>
             </div>
           </div>
@@ -609,6 +615,7 @@ export function AppointmentForm({
   onSave: (a: PregnancyAppointment) => void;
   onCancel: () => void;
 }) {
+  const { t } = useI18n();
   const [kind, setKind] = useState<PregnancyAppointment["kind"]>(initial?.kind ?? "checkup");
   const [date, setDate] = useState(initial?.date ?? toKey(new Date()));
   const [time, setTime] = useState(initial?.time ?? "");
@@ -689,6 +696,7 @@ export function AppointmentList({
   onEdit: (a: PregnancyAppointment) => void;
   onDelete: (id: string) => void;
 }) {
+  const { t } = useI18n();
   const todayK = toKey(new Date());
   const upcoming = appointments.filter((a) => a.date >= todayK).sort((a, b) => a.date.localeCompare(b.date));
   const past = appointments.filter((a) => a.date < todayK).sort((a, b) => b.date.localeCompare(a.date));
@@ -723,9 +731,9 @@ export function AppointmentList({
   return (
     <div className="space-y-4">
       <div>
-        <p className="mb-1 text-xs font-semibold text-foreground">Upcoming</p>
+        <p className="mb-1 text-xs font-semibold text-foreground">{t("Upcoming")}</p>
         {upcoming.length === 0 ? (
-          <p className="text-xs text-muted-foreground">No upcoming appointments.</p>
+          <p className="text-xs text-muted-foreground">{t("No upcoming appointments.")}</p>
         ) : (
           <ul className="space-y-1.5">
             {upcoming.map((a) => (
@@ -736,7 +744,7 @@ export function AppointmentList({
       </div>
       {past.length > 0 && (
         <div>
-          <p className="mb-1 text-xs font-semibold text-foreground">Past</p>
+          <p className="mb-1 text-xs font-semibold text-foreground">{t("Past")}</p>
           <ul className="space-y-1.5">
             {past.map((a) => (
               <Row key={a.id} a={a} />
