@@ -1065,7 +1065,6 @@ function PainWizard({
   onDone: () => void;
   initialEntry?: PainEntry;
 }) {
-  const { t } = useI18n();
   /**
    * The newest pain entry for the selected day. A new entry can reuse this
    * state and only add what changed (for example a headache several hours later).
@@ -3268,7 +3267,6 @@ function BowelForm({
   onDone: () => void;
   initialEntry?: BowelEntry;
 }) {
-  const { t } = useI18n();
   const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
   const [bristol, setBristol] = useState<number>(initialEntry?.bristol ?? 4);
   const [feelings, setFeelings] = useState<string[]>((initialEntry?.feelings ?? []).map(stripEmoji));
@@ -3795,15 +3793,15 @@ function MedsForm({
                   )}
                 </label>
               ) : (
-                m.times.map((t) => {
-                  const k = `${m.id}@${t}`;
+                m.times.map((scheduledTime) => {
+                  const k = `${m.id}@${scheduledTime}`;
                   const isTaken = !!taken[k];
                   return (
                     <label key={k} className="flex items-center gap-3 rounded-2xl bg-surface p-3 ring-1 ring-border">
-                      <input type="checkbox" checked={isTaken} onChange={() => toggle(k, t)} className="h-4 w-4" />
+                      <input type="checkbox" checked={isTaken} onChange={() => toggle(k, scheduledTime)} className="h-4 w-4" />
                       <div className="flex-1">
                         <p className="text-sm font-medium">
-                          {m.name} <span className="text-xs text-muted-foreground">· scheduled {t}</span>
+                          {m.name} <span className="text-xs text-muted-foreground">· scheduled {scheduledTime}</span>
                         </p>
                         {m.dose && <p className="text-xs text-muted-foreground">{m.dose}</p>}
                         {m.note && (
@@ -3815,7 +3813,7 @@ function MedsForm({
                       {isTaken && (
                         <Input
                           type="time"
-                          value={takenTimes[k] ?? t}
+                          value={takenTimes[k] ?? scheduledTime}
                           onChange={(e) => setTakenTime(k, e.target.value)}
                           className="h-8 w-24"
                           title={t("Actual time taken")}
@@ -3889,7 +3887,6 @@ function WorkoutForm({
   onDone: () => void;
   initialEntry?: WorkoutEntry;
 }) {
-  const { t } = useI18n();
   const [kind, setKind] = useState<string>(
     initialEntry?.kind ? stripEmoji(initialEntry.kind) : WORKOUT_KINDS_DEFAULT[0],
   );
