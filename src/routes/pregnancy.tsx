@@ -82,6 +82,14 @@ function PregnancyPage() {
           supplements: [],
           appointments: [],
         },
+        settings: {
+          ...d.settings,
+          pregnantSince: undefined,
+        },
+        profile: {
+          ...(d.profile ?? {}),
+          pregnancyStatus: d.profile?.pregnancyStatus === "pregnant" ? "none" : d.profile?.pregnancyStatus,
+        },
         dayLogs,
       };
     });
@@ -249,6 +257,21 @@ function SetupForm({ view, update }: { view: BixboData; update: (u: (d: BixboDat
         dueDate: dueDate || undefined,
         startWeightKg: startWeight ? Number(startWeight) : undefined,
         multiples: Number(multiples) || 1,
+        endedAt: undefined,
+      },
+      postpartum: {
+        ...(d.postpartum ?? EMPTY.postpartum!),
+        active: false,
+        endedAt: d.postpartum?.active ? (d.postpartum.endedAt ?? todayKey()) : d.postpartum?.endedAt,
+      },
+      settings: {
+        ...d.settings,
+        pregnantSince: undefined,
+      },
+      profile: {
+        ...(d.profile ?? {}),
+        pregnancyStatus: "none",
+        postpartum: undefined,
       },
     }));
   };
@@ -687,3 +710,4 @@ function PhotosSection({ view, update }: { view: BixboData; update: (u: (d: Bixb
     </Section>
   );
 }
+
