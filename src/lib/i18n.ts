@@ -359,7 +359,6 @@ const SK: Record<string, string> = {
   "Local and server-originated tests are separate.": "Lokálne a serverové testy sú oddelené.",
   "Check local reminders": "Skontrolovať lokálne pripomienky",
 
-  "Type 0 — Mystery": "Typ 0 — Neurčené",
   "Add extra dose": "Pridať extra dávku",
   "Select every symptom you experienced today.": "Vyber všetky príznaky, ktoré si dnes zaznamenala.",
   "Recovery note (optional)": "Poznámka k zotavovaniu (voliteľné)",
