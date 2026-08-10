@@ -553,6 +553,32 @@ const SK: Record<string, string> = {
   "Sweating": "Potenie",
   "Upset stomach": "Podráždený žalúdok",
 
+  "Helped": "Pomohlo",
+  "Pressure type": "Typ tlaku",
+  "Pressure intensity": "Intenzita tlaku",
+  "Nausea details": "Detaily nevoľnosti",
+  "Headache details": "Detaily bolesti hlavy",
+  "Flu details": "Detaily chrípky",
+  "Food symptoms after": "Príznaky po jedle",
+  "Urinary symptoms": "Močové príznaky",
+  "Allergens": "Alergény",
+  "Unknown": "Neviem",
+  "Trigger...": "Spúšťač...",
+  "Place...": "Miesto...",
+  "Notes...": "Poznámky...",
+  "Note...": "Poznámka...",
+  "Medication name": "Názov lieku",
+  "Rename": "Premenovať",
+  "to": "na",
+  "from your custom list?": "z tvojho vlastného zoznamu?",
+  "Very Heavy": "Veľmi silné",
+  "Heavy": "Silné",
+  "Light": "Slabé",
+  "Spotting": "Špinenie",
+  "Lowest pain": "Najnižšia bolesť",
+  "Most common flow": "Najčastejší priebeh",
+  "Logged days": "Zaznamenané dni",
+
 };
 
 const TRANSLATIONS: Record<AppLanguage, Record<string, string>> = { en: EN, sk: SK };
