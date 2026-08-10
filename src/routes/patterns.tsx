@@ -19,7 +19,7 @@ import {
   TrendingUp,
   Trash2,
   Waves,
-} from "lucide-react";
+} from "@/components/icons/BixboIcons";
 
 import { AppShell } from "@/components/AppShell";
 import { CHART_COLORS, CHART_TINTS } from "@/components/ui/chart";
