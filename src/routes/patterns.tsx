@@ -983,6 +983,9 @@ export function PatternsContent() {
 
   const medicationAdherence = (days: string[]) => {
     const scheduledMeds = view.meds.filter((med) => !med.asNeeded);
+    const comparisonNow = new Date();
+    const cutoffMinutes = comparisonNow.getHours() * 60 + comparisonNow.getMinutes();
+    const lastComparableDay = days[days.length - 1];
 
     let expected = 0;
     let taken = 0;
@@ -990,11 +993,22 @@ export function PatternsContent() {
     days.forEach((day) => {
       scheduledMeds.forEach((med) => {
         med.times.forEach((time) => {
-          expected += 1;
+          const key = `${med.id}@${time}`;
+          const isTaken = !!view.medLog[day]?.[key];
 
-          if (view.medLog[day]?.[`${med.id}@${time}`]) {
-            taken += 1;
+          // Both months use the same clock-time cutoff on their matched
+          // final day. Future doses on today's equivalent day are not missed.
+          if (day === lastComparableDay && !isTaken) {
+            const match = /^(\d{1,2}):(\d{2})/.exec(time.trim());
+
+            if (!match) return;
+
+            const scheduledMinutes = Number(match[1]) * 60 + Number(match[2]);
+            if (scheduledMinutes > cutoffMinutes) return;
           }
+
+          expected += 1;
+          if (isTaken) taken += 1;
         });
       });
     });
@@ -1319,18 +1333,44 @@ export function PatternsContent() {
     ),
   });
 
+  // Event-frequency metrics use average entries per calendar day instead of
+  // raw totals, because the "after" window may still be shorter than 28 days.
+  const treatmentEventRate = (countFn: (log: DayLog) => number): TreatmentMetric => ({
+    before: treatmentBeforeDays.length
+      ? treatmentBeforeDays.reduce((sum, day) => sum + countFn(dayLogs[day] ?? {}), 0) / treatmentBeforeDays.length
+      : null,
+    after: treatmentAfterDays.length
+      ? treatmentAfterDays.reduce((sum, day) => sum + countFn(dayLogs[day] ?? {}), 0) / treatmentAfterDays.length
+      : null,
+  });
+
   const treatmentPain = treatmentMetric((log) => avgDayPain(log) ?? null);
 
   const treatmentTetany = treatmentMetric(dayTetanyIntensity);
+  const treatmentTetanyEpisodes = treatmentEventRate((log) => log.tetany?.length ?? 0);
 
   const treatmentPanic = treatmentMetric(dayPanicIntensity);
+  const treatmentPanicEpisodes = treatmentEventRate((log) => log.panic?.length ?? 0);
+
+  const treatmentHeadache = treatmentEventRate(
+    (log) =>
+      (log.pain ?? []).filter(
+        (entry) =>
+          entry.headache ||
+          entry.headacheIntensity != null ||
+          (entry.headacheTypes?.length ?? 0) > 0,
+      ).length,
+  );
 
   const treatmentMood = treatmentMetric((log) => negativeMoodCount(log));
 
   const treatmentChanges = [
     { label: "Pain", metric: treatmentPain },
     { label: "Tetany intensity", metric: treatmentTetany },
+    { label: "Tetany episodes", metric: treatmentTetanyEpisodes },
     { label: "Panic intensity", metric: treatmentPanic },
+    { label: "Panic episodes", metric: treatmentPanicEpisodes },
+    { label: "Headache", metric: treatmentHeadache },
     { label: "Negative mood", metric: treatmentMood },
   ]
     .filter((entry) => entry.metric.before != null && entry.metric.after != null)
@@ -2449,7 +2489,7 @@ export function PatternsContent() {
 
                 <CollapsibleSection
                   title="Treatment results"
-                  subtitle="Pain, tetany, panic and mood before versus after"
+                  subtitle="Pain, episodes, headache, intensity and mood before versus after"
                   defaultOpen={true}
                 >
                   <div className="space-y-3">
@@ -2484,6 +2524,20 @@ export function PatternsContent() {
                     />
 
                     <ComparisonMetric
+                      title="Tetany episodes"
+                      subtitle="Average number of tetany episodes per day"
+                      previous={treatmentTetanyEpisodes.before}
+                      current={treatmentTetanyEpisodes.after}
+                      decimals={2}
+                      unit="/day"
+                      color="blue"
+                      higherIsWorse
+                      previousLabel="Before"
+                      currentLabel="After"
+                      icon={<Activity className="h-5 w-5" />}
+                    />
+
+                    <ComparisonMetric
                       title="Panic intensity"
                       subtitle="Average panic intensity before and after treatment"
                       previous={treatmentPanic.before}
@@ -2496,6 +2550,34 @@ export function PatternsContent() {
                       previousLabel="Before"
                       currentLabel="After"
                       icon={<Sparkles className="h-5 w-5" />}
+                    />
+
+                    <ComparisonMetric
+                      title="Panic episodes"
+                      subtitle="Average number of panic episodes per day"
+                      previous={treatmentPanicEpisodes.before}
+                      current={treatmentPanicEpisodes.after}
+                      decimals={2}
+                      unit="/day"
+                      color="purple"
+                      higherIsWorse
+                      previousLabel="Before"
+                      currentLabel="After"
+                      icon={<Sparkles className="h-5 w-5" />}
+                    />
+
+                    <ComparisonMetric
+                      title="Headache"
+                      subtitle="Average number of headache entries per day"
+                      previous={treatmentHeadache.before}
+                      current={treatmentHeadache.after}
+                      decimals={2}
+                      unit="/day"
+                      color="cyan"
+                      higherIsWorse
+                      previousLabel="Before"
+                      currentLabel="After"
+                      icon={<Brain className="h-5 w-5" />}
                     />
 
                     <ComparisonMetric
