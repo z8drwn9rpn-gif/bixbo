@@ -647,6 +647,8 @@ export interface CustomQuickTag {
 export interface Settings {
   textSize: "sm" | "md" | "lg" | "xl";
   notifications: boolean;
+  /** App interface language. User-entered health data is never translated. */
+  language?: "en" | "sk";
   /** Appearance preference; "system" follows the device. */
   theme?: "light" | "dark" | "system";
   pairingCode?: string;
@@ -917,6 +919,7 @@ export const EMPTY: BixboData = {
   settings: {
     textSize: "md",
     notifications: true,
+    language: "en",
     gender: "female",
     theme: "system",
     savedTriggers: [],
@@ -1387,6 +1390,7 @@ function migrate(raw: unknown): BixboData {
     settings: {
       ...EMPTY.settings,
       ...rawSettings,
+      language: rawSettings.language === "sk" ? "sk" : "en",
       gender:
         rawSettings.gender === "male" || rawSettings.gender === "female"
           ? rawSettings.gender
