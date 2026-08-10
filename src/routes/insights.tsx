@@ -6,6 +6,7 @@ import { CHART_COLORS } from "@/components/ui/chart";
 import { ChartCard, CHART_GRID, useDismissTapTooltip } from "@/components/charts";
 import { Ico } from "@/components/icons/BixboIcons";
 import { PatternsContent } from "./patterns";
+import { useI18n } from "@/hooks/useI18n";
 import {
   useBixbo,
   EMPTY,
@@ -456,6 +457,7 @@ function InsightPeriodControl({
 }
 
 function InsightsPage() {
+  const { t } = useI18n();
   const { data, hydrated } = useBixbo();
   const view = hydrated ? data : EMPTY;
   const [anchor, setAnchor] = useState<Date>(() => new Date());
@@ -640,7 +642,7 @@ function InsightsPage() {
 
         <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
           <div className="flex items-start justify-between gap-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Pain scale</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t("Pain scale")}</p>
             <InsightPeriodControl
               value={painPeriod}
               onChange={setPainPeriod}
@@ -673,7 +675,7 @@ function InsightsPage() {
 
         <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
           <div className="flex items-start justify-between gap-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Hot flashes</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t("Hot flashes")}</p>
             <InsightPeriodControl
               value={hotFlashPeriod}
               onChange={setHotFlashPeriod}
@@ -785,6 +787,7 @@ function MedsAdherence({
   onPeriodChange: (period: Period) => void;
   onPeriodShift: (delta: -1 | 1) => void;
 }) {
+  const { t } = useI18n();
   const { update } = useBixbo();
   const [open, setOpen] = useState(true);
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
@@ -1072,7 +1075,7 @@ function MedsAdherence({
           className="flex min-w-0 flex-1 items-start justify-between text-left"
         >
           <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Meds adherence</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t("Meds adherence")}</p>
             <p className="mt-1 truncate text-[11px] font-medium text-foreground">
               {range.title} · {range.label}
             </p>
@@ -1255,14 +1258,14 @@ function MedsAdherence({
           {period === "Y" && (bestMonth || worstMonth) && (
             <div className="mt-4 grid grid-cols-2 gap-2">
               <div className="rounded-2xl bg-tint p-3">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Best month</p>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{t("Best month")}</p>
                 <p className="mt-1 text-sm font-semibold">
                   {bestMonth?.label ?? "—"} · {bestMonth?.pct ?? "—"}%
                 </p>
               </div>
 
               <div className="rounded-2xl bg-tint p-3">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Lowest month</p>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{t("Lowest month")}</p>
                 <p className="mt-1 text-sm font-semibold">
                   {worstMonth?.label ?? "—"} · {worstMonth?.pct ?? "—"}%
                 </p>
@@ -1272,7 +1275,7 @@ function MedsAdherence({
 
           {perMed.length > 0 && (
             <div className="mt-5">
-              <p className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">Per medication</p>
+              <p className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">{t("Per medication")}</p>
 
               <ul className="space-y-3">
                 {perMed.map((med) => {
@@ -1553,6 +1556,7 @@ function BristolChart({
   onPeriodChange: (period: Period) => void;
   onPeriodShift: (delta: -1 | 1) => void;
 }) {
+  const { t } = useI18n();
   const [active, setActive] = useState<number | null>(null);
   useDismissTapTooltip(() => setActive(null));
 
@@ -1573,7 +1577,7 @@ function BristolChart({
   return (
     <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
       <div className="flex items-start justify-between gap-3">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Bowel</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t("Bowel")}</p>
         <InsightPeriodControl
           value={period}
           onChange={onPeriodChange}
@@ -1738,6 +1742,7 @@ type HeatmapDatum = {
 
 const HEATMAP_OPTIONS: { id: HeatmapMetric; label: string }[] = [
   { id: "pain", label: "Pain" },
+  { id: "period", label: "Period" },
   { id: "bowel", label: "Bowel" },
   { id: "panic", label: "Panic episode" },
   { id: "tetany", label: "Tetany episode" },
@@ -1785,6 +1790,7 @@ function YearHealthHeatmap({
   anchor: Date;
   onShiftPeriod: (period: HeatmapPeriod, delta: -1 | 1) => void;
 }) {
+  const { t } = useI18n();
   const [metric, setMetric] = useState<HeatmapMetric>("pain");
   const [active, setActive] = useState<string | null>(null);
 
@@ -2225,7 +2231,7 @@ function YearHealthHeatmap({
                 : "bg-tint text-muted-foreground ring-1 ring-border/60"
             }`}
           >
-            {option.label}
+            {t(option.label)}
           </button>
         ))}
       </div>
@@ -2418,7 +2424,7 @@ function YearHealthHeatmap({
             <span className="min-w-0 truncate text-[10px] font-medium text-foreground">
               {activeTooltip.summary}
             </span>
-            <span className="shrink-0 text-[10px] text-muted-foreground">Tap to close</span>
+            <span className="shrink-0 text-[10px] text-muted-foreground">{t("Tap to close")}</span>
           </button>
         ) : (
           <p className="mt-2.5 text-center text-[10px] text-muted-foreground">
@@ -2446,6 +2452,7 @@ function TimeOfDayPatternChart({
   onPeriodChange: (period: Period) => void;
   onPeriodShift: (delta: -1 | 1) => void;
 }) {
+  const { t } = useI18n();
   const [active, setActive] = useState<string | null>(null);
   useDismissTapTooltip(() => setActive(null));
 
@@ -2492,7 +2499,7 @@ function TimeOfDayPatternChart({
   return (
     <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
       <div className="flex items-start justify-between gap-3">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Time of Day Pattern</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t("Time of Day Pattern")}</p>
         <InsightPeriodControl
           value={period}
           onChange={onPeriodChange}
@@ -2503,7 +2510,7 @@ function TimeOfDayPatternChart({
       </div>
 
       {!tetanyTotal && !panicTotal ? (
-        <p className="mt-2 text-sm text-muted-foreground">Not enough data yet</p>
+        <p className="mt-2 text-sm text-muted-foreground">{t("Not enough data yet")}</p>
       ) : (
         <>
           <div className="mt-2 flex gap-4 text-[10px]">
