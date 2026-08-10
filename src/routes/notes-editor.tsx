@@ -13,7 +13,7 @@ import {
   Pin,
   Trash2,
   X,
-} from "lucide-react";
+} from "@/components/icons/BixboIcons";
 
 type NoteColor = NonNullable<Note["color"]>;
 
