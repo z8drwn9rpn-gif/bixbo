@@ -1742,7 +1742,6 @@ type HeatmapDatum = {
 
 const HEATMAP_OPTIONS: { id: HeatmapMetric; label: string }[] = [
   { id: "pain", label: "Pain" },
-  { id: "period", label: "Period" },
   { id: "bowel", label: "Bowel" },
   { id: "panic", label: "Panic episode" },
   { id: "tetany", label: "Tetany episode" },
@@ -2231,7 +2230,7 @@ function YearHealthHeatmap({
                 : "bg-tint text-muted-foreground ring-1 ring-border/60"
             }`}
           >
-            {t(option.label)}
+            {option.label}
           </button>
         ))}
       </div>
