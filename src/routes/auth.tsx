@@ -4,7 +4,6 @@ import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -71,29 +70,32 @@ function AuthPage() {
     }
   };
 
-  const google = async () => {
+  const startOAuth = async (provider: "google" | "apple") => {
     setBusy(true);
     setMsg(null);
-    const res = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
-    if (res.error) {
-      setMsg(res.error.message);
+
+    try {
+      const redirectTo = `${window.location.origin}/auth`;
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo,
+          skipBrowserRedirect: true,
+        },
+      });
+
+      if (error) throw error;
+      if (!data?.url) throw new Error(`${provider === "google" ? "Google" : "Apple"} sign-in URL was not returned.`);
+
+      window.location.assign(data.url);
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : String(err));
       setBusy(false);
-      return;
     }
-    if (!res.redirected) navigate({ to: "/settings" });
   };
 
-  const apple = async () => {
-    setBusy(true);
-    setMsg(null);
-    const res = await lovable.auth.signInWithOAuth("apple", { redirect_uri: window.location.origin });
-    if (res.error) {
-      setMsg(res.error.message);
-      setBusy(false);
-      return;
-    }
-    if (!res.redirected) navigate({ to: "/settings" });
-  };
+  const google = () => void startOAuth("google");
+  const apple = () => void startOAuth("apple");
 
   return (
     <AppShell title="Sign in" big>
@@ -158,4 +160,3 @@ function AuthPage() {
     </AppShell>
   );
 }
-
