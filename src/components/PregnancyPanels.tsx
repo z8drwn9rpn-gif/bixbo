@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { X } from "lucide-react";
+import { X } from "@/components/icons/BixboIcons";
 import { Ico } from "@/components/icons/BixboIcons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
