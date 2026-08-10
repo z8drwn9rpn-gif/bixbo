@@ -181,7 +181,7 @@ function TagListField({
               add();
             }
           }}
-          placeholder={placeholder ?? "Type and press Add…"}
+          placeholder={t(placeholder ?? "Type and press Add…")}
           className="h-11"
         />
         <Button type="button" size="sm" onClick={add} className="h-11 min-w-11 px-3">
@@ -198,7 +198,7 @@ function TagListField({
               {v}
               <button
                 type="button"
-                aria-label={`Remove ${v}`}
+                aria-label={`${t("Remove")} ${v}`}
                 onClick={() => remove(v)}
                 className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
@@ -410,7 +410,15 @@ function HubRow({
   );
 }
 
-function HealthHub({ onHome, onOpen }: { onHome: () => void; onOpen: (view: HealthView) => void }) {
+function HealthHub({
+  onHome,
+  onOpen,
+  onNotifications,
+}: {
+  onHome: () => void;
+  onOpen: (view: HealthView) => void;
+  onNotifications: () => void;
+}) {
   const { t } = useI18n();
 
   return (
@@ -418,7 +426,7 @@ function HealthHub({ onHome, onOpen }: { onHome: () => void; onOpen: (view: Heal
       title={
         <button type="button" onClick={onHome} className="flex items-center gap-2">
           <ArrowLeft className="h-5 w-5" />
-          Health
+          {t("Health")}
         </button>
       }
     >
@@ -432,7 +440,7 @@ function HealthHub({ onHome, onOpen }: { onHome: () => void; onOpen: (view: Heal
             <div className="min-w-0">
               <p className="font-serif text-2xl font-bold text-foreground">{t("Your health hub")}</p>
               <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                Your health profile, journey, milestones and app preferences.
+                {t("Your health profile, journey, milestones and app preferences.")}
               </p>
             </div>
           </div>
@@ -477,7 +485,7 @@ function HealthHub({ onHome, onOpen }: { onHome: () => void; onOpen: (view: Heal
 
         <div>
           <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-            Preferences
+            {t("Preferences")}
           </p>
 
           <section className="overflow-hidden rounded-3xl bg-surface shadow-sm ring-1 ring-border/80">
@@ -513,9 +521,9 @@ function HealthHub({ onHome, onOpen }: { onHome: () => void; onOpen: (view: Heal
 
             <HubRow
               icon={<ClockIcon size={22} />}
-              title="Medications & Reminders"
-              subtitle="Medication schedule, reminders and notification settings"
-              onClick={() => onOpen("reminders")}
+              title="Notifications"
+              subtitle="All notification and reminder settings in one place"
+              onClick={onNotifications}
             />
             <div className="ml-[4.5rem] border-t border-border/60" />
 
@@ -966,6 +974,7 @@ function ProfilePage() {
           setEditing(false);
           setHealthView(next);
         }}
+        onNotifications={() => navigate({ to: "/notifications" as never })}
       />
     );
   }
@@ -1010,9 +1019,9 @@ function ProfilePage() {
                 </span>
                 <div className="min-w-0 pt-0.5">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    {item.date}
+                    {t(item.date)}
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-foreground">{item.title}</p>
+                  <p className="mt-1 text-sm font-semibold text-foreground">{t(item.title)}</p>
                 </div>
               </div>
             ))}
@@ -1056,9 +1065,9 @@ function ProfilePage() {
                   {item.icon}
                 </span>
                 <p className="mt-3 font-serif text-3xl font-bold tabular-nums">{item.value}</p>
-                <p className="mt-1 text-xs font-semibold text-foreground">{item.label}</p>
+                <p className="mt-1 text-xs font-semibold text-foreground">{t(item.label)}</p>
                 <p className="mt-1 text-[10px] text-muted-foreground">
-                  {unlocked ? "Unlocked" : `${Math.max(0, item.goal - item.value)} to go`}
+                  {unlocked ? t("Unlocked") : `${Math.max(0, item.goal - item.value)} ${t("to go")}`}
                 </p>
               </article>
             );
@@ -1078,7 +1087,7 @@ function ProfilePage() {
       ? sleepValues.reduce((sum, value) => sum + value, 0) / sleepValues.length
       : null;
     const stats = [
-      ["Tracking for", trackingDays ? `${trackingDays} days` : "—"],
+      ["Tracking for", trackingDays ? `${trackingDays} ${t("days")}` : "—"],
       ["Days with logs", String(trackedDates.length)],
       ["Pain logs", String(totalPainLogs)],
       ["Average pain", averagePain != null ? `${averagePain.toFixed(1)} / 10` : "—"],
@@ -1098,7 +1107,7 @@ function ProfilePage() {
               key={label}
               className={`flex items-center justify-between gap-4 px-4 py-3 ${index ? "border-t border-border/60" : ""}`}
             >
-              <span className="text-sm text-foreground">{label}</span>
+              <span className="text-sm text-foreground">{t(label)}</span>
               <span className="shrink-0 text-sm font-semibold tabular-nums text-primary">{value}</span>
             </div>
           ))}
@@ -1203,7 +1212,7 @@ function ProfilePage() {
           )}
 
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Sign-in opens the configured OAuth provider directly. If a provider is not enabled in Supabase, BIXBO will show the provider error here.
+            {t("Sign-in opens the configured OAuth provider directly. If a provider is not enabled in Supabase, BIXBO will show the provider error here.")}
           </p>
         </Section>
 
@@ -1347,7 +1356,7 @@ function ProfilePage() {
           subtitle="Manage the local copy of your BIXBO data from the same place as backup and sync."
         >
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Export JSON downloads a complete copy of the data currently stored by BIXBO on this device.
+            {t("Export JSON downloads a complete copy of the data currently stored by BIXBO on this device.")}
           </p>
           <button
             type="button"
@@ -1426,7 +1435,7 @@ function ProfilePage() {
                     : "border-border bg-tint text-foreground"
                 }`}
               >
-                <span className="block text-sm font-semibold">{option.label}</span>
+                <span className="block text-sm font-semibold">{t(option.label)}</span>
                 <span className="mt-1 block text-xs text-muted-foreground">{option.detail}</span>
               </button>
             ))}
@@ -1452,7 +1461,7 @@ function ProfilePage() {
                         : "border-border bg-tint"
                     }`}
                   >
-                    {option.label}
+                    {t(option.label)}
                   </button>
                 ))}
               </div>
@@ -1475,7 +1484,7 @@ function ProfilePage() {
                         : "border-border bg-tint"
                     }`}
                   >
-                    {option.label}
+                    {t(option.label)}
                   </button>
                 ))}
               </div>
@@ -1498,7 +1507,7 @@ function ProfilePage() {
                         : "border-border bg-tint"
                     }`}
                   >
-                    {option.label}
+                    {t(option.label)}
                   </button>
                 ))}
               </div>
@@ -1521,7 +1530,7 @@ function ProfilePage() {
                         : "border-border bg-tint"
                     }`}
                   >
-                    {option.label}
+                    {t(option.label)}
                   </button>
                 ))}
               </div>

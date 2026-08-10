@@ -174,8 +174,8 @@ function NotificationsPage() {
   return (
     <AppShell title={t("Notifications")}>
       <div className="space-y-4 px-4 pb-24 pt-4">
-        <Link to="/settings" className="inline-flex items-center gap-1 text-sm text-muted-foreground">
-          <ChevronLeft className="h-4 w-4" /> {t("Settings")}
+        <Link to="/profile" className="inline-flex items-center gap-1 text-sm text-muted-foreground">
+          <ChevronLeft className="h-4 w-4" /> {t("Health")}
         </Link>
 
         <Card title={t("Push notifications")} subtitle={t("Reminders arrive even when BIXBO is fully closed.")}>
@@ -185,11 +185,11 @@ function NotificationsPage() {
             <p className="text-xs text-destructive">{t("Sign in to enable reminders when BIXBO is fully closed.")}</p>
           ) : unsupported ? (
             <p className="flex items-center gap-2 text-xs text-destructive">
-              <BellOff className="h-4 w-4" /> This browser doesn't support Web Push.
+              <BellOff className="h-4 w-4" /> {t("This browser doesn't support Web Push.")}
             </p>
           ) : denied ? (
             <p className="text-xs text-destructive">
-              Notifications are blocked in your browser settings. Re-allow them for this site before enabling reminders.
+              {t("Notifications are blocked in your browser settings. Re-allow them for this site before enabling reminders.")}
             </p>
           ) : perm === "granted" ? (
             <ToggleRow
@@ -211,7 +211,7 @@ function NotificationsPage() {
           )}
 
           <p className="text-xs text-muted-foreground">
-            When BIXBO is open, local reminder checks can also appear as a soft in-app message.
+            {t("When BIXBO is open, local reminder checks can also appear as a soft in-app message.")}
           </p>
           {message && <p className="rounded-xl bg-primary/10 px-3 py-2 text-xs text-foreground">{message}</p>}
           {error && <p className="rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>}
@@ -281,7 +281,7 @@ function NotificationsPage() {
               onClick={() => void runNotificationChecks()}
               className="min-h-11 rounded-full border border-border px-4 text-sm font-medium text-foreground"
             >
-              Check local reminders
+              {t("Check local reminders")}
             </button>
             <button
               type="button"
@@ -294,8 +294,7 @@ function NotificationsPage() {
           </div>
           {!hydrated && <p className="text-xs text-muted-foreground">{t("Loading your preferences…")}</p>}
           <p className="text-xs text-muted-foreground">
-            For the real test, install BIXBO to the Home Screen on iPhone, close it completely, then tap the button
-            before closing.
+            {t("For the real test, install BIXBO to the Home Screen on iPhone, close it completely, then tap the button before closing.")}
           </p>
         </Card>
       </div>
