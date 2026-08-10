@@ -7,7 +7,7 @@ import { ChartCard, CHART_GRID, useDismissTapTooltip } from "@/components/charts
 import { Ico } from "@/components/icons/BixboIcons";
 import { PatternsContent } from "./patterns";
 import { useI18n } from "@/hooks/useI18n";
-import { isRegistrySurfaceEnabled } from "@/lib/appRegistry";
+import { getRegistryFeature, isRegistrySurfaceEnabled } from "@/lib/appRegistry";
 import {
   useBixbo,
   EMPTY,
@@ -1855,7 +1855,9 @@ function YearHealthHeatmap({
 }) {
   const { t } = useI18n();
   const availableHeatmapOptions = useMemo(
-    () => HEATMAP_OPTIONS.filter((option) => isRegistrySurfaceEnabled(data, option.id, "heatmap")),
+    () => HEATMAP_OPTIONS
+      .filter((option) => isRegistrySurfaceEnabled(data, option.id, "heatmap"))
+      .map((option) => ({ ...option, label: getRegistryFeature(data, option.id).label })),
     [data],
   );
   const [metric, setMetric] = useState<HeatmapMetric>("pain");

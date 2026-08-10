@@ -1,7 +1,7 @@
 import { Ico, IcoText } from "@/components/icons/BixboIcons";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "@/hooks/useI18n";
-import { isRegistrySurfaceEnabled } from "@/lib/appRegistry";
+import { getRegistryFeature, isRegistrySurfaceEnabled, type RegistryFeatureId } from "@/lib/appRegistry";
 import {
   toKey,
   periodLabel,
@@ -77,9 +77,23 @@ function periodColorVar(level?: PeriodLevel) {
   }
 }
 function iconsFor(log: DayLog | undefined, data: BixboData): string[] {
-  // Month calendar shows only ŠukŠuk, controlled by the registry.
-  if (!isRegistrySurfaceEnabled(data, "sex", "calendar")) return [];
-  return log?.sex?.some((e) => isIntercourseKind(e.kind)) ? ["❤️"] : [];
+  if (!log) return [];
+  const out: string[] = [];
+  const add = (id: RegistryFeatureId, present: boolean) => {
+    if (present && isRegistrySurfaceEnabled(data, id, "calendar")) out.push(getRegistryFeature(data, id).icon);
+  };
+  add("sex", Boolean(log.sex?.some((entry) => isIntercourseKind(entry.kind))));
+  add("tetany", Boolean(log.tetany?.length));
+  add("panic", Boolean(log.panic?.length));
+  add("bowel", Boolean(log.bowel?.length));
+  add("workout", Boolean(log.workout?.length));
+  add("food", Boolean(log.food?.length));
+  add("heat", Boolean(log.heat?.length));
+  add("meds", Boolean(log.extraMeds?.length));
+  add("sleep", log.sleepHours != null);
+  add("hotFlashes", Boolean(log.pain?.some((entry) => entry.hotFlashesOn || (entry.hotFlashes ?? 0) > 0)));
+  add("headache", Boolean(log.pain?.some((entry) => entry.headache || entry.headacheIntensity != null)));
+  return Array.from(new Set(out)).slice(0, 3);
 }
 
 function daySummaryLines(log: DayLog | undefined, cycleTrackingHidden: boolean, t: (key: string) => string): string[] {
