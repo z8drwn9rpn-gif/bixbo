@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { LockKeyhole, ShieldCheck } from "@/components/icons/BixboIcons";
+import { useI18n } from "@/hooks/useI18n";
 
 import {
   authenticateBiometric,
@@ -9,6 +10,7 @@ import {
 } from "@/lib/devicePrivacy";
 
 export function AppPrivacyGuard({ children }: { children: ReactNode }) {
+  const { t } = useI18n();
   const { prefs } = useDevicePrivacy();
   const [covered, setCovered] = useState(false);
   const [locked, setLocked] = useState(false);
@@ -42,14 +44,14 @@ export function AppPrivacyGuard({ children }: { children: ReactNode }) {
   const unlockBiometric = async () => {
     setError("");
     if (!biometricSupported()) {
-      setError("Biometric/passkey verification is not available on this device.");
+      setError(t("Biometric/passkey verification is not available on this device."));
       return;
     }
     if (await authenticateBiometric()) {
       setLocked(false);
       setPin("");
     } else {
-      setError("Verification was cancelled or failed.");
+      setError(t("Verification was cancelled or failed."));
     }
   };
 
@@ -60,7 +62,7 @@ export function AppPrivacyGuard({ children }: { children: ReactNode }) {
       setPin("");
       return;
     }
-    setError("Incorrect PIN.");
+    setError(t("Incorrect PIN."));
   };
 
   return (
@@ -72,7 +74,7 @@ export function AppPrivacyGuard({ children }: { children: ReactNode }) {
           <div className="text-center">
             <ShieldCheck className="mx-auto h-8 w-8 text-primary" />
             <p className="mt-3 font-serif text-xl font-semibold">BIXBO</p>
-            <p className="mt-1 text-sm text-muted-foreground">Private health data hidden</p>
+            <p className="mt-1 text-sm text-muted-foreground">{t("Private health data hidden")}</p>
           </div>
         </div>
       )}
@@ -83,8 +85,8 @@ export function AppPrivacyGuard({ children }: { children: ReactNode }) {
             <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-primary/15 text-primary">
               <LockKeyhole className="h-6 w-6" />
             </span>
-            <h1 className="mt-3 text-center font-serif text-2xl font-semibold">Unlock BIXBO</h1>
-            <p className="mt-1 text-center text-sm text-muted-foreground">Device protection is enabled.</p>
+            <h1 className="mt-3 text-center font-serif text-2xl font-semibold">{t("Unlock BIXBO")}</h1>
+            <p className="mt-1 text-center text-sm text-muted-foreground">{t("Device protection is enabled.")}</p>
 
             <div className="mt-5 space-y-3">
               {prefs.biometricLock && (
@@ -93,7 +95,7 @@ export function AppPrivacyGuard({ children }: { children: ReactNode }) {
                   onClick={() => void unlockBiometric()}
                   className="min-h-11 w-full rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
                 >
-                  Use Face ID / biometrics
+                  {t("Use Face ID / biometrics")}
                 </button>
               )}
 
