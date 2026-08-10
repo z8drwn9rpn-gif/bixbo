@@ -1065,6 +1065,7 @@ function PainWizard({
   onDone: () => void;
   initialEntry?: PainEntry;
 }) {
+  const { t } = useI18n();
   /**
    * The newest pain entry for the selected day. A new entry can reuse this
    * state and only add what changed (for example a headache several hours later).
@@ -3267,6 +3268,7 @@ function BowelForm({
   onDone: () => void;
   initialEntry?: BowelEntry;
 }) {
+  const { t } = useI18n();
   const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
   const [bristol, setBristol] = useState<number>(initialEntry?.bristol ?? 4);
   const [feelings, setFeelings] = useState<string[]>((initialEntry?.feelings ?? []).map(stripEmoji));
@@ -3887,6 +3889,7 @@ function WorkoutForm({
   onDone: () => void;
   initialEntry?: WorkoutEntry;
 }) {
+  const { t } = useI18n();
   const [kind, setKind] = useState<string>(
     initialEntry?.kind ? stripEmoji(initialEntry.kind) : WORKOUT_KINDS_DEFAULT[0],
   );
