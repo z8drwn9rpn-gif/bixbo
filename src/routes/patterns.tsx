@@ -23,6 +23,7 @@ import {
 
 import { AppShell } from "@/components/AppShell";
 import { CHART_COLORS, CHART_TINTS } from "@/components/ui/chart";
+import { useI18n } from "@/hooks/useI18n";
 import {
   EMPTY,
   addDays,
@@ -262,12 +263,13 @@ const PHASE_COLORS = [
 /* -------------------------------------------------------------------------- */
 
 function Card({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
+  const { t } = useI18n();
   return (
     <section className="overflow-hidden rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
       <div>
         <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{title}</h2>
 
-        {description && <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{description}</p>}
+        {description && <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t(description)}</p>}
       </div>
 
       {children}
@@ -276,10 +278,11 @@ function Card({ title, description, children }: { title: string; description?: s
 }
 
 function Empty({ text = "Log at least 7 days to unlock this analysis." }: { text?: string }) {
+  const { t } = useI18n();
   return (
     <div className="mt-3 rounded-2xl bg-tint px-4 py-5 text-center ring-1 ring-border/40">
       <p className="text-sm font-medium text-foreground">More data needed</p>
-      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{text}</p>
+      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t(text)}</p>
     </div>
   );
 }
@@ -343,7 +346,7 @@ function PhaseBarChart({
     <div className="rounded-2xl bg-tint p-4 ring-1 ring-border/50">
       <div>
         <p className="text-sm font-semibold text-foreground">{title}</p>
-        {description && <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">{description}</p>}
+        {description && <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">{t(description)}</p>}
       </div>
 
       {!hasData ? (
@@ -577,9 +580,10 @@ function MetricColumn({
   );
 }
 function SummaryRow({ label, value }: { label: string; value: string }) {
+  const { t } = useI18n();
   return (
     <div className="flex items-center justify-between rounded-2xl bg-tint px-4 py-3 ring-1 ring-border/40">
-      <span className="text-sm text-muted-foreground">{label}</span>
+      <span className="text-sm text-muted-foreground">{t(label)}</span>
 
       <span className="font-semibold text-foreground">{value}</span>
     </div>
@@ -624,7 +628,7 @@ function SummaryPanel({
 }) {
   return (
     <div className="mt-4 rounded-3xl bg-background p-4 ring-1 ring-border">
-      <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+      <h3 className="text-sm font-semibold text-foreground">{t(title)}</h3>
       <div className="mt-3 space-y-2.5">
         {items.map((item) => {
           const valueClass =
@@ -745,6 +749,7 @@ function CollapsibleSection({
   children: ReactNode;
   defaultOpen?: boolean;
 }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(defaultOpen);
 
   return (
@@ -777,6 +782,7 @@ function CollapsibleSection({
 /* -------------------------------------------------------------------------- */
 
 export function PatternsContent() {
+  const { t } = useI18n();
   const { data, update, hydrated } = useBixbo();
   const view = hydrated ? data : EMPTY;
   const dayLogs = view.dayLogs;
