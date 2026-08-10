@@ -1,0 +1,29 @@
+name: One-time typecheck fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/one-time-typecheck-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply patch
+        run: python .github/scripts/one_time_typecheck_fix.py
+      - name: Commit fixes
+        run: |
+          rm -f .github/scripts/one_time_typecheck_fix.py
+          rm -f .github/workflows/one-time-typecheck-fix.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Fix i18n typecheck errors"
+          git push
