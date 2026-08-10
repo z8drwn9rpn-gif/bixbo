@@ -14,8 +14,6 @@ import {
   PillIcon,
   PoopIcon,
   StarIcon,
-  ThermometerIcon,
-  WeightIcon,
 } from "@/components/icons/BixboIcons";
 import { AppShell } from "@/components/AppShell";
 import { pregnancyProgress, postpartumProgress } from "@/lib/health";
@@ -1079,7 +1077,6 @@ function HomePage() {
           const todayTetany = todayLog?.tetany?.length ?? 0;
           const todayPanic = todayLog?.panic?.length ?? 0;
           const todayBowelEntries = todayLog?.bowel ?? [];
-          const latestBowel = todayBowelEntries.length ? todayBowelEntries[todayBowelEntries.length - 1] : undefined;
           const noteValue = view.dayNotes[todayDateKey]?.[0];
           const noteText =
             typeof noteValue === "string"
@@ -1123,19 +1120,30 @@ function HomePage() {
               key: "bowel",
               icon: <PoopIcon size={22} />,
               label: "Bowel",
-              value: latestBowel ? `Type ${latestBowel.bristol}` : "Not logged",
+              value: todayBowelEntries.length
+                ? `${todayBowelEntries.length} entr${todayBowelEntries.length === 1 ? "y" : "ies"}`
+                : "None",
             },
             {
-              key: "temperature",
-              icon: <ThermometerIcon size={22} />,
-              label: "Temperature",
-              value: todayLog?.temperature != null ? `${todayLog.temperature} °C` : "Not logged",
+              key: "hotFlashes",
+              icon: <Ico e="🥵" size={22} />,
+              label: "Hot flashes",
+              value: (() => {
+                const entries = todayLog?.pain?.filter((entry) => (entry.hotFlashes ?? 0) > 0) ?? [];
+                return entries.length ? `${entries.length} entr${entries.length === 1 ? "y" : "ies"}` : "None";
+              })(),
             },
             {
-              key: "weight",
-              icon: <WeightIcon size={22} />,
-              label: "Weight",
-              value: todayLog?.weight != null ? `${todayLog.weight} kg` : "Not logged",
+              key: "headache",
+              icon: <Ico e="🤕" size={22} />,
+              label: "Headache",
+              value: (() => {
+                const entries =
+                  todayLog?.pain?.filter(
+                    (entry) => entry.headacheIntensity != null || (entry.headacheTypes?.length ?? 0) > 0,
+                  ) ?? [];
+                return entries.length ? `${entries.length} entr${entries.length === 1 ? "y" : "ies"}` : "None";
+              })(),
             },
           ];
 
@@ -1154,15 +1162,32 @@ function HomePage() {
           const monthTetany = monthLogs.reduce((sum, { log }) => sum + (log?.tetany?.length ?? 0), 0);
           const monthPanic = monthLogs.reduce((sum, { log }) => sum + (log?.panic?.length ?? 0), 0);
 
-          const bowelCounts = new Map<number, number>();
-          monthLogs.forEach(({ log }) => {
-            (log?.bowel ?? []).forEach((entry) => {
-              const type = Number(entry.bristol);
-              if (!Number.isFinite(type)) return;
-              bowelCounts.set(type, (bowelCounts.get(type) ?? 0) + 1);
-            });
-          });
-          const bowelMostCommon = [...bowelCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+          const monthBowelCount = monthLogs.reduce((sum, { log }) => sum + (log?.bowel?.length ?? 0), 0);
+
+          const monthHotFlashDays = monthLogs.filter(({ log }) =>
+            (log?.pain ?? []).some((entry) => (entry.hotFlashes ?? 0) > 0),
+          ).length;
+
+          const monthHeadacheDays = monthLogs.filter(({ log }) =>
+            (log?.pain ?? []).some(
+              (entry) => entry.headacheIntensity != null || (entry.headacheTypes?.length ?? 0) > 0,
+            ),
+          ).length;
+
+          const periodDays = monthLogs
+            .filter(({ log }) => !!(log?.periodInfo?.level ?? log?.period))
+            .map(({ key, log }) => ({ key, level: log?.periodInfo?.level ?? log?.period }));
+
+          const periodStart = periodDays[0]?.key;
+          const periodEnd = periodDays[periodDays.length - 1]?.key;
+          const monthPeriodLabel =
+            periodStart && periodEnd
+              ? `${fromKey(periodStart).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}${
+                  periodEnd !== periodStart
+                    ? ` – ${fromKey(periodEnd).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`
+                    : ""
+                } · ${periodDays.length} day${periodDays.length === 1 ? "" : "s"}`
+              : "Not logged";
 
           const monthSex = monthLogs.reduce(
             (sum, { log }) => sum + (log?.sex?.filter((entry) => isIntercourseKind(entry.kind)).length ?? 0),
@@ -1173,17 +1198,6 @@ function HomePage() {
             .map(({ log }) => log?.sleepHours ?? log?.pregnancy?.sleepHours ?? log?.postpartum?.sleepHours)
             .filter((value): value is number => value != null && Number.isFinite(value));
           const monthSleepAvg = averageNumbers(monthSleepValues);
-
-          const monthTempValues = monthLogs
-            .map(({ log }) => averageDayTemperature(log))
-            .filter((value): value is number => value != null && Number.isFinite(value));
-          const monthTempAvg = averageNumbers(monthTempValues);
-
-          const monthWeights = monthLogs
-            .map(({ key, log }) => ({ key, value: latestDayWeight(log) }))
-            .filter((item): item is { key: string; value: number } => item.value != null && Number.isFinite(item.value));
-          const monthWeightChange =
-            monthWeights.length >= 2 ? monthWeights[monthWeights.length - 1].value - monthWeights[0].value : undefined;
 
           const monthScheduledTotal = todayScheduled.length * monthKeys.length;
           const monthMedsTaken = monthKeys.reduce(
@@ -1229,7 +1243,9 @@ function HomePage() {
               key: "bowel",
               icon: <PoopIcon size={22} />,
               label: "Bowel",
-              value: bowelMostCommon != null ? `Type ${bowelMostCommon} most common` : "Not logged",
+              value: monthBowelCount
+                ? `${monthBowelCount} entr${monthBowelCount === 1 ? "y" : "ies"}`
+                : "None",
             },
             {
               key: "sex",
@@ -1238,21 +1254,26 @@ function HomePage() {
               value: `${monthSex}× this month`,
             },
             {
-              key: "temperature",
-              icon: <ThermometerIcon size={22} />,
-              label: "Temperature",
-              value: monthTempAvg != null ? `${monthTempAvg.toFixed(1)} °C avg` : "Not logged",
+              key: "hotFlashes",
+              icon: <Ico e="🥵" size={22} />,
+              label: "Hot flashes",
+              value: monthHotFlashDays
+                ? `${monthHotFlashDays} day${monthHotFlashDays === 1 ? "" : "s"}`
+                : "None",
             },
             {
-              key: "weight",
-              icon: <WeightIcon size={22} />,
-              label: "Weight",
-              value:
-                monthWeightChange != null
-                  ? `${monthWeightChange >= 0 ? "+" : ""}${monthWeightChange.toFixed(1)} kg`
-                  : monthWeights.length === 1
-                    ? `${monthWeights[0].value.toFixed(1)} kg`
-                    : "Not logged",
+              key: "headache",
+              icon: <Ico e="🤕" size={22} />,
+              label: "Headache",
+              value: monthHeadacheDays
+                ? `${monthHeadacheDays} day${monthHeadacheDays === 1 ? "" : "s"}`
+                : "None",
+            },
+            {
+              key: "period",
+              icon: <Ico e="🩸" size={22} />,
+              label: "Period",
+              value: monthPeriodLabel,
             },
           ];
 
