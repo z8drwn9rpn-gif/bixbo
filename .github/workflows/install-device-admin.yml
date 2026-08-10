@@ -1,0 +1,31 @@
+name: Install device-only admin
+on:
+  push:
+    paths:
+      - '.github/scripts/install-device-admin.py'
+      - '.github/workflows/install-device-admin.yml'
+permissions:
+  contents: write
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: python .github/scripts/install-device-admin.py
+      - run: bun run build
+      - run: bun run typecheck
+      - run: bun run lint
+      - run: bun test
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/lib/deviceAdmin.ts src/routes/admin.tsx src/routes/profile.tsx
+          if git diff --cached --quiet; then
+            echo 'No changes to commit'
+          else
+            git commit -m 'Keep admin UI device-only until account auth'
+            git push
+          fi
