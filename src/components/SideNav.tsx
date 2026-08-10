@@ -1,4 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
+import type { ComponentType } from "react";
 import {
   NavHomeIcon,
   NavOverviewIcon,
@@ -9,6 +10,7 @@ import {
   Pill,
   User,
   Settings,
+  type IconProps,
 } from "@/components/icons/BixboIcons";
 
 const main = [
@@ -40,10 +42,10 @@ export function SideNav() {
 
   const isActive = (to: string) => (to === "/" ? pathname === "/" : pathname.startsWith(to));
 
-  const item = (to: string, label: string, Icon: typeof NavHomeIcon) => (
+  const item = (to: string, label: string, Icon: ComponentType<IconProps>) => (
     <li key={to}>
       <Link
-        to={to}
+        to={to as never}
         className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium transition-colors ${
           isActive(to)
             ? "bg-tint text-primary shadow-sm"
@@ -70,6 +72,7 @@ export function SideNav() {
       </Link>
 
       <button
+        type="button"
         onClick={openLog}
         className="mb-5 flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-tint px-4 py-2.5 text-sm font-semibold text-foreground shadow-sm ring-1 ring-border/70 transition hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
