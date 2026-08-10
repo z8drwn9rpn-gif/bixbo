@@ -1166,32 +1166,6 @@ function ProfilePage() {
     );
   }
 
-  if (healthView === "notifications") {
-    return (
-      <HealthSubpage title="Notifications" onBack={() => setHealthView("hub")}>
-        <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
-          <p className="text-sm font-semibold text-foreground">Reminders and alerts</p>
-          <p className="mt-1 text-xs text-muted-foreground">Manage medication, period and app reminders.</p>
-          <Link
-            to={"/notifications" as never}
-            className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
-          >
-            Open notification controls
-          </Link>
-        </section>
-        <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
-          <p className="text-sm font-semibold text-foreground">Medication reminders</p>
-          <Link
-            to={"/meds" as never}
-            className="mt-3 inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-input px-4 text-sm font-semibold"
-          >
-            Manage medication times
-          </Link>
-        </section>
-      </HealthSubpage>
-    );
-  }
-
   if (healthView === "privacy") {
     return (
       <HealthSubpage title="Privacy" onBack={() => setHealthView("hub")}>
