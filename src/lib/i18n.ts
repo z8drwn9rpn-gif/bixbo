@@ -359,6 +359,22 @@ const SK: Record<string, string> = {
   "Local and server-originated tests are separate.": "Lokálne a serverové testy sú oddelené.",
   "Check local reminders": "Skontrolovať lokálne pripomienky",
 
+  "Type 0 — Mystery": "Typ 0 — Neurčené",
+  "Add extra dose": "Pridať extra dávku",
+  "Select every symptom you experienced today.": "Vyber všetky príznaky, ktoré si dnes zaznamenala.",
+  "Recovery note (optional)": "Poznámka k zotavovaniu (voliteľné)",
+  "tap to uncheck": "ťukni pre zrušenie",
+  "missed (tap if taken)": "vynechané (ťukni, ak bolo užité)",
+  "No hot flashes logged": "Nie sú zaznamenané návaly tepla",
+  "Set up the meds you take on a schedule. One-off extra doses can be added from the Log button.": "Nastav lieky, ktoré užívaš podľa rozvrhu. Jednorazové extra dávky môžeš pridať cez Záznam.",
+  "No medications yet. Tap Add.": "Zatiaľ nemáš žiadne lieky. Ťukni na Pridať.",
+  "e.g. Magnerot": "napr. Magnerot",
+  "Take with food, side effects…": "Užiť s jedlom, vedľajšie účinky…",
+  "similarity": "zhoda",
+  "Based only on shared pain, panic and tetany data during the selected month.": "Vypočítané iba zo zdieľaných údajov o bolesti, panike a tetánii vo vybranom mesiaci.",
+  "Tap any pain bar to see the exact value.": "Ťukni na ľubovoľný stĺpec bolesti a zobrazí sa presná hodnota.",
+  "Show earlier entries": "Zobraziť staršie záznamy",
+
 };
 
 const TRANSLATIONS: Record<AppLanguage, Record<string, string>> = { en: EN, sk: SK };
