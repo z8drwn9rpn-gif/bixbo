@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { useI18n } from "@/hooks/useI18n";
 import { Ico } from "@/components/icons/BixboIcons";
 import { type Note, type NoteChecklistItem, type NoteFolder } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
@@ -81,6 +82,7 @@ export function NoteEditor({
   onBack: () => void;
   update: (updater: (data: import("@/lib/storage").BixboData) => import("@/lib/storage").BixboData) => void;
 }) {
+  const { t } = useI18n();
   const [title, setTitle] = useState(note.title);
   const [folderId, setFolderId] = useState(note.folderId);
   const [color, setColor] = useState<NoteColor>(note.color ?? "default");
@@ -319,7 +321,7 @@ export function NoteEditor({
             className={`grid h-9 w-9 place-items-center rounded-xl ${
               showChecklist ? "bg-primary text-primary-foreground" : "hover:bg-tint"
             }`}
-            aria-label="Checklist"
+            aria-label={t("Checklist")}
           >
             <ListChecks className="h-4 w-4" />
           </button>
@@ -354,7 +356,7 @@ export function NoteEditor({
 
         {showChecklist && (
           <section className="space-y-3 rounded-3xl bg-surface p-4 ring-1 ring-border/70">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Checklist</h2>
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("Checklist")}</h2>
 
             <div className="space-y-2">
               {checklist.map((item) => (
