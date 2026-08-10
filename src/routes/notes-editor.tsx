@@ -245,7 +245,7 @@ export function NoteEditor({
             type="button"
             onClick={deleteCurrent}
             className="rounded-full p-2 text-muted-foreground hover:text-destructive"
-            aria-label="Delete note"
+            aria-label={t("Delete note")}
           >
             <Trash2 className="h-4 w-4" />
           </button>
@@ -256,7 +256,7 @@ export function NoteEditor({
         <Input
           value={title}
           onChange={(event) => setTitle(event.target.value)}
-          placeholder="Title"
+          placeholder={t("Title")}
           className="border-0 bg-transparent px-0 font-serif text-3xl shadow-none focus-visible:ring-0"
         />
 
@@ -300,7 +300,7 @@ export function NoteEditor({
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => exec("bold")}
             className="grid h-9 w-9 place-items-center rounded-xl hover:bg-tint"
-            aria-label="Bold"
+            aria-label={t("Bold")}
           >
             <Bold className="h-4 w-4" />
           </button>
@@ -310,7 +310,7 @@ export function NoteEditor({
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => exec("highlight")}
             className="grid h-9 w-9 place-items-center rounded-xl hover:bg-tint"
-            aria-label="Highlight"
+            aria-label={t("Highlight")}
           >
             <Highlighter className="h-4 w-4" />
           </button>
@@ -350,7 +350,7 @@ export function NoteEditor({
             onInput={onInput}
             onBlur={onInput}
             className="min-h-[40dvh] text-base leading-relaxed whitespace-pre-wrap outline-none empty:before:pointer-events-none empty:before:text-muted-foreground empty:before:content-[attr(data-placeholder)]"
-            data-placeholder="Start writing…"
+            data-placeholder={t("Start writing…")}
           />
         </div>
 
@@ -384,7 +384,7 @@ export function NoteEditor({
                     type="button"
                     onClick={() => setChecklist((current) => current.filter((entry) => entry.id !== item.id))}
                     className="rounded-full p-1.5 text-muted-foreground hover:text-destructive"
-                    aria-label="Delete checklist item"
+                    aria-label={t("Delete checklist item")}
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
@@ -406,7 +406,7 @@ export function NoteEditor({
               <Input
                 value={newItem}
                 onChange={(event) => setNewItem(event.target.value)}
-                placeholder="Add checklist item"
+                placeholder={t("Add checklist item")}
                 className="rounded-2xl"
               />
               <Button type="submit" className="rounded-2xl">
