@@ -613,6 +613,8 @@ function HomePage() {
 
   const [logOpen, setLogOpen] = useState(false);
   const [todayOpen, setTodayOpen] = useState(false);
+  const [summaryMode, setSummaryMode] = useState<"today" | "month">("today");
+  const [summaryMonthAnchor, setSummaryMonthAnchor] = useState<Date | null>(null);
   const [vitalTrendOpen, setVitalTrendOpen] = useState<VitalTrendMetric | null>(null);
   const [quickCat, setQuickCat] = useState<string | undefined>();
   const [editPain, setEditPain] = useState<import("@/lib/storage").PainEntry | undefined>();
@@ -736,7 +738,11 @@ function HomePage() {
         <div className="flex items-center gap-1">
           <button
             type="button"
-            onClick={() => setTodayOpen(true)}
+            onClick={() => {
+              setSummaryMode("today");
+              setSummaryMonthAnchor(new Date());
+              setTodayOpen(true);
+            }}
             className="flex min-w-[82px] flex-col items-end justify-center rounded-2xl px-2 py-1 transition hover:bg-tint"
             aria-label="Open today's summary"
           >
@@ -1082,7 +1088,7 @@ function HomePage() {
                 ? String(noteValue.text)
                 : "";
 
-          const rows = [
+          const todayRows = [
             {
               key: "pain",
               icon: <FlameIcon size={22} />,
@@ -1103,13 +1109,13 @@ function HomePage() {
             },
             {
               key: "tetany",
-              icon: <StarIcon size={22} />,
+              icon: <Ico e="⭐️" size={22} />,
               label: "Tetany episode",
               value: todayTetany ? `${todayTetany} episode${todayTetany === 1 ? "" : "s"}` : "None",
             },
             {
               key: "panic",
-              icon: <PanicIcon size={22} />,
+              icon: <Ico e="✨" size={22} />,
               label: "Panic episode",
               value: todayPanic ? `${todayPanic}` : "None",
             },
@@ -1133,36 +1139,222 @@ function HomePage() {
             },
           ];
 
+          const activeMonth = summaryMonthAnchor ?? fromKey(todayDateKey);
+          const monthStart = new Date(activeMonth.getFullYear(), activeMonth.getMonth(), 1);
+          const monthEnd = new Date(activeMonth.getFullYear(), activeMonth.getMonth() + 1, 0);
+          const monthKeys = daysBetweenInclusive(monthStart, monthEnd);
+          const monthLogs = monthKeys.map((key) => ({ key, log: view.dayLogs[key] })).filter((item) => !!item.log);
+          const loggedDays = monthLogs.length;
+
+          const monthPainValues = monthLogs
+            .map(({ log }) => avgDayPain(log))
+            .filter((value): value is number => value != null && Number.isFinite(value));
+          const monthPainAvg = averageNumbers(monthPainValues);
+
+          const monthTetany = monthLogs.reduce((sum, { log }) => sum + (log?.tetany?.length ?? 0), 0);
+          const monthPanic = monthLogs.reduce((sum, { log }) => sum + (log?.panic?.length ?? 0), 0);
+
+          const bowelCounts = new Map<number, number>();
+          monthLogs.forEach(({ log }) => {
+            (log?.bowel ?? []).forEach((entry) => {
+              const type = Number(entry.bristol);
+              if (!Number.isFinite(type)) return;
+              bowelCounts.set(type, (bowelCounts.get(type) ?? 0) + 1);
+            });
+          });
+          const bowelMostCommon = [...bowelCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+
+          const monthSex = monthLogs.reduce(
+            (sum, { log }) => sum + (log?.sex?.filter((entry) => isIntercourseKind(entry.kind)).length ?? 0),
+            0,
+          );
+
+          const monthSleepValues = monthLogs
+            .map(({ log }) => log?.sleepHours ?? log?.pregnancy?.sleepHours ?? log?.postpartum?.sleepHours)
+            .filter((value): value is number => value != null && Number.isFinite(value));
+          const monthSleepAvg = averageNumbers(monthSleepValues);
+
+          const monthTempValues = monthLogs
+            .map(({ log }) => averageDayTemperature(log))
+            .filter((value): value is number => value != null && Number.isFinite(value));
+          const monthTempAvg = averageNumbers(monthTempValues);
+
+          const monthWeights = monthLogs
+            .map(({ key, log }) => ({ key, value: latestDayWeight(log) }))
+            .filter((item): item is { key: string; value: number } => item.value != null && Number.isFinite(item.value));
+          const monthWeightChange =
+            monthWeights.length >= 2 ? monthWeights[monthWeights.length - 1].value - monthWeights[0].value : undefined;
+
+          const monthScheduledTotal = todayScheduled.length * monthKeys.length;
+          const monthMedsTaken = monthKeys.reduce(
+            (sum, key) =>
+              sum + todayScheduled.filter((medKey) => view.medLog[key]?.[medKey]).length,
+            0,
+          );
+          const monthMedsPct =
+            monthScheduledTotal > 0 ? Math.round((monthMedsTaken / monthScheduledTotal) * 100) : undefined;
+
+          const monthRows = [
+            {
+              key: "pain",
+              icon: <FlameIcon size={22} />,
+              label: "Pain",
+              value: monthPainAvg != null ? `${monthPainAvg.toFixed(1)} / 10 avg` : "No pain logged",
+            },
+            {
+              key: "meds",
+              icon: <PillIcon size={22} />,
+              label: "Medication",
+              value: monthMedsPct != null ? `${monthMedsPct}% taken` : "No schedule",
+            },
+            {
+              key: "sleep",
+              icon: <ClockIcon size={22} />,
+              label: "Sleep",
+              value: monthSleepAvg != null ? `${monthSleepAvg.toFixed(1)} h avg` : "Not logged",
+            },
+            {
+              key: "tetany",
+              icon: <Ico e="⭐️" size={22} />,
+              label: "Tetany",
+              value: `${monthTetany} episode${monthTetany === 1 ? "" : "s"}`,
+            },
+            {
+              key: "panic",
+              icon: <Ico e="✨" size={22} />,
+              label: "Panic",
+              value: `${monthPanic} episode${monthPanic === 1 ? "" : "s"}`,
+            },
+            {
+              key: "bowel",
+              icon: <PoopIcon size={22} />,
+              label: "Bowel",
+              value: bowelMostCommon != null ? `Type ${bowelMostCommon} most common` : "Not logged",
+            },
+            {
+              key: "sex",
+              icon: <HeartIcon size={22} />,
+              label: "ŠukŠuk",
+              value: `${monthSex}× this month`,
+            },
+            {
+              key: "temperature",
+              icon: <ThermometerIcon size={22} />,
+              label: "Temperature",
+              value: monthTempAvg != null ? `${monthTempAvg.toFixed(1)} °C avg` : "Not logged",
+            },
+            {
+              key: "weight",
+              icon: <WeightIcon size={22} />,
+              label: "Weight",
+              value:
+                monthWeightChange != null
+                  ? `${monthWeightChange >= 0 ? "+" : ""}${monthWeightChange.toFixed(1)} kg`
+                  : monthWeights.length === 1
+                    ? `${monthWeights[0].value.toFixed(1)} kg`
+                    : "Not logged",
+            },
+          ];
+
+          const rows = summaryMode === "today" ? todayRows : monthRows;
+
+          const shiftSummaryMonth = (delta: -1 | 1) => {
+            setSummaryMonthAnchor((current) => {
+              const base = current ?? fromKey(todayDateKey);
+              return new Date(base.getFullYear(), base.getMonth() + delta, 1);
+            });
+          };
+
           return (
             <div className="fixed inset-0 z-[90] flex items-center justify-center px-7">
               <button
                 type="button"
-                aria-label="Close today's summary"
+                aria-label="Close summary"
                 className="absolute inset-0 bg-black/35"
                 onClick={() => setTodayOpen(false)}
               />
 
               <section className="relative z-10 w-full max-w-[320px] overflow-hidden rounded-[1.65rem] bg-background shadow-2xl ring-1 ring-border">
-                <div className="flex items-start justify-between gap-2 border-b border-border/70 px-4 pb-3 pt-4">
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Today</p>
-                    <h2 className="mt-0.5 font-serif text-lg font-bold text-foreground">
-                      {fromKey(todayDateKey).toLocaleDateString("en-GB", {
-                        weekday: "long",
-                        day: "numeric",
-                        month: "long",
-                      })}
-                    </h2>
-                  </div>
+                <div className="border-b border-border/70 px-4 pb-3 pt-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="inline-flex rounded-xl bg-tint p-0.5 ring-1 ring-border/50">
+                        <button
+                          type="button"
+                          onClick={() => setSummaryMode("today")}
+                          className={`rounded-[10px] px-3 py-1 text-[10px] font-semibold transition ${
+                            summaryMode === "today"
+                              ? "bg-surface text-foreground shadow-sm ring-1 ring-border"
+                              : "text-muted-foreground"
+                          }`}
+                        >
+                          Today
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSummaryMode("month");
+                            setSummaryMonthAnchor((current) => current ?? fromKey(todayDateKey));
+                          }}
+                          className={`rounded-[10px] px-3 py-1 text-[10px] font-semibold transition ${
+                            summaryMode === "month"
+                              ? "bg-surface text-foreground shadow-sm ring-1 ring-border"
+                              : "text-muted-foreground"
+                          }`}
+                        >
+                          Month
+                        </button>
+                      </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setTodayOpen(false)}
-                    className="grid h-8 w-8 place-items-center rounded-full bg-tint text-xs font-bold text-foreground ring-1 ring-border"
-                    aria-label="Close"
-                  >
-                    ×
-                  </button>
+                      {summaryMode === "today" ? (
+                        <h2 className="mt-2 font-serif text-lg font-bold text-foreground">
+                          {fromKey(todayDateKey).toLocaleDateString("en-GB", {
+                            weekday: "long",
+                            day: "numeric",
+                            month: "long",
+                          })}
+                        </h2>
+                      ) : (
+                        <div className="mt-2 flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => shiftSummaryMonth(-1)}
+                            className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-tint ring-1 ring-border"
+                            aria-label="Previous month"
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </button>
+
+                          <div className="min-w-0 flex-1 text-center">
+                            <h2 className="font-serif text-lg font-bold text-foreground">
+                              {activeMonth.toLocaleDateString("en-GB", { month: "long", year: "numeric" })}
+                            </h2>
+                            <p className="mt-0.5 text-[10px] text-muted-foreground">
+                              {loggedDays} / {monthKeys.length} days logged
+                            </p>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => shiftSummaryMonth(1)}
+                            className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-tint ring-1 ring-border"
+                            aria-label="Next month"
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setTodayOpen(false)}
+                      className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-tint text-xs font-bold text-foreground ring-1 ring-border"
+                      aria-label="Close"
+                    >
+                      ×
+                    </button>
+                  </div>
                 </div>
 
                 <div className="max-h-[48dvh] overflow-y-auto overscroll-contain touch-pan-y p-3">
@@ -1184,7 +1376,7 @@ function HomePage() {
                     ))}
                   </div>
 
-                  {noteText && (
+                  {summaryMode === "today" && noteText && (
                     <div className="mt-2 flex items-start gap-2 rounded-2xl bg-tint px-3 py-2.5 ring-1 ring-border/50">
                       <span className="grid h-8 w-8 shrink-0 place-items-center">
                         <NoteIcon size={20} />
@@ -1201,13 +1393,19 @@ function HomePage() {
                   <button
                     type="button"
                     onClick={() => {
-                      setSelected(todayDateKey);
-                      setMonthAnchor(fromKey(todayDateKey));
+                      if (summaryMode === "today") {
+                        setSelected(todayDateKey);
+                        setMonthAnchor(fromKey(todayDateKey));
+                      } else {
+                        const key = toKey(new Date(activeMonth.getFullYear(), activeMonth.getMonth(), 1));
+                        setSelected(key);
+                        setMonthAnchor(new Date(activeMonth.getFullYear(), activeMonth.getMonth(), 1));
+                      }
                       setTodayOpen(false);
                     }}
                     className="min-h-10 w-full rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground"
                   >
-                    Open today on calendar
+                    {summaryMode === "today" ? "Open today on calendar" : "Open month on calendar"}
                   </button>
                 </div>
               </section>
