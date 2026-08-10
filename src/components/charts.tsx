@@ -233,13 +233,13 @@ export function BarChartFrame({
       </div>
       <div className="mt-1 flex pl-5">
         <div
-          className="grid flex-1 gap-[2px] text-center text-[9px] text-muted-foreground"
+          className="grid flex-1 gap-[2px] text-center text-[10px] text-muted-foreground"
           style={{ gridTemplateColumns: `repeat(${Math.max(1, bars.length)}, minmax(0, 1fr))` }}
         >
           {bars.map((b, i) => (
             <div key={i} className="leading-tight">
               <div className="tabular-nums">{b.label}</div>
-              {b.sub && <div className="text-[8px] opacity-70 tabular-nums">{b.sub}</div>}
+              {b.sub && <div className="text-[10px] opacity-70 tabular-nums">{b.sub}</div>}
             </div>
           ))}
         </div>
