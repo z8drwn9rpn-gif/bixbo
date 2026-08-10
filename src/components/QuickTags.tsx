@@ -644,7 +644,7 @@ export function QuickTags({
       </div>
 
       <div className="pb-1">
-        <div className="grid grid-cols-5 gap-x-2 gap-y-3 lg:grid-cols-8 xl:grid-cols-10">
+        <div className="grid grid-cols-5 gap-x-2 gap-y-3 lg:grid-cols-8 lg:justify-items-center lg:[&>*]:w-full lg:[&>*]:max-w-[86px] xl:grid-cols-10">
           {tags.map((tag, index) => {
             const isFlash = flash === tag.key;
 
