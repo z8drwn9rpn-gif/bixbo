@@ -1431,7 +1431,7 @@ function ProfilePage() {
         <Section title="Measurement units" subtitle="Choose how measurements are displayed across BIXBO.">
           <div className="space-y-4">
             <div>
-              <p className="mb-2 text-xs font-medium text-muted-foreground">Weight</p>
+              <p className="mb-2 text-xs font-medium text-muted-foreground">{t("Weight")}</p>
               <div className="grid grid-cols-2 gap-2">
                 {[
                   { value: "kg", label: "Kilograms (kg)" },
@@ -1454,7 +1454,7 @@ function ProfilePage() {
             </div>
 
             <div>
-              <p className="mb-2 text-xs font-medium text-muted-foreground">Temperature</p>
+              <p className="mb-2 text-xs font-medium text-muted-foreground">{t("Temperature")}</p>
               <div className="grid grid-cols-2 gap-2">
                 {[
                   { value: "c", label: "Celsius (°C)" },
@@ -1477,7 +1477,7 @@ function ProfilePage() {
             </div>
 
             <div>
-              <p className="mb-2 text-xs font-medium text-muted-foreground">Volume</p>
+              <p className="mb-2 text-xs font-medium text-muted-foreground">{t("Volume")}</p>
               <div className="grid grid-cols-2 gap-2">
                 {[
                   { value: "ml", label: "Millilitres (ml)" },
@@ -1500,7 +1500,7 @@ function ProfilePage() {
             </div>
 
             <div>
-              <p className="mb-2 text-xs font-medium text-muted-foreground">Time</p>
+              <p className="mb-2 text-xs font-medium text-muted-foreground">{t("Time")}</p>
               <div className="grid grid-cols-2 gap-2">
                 {[
                   { value: "24h", label: "24-hour" },
