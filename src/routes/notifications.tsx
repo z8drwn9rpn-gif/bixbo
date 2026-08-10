@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { useBixbo } from "@/lib/storage";
 import { useSession } from "@/lib/cloudSync";
+import { useI18n } from "@/hooks/useI18n";
 import {
   NOTIF_CATEGORY_LABELS,
   disableRemotePush,
@@ -41,10 +42,11 @@ export const Route = createFileRoute("/notifications")({
 });
 
 function Card({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
+  const { t } = useI18n();
   return (
     <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
-      <p className="text-sm font-semibold text-foreground">{title}</p>
-      {subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>}
+      <p className="text-sm font-semibold text-foreground">{t(title)}</p>
+      {subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{t(subtitle)}</p>}
       <div className="mt-3 space-y-3">{children}</div>
     </section>
   );
@@ -63,6 +65,7 @@ function ToggleRow({
   disabled?: boolean;
   onChange: (v: boolean) => void;
 }) {
+  const { t } = useI18n();
   return (
     <div className="flex items-center justify-between gap-3">
       <div className="min-w-0">
@@ -75,9 +78,10 @@ function ToggleRow({
 }
 
 function TimeRow({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  const { t } = useI18n();
   return (
     <label className="flex items-center justify-between gap-3">
-      <span className="text-sm text-foreground">{label}</span>
+      <span className="text-sm text-foreground">{t(label)}</span>
       <Input type="time" value={value} onChange={(e) => onChange(e.target.value)} className="h-11 w-[8.5rem] text-sm" />
     </label>
   );
@@ -100,6 +104,7 @@ function messageOf(error: unknown): string {
 }
 
 function NotificationsPage() {
+  const { t } = useI18n();
   const { data, hydrated } = useBixbo();
   const { session, ready } = useSession();
   const prefs = notifPrefs(data);
