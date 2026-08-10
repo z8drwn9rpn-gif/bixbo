@@ -1,0 +1,28 @@
+name: Install admin lock custom surfaces
+on:
+  push:
+    paths:
+      - '.github/workflows/install-admin-lock-custom-surfaces.yml'
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: python .github/scripts/install-admin-lock.py
+      - run: python .github/scripts/install-custom-surfaces.py
+      - run: bun run build
+      - run: bun run typecheck
+      - run: bun run lint
+      - run: bun test
+      - name: Commit
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/routes/admin.tsx src/components/CustomLogBuilder.tsx src/components/QuickTags.tsx src/routes/insights.tsx src/lib/appRegistry.ts src/routeTree.gen.ts
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Lock admin and connect custom logs to Quick Log and Heatmap"
+          git push
