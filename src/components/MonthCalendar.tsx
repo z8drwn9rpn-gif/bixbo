@@ -2,7 +2,6 @@ import { Ico, IcoText } from "@/components/icons/BixboIcons";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   toKey,
-  hasAnyLog,
   periodLabel,
   isDateInRange,
   predictPeriods,
@@ -68,14 +67,8 @@ function periodColorVar(level?: PeriodLevel) {
   }
 }
 function iconsFor(log: DayLog | undefined): string[] {
-  // Month calendar deliberately shows only the four compact BIXBO day markers
-  // requested for quick scanning: ŠukŠuk, panic, tetany and bowel.
-  const out: string[] = [];
-  if (log?.sex?.some((e) => isIntercourseKind(e.kind))) out.push("❤️");
-  if (log?.panic?.length) out.push("✨");
-  if (log?.tetany?.length) out.push("⚡");
-  if (log?.bowel?.some((b) => Number.isFinite(Number(b?.bristol)) && Number(b.bristol) >= 0)) out.push("💩⚪");
-  return out;
+  // Month calendar shows only ŠukŠuk.
+  return log?.sex?.some((e) => isIntercourseKind(e.kind)) ? ["❤️"] : [];
 }
 
 function daySummaryLines(log: DayLog | undefined, cycleTrackingHidden: boolean): string[] {
@@ -208,7 +201,6 @@ export function MonthCalendar({
         pAvg: number | null;
         predictedPeriod: boolean;
         icons: string[];
-        marked: boolean;
       }
     >();
 
@@ -228,7 +220,6 @@ export function MonthCalendar({
         pAvg: avgDayPain(log) ?? null,
         predictedPeriod: predictedKeys.has(cell.key),
         icons: iconsFor(log),
-        marked: hasAnyLog(log),
       });
     }
 
@@ -329,7 +320,6 @@ export function MonthCalendar({
                 const isSel = key === selected;
                 const predictedPeriod = meta?.predictedPeriod ?? false;
                 const icons = meta?.icons ?? [];
-                const marked = meta?.marked ?? false;
 
                 return (
                   <button
@@ -407,14 +397,9 @@ export function MonthCalendar({
                         </span>
                       </div>
                       {icons.length > 0 && (
-                        <span className="pointer-events-none absolute bottom-0.5 left-1/2 flex w-[44px] -translate-x-1/2 items-center justify-center gap-0 leading-none drop-shadow-sm">
-                          {icons.map((ic, idx) => (
-                            <Ico key={idx} e={ic} size={11} />
-                          ))}
+                        <span className="pointer-events-none absolute bottom-0.5 left-1/2 flex -translate-x-1/2 items-center justify-center leading-none drop-shadow-sm">
+                          <Ico e="❤️" size={15} />
                         </span>
-                      )}
-                      {icons.length === 0 && marked && (
-                        <span className="absolute bottom-0.5 h-1 w-1 rounded-full bg-primary/70" />
                       )}
                     </div>
                   </button>
