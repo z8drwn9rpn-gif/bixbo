@@ -466,12 +466,9 @@ export function userGender(data: Pick<BixboData, "settings">): Gender {
   return data.settings.gender ?? "female";
 }
 
-/**
- * Active pregnancy selector. The legacy settings.pregnantSince fallback keeps
- * older backups working until every route has migrated to pregnancy.active.
- */
-export function isPregnancyActive(data: Pick<BixboData, "pregnancy" | "settings">): boolean {
-  return Boolean(data.pregnancy?.active || data.settings.pregnantSince);
+/** Active pregnancy selector. pregnancy.active is the single runtime source of truth. */
+export function isPregnancyActive(data: Pick<BixboData, "pregnancy">): boolean {
+  return Boolean(data.pregnancy?.active);
 }
 
 /** Active postpartum selector. */
@@ -1205,6 +1202,19 @@ function migrate(raw: unknown): BixboData {
   const rawPregnancy = safeRecord<Partial<PregnancyState>>(parsed.pregnancy);
   const rawPostpartum = safeRecord<Partial<PostpartumState>>(parsed.postpartum);
 
+  // Canonical reproductive mode migration. Older builds stored pregnancy only
+  // in settings.pregnantSince. Convert that marker into pregnancy.lmp once and
+  // never use it as a runtime source again. Postpartum wins if legacy data has
+  // both modes active, preventing an impossible simultaneous state.
+  const postpartumActive = Boolean(rawPostpartum.active);
+  const legacyPregnancyLmp = typeof rawSettings.pregnantSince === "string" && rawSettings.pregnantSince
+    ? rawSettings.pregnantSince
+    : undefined;
+  const pregnancyActive = !postpartumActive && Boolean(rawPregnancy.active || legacyPregnancyLmp);
+  const pregnancyLmp = typeof rawPregnancy.lmp === "string" && rawPregnancy.lmp
+    ? rawPregnancy.lmp
+    : legacyPregnancyLmp;
+
   const dayNotes: BixboData["dayNotes"] = {};
   for (const [date, notes] of Object.entries(safeRecord(parsed.dayNotes))) {
     if (!Array.isArray(notes)) continue;
@@ -1295,6 +1305,8 @@ function migrate(raw: unknown): BixboData {
         ...safeRecord(rawSettings.backup),
       },
       notif: safeRecord(rawSettings.notif) as NotificationPrefs,
+      // Legacy-only field is consumed above and deliberately removed.
+      pregnantSince: undefined,
     },
     tasks: safeIdArray<TaskEntry>(parsed.tasks),
     events: safeIdArray<EventEntry>(parsed.events).map((event) => ({
@@ -1329,12 +1341,13 @@ function migrate(raw: unknown): BixboData {
     pregnancy: {
       ...EMPTY.pregnancy!,
       ...rawPregnancy,
-      active: Boolean(rawPregnancy.active),
+      active: pregnancyActive,
+      lmp: pregnancyLmp,
       hospitalBag: safeIdArray<ChecklistItem>(rawPregnancy.hospitalBag),
       vaccinations: safeIdArray<ChecklistItem>(rawPregnancy.vaccinations),
       supplements: safeIdArray<ChecklistItem>(rawPregnancy.supplements),
       appointments: safeIdArray<PregnancyAppointment>(rawPregnancy.appointments),
-      endedAt: Boolean(rawPregnancy.active)
+      endedAt: pregnancyActive
         ? undefined
         : typeof rawPregnancy.endedAt === "string"
           ? rawPregnancy.endedAt
@@ -1343,9 +1356,9 @@ function migrate(raw: unknown): BixboData {
     postpartum: {
       ...EMPTY.postpartum!,
       ...rawPostpartum,
-      active: Boolean(rawPostpartum.active),
+      active: postpartumActive,
       visits: safeIdArray<PregnancyAppointment>(rawPostpartum.visits),
-      endedAt: Boolean(rawPostpartum.active)
+      endedAt: postpartumActive
         ? undefined
         : typeof rawPostpartum.endedAt === "string"
           ? rawPostpartum.endedAt
