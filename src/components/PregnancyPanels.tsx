@@ -94,6 +94,7 @@ export function TagList({
   values: string[];
   onChange: (v: string[]) => void;
 }) {
+  const { t } = useI18n();
   const [text, setText] = useState("");
   const add = () => {
     const v = text.trim();
@@ -113,12 +114,12 @@ export function TagList({
               add();
             }
           }}
-          placeholder={`Add ${label.toLowerCase()}…`}
+          placeholder={`${t("Add")} ${label.toLowerCase()}…`}
           aria-label={label}
           className="h-11"
         />
         <Button type="button" className="h-11" onClick={add}>
-          Add
+          {t("Add")}
         </Button>
       </div>
       {values.length > 0 && (
@@ -187,7 +188,7 @@ export function SimpleLineChart({
 
   return (
     <div className="overflow-hidden">
-      <svg viewBox={`0 0 ${width} ${height}`} className="h-40 w-full" role="img" aria-label="Line chart">
+      <svg viewBox={`0 0 ${width} ${height}`} className="h-40 w-full" role="img" aria-label={t("Line chart")}>
         {[yMax, yMid, yMin].map((y) => (
           <g key={y}>
             <line x1={left} x2={width - right} y1={yFor(y)} y2={yFor(y)} stroke="var(--border)" strokeWidth="1" />
@@ -259,6 +260,7 @@ export function Checklist({
   onChange: (items: ChecklistItem[]) => void;
   defaults: string[];
 }) {
+  const { t } = useI18n();
   const [text, setText] = useState("");
   const add = () => {
     const v = text.trim();
@@ -273,7 +275,7 @@ export function Checklist({
     <div>
       {items.length === 0 && (
         <Button type="button" variant="outline" size="sm" onClick={seed} className="mb-3">
-          Add suggested items
+          {t("Add suggested items")}
         </Button>
       )}
       <div className="flex gap-2">
@@ -286,12 +288,12 @@ export function Checklist({
               add();
             }
           }}
-          placeholder="Add item…"
-          aria-label="Add checklist item"
+          placeholder={t("Add item…")}
+          aria-label={t("Add checklist item")}
           className="h-11"
         />
         <Button type="button" className="h-11" onClick={add}>
-          Add
+          {t("Add")}
         </Button>
       </div>
       <ul className="mt-3 space-y-1">
@@ -306,7 +308,7 @@ export function Checklist({
               <span
                 className={`flex h-5 w-5 items-center justify-center rounded-md ring-1 ring-border ${it.done ? "bg-primary text-primary-foreground" : "bg-background"}`}
               >
-                {it.done ? "Done" : ""}
+                {it.done ? t("Done") : ""}
               </span>
             </button>
             <span className={`flex-1 text-sm ${it.done ? "text-muted-foreground line-through" : ""}`}>{it.text}</span>
