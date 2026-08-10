@@ -83,6 +83,18 @@ function AuthPage() {
     if (!res.redirected) navigate({ to: "/settings" });
   };
 
+  const apple = async () => {
+    setBusy(true);
+    setMsg(null);
+    const res = await lovable.auth.signInWithOAuth("apple", { redirect_uri: window.location.origin });
+    if (res.error) {
+      setMsg(res.error.message);
+      setBusy(false);
+      return;
+    }
+    if (!res.redirected) navigate({ to: "/settings" });
+  };
+
   return (
     <AppShell title="Sign in" big>
       <div className="mx-auto max-w-sm space-y-4 px-5 pt-6 pb-24">
@@ -131,6 +143,10 @@ function AuthPage() {
           Continue with Google
         </Button>
 
+        <Button variant="outline" className="w-full" onClick={apple} disabled={busy}>
+          Continue with Apple / iCloud
+        </Button>
+
         {msg && <p className="text-sm text-destructive">{msg}</p>}
 
         <div className="text-center">
@@ -142,3 +158,4 @@ function AuthPage() {
     </AppShell>
   );
 }
+
