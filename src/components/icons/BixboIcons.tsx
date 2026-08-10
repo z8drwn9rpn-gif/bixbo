@@ -4,7 +4,7 @@
  * Shared language: 64x64 viewBox, rounded volumes, top-left key light,
  * soft contact shadow, gentle gradients.
  */
-import { useId, type SVGProps } from "react";
+import { useId, type ReactNode, type SVGProps } from "react";
 
 export type IconProps = SVGProps<SVGSVGElement> & { size?: number };
 
@@ -1458,6 +1458,68 @@ export function DropIcon(p: IconProps) {
     </Svg>
   );
 }
+
+
+/* ------------------------------------------------------------ UI / NAVIGATION
+ * Utility symbols belong to the same BIXBO family. They intentionally use
+ * rounded olive strokes and soft circular volumes instead of Lucide icons.
+ */
+function UiGlyph({ size = 24, children, className, ...rest }: IconProps & { children: ReactNode }) {
+  return (
+    <Svg size={size} className={className} {...rest}>
+      <circle cx="32" cy="32" r="25" fill="var(--tint)" opacity="0.72" />
+      <circle cx="32" cy="32" r="24.25" stroke="var(--border)" strokeWidth="1.5" opacity="0.8" />
+      <g fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+        {children}
+      </g>
+    </Svg>
+  );
+}
+
+export function ArrowLeft(p: IconProps) { return <UiGlyph {...p}><path d="M38 18 24 32l14 14" /><path d="M25 32h18" /></UiGlyph>; }
+export function ChevronLeft(p: IconProps) { return <UiGlyph {...p}><path d="M38 18 24 32l14 14" /></UiGlyph>; }
+export function ChevronRight(p: IconProps) { return <UiGlyph {...p}><path d="m26 18 14 14-14 14" /></UiGlyph>; }
+export function ChevronDown(p: IconProps) { return <UiGlyph {...p}><path d="m18 26 14 14 14-14" /></UiGlyph>; }
+export function Plus(p: IconProps) { return <UiGlyph {...p}><path d="M32 18v28M18 32h28" /></UiGlyph>; }
+export function X(p: IconProps) { return <UiGlyph {...p}><path d="m21 21 22 22M43 21 21 43" /></UiGlyph>; }
+export function Check(p: IconProps) { return <UiGlyph {...p}><path d="m18 33 9 9 20-22" /></UiGlyph>; }
+export function Pencil(p: IconProps) { return <UiGlyph {...p}><path d="m20 43 4-13 17-17 10 10-17 17-14 3Z" /><path d="m24 30 10 10" /></UiGlyph>; }
+export function Trash2(p: IconProps) { return <UiGlyph {...p}><path d="M20 23h24M27 23v-6h10v6M24 27l2 21h12l2-21M30 31v11M35 31v11" /></UiGlyph>; }
+export function Share2(p: IconProps) { return <UiGlyph {...p}><circle cx="22" cy="32" r="4"/><circle cx="42" cy="20" r="4"/><circle cx="42" cy="44" r="4"/><path d="m26 30 12-7M26 34l12 7"/></UiGlyph>; }
+export function Search(p: IconProps) { return <UiGlyph {...p}><circle cx="29" cy="28" r="11"/><path d="m37 37 10 10"/></UiGlyph>; }
+export function MoreVertical(p: IconProps) { return <UiGlyph {...p}><path d="M32 20h.01M32 32h.01M32 44h.01" strokeWidth="6"/></UiGlyph>; }
+export function Pin(p: IconProps) { return <UiGlyph {...p}><path d="M25 18h14l-2 10 7 7H20l7-7-2-10ZM32 35v13" /></UiGlyph>; }
+export function PinOff(p: IconProps) { return <UiGlyph {...p}><path d="M23 18h16l-2 10 6 6M21 35h20M32 36v12M18 18l28 28" /></UiGlyph>; }
+export function Archive(p: IconProps) { return <UiGlyph {...p}><path d="M18 22h28v26H18zM16 16h32v8H16zM27 32h10" /></UiGlyph>; }
+export function RotateCcw(p: IconProps) { return <UiGlyph {...p}><path d="M20 25v-9l-8 8 8 8v-7c4-8 17-10 25-3 8 8 4 22-7 25" /></UiGlyph>; }
+export function TrendingDown(p: IconProps) { return <UiGlyph {...p}><path d="m17 22 11 11 8-8 12 12M39 37h9v-9" /></UiGlyph>; }
+export function TrendingUp(p: IconProps) { return <UiGlyph {...p}><path d="m17 42 11-11 8 8 12-12M39 27h9v9" /></UiGlyph>; }
+export function Bell(p: IconProps) { return <UiGlyph {...p}><path d="M22 39h20l-3-5v-7a7 7 0 0 0-14 0v7l-3 5ZM29 43c1 4 5 4 6 0" /></UiGlyph>; }
+export function BellOff(p: IconProps) { return <UiGlyph {...p}><path d="M22 39h20M25 34v-7c0-2 .7-4 2-5M38 24c.7 1 .9 2 .9 3v7l3 5M29 43c1 4 5 4 6 0M18 18l28 28" /></UiGlyph>; }
+export function Bold(p: IconProps) { return <UiGlyph {...p}><path d="M24 17v30M24 18h10c8 0 9 12 1 14H24M24 32h12c9 0 9 14 0 14H24" /></UiGlyph>; }
+export function Highlighter(p: IconProps) { return <UiGlyph {...p}><path d="m20 38 18-20 8 8-18 20H18l2-8ZM18 47h28" /></UiGlyph>; }
+export function ListChecks(p: IconProps) { return <UiGlyph {...p}><path d="m18 22 3 3 5-6M18 34l3 3 5-6M31 23h15M31 35h15M18 47h28" /></UiGlyph>; }
+export function LockKeyhole(p: IconProps) { return <UiGlyph {...p}><path d="M22 29v-6a10 10 0 0 1 20 0v6M19 29h26v20H19zM32 36v6" /></UiGlyph>; }
+export function ShieldCheck(p: IconProps) { return <UiGlyph {...p}><path d="M32 15 47 21v11c0 10-7 16-15 19-8-3-15-9-15-19V21l15-6Z"/><path d="m24 32 6 6 11-12"/></UiGlyph>; }
+
+// Semantic BIXBO aliases used by navigation and analytical views.
+export const Activity = BoltIcon;
+export const Brain = ProfileIcon;
+export const CalendarDays = CalendarIcon;
+export const Dumbbell = WorkoutIcon;
+export const Flame = FlameIcon;
+export const HeartPulse = HeartIcon;
+export const Moon = SleepIcon;
+export const Pill = PillIcon;
+export const Scale = WeightIcon;
+export const Sparkles = SparkleIcon;
+export const ThermometerSun = ThermometerIcon;
+export const Waves = WaterIcon;
+export const Home = CalendarIcon;
+export const StickyNote = NoteIcon;
+export const Users = HeartIcon;
+export const User = ProfileIcon;
+export const Settings = TaskIcon;
 
 /* ------------------------------------------------------------ REGISTRY */
 
