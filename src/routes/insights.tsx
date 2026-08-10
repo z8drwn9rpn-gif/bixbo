@@ -274,6 +274,47 @@ function eachDay(startK: string, endK: string): string[] {
   return out;
 }
 
+function scheduledTimeMinutes(time?: string): number | null {
+  if (!time) return null;
+  const match = /^(\d{1,2}):(\d{2})/.exec(time.trim());
+  if (!match) return null;
+
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+
+  if (
+    !Number.isInteger(hours) ||
+    !Number.isInteger(minutes) ||
+    hours < 0 ||
+    hours > 23 ||
+    minutes < 0 ||
+    minutes > 59
+  ) {
+    return null;
+  }
+
+  return hours * 60 + minutes;
+}
+
+/**
+ * Past days count in full. Future days never count.
+ * On today, only doses whose scheduled time has already passed count;
+ * a dose already marked taken also counts immediately.
+ */
+function isDoseEligibleNow(dateKey: string, time: string, taken: boolean, now: Date): boolean {
+  const today = toKey(now);
+
+  if (dateKey < today) return true;
+  if (dateKey > today) return false;
+  if (taken) return true;
+
+  const scheduledMinutes = scheduledTimeMinutes(time);
+  if (scheduledMinutes == null) return false;
+
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  return scheduledMinutes <= nowMinutes;
+}
+
 
 function InsightPeriodSelect({
   value,
@@ -819,20 +860,26 @@ function MedsAdherence({
     return out;
   }, [range.end, range.start]);
 
-  const expectedPerDay = scheduled.reduce((sum, med) => sum + med.times.length, 0);
+  const adherenceNow = new Date();
 
   const perDay = useMemo(
     () =>
       days.map((date) => {
         const missed: { medName: string; time: string; key: string }[] = [];
         const takenList: { medName: string; time: string; key: string }[] = [];
+        let expected = 0;
         let taken = 0;
 
         scheduled.forEach((med) => {
           med.times.forEach((time) => {
             const key = `${med.id}@${time}`;
+            const isTaken = !!data.medLog[date]?.[key];
 
-            if (data.medLog[date]?.[key]) {
+            if (!isDoseEligibleNow(date, time, isTaken, adherenceNow)) return;
+
+            expected += 1;
+
+            if (isTaken) {
               taken += 1;
               takenList.push({ medName: med.name, time, key });
             } else {
@@ -843,14 +890,23 @@ function MedsAdherence({
 
         return {
           date,
-          expected: expectedPerDay,
+          expected,
           taken,
           missed,
           takenList,
-          pct: expectedPerDay ? Math.round((taken / expectedPerDay) * 100) : null,
+          pct: expected ? Math.round((taken / expected) * 100) : null,
         };
       }),
-    [data.medLog, days, expectedPerDay, scheduled],
+    [
+      data.medLog,
+      days,
+      scheduled,
+      adherenceNow.getFullYear(),
+      adherenceNow.getMonth(),
+      adherenceNow.getDate(),
+      adherenceNow.getHours(),
+      adherenceNow.getMinutes(),
+    ],
   );
 
   const totalExpected = perDay.reduce((sum, day) => sum + day.expected, 0);
@@ -870,14 +926,20 @@ function MedsAdherence({
       scheduled
         .flatMap((med) =>
           med.times.map((time) => {
+            let expected = 0;
             let taken = 0;
 
             days.forEach((date) => {
-              if (data.medLog[date]?.[`${med.id}@${time}`]) taken += 1;
+              const key = `${med.id}@${time}`;
+              const isTaken = !!data.medLog[date]?.[key];
+
+              if (!isDoseEligibleNow(date, time, isTaken, adherenceNow)) return;
+
+              expected += 1;
+              if (isTaken) taken += 1;
             });
 
-            const expected = days.length;
-            const pct = expected ? Math.round((taken / expected) * 100) : 0;
+            const pct = expected ? Math.round((taken / expected) * 100) : null;
 
             return {
               id: `${med.id}@${time}`,
@@ -890,8 +952,18 @@ function MedsAdherence({
             };
           }),
         )
-        .sort((a, b) => a.pct - b.pct),
-    [data.medLog, days, scheduled],
+        .filter((entry) => entry.expected > 0)
+        .sort((a, b) => (a.pct ?? 0) - (b.pct ?? 0)),
+    [
+      data.medLog,
+      days,
+      scheduled,
+      adherenceNow.getFullYear(),
+      adherenceNow.getMonth(),
+      adherenceNow.getDate(),
+      adherenceNow.getHours(),
+      adherenceNow.getMinutes(),
+    ],
   );
 
   const asNeededCounts = useMemo(
@@ -1217,14 +1289,14 @@ function MedsAdherence({
                         <div
                           className="h-full rounded-full transition-all duration-300"
                           style={{
-                            width: `${med.pct}%`,
+                            width: `${med.pct ?? 0}%`,
                             background: color,
                           }}
                         />
                       </div>
 
                       <span className="w-14 shrink-0 text-right tabular-nums">
-                        {med.pct}%
+                        {med.pct ?? 0}%
                         <span className="block text-[10px] text-muted-foreground">
                           {med.taken}/{med.expected}
                         </span>
