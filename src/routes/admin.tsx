@@ -6,6 +6,7 @@ import { LayoutOrderEditor } from "@/components/LayoutOrderEditor";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "@/components/icons/BixboIcons";
 import { useI18n } from "@/hooks/useI18n";
 import { EMPTY, useBixbo, type BixboData } from "@/lib/storage";
+import { enableDeviceAdmin } from "@/lib/deviceAdmin";
 import {
   BIXBO_REGISTRY,
   getRegistryFeature,
@@ -65,6 +66,7 @@ function AdminPage() {
     const unlock = async () => {
       if ((await sha256Hex(adminPin)) === ADMIN_PIN_HASH) {
         window.sessionStorage.setItem("bixbo-admin-unlocked", "1");
+        enableDeviceAdmin();
         setPinError(false);
         setAdminUnlocked(true);
       } else {

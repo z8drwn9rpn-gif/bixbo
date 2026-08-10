@@ -48,6 +48,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { createCloudBackup } from "@/lib/cloudSync";
 import { useI18n } from "@/hooks/useI18n";
 import type { AppLanguage } from "@/lib/i18n";
+import { isDeviceAdminEnabled } from "@/lib/deviceAdmin";
 
 
 function TrText({ value }: { value: unknown }) {
@@ -477,7 +478,7 @@ function HealthHub({
   onHome: () => void;
   onOpen: (view: HealthView) => void;
   onNotifications: () => void;
-  onAdmin: () => void;
+  onAdmin?: () => void;
 }) {
   const { t } = useI18n();
 
@@ -587,13 +588,17 @@ function HealthHub({
             />
             <div className="ml-[4.5rem] border-t border-border/60" />
 
-            <HubRow
-              icon={<TaskIcon size={22} />}
-              title="Admin mode"
-              subtitle="Configure logs, calendar, Quick Log and Insights without editing code"
-              onClick={onAdmin}
-            />
-            <div className="ml-[4.5rem] border-t border-border/60" />
+            {onAdmin ? (
+              <>
+                <HubRow
+                  icon={<TaskIcon size={22} />}
+                  title="Admin mode"
+                  subtitle="Configure logs, calendar, Quick Log and Insights without editing code"
+                  onClick={onAdmin}
+                />
+                <div className="ml-[4.5rem] border-t border-border/60" />
+              </>
+            ) : null}
 
             <HubRow
               icon={<ProfileIcon size={22} />}
@@ -672,6 +677,7 @@ function ProfilePage() {
   const [healthView, setHealthView] = useState<HealthView>("hub");
   const [accountAuthBusy, setAccountAuthBusy] = useState<"google" | "apple" | null>(null);
   const [accountAuthError, setAccountAuthError] = useState<string | null>(null);
+  const [deviceAdminEnabled] = useState(() => isDeviceAdminEnabled());
 
   const [trackingPrefs, setTrackingPrefs] = useState({
     pain: true,
@@ -1043,7 +1049,7 @@ function ProfilePage() {
           setHealthView(next);
         }}
         onNotifications={() => navigate({ to: "/notifications" as never })}
-        onAdmin={() => navigate({ to: "/admin" as never })}
+        onAdmin={deviceAdminEnabled ? () => navigate({ to: "/admin" as never }) : undefined}
       />
     );
   }
