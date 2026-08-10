@@ -11,7 +11,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Apply patch
-        run: python3 .github/scripts/final_ui_i18n_couple_fix.py
+        run: |
+          python3 .github/scripts/final_ui_i18n_couple_fix.py
+          python3 .github/scripts/final_ui_i18n_couple_fix_v2.py
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
