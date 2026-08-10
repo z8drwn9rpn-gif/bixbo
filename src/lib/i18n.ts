@@ -416,6 +416,32 @@ const SK: Record<string, string> = {
   "tap to mark taken": "ťukni pre označenie ako užité",
   "Discontinued meds (history)": "Vysadené lieky (história)",
 
+  "Log at least one complete menstrual cycle to unlock this analysis.": "Zaznamenaj aspoň jeden celý menštruačný cyklus, aby sa táto analýza odomkla.",
+  "Before": "Pred",
+  "During": "Počas",
+  "After": "Po",
+  "Comparison unavailable": "Porovnanie nie je dostupné",
+  "No change": "Bez zmeny",
+  "Changed": "Zmena",
+  "Improved": "Zlepšenie",
+  "Worsened": "Zhoršenie",
+  "Log this metric in both periods to compare it.": "Zaznamenaj túto metriku v oboch obdobiach, aby sa dali porovnať.",
+  "Low": "Nízka",
+  "Medium": "Stredná",
+  "High": "Vysoká",
+  "Monthly": "Mesačne",
+  "Treatment": "Liečba",
+  "7 days": "7 dní",
+  "30 days": "30 dní",
+  "90 days": "90 dní",
+  "Patterns analysis period": "Obdobie analýzy Patterns",
+  "Medicines": "Lieky",
+  "(optional)": "(voliteľné)",
+  "Why you started it, dose change, or anything useful to remember": "Prečo si liečbu začala, zmena dávky alebo čokoľvek užitočné na zapamätanie",
+  "Unnamed treatment": "Nepomenovaná liečba",
+  "Choose one of your medicines or enter another treatment.": "Vyber jeden zo svojich liekov alebo zadaj inú liečbu.",
+  "e.g. Elicea, physiotherapy, low-histamine diet": "napr. Elicea, fyzioterapia, nízkohistamínová strava",
+
 };
 
 const TRANSLATIONS: Record<AppLanguage, Record<string, string>> = { en: EN, sk: SK };
