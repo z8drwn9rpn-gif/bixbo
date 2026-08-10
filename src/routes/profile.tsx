@@ -760,19 +760,14 @@ function ProfilePage() {
     setAccountAuthError(null);
 
     try {
-      const redirectTo = `${window.location.origin}/auth`;
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo,
-          skipBrowserRedirect: true,
+          redirectTo: `${window.location.origin}/auth`,
         },
       });
 
       if (error) throw error;
-      if (!data?.url) throw new Error(`${provider === "google" ? "Google" : "Apple"} sign-in URL was not returned.`);
-
-      window.location.assign(data.url);
     } catch (error) {
       setAccountAuthError(error instanceof Error ? error.message : String(error));
       setAccountAuthBusy(null);
