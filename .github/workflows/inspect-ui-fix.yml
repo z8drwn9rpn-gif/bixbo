@@ -1,0 +1,16 @@
+name: Inspect UI fix blocks
+on:
+  push:
+    paths:
+      - '.github/workflows/inspect-ui-fix.yml'
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show relevant blocks
+        run: |
+          echo '=== LOGSHEET CRAMP ==='
+          grep -n -C 30 -E 'Cramp pain|Intensity \(RPE\)|Very heavy|Spotting' src/components/LogSheet.tsx || true
+          echo '=== COUPLE ==='
+          grep -n -C 20 -E 'Daily average pain|You — solid|PARTNER — SHARED DETAILS|Today|Panic attacks|Tetany' src/routes/couple.tsx || true
