@@ -1511,6 +1511,19 @@ const SK: Record<string, string> = {
   "High caffeine (≥200 mg)": "Vysoký príjem kofeínu (≥200 mg)",
   "Hot flash": "Nával tepla",
   "Low energy": "Nízka energia",
+  "Intensity (RPE)": "Intenzita (RPE)",
+  "Monthly average pain": "Mesačný priemer bolesti",
+  "Daily average pain": "Denný priemer bolesti",
+  "Tap a bar to see its value. Solid bars are yours; striped bars belong to": "Ťukni na stĺpec a zobrazí sa jeho hodnota. Plné stĺpce sú tvoje; pruhované patria",
+  "shared details": "zdieľané údaje",
+  "Separate hard lumps": "Tvrdé, oddelené hrudky",
+  "Sausage-shaped but firm and lumpy": "Tvar klobásy, ale tuhý a hrudkovitý",
+  "Thicker but soft, with cracks": "Tvar klobásy s prasklinami na povrchu",
+  "Smooth, soft, uniform": "Hladká, mäkká, tvar klobásy",
+  "Soft blobs with clear-cut edges": "Mäkké hrudky s ostrými okrajmi",
+  "Fluffy, mushy, ragged edges": "Kašovitá, nadýchaná, rozstrapkané okraje",
+  "Watery, no solid pieces": "Tekutá, bez pevných častí",
+
 };
 
 const TRANSLATIONS: Record<AppLanguage, Record<string, string>> = { en: EN, sk: SK };

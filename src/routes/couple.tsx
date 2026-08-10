@@ -800,11 +800,11 @@ function CouplePainChart({
     <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
       <div>
         <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-          {`Pain — ${periodLabel}`}
+          {`${t("Pain")} — ${periodLabel}`}
         </h2>
 
         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-          {period === "Y" ? "Monthly average pain" : "Daily average pain"}. Tap a bar to see its value. Solid bars are yours; striped bars belong to {t(partnerName)}.
+          {t(period === "Y" ? "Monthly average pain" : "Daily average pain")}. {t("Tap a bar to see its value. Solid bars are yours; striped bars belong to")} {t(partnerName)}.
         </p>
       </div>
 
@@ -1067,7 +1067,7 @@ function CouplePainChart({
           >
             <span className="min-w-0 break-words leading-snug [overflow-wrap:anywhere]">
               <b>{selectedBar.owner}</b> · {selectedBar.day} · {t("Pain")} <b>{selectedBar.value.toFixed(1)}/10</b> ·{" "}
-              {PAIN_DESCRIPTIONS[Math.max(0, Math.min(10, Math.round(selectedBar.value)))] ?? "Pain"}
+              {t(PAIN_DESCRIPTIONS[Math.max(0, Math.min(10, Math.round(selectedBar.value)))] ?? "Pain")}
             </span>
 
             <span className="shrink-0 text-[10px] text-muted-foreground">{t("Tap to close")}</span>
@@ -1080,7 +1080,7 @@ function CouplePainChart({
       <div className="mt-2 flex flex-wrap gap-4 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
           <span className="inline-block h-3 w-3 rounded-sm" style={{ background: couplePainColor(6) }} />
-          You — solid
+          {t("You")} — {t("solid")}
         </span>
 
         <span className="flex items-center gap-1.5">
@@ -1437,7 +1437,7 @@ function CouplePage() {
   const partnerMeds = partner ? collectMedDays(partner.meds ?? [], partner.medLog ?? {}, partner.dayLogs) : [];
 
   const visibleHealthDay = periodDays.includes(todayKey()) ? todayKey() : (periodDays[periodDays.length - 1] ?? todayKey());
-  const visibleHealthDayLabel = visibleHealthDay === todayKey() ? "Today" : visibleHealthDay;
+  const visibleHealthDayLabel = visibleHealthDay === todayKey() ? t("Today") : visibleHealthDay;
 
   const splitEntriesByVisibleDay = <T extends { dateKey: string }>(entries: T[]) => ({
     current: entries.filter((entry) => entry.dateKey === visibleHealthDay),
@@ -1710,7 +1710,7 @@ function CouplePage() {
                       max={10}
                       decimals={1}
                       unit="/10"
-                      mineLabel="You"
+                      mineLabel={t("You")}
                       partnerLabel={t(partnerName)}
                       tone="rose"
                       icon={<HeartIcon size={22} />}
@@ -1722,7 +1722,7 @@ function CouplePage() {
                       mine={myPainDays}
                       theirs={partnerPainDays}
                       decimals={0}
-                      mineLabel="You"
+                      mineLabel={t("You")}
                       partnerLabel={t(partnerName)}
                       tone="green"
                       icon={<SparkleIcon size={22} />}
@@ -1734,7 +1734,7 @@ function CouplePage() {
                       mine={myPanic.length}
                       theirs={partnerPanic.length}
                       decimals={0}
-                      mineLabel="You"
+                      mineLabel={t("You")}
                       partnerLabel={t(partnerName)}
                       tone="purple"
                       icon={<PanicIcon size={22} />}
@@ -1746,7 +1746,7 @@ function CouplePage() {
                       mine={myTetany.length}
                       theirs={partnerTetany.length}
                       decimals={0}
-                      mineLabel="You"
+                      mineLabel={t("You")}
                       partnerLabel={t(partnerName)}
                       tone="blue"
                       icon={<BoltIcon size={22} />}
@@ -1758,7 +1758,7 @@ function CouplePage() {
                       mine={myTakenDoses}
                       theirs={partnerTakenDoses}
                       decimals={0}
-                      mineLabel="You"
+                      mineLabel={t("You")}
                       partnerLabel={t(partnerName)}
                       tone="emerald"
                       icon={<PillIcon size={22} />}
@@ -1770,12 +1770,12 @@ function CouplePage() {
 
             {activeTab === "health" ? (
               <SectionCard
-                title={`${t(partnerName)} — shared details`}
+                title={`${t(partnerName)} — ${t("shared details")}`}
                 description="Only the explicitly shared categories for the selected month."
               >
                 <div className="mt-3 space-y-2.5">
                   <CurrentAndHistory
-                    title={`Pain (${partnerPain.length})`}
+                    title={`${t("Pain")} (${partnerPain.length})`}
                     currentLabel={visibleHealthDayLabel}
                     currentContent={<PainList title={visibleHealthDayLabel} entries={partnerPainSplit.current} />}
                     historyCount={partnerPainSplit.history.length}
@@ -1783,7 +1783,7 @@ function CouplePage() {
                   />
 
                   <CurrentAndHistory
-                    title={`Tetany (${partnerTetany.length})`}
+                    title={`${t("Tetany")} (${partnerTetany.length})`}
                     currentLabel={visibleHealthDayLabel}
                     currentContent={<TetanyList title={visibleHealthDayLabel} entries={partnerTetanySplit.current} />}
                     historyCount={partnerTetanySplit.history.length}
@@ -1791,7 +1791,7 @@ function CouplePage() {
                   />
 
                   <CurrentAndHistory
-                    title={`Panic attacks (${partnerPanic.length})`}
+                    title={`${t("Panic attacks")} (${partnerPanic.length})`}
                     currentLabel={visibleHealthDayLabel}
                     currentContent={<PanicList title={visibleHealthDayLabel} entries={partnerPanicSplit.current} />}
                     historyCount={partnerPanicSplit.history.length}
@@ -1816,7 +1816,7 @@ function CouplePage() {
               >
                 <div className="mt-3 space-y-2.5">
                   <CurrentAndHistory
-                    title={`Pain (${myPain.length})`}
+                    title={`${t("Pain")} (${myPain.length})`}
                     currentLabel={visibleHealthDayLabel}
                     currentContent={<PainList title={visibleHealthDayLabel} entries={myPainSplit.current} />}
                     historyCount={myPainSplit.history.length}
@@ -1824,7 +1824,7 @@ function CouplePage() {
                   />
 
                   <CurrentAndHistory
-                    title={`Tetany (${myTetany.length})`}
+                    title={`${t("Tetany")} (${myTetany.length})`}
                     currentLabel={visibleHealthDayLabel}
                     currentContent={<TetanyList title={visibleHealthDayLabel} entries={myTetanySplit.current} />}
                     historyCount={myTetanySplit.history.length}
@@ -1832,7 +1832,7 @@ function CouplePage() {
                   />
 
                   <CurrentAndHistory
-                    title={`Panic attacks (${myPanic.length})`}
+                    title={`${t("Panic attacks")} (${myPanic.length})`}
                     currentLabel={visibleHealthDayLabel}
                     currentContent={<PanicList title={visibleHealthDayLabel} entries={myPanicSplit.current} />}
                     historyCount={myPanicSplit.history.length}

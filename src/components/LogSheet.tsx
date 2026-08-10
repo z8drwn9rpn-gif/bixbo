@@ -2551,7 +2551,7 @@ function PeriodForm({
   const [discharge, setDischarge] = useState<string>(cur?.discharge ?? "");
   const [dNote, setDNote] = useState<string>(cur?.dischargeNote ?? "");
   const [note, setNote] = useState<string>(cur?.note ?? "");
-  const [cramps, setCramps] = useState<number | undefined>(cur?.cramps);
+  const [cramps, setCramps] = useState<number | undefined>(cur?.cramps == null ? undefined : Math.max(1, Math.min(10, Math.round(cur.cramps))));
   const painDesc = getScaleDesc(data, "pain");
 
   const save = () => {
@@ -2587,49 +2587,34 @@ function PeriodForm({
               className={`rounded-2xl p-2 text-[11px] font-medium ${level === L.v ? "text-white ring-2 ring-foreground" : "bg-tint text-foreground"}`}
               style={level === L.v ? { background: L.color } : undefined}
             >
-              {L.label}
+              {t(L.label)}
             </button>
           ))}
         </div>
       </Field>
-      <Field label={`Cramp pain ${cramps == null ? "—" : Number.isInteger(cramps) ? cramps : cramps.toFixed(1)} / 10`}>
-        <div className="mt-2 flex items-center gap-3">
-          <div
-            className="grid h-14 w-14 shrink-0 place-items-center rounded-full text-lg font-bold text-white"
-            style={{ background: cramps == null ? "hsl(var(--muted-foreground))" : painColor(cramps) }}
-          >
-            {cramps == null ? "—" : Number.isInteger(cramps) ? cramps : cramps.toFixed(1)}
-          </div>
-          <div className="flex-1">
-            <Slider value={[(cramps ?? 0) * 2]} min={0} max={20} step={1} onValueChange={([v]) => setCramps(v / 2)} />
-          </div>
-        </div>
+      <Field label={`${t("Cramp pain")} ${cramps ?? "—"} / 10`}>
         <div className="mt-2 flex flex-nowrap items-center justify-center gap-0.5 px-0">
-          {Array.from({ length: 21 }, (_, i) => i / 2).map((n) => (
+          {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
             <button
               key={n}
               type="button"
               onClick={() => setCramps(cramps === n ? undefined : n)}
-              title={`${n} — ${painDesc[Math.round(n)]}`}
-              className={`h-8 w-8 rounded-full text-[11px] font-semibold transition ${
+              title={`${n} — ${t(painDesc[n])}`}
+              aria-label={`${n} — ${t(painDesc[n])}`}
+              className={`h-7 w-7 shrink-0 rounded-full text-[10px] font-semibold transition ${
                 cramps === n ? "text-white ring-2 ring-foreground" : "text-foreground"
               }`}
               style={{ background: painColor(n) }}
             >
-              {Number.isInteger(n) ? n : n.toFixed(1)}
+              {n}
             </button>
           ))}
         </div>
-        {cramps != null && (
-          <div className="mt-2 rounded-lg bg-tint px-2.5 py-1.5 text-[11px] leading-snug text-foreground">
-            <span className="font-semibold">Level {Math.round(cramps)}:</span> {painDesc[Math.round(cramps)]}
-          </div>
-        )}
         <ScaleLegend
           max={10}
-          from={0}
+          from={1}
           descriptions={painDesc}
-          value={cramps == null ? undefined : Math.round(cramps)}
+          value={cramps}
           title={t("Pain scale (Mankosky)")}
         />
       </Field>
@@ -3437,10 +3422,10 @@ function BowelForm({
               <BristolIcon shape={b.shape} color={b.color} />
               <div className="flex-1">
                 <p className="font-medium">
-                  <IcoText text={b.label} size={14} />
+                  <IcoText text={t(b.label)} size={14} />
                 </p>
                 <p className="text-[11px] text-muted-foreground">
-                  <IcoText text={b.sub} size={12} />
+                  <IcoText text={t(b.sub)} size={12} />
                 </p>
               </div>
             </button>
@@ -4119,8 +4104,8 @@ function WorkoutForm({
         </Field>
       )}
 
-      <Field label={`Intensity (RPE) ${rpe ?? "-"} / 10`}>
-        <div className="mt-2 flex flex-wrap justify-center gap-1.5 px-1">
+      <Field label={`${t("Intensity (RPE)")} ${rpe ?? "—"} / 10`}>
+        <div className="mt-2 flex flex-nowrap items-center justify-center gap-0.5 px-0">
           {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => {
             const active = rpe === n;
             return (
@@ -4129,7 +4114,7 @@ function WorkoutForm({
                 type="button"
                 onClick={() => setRpe(rpe === n ? undefined : n)}
                 aria-label={`RPE ${n}`}
-                className={`h-8 w-8 rounded-full text-[11px] font-semibold transition ${
+                className={`h-7 w-7 shrink-0 rounded-full text-[10px] font-semibold transition ${
                   active ? "text-white ring-2 ring-foreground" : "text-foreground"
                 }`}
                 style={{ background: painColor(n) }}
