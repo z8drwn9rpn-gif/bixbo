@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight } from "@/components/icons/BixboIcons";
 import { useI18n } from "@/hooks/useI18n";
 import { BIXBO_LAYOUT_SECTIONS, orderedLayoutSections, type LayoutPageId } from "@/lib/layoutRegistry";
 import type { BixboData } from "@/lib/storage";
@@ -36,14 +35,7 @@ export function LayoutOrderEditor({ data, update }: { data: BixboData; update: U
     },
   }));
 
-  const move = (id: string, delta: -1 | 1) => {
-    const ids = sections.map((section) => section.id);
-    const index = ids.indexOf(id);
-    const target = index + delta;
-    if (index < 0 || target < 0 || target >= ids.length) return;
-    [ids[index], ids[target]] = [ids[target], ids[index]];
-    writeOrder(ids);
-  };
+
 
   const drop = (targetId: string) => {
     if (!dragged || dragged === targetId) return;
@@ -54,7 +46,13 @@ export function LayoutOrderEditor({ data, update }: { data: BixboData; update: U
     const [item] = ids.splice(from, 1);
     ids.splice(to, 0, item);
     writeOrder(ids);
-    setDragged(null);
+  };
+
+  const moveDraggedByPointer = (event: React.PointerEvent<HTMLElement>) => {
+    if (!dragged) return;
+    const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>("[data-layout-sort-id]");
+    const targetId = target?.dataset.layoutSortId;
+    if (targetId && targetId !== dragged) drop(targetId);
   };
 
   const reset = () => update((current) => {
@@ -80,11 +78,10 @@ export function LayoutOrderEditor({ data, update }: { data: BixboData; update: U
 
       <div className="space-y-2">
         {sections.map((section, index) => (
-          <div key={section.id} draggable onDragStart={() => setDragged(section.id)} onDragEnd={() => setDragged(null)} onDragOver={(event) => event.preventDefault()} onDrop={() => drop(section.id)} className={`flex items-center gap-3 rounded-2xl bg-surface p-3 shadow-sm ring-1 ring-border/80 lg:cursor-grab ${dragged === section.id ? "opacity-60" : ""}`}>
+          <div key={section.id} data-layout-sort-id={section.id} draggable onDragStart={() => setDragged(section.id)} onDragEnd={() => setDragged(null)} onDragOver={(event) => event.preventDefault()} onDrop={() => { drop(section.id); setDragged(null); }} className={`flex items-center gap-3 rounded-2xl bg-surface p-3 shadow-sm ring-1 ring-border/80 lg:cursor-grab ${dragged === section.id ? "opacity-60" : ""}`}>
             <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-tint text-xs font-bold text-muted-foreground">{index + 1}</span>
             <div className="min-w-0 flex-1"><p className="text-sm font-semibold">{t(section.label)}</p><p className="text-[9px] text-muted-foreground">ID: {section.id}</p></div>
-            <button type="button" onClick={() => move(section.id, -1)} disabled={index === 0} className="grid h-9 w-9 place-items-center rounded-full bg-tint disabled:opacity-30" aria-label={t("Move up")}><ChevronLeft className="h-4 w-4 rotate-90" /></button>
-            <button type="button" onClick={() => move(section.id, 1)} disabled={index === sections.length - 1} className="grid h-9 w-9 place-items-center rounded-full bg-tint disabled:opacity-30" aria-label={t("Move down")}><ChevronRight className="h-4 w-4 rotate-90" /></button>
+            <button type="button" onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setDragged(section.id); }} onPointerMove={moveDraggedByPointer} onPointerUp={() => setDragged(null)} onPointerCancel={() => setDragged(null)} style={{ touchAction: "none" }} className="inline-flex h-9 items-center gap-1.5 rounded-full bg-tint px-3 text-[11px] font-semibold text-muted-foreground cursor-grab active:cursor-grabbing" aria-label={t("Drag to reorder")}><span className="text-base">⋮⋮</span>{t("Drag")}</button>
           </div>
         ))}
       </div>

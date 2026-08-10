@@ -1,12 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { CustomLogBuilder } from "@/components/CustomLogBuilder";
 import { LayoutOrderEditor } from "@/components/LayoutOrderEditor";
-import { ArrowLeft, ChevronLeft, ChevronRight } from "@/components/icons/BixboIcons";
+import { ArrowLeft } from "@/components/icons/BixboIcons";
 import { useI18n } from "@/hooks/useI18n";
 import { EMPTY, useBixbo, type BixboData } from "@/lib/storage";
 import { enableDeviceAdmin } from "@/lib/deviceAdmin";
+import { getDeviceAdminConfig, migrateLegacyAdminConfig, setDeviceAdminConfig } from "@/lib/deviceAdminConfig";
 import {
   BIXBO_REGISTRY,
   getRegistryFeature,
@@ -57,7 +58,16 @@ function AdminPage() {
   const [adminUnlocked, setAdminUnlocked] = useState(() => typeof window !== "undefined" && window.sessionStorage.getItem("bixbo-admin-unlocked") === "1");
   const [adminPin, setAdminPin] = useState("");
   const [pinError, setPinError] = useState(false);
+  const [configRevision, setConfigRevision] = useState(0);
   const view = hydrated ? data : EMPTY;
+  void configRevision;
+  const adminView: BixboData = { ...view, settings: { ...view.settings, adminConfig: getDeviceAdminConfig() } };
+  const deviceUpdate = (recipe: (current: BixboData) => BixboData) => {
+    const current: BixboData = { ...view, settings: { ...view.settings, adminConfig: getDeviceAdminConfig() } };
+    const next = recipe(current);
+    setDeviceAdminConfig(next.settings.adminConfig ?? {});
+    setConfigRevision((value) => value + 1);
+  };
   const [tab, setTab] = useState<AdminTab>("logs");
   const [dragged, setDragged] = useState<RegistryFeatureId | null>(null);
   const surface = TAB_SURFACE[tab];
@@ -67,6 +77,8 @@ function AdminPage() {
       if ((await sha256Hex(adminPin)) === ADMIN_PIN_HASH) {
         window.sessionStorage.setItem("bixbo-admin-unlocked", "1");
         enableDeviceAdmin();
+        migrateLegacyAdminConfig(view.settings.adminConfig);
+        update((current) => ({ ...current, settings: { ...current.settings, adminConfig: undefined } }));
         setPinError(false);
         setAdminUnlocked(true);
       } else {
@@ -90,13 +102,10 @@ function AdminPage() {
     );
   }
 
-  const features = useMemo(
-    () => BIXBO_REGISTRY.map((base) => getRegistryFeature(view, base.id)).sort((a, b) => a.order - b.order),
-    [view],
-  );
+  const features = BIXBO_REGISTRY.map((base) => getRegistryFeature(adminView, base.id)).sort((a, b) => a.order - b.order);
 
   const patchFeature = (id: RegistryFeatureId, patch: RegistryFeatureOverride) => {
-    update((current) => {
+    deviceUpdate((current) => {
       const existing = current.settings.adminConfig?.features?.[id] ?? {};
       return {
         ...current,
@@ -120,7 +129,7 @@ function AdminPage() {
   };
 
   const patchField = (featureId: RegistryFeatureId, fieldId: string, patch: RegistryFieldOverride) => {
-    update((current) => {
+    deviceUpdate((current) => {
       const feature = current.settings.adminConfig?.features?.[featureId] ?? {};
       const existing = feature.fields?.[fieldId] ?? {};
       return {
@@ -144,7 +153,7 @@ function AdminPage() {
   };
 
   const resetFeature = (id: RegistryFeatureId) => {
-    update((current) => {
+    deviceUpdate((current) => {
       const next = { ...(current.settings.adminConfig?.features ?? {}) };
       delete next[id];
       return {
@@ -157,14 +166,7 @@ function AdminPage() {
     });
   };
 
-  const move = (id: RegistryFeatureId, delta: -1 | 1) => {
-    const index = features.findIndex((feature) => feature.id === id);
-    const other = features[index + delta];
-    const current = features[index];
-    if (!current || !other) return;
-    patchFeature(current.id, { order: other.order });
-    patchFeature(other.id, { order: current.order });
-  };
+
 
   const moveTo = (targetId: RegistryFeatureId) => {
     if (!dragged || dragged === targetId) return;
@@ -175,7 +177,13 @@ function AdminPage() {
     const [source] = reordered.splice(sourceIndex, 1);
     reordered.splice(targetIndex, 0, source);
     reordered.forEach((feature, index) => patchFeature(feature.id, { order: (index + 1) * 10 }));
-    setDragged(null);
+  };
+
+  const moveDraggedByPointer = (event: React.PointerEvent<HTMLElement>) => {
+    if (!dragged) return;
+    const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>("[data-feature-sort-id]");
+    const targetId = target?.dataset.featureSortId as RegistryFeatureId | undefined;
+    if (targetId && targetId !== dragged) moveTo(targetId);
   };
 
   return (
@@ -208,8 +216,8 @@ function AdminPage() {
           ))}
         </div>
 
-        {tab === "fields" && <CustomLogBuilder data={view} update={update} />}
-        {tab === "layout" && <LayoutOrderEditor data={view} update={update} />}
+        {tab === "fields" && <CustomLogBuilder data={adminView} update={deviceUpdate} />}
+        {tab === "layout" && <LayoutOrderEditor data={adminView} update={deviceUpdate} />}
 
         <div className={`space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0 ${tab === "layout" ? "hidden" : ""}`}>
           {features.map((feature, index) => {
@@ -221,7 +229,7 @@ function AdminPage() {
                   <div className="mb-3 flex items-center gap-2"><span className="text-xl">{feature.icon}</span><div><p className="text-sm font-bold">{t(feature.label)}</p><p className="text-[10px] text-muted-foreground">ID: {feature.id}</p></div></div>
                   <div className="space-y-3">
                     {fields.map((baseField) => {
-                      const field = getRegistryField(view, feature.id, baseField.id)!;
+                      const field = getRegistryField(adminView, feature.id, baseField.id)!;
                       return (
                         <div key={field.id} className="rounded-2xl bg-tint p-3 ring-1 ring-border/70">
                           <div className="flex items-center gap-2">
@@ -240,8 +248,8 @@ function AdminPage() {
                             <div className="mt-3 space-y-1.5">
                               <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{t("Options")}</p>
                               {baseField.options.map((value, optionIndex) => {
-                                const option = view.settings.adminConfig?.features?.[feature.id]?.fields?.[field.id]?.options?.[value] ?? {};
-                                return <div key={value} className="flex items-center gap-2"><input defaultValue={option.label ?? value} onBlur={(e) => patchField(feature.id, field.id, { options: { ...(view.settings.adminConfig?.features?.[feature.id]?.fields?.[field.id]?.options ?? {}), [value]: { ...option, label: e.target.value, order: option.order ?? optionIndex } } })} className="h-8 min-w-0 flex-1 rounded-lg bg-background px-2 text-[11px] ring-1 ring-border"/><button type="button" onClick={() => patchField(feature.id, field.id, { options: { ...(view.settings.adminConfig?.features?.[feature.id]?.fields?.[field.id]?.options ?? {}), [value]: { ...option, enabled: option.enabled === false, order: option.order ?? optionIndex } } })} className="rounded-full bg-background px-2 py-1 text-[10px] ring-1 ring-border">{option.enabled === false ? t("Hidden") : t("Shown")}</button></div>;
+                                const option = adminView.settings.adminConfig?.features?.[feature.id]?.fields?.[field.id]?.options?.[value] ?? {};
+                                return <div key={value} className="flex items-center gap-2"><input defaultValue={option.label ?? value} onBlur={(e) => patchField(feature.id, field.id, { options: { ...(adminView.settings.adminConfig?.features?.[feature.id]?.fields?.[field.id]?.options ?? {}), [value]: { ...option, label: e.target.value, order: option.order ?? optionIndex } } })} className="h-8 min-w-0 flex-1 rounded-lg bg-background px-2 text-[11px] ring-1 ring-border"/><button type="button" onClick={() => patchField(feature.id, field.id, { options: { ...(adminView.settings.adminConfig?.features?.[feature.id]?.fields?.[field.id]?.options ?? {}), [value]: { ...option, enabled: option.enabled === false, order: option.order ?? optionIndex } } })} className="rounded-full bg-background px-2 py-1 text-[10px] ring-1 ring-border">{option.enabled === false ? t("Hidden") : t("Shown")}</button></div>;
                               })}
                             </div>
                           ) : null}
@@ -252,16 +260,17 @@ function AdminPage() {
                 </section>
               );
             }
-            const enabled = isRegistryFeatureEnabled(view, feature.id);
+            const enabled = isRegistryFeatureEnabled(adminView, feature.id);
             const shownHere = enabled && feature.surfaces[surface];
             return (
               <section
                 key={feature.id}
+                data-feature-sort-id={feature.id}
                 draggable
                 onDragStart={() => setDragged(feature.id)}
                 onDragEnd={() => setDragged(null)}
                 onDragOver={(event) => event.preventDefault()}
-                onDrop={() => moveTo(feature.id)}
+                onDrop={() => { moveTo(feature.id); setDragged(null); }}
                 className={`rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80 lg:cursor-grab ${dragged === feature.id ? "opacity-60" : ""}`}
               >
                 <div className="flex items-start gap-3">
@@ -332,10 +341,16 @@ function AdminPage() {
                 </div>
 
                 <div className="mt-3 flex items-center justify-between gap-2">
-                  <div className="flex gap-1">
-                    <button type="button" onClick={() => move(feature.id, -1)} disabled={index === 0} className="grid h-9 w-9 place-items-center rounded-full bg-tint disabled:opacity-30" aria-label={t("Move up")}><ChevronLeft className="h-4 w-4 rotate-90" /></button>
-                    <button type="button" onClick={() => move(feature.id, 1)} disabled={index === features.length - 1} className="grid h-9 w-9 place-items-center rounded-full bg-tint disabled:opacity-30" aria-label={t("Move down")}><ChevronRight className="h-4 w-4 rotate-90" /></button>
-                  </div>
+                  <button
+                    type="button"
+                    onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setDragged(feature.id); }}
+                    onPointerMove={moveDraggedByPointer}
+                    onPointerUp={() => setDragged(null)}
+                    onPointerCancel={() => setDragged(null)}
+                    style={{ touchAction: "none" }}
+                    className="inline-flex h-9 items-center gap-2 rounded-full bg-tint px-3 text-[11px] font-semibold text-muted-foreground cursor-grab active:cursor-grabbing"
+                    aria-label={t("Drag to reorder")}
+                  ><span className="text-base leading-none">⋮⋮</span>{t("Drag")}</button>
                   <button type="button" onClick={() => resetFeature(feature.id)} className="rounded-full bg-tint px-3 py-2 text-[10px] font-semibold text-muted-foreground">{t("Reset")}</button>
                 </div>
               </section>

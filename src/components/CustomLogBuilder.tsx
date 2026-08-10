@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Plus, ChevronLeft, ChevronRight } from "@/components/icons/BixboIcons";
+import { Plus } from "@/components/icons/BixboIcons";
 import { useI18n } from "@/hooks/useI18n";
 import type { BixboData } from "@/lib/storage";
 import type { CustomLogDefinition, RegistryFieldDefinition, RegistryFieldKind } from "@/lib/appRegistry";
@@ -72,14 +72,7 @@ export function CustomLogBuilder({ data, update }: { data: BixboData; update: Up
     patchLog(log.id, { fields: [...log.fields, field] });
   };
 
-  const moveField = (log: CustomLogDefinition, fieldId: string, delta: -1 | 1) => {
-    const ordered = [...log.fields].sort((a, b) => a.order - b.order);
-    const index = ordered.findIndex((field) => field.id === fieldId);
-    const target = index + delta;
-    if (index < 0 || target < 0 || target >= ordered.length) return;
-    [ordered[index], ordered[target]] = [ordered[target], ordered[index]];
-    patchLog(log.id, { fields: ordered.map((field, idx) => ({ ...field, order: (idx + 1) * 10 })) });
-  };
+
 
   const dropField = (log: CustomLogDefinition, targetId: string) => {
     if (!dragField || dragField.logId !== log.id || dragField.fieldId === targetId) return;
@@ -90,7 +83,15 @@ export function CustomLogBuilder({ data, update }: { data: BixboData; update: Up
     const [item] = ordered.splice(from, 1);
     ordered.splice(to, 0, item);
     patchLog(log.id, { fields: ordered.map((field, idx) => ({ ...field, order: (idx + 1) * 10 })) });
-    setDragField(null);
+  };
+
+  const moveFieldByPointer = (event: React.PointerEvent<HTMLElement>, log: CustomLogDefinition) => {
+    if (!dragField || dragField.logId !== log.id) return;
+    const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>("[data-field-sort-id]");
+    const raw = target?.dataset.fieldSortId;
+    if (!raw) return;
+    const [logId, fieldId] = raw.split(":");
+    if (logId === log.id && fieldId && fieldId !== dragField.fieldId) dropField(log, fieldId);
   };
 
   return (
@@ -153,7 +154,7 @@ export function CustomLogBuilder({ data, update }: { data: BixboData; update: Up
             <div className="mt-4 flex items-center justify-between">
               <div>
                 <p className="text-xs font-bold">{t("Fields")}</p>
-                <p className="text-[10px] text-muted-foreground">{t("Drag fields on desktop or use the arrows on mobile.")}</p>
+                <p className="text-[10px] text-muted-foreground">{t("Drag fields to reorder them on mobile or desktop.")}</p>
               </div>
               <select defaultValue="text" onChange={(event) => { addField(log, event.target.value as RegistryFieldKind); event.currentTarget.value = "text"; }} className="h-9 rounded-xl bg-tint px-2 text-[11px] font-semibold ring-1 ring-border">
                 <option value="text">+ {t("Text")}</option><option value="number">+ {t("Number")}</option><option value="toggle">+ {t("Yes / No")}</option><option value="chips">+ {t("Choices")}</option><option value="scale">+ {t("Scale")}</option>
@@ -165,11 +166,12 @@ export function CustomLogBuilder({ data, update }: { data: BixboData; update: Up
               {fields.map((field, index) => (
                 <div
                   key={field.id}
+                  data-field-sort-id={`${log.id}:${field.id}`}
                   draggable
                   onDragStart={() => setDragField({ logId: log.id, fieldId: field.id })}
                   onDragEnd={() => setDragField(null)}
                   onDragOver={(event) => event.preventDefault()}
-                  onDrop={() => dropField(log, field.id)}
+                  onDrop={() => { dropField(log, field.id); setDragField(null); }}
                   className={`rounded-2xl bg-tint p-3 ring-1 ring-border/70 lg:cursor-grab ${dragField?.fieldId === field.id ? "opacity-60" : ""}`}
                 >
                   <div className="flex items-center gap-2">
@@ -187,7 +189,7 @@ export function CustomLogBuilder({ data, update }: { data: BixboData; update: Up
                   </div> : null}
 
                   <div className="mt-3 flex items-center justify-between">
-                    <div className="flex gap-1"><button type="button" onClick={() => moveField(log, field.id, -1)} disabled={index === 0} className="grid h-8 w-8 place-items-center rounded-full bg-background disabled:opacity-30"><ChevronLeft className="h-3.5 w-3.5 rotate-90" /></button><button type="button" onClick={() => moveField(log, field.id, 1)} disabled={index === fields.length - 1} className="grid h-8 w-8 place-items-center rounded-full bg-background disabled:opacity-30"><ChevronRight className="h-3.5 w-3.5 rotate-90" /></button></div>
+                    <button type="button" onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setDragField({ logId: log.id, fieldId: field.id }); }} onPointerMove={(event) => moveFieldByPointer(event, log)} onPointerUp={() => setDragField(null)} onPointerCancel={() => setDragField(null)} style={{ touchAction: "none" }} className="inline-flex h-8 items-center gap-1.5 rounded-full bg-background px-2.5 text-[10px] font-semibold text-muted-foreground cursor-grab active:cursor-grabbing" aria-label={t("Drag to reorder")}><span className="text-sm">⋮⋮</span>{t("Drag")}</button>
                     <button type="button" onClick={() => patchField(log, field.id, { enabled: false })} className="text-[10px] font-semibold text-destructive">{t("Hide field")}</button>
                   </div>
                 </div>

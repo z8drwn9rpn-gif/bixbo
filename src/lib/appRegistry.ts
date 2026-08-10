@@ -1,4 +1,10 @@
 import type { BixboData } from "./storage";
+import { getDeviceAdminConfig } from "./deviceAdminConfig";
+
+function activeAdminConfig(data: Pick<BixboData, "settings">): AdminConfig {
+  if (typeof window === "undefined") return data.settings.adminConfig ?? {};
+  return getDeviceAdminConfig();
+}
 
 export type RegistrySurface = "log" | "quickLog" | "calendar" | "heatmap" | "monthly" | "patterns";
 
@@ -171,7 +177,7 @@ export const BIXBO_LOG_FIELDS: Partial<Record<RegistryFeatureId, RegistryFieldDe
 export function getRegistryField(data: Pick<BixboData, "settings">, featureId: RegistryFeatureId, fieldId: string): RegistryFieldDefinition | undefined {
   const base = BIXBO_LOG_FIELDS[featureId]?.find((field) => field.id === fieldId);
   if (!base) return undefined;
-  const override = data.settings.adminConfig?.features?.[featureId]?.fields?.[fieldId];
+  const override = activeAdminConfig(data)?.features?.[featureId]?.fields?.[fieldId];
   return {
     ...base,
     ...override,
@@ -202,18 +208,18 @@ export function registryFieldScale(data: Pick<BixboData, "settings">, featureId:
 }
 
 export function registryFieldOptions(data: Pick<BixboData, "settings">, featureId: RegistryFeatureId, fieldId: string, base: string[]): string[] {
-  const overrides = data.settings.adminConfig?.features?.[featureId]?.fields?.[fieldId]?.options ?? {};
+  const overrides = activeAdminConfig(data)?.features?.[featureId]?.fields?.[fieldId]?.options ?? {};
   return base
     .filter((value) => overrides[value]?.enabled !== false)
     .sort((a, b) => (overrides[a]?.order ?? base.indexOf(a)) - (overrides[b]?.order ?? base.indexOf(b)));
 }
 
 export function registryOptionLabel(data: Pick<BixboData, "settings">, featureId: RegistryFeatureId, fieldId: string, value: string): string {
-  return data.settings.adminConfig?.features?.[featureId]?.fields?.[fieldId]?.options?.[value]?.label ?? value;
+  return activeAdminConfig(data)?.features?.[featureId]?.fields?.[fieldId]?.options?.[value]?.label ?? value;
 }
 
 export function customLogDefinitions(data: Pick<BixboData, "settings">): CustomLogDefinition[] {
-  return [...(data.settings.adminConfig?.customLogs ?? [])]
+  return [...(activeAdminConfig(data)?.customLogs ?? [])]
     .filter((log) => log.enabled !== false)
     .map((log) => ({ ...log, fields: [...(log.fields ?? [])].sort((a, b) => a.order - b.order) }))
     .sort((a, b) => a.order - b.order);
@@ -224,7 +230,7 @@ const byId = new Map(BIXBO_REGISTRY.map((feature) => [feature.id, feature]));
 export function getRegistryFeature(data: Pick<BixboData, "settings">, id: RegistryFeatureId): RegistryFeatureDefinition {
   const base = byId.get(id);
   if (!base) throw new Error(`Unknown BIXBO registry feature: ${id}`);
-  const override = data.settings.adminConfig?.features?.[id];
+  const override = activeAdminConfig(data)?.features?.[id];
   return {
     ...base,
     ...override,
@@ -237,7 +243,7 @@ export function getRegistryFeature(data: Pick<BixboData, "settings">, id: Regist
 }
 
 export function isRegistryFeatureEnabled(data: Pick<BixboData, "settings">, id: RegistryFeatureId): boolean {
-  return data.settings.adminConfig?.features?.[id]?.enabled !== false;
+  return activeAdminConfig(data)?.features?.[id]?.enabled !== false;
 }
 
 export function isRegistrySurfaceEnabled(
