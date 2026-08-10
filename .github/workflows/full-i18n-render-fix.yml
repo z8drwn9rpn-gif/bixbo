@@ -14,6 +14,15 @@ jobs:
         with:
           bun-version: latest
       - run: bun install --frozen-lockfile
+      - name: Fix helper placement in patch script
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('.github/scripts/full_i18n_render_fix.py')
+          s=p.read_text()
+          s=s.replace("        idx = s.find('type ')", "        idx = s.find('\\ntype UpdateFn') + 1")
+          p.write_text(s)
+          PY
       - name: Apply render translation patch
         run: python3 .github/scripts/full_i18n_render_fix.py
       - name: Typecheck
