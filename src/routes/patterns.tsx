@@ -394,10 +394,10 @@ function PhaseBarChart({
 }
 
 
-function monthLabelFromPrefix(prefix: string): string {
+function monthLabelFromPrefix(prefix: string, language: "en" | "sk"): string {
   const match = /^(\d{4})-(\d{2})$/.exec(prefix);
   if (!match) return prefix;
-  return new Date(Number(match[1]), Number(match[2]) - 1, 1).toLocaleDateString("en-GB", {
+  return new Date(Number(match[1]), Number(match[2]) - 1, 1).toLocaleDateString(language === "sk" ? "sk-SK" : "en-GB", {
     month: "long",
     year: "numeric",
   });
@@ -422,11 +422,11 @@ function ComparisonMetric({
   previousLabel,
   currentLabel,
 }: ComparisonMetricProps) {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const palette = METRIC_COLORS[color];
   const [defaultCurrentPrefix, defaultPreviousPrefix] = thisAndLastMonthPrefixes();
-  const resolvedPreviousLabel = previousLabel ?? monthLabelFromPrefix(defaultPreviousPrefix);
-  const resolvedCurrentLabel = currentLabel ?? monthLabelFromPrefix(defaultCurrentPrefix);
+  const resolvedPreviousLabel = previousLabel ?? monthLabelFromPrefix(defaultPreviousPrefix, language);
+  const resolvedCurrentLabel = currentLabel ?? monthLabelFromPrefix(defaultCurrentPrefix, language);
   const hasAnyData = previous != null || current != null;
 
   const values = [previous, current].filter((value): value is number => value != null && Number.isFinite(value));
@@ -560,9 +560,10 @@ function MetricColumn({
   color: string;
   muted?: boolean;
 }) {
+  const { t } = useI18n();
   return (
     <div className="min-w-0">
-      <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
+      <p className="text-[11px] font-medium text-muted-foreground">{t(label)}</p>
 
       <p className="mt-0.5 text-lg font-bold tabular-nums text-foreground">
         {formatMetricValue(value, decimals, unit)}
@@ -788,7 +789,7 @@ function CollapsibleSection({
 /* -------------------------------------------------------------------------- */
 
 export function PatternsContent() {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const { data, update, hydrated } = useBixbo();
   const view = hydrated ? data : EMPTY;
   const dayLogs = view.dayLogs;
@@ -910,8 +911,8 @@ export function PatternsContent() {
   /* ------------------------------------------------------------------------ */
 
   const [currentMonthPrefix, previousMonthPrefix] = thisAndLastMonthPrefixes();
-  const currentMonthLabel = monthLabelFromPrefix(currentMonthPrefix);
-  const previousMonthLabel = monthLabelFromPrefix(previousMonthPrefix);
+  const currentMonthLabel = monthLabelFromPrefix(currentMonthPrefix, language);
+  const previousMonthLabel = monthLabelFromPrefix(previousMonthPrefix, language);
   const monthlyComparisonLabel = `${currentMonthLabel} vs ${previousMonthLabel}`;
 
   const currentMonthDays = daysOfMonth(currentMonthPrefix).filter((day) => day <= todayKey());

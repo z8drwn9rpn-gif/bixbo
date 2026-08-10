@@ -284,7 +284,7 @@ function StatCard({
 
       <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">{value}</p>
 
-      <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">{detail}</p>
+      <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">{t(detail)}</p>
     </article>
   );
 }
@@ -438,7 +438,7 @@ function SimilarityCard({ score, partnerName }: { score: number; partnerName: st
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t("Health similarity")}</p>
 
-          <h2 className="mt-1 font-serif text-xl font-semibold">You + {t(partnerName)}</h2>
+          <h2 className="mt-1 font-serif text-xl font-semibold">{t("You")} + {t(partnerName)}</h2>
 
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
             {t("Based only on shared pain, panic and tetany data during the selected month.")}
@@ -478,28 +478,28 @@ function PainList({ title, entries }: { title: string; entries: (PainEntry & { d
                 {pain.dateKey} · {pain.time} · {t(PAIN_DESCRIPTIONS[Math.round(pain.score)])}
               </p>
 
-              {pain.parts?.length ? <p className="text-sm">{pain.parts.join(", ")}</p> : null}
+              {pain.parts?.length ? <p className="text-sm">{pain.parts.map(t).join(", ")}</p> : null}
 
-              {pain.quality?.length ? <p className="text-xs text-muted-foreground">{pain.quality.join(", ")}</p> : null}
+              {pain.quality?.length ? <p className="text-xs text-muted-foreground">{pain.quality.map(t).join(", ")}</p> : null}
 
               {pain.symptoms?.length ? (
-                <p className="text-xs text-muted-foreground">+ {pain.symptoms.join(", ")}</p>
+                <p className="text-xs text-muted-foreground">+ {pain.symptoms.map(t).join(", ")}</p>
               ) : null}
 
               {pain.hotFlashes != null ? (
-                <p className="text-xs text-muted-foreground">Hot flashes {pain.hotFlashes}/5</p>
+                <p className="text-xs text-muted-foreground">{t("Hot flashes")} {pain.hotFlashes}/5</p>
               ) : null}
 
               {pain.headache ? (
                 <p className="text-xs text-muted-foreground">
-                  Headache
+                  {t("Headache")}
                   {pain.headacheIntensity != null ? ` ${pain.headacheIntensity}/10` : ""}
                 </p>
               ) : null}
 
               {pain.nausea ? (
                 <p className="text-xs text-muted-foreground">
-                  Nausea
+                  {t("Nausea")}
                   {pain.nauseaSeverity != null ? ` ${pain.nauseaSeverity}/10` : ""}
                 </p>
               ) : null}
@@ -1615,7 +1615,7 @@ function CouplePage() {
                   icon={<HeartIcon size={18} />}
                   label="Your symptom days"
                   value={`${mySymptomDays}`}
-                  detail={`${t(partnerName)}: ${partnerSymptomDays} days`}
+                  detail={`${t(partnerName)}: ${partnerSymptomDays} ${t("days")}`}
                   tone="rose"
                 />
 
@@ -1623,7 +1623,7 @@ function CouplePage() {
                   icon={<PanicIcon size={18} />}
                   label="Panic attacks"
                   value={`${myPanic.length + partnerPanic.length}`}
-                  detail={`You ${myPanic.length} · ${t(partnerName)} ${partnerPanic.length}`}
+                  detail={`${t("You")} ${myPanic.length} · ${t(partnerName)} ${partnerPanic.length}`}
                   tone="purple"
                 />
 
@@ -1631,7 +1631,7 @@ function CouplePage() {
                   icon={<BoltIcon size={18} />}
                   label="Tetany episodes"
                   value={`${myTetany.length + partnerTetany.length}`}
-                  detail={`You ${myTetany.length} · ${t(partnerName)} ${partnerTetany.length}`}
+                  detail={`${t("You")} ${myTetany.length} · ${t(partnerName)} ${partnerTetany.length}`}
                   tone="blue"
                 />
               </div>

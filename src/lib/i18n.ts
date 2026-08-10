@@ -1004,6 +1004,8 @@ const SK: Record<string, string> = {
   "An evening mood check-in.": "Večerná kontrola nálady.",
   "Friendly water reminders during the day.": "Jemné pripomienky pitného režimu počas dňa.",
   "Occasional BIXBO news and tips. Off by default.": "Občasné novinky a tipy BIXBO. Predvolene vypnuté.",
+  "Open birth control overview": "Otvoriť prehľad antikoncepcie",
+  "HAK day": "Deň HAK",
 };
 
 const TRANSLATIONS: Record<AppLanguage, Record<string, string>> = { en: EN, sk: SK };

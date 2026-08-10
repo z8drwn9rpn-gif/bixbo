@@ -1551,7 +1551,7 @@ function BirthControlSummaryCard({
       type="button"
       onClick={onOpen}
       className="mx-5 mt-2 block w-[calc(100%-2.5rem)] rounded-2xl bg-surface px-3 py-2.5 text-left shadow-sm ring-1 ring-border transition active:scale-[0.99]"
-      aria-label={`Open birth control overview. HAK day ${packDay} of ${PACK_DAYS}`}
+      aria-label={`${t("Open birth control overview")} · ${t("HAK day")} ${packDay} ${t("of")} ${PACK_DAYS}`}
     >
       <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/15 text-primary">
@@ -1567,7 +1567,7 @@ function BirthControlSummaryCard({
           <div className="mt-1 flex items-center gap-3">
             <div className="flex items-baseline gap-1">
               <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                Day
+                {t("Day")}
               </span>
               <span className="font-serif text-lg font-bold leading-none text-primary">
                 {packDay}/{PACK_DAYS}
