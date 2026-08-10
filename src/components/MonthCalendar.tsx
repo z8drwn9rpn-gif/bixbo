@@ -1,7 +1,7 @@
 import { Ico, IcoText } from "@/components/icons/BixboIcons";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "@/hooks/useI18n";
-import { getRegistryFeature, isRegistrySurfaceEnabled, type RegistryFeatureId } from "@/lib/appRegistry";
+import { customLogDefinitions, getRegistryFeature, isRegistrySurfaceEnabled, type RegistryFeatureId } from "@/lib/appRegistry";
 import {
   toKey,
   periodLabel,
@@ -93,6 +93,10 @@ function iconsFor(log: DayLog | undefined, data: BixboData): string[] {
   add("sleep", log.sleepHours != null);
   add("hotFlashes", Boolean(log.pain?.some((entry) => entry.hotFlashesOn || (entry.hotFlashes ?? 0) > 0)));
   add("headache", Boolean(log.pain?.some((entry) => entry.headache || entry.headacheIntensity != null)));
+  for (const custom of customLogDefinitions(data)) {
+    if (custom.calendar === false) continue;
+    if (log.customLogs?.[custom.id]?.length) out.push(custom.icon);
+  }
   return Array.from(new Set(out)).slice(0, 3);
 }
 

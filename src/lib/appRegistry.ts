@@ -57,6 +57,8 @@ export interface CustomLogDefinition {
   icon: string;
   color: string;
   enabled?: boolean;
+  /** Show the custom log icon on calendar days that contain entries. */
+  calendar?: boolean;
   order: number;
   fields: RegistryFieldDefinition[];
 }

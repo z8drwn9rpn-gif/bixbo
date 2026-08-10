@@ -45,6 +45,7 @@ export function CustomLogBuilder({ data, update }: { data: BixboData; update: Up
       icon: "🩺",
       color: "#788C45",
       enabled: true,
+      calendar: true,
       order: (logs.at(-1)?.order ?? 0) + 10,
       fields: [],
     };
@@ -113,6 +114,11 @@ export function CustomLogBuilder({ data, update }: { data: BixboData; update: Up
                 <p className="text-[10px] text-muted-foreground">Stable ID: {log.id}</p>
               </div>
               <button type="button" onClick={() => patchLog(log.id, { enabled: log.enabled === false })} className={`rounded-full px-3 py-1.5 text-[10px] font-semibold ${log.enabled === false ? "bg-tint text-muted-foreground" : "bg-primary text-primary-foreground"}`}>{log.enabled === false ? t("Hidden") : t("Enabled")}</button>
+            </div>
+
+            <div className="mt-3 flex items-center justify-between rounded-2xl bg-tint px-3 py-2 ring-1 ring-border/70">
+              <div><p className="text-xs font-semibold">{t("Show in Calendar")}</p><p className="text-[10px] text-muted-foreground">{t("Display this log's icon on days with saved entries.")}</p></div>
+              <button type="button" onClick={() => patchLog(log.id, { calendar: log.calendar === false })} className={`rounded-full px-3 py-1.5 text-[10px] font-semibold ${log.calendar === false ? "bg-background text-muted-foreground" : "bg-primary text-primary-foreground"}`}>{log.calendar === false ? t("Off") : t("On")}</button>
             </div>
 
             <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
