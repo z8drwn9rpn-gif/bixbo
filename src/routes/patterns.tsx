@@ -363,7 +363,7 @@ function PhaseBarChart({
               const miniBars = [0.72, 0.84, 0.94, 1, 0.9, 0.78];
 
               return (
-                <div key={`${title}-${bar.label}`} className="flex min-w-0 flex-1 flex-col items-center">
+                <div key={`${title}-${t(bar.label)}`} className="flex min-w-0 flex-1 flex-col items-center">
                   <span className="mb-2 text-xs font-bold tabular-nums text-foreground">
                     {formatMetricValue(bar.value, decimals, unit)}
                   </span>
@@ -643,7 +643,7 @@ function SummaryPanel({
                 : "text-foreground";
           return (
             <div
-              key={`${title}-${item.label}`}
+              key={`${title}-${t(item.label)}`}
               className="flex items-center justify-between gap-4 rounded-2xl bg-tint px-4 py-3 ring-1 ring-border/40"
             >
               <span className="text-sm text-muted-foreground">{t(item.label)}</span>
@@ -652,7 +652,7 @@ function SummaryPanel({
           );
         })}
       </div>
-      {confidence && <ConfidenceBadge level={confidence.level} detail={confidence.detail} />}
+      {confidence && <ConfidenceBadge level={t(String(confidence.level))} detail={confidence.detail} />}
     </div>
   );
 }
