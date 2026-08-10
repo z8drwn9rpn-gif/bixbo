@@ -1,0 +1,60 @@
+name: Finish LogSheet Slovak
+on:
+  push:
+    paths:
+      - .github/workflows/fix-logsheet-final23-sk.yml
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Add final translations
+        shell: python
+        run: |
+          from pathlib import Path
+          import json
+          p=Path('src/lib/i18n.ts'); s=p.read_text()
+          marker='  "Pain still feels the same?": "Bolesť je stále rovnaká?",'
+          entries={
+            '°C':'°C',"Can't be ignored > 30 min":'Nedá sa ignorovať dlhšie ako 30 min',"Can't be ignored for long":'Nedá sa dlho ignorovať',
+            'Comes and goes in waves through the day.':'Počas dňa prichádza a odchádza vo vlnách.',
+            "Cramp of hands/feet — fingers pulled into an “obstetrician's hand” or feet arched like a bow.":'Kŕč rúk/nôh — prsty stiahnuté do „pôrodníckej ruky“ alebo chodidlá prehnuté do oblúka.',
+            'Cramps':'Kŕče','Drained':'Vyčerpaná','Facial twitch when tapping the facial nerve (in front of the ear).':'Zášklb tváre pri poklepaní na tvárový nerv (pred uchom).',
+            'Frontin':'Frontin','Fully charged':'Plne nabitá','Hand cramp after inflating a BP cuff above systolic pressure.':'Kŕč ruky po nafúknutí tlakovej manžety nad systolický tlak.',
+            'Head / sinus':'Hlava / dutiny','kg':'kg','Neutral':'Neutrálne','Present all day without letting up.':'Prítomná celý deň bez ústupu.','Sex':'Sex',
+            'Starts shortly after eating.':'Začína krátko po jedle.',"Strong — hard to concentrate, feel like I'll vomit":'Silná — ťažko sa sústredím, mám pocit, že budem vracať',
+            'ŠukŠuk!':'ŠukŠuk!',"Trigger (or 'no obvious trigger')":'Spúšťač (alebo „bez zjavného spúšťača“)',
+            'Triggered by travel or movement (car, bus, boat).':'Vyvolaná cestovaním alebo pohybom (auto, autobus, loď).',
+            "Very mild — occasionally noticeable, doesn't bother me":'Veľmi mierna — občas badateľná, neprekáža mi',
+            'Worst right after waking, before eating.':'Najhoršia hneď po zobudení, pred jedlom.'
+          }
+          if marker not in s: raise RuntimeError('marker missing')
+          block=''.join(f'  {json.dumps(k,ensure_ascii=False)}: {json.dumps(v,ensure_ascii=False)},\n' for k,v in entries.items() if f'  {json.dumps(k,ensure_ascii=False)}:' not in s)
+          p.write_text(s.replace(marker,block+marker,1))
+      - run: bun run typecheck
+      - run: bun run lint
+      - run: bun test
+      - run: bun run build
+      - name: Verify zero missing LogSheet translations
+        run: |
+          cat > /tmp/audit.cjs <<'JS'
+          const ts=require('typescript'),fs=require('fs');
+          const i18n=fs.readFileSync('src/lib/i18n.ts','utf8'); const sk=i18n.slice(i18n.indexOf('const SK'));
+          const keys=new Set([...sk.matchAll(/^\s*["']([^"']+)["']\s*:/gm)].map(m=>m[1])); const c=new Set();
+          const add=s=>{s=s.trim().replace(/\s+/g,' ');if(/[A-Za-z]/.test(s)&&s.length>1)c.add(s)};
+          function scan(path){const sf=ts.createSourceFile(path,fs.readFileSync(path,'utf8'),ts.ScriptTarget.Latest,true,path.endsWith('.tsx')?ts.ScriptKind.TSX:ts.ScriptKind.TS);const attrs=new Set(['label','placeholder','title','aria-label','legendTitle','hint']);const arrays=/(_DEFAULT|_TYPES|_TRIGGERS|_SYMPTOMS|_HELPED|_LOCATIONS|_QUALITY|_MOODS|_LEVELS|_OPTIONS|_FEELINGS)$/;function w(n){if(ts.isJsxText(n))add(n.getText(sf));if(ts.isJsxAttribute(n)&&attrs.has(n.name.getText(sf))&&n.initializer&&ts.isStringLiteral(n.initializer))add(n.initializer.text);if(ts.isPropertyAssignment(n)&&ts.isIdentifier(n.name)&&['label','hint'].includes(n.name.text)&&ts.isStringLiteralLike(n.initializer))add(n.initializer.text);if(ts.isVariableDeclaration(n)&&ts.isIdentifier(n.name)&&arrays.test(n.name.text)&&n.initializer&&ts.isArrayLiteralExpression(n.initializer))for(const e of n.initializer.elements)if(ts.isStringLiteralLike(e))add(e.text);if(ts.isPropertyAssignment(n)&&ts.isStringLiteralLike(n.initializer)){let p=n.parent;while(p&&!ts.isVariableDeclaration(p))p=p.parent;if(p&&ts.isVariableDeclaration(p)&&ts.isIdentifier(p.name)&&/(DESC|DESCRIPTION|PAIN_DESCRIPTIONS)/.test(p.name.text))add(n.initializer.text)}ts.forEachChild(n,w)}w(sf)}
+          scan('src/components/LogSheet.tsx');scan('src/lib/scaleDescriptions.ts');scan('src/lib/storage.ts');const missing=[...c].filter(x=>!keys.has(x));console.log('MISSING_SK',missing.length);for(const x of missing)console.log(x);if(missing.length)process.exit(1);
+          JS
+          node /tmp/audit.cjs
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/fix-logsheet-final23-sk.yml
+          git add src/lib/i18n.ts
+          git commit -m "Finish all Slovak translations inside LogSheet"
+          git push
