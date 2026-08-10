@@ -1648,7 +1648,7 @@ function ProfilePage() {
       <HealthSubpage title="About BIXBO" onBack={() => setHealthView("hub")}>
         <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
           <p className="text-sm font-semibold text-foreground">BIXBO</p>
-          <p className="mt-1 text-xs text-muted-foreground">Health tracking application. Development build.</p>
+          <p className="mt-1 text-xs text-muted-foreground">{t("Health tracking application. Development build.")}</p>
         </section>
       </HealthSubpage>
     );
@@ -1777,7 +1777,7 @@ function ProfilePage() {
                   value={currentWeight ?? ""}
                   onChange={(e) => setCurrentWeight(e.target.value === "" ? undefined : Number(e.target.value))}
                 />
-                <p className="mt-1 text-[10px] text-muted-foreground">Saved as today&apos;s dated weight entry.</p>
+                <p className="mt-1 text-[10px] text-muted-foreground">{t("Saved as today's dated weight entry.")}</p>
               </Field>
               <Field label="Target weight (kg)" htmlFor="p-target-weight">
                 <Input
@@ -2318,3 +2318,5 @@ function ProfilePage() {
     </AppShell>
   );
 }
+
+
