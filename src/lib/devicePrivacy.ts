@@ -189,18 +189,3 @@ export async function authenticateBiometric(): Promise<boolean> {
     return false;
   }
 }
-
-/** One-time migration for the old Profile-only local object. */
-export function migrateLegacyDevicePrivacy(raw: unknown): void {
-  if (!raw || typeof raw !== "object") return;
-  const privacy = (raw as Record<string, unknown>).privacyPrefs;
-  if (!privacy || typeof privacy !== "object") return;
-  const p = privacy as Record<string, unknown>;
-  const current = readDevicePrivacy();
-  writeDevicePrivacy({
-    ...current,
-    // Old Face ID/PIN toggles were not real credentials, so do not silently
-    // enable a lock that the user cannot unlock. Privacy-screen can migrate.
-    privacyScreen: typeof p.blurScreenshots === "boolean" ? p.blurScreenshots : current.privacyScreen,
-  });
-}
