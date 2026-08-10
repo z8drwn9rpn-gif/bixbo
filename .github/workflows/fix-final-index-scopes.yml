@@ -1,0 +1,29 @@
+name: Fix final index i18n scopes
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-final-index-scopes.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply scope fix
+        run: python .github/scripts/fix_final_index_scopes.py
+      - name: Commit scope fix
+        run: |
+          rm -f .github/scripts/fix_final_index_scopes.py
+          rm -f .github/workflows/fix-final-index-scopes.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Fix final index i18n scopes"
+          git push
