@@ -1175,15 +1175,17 @@ export function PatternsContent() {
   const [archivedTreatments, setArchivedTreatments] = useState<ArchivedTreatment[]>([]);
   const [treatmentsLoaded, setTreatmentsLoaded] = useState(false);
   const treatmentStorageKey = "bixbo:patterns:treatment";
+  const treatmentStorageBackupKey = "bixbo:patterns:treatment:backup";
   const treatmentArchiveStorageKey = "bixbo:patterns:treatment-archive";
+  const treatmentArchiveStorageBackupKey = "bixbo:patterns:treatment-archive:backup";
 
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    try {
-      const raw = window.localStorage.getItem(treatmentStorageKey);
-      if (raw) {
-        const saved = JSON.parse(raw) as {
+    const parseTreatment = (raw: string | null) => {
+      if (!raw) return null;
+      try {
+        return JSON.parse(raw) as {
           date?: string;
           name?: string;
           kind?: TreatmentKind;
@@ -1191,59 +1193,88 @@ export function PatternsContent() {
           notes?: string;
           custom?: boolean;
         };
-        setTreatmentDate(saved.date ?? "");
-        setTreatmentName(saved.name ?? "");
-        setTreatmentKind(saved.kind ?? "medication");
-        setTreatmentResult(saved.result ?? "pain");
-        setTreatmentNotes(saved.notes ?? "");
-        setCustomTreatment(Boolean(saved.custom));
+      } catch {
+        return null;
       }
-    } catch {
-      // Ignore malformed local treatment drafts without touching the saved key.
+    };
+
+    const primaryTreatment = parseTreatment(window.localStorage.getItem(treatmentStorageKey));
+    const backupTreatment = parseTreatment(window.localStorage.getItem(treatmentStorageBackupKey));
+    const saved = primaryTreatment ?? backupTreatment;
+
+    if (saved) {
+      setTreatmentDate(saved.date ?? "");
+      setTreatmentName(saved.name ?? "");
+      setTreatmentKind(saved.kind ?? "medication");
+      setTreatmentResult(saved.result ?? "pain");
+      setTreatmentNotes(saved.notes ?? "");
+      setCustomTreatment(Boolean(saved.custom));
+
+      // Heal a missing/corrupt primary copy from the backup without deleting anything.
+      const serialized = JSON.stringify(saved);
+      window.localStorage.setItem(treatmentStorageKey, serialized);
+      window.localStorage.setItem(treatmentStorageBackupKey, serialized);
     }
 
-    try {
-      const rawArchive = window.localStorage.getItem(treatmentArchiveStorageKey);
-      if (rawArchive) {
-        const savedArchive = JSON.parse(rawArchive) as ArchivedTreatment[];
-        if (Array.isArray(savedArchive)) setArchivedTreatments(savedArchive);
+    const parseArchive = (raw: string | null): ArchivedTreatment[] | null => {
+      if (!raw) return null;
+      try {
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? (parsed as ArchivedTreatment[]) : null;
+      } catch {
+        return null;
       }
-    } catch {
-      // Ignore malformed archive data without deleting it automatically.
+    };
+
+    const primaryArchive = parseArchive(window.localStorage.getItem(treatmentArchiveStorageKey));
+    const backupArchive = parseArchive(window.localStorage.getItem(treatmentArchiveStorageBackupKey));
+    const savedArchive = primaryArchive ?? backupArchive;
+
+    if (savedArchive) {
+      setArchivedTreatments(savedArchive);
+      const serializedArchive = JSON.stringify(savedArchive);
+      window.localStorage.setItem(treatmentArchiveStorageKey, serializedArchive);
+      window.localStorage.setItem(treatmentArchiveStorageBackupKey, serializedArchive);
     }
 
-    // Autosave/remove effects must never run against the initial empty React
-    // state before the existing localStorage values have been loaded.
+    // From this point onward autosave is allowed, but autosave itself is
+    // never allowed to delete treatment data.
     setTreatmentsLoaded(true);
   }, []);
 
   useEffect(() => {
     if (typeof window === "undefined" || !treatmentsLoaded) return;
+
     const hasTreatment = Boolean(treatmentDate || treatmentName || treatmentNotes);
-    if (!hasTreatment) {
-      window.localStorage.removeItem(treatmentStorageKey);
-      return;
-    }
-    window.localStorage.setItem(
-      treatmentStorageKey,
-      JSON.stringify({
-        date: treatmentDate,
-        name: treatmentName,
-        kind: treatmentKind,
-        result: treatmentResult,
-        notes: treatmentNotes,
-        custom: customTreatment,
-      }),
-    );
-  }, [customTreatment, treatmentDate, treatmentKind, treatmentName, treatmentNotes, treatmentResult, treatmentsLoaded]);
+    if (!hasTreatment) return;
+
+    const serialized = JSON.stringify({
+      date: treatmentDate,
+      name: treatmentName,
+      kind: treatmentKind,
+      result: treatmentResult,
+      notes: treatmentNotes,
+      custom: customTreatment,
+    });
+
+    window.localStorage.setItem(treatmentStorageKey, serialized);
+    window.localStorage.setItem(treatmentStorageBackupKey, serialized);
+  }, [
+    customTreatment,
+    treatmentDate,
+    treatmentKind,
+    treatmentName,
+    treatmentNotes,
+    treatmentResult,
+    treatmentsLoaded,
+  ]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !treatmentsLoaded) return;
-    if (archivedTreatments.length === 0) {
-      window.localStorage.removeItem(treatmentArchiveStorageKey);
-      return;
-    }
-    window.localStorage.setItem(treatmentArchiveStorageKey, JSON.stringify(archivedTreatments));
+
+    const serialized = JSON.stringify(archivedTreatments);
+    window.localStorage.setItem(treatmentArchiveStorageKey, serialized);
+    window.localStorage.setItem(treatmentArchiveStorageBackupKey, serialized);
   }, [archivedTreatments, treatmentsLoaded]);
 
   const clearActiveTreatment = () => {
@@ -1253,7 +1284,10 @@ export function PatternsContent() {
     setTreatmentResult("pain");
     setTreatmentNotes("");
     setCustomTreatment(false);
-    if (typeof window !== "undefined") window.localStorage.removeItem(treatmentStorageKey);
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(treatmentStorageKey);
+      window.localStorage.removeItem(treatmentStorageBackupKey);
+    }
   };
 
   const archiveTreatmentComparison = () => {
