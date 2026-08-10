@@ -1,0 +1,34 @@
+name: Full i18n render fix
+on:
+  push:
+    paths:
+      - '.github/workflows/full-i18n-render-fix.yml'
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - name: Apply render translation patch
+        run: python3 .github/scripts/full_i18n_render_fix.py
+      - name: Typecheck
+        run: bun run typecheck
+      - name: Lint
+        run: bun run lint
+      - name: Tests
+        run: bun test
+      - name: Build
+        run: bun run build
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/LogSheet.tsx src/routes/insights.tsx src/routes/patterns.tsx src/routes/profile.tsx src/lib/i18n.ts
+          git diff --cached --quiet && exit 0
+          git commit -m "Complete Slovak render translation pass"
+          git push
