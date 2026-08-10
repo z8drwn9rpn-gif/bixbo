@@ -32,6 +32,8 @@ import {
   isPostpartumActive,
   normalizeBixboBackup,
   replaceBixbo,
+  createBixboSafetyBackup,
+  getBixboSafetyBackup,
   type HealthProfile,
   type Doctor,
   type EmergencyContact,
@@ -40,6 +42,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
+import { createCloudBackup } from "@/lib/cloudSync";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -1230,6 +1233,20 @@ function ProfilePage() {
   }
 
   if (healthView === "backup") {
+    const safetyBackup = getBixboSafetyBackup();
+
+    const restoreSafetyBackup = () => {
+      if (!safetyBackup) return;
+      const confirmed = window.confirm(
+        `Restore BIXBO safety copy from ${new Date(safetyBackup.createdAt).toLocaleString("en-GB")}? Your current state will first be preserved as another safety snapshot when possible.`,
+      );
+      if (!confirmed) return;
+
+      createBixboSafetyBackup("before-safety-restore");
+      replaceBixbo(safetyBackup.data, "local");
+      window.alert("BIXBO safety copy restored.");
+    };
+
     const restoreBackup = async (file: File) => {
       try {
         const raw = await file.text();
@@ -1237,9 +1254,18 @@ function ProfilePage() {
         const restored = normalizeBixboBackup(parsed);
 
         const confirmed = window.confirm(
-          "Restore this BIXBO backup? Your current local BIXBO data will be replaced by the selected backup. This action does not delete the backup file itself.",
+          "Restore this BIXBO backup? BIXBO will first save a safety copy of your current data, then replace the local data with the selected backup.",
         );
         if (!confirmed) return;
+
+        // Protect the current state before any destructive restore. Local safety
+        // backup works offline; cloud backup is best-effort when signed in.
+        createBixboSafetyBackup("before-manual-restore");
+        try {
+          await createCloudBackup(view);
+        } catch (error) {
+          console.warn("Pre-restore cloud backup unavailable; local safety backup is still kept.", error);
+        }
 
         replaceBixbo(restored, "local");
         window.alert("BIXBO backup restored successfully.");
@@ -1267,6 +1293,38 @@ function ProfilePage() {
               {backupPrefs.lastBackup ? new Date(backupPrefs.lastBackup).toLocaleString("en-GB") : "Never"}
             </span>
           </p>
+        </Section>
+
+        <Section
+          title="Emergency safety copy"
+          subtitle="BIXBO keeps a local recovery snapshot before migrations, restores and suspicious large data reductions when storage space allows."
+        >
+          {safetyBackup ? (
+            <>
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                Available from {new Date(safetyBackup.createdAt).toLocaleString("en-GB")} · {safetyBackup.reason}
+              </p>
+              <button
+                type="button"
+                onClick={restoreSafetyBackup}
+                className="min-h-11 w-full rounded-xl border border-input px-4 text-sm font-semibold"
+              >
+                Restore safety copy
+              </button>
+            </>
+          ) : (
+            <p className="text-xs leading-relaxed text-muted-foreground">No local safety copy has been created yet.</p>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              const ok = createBixboSafetyBackup("manual-safety-copy");
+              window.alert(ok ? "Safety copy created." : "Safety copy could not be created (for example because local storage is full or the dataset is too large).");
+            }}
+            className="min-h-11 w-full rounded-xl border border-input px-4 text-sm font-semibold"
+          >
+            Create safety copy now
+          </button>
         </Section>
 
         <Section title="Backup actions">
