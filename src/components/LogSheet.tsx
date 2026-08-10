@@ -2,8 +2,9 @@ import { createContext, useContext, useState, useMemo, useRef, useEffect, type R
 import { useI18n } from "@/hooks/useI18n";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Ico, IcoText } from "@/components/icons/BixboIcons";
+import { CustomLogForm } from "@/components/CustomLogForm";
 import { POSTPARTUM_SYMPTOMS } from "@/lib/health";
-import { getRegistryFeature, isRegistrySurfaceEnabled, registryFieldLabel, registryFieldOptions, registryFieldScale, registryOptionLabel, type RegistryFeatureId } from "@/lib/appRegistry";
+import { getRegistryFeature, isRegistrySurfaceEnabled, registryFieldLabel, registryFieldOptions, registryFieldScale, registryOptionLabel, customLogDefinitions, type RegistryFeatureId } from "@/lib/appRegistry";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -162,7 +163,8 @@ type Category =
   | "temp"
   | "task"
   | "event"
-  | "note";
+  | "note"
+  | `custom:${string}`;
 
 const CATEGORIES: { id: Category; label: string; emoji: string; hint: string }[] = [
   { id: "postpartum", label: "Postpartum symptoms", emoji: "🤱", hint: "Recovery symptoms · notes" },
@@ -220,7 +222,7 @@ export function LogSheet({
 
   const orderedCats = useMemo(() => {
     const saved = data.settings.logOrder ?? [];
-    const source = CATEGORIES
+    const builtins = CATEGORIES
       .map((category) => {
         const feature = getRegistryFeature(data, category.id as RegistryFeatureId);
         return { ...category, label: feature.label, emoji: feature.icon, registryOrder: feature.order };
@@ -230,11 +232,18 @@ export function LogSheet({
         if (category.id === "period" && cycleTrackingHidden) return false;
         if (category.id === "postpartum" && !postpartumActive) return false;
         return true;
-      })
-      .sort((a, b) => a.registryOrder - b.registryOrder);
+      });
+    const customs = customLogDefinitions(data).map((definition) => ({
+      id: `custom:${definition.id}` as Category,
+      label: definition.label,
+      emoji: definition.icon,
+      hint: "Custom log",
+      registryOrder: 1000 + definition.order,
+    }));
+    const source = [...builtins, ...customs].sort((a, b) => a.registryOrder - b.registryOrder);
     const byId = new Map(source.map((c) => [c.id, c]));
     const seen = new Set<string>();
-    const out: typeof CATEGORIES = [];
+    const out: typeof source = [];
     for (const id of saved) {
       const c = byId.get(id as Category);
       if (c && !seen.has(id)) {
@@ -634,18 +643,24 @@ export function LogSheet({
               <button onClick={back} className="flex items-center gap-1 text-sm text-muted-foreground">
                 <ChevronLeft className="h-4 w-4" /> {t("Back to Log")}
               </button>
-              <SheetTitle className="font-serif text-lg">{t(CATEGORIES.find((c) => c.id === active)?.label ?? "")}</SheetTitle>
+              <SheetTitle className="font-serif text-lg">{t(orderedCats.find((c) => c.id === active)?.label ?? CATEGORIES.find((c) => c.id === active)?.label ?? "")}</SheetTitle>
               <button onClick={close} aria-label={t("Close")} className="rounded-full p-1 hover:bg-tint">
                 <X className="h-5 w-5" />
               </button>
             </SheetHeader>
-            <LogSchemaContext.Provider value={active ? { data, featureId: active as RegistryFeatureId } : null}>
+            <LogSchemaContext.Provider value={active && !active.startsWith("custom:") ? { data, featureId: active as RegistryFeatureId } : null}>
             <div
               key={`${active}-${openToken}-${(edit as { id?: string } | undefined)?.id ?? initialPain?.id ?? "new"}`}
               className={`min-h-0 flex-1 overflow-y-auto ${
                 active === "pain" ? "pt-[60px]" : "px-5 pb-4"
               }`}
             >
+              {active?.startsWith("custom:") && (() => {
+                const id = active.slice("custom:".length);
+                const definition = customLogDefinitions(data).find((item) => item.id === id);
+                return definition ? <CustomLogForm definition={definition} date={date} data={data} update={update} onDone={close} /> : null;
+              })()}
+
               {active === "postpartum" && (
                 <PostpartumSymptomsForm date={date} data={data} update={update} onDone={close} />
               )}

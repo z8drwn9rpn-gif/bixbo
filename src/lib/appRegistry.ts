@@ -50,6 +50,17 @@ export interface RegistryFieldOverride {
   fields?: Record<string, RegistryFieldOverride>;
 }
 
+
+export interface CustomLogDefinition {
+  id: string;
+  label: string;
+  icon: string;
+  color: string;
+  enabled?: boolean;
+  order: number;
+  fields: RegistryFieldDefinition[];
+}
+
 export interface RegistryFeatureDefinition {
   id: RegistryFeatureId;
   label: string;
@@ -75,6 +86,7 @@ export interface RegistryFeatureOverride {
 export interface AdminConfig {
   enabled?: boolean;
   features?: Partial<Record<RegistryFeatureId, RegistryFeatureOverride>>;
+  customLogs?: CustomLogDefinition[];
 }
 
 const s = (
@@ -188,6 +200,13 @@ export function registryFieldOptions(data: Pick<BixboData, "settings">, featureI
 
 export function registryOptionLabel(data: Pick<BixboData, "settings">, featureId: RegistryFeatureId, fieldId: string, value: string): string {
   return data.settings.adminConfig?.features?.[featureId]?.fields?.[fieldId]?.options?.[value]?.label ?? value;
+}
+
+export function customLogDefinitions(data: Pick<BixboData, "settings">): CustomLogDefinition[] {
+  return [...(data.settings.adminConfig?.customLogs ?? [])]
+    .filter((log) => log.enabled !== false)
+    .map((log) => ({ ...log, fields: [...(log.fields ?? [])].sort((a, b) => a.order - b.order) }))
+    .sort((a, b) => a.order - b.order);
 }
 
 const byId = new Map(BIXBO_REGISTRY.map((feature) => [feature.id, feature]));

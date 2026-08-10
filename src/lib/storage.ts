@@ -229,6 +229,14 @@ export interface HistamineEntry {
   note?: string;
 }
 
+export type CustomLogValue = string | number | boolean | string[];
+export interface CustomLogEntry {
+  id: string;
+  time: string;
+  values: Record<string, CustomLogValue>;
+  note?: string;
+}
+
 /** A single time-stamped weight or body-temperature measurement. */
 export interface VitalMeasurement {
   id: string;
@@ -261,6 +269,8 @@ export interface DayLog {
   mood?: MoodEntry[];
   energy?: EnergyEntry[];
   histamine?: HistamineEntry[];
+  /** Admin-created generic logs. Keys are stable custom-log IDs. */
+  customLogs?: Record<string, CustomLogEntry[]>;
   /** Pregnancy-mode daily log (only used when pregnancy mode is on). */
   pregnancy?: PregnancyDayLog;
   /** Postpartum-mode daily log (only used when postpartum mode is on). */

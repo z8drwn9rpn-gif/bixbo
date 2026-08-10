@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { CustomLogBuilder } from "@/components/CustomLogBuilder";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "@/components/icons/BixboIcons";
 import { useI18n } from "@/hooks/useI18n";
 import { EMPTY, useBixbo, type BixboData } from "@/lib/storage";
@@ -163,6 +164,8 @@ function AdminPage() {
             </button>
           ))}
         </div>
+
+        {tab === "fields" && <CustomLogBuilder data={view} update={update} />}
 
         <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
           {features.map((feature, index) => {
