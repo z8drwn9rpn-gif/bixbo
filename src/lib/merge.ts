@@ -351,7 +351,7 @@ function withLegacyCanonicalBaseline(local: BixboData, remote: BixboData): Bixbo
 
   return {
     ...local,
-    deletedIds: Array.from(deletedIds).slice(-2000),
+    deletedIds: Array.from(deletedIds),
     deletedCustom,
     syncMeta: {
       updatedAt,
@@ -879,7 +879,7 @@ export function mergeBixbo(
   const remoteDeleted = Array.isArray(remote.deletedIds)
     ? remote.deletedIds.filter((id): id is string => typeof id === "string")
     : [];
-  const legacyDeletedIds = Array.from(new Set([...localDeleted, ...remoteDeleted])).slice(-2000);
+  const legacyDeletedIds = Array.from(new Set([...localDeleted, ...remoteDeleted]));
   const deletedCustom = mergeDeletedCustom(effectiveLocal.deletedCustom, remote.deletedCustom);
   const syncMeta = mergeSyncMeta(effectiveLocal.syncMeta, remote.syncMeta);
 
