@@ -2318,4 +2318,3 @@ function ProfilePage() {
     </AppShell>
   );
 }
-
