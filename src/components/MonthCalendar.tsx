@@ -302,17 +302,17 @@ export function MonthCalendar({
 
   return (
     <div className="px-1 landscape:px-2 lg:px-2" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-      <div className="grid grid-cols-7 gap-0.5 pb-1 text-center text-[11px] font-semibold text-muted-foreground landscape:pb-0 landscape:text-[10px] lg:pb-3 lg:text-base xl:text-[17px]">
+      <div className="grid grid-cols-7 gap-0.5 pb-1 text-center text-[11px] font-semibold text-muted-foreground landscape:pb-0 landscape:text-[10px] lg:pb-2 lg:text-sm xl:text-[15px]">
         {WEEKDAYS.map((d) => (
           <div key={d}>{d}</div>
         ))}
       </div>
-      <div className="space-y-0.5 lg:space-y-2 xl:space-y-2.5">
+      <div className="space-y-0.5 lg:space-y-1.5 xl:space-y-2">
         {weeks.map((week, wi) => {
           const { rows, overflowByCell } = weekLayouts[wi];
 
           return (
-            <div key={wi} className="grid grid-cols-7 gap-x-0.5 gap-y-0.5 lg:gap-x-1.5 lg:gap-y-1.5 xl:gap-x-2 xl:gap-y-2">
+            <div key={wi} className="grid grid-cols-7 gap-x-0.5 gap-y-0.5 lg:gap-x-1 lg:gap-y-1 xl:gap-x-1.5 xl:gap-y-1.5">
               {week.map(({ date, inMonth, key }, ci) => {
                 const meta = cellMeta.get(key);
                 const periodColor = meta?.periodColor ?? null;
@@ -373,32 +373,32 @@ export function MonthCalendar({
                       inMonth ? "" : "opacity-30"
                     } ${isSel ? "ring-2 ring-primary" : ""}`}
                   >
-                    <div className="relative flex h-[58px] items-center justify-center pt-0.5 landscape:h-8 landscape:pt-0 lg:h-[94px] lg:pt-1.5 xl:h-[102px]">
+                    <div className="relative flex h-[58px] items-center justify-center pt-0.5 landscape:h-8 landscape:pt-0 lg:h-[78px] lg:pt-1 xl:h-[84px]">
                       {pAvg != null && (
                         <span
                           aria-hidden
-                          className="pointer-events-none absolute h-10 w-10 rounded-full lg:h-14 lg:w-14 xl:h-16 xl:w-16"
+                          className="pointer-events-none absolute h-10 w-10 rounded-full lg:h-12 lg:w-12 xl:h-[52px] xl:w-[52px]"
                           style={{ boxShadow: `0 0 0 4.75px ${calendarPainColor(pAvg)}` }}
                         />
                       )}
                       {predictedPeriod && (
                         <span
                           aria-hidden
-                          className="pointer-events-none absolute inset-2 rounded-full lg:inset-[18px] xl:inset-[20px]"
+                          className="pointer-events-none absolute inset-2 rounded-full lg:inset-[15px] xl:inset-[16px]"
                           style={{ boxShadow: `0 0 0 2px var(--period-medium)` }}
                         />
                       )}
                       <div
-                        className="relative flex h-8 w-8 items-center justify-center rounded-full lg:h-12 lg:w-12 xl:h-14 xl:w-14"
+                        className="relative flex h-8 w-8 items-center justify-center rounded-full lg:h-10 lg:w-10 xl:h-11 xl:w-11"
                         style={{ background: periodColor ?? "transparent" }}
                       >
-                        <span className={`text-sm lg:text-lg xl:text-xl ${periodColor ? "font-semibold text-white" : "text-foreground"}`}>
+                        <span className={`text-sm lg:text-base xl:text-[17px] ${periodColor ? "font-semibold text-white" : "text-foreground"}`}>
                           {date.getDate()}
                         </span>
                       </div>
                       {icons.length > 0 && (
-                        <span className="pointer-events-none absolute bottom-0.5 left-1/2 flex -translate-x-1/2 items-center justify-center leading-none drop-shadow-sm lg:bottom-1.5 xl:bottom-2">
-                          <Ico e="❤️" size={15} className="lg:h-[18px] lg:w-[18px] xl:h-5 xl:w-5" />
+                        <span className="pointer-events-none absolute bottom-0.5 left-1/2 flex -translate-x-1/2 items-center justify-center leading-none drop-shadow-sm lg:bottom-1 xl:bottom-1.5">
+                          <Ico e="❤️" size={15} className="lg:h-4 lg:w-4 xl:h-[18px] xl:w-[18px]" />
                         </span>
                       )}
                     </div>
@@ -419,7 +419,7 @@ export function MonthCalendar({
                         return (
                           <div
                             key={ci}
-                            className={`h-3 truncate px-1 text-[10px] font-medium leading-3 text-primary-foreground lg:h-4 lg:text-[11px] lg:leading-4 xl:h-[18px] xl:text-xs xl:leading-[18px] ${
+                            className={`h-3 truncate px-1 text-[10px] font-medium leading-3 text-primary-foreground lg:h-3.5 lg:text-[10px] lg:leading-[14px] xl:h-4 xl:text-[11px] xl:leading-4 ${
                               isStart ? "rounded-l" : ""
                             } ${isEnd ? "rounded-r" : ""}`}
                             style={{
@@ -434,7 +434,7 @@ export function MonthCalendar({
                       // if this cell is covered by a segment (mid), skip (it's part of prior span)
                       const covered = row.some((s) => ci > s.startIdx && ci <= s.endIdx);
                       if (covered) return null;
-                      return <div key={ci} className="h-3 lg:h-4 xl:h-[18px]" />;
+                      return <div key={ci} className="h-3 lg:h-3.5 xl:h-4" />;
                     })}
                   </div>
                 ) : null,
@@ -442,7 +442,7 @@ export function MonthCalendar({
               {overflowByCell.some((n) => n > 0) && (
                 <div className="col-span-7 grid grid-cols-7 gap-0.5">
                   {overflowByCell.map((n, ci) => (
-                    <div key={ci} className="h-[10px] text-center text-[10px] leading-[10px] text-muted-foreground lg:h-3 lg:text-[11px] lg:leading-3">
+                    <div key={ci} className="h-[10px] text-center text-[10px] leading-[10px] text-muted-foreground lg:h-3 lg:text-[10px] lg:leading-3">
                       {n > 0 ? `+${n}` : ""}
                     </div>
                   ))}
