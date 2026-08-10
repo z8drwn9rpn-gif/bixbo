@@ -401,15 +401,15 @@ function NotesPage() {
 
     if (!note) {
       return (
-        <AppShell title="Bixbo Note">
+        <AppShell title={t("Bixbo Note")}>
           <div className="px-5 py-8 text-sm text-muted-foreground">
-            This note could not be found.
+            {t("This note could not be found.")}
             <button
               type="button"
               onClick={() => setOpenNote(null)}
               className="mt-4 block rounded-2xl bg-primary px-4 py-2 font-semibold text-primary-foreground"
             >
-              Back to notes
+              {t("Back to notes")}
             </button>
           </div>
         </AppShell>
@@ -420,7 +420,7 @@ function NotesPage() {
   }
 
   const addFolder = () => {
-    const name = prompt("Folder name");
+    const name = prompt(t("Folder name"));
     if (!name?.trim()) return;
 
     const folder: NoteFolder = {
@@ -433,7 +433,7 @@ function NotesPage() {
   };
 
   const deleteFolder = (id: string) => {
-    if (!confirm("Delete this folder? Notes will be moved to General.")) return;
+    if (!confirm(t("Delete this folder? Notes will be moved to General."))) return;
 
     update((current) => ({
       ...current,
@@ -484,7 +484,7 @@ function NotesPage() {
               type="button"
               onClick={() => setQuery("")}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-              aria-label="Clear search"
+              aria-label={t("Clear search")}
             >
               <X className="h-4 w-4" />
             </button>
@@ -506,7 +506,7 @@ function NotesPage() {
                   screen === item.key ? "bg-primary text-primary-foreground shadow-sm" : "text-foreground/75"
                 }`}
               >
-                {item.label}
+                {t(item.label)}
               </button>
             ))}
           </div>
@@ -518,7 +518,7 @@ function NotesPage() {
               <h2 className="font-serif text-2xl">{t("Folders")}</h2>
               <Button size="sm" variant="outline" onClick={addFolder}>
                 <Plus className="h-4 w-4" />
-                Folder
+                {t("Folder")}
               </Button>
             </div>
 
@@ -546,7 +546,7 @@ function NotesPage() {
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-semibold">{folder.name}</span>
                         <span className="text-xs text-muted-foreground">
-                          {count} {count === 1 ? "note" : "notes"}
+                          {count} {count === 1 ? t("note") : t("notes")}
                         </span>
                       </span>
 
@@ -558,7 +558,7 @@ function NotesPage() {
                         type="button"
                         onClick={() => deleteFolder(folder.id)}
                         className="rounded-full p-2 text-muted-foreground hover:bg-tint hover:text-destructive"
-                        aria-label={`Delete ${folder.name}`}
+                        aria-label={`${t("Delete")} ${folder.name}`}
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -628,16 +628,18 @@ function NoteSection({
   onDelete: (id: string) => void;
   emptyText?: string;
 }) {
+  const { t, language } = useI18n();
+  const locale = language === "sk" ? "sk-SK" : "en-GB";
   return (
     <section>
       <h2 className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
         {title === "Pinned" && <Pin className="h-3.5 w-3.5" />}
-        {title}
+        {t(title)}
       </h2>
 
       {notes.length === 0 ? (
         <div className="rounded-3xl bg-surface px-4 py-8 text-center text-sm text-muted-foreground ring-1 ring-border/70">
-          {emptyText ?? "No notes."}
+          {t(emptyText ?? "No notes.")}
         </div>
       ) : (
         <div className="space-y-2">
@@ -650,7 +652,7 @@ function NoteSection({
               <button type="button" onClick={() => onOpen(note.id)} className="block w-full pr-8 text-left">
                 <div className="flex items-start justify-between gap-3">
                   <h3 className="line-clamp-1 text-sm font-semibold">
-                    <NoteRichText text={note.title.trim() || "Untitled"} size={16} />
+                    <NoteRichText text={note.title.trim() || t("Untitled")} size={16} />
                   </h3>
                   <span className="shrink-0 text-[10px] text-muted-foreground">{formatNoteDate(note, t, locale)}</span>
                 </div>
@@ -664,7 +666,7 @@ function NoteSection({
                 type="button"
                 onClick={() => setMenuNoteId(menuNoteId === note.id ? null : note.id)}
                 className="absolute right-2 top-8 rounded-full p-1.5 text-muted-foreground hover:bg-background/60"
-                aria-label="Note options"
+                aria-label={t("Note options")}
               >
                 <MoreVertical className="h-4 w-4" />
               </button>
@@ -677,7 +679,7 @@ function NoteSection({
                     className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-xs hover:bg-tint"
                   >
                     {note.pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
-                    {note.pinned ? "Unpin" : "Pin"}
+                    {note.pinned ? t("Unpin") : t("Pin")}
                   </button>
 
                   <button
@@ -686,7 +688,7 @@ function NoteSection({
                     className="flex w-full items-center gap-2 border-t border-border/60 px-3 py-2.5 text-left text-xs hover:bg-tint"
                   >
                     <Archive className="h-4 w-4" />
-                    {note.archived ? "Restore" : "Archive"}
+                    {note.archived ? t("Restore") : t("Archive")}
                   </button>
 
                   <button
