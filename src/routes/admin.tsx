@@ -38,6 +38,7 @@ function AdminPage() {
   const { t } = useI18n();
   const view = hydrated ? data : EMPTY;
   const [tab, setTab] = useState<AdminTab>("logs");
+  const [dragged, setDragged] = useState<RegistryFeatureId | null>(null);
   const surface = TAB_SURFACE[tab];
 
   const features = useMemo(
@@ -92,6 +93,18 @@ function AdminPage() {
     patchFeature(other.id, { order: current.order });
   };
 
+  const moveTo = (targetId: RegistryFeatureId) => {
+    if (!dragged || dragged === targetId) return;
+    const sourceIndex = features.findIndex((feature) => feature.id === dragged);
+    const targetIndex = features.findIndex((feature) => feature.id === targetId);
+    if (sourceIndex < 0 || targetIndex < 0) return;
+    const reordered = [...features];
+    const [source] = reordered.splice(sourceIndex, 1);
+    reordered.splice(targetIndex, 0, source);
+    reordered.forEach((feature, index) => patchFeature(feature.id, { order: (index + 1) * 10 }));
+    setDragged(null);
+  };
+
   return (
     <AppShell
       title={
@@ -127,7 +140,15 @@ function AdminPage() {
             const enabled = isRegistryFeatureEnabled(view, feature.id);
             const shownHere = enabled && feature.surfaces[surface];
             return (
-              <section key={feature.id} className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
+              <section
+                key={feature.id}
+                draggable
+                onDragStart={() => setDragged(feature.id)}
+                onDragEnd={() => setDragged(null)}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={() => moveTo(feature.id)}
+                className={`rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80 lg:cursor-grab ${dragged === feature.id ? "opacity-60" : ""}`}
+              >
                 <div className="flex items-start gap-3">
                   <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-tint text-2xl">{feature.icon}</span>
                   <div className="min-w-0 flex-1">
@@ -185,12 +206,12 @@ function AdminPage() {
                         type="button"
                         onClick={() => patchFeature(feature.id, { surfaces: { monthly: !feature.surfaces.monthly } })}
                         className={`rounded-xl px-2 text-[10px] font-semibold ring-1 ring-border ${feature.surfaces.monthly ? "bg-primary/15 text-primary" : "bg-tint"}`}
-                      >Monthly</button>
+                      >{t("Monthly")}</button>
                       <button
                         type="button"
                         onClick={() => patchFeature(feature.id, { surfaces: { patterns: !feature.surfaces.patterns } })}
                         className={`rounded-xl px-2 text-[10px] font-semibold ring-1 ring-border ${feature.surfaces.patterns ? "bg-primary/15 text-primary" : "bg-tint"}`}
-                      >Patterns</button>
+                      >{t("Patterns")}</button>
                     </div>
                   ) : <span />}
                 </div>

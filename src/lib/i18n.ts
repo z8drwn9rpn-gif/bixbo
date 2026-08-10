@@ -1524,6 +1524,21 @@ const SK: Record<string, string> = {
   "Fluffy, mushy, ragged edges": "Kašovitá, nadýchaná, rozstrapkané okraje",
   "Watery, no solid pieces": "Tekutá, bez pevných častí",
 
+  "Admin mode": "Režim správcu",
+  "BIXBO Registry": "Register BIXBO",
+  "Change labels, icons, visibility and placement without editing source code. Historical data always keeps its stable ID.": "Meň názvy, ikony, viditeľnosť a umiestnenie bez úpravy zdrojového kódu. Historické dáta si vždy zachovajú stabilné ID.",
+  "Insights & graphs": "Prehľad a grafy",
+  "Display name": "Zobrazovaný názov",
+  "Enabled": "Aktívne",
+  "Hidden": "Skryté",
+  "Icon": "Ikona",
+  "Shown here": "Zobrazené tu",
+  "Hidden here": "Skryté tu",
+  "Move up": "Posunúť vyššie",
+  "Move down": "Posunúť nižšie",
+  "Safe delete policy": "Bezpečné mazanie",
+  "Admin mode never deletes historical health data. Use Hide to stop new logging. Stable IDs remain unchanged when you rename an item.": "Režim správcu nikdy nemaže historické zdravotné dáta. Použi Skryť, ak nechceš položku ponúkať pri nových záznamoch. Pri premenovaní zostáva stabilné ID nezmenené.",
+  "Configure logs, calendar, Quick Log and Insights without editing code": "Nastav logy, kalendár, Rýchly záznam a Prehľad bez úpravy kódu",
 };
 
 const TRANSLATIONS: Record<AppLanguage, Record<string, string>> = { en: EN, sk: SK };
