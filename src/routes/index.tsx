@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { createPortal } from "react-dom";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { ChevronLeft, ChevronRight, Share2, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Share2, Trash2 } from "@/components/icons/BixboIcons";
 
 import {
   ClockIcon,
@@ -243,7 +243,7 @@ function SleepTrendBars({
     <div className="pt-1">
       <div className="flex gap-1.5">
         <div className="flex flex-col items-end pr-1" style={{ height }}>
-          <div className="flex h-full flex-col justify-between text-[8px] font-medium text-muted-foreground">
+          <div className="flex h-full flex-col justify-between text-[10px] font-medium text-muted-foreground">
             {yLabels.map((value) => (
               <span key={value} className="leading-none tabular-nums">
                 {value}
@@ -291,7 +291,7 @@ function SleepTrendBars({
 
       <div className="mt-1 flex pl-5">
         <div
-          className="grid flex-1 gap-[2px] text-center text-[7px] text-muted-foreground"
+          className="grid flex-1 gap-[2px] text-center text-[10px] text-muted-foreground"
           style={{ gridTemplateColumns: `repeat(${Math.max(1, points.length)}, minmax(0, 1fr))` }}
         >
           {points.map((point) => (
@@ -302,7 +302,7 @@ function SleepTrendBars({
         </div>
       </div>
 
-      <div className="mt-2 flex items-center justify-center gap-3 text-[9px] text-muted-foreground">
+      <div className="mt-2 flex items-center justify-center gap-3 text-[10px] text-muted-foreground">
         <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-[#EF4444]" /> &lt;8h</span>
         <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-[#F3C30D]" /> 8h</span>
         <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-[#72C64A]" /> &gt;8h</span>
@@ -1553,7 +1553,7 @@ function BirthControlSummaryCard({
 
           <div className="mt-1 flex items-center gap-3">
             <div className="flex items-baseline gap-1">
-              <span className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                 Day
               </span>
               <span className="font-serif text-lg font-bold leading-none text-primary">
@@ -1564,7 +1564,7 @@ function BirthControlSummaryCard({
             <span className="h-5 w-px bg-border/70" />
 
             <div className="flex items-baseline gap-1">
-              <span className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                 {isPlacebo ? "Placebo" : "Active"}
               </span>
               <span className="text-xs font-bold text-primary">
@@ -2287,7 +2287,7 @@ function BirthControlCalendar({
 
           {/* Current day status — kept clear of the top pill bubbles. */}
           <div className="pointer-events-none absolute left-[25%] right-[25%] top-[20%] z-20 text-center">
-            <p className="text-[9px] font-semibold leading-none text-foreground">Day</p>
+            <p className="text-[10px] font-semibold leading-none text-foreground">Day</p>
             <p
               className="mt-0.5 font-serif text-[clamp(1.85rem,7.5vw,2.45rem)] font-bold leading-none"
               style={{ color: currentDay <= ACTIVE_DAYS ? HAK_PURPLE_DARK : HAK_PINK_DARK }}
@@ -2311,7 +2311,7 @@ function BirthControlCalendar({
               {hakMonthLabel}
             </p>
 
-            <div className="mt-1.5 grid grid-cols-7 text-center text-[7.5px] font-semibold leading-none text-foreground/75">
+            <div className="mt-1.5 grid grid-cols-7 text-center text-[10px] font-semibold leading-none text-foreground/75">
               {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((weekday) => (
                 <span key={weekday}>{weekday}</span>
               ))}
@@ -2359,7 +2359,7 @@ function BirthControlCalendar({
                     }
                   >
                     <span
-                      className="grid h-[10px] min-w-[16px] place-items-center rounded-full px-[1px] text-[8px] font-bold leading-none tabular-nums"
+                      className="grid h-[10px] min-w-[16px] place-items-center rounded-full px-[1px] text-[10px] font-bold leading-none tabular-nums"
                       style={{
                         color: "var(--foreground)",
                         boxShadow: isToday ? (darkMode ? "0 0 0 1px rgba(221,220,203,.75)" : "0 0 0 1px rgba(65,76,18,.68)") : undefined,
@@ -2399,16 +2399,16 @@ function BirthControlCalendar({
         >
           <div className="grid grid-cols-[1.35fr_1fr_.9fr] items-start gap-2 text-center">
             <div>
-              <p className="text-[9px] font-bold leading-tight" style={{ color: HAK_PURPLE_DARK }}>Active HAK days</p>
-              <p className="mt-0.5 text-[9px] font-semibold leading-tight" style={{ color: HAK_PURPLE_DARK }}>1–{ACTIVE_DAYS}</p>
+              <p className="text-[10px] font-bold leading-tight" style={{ color: HAK_PURPLE_DARK }}>Active HAK days</p>
+              <p className="mt-0.5 text-[10px] font-semibold leading-tight" style={{ color: HAK_PURPLE_DARK }}>1–{ACTIVE_DAYS}</p>
             </div>
             <div>
-              <p className="text-[9px] font-bold leading-tight" style={{ color: HAK_PINK_DARK }}>Placebo / break</p>
-              <p className="mt-0.5 text-[9px] font-semibold leading-tight" style={{ color: HAK_PINK_DARK }}>{ACTIVE_DAYS + 1}–{PACK_DAYS}</p>
+              <p className="text-[10px] font-bold leading-tight" style={{ color: HAK_PINK_DARK }}>Placebo / break</p>
+              <p className="mt-0.5 text-[10px] font-semibold leading-tight" style={{ color: HAK_PINK_DARK }}>{ACTIVE_DAYS + 1}–{PACK_DAYS}</p>
             </div>
             <div>
-              <p className="text-[9px] font-bold leading-tight" style={{ color: HAK_GREEN_DARK }}>New cycle</p>
-              <p className="mt-0.5 text-[9px] font-semibold leading-tight" style={{ color: HAK_GREEN_DARK }}>Day 1</p>
+              <p className="text-[10px] font-bold leading-tight" style={{ color: HAK_GREEN_DARK }}>New cycle</p>
+              <p className="mt-0.5 text-[10px] font-semibold leading-tight" style={{ color: HAK_GREEN_DARK }}>Day 1</p>
             </div>
           </div>
 
@@ -2489,38 +2489,38 @@ function BirthControlCalendar({
         >
           <div className="px-2 py-3 text-center">
             <span className="mx-auto grid h-7 w-7 place-items-center rounded-full bg-pink-100/80 text-[13px]"><Ico e="🫐" size={18} /></span>
-            <p className="mt-1 text-[9px] font-semibold text-foreground">Menstruation</p>
+            <p className="mt-1 text-[10px] font-semibold text-foreground">Menstruation</p>
             <p className="text-[11px] font-bold text-foreground">{PACK_DAYS - ACTIVE_DAYS} days</p>
-            <p className="mt-1 text-[8px] text-muted-foreground">
+            <p className="mt-1 text-[10px] text-muted-foreground">
               {fmtShortDate(currentPlaceboStart)} – {fmtShortDate(currentPlaceboEnd)}
             </p>
           </div>
 
           <div className="border-l border-border/50 px-2 py-3 text-center">
             <span className="mx-auto grid h-7 w-7 place-items-center rounded-full bg-primary/12 text-[13px] text-primary"><Ico e="🩸" size={18} /></span>
-            <p className="mt-1 text-[9px] font-semibold text-foreground">Cycle</p>
+            <p className="mt-1 text-[10px] font-semibold text-foreground">Cycle</p>
             <p className="text-[11px] font-bold text-foreground">{PACK_DAYS} days</p>
-            <p className="mt-1 text-[8px] text-muted-foreground">
+            <p className="mt-1 text-[10px] text-muted-foreground">
               {fmtShortDate(currentPackStart)} – {fmtShortDate(currentPackEnd)}
             </p>
           </div>
 
           <div className="border-l border-border/50 px-2 py-3 text-center">
             <span className="mx-auto grid h-7 w-7 place-items-center rounded-full bg-primary/12 text-[13px] text-primary"><Ico e="💊" size={18} /></span>
-            <p className="mt-1 text-[9px] font-semibold text-foreground">Taking HAK</p>
+            <p className="mt-1 text-[10px] font-semibold text-foreground">Taking HAK</p>
             <p className="text-[11px] font-bold text-foreground">{PACK_DAYS} days</p>
-            <p className="mt-1 text-[8px] text-muted-foreground">
+            <p className="mt-1 text-[10px] text-muted-foreground">
               {fmtShortDate(currentPackStart)} – {fmtShortDate(currentPackEnd)}
             </p>
           </div>
 
           <div className="border-l border-border/50 px-2 py-3 text-center">
             <span className="mx-auto grid h-7 w-7 place-items-center rounded-full bg-lime-100/80 text-[13px]"><Ico e="🛡️" size={18} /></span>
-            <p className="mt-1 text-[9px] font-semibold text-foreground">Protection</p>
+            <p className="mt-1 text-[10px] font-semibold text-foreground">Protection</p>
             <p className="text-[11px] font-bold" style={{ color: HAK_GREEN_DARK }}>
               {protectionActive ? "Active" : "Waiting"}
             </p>
-            <p className="mt-1 text-[8px] text-muted-foreground">From {fmtShortDate(protectionStart)}</p>
+            <p className="mt-1 text-[10px] text-muted-foreground">From {fmtShortDate(protectionStart)}</p>
           </div>
         </div>
       </div>
@@ -2857,7 +2857,7 @@ function SukSukPeriodChart({
     const value = diff === 0 ? "0" : `${diff > 0 ? "+" : ""}${diff}`;
 
     return (
-      <p className="mt-2 flex h-4 items-center justify-center gap-1 whitespace-nowrap text-center text-[9px] leading-none text-muted-foreground">
+      <p className="mt-2 flex h-4 items-center justify-center gap-1 whitespace-nowrap text-center text-[10px] leading-none text-muted-foreground">
         vs last {label}{" "}
         <span
           className="font-bold"
@@ -2889,7 +2889,7 @@ function SukSukPeriodChart({
           return (
             <div key={`${item.label}-${index}`} className="flex min-w-0 flex-col items-center justify-end">
               <span
-                className={`${dense ? "text-[6px]" : "text-[8px]"} mb-1 h-3 tabular-nums font-medium text-foreground/80`}
+                className={`${dense ? "text-[6px]" : "text-[10px]"} mb-1 h-3 tabular-nums font-medium text-foreground/80`}
                 title={`${item.label}: ${item.count}`}
                 aria-label={`${item.label}: ${item.count}`}
               >
@@ -2909,7 +2909,7 @@ function SukSukPeriodChart({
                 />
               </div>
               <span
-                className={`${dense ? "text-[6px]" : "text-[7.5px]"} mt-1.5 truncate font-medium text-muted-foreground`}
+                className={`${dense ? "text-[6px]" : "text-[10px]"} mt-1.5 truncate font-medium text-muted-foreground`}
               >
                 {item.label}
               </span>
@@ -2960,7 +2960,7 @@ function SukSukPeriodChart({
               <button
                 type="button"
                 onClick={() => setWeekOffset(0)}
-                className="min-w-0 truncate rounded-md px-0.5 py-0.5 text-center text-[7.5px] tabular-nums text-muted-foreground transition hover:bg-tint hover:text-foreground"
+                className="min-w-0 truncate rounded-md px-0.5 py-0.5 text-center text-[10px] tabular-nums text-muted-foreground transition hover:bg-tint hover:text-foreground"
                 aria-label="Back to current week"
                 title={weekOffset === 0 ? "Current week" : "Back to current week"}
               >
@@ -2982,7 +2982,7 @@ function SukSukPeriodChart({
             </div>
             <p className="mt-1 flex h-7 items-end justify-center text-center font-serif text-2xl font-bold leading-none text-foreground">
               {week.count}
-              <span className="ml-1 font-sans text-[8px] font-medium text-muted-foreground">times</span>
+              <span className="ml-1 font-sans text-[10px] font-medium text-muted-foreground">times</span>
             </p>
             {comparison(week.count, week.previousCount, "week")}
             <MiniBars items={week.bars} />
@@ -3004,7 +3004,7 @@ function SukSukPeriodChart({
               <button
                 type="button"
                 onClick={() => setMonthOffset(0)}
-                className="min-w-0 truncate rounded-md px-0.5 py-0.5 text-center text-[7.5px] text-muted-foreground transition hover:bg-tint hover:text-foreground"
+                className="min-w-0 truncate rounded-md px-0.5 py-0.5 text-center text-[10px] text-muted-foreground transition hover:bg-tint hover:text-foreground"
                 aria-label="Back to current month"
                 title={monthOffset === 0 ? "Current month" : "Back to current month"}
               >
@@ -3026,7 +3026,7 @@ function SukSukPeriodChart({
             </div>
             <p className="mt-1 flex h-7 items-end justify-center text-center font-serif text-2xl font-bold leading-none text-foreground">
               {month.count}
-              <span className="ml-1 font-sans text-[8px] font-medium text-muted-foreground">times</span>
+              <span className="ml-1 font-sans text-[10px] font-medium text-muted-foreground">times</span>
             </p>
             {comparison(month.count, month.previousCount, "month")}
             <MiniBars items={month.bars} />
@@ -3048,7 +3048,7 @@ function SukSukPeriodChart({
               <button
                 type="button"
                 onClick={() => setYearOffset(0)}
-                className="min-w-0 rounded-md px-1 py-0.5 text-center text-[7.5px] tabular-nums text-muted-foreground transition hover:bg-tint hover:text-foreground"
+                className="min-w-0 rounded-md px-1 py-0.5 text-center text-[10px] tabular-nums text-muted-foreground transition hover:bg-tint hover:text-foreground"
                 aria-label="Back to current year"
                 title={yearOffset === 0 ? "Current year" : "Back to current year"}
               >
@@ -3067,7 +3067,7 @@ function SukSukPeriodChart({
             </div>
             <p className="mt-1 flex h-7 items-end justify-center text-center font-serif text-2xl font-bold leading-none text-foreground">
               {year.count}
-              <span className="ml-1 font-sans text-[8px] font-medium text-muted-foreground">times</span>
+              <span className="ml-1 font-sans text-[10px] font-medium text-muted-foreground">times</span>
             </p>
             {comparison(year.count, year.previousCount, "year")}
             <MiniBars items={year.bars} dense />
