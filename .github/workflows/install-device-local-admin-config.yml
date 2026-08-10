@@ -1,0 +1,35 @@
+name: Install device-local admin config
+on:
+  push:
+    paths:
+      - '.github/scripts/install-device-local-admin-config.py'
+      - '.github/workflows/install-device-local-admin-config.yml'
+permissions:
+  contents: write
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: python .github/scripts/install-device-local-admin-config.py
+      - run: bun run build
+      - run: bun run typecheck
+      - run: bun run lint
+      - run: bun test
+      - name: Audit direct synced adminConfig reads
+        run: |
+          echo 'Remaining direct references:'
+          grep -R "settings\.adminConfig" src --include='*.ts' --include='*.tsx' || true
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/lib/deviceAdminConfig.ts src/lib/appRegistry.ts src/lib/layoutRegistry.ts src/routes/admin.tsx src/components/LayoutOrderEditor.tsx src/components/CustomLogBuilder.tsx
+          if git diff --cached --quiet; then
+            echo 'No changes to commit'
+          else
+            git commit -m 'Keep admin configuration device-local and add touch drag ordering'
+            git push
+          fi
