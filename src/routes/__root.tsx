@@ -23,6 +23,7 @@ import { HakAdminEditOverlay } from "../components/HakAdminEditOverlay";
 import { GlobalAdminModeController } from "../components/GlobalAdminModeController";
 import { UniversalAdminPageEditor } from "../components/UniversalAdminPageEditor";
 import { NavigationAdminEditor } from "../components/NavigationAdminEditor";
+import { UniversalTextAdminEditor } from "../components/UniversalTextAdminEditor";
 import { Toaster } from "../components/ui/sonner";
 import { useI18n } from "@/hooks/useI18n";
 import { useGlobalAdminConfigSync } from "@/lib/globalAdminConfig";
@@ -167,6 +168,7 @@ function RootComponent() {
       <GlobalAdminModeController />
       <UniversalAdminPageEditor />
       <NavigationAdminEditor />
+      <UniversalTextAdminEditor />
       <NotificationPrompt />
       <Toaster />
     </QueryClientProvider>

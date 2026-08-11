@@ -103,6 +103,8 @@ export interface AdminConfig {
   layoutOrder?: Record<string, string[]>;
   /** Admin overrides for stable navigation item IDs. BIXBO branding is not a navigation item. */
   navigation?: { items?: Record<string, { label?: string; hidden?: boolean; order?: number }> };
+  /** Route-scoped visible text overrides. BIXBO brand strings are rejected by the editor runtime. */
+  textOverrides?: Record<string, { label?: string; hidden?: boolean }>;
   /** Reserved for Google-account ownership once app authentication is enabled. */
   ownerEmail?: string;
 }
@@ -285,15 +287,7 @@ export function registryFeaturesForSurface(
   surface: RegistrySurface,
 ): RegistryFeatureDefinition[] {
   return BIXBO_REGISTRY
+    .map((definition) => getRegistryFeature(data, definition.id))
     .filter((feature) => isRegistrySurfaceEnabled(data, feature.id, surface))
-    .map((feature) => getRegistryFeature(data, feature.id))
     .sort((a, b) => a.order - b.order);
-}
-
-export function registryFeatureLabel(data: Pick<BixboData, "settings">, id: RegistryFeatureId): string {
-  return getRegistryFeature(data, id).label;
-}
-
-export function registryFeatureIcon(data: Pick<BixboData, "settings">, id: RegistryFeatureId): string {
-  return getRegistryFeature(data, id).icon;
 }
