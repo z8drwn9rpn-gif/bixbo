@@ -5,11 +5,14 @@ import { resolve } from "node:path";
 const read = (path: string) => readFileSync(resolve(process.cwd(), path), "utf8");
 
 describe("Notes keyboard, Heatmap edge tooltip and live Admin regressions", () => {
-  it("primes iOS keyboard through a native textarea before focusing rich Notes", () => {
+  it("primes iOS keyboard once and forces the post-mount editor rerender that makes typing available", () => {
     const source = read("src/routes/notes-editor.tsx");
     expect(source).toContain("keyboardBridgeRef");
     expect(source).toContain("bridge.focus({ preventScroll: true })");
-    expect(source).toContain("onTouchStart={primeIOSKeyboard}");
+    expect(source).toContain('if (event.pointerType === "touch") primeIOSKeyboard()');
+    expect(source).toContain("editorReady");
+    expect(source).toContain('key={`${note.id}:${editorReady ? "ready" : "boot"}`}');
+    expect(source).not.toContain("onTouchStart={primeIOSKeyboard}");
   });
 
   it("always renders the Year Heatmap tooltip with a deterministic edge-safe fallback", () => {
@@ -17,6 +20,7 @@ describe("Notes keyboard, Heatmap edge tooltip and live Admin regressions", () =
     expect(source).toContain("hasActive && activeTooltip && activePosition && activeTooltipLayout");
     expect(source).toContain("Math.max(2, Math.min(98, yearTooltipAnchor.leftPct))");
     expect(source).toContain("activePosition.weekIndex");
+    expect(source).toContain("activeDate.getMonth() < half.startMonth");
   });
 
   it("keeps the current app page interactive while Admin editing is open", () => {

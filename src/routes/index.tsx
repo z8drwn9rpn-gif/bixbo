@@ -1859,6 +1859,7 @@ function BirthControlOverlay({
   return createPortal(
     <div
       ref={overlayRef}
+      data-bixbo-hak-root="1"
       className="fixed inset-0 z-[900] flex h-[100dvh] flex-col overflow-hidden bg-background text-foreground"
       style={{
         ...({

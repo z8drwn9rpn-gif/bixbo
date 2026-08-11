@@ -91,6 +91,7 @@ export function NoteEditor({
   const [showChecklist, setShowChecklist] = useState(Boolean(note.checklist?.length));
   const [newItem, setNewItem] = useState("");
   const [tick, setTick] = useState(0);
+  const [editorReady, setEditorReady] = useState(false);
 
   const editorRef = useRef<HTMLDivElement | null>(null);
   const keyboardBridgeRef = useRef<HTMLTextAreaElement | null>(null);
@@ -101,6 +102,12 @@ export function NoteEditor({
   );
   const contentRef = useRef(initialContentRef.current);
   const firstRender = useRef(true);
+
+  useEffect(() => {
+    setEditorReady(false);
+    const frame = window.requestAnimationFrame(() => setEditorReady(true));
+    return () => window.cancelAnimationFrame(frame);
+  }, [note.id]);
 
   useEffect(() => {
     if (firstRender.current) {
@@ -361,7 +368,7 @@ export function NoteEditor({
             className="pointer-events-none fixed left-0 top-0 h-px w-px opacity-0 text-base"
           />
           <div
-            key={note.id}
+            key={`${note.id}:${editorReady ? "ready" : "boot"}`}
             ref={editorRef}
             contentEditable
             suppressContentEditableWarning
@@ -377,7 +384,6 @@ export function NoteEditor({
             onPointerDown={(event) => {
               if (event.pointerType === "touch") primeIOSKeyboard();
             }}
-            onTouchStart={primeIOSKeyboard}
             onInput={onInput}
             onBlur={onInput}
             className="relative z-10 min-h-[40dvh] touch-manipulation select-text text-base leading-relaxed whitespace-pre-wrap outline-none empty:before:pointer-events-none empty:before:text-muted-foreground empty:before:content-[attr(data-placeholder)]"

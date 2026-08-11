@@ -2223,8 +2223,10 @@ function YearHealthHeatmap({
   const activePosition = useMemo(() => {
     if (!active || heatmapPeriod !== "Y") return null;
 
+    const activeDate = fromKey(active);
     for (let halfIndex = 0; halfIndex < halfYearGrids.length; halfIndex++) {
       const half = halfYearGrids[halfIndex];
+      if (activeDate.getMonth() < half.startMonth || activeDate.getMonth() > half.endMonth) continue;
       for (let weekIndex = 0; weekIndex < half.weeks.length; weekIndex++) {
         const weekdayIndex = half.weeks[weekIndex].findIndex((date) => toKey(date) === active);
         if (weekdayIndex >= 0) return { halfIndex, weekIndex, weekdayIndex };

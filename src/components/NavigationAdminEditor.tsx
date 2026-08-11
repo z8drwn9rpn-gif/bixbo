@@ -117,7 +117,7 @@ export function NavigationAdminEditor() {
   return (
     <>
       <div data-bixbo-admin-ui className="fixed bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] left-4 z-[92] lg:bottom-6 lg:left-[16rem]">
-        <button type="button" onClick={() => setOpen((value) => !value)} className="rounded-full bg-foreground px-4 py-2 text-xs font-bold text-background shadow-lg ring-1 ring-border">
+        <button type="button" data-bixbo-admin-open="navigation" onClick={() => setOpen((value) => !value)} className="rounded-full bg-foreground px-4 py-2 text-xs font-bold text-background shadow-lg ring-1 ring-border">
           {open ? t("Done") : `☰ ${t("Navigation")}`}
         </button>
       </div>

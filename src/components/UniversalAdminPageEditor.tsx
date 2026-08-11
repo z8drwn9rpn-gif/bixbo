@@ -225,6 +225,21 @@ export function UniversalAdminPageEditor() {
 
   useEffect(() => {
     if (!supported) return;
+    let refreshQueued = false;
+    const refreshObserver = new MutationObserver(() => {
+      if (refreshQueued) return;
+      refreshQueued = true;
+      window.requestAnimationFrame(() => {
+        refreshQueued = false;
+        setRevision((value) => value + 1);
+      });
+    });
+    refreshObserver.observe(document.body, { childList: true, subtree: true });
+    return () => refreshObserver.disconnect();
+  }, [pathname, supported]);
+
+  useEffect(() => {
+    if (!supported) return;
     let queued = false;
     const apply = () => {
       queued = false;
@@ -243,7 +258,11 @@ export function UniversalAdminPageEditor() {
 
   useEffect(() => {
     setOpen(false);
-  }, [pathname, adminMode]);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!adminMode) setOpen(false);
+  }, [adminMode]);
 
   const persist = (nextPage: UniversalPageConfig) => {
     const config = readExtendedConfig();
