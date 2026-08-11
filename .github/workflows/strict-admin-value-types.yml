@@ -1,0 +1,29 @@
+name: Strict admin value types
+
+on:
+  push:
+    branches:
+      - agent/strict-admin-field-value-types
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/strict-admin-field-value-types
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - run: python .github/scripts/strict_admin_value_types.py
+      - run: rm .github/scripts/strict_admin_value_types.py .github/workflows/strict-admin-value-types.yml
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/routes/patterns.tsx src/routes/insights.tsx .github
+          git commit -m 'enforce strict admin numeric value types'
+          git push origin HEAD:agent/strict-admin-field-value-types
