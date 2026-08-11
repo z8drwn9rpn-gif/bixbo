@@ -1846,12 +1846,14 @@ function BirthControlOverlay({
       >
         <div
           ref={fitRef}
+          data-bixbo-hak-content="1"
           className="mx-auto w-full"
           style={{
             transform: `scale(${fitScale})`,
             transformOrigin: "top center",
           }}
         >
+          <div data-bixbo-hak-custom-top="1" />
           <BirthControlCalendar data={data} darkMode={hakDarkMode} />
         </div>
       </main>

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { Link, useRouter, useRouterState } from "@tanstack/react-router";
 
 import { CustomLogBuilder } from "@/components/CustomLogBuilder";
@@ -155,6 +155,9 @@ export function AdminEditOverlay() {
   const [publishPin, setPublishPin] = useState("");
   const [publishStatus, setPublishStatus] = useState("");
   const [publishing, setPublishing] = useState(false);
+  const [draggedSection, setDraggedSection] = useState<string | null>(null);
+  const [draggedFeature, setDraggedFeature] = useState<RegistryFeatureId | null>(null);
+  const [draggedOption, setDraggedOption] = useState<{ featureId: RegistryFeatureId; fieldId: string; value: string } | null>(null);
   const undoStack = useRef<string[]>([]);
 
   useEffect(() => {
@@ -251,19 +254,40 @@ export function AdminEditOverlay() {
     persist({ ...config, features: featuresCopy });
   };
 
-  const moveFeature = (featureId: RegistryFeatureId, delta: number) => {
-    const ids = features.map((feature) => feature.id);
-    const from = ids.indexOf(featureId);
-    const to = from + delta;
-    if (from < 0 || to < 0 || to >= ids.length) return;
-    [ids[from], ids[to]] = [ids[to], ids[from]];
-
+  const writeFeatureOrder = (ids: RegistryFeatureId[]) => {
     const config = getDeviceAdminConfig();
     const featureOverrides = { ...(config.features ?? {}) };
     ids.forEach((id, index) => {
       featureOverrides[id] = { ...(featureOverrides[id] ?? {}), order: (index + 1) * 10 };
     });
     persist({ ...config, enabled: true, features: featureOverrides });
+  };
+
+  const moveFeature = (featureId: RegistryFeatureId, delta: number) => {
+    const ids = features.map((feature) => feature.id);
+    const from = ids.indexOf(featureId);
+    const to = from + delta;
+    if (from < 0 || to < 0 || to >= ids.length) return;
+    [ids[from], ids[to]] = [ids[to], ids[from]];
+    writeFeatureOrder(ids);
+  };
+
+  const dropFeature = (targetId: RegistryFeatureId) => {
+    if (!draggedFeature || draggedFeature === targetId) return;
+    const ids = features.map((feature) => feature.id);
+    const from = ids.indexOf(draggedFeature);
+    const to = ids.indexOf(targetId);
+    if (from < 0 || to < 0) return;
+    const [item] = ids.splice(from, 1);
+    ids.splice(to, 0, item);
+    writeFeatureOrder(ids);
+  };
+
+  const moveDraggedFeatureByPointer = (event: ReactPointerEvent<HTMLElement>) => {
+    if (!draggedFeature) return;
+    const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>("[data-admin-feature-sort-id]");
+    const targetId = target?.dataset.adminFeatureSortId as RegistryFeatureId | undefined;
+    if (targetId && targetId !== draggedFeature) dropFeature(targetId);
   };
 
   const addFieldOption = (featureId: RegistryFeatureId, fieldId: string) => {
@@ -303,13 +327,7 @@ export function AdminEditOverlay() {
     return values.sort((a, b) => (overrides[a]?.order ?? values.indexOf(a)) - (overrides[b]?.order ?? values.indexOf(b)));
   };
 
-  const moveFieldOption = (featureId: RegistryFeatureId, fieldId: string, baseOptions: string[], value: string, delta: number) => {
-    const values = orderedFieldOptionValues(featureId, fieldId, baseOptions);
-    const from = values.indexOf(value);
-    const to = from + delta;
-    if (from < 0 || to < 0 || to >= values.length) return;
-    [values[from], values[to]] = [values[to], values[from]];
-
+  const writeFieldOptionOrder = (featureId: RegistryFeatureId, fieldId: string, values: string[]) => {
     const config = getDeviceAdminConfig();
     const feature = config.features?.[featureId] ?? {};
     const field = feature.fields?.[fieldId] ?? {};
@@ -318,6 +336,35 @@ export function AdminEditOverlay() {
       options[option] = { ...(options[option] ?? {}), order: (index + 1) * 10 };
     });
     patchField(featureId, fieldId, { options });
+  };
+
+  const moveFieldOption = (featureId: RegistryFeatureId, fieldId: string, baseOptions: string[], value: string, delta: number) => {
+    const values = orderedFieldOptionValues(featureId, fieldId, baseOptions);
+    const from = values.indexOf(value);
+    const to = from + delta;
+    if (from < 0 || to < 0 || to >= values.length) return;
+    [values[from], values[to]] = [values[to], values[from]];
+    writeFieldOptionOrder(featureId, fieldId, values);
+  };
+
+  const dropFieldOption = (featureId: RegistryFeatureId, fieldId: string, baseOptions: string[], targetValue: string) => {
+    if (!draggedOption || draggedOption.featureId !== featureId || draggedOption.fieldId !== fieldId || draggedOption.value === targetValue) return;
+    const values = orderedFieldOptionValues(featureId, fieldId, baseOptions);
+    const from = values.indexOf(draggedOption.value);
+    const to = values.indexOf(targetValue);
+    if (from < 0 || to < 0) return;
+    const [item] = values.splice(from, 1);
+    values.splice(to, 0, item);
+    writeFieldOptionOrder(featureId, fieldId, values);
+  };
+
+  const moveDraggedOptionByPointer = (event: ReactPointerEvent<HTMLElement>, featureId: RegistryFeatureId, fieldId: string, baseOptions: string[]) => {
+    if (!draggedOption) return;
+    const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>("[data-admin-option-sort-value]");
+    const targetValue = target?.dataset.adminOptionSortValue;
+    if (targetValue && target?.dataset.adminOptionFeature === featureId && target?.dataset.adminOptionField === fieldId && targetValue !== draggedOption.value) {
+      dropFieldOption(featureId, fieldId, baseOptions, targetValue);
+    }
   };
 
   const writeOrder = (ids: string[]) => {
@@ -333,6 +380,24 @@ export function AdminEditOverlay() {
     if (index < 0 || target < 0 || target >= ids.length) return;
     [ids[index], ids[target]] = [ids[target], ids[index]];
     writeOrder(ids);
+  };
+
+  const dropSection = (targetId: string) => {
+    if (!draggedSection || draggedSection === targetId) return;
+    const ids = sectionDefinitions.map((section) => section.id);
+    const from = ids.indexOf(draggedSection);
+    const to = ids.indexOf(targetId);
+    if (from < 0 || to < 0) return;
+    const [item] = ids.splice(from, 1);
+    ids.splice(to, 0, item);
+    writeOrder(ids);
+  };
+
+  const moveDraggedSectionByPointer = (event: ReactPointerEvent<HTMLElement>) => {
+    if (!draggedSection) return;
+    const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>("[data-admin-section-sort-id]");
+    const targetId = target?.dataset.adminSectionSortId;
+    if (targetId && targetId !== draggedSection) dropSection(targetId);
   };
 
   const patchSection = (sectionId: string, patch: { label?: string; hidden?: boolean }) => {
@@ -415,7 +480,7 @@ export function AdminEditOverlay() {
                     const visible = isEffectiveLayoutSectionVisible(page, section.id);
                     const localOverride = layoutSectionOverridesFromConfig(localConfig)[page]?.[section.id];
                     return (
-                      <section key={section.id} className="rounded-2xl bg-surface p-3 ring-1 ring-border/80">
+                      <section key={section.id} data-admin-section-sort-id={section.id} className={`rounded-2xl bg-surface p-3 ring-1 ring-border/80 ${draggedSection === section.id ? "opacity-60" : ""}`}>
                         <div className="flex items-center gap-2">
                           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-tint text-[10px] font-bold text-muted-foreground">{index + 1}</span>
                           <input value={label} onChange={(event) => patchSection(section.id, { label: event.target.value })} className="h-9 min-w-0 flex-1 rounded-xl bg-tint px-3 text-xs font-semibold ring-1 ring-border" />
@@ -424,6 +489,7 @@ export function AdminEditOverlay() {
                         <div className="mt-2 flex items-center gap-1.5">
                           <button type="button" disabled={index === 0} onClick={() => moveSection(section.id, -1)} className="rounded-full bg-tint px-3 py-1.5 text-[10px] font-semibold ring-1 ring-border disabled:opacity-30">↑</button>
                           <button type="button" disabled={index === sectionDefinitions.length - 1} onClick={() => moveSection(section.id, 1)} className="rounded-full bg-tint px-3 py-1.5 text-[10px] font-semibold ring-1 ring-border disabled:opacity-30">↓</button>
+                          <button type="button" onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setDraggedSection(section.id); }} onPointerMove={moveDraggedSectionByPointer} onPointerUp={() => setDraggedSection(null)} onPointerCancel={() => setDraggedSection(null)} style={{ touchAction: "none" }} className="inline-flex h-7 items-center gap-1 rounded-full bg-tint px-2.5 text-[9px] font-semibold text-muted-foreground ring-1 ring-border cursor-grab active:cursor-grabbing" aria-label={t("Drag to reorder")}><span className="text-sm">⋮⋮</span>{t("Drag")}</button>
                           <span className="min-w-0 flex-1 truncate text-[9px] text-muted-foreground">ID: {section.id}</span>
                           {localOverride ? <button type="button" onClick={() => resetSection(section.id)} className="rounded-full bg-tint px-3 py-1.5 text-[9px] font-semibold text-muted-foreground ring-1 ring-border">{t("Reset")}</button> : null}
                         </div>
@@ -444,7 +510,7 @@ export function AdminEditOverlay() {
                     const local = localConfig.features?.[feature.id];
                     const enabled = isRegistryFeatureEnabled(adminView, feature.id);
                     return (
-                      <section key={feature.id} className="rounded-2xl bg-surface p-3 ring-1 ring-border/80">
+                      <section key={feature.id} data-admin-feature-sort-id={feature.id} className={`rounded-2xl bg-surface p-3 ring-1 ring-border/80 ${draggedFeature === feature.id ? "opacity-60" : ""}`}>
                         <div className="flex items-center gap-2">
                           <select value={feature.icon} onChange={(event) => patchFeature(feature.id, { icon: event.target.value })} className="h-9 w-14 rounded-xl bg-tint px-1 text-lg ring-1 ring-border">
                             {[...new Set([feature.icon, ...ICONS])].map((icon) => <option key={icon}>{icon}</option>)}
@@ -456,6 +522,7 @@ export function AdminEditOverlay() {
                         <div className="mt-2 flex flex-wrap items-center gap-1.5">
                           <button type="button" disabled={featureIndex === 0} onClick={() => moveFeature(feature.id, -1)} className="rounded-full bg-tint px-2.5 py-1 text-[9px] font-semibold ring-1 ring-border disabled:opacity-25" aria-label={`${t("Move up")} ${feature.label}`}>↑</button>
                           <button type="button" disabled={featureIndex === features.length - 1} onClick={() => moveFeature(feature.id, 1)} className="rounded-full bg-tint px-2.5 py-1 text-[9px] font-semibold ring-1 ring-border disabled:opacity-25" aria-label={`${t("Move down")} ${feature.label}`}>↓</button>
+                          <button type="button" onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setDraggedFeature(feature.id); }} onPointerMove={moveDraggedFeatureByPointer} onPointerUp={() => setDraggedFeature(null)} onPointerCancel={() => setDraggedFeature(null)} style={{ touchAction: "none" }} className="inline-flex h-7 items-center gap-1 rounded-full bg-tint px-2.5 text-[9px] font-semibold text-muted-foreground ring-1 ring-border cursor-grab active:cursor-grabbing" aria-label={t("Drag to reorder")}><span className="text-sm">⋮⋮</span>{t("Drag")}</button>
                           {SURFACES.map((surface) => {
                             const protectedPeriodHeatmap = feature.id === "period" && surface.id === "heatmap";
                             const on = isRegistrySurfaceEnabled(adminView, feature.id, surface.id);
@@ -511,9 +578,10 @@ export function AdminEditOverlay() {
                                       const label = registryOptionLabel(adminView, featureId, baseField.id, option);
                                       const custom = option.startsWith("custom:");
                                       return (
-                                        <div key={option} className="flex items-center gap-1.5">
+                                        <div key={option} data-admin-option-sort-value={option} data-admin-option-feature={featureId} data-admin-option-field={baseField.id} className={`flex items-center gap-1.5 ${draggedOption?.featureId === featureId && draggedOption.fieldId === baseField.id && draggedOption.value === option ? "opacity-60" : ""}`}>
                                           <button type="button" disabled={optionIndex === 0} onClick={() => moveFieldOption(featureId, baseField.id, baseField.options ?? [], option, -1)} className="rounded-full bg-background px-2 py-1 text-[8px] ring-1 ring-border disabled:opacity-25" aria-label={`${t("Move up")} ${label}`}>↑</button>
                                           <button type="button" disabled={optionIndex === optionValues.length - 1} onClick={() => moveFieldOption(featureId, baseField.id, baseField.options ?? [], option, 1)} className="rounded-full bg-background px-2 py-1 text-[8px] ring-1 ring-border disabled:opacity-25" aria-label={`${t("Move down")} ${label}`}>↓</button>
+                                          <button type="button" onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setDraggedOption({ featureId, fieldId: baseField.id, value: option }); }} onPointerMove={(event) => moveDraggedOptionByPointer(event, featureId, baseField.id, baseField.options ?? [])} onPointerUp={() => setDraggedOption(null)} onPointerCancel={() => setDraggedOption(null)} style={{ touchAction: "none" }} className="inline-flex h-7 items-center rounded-full bg-background px-2 text-[8px] text-muted-foreground ring-1 ring-border cursor-grab active:cursor-grabbing" aria-label={t("Drag to reorder")}>⋮⋮</button>
                                           <input value={label} onChange={(event) => patchField(featureId, baseField.id, { options: { [option]: { ...override, label: event.target.value, order: override?.order ?? (optionIndex + 1) * 10 } } })} className="h-7 min-w-0 flex-1 rounded-lg bg-background px-2 text-[10px] ring-1 ring-border" />
                                           {custom ? (
                                             <button type="button" onClick={() => deleteCustomFieldOption(featureId, baseField.id, option)} className="rounded-full bg-background px-2 py-1 text-[8px] font-semibold text-destructive ring-1 ring-border">{t("Delete")}</button>
