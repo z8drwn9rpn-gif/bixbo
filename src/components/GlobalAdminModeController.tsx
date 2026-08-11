@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Link, useRouterState } from "@tanstack/react-router";
+import { useRouterState } from "@tanstack/react-router";
 
 import { useI18n } from "@/hooks/useI18n";
 import { isAdminOwnerAccount } from "@/lib/deviceAdmin";
+import { requestAdminCustomizeCurrentPage } from "@/lib/adminCustomizeEvents";
 
 export const ADMIN_UNLOCK_KEY = "bixbo-admin-unlocked";
 export const ADMIN_MODE_CHANGED = "bixbo:admin-mode-changed";
@@ -77,9 +78,13 @@ export function GlobalAdminModeController() {
           className="fixed left-1/2 top-[max(.6rem,env(safe-area-inset-top))] z-[10020] flex -translate-x-1/2 items-center gap-2 rounded-full bg-foreground px-3 py-2 text-background shadow-xl ring-1 ring-background/20"
         >
           <span className="whitespace-nowrap text-[10px] font-black uppercase tracking-[0.12em]">✦ {t("Admin mode")}</span>
-          <Link to="/admin" className="rounded-full bg-background/15 px-2.5 py-1 text-[9px] font-bold">
+          <button
+            type="button"
+            onClick={requestAdminCustomizeCurrentPage}
+            className="rounded-full bg-background/15 px-2.5 py-1 text-[9px] font-bold"
+          >
             {t("Customize")}
-          </Link>
+          </button>
           <button
             type="button"
             onClick={() => {
