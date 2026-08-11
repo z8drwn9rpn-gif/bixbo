@@ -24,7 +24,7 @@ import {
 import { AppShell } from "@/components/AppShell";
 import { CHART_COLORS, CHART_TINTS } from "@/components/ui/chart";
 import { useI18n } from "@/hooks/useI18n";
-import { BIXBO_REGISTRY, getRegistryFeature, registryAdminCycleFieldsForFeature, registryAdminMonthlyFieldsForFeature } from "@/lib/appRegistry";
+import { BIXBO_REGISTRY, getRegistryFeature, registryAdminCycleFieldsForFeature, registryAdminMonthlyFieldsForFeature, registryAdminTreatmentFieldsForFeature } from "@/lib/appRegistry";
 import { layoutOrder } from "@/lib/layoutRegistry";
 import {
   EMPTY,
@@ -1536,6 +1536,25 @@ export function PatternsContent() {
 
   const treatmentHeadacheIntensity = treatmentMetric(dayHeadacheIntensity);
 
+  const adminTreatmentMetrics = BIXBO_REGISTRY.flatMap((featureBase) => {
+    const feature = getRegistryFeature(view, featureBase.id);
+    return registryAdminTreatmentFieldsForFeature(view, featureBase.id).map((field) => {
+      const metric = treatmentMetric((log) => {
+        const values = (log.adminFields?.[featureBase.id] ?? [])
+          .map((entry) => Number(entry.values[field.id]))
+          .filter((value) => Number.isFinite(value));
+        return avg(values);
+      });
+      return {
+        id: `${featureBase.id}:${field.id}`,
+        title: `${feature.label} · ${field.label}`,
+        metric,
+        max: field.kind === "scale" ? field.scale?.max : undefined,
+        unit: field.kind === "scale" && field.scale?.max != null ? `/${field.scale.max}` : "",
+      };
+    });
+  });
+
   const treatmentHotFlash = treatmentMetric(dayHotFlash);
   const treatmentHotFlashEpisodes = treatmentEventRate(
     (log) =>
@@ -2936,6 +2955,35 @@ export function PatternsContent() {
                     />
                   </div>
                 </CollapsibleSection>
+
+                {adminTreatmentMetrics.length > 0 ? (
+                  <CollapsibleSection
+                    layoutOrderValue={layoutOrder(view, "patterns.treatment", "customMetrics", 20)}
+                    title="Custom metrics"
+                    subtitle="Admin-created values before versus after treatment"
+                    defaultOpen={false}
+                  >
+                    <div className="space-y-3">
+                      {adminTreatmentMetrics.map((item) => (
+                        <ComparisonMetric
+                          key={item.id}
+                          title={item.title}
+                          subtitle="Average supplementary value · 4 weeks before vs 4 weeks after"
+                          previous={item.metric.before}
+                          current={item.metric.after}
+                          max={item.max}
+                          decimals={1}
+                          unit={item.unit}
+                          color="green"
+                          neutralTrend
+                          previousLabel="Before"
+                          currentLabel="After"
+                          icon={<Activity className="h-5 w-5" />}
+                        />
+                      ))}
+                    </div>
+                  </CollapsibleSection>
+                ) : null}
 
                 <CollapsibleSection
                   title="Detailed treatment summary"

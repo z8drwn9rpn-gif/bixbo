@@ -51,7 +51,8 @@ export const BIXBO_LAYOUT_SECTIONS: Record<LayoutPageId, LayoutSectionDefinition
   ],
   "patterns.treatment": [
     { id: "comparison", label: "Treatment comparison", order: 10 },
-    { id: "history", label: "Treatment history", order: 20 },
+    { id: "customMetrics", label: "Custom metrics", order: 20 },
+    { id: "history", label: "Treatment history", order: 30 },
   ],
   "patterns.triggers": [
     { id: "correlations", label: "Smart correlations", order: 10 },
