@@ -1,0 +1,26 @@
+name: Apply strict global admin gates
+on:
+  push:
+    branches: [agent/strict-global-admin-gates]
+    paths:
+      - .github/workflows/apply-strict-global-admin-gates.yml
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/strict-global-admin-gates
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - run: python .github/scripts/apply_strict_global_admin_gates.py
+      - run: rm .github/scripts/apply_strict_global_admin_gates.py .github/workflows/apply-strict-global-admin-gates.yml
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/components/AdminEditOverlay.tsx src/components/CoupleAdminEditOverlay.tsx src/lib/__tests__/strict-admin-gates-source.test.ts .github
+          git commit -m 'gate all primary editors behind global Admin Mode'
+          git push origin HEAD:agent/strict-global-admin-gates
