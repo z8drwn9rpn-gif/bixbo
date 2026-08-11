@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useRouter, useRouterState } from "@tanstack/react-router";
 
 import { CustomLogBuilder } from "@/components/CustomLogBuilder";
@@ -30,11 +30,7 @@ import {
   setDeviceAdminConfig,
 } from "@/lib/deviceAdminConfig";
 import { publishGlobalAdminConfig } from "@/lib/globalAdminConfig";
-import {
-  BIXBO_LAYOUT_SECTIONS,
-  layoutOrder,
-  type LayoutPageId,
-} from "@/lib/layoutRegistry";
+import { BIXBO_LAYOUT_SECTIONS, layoutOrder, type LayoutPageId } from "@/lib/layoutRegistry";
 import { EMPTY, useBixbo, type BixboData } from "@/lib/storage";
 
 const SURFACES: { id: RegistrySurface; label: string }[] = [
@@ -57,31 +53,28 @@ function pageFromPath(pathname: string): LayoutPageId | null {
   return null;
 }
 
-function pageSurface(page: LayoutPageId): RegistrySurface {
+function pageSurface(page: LayoutPageId | null): RegistrySurface {
   if (page === "home") return "calendar";
   if (page === "insights") return "heatmap";
   return "patterns";
 }
 
-function safeText(value: string | undefined) {
-  return (value ?? "").trim();
-}
-
 function AdminLayoutDomRuntime({ page, revision }: { page: LayoutPageId; revision: number }) {
   useEffect(() => {
     let disposed = false;
-    const changed = new Set<HTMLElement>();
     let scheduled = false;
+    const changed = new Set<HTMLElement>();
 
     const restore = () => {
       changed.forEach((element) => {
-        if (element.dataset.bixboAdminOriginalDisplay !== undefined) {
-          element.style.display = element.dataset.bixboAdminOriginalDisplay;
+        const display = element.dataset.bixboAdminOriginalDisplay;
+        if (display !== undefined) {
+          element.style.display = display;
           delete element.dataset.bixboAdminOriginalDisplay;
         }
-        const originalText = element.dataset.bixboAdminOriginalText;
-        if (originalText !== undefined && element.children.length === 0) {
-          element.textContent = originalText;
+        const text = element.dataset.bixboAdminOriginalText;
+        if (text !== undefined && element.children.length === 0) {
+          element.textContent = text;
           delete element.dataset.bixboAdminOriginalText;
         }
       });
@@ -92,22 +85,22 @@ function AdminLayoutDomRuntime({ page, revision }: { page: LayoutPageId; revisio
       scheduled = false;
       if (disposed) return;
       restore();
-      const definitions = BIXBO_LAYOUT_SECTIONS[page] ?? [];
+
       const candidates = Array.from(
         document.querySelectorAll<HTMLElement>("h1,h2,h3,h4,p,span,button,label"),
       ).filter((element) => !element.closest("[data-bixbo-admin-ui]"));
 
-      definitions.forEach((section) => {
+      (BIXBO_LAYOUT_SECTIONS[page] ?? []).forEach((section) => {
         const override = getEffectiveLayoutSectionOverride(page, section.id);
         if (!override.label && override.hidden !== true) return;
-        const base = section.label.trim();
+
         const labelElement = candidates.find(
-          (element) => element.children.length === 0 && element.textContent?.trim() === base,
+          (element) => element.children.length === 0 && element.textContent?.trim() === section.label.trim(),
         );
         if (!labelElement) return;
 
-        if (override.label?.trim() && override.label.trim() !== base) {
-          labelElement.dataset.bixboAdminOriginalText = labelElement.textContent ?? base;
+        if (override.label?.trim() && override.label.trim() !== section.label.trim()) {
+          labelElement.dataset.bixboAdminOriginalText = labelElement.textContent ?? section.label;
           labelElement.textContent = override.label.trim();
           changed.add(labelElement);
         }
@@ -168,14 +161,17 @@ export function AdminEditOverlay() {
     setTab("page");
   }, [pathname]);
 
-  if (!page || typeof window === "undefined" || !isAdminOwnerAccount()) return null;
-
-  const localConfig = getDeviceAdminConfig();
-  const adminView: BixboData = {
-    ...view,
-    settings: { ...view.settings, adminConfig: localConfig },
-  };
+  const localConfig = typeof window === "undefined" ? {} : getDeviceAdminConfig();
+  const adminView: BixboData = { ...view, settings: { ...view.settings, adminConfig: localConfig } };
   const currentSurface = pageSurface(page);
+  const sectionDefinitions = page
+    ? [...(BIXBO_LAYOUT_SECTIONS[page] ?? [])].sort(
+        (a, b) => layoutOrder(adminView, page, a.id, a.order) - layoutOrder(adminView, page, b.id, b.order),
+      )
+    : [];
+  const features = BIXBO_REGISTRY.map((base) => getRegistryFeature(adminView, base.id)).sort(
+    (a, b) => a.order - b.order,
+  );
 
   const persist = (next: AdminConfig, snapshot = true) => {
     if (snapshot) undoStack.current.push(JSON.stringify(getDeviceAdminConfig()));
@@ -185,12 +181,8 @@ export function AdminEditOverlay() {
   };
 
   const deviceUpdate = (recipe: (current: BixboData) => BixboData) => {
-    const current: BixboData = {
-      ...view,
-      settings: { ...view.settings, adminConfig: getDeviceAdminConfig() },
-    };
-    const next = recipe(current);
-    persist(next.settings.adminConfig ?? {});
+    const current: BixboData = { ...view, settings: { ...view.settings, adminConfig: getDeviceAdminConfig() } };
+    persist(recipe(current).settings.adminConfig ?? {});
   };
 
   const patchFeature = (id: RegistryFeatureId, patch: RegistryFeatureOverride) => {
@@ -204,9 +196,7 @@ export function AdminEditOverlay() {
         [id]: {
           ...existing,
           ...patch,
-          surfaces: patch.surfaces
-            ? { ...(existing.surfaces ?? {}), ...patch.surfaces }
-            : existing.surfaces,
+          surfaces: patch.surfaces ? { ...(existing.surfaces ?? {}), ...patch.surfaces } : existing.surfaces,
         },
       },
     });
@@ -239,25 +229,15 @@ export function AdminEditOverlay() {
 
   const resetFeature = (id: RegistryFeatureId) => {
     const config = getDeviceAdminConfig();
-    const features = { ...(config.features ?? {}) };
-    delete features[id];
-    persist({ ...config, features });
+    const featuresCopy = { ...(config.features ?? {}) };
+    delete featuresCopy[id];
+    persist({ ...config, features: featuresCopy });
   };
 
-  const sectionDefinitions = useMemo(() => {
-    if (!page) return [];
-    return [...(BIXBO_LAYOUT_SECTIONS[page] ?? [])].sort(
-      (a, b) => layoutOrder(adminView, page, a.id, a.order) - layoutOrder(adminView, page, b.id, b.order),
-    );
-  }, [page, revision, hydrated]);
-
   const writeOrder = (ids: string[]) => {
+    if (!page) return;
     const config = getDeviceAdminConfig();
-    persist({
-      ...config,
-      enabled: true,
-      layoutOrder: { ...(config.layoutOrder ?? {}), [page]: ids },
-    });
+    persist({ ...config, enabled: true, layoutOrder: { ...(config.layoutOrder ?? {}), [page]: ids } });
   };
 
   const moveSection = (sectionId: string, delta: number) => {
@@ -270,15 +250,13 @@ export function AdminEditOverlay() {
   };
 
   const patchSection = (sectionId: string, patch: { label?: string; hidden?: boolean }) => {
+    if (!page) return;
     persist(withLayoutSectionOverride(getDeviceAdminConfig(), page, sectionId, patch));
   };
 
   const resetSection = (sectionId: string) => {
+    if (!page) return;
     persist(withoutLayoutSectionOverride(getDeviceAdminConfig(), page, sectionId));
-  };
-
-  const resetPage = () => {
-    persist(withoutPageLayoutOverrides(getDeviceAdminConfig(), page));
   };
 
   const undo = () => {
@@ -287,13 +265,9 @@ export function AdminEditOverlay() {
     try {
       persist(JSON.parse(previous) as AdminConfig, false);
     } catch {
-      // Ignore a malformed in-memory snapshot; health data is never involved.
+      // Admin-config snapshots only; health data is never touched.
     }
   };
-
-  const features = BIXBO_REGISTRY.map((base) => getRegistryFeature(adminView, base.id)).sort(
-    (a, b) => a.order - b.order,
-  );
 
   const publish = async () => {
     if (publishPin.length !== 4) return;
@@ -311,38 +285,29 @@ export function AdminEditOverlay() {
     }
   };
 
+  if (!page || typeof window === "undefined" || !isAdminOwnerAccount()) return null;
+
   return (
     <>
       <AdminLayoutDomRuntime page={page} revision={revision} />
 
       <div data-bixbo-admin-ui className="fixed bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] right-4 z-[90] lg:bottom-6 lg:right-6">
-        <button
-          type="button"
-          onClick={() => setOpen((value) => !value)}
-          className="rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-lg ring-1 ring-primary/30"
-          aria-expanded={open}
-        >
+        <button type="button" onClick={() => setOpen((value) => !value)} className="rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-lg ring-1 ring-primary/30">
           {open ? t("Done") : `✦ ${t("Edit")}`}
         </button>
       </div>
 
       {open ? (
         <div data-bixbo-admin-ui className="fixed inset-0 z-[89] bg-black/20 lg:bg-black/10" onClick={() => setOpen(false)}>
-          <aside
-            className="absolute inset-x-0 bottom-0 max-h-[82dvh] overflow-y-auto rounded-t-[28px] bg-background pb-[calc(env(safe-area-inset-bottom)+1rem)] shadow-2xl ring-1 ring-border lg:inset-y-4 lg:left-auto lg:right-4 lg:w-[460px] lg:max-h-none lg:rounded-[28px]"
-            onClick={(event) => event.stopPropagation()}
-          >
+          <aside className="absolute inset-x-0 bottom-0 max-h-[82dvh] overflow-y-auto rounded-t-[28px] bg-background pb-[calc(env(safe-area-inset-bottom)+1rem)] shadow-2xl ring-1 ring-border lg:inset-y-4 lg:left-auto lg:right-4 lg:w-[460px] lg:max-h-none lg:rounded-[28px]" onClick={(event) => event.stopPropagation()}>
             <div className="sticky top-0 z-10 border-b border-border bg-background/95 px-4 pb-3 pt-4 backdrop-blur">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="font-serif text-xl font-bold">{t("Admin edit mode")}</p>
                   <p className="mt-0.5 text-[11px] text-muted-foreground">{t("Device-local draft. Health data and chart calculations are untouched.")}</p>
                 </div>
-                <button type="button" onClick={undo} disabled={!undoStack.current.length} className="rounded-full bg-tint px-3 py-1.5 text-[10px] font-semibold text-muted-foreground ring-1 ring-border disabled:opacity-40">
-                  ↶ {t("Undo")}
-                </button>
+                <button type="button" onClick={undo} disabled={!undoStack.current.length} className="rounded-full bg-tint px-3 py-1.5 text-[10px] font-semibold text-muted-foreground ring-1 ring-border disabled:opacity-40">↶ {t("Undo")}</button>
               </div>
-
               <div className="mt-3 grid grid-cols-5 gap-1 rounded-2xl bg-tint p-1">
                 {(["page", "features", "fields", "custom", "publish"] as EditorTab[]).map((key) => (
                   <button key={key} type="button" onClick={() => setTab(key)} className={`rounded-xl px-1 py-2 text-[9px] font-bold ${tab === key ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
@@ -359,7 +324,6 @@ export function AdminEditOverlay() {
                     <p className="text-sm font-bold">{t("Current page layout")}</p>
                     <p className="mt-1 text-[11px] text-muted-foreground">{t("Rename, hide or reorder whole sections. Stable section IDs never change.")}</p>
                   </section>
-
                   {sectionDefinitions.map((section, index) => {
                     const label = getEffectiveLayoutSectionLabel(page, section.id);
                     const visible = isEffectiveLayoutSectionVisible(page, section.id);
@@ -368,14 +332,8 @@ export function AdminEditOverlay() {
                       <section key={section.id} className="rounded-2xl bg-surface p-3 ring-1 ring-border/80">
                         <div className="flex items-center gap-2">
                           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-tint text-[10px] font-bold text-muted-foreground">{index + 1}</span>
-                          <input
-                            value={label}
-                            onChange={(event) => patchSection(section.id, { label: event.target.value })}
-                            className="h-9 min-w-0 flex-1 rounded-xl bg-tint px-3 text-xs font-semibold ring-1 ring-border"
-                          />
-                          <button type="button" onClick={() => patchSection(section.id, { hidden: visible })} className={`rounded-full px-2.5 py-1.5 text-[9px] font-bold ${visible ? "bg-primary text-primary-foreground" : "bg-tint text-muted-foreground ring-1 ring-border"}`}>
-                            {visible ? t("Shown") : t("Hidden")}
-                          </button>
+                          <input value={label} onChange={(event) => patchSection(section.id, { label: event.target.value })} className="h-9 min-w-0 flex-1 rounded-xl bg-tint px-3 text-xs font-semibold ring-1 ring-border" />
+                          <button type="button" onClick={() => patchSection(section.id, { hidden: visible })} className={`rounded-full px-2.5 py-1.5 text-[9px] font-bold ${visible ? "bg-primary text-primary-foreground" : "bg-tint text-muted-foreground ring-1 ring-border"}`}>{visible ? t("Shown") : t("Hidden")}</button>
                         </div>
                         <div className="mt-2 flex items-center gap-1.5">
                           <button type="button" disabled={index === 0} onClick={() => moveSection(section.id, -1)} className="rounded-full bg-tint px-3 py-1.5 text-[10px] font-semibold ring-1 ring-border disabled:opacity-30">↑</button>
@@ -386,10 +344,7 @@ export function AdminEditOverlay() {
                       </section>
                     );
                   })}
-
-                  <button type="button" onClick={resetPage} className="w-full rounded-2xl bg-tint px-4 py-2.5 text-xs font-semibold text-muted-foreground ring-1 ring-border">
-                    {t("Reset current page customizations")}
-                  </button>
+                  <button type="button" onClick={() => persist(withoutPageLayoutOverrides(getDeviceAdminConfig(), page))} className="w-full rounded-2xl bg-tint px-4 py-2.5 text-xs font-semibold text-muted-foreground ring-1 ring-border">{t("Reset current page customizations")}</button>
                 </>
               ) : null}
 
@@ -400,7 +355,6 @@ export function AdminEditOverlay() {
                     <p className="mt-1 text-[11px] text-muted-foreground">{t("Core features can be hidden but are never deleted. Current page surface is highlighted.")}</p>
                   </section>
                   {features.map((feature) => {
-                    const base = BIXBO_REGISTRY.find((item) => item.id === feature.id)!;
                     const local = localConfig.features?.[feature.id];
                     const enabled = local?.enabled !== false;
                     return (
@@ -421,7 +375,7 @@ export function AdminEditOverlay() {
                         </div>
                         <div className="mt-2 flex items-center justify-between">
                           <span className="text-[9px] text-muted-foreground">ID: {feature.id}</span>
-                          {local ? <button type="button" onClick={() => resetFeature(feature.id)} className="rounded-full bg-tint px-3 py-1 text-[9px] font-semibold text-muted-foreground ring-1 ring-border">{t("Reset")}</button> : <span className="text-[9px] text-muted-foreground">{base.label}</span>}
+                          {local ? <button type="button" onClick={() => resetFeature(feature.id)} className="rounded-full bg-tint px-3 py-1 text-[9px] font-semibold text-muted-foreground ring-1 ring-border">{t("Reset")}</button> : null}
                         </div>
                       </section>
                     );
@@ -433,7 +387,7 @@ export function AdminEditOverlay() {
                 <>
                   <section className="rounded-3xl bg-primary/10 p-4 ring-1 ring-primary/20">
                     <p className="text-sm font-bold">{t("Log fields, choices & scales")}</p>
-                    <p className="mt-1 text-[11px] text-muted-foreground">{t("Edits only change configuration labels/order/visibility. Saved historical values keep their stable field IDs.")}</p>
+                    <p className="mt-1 text-[11px] text-muted-foreground">{t("Historical values keep their stable field IDs.")}</p>
                   </section>
                   {(Object.keys(BIXBO_LOG_FIELDS) as RegistryFeatureId[]).map((featureId) => {
                     const feature = getRegistryFeature(adminView, featureId);
@@ -464,10 +418,9 @@ export function AdminEditOverlay() {
                                     {baseField.options.map((option, optionIndex) => {
                                       const override = localField?.options?.[option];
                                       const shown = override?.enabled !== false;
-                                      const label = override?.label ?? option;
                                       return (
                                         <div key={option} className="flex items-center gap-1.5">
-                                          <input value={label} onChange={(event) => patchField(featureId, baseField.id, { options: { [option]: { ...override, label: event.target.value, order: override?.order ?? optionIndex } } })} className="h-7 min-w-0 flex-1 rounded-lg bg-background px-2 text-[10px] ring-1 ring-border" />
+                                          <input value={override?.label ?? option} onChange={(event) => patchField(featureId, baseField.id, { options: { [option]: { ...override, label: event.target.value, order: override?.order ?? optionIndex } } })} className="h-7 min-w-0 flex-1 rounded-lg bg-background px-2 text-[10px] ring-1 ring-border" />
                                           <button type="button" onClick={() => patchField(featureId, baseField.id, { options: { [option]: { ...override, enabled: !shown, order: override?.order ?? optionIndex } } })} className="rounded-full bg-background px-2 py-1 text-[8px] ring-1 ring-border">{shown ? t("On") : t("Hidden")}</button>
                                         </div>
                                       );
@@ -490,7 +443,7 @@ export function AdminEditOverlay() {
               {tab === "publish" ? (
                 <section className="rounded-3xl bg-surface p-4 ring-1 ring-border/80">
                   <p className="font-serif text-lg font-bold">{t("Publish admin configuration")}</p>
-                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t("Your edits are a device-local draft until you explicitly publish them globally.")}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t("Your edits stay device-local until you explicitly publish them globally.")}</p>
                   <div className="mt-3 flex gap-2">
                     <input type="password" inputMode="numeric" maxLength={4} value={publishPin} onChange={(event) => setPublishPin(event.target.value.replace(/\D/g, "").slice(0, 4))} placeholder={t("Admin PIN")} className="h-10 min-w-0 flex-1 rounded-xl bg-tint px-3 text-center font-bold tracking-[0.35em] ring-1 ring-border" />
                     <button type="button" disabled={publishing || publishPin.length !== 4} onClick={() => void publish()} className="rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground disabled:opacity-40">{publishing ? t("Publishing…") : t("Publish globally")}</button>
