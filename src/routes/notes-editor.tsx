@@ -222,6 +222,14 @@ export function NoteEditor({
     setTick((value) => value + 1);
   };
 
+  const focusEditorForTyping = () => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    if (document.activeElement !== editor) {
+      editor.focus({ preventScroll: true });
+    }
+  };
+
   return (
     <AppShell
       title={
@@ -347,9 +355,18 @@ export function NoteEditor({
             ref={editorRef}
             contentEditable
             suppressContentEditableWarning
+            role="textbox"
+            aria-multiline="true"
+            tabIndex={0}
+            inputMode="text"
+            spellCheck
+            onPointerDown={focusEditorForTyping}
+            onTouchStart={focusEditorForTyping}
+            onClick={focusEditorForTyping}
             onInput={onInput}
             onBlur={onInput}
-            className="min-h-[40dvh] text-base leading-relaxed whitespace-pre-wrap outline-none empty:before:pointer-events-none empty:before:text-muted-foreground empty:before:content-[attr(data-placeholder)]"
+            className="relative z-10 min-h-[40dvh] touch-manipulation select-text text-base leading-relaxed whitespace-pre-wrap outline-none empty:before:pointer-events-none empty:before:text-muted-foreground empty:before:content-[attr(data-placeholder)]"
+            style={{ WebkitUserSelect: "text", userSelect: "text" }}
             data-placeholder={t("Start writing…")}
           />
         </div>
