@@ -1688,6 +1688,49 @@ function protectAgainstLargeDataLoss(previous: BixboData, next: BixboData, reaso
   }
 }
 
+const DEVICE_QUICK_LOG_KEY = "bixbo-device-quick-log-v1";
+
+type DeviceQuickLogPrefs = Pick<BixboData["settings"], "quickTagOrder" | "hiddenQuickTags" | "customQuickTags">;
+
+function readDeviceQuickLogPrefs(): DeviceQuickLogPrefs | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(DEVICE_QUICK_LOG_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as DeviceQuickLogPrefs;
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeDeviceQuickLogPrefs(data: BixboData): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(DEVICE_QUICK_LOG_KEY, JSON.stringify({
+      quickTagOrder: data.settings.quickTagOrder ?? [],
+      hiddenQuickTags: data.settings.hiddenQuickTags ?? [],
+      customQuickTags: data.settings.customQuickTags ?? [],
+    } satisfies DeviceQuickLogPrefs));
+  } catch {
+    // Device storage may be unavailable in private/restricted browser contexts.
+  }
+}
+
+function applyDeviceQuickLogPrefs(data: BixboData): BixboData {
+  const local = readDeviceQuickLogPrefs();
+  if (!local) return data;
+  return {
+    ...data,
+    settings: {
+      ...data.settings,
+      quickTagOrder: local.quickTagOrder ?? [],
+      hiddenQuickTags: local.hiddenQuickTags ?? [],
+      customQuickTags: local.customQuickTags ?? [],
+    },
+  };
+}
+
 function emit() {
   listeners.forEach((l) => l());
 }
@@ -1717,7 +1760,7 @@ function hydrate() {
       }
     }
 
-    _state = raw ? migrate(JSON.parse(raw)) : freshEmptyState();
+    _state = applyDeviceQuickLogPrefs(raw ? migrate(JSON.parse(raw)) : freshEmptyState());
 
     const legacyPrefsRaw = window.localStorage.getItem(LEGACY_HEALTH_PREFS_KEY);
     if (legacyPrefsRaw) {
@@ -1978,6 +2021,7 @@ export function setBixbo(updater: (d: BixboData) => BixboData) {
   const next = migrate(updater(_state));
   protectAgainstLargeDataLoss(previous, next, "before-local-data-reduction");
   _state = migrate(withLocalSyncMetadata(previous, next));
+  writeDeviceQuickLogPrefs(_state);
   persist();
   emit();
   changeListeners.forEach((l) => l(_state, "local"));
@@ -1987,7 +2031,10 @@ export function replaceBixbo(d: BixboData, reason: "local" | "remote" = "local")
   if (reason === "local") _localEditedSinceHydrate = true;
   const next = migrate(d);
   protectAgainstLargeDataLoss(_state, next, reason === "local" ? "before-local-replace" : "before-cloud-reconcile");
-  _state = reason === "local" ? migrate(withLocalSyncMetadata(_state, next)) : next;
+  _state = reason === "local"
+    ? migrate(withLocalSyncMetadata(_state, next))
+    : applyDeviceQuickLogPrefs(next);
+  if (reason === "local") writeDeviceQuickLogPrefs(_state);
   persist();
   emit();
   changeListeners.forEach((l) => l(_state, reason));
