@@ -1,1 +1,0 @@
-Home and Couple navigation artwork are the exact user-provided assets already stored as nav-home.webp and nav-couple.webp. Do not replace them with SVG fallbacks.
