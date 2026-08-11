@@ -1,0 +1,41 @@
+name: Apply clean profile hub order fix
+
+on:
+  push:
+    branches:
+      - agent/fix-nav-assets-profile-order-clean
+    paths:
+      - scripts/apply_profile_hub_order_fix_clean.py
+      - .github/workflows/apply-profile-hub-order-fix-clean.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/fix-nav-assets-profile-order-clean
+      - uses: oven-sh/setup-bun@v2
+      - name: Apply profile order patch
+        run: python scripts/apply_profile_hub_order_fix_clean.py
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Typecheck
+        run: bun run typecheck
+      - name: Lint
+        run: bun run lint
+      - name: Tests
+        run: bun test
+      - name: Build
+        run: bun run build
+      - name: Commit verified fix and remove temporary helpers
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/routes/profile.tsx src/components/BottomNav.tsx
+          git rm scripts/apply_profile_hub_order_fix_clean.py .github/workflows/apply-profile-hub-order-fix-clean.yml
+          git commit -m "Restore Health Hub ordering and refine nav"
+          git push origin HEAD:agent/fix-nav-assets-profile-order-clean
