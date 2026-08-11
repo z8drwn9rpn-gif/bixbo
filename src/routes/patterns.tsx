@@ -187,6 +187,10 @@ type SelectOption = {
   label: string;
 };
 
+function strictAdminNumericValue(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : Number.NaN;
+}
+
 type VitalEntry = {
   id?: string;
   time?: string;
@@ -968,7 +972,7 @@ export function PatternsContent() {
     const feature = getRegistryFeature(view, featureBase.id);
     return registryAdminCycleFieldsForFeature(view, featureBase.id).map((field) => {
       const metricFn = (log: DayLog) => {
-        const values = (log.adminFields?.[featureBase.id] ?? []).map((entry) => Number(entry.values[field.id])).filter((value) => Number.isFinite(value));
+        const values = (log.adminFields?.[featureBase.id] ?? []).map((entry) => strictAdminNumericValue(entry.values[field.id])).filter((value) => Number.isFinite(value));
         return avg(values);
       };
       return { id: `${featureBase.id}:${field.id}`, title: `${feature.label} · ${field.label}`, bars: [
@@ -1082,7 +1086,7 @@ export function PatternsContent() {
       const averageForDays = (days: string[]) => {
         const values = days.flatMap((day) =>
           (dayLogs[day]?.adminFields?.[featureBase.id] ?? [])
-            .map((entry) => Number(entry.values[field.id]))
+            .map((entry) => strictAdminNumericValue(entry.values[field.id]))
             .filter((value) => Number.isFinite(value)),
         );
         return avg(values);
@@ -1541,7 +1545,7 @@ export function PatternsContent() {
     return registryAdminTreatmentFieldsForFeature(view, featureBase.id).map((field) => {
       const metric = treatmentMetric((log) => {
         const values = (log.adminFields?.[featureBase.id] ?? [])
-          .map((entry) => Number(entry.values[field.id]))
+          .map((entry) => strictAdminNumericValue(entry.values[field.id]))
           .filter((value) => Number.isFinite(value));
         return avg(values);
       });
@@ -1892,7 +1896,7 @@ export function PatternsContent() {
     const threshold = registryAdminCorrelationThreshold(view, featureId, fieldId);
     if (!threshold) return false;
     const values = (log.adminFields?.[featureId] ?? [])
-      .map((entry) => Number(entry.values[fieldId]))
+      .map((entry) => strictAdminNumericValue(entry.values[fieldId]))
       .filter((value) => Number.isFinite(value));
     const dailyAverage = avg(values);
     if (dailyAverage == null) return false;

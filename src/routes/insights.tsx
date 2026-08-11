@@ -224,6 +224,10 @@ const TIME_BLOCK_LABELS = ["Night (0–6)", "Morning (6–12)", "Afternoon (12�
 const TIME_BLOCK_SHORT = ["Night", "Morning", "Afternoon", "Evening"];
 
 
+function strictAdminNumericValue(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : Number.NaN;
+}
+
 function TrText({ value }: { value: unknown }) {
   const { t, language } = useI18n();
   const raw = String(value ?? "");
@@ -1911,7 +1915,7 @@ function YearHealthHeatmap({
         const feature = getRegistryFeature(data, featureId);
         const field = registryAdminHeatmapFieldsForFeature(data, featureId).find((item) => item.id === fieldId);
         const entries = log.adminFields?.[featureId] ?? [];
-        const values = entries.map((entry) => Number(entry.values[fieldId])).filter((value) => Number.isFinite(value));
+        const values = entries.map((entry) => strictAdminNumericValue(entry.values[fieldId])).filter((value) => Number.isFinite(value));
         if (!field || !values.length) return null;
         const value = values.reduce((sum, item) => sum + item, 0) / values.length;
         const min = field.scale?.min ?? 0;
@@ -1934,7 +1938,7 @@ function YearHealthHeatmap({
         const definition = customLogDefinitions(data).find((item) => item.id === logId);
         const field = definition?.fields.find((item) => item.id === fieldId);
         const entries = log.customLogs?.[logId] ?? [];
-        const values = entries.map((entry) => Number(entry.values[fieldId])).filter((value) => Number.isFinite(value));
+        const values = entries.map((entry) => strictAdminNumericValue(entry.values[fieldId])).filter((value) => Number.isFinite(value));
         if (!definition || !field || !values.length) return null;
         const value = values.reduce((sum, item) => sum + item, 0) / values.length;
         const min = field.scale?.min ?? Math.min(...values, 0);
