@@ -61,5 +61,7 @@ jobs:
           git config user.email "bixbo-bot@users.noreply.github.com"
           git add src/lib/storage.ts
           git commit -m "Preserve Quick Log customisation per device across updates"
+          git stash -u
           git pull --rebase origin main
+          git stash drop || true
           git push origin HEAD:main
