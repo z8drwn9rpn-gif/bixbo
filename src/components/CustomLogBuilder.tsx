@@ -88,17 +88,26 @@ export function CustomLogBuilder({ data, update }: { data: BixboData; update: Up
   };
 
   const patchField = (log: CustomLogDefinition, fieldId: string, patch: Partial<RegistryFieldDefinition>) => {
+    let patchedField: RegistryFieldDefinition | undefined;
+    const fields = log.fields.map((field) => {
+      if (field.id !== fieldId) return field;
+      const next = { ...field, ...patch, id: field.id };
+      if (next.kind === "chips") {
+        const options = sanitizeOptions(next.options);
+        patchedField = { ...next, options, optionLabels: sanitizeOptionLabels(options, next.optionLabels), scale: undefined };
+      } else if (next.kind === "scale") {
+        patchedField = { ...next, options: undefined, optionLabels: undefined, scale: sanitizeScale(next.scale) };
+      } else {
+        patchedField = { ...next, options: undefined, optionLabels: undefined, scale: undefined };
+      }
+      return patchedField;
+    });
+    const selectedHeatmapFieldBecameInvalid =
+      log.heatmapFieldId === fieldId &&
+      (!patchedField || patchedField.enabled === false || (patchedField.kind !== "number" && patchedField.kind !== "scale"));
     patchLog(log.id, {
-      fields: log.fields.map((field) => {
-        if (field.id !== fieldId) return field;
-        const next = { ...field, ...patch, id: field.id };
-        if (next.kind === "chips") {
-          const options = sanitizeOptions(next.options);
-          return { ...next, options, optionLabels: sanitizeOptionLabels(options, next.optionLabels), scale: undefined };
-        }
-        if (next.kind === "scale") return { ...next, options: undefined, optionLabels: undefined, scale: sanitizeScale(next.scale) };
-        return { ...next, options: undefined, optionLabels: undefined, scale: undefined };
-      }),
+      fields,
+      ...(selectedHeatmapFieldBecameInvalid ? { heatmapFieldId: undefined } : {}),
     });
   };
 
