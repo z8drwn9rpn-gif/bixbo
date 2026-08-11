@@ -18,6 +18,7 @@ import { NotificationPrompt } from "../components/NotificationPrompt";
 import { AppPrivacyGuard } from "../components/AppPrivacyGuard";
 import { AdminEditOverlay } from "../components/AdminEditOverlay";
 import { CoupleAdminEditOverlay } from "../components/CoupleAdminEditOverlay";
+import { AdminEditPinGate } from "../components/AdminEditPinGate";
 import { Toaster } from "../components/ui/sonner";
 import { useI18n } from "@/hooks/useI18n";
 import { useGlobalAdminConfigSync } from "@/lib/globalAdminConfig";
@@ -158,6 +159,7 @@ function RootComponent() {
       </AppPrivacyGuard>
       <AdminEditOverlay />
       <CoupleAdminEditOverlay />
+      <AdminEditPinGate />
       <NotificationPrompt />
       <Toaster />
     </QueryClientProvider>
