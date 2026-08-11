@@ -1,0 +1,41 @@
+name: Patch HAK admin selectors
+
+on:
+  push:
+    branches:
+      - agent/hak-inline-admin-edit
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/hak-inline-admin-edit
+      - name: Apply exact selector patch
+        shell: python
+        run: |
+          from pathlib import Path
+          path = Path('src/components/HakAdminEditOverlay.tsx')
+          text = path.read_text()
+          old = '''function textCandidates(root: HTMLElement): HTMLElement[] {\n  return Array.from(root.querySelectorAll<HTMLElement>("h1,h2,h3,p,span"));\n}\n\nfunction findByOriginal(root: HTMLElement, original: string, occurrence = 0): HTMLElement | null {\n  const matches = textCandidates(root).filter(\n    (element) => !element.closest("[data-bixbo-hak-admin-ui]") && element.children.length === 0 && element.textContent?.trim() === original,\n  );\n  return matches[occurrence] ?? null;\n}'''
+          new = '''function findDefinitionElement(root: HTMLElement, definition: HakDefinition): HTMLElement | null {\n  const selector =\n    definition.id === "overviewTitle"\n      ? "h1"\n      : definition.id === "cycleTitle" || definition.id === "sex"\n        ? "h2"\n        : definition.id === "currentPack"\n          ? "h3"\n          : "p";\n  return (\n    Array.from(root.querySelectorAll<HTMLElement>(selector)).find(\n      (element) =>\n        !element.closest("[data-bixbo-hak-admin-ui]") &&\n        element.children.length === 0 &&\n        element.textContent?.trim() === definition.original,\n    ) ?? null\n  );\n}'''
+          old2 = '''        const occurrence = definition.id === "cycleSubtitle" ? 1 : 0;\n        const element = findByOriginal(root, definition.original, occurrence);'''
+          new2 = '''        const element = findDefinitionElement(root, definition);'''
+          if text.count(old) != 1 or text.count(old2) != 1:
+              raise SystemExit('Expected selector blocks exactly once')
+          text = text.replace(old, new, 1).replace(old2, new2, 1)
+          path.write_text(text)
+      - name: Remove temporary workflow
+        run: rm .github/workflows/patch-hak-admin-selectors.yml
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/HakAdminEditOverlay.tsx .github/workflows/patch-hak-admin-selectors.yml
+          git commit -m "fix HAK admin label selectors"
+          git push origin HEAD:agent/hak-inline-admin-edit
