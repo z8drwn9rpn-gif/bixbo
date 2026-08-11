@@ -29,7 +29,7 @@ describe("admin navigation config", () => {
       { navigation: { items: { home: { label: "Start" }, notes: { hidden: true } } } },
       { navigation: { items: { home: { order: 50 }, log: { label: "Quick add" } } } },
     );
-    expect(merged.navigation?.items?.home).toEqual({ order: 50 });
+    expect(merged.navigation?.items?.home).toEqual({ label: "Start", order: 50 });
     expect(merged.navigation?.items?.notes?.hidden).toBe(true);
     expect(merged.navigation?.items?.log?.label).toBe("Quick add");
   });
