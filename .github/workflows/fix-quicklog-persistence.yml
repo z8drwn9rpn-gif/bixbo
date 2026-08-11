@@ -1,6 +1,9 @@
 name: Fix Quick Log persistence
 
 on:
+  push:
+    paths:
+      - ".github/workflows/fix-quicklog-persistence.yml"
   workflow_dispatch:
 
 permissions:
