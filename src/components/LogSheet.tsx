@@ -5,7 +5,7 @@ import { Ico, IcoText } from "@/components/icons/BixboIcons";
 import { CustomLogForm } from "@/components/CustomLogForm";
 import { CoreFeatureCustomFieldsForm } from "@/components/CoreFeatureCustomFieldsForm";
 import { POSTPARTUM_SYMPTOMS } from "@/lib/health";
-import { getRegistryFeature, getRegistryField, isRegistrySurfaceEnabled, registryCustomFieldsForFeature, registryFieldLabel, registryFieldOptions, registryFieldScale, registryOptionLabel, customLogDefinitions, type RegistryFeatureId } from "@/lib/appRegistry";
+import { getRegistryFeature, getRegistryField, isRegistrySurfaceEnabled, registryCustomFieldsForFeature, registryFieldLabel, registryFieldOptions, registryFieldScale, registryFieldsForFeature, registryOptionLabel, customLogDefinitions, type RegistryFeatureId } from "@/lib/appRegistry";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -1295,6 +1295,20 @@ function PainWizard({
   }, [data.dayLogs, date, initialEntry]);
 
   const [step, setStep] = useState(0);
+  const painSteps = useMemo(() => {
+    const configured = registryFieldsForFeature(data, "pain");
+    return configured.length ? configured : [
+      { id: "score", label: "Pain scale" },
+      { id: "parts", label: "Where does it hurt?" },
+      { id: "quality", label: "How does it hurt?" },
+      { id: "symptoms", label: "Other symptoms" },
+      { id: "details", label: "Details" },
+    ];
+  }, [data]);
+  const safeStep = Math.min(step, Math.max(0, painSteps.length - 1));
+  const activePainStep = painSteps[safeStep];
+  const activePainStepId = activePainStep?.id ?? "score";
+  const symptomsStepIndex = painSteps.findIndex((field) => field.id === "symptoms");
   const [score, setScore] = useState(initialEntry?.score ?? 0);
   const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
   const [parts, setParts] = useState<string[]>(initialEntry?.parts ?? []);
@@ -1406,7 +1420,7 @@ function PainWizard({
 
     setCopiedFromTime(latestPain.time);
     setQuickSymptomUpdate(true);
-    setStep(3);
+    setStep(symptomsStepIndex >= 0 ? symptomsStepIndex : 0);
   };
 
 
@@ -1539,8 +1553,8 @@ function PainWizard({
     if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy)) return;
     const target = e.target as HTMLElement;
     if (target.closest('input,textarea,select,button,[role="slider"],.no-swipe')) return;
-    if (dx < 0 && step < 4) setStep(step + 1);
-    else if (dx > 0 && step > 0) setStep(step - 1);
+    if (dx < 0 && safeStep < painSteps.length - 1) setStep(safeStep + 1);
+    else if (dx > 0 && safeStep > 0) setStep(safeStep - 1);
   };
 
   return (
@@ -1561,10 +1575,10 @@ function PainWizard({
           className="fixed inset-x-0 z-30 h-[60px] flex items-center justify-between gap-2 border-b border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur"
           style={{ top: "calc(env(safe-area-inset-top) + 56px)" }}
         >
-          {step > 0 ? (
+          {safeStep > 0 ? (
             <button
               type="button"
-              onClick={() => setStep(step - 1)}
+              onClick={() => setStep(safeStep - 1)}
               className="flex min-w-[68px] items-center gap-1 text-sm font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <span aria-hidden="true" className="text-base leading-none">←</span>
@@ -1576,30 +1590,31 @@ function PainWizard({
 
           <div className="flex min-w-0 flex-1 items-center justify-center gap-2">
             <div className="flex gap-1">
-              {[0, 1, 2, 3, 4].map((i) => (
+              {painSteps.map((painStep, i) => (
                 <span
-                  key={i}
-                  className={`h-1.5 w-5 rounded-full transition-colors ${i <= step ? "bg-primary" : "bg-tint"}`}
+                  key={painStep.id}
+                  className={`h-1.5 w-5 rounded-full transition-colors ${i <= safeStep ? "bg-primary" : "bg-tint"}`}
                 />
               ))}
             </div>
-            <span className="shrink-0 text-xs font-semibold text-foreground/75">{step + 1}/5</span>
+            <span className="min-w-0 truncate text-xs font-semibold text-foreground/75">{t(activePainStep?.label ?? "")}</span>
+            <span className="shrink-0 text-xs font-semibold text-foreground/75">{safeStep + 1}/{painSteps.length}</span>
           </div>
 
           <button
             type="button"
-            onClick={step < 4 ? () => setStep(step + 1) : save}
+            onClick={safeStep < painSteps.length - 1 ? () => setStep(safeStep + 1) : save}
             className="flex h-[52px] min-w-[64px] flex-col items-center justify-center rounded-[1.15rem] bg-primary px-3 text-primary-foreground shadow-sm transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
-            <span className="text-sm font-semibold leading-none">{t(step < 4 ? "Next" : "Save")}</span>
-            <span aria-hidden="true" className="mt-0.5 text-base leading-none">{step < 4 ? "→" : "✓"}</span>
+            <span className="text-sm font-semibold leading-none">{t(safeStep < painSteps.length - 1 ? "Next" : "Save")}</span>
+            <span aria-hidden="true" className="mt-0.5 text-base leading-none">{safeStep < painSteps.length - 1 ? "→" : "✓"}</span>
           </button>
         </div>
       )}
 
-      {step === 0 && (
+      {activePainStepId === "score" && (
         <div className="flex flex-col items-center gap-4 py-6">
-          {latestPain && !initialEntry && (
+          {latestPain && !initialEntry && symptomsStepIndex >= 0 && (
             <div className="w-full rounded-2xl border border-primary/30 bg-surface/90 p-3 shadow-sm">
               <div className="mb-3 flex items-start justify-between gap-3">
                 <div>
@@ -1656,7 +1671,7 @@ function PainWizard({
         </div>
       )}
 
-      {step === 1 && (
+      {activePainStepId === "parts" && (
         <Field label="Where does it hurt?">
           <CustomChipList
             base={BODY_PARTS_DEFAULT}
@@ -1675,7 +1690,7 @@ function PainWizard({
            schemaFieldId="parts"/>
         </Field>
       )}
-      {step === 2 && (
+      {activePainStepId === "quality" && (
         <div className="space-y-4">
           <Field label="How does it hurt?">
             <CustomChipList
@@ -1725,7 +1740,7 @@ function PainWizard({
           )}
         </div>
       )}
-      {step === 3 && (
+      {activePainStepId === "symptoms" && (
         <div className="space-y-4">
           {quickSymptomUpdate && (
             <div className="rounded-2xl border border-primary/30 bg-primary/10 p-3 text-sm">
@@ -2232,7 +2247,7 @@ function PainWizard({
         </div>
       )}
 
-      {step === 4 && (
+      {activePainStepId === "details" && (
         <div className="space-y-4">
           {(() => {
             const STRESS_DESC = getScaleDesc(data, "stress");
@@ -2292,7 +2307,7 @@ function PainWizard({
         </div>
       )}
 
-      {quickSymptomUpdate && step === 3 && (
+      {quickSymptomUpdate && activePainStepId === "symptoms" && (
         <SheetFooter className="fixed inset-x-0 z-30 h-[60px] flex-row items-center justify-between gap-3 border-b border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur" style={{ top: "calc(env(safe-area-inset-top) + 56px)" }}>
           <button
             type="button"
