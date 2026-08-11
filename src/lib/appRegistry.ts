@@ -206,9 +206,13 @@ export function registryFieldScale(data: Pick<BixboData, "settings">, featureId:
 
 export function registryFieldOptions(data: Pick<BixboData, "settings">, featureId: RegistryFeatureId, fieldId: string, base: string[]): string[] {
   const overrides = activeAdminConfig(data)?.features?.[featureId]?.fields?.[fieldId]?.options ?? {};
-  return base
+  const values = [...base];
+  for (const value of Object.keys(overrides)) {
+    if (!values.includes(value)) values.push(value);
+  }
+  return values
     .filter((value) => overrides[value]?.enabled !== false)
-    .sort((a, b) => (overrides[a]?.order ?? base.indexOf(a)) - (overrides[b]?.order ?? base.indexOf(b)));
+    .sort((a, b) => (overrides[a]?.order ?? values.indexOf(a)) - (overrides[b]?.order ?? values.indexOf(b)));
 }
 
 export function registryOptionLabel(data: Pick<BixboData, "settings">, featureId: RegistryFeatureId, fieldId: string, value: string): string {

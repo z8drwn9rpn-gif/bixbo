@@ -238,6 +238,37 @@ export function AdminEditOverlay() {
     persist({ ...config, features: featuresCopy });
   };
 
+  const addFieldOption = (featureId: RegistryFeatureId, fieldId: string) => {
+    const label = window.prompt(t("New option name"))?.trim();
+    if (!label) return;
+    const config = getDeviceAdminConfig();
+    const feature = config.features?.[featureId] ?? {};
+    const field = feature.fields?.[fieldId] ?? {};
+    const options = field.options ?? {};
+    const stableValue = `custom:${Date.now().toString(36)}:${Math.random().toString(36).slice(2, 8)}`;
+    patchField(featureId, fieldId, { options: { [stableValue]: { label, enabled: true, order: Object.keys(options).length + 1000 } } });
+  };
+
+  const deleteCustomFieldOption = (featureId: RegistryFeatureId, fieldId: string, value: string) => {
+    if (!value.startsWith("custom:")) return;
+    const config = getDeviceAdminConfig();
+    const feature = config.features?.[featureId] ?? {};
+    const field = feature.fields?.[fieldId] ?? {};
+    const options = { ...(field.options ?? {}) };
+    delete options[value];
+    persist({
+      ...config,
+      enabled: true,
+      features: {
+        ...(config.features ?? {}),
+        [featureId]: {
+          ...feature,
+          fields: { ...(feature.fields ?? {}), [fieldId]: { ...field, options } },
+        },
+      },
+    });
+  };
+
   const writeOrder = (ids: string[]) => {
     if (!page) return;
     const config = getDeviceAdminConfig();
@@ -418,19 +449,25 @@ export function AdminEditOverlay() {
                                     ))}
                                   </div>
                                 ) : null}
-                                {baseField.options?.length ? (
+                                {baseField.kind === "chips" ? (
                                   <div className="mt-2 space-y-1">
-                                    {baseField.options.map((option, optionIndex) => {
+                                    {[...new Set([...(baseField.options ?? []), ...Object.keys(localField?.options ?? {})])].map((option, optionIndex) => {
                                       const override = localField?.options?.[option];
                                       const shown = isRegistryOptionEnabled(adminView, featureId, baseField.id, option);
                                       const label = registryOptionLabel(adminView, featureId, baseField.id, option);
+                                      const custom = option.startsWith("custom:");
                                       return (
                                         <div key={option} className="flex items-center gap-1.5">
                                           <input value={label} onChange={(event) => patchField(featureId, baseField.id, { options: { [option]: { ...override, label: event.target.value, order: override?.order ?? optionIndex } } })} className="h-7 min-w-0 flex-1 rounded-lg bg-background px-2 text-[10px] ring-1 ring-border" />
-                                          <button type="button" onClick={() => patchField(featureId, baseField.id, { options: { [option]: { ...override, enabled: !shown, order: override?.order ?? optionIndex } } })} className="rounded-full bg-background px-2 py-1 text-[8px] ring-1 ring-border">{shown ? t("On") : t("Hidden")}</button>
+                                          {custom ? (
+                                            <button type="button" onClick={() => deleteCustomFieldOption(featureId, baseField.id, option)} className="rounded-full bg-background px-2 py-1 text-[8px] font-semibold text-destructive ring-1 ring-border">{t("Delete")}</button>
+                                          ) : (
+                                            <button type="button" onClick={() => patchField(featureId, baseField.id, { options: { [option]: { ...override, enabled: !shown, order: override?.order ?? optionIndex } } })} className="rounded-full bg-background px-2 py-1 text-[8px] ring-1 ring-border">{shown ? t("On") : t("Hidden")}</button>
+                                          )}
                                         </div>
                                       );
                                     })}
+                                    <button type="button" onClick={() => addFieldOption(featureId, baseField.id)} className="mt-1 w-full rounded-lg border border-dashed border-primary/40 bg-background px-2 py-1.5 text-[9px] font-bold text-primary">+ {t("Add custom")}</button>
                                   </div>
                                 ) : null}
                                 <p className="mt-1 text-[8px] text-muted-foreground">Field ID: {baseField.id}</p>
