@@ -24,6 +24,7 @@ import {
 import { AppShell } from "@/components/AppShell";
 import { CHART_COLORS, CHART_TINTS } from "@/components/ui/chart";
 import { useI18n } from "@/hooks/useI18n";
+import { BIXBO_REGISTRY, getRegistryFeature, registryAdminMonthlyFieldsForFeature } from "@/lib/appRegistry";
 import { layoutOrder } from "@/lib/layoutRegistry";
 import {
   EMPTY,
@@ -1059,6 +1060,28 @@ export function PatternsContent() {
 
   const weightAverage = (days: string[]) =>
     avg(days.map((day) => latestWeightForDay(dayLogs[day])).filter((value): value is number => value != null));
+
+  const adminMonthlyMetrics = BIXBO_REGISTRY.flatMap((featureBase) => {
+    const feature = getRegistryFeature(view, featureBase.id);
+    return registryAdminMonthlyFieldsForFeature(view, featureBase.id).map((field) => {
+      const averageForDays = (days: string[]) => {
+        const values = days.flatMap((day) =>
+          (dayLogs[day]?.adminFields?.[featureBase.id] ?? [])
+            .map((entry) => Number(entry.values[field.id]))
+            .filter((value) => Number.isFinite(value)),
+        );
+        return avg(values);
+      };
+      return {
+        id: `${featureBase.id}:${field.id}`,
+        title: `${feature.label} · ${field.label}`,
+        previous: averageForDays(previousMonthDays),
+        current: averageForDays(currentMonthDays),
+        max: field.kind === "scale" ? field.scale?.max : undefined,
+        unit: field.kind === "scale" && field.scale?.max != null ? `/${field.scale.max}` : "",
+      };
+    });
+  });
 
   const medicationAdherence = (days: string[]) => {
     const scheduledMeds = view.meds.filter((med) => !med.asNeeded);
@@ -2213,6 +2236,38 @@ export function PatternsContent() {
                 </div>
               </div>
             </Card>
+
+            {adminMonthlyMetrics.length > 0 ? (
+              <CollapsibleSection
+                layoutOrderValue={layoutOrder(view, "patterns.monthly", "customMetrics", 60)}
+                title="Custom metrics"
+                subtitle="Admin-created numeric and scale fields"
+                defaultOpen={false}
+              >
+                <Card
+                  title="Monthly comparison — custom metrics"
+                  description={`${monthlyComparisonLabel} · same number of elapsed days in each month.`}
+                >
+                  <div className="mt-3 space-y-2.5">
+                    {adminMonthlyMetrics.map((metric) => (
+                      <ComparisonMetric
+                        key={metric.id}
+                        title={metric.title}
+                        subtitle="Average of saved supplementary values"
+                        previous={metric.previous}
+                        current={metric.current}
+                        max={metric.max}
+                        decimals={1}
+                        unit={metric.unit}
+                        color="green"
+                        neutralTrend
+                        icon={<Activity className="h-5 w-5" />}
+                      />
+                    ))}
+                  </div>
+                </Card>
+              </CollapsibleSection>
+            ) : null}
 
             <SummaryPanel
               title="Monthly Summary"

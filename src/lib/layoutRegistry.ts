@@ -46,6 +46,7 @@ export const BIXBO_LAYOUT_SECTIONS: Record<LayoutPageId, LayoutSectionDefinition
     { id: "symptoms", label: "Symptoms", order: 30 },
     { id: "lifestyle", label: "Lifestyle & routines", order: 40 },
     { id: "hormones", label: "Hormones", order: 50 },
+    { id: "customMetrics", label: "Custom metrics", order: 60 },
   ],
   "patterns.treatment": [
     { id: "comparison", label: "Treatment comparison", order: 10 },
