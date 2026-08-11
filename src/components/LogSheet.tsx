@@ -3530,12 +3530,12 @@ function BowelForm({
     onDone();
   };
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       <SaveBar onCancel={onDone} onSave={save} />
-      <Field label="Time">
+      <Field label="Time" schemaFieldId="time">
         <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
       </Field>
-      <Field label="Bristol stool scale">
+      <Field label="Bristol stool scale" schemaFieldId="bristol">
         <div className="mt-1 space-y-1.5">
           <button
             onClick={() => setBristol(-1)}
@@ -3598,7 +3598,7 @@ function BowelForm({
           ))}
         </div>
       </Field>
-      <Field label="Urinary">
+      <Field label="Urinary" schemaFieldId="urinary">
         <CustomChipList
           base={URINARY_DEFAULT}
           custom={data.custom.urinary}
@@ -3609,7 +3609,7 @@ function BowelForm({
           onToggle={(v) => setUrinary((a) => toggleIn(a, v))}
         />
       </Field>
-      <Field label="How do you feel?">
+      <Field label="How do you feel?" schemaFieldId="feelings">
         <CustomChipList
           base={BOWEL_FEELINGS_DEFAULT}
           custom={data.custom.bowelFeelings}
@@ -3619,7 +3619,7 @@ function BowelForm({
           onToggle={(v) => setFeelings((a) => toggleIn(a, v))}
         />
       </Field>
-      <Field label="Symptoms">
+      <Field label="Symptoms" schemaFieldId="symptoms">
         <CustomChipList
           base={BOWEL_SYMPTOMS_DEFAULT}
           custom={data.custom.bowelSymptoms}
@@ -3629,7 +3629,7 @@ function BowelForm({
           onToggle={(v) => setSymptoms((a) => toggleIn(a, v))}
         />
       </Field>
-      <Field label="Note (optional)">
+      <Field label="Note (optional)" schemaFieldId="note">
         <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
     </div>
