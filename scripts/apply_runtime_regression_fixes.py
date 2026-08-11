@@ -50,7 +50,6 @@ write(path, text)
 for path in [
     'src/components/AdminEditOverlay.tsx',
     'src/components/CoupleAdminEditOverlay.tsx',
-    'src/components/HakAdminEditOverlay.tsx',
     'src/components/UniversalAdminPageEditor.tsx',
 ]:
     text = read(path)
@@ -60,6 +59,15 @@ for path in [
     text2, count = re.subn(pattern, r'\1data-bixbo-admin-page-opener onClick={() => setOpen((value) => !value)}', text, count=1, flags=re.S)
     assert count == 1, f'Admin opener anchor missing in {path}'
     write(path, text2)
+
+path = 'src/components/HakAdminEditOverlay.tsx'
+text = read(path)
+if 'data-bixbo-admin-page-opener' not in text:
+    old = '          data-bixbo-admin-open="hak"\n          onClick={() => setEditorOpen((value) => !value)}'
+    new = '          data-bixbo-admin-open="hak"\n          data-bixbo-admin-page-opener\n          onClick={() => setEditorOpen((value) => !value)}'
+    assert old in text, 'HAK admin opener anchor missing'
+    text = text.replace(old, new, 1)
+    write(path, text)
 
 # Source-level regression tests for the four reported failures.
 test_path = ROOT / 'src/lib/__tests__/reported-runtime-regressions.test.ts'
