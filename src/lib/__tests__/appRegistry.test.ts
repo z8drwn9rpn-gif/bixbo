@@ -62,7 +62,20 @@ describe("BIXBO log schema registry", () => {
 
   it("can rename/hide chip options while keeping their stored stable value", () => {
     const data = structuredClone(EMPTY);
-    data.settings.adminConfig = { features: { pain: { fields: { parts: { options: { Pelvis: { label: "Lower pelvis" }, Head: { enabled: false } } } } } };
+    data.settings.adminConfig = {
+      features: {
+        pain: {
+          fields: {
+            parts: {
+              options: {
+                Pelvis: { label: "Lower pelvis" },
+                Head: { enabled: false },
+              },
+            },
+          },
+        },
+      },
+    };
     expect(registryOptionLabel(data, "pain", "parts", "Pelvis")).toBe("Lower pelvis");
     expect(registryFieldOptions(data, "pain", "parts", ["Head", "Pelvis"])).toEqual(["Pelvis"]);
     expect(isRegistryOptionEnabled(data, "pain", "parts", "Head")).toBe(false);
