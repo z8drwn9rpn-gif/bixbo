@@ -52,6 +52,18 @@ function mergeNavigation(globalConfig: AdminConfig, localConfig: AdminConfig): A
   };
 }
 
+function mergeHak(globalConfig: AdminConfig, localConfig: AdminConfig): AdminConfig["hak"] {
+  if (!globalConfig.hak && !localConfig.hak) return undefined;
+  return {
+    ...(globalConfig.hak ?? {}),
+    ...(localConfig.hak ?? {}),
+    items: {
+      ...(globalConfig.hak?.items ?? {}),
+      ...(localConfig.hak?.items ?? {}),
+    },
+  };
+}
+
 function mergeTextOverrides(globalConfig: AdminConfig, localConfig: AdminConfig): AdminConfig["textOverrides"] {
   if (!globalConfig.textOverrides && !localConfig.textOverrides) return undefined;
   const keys = new Set([
@@ -96,6 +108,7 @@ export function mergeAdminConfigs(globalConfig: AdminConfig = {}, localConfig: A
       ...(globalConfig.pageBlocks ?? {}),
       ...(localConfig.pageBlocks ?? {}),
     },
+    hak: mergeHak(globalConfig, localConfig),
   };
 }
 
