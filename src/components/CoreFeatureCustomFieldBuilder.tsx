@@ -70,12 +70,13 @@ export function CoreFeatureCustomFieldBuilder({ data }: { data: BixboData }) {
     const fields = feature.customFields ?? [];
     const heatmapFieldIds = (feature.heatmapFieldIds ?? []).filter((id) => id !== fieldId);
     const monthlyFieldIds = (feature.monthlyFieldIds ?? []).filter((id) => id !== fieldId);
+    const cycleFieldIds = (feature.cycleFieldIds ?? []).filter((id) => id !== fieldId);
     setDeviceAdminConfig({
       ...current,
       enabled: true,
       features: {
         ...(current.features ?? {}),
-        [featureId]: { ...feature, customFields: fields.filter((field) => field.id !== fieldId), heatmapFieldIds, monthlyFieldIds },
+        [featureId]: { ...feature, customFields: fields.filter((field) => field.id !== fieldId), heatmapFieldIds, monthlyFieldIds, cycleFieldIds },
       },
     });
   };
@@ -102,14 +103,15 @@ export function CoreFeatureCustomFieldBuilder({ data }: { data: BixboData }) {
     const selected = new Set(feature.monthlyFieldIds ?? []);
     if (enabled) selected.add(fieldId);
     else selected.delete(fieldId);
-    setDeviceAdminConfig({
-      ...current,
-      enabled: true,
-      features: {
-        ...(current.features ?? {}),
-        [featureId]: { ...feature, monthlyFieldIds: [...selected] },
-      },
-    });
+    setDeviceAdminConfig({ ...current, enabled: true, features: { ...(current.features ?? {}), [featureId]: { ...feature, monthlyFieldIds: [...selected] } } });
+  };
+
+  const setCycleFieldEnabled = (featureId: RegistryFeatureId, fieldId: string, enabled: boolean) => {
+    const current = getDeviceAdminConfig();
+    const feature = current.features?.[featureId] ?? {};
+    const selected = new Set(feature.cycleFieldIds ?? []);
+    if (enabled) selected.add(fieldId); else selected.delete(fieldId);
+    setDeviceAdminConfig({ ...current, enabled: true, features: { ...(current.features ?? {}), [featureId]: { ...feature, cycleFieldIds: [...selected] } } });
   };
 
   return (
@@ -214,6 +216,9 @@ export function CoreFeatureCustomFieldBuilder({ data }: { data: BixboData }) {
                               }`}
                             >
                               Monthly {(config.features?.[feature.id]?.monthlyFieldIds ?? []).includes(field.id) ? t("On") : t("Off")}
+                            </button>
+                            <button type="button" onClick={() => setCycleFieldEnabled(feature.id, field.id, !(config.features?.[feature.id]?.cycleFieldIds ?? []).includes(field.id))} className={`rounded-full px-2 py-1 text-[8px] font-semibold ring-1 ${(config.features?.[feature.id]?.cycleFieldIds ?? []).includes(field.id) ? "bg-primary text-primary-foreground ring-primary/30" : "bg-tint text-muted-foreground ring-border"}`}>
+                              Cycle {(config.features?.[feature.id]?.cycleFieldIds ?? []).includes(field.id) ? t("On") : t("Off")}
                             </button>
                           </>
                         ) : null}

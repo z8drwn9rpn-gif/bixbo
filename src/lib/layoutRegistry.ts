@@ -39,6 +39,7 @@ export const BIXBO_LAYOUT_SECTIONS: Record<LayoutPageId, LayoutSectionDefinition
   "patterns.cycle": [
     { id: "painFlow", label: "Pain & flow", order: 10 },
     { id: "bodyChanges", label: "Body changes", order: 20 },
+    { id: "customMetrics", label: "Custom metrics", order: 30 },
   ],
   "patterns.monthly": [
     { id: "glance", label: "This month at a glance", order: 10 },
