@@ -2215,7 +2215,7 @@ export function PatternsContent() {
             {adminCycleMetrics.length > 0 ? (
               <CollapsibleSection layoutOrderValue={layoutOrder(view, "patterns.cycle", "customMetrics", 30)} title="Custom metrics" subtitle="Admin-created numeric and scale fields" defaultOpen={false}>
                 <Card title="Cycle phase — custom metrics" description="Admin-created values grouped by cycle phase.">
-                  <div className="mt-3 space-y-2.5">{adminCycleMetrics.map((metric) => <PhaseBarChart key={metric.id} title={metric.title} description="Average saved supplementary value by cycle phase." bars={metric.bars} max={metric.max} decimals={1} unit={metric.unit} />)}</div>
+                  <div className="mt-3 space-y-2.5">{adminCycleMetrics.map((metric) => <PhaseBarChart key={metric.id} title={metric.title} description="Average saved supplementary value by cycle phase." bars={metric.bars} max={metric.max ?? 10} decimals={1} unit={metric.unit} />)}</div>
                 </Card>
               </CollapsibleSection>
             ) : null}
