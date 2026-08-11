@@ -1,0 +1,25 @@
+name: Edit admin custom log entries
+on:
+  push:
+    branches: [agent/edit-admin-custom-log-entries]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/edit-admin-custom-log-entries
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - run: python .github/scripts/edit_admin_custom_log_entries.py
+      - run: rm .github/scripts/edit_admin_custom_log_entries.py .github/workflows/edit-admin-custom-log-entries.yml
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/components/CustomLogForm.tsx src/components/LogSheet.tsx .github
+          git commit -m 'support editing saved admin custom log entries'
+          git push origin HEAD:agent/edit-admin-custom-log-entries
