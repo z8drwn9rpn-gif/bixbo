@@ -2434,12 +2434,24 @@ function YearHealthHeatmap({
                 data-bixbo-heatmap-half={halfIndex}
                 className="relative min-w-0 overflow-visible"
               >
-                {hasActive && activeTooltip && yearTooltipAnchor?.halfIndex === halfIndex ? (
+                {hasActive && activeTooltip && activePosition && activeTooltipLayout ? (
                   <InsightFloatingTooltip
-                    leftPct={yearTooltipAnchor.leftPct}
+                    leftPct={
+                      yearTooltipAnchor?.halfIndex === halfIndex
+                        ? Math.max(2, Math.min(98, yearTooltipAnchor.leftPct))
+                        : 10 + ((activePosition.weekIndex + 0.5) / Math.max(1, half.weekCount)) * 88
+                    }
                     details={activeTooltip}
-                    top={yearTooltipAnchor.top}
-                    connectorSide={yearTooltipAnchor.connectorSide}
+                    top={
+                      yearTooltipAnchor?.halfIndex === halfIndex
+                        ? yearTooltipAnchor.top
+                        : activeTooltipLayout.top
+                    }
+                    connectorSide={
+                      yearTooltipAnchor?.halfIndex === halfIndex
+                        ? yearTooltipAnchor.connectorSide
+                        : activeTooltipLayout.connectorSide
+                    }
                   />
                 ) : null}
 

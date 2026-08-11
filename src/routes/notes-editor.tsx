@@ -93,6 +93,7 @@ export function NoteEditor({
   const [tick, setTick] = useState(0);
 
   const editorRef = useRef<HTMLDivElement | null>(null);
+  const keyboardBridgeRef = useRef<HTMLTextAreaElement | null>(null);
   const initialContentRef = useRef(
     sanitizeNoteHtml(
       (note.content || "").replaceAll("#fef3c7", "#b4be80").replaceAll("rgb(254, 243, 199)", "rgb(223, 230, 184)"),
@@ -210,6 +211,26 @@ export function NoteEditor({
     // and dismiss the software keyboard. We still sanitize before persistence.
     contentRef.current = editorRef.current.innerHTML;
     setTick((value) => value + 1);
+  };
+
+  const primeIOSKeyboard = () => {
+    const bridge = keyboardBridgeRef.current;
+    const editor = editorRef.current;
+    if (!bridge || !editor) return;
+
+    // iOS reliably opens its software keyboard for a native textarea during the
+    // user gesture. Transfer focus to the rich editor on the next animation frame
+    // so typing lands in the note body while the keyboard stays open.
+    bridge.focus({ preventScroll: true });
+    window.requestAnimationFrame(() => {
+      editor.focus({ preventScroll: true });
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount > 0) return;
+      const range = document.createRange();
+      range.selectNodeContents(editor);
+      range.collapse(false);
+      selection.addRange(range);
+    });
   };
 
   return (
@@ -333,6 +354,12 @@ export function NoteEditor({
         </div>
 
         <div className="rounded-3xl p-4 ring-1 ring-border/70" style={{ background: NOTE_COLORS[color] }}>
+          <textarea
+            ref={keyboardBridgeRef}
+            aria-hidden="true"
+            tabIndex={-1}
+            className="pointer-events-none fixed left-0 top-0 h-px w-px opacity-0 text-base"
+          />
           <div
             key={note.id}
             ref={editorRef}
@@ -347,6 +374,10 @@ export function NoteEditor({
             autoCorrect="on"
             data-bixbo-note-editor
             dangerouslySetInnerHTML={{ __html: initialContentRef.current }}
+            onPointerDown={(event) => {
+              if (event.pointerType === "touch") primeIOSKeyboard();
+            }}
+            onTouchStart={primeIOSKeyboard}
             onInput={onInput}
             onBlur={onInput}
             className="relative z-10 min-h-[40dvh] touch-manipulation select-text text-base leading-relaxed whitespace-pre-wrap outline-none empty:before:pointer-events-none empty:before:text-muted-foreground empty:before:content-[attr(data-placeholder)]"
