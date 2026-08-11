@@ -1,0 +1,29 @@
+name: Apply admin cycle custom metrics
+on:
+  push:
+    branches:
+      - agent/admin-cycle-custom-metrics
+    paths:
+      - .github/scripts/apply_admin_cycle_metrics.py
+      - .github/workflows/apply-admin-cycle-metrics.yml
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/admin-cycle-custom-metrics
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - run: python .github/scripts/apply_admin_cycle_metrics.py
+      - run: rm .github/scripts/apply_admin_cycle_metrics.py .github/workflows/apply-admin-cycle-metrics.yml
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'add admin cycle custom metrics'
+          git push origin HEAD:agent/admin-cycle-custom-metrics
