@@ -1795,7 +1795,7 @@ function HfBars({
   );
 }
 
-type HeatmapMetric = "pain" | "period" | "bowel" | "panic" | "tetany" | "hotFlashes" | "sleep" | `custom:${string}:${string}`;
+type HeatmapMetric = "pain" | "period" | "bowel" | "panic" | "tetany" | "hotFlashes" | "sleep" | "sex" | `custom:${string}:${string}`;
 
 type HeatmapDatum = {
   /** CSS background for the heatmap mark. May be a gradient (Bowel Type 0). */
@@ -1820,6 +1820,7 @@ const HEATMAP_OPTIONS: { id: HeatmapMetric; label: string }[] = [
   { id: "tetany", label: "Tetany episode" },
   { id: "hotFlashes", label: "Hot flashes" },
   { id: "sleep", label: "Sleep" },
+  { id: "sex", label: "ŠukŠuk!" },
 ];
 
 function heatmapPeriodColor(level?: string | null): string {
@@ -2015,6 +2016,35 @@ function YearHealthHeatmap({
           popupValue:
             entries.length > 1 ? `Hot flashes avg ${value.toFixed(1)}/5` : `Hot flashes ${value.toFixed(1)}/5`,
           description: HOT_FLASH_DESCRIPTIONS[rounded] ?? "Hot flashes",
+          entryCount: entries.length,
+        };
+      }
+
+      if (selectedMetric === "sex") {
+        const entries = log.sex ?? [];
+        if (!entries.length) return null;
+
+        const feature = getRegistryFeature(data, "sex");
+        const latest = entries[entries.length - 1];
+        const kindLabels: Record<string, string> = {
+          sex: "Sex",
+          fingering: "Fingering",
+          suck_dick: "Oral — giving",
+          oral: "Oral",
+          other: "Other",
+          sex_with_condom: "Sex with condom",
+          sex_without_condom: "Sex without condom",
+          oral_giving: "Oral — giving",
+          oral_receiving: "Oral — receiving",
+        };
+        const latestKind = kindLabels[latest.kind] ?? String(latest.kind);
+
+        return {
+          color: feature.color,
+          tooltipColor: feature.color,
+          value: `${entries.length}×`,
+          popupValue: feature.label,
+          description: `Latest: ${latestKind}`,
           entryCount: entries.length,
         };
       }
@@ -2245,6 +2275,11 @@ function YearHealthHeatmap({
 
     if (metric === "bowel") {
       return [["T0", BRISTOL_MYSTERY_COLOR], ...BRISTOL.filter((item) => item.n !== 0).map((item) => [`T${item.n}`, item.color] as const)];
+    }
+
+    if (metric === "sex") {
+      const feature = getRegistryFeature(data, "sex");
+      return [[feature.label, feature.color]] as const;
     }
 
     if (metric === "sleep") {
