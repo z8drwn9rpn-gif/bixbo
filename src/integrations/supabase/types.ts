@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_global_config: {
+        Row: {
+          config: Json
+          id: string
+          published_at: string
+          version: number
+        }
+        Insert: {
+          config?: Json
+          id: string
+          published_at?: string
+          version?: number
+        }
+        Update: {
+          config?: Json
+          id?: string
+          published_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
       partner_link_requests: {
         Row: {
           created_at: string
@@ -263,6 +284,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      publish_global_admin_config: {
+        Args: { _config: Json; _pin: string }
+        Returns: number
       }
       unlink_partner: { Args: never; Returns: undefined }
     }
