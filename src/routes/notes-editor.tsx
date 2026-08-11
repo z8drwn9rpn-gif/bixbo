@@ -93,21 +93,13 @@ export function NoteEditor({
   const [tick, setTick] = useState(0);
 
   const editorRef = useRef<HTMLDivElement | null>(null);
-  const contentRef = useRef(note.content);
-  const firstRender = useRef(true);
-
-  useEffect(() => {
-    if (!editorRef.current) return;
-
-    const migratedContent = sanitizeNoteHtml(
+  const initialContentRef = useRef(
+    sanitizeNoteHtml(
       (note.content || "").replaceAll("#fef3c7", "#b4be80").replaceAll("rgb(254, 243, 199)", "rgb(223, 230, 184)"),
-    );
-
-    if (editorRef.current.innerHTML !== migratedContent) {
-      editorRef.current.innerHTML = migratedContent;
-      contentRef.current = migratedContent;
-    }
-  }, [note.id, note.content]);
+    ),
+  );
+  const contentRef = useRef(initialContentRef.current);
+  const firstRender = useRef(true);
 
   useEffect(() => {
     if (firstRender.current) {
@@ -342,6 +334,7 @@ export function NoteEditor({
 
         <div className="rounded-3xl p-4 ring-1 ring-border/70" style={{ background: NOTE_COLORS[color] }}>
           <div
+            key={note.id}
             ref={editorRef}
             contentEditable
             suppressContentEditableWarning
@@ -353,6 +346,7 @@ export function NoteEditor({
             autoCapitalize="sentences"
             autoCorrect="on"
             data-bixbo-note-editor
+            dangerouslySetInnerHTML={{ __html: initialContentRef.current }}
             onInput={onInput}
             onBlur={onInput}
             className="relative z-10 min-h-[40dvh] touch-manipulation select-text text-base leading-relaxed whitespace-pre-wrap outline-none empty:before:pointer-events-none empty:before:text-muted-foreground empty:before:content-[attr(data-placeholder)]"

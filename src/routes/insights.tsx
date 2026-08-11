@@ -1889,6 +1889,12 @@ function YearHealthHeatmap({
   }, [data]);
   const [metric, setMetric] = useState<HeatmapMetric>("pain");
   const [active, setActive] = useState<string | null>(null);
+  const [yearTooltipAnchor, setYearTooltipAnchor] = useState<{
+    halfIndex: number;
+    leftPct: number;
+    top: number;
+    connectorSide: "top" | "bottom";
+  } | null>(null);
 
   useEffect(() => {
     if (availableHeatmapOptions.some((option) => option.id === metric)) return;
@@ -1902,6 +1908,7 @@ function YearHealthHeatmap({
 
   useEffect(() => {
     setActive(null);
+    setYearTooltipAnchor(null);
   }, [anchor, heatmapPeriod, metric]);
 
   const datumFor = useCallback(
@@ -2422,13 +2429,17 @@ function YearHealthHeatmap({
             const hasActive = activePosition?.halfIndex === halfIndex;
 
             return (
-              <div key={`${half.startMonth}-${half.endMonth}`} className="relative min-w-0 overflow-visible">
-                {hasActive && activeTooltip && activePosition && activeTooltipLayout ? (
+              <div
+                key={`${half.startMonth}-${half.endMonth}`}
+                data-bixbo-heatmap-half={halfIndex}
+                className="relative min-w-0 overflow-visible"
+              >
+                {hasActive && activeTooltip && yearTooltipAnchor?.halfIndex === halfIndex ? (
                   <InsightFloatingTooltip
-                    leftPct={10 + ((activePosition.weekIndex + 0.5) / Math.max(1, half.weekCount)) * 88}
+                    leftPct={yearTooltipAnchor.leftPct}
                     details={activeTooltip}
-                    top={activeTooltipLayout.top}
-                    connectorSide={activeTooltipLayout.connectorSide}
+                    top={yearTooltipAnchor.top}
+                    connectorSide={yearTooltipAnchor.connectorSide}
                   />
                 ) : null}
 
@@ -2502,7 +2513,28 @@ function YearHealthHeatmap({
                                   onClick={(event) => {
                                     if (!datum) return;
                                     event.stopPropagation();
-                                    setActive((current) => (current === key ? null : key));
+
+                                    if (active === key) {
+                                      setActive(null);
+                                      setYearTooltipAnchor(null);
+                                      return;
+                                    }
+
+                                    const halfElement = event.currentTarget.closest<HTMLElement>("[data-bixbo-heatmap-half]");
+                                    if (halfElement) {
+                                      const halfRect = halfElement.getBoundingClientRect();
+                                      const dotRect = event.currentTarget.getBoundingClientRect();
+                                      const centerX = dotRect.left - halfRect.left + dotRect.width / 2;
+                                      const centerY = dotRect.top - halfRect.top + dotRect.height / 2;
+                                      const showBelow = centerY < 92;
+                                      setYearTooltipAnchor({
+                                        halfIndex,
+                                        leftPct: Math.max(0, Math.min(100, (centerX / Math.max(1, halfRect.width)) * 100)),
+                                        top: showBelow ? centerY + 5 : Math.max(0, centerY - 75),
+                                        connectorSide: showBelow ? "top" : "bottom",
+                                      });
+                                    }
+                                    setActive(key);
                                   }}
                                   aria-label={`${fmtTapDay(key)} · ${activeMetricLabel}${
                                     datum ? ` · ${datum.value}` : " · no data"
