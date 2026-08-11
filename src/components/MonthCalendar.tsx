@@ -246,7 +246,7 @@ export function MonthCalendar({
       }
 
       meta.set(cell.key, {
-        periodColor: cycleTrackingHidden || !isRegistrySurfaceEnabled(data, "period", "calendar") ? null : (periodColorVar(periodLevel) ?? actualPeriodColor),
+        periodColor: cycleTrackingHidden ? null : (periodColorVar(periodLevel) ?? actualPeriodColor),
         pAvg: isRegistrySurfaceEnabled(data, "pain", "calendar") ? (avgDayPain(log) ?? null) : null,
         predictedPeriod: predictedKeys.has(cell.key),
         icons: iconsFor(log, data),

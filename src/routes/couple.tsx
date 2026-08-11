@@ -1462,17 +1462,26 @@ function CouplePage() {
   const myPanicSplit = splitEntriesByVisibleDay(myPanic);
   const myMedsSplit = splitMedDaysByVisibleDay(myMeds);
 
-  // Couple similarity starts only when the partner has their first comparable
-  // pain/panic/tetany log. Calendar days before that date must never dilute or
-  // penalize the comparison (for example 1–25 July when the partner starts on 26 July).
+  // Couple similarity must use the same comparison window on both phones.
+  // Start only once BOTH people have comparable symptom history.
+  const myFirstComparisonDay =
+    Object.keys(view.dayLogs)
+      .filter((day) => hasSymptoms(view.dayLogs[day]))
+      .sort()[0] ?? null;
+
   const partnerFirstComparisonDay = partner
     ? (Object.keys(partner.dayLogs)
         .filter((day) => hasSymptoms(partner.dayLogs[day]))
         .sort()[0] ?? null)
     : null;
 
-  const comparisonPeriodDays = partnerFirstComparisonDay
-    ? periodDays.filter((day) => day >= partnerFirstComparisonDay)
+  const comparisonStartDay =
+    myFirstComparisonDay && partnerFirstComparisonDay
+      ? (myFirstComparisonDay > partnerFirstComparisonDay ? myFirstComparisonDay : partnerFirstComparisonDay)
+      : null;
+
+  const comparisonPeriodDays = comparisonStartDay
+    ? periodDays.filter((day) => day >= comparisonStartDay)
     : [];
 
   const hasPartnerComparisonData = partner
