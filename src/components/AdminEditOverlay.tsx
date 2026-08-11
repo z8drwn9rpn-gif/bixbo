@@ -282,6 +282,29 @@ export function AdminEditOverlay() {
     });
   };
 
+  const orderedFieldOptionValues = (featureId: RegistryFeatureId, fieldId: string, baseOptions: string[]) => {
+    const overrides = getDeviceAdminConfig().features?.[featureId]?.fields?.[fieldId]?.options ?? {};
+    const values = [...new Set([...baseOptions, ...Object.keys(overrides)])];
+    return values.sort((a, b) => (overrides[a]?.order ?? values.indexOf(a)) - (overrides[b]?.order ?? values.indexOf(b)));
+  };
+
+  const moveFieldOption = (featureId: RegistryFeatureId, fieldId: string, baseOptions: string[], value: string, delta: number) => {
+    const values = orderedFieldOptionValues(featureId, fieldId, baseOptions);
+    const from = values.indexOf(value);
+    const to = from + delta;
+    if (from < 0 || to < 0 || to >= values.length) return;
+    [values[from], values[to]] = [values[to], values[from]];
+
+    const config = getDeviceAdminConfig();
+    const feature = config.features?.[featureId] ?? {};
+    const field = feature.fields?.[fieldId] ?? {};
+    const options = { ...(field.options ?? {}) };
+    values.forEach((option, index) => {
+      options[option] = { ...(options[option] ?? {}), order: (index + 1) * 10 };
+    });
+    patchField(featureId, fieldId, { options });
+  };
+
   const writeOrder = (ids: string[]) => {
     if (!page) return;
     const config = getDeviceAdminConfig();
@@ -447,6 +470,7 @@ export function AdminEditOverlay() {
                           {(BIXBO_LOG_FIELDS[featureId] ?? []).map((baseField) => {
                             const field = getRegistryField(adminView, featureId, baseField.id) ?? baseField;
                             const localField = localConfig.features?.[featureId]?.fields?.[baseField.id];
+                            const optionValues = orderedFieldOptionValues(featureId, baseField.id, baseField.options ?? []);
                             return (
                               <div key={baseField.id} className="rounded-xl bg-tint p-2 ring-1 ring-border/70">
                                 <div className="flex items-center gap-2">
@@ -464,14 +488,16 @@ export function AdminEditOverlay() {
                                 ) : null}
                                 {baseField.kind === "chips" ? (
                                   <div className="mt-2 space-y-1">
-                                    {[...new Set([...(baseField.options ?? []), ...Object.keys(localField?.options ?? {})])].map((option, optionIndex) => {
+                                    {optionValues.map((option, optionIndex) => {
                                       const override = localField?.options?.[option];
                                       const shown = isRegistryOptionEnabled(adminView, featureId, baseField.id, option);
                                       const label = registryOptionLabel(adminView, featureId, baseField.id, option);
                                       const custom = option.startsWith("custom:");
                                       return (
                                         <div key={option} className="flex items-center gap-1.5">
-                                          <input value={label} onChange={(event) => patchField(featureId, baseField.id, { options: { [option]: { ...override, label: event.target.value, order: override?.order ?? optionIndex } } })} className="h-7 min-w-0 flex-1 rounded-lg bg-background px-2 text-[10px] ring-1 ring-border" />
+                                          <button type="button" disabled={optionIndex === 0} onClick={() => moveFieldOption(featureId, baseField.id, baseField.options ?? [], option, -1)} className="rounded-full bg-background px-2 py-1 text-[8px] ring-1 ring-border disabled:opacity-25" aria-label={`${t("Move up")} ${label}`}>↑</button>
+                                          <button type="button" disabled={optionIndex === optionValues.length - 1} onClick={() => moveFieldOption(featureId, baseField.id, baseField.options ?? [], option, 1)} className="rounded-full bg-background px-2 py-1 text-[8px] ring-1 ring-border disabled:opacity-25" aria-label={`${t("Move down")} ${label}`}>↓</button>
+                                          <input value={label} onChange={(event) => patchField(featureId, baseField.id, { options: { [option]: { ...override, label: event.target.value, order: override?.order ?? (optionIndex + 1) * 10 } } })} className="h-7 min-w-0 flex-1 rounded-lg bg-background px-2 text-[10px] ring-1 ring-border" />
                                           {custom ? (
                                             <button type="button" onClick={() => deleteCustomFieldOption(featureId, baseField.id, option)} className="rounded-full bg-background px-2 py-1 text-[8px] font-semibold text-destructive ring-1 ring-border">{t("Delete")}</button>
                                           ) : (
