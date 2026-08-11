@@ -77,16 +77,17 @@ function AuthPage() {
     setMsg(null);
 
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo: `${window.location.origin}/auth`,
-        },
+      const result = await lovable.auth.signInWithOAuth(provider, {
+        redirect_uri: window.location.origin,
       });
 
-      if (error) throw error;
+      if (result.error) throw result.error;
+      if (result.redirected) return;
+
+      navigate({ to: "/settings" });
     } catch (err) {
       setMsg(err instanceof Error ? err.message : String(err));
+    } finally {
       setBusy(false);
     }
   };
