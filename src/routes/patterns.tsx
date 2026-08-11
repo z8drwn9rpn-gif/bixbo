@@ -1695,10 +1695,15 @@ export function PatternsContent() {
 
   const customCorrelationOptions: SelectOption[] = BIXBO_REGISTRY.flatMap((featureBase) => {
     const feature = getRegistryFeature(view, featureBase.id);
-    return registryAdminCorrelationFieldsForFeature(view, featureBase.id).map((field) => ({
-      id: `admin-toggle:${featureBase.id}:${field.id}`,
-      label: `${feature.label} · ${field.label}`,
-    }));
+    return registryAdminCorrelationFieldsForFeature(view, featureBase.id).flatMap((field) => {
+      if (field.kind === "toggle") {
+        return [{ id: `admin-toggle:${featureBase.id}:${field.id}`, label: `${feature.label} · ${field.label}` }];
+      }
+      return (field.options ?? []).filter((option) => option.trim()).map((option) => ({
+        id: `admin-choice:${featureBase.id}:${field.id}:${encodeURIComponent(option)}`,
+        label: `${feature.label} · ${field.label}: ${option}`,
+      }));
+    });
   });
   const customCorrelationOptionKey = customCorrelationOptions.map((option) => option.id).join("|");
 
@@ -1863,10 +1868,21 @@ export function PatternsContent() {
     return (log.adminFields?.[featureId] ?? []).some((entry) => entry.values[fieldId] === true);
   };
 
+  const hasAdminChoice = (log: DayLog, id: string): boolean => {
+    const [, rawFeatureId, fieldId, encodedOption] = id.split(":");
+    const featureId = rawFeatureId as keyof NonNullable<DayLog["adminFields"]>;
+    const option = decodeURIComponent(encodedOption ?? "");
+    return (log.adminFields?.[featureId] ?? []).some((entry) => {
+      const value = entry.values[fieldId];
+      return Array.isArray(value) && value.includes(option);
+    });
+  };
+
   const hasTrigger = (day: string, log: DayLog | undefined, trigger: string): boolean => {
     if (!log) return false;
 
     if (trigger.startsWith("admin-toggle:")) return hasAdminToggle(log, trigger);
+    if (trigger.startsWith("admin-choice:")) return hasAdminChoice(log, trigger);
 
     if (trigger === "highCaffeine") {
       return (log.food ?? []).some((food) => (food.caffeineMg ?? 0) >= 200);
@@ -1949,6 +1965,7 @@ export function PatternsContent() {
     if (!log) return false;
 
     if (outcome.startsWith("admin-toggle:")) return hasAdminToggle(log, outcome);
+    if (outcome.startsWith("admin-choice:")) return hasAdminChoice(log, outcome);
 
     if (outcome === "tetany") {
       return (log.tetany?.length ?? 0) > 0;
