@@ -52,6 +52,22 @@ function mergeNavigation(globalConfig: AdminConfig, localConfig: AdminConfig): A
   };
 }
 
+function mergeTextOverrides(globalConfig: AdminConfig, localConfig: AdminConfig): AdminConfig["textOverrides"] {
+  if (!globalConfig.textOverrides && !localConfig.textOverrides) return undefined;
+  const keys = new Set([
+    ...Object.keys(globalConfig.textOverrides ?? {}),
+    ...Object.keys(localConfig.textOverrides ?? {}),
+  ]);
+  const merged: NonNullable<AdminConfig["textOverrides"]> = {};
+  keys.forEach((key) => {
+    merged[key] = {
+      ...(globalConfig.textOverrides?.[key] ?? {}),
+      ...(localConfig.textOverrides?.[key] ?? {}),
+    };
+  });
+  return merged;
+}
+
 export function mergeAdminConfigs(globalConfig: AdminConfig = {}, localConfig: AdminConfig = {}): AdminConfig {
   const featureIds = new Set<RegistryFeatureId>([
     ...(Object.keys(globalConfig.features ?? {}) as RegistryFeatureId[]),
@@ -75,6 +91,7 @@ export function mergeAdminConfigs(globalConfig: AdminConfig = {}, localConfig: A
       ...(localConfig.layoutOrder ?? {}),
     },
     navigation: mergeNavigation(globalConfig, localConfig),
+    textOverrides: mergeTextOverrides(globalConfig, localConfig),
   };
 }
 
