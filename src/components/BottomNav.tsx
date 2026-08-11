@@ -23,20 +23,18 @@ const ICONS: Record<NavigationItemId, ComponentType<IconProps>> = {
 };
 
 const NAV_IMAGE_SRC: Partial<Record<NavigationItemId, string>> = {
-  home: "/nav-assets/nav-home.webp",
+  home: "/nav-assets/nav-home.webp?v=user-exact-20260811-2",
   overview: "/nav-assets/nav-overview.webp",
-  couple: "/nav-assets/nav-couple.webp",
+  couple: "/nav-assets/nav-couple.webp?v=user-exact-20260811-2",
   notes: "/nav-assets/nav-note.webp",
 };
 
 function NavArtwork({ id, size, className }: { id: NavigationItemId; size: number; className?: string }) {
   const Icon = ICONS[id];
   const imageSrc = NAV_IMAGE_SRC[id];
-  const [imageFailed, setImageFailed] = useState(false);
+  const isExactUserArtwork = id === "home" || id === "couple";
 
-  // Never show Safari's broken-image placeholder. If a deployed PWA still has
-  // an older asset cache, fall back to the bundled BIXBO SVG immediately.
-  if (imageSrc && !imageFailed) {
+  if (imageSrc) {
     return (
       <img
         src={imageSrc}
@@ -47,7 +45,12 @@ function NavArtwork({ id, size, className }: { id: NavigationItemId; size: numbe
         height={size}
         className={className}
         style={{ objectFit: "contain" }}
-        onError={() => setImageFailed(true)}
+        onError={(event) => {
+          // Home and Couple must never fall back to the old SVG artwork.
+          // If an old PWA cache is stale, keep the slot empty until the exact
+          // user asset is fetched instead of showing the wrong icon.
+          if (isExactUserArtwork) event.currentTarget.style.visibility = "hidden";
+        }}
       />
     );
   }
