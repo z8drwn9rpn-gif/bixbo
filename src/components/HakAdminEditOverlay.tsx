@@ -4,6 +4,7 @@ import { useI18n } from "@/hooks/useI18n";
 import { getRegistryFeature } from "@/lib/appRegistry";
 import { isAdminOwnerAccount } from "@/lib/deviceAdmin";
 import { EMPTY, useBixbo } from "@/lib/storage";
+import { ADMIN_MODE_CHANGED, isGlobalAdminModeActive } from "@/components/GlobalAdminModeController";
 
 const STORAGE_KEY = "bixbo-hak-admin-layout-v1";
 
@@ -110,6 +111,7 @@ export function HakAdminEditOverlay() {
   const view = hydrated ? data : EMPTY;
   const sexRegistryLabel = getRegistryFeature(view, "sex").label;
   const [hakOpen, setHakOpen] = useState(false);
+  const [adminMode, setAdminMode] = useState(() => isGlobalAdminModeActive());
   const [editorOpen, setEditorOpen] = useState(false);
   const [config, setConfig] = useState<HakConfig>(() => readConfig());
   const [revision, setRevision] = useState(0);
@@ -127,6 +129,16 @@ export function HakAdminEditOverlay() {
     observer.observe(document.body, { childList: true, subtree: true });
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    const syncAdminMode = () => setAdminMode(isGlobalAdminModeActive());
+    window.addEventListener(ADMIN_MODE_CHANGED, syncAdminMode);
+    return () => window.removeEventListener(ADMIN_MODE_CHANGED, syncAdminMode);
+  }, []);
+
+  useEffect(() => {
+    if (!adminMode) setEditorOpen(false);
+  }, [adminMode]);
 
   useEffect(() => {
     const refresh = () => {
@@ -210,7 +222,7 @@ export function HakAdminEditOverlay() {
     setRevision((value) => value + 1);
   };
 
-  if (!hakOpen || typeof window === "undefined" || !isAdminOwnerAccount()) return null;
+  if (!hakOpen || !adminMode || typeof window === "undefined" || !isAdminOwnerAccount()) return null;
 
   return (
     <>
