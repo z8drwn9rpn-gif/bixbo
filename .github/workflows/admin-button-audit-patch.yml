@@ -17,6 +17,21 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: agent/admin-button-audit-fixes
+      - name: Normalize multiline import for deterministic patch
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/components/UniversalAdminPageEditor.tsx')
+          s = p.read_text()
+          old = '''import {
+            ADMIN_MODE_CHANGED,
+            isGlobalAdminModeActive,
+          } from "@/components/GlobalAdminModeController";'''
+          compact = 'import { ADMIN_MODE_CHANGED, isGlobalAdminModeActive } from "@/components/GlobalAdminModeController";'
+          if old not in s:
+              raise SystemExit('Universal admin mode import shape changed')
+          p.write_text(s.replace(old, compact, 1))
+          PY
       - name: Apply patch
         run: python3 scripts/admin_button_audit_patch.py
       - name: Remove temporary patch files
