@@ -68,15 +68,23 @@ function findHakRoot(): HTMLElement | null {
   return root;
 }
 
-function textCandidates(root: HTMLElement): HTMLElement[] {
-  return Array.from(root.querySelectorAll<HTMLElement>("h1,h2,h3,p,span"));
-}
-
-function findByOriginal(root: HTMLElement, original: string, occurrence = 0): HTMLElement | null {
-  const matches = textCandidates(root).filter(
-    (element) => !element.closest("[data-bixbo-hak-admin-ui]") && element.children.length === 0 && element.textContent?.trim() === original,
+function findDefinitionElement(root: HTMLElement, definition: HakDefinition): HTMLElement | null {
+  const selector =
+    definition.id === "overviewTitle"
+      ? "h1"
+      : definition.id === "cycleTitle" || definition.id === "sex"
+        ? "h2"
+        : definition.id === "currentPack"
+          ? "h3"
+          : "p";
+  return (
+    Array.from(root.querySelectorAll<HTMLElement>(selector)).find(
+      (element) =>
+        !element.closest("[data-bixbo-hak-admin-ui]") &&
+        element.children.length === 0 &&
+        element.textContent?.trim() === definition.original,
+    ) ?? null
   );
-  return matches[occurrence] ?? null;
 }
 
 function restoreRuntime(root: HTMLElement) {
@@ -150,8 +158,7 @@ export function HakAdminEditOverlay() {
       restoreRuntime(root);
 
       definitions.forEach((definition) => {
-        const occurrence = definition.id === "cycleSubtitle" ? 1 : 0;
-        const element = findByOriginal(root, definition.original, occurrence);
+        const element = findDefinitionElement(root, definition);
         if (!element) return;
 
         const override = config[definition.id] ?? {};
