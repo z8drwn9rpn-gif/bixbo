@@ -1775,6 +1775,12 @@ function ProfilePage() {
           <button type="button" onClick={exportCsv} className="min-h-11 w-full rounded-xl border border-input bg-background px-4 text-sm font-semibold text-foreground">
             Export daily health CSV
           </button>
+<Link
+  to="/report"
+  className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-primary/10 px-4 text-sm font-semibold text-primary ring-1 ring-primary/20"
+>
+  {t("PDF Reports")}
+</Link>
         </Section>
       </HealthSubpage>
     );
