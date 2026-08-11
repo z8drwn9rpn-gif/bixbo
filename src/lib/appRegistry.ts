@@ -82,6 +82,8 @@ export interface RegistryFeatureDefinition {
   fields?: RegistryFieldDefinition[];
 }
 
+export type RegistryCorrelationThreshold = { operator: "gte" | "lte"; value: number };
+
 export interface RegistryFeatureOverride {
   label?: string;
   icon?: string;
@@ -101,8 +103,10 @@ export interface RegistryFeatureOverride {
   cycleFieldIds?: string[];
   /** Supplementary numeric/scale field IDs explicitly exposed to Patterns → Treatment. */
   treatmentFieldIds?: string[];
-  /** Supplementary Yes/No or Choices field IDs explicitly exposed to Patterns → Triggers/Correlations. */
+  /** Supplementary fields explicitly exposed to Patterns → Triggers/Correlations. */
   correlationFieldIds?: string[];
+  /** Explicit daily-average thresholds required before Number/Scale fields can act as correlation events. */
+  correlationThresholds?: Record<string, RegistryCorrelationThreshold>;
 }
 
 export interface AdminConfig {
@@ -260,6 +264,16 @@ export function registryAdminTreatmentFieldsForFeature(
     .sort((a, b) => a.order - b.order);
 }
 
+export function registryAdminCorrelationThreshold(
+  data: Pick<BixboData, "settings">,
+  featureId: RegistryFeatureId,
+  fieldId: string,
+): RegistryCorrelationThreshold | undefined {
+  const threshold = activeAdminConfig(data)?.features?.[featureId]?.correlationThresholds?.[fieldId];
+  if (!threshold || !Number.isFinite(threshold.value) || (threshold.operator !== "gte" && threshold.operator !== "lte")) return undefined;
+  return threshold;
+}
+
 export function registryAdminCorrelationFieldsForFeature(
   data: Pick<BixboData, "settings">,
   featureId: RegistryFeatureId,
@@ -267,7 +281,12 @@ export function registryAdminCorrelationFieldsForFeature(
   const feature = activeAdminConfig(data)?.features?.[featureId];
   const selected = new Set(feature?.correlationFieldIds ?? []);
   return [...(feature?.customFields ?? [])]
-    .filter((field) => field.enabled !== false && (field.kind === "toggle" || field.kind === "chips") && selected.has(field.id))
+    .filter((field) => {
+      if (field.enabled === false || !selected.has(field.id)) return false;
+      if (field.kind === "toggle" || field.kind === "chips") return true;
+      if (field.kind === "number" || field.kind === "scale") return Boolean(registryAdminCorrelationThreshold(data, featureId, field.id));
+      return false;
+    })
     .sort((a, b) => a.order - b.order);
 }
 

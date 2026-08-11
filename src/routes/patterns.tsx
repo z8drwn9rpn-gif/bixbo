@@ -24,7 +24,7 @@ import {
 import { AppShell } from "@/components/AppShell";
 import { CHART_COLORS, CHART_TINTS } from "@/components/ui/chart";
 import { useI18n } from "@/hooks/useI18n";
-import { BIXBO_REGISTRY, getRegistryFeature, registryAdminCorrelationFieldsForFeature, registryAdminCycleFieldsForFeature, registryAdminMonthlyFieldsForFeature, registryAdminTreatmentFieldsForFeature } from "@/lib/appRegistry";
+import { BIXBO_REGISTRY, getRegistryFeature, registryAdminCorrelationFieldsForFeature, registryAdminCorrelationThreshold, registryAdminCycleFieldsForFeature, registryAdminMonthlyFieldsForFeature, registryAdminTreatmentFieldsForFeature, type RegistryFeatureId } from "@/lib/appRegistry";
 import { layoutOrder } from "@/lib/layoutRegistry";
 import {
   EMPTY,
@@ -1699,10 +1699,18 @@ export function PatternsContent() {
       if (field.kind === "toggle") {
         return [{ id: `admin-toggle:${featureBase.id}:${field.id}`, label: `${feature.label} · ${field.label}` }];
       }
-      return (field.options ?? []).filter((option) => option.trim()).map((option) => ({
-        id: `admin-choice:${featureBase.id}:${field.id}:${encodeURIComponent(option)}`,
-        label: `${feature.label} · ${field.label}: ${option}`,
-      }));
+      if (field.kind === "chips") {
+        return (field.options ?? []).filter((option) => option.trim()).map((option) => ({
+          id: `admin-choice:${featureBase.id}:${field.id}:${encodeURIComponent(option)}`,
+          label: `${feature.label} · ${field.label}: ${option}`,
+        }));
+      }
+      const threshold = registryAdminCorrelationThreshold(view, featureBase.id, field.id);
+      if (!threshold) return [];
+      return [{
+        id: `admin-threshold:${featureBase.id}:${field.id}`,
+        label: `${feature.label} · ${field.label}: daily avg ${threshold.operator === "gte" ? "≥" : "≤"} ${threshold.value}`,
+      }];
     });
   });
   const customCorrelationOptionKey = customCorrelationOptions.map((option) => option.id).join("|");
@@ -1878,11 +1886,25 @@ export function PatternsContent() {
     });
   };
 
+  const hasAdminThreshold = (log: DayLog, id: string): boolean => {
+    const [, rawFeatureId, fieldId] = id.split(":");
+    const featureId = rawFeatureId as RegistryFeatureId;
+    const threshold = registryAdminCorrelationThreshold(view, featureId, fieldId);
+    if (!threshold) return false;
+    const values = (log.adminFields?.[featureId] ?? [])
+      .map((entry) => Number(entry.values[fieldId]))
+      .filter((value) => Number.isFinite(value));
+    const dailyAverage = avg(values);
+    if (dailyAverage == null) return false;
+    return threshold.operator === "gte" ? dailyAverage >= threshold.value : dailyAverage <= threshold.value;
+  };
+
   const hasTrigger = (day: string, log: DayLog | undefined, trigger: string): boolean => {
     if (!log) return false;
 
     if (trigger.startsWith("admin-toggle:")) return hasAdminToggle(log, trigger);
     if (trigger.startsWith("admin-choice:")) return hasAdminChoice(log, trigger);
+    if (trigger.startsWith("admin-threshold:")) return hasAdminThreshold(log, trigger);
 
     if (trigger === "highCaffeine") {
       return (log.food ?? []).some((food) => (food.caffeineMg ?? 0) >= 200);
@@ -1966,6 +1988,7 @@ export function PatternsContent() {
 
     if (outcome.startsWith("admin-toggle:")) return hasAdminToggle(log, outcome);
     if (outcome.startsWith("admin-choice:")) return hasAdminChoice(log, outcome);
+    if (outcome.startsWith("admin-threshold:")) return hasAdminThreshold(log, outcome);
 
     if (outcome === "tetany") {
       return (log.tetany?.length ?? 0) > 0;
