@@ -101,11 +101,14 @@ export function CoreFeatureCustomFieldBuilder({ data }: { data: BixboData }) {
 
   const patchField = (featureId: RegistryFeatureId, fieldId: string, patch: Partial<RegistryFieldDefinition>) => {
     const current = getDeviceAdminConfig();
-    const fields = current.features?.[featureId]?.customFields ?? [];
-    writeFields(featureId, fields.map((field) => {
+    const feature = current.features?.[featureId] ?? {};
+    const fields = feature.customFields ?? [];
+    const previous = fields.find((field) => field.id === fieldId);
+    let patchedField: RegistryFieldDefinition | undefined;
+    const customFields = fields.map((field) => {
       if (field.id !== fieldId) return field;
       const next = { ...field, ...patch, id: field.id };
-      return {
+      patchedField = {
         ...next,
         label: next.label.trimStart(),
         ...(next.kind === "chips"
@@ -116,7 +119,45 @@ export function CoreFeatureCustomFieldBuilder({ data }: { data: BixboData }) {
           : { options: undefined, optionLabels: undefined }),
         ...(next.kind === "scale" ? { scale: sanitizeScale(next.scale) } : { scale: undefined }),
       };
-    }));
+      return patchedField;
+    });
+
+    const kindChanged = Boolean(previous && patchedField && previous.kind !== patchedField.kind);
+    const previousNumeric = previous?.kind === "number" || previous?.kind === "scale";
+    const nextNumeric = patchedField?.kind === "number" || patchedField?.kind === "scale";
+    const previousChoice = previous?.kind === "toggle" || previous?.kind === "chips";
+    const nextChoice = patchedField?.kind === "toggle" || patchedField?.kind === "chips";
+    const crossingAnalyticsFamily = kindChanged && (
+      (previousNumeric && !nextNumeric) ||
+      (previousChoice && !nextChoice) ||
+      (!previousNumeric && nextNumeric) ||
+      (!previousChoice && nextChoice)
+    );
+
+    const removeFieldId = (ids: string[] | undefined) => (ids ?? []).filter((id) => id !== fieldId);
+    const correlationThresholds = { ...(feature.correlationThresholds ?? {}) };
+    if (crossingAnalyticsFamily || patchedField?.kind === "text") delete correlationThresholds[fieldId];
+
+    const shouldClearNumericAnalytics = kindChanged && !nextNumeric;
+    const shouldClearCorrelation = crossingAnalyticsFamily;
+
+    setDeviceAdminConfig({
+      ...current,
+      enabled: true,
+      features: {
+        ...(current.features ?? {}),
+        [featureId]: {
+          ...feature,
+          customFields,
+          heatmapFieldIds: shouldClearNumericAnalytics ? removeFieldId(feature.heatmapFieldIds) : feature.heatmapFieldIds,
+          monthlyFieldIds: shouldClearNumericAnalytics ? removeFieldId(feature.monthlyFieldIds) : feature.monthlyFieldIds,
+          cycleFieldIds: shouldClearNumericAnalytics ? removeFieldId(feature.cycleFieldIds) : feature.cycleFieldIds,
+          treatmentFieldIds: shouldClearNumericAnalytics ? removeFieldId(feature.treatmentFieldIds) : feature.treatmentFieldIds,
+          correlationFieldIds: shouldClearCorrelation ? removeFieldId(feature.correlationFieldIds) : feature.correlationFieldIds,
+          correlationThresholds,
+        },
+      },
+    });
   };
 
   const unifiedFieldIds = (featureId: RegistryFeatureId) => {
