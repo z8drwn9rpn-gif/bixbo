@@ -1,0 +1,28 @@
+name: Protect required core fields
+on:
+  push:
+    branches: [agent/protect-required-core-fields]
+    paths:
+      - '.github/scripts/protect_required_core_fields.py'
+      - '.github/workflows/protect-required-core-fields.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/protect-required-core-fields
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - run: python .github/scripts/protect_required_core_fields.py
+      - run: rm .github/scripts/protect_required_core_fields.py .github/workflows/protect-required-core-fields.yml
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'protect required log fields from hide'
+          git push origin HEAD:agent/protect-required-core-fields
