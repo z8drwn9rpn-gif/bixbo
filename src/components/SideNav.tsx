@@ -23,13 +23,13 @@ const ICONS: Record<NavigationItemId, ComponentType<IconProps>> = {
   healthProfile: User,
 };
 
-
 /** Desktop-only left navigation. Hidden below lg so the mobile UI is untouched. */
 export function SideNav({ mascotSrc }: { mascotSrc: string }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const { t } = useI18n();
   const [navRevision, setNavRevision] = useState(0);
+
   useEffect(() => {
     const refresh = () => setNavRevision((value) => value + 1);
     window.addEventListener(DEVICE_ADMIN_CONFIG_CHANGED, refresh);
@@ -39,6 +39,7 @@ export function SideNav({ mascotSrc }: { mascotSrc: string }) {
       window.removeEventListener(GLOBAL_ADMIN_CONFIG_CHANGED, refresh);
     };
   }, []);
+
   void navRevision;
   const navItems = resolvedNavigation("desktop");
 
@@ -52,10 +53,14 @@ export function SideNav({ mascotSrc }: { mascotSrc: string }) {
 
   const isActive = (to: string) => (to === "/" ? pathname === "/" : pathname.startsWith(to));
 
-
-
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-border/70 bg-surface/80 px-3 py-5 backdrop-blur-xl lg:flex">
+    <aside
+      className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-[#cbd3a7]/85 bg-[#edf0c8] px-3 py-5 lg:flex dark:border-border/70 dark:bg-[#303827]"
+      style={{
+        boxShadow:
+          "10px 0 30px -24px rgba(52,67,28,.55), inset -1px 0 0 rgba(255,255,255,.45), inset 0 18px 34px rgba(255,255,255,.16)",
+      }}
+    >
       <Link to="/" className="mb-6 flex items-center gap-3 px-2">
         <img
           src={mascotSrc}
@@ -64,28 +69,49 @@ export function SideNav({ mascotSrc }: { mascotSrc: string }) {
           className="h-11 w-auto max-w-[46px] select-none object-contain"
           style={{ filter: "none", opacity: 1, mixBlendMode: "normal" }}
         />
-        <span className="font-serif text-2xl font-bold leading-none text-foreground">BIXBO</span>
+        <span className="font-serif text-2xl font-bold leading-none text-[#3f4f22] dark:text-[#e3edc4]">BIXBO</span>
       </Link>
 
       <nav className="min-h-0 flex-1 overflow-y-auto">
-        <ul className="flex flex-col gap-1">
+        <ul className="flex flex-col gap-1.5">
           {navItems.map((navItem) => {
             const Icon = ICONS[navItem.id];
             const label = navItem.label ?? BIXBO_NAVIGATION.find((candidate) => candidate.id === navItem.id)?.label ?? navItem.id;
+
             if (navItem.action === "log") {
               return (
                 <li key={navItem.id}>
-                  <button type="button" onClick={openLog} className="mb-4 flex min-h-[68px] w-full items-center justify-center gap-2.5 rounded-2xl bg-tint px-4 py-2 text-sm font-semibold text-foreground shadow-sm ring-1 ring-border/70 transition hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                    <Icon size={50} className="-my-3 shrink-0 drop-shadow-lg" /> <span>{t(label)}</span>
+                  <button
+                    type="button"
+                    onClick={openLog}
+                    className="flex min-h-[76px] w-full items-center gap-4 rounded-3xl px-3 py-2 text-left text-[15px] font-semibold text-[#415025] transition-transform hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.985] dark:text-[#dfe9bd] dark:hover:bg-white/5"
+                  >
+                    <Icon size={60} className="-my-2 shrink-0 drop-shadow-[0_8px_9px_rgba(59,74,31,0.28)]" />
+                    <span>{t(label)}</span>
                   </button>
                 </li>
               );
             }
+
             const to = navItem.to ?? "/";
+            const active = navItem.id === "overview"
+              ? pathname.startsWith("/insights") || pathname.startsWith("/patterns")
+              : isActive(to);
+
             return (
               <li key={navItem.id}>
-                <Link to={to as never} className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium transition-colors ${isActive(to) ? "bg-tint text-primary shadow-sm" : "text-muted-foreground hover:bg-surface-elevated hover:text-foreground"}`}>
-                  <Icon size={40} className={`shrink-0 drop-shadow-sm transition-transform ${isActive(to) ? "scale-[1.04]" : ""}`} />
+                <Link
+                  to={to as never}
+                  className={`flex min-h-[68px] items-center gap-4 rounded-3xl px-3 py-2 text-[15px] font-semibold transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.985] ${
+                    active
+                      ? "bg-white/25 text-[#3a4920] shadow-[inset_0_1px_0_rgba(255,255,255,.65)] dark:bg-white/7 dark:text-[#e4edc7]"
+                      : "text-[#4b5930] hover:bg-white/18 hover:text-[#34411f] dark:text-[#bdc99e] dark:hover:bg-white/5 dark:hover:text-[#e4edc7]"
+                  }`}
+                >
+                  <Icon
+                    size={48}
+                    className={`shrink-0 drop-shadow-[0_6px_7px_rgba(59,74,31,0.24)] transition-transform ${active ? "scale-[1.04]" : ""}`}
+                  />
                   <span className="truncate">{t(label)}</span>
                 </Link>
               </li>
