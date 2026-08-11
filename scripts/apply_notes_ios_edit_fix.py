@@ -20,4 +20,11 @@ s = s.replace(old, new, 1)
 
 p.write_text(s)
 
+p = Path('src/lib/__tests__/admin-couple-notes-regression.test.ts')
+s = p.read_text()
+old = '''  it("keeps Notes explicitly focusable on iOS", () => {\n    const source = read("src/routes/notes-editor.tsx");\n    expect(source).toContain("focusEditorForTyping");\n    expect(source).toContain('role="textbox"');\n    expect(source).toContain('inputMode="text"');\n    expect(source).toContain("onTouchStart={focusEditorForTyping}");\n  });'''
+new = '''  it("keeps Notes natively editable on iOS", () => {\n    const source = read("src/routes/notes-editor.tsx");\n    expect(source).toContain('role="textbox"');\n    expect(source).toContain('inputMode="text"');\n    expect(source).toContain("data-bixbo-note-editor");\n    expect(source).not.toContain("onTouchStart={focusEditorForTyping}");\n  });'''
+assert old in s, 'Old Notes iOS regression test not found'
+p.write_text(s.replace(old, new, 1))
+
 Path('src/lib/__tests__/notes-ios-editing-regression.test.ts').write_text('''import { describe, expect, it } from "vitest";\nimport fs from "node:fs";\n\nconst source = fs.readFileSync("src/routes/notes-editor.tsx", "utf8");\n\ndescribe("Notes iOS editing", () => {\n  it("does not rewrite contentEditable innerHTML during input", () => {\n    const inputBlock = source.slice(source.indexOf("const onInput"), source.indexOf("return (", source.indexOf("const onInput")));\n    expect(inputBlock).toContain("contentRef.current = editorRef.current.innerHTML");\n    expect(inputBlock).not.toContain("sanitizeNoteHtml(editorRef.current.innerHTML)");\n    expect(inputBlock).not.toContain("editorRef.current.innerHTML =");\n  });\n\n  it("lets iOS use native contentEditable touch focus", () => {\n    expect(source).toContain("data-bixbo-note-editor");\n    expect(source).toContain("contentEditable");\n    expect(source).not.toContain("onTouchStart={focusEditorForTyping}");\n    expect(source).not.toContain("onPointerDown={focusEditorForTyping}");\n  });\n});\n''')
