@@ -93,6 +93,8 @@ export interface RegistryFeatureOverride {
   fields?: Record<string, RegistryFieldOverride>;
   /** Admin-created supplementary fields. Core calculations never depend on these. */
   customFields?: RegistryFieldDefinition[];
+  /** Supplementary numeric/scale field IDs explicitly exposed to Heatmap. */
+  heatmapFieldIds?: string[];
 }
 
 export interface AdminConfig {
@@ -203,6 +205,17 @@ export function registryCustomFieldsForFeature(
 ): RegistryFieldDefinition[] {
   return [...(activeAdminConfig(data)?.features?.[featureId]?.customFields ?? [])]
     .filter((field) => field.enabled !== false)
+    .sort((a, b) => a.order - b.order);
+}
+
+export function registryAdminHeatmapFieldsForFeature(
+  data: Pick<BixboData, "settings">,
+  featureId: RegistryFeatureId,
+): RegistryFieldDefinition[] {
+  const feature = activeAdminConfig(data)?.features?.[featureId];
+  const selected = new Set(feature?.heatmapFieldIds ?? []);
+  return [...(feature?.customFields ?? [])]
+    .filter((field) => field.enabled !== false && (field.kind === "number" || field.kind === "scale") && selected.has(field.id))
     .sort((a, b) => a.order - b.order);
 }
 
