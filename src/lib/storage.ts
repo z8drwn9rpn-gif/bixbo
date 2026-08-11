@@ -2083,6 +2083,46 @@ export function useBixbo() {
 }
 
 /* ------------------- Day helpers ------------------- */
+function linkedCoreEntryIds(log: DayLog, featureId: string): Set<string> | null {
+  const ids = (entries: Array<{ id: string }> | undefined) => new Set((entries ?? []).map((entry) => entry.id));
+  switch (featureId) {
+    case "pain": return ids(log.pain);
+    case "tetany": return ids(log.tetany);
+    case "panic": return ids(log.panic);
+    case "heat": return ids(log.heat);
+    case "food": return ids(log.food);
+    case "bowel": return ids(log.bowel);
+    case "sex": return ids(log.sex);
+    case "workout": return ids(log.workout);
+    case "meds": return ids(log.extraMeds);
+    case "temp": return new Set([
+      ...(log.temperatureEntries ?? []).map((entry) => entry.id),
+      ...(log.weightEntries ?? []).map((entry) => entry.id),
+    ]);
+    default: return null;
+  }
+}
+
+/** Remove only ID-linked supplementary records whose concrete core entry no longer exists. */
+export function pruneOrphanedAdminFields(log: DayLog): DayLog {
+  if (!log.adminFields) return log;
+  let changed = false;
+  const nextAdminFields: NonNullable<DayLog["adminFields"]> = {};
+
+  Object.entries(log.adminFields).forEach(([featureId, entries]) => {
+    const coreIds = linkedCoreEntryIds(log, featureId);
+    if (coreIds == null) {
+      nextAdminFields[featureId] = entries;
+      return;
+    }
+    const kept = entries.filter((entry) => !entry.sourceEntryId || coreIds.has(entry.sourceEntryId));
+    if (kept.length !== entries.length) changed = true;
+    nextAdminFields[featureId] = kept;
+  });
+
+  return changed ? { ...log, adminFields: nextAdminFields } : log;
+}
+
 export function updateDayLog(
   update: (u: (d: BixboData) => BixboData) => void,
   date: string,
@@ -2097,7 +2137,7 @@ export function updateDayLog(
     ...d,
     dayLogs: {
       ...d.dayLogs,
-      [date]: patch(d.dayLogs[date] ?? {}),
+      [date]: pruneOrphanedAdminFields(patch(d.dayLogs[date] ?? {})),
     },
   }));
 }
