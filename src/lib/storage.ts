@@ -208,6 +208,8 @@ export interface PeriodEntry {
   cramps?: number;
 }
 export interface DayNote {
+  /** Stable ID for notes created by current versions; legacy notes may omit it. */
+  id?: string;
   text: string;
   time?: string;
 }
