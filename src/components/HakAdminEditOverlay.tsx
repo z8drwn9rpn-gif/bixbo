@@ -344,6 +344,7 @@ export function HakAdminEditOverlay() {
       <div data-bixbo-hak-admin-ui data-bixbo-admin-ui className="fixed right-4 top-[max(4.1rem,calc(env(safe-area-inset-top)+3.1rem))] z-[9980]">
         <button
           type="button"
+          data-bixbo-admin-page-opener
           onClick={() => setEditorOpen((value) => !value)}
           className="rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-lg ring-1 ring-primary/30"
         >

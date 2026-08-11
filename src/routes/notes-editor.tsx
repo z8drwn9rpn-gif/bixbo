@@ -347,9 +347,22 @@ export function NoteEditor({
             ref={editorRef}
             contentEditable
             suppressContentEditableWarning
+            role="textbox"
+            aria-multiline="true"
+            tabIndex={0}
+            inputMode="text"
+            onPointerDown={(event) => {
+              event.stopPropagation();
+              editorRef.current?.focus();
+            }}
+            onClick={(event) => {
+              event.stopPropagation();
+              editorRef.current?.focus();
+            }}
             onInput={onInput}
             onBlur={onInput}
-            className="min-h-[40dvh] text-base leading-relaxed whitespace-pre-wrap outline-none empty:before:pointer-events-none empty:before:text-muted-foreground empty:before:content-[attr(data-placeholder)]"
+            style={{ WebkitUserSelect: "text", userSelect: "text", touchAction: "manipulation" }}
+            className="min-h-[40dvh] cursor-text text-base leading-relaxed whitespace-pre-wrap outline-none empty:before:pointer-events-none empty:before:text-muted-foreground empty:before:content-[attr(data-placeholder)]"
             data-placeholder={t("Start writing…")}
           />
         </div>

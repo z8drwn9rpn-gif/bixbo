@@ -226,7 +226,7 @@ export function CoupleAdminEditOverlay() {
       <CoupleLayoutDomRuntime page={page} revision={revision} />
 
       <div data-bixbo-couple-admin-ui className="fixed bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] right-4 z-[90] lg:bottom-6 lg:right-6">
-        <button type="button" onClick={() => setOpen((value) => !value)} className="rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-lg ring-1 ring-primary/30">
+        <button type="button" data-bixbo-admin-page-opener onClick={() => setOpen((value) => !value)} className="rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-lg ring-1 ring-primary/30">
           {open ? t("Done") : `✦ ${t("Edit")}`}
         </button>
       </div>

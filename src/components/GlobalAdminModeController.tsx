@@ -80,7 +80,16 @@ export function GlobalAdminModeController() {
           <span className="whitespace-nowrap text-[10px] font-black uppercase tracking-[0.12em]">✦ {t("Admin mode")}</span>
           <button
             type="button"
-            onClick={requestAdminCustomizeCurrentPage}
+            onClick={() => {
+              requestAdminCustomizeCurrentPage();
+              window.setTimeout(() => {
+                const panelAlreadyOpen = document.querySelector(
+                  '[data-bixbo-admin-ui] aside, [data-bixbo-couple-admin-ui] aside, [data-bixbo-hak-admin-ui] aside',
+                );
+                if (panelAlreadyOpen) return;
+                document.querySelector<HTMLButtonElement>('[data-bixbo-admin-page-opener]')?.click();
+              }, 80);
+            }}
             className="rounded-full bg-background/15 px-2.5 py-1 text-[9px] font-bold"
           >
             {t("Customize")}
