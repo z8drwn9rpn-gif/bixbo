@@ -92,6 +92,10 @@ export function mergeAdminConfigs(globalConfig: AdminConfig = {}, localConfig: A
     },
     navigation: mergeNavigation(globalConfig, localConfig),
     textOverrides: mergeTextOverrides(globalConfig, localConfig),
+    pageBlocks: {
+      ...(globalConfig.pageBlocks ?? {}),
+      ...(localConfig.pageBlocks ?? {}),
+    },
   };
 }
 

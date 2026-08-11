@@ -84,6 +84,14 @@ export interface RegistryFeatureDefinition {
 
 export type RegistryCorrelationThreshold = { operator: "gte" | "lte"; value: number };
 
+export type AdminPageBlock = {
+  id: string;
+  title: string;
+  body: string;
+  order: number;
+  hidden?: boolean;
+};
+
 export interface RegistryFeatureOverride {
   label?: string;
   icon?: string;
@@ -119,6 +127,8 @@ export interface AdminConfig {
   navigation?: { items?: Record<string, { label?: string; hidden?: boolean; order?: number }> };
   /** Route-scoped visible text overrides. BIXBO brand strings are rejected by the editor runtime. */
   textOverrides?: Record<string, { label?: string; hidden?: boolean }>;
+  /** Route-scoped admin-created content blocks. These never participate in health calculations. */
+  pageBlocks?: Record<string, AdminPageBlock[]>;
   /** Reserved for Google-account ownership once app authentication is enabled. */
   ownerEmail?: string;
 }
