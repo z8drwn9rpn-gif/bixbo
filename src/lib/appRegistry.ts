@@ -64,6 +64,8 @@ export interface CustomLogDefinition {
   icon: string;
   color: string;
   enabled?: boolean;
+  /** Soft-deleted definitions stay in config so historical entries can be restored safely. */
+  deleted?: boolean;
   /** Show the custom log icon on calendar days that contain entries. */
   calendar?: boolean;
   /** Show a shortcut in Quick Log. */
@@ -431,7 +433,7 @@ export function isRegistryOptionEnabled(
 
 export function customLogDefinitions(data: Pick<BixboData, "settings">): CustomLogDefinition[] {
   return [...(activeAdminConfig(data)?.customLogs ?? [])]
-    .filter((log) => log.enabled !== false)
+    .filter((log) => log.enabled !== false && log.deleted !== true)
     .map((log) => ({ ...log, fields: [...(log.fields ?? [])].sort((a, b) => a.order - b.order) }))
     .sort((a, b) => a.order - b.order);
 }

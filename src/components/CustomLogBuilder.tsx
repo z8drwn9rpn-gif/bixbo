@@ -51,9 +51,12 @@ function makeId(prefix: string, label: string) {
 
 export function CustomLogBuilder({ data, update }: { data: BixboData; update: UpdateFn }) {
   const { t } = useI18n();
-  const logs = useMemo(() => [...(data.settings.adminConfig?.customLogs ?? [])].sort((a, b) => a.order - b.order), [data.settings.adminConfig?.customLogs]);
+  const allLogs = useMemo(() => [...(data.settings.adminConfig?.customLogs ?? [])].sort((a, b) => a.order - b.order), [data.settings.adminConfig?.customLogs]);
+  const logs = useMemo(() => allLogs.filter((log) => log.deleted !== true), [allLogs]);
+  const archivedLogs = useMemo(() => allLogs.filter((log) => log.deleted === true), [allLogs]);
   const [newName, setNewName] = useState("");
   const [dragField, setDragField] = useState<{ logId: string; fieldId: string } | null>(null);
+  const [dragLogId, setDragLogId] = useState<string | null>(null);
 
   const writeLogs = (next: CustomLogDefinition[]) => {
     update((current) => ({
@@ -66,7 +69,7 @@ export function CustomLogBuilder({ data, update }: { data: BixboData; update: Up
   };
 
   const patchLog = (id: string, patch: Partial<CustomLogDefinition>) => {
-    writeLogs(logs.map((log) => (log.id === id ? { ...log, ...patch, id: log.id } : log)));
+    writeLogs(allLogs.map((log) => (log.id === id ? { ...log, ...patch, id: log.id } : log)));
   };
 
   const addLog = () => {
@@ -80,10 +83,10 @@ export function CustomLogBuilder({ data, update }: { data: BixboData; update: Up
       enabled: true,
       calendar: true,
       quickLog: false,
-      order: (logs.at(-1)?.order ?? 0) + 10,
+      order: Math.max(0, ...allLogs.map((item) => item.order)) + 10,
       fields: [],
     };
-    writeLogs([...logs, next]);
+    writeLogs([...allLogs, next]);
     setNewName("");
   };
 
@@ -127,6 +130,25 @@ export function CustomLogBuilder({ data, update }: { data: BixboData; update: Up
 
 
 
+  const reorderLogs = (sourceId: string, targetId: string) => {
+    if (sourceId === targetId) return;
+    const active = [...logs].sort((a, b) => a.order - b.order);
+    const from = active.findIndex((log) => log.id === sourceId);
+    const to = active.findIndex((log) => log.id === targetId);
+    if (from < 0 || to < 0) return;
+    const [item] = active.splice(from, 1);
+    active.splice(to, 0, item);
+    const orderById = new Map(active.map((log, index) => [log.id, (index + 1) * 10]));
+    writeLogs(allLogs.map((log) => orderById.has(log.id) ? { ...log, order: orderById.get(log.id)! } : log));
+  };
+
+  const moveLogByPointer = (event: React.PointerEvent<HTMLElement>) => {
+    if (!dragLogId) return;
+    const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>("[data-custom-log-sort-id]");
+    const targetId = target?.dataset.customLogSortId;
+    if (targetId && targetId !== dragLogId) reorderLogs(dragLogId, targetId);
+  };
+
   const dropField = (log: CustomLogDefinition, targetId: string) => {
     if (!dragField || dragField.logId !== log.id || dragField.fieldId === targetId) return;
     const ordered = [...log.fields].sort((a, b) => a.order - b.order);
@@ -161,14 +183,38 @@ export function CustomLogBuilder({ data, update }: { data: BixboData; update: Up
       {logs.map((log) => {
         const fields = [...log.fields].sort((a, b) => a.order - b.order);
         return (
-          <section key={log.id} className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
+          <section
+            key={log.id}
+            data-custom-log-sort-id={log.id}
+            className={`rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80 ${dragLogId === log.id ? "ring-2 ring-primary" : ""}`}
+          >
             <div className="flex items-start gap-3">
+              <button
+                type="button"
+                aria-label={`${t("Drag")} ${log.label}`}
+                onPointerDown={(event) => { event.preventDefault(); setDragLogId(log.id); try { event.currentTarget.setPointerCapture(event.pointerId); } catch {} }}
+                onPointerMove={moveLogByPointer}
+                onPointerUp={() => setDragLogId(null)}
+                onPointerCancel={() => setDragLogId(null)}
+                className="touch-none select-none rounded-xl bg-tint px-2 py-2 text-xs font-bold text-muted-foreground ring-1 ring-border cursor-grab active:cursor-grabbing"
+              >
+                ⋮⋮
+              </button>
               <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-tint text-2xl">{log.icon}</span>
               <div className="min-w-0 flex-1 space-y-1">
                 <input value={log.label} onChange={(event) => patchLog(log.id, { label: event.target.value })} className="h-9 w-full rounded-xl bg-tint px-3 text-sm font-bold ring-1 ring-border" />
                 <p className="text-[10px] text-muted-foreground">Stable ID: {log.id}</p>
               </div>
-              <button type="button" onClick={() => patchLog(log.id, { enabled: log.enabled === false })} className={`rounded-full px-3 py-1.5 text-[10px] font-semibold ${log.enabled === false ? "bg-tint text-muted-foreground" : "bg-primary text-primary-foreground"}`}>{log.enabled === false ? t("Hidden") : t("Enabled")}</button>
+              <div className="flex shrink-0 flex-col gap-1">
+                <button type="button" onClick={() => patchLog(log.id, { enabled: log.enabled === false })} className={`rounded-full px-3 py-1.5 text-[10px] font-semibold ${log.enabled === false ? "bg-tint text-muted-foreground" : "bg-primary text-primary-foreground"}`}>{log.enabled === false ? t("Hidden") : t("Enabled")}</button>
+                <button
+                  type="button"
+                  onClick={() => { if (confirm(`${t("Delete")} ${log.label}?`)) patchLog(log.id, { deleted: true, enabled: false }); }}
+                  className="rounded-full bg-destructive/10 px-3 py-1.5 text-[10px] font-semibold text-destructive"
+                >
+                  {t("Delete")}
+                </button>
+              </div>
             </div>
 
             <div className="mt-3 flex items-center justify-between rounded-2xl bg-tint px-3 py-2 ring-1 ring-border/70">
@@ -276,6 +322,22 @@ export function CustomLogBuilder({ data, update }: { data: BixboData; update: Up
           </section>
         );
       })}
+      {archivedLogs.length > 0 && (
+        <section className="rounded-3xl bg-tint p-4 ring-1 ring-border/80">
+          <p className="font-serif text-base font-bold">{t("Deleted custom logs")}</p>
+          <p className="mt-1 text-[10px] text-muted-foreground">{t("Definitions are kept so historical entries are never destroyed. Restore any log here.")}</p>
+          <div className="mt-3 space-y-2">
+            {archivedLogs.map((log) => (
+              <div key={log.id} className="flex items-center gap-2 rounded-2xl bg-background p-3 ring-1 ring-border">
+                <span className="text-xl">{log.icon}</span>
+                <span className="min-w-0 flex-1 truncate text-xs font-semibold">{log.label}</span>
+                <button type="button" onClick={() => patchLog(log.id, { deleted: false, enabled: true })} className="rounded-full bg-primary px-3 py-1.5 text-[10px] font-semibold text-primary-foreground">{t("Restore")}</button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
     </div>
   );
 }
