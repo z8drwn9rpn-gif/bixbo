@@ -20,6 +20,7 @@ import { AdminEditOverlay } from "../components/AdminEditOverlay";
 import { CoupleAdminEditOverlay } from "../components/CoupleAdminEditOverlay";
 import { AdminEditPinGate } from "../components/AdminEditPinGate";
 import { HakAdminEditOverlay } from "../components/HakAdminEditOverlay";
+import { GlobalAdminModeController } from "../components/GlobalAdminModeController";
 import { Toaster } from "../components/ui/sonner";
 import { useI18n } from "@/hooks/useI18n";
 import { useGlobalAdminConfigSync } from "@/lib/globalAdminConfig";
@@ -144,7 +145,6 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
-
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   useCloudSync();
@@ -162,6 +162,7 @@ function RootComponent() {
       <CoupleAdminEditOverlay />
       <HakAdminEditOverlay />
       <AdminEditPinGate />
+      <GlobalAdminModeController />
       <NotificationPrompt />
       <Toaster />
     </QueryClientProvider>
