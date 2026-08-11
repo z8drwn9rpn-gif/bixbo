@@ -99,6 +99,8 @@ export interface RegistryFeatureOverride {
   monthlyFieldIds?: string[];
   /** Supplementary numeric/scale field IDs explicitly exposed to Patterns → Cycle. */
   cycleFieldIds?: string[];
+  /** Supplementary numeric/scale field IDs explicitly exposed to Patterns → Treatment. */
+  treatmentFieldIds?: string[];
 }
 
 export interface AdminConfig {
@@ -240,6 +242,17 @@ export function registryAdminCycleFieldsForFeature(
 ): RegistryFieldDefinition[] {
   const feature = activeAdminConfig(data)?.features?.[featureId];
   const selected = new Set(feature?.cycleFieldIds ?? []);
+  return [...(feature?.customFields ?? [])]
+    .filter((field) => field.enabled !== false && (field.kind === "number" || field.kind === "scale") && selected.has(field.id))
+    .sort((a, b) => a.order - b.order);
+}
+
+export function registryAdminTreatmentFieldsForFeature(
+  data: Pick<BixboData, "settings">,
+  featureId: RegistryFeatureId,
+): RegistryFieldDefinition[] {
+  const feature = activeAdminConfig(data)?.features?.[featureId];
+  const selected = new Set(feature?.treatmentFieldIds ?? []);
   return [...(feature?.customFields ?? [])]
     .filter((field) => field.enabled !== false && (field.kind === "number" || field.kind === "scale") && selected.has(field.id))
     .sort((a, b) => a.order - b.order);

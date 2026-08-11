@@ -71,12 +71,13 @@ export function CoreFeatureCustomFieldBuilder({ data }: { data: BixboData }) {
     const heatmapFieldIds = (feature.heatmapFieldIds ?? []).filter((id) => id !== fieldId);
     const monthlyFieldIds = (feature.monthlyFieldIds ?? []).filter((id) => id !== fieldId);
     const cycleFieldIds = (feature.cycleFieldIds ?? []).filter((id) => id !== fieldId);
+    const treatmentFieldIds = (feature.treatmentFieldIds ?? []).filter((id) => id !== fieldId);
     setDeviceAdminConfig({
       ...current,
       enabled: true,
       features: {
         ...(current.features ?? {}),
-        [featureId]: { ...feature, customFields: fields.filter((field) => field.id !== fieldId), heatmapFieldIds, monthlyFieldIds, cycleFieldIds },
+        [featureId]: { ...feature, customFields: fields.filter((field) => field.id !== fieldId), heatmapFieldIds, monthlyFieldIds, cycleFieldIds, treatmentFieldIds },
       },
     });
   };
@@ -112,6 +113,14 @@ export function CoreFeatureCustomFieldBuilder({ data }: { data: BixboData }) {
     const selected = new Set(feature.cycleFieldIds ?? []);
     if (enabled) selected.add(fieldId); else selected.delete(fieldId);
     setDeviceAdminConfig({ ...current, enabled: true, features: { ...(current.features ?? {}), [featureId]: { ...feature, cycleFieldIds: [...selected] } } });
+  };
+
+  const setTreatmentFieldEnabled = (featureId: RegistryFeatureId, fieldId: string, enabled: boolean) => {
+    const current = getDeviceAdminConfig();
+    const feature = current.features?.[featureId] ?? {};
+    const selected = new Set(feature.treatmentFieldIds ?? []);
+    if (enabled) selected.add(fieldId); else selected.delete(fieldId);
+    setDeviceAdminConfig({ ...current, enabled: true, features: { ...(current.features ?? {}), [featureId]: { ...feature, treatmentFieldIds: [...selected] } } });
   };
 
   return (
@@ -219,6 +228,9 @@ export function CoreFeatureCustomFieldBuilder({ data }: { data: BixboData }) {
                             </button>
                             <button type="button" onClick={() => setCycleFieldEnabled(feature.id, field.id, !(config.features?.[feature.id]?.cycleFieldIds ?? []).includes(field.id))} className={`rounded-full px-2 py-1 text-[8px] font-semibold ring-1 ${(config.features?.[feature.id]?.cycleFieldIds ?? []).includes(field.id) ? "bg-primary text-primary-foreground ring-primary/30" : "bg-tint text-muted-foreground ring-border"}`}>
                               Cycle {(config.features?.[feature.id]?.cycleFieldIds ?? []).includes(field.id) ? t("On") : t("Off")}
+                            </button>
+                            <button type="button" onClick={() => setTreatmentFieldEnabled(feature.id, field.id, !(config.features?.[feature.id]?.treatmentFieldIds ?? []).includes(field.id))} className={`rounded-full px-2 py-1 text-[8px] font-semibold ring-1 ${(config.features?.[feature.id]?.treatmentFieldIds ?? []).includes(field.id) ? "bg-primary text-primary-foreground ring-primary/30" : "bg-tint text-muted-foreground ring-border"}`}>
+                              Treatment {(config.features?.[feature.id]?.treatmentFieldIds ?? []).includes(field.id) ? t("On") : t("Off")}
                             </button>
                           </>
                         ) : null}
