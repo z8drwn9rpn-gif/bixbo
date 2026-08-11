@@ -1,0 +1,26 @@
+name: Apply HAK global admin mode
+on:
+  push:
+    branches: [agent/hak-global-admin-mode]
+    paths:
+      - .github/workflows/apply-hak-global-admin-mode.yml
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/hak-global-admin-mode
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - run: python .github/scripts/apply_hak_global_admin_mode.py
+      - run: rm .github/scripts/apply_hak_global_admin_mode.py .github/workflows/apply-hak-global-admin-mode.yml
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/components/HakAdminEditOverlay.tsx src/lib/__tests__/hak-admin-mode-source.test.ts .github
+          git commit -m 'gate HAK editor behind global Admin Mode'
+          git push origin HEAD:agent/hak-global-admin-mode
