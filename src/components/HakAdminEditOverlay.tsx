@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
 
 import { useI18n } from "@/hooks/useI18n";
@@ -130,6 +130,7 @@ export function HakAdminEditOverlay() {
   const [config, setConfig] = useState<HakConfig>(() => readConfig());
   const [revision, setRevision] = useState(0);
   const [portalRevision, setPortalRevision] = useState(0);
+  const [draggedBlock, setDraggedBlock] = useState<string | null>(null);
 
   const definitions = useMemo(
     () => BASE_DEFINITIONS.map((item) => (item.id === "sex" ? { ...item, defaultLabel: sexRegistryLabel } : item)),
@@ -278,6 +279,24 @@ export function HakAdminEditOverlay() {
     writeBlocks(blocks);
   };
 
+  const dropBlock = (targetId: string) => {
+    if (!draggedBlock || draggedBlock === targetId) return;
+    const blocks = editableBlocks();
+    const from = blocks.findIndex((block) => block.id === draggedBlock);
+    const to = blocks.findIndex((block) => block.id === targetId);
+    if (from < 0 || to < 0) return;
+    const [item] = blocks.splice(from, 1);
+    blocks.splice(to, 0, item);
+    writeBlocks(blocks);
+  };
+
+  const moveDraggedBlockByPointer = (event: ReactPointerEvent<HTMLElement>) => {
+    if (!draggedBlock) return;
+    const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>("[data-hak-block-sort-id]");
+    const targetId = target?.dataset.hakBlockSortId;
+    if (targetId && targetId !== draggedBlock) dropBlock(targetId);
+  };
+
   const patch = (id: HakItemId, next: HakItemOverride) => {
     const updated = { ...config, [id]: { ...(config[id] ?? {}), ...next } };
     setConfig(updated);
@@ -344,12 +363,22 @@ export function HakAdminEditOverlay() {
                 <div className="mb-4 space-y-2">
                   <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{t("Custom sections")}</p>
                   {effectiveHakBlocks.map((block, blockIndex) => (
-                    <section key={block.id} className="rounded-2xl bg-primary/5 p-3 ring-1 ring-primary/15">
+                    <section key={block.id} data-hak-block-sort-id={block.id} className={`rounded-2xl bg-primary/5 p-3 ring-1 ring-primary/15 ${draggedBlock === block.id ? "opacity-60" : ""}`}>
                       <input value={block.title} onChange={(event) => patchBlock(block.id, { title: event.target.value })} className="h-9 w-full rounded-xl bg-tint px-3 text-xs font-semibold ring-1 ring-border" />
                       <textarea value={block.body} onChange={(event) => patchBlock(block.id, { body: event.target.value })} rows={2} placeholder={t("Text…")} className="mt-2 w-full resize-y rounded-xl bg-tint px-3 py-2 text-xs ring-1 ring-border" />
                       <div className="mt-2 flex flex-wrap items-center gap-1.5">
                         <button type="button" disabled={blockIndex === 0} onClick={() => moveBlock(block.id, -1)} className="rounded-full bg-tint px-2.5 py-1 text-[9px] ring-1 ring-border disabled:opacity-25">↑</button>
                         <button type="button" disabled={blockIndex === effectiveHakBlocks.length - 1} onClick={() => moveBlock(block.id, 1)} className="rounded-full bg-tint px-2.5 py-1 text-[9px] ring-1 ring-border disabled:opacity-25">↓</button>
+                        <button
+                          type="button"
+                          onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setDraggedBlock(block.id); }}
+                          onPointerMove={moveDraggedBlockByPointer}
+                          onPointerUp={() => setDraggedBlock(null)}
+                          onPointerCancel={() => setDraggedBlock(null)}
+                          style={{ touchAction: "none" }}
+                          className="inline-flex h-7 items-center gap-1 rounded-full bg-tint px-2.5 text-[9px] font-semibold text-muted-foreground ring-1 ring-border cursor-grab active:cursor-grabbing"
+                          aria-label={t("Drag to reorder")}
+                        ><span className="text-sm">⋮⋮</span>{t("Drag")}</button>
                         <select value={block.placement ?? "bottom"} onChange={(event) => patchBlock(block.id, { placement: event.target.value as "top" | "bottom" })} className="h-7 rounded-full bg-tint px-2 text-[9px] ring-1 ring-border">
                           <option value="top">{t("Top")}</option>
                           <option value="bottom">{t("Bottom")}</option>
