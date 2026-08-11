@@ -251,6 +251,21 @@ export function AdminEditOverlay() {
     persist({ ...config, features: featuresCopy });
   };
 
+  const moveFeature = (featureId: RegistryFeatureId, delta: number) => {
+    const ids = features.map((feature) => feature.id);
+    const from = ids.indexOf(featureId);
+    const to = from + delta;
+    if (from < 0 || to < 0 || to >= ids.length) return;
+    [ids[from], ids[to]] = [ids[to], ids[from]];
+
+    const config = getDeviceAdminConfig();
+    const featureOverrides = { ...(config.features ?? {}) };
+    ids.forEach((id, index) => {
+      featureOverrides[id] = { ...(featureOverrides[id] ?? {}), order: (index + 1) * 10 };
+    });
+    persist({ ...config, enabled: true, features: featureOverrides });
+  };
+
   const addFieldOption = (featureId: RegistryFeatureId, fieldId: string) => {
     const label = window.prompt(t("New option name"))?.trim();
     if (!label) return;
@@ -425,7 +440,7 @@ export function AdminEditOverlay() {
                     <p className="text-sm font-bold">{t("Features & surfaces")}</p>
                     <p className="mt-1 text-[11px] text-muted-foreground">{t("Core features can be hidden but are never deleted. Current page surface is highlighted.")}</p>
                   </section>
-                  {features.map((feature) => {
+                  {features.map((feature, featureIndex) => {
                     const local = localConfig.features?.[feature.id];
                     const enabled = isRegistryFeatureEnabled(adminView, feature.id);
                     return (
@@ -438,7 +453,9 @@ export function AdminEditOverlay() {
                           <input type="color" value={feature.color} onChange={(event) => patchFeature(feature.id, { color: event.target.value })} className="h-9 w-10 rounded-xl bg-tint p-1 ring-1 ring-border" />
                           <button type="button" onClick={() => patchFeature(feature.id, { enabled: !enabled })} className={`rounded-full px-2.5 py-1.5 text-[9px] font-bold ${enabled ? "bg-primary text-primary-foreground" : "bg-tint text-muted-foreground ring-1 ring-border"}`}>{enabled ? t("On") : t("Hidden")}</button>
                         </div>
-                        <div className="mt-2 flex flex-wrap gap-1.5">
+                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                          <button type="button" disabled={featureIndex === 0} onClick={() => moveFeature(feature.id, -1)} className="rounded-full bg-tint px-2.5 py-1 text-[9px] font-semibold ring-1 ring-border disabled:opacity-25" aria-label={`${t("Move up")} ${feature.label}`}>↑</button>
+                          <button type="button" disabled={featureIndex === features.length - 1} onClick={() => moveFeature(feature.id, 1)} className="rounded-full bg-tint px-2.5 py-1 text-[9px] font-semibold ring-1 ring-border disabled:opacity-25" aria-label={`${t("Move down")} ${feature.label}`}>↓</button>
                           {SURFACES.map((surface) => {
                             const protectedPeriodHeatmap = feature.id === "period" && surface.id === "heatmap";
                             const on = isRegistrySurfaceEnabled(adminView, feature.id, surface.id);
