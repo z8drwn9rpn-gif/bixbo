@@ -13,11 +13,23 @@ function uid() {
 }
 
 function scaleValues(field: RegistryFieldDefinition): number[] {
-  const min = field.scale?.min ?? 0;
-  const max = field.scale?.max ?? 10;
-  const step = field.scale?.step && field.scale.step > 0 ? field.scale.step : 1;
+  const rawMin = Number(field.scale?.min);
+  const rawMax = Number(field.scale?.max);
+  const rawStep = Number(field.scale?.step);
+  const min = Number.isFinite(rawMin) ? rawMin : 0;
+  const maxCandidate = Number.isFinite(rawMax) ? rawMax : 10;
+  const max = maxCandidate > min ? maxCandidate : min + 1;
+  const stepCandidate = Number.isFinite(rawStep) && rawStep > 0 ? rawStep : 1;
+  const step = Math.min(stepCandidate, max - min);
   const count = Math.max(1, Math.min(101, Math.floor((max - min) / step) + 1));
   return Array.from({ length: count }, (_, index) => Number((min + index * step).toFixed(4)));
+}
+
+function safeOptions(field: RegistryFieldDefinition): string[] {
+  const seen = new Set<string>();
+  return (field.options ?? [])
+    .map((option) => option.trim())
+    .filter((option) => option.length > 0 && !seen.has(option) && Boolean(seen.add(option)));
 }
 
 function CustomField({
@@ -96,7 +108,7 @@ function CustomField({
   }
 
   const selected = Array.isArray(value) ? value : [];
-  const options = field.options ?? [];
+  const options = safeOptions(field);
   return (
     <div className="space-y-2">
       <span className="text-xs font-semibold text-muted-foreground">{t(field.label)}</span>
@@ -110,7 +122,7 @@ function CustomField({
               onClick={() => onChange(active ? selected.filter((item) => item !== option) : [...selected, option])}
               className={`rounded-full px-3 py-1.5 text-xs font-semibold ring-1 ring-border ${active ? "bg-primary text-primary-foreground" : "bg-tint text-foreground"}`}
             >
-              {t(option)}
+              {t(field.optionLabels?.[option] ?? option)}
             </button>
           );
         })}
