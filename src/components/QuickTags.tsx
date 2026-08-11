@@ -28,6 +28,8 @@ type Tag = {
   cat: Cat;
   popup?: "period" | "postpartum";
   customLogId?: string;
+  /** Button explicitly created by the user through Quick Log → Add. */
+  userCustom?: boolean;
   apply?: (l: DayLog) => DayLog;
   scheduledMed?: {
     medId: string;
@@ -397,6 +399,7 @@ function customToTag(c: CustomQuickTag, data: BixboData): Tag {
     emoji: c.emoji,
     label: c.label,
     cat: c.cat,
+    userCustom: true,
     apply,
     scheduledMed:
       c.cat === "meds" && p.mode === "scheduled" && p.medId && p.scheduleTime
@@ -452,7 +455,10 @@ export function QuickTags({
     return null;
   };
   const registryAllowsQuickTag = (tag: Tag) => {
-    if (tag.cat === "custom") return true;
+    // Explicit Quick Log → Add buttons must remain visible even when the
+    // underlying built-in category is disabled on the default Quick Log surface.
+    // Creating the custom button is itself an explicit per-device opt-in.
+    if (tag.userCustom || tag.cat === "custom") return true;
     const id = registryIdForTag(tag);
     return id ? isRegistrySurfaceEnabled(data, id, "quickLog") : true;
   };
