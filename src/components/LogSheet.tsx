@@ -3,9 +3,9 @@ import { useI18n } from "@/hooks/useI18n";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Ico, IcoText } from "@/components/icons/BixboIcons";
 import { CustomLogForm } from "@/components/CustomLogForm";
-import { CoreFeatureCustomFieldsForm } from "@/components/CoreFeatureCustomFieldsForm";
+import { CoreFeatureCustomFieldInput } from "@/components/CoreFeatureCustomFieldsForm";
 import { POSTPARTUM_SYMPTOMS } from "@/lib/health";
-import { getRegistryFeature, getRegistryField, isRegistrySurfaceEnabled, registryCustomFieldsForFeature, registryFieldLabel, registryFieldOptions, registryFieldScale, registryFieldsForFeature, registryOptionLabel, customLogDefinitions, type RegistryFeatureId } from "@/lib/appRegistry";
+import { BIXBO_LOG_FIELDS, getRegistryFeature, getRegistryField, isRegistrySurfaceEnabled, registryCustomFieldsForFeature, registryFieldLabel, registryFieldOptions, registryFieldScale, registryFieldsForFeature, registryOptionLabel, customLogDefinitions, type RegistryFeatureId } from "@/lib/appRegistry";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -834,13 +834,6 @@ export function LogSheet({
                 <EventForm date={date} update={update} onDone={close} initialEntry={edit as EventEntry | undefined} />
               )}
               {active === "note" && <NoteForm date={date} update={update} onDone={close} />}
-              {activeRegistryFeature && activeAdminFields.length ? (
-                <CoreFeatureCustomFieldsForm
-                  fields={activeAdminFields}
-                  values={adminFieldValues}
-                  onChange={(fieldId, value) => setAdminFieldValues((current) => ({ ...current, [fieldId]: value }))}
-                />
-              ) : null}
             </div>
             </LogSchemaContext.Provider>
           </div>
@@ -851,6 +844,26 @@ export function LogSheet({
 }
 
 /* ------------------- Primitives ------------------- */
+function InlineAdminCustomFields({ anchorFieldId }: { anchorFieldId?: string }) {
+  const schema = useLogSchema();
+  if (!schema || schema.featureId === "pain" || !anchorFieldId || !schema.adminFields.length) return null;
+  const firstCoreFieldId = BIXBO_LOG_FIELDS[schema.featureId]?.[0]?.id;
+  if (firstCoreFieldId !== anchorFieldId) return null;
+  return (
+    <>
+      {schema.adminFields.map((field) => (
+        <CoreFeatureCustomFieldInput
+          key={field.id}
+          field={field}
+          value={schema.adminFieldValues[field.id]}
+          onChange={(value) => schema.setAdminFieldValue(field.id, value)}
+          style={{ order: field.order }}
+        />
+      ))}
+    </>
+  );
+}
+
 function Field({ label, children, schemaFieldId }: { label: string; children: ReactNode; schemaFieldId?: string }) {
   const { t } = useI18n();
   const schema = useLogSchema();
@@ -865,23 +878,29 @@ function Field({ label, children, schemaFieldId }: { label: string; children: Re
   // caused stray click activations on the first focusable descendant, which
   // manifested as chips getting "auto-selected" in the Pain wizard.
   return (
-    <div className={configuredField?.enabled === false ? "hidden" : "block"} style={configuredField ? { order: configuredField.order } : undefined} data-bixbo-log-field-id={fieldId || undefined}>
-      <span className="text-xs font-medium text-muted-foreground">{t(displayLabel)}</span>
-      <div className="mt-1">{children}</div>
-    </div>
+    <>
+      <InlineAdminCustomFields anchorFieldId={fieldId} />
+      <div className={configuredField?.enabled === false ? "hidden" : "block"} style={configuredField ? { order: configuredField.order } : undefined} data-bixbo-log-field-id={fieldId || undefined}>
+        <span className="text-xs font-medium text-muted-foreground">{t(displayLabel)}</span>
+        <div className="mt-1">{children}</div>
+      </div>
+    </>
   );
 }
 function RegistryFieldBlock({ fieldId, children }: { fieldId: string; children: ReactNode }) {
   const schema = useLogSchema();
   const configuredField = schema ? getRegistryField(schema.data, schema.featureId, fieldId) : undefined;
   return (
-    <div
-      className={configuredField?.enabled === false ? "hidden" : "block"}
-      style={configuredField ? { order: configuredField.order } : undefined}
-      data-bixbo-log-field-id={fieldId}
-    >
-      {children}
-    </div>
+    <>
+      <InlineAdminCustomFields anchorFieldId={fieldId} />
+      <div
+        className={configuredField?.enabled === false ? "hidden" : "block"}
+        style={configuredField ? { order: configuredField.order } : undefined}
+        data-bixbo-log-field-id={fieldId}
+      >
+        {children}
+      </div>
+    </>
   );
 }
 
@@ -1309,19 +1328,24 @@ function PainWizard({
   }, [data.dayLogs, date, initialEntry]);
 
   const [step, setStep] = useState(0);
+  const schema = useLogSchema();
   const painSteps = useMemo(() => {
-    const configured = registryFieldsForFeature(data, "pain");
+    const configured = [
+      ...registryFieldsForFeature(data, "pain"),
+      ...registryCustomFieldsForFeature(data, "pain"),
+    ].sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));
     return configured.length ? configured : [
-      { id: "score", label: "Pain scale" },
-      { id: "parts", label: "Where does it hurt?" },
-      { id: "quality", label: "How does it hurt?" },
-      { id: "symptoms", label: "Other symptoms" },
-      { id: "details", label: "Details" },
+      { id: "score", label: "Pain scale", kind: "scale" as const, order: 10 },
+      { id: "parts", label: "Where does it hurt?", kind: "chips" as const, order: 20 },
+      { id: "quality", label: "How does it hurt?", kind: "chips" as const, order: 30 },
+      { id: "symptoms", label: "Other symptoms", kind: "chips" as const, order: 40 },
+      { id: "details", label: "Details", kind: "text" as const, order: 50 },
     ];
   }, [data]);
   const safeStep = Math.min(step, Math.max(0, painSteps.length - 1));
   const activePainStep = painSteps[safeStep];
   const activePainStepId = activePainStep?.id ?? "score";
+  const activePainStepIsCustom = !!activePainStep && !(BIXBO_LOG_FIELDS.pain ?? []).some((field) => field.id === activePainStep.id);
   const symptomsStepIndex = painSteps.findIndex((field) => field.id === "symptoms");
   const [score, setScore] = useState(initialEntry?.score ?? 0);
   const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
@@ -1547,6 +1571,7 @@ function PainWizard({
       };
       updateDayLog(update, date, (l) => ({ ...l, panic: [...(l.panic ?? []), pk] }));
     }
+    schema?.saveAdminCustomFields();
     onDone();
   };
 
@@ -1625,6 +1650,15 @@ function PainWizard({
           </button>
         </div>
       )}
+
+      {activePainStepIsCustom && activePainStep && schema ? (
+        <CoreFeatureCustomFieldInput
+          field={activePainStep}
+          value={schema.adminFieldValues[activePainStep.id]}
+          onChange={(value) => schema.setAdminFieldValue(activePainStep.id, value)}
+          className="mx-1"
+        />
+      ) : null}
 
       {activePainStepId === "score" && (
         <div className="flex flex-col items-center gap-4 py-6">
@@ -3998,7 +4032,7 @@ function MedsForm({
   const extraDoseHeading = t(extraDoseField?.label ?? "Extra dose (one-off)");
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-4">
       <RegistryFieldBlock fieldId="scheduled">
       {meds.length === 0 ? (
@@ -4547,7 +4581,7 @@ function NoteForm({ date, update, onDone }: { date: string; update: UpdateFn; on
     onDone();
   };
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       <SaveBar onCancel={onDone} onSave={save} disabled={!text.trim()} />
       <div className="flex flex-col gap-3">
       <Field label="Time (optional)" schemaFieldId="time">
@@ -4601,7 +4635,7 @@ function PostpartumSymptomsForm({
   };
 
   return (
-    <div className="space-y-5">
+    <div className="flex flex-col gap-5">
       <SaveBar onCancel={onDone} onSave={save} />
       <div className="flex items-start gap-3 rounded-3xl bg-tint p-4 ring-1 ring-border/50">
         <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-surface ring-1 ring-border/50">

@@ -2,8 +2,10 @@ import { useMemo } from "react";
 
 import { useI18n } from "@/hooks/useI18n";
 import {
+  BIXBO_LOG_FIELDS,
   BIXBO_REGISTRY,
   getRegistryFeature,
+  getRegistryField,
   type RegistryFieldDefinition,
   type RegistryFieldKind,
   type RegistryFeatureId,
@@ -46,11 +48,14 @@ export function CoreFeatureCustomFieldBuilder({ data }: { data: BixboData }) {
   const addField = (featureId: RegistryFeatureId, kind: RegistryFieldKind) => {
     const current = getDeviceAdminConfig();
     const existing = current.features?.[featureId]?.customFields ?? [];
+    const currentView = { ...data, settings: { ...data.settings, adminConfig: current } } as BixboData;
+    const builtinOrders = (BIXBO_LOG_FIELDS[featureId] ?? []).map((base) => getRegistryField(currentView, featureId, base.id)?.order ?? base.order);
+    const maxOrder = Math.max(0, ...builtinOrders, ...existing.map((item) => item.order));
     const field: RegistryFieldDefinition = {
       id: makeFieldId(),
       label: t("New field"),
       kind,
-      order: (existing.at(-1)?.order ?? 0) + 10,
+      order: maxOrder + 10,
       enabled: true,
       ...(kind === "chips" ? { options: [t("Option 1"), t("Option 2")] } : {}),
       ...(kind === "scale" ? { scale: { min: 1, max: 10, step: 1 } } : {}),
@@ -66,13 +71,30 @@ export function CoreFeatureCustomFieldBuilder({ data }: { data: BixboData }) {
 
   const moveField = (featureId: RegistryFeatureId, fieldId: string, delta: -1 | 1) => {
     const current = getDeviceAdminConfig();
-    const ordered = [...(current.features?.[featureId]?.customFields ?? [])].sort((a, b) => a.order - b.order);
+    const feature = current.features?.[featureId] ?? {};
+    const currentView = { ...data, settings: { ...data.settings, adminConfig: current } } as BixboData;
+    const builtin = (BIXBO_LOG_FIELDS[featureId] ?? []).map((base) => ({
+      id: base.id,
+      order: getRegistryField(currentView, featureId, base.id)?.order ?? base.order,
+      custom: false,
+    }));
+    const custom = (feature.customFields ?? []).map((field) => ({ id: field.id, order: field.order, custom: true }));
+    const ordered = [...builtin, ...custom].sort((a, b) => a.order - b.order || (a.custom === b.custom ? a.id.localeCompare(b.id) : a.custom ? 1 : -1));
     const from = ordered.findIndex((field) => field.id === fieldId);
     const to = from + delta;
     if (from < 0 || to < 0 || to >= ordered.length) return;
     const [item] = ordered.splice(from, 1);
     ordered.splice(to, 0, item);
-    writeFields(featureId, ordered.map((field, index) => ({ ...field, order: (index + 1) * 10 })));
+
+    const orderById = new Map(ordered.map((field, index) => [field.id, (index + 1) * 10]));
+    const fields = { ...(feature.fields ?? {}) };
+    builtin.forEach((field) => { fields[field.id] = { ...(fields[field.id] ?? {}), order: orderById.get(field.id) }; });
+    const customFields = (feature.customFields ?? []).map((field) => ({ ...field, order: orderById.get(field.id) ?? field.order }));
+    setDeviceAdminConfig({
+      ...current,
+      enabled: true,
+      features: { ...(current.features ?? {}), [featureId]: { ...feature, fields, customFields } },
+    });
   };
 
   const deleteField = (featureId: RegistryFeatureId, fieldId: string) => {
