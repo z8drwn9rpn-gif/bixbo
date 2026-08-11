@@ -275,6 +275,19 @@ export const BIXBO_LOG_FIELDS: Partial<Record<RegistryFeatureId, RegistryFieldDe
     { id: "scheduled", label: "Scheduled meds", kind: "text", order: 10 },
     { id: "extraDose", label: "Extra dose (one-off)", kind: "text", order: 20 },
   ],
+  sex: [
+    { id: "time", label: "Time", kind: "text", order: 10 },
+    { id: "type", label: "Type", kind: "chips", order: 20 },
+    { id: "feelingAfter", label: "How I feel after", kind: "chips", order: 30 },
+    { id: "painful", label: "Painful?", kind: "chips", order: 40 },
+    { id: "note", label: "Note (optional)", kind: "text", order: 50 },
+  ],
+  heat: [
+    { id: "type", label: "Type", kind: "chips", order: 10 },
+    { id: "start", label: "Start", kind: "text", order: 20 },
+    { id: "duration", label: "Duration (min)", kind: "number", order: 30 },
+    { id: "note", label: "Note (optional)", kind: "text", order: 40 },
+  ],
 };
 
 export function getRegistryField(data: Pick<BixboData, "settings">, featureId: RegistryFeatureId, fieldId: string): RegistryFieldDefinition | undefined {

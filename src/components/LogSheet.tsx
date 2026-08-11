@@ -2972,12 +2972,12 @@ function SexForm({
     onDone();
   };
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       <SaveBar onCancel={onDone} onSave={save} />
-      <Field label="Time">
+      <Field label="Time" schemaFieldId="time">
         <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
       </Field>
-      <Field label="Type">
+      <Field label="Type" schemaFieldId="type">
         <div className="mt-2 flex flex-wrap gap-2">
           {SEX_TYPES_DEFAULT.map((o) => (
             <Chip key={o.value} active={kind === o.value} onClick={() => setKind(o.value)}>
@@ -3004,7 +3004,7 @@ function SexForm({
           <AddCustomInline onAdd={addCustom} />
         </div>
       </Field>
-      <Field label="How I feel after">
+      <Field label="How I feel after" schemaFieldId="feelingAfter">
         <CustomChipList
           base={SEX_FEELINGS_DEFAULT}
           custom={data.custom.sexFeelings ?? []}
@@ -3027,9 +3027,10 @@ function SexForm({
           }}
           selected={feelingAfter}
           onToggle={(v) => setFeelingAfter((a) => toggleIn(a, v))}
+          schemaFieldId="feelingAfter"
         />
       </Field>
-      <Field label="Painful?">
+      <Field label="Painful?" schemaFieldId="painful">
         <div className="mt-2 flex gap-2">
           {(["no", "before", "during", "after"] as const).map((v) => (
             <Chip key={v} active={painful === v} onClick={() => setPainful(v)}>
@@ -3038,7 +3039,7 @@ function SexForm({
           ))}
         </div>
       </Field>
-      <Field label="Note (optional)">
+      <Field label="Note (optional)" schemaFieldId="note">
         <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
     </div>
@@ -3125,9 +3126,9 @@ function ThermoForm({
     onDone();
   };
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       <SaveBar onCancel={onDone} onSave={save} />
-      <Field label="Type">
+      <Field label="Type" schemaFieldId="type">
         <div className="mt-2 flex gap-2">
           <Chip active={kind === "heat"} onClick={() => setKind("heat")}>
             <Ico e="♨️" size={16} /> {t("Heat")}
@@ -3140,11 +3141,11 @@ function ThermoForm({
           </Chip>
         </div>
       </Field>
-      <Field label="Start">
+      <Field label="Start" schemaFieldId="start">
         <Input type="time" value={start} onChange={(e) => setStart(e.target.value)} className="w-full" />
       </Field>
-      <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} />
-      <Field label="Note (optional)">
+      <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} schemaFieldId="duration" />
+      <Field label="Note (optional)" schemaFieldId="note">
         <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
     </div>
