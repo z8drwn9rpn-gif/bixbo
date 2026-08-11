@@ -64,6 +64,17 @@ export function CoreFeatureCustomFieldBuilder({ data }: { data: BixboData }) {
     writeFields(featureId, fields.map((field) => field.id === fieldId ? { ...field, ...patch, id: field.id } : field));
   };
 
+  const moveField = (featureId: RegistryFeatureId, fieldId: string, delta: -1 | 1) => {
+    const current = getDeviceAdminConfig();
+    const ordered = [...(current.features?.[featureId]?.customFields ?? [])].sort((a, b) => a.order - b.order);
+    const from = ordered.findIndex((field) => field.id === fieldId);
+    const to = from + delta;
+    if (from < 0 || to < 0 || to >= ordered.length) return;
+    const [item] = ordered.splice(from, 1);
+    ordered.splice(to, 0, item);
+    writeFields(featureId, ordered.map((field, index) => ({ ...field, order: (index + 1) * 10 })));
+  };
+
   const deleteField = (featureId: RegistryFeatureId, fieldId: string) => {
     const current = getDeviceAdminConfig();
     const feature = current.features?.[featureId] ?? {};
@@ -180,7 +191,7 @@ export function CoreFeatureCustomFieldBuilder({ data }: { data: BixboData }) {
 
               {fields.length ? (
                 <div className="mt-2 space-y-2">
-                  {fields.map((field) => (
+                  {fields.map((field, fieldIndex) => (
                     <div key={field.id} className="rounded-xl bg-background p-2 ring-1 ring-border">
                       <div className="flex items-center gap-1.5">
                         <input
@@ -202,6 +213,8 @@ export function CoreFeatureCustomFieldBuilder({ data }: { data: BixboData }) {
                         >
                           {FIELD_KINDS.map((kind) => <option key={kind} value={kind}>{kind}</option>)}
                         </select>
+                        <button type="button" disabled={fieldIndex === 0} onClick={() => moveField(feature.id, field.id, -1)} aria-label={t("Move field up")} className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-tint text-[12px] font-bold ring-1 ring-border disabled:opacity-30">↑</button>
+                        <button type="button" disabled={fieldIndex === fields.length - 1} onClick={() => moveField(feature.id, field.id, 1)} aria-label={t("Move field down")} className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-tint text-[12px] font-bold ring-1 ring-border disabled:opacity-30">↓</button>
                         <button type="button" onClick={() => deleteField(feature.id, field.id)} className="rounded-full px-2 py-1 text-[9px] font-semibold text-destructive ring-1 ring-border">{t("Delete")}</button>
                       </div>
 
