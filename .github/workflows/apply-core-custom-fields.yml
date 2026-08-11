@@ -1,0 +1,24 @@
+name: Apply core custom fields patch
+on:
+  push:
+    branches:
+      - agent/admin-core-custom-fields
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/admin-core-custom-fields
+      - name: Apply patch
+        run: python scripts/apply_core_custom_fields.py
+      - name: Commit patch
+        run: |
+          git rm .github/workflows/apply-core-custom-fields.yml scripts/apply_core_custom_fields.py
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/lib/appRegistry.ts src/lib/storage.ts src/components/AdminEditOverlay.tsx src/components/LogSheet.tsx
+          git commit -m "add custom fields to core logs"
+          git push origin HEAD:agent/admin-core-custom-fields
