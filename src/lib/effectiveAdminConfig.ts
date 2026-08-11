@@ -32,6 +32,26 @@ function mergeFeature(base: RegistryFeatureOverride = {}, local: RegistryFeature
   };
 }
 
+function mergeNavigation(globalConfig: AdminConfig, localConfig: AdminConfig): AdminConfig["navigation"] {
+  if (!globalConfig.navigation && !localConfig.navigation) return undefined;
+  const ids = new Set([
+    ...Object.keys(globalConfig.navigation?.items ?? {}),
+    ...Object.keys(localConfig.navigation?.items ?? {}),
+  ]);
+  const items: NonNullable<NonNullable<AdminConfig["navigation"]>["items"]> = {};
+  ids.forEach((id) => {
+    items[id] = {
+      ...(globalConfig.navigation?.items?.[id] ?? {}),
+      ...(localConfig.navigation?.items?.[id] ?? {}),
+    };
+  });
+  return {
+    ...(globalConfig.navigation ?? {}),
+    ...(localConfig.navigation ?? {}),
+    items,
+  };
+}
+
 export function mergeAdminConfigs(globalConfig: AdminConfig = {}, localConfig: AdminConfig = {}): AdminConfig {
   const featureIds = new Set<RegistryFeatureId>([
     ...(Object.keys(globalConfig.features ?? {}) as RegistryFeatureId[]),
@@ -54,6 +74,7 @@ export function mergeAdminConfigs(globalConfig: AdminConfig = {}, localConfig: A
       ...(globalConfig.layoutOrder ?? {}),
       ...(localConfig.layoutOrder ?? {}),
     },
+    navigation: mergeNavigation(globalConfig, localConfig),
   };
 }
 
