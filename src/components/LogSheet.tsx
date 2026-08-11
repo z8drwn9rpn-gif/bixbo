@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
-import { X, Plus, ChevronLeft, Check, Pencil } from "@/components/icons/BixboIcons";
+import { X, Plus, ChevronLeft, Check, Pencil, Trash2 } from "@/components/icons/BixboIcons";
 import {
   PAIN_DESCRIPTIONS,
   painColor,
@@ -803,17 +803,45 @@ export function LogSheet({
                         </div>
                         <div className="mt-2 flex flex-wrap gap-2">
                           {savedEntries.map((entry, index) => (
-                            <button
-                              key={entry.id}
-                              type="button"
-                              onClick={() => setCustomEditEntry(entry)}
-                              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-semibold ring-1 ring-border ${
-                                initialCustomEntry?.id === entry.id ? "bg-primary text-primary-foreground" : "bg-background text-foreground"
-                              }`}
-                            >
-                              <Pencil className="h-3 w-3" />
-                              {entry.time || `${t("Entry")} ${index + 1}`}
-                            </button>
+                            <div key={entry.id} className="inline-flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => setCustomEditEntry(entry)}
+                                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-semibold ring-1 ring-border ${
+                                  initialCustomEntry?.id === entry.id ? "bg-primary text-primary-foreground" : "bg-background text-foreground"
+                                }`}
+                              >
+                                <Pencil className="h-3 w-3" />
+                                {entry.time || `${t("Entry")} ${index + 1}`}
+                              </button>
+                              <button
+                                type="button"
+                                aria-label={`${t("Delete")} ${entry.time || `${t("Entry")} ${index + 1}`}`}
+                                onClick={() => {
+                                  if (!window.confirm(t("Delete this saved entry? Other entries and the selected day will stay unchanged."))) return;
+                                  update((current) => {
+                                    const day = current.dayLogs[date];
+                                    if (!day) return current;
+                                    const customLogs = { ...(day.customLogs ?? {}) };
+                                    const existing = customLogs[id] ?? [];
+                                    const nextEntries = existing.filter((saved) => saved.id !== entry.id);
+                                    if (nextEntries.length) customLogs[id] = nextEntries;
+                                    else delete customLogs[id];
+                                    return {
+                                      ...current,
+                                      dayLogs: {
+                                        ...current.dayLogs,
+                                        [date]: { ...day, customLogs },
+                                      },
+                                    };
+                                  });
+                                  if (customEditEntry?.id === entry.id) setCustomEditEntry(undefined);
+                                }}
+                                className="grid h-7 w-7 place-items-center rounded-full bg-background text-destructive ring-1 ring-border"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
                           ))}
                         </div>
                       </section>
