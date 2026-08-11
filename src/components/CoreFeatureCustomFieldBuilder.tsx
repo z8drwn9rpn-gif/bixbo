@@ -72,12 +72,13 @@ export function CoreFeatureCustomFieldBuilder({ data }: { data: BixboData }) {
     const monthlyFieldIds = (feature.monthlyFieldIds ?? []).filter((id) => id !== fieldId);
     const cycleFieldIds = (feature.cycleFieldIds ?? []).filter((id) => id !== fieldId);
     const treatmentFieldIds = (feature.treatmentFieldIds ?? []).filter((id) => id !== fieldId);
+    const correlationFieldIds = (feature.correlationFieldIds ?? []).filter((id) => id !== fieldId);
     setDeviceAdminConfig({
       ...current,
       enabled: true,
       features: {
         ...(current.features ?? {}),
-        [featureId]: { ...feature, customFields: fields.filter((field) => field.id !== fieldId), heatmapFieldIds, monthlyFieldIds, cycleFieldIds, treatmentFieldIds },
+        [featureId]: { ...feature, customFields: fields.filter((field) => field.id !== fieldId), heatmapFieldIds, monthlyFieldIds, cycleFieldIds, treatmentFieldIds, correlationFieldIds },
       },
     });
   };
@@ -121,6 +122,14 @@ export function CoreFeatureCustomFieldBuilder({ data }: { data: BixboData }) {
     const selected = new Set(feature.treatmentFieldIds ?? []);
     if (enabled) selected.add(fieldId); else selected.delete(fieldId);
     setDeviceAdminConfig({ ...current, enabled: true, features: { ...(current.features ?? {}), [featureId]: { ...feature, treatmentFieldIds: [...selected] } } });
+  };
+
+  const setCorrelationFieldEnabled = (featureId: RegistryFeatureId, fieldId: string, enabled: boolean) => {
+    const current = getDeviceAdminConfig();
+    const feature = current.features?.[featureId] ?? {};
+    const selected = new Set(feature.correlationFieldIds ?? []);
+    if (enabled) selected.add(fieldId); else selected.delete(fieldId);
+    setDeviceAdminConfig({ ...current, enabled: true, features: { ...(current.features ?? {}), [featureId]: { ...feature, correlationFieldIds: [...selected] } } });
   };
 
   return (
@@ -202,6 +211,11 @@ export function CoreFeatureCustomFieldBuilder({ data }: { data: BixboData }) {
 
                       <div className="mt-2 flex items-center justify-between gap-2">
                         <span className="min-w-0 flex-1 truncate text-[8px] text-muted-foreground">ID: {field.id}</span>
+                        {field.kind === "toggle" ? (
+                          <button type="button" onClick={() => setCorrelationFieldEnabled(feature.id, field.id, !(config.features?.[feature.id]?.correlationFieldIds ?? []).includes(field.id))} className={`rounded-full px-2 py-1 text-[8px] font-semibold ring-1 ${(config.features?.[feature.id]?.correlationFieldIds ?? []).includes(field.id) ? "bg-primary text-primary-foreground ring-primary/30" : "bg-tint text-muted-foreground ring-border"}`}>
+                            Correlations {(config.features?.[feature.id]?.correlationFieldIds ?? []).includes(field.id) ? t("On") : t("Off")}
+                          </button>
+                        ) : null}
                         {(field.kind === "number" || field.kind === "scale") ? (
                           <>
                             <button
