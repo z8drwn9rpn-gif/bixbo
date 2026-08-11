@@ -22,6 +22,39 @@ const ICONS: Record<NavigationItemId, ComponentType<IconProps>> = {
   healthProfile: BottomNavHomeIcon,
 };
 
+/**
+ * Exact user-provided 3D navigation artwork. The previous SVG icon family is
+ * deliberately kept above as a fallback; no existing icon component is removed.
+ */
+const NAV_IMAGE_SRC: Partial<Record<NavigationItemId, string>> = {
+  home: "/nav-assets/nav-home.webp",
+  overview: "/nav-assets/nav-overview.webp",
+  couple: "/nav-assets/nav-couple.webp",
+  notes: "/nav-assets/nav-note.webp",
+};
+
+function NavArtwork({ id, size, className }: { id: NavigationItemId; size: number; className?: string }) {
+  const Icon = ICONS[id];
+  const imageSrc = NAV_IMAGE_SRC[id];
+
+  if (imageSrc) {
+    return (
+      <img
+        src={imageSrc}
+        alt=""
+        aria-hidden="true"
+        draggable={false}
+        width={size}
+        height={size}
+        className={className}
+        style={{ objectFit: "contain" }}
+      />
+    );
+  }
+
+  return <Icon size={size} className={className} />;
+}
+
 export function BottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
@@ -59,7 +92,6 @@ export function BottomNav() {
     >
       <ul className="mx-auto flex min-h-[96px] w-full items-end justify-around gap-0 px-2 pb-2 pt-1.5 sm:px-4 landscape:min-h-[84px] landscape:py-1.5">
         {items.map((item) => {
-          const Icon = ICONS[item.id];
           const label = item.label ?? BIXBO_NAVIGATION.find((candidate) => candidate.id === item.id)?.label ?? item.id;
 
           if (item.action === "log") {
@@ -71,9 +103,10 @@ export function BottomNav() {
                   className="flex min-h-[82px] w-full flex-col items-center justify-end gap-0 px-1 pb-0.5 text-[11px] font-semibold text-[#3f4e27] transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] dark:text-[#dce7b8] landscape:min-h-[70px]"
                   aria-label={t(label)}
                 >
-                  <Icon
+                  <NavArtwork
+                    id={item.id}
                     size={82}
-                    className="-mb-2 shrink-0 drop-shadow-[0_8px_9px_rgba(52,67,30,0.30)] landscape:h-[68px] landscape:w-[68px]"
+                    className="-mb-2 h-[82px] w-[82px] shrink-0 object-contain drop-shadow-[0_8px_9px_rgba(52,67,30,0.30)] landscape:h-[68px] landscape:w-[68px]"
                   />
                   <span className="max-w-full truncate text-center leading-none">{t(label)}</span>
                 </button>
@@ -99,9 +132,10 @@ export function BottomNav() {
                     : "text-[#45542b]/95 hover:text-[#34411f] dark:text-[#bdc99e] dark:hover:text-[#e3edc4]"
                 }`}
               >
-                <Icon
+                <NavArtwork
+                  id={item.id}
                   size={58}
-                  className={`mb-0 shrink-0 drop-shadow-[0_6px_7px_rgba(52,67,30,0.22)] transition-transform landscape:h-[48px] landscape:w-[48px] ${
+                  className={`mb-0 h-[58px] w-[58px] shrink-0 object-contain drop-shadow-[0_6px_7px_rgba(52,67,30,0.22)] transition-transform landscape:h-[48px] landscape:w-[48px] ${
                     active ? "scale-[1.02]" : ""
                   }`}
                 />
