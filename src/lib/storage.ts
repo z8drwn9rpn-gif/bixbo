@@ -271,6 +271,8 @@ export interface DayLog {
   histamine?: HistamineEntry[];
   /** Admin-created generic logs. Keys are stable custom-log IDs. */
   customLogs?: Record<string, CustomLogEntry[]>;
+  /** Supplementary values from admin-added fields on core logs. Keys are stable core feature IDs. */
+  adminFields?: Record<string, CustomLogEntry[]>;
   /** Pregnancy-mode daily log (only used when pregnancy mode is on). */
   pregnancy?: PregnancyDayLog;
   /** Postpartum-mode daily log (only used when postpartum mode is on). */

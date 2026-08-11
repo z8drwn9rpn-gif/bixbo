@@ -91,6 +91,8 @@ export interface RegistryFeatureOverride {
   surfaces?: Partial<Record<RegistrySurface, boolean>>;
   scale?: Partial<RegistryScaleDefinition>;
   fields?: Record<string, RegistryFieldOverride>;
+  /** Admin-created supplementary fields. Core calculations never depend on these. */
+  customFields?: RegistryFieldDefinition[];
 }
 
 export interface AdminConfig {
@@ -187,6 +189,15 @@ export function getRegistryField(data: Pick<BixboData, "settings">, featureId: R
 export function registryFieldsForFeature(data: Pick<BixboData, "settings">, featureId: RegistryFeatureId): RegistryFieldDefinition[] {
   return (BIXBO_LOG_FIELDS[featureId] ?? [])
     .map((field) => getRegistryField(data, featureId, field.id)!)
+    .filter((field) => field.enabled !== false)
+    .sort((a, b) => a.order - b.order);
+}
+
+export function registryCustomFieldsForFeature(
+  data: Pick<BixboData, "settings">,
+  featureId: RegistryFeatureId,
+): RegistryFieldDefinition[] {
+  return [...(activeAdminConfig(data)?.features?.[featureId]?.customFields ?? [])]
     .filter((field) => field.enabled !== false)
     .sort((a, b) => a.order - b.order);
 }

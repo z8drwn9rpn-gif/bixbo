@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useRouter, useRouterState } from "@tanstack/react-router";
 
 import { CustomLogBuilder } from "@/components/CustomLogBuilder";
+import { CoreFeatureCustomFieldBuilder } from "@/components/CoreFeatureCustomFieldBuilder";
 import { useI18n } from "@/hooks/useI18n";
 import {
   BIXBO_LOG_FIELDS,
@@ -478,6 +479,7 @@ export function AdminEditOverlay() {
                       </section>
                     );
                   })}
+                  <CoreFeatureCustomFieldBuilder data={adminView} />
                 </>
               ) : null}
 
