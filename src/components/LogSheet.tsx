@@ -245,8 +245,7 @@ export function LogSheet({
 
   const saveAdminCustomFields = () => {
     if (!activeRegistryFeature || !activeAdminFields.length) return;
-    const allowed = new Set(activeAdminFields.map((field) => field.id));
-    const values = Object.fromEntries(Object.entries(adminFieldValues).filter(([fieldId, value]) => allowed.has(fieldId) && value !== ""));
+    const editableFieldIds = new Set(activeAdminFields.map((field) => field.id));
     update((current) => {
       const day = current.dayLogs[date] ?? {};
       const adminFields = day.adminFields ?? {};
@@ -263,6 +262,17 @@ export function LogSheet({
         }
       }
       const matchIndex = linkedIndex >= 0 ? linkedIndex : legacyIndex;
+
+      // Only fields currently exposed by Admin are editable in this form.
+      // Preserve values belonging to hidden, removed or legacy admin fields so
+      // "Hide" never becomes an accidental historical-data deletion on edit.
+      const previousValues = matchIndex >= 0 ? existing[matchIndex]?.values ?? {} : {};
+      const values: Record<string, CustomLogValue> = { ...previousValues };
+      editableFieldIds.forEach((fieldId) => {
+        const value = adminFieldValues[fieldId];
+        if (value === "" || value === undefined) delete values[fieldId];
+        else values[fieldId] = value;
+      });
 
       let nextEntries = existing;
       if (!Object.keys(values).length) {
