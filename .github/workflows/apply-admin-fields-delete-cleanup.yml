@@ -1,0 +1,26 @@
+name: Apply admin fields delete cleanup
+on:
+  push:
+    branches: [agent/admin-fields-delete-cleanup]
+    paths:
+      - .github/workflows/apply-admin-fields-delete-cleanup.yml
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/admin-fields-delete-cleanup
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - run: python .github/scripts/apply_admin_fields_delete_cleanup.py
+      - run: rm .github/scripts/apply_admin_fields_delete_cleanup.py .github/workflows/apply-admin-fields-delete-cleanup.yml
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/lib/storage.ts src/lib/__tests__/admin-entry-cleanup.test.ts .github
+          git commit -m 'clean linked supplementary records after core entry deletion'
+          git push origin HEAD:agent/admin-fields-delete-cleanup
