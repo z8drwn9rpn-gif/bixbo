@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useRouterState } from "@tanstack/react-router";
 
 import { useI18n } from "@/hooks/useI18n";
@@ -9,10 +9,9 @@ import {
   getDeviceAdminConfig,
   setDeviceAdminConfig,
 } from "@/lib/deviceAdminConfig";
-import {
-  ADMIN_MODE_CHANGED,
-  isGlobalAdminModeActive,
-} from "@/components/GlobalAdminModeController";
+import { ADMIN_MODE_CHANGED, isGlobalAdminModeActive } from "@/components/GlobalAdminModeController";
+import { ADMIN_CUSTOMIZE_REQUESTED } from "@/lib/adminCustomizeEvents";
+import { getEffectiveAdminConfig } from "@/lib/effectiveAdminConfig";
 
 type UniversalBlockOverride = {
   label?: string;
@@ -121,6 +120,10 @@ function writeExtendedConfig(config: ExtendedAdminConfig) {
 }
 
 function pageConfig(pathname: string): UniversalPageConfig {
+  return (getEffectiveAdminConfig() as ExtendedAdminConfig).universalPages?.[pathname] ?? {};
+}
+
+function localPageConfig(pathname: string): UniversalPageConfig {
   return readExtendedConfig().universalPages?.[pathname] ?? {};
 }
 
@@ -194,6 +197,7 @@ export function UniversalAdminPageEditor() {
   const [adminMode, setAdminMode] = useState(() => isGlobalAdminModeActive());
   const [open, setOpen] = useState(false);
   const [revision, setRevision] = useState(0);
+  const [draggedBlock, setDraggedBlock] = useState<string | null>(null);
 
   const supported = !isSpecializedPath(pathname);
   const blocks = useMemo(() => (supported ? snapshots(pathname) : []), [pathname, revision, supported]);
@@ -210,6 +214,14 @@ export function UniversalAdminPageEditor() {
       window.removeEventListener(DEVICE_ADMIN_CONFIG_CHANGED, sync);
     };
   }, []);
+
+  useEffect(() => {
+    const openCurrentPageEditor = () => {
+      if (adminMode && supported) setOpen(true);
+    };
+    window.addEventListener(ADMIN_CUSTOMIZE_REQUESTED, openCurrentPageEditor);
+    return () => window.removeEventListener(ADMIN_CUSTOMIZE_REQUESTED, openCurrentPageEditor);
+  }, [adminMode, supported]);
 
   useEffect(() => {
     if (!supported) return;
@@ -257,18 +269,40 @@ export function UniversalAdminPageEditor() {
     });
   };
 
+  const writeOrder = (ordered: BlockSnapshot[]) => {
+    const current = localPageConfig(pathname);
+    const nextBlocks = { ...(current.blocks ?? {}) };
+    ordered.forEach((block, orderIndex) => {
+      nextBlocks[block.key] = { ...(nextBlocks[block.key] ?? {}), order: orderIndex };
+    });
+    persist({ ...current, blocks: nextBlocks });
+  };
+
   const move = (key: string, delta: number) => {
     const ordered = [...blocks];
     const index = ordered.findIndex((block) => block.key === key);
     const target = index + delta;
     if (index < 0 || target < 0 || target >= ordered.length) return;
     [ordered[index], ordered[target]] = [ordered[target], ordered[index]];
-    const current = pageConfig(pathname);
-    const nextBlocks = { ...(current.blocks ?? {}) };
-    ordered.forEach((block, orderIndex) => {
-      nextBlocks[block.key] = { ...(nextBlocks[block.key] ?? {}), order: orderIndex };
-    });
-    persist({ ...current, blocks: nextBlocks });
+    writeOrder(ordered);
+  };
+
+  const dropBlock = (targetKey: string) => {
+    if (!draggedBlock || draggedBlock === targetKey) return;
+    const ordered = [...blocks];
+    const from = ordered.findIndex((block) => block.key === draggedBlock);
+    const to = ordered.findIndex((block) => block.key === targetKey);
+    if (from < 0 || to < 0) return;
+    const [item] = ordered.splice(from, 1);
+    ordered.splice(to, 0, item);
+    writeOrder(ordered);
+  };
+
+  const moveDraggedBlockByPointer = (event: ReactPointerEvent<HTMLElement>) => {
+    if (!draggedBlock) return;
+    const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>("[data-universal-page-sort-key]");
+    const targetKey = target?.dataset.universalPageSortKey;
+    if (targetKey && targetKey !== draggedBlock) dropBlock(targetKey);
   };
 
   const resetBlock = (key: string) => {
@@ -313,7 +347,7 @@ export function UniversalAdminPageEditor() {
 
             <div className="space-y-2 px-4 py-4">
               {blocks.length ? blocks.map((block, index) => (
-                <section key={block.key} className="rounded-2xl bg-surface p-3 ring-1 ring-border/80">
+                <section key={block.key} data-universal-page-sort-key={block.key} className={`rounded-2xl bg-surface p-3 ring-1 ring-border/80 ${draggedBlock === block.key ? "opacity-60" : ""}`}>
                   <div className="flex items-center gap-2">
                     <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-tint text-[10px] font-bold text-muted-foreground">{index + 1}</span>
                     <input
@@ -333,17 +367,18 @@ export function UniversalAdminPageEditor() {
                   <div className="mt-2 flex items-center gap-1.5">
                     <button type="button" disabled={index === 0} onClick={() => move(block.key, -1)} className="rounded-full bg-tint px-3 py-1.5 text-[10px] font-semibold ring-1 ring-border disabled:opacity-30">↑</button>
                     <button type="button" disabled={index === blocks.length - 1} onClick={() => move(block.key, 1)} className="rounded-full bg-tint px-3 py-1.5 text-[10px] font-semibold ring-1 ring-border disabled:opacity-30">↓</button>
+                    <button type="button" onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setDraggedBlock(block.key); }} onPointerMove={moveDraggedBlockByPointer} onPointerUp={() => setDraggedBlock(null)} onPointerCancel={() => setDraggedBlock(null)} style={{ touchAction: "none" }} className="inline-flex h-7 items-center gap-1 rounded-full bg-tint px-2.5 text-[9px] font-semibold text-muted-foreground ring-1 ring-border cursor-grab active:cursor-grabbing" aria-label={t("Drag to reorder")}><span className="text-sm">⋮⋮</span>{t("Drag")}</button>
                     <span className="min-w-0 flex-1 truncate text-[8px] text-muted-foreground">{block.key}</span>
-                    <button type="button" onClick={() => resetBlock(block.key)} className="rounded-full bg-tint px-3 py-1.5 text-[9px] font-semibold text-muted-foreground ring-1 ring-border">{t("Reset")}</button>
+                    {Boolean(localPageConfig(pathname).blocks?.[block.key]) ? <button type="button" onClick={() => resetBlock(block.key)} className="rounded-full bg-tint px-3 py-1.5 text-[9px] font-semibold text-muted-foreground ring-1 ring-border">{t("Reset")}</button> : null}
                   </div>
                 </section>
               )) : (
                 <p className="rounded-2xl bg-tint p-4 text-xs text-muted-foreground">{t("No editable page sections were detected on this screen.")}</p>
               )}
 
-              <button type="button" onClick={resetPage} className="w-full rounded-2xl bg-tint px-4 py-2.5 text-xs font-semibold text-muted-foreground ring-1 ring-border">
+              {Boolean(readExtendedConfig().universalPages?.[pathname]) ? <button type="button" onClick={resetPage} className="w-full rounded-2xl bg-tint px-4 py-2.5 text-xs font-semibold text-muted-foreground ring-1 ring-border">
                 {t("Reset this page")}
-              </button>
+              </button> : null}
             </div>
           </aside>
         </div>

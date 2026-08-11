@@ -752,6 +752,7 @@ function PatternTabs({
             type="button"
             role="tab"
             aria-selected={selected}
+            data-bixbo-pattern-tab={tab.id}
             onClick={() => onChange(tab.id)}
             className={`min-w-0 rounded-[10px] px-2 py-1.5 text-[11px] font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
               selected

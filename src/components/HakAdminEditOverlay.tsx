@@ -9,6 +9,7 @@ import { GLOBAL_ADMIN_CONFIG_CHANGED } from "@/lib/globalAdminConfig";
 import { isAdminOwnerAccount } from "@/lib/deviceAdmin";
 import { EMPTY, useBixbo } from "@/lib/storage";
 import { ADMIN_MODE_CHANGED, isGlobalAdminModeActive } from "@/components/GlobalAdminModeController";
+import { ADMIN_CUSTOMIZE_REQUESTED } from "@/lib/adminCustomizeEvents";
 
 const STORAGE_KEY = "bixbo-hak-admin-layout-v1";
 
@@ -151,6 +152,14 @@ export function HakAdminEditOverlay() {
     window.addEventListener(ADMIN_MODE_CHANGED, syncAdminMode);
     return () => window.removeEventListener(ADMIN_MODE_CHANGED, syncAdminMode);
   }, []);
+
+  useEffect(() => {
+    const openHakEditor = () => {
+      if (adminMode && hakOpen) setEditorOpen(true);
+    };
+    window.addEventListener(ADMIN_CUSTOMIZE_REQUESTED, openHakEditor);
+    return () => window.removeEventListener(ADMIN_CUSTOMIZE_REQUESTED, openHakEditor);
+  }, [adminMode, hakOpen]);
 
   useEffect(() => {
     if (!adminMode) setEditorOpen(false);
@@ -396,6 +405,7 @@ export function HakAdminEditOverlay() {
                 const override = config[definition.id] ?? {};
                 const label = override.label ?? definition.defaultLabel;
                 const hidden = override.hidden === true;
+                const hasLocalOverride = Boolean(getDeviceAdminConfig().hak?.items?.[definition.id]);
                 return (
                   <section key={definition.id} className="rounded-2xl bg-surface p-3 ring-1 ring-border/80">
                     <div className="flex items-center gap-2">
@@ -414,7 +424,7 @@ export function HakAdminEditOverlay() {
                     </div>
                     <div className="mt-2 flex items-center justify-between gap-2">
                       <span className="text-[9px] text-muted-foreground">{definition.id}</span>
-                      <button type="button" onClick={() => reset(definition.id)} className="text-[9px] font-semibold text-primary">{t("Reset")}</button>
+                      {hasLocalOverride ? <button type="button" onClick={() => reset(definition.id)} className="text-[9px] font-semibold text-primary">{t("Reset")}</button> : null}
                     </div>
                   </section>
                 );
