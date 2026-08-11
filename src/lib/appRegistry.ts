@@ -101,6 +101,8 @@ export interface RegistryFeatureOverride {
   cycleFieldIds?: string[];
   /** Supplementary numeric/scale field IDs explicitly exposed to Patterns → Treatment. */
   treatmentFieldIds?: string[];
+  /** Supplementary Yes/No field IDs explicitly exposed to Patterns → Triggers/Correlations. */
+  correlationFieldIds?: string[];
 }
 
 export interface AdminConfig {
@@ -255,6 +257,17 @@ export function registryAdminTreatmentFieldsForFeature(
   const selected = new Set(feature?.treatmentFieldIds ?? []);
   return [...(feature?.customFields ?? [])]
     .filter((field) => field.enabled !== false && (field.kind === "number" || field.kind === "scale") && selected.has(field.id))
+    .sort((a, b) => a.order - b.order);
+}
+
+export function registryAdminCorrelationFieldsForFeature(
+  data: Pick<BixboData, "settings">,
+  featureId: RegistryFeatureId,
+): RegistryFieldDefinition[] {
+  const feature = activeAdminConfig(data)?.features?.[featureId];
+  const selected = new Set(feature?.correlationFieldIds ?? []);
+  return [...(feature?.customFields ?? [])]
+    .filter((field) => field.enabled !== false && field.kind === "toggle" && selected.has(field.id))
     .sort((a, b) => a.order - b.order);
 }
 

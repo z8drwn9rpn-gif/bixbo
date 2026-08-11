@@ -24,7 +24,7 @@ import {
 import { AppShell } from "@/components/AppShell";
 import { CHART_COLORS, CHART_TINTS } from "@/components/ui/chart";
 import { useI18n } from "@/hooks/useI18n";
-import { BIXBO_REGISTRY, getRegistryFeature, registryAdminCycleFieldsForFeature, registryAdminMonthlyFieldsForFeature, registryAdminTreatmentFieldsForFeature } from "@/lib/appRegistry";
+import { BIXBO_REGISTRY, getRegistryFeature, registryAdminCorrelationFieldsForFeature, registryAdminCycleFieldsForFeature, registryAdminMonthlyFieldsForFeature, registryAdminTreatmentFieldsForFeature } from "@/lib/appRegistry";
 import { layoutOrder } from "@/lib/layoutRegistry";
 import {
   EMPTY,
@@ -1693,6 +1693,15 @@ export function PatternsContent() {
   /* Trigger comparison                                                       */
   /* ------------------------------------------------------------------------ */
 
+  const customCorrelationOptions: SelectOption[] = BIXBO_REGISTRY.flatMap((featureBase) => {
+    const feature = getRegistryFeature(view, featureBase.id);
+    return registryAdminCorrelationFieldsForFeature(view, featureBase.id).map((field) => ({
+      id: `admin-toggle:${featureBase.id}:${field.id}`,
+      label: `${feature.label} · ${field.label}`,
+    }));
+  });
+  const customCorrelationOptionKey = customCorrelationOptions.map((option) => option.id).join("|");
+
   const triggerOptions: SelectOption[] = [
     {
       id: "highCaffeine",
@@ -1762,6 +1771,7 @@ export function PatternsContent() {
       id: `food:${food}`,
       label: `Ate "${food}"`,
     })),
+    ...customCorrelationOptions,
   ].filter((option) => {
     if (!cycleTrackingHidden) return true;
     return option.id !== "period" && option.id !== "heavyPeriod";
@@ -1820,6 +1830,7 @@ export function PatternsContent() {
       id: "pcosSymptoms",
       label: "PCOS symptoms",
     },
+    ...customCorrelationOptions,
   ];
 
   const [selectedTrigger, setSelectedTrigger] = useState(triggerOptions[0]?.id ?? "");
@@ -1830,13 +1841,13 @@ export function PatternsContent() {
     if (!triggerOptions.some((option) => option.id === selectedTrigger)) {
       setSelectedTrigger(triggerOptions[0]?.id ?? "");
     }
-  }, [cycleTrackingHidden, selectedTrigger, view.custom.foodQuickAdd]);
+  }, [cycleTrackingHidden, customCorrelationOptionKey, selectedTrigger, view.custom.foodQuickAdd]);
 
   useEffect(() => {
     if (!outcomeOptions.some((option) => option.id === selectedOutcome)) {
       setSelectedOutcome(outcomeOptions[0]?.id ?? "");
     }
-  }, [selectedOutcome]);
+  }, [customCorrelationOptionKey, selectedOutcome]);
 
   const hasScheduledMedicationMissed = (day: string): boolean => {
     const scheduledMeds = view.meds.filter((med) => !med.asNeeded);
@@ -1846,8 +1857,16 @@ export function PatternsContent() {
     return scheduledMeds.some((med) => med.times.some((time) => !view.medLog[day]?.[`${med.id}@${time}`]));
   };
 
+  const hasAdminToggle = (log: DayLog, id: string): boolean => {
+    const [, rawFeatureId, fieldId] = id.split(":");
+    const featureId = rawFeatureId as keyof NonNullable<DayLog["adminFields"]>;
+    return (log.adminFields?.[featureId] ?? []).some((entry) => entry.values[fieldId] === true);
+  };
+
   const hasTrigger = (day: string, log: DayLog | undefined, trigger: string): boolean => {
     if (!log) return false;
+
+    if (trigger.startsWith("admin-toggle:")) return hasAdminToggle(log, trigger);
 
     if (trigger === "highCaffeine") {
       return (log.food ?? []).some((food) => (food.caffeineMg ?? 0) >= 200);
@@ -1928,6 +1947,8 @@ export function PatternsContent() {
 
   const hasOutcome = (log: DayLog | undefined, outcome: string): boolean => {
     if (!log) return false;
+
+    if (outcome.startsWith("admin-toggle:")) return hasAdminToggle(log, outcome);
 
     if (outcome === "tetany") {
       return (log.tetany?.length ?? 0) > 0;
