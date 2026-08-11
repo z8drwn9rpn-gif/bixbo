@@ -22,6 +22,7 @@ import { AdminEditPinGate } from "../components/AdminEditPinGate";
 import { HakAdminEditOverlay } from "../components/HakAdminEditOverlay";
 import { GlobalAdminModeController } from "../components/GlobalAdminModeController";
 import { UniversalAdminPageEditor } from "../components/UniversalAdminPageEditor";
+import { NavigationAdminEditor } from "../components/NavigationAdminEditor";
 import { Toaster } from "../components/ui/sonner";
 import { useI18n } from "@/hooks/useI18n";
 import { useGlobalAdminConfigSync } from "@/lib/globalAdminConfig";
@@ -165,6 +166,7 @@ function RootComponent() {
       <AdminEditPinGate />
       <GlobalAdminModeController />
       <UniversalAdminPageEditor />
+      <NavigationAdminEditor />
       <NotificationPrompt />
       <Toaster />
     </QueryClientProvider>

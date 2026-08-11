@@ -101,6 +101,8 @@ export interface AdminConfig {
   customLogs?: CustomLogDefinition[];
   /** Per-page whole-section ordering. IDs are stable layout section IDs. */
   layoutOrder?: Record<string, string[]>;
+  /** Admin overrides for stable navigation item IDs. BIXBO branding is not a navigation item. */
+  navigation?: { items?: Record<string, { label?: string; hidden?: boolean; order?: number }> };
   /** Reserved for Google-account ownership once app authentication is enabled. */
   ownerEmail?: string;
 }

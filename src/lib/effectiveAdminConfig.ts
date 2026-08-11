@@ -54,6 +54,14 @@ export function mergeAdminConfigs(globalConfig: AdminConfig = {}, localConfig: A
       ...(globalConfig.layoutOrder ?? {}),
       ...(localConfig.layoutOrder ?? {}),
     },
+    navigation: globalConfig.navigation || localConfig.navigation ? {
+      ...(globalConfig.navigation ?? {}),
+      ...(localConfig.navigation ?? {}),
+      items: {
+        ...(globalConfig.navigation?.items ?? {}),
+        ...(localConfig.navigation?.items ?? {}),
+      },
+    } : undefined,
   };
 }
 
