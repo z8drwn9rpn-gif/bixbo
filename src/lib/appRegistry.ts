@@ -130,7 +130,10 @@ export interface AdminConfig {
   /** Route-scoped admin-created content blocks. These never participate in health calculations. */
   pageBlocks?: Record<string, AdminPageBlock[]>;
   /** HAK overlay labels/layout. Stable item IDs; HAK calculations never depend on these values. */
-  hak?: { items?: Record<string, { label?: string; hidden?: boolean; order?: number }> };
+  hak?: {
+    items?: Record<string, { label?: string; hidden?: boolean; order?: number }>;
+    blocks?: Array<AdminPageBlock & { placement?: "top" | "bottom" }>;
+  };
   /** Reserved for Google-account ownership once app authentication is enabled. */
   ownerEmail?: string;
 }

@@ -61,6 +61,7 @@ function mergeHak(globalConfig: AdminConfig, localConfig: AdminConfig): AdminCon
       ...(globalConfig.hak?.items ?? {}),
       ...(localConfig.hak?.items ?? {}),
     },
+    blocks: localConfig.hak?.blocks ?? globalConfig.hak?.blocks,
   };
 }
 
