@@ -108,8 +108,8 @@ export function BottomNav() {
                 >
                   <NavArtwork
                     id={item.id}
-                    size={72}
-                    className="-mb-1 h-[72px] w-[72px] shrink-0 object-contain drop-shadow-[0_7px_8px_rgba(52,67,30,0.28)] landscape:h-[62px] landscape:w-[62px]"
+                    size={68}
+                    className="-mb-1 h-[68px] w-[68px] shrink-0 object-contain drop-shadow-[0_7px_8px_rgba(52,67,30,0.28)] landscape:h-[58px] landscape:w-[58px]"
                   />
                   <span className="max-w-full truncate text-center leading-none">{t(label)}</span>
                 </button>

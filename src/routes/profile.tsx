@@ -512,7 +512,11 @@ function HealthHub({
           <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
             {t("Health Hub")}
           </p>
-          <section className="overflow-hidden rounded-3xl bg-surface shadow-sm ring-1 ring-border/80">
+          <p className="-mb-3 px-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          {t("Health Hub")}
+        </p>
+
+        <section className="overflow-hidden rounded-3xl bg-surface shadow-sm ring-1 ring-border/80">
           <HubRow
             icon={<StethoscopeIcon size={23} />}
             title="Health Summary"
