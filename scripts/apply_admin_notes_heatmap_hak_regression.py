@@ -118,7 +118,6 @@ old = '''          <button\n            type="button"\n            onClick={requ
 new = '''          <div className="flex items-center gap-1">\n            <button type="button" onClick={requestAdminCustomizeCurrentPage} className="rounded-full bg-background/15 px-2 py-1 text-[9px] font-bold">{t("Page")}</button>\n            <button type="button" onClick={() => openAdminTool("text")} className="rounded-full bg-background/15 px-2 py-1 text-[9px] font-bold">Aa</button>\n            <button type="button" onClick={() => openAdminTool("sections")} className="rounded-full bg-background/15 px-2 py-1 text-[9px] font-bold">＋</button>\n            <button type="button" onClick={() => openAdminTool("navigation")} className="rounded-full bg-background/15 px-2 py-1 text-[9px] font-bold">☰</button>\n          </div>'''
 assert old in s
 s = s.replace(old, new, 1)
-# Make the toolbar fit on iPhone without covering half the screen horizontally.
 s = s.replace(
     'className="fixed left-1/2 top-[max(.6rem,env(safe-area-inset-top))] z-[10020] flex -translate-x-1/2 items-center gap-2 rounded-full bg-foreground px-3 py-2 text-background shadow-xl ring-1 ring-background/20"',
     'className="fixed left-1/2 top-[max(.55rem,env(safe-area-inset-top))] z-[10020] flex max-w-[calc(100vw-1rem)] -translate-x-1/2 items-center gap-1.5 rounded-full bg-foreground px-2.5 py-2 text-background shadow-xl ring-1 ring-background/20"',
@@ -127,3 +126,4 @@ s = s.replace(
 p.write_text(s)
 
 print('admin/notes/heatmap/HAK regression patch applied')
+# Gate retrigger: regression test now checks single touch priming + automatic editor-ready rerender.
