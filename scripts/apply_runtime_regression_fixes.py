@@ -31,13 +31,12 @@ write(path, text)
 path = 'src/routes/notes-editor.tsx'
 text = read(path)
 old = '''          <div\n            ref={editorRef}\n            contentEditable\n            suppressContentEditableWarning\n            onInput={onInput}\n            onBlur={onInput}\n            className="min-h-[40dvh] text-base leading-relaxed whitespace-pre-wrap outline-none empty:before:pointer-events-none empty:before:text-muted-foreground empty:before:content-[attr(data-placeholder)]"\n            data-placeholder={t("Start writing…")}\n          />'''
-new = '''          <div\n            ref={editorRef}\n            contentEditable\n            suppressContentEditableWarning\n            role="textbox"\n            aria-multiline="true"\n            tabIndex={0}\n            inputMode="text"\n            onPointerDown={(event) => {\n              // iOS requires focus to happen synchronously inside the user's gesture\n              // for the software keyboard to open reliably in installed/PWA mode.\n              event.stopPropagation();\n              editorRef.current?.focus();\n            }}\n            onClick={(event) => {\n              event.stopPropagation();\n              editorRef.current?.focus();\n            }}\n            onInput={onInput}\n            onBlur={onInput}\n            style={{ WebkitUserSelect: "text", userSelect: "text", touchAction: "manipulation" }}\n            className="min-h-[40dvh] cursor-text text-base leading-relaxed whitespace-pre-wrap outline-none empty:before:pointer-events-none empty:before:text-muted-foreground empty:before:content-[attr(data-placeholder)]"\n            data-placeholder={t("Start writing…")}\n          />'''
+new = '''          <div\n            ref={editorRef}\n            contentEditable\n            suppressContentEditableWarning\n            role="textbox"\n            aria-multiline="true"\n            tabIndex={0}\n            inputMode="text"\n            onPointerDown={(event) => {\n              event.stopPropagation();\n              editorRef.current?.focus();\n            }}\n            onClick={(event) => {\n              event.stopPropagation();\n              editorRef.current?.focus();\n            }}\n            onInput={onInput}\n            onBlur={onInput}\n            style={{ WebkitUserSelect: "text", userSelect: "text", touchAction: "manipulation" }}\n            className="min-h-[40dvh] cursor-text text-base leading-relaxed whitespace-pre-wrap outline-none empty:before:pointer-events-none empty:before:text-muted-foreground empty:before:content-[attr(data-placeholder)]"\n            data-placeholder={t("Start writing…")}\n          />'''
 assert old in text, 'Notes editor anchor missing'
 text = text.replace(old, new, 1)
 write(path, text)
 
-# 4) Admin Customize: keep explicit events, but add a deterministic fallback that clicks
-# the current page's mounted editor opener if a route listener did not open a panel.
+# 4) Admin Customize: explicit event + deterministic route-editor fallback.
 path = 'src/components/GlobalAdminModeController.tsx'
 text = read(path)
 old = '            onClick={requestAdminCustomizeCurrentPage}'
@@ -46,7 +45,6 @@ assert old in text, 'Global admin Customize anchor missing'
 text = text.replace(old, new, 1)
 write(path, text)
 
-# Mark the real current-page editor opener in every page editor implementation.
 for path in [
     'src/components/AdminEditOverlay.tsx',
     'src/components/CoupleAdminEditOverlay.tsx',
@@ -63,9 +61,9 @@ for path in [
 path = 'src/components/HakAdminEditOverlay.tsx'
 text = read(path)
 if 'data-bixbo-admin-page-opener' not in text:
-    anchor = 'data-bixbo-admin-open="hak"'
+    anchor = '          onClick={() => setEditorOpen((value) => !value)}'
     assert anchor in text, 'HAK admin opener anchor missing'
-    text = text.replace(anchor, anchor + '\n          data-bixbo-admin-page-opener', 1)
+    text = text.replace(anchor, '          data-bixbo-admin-page-opener\n' + anchor, 1)
     write(path, text)
 
 # Source-level regression tests for the four reported failures.
