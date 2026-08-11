@@ -16,26 +16,27 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
           p=Path('src/routes/profile.tsx')
           s=p.read_text(encoding='utf-8')
-          marker='''            Export daily health CSV
-          </button>'''
-          addition='''
+          export_pos=s.find('if (healthView === "export")')
+          if export_pos < 0:
+              raise SystemExit('Export section not found')
+          head=s[:export_pos]
+          tail=s[export_pos:]
+          if '{t("PDF Reports")}' not in tail[:3000]:
+              addition='''
           <Link
             to="/report"
             className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-primary/10 px-4 text-sm font-semibold text-primary ring-1 ring-primary/20"
           >
             {t("PDF Reports")}
           </Link>'''
-          export_pos=s.find('if (healthView === "export")')
-          if export_pos < 0:
-              raise SystemExit('Export section not found')
-          tail=s[export_pos:]
-          if '>{t("PDF Reports")}</Link>' not in tail and '{t("PDF Reports")}' not in tail[:2500]:
-              if marker not in tail:
-                  raise SystemExit('CSV marker not found in Export section')
-              tail=tail.replace(marker,marker+addition,1)
-              s=s[:export_pos]+tail
+              pattern=r'(Export daily health CSV\s*</button>)'
+              tail2,count=re.subn(pattern,lambda m:m.group(1)+addition,tail,count=1)
+              if count != 1:
+                  raise SystemExit('CSV button text not found in Export section')
+              s=head+tail2
               p.write_text(s,encoding='utf-8')
           PY
       - run: bun run build
