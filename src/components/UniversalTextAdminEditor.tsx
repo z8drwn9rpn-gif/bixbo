@@ -124,6 +124,20 @@ export function UniversalTextAdminEditor() {
   }, []);
 
   useEffect(() => {
+    let refreshQueued = false;
+    const refreshObserver = new MutationObserver(() => {
+      if (refreshQueued) return;
+      refreshQueued = true;
+      window.requestAnimationFrame(() => {
+        refreshQueued = false;
+        setRevision((value) => value + 1);
+      });
+    });
+    refreshObserver.observe(document.body, { childList: true, subtree: true });
+    return () => refreshObserver.disconnect();
+  }, [pathname]);
+
+  useEffect(() => {
     let queued = false;
     const apply = () => {
       queued = false;
@@ -142,7 +156,11 @@ export function UniversalTextAdminEditor() {
 
   useEffect(() => {
     setOpen(false);
-  }, [pathname, adminMode]);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!adminMode) setOpen(false);
+  }, [adminMode]);
 
   const items = useMemo(() => currentTextItems(pathname), [pathname, revision, open]);
 
@@ -173,7 +191,7 @@ export function UniversalTextAdminEditor() {
   return (
     <>
       <div data-bixbo-admin-ui className="fixed bottom-[calc(env(safe-area-inset-bottom)+9rem)] left-4 z-[93] lg:bottom-[4.5rem] lg:left-[16rem]">
-        <button type="button" onClick={() => setOpen((value) => !value)} className="rounded-full bg-surface px-4 py-2 text-xs font-bold text-foreground shadow-lg ring-1 ring-border">
+        <button type="button" data-bixbo-admin-open="text" onClick={() => setOpen((value) => !value)} className="rounded-full bg-surface px-4 py-2 text-xs font-bold text-foreground shadow-lg ring-1 ring-border">
           {open ? t("Done") : `Aa ${t("Text")}`}
         </button>
       </div>

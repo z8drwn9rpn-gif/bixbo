@@ -62,6 +62,11 @@ export function GlobalAdminModeController() {
 
   const owner = typeof window !== "undefined" && isAdminOwnerAccount();
 
+  const openAdminTool = (tool: "text" | "sections" | "navigation") => {
+    const button = document.querySelector<HTMLButtonElement>(`[data-bixbo-admin-open="${tool}"]`);
+    button?.click();
+  };
+
   useEffect(() => {
     if (!active || !owner || typeof window === "undefined") return;
     const frame = window.requestAnimationFrame(() => requestAdminCustomizeCurrentPage());
@@ -76,21 +81,23 @@ export function GlobalAdminModeController() {
         html:not([data-bixbo-admin-mode="1"]) [data-bixbo-hak-admin-ui] {
           display: none !important;
         }
+        html[data-bixbo-admin-mode="1"] [data-bixbo-admin-open] {
+          display: none !important;
+        }
       `}</style>
 
       {owner && active ? (
         <div
           data-bixbo-admin-mode-toolbar
-          className="fixed left-1/2 top-[max(.6rem,env(safe-area-inset-top))] z-[10020] flex -translate-x-1/2 items-center gap-2 rounded-full bg-foreground px-3 py-2 text-background shadow-xl ring-1 ring-background/20"
+          className="fixed left-1/2 top-[max(.55rem,env(safe-area-inset-top))] z-[10020] flex max-w-[calc(100vw-1rem)] -translate-x-1/2 items-center gap-1.5 rounded-full bg-foreground px-2.5 py-2 text-background shadow-xl ring-1 ring-background/20"
         >
           <span className="whitespace-nowrap text-[10px] font-black uppercase tracking-[0.12em]">✦ {t("Admin mode")}</span>
-          <button
-            type="button"
-            onClick={requestAdminCustomizeCurrentPage}
-            className="rounded-full bg-background/15 px-2.5 py-1 text-[9px] font-bold"
-          >
-            {t("Customize")}
-          </button>
+          <div className="flex items-center gap-1">
+            <button type="button" onClick={requestAdminCustomizeCurrentPage} className="rounded-full bg-background/15 px-2 py-1 text-[9px] font-bold">{t("Page")}</button>
+            <button type="button" onClick={() => openAdminTool("text")} className="rounded-full bg-background/15 px-2 py-1 text-[9px] font-bold">Aa</button>
+            <button type="button" onClick={() => openAdminTool("sections")} className="rounded-full bg-background/15 px-2 py-1 text-[9px] font-bold">＋</button>
+            <button type="button" onClick={() => openAdminTool("navigation")} className="rounded-full bg-background/15 px-2 py-1 text-[9px] font-bold">☰</button>
+          </div>
           <button
             type="button"
             onClick={() => {

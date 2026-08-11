@@ -41,6 +41,13 @@ export function AdminCustomPageBlocks() {
   useEffect(() => {
     setHost(pageHost());
     setOpen(false);
+    const observer = new MutationObserver(() => {
+      const nextHost = pageHost();
+      setHost((current) => current === nextHost ? current : nextHost);
+      setRevision((value) => value + 1);
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
   }, [pathname]);
 
   useEffect(() => {
@@ -149,7 +156,7 @@ export function AdminCustomPageBlocks() {
       {adminMode && isAdminOwnerAccount() ? (
         <>
           <div data-bixbo-admin-ui className="fixed bottom-[calc(env(safe-area-inset-bottom)+12.5rem)] right-4 z-[94] lg:bottom-[8rem] lg:right-6">
-            <button type="button" onClick={() => setOpen((value) => !value)} className="rounded-full bg-surface px-4 py-2 text-xs font-bold text-foreground shadow-lg ring-1 ring-border">
+            <button type="button" data-bixbo-admin-open="sections" onClick={() => setOpen((value) => !value)} className="rounded-full bg-surface px-4 py-2 text-xs font-bold text-foreground shadow-lg ring-1 ring-border">
               {open ? t("Done") : `＋ ${t("Sections")}`}
             </button>
           </div>

@@ -162,8 +162,12 @@ export function HakAdminEditOverlay() {
   }, [adminMode, hakOpen]);
 
   useEffect(() => {
-    if (!adminMode) setEditorOpen(false);
-  }, [adminMode]);
+    if (!adminMode) {
+      setEditorOpen(false);
+      return;
+    }
+    if (hakOpen) setEditorOpen(true);
+  }, [adminMode, hakOpen]);
 
   useEffect(() => {
     const refresh = () => {
