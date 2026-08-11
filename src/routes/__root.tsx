@@ -24,6 +24,7 @@ import { GlobalAdminModeController } from "../components/GlobalAdminModeControll
 import { UniversalAdminPageEditor } from "../components/UniversalAdminPageEditor";
 import { NavigationAdminEditor } from "../components/NavigationAdminEditor";
 import { UniversalTextAdminEditor } from "../components/UniversalTextAdminEditor";
+import { AdminCustomPageBlocks } from "../components/AdminCustomPageBlocks";
 import { Toaster } from "../components/ui/sonner";
 import { useI18n } from "@/hooks/useI18n";
 import { useGlobalAdminConfigSync } from "@/lib/globalAdminConfig";
@@ -169,6 +170,7 @@ function RootComponent() {
       <UniversalAdminPageEditor />
       <NavigationAdminEditor />
       <UniversalTextAdminEditor />
+      <AdminCustomPageBlocks />
       <NotificationPrompt />
       <Toaster />
     </QueryClientProvider>
