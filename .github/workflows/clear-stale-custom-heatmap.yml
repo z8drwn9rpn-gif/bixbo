@@ -1,0 +1,29 @@
+name: Clear stale custom heatmap field
+
+on:
+  push:
+    branches:
+      - agent/clear-stale-custom-heatmap-field
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/clear-stale-custom-heatmap-field
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - run: python .github/scripts/clear_stale_custom_heatmap.py
+      - run: rm .github/scripts/clear_stale_custom_heatmap.py .github/workflows/clear-stale-custom-heatmap.yml
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/components/CustomLogBuilder.tsx .github
+          git commit -m 'clear stale custom heatmap field references'
+          git push origin HEAD:agent/clear-stale-custom-heatmap-field
