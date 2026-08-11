@@ -871,6 +871,20 @@ function Field({ label, children, schemaFieldId }: { label: string; children: Re
     </div>
   );
 }
+function RegistryFieldBlock({ fieldId, children }: { fieldId: string; children: ReactNode }) {
+  const schema = useLogSchema();
+  const configuredField = schema ? getRegistryField(schema.data, schema.featureId, fieldId) : undefined;
+  return (
+    <div
+      className={configuredField?.enabled === false ? "hidden" : "block"}
+      style={configuredField ? { order: configuredField.order } : undefined}
+      data-bixbo-log-field-id={fieldId}
+    >
+      {children}
+    </div>
+  );
+}
+
 function Chip({
   active,
   onClick,
@@ -2742,9 +2756,9 @@ function PeriodForm({
     { v: "very-heavy", label: "Very heavy", color: "var(--period-veryheavy)" },
   ];
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       <SaveBar onCancel={onDone} onSave={save} />
-      <Field label="Flow">
+      <Field label="Flow" schemaFieldId="flow">
         <div className="mt-2 grid grid-cols-5 gap-1.5">
           {LEVELS.map((L) => (
             <button
@@ -2758,7 +2772,7 @@ function PeriodForm({
           ))}
         </div>
       </Field>
-      <Field label={`${t("Cramp pain")} ${cramps ?? "—"} / 10`}>
+      <Field label={`${t("Cramp pain")} ${cramps ?? "—"} / 10`} schemaFieldId="cramps">
         <div className="mt-2 flex flex-nowrap items-center justify-center gap-0.5 px-0">
           {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
             <button
@@ -2784,7 +2798,7 @@ function PeriodForm({
           title={t("Pain scale (Mankosky)")}
         />
       </Field>
-      <Field label="Discharge (optional)">
+      <Field label="Discharge (optional)" schemaFieldId="discharge">
         <div className="mt-2 flex flex-wrap gap-2">
           {DISCHARGE_OPTS.map((d) => (
             <Chip
@@ -2798,13 +2812,13 @@ function PeriodForm({
           ))}
         </div>
       </Field>
-      <Field label="Discharge note (optional)">
+      <Field label="Discharge note (optional)" schemaFieldId="dischargeNote">
         <Input value={dNote} onChange={(e) => setDNote(e.target.value)} />
       </Field>
-      <Field label="Day note (optional)">
+      <Field label="Day note (optional)" schemaFieldId="note">
         <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
-      <Field label="Birth control since (optional)">
+      <Field label="Birth control since (optional)" schemaFieldId="birthControlSince">
         <Input
           type="date"
           value={data.settings.birthControlSince ?? ""}
@@ -2818,7 +2832,7 @@ function PeriodForm({
           </p>
         )}
       </Field>
-      <Field label="Pregnant?">
+      <Field label="Pregnant?" schemaFieldId="pregnant">
         <div className="mt-1 flex gap-2">
           <Chip
             active={!data.pregnancy?.active}
@@ -4164,9 +4178,9 @@ function WorkoutForm({
     onDone();
   };
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       <SaveBar onCancel={onDone} onSave={save} />
-      <Field label="Type">
+      <Field label="Type" schemaFieldId="kind">
         <CustomChipList
           base={WORKOUT_KINDS_DEFAULT}
           custom={data.custom.workoutKinds}
@@ -4176,11 +4190,12 @@ function WorkoutForm({
           onToggle={(v) => setKind(v)}
         />
       </Field>
-      <Field label="Duration (minutes)">
+      <Field label="Duration (minutes)" schemaFieldId="minutes">
         <Input type="number" min={1} value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} />
       </Field>
 
       {workoutHasDistance(kind) && (
+        <RegistryFieldBlock fieldId="distance">
         <div className="grid grid-cols-2 gap-2">
           <Field label="Distance (km)">
             <Input type="number" step="0.1" min={0} value={distance} onChange={(e) => setDistance(e.target.value)} />
@@ -4191,10 +4206,11 @@ function WorkoutForm({
             </Field>
           )}
         </div>
+        </RegistryFieldBlock>
       )}
 
       {workoutIsStrength(kind) && (
-        <Field label="Exercises">
+        <Field label="Exercises" schemaFieldId="exercises">
           <div className="space-y-2">
             {exercises.map((ex, i) => (
               <div key={ex.id} className="rounded-2xl border border-border p-2 space-y-2">
@@ -4270,7 +4286,7 @@ function WorkoutForm({
         </Field>
       )}
 
-      <Field label={`${t("Intensity (RPE)")} ${rpe ?? "—"} / 10`}>
+      <Field label={`${t("Intensity (RPE)")} ${rpe ?? "—"} / 10`} schemaFieldId="rpe">
         <div className="mt-2 flex flex-nowrap items-center justify-center gap-0.5 px-0">
           {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => {
             const active = rpe === n;
@@ -4292,7 +4308,7 @@ function WorkoutForm({
         </div>
       </Field>
 
-      <Field label="Magnesium before workout?">
+      <Field label="Magnesium before workout?" schemaFieldId="magnesiumBefore">
         <div className="mt-1 flex gap-2">
           <Chip active={!magnesium} onClick={() => setMagnesium(false)}>
             No
@@ -4303,7 +4319,7 @@ function WorkoutForm({
         </div>
       </Field>
 
-      <Field label="Triggered a symptom? (optional)">
+      <Field label="Triggered a symptom? (optional)" schemaFieldId="triggeredSymptom">
         {symptomOptions.length === 0 ? (
           <p className="text-[11px] text-muted-foreground">{t("No tetany or pain entries logged for this day yet.")}</p>
         ) : (
@@ -4326,13 +4342,13 @@ function WorkoutForm({
         )}
       </Field>
 
-      <Field label="Weight after (kg, optional)">
+      <Field label="Weight after (kg, optional)" schemaFieldId="weightKg">
         <Input type="number" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} />
         <p className="mt-1 text-[11px] text-muted-foreground">
           {t("Saved with this workout only — it doesn't change your daily weight.")}
         </p>
       </Field>
-      <Field label="How you feel">
+      <Field label="How you feel" schemaFieldId="feel">
         <div className="mt-2 flex flex-wrap gap-2">
           {["Great", "Good", "Ok", "Tired", "Sore"].map((f) => (
             <Chip key={f} active={feeling.includes(f)} onClick={() => setFeeling((a) => toggleIn(a, f))}>
@@ -4341,7 +4357,7 @@ function WorkoutForm({
           ))}
         </div>
       </Field>
-      <Field label="Note (optional)">
+      <Field label="Note (optional)" schemaFieldId="note">
         <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
     </div>
