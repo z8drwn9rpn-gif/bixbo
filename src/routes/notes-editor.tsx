@@ -213,21 +213,11 @@ export function NoteEditor({
   const onInput = () => {
     if (!editorRef.current) return;
 
-    contentRef.current = sanitizeNoteHtml(editorRef.current.innerHTML);
-
-    if (editorRef.current.innerHTML !== contentRef.current) {
-      editorRef.current.innerHTML = contentRef.current;
-    }
-
+    // Keep the live DOM completely native while the user is typing. Rewriting
+    // innerHTML from an input/touch gesture can destroy iOS WebKit's selection
+    // and dismiss the software keyboard. We still sanitize before persistence.
+    contentRef.current = editorRef.current.innerHTML;
     setTick((value) => value + 1);
-  };
-
-  const focusEditorForTyping = () => {
-    const editor = editorRef.current;
-    if (!editor) return;
-    if (document.activeElement !== editor) {
-      editor.focus({ preventScroll: true });
-    }
   };
 
   return (
@@ -360,9 +350,9 @@ export function NoteEditor({
             tabIndex={0}
             inputMode="text"
             spellCheck
-            onPointerDown={focusEditorForTyping}
-            onTouchStart={focusEditorForTyping}
-            onClick={focusEditorForTyping}
+            autoCapitalize="sentences"
+            autoCorrect="on"
+            data-bixbo-note-editor
             onInput={onInput}
             onBlur={onInput}
             className="relative z-10 min-h-[40dvh] touch-manipulation select-text text-base leading-relaxed whitespace-pre-wrap outline-none empty:before:pointer-events-none empty:before:text-muted-foreground empty:before:content-[attr(data-placeholder)]"
