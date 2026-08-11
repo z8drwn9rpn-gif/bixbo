@@ -14,12 +14,12 @@ describe("admin / Couple / Notes regressions", () => {
     expect(read("src/components/UniversalAdminPageEditor.tsx")).toContain('data-bixbo-admin-open="universal"');
   });
 
-  it("keeps Notes explicitly focusable on iOS", () => {
+  it("keeps Notes natively editable on iOS", () => {
     const source = read("src/routes/notes-editor.tsx");
-    expect(source).toContain("focusEditorForTyping");
     expect(source).toContain('role="textbox"');
     expect(source).toContain('inputMode="text"');
-    expect(source).toContain("onTouchStart={focusEditorForTyping}");
+    expect(source).toContain("data-bixbo-note-editor");
+    expect(source).not.toContain("onTouchStart={focusEditorForTyping}");
   });
 
   it("checks for a newer deployed asset bundle", () => {
