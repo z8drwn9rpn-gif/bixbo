@@ -137,23 +137,37 @@ export function CustomLogForm({
   data,
   update,
   onDone,
+  initialEntry,
 }: {
   definition: CustomLogDefinition;
   date: string;
   data: BixboData;
   update: UpdateFn;
   onDone: () => void;
+  initialEntry?: CustomLogEntry;
 }) {
   const { t } = useI18n();
-  const [values, setValues] = useState<Record<string, CustomLogValue>>({});
-  const [note, setNote] = useState("");
+  // Seed the complete saved values object so hidden/legacy fields survive an edit.
+  // Visible fields can overwrite their own values without deleting unrelated history.
+  const [values, setValues] = useState<Record<string, CustomLogValue>>(() => ({ ...(initialEntry?.values ?? {}) }));
+  const [note, setNote] = useState(initialEntry?.note ?? "");
   const fields = useMemo(() => definition.fields.filter((field) => field.enabled !== false).sort((a, b) => a.order - b.order), [definition.fields]);
 
   const save = () => {
-    const entry: CustomLogEntry = { id: uid(), time: nowHHMM(), values, note: note.trim() || undefined };
+    const entry: CustomLogEntry = {
+      id: initialEntry?.id ?? uid(),
+      // Editing must not silently move an old event to the current clock time.
+      time: initialEntry?.time ?? nowHHMM(),
+      values,
+      note: note.trim() || undefined,
+    };
     update((current) => {
       const day = current.dayLogs[date] ?? {};
       const customLogs = day.customLogs ?? {};
+      const existing = customLogs[definition.id] ?? [];
+      const nextEntries = initialEntry
+        ? existing.map((saved) => (saved.id === initialEntry.id ? entry : saved))
+        : [...existing, entry];
       return {
         ...current,
         dayLogs: {
@@ -162,7 +176,7 @@ export function CustomLogForm({
             ...day,
             customLogs: {
               ...customLogs,
-              [definition.id]: [...(customLogs[definition.id] ?? []), entry],
+              [definition.id]: nextEntries,
             },
           },
         },
