@@ -158,6 +158,7 @@ export function AdminEditOverlay() {
   const [draggedSection, setDraggedSection] = useState<string | null>(null);
   const [draggedFeature, setDraggedFeature] = useState<RegistryFeatureId | null>(null);
   const [draggedOption, setDraggedOption] = useState<{ featureId: RegistryFeatureId; fieldId: string; value: string } | null>(null);
+  const [draggedField, setDraggedField] = useState<{ featureId: RegistryFeatureId; fieldId: string } | null>(null);
   const undoStack = useRef<string[]>([]);
 
   useEffect(() => {
@@ -367,6 +368,46 @@ export function AdminEditOverlay() {
     }
   };
 
+  const orderedBuiltinFields = (featureId: RegistryFeatureId) =>
+    [...(BIXBO_LOG_FIELDS[featureId] ?? [])].sort((a, b) =>
+      (getRegistryField(adminView, featureId, a.id)?.order ?? a.order) -
+      (getRegistryField(adminView, featureId, b.id)?.order ?? b.order),
+    );
+
+  const writeBuiltinFieldOrder = (featureId: RegistryFeatureId, ids: string[]) => {
+    const config = getDeviceAdminConfig();
+    const feature = config.features?.[featureId] ?? {};
+    const fields = { ...(feature.fields ?? {}) };
+    ids.forEach((fieldId, index) => {
+      fields[fieldId] = { ...(fields[fieldId] ?? {}), order: (index + 1) * 10 };
+    });
+    persist({
+      ...config,
+      enabled: true,
+      features: { ...(config.features ?? {}), [featureId]: { ...feature, fields } },
+    });
+  };
+
+  const dropBuiltinField = (featureId: RegistryFeatureId, targetId: string) => {
+    if (!draggedField || draggedField.featureId !== featureId || draggedField.fieldId === targetId) return;
+    const ids = orderedBuiltinFields(featureId).map((field) => field.id);
+    const from = ids.indexOf(draggedField.fieldId);
+    const to = ids.indexOf(targetId);
+    if (from < 0 || to < 0) return;
+    const [item] = ids.splice(from, 1);
+    ids.splice(to, 0, item);
+    writeBuiltinFieldOrder(featureId, ids);
+  };
+
+  const moveDraggedFieldByPointer = (event: ReactPointerEvent<HTMLElement>, featureId: RegistryFeatureId) => {
+    if (!draggedField || draggedField.featureId !== featureId) return;
+    const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>("[data-admin-field-sort-id]");
+    const targetId = target?.dataset.adminFieldSortId;
+    if (targetId && target?.dataset.adminFieldFeature === featureId && targetId !== draggedField.fieldId) {
+      dropBuiltinField(featureId, targetId);
+    }
+  };
+
   const writeOrder = (ids: string[]) => {
     if (!page) return;
     const config = getDeviceAdminConfig();
@@ -551,13 +592,16 @@ export function AdminEditOverlay() {
                       <section key={featureId} className="rounded-2xl bg-surface p-3 ring-1 ring-border/80">
                         <p className="text-xs font-bold">{feature.icon} {feature.label}</p>
                         <div className="mt-2 space-y-2">
-                          {(BIXBO_LOG_FIELDS[featureId] ?? []).map((baseField) => {
+                          {orderedBuiltinFields(featureId).map((baseField) => {
                             const field = getRegistryField(adminView, featureId, baseField.id) ?? baseField;
                             const localField = localConfig.features?.[featureId]?.fields?.[baseField.id];
                             const optionValues = orderedFieldOptionValues(featureId, baseField.id, baseField.options ?? []);
                             return (
-                              <div key={baseField.id} className="rounded-xl bg-tint p-2 ring-1 ring-border/70">
+                              <div key={baseField.id} data-admin-field-sort-id={baseField.id} data-admin-field-feature={featureId} className={`rounded-xl bg-tint p-2 ring-1 ring-border/70 ${draggedField?.featureId === featureId && draggedField.fieldId === baseField.id ? "opacity-60" : ""}`}>
                                 <div className="flex items-center gap-2">
+                                  {(featureId === "panic" || featureId === "tetany") ? (
+                                    <button type="button" onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setDraggedField({ featureId, fieldId: baseField.id }); }} onPointerMove={(event) => moveDraggedFieldByPointer(event, featureId)} onPointerUp={() => setDraggedField(null)} onPointerCancel={() => setDraggedField(null)} style={{ touchAction: "none" }} className="inline-flex h-8 shrink-0 items-center gap-1 rounded-lg bg-background px-2 text-[9px] font-semibold text-muted-foreground ring-1 ring-border cursor-grab active:cursor-grabbing" aria-label={t("Drag to reorder")}><span className="text-sm">⋮⋮</span>{t("Drag")}</button>
+                                  ) : null}
                                   <input value={field.label} onChange={(event) => patchField(featureId, baseField.id, { label: event.target.value })} className="h-8 min-w-0 flex-1 rounded-lg bg-background px-2 text-[11px] font-semibold ring-1 ring-border" />
                                   <button type="button" onClick={() => patchField(featureId, baseField.id, { enabled: field.enabled === false })} className="rounded-full bg-background px-2 py-1 text-[9px] ring-1 ring-border">{field.enabled === false ? t("Hidden") : t("Shown")}</button>
                                 </div>

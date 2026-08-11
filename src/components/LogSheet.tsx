@@ -5,7 +5,7 @@ import { Ico, IcoText } from "@/components/icons/BixboIcons";
 import { CustomLogForm } from "@/components/CustomLogForm";
 import { CoreFeatureCustomFieldsForm } from "@/components/CoreFeatureCustomFieldsForm";
 import { POSTPARTUM_SYMPTOMS } from "@/lib/health";
-import { getRegistryFeature, isRegistrySurfaceEnabled, registryCustomFieldsForFeature, registryFieldLabel, registryFieldOptions, registryFieldScale, registryOptionLabel, customLogDefinitions, type RegistryFeatureId } from "@/lib/appRegistry";
+import { getRegistryFeature, getRegistryField, isRegistrySurfaceEnabled, registryCustomFieldsForFeature, registryFieldLabel, registryFieldOptions, registryFieldScale, registryOptionLabel, customLogDefinitions, type RegistryFeatureId } from "@/lib/appRegistry";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -851,17 +851,18 @@ export function LogSheet({
 }
 
 /* ------------------- Primitives ------------------- */
-function Field({ label, children }: { label: string; children: ReactNode }) {
+function Field({ label, children, schemaFieldId }: { label: string; children: ReactNode; schemaFieldId?: string }) {
   const { t } = useI18n();
   const schema = useLogSchema();
   const fieldIdByLabel: Record<string, string> = { "Pain scale": "score", "Where does it hurt?": "parts", "How does it hurt?": "quality", "Other symptoms": "symptoms", "Intensity": "intensity", "Type": "types", "Location": "location", "Triggers": "triggers", "What helped?": "helped", "Bleeding": "flow", "Cramp pain": "cramps", "Discharge (optional)": "discharge", "Duration (minutes)": "minutes", "Intensity (RPE)": "rpe", "How you feel": "feel", "Urinary": "urinary" };
-  const fieldId = fieldIdByLabel[label];
-  const displayLabel = schema && fieldId ? registryFieldLabel(schema.data, schema.featureId, fieldId, label) : label;
+  const fieldId = schemaFieldId ?? fieldIdByLabel[label];
+  const configuredField = schema && fieldId ? getRegistryField(schema.data, schema.featureId, fieldId) : undefined;
+  const displayLabel = configuredField?.label ?? (schema && fieldId ? registryFieldLabel(schema.data, schema.featureId, fieldId, label) : label);
   // Intentionally a <div>, not <label>. Wrapping chip/button groups in <label>
   // caused stray click activations on the first focusable descendant, which
   // manifested as chips getting "auto-selected" in the Pain wizard.
   return (
-    <div className="block">
+    <div className={configuredField?.enabled === false ? "hidden" : "block"} style={configuredField ? { order: configuredField.order } : undefined} data-bixbo-log-field-id={fieldId || undefined}>
       <span className="text-xs font-medium text-muted-foreground">{t(displayLabel)}</span>
       <div className="mt-1">{children}</div>
     </div>
@@ -1222,16 +1223,21 @@ function DurationField({
   setMinutes,
   ongoing,
   setOngoing,
+  schemaFieldId,
 }: {
   minutes: string;
   setMinutes: (s: string) => void;
   ongoing: boolean;
   setOngoing: (b: boolean) => void;
+  schemaFieldId?: string;
 }) {
   const { t } = useI18n();
+  const schema = useLogSchema();
+  const configuredField = schema && schemaFieldId ? getRegistryField(schema.data, schema.featureId, schemaFieldId) : undefined;
+  const displayLabel = configuredField?.label ?? "Duration (min)";
   return (
-    <div className="space-y-1">
-      <span className="text-xs font-medium text-muted-foreground">{t("Duration (min)")}</span>
+    <div className={configuredField?.enabled === false ? "hidden" : "space-y-1"} style={configuredField ? { order: configuredField.order } : undefined} data-bixbo-log-field-id={schemaFieldId || undefined}>
+      <span className="text-xs font-medium text-muted-foreground">{t(displayLabel)}</span>
       <div className="flex items-center gap-2">
         <Input
           type="number"
@@ -2373,13 +2379,13 @@ function PanicForm({
     onDone();
   };
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       <SaveBar onCancel={onDone} onSave={save} />
-      <Field label="Time">
+      <Field label="Time" schemaFieldId="time">
         <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="w-full" />
       </Field>
-      <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} />
-      <Field label={`Intensity ${intensity}/10`}>
+      <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} schemaFieldId="duration" />
+      <Field label={`Intensity ${intensity}/10`} schemaFieldId="intensity">
         <IntensityScale
           value={intensity}
           onChange={setIntensity}
@@ -2388,7 +2394,7 @@ function PanicForm({
           legendTitle="Panic intensity scale" schemaFieldId="intensity"
         />
       </Field>
-      <Field label="Physical symptoms">
+      <Field label="Physical symptoms" schemaFieldId="physical">
         <CustomChipList
           base={PANIC_PHYSICAL}
           custom={data.custom.panicPhysical}
@@ -2413,7 +2419,7 @@ function PanicForm({
           onToggle={(v) => setPhysical((a) => toggleIn(a, v))}
          schemaFieldId="physical"/>
       </Field>
-      <Field label="Cognitive symptoms">
+      <Field label="Cognitive symptoms" schemaFieldId="cognitive">
         <CustomChipList
           base={PANIC_COGNITIVE}
           custom={data.custom.panicCognitive}
@@ -2438,13 +2444,13 @@ function PanicForm({
           onToggle={(v) => setCognitive((a) => toggleIn(a, v))}
          schemaFieldId="cognitive"/>
       </Field>
-      <Field label="Trigger (or 'no obvious trigger')">
+      <Field label="Trigger (or 'no obvious trigger')" schemaFieldId="trigger">
         <Textarea rows={2} value={trigger} onChange={(e) => setTrigger(e.target.value)} />
       </Field>
-      <Field label="Place (optional)">
+      <Field label="Place (optional)" schemaFieldId="place">
         <Input value={place} onChange={(e) => setPlace(e.target.value)} />
       </Field>
-      <Field label="Hyperventilation">
+      <Field label="Hyperventilation" schemaFieldId="hyperventilation">
         <div className="mt-2 flex flex-wrap gap-2">
           {(["no", "before", "during", "unknown"] as const).map((v) => (
             <Chip key={v} active={hyper === v} onClick={() => setHyper(v)}>
@@ -2453,7 +2459,7 @@ function PanicForm({
           ))}
         </div>
       </Field>
-      <Field label="Tetany present?">
+      <Field label="Tetany present?" schemaFieldId="tetanyPresent">
         <div className="mt-2 flex gap-2">
           <Chip active={!tetanyPresent} onClick={() => setTetanyPresent(false)}>
             No
@@ -2463,7 +2469,7 @@ function PanicForm({
           </Chip>
         </div>
       </Field>
-      <Field label="What helped">
+      <Field label="What helped" schemaFieldId="helped">
         <CustomChipList
           base={PANIC_HELPED_DEFAULT}
           custom={data.custom.panicHelped}
@@ -2473,7 +2479,7 @@ function PanicForm({
           onToggle={(v) => setHelped((a) => toggleIn(a, v))}
         />
       </Field>
-      <Field label="Rescue med (what you took)">
+      <Field label="Rescue med (what you took)" schemaFieldId="rescueMed">
         <Input value={rescueMed} onChange={(e) => setRescueMed(e.target.value)} placeholder={t("e.g. Frontin 0.25 mg")} />
         {data.meds.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1.5">
@@ -2491,7 +2497,7 @@ function PanicForm({
           </div>
         )}
       </Field>
-      <Field label="Note (optional)">
+      <Field label="Note (optional)" schemaFieldId="note">
         <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
     </div>
@@ -2566,12 +2572,12 @@ function TetanyForm({
   };
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       <SaveBar onCancel={onDone} onSave={save} />
-      <Field label="Time">
+      <Field label="Time" schemaFieldId="time">
         <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
       </Field>
-      <Field label="Type">
+      <Field label="Type" schemaFieldId="types">
         <CustomChipList
           base={TETANY_TYPES}
           custom={data.custom.tetanyTypes}
@@ -2589,7 +2595,7 @@ function TetanyForm({
           onToggle={(v) => setTypes((a) => toggleIn(a, v))}
         />
       </Field>
-      <Field label="Location">
+      <Field label="Location" schemaFieldId="location">
         <CustomChipList
           base={TETANY_LOCATIONS_DEFAULT}
           custom={data.custom.tetanyLocations}
@@ -2606,7 +2612,7 @@ function TetanyForm({
           onToggle={(v) => setLoc((a) => toggleIn(a, v))}
         />
       </Field>
-      <Field label={`Intensity ${intensity}/5`}>
+      <Field label={`Intensity ${intensity}/5`} schemaFieldId="intensity">
         <IntensityScale
           value={intensity}
           onChange={setIntensity}
@@ -2615,8 +2621,8 @@ function TetanyForm({
           legendTitle="Tetany intensity scale" schemaFieldId="intensity"
         />
       </Field>
-      <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} />
-      <Field label="Triggers">
+      <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} schemaFieldId="duration" />
+      <Field label="Triggers" schemaFieldId="triggers">
         <CustomChipList
           base={TETANY_TRIGGERS}
           custom={data.custom.tetanyTriggers}
@@ -2633,7 +2639,7 @@ function TetanyForm({
           onToggle={(v) => setTriggers((a) => toggleIn(a, v))}
         />
       </Field>
-      <Field label="What helped">
+      <Field label="What helped" schemaFieldId="helped">
         <CustomChipList
           base={TETANY_HELPED_DEFAULT}
           custom={data.custom.tetanyHelped}
@@ -2650,7 +2656,7 @@ function TetanyForm({
           onToggle={(v) => setHelped((a) => toggleIn(a, v))}
         />
       </Field>
-      <Field label="Rescue med (what you took)">
+      <Field label="Rescue med (what you took)" schemaFieldId="rescueMed">
         <Input value={rescueMed} onChange={(e) => setRescueMed(e.target.value)} placeholder={t("e.g. Magnesium 400 mg")} />
         {data.meds.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1.5">
@@ -2668,7 +2674,7 @@ function TetanyForm({
           </div>
         )}
       </Field>
-      <Field label="Note (optional)">
+      <Field label="Note (optional)" schemaFieldId="note">
         <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
     </div>
