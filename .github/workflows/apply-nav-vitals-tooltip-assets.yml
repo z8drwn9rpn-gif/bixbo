@@ -6,6 +6,7 @@ on:
       - agent/nav-image-assets-vital-tooltips
     paths:
       - scripts/apply-nav-vitals-tooltip-assets.py
+      - .github/workflows/apply-nav-vitals-tooltip-assets.yml
 
 permissions:
   contents: write
