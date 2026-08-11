@@ -1414,6 +1414,11 @@ function ProfilePage() {
             onClick={exportJson}
             className="min-h-11 w-full rounded-xl border border-input px-4 text-sm font-semibold"
           ><TrText value="Export JSON" /></button>
+
+<Link
+  to="/report"
+  className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-input bg-primary/10 px-4 text-sm font-semibold text-primary"
+>{t("PDF reports")}</Link>
         </Section>
 
         <Section
