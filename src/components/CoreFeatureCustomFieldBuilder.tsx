@@ -211,7 +211,7 @@ export function CoreFeatureCustomFieldBuilder({ data }: { data: BixboData }) {
 
                       <div className="mt-2 flex items-center justify-between gap-2">
                         <span className="min-w-0 flex-1 truncate text-[8px] text-muted-foreground">ID: {field.id}</span>
-                        {field.kind === "toggle" ? (
+                        {(field.kind === "toggle" || field.kind === "chips") ? (
                           <button type="button" onClick={() => setCorrelationFieldEnabled(feature.id, field.id, !(config.features?.[feature.id]?.correlationFieldIds ?? []).includes(field.id))} className={`rounded-full px-2 py-1 text-[8px] font-semibold ring-1 ${(config.features?.[feature.id]?.correlationFieldIds ?? []).includes(field.id) ? "bg-primary text-primary-foreground ring-primary/30" : "bg-tint text-muted-foreground ring-border"}`}>
                             Correlations {(config.features?.[feature.id]?.correlationFieldIds ?? []).includes(field.id) ? t("On") : t("Off")}
                           </button>

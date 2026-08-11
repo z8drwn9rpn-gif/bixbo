@@ -101,7 +101,7 @@ export interface RegistryFeatureOverride {
   cycleFieldIds?: string[];
   /** Supplementary numeric/scale field IDs explicitly exposed to Patterns → Treatment. */
   treatmentFieldIds?: string[];
-  /** Supplementary Yes/No field IDs explicitly exposed to Patterns → Triggers/Correlations. */
+  /** Supplementary Yes/No or Choices field IDs explicitly exposed to Patterns → Triggers/Correlations. */
   correlationFieldIds?: string[];
 }
 
@@ -267,7 +267,7 @@ export function registryAdminCorrelationFieldsForFeature(
   const feature = activeAdminConfig(data)?.features?.[featureId];
   const selected = new Set(feature?.correlationFieldIds ?? []);
   return [...(feature?.customFields ?? [])]
-    .filter((field) => field.enabled !== false && field.kind === "toggle" && selected.has(field.id))
+    .filter((field) => field.enabled !== false && (field.kind === "toggle" || field.kind === "chips") && selected.has(field.id))
     .sort((a, b) => a.order - b.order);
 }
 
