@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 
 import { useI18n } from "@/hooks/useI18n";
 import { getRegistryFeature } from "@/lib/appRegistry";
+import { getEffectiveAdminConfig } from "@/lib/effectiveAdminConfig";
+import { DEVICE_ADMIN_CONFIG_CHANGED, getDeviceAdminConfig, setDeviceAdminConfig } from "@/lib/deviceAdminConfig";
+import { GLOBAL_ADMIN_CONFIG_CHANGED } from "@/lib/globalAdminConfig";
 import { isAdminOwnerAccount } from "@/lib/deviceAdmin";
 import { EMPTY, useBixbo } from "@/lib/storage";
 import { ADMIN_MODE_CHANGED, isGlobalAdminModeActive } from "@/components/GlobalAdminModeController";
@@ -41,7 +44,7 @@ const BASE_DEFINITIONS: HakDefinition[] = [
   { id: "sex", original: "ŠukŠuk!", defaultLabel: "ŠukŠuk!", kind: "section" },
 ];
 
-function readConfig(): HakConfig {
+function readLegacyConfig(): HakConfig {
   if (typeof window === "undefined") return {};
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
@@ -51,9 +54,19 @@ function readConfig(): HakConfig {
   }
 }
 
+function readConfig(): HakConfig {
+  const hak = getEffectiveAdminConfig().hak;
+  if (hak?.items) return hak.items as HakConfig;
+  return readLegacyConfig();
+}
+
 function writeConfig(config: HakConfig) {
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-  window.dispatchEvent(new CustomEvent("bixbo:hak-admin-change"));
+  const current = getDeviceAdminConfig();
+  setDeviceAdminConfig({
+    ...current,
+    enabled: true,
+    hak: { ...(current.hak ?? {}), items: config },
+  });
 }
 
 function findHakRoot(): HTMLElement | null {
@@ -146,10 +159,12 @@ export function HakAdminEditOverlay() {
       setRevision((value) => value + 1);
     };
     window.addEventListener("storage", refresh);
-    window.addEventListener("bixbo:hak-admin-change", refresh);
+    window.addEventListener(DEVICE_ADMIN_CONFIG_CHANGED, refresh);
+    window.addEventListener(GLOBAL_ADMIN_CONFIG_CHANGED, refresh);
     return () => {
       window.removeEventListener("storage", refresh);
-      window.removeEventListener("bixbo:hak-admin-change", refresh);
+      window.removeEventListener(DEVICE_ADMIN_CONFIG_CHANGED, refresh);
+      window.removeEventListener(GLOBAL_ADMIN_CONFIG_CHANGED, refresh);
     };
   }, []);
 
