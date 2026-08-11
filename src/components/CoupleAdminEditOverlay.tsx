@@ -19,6 +19,7 @@ import {
 } from "@/lib/deviceAdminConfig";
 import { BIXBO_LAYOUT_SECTIONS, layoutOrder, type LayoutPageId } from "@/lib/layoutRegistry";
 import { EMPTY, useBixbo, type BixboData } from "@/lib/storage";
+import { ADMIN_MODE_CHANGED, isGlobalAdminModeActive } from "@/components/GlobalAdminModeController";
 
 const COUPLE_PAGES: LayoutPageId[] = ["couple.overview", "couple.compare", "couple.health"];
 
@@ -113,6 +114,7 @@ export function CoupleAdminEditOverlay() {
   const view = hydrated ? data : EMPTY;
   const [page, setPage] = useState<LayoutPageId>("couple.overview");
   const [revision, setRevision] = useState(0);
+  const [adminMode, setAdminMode] = useState(() => isGlobalAdminModeActive());
   const [open, setOpen] = useState(false);
   const undoStack = useRef<string[]>([]);
 
@@ -128,6 +130,16 @@ export function CoupleAdminEditOverlay() {
       observer.disconnect();
     };
   }, [pathname]);
+
+  useEffect(() => {
+    const syncAdminMode = () => setAdminMode(isGlobalAdminModeActive());
+    window.addEventListener(ADMIN_MODE_CHANGED, syncAdminMode);
+    return () => window.removeEventListener(ADMIN_MODE_CHANGED, syncAdminMode);
+  }, []);
+
+  useEffect(() => {
+    if (!adminMode) setOpen(false);
+  }, [adminMode]);
 
   useEffect(() => {
     const refresh = () => setRevision((value) => value + 1);
@@ -179,7 +191,7 @@ export function CoupleAdminEditOverlay() {
     }
   };
 
-  if (!pathname.startsWith("/couple") || typeof window === "undefined" || !isAdminOwnerAccount()) return null;
+  if (!pathname.startsWith("/couple") || !adminMode || typeof window === "undefined" || !isAdminOwnerAccount()) return null;
 
   return (
     <>
