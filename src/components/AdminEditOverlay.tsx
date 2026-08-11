@@ -3,6 +3,7 @@ import { Link, useRouter, useRouterState } from "@tanstack/react-router";
 
 import { CustomLogBuilder } from "@/components/CustomLogBuilder";
 import { CoreFeatureCustomFieldBuilder } from "@/components/CoreFeatureCustomFieldBuilder";
+import { Ico } from "@/components/icons/BixboIcons";
 import { useI18n } from "@/hooks/useI18n";
 import {
   BIXBO_LOG_FIELDS,
@@ -637,9 +638,30 @@ export function AdminEditOverlay() {
                     return (
                       <section key={feature.id} data-admin-feature-sort-id={feature.id} className={`rounded-2xl bg-surface p-3 ring-1 ring-border/80 ${draggedFeature === feature.id ? "opacity-60" : ""}`}>
                         <div className="flex items-center gap-2">
-                          <select value={feature.icon} onChange={(event) => patchFeature(feature.id, { icon: event.target.value })} className="h-9 w-14 rounded-xl bg-tint px-1 text-lg ring-1 ring-border">
-                            {[...new Set([feature.icon, ...ICONS])].map((icon) => <option key={icon}>{icon}</option>)}
-                          </select>
+                          <details className="group relative shrink-0">
+                            <summary
+                              className="grid h-9 w-11 cursor-pointer list-none place-items-center rounded-xl bg-tint ring-1 ring-border [&::-webkit-details-marker]:hidden"
+                              aria-label={t("Choose BIXBO icon")}
+                            >
+                              <Ico e={feature.icon} size={24} />
+                            </summary>
+                            <div className="absolute left-0 top-11 z-30 grid w-[184px] grid-cols-5 gap-1 rounded-2xl bg-background p-2 shadow-xl ring-1 ring-border">
+                              {[...new Set([feature.icon, ...ICONS])].map((icon) => (
+                                <button
+                                  key={icon}
+                                  type="button"
+                                  onClick={(event) => {
+                                    patchFeature(feature.id, { icon });
+                                    event.currentTarget.closest("details")?.removeAttribute("open");
+                                  }}
+                                  className="grid h-8 w-8 place-items-center rounded-lg bg-tint ring-1 ring-border/60 transition hover:bg-primary/10"
+                                  aria-label={`${t("Use icon")} ${icon}`}
+                                >
+                                  <Ico e={icon} size={21} />
+                                </button>
+                              ))}
+                            </div>
+                          </details>
                           <input value={feature.label} onChange={(event) => patchFeature(feature.id, { label: event.target.value })} className="h-9 min-w-0 flex-1 rounded-xl bg-tint px-3 text-xs font-bold ring-1 ring-border" />
                           <input type="color" value={feature.color} onChange={(event) => patchFeature(feature.id, { color: event.target.value })} className="h-9 w-10 rounded-xl bg-tint p-1 ring-1 ring-border" />
                           <button type="button" onClick={() => patchFeature(feature.id, { enabled: !enabled })} className={`rounded-full px-2.5 py-1.5 text-[9px] font-bold ${enabled ? "bg-primary text-primary-foreground" : "bg-tint text-muted-foreground ring-1 ring-border"}`}>{enabled ? t("On") : t("Hidden")}</button>
@@ -674,7 +696,7 @@ export function AdminEditOverlay() {
                     const feature = getRegistryFeature(adminView, featureId);
                     return (
                       <section key={featureId} className="rounded-2xl bg-surface p-3 ring-1 ring-border/80">
-                        <p className="text-xs font-bold">{feature.icon} {feature.label}</p>
+                        <p className="flex items-center gap-1.5 text-xs font-bold"><Ico e={feature.icon} size={16} /><span>{feature.label}</span></p>
                         <div className="mt-2 space-y-2">
                           {orderedUnifiedFields(featureId).map((item) => {
                             if (item.source === "custom") {

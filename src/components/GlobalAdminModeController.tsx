@@ -63,6 +63,11 @@ export function GlobalAdminModeController() {
   const owner = typeof window !== "undefined" && isAdminOwnerAccount();
 
   const openAdminTool = (tool: "text" | "sections" | "navigation") => {
+    const hakOpen = Boolean(document.querySelector("[data-bixbo-hak-root]"));
+    if (hakOpen && tool !== "navigation") {
+      requestAdminCustomizeCurrentPage();
+      return;
+    }
     const button = document.querySelector<HTMLButtonElement>(`[data-bixbo-admin-open="${tool}"]`);
     button?.click();
   };
@@ -94,9 +99,9 @@ export function GlobalAdminModeController() {
           <span className="whitespace-nowrap text-[10px] font-black uppercase tracking-[0.12em]">✦ {t("Admin mode")}</span>
           <div className="flex items-center gap-1">
             <button type="button" onClick={requestAdminCustomizeCurrentPage} className="rounded-full bg-background/15 px-2 py-1 text-[9px] font-bold">{t("Page")}</button>
-            <button type="button" onClick={() => openAdminTool("text")} className="rounded-full bg-background/15 px-2 py-1 text-[9px] font-bold">Aa</button>
-            <button type="button" onClick={() => openAdminTool("sections")} className="rounded-full bg-background/15 px-2 py-1 text-[9px] font-bold">＋</button>
-            <button type="button" onClick={() => openAdminTool("navigation")} className="rounded-full bg-background/15 px-2 py-1 text-[9px] font-bold">☰</button>
+            <button type="button" onClick={() => openAdminTool("text")} className="rounded-full bg-background/15 px-2 py-1 text-[9px] font-bold">{t("Text")}</button>
+            <button type="button" onClick={() => openAdminTool("sections")} className="rounded-full bg-background/15 px-2 py-1 text-[9px] font-bold">{t("Sections")}</button>
+            <button type="button" onClick={() => openAdminTool("navigation")} className="rounded-full bg-background/15 px-2 py-1 text-[9px] font-bold">{t("Nav")}</button>
           </div>
           <button
             type="button"
