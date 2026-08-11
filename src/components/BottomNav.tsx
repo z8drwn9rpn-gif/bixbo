@@ -9,6 +9,8 @@ import {
   BottomNavNoteIcon,
   BottomNavLogIcon,
 } from "@/components/icons/BottomNavReferenceIcons";
+import exactHomeArtwork from "@/assets/nav-home-exact.webp";
+import exactCoupleArtwork from "@/assets/nav-couple-exact.webp";
 import { DEVICE_ADMIN_CONFIG_CHANGED } from "@/lib/deviceAdminConfig";
 import { GLOBAL_ADMIN_CONFIG_CHANGED } from "@/lib/globalAdminConfig";
 import { BIXBO_NAVIGATION, resolvedNavigation, type NavigationItemId } from "@/lib/navigationRegistry";
@@ -22,17 +24,17 @@ const ICONS: Record<NavigationItemId, ComponentType<IconProps>> = {
   healthProfile: BottomNavHomeIcon,
 };
 
+/** Home and Couple are bundled imports so Vite fingerprints them and iOS/PWA cannot serve stale public URLs. */
 const NAV_IMAGE_SRC: Partial<Record<NavigationItemId, string>> = {
-  home: "/nav-assets/nav-home.webp?v=user-exact-20260811-2",
+  home: exactHomeArtwork,
   overview: "/nav-assets/nav-overview.webp",
-  couple: "/nav-assets/nav-couple.webp?v=user-exact-20260811-2",
+  couple: exactCoupleArtwork,
   notes: "/nav-assets/nav-note.webp",
 };
 
 function NavArtwork({ id, size, className }: { id: NavigationItemId; size: number; className?: string }) {
   const Icon = ICONS[id];
   const imageSrc = NAV_IMAGE_SRC[id];
-  const isExactUserArtwork = id === "home" || id === "couple";
 
   if (imageSrc) {
     return (
@@ -45,12 +47,6 @@ function NavArtwork({ id, size, className }: { id: NavigationItemId; size: numbe
         height={size}
         className={className}
         style={{ objectFit: "contain" }}
-        onError={(event) => {
-          // Home and Couple must never fall back to the old SVG artwork.
-          // If an old PWA cache is stale, keep the slot empty until the exact
-          // user asset is fetched instead of showing the wrong icon.
-          if (isExactUserArtwork) event.currentTarget.style.visibility = "hidden";
-        }}
       />
     );
   }
