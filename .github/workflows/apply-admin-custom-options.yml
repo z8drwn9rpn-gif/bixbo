@@ -3,8 +3,6 @@ on:
   push:
     branches:
       - agent/full-admin-customization-v2
-    paths:
-      - .github/workflows/apply-admin-custom-options.yml
 permissions:
   contents: write
 jobs:
@@ -15,28 +13,28 @@ jobs:
         with:
           ref: agent/full-admin-customization-v2
       - name: Patch registry and inline admin
-        shell: python
         run: |
+          python - <<'PY'
           from pathlib import Path
 
           registry = Path('src/lib/appRegistry.ts')
           text = registry.read_text()
           old = '''export function registryFieldOptions(data: Pick<BixboData, "settings">, featureId: RegistryFeatureId, fieldId: string, base: string[]): string[] {
-  const overrides = activeAdminConfig(data)?.features?.[featureId]?.fields?.[fieldId]?.options ?? {};
-  return base
-    .filter((value) => overrides[value]?.enabled !== false)
-    .sort((a, b) => (overrides[a]?.order ?? base.indexOf(a)) - (overrides[b]?.order ?? base.indexOf(b)));
-}'''
+            const overrides = activeAdminConfig(data)?.features?.[featureId]?.fields?.[fieldId]?.options ?? {};
+            return base
+              .filter((value) => overrides[value]?.enabled !== false)
+              .sort((a, b) => (overrides[a]?.order ?? base.indexOf(a)) - (overrides[b]?.order ?? base.indexOf(b)));
+          }'''.replace('          ', '')
           new = '''export function registryFieldOptions(data: Pick<BixboData, "settings">, featureId: RegistryFeatureId, fieldId: string, base: string[]): string[] {
-  const overrides = activeAdminConfig(data)?.features?.[featureId]?.fields?.[fieldId]?.options ?? {};
-  const values = [...base];
-  for (const value of Object.keys(overrides)) {
-    if (!values.includes(value)) values.push(value);
-  }
-  return values
-    .filter((value) => overrides[value]?.enabled !== false)
-    .sort((a, b) => (overrides[a]?.order ?? values.indexOf(a)) - (overrides[b]?.order ?? values.indexOf(b)));
-}'''
+            const overrides = activeAdminConfig(data)?.features?.[featureId]?.fields?.[fieldId]?.options ?? {};
+            const values = [...base];
+            for (const value of Object.keys(overrides)) {
+              if (!values.includes(value)) values.push(value);
+            }
+            return values
+              .filter((value) => overrides[value]?.enabled !== false)
+              .sort((a, b) => (overrides[a]?.order ?? values.indexOf(a)) - (overrides[b]?.order ?? values.indexOf(b)));
+          }'''.replace('          ', '')
           if old not in text:
               raise SystemExit('registryFieldOptions source block not found')
           registry.write_text(text.replace(old, new))
@@ -44,50 +42,44 @@ jobs:
           overlay = Path('src/components/AdminEditOverlay.tsx')
           text = overlay.read_text()
           anchor = '''  const resetFeature = (id: RegistryFeatureId) => {
-    const config = getDeviceAdminConfig();
-    const featuresCopy = { ...(config.features ?? {}) };
-    delete featuresCopy[id];
-    persist({ ...config, features: featuresCopy });
-  };
-'''
+            const config = getDeviceAdminConfig();
+            const featuresCopy = { ...(config.features ?? {}) };
+            delete featuresCopy[id];
+            persist({ ...config, features: featuresCopy });
+          };
+          '''.replace('          ', '')
           addition = anchor + '''
-  const addFieldOption = (featureId: RegistryFeatureId, fieldId: string) => {
-    const label = window.prompt(t("New option name"))?.trim();
-    if (!label) return;
-    const config = getDeviceAdminConfig();
-    const feature = config.features?.[featureId] ?? {};
-    const field = feature.fields?.[fieldId] ?? {};
-    const options = field.options ?? {};
-    const existingLabels = new Set(Object.entries(options).map(([value, override]) => (override?.label ?? value).trim().toLocaleLowerCase()));
-    if (existingLabels.has(label.toLocaleLowerCase())) return;
-    const stableValue = `custom:${Date.now().toString(36)}:${Math.random().toString(36).slice(2, 8)}`;
-    const order = Object.keys(options).length + 1000;
-    patchField(featureId, fieldId, { options: { [stableValue]: { label, enabled: true, order } } });
-  };
+          const addFieldOption = (featureId: RegistryFeatureId, fieldId: string) => {
+            const label = window.prompt(t("New option name"))?.trim();
+            if (!label) return;
+            const config = getDeviceAdminConfig();
+            const feature = config.features?.[featureId] ?? {};
+            const field = feature.fields?.[fieldId] ?? {};
+            const options = field.options ?? {};
+            const stableValue = `custom:${Date.now().toString(36)}:${Math.random().toString(36).slice(2, 8)}`;
+            patchField(featureId, fieldId, { options: { [stableValue]: { label, enabled: true, order: Object.keys(options).length + 1000 } } });
+          };
 
-  const deleteCustomFieldOption = (featureId: RegistryFeatureId, fieldId: string, value: string) => {
-    if (!value.startsWith("custom:")) return;
-    const config = getDeviceAdminConfig();
-    const feature = config.features?.[featureId] ?? {};
-    const field = feature.fields?.[fieldId] ?? {};
-    const options = { ...(field.options ?? {}) };
-    delete options[value];
-    persist({
-      ...config,
-      enabled: true,
-      features: {
-        ...(config.features ?? {}),
-        [featureId]: {
-          ...feature,
-          fields: {
-            ...(feature.fields ?? {}),
-            [fieldId]: { ...field, options },
-          },
-        },
-      },
-    });
-  };
-'''
+          const deleteCustomFieldOption = (featureId: RegistryFeatureId, fieldId: string, value: string) => {
+            if (!value.startsWith("custom:")) return;
+            const config = getDeviceAdminConfig();
+            const feature = config.features?.[featureId] ?? {};
+            const field = feature.fields?.[fieldId] ?? {};
+            const options = { ...(field.options ?? {}) };
+            delete options[value];
+            persist({
+              ...config,
+              enabled: true,
+              features: {
+                ...(config.features ?? {}),
+                [featureId]: {
+                  ...feature,
+                  fields: { ...(feature.fields ?? {}), [fieldId]: { ...field, options } },
+                },
+              },
+            });
+          };
+          '''.replace('          ', '')
           if anchor not in text:
               raise SystemExit('resetFeature anchor not found')
           text = text.replace(anchor, addition)
@@ -131,6 +123,7 @@ jobs:
           if old_options not in text:
               raise SystemExit('field options block not found')
           overlay.write_text(text.replace(old_options, new_options))
+          PY
       - name: Remove temporary workflow and commit patch
         run: |
           git rm .github/workflows/apply-admin-custom-options.yml
