@@ -219,7 +219,7 @@ export function LogSheet({
     if (open) setOpenToken((t) => t + 1);
   }, [open]);
   const [editingOrder, setEditingOrder] = useState(false);
-  const [customEditEntry, setCustomEditEntry] = useState<CustomLogEntry | undefined>();
+  const [customEditEntry, setCustomEditEntry] = useState<CustomLogEntry | null | undefined>();
   const close = () => {
     setCat(null);
     setEditingOrder(false);
@@ -781,7 +781,7 @@ export function LogSheet({
                 const definition = customLogDefinitions(data).find((item) => item.id === id);
                 if (!definition) return null;
                 const savedEntries = data.dayLogs[date]?.customLogs?.[id] ?? [];
-                const initialCustomEntry = customEditEntry ?? (edit as CustomLogEntry | undefined);
+                const initialCustomEntry = customEditEntry === null ? undefined : customEditEntry ?? (edit as CustomLogEntry | undefined);
                 return (
                   <div className="space-y-4">
                     {savedEntries.length ? (
@@ -794,7 +794,7 @@ export function LogSheet({
                           {initialCustomEntry ? (
                             <button
                               type="button"
-                              onClick={() => setCustomEditEntry(undefined)}
+                              onClick={() => setCustomEditEntry(null)}
                               className="rounded-full bg-background px-3 py-1 text-[10px] font-semibold ring-1 ring-border"
                             >
                               {t("New entry")}
@@ -835,7 +835,7 @@ export function LogSheet({
                                       },
                                     };
                                   });
-                                  if (customEditEntry?.id === entry.id) setCustomEditEntry(undefined);
+                                  if (initialCustomEntry?.id === entry.id) setCustomEditEntry(null);
                                 }}
                                 className="grid h-7 w-7 place-items-center rounded-full bg-background text-destructive ring-1 ring-border"
                               >
