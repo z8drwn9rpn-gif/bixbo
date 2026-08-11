@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperti
 import { ChevronLeft, ChevronRight, Share2, Trash2 } from "@/components/icons/BixboIcons";
 
 import { layoutOrder } from "@/lib/layoutRegistry";
+import { customLogDefinitions, type RegistryFieldDefinition } from "@/lib/appRegistry";
 import {
   ClockIcon,
   FlameIcon,
@@ -3144,6 +3145,9 @@ function DayPreview({
   const takenList = scheduled.filter((x) => x.taken);
   const missedList = scheduled.filter((x) => !x.taken && (date < k || (date === k && x.time < nowHHMM)));
   const extraMeds = log?.extraMeds ?? [];
+  const customLogsForDay = customLogDefinitions(data)
+    .map((definition) => ({ definition, entries: log?.customLogs?.[definition.id] ?? [] }))
+    .filter((item) => item.entries.length > 0);
   const cycleTrackingHidden = isCycleTrackingHidden(data);
   const flowLabel = (level?: string | null): string => {
     switch (level) {
@@ -3184,6 +3188,7 @@ function DayPreview({
     todos.length ||
     events.length ||
     tasks.length ||
+    customLogsForDay.length ||
     takenList.length ||
     missedList.length;
 
@@ -3196,6 +3201,13 @@ function DayPreview({
         </p>
       </div>
     );
+
+  const formatCustomValue = (field: RegistryFieldDefinition, value: unknown): string => {
+    if (value == null || value === "") return "";
+    if (Array.isArray(value)) return value.map((item) => field.optionLabels?.[String(item)] ?? String(item)).join(", ");
+    if (typeof value === "boolean") return value ? t("Yes") : t("No");
+    return String(value);
+  };
 
   const markMissedTaken = (medKey: string) =>
     update((d) => ({
@@ -3820,6 +3832,41 @@ function DayPreview({
           </ul>
         </Card>
       )}
+
+      {customLogsForDay.map(({ definition, entries }) => (
+        <Card key={definition.id} title={definition.label} icon={definition.icon}>
+          <ul className="space-y-2 text-sm">
+            {entries.map((entry) => (
+              <li key={entry.id} className="flex items-start gap-2">
+                <button onClick={() => onEdit?.(`custom:${definition.id}`, entry)} className="min-w-0 flex-1 text-left">
+                  <p className="text-xs font-semibold text-muted-foreground">{entry.time || t("Entry")}</p>
+                  {definition.fields
+                    .filter((field) => field.enabled !== false)
+                    .sort((a, b) => a.order - b.order)
+                    .map((field) => {
+                      const text = formatCustomValue(field, entry.values?.[field.id]);
+                      return text ? <p key={field.id} className="text-xs"><span className="font-semibold">{field.label}:</span> {text}</p> : null;
+                    })}
+                  {entry.note ? <p className="mt-1 whitespace-pre-line text-xs text-muted-foreground">{entry.note}</p> : null}
+                  <p className="mt-1 text-[10px] text-primary">{t("Tap to edit")}</p>
+                </button>
+                <DeleteBtn
+                  onClick={() =>
+                    update((d) => {
+                      const day = d.dayLogs[date] ?? {};
+                      const customLogs = { ...(day.customLogs ?? {}) };
+                      const remaining = (customLogs[definition.id] ?? []).filter((item) => item.id !== entry.id);
+                      if (remaining.length) customLogs[definition.id] = remaining;
+                      else delete customLogs[definition.id];
+                      return { ...d, dayLogs: { ...d.dayLogs, [date]: { ...day, customLogs } } };
+                    })
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ))}
 
       {notes.length > 0 && (
         <Card title="Notes" icon="📝">
