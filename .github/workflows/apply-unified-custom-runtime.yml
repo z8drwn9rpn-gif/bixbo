@@ -1,0 +1,28 @@
+name: Apply unified custom runtime
+on:
+  push:
+    branches: [agent/unified-core-custom-field-order]
+    paths:
+      - '.github/scripts/apply_unified_custom_runtime.py'
+      - '.github/workflows/apply-unified-custom-runtime.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/unified-core-custom-field-order
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - run: python .github/scripts/apply_unified_custom_runtime.py
+      - run: rm .github/scripts/apply_unified_custom_runtime.py .github/workflows/apply-unified-custom-runtime.yml
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'unify core and custom field runtime order'
+          git push origin HEAD:agent/unified-core-custom-field-order
