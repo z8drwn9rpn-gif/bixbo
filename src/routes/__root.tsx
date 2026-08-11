@@ -28,6 +28,7 @@ import { AdminCustomPageBlocks } from "../components/AdminCustomPageBlocks";
 import { Toaster } from "../components/ui/sonner";
 import { useI18n } from "@/hooks/useI18n";
 import { useGlobalAdminConfigSync } from "@/lib/globalAdminConfig";
+import { useDeploymentFreshness } from "@/lib/deploymentFreshness";
 
 function NotFoundComponent() {
   const { t } = useI18n();
@@ -155,6 +156,7 @@ function RootComponent() {
   useThemeSync();
   useNotificationRuntime();
   useGlobalAdminConfigSync();
+  useDeploymentFreshness();
 
   return (
     <QueryClientProvider client={queryClient}>

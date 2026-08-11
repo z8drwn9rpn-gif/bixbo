@@ -327,6 +327,7 @@ export function UniversalAdminPageEditor() {
       <div data-bixbo-admin-ui className="fixed bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] right-4 z-[91] lg:bottom-6 lg:right-6">
         <button
           type="button"
+          data-bixbo-admin-open="universal"
           onClick={() => setOpen((value) => !value)}
           className="rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-lg ring-1 ring-primary/30"
         >
