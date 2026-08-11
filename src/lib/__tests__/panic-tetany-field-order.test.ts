@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { BIXBO_LOG_FIELDS, registryFieldsForFeature } from "../appRegistry";
 import { EMPTY } from "../storage";
 
+// Whole-field drag must change presentation order only; stable health-data keys remain unchanged.
 describe("Panic/Tetany built-in admin field order", () => {
   it("registers every linear panic field with a stable ID", () => {
     expect((BIXBO_LOG_FIELDS.panic ?? []).map((field) => field.id)).toEqual([
