@@ -252,9 +252,16 @@ export function LogSheet({
       const adminFields = day.adminFields ?? {};
       const existing = adminFields[activeRegistryFeature] ?? [];
       const linkedIndex = editSourceId ? existing.findIndex((entry) => entry.sourceEntryId === editSourceId) : -1;
-      const legacyIndex = linkedIndex < 0 && editSourceId && editSourceTime
-        ? existing.findLastIndex((entry) => !entry.sourceEntryId && entry.time === editSourceTime)
-        : -1;
+      let legacyIndex = -1;
+      if (linkedIndex < 0 && editSourceId && editSourceTime) {
+        for (let index = existing.length - 1; index >= 0; index -= 1) {
+          const entry = existing[index];
+          if (!entry.sourceEntryId && entry.time === editSourceTime) {
+            legacyIndex = index;
+            break;
+          }
+        }
+      }
       const matchIndex = linkedIndex >= 0 ? linkedIndex : legacyIndex;
 
       let nextEntries = existing;
