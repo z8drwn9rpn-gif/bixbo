@@ -271,6 +271,10 @@ export const BIXBO_LOG_FIELDS: Partial<Record<RegistryFeatureId, RegistryFieldDe
     { id: "symptoms", label: "Symptoms today", kind: "chips", order: 10 },
     { id: "note", label: "Recovery note (optional)", kind: "text", order: 20 },
   ],
+  meds: [
+    { id: "scheduled", label: "Scheduled meds", kind: "text", order: 10 },
+    { id: "extraDose", label: "Extra dose (one-off)", kind: "text", order: 20 },
+  ],
 };
 
 export function getRegistryField(data: Pick<BixboData, "settings">, featureId: RegistryFeatureId, fieldId: string): RegistryFieldDefinition | undefined {
