@@ -12,14 +12,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
-      - name: Patch exact Export section
+      - name: Patch Export section
         run: |
           python - <<'PY'
           from pathlib import Path
           p=Path('src/routes/profile.tsx')
           s=p.read_text(encoding='utf-8')
-          anchor='''          <button type="button" onClick={exportCsv} className="min-h-11 w-full rounded-xl border border-input bg-background px-4 text-sm font-semibold text-foreground">
-            Export daily health CSV
+          marker='''            Export daily health CSV
           </button>'''
           addition='''
           <Link
@@ -28,10 +27,15 @@ jobs:
           >
             {t("PDF Reports")}
           </Link>'''
-          if anchor + addition not in s:
-              if anchor not in s:
-                  raise SystemExit('Exact Export CSV anchor not found')
-              s=s.replace(anchor,anchor+addition,1)
+          export_pos=s.find('if (healthView === "export")')
+          if export_pos < 0:
+              raise SystemExit('Export section not found')
+          tail=s[export_pos:]
+          if '>{t("PDF Reports")}</Link>' not in tail and '{t("PDF Reports")}' not in tail[:2500]:
+              if marker not in tail:
+                  raise SystemExit('CSV marker not found in Export section')
+              tail=tail.replace(marker,marker+addition,1)
+              s=s[:export_pos]+tail
               p.write_text(s,encoding='utf-8')
           PY
       - run: bun run build
