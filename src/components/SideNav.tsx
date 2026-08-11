@@ -4,6 +4,8 @@ import { useI18n } from "@/hooks/useI18n";
 import { DEVICE_ADMIN_CONFIG_CHANGED } from "@/lib/deviceAdminConfig";
 import { GLOBAL_ADMIN_CONFIG_CHANGED } from "@/lib/globalAdminConfig";
 import { BIXBO_NAVIGATION, resolvedNavigation, type NavigationItemId } from "@/lib/navigationRegistry";
+import exactHomeArtwork from "@/assets/nav-home-exact.webp";
+import exactCoupleArtwork from "@/assets/nav-couple-exact.webp";
 import {
   NavHomeIcon,
   NavOverviewIcon,
@@ -23,11 +25,11 @@ const ICONS: Record<NavigationItemId, ComponentType<IconProps>> = {
   healthProfile: User,
 };
 
-/** Exact user-provided artwork; existing SVG icons remain available as fallback. */
+/** Home and Couple use the same bundled, fingerprinted user artwork as BottomNav. */
 const NAV_IMAGE_SRC: Partial<Record<NavigationItemId, string>> = {
-  home: "/nav-assets/nav-home.webp?v=user-exact-20260811-2",
+  home: exactHomeArtwork,
   overview: "/nav-assets/nav-overview.webp",
-  couple: "/nav-assets/nav-couple.webp?v=user-exact-20260811-2",
+  couple: exactCoupleArtwork,
   notes: "/nav-assets/nav-note.webp",
 };
 
@@ -115,7 +117,7 @@ export function SideNav({ mascotSrc }: { mascotSrc: string }) {
                     onClick={openLog}
                     className="flex min-h-[76px] w-full items-center gap-4 rounded-3xl px-3 py-2 text-left text-[15px] font-semibold text-[#415025] transition-transform hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.985] dark:text-[#dfe9bd] dark:hover:bg-white/5"
                   >
-                    <NavArtwork id={navItem.id} size={60} className="-my-2 h-[60px] w-[60px] shrink-0 object-contain drop-shadow-[0_8px_9px_rgba(59,74,31,0.28)]" />
+                    <NavArtwork id={navItem.id} size={58} className="-my-2 h-[58px] w-[58px] shrink-0 object-contain drop-shadow-[0_8px_9px_rgba(59,74,31,0.28)]" />
                     <span>{t(label)}</span>
                   </button>
                 </li>
