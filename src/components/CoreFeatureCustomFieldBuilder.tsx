@@ -73,12 +73,14 @@ export function CoreFeatureCustomFieldBuilder({ data }: { data: BixboData }) {
     const cycleFieldIds = (feature.cycleFieldIds ?? []).filter((id) => id !== fieldId);
     const treatmentFieldIds = (feature.treatmentFieldIds ?? []).filter((id) => id !== fieldId);
     const correlationFieldIds = (feature.correlationFieldIds ?? []).filter((id) => id !== fieldId);
+    const correlationThresholds = { ...(feature.correlationThresholds ?? {}) };
+    delete correlationThresholds[fieldId];
     setDeviceAdminConfig({
       ...current,
       enabled: true,
       features: {
         ...(current.features ?? {}),
-        [featureId]: { ...feature, customFields: fields.filter((field) => field.id !== fieldId), heatmapFieldIds, monthlyFieldIds, cycleFieldIds, treatmentFieldIds, correlationFieldIds },
+        [featureId]: { ...feature, customFields: fields.filter((field) => field.id !== fieldId), heatmapFieldIds, monthlyFieldIds, cycleFieldIds, treatmentFieldIds, correlationFieldIds, correlationThresholds },
       },
     });
   };
@@ -129,7 +131,23 @@ export function CoreFeatureCustomFieldBuilder({ data }: { data: BixboData }) {
     const feature = current.features?.[featureId] ?? {};
     const selected = new Set(feature.correlationFieldIds ?? []);
     if (enabled) selected.add(fieldId); else selected.delete(fieldId);
-    setDeviceAdminConfig({ ...current, enabled: true, features: { ...(current.features ?? {}), [featureId]: { ...feature, correlationFieldIds: [...selected] } } });
+    const thresholds = { ...(feature.correlationThresholds ?? {}) };
+    if (enabled && !thresholds[fieldId]) thresholds[fieldId] = { operator: "gte", value: 0 };
+    setDeviceAdminConfig({ ...current, enabled: true, features: { ...(current.features ?? {}), [featureId]: { ...feature, correlationFieldIds: [...selected], correlationThresholds: thresholds } } });
+  };
+
+  const setCorrelationThreshold = (featureId: RegistryFeatureId, fieldId: string, patch: { operator?: "gte" | "lte"; value?: number }) => {
+    const current = getDeviceAdminConfig();
+    const feature = current.features?.[featureId] ?? {};
+    const previous = feature.correlationThresholds?.[fieldId] ?? { operator: "gte" as const, value: 0 };
+    setDeviceAdminConfig({
+      ...current,
+      enabled: true,
+      features: {
+        ...(current.features ?? {}),
+        [featureId]: { ...feature, correlationThresholds: { ...(feature.correlationThresholds ?? {}), [fieldId]: { ...previous, ...patch } } },
+      },
+    });
   };
 
   return (
@@ -209,8 +227,8 @@ export function CoreFeatureCustomFieldBuilder({ data }: { data: BixboData }) {
                         </div>
                       ) : null}
 
-                      <div className="mt-2 flex items-center justify-between gap-2">
-                        <span className="min-w-0 flex-1 truncate text-[8px] text-muted-foreground">ID: {field.id}</span>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <span className="w-full min-w-0 truncate text-[8px] text-muted-foreground">ID: {field.id}</span>
                         {(field.kind === "toggle" || field.kind === "chips") ? (
                           <button type="button" onClick={() => setCorrelationFieldEnabled(feature.id, field.id, !(config.features?.[feature.id]?.correlationFieldIds ?? []).includes(field.id))} className={`rounded-full px-2 py-1 text-[8px] font-semibold ring-1 ${(config.features?.[feature.id]?.correlationFieldIds ?? []).includes(field.id) ? "bg-primary text-primary-foreground ring-primary/30" : "bg-tint text-muted-foreground ring-border"}`}>
                             Correlations {(config.features?.[feature.id]?.correlationFieldIds ?? []).includes(field.id) ? t("On") : t("Off")}
@@ -246,6 +264,17 @@ export function CoreFeatureCustomFieldBuilder({ data }: { data: BixboData }) {
                             <button type="button" onClick={() => setTreatmentFieldEnabled(feature.id, field.id, !(config.features?.[feature.id]?.treatmentFieldIds ?? []).includes(field.id))} className={`rounded-full px-2 py-1 text-[8px] font-semibold ring-1 ${(config.features?.[feature.id]?.treatmentFieldIds ?? []).includes(field.id) ? "bg-primary text-primary-foreground ring-primary/30" : "bg-tint text-muted-foreground ring-border"}`}>
                               Treatment {(config.features?.[feature.id]?.treatmentFieldIds ?? []).includes(field.id) ? t("On") : t("Off")}
                             </button>
+                            <button type="button" onClick={() => setCorrelationFieldEnabled(feature.id, field.id, !(config.features?.[feature.id]?.correlationFieldIds ?? []).includes(field.id))} className={`rounded-full px-2 py-1 text-[8px] font-semibold ring-1 ${(config.features?.[feature.id]?.correlationFieldIds ?? []).includes(field.id) ? "bg-primary text-primary-foreground ring-primary/30" : "bg-tint text-muted-foreground ring-border"}`}>
+                              Correlations {(config.features?.[feature.id]?.correlationFieldIds ?? []).includes(field.id) ? t("On") : t("Off")}
+                            </button>
+                            {(config.features?.[feature.id]?.correlationFieldIds ?? []).includes(field.id) ? (
+                              <>
+                                <select value={config.features?.[feature.id]?.correlationThresholds?.[field.id]?.operator ?? "gte"} onChange={(event) => setCorrelationThreshold(feature.id, field.id, { operator: event.target.value as "gte" | "lte" })} className="h-7 rounded-lg bg-tint px-2 text-[9px] ring-1 ring-border" aria-label={t("Correlation threshold operator")}>
+                                  <option value="gte">≥</option><option value="lte">≤</option>
+                                </select>
+                                <input type="number" step={field.kind === "scale" ? field.scale?.step ?? 1 : "any"} value={config.features?.[feature.id]?.correlationThresholds?.[field.id]?.value ?? 0} onChange={(event) => setCorrelationThreshold(feature.id, field.id, { value: Number(event.target.value) })} className="h-7 w-16 rounded-lg bg-tint px-2 text-[9px] ring-1 ring-border" aria-label={t("Correlation threshold value")} />
+                              </>
+                            ) : null}
                           </>
                         ) : null}
                         <button type="button" onClick={() => patchField(feature.id, field.id, { enabled: field.enabled === false })} className="rounded-full bg-tint px-2 py-1 text-[8px] ring-1 ring-border">{field.enabled === false ? t("Hidden") : t("Shown")}</button>
