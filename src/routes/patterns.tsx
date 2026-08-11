@@ -24,7 +24,7 @@ import {
 import { AppShell } from "@/components/AppShell";
 import { CHART_COLORS, CHART_TINTS } from "@/components/ui/chart";
 import { useI18n } from "@/hooks/useI18n";
-import { BIXBO_REGISTRY, getRegistryFeature, registryAdminMonthlyFieldsForFeature } from "@/lib/appRegistry";
+import { BIXBO_REGISTRY, getRegistryFeature, registryAdminCycleFieldsForFeature, registryAdminMonthlyFieldsForFeature } from "@/lib/appRegistry";
 import { layoutOrder } from "@/lib/layoutRegistry";
 import {
   EMPTY,
@@ -963,6 +963,21 @@ export function PatternsContent() {
       value: phaseAvg(phaseBuckets.after, dayLogs, dayBowelSymptoms),
     },
   ];
+
+  const adminCycleMetrics = BIXBO_REGISTRY.flatMap((featureBase) => {
+    const feature = getRegistryFeature(view, featureBase.id);
+    return registryAdminCycleFieldsForFeature(view, featureBase.id).map((field) => {
+      const metricFn = (log: DayLog) => {
+        const values = (log.adminFields?.[featureBase.id] ?? []).map((entry) => Number(entry.values[field.id])).filter((value) => Number.isFinite(value));
+        return avg(values);
+      };
+      return { id: `${featureBase.id}:${field.id}`, title: `${feature.label} · ${field.label}`, bars: [
+        { label: "Before", value: phaseAvg(phaseBuckets.before, dayLogs, metricFn) },
+        { label: "During", value: phaseAvg(phaseBuckets.during, dayLogs, metricFn) },
+        { label: "After", value: phaseAvg(phaseBuckets.after, dayLogs, metricFn) },
+      ] as PhaseBar[], max: field.kind === "scale" ? field.scale?.max : undefined, unit: field.kind === "scale" && field.scale?.max != null ? `/${field.scale.max}` : "" };
+    });
+  });
 
   const commonFlow = phaseFlowMode(phaseBuckets.during, dayLogs);
   const highestPainPhase = phaseLabelByValue(painPhaseBars);
@@ -2197,6 +2212,13 @@ export function PatternsContent() {
                 </div>
               </Card>
             </CollapsibleSection>
+            {adminCycleMetrics.length > 0 ? (
+              <CollapsibleSection layoutOrderValue={layoutOrder(view, "patterns.cycle", "customMetrics", 30)} title="Custom metrics" subtitle="Admin-created numeric and scale fields" defaultOpen={false}>
+                <Card title="Cycle phase — custom metrics" description="Admin-created values grouped by cycle phase.">
+                  <div className="mt-3 space-y-2.5">{adminCycleMetrics.map((metric) => <PhaseBarChart key={metric.id} title={metric.title} description="Average saved supplementary value by cycle phase." bars={metric.bars} max={metric.max} decimals={1} unit={metric.unit} />)}</div>
+                </Card>
+              </CollapsibleSection>
+            ) : null}
           </div>
         )}
 
