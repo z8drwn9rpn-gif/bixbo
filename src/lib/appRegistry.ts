@@ -214,8 +214,12 @@ export const BIXBO_LOG_FIELDS: Partial<Record<RegistryFeatureId, RegistryFieldDe
     { id: "feel", label: "How you feel", kind: "chips", order: 40, options: ["Great", "Good", "Ok", "Tired", "Sore"] },
   ],
   bowel: [
-    { id: "bristol", label: "Bristol type", kind: "scale", order: 10, scale: { min: 0, max: 7, step: 1 } },
-    { id: "urinary", label: "Urinary", kind: "chips", order: 20 },
+    { id: "time", label: "Time", kind: "text", order: 10 },
+    { id: "bristol", label: "Bristol stool scale", kind: "scale", order: 20, scale: { min: 0, max: 7, step: 1 } },
+    { id: "urinary", label: "Urinary", kind: "chips", order: 30 },
+    { id: "feelings", label: "How do you feel?", kind: "chips", order: 40 },
+    { id: "symptoms", label: "Symptoms", kind: "chips", order: 50 },
+    { id: "note", label: "Note (optional)", kind: "text", order: 60 },
   ],
 };
 
