@@ -79,6 +79,7 @@ import {
   type PanicAttack,
   type PainfulWhen,
   type PostpartumDayLog,
+  type CustomLogEntry,
   type CustomLogValue,
   withCustomTombstones,
   withoutCustomTombstones,
@@ -218,12 +219,17 @@ export function LogSheet({
     if (open) setOpenToken((t) => t + 1);
   }, [open]);
   const [editingOrder, setEditingOrder] = useState(false);
+  const [customEditEntry, setCustomEditEntry] = useState<CustomLogEntry | undefined>();
   const close = () => {
     setCat(null);
     setEditingOrder(false);
+    setCustomEditEntry(undefined);
     onOpenChange(false);
   };
-  const back = () => setCat(null);
+  const back = () => {
+    setCustomEditEntry(undefined);
+    setCat(null);
+  };
   const active = cat ?? initial;
   const edit = editEntry;
   const editSource = edit && typeof edit === "object" ? edit as { id?: unknown; time?: unknown } : null;
@@ -773,7 +779,56 @@ export function LogSheet({
               {active?.startsWith("custom:") && (() => {
                 const id = active.slice("custom:".length);
                 const definition = customLogDefinitions(data).find((item) => item.id === id);
-                return definition ? <CustomLogForm definition={definition} date={date} data={data} update={update} onDone={close} /> : null;
+                if (!definition) return null;
+                const savedEntries = data.dayLogs[date]?.customLogs?.[id] ?? [];
+                const initialCustomEntry = customEditEntry ?? (edit as CustomLogEntry | undefined);
+                return (
+                  <div className="space-y-4">
+                    {savedEntries.length ? (
+                      <section className="rounded-2xl bg-tint p-3 ring-1 ring-border/70">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-xs font-bold">{t("Saved entries")}</p>
+                            <p className="text-[10px] text-muted-foreground">{t("Tap an entry to edit it without creating a duplicate.")}</p>
+                          </div>
+                          {initialCustomEntry ? (
+                            <button
+                              type="button"
+                              onClick={() => setCustomEditEntry(undefined)}
+                              className="rounded-full bg-background px-3 py-1 text-[10px] font-semibold ring-1 ring-border"
+                            >
+                              {t("New entry")}
+                            </button>
+                          ) : null}
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {savedEntries.map((entry, index) => (
+                            <button
+                              key={entry.id}
+                              type="button"
+                              onClick={() => setCustomEditEntry(entry)}
+                              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-semibold ring-1 ring-border ${
+                                initialCustomEntry?.id === entry.id ? "bg-primary text-primary-foreground" : "bg-background text-foreground"
+                              }`}
+                            >
+                              <Pencil className="h-3 w-3" />
+                              {entry.time || `${t("Entry")} ${index + 1}`}
+                            </button>
+                          ))}
+                        </div>
+                      </section>
+                    ) : null}
+                    <CustomLogForm
+                      key={`${definition.id}:${initialCustomEntry?.id ?? "new"}`}
+                      definition={definition}
+                      date={date}
+                      data={data}
+                      update={update}
+                      onDone={close}
+                      initialEntry={initialCustomEntry}
+                    />
+                  </div>
+                );
               })()}
 
               {active === "postpartum" && (
