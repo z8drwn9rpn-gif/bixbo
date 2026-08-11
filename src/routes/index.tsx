@@ -73,6 +73,8 @@ type VitalTrendPoint = {
   heading: string;
   value?: number;
   details: string[];
+  /** Number of actual saved records represented by this plotted point. */
+  recordCount: number;
 };
 
 function averageNumbers(values: number[]): number | undefined {
@@ -131,6 +133,23 @@ function dailyVitalDetails(metric: VitalTrendMetric, key: string, data: BixboDat
 
   const legacy = metric === "temperature" ? log.temperature : log.weight;
   return legacy != null && Number.isFinite(legacy) ? [`Saved value · ${legacy.toFixed(1)} ${unit}`] : [];
+}
+
+function dailyVitalRecordCount(metric: VitalTrendMetric, key: string, data: BixboData): number {
+  const log = data.dayLogs[key];
+  if (!log) return 0;
+
+  if (metric === "sleep") {
+    const hours = log.sleepHours ?? log.pregnancy?.sleepHours ?? log.postpartum?.sleepHours;
+    return hours != null && Number.isFinite(hours) ? 1 : 0;
+  }
+
+  const entries = metric === "temperature" ? log.temperatureEntries ?? [] : log.weightEntries ?? [];
+  const validEntries = entries.filter((entry) => Number.isFinite(Number(entry.value)));
+  if (validEntries.length) return validEntries.length;
+
+  const legacy = metric === "temperature" ? log.temperature : log.weight;
+  return legacy != null && Number.isFinite(legacy) ? 1 : 0;
 }
 
 function monthlyVitalRecords(metric: VitalTrendMetric, start: Date, end: Date, data: BixboData) {
@@ -228,6 +247,46 @@ function sleepTrendColor(hours: number): string {
   if (hours < 8) return "#EF4444";
   if (Math.abs(hours - 8) < 0.05) return "#F3C30D";
   return "#72C64A";
+}
+
+function VitalTrendTooltip({
+  point,
+  unit,
+  leftPct,
+  topPx,
+  annual,
+}: {
+  point: VitalTrendPoint;
+  unit: string;
+  leftPct: number;
+  topPx: number;
+  annual: boolean;
+}) {
+  if (point.value == null) return null;
+
+  const clamped = Math.max(0, Math.min(100, leftPct));
+  const position =
+    clamped < 18
+      ? { left: "6px", transform: "none" }
+      : clamped > 82
+        ? { right: "6px", transform: "none" }
+        : { left: `${clamped}%`, transform: "translateX(-50%)" };
+
+  return (
+    <div
+      className="pointer-events-none absolute z-30 w-[128px] rounded-xl bg-surface px-2.5 py-2 text-left shadow-lg ring-1 ring-primary/35"
+      style={{ ...position, top: Math.max(4, topPx) }}
+      data-bixbo-vital-tooltip
+    >
+      <p className="truncate text-[9px] font-semibold text-muted-foreground">{point.heading}</p>
+      <p className="mt-0.5 text-[12px] font-bold tabular-nums text-foreground">
+        {annual ? "Avg " : ""}{point.value.toFixed(1)} {unit}
+      </p>
+      {annual ? (
+        <p className="mt-0.5 text-[8px] text-muted-foreground">{point.recordCount} saved {point.recordCount === 1 ? "entry" : "entries"}</p>
+      ) : null}
+    </div>
+  );
 }
 
 function SleepTrendBars({
@@ -360,6 +419,7 @@ function VitalTrendPopup({
           heading: start.toLocaleDateString(language === "sk" ? "sk-SK" : "en-GB", { month: "long", year: "numeric" }),
           value: averageNumbers(records.values),
           details: records.details,
+          recordCount: records.values.length,
         };
       });
     }
@@ -373,6 +433,7 @@ function VitalTrendPopup({
         heading: trendDayHeading(key),
         value: dailyVitalTrendValue(metric, data.dayLogs[key]),
         details: dailyVitalDetails(metric, key, data),
+        recordCount: dailyVitalRecordCount(metric, key, data),
       };
     });
   }, [anchor, data.dayLogs, metric, period]);
@@ -424,6 +485,19 @@ function VitalTrendPopup({
   if (period === "Y") points.forEach((_, index) => visibleLabelIndexes.add(index));
 
   const active = activeIndex != null ? points[activeIndex] : undefined;
+  const showDetailPanel = Boolean(active?.value != null && (period === "Y" || active.recordCount > 1));
+  const tooltipLeftPct = activeIndex == null
+    ? 50
+    : points.length <= 1
+      ? 50
+      : metric === "sleep"
+        ? ((activeIndex + 0.5) / Math.max(1, points.length)) * 100
+        : (xFor(activeIndex) / chartWidth) * 100;
+  const tooltipTopPx = active?.value == null
+    ? 4
+    : metric === "sleep"
+      ? Math.max(4, 118 - (Math.min(12, active.value) / 12) * 96 - 56)
+      : Math.max(4, yFor(active.value) - 62);
 
   return (
     <div className="fixed inset-0 z-[95] flex items-center justify-center px-7">
@@ -486,7 +560,7 @@ function VitalTrendPopup({
             </button>
           </div>
 
-          <div className="mt-3 rounded-2xl bg-tint/70 p-2 ring-1 ring-border/50">
+          <div className="relative mt-3 rounded-2xl bg-tint/70 p-2 ring-1 ring-border/50">
             {values.length ? (
               <>
                 {metric === "sleep" ? (
@@ -556,12 +630,22 @@ function VitalTrendPopup({
                 )}
 
                 {active?.value != null ? (
+                  <VitalTrendTooltip
+                    point={active}
+                    unit={unit}
+                    leftPct={tooltipLeftPct}
+                    topPx={tooltipTopPx}
+                    annual={period === "Y"}
+                  />
+                ) : null}
+
+                {showDetailPanel && active?.value != null ? (
                   <div className="mt-2 rounded-2xl bg-surface/80 p-3 ring-1 ring-border/50">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="text-[10px] font-semibold text-muted-foreground">{active.heading}</p>
                         <p className="mt-1 text-[11px] text-muted-foreground">
-                          {period === "Y" ? t("Monthly average from saved entries") : t("Saved entry")}
+                          {period === "Y" ? `${t("Calculated average from")} ${active.recordCount} ${t("saved entries")}` : t("Saved entries")}
                         </p>
                       </div>
                       <b className="shrink-0 tabular-nums text-sm text-foreground">
@@ -581,9 +665,9 @@ function VitalTrendPopup({
                       )}
                     </div>
                   </div>
-                ) : (
+                ) : active?.value == null ? (
                   <p className="mt-2 text-center text-[10px] text-muted-foreground">{t("Tap a point or bar to see the exact saved entry.")}</p>
-                )}
+                ) : null}
               </>
             ) : (
               <div className="grid min-h-32 place-items-center text-center text-xs text-muted-foreground">
