@@ -8,6 +8,10 @@ import {
   BIXBO_REGISTRY,
   getRegistryFeature,
   getRegistryField,
+  isRegistryFeatureEnabled,
+  isRegistryOptionEnabled,
+  isRegistrySurfaceEnabled,
+  registryOptionLabel,
   type AdminConfig,
   type RegistryFeatureId,
   type RegistryFeatureOverride,
@@ -356,7 +360,7 @@ export function AdminEditOverlay() {
                   </section>
                   {features.map((feature) => {
                     const local = localConfig.features?.[feature.id];
-                    const enabled = local?.enabled !== false;
+                    const enabled = isRegistryFeatureEnabled(adminView, feature.id);
                     return (
                       <section key={feature.id} className="rounded-2xl bg-surface p-3 ring-1 ring-border/80">
                         <div className="flex items-center gap-2">
@@ -369,8 +373,9 @@ export function AdminEditOverlay() {
                         </div>
                         <div className="mt-2 flex flex-wrap gap-1.5">
                           {SURFACES.map((surface) => {
-                            const on = feature.surfaces[surface.id];
-                            return <button key={surface.id} type="button" onClick={() => patchFeature(feature.id, { surfaces: { [surface.id]: !on } })} className={`rounded-full px-2.5 py-1 text-[9px] font-semibold ring-1 ${on ? "bg-primary/10 text-primary ring-primary/25" : "bg-tint text-muted-foreground ring-border"} ${surface.id === currentSurface ? "outline outline-1 outline-primary/50" : ""}`}>{surface.label}</button>;
+                            const protectedPeriodHeatmap = feature.id === "period" && surface.id === "heatmap";
+                            const on = isRegistrySurfaceEnabled(adminView, feature.id, surface.id);
+                            return <button key={surface.id} type="button" disabled={protectedPeriodHeatmap} title={protectedPeriodHeatmap ? t("Period is a required Heatmap metric") : undefined} onClick={() => patchFeature(feature.id, { surfaces: { [surface.id]: !on } })} className={`rounded-full px-2.5 py-1 text-[9px] font-semibold ring-1 ${on ? "bg-primary/10 text-primary ring-primary/25" : "bg-tint text-muted-foreground ring-border"} ${surface.id === currentSurface ? "outline outline-1 outline-primary/50" : ""} disabled:cursor-default disabled:opacity-100`}>{protectedPeriodHeatmap ? `${surface.label} · ${t("Required")}` : surface.label}</button>;
                           })}
                         </div>
                         <div className="mt-2 flex items-center justify-between">
@@ -417,10 +422,11 @@ export function AdminEditOverlay() {
                                   <div className="mt-2 space-y-1">
                                     {baseField.options.map((option, optionIndex) => {
                                       const override = localField?.options?.[option];
-                                      const shown = override?.enabled !== false;
+                                      const shown = isRegistryOptionEnabled(adminView, featureId, baseField.id, option);
+                                      const label = registryOptionLabel(adminView, featureId, baseField.id, option);
                                       return (
                                         <div key={option} className="flex items-center gap-1.5">
-                                          <input value={override?.label ?? option} onChange={(event) => patchField(featureId, baseField.id, { options: { [option]: { ...override, label: event.target.value, order: override?.order ?? optionIndex } } })} className="h-7 min-w-0 flex-1 rounded-lg bg-background px-2 text-[10px] ring-1 ring-border" />
+                                          <input value={label} onChange={(event) => patchField(featureId, baseField.id, { options: { [option]: { ...override, label: event.target.value, order: override?.order ?? optionIndex } } })} className="h-7 min-w-0 flex-1 rounded-lg bg-background px-2 text-[10px] ring-1 ring-border" />
                                           <button type="button" onClick={() => patchField(featureId, baseField.id, { options: { [option]: { ...override, enabled: !shown, order: override?.order ?? optionIndex } } })} className="rounded-full bg-background px-2 py-1 text-[8px] ring-1 ring-border">{shown ? t("On") : t("Hidden")}</button>
                                         </div>
                                       );
