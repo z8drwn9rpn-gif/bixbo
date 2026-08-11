@@ -1,0 +1,29 @@
+name: Stable admin option labels
+
+on:
+  push:
+    branches:
+      - agent/stable-admin-option-labels
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/stable-admin-option-labels
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - run: python .github/scripts/stable_admin_option_labels.py
+      - run: rm .github/scripts/stable_admin_option_labels.py .github/workflows/stable-admin-option-labels.yml
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/lib/appRegistry.ts src/components/CoreFeatureCustomFieldBuilder.tsx src/components/CoreFeatureCustomFieldsForm.tsx src/routes/patterns.tsx .github
+          git commit -m 'preserve stable admin option values on rename'
+          git push origin HEAD:agent/stable-admin-option-labels
