@@ -66,8 +66,33 @@ export function CoreFeatureCustomFieldBuilder({ data }: { data: BixboData }) {
 
   const deleteField = (featureId: RegistryFeatureId, fieldId: string) => {
     const current = getDeviceAdminConfig();
-    const fields = current.features?.[featureId]?.customFields ?? [];
-    writeFields(featureId, fields.filter((field) => field.id !== fieldId));
+    const feature = current.features?.[featureId] ?? {};
+    const fields = feature.customFields ?? [];
+    const heatmapFieldIds = (feature.heatmapFieldIds ?? []).filter((id) => id !== fieldId);
+    setDeviceAdminConfig({
+      ...current,
+      enabled: true,
+      features: {
+        ...(current.features ?? {}),
+        [featureId]: { ...feature, customFields: fields.filter((field) => field.id !== fieldId), heatmapFieldIds },
+      },
+    });
+  };
+
+  const setHeatmapFieldEnabled = (featureId: RegistryFeatureId, fieldId: string, enabled: boolean) => {
+    const current = getDeviceAdminConfig();
+    const feature = current.features?.[featureId] ?? {};
+    const selected = new Set(feature.heatmapFieldIds ?? []);
+    if (enabled) selected.add(fieldId);
+    else selected.delete(fieldId);
+    setDeviceAdminConfig({
+      ...current,
+      enabled: true,
+      features: {
+        ...(current.features ?? {}),
+        [featureId]: { ...feature, heatmapFieldIds: [...selected] },
+      },
+    });
   };
 
   return (
@@ -147,8 +172,21 @@ export function CoreFeatureCustomFieldBuilder({ data }: { data: BixboData }) {
                         </div>
                       ) : null}
 
-                      <div className="mt-2 flex items-center justify-between">
-                        <span className="text-[8px] text-muted-foreground">ID: {field.id}</span>
+                      <div className="mt-2 flex items-center justify-between gap-2">
+                        <span className="min-w-0 flex-1 truncate text-[8px] text-muted-foreground">ID: {field.id}</span>
+                        {(field.kind === "number" || field.kind === "scale") ? (
+                          <button
+                            type="button"
+                            onClick={() => setHeatmapFieldEnabled(feature.id, field.id, !(config.features?.[feature.id]?.heatmapFieldIds ?? []).includes(field.id))}
+                            className={`rounded-full px-2 py-1 text-[8px] font-semibold ring-1 ${
+                              (config.features?.[feature.id]?.heatmapFieldIds ?? []).includes(field.id)
+                                ? "bg-primary text-primary-foreground ring-primary/30"
+                                : "bg-tint text-muted-foreground ring-border"
+                            }`}
+                          >
+                            Heatmap {(config.features?.[feature.id]?.heatmapFieldIds ?? []).includes(field.id) ? t("On") : t("Off")}
+                          </button>
+                        ) : null}
                         <button type="button" onClick={() => patchField(feature.id, field.id, { enabled: field.enabled === false })} className="rounded-full bg-tint px-2 py-1 text-[8px] ring-1 ring-border">{field.enabled === false ? t("Hidden") : t("Shown")}</button>
                       </div>
                     </div>

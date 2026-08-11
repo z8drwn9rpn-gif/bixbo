@@ -7,7 +7,7 @@ import { ChartCard, CHART_GRID, useDismissTapTooltip } from "@/components/charts
 import { Ico } from "@/components/icons/BixboIcons";
 import { PatternsContent } from "./patterns";
 import { useI18n } from "@/hooks/useI18n";
-import { customLogDefinitions, getRegistryFeature, isRegistrySurfaceEnabled, type RegistryFeatureId } from "@/lib/appRegistry";
+import { BIXBO_REGISTRY, customLogDefinitions, getRegistryFeature, isRegistrySurfaceEnabled, registryAdminHeatmapFieldsForFeature, type RegistryFeatureId } from "@/lib/appRegistry";
 import { layoutOrder } from "@/lib/layoutRegistry";
 import {
   useBixbo,
@@ -1795,7 +1795,7 @@ function HfBars({
   );
 }
 
-type HeatmapMetric = "pain" | "period" | "bowel" | "panic" | "tetany" | "hotFlashes" | "sleep" | "sex" | `custom:${string}:${string}`;
+type HeatmapMetric = "pain" | "period" | "bowel" | "panic" | "tetany" | "hotFlashes" | "sleep" | "sex" | `custom:${string}:${string}` | `admin:${RegistryFeatureId}:${string}`;
 
 type HeatmapDatum = {
   /** CSS background for the heatmap mark. May be a gradient (Bowel Type 0). */
@@ -1874,7 +1874,14 @@ function YearHealthHeatmap({
       if (!field) return [];
       return [{ id: `custom:${log.id}:${field.id}` as HeatmapMetric, label: `${log.label} · ${field.label}` }];
     });
-    return [...builtins, ...customs];
+    const adminFields = BIXBO_REGISTRY.flatMap((featureBase) => {
+      const feature = getRegistryFeature(data, featureBase.id);
+      return registryAdminHeatmapFieldsForFeature(data, featureBase.id).map((field) => ({
+        id: `admin:${featureBase.id}:${field.id}` as HeatmapMetric,
+        label: `${feature.label} · ${field.label}`,
+      }));
+    });
+    return [...builtins, ...adminFields, ...customs];
   }, [data]);
   const [metric, setMetric] = useState<HeatmapMetric>("pain");
   const [active, setActive] = useState<string | null>(null);
@@ -1897,6 +1904,30 @@ function YearHealthHeatmap({
     (key: string, selectedMetric: HeatmapMetric): HeatmapDatum | null => {
       const log = data.dayLogs[key];
       if (!log) return null;
+
+      if (selectedMetric.startsWith("admin:")) {
+        const [, rawFeatureId, fieldId] = selectedMetric.split(":");
+        const featureId = rawFeatureId as RegistryFeatureId;
+        const feature = getRegistryFeature(data, featureId);
+        const field = registryAdminHeatmapFieldsForFeature(data, featureId).find((item) => item.id === fieldId);
+        const entries = log.adminFields?.[featureId] ?? [];
+        const values = entries.map((entry) => Number(entry.values[fieldId])).filter((value) => Number.isFinite(value));
+        if (!field || !values.length) return null;
+        const value = values.reduce((sum, item) => sum + item, 0) / values.length;
+        const min = field.scale?.min ?? 0;
+        const max = field.scale?.max ?? Math.max(10, ...values);
+        const span = Math.max(0.0001, max - min);
+        const normalized = Math.max(0, Math.min(10, ((value - min) / span) * 10));
+        const shownValue = Number.isInteger(value) ? String(value) : value.toFixed(1);
+        return {
+          color: vividPainChartColor(normalized),
+          tooltipColor: vividPainChartColor(normalized),
+          value: shownValue,
+          popupValue: `${field.label} · ${shownValue}`,
+          description: feature.label,
+          entryCount: values.length,
+        };
+      }
 
       if (selectedMetric.startsWith("custom:")) {
         const [, logId, fieldId] = selectedMetric.split(":");
