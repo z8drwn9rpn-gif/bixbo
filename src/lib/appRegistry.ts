@@ -175,6 +175,7 @@ export const BIXBO_LOG_FIELDS: Partial<Record<RegistryFeatureId, RegistryFieldDe
     { id: "parts", label: "Where does it hurt?", kind: "chips", order: 20, options: ["Head", "Neck", "Shoulder", "Chest", "Upper back", "Lower back", "Abdomen", "Pelvis", "Hip", "Arm", "Hand", "Leg", "Knee", "Foot"] },
     { id: "quality", label: "How does it hurt?", kind: "chips", order: 30, options: ["Sharp", "Dull", "Throbbing", "Burning", "Cramping", "Pressure", "Stabbing", "Aching"] },
     { id: "symptoms", label: "Other symptoms", kind: "chips", order: 40 },
+    { id: "details", label: "Details", kind: "text", order: 50 },
   ],
   tetany: [
     { id: "time", label: "Time", kind: "text", order: 10 },
