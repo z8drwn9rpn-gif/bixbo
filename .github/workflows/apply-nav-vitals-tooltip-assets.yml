@@ -28,7 +28,7 @@ jobs:
       - name: Lint
         run: bun run lint
       - name: Tests
-        run: bun run test
+        run: bun test
       - name: Build
         run: bun run build
       - name: Commit verified patch
