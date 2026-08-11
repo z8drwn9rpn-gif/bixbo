@@ -4401,11 +4401,12 @@ function EventForm({
     onDone();
   };
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       <SaveBar onCancel={onDone} onSave={save} disabled={!title.trim()} />
-      <Field label="Title">
+      <Field label="Title" schemaFieldId="title">
         <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("e.g. Doctor visit")} />
       </Field>
+      <RegistryFieldBlock fieldId="dates">
       <div className="grid grid-cols-2 gap-2">
         <Field label="From">
           <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
@@ -4414,6 +4415,8 @@ function EventForm({
           <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
         </Field>
       </div>
+      </RegistryFieldBlock>
+      <RegistryFieldBlock fieldId="times">
       <div className="grid grid-cols-2 gap-2">
         <Field label="Time from">
           <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
@@ -4422,7 +4425,8 @@ function EventForm({
           <Input type="time" value={timeEnd} onChange={(e) => setTimeEnd(e.target.value)} />
         </Field>
       </div>
-      <Field label="Color">
+      </RegistryFieldBlock>
+      <Field label="Color" schemaFieldId="color">
         <div className="mt-2 flex gap-2 flex-wrap">
           {EVENT_COLORS.map((c) => (
             <button
@@ -4434,7 +4438,7 @@ function EventForm({
           ))}
         </div>
       </Field>
-      <Field label="Note (optional)">
+      <Field label="Note (optional)" schemaFieldId="note">
         <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
     </div>
@@ -4477,11 +4481,12 @@ function TaskForm({
     onDone();
   };
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       <SaveBar onCancel={onDone} onSave={save} disabled={!title.trim()} />
-      <Field label="Task">
+      <Field label="Task" schemaFieldId="title">
         <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("What to do…")} />
       </Field>
+      <RegistryFieldBlock fieldId="dates">
       <div className="grid grid-cols-2 gap-2">
         <Field label="From">
           <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
@@ -4490,6 +4495,8 @@ function TaskForm({
           <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
         </Field>
       </div>
+      </RegistryFieldBlock>
+      <RegistryFieldBlock fieldId="times">
       <div className="grid grid-cols-2 gap-2">
         <Field label="Time from">
           <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
@@ -4498,7 +4505,8 @@ function TaskForm({
           <Input type="time" value={timeEnd} onChange={(e) => setTimeEnd(e.target.value)} />
         </Field>
       </div>
-      <Field label="Note (optional)">
+      </RegistryFieldBlock>
+      <Field label="Note (optional)" schemaFieldId="note">
         <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
     </div>
