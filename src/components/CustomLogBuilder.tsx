@@ -7,6 +7,39 @@ import type { CustomLogDefinition, RegistryFieldDefinition, RegistryFieldKind } 
 type UpdateFn = (u: (d: BixboData) => BixboData) => void;
 
 const FIELD_KINDS: RegistryFieldKind[] = ["chips", "text", "number", "toggle", "scale"];
+function sanitizeOptions(options: string[] | undefined): string[] {
+  const seen = new Set<string>();
+  return (options ?? [])
+    .map((option) => option.trim())
+    .filter((option) => option.length > 0 && !seen.has(option) && Boolean(seen.add(option)));
+}
+
+function sanitizeOptionLabels(options: string[] | undefined, labels: Record<string, string> | undefined): Record<string, string> | undefined {
+  const allowed = new Set(options ?? []);
+  const out = Object.fromEntries(
+    Object.entries(labels ?? {})
+      .filter(([value]) => allowed.has(value))
+      .map(([value, label]) => [value, label.trim()])
+      .filter(([value, label]) => Boolean(label) && label !== value),
+  );
+  return Object.keys(out).length ? out : undefined;
+}
+
+function sanitizeScale(scale: RegistryFieldDefinition["scale"]): NonNullable<RegistryFieldDefinition["scale"]> {
+  const rawMin = Number(scale?.min);
+  const rawMax = Number(scale?.max);
+  const rawStep = Number(scale?.step);
+  const min = Number.isFinite(rawMin) ? rawMin : 1;
+  const maxCandidate = Number.isFinite(rawMax) ? rawMax : 10;
+  const max = maxCandidate > min ? maxCandidate : min + 1;
+  const stepCandidate = Number.isFinite(rawStep) && rawStep > 0 ? rawStep : 1;
+  return { min, max, step: Math.min(stepCandidate, max - min) };
+}
+
+function displayOptionLabel(field: RegistryFieldDefinition, option: string): string {
+  return field.optionLabels?.[option] ?? option;
+}
+
 const ICONS = ["🩺", "🫀", "🧠", "🫁", "🦴", "🩸", "💊", "🌡️", "💤", "⚡", "🔥", "✨", "🫐", "❤️", "🍽️", "💩", "🏃‍♀️", "📝"];
 
 function idPart(value: string) {
@@ -55,7 +88,18 @@ export function CustomLogBuilder({ data, update }: { data: BixboData; update: Up
   };
 
   const patchField = (log: CustomLogDefinition, fieldId: string, patch: Partial<RegistryFieldDefinition>) => {
-    patchLog(log.id, { fields: log.fields.map((field) => (field.id === fieldId ? { ...field, ...patch, id: field.id } : field)) });
+    patchLog(log.id, {
+      fields: log.fields.map((field) => {
+        if (field.id !== fieldId) return field;
+        const next = { ...field, ...patch, id: field.id };
+        if (next.kind === "chips") {
+          const options = sanitizeOptions(next.options);
+          return { ...next, options, optionLabels: sanitizeOptionLabels(options, next.optionLabels), scale: undefined };
+        }
+        if (next.kind === "scale") return { ...next, options: undefined, optionLabels: undefined, scale: sanitizeScale(next.scale) };
+        return { ...next, options: undefined, optionLabels: undefined, scale: undefined };
+      }),
+    });
   };
 
   const addField = (log: CustomLogDefinition, kind: RegistryFieldKind = "text") => {
@@ -176,7 +220,7 @@ export function CustomLogBuilder({ data, update }: { data: BixboData; update: Up
                 >
                   <div className="flex items-center gap-2">
                     <input value={field.label} onChange={(event) => patchField(log, field.id, { label: event.target.value })} className="h-9 min-w-0 flex-1 rounded-xl bg-background px-3 text-xs font-semibold ring-1 ring-border" />
-                    <select value={field.kind} onChange={(event) => { const kind = event.target.value as RegistryFieldKind; patchField(log, field.id, { kind, options: kind === "chips" ? (field.options?.length ? field.options : [t("Option 1")]) : undefined, scale: kind === "scale" ? (field.scale ?? { min: 1, max: 10, step: 1 }) : undefined }); }} className="h-9 rounded-xl bg-background px-2 text-[10px] ring-1 ring-border">{FIELD_KINDS.map((kind) => <option key={kind} value={kind}>{kind}</option>)}</select>
+                    <select value={field.kind} onChange={(event) => { const kind = event.target.value as RegistryFieldKind; patchField(log, field.id, { kind, options: kind === "chips" ? (field.options?.length ? field.options : [t("Option 1")]) : undefined, optionLabels: kind === "chips" ? field.optionLabels : undefined, scale: kind === "scale" ? (field.scale ?? { min: 1, max: 10, step: 1 }) : undefined }); }} className="h-9 rounded-xl bg-background px-2 text-[10px] ring-1 ring-border">{FIELD_KINDS.map((kind) => <option key={kind} value={kind}>{kind}</option>)}</select>
                     <button type="button" onClick={() => patchField(log, field.id, { enabled: field.enabled === false })} className="rounded-full bg-background px-2 py-1 text-[10px] ring-1 ring-border">{field.enabled === false ? t("Hidden") : t("Shown")}</button>
                   </div>
                   <p className="mt-1 text-[9px] text-muted-foreground">Field ID: {field.id}</p>
@@ -184,8 +228,33 @@ export function CustomLogBuilder({ data, update }: { data: BixboData; update: Up
                   {field.kind === "scale" && field.scale ? <div className="mt-3 grid grid-cols-3 gap-2">{(["min", "max", "step"] as const).map((key) => <label key={key} className="text-[9px] text-muted-foreground">{t(key === "min" ? "Minimum" : key === "max" ? "Maximum" : "Step")}<input type="number" step="0.5" value={field.scale?.[key] ?? ""} onChange={(event) => patchField(log, field.id, { scale: { ...field.scale!, [key]: Number(event.target.value) } })} className="mt-1 h-8 w-full rounded-lg bg-background px-2 text-xs ring-1 ring-border" /></label>)}</div> : null}
 
                   {field.kind === "chips" ? <div className="mt-3 space-y-1.5">
-                    {(field.options ?? []).map((option, optionIndex) => <div key={`${field.id}-${optionIndex}`} className="flex gap-2"><input value={option} onChange={(event) => { const options = [...(field.options ?? [])]; options[optionIndex] = event.target.value; patchField(log, field.id, { options }); }} className="h-8 min-w-0 flex-1 rounded-lg bg-background px-2 text-[11px] ring-1 ring-border"/><button type="button" onClick={() => patchField(log, field.id, { options: (field.options ?? []).filter((_, i) => i !== optionIndex) })} className="rounded-full bg-background px-2 text-[10px] ring-1 ring-border">×</button></div>)}
-                    <button type="button" onClick={() => patchField(log, field.id, { options: [...(field.options ?? []), `${t("Option")} ${(field.options?.length ?? 0) + 1}`] })} className="rounded-full bg-background px-3 py-1 text-[10px] font-semibold ring-1 ring-border">+ {t("Add option")}</button>
+                    {(field.options ?? []).map((option, optionIndex) => (
+                      <div key={`${field.id}-${option}`} className="flex gap-2">
+                        <input
+                          value={displayOptionLabel(field, option)}
+                          onChange={(event) => patchField(log, field.id, { optionLabels: { ...(field.optionLabels ?? {}), [option]: event.target.value } })}
+                          className="h-8 min-w-0 flex-1 rounded-lg bg-background px-2 text-[11px] ring-1 ring-border"
+                        />
+                        <button
+                          type="button"
+                          disabled={(field.options?.length ?? 0) <= 1}
+                          onClick={() => {
+                            const options = (field.options ?? []).filter((_, i) => i !== optionIndex);
+                            const optionLabels = { ...(field.optionLabels ?? {}) };
+                            delete optionLabels[option];
+                            patchField(log, field.id, { options, optionLabels });
+                          }}
+                          className="rounded-full bg-background px-2 text-[10px] ring-1 ring-border disabled:opacity-30"
+                        >×</button>
+                      </div>
+                    ))}
+                    <button type="button" onClick={() => {
+                      const existing = sanitizeOptions(field.options);
+                      let optionNumber = existing.length + 1;
+                      let option = `${t("Option")} ${optionNumber}`;
+                      while (existing.includes(option)) { optionNumber += 1; option = `${t("Option")} ${optionNumber}`; }
+                      patchField(log, field.id, { options: [...existing, option] });
+                    }} className="rounded-full bg-background px-3 py-1 text-[10px] font-semibold ring-1 ring-border">+ {t("Add option")}</button>
                   </div> : null}
 
                   <div className="mt-3 flex items-center justify-between">
