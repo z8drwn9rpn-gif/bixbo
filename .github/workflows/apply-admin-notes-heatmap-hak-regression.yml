@@ -1,9 +1,9 @@
-name: Apply admin notes heatmap HAK regression
+name: Apply BIXBO icon and HAK admin cleanup
 
 on:
   push:
     branches:
-      - agent/fix-admin-notes-heatmap-hak
+      - agent/fix-admin-icons-hak-cleanup
     paths:
       - scripts/apply_admin_notes_heatmap_hak_regression.py
       - .github/workflows/apply-admin-notes-heatmap-hak-regression.yml
@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: agent/fix-admin-notes-heatmap-hak
+          ref: agent/fix-admin-icons-hak-cleanup
       - uses: oven-sh/setup-bun@v2
       - name: Apply patch
         run: python scripts/apply_admin_notes_heatmap_hak_regression.py
@@ -31,15 +31,13 @@ jobs:
         run: bun test
       - name: Build
         run: bun run build
-      - name: Commit verified patch
+      - name: Commit verified patch and remove temporary helpers
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/routes/insights.tsx src/routes/index.tsx src/routes/notes-editor.tsx \
-            src/components/UniversalAdminPageEditor.tsx src/components/UniversalTextAdminEditor.tsx \
-            src/components/AdminCustomPageBlocks.tsx src/components/NavigationAdminEditor.tsx \
-            src/components/HakAdminEditOverlay.tsx src/components/GlobalAdminModeController.tsx
-          if ! git diff --cached --quiet; then
-            git commit -m "Fix inline admin, Notes input, HAK editor and heatmap anchoring"
-            git push origin HEAD:agent/fix-admin-notes-heatmap-hak
-          fi
+          git add src/components/AdminEditOverlay.tsx src/components/GlobalAdminModeController.tsx \
+            src/lib/__tests__/admin-bixbo-icons-hak-regression.test.ts
+          git rm .github/workflows/apply-admin-notes-heatmap-hak-regression.yml \
+            scripts/apply_admin_notes_heatmap_hak_regression.py
+          git commit -m "Use BIXBO icons in Admin and finish HAK admin routing"
+          git push origin HEAD:agent/fix-admin-icons-hak-cleanup
