@@ -22,10 +22,6 @@ const ICONS: Record<NavigationItemId, ComponentType<IconProps>> = {
   healthProfile: BottomNavHomeIcon,
 };
 
-/**
- * Exact user-provided 3D navigation artwork. The previous SVG icon family is
- * deliberately kept above as a fallback; no existing icon component is removed.
- */
 const NAV_IMAGE_SRC: Partial<Record<NavigationItemId, string>> = {
   home: "/nav-assets/nav-home.webp",
   overview: "/nav-assets/nav-overview.webp",
@@ -36,8 +32,11 @@ const NAV_IMAGE_SRC: Partial<Record<NavigationItemId, string>> = {
 function NavArtwork({ id, size, className }: { id: NavigationItemId; size: number; className?: string }) {
   const Icon = ICONS[id];
   const imageSrc = NAV_IMAGE_SRC[id];
+  const [imageFailed, setImageFailed] = useState(false);
 
-  if (imageSrc) {
+  // Never show Safari's broken-image placeholder. If a deployed PWA still has
+  // an older asset cache, fall back to the bundled BIXBO SVG immediately.
+  if (imageSrc && !imageFailed) {
     return (
       <img
         src={imageSrc}
@@ -48,6 +47,7 @@ function NavArtwork({ id, size, className }: { id: NavigationItemId; size: numbe
         height={size}
         className={className}
         style={{ objectFit: "contain" }}
+        onError={() => setImageFailed(true)}
       />
     );
   }
@@ -100,13 +100,13 @@ export function BottomNav() {
                 <button
                   type="button"
                   onClick={openLog}
-                  className="flex min-h-[82px] w-full flex-col items-center justify-end gap-0 px-1 pb-0.5 text-[11px] font-semibold text-[#3f4e27] transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] dark:text-[#dce7b8] landscape:min-h-[70px]"
+                  className="flex min-h-[80px] w-full flex-col items-center justify-end gap-0 px-1 pb-0.5 text-[11px] font-semibold text-[#3f4e27] transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] dark:text-[#dce7b8] landscape:min-h-[68px]"
                   aria-label={t(label)}
                 >
                   <NavArtwork
                     id={item.id}
-                    size={82}
-                    className="-mb-2 h-[82px] w-[82px] shrink-0 object-contain drop-shadow-[0_8px_9px_rgba(52,67,30,0.30)] landscape:h-[68px] landscape:w-[68px]"
+                    size={72}
+                    className="-mb-1 h-[72px] w-[72px] shrink-0 object-contain drop-shadow-[0_7px_8px_rgba(52,67,30,0.28)] landscape:h-[62px] landscape:w-[62px]"
                   />
                   <span className="max-w-full truncate text-center leading-none">{t(label)}</span>
                 </button>

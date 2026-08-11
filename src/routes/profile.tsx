@@ -1202,6 +1202,23 @@ function ProfilePage() {
     return (
       <HealthSubpage title="Appearance" onBack={() => setHealthView("hub")}>
         <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
+          <p className="text-sm font-semibold text-foreground">{t("Home greeting name")}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{t("This name is shown under BIXBO in the Hi greeting on Home.")}</p>
+          <Input
+            className="mt-3 h-11"
+            value={view.settings.userName ?? ""}
+            onChange={(event) =>
+              update((d) => ({
+                ...d,
+                settings: { ...d.settings, userName: event.target.value },
+              }))
+            }
+            placeholder={t("Name")}
+            aria-label={t("Home greeting name")}
+          />
+        </section>
+
+        <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
           <p className="text-sm font-semibold text-foreground">{t("Theme")}</p>
           <p className="mt-1 text-xs text-muted-foreground">{t("Choose how BIXBO looks on this device.")}</p>
           <div className="mt-3 grid grid-cols-3 gap-2">
