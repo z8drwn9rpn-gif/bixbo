@@ -23,19 +23,21 @@ const ICONS: Record<NavigationItemId, ComponentType<IconProps>> = {
   healthProfile: User,
 };
 
-/** Exact user-provided artwork; existing SVG icons remain available as fallback. */
+/** User-approved navigation artwork; versioned to bypass stale browser/PWA caches. */
 const NAV_IMAGE_SRC: Partial<Record<NavigationItemId, string>> = {
-  home: "/nav-assets/nav-home.webp",
-  overview: "/nav-assets/nav-overview.webp",
-  couple: "/nav-assets/nav-couple.webp",
-  notes: "/nav-assets/nav-note.webp",
+  home: "/nav-assets/nav-home.webp?v=exact-20260811-2",
+  overview: "/nav-assets/nav-overview.webp?v=exact-20260811-2",
+  couple: "/nav-assets/nav-couple.webp?v=exact-20260811-2",
+  notes: "/nav-assets/nav-note.webp?v=exact-20260811-2",
 };
 
 function NavArtwork({ id, size, className }: { id: NavigationItemId; size: number; className?: string }) {
   const Icon = ICONS[id];
   const imageSrc = NAV_IMAGE_SRC[id];
+  const [imageFailed, setImageFailed] = useState(false);
+  const mustUseUserArtwork = id === "home" || id === "couple";
 
-  if (imageSrc) {
+  if (imageSrc && (mustUseUserArtwork || !imageFailed)) {
     return (
       <img
         src={imageSrc}
@@ -46,6 +48,7 @@ function NavArtwork({ id, size, className }: { id: NavigationItemId; size: numbe
         height={size}
         className={className}
         style={{ objectFit: "contain" }}
+        onError={mustUseUserArtwork ? undefined : () => setImageFailed(true)}
       />
     );
   }
@@ -115,7 +118,7 @@ export function SideNav({ mascotSrc }: { mascotSrc: string }) {
                     onClick={openLog}
                     className="flex min-h-[76px] w-full items-center gap-4 rounded-3xl px-3 py-2 text-left text-[15px] font-semibold text-[#415025] transition-transform hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.985] dark:text-[#dfe9bd] dark:hover:bg-white/5"
                   >
-                    <NavArtwork id={navItem.id} size={60} className="-my-2 h-[60px] w-[60px] shrink-0 object-contain drop-shadow-[0_8px_9px_rgba(59,74,31,0.28)]" />
+                    <NavArtwork id={navItem.id} size={58} className="-my-2 h-[58px] w-[58px] shrink-0 object-contain drop-shadow-[0_8px_9px_rgba(59,74,31,0.28)]" />
                     <span>{t(label)}</span>
                   </button>
                 </li>
