@@ -3811,9 +3811,9 @@ function TempForm({
   };
 
   return (
-    <div className="space-y-5">
+    <div className="flex flex-col gap-5">
       <SaveBar onCancel={onDone} onSave={save} />
-      <Field label="New temperature measurement">
+      <Field label="New temperature measurement" schemaFieldId="temperature">
         <div className="grid grid-cols-[1fr_120px] gap-2">
           <Input
             type="text"
@@ -3861,7 +3861,7 @@ function TempForm({
         )}
       </Field>
 
-      <Field label="New weight measurement">
+      <Field label="New weight measurement" schemaFieldId="weight">
         <div className="grid grid-cols-[1fr_120px] gap-2">
           <Input
             type="text"
@@ -3907,7 +3907,7 @@ function TempForm({
         )}
       </Field>
 
-      <Field label="Sleep (hours)">
+      <Field label="Sleep (hours)" schemaFieldId="sleepHours">
         <Input
           type="text"
           inputMode="decimal"
@@ -3917,7 +3917,7 @@ function TempForm({
         />
       </Field>
 
-      <Field label="How I slept">
+      <Field label="How I slept" schemaFieldId="sleepQuality">
         <div className="mt-2 flex flex-wrap gap-2">
           {SLEEP_QUALITY.map((item) => (
             <Chip

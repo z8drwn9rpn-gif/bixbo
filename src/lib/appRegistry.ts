@@ -257,6 +257,12 @@ export const BIXBO_LOG_FIELDS: Partial<Record<RegistryFeatureId, RegistryFieldDe
     { id: "intake", label: "Water / caffeine / alcohol", kind: "number", order: 100 },
     { id: "note", label: "Additional note (optional)", kind: "text", order: 110 },
   ],
+  temp: [
+    { id: "temperature", label: "New temperature measurement", kind: "number", order: 10 },
+    { id: "weight", label: "New weight measurement", kind: "number", order: 20 },
+    { id: "sleepHours", label: "Sleep (hours)", kind: "number", order: 30 },
+    { id: "sleepQuality", label: "How I slept", kind: "chips", order: 40 },
+  ],
 };
 
 export function getRegistryField(data: Pick<BixboData, "settings">, featureId: RegistryFeatureId, fieldId: string): RegistryFieldDefinition | undefined {
