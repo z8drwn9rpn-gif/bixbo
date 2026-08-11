@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState, type PointerEvent as ReactPointerEvent } from "react";
 
 import { useI18n } from "@/hooks/useI18n";
 import {
@@ -21,6 +21,7 @@ function makeFieldId() {
 
 export function CoreFeatureCustomFieldBuilder({ data }: { data: BixboData }) {
   const { t } = useI18n();
+  const [draggedOption, setDraggedOption] = useState<{ featureId: RegistryFeatureId; fieldId: string; value: string } | null>(null);
   const config = getDeviceAdminConfig();
   const adminView = { ...data, settings: { ...data.settings, adminConfig: config } } as BixboData;
 
@@ -67,6 +68,51 @@ export function CoreFeatureCustomFieldBuilder({ data }: { data: BixboData }) {
     const current = getDeviceAdminConfig();
     const fields = current.features?.[featureId]?.customFields ?? [];
     writeFields(featureId, fields.map((field) => field.id === fieldId ? { ...field, ...patch, id: field.id } : field));
+  };
+
+  const unifiedFieldIds = (featureId: RegistryFeatureId) => {
+    const current = getDeviceAdminConfig();
+    const feature = current.features?.[featureId] ?? {};
+    const currentView = { ...data, settings: { ...data.settings, adminConfig: current } } as BixboData;
+    const builtin = (BIXBO_LOG_FIELDS[featureId] ?? []).map((base) => ({
+      id: base.id,
+      order: getRegistryField(currentView, featureId, base.id)?.order ?? base.order,
+      custom: false,
+    }));
+    const custom = (feature.customFields ?? []).map((field) => ({ id: field.id, order: field.order, custom: true }));
+    return [...builtin, ...custom]
+      .sort((a, b) => a.order - b.order || (a.custom === b.custom ? a.id.localeCompare(b.id) : a.custom ? 1 : -1))
+      .map((field) => field.id);
+  };
+
+  const canMoveField = (featureId: RegistryFeatureId, fieldId: string, delta: -1 | 1) => {
+    const ids = unifiedFieldIds(featureId);
+    const index = ids.indexOf(fieldId);
+    const target = index + delta;
+    return index >= 0 && target >= 0 && target < ids.length;
+  };
+
+  const moveCustomOption = (featureId: RegistryFeatureId, fieldId: string, sourceValue: string, targetValue: string) => {
+    if (sourceValue === targetValue) return;
+    const current = getDeviceAdminConfig();
+    const field = current.features?.[featureId]?.customFields?.find((item) => item.id === fieldId);
+    if (!field?.options?.length) return;
+    const options = [...field.options];
+    const from = options.indexOf(sourceValue);
+    const to = options.indexOf(targetValue);
+    if (from < 0 || to < 0) return;
+    const [item] = options.splice(from, 1);
+    options.splice(to, 0, item);
+    patchField(featureId, fieldId, { options });
+  };
+
+  const moveDraggedOptionByPointer = (event: ReactPointerEvent<HTMLElement>, featureId: RegistryFeatureId, fieldId: string) => {
+    if (!draggedOption || draggedOption.featureId !== featureId || draggedOption.fieldId !== fieldId) return;
+    const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>("[data-admin-custom-option-value]");
+    const targetValue = target?.dataset.adminCustomOptionValue;
+    if (targetValue && target?.dataset.adminCustomOptionFeature === featureId && target?.dataset.adminCustomOptionField === fieldId && targetValue !== draggedOption.value) {
+      moveCustomOption(featureId, fieldId, draggedOption.value, targetValue);
+    }
   };
 
   const moveField = (featureId: RegistryFeatureId, fieldId: string, delta: -1 | 1) => {
@@ -213,7 +259,7 @@ export function CoreFeatureCustomFieldBuilder({ data }: { data: BixboData }) {
 
               {fields.length ? (
                 <div className="mt-2 space-y-2">
-                  {fields.map((field, fieldIndex) => (
+                  {fields.map((field) => (
                     <div key={field.id} className="rounded-xl bg-background p-2 ring-1 ring-border">
                       <div className="flex items-center gap-1.5">
                         <input
@@ -235,8 +281,9 @@ export function CoreFeatureCustomFieldBuilder({ data }: { data: BixboData }) {
                         >
                           {FIELD_KINDS.map((kind) => <option key={kind} value={kind}>{kind}</option>)}
                         </select>
-                        <button type="button" disabled={fieldIndex === 0} onClick={() => moveField(feature.id, field.id, -1)} aria-label={t("Move field up")} className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-tint text-[12px] font-bold ring-1 ring-border disabled:opacity-30">↑</button>
-                        <button type="button" disabled={fieldIndex === fields.length - 1} onClick={() => moveField(feature.id, field.id, 1)} aria-label={t("Move field down")} className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-tint text-[12px] font-bold ring-1 ring-border disabled:opacity-30">↓</button>
+                        <button type="button" disabled={!canMoveField(feature.id, field.id, -1)} onClick={() => moveField(feature.id, field.id, -1)} aria-label={t("Move field up")} className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-tint text-[12px] font-bold ring-1 ring-border disabled:opacity-30">↑</button>
+                        <button type="button" disabled={!canMoveField(feature.id, field.id, 1)} onClick={() => moveField(feature.id, field.id, 1)} aria-label={t("Move field down")} className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-tint text-[12px] font-bold ring-1 ring-border disabled:opacity-30">↓</button>
+                        <button type="button" onClick={() => patchField(feature.id, field.id, { enabled: field.enabled === false })} className={`rounded-full px-2 py-1 text-[9px] font-semibold ring-1 ring-border ${field.enabled === false ? "bg-tint text-muted-foreground" : "bg-primary/10 text-primary"}`}>{field.enabled === false ? t("Hidden") : t("Shown")}</button>
                         <button type="button" onClick={() => deleteField(feature.id, field.id)} className="rounded-full px-2 py-1 text-[9px] font-semibold text-destructive ring-1 ring-border">{t("Delete")}</button>
                       </div>
 
@@ -253,7 +300,23 @@ export function CoreFeatureCustomFieldBuilder({ data }: { data: BixboData }) {
                       {field.kind === "chips" ? (
                         <div className="mt-2 space-y-1">
                           {(field.options ?? []).map((option, index) => (
-                            <div key={`${field.id}-${index}`} className="flex gap-1">
+                            <div
+                              key={`${field.id}-${option}-${index}`}
+                              data-admin-custom-option-value={option}
+                              data-admin-custom-option-feature={feature.id}
+                              data-admin-custom-option-field={field.id}
+                              className={`flex gap-1 ${draggedOption?.featureId === feature.id && draggedOption.fieldId === field.id && draggedOption.value === option ? "opacity-60" : ""}`}
+                            >
+                              <button
+                                type="button"
+                                onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setDraggedOption({ featureId: feature.id, fieldId: field.id, value: option }); }}
+                                onPointerMove={(event) => moveDraggedOptionByPointer(event, feature.id, field.id)}
+                                onPointerUp={() => setDraggedOption(null)}
+                                onPointerCancel={() => setDraggedOption(null)}
+                                style={{ touchAction: "none" }}
+                                className="inline-flex h-7 shrink-0 items-center rounded-lg bg-tint px-2 text-[10px] text-muted-foreground ring-1 ring-border cursor-grab active:cursor-grabbing"
+                                aria-label={t("Drag to reorder")}
+                              >⋮⋮</button>
                               <input value={option} onChange={(event) => { const options = [...(field.options ?? [])]; options[index] = event.target.value; patchField(feature.id, field.id, { options }); }} className="h-7 min-w-0 flex-1 rounded-lg bg-tint px-2 text-[9px] ring-1 ring-border" />
                               <button type="button" onClick={() => patchField(feature.id, field.id, { options: (field.options ?? []).filter((_, optionIndex) => optionIndex !== index) })} className="rounded-full px-2 text-[10px] ring-1 ring-border">×</button>
                             </div>
