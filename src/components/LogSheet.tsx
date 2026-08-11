@@ -225,24 +225,56 @@ export function LogSheet({
   const back = () => setCat(null);
   const active = cat ?? initial;
   const edit = editEntry;
+  const editSource = edit && typeof edit === "object" ? edit as { id?: unknown; time?: unknown } : null;
+  const editSourceId = typeof editSource?.id === "string" ? editSource.id : undefined;
+  const editSourceTime = typeof editSource?.time === "string" ? editSource.time : undefined;
   const [adminFieldValues, setAdminFieldValues] = useState<Record<string, CustomLogValue>>({});
-  useEffect(() => setAdminFieldValues({}), [active, openToken]);
 
   const activeRegistryFeature = active && !active.startsWith("custom:") ? active as RegistryFeatureId : null;
   const activeAdminFields = activeRegistryFeature ? registryCustomFieldsForFeature(data, activeRegistryFeature) : [];
+  useEffect(() => {
+    if (!activeRegistryFeature || !editSourceId) {
+      setAdminFieldValues({});
+      return;
+    }
+    const entries = data.dayLogs[date]?.adminFields?.[activeRegistryFeature] ?? [];
+    const linked = entries.find((entry) => entry.sourceEntryId === editSourceId);
+    const legacy = linked ?? (editSourceTime ? [...entries].reverse().find((entry) => !entry.sourceEntryId && entry.time === editSourceTime) : undefined);
+    setAdminFieldValues(legacy?.values ?? {});
+  }, [active, activeRegistryFeature, data.dayLogs, date, editSourceId, editSourceTime, openToken]);
+
   const saveAdminCustomFields = () => {
     if (!activeRegistryFeature || !activeAdminFields.length) return;
     const allowed = new Set(activeAdminFields.map((field) => field.id));
     const values = Object.fromEntries(Object.entries(adminFieldValues).filter(([fieldId, value]) => allowed.has(fieldId) && value !== ""));
-    if (!Object.keys(values).length) return;
     update((current) => {
       const day = current.dayLogs[date] ?? {};
       const adminFields = day.adminFields ?? {};
-      const entry = {
-        id: globalThis.crypto?.randomUUID?.() ?? `admin-field-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        time: nowHHMM(),
-        values,
-      };
+      const existing = adminFields[activeRegistryFeature] ?? [];
+      const linkedIndex = editSourceId ? existing.findIndex((entry) => entry.sourceEntryId === editSourceId) : -1;
+      const legacyIndex = linkedIndex < 0 && editSourceId && editSourceTime
+        ? existing.findLastIndex((entry) => !entry.sourceEntryId && entry.time === editSourceTime)
+        : -1;
+      const matchIndex = linkedIndex >= 0 ? linkedIndex : legacyIndex;
+
+      let nextEntries = existing;
+      if (!Object.keys(values).length) {
+        if (matchIndex >= 0) nextEntries = existing.filter((_, index) => index !== matchIndex);
+        else if (!editSourceId) return current;
+      } else if (matchIndex >= 0) {
+        nextEntries = existing.map((entry, index) => index === matchIndex
+          ? { ...entry, values, sourceEntryId: editSourceId ?? entry.sourceEntryId }
+          : entry);
+      } else {
+        const entry = {
+          id: globalThis.crypto?.randomUUID?.() ?? `admin-field-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          time: editSourceTime ?? nowHHMM(),
+          values,
+          ...(editSourceId ? { sourceEntryId: editSourceId } : {}),
+        };
+        nextEntries = [...existing, entry];
+      }
+
       return {
         ...current,
         dayLogs: {
@@ -251,7 +283,7 @@ export function LogSheet({
             ...day,
             adminFields: {
               ...adminFields,
-              [activeRegistryFeature]: [...(adminFields[activeRegistryFeature] ?? []), entry],
+              [activeRegistryFeature]: nextEntries,
             },
           },
         },
