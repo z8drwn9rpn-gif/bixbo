@@ -1,0 +1,25 @@
+name: Custom log edit new sentinel
+on:
+  push:
+    branches: [agent/custom-log-edit-new-sentinel]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/custom-log-edit-new-sentinel
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - run: python .github/scripts/custom_log_edit_new_sentinel.py
+      - run: rm .github/scripts/custom_log_edit_new_sentinel.py .github/workflows/custom-log-edit-new-sentinel.yml
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/components/LogSheet.tsx .github
+          git commit -m 'make custom log new-entry mode explicit'
+          git push origin HEAD:agent/custom-log-edit-new-sentinel
