@@ -40,9 +40,11 @@ export function GlobalAdminModeController() {
   useEffect(() => {
     const sync = () => setActive(isGlobalAdminModeActive());
     sync();
+    const timer = window.setInterval(sync, 300);
     window.addEventListener(ADMIN_MODE_CHANGED, sync);
     window.addEventListener("storage", sync);
     return () => {
+      window.clearInterval(timer);
       window.removeEventListener(ADMIN_MODE_CHANGED, sync);
       window.removeEventListener("storage", sync);
     };
