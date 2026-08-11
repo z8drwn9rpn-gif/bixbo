@@ -1,0 +1,28 @@
+name: Preserve hidden admin values
+on:
+  push:
+    branches: [agent/preserve-hidden-admin-field-values]
+    paths:
+      - '.github/scripts/preserve_hidden_admin_values.py'
+      - '.github/workflows/preserve-hidden-admin-values.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/preserve-hidden-admin-field-values
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - run: python .github/scripts/preserve_hidden_admin_values.py
+      - run: rm .github/scripts/preserve_hidden_admin_values.py .github/workflows/preserve-hidden-admin-values.yml
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'preserve hidden admin field values on edit'
+          git push origin HEAD:agent/preserve-hidden-admin-field-values
