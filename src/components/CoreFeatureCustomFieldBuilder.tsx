@@ -22,6 +22,21 @@ function sanitizeOptions(options: string[] | undefined): string[] {
     .filter((option) => option.length > 0 && !seen.has(option) && Boolean(seen.add(option)));
 }
 
+function sanitizeOptionLabels(options: string[] | undefined, labels: Record<string, string> | undefined): Record<string, string> | undefined {
+  const allowed = new Set(options ?? []);
+  const out = Object.fromEntries(
+    Object.entries(labels ?? {})
+      .filter(([value]) => allowed.has(value))
+      .map(([value, label]) => [value, label.trim()])
+      .filter(([value, label]) => Boolean(label) && label !== value),
+  );
+  return Object.keys(out).length ? out : undefined;
+}
+
+function displayOptionLabel(field: RegistryFieldDefinition, option: string): string {
+  return field.optionLabels?.[option] ?? option;
+}
+
 function sanitizeScale(scale: RegistryFieldDefinition["scale"]): NonNullable<RegistryFieldDefinition["scale"]> {
   const rawMin = Number(scale?.min);
   const rawMax = Number(scale?.max);
@@ -93,7 +108,12 @@ export function CoreFeatureCustomFieldBuilder({ data }: { data: BixboData }) {
       return {
         ...next,
         label: next.label.trimStart(),
-        ...(next.kind === "chips" ? { options: sanitizeOptions(next.options) } : { options: undefined }),
+        ...(next.kind === "chips"
+          ? (() => {
+              const options = sanitizeOptions(next.options);
+              return { options, optionLabels: sanitizeOptionLabels(options, next.optionLabels) };
+            })()
+          : { options: undefined, optionLabels: undefined }),
         ...(next.kind === "scale" ? { scale: sanitizeScale(next.scale) } : { scale: undefined }),
       };
     }));
@@ -303,6 +323,7 @@ export function CoreFeatureCustomFieldBuilder({ data }: { data: BixboData }) {
                             patchField(feature.id, field.id, {
                               kind,
                               options: kind === "chips" ? (field.options?.length ? field.options : [t("Option 1")]) : undefined,
+                              optionLabels: kind === "chips" ? field.optionLabels : undefined,
                               scale: kind === "scale" ? (field.scale ?? { min: 1, max: 10, step: 1 }) : undefined,
                             });
                           }}
@@ -346,8 +367,19 @@ export function CoreFeatureCustomFieldBuilder({ data }: { data: BixboData }) {
                                 className="inline-flex h-7 shrink-0 items-center rounded-lg bg-tint px-2 text-[10px] text-muted-foreground ring-1 ring-border cursor-grab active:cursor-grabbing"
                                 aria-label={t("Drag to reorder")}
                               >⋮⋮</button>
-                              <input value={option} onChange={(event) => { const options = [...(field.options ?? [])]; options[index] = event.target.value; patchField(feature.id, field.id, { options }); }} className="h-7 min-w-0 flex-1 rounded-lg bg-tint px-2 text-[9px] ring-1 ring-border" />
-                              <button type="button" disabled={(field.options?.length ?? 0) <= 1} onClick={() => patchField(feature.id, field.id, { options: (field.options ?? []).filter((_, optionIndex) => optionIndex !== index) })} className="rounded-full px-2 text-[10px] ring-1 ring-border">×</button>
+                              <input
+                                value={displayOptionLabel(field, option)}
+                                onChange={(event) => patchField(feature.id, field.id, {
+                                  optionLabels: { ...(field.optionLabels ?? {}), [option]: event.target.value },
+                                })}
+                                className="h-7 min-w-0 flex-1 rounded-lg bg-tint px-2 text-[9px] ring-1 ring-border"
+                              />
+                              <button type="button" disabled={(field.options?.length ?? 0) <= 1} onClick={() => {
+                                const options = (field.options ?? []).filter((_, optionIndex) => optionIndex !== index);
+                                const optionLabels = { ...(field.optionLabels ?? {}) };
+                                delete optionLabels[option];
+                                patchField(feature.id, field.id, { options, optionLabels });
+                              }} className="rounded-full px-2 text-[10px] ring-1 ring-border">×</button>
                             </div>
                           ))}
                           <button type="button" onClick={() => {

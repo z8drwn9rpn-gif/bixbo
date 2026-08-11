@@ -42,7 +42,10 @@ export interface RegistryFieldDefinition {
   kind: RegistryFieldKind;
   order: number;
   enabled?: boolean;
+  /** Stable stored option values. Renaming an option must not change these keys. */
   options?: string[];
+  /** Optional display labels keyed by the stable stored option value. */
+  optionLabels?: Record<string, string>;
   scale?: RegistryScaleDefinition;
 }
 

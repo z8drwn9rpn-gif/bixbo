@@ -115,7 +115,7 @@ export function CoreFeatureCustomFieldInput({
               onClick={() => onChange(active ? selected.filter((item) => item !== option) : [...selected, option])}
               className={`rounded-full px-3 py-1.5 text-xs font-semibold ring-1 ring-border ${active ? "bg-primary text-primary-foreground" : "bg-tint"}`}
             >
-              {t(option)}
+              {t(field.optionLabels?.[option] ?? option)}
             </button>
           );
         })}
