@@ -37,6 +37,7 @@ import {
 import { publishGlobalAdminConfig } from "@/lib/globalAdminConfig";
 import { BIXBO_LAYOUT_SECTIONS, layoutOrder, type LayoutPageId } from "@/lib/layoutRegistry";
 import { EMPTY, useBixbo, type BixboData } from "@/lib/storage";
+import { ADMIN_MODE_CHANGED, isGlobalAdminModeActive } from "@/components/GlobalAdminModeController";
 
 const SURFACES: { id: RegistrySurface; label: string }[] = [
   { id: "log", label: "Log" },
@@ -148,12 +149,23 @@ export function AdminEditOverlay() {
   const { data, hydrated } = useBixbo();
   const view = hydrated ? data : EMPTY;
   const [revision, setRevision] = useState(0);
+  const [adminMode, setAdminMode] = useState(() => isGlobalAdminModeActive());
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<EditorTab>("page");
   const [publishPin, setPublishPin] = useState("");
   const [publishStatus, setPublishStatus] = useState("");
   const [publishing, setPublishing] = useState(false);
   const undoStack = useRef<string[]>([]);
+
+  useEffect(() => {
+    const syncAdminMode = () => setAdminMode(isGlobalAdminModeActive());
+    window.addEventListener(ADMIN_MODE_CHANGED, syncAdminMode);
+    return () => window.removeEventListener(ADMIN_MODE_CHANGED, syncAdminMode);
+  }, []);
+
+  useEffect(() => {
+    if (!adminMode) setOpen(false);
+  }, [adminMode]);
 
   useEffect(() => {
     const refresh = () => setRevision((value) => value + 1);
@@ -321,7 +333,7 @@ export function AdminEditOverlay() {
     }
   };
 
-  if (!page || typeof window === "undefined" || !isAdminOwnerAccount()) return null;
+  if (!page || !adminMode || typeof window === "undefined" || !isAdminOwnerAccount()) return null;
 
   return (
     <>
