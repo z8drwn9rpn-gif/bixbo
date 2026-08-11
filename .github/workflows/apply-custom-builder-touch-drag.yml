@@ -1,0 +1,28 @@
+name: Apply custom builder touch drag
+on:
+  push:
+    branches: [agent/custom-field-builder-touch-drag]
+    paths:
+      - '.github/scripts/apply_custom_builder_touch_drag.py'
+      - '.github/workflows/apply-custom-builder-touch-drag.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/custom-field-builder-touch-drag
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - run: python .github/scripts/apply_custom_builder_touch_drag.py
+      - run: rm .github/scripts/apply_custom_builder_touch_drag.py .github/workflows/apply-custom-builder-touch-drag.yml
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'add touch drag to custom field builder'
+          git push origin HEAD:agent/custom-field-builder-touch-drag
