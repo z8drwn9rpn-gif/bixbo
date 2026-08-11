@@ -1,0 +1,32 @@
+name: Fix dynamic field labels
+
+on:
+  push:
+    branches:
+      - agent/panic-tetany-field-drag
+    paths:
+      - .github/scripts/fix_dynamic_field_labels.py
+      - .github/workflows/fix-dynamic-field-labels.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/panic-tetany-field-drag
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python .github/scripts/fix_dynamic_field_labels.py
+      - run: rm .github/scripts/fix_dynamic_field_labels.py .github/workflows/fix-dynamic-field-labels.yml
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/components/LogSheet.tsx .github/scripts/fix_dynamic_field_labels.py .github/workflows/fix-dynamic-field-labels.yml
+          git commit -m 'preserve dynamic intensity labels'
+          git push
