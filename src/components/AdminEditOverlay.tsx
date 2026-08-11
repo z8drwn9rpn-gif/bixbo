@@ -570,8 +570,12 @@ export function AdminEditOverlay() {
       </div>
 
       {open ? (
-        <div data-bixbo-admin-ui className="fixed inset-0 z-[89] bg-black/20 lg:bg-black/10" onClick={() => setOpen(false)}>
-          <aside className="absolute inset-x-0 bottom-0 max-h-[82dvh] overflow-y-auto rounded-t-[28px] bg-background pb-[calc(env(safe-area-inset-bottom)+1rem)] shadow-2xl ring-1 ring-border lg:inset-y-4 lg:left-auto lg:right-4 lg:w-[460px] lg:max-h-none lg:rounded-[28px]" onClick={(event) => event.stopPropagation()}>
+        <div
+          data-bixbo-admin-ui
+          data-bixbo-admin-live-editor
+          className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+5.6rem)] z-[10010] lg:inset-0 lg:pointer-events-auto lg:bg-black/10"
+        >
+          <aside className="pointer-events-auto relative mx-2 max-h-[48dvh] overflow-y-auto rounded-[28px] bg-background pb-4 shadow-2xl ring-1 ring-border lg:absolute lg:inset-y-4 lg:left-auto lg:right-4 lg:mx-0 lg:w-[460px] lg:max-h-none lg:rounded-[28px] lg:pb-[calc(env(safe-area-inset-bottom)+1rem)]" onClick={(event) => event.stopPropagation()}>
             <div className="sticky top-0 z-10 border-b border-border bg-background/95 px-4 pb-3 pt-4 backdrop-blur">
               <div className="flex items-start justify-between gap-3">
                 <div>
