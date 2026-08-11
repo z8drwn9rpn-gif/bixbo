@@ -55,7 +55,6 @@ export interface RegistryFieldOverride {
   fields?: Record<string, RegistryFieldOverride>;
 }
 
-
 export interface CustomLogDefinition {
   id: string;
   label: string;
@@ -134,7 +133,6 @@ export const BIXBO_REGISTRY: RegistryFeatureDefinition[] = [
   { id: "sleep", label: "Sleep", icon: "🌙", color: "#7567C8", order: 180, surfaces: s(false, false, false, true, true, true) },
   { id: "histamine", label: "Histamine flare", icon: "🔥", color: "#D95D4F", order: 190, surfaces: s(false, true, false, false, true, true) },
 ];
-
 
 export const BIXBO_LOG_FIELDS: Partial<Record<RegistryFeatureId, RegistryFieldDefinition[]>> = {
   pain: [
@@ -217,6 +215,15 @@ export function registryOptionLabel(data: Pick<BixboData, "settings">, featureId
   return activeAdminConfig(data)?.features?.[featureId]?.fields?.[fieldId]?.options?.[value]?.label ?? value;
 }
 
+export function isRegistryOptionEnabled(
+  data: Pick<BixboData, "settings">,
+  featureId: RegistryFeatureId,
+  fieldId: string,
+  value: string,
+): boolean {
+  return activeAdminConfig(data)?.features?.[featureId]?.fields?.[fieldId]?.options?.[value]?.enabled !== false;
+}
+
 export function customLogDefinitions(data: Pick<BixboData, "settings">): CustomLogDefinition[] {
   return [...(activeAdminConfig(data)?.customLogs ?? [])]
     .filter((log) => log.enabled !== false)
@@ -250,6 +257,9 @@ export function isRegistrySurfaceEnabled(
   id: RegistryFeatureId,
   surface: RegistrySurface,
 ): boolean {
+  // Period is a core Heatmap metric. A stale local/global admin override must
+  // never make it impossible to get Period back into the Heatmap selector.
+  if (id === "period" && surface === "heatmap") return true;
   return isRegistryFeatureEnabled(data, id) && getRegistryFeature(data, id).surfaces[surface];
 }
 
