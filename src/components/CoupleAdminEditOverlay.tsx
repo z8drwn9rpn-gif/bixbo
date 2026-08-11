@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { Link, useRouter, useRouterState } from "@tanstack/react-router";
 
 import { useI18n } from "@/hooks/useI18n";
@@ -20,6 +20,7 @@ import {
 import { BIXBO_LAYOUT_SECTIONS, layoutOrder, type LayoutPageId } from "@/lib/layoutRegistry";
 import { EMPTY, useBixbo, type BixboData } from "@/lib/storage";
 import { ADMIN_MODE_CHANGED, isGlobalAdminModeActive } from "@/components/GlobalAdminModeController";
+import { ADMIN_CUSTOMIZE_REQUESTED } from "@/lib/adminCustomizeEvents";
 
 const COUPLE_PAGES: LayoutPageId[] = ["couple.overview", "couple.compare", "couple.health"];
 
@@ -116,6 +117,7 @@ export function CoupleAdminEditOverlay() {
   const [revision, setRevision] = useState(0);
   const [adminMode, setAdminMode] = useState(() => isGlobalAdminModeActive());
   const [open, setOpen] = useState(false);
+  const [draggedSection, setDraggedSection] = useState<string | null>(null);
   const undoStack = useRef<string[]>([]);
 
   useEffect(() => {
@@ -136,6 +138,14 @@ export function CoupleAdminEditOverlay() {
     window.addEventListener(ADMIN_MODE_CHANGED, syncAdminMode);
     return () => window.removeEventListener(ADMIN_MODE_CHANGED, syncAdminMode);
   }, []);
+
+  useEffect(() => {
+    const openCurrentPageEditor = () => {
+      if (adminMode && pathname.startsWith("/couple")) setOpen(true);
+    };
+    window.addEventListener(ADMIN_CUSTOMIZE_REQUESTED, openCurrentPageEditor);
+    return () => window.removeEventListener(ADMIN_CUSTOMIZE_REQUESTED, openCurrentPageEditor);
+  }, [adminMode, pathname]);
 
   useEffect(() => {
     if (!adminMode) setOpen(false);
@@ -179,6 +189,24 @@ export function CoupleAdminEditOverlay() {
     if (index < 0 || target < 0 || target >= ids.length) return;
     [ids[index], ids[target]] = [ids[target], ids[index]];
     writeOrder(ids);
+  };
+
+  const dropSection = (targetId: string) => {
+    if (!draggedSection || draggedSection === targetId) return;
+    const ids = sections.map((section) => section.id);
+    const from = ids.indexOf(draggedSection);
+    const to = ids.indexOf(targetId);
+    if (from < 0 || to < 0) return;
+    const [item] = ids.splice(from, 1);
+    ids.splice(to, 0, item);
+    writeOrder(ids);
+  };
+
+  const moveDraggedSectionByPointer = (event: ReactPointerEvent<HTMLElement>) => {
+    if (!draggedSection) return;
+    const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>("[data-admin-couple-section-sort-id]");
+    const targetId = target?.dataset.adminCoupleSectionSortId;
+    if (targetId && targetId !== draggedSection) dropSection(targetId);
   };
 
   const undo = () => {
@@ -227,7 +255,7 @@ export function CoupleAdminEditOverlay() {
                 const visible = isEffectiveLayoutSectionVisible(page, section.id);
                 const localOverride = layoutSectionOverridesFromConfig(localConfig)[page]?.[section.id];
                 return (
-                  <section key={section.id} className="rounded-2xl bg-surface p-3 ring-1 ring-border/80">
+                  <section key={section.id} data-admin-couple-section-sort-id={section.id} className={`rounded-2xl bg-surface p-3 ring-1 ring-border/80 ${draggedSection === section.id ? "opacity-60" : ""}`}>
                     <div className="flex items-center gap-2">
                       <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-tint text-[10px] font-bold text-muted-foreground">{index + 1}</span>
                       <input value={label} onChange={(event) => persist(withLayoutSectionOverride(getDeviceAdminConfig(), page, section.id, { label: event.target.value }))} className="h-9 min-w-0 flex-1 rounded-xl bg-tint px-3 text-xs font-semibold ring-1 ring-border" />
@@ -236,6 +264,7 @@ export function CoupleAdminEditOverlay() {
                     <div className="mt-2 flex items-center gap-1.5">
                       <button type="button" disabled={index === 0} onClick={() => moveSection(section.id, -1)} className="rounded-full bg-tint px-3 py-1.5 text-[10px] font-semibold ring-1 ring-border disabled:opacity-30">↑</button>
                       <button type="button" disabled={index === sections.length - 1} onClick={() => moveSection(section.id, 1)} className="rounded-full bg-tint px-3 py-1.5 text-[10px] font-semibold ring-1 ring-border disabled:opacity-30">↓</button>
+                      <button type="button" onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setDraggedSection(section.id); }} onPointerMove={moveDraggedSectionByPointer} onPointerUp={() => setDraggedSection(null)} onPointerCancel={() => setDraggedSection(null)} style={{ touchAction: "none" }} className="inline-flex h-7 items-center gap-1 rounded-full bg-tint px-2.5 text-[9px] font-semibold text-muted-foreground ring-1 ring-border cursor-grab active:cursor-grabbing" aria-label={t("Drag to reorder")}><span className="text-sm">⋮⋮</span>{t("Drag")}</button>
                       <span className="min-w-0 flex-1 truncate text-[9px] text-muted-foreground">ID: {section.id}</span>
                       {localOverride ? <button type="button" onClick={() => persist(withoutLayoutSectionOverride(getDeviceAdminConfig(), page, section.id))} className="rounded-full bg-tint px-3 py-1.5 text-[9px] font-semibold text-muted-foreground ring-1 ring-border">{t("Reset")}</button> : null}
                     </div>

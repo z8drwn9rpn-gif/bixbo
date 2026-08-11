@@ -187,7 +187,7 @@ export function UniversalTextAdminEditor() {
             </div>
             <div className="space-y-2 px-4 py-4">
               {items.map((item) => {
-                const hasOverride = Boolean(getEffectiveAdminConfig().textOverrides?.[item.key]);
+                const hasOverride = Boolean(getDeviceAdminConfig().textOverrides?.[item.key]);
                 return (
                   <section key={item.key} className="rounded-2xl bg-surface p-3 ring-1 ring-border/80">
                     <div className="flex items-center gap-2">

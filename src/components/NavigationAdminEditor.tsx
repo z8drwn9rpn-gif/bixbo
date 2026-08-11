@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type PointerEvent as ReactPointerEvent } from "react";
 
 import { useI18n } from "@/hooks/useI18n";
 import type { AdminConfig } from "@/lib/appRegistry";
@@ -18,6 +18,7 @@ export function NavigationAdminEditor() {
   const [active, setActive] = useState(() => isGlobalAdminModeActive());
   const [open, setOpen] = useState(false);
   const [revision, setRevision] = useState(0);
+  const [draggedItem, setDraggedItem] = useState<NavigationItemId | null>(null);
   void revision;
 
   useEffect(() => {
@@ -79,6 +80,30 @@ export function NavigationAdminEditor() {
     setRevision((value) => value + 1);
   };
 
+  const dropItem = (targetId: NavigationItemId) => {
+    if (!draggedItem || draggedItem === targetId) return;
+    const ordered = [...items];
+    const from = ordered.findIndex((item) => item.id === draggedItem);
+    const to = ordered.findIndex((item) => item.id === targetId);
+    if (from < 0 || to < 0) return;
+    const [item] = ordered.splice(from, 1);
+    ordered.splice(to, 0, item);
+    const config = getDeviceAdminConfig() as NavAdminConfig;
+    const nextItems = { ...(config.navigation?.items ?? {}) };
+    ordered.forEach((navItem, orderIndex) => {
+      nextItems[navItem.id] = { ...(nextItems[navItem.id] ?? {}), order: (orderIndex + 1) * 10 };
+    });
+    setDeviceAdminConfig({ ...config, enabled: true, navigation: { ...(config.navigation ?? {}), items: nextItems } } as AdminConfig);
+    setRevision((value) => value + 1);
+  };
+
+  const moveDraggedItemByPointer = (event: ReactPointerEvent<HTMLElement>) => {
+    if (!draggedItem) return;
+    const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>("[data-admin-nav-sort-id]");
+    const targetId = target?.dataset.adminNavSortId as NavigationItemId | undefined;
+    if (targetId && targetId !== draggedItem) dropItem(targetId);
+  };
+
   const resetItem = (id: NavigationItemId) => {
     const config = getDeviceAdminConfig() as NavAdminConfig;
     const nextItems = { ...(config.navigation?.items ?? {}) };
@@ -110,7 +135,7 @@ export function NavigationAdminEditor() {
                 const hidden = override?.hidden === true;
                 const defaultItem = BIXBO_NAVIGATION.find((candidate) => candidate.id === item.id)!;
                 return (
-                  <section key={item.id} className="rounded-2xl bg-surface p-3 ring-1 ring-border/80">
+                  <section key={item.id} data-admin-nav-sort-id={item.id} className={`rounded-2xl bg-surface p-3 ring-1 ring-border/80 ${draggedItem === item.id ? "opacity-60" : ""}`}>
                     <div className="flex items-center gap-2">
                       <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-tint text-[10px] font-bold text-muted-foreground">{index + 1}</span>
                       <input value={override?.label ?? t(defaultItem.label)} onChange={(event) => write(item.id, { label: event.target.value })} className="h-9 min-w-0 flex-1 rounded-xl bg-tint px-3 text-xs font-semibold ring-1 ring-border" />
@@ -119,8 +144,9 @@ export function NavigationAdminEditor() {
                     <div className="mt-2 flex items-center gap-1.5">
                       <button type="button" disabled={index === 0} onClick={() => move(item.id, -1)} className="rounded-full bg-tint px-3 py-1.5 text-[10px] font-semibold ring-1 ring-border disabled:opacity-30">↑</button>
                       <button type="button" disabled={index === items.length - 1} onClick={() => move(item.id, 1)} className="rounded-full bg-tint px-3 py-1.5 text-[10px] font-semibold ring-1 ring-border disabled:opacity-30">↓</button>
+                      <button type="button" onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setDraggedItem(item.id); }} onPointerMove={moveDraggedItemByPointer} onPointerUp={() => setDraggedItem(null)} onPointerCancel={() => setDraggedItem(null)} style={{ touchAction: "none" }} className="inline-flex h-7 items-center gap-1 rounded-full bg-tint px-2.5 text-[9px] font-semibold text-muted-foreground ring-1 ring-border cursor-grab active:cursor-grabbing" aria-label={t("Drag to reorder")}><span className="text-sm">⋮⋮</span>{t("Drag")}</button>
                       <span className="min-w-0 flex-1 truncate text-[8px] text-muted-foreground">ID: {item.id}</span>
-                      {override ? <button type="button" onClick={() => resetItem(item.id)} className="rounded-full bg-tint px-3 py-1.5 text-[9px] font-semibold ring-1 ring-border">{t("Reset")}</button> : null}
+                      {Boolean((getDeviceAdminConfig() as NavAdminConfig).navigation?.items?.[item.id]) ? <button type="button" onClick={() => resetItem(item.id)} className="rounded-full bg-tint px-3 py-1.5 text-[9px] font-semibold ring-1 ring-border">{t("Reset")}</button> : null}
                     </div>
                   </section>
                 );

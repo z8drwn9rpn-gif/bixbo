@@ -36,6 +36,7 @@ import {
   setDeviceAdminConfig,
 } from "@/lib/deviceAdminConfig";
 import { publishGlobalAdminConfig } from "@/lib/globalAdminConfig";
+import { ADMIN_CUSTOMIZE_REQUESTED } from "@/lib/adminCustomizeEvents";
 import { BIXBO_LAYOUT_SECTIONS, layoutOrder, type LayoutPageId } from "@/lib/layoutRegistry";
 import { EMPTY, useBixbo, type BixboData } from "@/lib/storage";
 import { ADMIN_MODE_CHANGED, isGlobalAdminModeActive } from "@/components/GlobalAdminModeController";
@@ -63,10 +64,20 @@ function isRequiredCoreField(featureId: RegistryFeatureId, fieldId: string): boo
   return REQUIRED_CORE_FIELDS.has(`${featureId}:${fieldId}`);
 }
 
+function activePatternsPage(): LayoutPageId {
+  if (typeof document === "undefined") return "patterns.monthly";
+  const selected = document.querySelector<HTMLElement>('[data-bixbo-pattern-tab][aria-selected="true"]');
+  const tab = selected?.dataset.bixboPatternTab;
+  if (tab === "cycle" || tab === "monthly" || tab === "treatment" || tab === "triggers") {
+    return `patterns.${tab}` as LayoutPageId;
+  }
+  return "patterns.monthly";
+}
+
 function pageFromPath(pathname: string): LayoutPageId | null {
   if (pathname === "/") return "home";
   if (pathname.startsWith("/insights")) return "insights";
-  if (pathname.startsWith("/patterns")) return "patterns.monthly";
+  if (pathname.startsWith("/patterns")) return activePatternsPage();
   return null;
 }
 
@@ -177,6 +188,25 @@ export function AdminEditOverlay() {
     window.addEventListener(ADMIN_MODE_CHANGED, syncAdminMode);
     return () => window.removeEventListener(ADMIN_MODE_CHANGED, syncAdminMode);
   }, []);
+
+  useEffect(() => {
+    const openCurrentPageEditor = () => {
+      if (!adminMode || !page) return;
+      if (pathname === "/" && document.querySelector("[data-bixbo-hak-root]")) return;
+      setTab("page");
+      setOpen(true);
+    };
+    window.addEventListener(ADMIN_CUSTOMIZE_REQUESTED, openCurrentPageEditor);
+    return () => window.removeEventListener(ADMIN_CUSTOMIZE_REQUESTED, openCurrentPageEditor);
+  }, [adminMode, page, pathname]);
+
+  useEffect(() => {
+    if (!pathname.startsWith("/patterns")) return;
+    const refreshPatternsPage = () => setRevision((value) => value + 1);
+    const observer = new MutationObserver(refreshPatternsPage);
+    observer.observe(document.body, { attributes: true, subtree: true, attributeFilter: ["aria-selected"] });
+    return () => observer.disconnect();
+  }, [pathname]);
 
   useEffect(() => {
     if (!adminMode) setOpen(false);
