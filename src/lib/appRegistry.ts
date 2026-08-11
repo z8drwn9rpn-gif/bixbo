@@ -263,6 +263,14 @@ export const BIXBO_LOG_FIELDS: Partial<Record<RegistryFeatureId, RegistryFieldDe
     { id: "sleepHours", label: "Sleep (hours)", kind: "number", order: 30 },
     { id: "sleepQuality", label: "How I slept", kind: "chips", order: 40 },
   ],
+  note: [
+    { id: "time", label: "Time (optional)", kind: "text", order: 10 },
+    { id: "text", label: "Anything about today…", kind: "text", order: 20 },
+  ],
+  postpartum: [
+    { id: "symptoms", label: "Symptoms today", kind: "chips", order: 10 },
+    { id: "note", label: "Recovery note (optional)", kind: "text", order: 20 },
+  ],
 };
 
 export function getRegistryField(data: Pick<BixboData, "settings">, featureId: RegistryFeatureId, fieldId: string): RegistryFieldDefinition | undefined {

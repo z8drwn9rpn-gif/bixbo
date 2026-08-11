@@ -4518,6 +4518,8 @@ function TaskForm({
 /* ------------------- NOTE ------------------- */
 function NoteForm({ date, update, onDone }: { date: string; update: UpdateFn; onDone: () => void }) {
   const { t } = useI18n();
+  const schema = useLogSchema();
+  const noteTextPlaceholder = schema ? (getRegistryField(schema.data, schema.featureId, "text")?.label ?? "Anything about today…") : "Anything about today…";
   const [text, setText] = useState("");
   const [time, setTime] = useState("");
   const save = () => {
@@ -4533,10 +4535,14 @@ function NoteForm({ date, update, onDone }: { date: string; update: UpdateFn; on
   return (
     <div className="space-y-3">
       <SaveBar onCancel={onDone} onSave={save} disabled={!text.trim()} />
-      <Field label="Time (optional)">
+      <div className="flex flex-col gap-3">
+      <Field label="Time (optional)" schemaFieldId="time">
         <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
       </Field>
-      <Textarea rows={6} value={text} onChange={(e) => setText(e.target.value)} placeholder={t("Anything about today…")} />
+      <RegistryFieldBlock fieldId="text">
+        <Textarea rows={6} value={text} onChange={(e) => setText(e.target.value)} placeholder={t(noteTextPlaceholder)} />
+      </RegistryFieldBlock>
+      </div>
     </div>
   );
 }
@@ -4596,7 +4602,8 @@ function PostpartumSymptomsForm({
         </div>
       </div>
 
-      <Field label={t("Symptoms today")}>
+      <div className="flex flex-col gap-5">
+      <Field label={t("Symptoms today")} schemaFieldId="symptoms">
         <div className="mt-2 flex flex-wrap gap-2">
           {POSTPARTUM_SYMPTOMS.map((symptom) => (
             <Chip key={symptom} active={symptoms.includes(symptom)} onClick={() => toggleSymptom(symptom)}><TrText value={symptom} /></Chip>
@@ -4604,7 +4611,7 @@ function PostpartumSymptomsForm({
         </div>
       </Field>
 
-      <Field label={t("Recovery note (optional)")}>
+      <Field label={t("Recovery note (optional)")} schemaFieldId="note">
         <Textarea
           rows={4}
           value={note}
@@ -4612,6 +4619,7 @@ function PostpartumSymptomsForm({
           placeholder={t("Add anything important about recovery, bleeding, feeding or how you feel.")}
         />
       </Field>
+      </div>
 
       {current.symptoms?.length || current.note ? (
         <button
