@@ -16,6 +16,7 @@ import {
   type AdminConfig,
   type RegistryFeatureId,
   type RegistryFeatureOverride,
+  type RegistryFieldDefinition,
   type RegistryFieldOverride,
   type RegistrySurface,
 } from "@/lib/appRegistry";
@@ -248,6 +249,22 @@ export function AdminEditOverlay() {
     });
   };
 
+  const patchCustomField = (featureId: RegistryFeatureId, fieldId: string, patch: Partial<RegistryFieldDefinition>) => {
+    const config = getDeviceAdminConfig();
+    const feature = config.features?.[featureId] ?? {};
+    const customFields = (feature.customFields ?? []).map((field) =>
+      field.id === fieldId ? { ...field, ...patch, id: field.id } : field,
+    );
+    persist({
+      ...config,
+      enabled: true,
+      features: {
+        ...(config.features ?? {}),
+        [featureId]: { ...feature, customFields },
+      },
+    });
+  };
+
   const resetFeature = (id: RegistryFeatureId) => {
     const config = getDeviceAdminConfig();
     const featuresCopy = { ...(config.features ?? {}) };
@@ -368,35 +385,57 @@ export function AdminEditOverlay() {
     }
   };
 
-  const orderedBuiltinFields = (featureId: RegistryFeatureId) =>
-    [...(BIXBO_LOG_FIELDS[featureId] ?? [])].sort((a, b) =>
-      (getRegistryField(adminView, featureId, a.id)?.order ?? a.order) -
-      (getRegistryField(adminView, featureId, b.id)?.order ?? b.order),
+  const orderedUnifiedFields = (featureId: RegistryFeatureId) => {
+    const builtins = (BIXBO_LOG_FIELDS[featureId] ?? []).map((baseField) => ({
+      source: "builtin" as const,
+      id: baseField.id,
+      order: getRegistryField(adminView, featureId, baseField.id)?.order ?? baseField.order,
+      baseField,
+    }));
+    const custom = (localConfig.features?.[featureId]?.customFields ?? []).map((customField) => ({
+      source: "custom" as const,
+      id: customField.id,
+      order: customField.order,
+      customField,
+    }));
+    return [...builtins, ...custom].sort((a, b) =>
+      a.order - b.order || (a.source === b.source ? a.id.localeCompare(b.id) : a.source === "builtin" ? -1 : 1),
     );
+  };
 
-  const writeBuiltinFieldOrder = (featureId: RegistryFeatureId, ids: string[]) => {
+  const writeUnifiedFieldOrder = (featureId: RegistryFeatureId, ids: string[]) => {
     const config = getDeviceAdminConfig();
     const feature = config.features?.[featureId] ?? {};
     const fields = { ...(feature.fields ?? {}) };
-    ids.forEach((fieldId, index) => {
-      fields[fieldId] = { ...(fields[fieldId] ?? {}), order: (index + 1) * 10 };
+    const customIds = new Set((feature.customFields ?? []).map((field) => field.id));
+    const orderById = new Map(ids.map((id, index) => [id, (index + 1) * 10]));
+
+    ids.forEach((fieldId) => {
+      if (!customIds.has(fieldId)) {
+        fields[fieldId] = { ...(fields[fieldId] ?? {}), order: orderById.get(fieldId) };
+      }
     });
+    const customFields = (feature.customFields ?? []).map((field) => ({
+      ...field,
+      order: orderById.get(field.id) ?? field.order,
+    }));
+
     persist({
       ...config,
       enabled: true,
-      features: { ...(config.features ?? {}), [featureId]: { ...feature, fields } },
+      features: { ...(config.features ?? {}), [featureId]: { ...feature, fields, customFields } },
     });
   };
 
-  const dropBuiltinField = (featureId: RegistryFeatureId, targetId: string) => {
+  const dropUnifiedField = (featureId: RegistryFeatureId, targetId: string) => {
     if (!draggedField || draggedField.featureId !== featureId || draggedField.fieldId === targetId) return;
-    const ids = orderedBuiltinFields(featureId).map((field) => field.id);
+    const ids = orderedUnifiedFields(featureId).map((field) => field.id);
     const from = ids.indexOf(draggedField.fieldId);
     const to = ids.indexOf(targetId);
     if (from < 0 || to < 0) return;
     const [item] = ids.splice(from, 1);
     ids.splice(to, 0, item);
-    writeBuiltinFieldOrder(featureId, ids);
+    writeUnifiedFieldOrder(featureId, ids);
   };
 
   const moveDraggedFieldByPointer = (event: ReactPointerEvent<HTMLElement>, featureId: RegistryFeatureId) => {
@@ -404,7 +443,7 @@ export function AdminEditOverlay() {
     const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>("[data-admin-field-sort-id]");
     const targetId = target?.dataset.adminFieldSortId;
     if (targetId && target?.dataset.adminFieldFeature === featureId && targetId !== draggedField.fieldId) {
-      dropBuiltinField(featureId, targetId);
+      dropUnifiedField(featureId, targetId);
     }
   };
 
@@ -592,7 +631,46 @@ export function AdminEditOverlay() {
                       <section key={featureId} className="rounded-2xl bg-surface p-3 ring-1 ring-border/80">
                         <p className="text-xs font-bold">{feature.icon} {feature.label}</p>
                         <div className="mt-2 space-y-2">
-                          {orderedBuiltinFields(featureId).map((baseField) => {
+                          {orderedUnifiedFields(featureId).map((item) => {
+                            if (item.source === "custom") {
+                              const customField = item.customField;
+                              return (
+                                <div
+                                  key={customField.id}
+                                  data-admin-field-sort-id={customField.id}
+                                  data-admin-field-feature={featureId}
+                                  className={`rounded-xl border border-dashed border-primary/35 bg-primary/5 p-2 ring-1 ring-primary/10 ${draggedField?.featureId === featureId && draggedField.fieldId === customField.id ? "opacity-60" : ""}`}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      type="button"
+                                      onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setDraggedField({ featureId, fieldId: customField.id }); }}
+                                      onPointerMove={(event) => moveDraggedFieldByPointer(event, featureId)}
+                                      onPointerUp={() => setDraggedField(null)}
+                                      onPointerCancel={() => setDraggedField(null)}
+                                      style={{ touchAction: "none" }}
+                                      className="inline-flex h-8 shrink-0 items-center gap-1 rounded-lg bg-background px-2 text-[9px] font-semibold text-muted-foreground ring-1 ring-border cursor-grab active:cursor-grabbing"
+                                      aria-label={t("Drag to reorder")}
+                                    ><span className="text-sm">⋮⋮</span>{t("Drag")}</button>
+                                    <input
+                                      value={customField.label}
+                                      onChange={(event) => patchCustomField(featureId, customField.id, { label: event.target.value })}
+                                      className="h-8 min-w-0 flex-1 rounded-lg bg-background px-2 text-[11px] font-semibold ring-1 ring-border"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => patchCustomField(featureId, customField.id, { enabled: customField.enabled === false })}
+                                      className="rounded-full bg-background px-2 py-1 text-[9px] ring-1 ring-border"
+                                    >{customField.enabled === false ? t("Hidden") : t("Shown")}</button>
+                                  </div>
+                                  <div className="mt-1 flex items-center justify-between gap-2">
+                                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[8px] font-bold text-primary">{t("Custom field")} · {customField.kind}</span>
+                                    <span className="min-w-0 truncate text-[8px] text-muted-foreground">Field ID: {customField.id}</span>
+                                  </div>
+                                </div>
+                              );
+                            }
+                            const baseField = item.baseField;
                             const field = getRegistryField(adminView, featureId, baseField.id) ?? baseField;
                             const localField = localConfig.features?.[featureId]?.fields?.[baseField.id];
                             const optionValues = orderedFieldOptionValues(featureId, baseField.id, baseField.options ?? []);
