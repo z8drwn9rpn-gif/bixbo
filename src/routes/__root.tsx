@@ -16,6 +16,7 @@ import { useThemeSync } from "../lib/theme";
 import { useNotificationRuntime } from "../lib/notifications";
 import { NotificationPrompt } from "../components/NotificationPrompt";
 import { AppPrivacyGuard } from "../components/AppPrivacyGuard";
+import { AdminEditOverlay } from "../components/AdminEditOverlay";
 import { Toaster } from "../components/ui/sonner";
 import { useI18n } from "@/hooks/useI18n";
 import { useGlobalAdminConfigSync } from "@/lib/globalAdminConfig";
@@ -154,6 +155,7 @@ function RootComponent() {
       <AppPrivacyGuard>
         <Outlet />
       </AppPrivacyGuard>
+      <AdminEditOverlay />
       <NotificationPrompt />
       <Toaster />
     </QueryClientProvider>
