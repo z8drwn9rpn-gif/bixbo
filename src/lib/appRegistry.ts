@@ -244,6 +244,19 @@ export const BIXBO_LOG_FIELDS: Partial<Record<RegistryFeatureId, RegistryFieldDe
     { id: "times", label: "Times", kind: "text", order: 30 },
     { id: "note", label: "Note (optional)", kind: "text", order: 40 },
   ],
+  food: [
+    { id: "time", label: "Time", kind: "text", order: 10 },
+    { id: "what", label: "What did you eat?", kind: "text", order: 20 },
+    { id: "quickAdd", label: "Quick add", kind: "chips", order: 30 },
+    { id: "reaction", label: "Reaction?", kind: "toggle", order: 40 },
+    { id: "feelings", label: "How do I feel after food?", kind: "chips", order: 50 },
+    { id: "symptomsAfter", label: "Symptoms after food", kind: "chips", order: 60 },
+    { id: "highHistamine", label: "High histamine food?", kind: "toggle", order: 70 },
+    { id: "histamineFlare", label: "Histamine flare?", kind: "toggle", order: 80 },
+    { id: "allergens", label: "Allergens in this meal", kind: "chips", order: 90 },
+    { id: "intake", label: "Water / caffeine / alcohol", kind: "number", order: 100 },
+    { id: "note", label: "Additional note (optional)", kind: "text", order: 110 },
+  ],
 };
 
 export function getRegistryField(data: Pick<BixboData, "settings">, featureId: RegistryFeatureId, fieldId: string): RegistryFieldDefinition | undefined {

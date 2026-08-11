@@ -3242,12 +3242,12 @@ function FoodForm({
     onDone();
   };
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       <SaveBar onCancel={onDone} onSave={save} />
-      <Field label="Time">
+      <Field label="Time" schemaFieldId="time">
         <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
       </Field>
-      <Field label="What did you eat?">
+      <Field label="What did you eat?" schemaFieldId="what">
         <Textarea
           rows={2}
           value={what}
@@ -3255,7 +3255,7 @@ function FoodForm({
           placeholder={t("e.g. chicken, rice, tomato")}
         />
       </Field>
-      <Field label="Quick add">
+      <Field label="Quick add" schemaFieldId="quickAdd">
         <div className="mt-2 flex flex-wrap gap-2">
           {[
             { l: "🍵 Matcha", w: "Matcha", caf: 70 },
@@ -3309,7 +3309,7 @@ function FoodForm({
           />
         </div>
       </Field>
-      <Field label="Reaction?">
+      <Field label="Reaction?" schemaFieldId="reaction">
         <div className="mt-1 flex gap-2">
           <Chip active={!allergicReaction} onClick={() => setAllergicReaction(false)}>
             No / not sure
@@ -3328,7 +3328,7 @@ function FoodForm({
           </div>
         )}
       </Field>
-      <Field label="How do I feel after food?">
+      <Field label="How do I feel after food?" schemaFieldId="feelings">
         <CustomChipList
           base={FOOD_FEELINGS_DEFAULT}
           custom={data.custom.foodFeelings}
@@ -3344,7 +3344,7 @@ function FoodForm({
           onToggle={(v) => setFeelings((a) => toggleIn(a, v))}
         />
       </Field>
-      <Field label="Symptoms after food">
+      <Field label="Symptoms after food" schemaFieldId="symptomsAfter">
         <CustomChipList
           base={FOOD_SYMPTOMS_AFTER}
           custom={data.custom.foodSymptomsAfter ?? []}
@@ -3361,7 +3361,7 @@ function FoodForm({
           onToggle={(v) => setSymptomsAfter((a) => toggleIn(a, v))}
         />
       </Field>
-      <Field label="High histamine food?">
+      <Field label="High histamine food?" schemaFieldId="highHistamine">
         <div className="mt-1 flex gap-2">
           <Chip active={!highHist} onClick={() => setHighHist(false)}>
             No
@@ -3371,7 +3371,7 @@ function FoodForm({
           </Chip>
         </div>
       </Field>
-      <Field label="Histamine flare?">
+      <Field label="Histamine flare?" schemaFieldId="histamineFlare">
         <div className="mt-1 flex gap-2">
           <Chip active={!histFlare} onClick={() => setHistFlare(false)}>
             No
@@ -3402,7 +3402,7 @@ function FoodForm({
           </Field>
         </div>
       )}
-      <Field label="Allergens in this meal">
+      <Field label="Allergens in this meal" schemaFieldId="allergens">
         <CustomChipList
           base={allergensBase}
           custom={data.custom.allergens}
@@ -3428,6 +3428,7 @@ function FoodForm({
           onToggle={(v) => setAllergensInMeal((a) => toggleIn(a, v))}
         />
       </Field>
+      <RegistryFieldBlock fieldId="intake">
       <div className="grid grid-cols-3 gap-2">
         <Field label="Water (ml)">
           <Input type="number" value={hydration} onChange={(e) => setHydration(e.target.value)} placeholder="300" />
@@ -3439,7 +3440,8 @@ function FoodForm({
           <Input type="number" value={alcohol} onChange={(e) => setAlcohol(e.target.value)} placeholder="0" />
         </Field>
       </div>
-      <Field label="Additional note (optional)">
+      </RegistryFieldBlock>
+      <Field label="Additional note (optional)" schemaFieldId="note">
         <Textarea rows={2} value={after} onChange={(e) => setAfter(e.target.value)} />
       </Field>
     </div>
