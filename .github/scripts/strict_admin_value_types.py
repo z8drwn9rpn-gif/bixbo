@@ -9,9 +9,18 @@ for path in ['src/routes/patterns.tsx', 'src/routes/insights.tsx']:
         if marker not in s:
             raise SystemExit(f'helper insertion marker missing in {path}')
         s = s.replace(marker, helper + marker, 1)
-    replaced = s.count('Number(entry.values[field.id])')
-    s = s.replace('Number(entry.values[field.id])', 'strictAdminNumericValue(entry.values[field.id])')
+
+    replacements = [
+        ('Number(entry.values[field.id])', 'strictAdminNumericValue(entry.values[field.id])'),
+        ('Number(entry.values[fieldId])', 'strictAdminNumericValue(entry.values[fieldId])'),
+    ]
+    replaced = 0
+    for old, new in replacements:
+        count = s.count(old)
+        replaced += count
+        s = s.replace(old, new)
+
     if replaced == 0:
-        raise SystemExit(f'no numeric admin coercions found in {path}')
+        raise SystemExit(f'no numeric admin/custom coercions found in {path}')
     p.write_text(s)
     print(path, 'replaced', replaced, 'numeric coercions')
