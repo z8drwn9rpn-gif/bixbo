@@ -63,10 +63,9 @@ for path in [
 path = 'src/components/HakAdminEditOverlay.tsx'
 text = read(path)
 if 'data-bixbo-admin-page-opener' not in text:
-    old = '          data-bixbo-admin-open="hak"\n          onClick={() => setEditorOpen((value) => !value)}'
-    new = '          data-bixbo-admin-open="hak"\n          data-bixbo-admin-page-opener\n          onClick={() => setEditorOpen((value) => !value)}'
-    assert old in text, 'HAK admin opener anchor missing'
-    text = text.replace(old, new, 1)
+    anchor = 'data-bixbo-admin-open="hak"'
+    assert anchor in text, 'HAK admin opener anchor missing'
+    text = text.replace(anchor, anchor + '\n          data-bixbo-admin-page-opener', 1)
     write(path, text)
 
 # Source-level regression tests for the four reported failures.
