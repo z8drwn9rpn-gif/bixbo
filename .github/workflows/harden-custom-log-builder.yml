@@ -1,0 +1,29 @@
+name: Harden custom log builder
+
+on:
+  push:
+    branches:
+      - agent/harden-custom-log-builder
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/harden-custom-log-builder
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - run: python .github/scripts/harden_custom_log_builder.py
+      - run: rm .github/scripts/harden_custom_log_builder.py .github/workflows/harden-custom-log-builder.yml
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/components/CustomLogBuilder.tsx src/components/CustomLogForm.tsx .github
+          git commit -m 'harden custom log field configuration'
+          git push origin HEAD:agent/harden-custom-log-builder
