@@ -238,10 +238,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      publish_global_admin_config: {
-        Args: { _config: Json; _pin: string }
-        Returns: number
-      }
       cleanup_push_delivery_log: { Args: never; Returns: undefined }
       ensure_profile: {
         Args: { _display_name?: string }
@@ -288,6 +284,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      publish_global_admin_config: {
+        Args: { _config: Json; _pin: string }
+        Returns: number
       }
       unlink_partner: { Args: never; Returns: undefined }
     }
