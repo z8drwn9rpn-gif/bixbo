@@ -5,6 +5,7 @@ on:
       - agent/fix-admin-couple-notes
     paths:
       - scripts/fix_admin_couple_notes.py
+      - .github/workflows/fix-admin-couple-notes.yml
 
 permissions:
   contents: write
