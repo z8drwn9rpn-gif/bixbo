@@ -1706,7 +1706,7 @@ export function PatternsContent() {
       if (field.kind === "chips") {
         return (field.options ?? []).filter((option) => option.trim()).map((option) => ({
           id: `admin-choice:${featureBase.id}:${field.id}:${encodeURIComponent(option)}`,
-          label: `${feature.label} · ${field.label}: ${option}`,
+          label: `${feature.label} · ${field.label}: ${field.optionLabels?.[option] ?? option}`,
         }));
       }
       const threshold = registryAdminCorrelationThreshold(view, featureBase.id, field.id);
