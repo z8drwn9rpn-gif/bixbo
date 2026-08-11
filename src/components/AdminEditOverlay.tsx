@@ -53,6 +53,16 @@ const ICONS = ["🔥", "⚡", "✨", "🫐", "❤️", "♨️", "🍽️", "�
 
 type EditorTab = "page" | "features" | "fields" | "custom" | "publish";
 
+const REQUIRED_CORE_FIELDS = new Set<string>([
+  "event:title",
+  "task:title",
+  "note:text",
+]);
+
+function isRequiredCoreField(featureId: RegistryFeatureId, fieldId: string): boolean {
+  return REQUIRED_CORE_FIELDS.has(`${featureId}:${fieldId}`);
+}
+
 function pageFromPath(pathname: string): LayoutPageId | null {
   if (pathname === "/") return "home";
   if (pathname.startsWith("/insights")) return "insights";
@@ -681,7 +691,11 @@ export function AdminEditOverlay() {
                                     <button type="button" onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setDraggedField({ featureId, fieldId: baseField.id }); }} onPointerMove={(event) => moveDraggedFieldByPointer(event, featureId)} onPointerUp={() => setDraggedField(null)} onPointerCancel={() => setDraggedField(null)} style={{ touchAction: "none" }} className="inline-flex h-8 shrink-0 items-center gap-1 rounded-lg bg-background px-2 text-[9px] font-semibold text-muted-foreground ring-1 ring-border cursor-grab active:cursor-grabbing" aria-label={t("Drag to reorder")}><span className="text-sm">⋮⋮</span>{t("Drag")}</button>
                                   ) : null}
                                   <input value={field.label} onChange={(event) => patchField(featureId, baseField.id, { label: event.target.value })} className="h-8 min-w-0 flex-1 rounded-lg bg-background px-2 text-[11px] font-semibold ring-1 ring-border" />
-                                  <button type="button" onClick={() => patchField(featureId, baseField.id, { enabled: field.enabled === false })} className="rounded-full bg-background px-2 py-1 text-[9px] ring-1 ring-border">{field.enabled === false ? t("Hidden") : t("Shown")}</button>
+                                  {isRequiredCoreField(featureId, baseField.id) ? (
+                                    <span title={t("Required to save this log")} className="rounded-full bg-primary/10 px-2 py-1 text-[9px] font-bold text-primary ring-1 ring-primary/20">{t("Required")}</span>
+                                  ) : (
+                                    <button type="button" onClick={() => patchField(featureId, baseField.id, { enabled: field.enabled === false })} className="rounded-full bg-background px-2 py-1 text-[9px] ring-1 ring-border">{field.enabled === false ? t("Hidden") : t("Shown")}</button>
+                                  )}
                                 </div>
                                 {field.scale ? (
                                   <div className="mt-2 grid grid-cols-3 gap-1.5">
