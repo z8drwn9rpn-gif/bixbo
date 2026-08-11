@@ -857,7 +857,10 @@ function Field({ label, children, schemaFieldId }: { label: string; children: Re
   const fieldIdByLabel: Record<string, string> = { "Pain scale": "score", "Where does it hurt?": "parts", "How does it hurt?": "quality", "Other symptoms": "symptoms", "Intensity": "intensity", "Type": "types", "Location": "location", "Triggers": "triggers", "What helped?": "helped", "Bleeding": "flow", "Cramp pain": "cramps", "Discharge (optional)": "discharge", "Duration (minutes)": "minutes", "Intensity (RPE)": "rpe", "How you feel": "feel", "Urinary": "urinary" };
   const fieldId = schemaFieldId ?? fieldIdByLabel[label];
   const configuredField = schema && fieldId ? getRegistryField(schema.data, schema.featureId, fieldId) : undefined;
-  const displayLabel = configuredField?.label ?? (schema && fieldId ? registryFieldLabel(schema.data, schema.featureId, fieldId, label) : label);
+  const dynamicSuffix = fieldId === "intensity" && label.startsWith("Intensity ") ? label.slice("Intensity".length) : "";
+  const displayLabel = configuredField
+    ? `${configuredField.label}${dynamicSuffix}`
+    : (schema && fieldId ? registryFieldLabel(schema.data, schema.featureId, fieldId, label) : label);
   // Intentionally a <div>, not <label>. Wrapping chip/button groups in <label>
   // caused stray click activations on the first focusable descendant, which
   // manifested as chips getting "auto-selected" in the Pain wizard.
