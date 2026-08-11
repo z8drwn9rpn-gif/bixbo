@@ -5,11 +5,23 @@ import type { RegistryFieldDefinition } from "@/lib/appRegistry";
 import { useI18n } from "@/hooks/useI18n";
 
 function scaleValues(field: RegistryFieldDefinition): number[] {
-  const min = field.scale?.min ?? 0;
-  const max = field.scale?.max ?? 10;
-  const step = field.scale?.step && field.scale.step > 0 ? field.scale.step : 1;
+  const rawMin = Number(field.scale?.min);
+  const rawMax = Number(field.scale?.max);
+  const rawStep = Number(field.scale?.step);
+  const min = Number.isFinite(rawMin) ? rawMin : 0;
+  const maxCandidate = Number.isFinite(rawMax) ? rawMax : 10;
+  const max = maxCandidate > min ? maxCandidate : min + 1;
+  const stepCandidate = Number.isFinite(rawStep) && rawStep > 0 ? rawStep : 1;
+  const step = Math.min(stepCandidate, max - min);
   const count = Math.max(1, Math.min(101, Math.floor((max - min) / step) + 1));
   return Array.from({ length: count }, (_, index) => Number((min + index * step).toFixed(4)));
+}
+
+function safeOptions(field: RegistryFieldDefinition): string[] {
+  const seen = new Set<string>();
+  return (field.options ?? [])
+    .map((option) => option.trim())
+    .filter((option) => option.length > 0 && !seen.has(option) && Boolean(seen.add(option)));
 }
 
 export function CoreFeatureCustomFieldInput({
@@ -94,7 +106,7 @@ export function CoreFeatureCustomFieldInput({
     <div className={`${shellClass} space-y-2`} style={style} data-bixbo-log-field-id={field.id}>
       <span className="text-xs font-semibold text-muted-foreground">{t(field.label)}</span>
       <div className="flex flex-wrap gap-2">
-        {(field.options ?? []).map((option) => {
+        {safeOptions(field).map((option) => {
           const active = selected.includes(option);
           return (
             <button
