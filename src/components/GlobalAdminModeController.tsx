@@ -62,6 +62,12 @@ export function GlobalAdminModeController() {
 
   const owner = typeof window !== "undefined" && isAdminOwnerAccount();
 
+  useEffect(() => {
+    if (!active || !owner || typeof window === "undefined") return;
+    const frame = window.requestAnimationFrame(() => requestAdminCustomizeCurrentPage());
+    return () => window.cancelAnimationFrame(frame);
+  }, [active, owner, pathname]);
+
   return (
     <>
       <style>{`
