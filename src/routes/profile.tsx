@@ -508,7 +508,11 @@ function HealthHub({
           </div>
         </section>
 
-        <section className="overflow-hidden rounded-3xl bg-surface shadow-sm ring-1 ring-border/80">
+        <div>
+          <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            {t("Health Hub")}
+          </p>
+          <section className="overflow-hidden rounded-3xl bg-surface shadow-sm ring-1 ring-border/80">
           <HubRow
             icon={<StethoscopeIcon size={23} />}
             title="Health Summary"
@@ -543,7 +547,8 @@ function HealthHub({
             subtitle="Export health data as JSON or CSV"
             onClick={() => onOpen("export")}
           />
-        </section>
+          </section>
+        </div>
 
         <div>
           <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">

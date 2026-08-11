@@ -25,9 +25,9 @@ const ICONS: Record<NavigationItemId, ComponentType<IconProps>> = {
 
 /** Exact user-provided artwork; existing SVG icons remain available as fallback. */
 const NAV_IMAGE_SRC: Partial<Record<NavigationItemId, string>> = {
-  home: "/nav-assets/nav-home.webp",
+  home: "/nav-assets/nav-home.webp?v=user-exact-20260811-2",
   overview: "/nav-assets/nav-overview.webp",
-  couple: "/nav-assets/nav-couple.webp",
+  couple: "/nav-assets/nav-couple.webp?v=user-exact-20260811-2",
   notes: "/nav-assets/nav-note.webp",
 };
 
