@@ -3988,14 +3988,23 @@ function MedsForm({
   };
   const today = date === todayKey();
   const extras = data.dayLogs[date]?.extraMeds ?? [];
+  const scheduledField = getRegistryField(data, "meds", "scheduled");
+  const extraDoseField = getRegistryField(data, "meds", "extraDose");
+  const dateLabel = today ? t("Today") : date;
+  const scheduledHeading = scheduledField?.label && scheduledField.label !== "Scheduled meds"
+    ? `${t(scheduledField.label)} · ${dateLabel}`
+    : dateLabel;
+  const extraDoseHeading = t(extraDoseField?.label ?? "Extra dose (one-off)");
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-col gap-4">
+      <RegistryFieldBlock fieldId="scheduled">
       {meds.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("No medications yet. Add them from Meds settings.")}</p>
       ) : (
         <div>
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">{today ? t("Today") : date}</p>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">{scheduledHeading}</p>
           <div className="mt-2 space-y-2">
             {meds.map((m) =>
               m.asNeeded ? (
@@ -4059,8 +4068,10 @@ function MedsForm({
           </div>
         </div>
       )}
+      </RegistryFieldBlock>
+      <RegistryFieldBlock fieldId="extraDose">
       <div>
-        <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("Extra dose (one-off)")}</p>
+        <p className="text-xs uppercase tracking-wider text-muted-foreground">{extraDoseHeading}</p>
         <div className="mt-2 grid grid-cols-3 gap-2">
           <Input
             placeholder={t("Name")}
@@ -4088,6 +4099,8 @@ function MedsForm({
             ))}
           </ul>
         )}
+      </div>
+      </RegistryFieldBlock>
       </div>
       <SheetFooter className="mt-2">
         <div className="mt-5 flex justify-end border-t border-border/50 pt-4">
