@@ -3,8 +3,9 @@ import { useI18n } from "@/hooks/useI18n";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Ico, IcoText } from "@/components/icons/BixboIcons";
 import { CustomLogForm } from "@/components/CustomLogForm";
+import { CoreFeatureCustomFieldsForm } from "@/components/CoreFeatureCustomFieldsForm";
 import { POSTPARTUM_SYMPTOMS } from "@/lib/health";
-import { getRegistryFeature, isRegistrySurfaceEnabled, registryFieldLabel, registryFieldOptions, registryFieldScale, registryOptionLabel, customLogDefinitions, type RegistryFeatureId } from "@/lib/appRegistry";
+import { getRegistryFeature, isRegistrySurfaceEnabled, registryCustomFieldsForFeature, registryFieldLabel, registryFieldOptions, registryFieldScale, registryOptionLabel, customLogDefinitions, type RegistryFeatureId } from "@/lib/appRegistry";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -78,6 +79,7 @@ import {
   type PanicAttack,
   type PainfulWhen,
   type PostpartumDayLog,
+  type CustomLogValue,
   withCustomTombstones,
   withoutCustomTombstones,
 } from "@/lib/storage";
@@ -144,7 +146,14 @@ function TrText({ value }: { value: unknown }) {
 
 type UpdateFn = (u: (d: BixboData) => BixboData) => void;
 
-type LogSchemaContextValue = { data: BixboData; featureId: RegistryFeatureId } | null;
+type LogSchemaContextValue = {
+  data: BixboData;
+  featureId: RegistryFeatureId;
+  adminFields: ReturnType<typeof registryCustomFieldsForFeature>;
+  adminFieldValues: Record<string, CustomLogValue>;
+  setAdminFieldValue: (fieldId: string, value: CustomLogValue) => void;
+  saveAdminCustomFields: () => void;
+} | null;
 const LogSchemaContext = createContext<LogSchemaContextValue>(null);
 function useLogSchema() { return useContext(LogSchemaContext); }
 
@@ -216,6 +225,39 @@ export function LogSheet({
   const back = () => setCat(null);
   const active = cat ?? initial;
   const edit = editEntry;
+  const [adminFieldValues, setAdminFieldValues] = useState<Record<string, CustomLogValue>>({});
+  useEffect(() => setAdminFieldValues({}), [active, openToken]);
+
+  const activeRegistryFeature = active && !active.startsWith("custom:") ? active as RegistryFeatureId : null;
+  const activeAdminFields = activeRegistryFeature ? registryCustomFieldsForFeature(data, activeRegistryFeature) : [];
+  const saveAdminCustomFields = () => {
+    if (!activeRegistryFeature || !activeAdminFields.length) return;
+    const allowed = new Set(activeAdminFields.map((field) => field.id));
+    const values = Object.fromEntries(Object.entries(adminFieldValues).filter(([fieldId, value]) => allowed.has(fieldId) && value !== ""));
+    if (!Object.keys(values).length) return;
+    update((current) => {
+      const day = current.dayLogs[date] ?? {};
+      const adminFields = day.adminFields ?? {};
+      const entry = {
+        id: globalThis.crypto?.randomUUID?.() ?? `admin-field-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        time: nowHHMM(),
+        values,
+      };
+      return {
+        ...current,
+        dayLogs: {
+          ...current.dayLogs,
+          [date]: {
+            ...day,
+            adminFields: {
+              ...adminFields,
+              [activeRegistryFeature]: [...(adminFields[activeRegistryFeature] ?? []), entry],
+            },
+          },
+        },
+      };
+    });
+  };
 
   const cycleTrackingHidden = isCycleTrackingHidden(data);
   const postpartumActive = Boolean(data.postpartum?.active);
@@ -648,7 +690,14 @@ export function LogSheet({
                 <X className="h-5 w-5" />
               </button>
             </SheetHeader>
-            <LogSchemaContext.Provider value={active && !active.startsWith("custom:") ? { data, featureId: active as RegistryFeatureId } : null}>
+            <LogSchemaContext.Provider value={activeRegistryFeature ? {
+              data,
+              featureId: activeRegistryFeature,
+              adminFields: activeAdminFields,
+              adminFieldValues,
+              setAdminFieldValue: (fieldId, value) => setAdminFieldValues((current) => ({ ...current, [fieldId]: value })),
+              saveAdminCustomFields,
+            } : null}>
             <div
               key={`${active}-${openToken}-${(edit as { id?: string } | undefined)?.id ?? initialPain?.id ?? "new"}`}
               className={`min-h-0 flex-1 overflow-y-auto ${
@@ -746,6 +795,13 @@ export function LogSheet({
                 <EventForm date={date} update={update} onDone={close} initialEntry={edit as EventEntry | undefined} />
               )}
               {active === "note" && <NoteForm date={date} update={update} onDone={close} />}
+              {activeRegistryFeature && activeAdminFields.length ? (
+                <CoreFeatureCustomFieldsForm
+                  fields={activeAdminFields}
+                  values={adminFieldValues}
+                  onChange={(fieldId, value) => setAdminFieldValues((current) => ({ ...current, [fieldId]: value }))}
+                />
+              ) : null}
             </div>
             </LogSchemaContext.Provider>
           </div>
@@ -804,6 +860,7 @@ function Chip({
 }
 function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave: () => void; disabled?: boolean }) {
   const { t } = useI18n();
+  const schema = useLogSchema();
   return (
     <SheetFooter className="sticky top-0 z-30 -mx-5 mt-0 flex-row items-center justify-between gap-2 border-b border-border/50 bg-background px-5 py-1.5">
       <button
@@ -819,7 +876,7 @@ function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave:
 
       <button
         type="button"
-        onClick={onSave}
+        onClick={() => { schema?.saveAdminCustomFields(); onSave(); }}
         disabled={disabled}
         className="inline-flex h-8 min-w-[68px] items-center justify-center gap-1 rounded-full bg-primary px-3 text-xs font-semibold text-primary-foreground shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
