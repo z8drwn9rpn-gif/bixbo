@@ -5,6 +5,7 @@ on:
       - agent/admin-button-audit-fixes
     paths:
       - scripts/admin_button_audit_patch.py
+      - scripts/admin_button_audit_trigger.txt
 
 permissions:
   contents: write
@@ -19,7 +20,7 @@ jobs:
       - name: Apply patch
         run: python3 scripts/admin_button_audit_patch.py
       - name: Remove temporary patch files
-        run: rm -f scripts/admin_button_audit_patch.py .github/workflows/admin-button-audit-patch.yml
+        run: rm -f scripts/admin_button_audit_patch.py scripts/admin_button_audit_trigger.txt .github/workflows/admin-button-audit-patch.yml
       - name: Commit patch
         run: |
           git config user.name "github-actions[bot]"
