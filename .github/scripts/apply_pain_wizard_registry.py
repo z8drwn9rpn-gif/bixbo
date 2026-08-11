@@ -27,8 +27,8 @@ admin.write_text(text.replace(old, new))
 
 log = Path('src/components/LogSheet.tsx')
 text = log.read_text()
-old = '''import { getRegistryFeature, isRegistrySurfaceEnabled, registryCustomFieldsForFeature, registryFieldLabel, registryFieldOptions, registryFieldScale, registryOptionLabel, customLogDefinitions, type RegistryFeatureId } from "@/lib/appRegistry";'''
-new = '''import { getRegistryFeature, isRegistrySurfaceEnabled, registryCustomFieldsForFeature, registryFieldLabel, registryFieldOptions, registryFieldScale, registryFieldsForFeature, registryOptionLabel, customLogDefinitions, type RegistryFeatureId } from "@/lib/appRegistry";'''
+old = '''import { getRegistryFeature, getRegistryField, isRegistrySurfaceEnabled, registryCustomFieldsForFeature, registryFieldLabel, registryFieldOptions, registryFieldScale, registryOptionLabel, customLogDefinitions, type RegistryFeatureId } from "@/lib/appRegistry";'''
+new = '''import { getRegistryFeature, getRegistryField, isRegistrySurfaceEnabled, registryCustomFieldsForFeature, registryFieldLabel, registryFieldOptions, registryFieldScale, registryFieldsForFeature, registryOptionLabel, customLogDefinitions, type RegistryFeatureId } from "@/lib/appRegistry";'''
 assert old in text, 'appRegistry import not found'
 text = text.replace(old, new)
 
@@ -60,17 +60,23 @@ new = '''    setQuickSymptomUpdate(true);
 assert old in text, 'quick symptom fixed step not found'
 text = text.replace(old, new)
 
-text = text.replace('''    if (dx < 0 && step < 4) setStep(step + 1);
-    else if (dx > 0 && step > 0) setStep(step - 1);''', '''    if (dx < 0 && safeStep < painSteps.length - 1) setStep(safeStep + 1);
-    else if (dx > 0 && safeStep > 0) setStep(safeStep - 1);''')
+old = '''    if (dx < 0 && step < 4) setStep(step + 1);
+    else if (dx > 0 && step > 0) setStep(step - 1);'''
+new = '''    if (dx < 0 && safeStep < painSteps.length - 1) setStep(safeStep + 1);
+    else if (dx > 0 && safeStep > 0) setStep(safeStep - 1);'''
+assert old in text, 'swipe step block not found'
+text = text.replace(old, new)
 
-text = text.replace('''          {step > 0 ? (
+old = '''          {step > 0 ? (
             <button
               type="button"
-              onClick={() => setStep(step - 1)}''', '''          {safeStep > 0 ? (
+              onClick={() => setStep(step - 1)}'''
+new = '''          {safeStep > 0 ? (
             <button
               type="button"
-              onClick={() => setStep(safeStep - 1)}''')
+              onClick={() => setStep(safeStep - 1)}'''
+assert old in text, 'back step block not found'
+text = text.replace(old, new)
 
 old = '''              {[0, 1, 2, 3, 4].map((i) => (
                 <span
@@ -103,6 +109,11 @@ new = '''            <span className="text-sm font-semibold leading-none">{t(saf
 assert old in text, 'next label block not found'
 text = text.replace(old, new)
 
+assert '{step === 0 && (' in text, 'score step condition not found'
+assert '{step === 1 && (' in text, 'parts step condition not found'
+assert '{step === 2 && (' in text, 'quality step condition not found'
+assert '{step === 3 && (' in text, 'symptoms step condition not found'
+assert '{step === 4 && (' in text, 'details step condition not found'
 text = text.replace('{step === 0 && (', '{activePainStepId === "score" && (', 1)
 text = text.replace('{step === 1 && (', '{activePainStepId === "parts" && (', 1)
 text = text.replace('{step === 2 && (', '{activePainStepId === "quality" && (', 1)
@@ -117,6 +128,5 @@ text = text.replace(old, new, 1)
 
 log.write_text(text)
 
-# Focused contract test.
 test = Path('src/lib/__tests__/pain-wizard-step-order.test.ts')
 test.write_text('''import { describe, expect, it } from "vitest";\n\nimport { BIXBO_LOG_FIELDS, registryFieldsForFeature } from "../appRegistry";\nimport { EMPTY } from "../storage";\n\ndescribe("Pain wizard admin step order", () => {\n  it("registers all five wizard steps with stable IDs", () => {\n    expect((BIXBO_LOG_FIELDS.pain ?? []).map((field) => field.id)).toEqual([\n      "score", "parts", "quality", "symptoms", "details",\n    ]);\n  });\n\n  it("uses admin order without changing stable IDs", () => {\n    const data = {\n      ...EMPTY,\n      settings: {\n        ...EMPTY.settings,\n        adminConfig: {\n          enabled: true,\n          features: { pain: { fields: { details: { order: 1 }, score: { order: 999 } } } },\n        },\n      },\n    };\n    expect(registryFieldsForFeature(data, "pain").map((field) => field.id)).toEqual([\n      "details", "parts", "quality", "symptoms", "score",\n    ]);\n  });\n});\n''')
