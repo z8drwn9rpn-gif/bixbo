@@ -2,7 +2,6 @@ name: Install PDF reports
 on:
   push:
     paths:
-      - 'src/routes/report.tsx'
       - '.github/workflows/install-pdf-reports.yml'
 permissions:
   contents: write
@@ -13,24 +12,41 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
-      - name: Add PDF reports entry to Profile
+      - name: Add PDF reports to Health hub
         run: |
           python - <<'PY'
           from pathlib import Path
           p = Path('src/routes/profile.tsx')
           s = p.read_text(encoding='utf-8')
-          if 'to="/report"' not in s:
-              anchor = '<TrText value="Export JSON" /></button>'
+          s = s.replace('  onNotifications,\n  onAdmin,', '  onNotifications,\n  onReports,\n  onAdmin,', 1)
+          s = s.replace('  onNotifications: () => void;\n  onAdmin?: () => void;', '  onNotifications: () => void;\n  onReports: () => void;\n  onAdmin?: () => void;', 1)
+          anchor = '''          <HubRow
+            icon={<NoteIcon size={22} />}
+            title="Export"
+            subtitle="Export health data as JSON or CSV"
+            onClick={() => onOpen("export")}
+          />'''
+          if 'title="PDF Reports"' not in s:
               if anchor not in s:
-                  raise SystemExit('Export JSON anchor not found')
-              addition = anchor + '''
-
-          <Link
-            to="/report"
-            className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-input bg-primary/10 px-4 text-sm font-semibold text-primary"
-          >{t("PDF reports")}</Link>'''
-              s = s.replace(anchor, addition, 1)
-              p.write_text(s, encoding='utf-8')
+                  raise SystemExit('Health hub Export row not found')
+              row = '''          <HubRow
+            icon={<NoteIcon size={22} />}
+            title="PDF Reports"
+            subtitle="Create a BIXBO-style printable health report"
+            onClick={onReports}
+          />
+          <div className="ml-[4.5rem] border-t border-border/60" />
+''' + anchor
+              s = s.replace(anchor, row, 1)
+          invoke = '''        onNotifications={() => navigate({ to: "/notifications" as never })}
+        onAdmin={deviceAdminEnabled ? () => navigate({ to: "/admin" as never }) : undefined}'''
+          if 'onReports={() => navigate({ to: "/report" as never })}' not in s:
+              if invoke not in s:
+                  raise SystemExit('HealthHub invocation not found')
+              s = s.replace(invoke, '''        onNotifications={() => navigate({ to: "/notifications" as never })}
+        onReports={() => navigate({ to: "/report" as never })}
+        onAdmin={deviceAdminEnabled ? () => navigate({ to: "/admin" as never }) : undefined}''', 1)
+          p.write_text(s, encoding='utf-8')
           PY
       - run: bun run build
       - run: bun run typecheck
@@ -44,7 +60,7 @@ jobs:
           if git diff --cached --quiet; then
             echo 'No changes to commit'
           else
-            git commit -m 'Integrate BIXBO PDF reports into Profile'
+            git commit -m 'Expose BIXBO PDF reports in Health hub'
             git pull --rebase origin main
             git push
           fi
