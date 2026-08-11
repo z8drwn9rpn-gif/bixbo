@@ -1,7 +1,12 @@
 import { describe, expect, it } from "bun:test";
 import { EMPTY, type BixboData } from "../storage";
 import { mergeBixbo } from "../merge";
-import { getRegistryFeature, isRegistrySurfaceEnabled, registryFeaturesForSurface } from "../appRegistry";
+import {
+  getRegistryFeature,
+  isRegistryOptionEnabled,
+  isRegistrySurfaceEnabled,
+  registryFeaturesForSurface,
+} from "../appRegistry";
 
 const clone = (): BixboData => structuredClone(EMPTY);
 
@@ -14,11 +19,18 @@ describe("BIXBO admin registry", () => {
     expect(pain.label).toBe("My pain");
   });
 
-  it("can hide a feature from one surface without deleting it", () => {
+  it("keeps Period available in Heatmap even when a stale admin override says false", () => {
     const data = clone();
     data.settings.adminConfig = { features: { period: { surfaces: { heatmap: false } } } };
-    expect(isRegistrySurfaceEnabled(data, "period", "heatmap")).toBe(false);
+    expect(isRegistrySurfaceEnabled(data, "period", "heatmap")).toBe(true);
     expect(isRegistrySurfaceEnabled(data, "period", "log")).toBe(true);
+  });
+
+  it("still allows non-required surfaces to be hidden", () => {
+    const data = clone();
+    data.settings.adminConfig = { features: { pain: { surfaces: { heatmap: false } } } };
+    expect(isRegistrySurfaceEnabled(data, "pain", "heatmap")).toBe(false);
+    expect(isRegistrySurfaceEnabled(data, "pain", "log")).toBe(true);
   });
 
   it("orders features using admin overrides", () => {
@@ -35,9 +47,7 @@ describe("BIXBO admin registry", () => {
     expect(merged.settings.adminConfig?.features?.pain?.label).toBe("My pain");
     expect(merged.settings.adminConfig?.features?.pain?.surfaces?.heatmap).toBe(false);
   });
-
 });
-
 
 import { registryFieldScale, registryFieldOptions, registryOptionLabel } from "../appRegistry";
 
@@ -52,8 +62,23 @@ describe("BIXBO log schema registry", () => {
 
   it("can rename/hide chip options while keeping their stored stable value", () => {
     const data = structuredClone(EMPTY);
-    data.settings.adminConfig = { features: { pain: { fields: { parts: { options: { Pelvis: { label: "Lower pelvis" }, Head: { enabled: false } } } } } } };
+    data.settings.adminConfig = {
+      features: {
+        pain: {
+          fields: {
+            parts: {
+              options: {
+                Pelvis: { label: "Lower pelvis" },
+                Head: { enabled: false },
+              },
+            },
+          },
+        },
+      },
+    };
     expect(registryOptionLabel(data, "pain", "parts", "Pelvis")).toBe("Lower pelvis");
     expect(registryFieldOptions(data, "pain", "parts", ["Head", "Pelvis"])).toEqual(["Pelvis"]);
+    expect(isRegistryOptionEnabled(data, "pain", "parts", "Head")).toBe(false);
+    expect(isRegistryOptionEnabled(data, "pain", "parts", "Pelvis")).toBe(true);
   });
 });
