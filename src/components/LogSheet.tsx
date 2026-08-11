@@ -153,6 +153,7 @@ type LogSchemaContextValue = {
   adminFieldValues: Record<string, CustomLogValue>;
   setAdminFieldValue: (fieldId: string, value: CustomLogValue) => void;
   saveAdminCustomFields: () => void;
+  sourceEntryId: string;
 } | null;
 const LogSchemaContext = createContext<LogSchemaContextValue>(null);
 function useLogSchema() { return useContext(LogSchemaContext); }
@@ -231,17 +232,30 @@ export function LogSheet({
   const [adminFieldValues, setAdminFieldValues] = useState<Record<string, CustomLogValue>>({});
 
   const activeRegistryFeature = active && !active.startsWith("custom:") ? active as RegistryFeatureId : null;
+  const dayLevelAdminFeatures = new Set<RegistryFeatureId>(["period", "temp", "meds", "postpartum"]);
+  const draftSourceEntryId = useMemo(
+    () => globalThis.crypto?.randomUUID?.() ?? `core-entry-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    [active, date, openToken],
+  );
+  const activeSourceEntryId = activeRegistryFeature
+    ? editSourceId ?? (dayLevelAdminFeatures.has(activeRegistryFeature) ? `day:${activeRegistryFeature}:${date}` : draftSourceEntryId)
+    : draftSourceEntryId;
   const activeAdminFields = activeRegistryFeature ? registryCustomFieldsForFeature(data, activeRegistryFeature) : [];
   useEffect(() => {
-    if (!activeRegistryFeature || !editSourceId) {
+    if (!activeRegistryFeature) {
       setAdminFieldValues({});
       return;
     }
     const entries = data.dayLogs[date]?.adminFields?.[activeRegistryFeature] ?? [];
-    const linked = entries.find((entry) => entry.sourceEntryId === editSourceId);
-    const legacy = linked ?? (editSourceTime ? [...entries].reverse().find((entry) => !entry.sourceEntryId && entry.time === editSourceTime) : undefined);
-    setAdminFieldValues(legacy?.values ?? {});
-  }, [active, activeRegistryFeature, data.dayLogs, date, editSourceId, editSourceTime, openToken]);
+    const linked = entries.find((entry) => entry.sourceEntryId === activeSourceEntryId);
+    const legacyByTime = editSourceTime
+      ? [...entries].reverse().find((entry) => !entry.sourceEntryId && entry.time === editSourceTime)
+      : undefined;
+    const legacyDayLevel = dayLevelAdminFeatures.has(activeRegistryFeature)
+      ? [...entries].reverse().find((entry) => !entry.sourceEntryId)
+      : undefined;
+    setAdminFieldValues((linked ?? legacyByTime ?? legacyDayLevel)?.values ?? {});
+  }, [active, activeRegistryFeature, activeSourceEntryId, data.dayLogs, date, editSourceTime, openToken]);
 
   const saveAdminCustomFields = () => {
     if (!activeRegistryFeature || !activeAdminFields.length) return;
@@ -250,12 +264,14 @@ export function LogSheet({
       const day = current.dayLogs[date] ?? {};
       const adminFields = day.adminFields ?? {};
       const existing = adminFields[activeRegistryFeature] ?? [];
-      const linkedIndex = editSourceId ? existing.findIndex((entry) => entry.sourceEntryId === editSourceId) : -1;
+      const linkedIndex = existing.findIndex((entry) => entry.sourceEntryId === activeSourceEntryId);
       let legacyIndex = -1;
-      if (linkedIndex < 0 && editSourceId && editSourceTime) {
+      if (linkedIndex < 0) {
         for (let index = existing.length - 1; index >= 0; index -= 1) {
           const entry = existing[index];
-          if (!entry.sourceEntryId && entry.time === editSourceTime) {
+          const legacyTimeMatch = Boolean(editSourceTime && !entry.sourceEntryId && entry.time === editSourceTime);
+          const legacyDayMatch = dayLevelAdminFeatures.has(activeRegistryFeature) && !entry.sourceEntryId;
+          if (legacyTimeMatch || legacyDayMatch) {
             legacyIndex = index;
             break;
           }
@@ -277,17 +293,17 @@ export function LogSheet({
       let nextEntries = existing;
       if (!Object.keys(values).length) {
         if (matchIndex >= 0) nextEntries = existing.filter((_, index) => index !== matchIndex);
-        else if (!editSourceId) return current;
+        else return current;
       } else if (matchIndex >= 0) {
         nextEntries = existing.map((entry, index) => index === matchIndex
-          ? { ...entry, values, sourceEntryId: editSourceId ?? entry.sourceEntryId }
+          ? { ...entry, values, sourceEntryId: activeSourceEntryId }
           : entry);
       } else {
         const entry = {
           id: globalThis.crypto?.randomUUID?.() ?? `admin-field-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           time: editSourceTime ?? nowHHMM(),
           values,
-          ...(editSourceId ? { sourceEntryId: editSourceId } : {}),
+          sourceEntryId: activeSourceEntryId,
         };
         nextEntries = [...existing, entry];
       }
@@ -746,6 +762,7 @@ export function LogSheet({
               adminFieldValues,
               setAdminFieldValue: (fieldId, value) => setAdminFieldValues((current) => ({ ...current, [fieldId]: value })),
               saveAdminCustomFields,
+              sourceEntryId: activeSourceEntryId,
             } : null}>
             <div
               key={`${active}-${openToken}-${(edit as { id?: string } | undefined)?.id ?? initialPain?.id ?? "new"}`}
@@ -1516,7 +1533,7 @@ function PainWizard({
   const save = () => {
     const editing = !!initialEntry;
     const p: PainEntry = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
+      id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
       time,
       score,
       parts,
@@ -2409,6 +2426,7 @@ function PanicForm({
   initialEntry?: PanicAttack;
 }) {
   const { t } = useI18n();
+  const schema = useLogSchema();
   const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
   const [minutes, setMinutes] = useState(initialEntry?.minutes != null ? String(initialEntry.minutes) : "10");
   const [ongoing, setOngoing] = useState(initialEntry?.minutes == null && !!initialEntry);
@@ -2434,7 +2452,7 @@ function PanicForm({
   const save = () => {
     const editing = !!initialEntry;
     const p: PanicAttack = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
+      id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
       time,
       minutes: ongoing ? undefined : minutes === "" ? undefined : Number(minutes),
       intensity,
@@ -2595,6 +2613,7 @@ function TetanyForm({
   initialEntry?: TetanyEpisode;
 }) {
   const { t } = useI18n();
+  const schema = useLogSchema();
   const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
   const [types, setTypes] = useState<string[]>(initialEntry?.types ?? []);
   const [loc, setLoc] = useState<string[]>(initialEntry?.location ?? []);
@@ -2629,7 +2648,7 @@ function TetanyForm({
   const save = () => {
     const editing = !!initialEntry;
     const t: TetanyEpisode = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
+      id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
       time,
       types,
       location: loc,
@@ -2986,6 +3005,7 @@ function SexForm({
   onDone: () => void;
   initialEntry?: SexEntry;
 }) {
+  const schema = useLogSchema();
   const [kind, setKind] = useState<SexKind>(initialEntry?.kind ?? "sex");
   const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
   const [feelingAfter, setFeelingAfter] = useState<string[]>(asArr(initialEntry?.feelingAfter));
@@ -3002,7 +3022,7 @@ function SexForm({
   const save = () => {
     const editing = !!initialEntry;
     const e: SexEntry = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
+      id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
       time,
       kind,
       feelingAfter: feelingAfter.length ? feelingAfter : undefined,
@@ -3145,6 +3165,7 @@ function ThermoForm({
   initialEntry?: ThermoSession;
 }) {
   const { t } = useI18n();
+  const schema = useLogSchema();
   const [kind, setKind] = useState<ThermoKind>(initialEntry?.kind ?? "heat");
   const [start, setStart] = useState(initialEntry?.start ?? nowHHMM());
   const [minutes, setMinutes] = useState<string>(
@@ -3156,7 +3177,7 @@ function ThermoForm({
     const editing = !!initialEntry;
     const mins = ongoing ? 0 : minutes === "" ? 0 : Number(minutes);
     const e: ThermoSession = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
+      id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
       kind,
       start,
       minutes: mins,
@@ -3211,6 +3232,7 @@ function FoodForm({
   initialEntry?: FoodEntry;
 }) {
   const { t } = useI18n();
+  const schema = useLogSchema();
   const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
   const [what, setWhat] = useState(initialEntry?.what ?? "");
   const [feelings, setFeelings] = useState<string[]>(initialEntry?.feelings ?? []);
@@ -3264,7 +3286,7 @@ function FoodForm({
     if (!what.trim() && !hydration && !caffeine && !alcohol && !histFlare && symptomsAfter.length === 0) return;
     const editing = !!initialEntry;
     const entry: FoodEntry = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
+      id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
       time,
       what: what.trim(),
       feelings,
@@ -3545,6 +3567,7 @@ function BowelForm({
   initialEntry?: BowelEntry;
 }) {
   const { t } = useI18n();
+  const schema = useLogSchema();
   const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
   const [bristol, setBristol] = useState<number>(initialEntry?.bristol ?? 4);
   const [feelings, setFeelings] = useState<string[]>((initialEntry?.feelings ?? []).map(stripEmoji));
@@ -3576,7 +3599,7 @@ function BowelForm({
   const save = () => {
     const editing = !!initialEntry;
     const entry: BowelEntry = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
+      id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
       time,
       bristol,
       feelings: feelings.length ? feelings : undefined,
@@ -3992,6 +4015,7 @@ function MedsForm({
   onDone: () => void;
 }) {
   const { t } = useI18n();
+  const schema = useLogSchema();
   const meds = data.meds;
   const taken = data.medLog[date] ?? {};
   const takenTimes = data.medLogTimes?.[date] ?? {};
@@ -4151,7 +4175,7 @@ function MedsForm({
         <div className="mt-5 flex justify-end border-t border-border/50 pt-4">
           <button
             type="button"
-            onClick={onDone}
+            onClick={() => { schema?.saveAdminCustomFields(); onDone(); }}
             className="inline-flex h-10 min-w-[78px] items-center justify-center gap-1.5 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             <span>{t("Done")}</span>
@@ -4178,6 +4202,7 @@ function WorkoutForm({
   initialEntry?: WorkoutEntry;
 }) {
   const { t } = useI18n();
+  const schema = useLogSchema();
   const [kind, setKind] = useState<string>(
     initialEntry?.kind ? stripEmoji(initialEntry.kind) : WORKOUT_KINDS_DEFAULT[0],
   );
@@ -4215,7 +4240,7 @@ function WorkoutForm({
   const save = () => {
     const editing = !!initialEntry;
     const e: WorkoutEntry = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
+      id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
       time: initialEntry?.time ?? nowHHMM(),
       kind,
       minutes,
@@ -4437,6 +4462,7 @@ function EventForm({
   initialEntry?: EventEntry;
 }) {
   const { t } = useI18n();
+  const schema = useLogSchema();
   const [title, setTitle] = useState(initialEntry?.title ?? "");
   const [startDate, setStartDate] = useState(initialEntry?.startDate ?? date);
   const [endDate, setEndDate] = useState(initialEntry?.endDate ?? date);
@@ -4448,7 +4474,7 @@ function EventForm({
     if (!title.trim()) return;
     const editing = !!initialEntry;
     const e: EventEntry = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
+      id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
       title: title.trim(),
       startDate,
       endDate: endDate < startDate ? startDate : endDate,
@@ -4518,6 +4544,7 @@ function TaskForm({
   initialEntry?: TaskEntry;
 }) {
   const { t } = useI18n();
+  const schema = useLogSchema();
   const [title, setTitle] = useState(initialEntry?.title ?? "");
   const [startDate, setStartDate] = useState(initialEntry?.startDate ?? date);
   const [endDate, setEndDate] = useState(initialEntry?.endDate ?? date);
@@ -4528,7 +4555,7 @@ function TaskForm({
     if (!title.trim()) return;
     const editing = !!initialEntry;
     const t: TaskEntry = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
+      id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
       title: title.trim(),
       startDate,
       endDate: endDate < startDate ? startDate : endDate,
@@ -4583,9 +4610,9 @@ function NoteForm({ date, update, onDone }: { date: string; update: UpdateFn; on
   const save = () => {
     if (!text.trim()) return;
     update((d) => {
-      const list = (d.dayNotes[date] ?? []) as (string | { text: string; time?: string })[];
-      const next: { text: string; time?: string }[] = list.map((x) => (typeof x === "string" ? { text: x } : x));
-      next.push({ text: text.trim(), time: time || undefined });
+      const list = (d.dayNotes[date] ?? []) as (string | { id?: string; text: string; time?: string })[];
+      const next: { id?: string; text: string; time?: string }[] = list.map((x) => (typeof x === "string" ? { text: x } : x));
+      next.push({ id: schema?.sourceEntryId, text: text.trim(), time: time || undefined });
       return { ...d, dayNotes: { ...d.dayNotes, [date]: next } };
     });
     onDone();
