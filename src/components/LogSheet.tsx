@@ -2974,11 +2974,23 @@ function PeriodForm({
         <button
           type="button"
           onClick={() => {
-            updateDayLog(update, date, (l) => {
-              const { period: _p, periodInfo: _pi, ...rest } = l;
+            update((current) => {
+              const day = current.dayLogs[date] ?? {};
+              const { period: _p, periodInfo: _pi, ...rest } = day;
               void _p;
               void _pi;
-              return rest;
+              const adminFields = { ...(rest.adminFields ?? {}) };
+              const periodAdmin = adminFields.period ?? [];
+              const nextPeriodAdmin = periodAdmin.filter((entry) => entry.sourceEntryId !== `day:period:${date}`);
+              if (nextPeriodAdmin.length) adminFields.period = nextPeriodAdmin;
+              else delete adminFields.period;
+              return {
+                ...current,
+                dayLogs: {
+                  ...current.dayLogs,
+                  [date]: { ...rest, adminFields: Object.keys(adminFields).length ? adminFields : undefined },
+                },
+              };
             });
             onDone();
           }}
@@ -4710,14 +4722,29 @@ function PostpartumSymptomsForm({
         <button
           type="button"
           onClick={() => {
-            updateDayLog(update, date, (dayLog) => ({
-              ...dayLog,
-              postpartum: {
-                ...(dayLog.postpartum ?? {}),
-                symptoms: undefined,
-                note: undefined,
-              },
-            }));
+            update((current) => {
+              const dayLog = current.dayLogs[date] ?? {};
+              const adminFields = { ...(dayLog.adminFields ?? {}) };
+              const postpartumAdmin = adminFields.postpartum ?? [];
+              const nextPostpartumAdmin = postpartumAdmin.filter((entry) => entry.sourceEntryId !== `day:postpartum:${date}`);
+              if (nextPostpartumAdmin.length) adminFields.postpartum = nextPostpartumAdmin;
+              else delete adminFields.postpartum;
+              return {
+                ...current,
+                dayLogs: {
+                  ...current.dayLogs,
+                  [date]: {
+                    ...dayLog,
+                    postpartum: {
+                      ...(dayLog.postpartum ?? {}),
+                      symptoms: undefined,
+                      note: undefined,
+                    },
+                    adminFields: Object.keys(adminFields).length ? adminFields : undefined,
+                  },
+                },
+              };
+            });
             onDone();
           }}
           className="w-full rounded-2xl bg-destructive/10 py-2.5 text-sm font-medium text-destructive ring-1 ring-destructive/30"
