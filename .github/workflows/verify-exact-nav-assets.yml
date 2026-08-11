@@ -1,0 +1,49 @@
+name: Verify exact nav assets
+
+on:
+  push:
+    branches:
+      - agent/fix-exact-nav-assets-bundled
+    paths:
+      - scripts/fix_nav_profile_order.py
+      - .github/workflows/verify-exact-nav-assets.yml
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/fix-exact-nav-assets-bundled
+      - uses: oven-sh/setup-bun@v2
+      - name: Apply profile cleanup
+        run: python scripts/fix_nav_profile_order.py
+      - name: Verify exact bundled assets exist
+        run: |
+          test -s src/assets/nav-home-exact.webp
+          test -s src/assets/nav-couple-exact.webp
+          grep -q 'nav-home-exact.webp' src/components/BottomNav.tsx
+          grep -q 'nav-couple-exact.webp' src/components/BottomNav.tsx
+          grep -q 'nav-home-exact.webp' src/components/SideNav.tsx
+          grep -q 'nav-couple-exact.webp' src/components/SideNav.tsx
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Typecheck
+        run: bun run typecheck
+      - name: Lint
+        run: bun run lint
+      - name: Tests
+        run: bun test
+      - name: Build
+        run: bun run build
+      - name: Commit verified cleanup and remove temporary helpers
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/routes/profile.tsx
+          git rm scripts/fix_nav_profile_order.py .github/workflows/verify-exact-nav-assets.yml
+          git commit -m "Restore Health Hub ordering and verify bundled nav artwork"
+          git push origin HEAD:agent/fix-exact-nav-assets-bundled
