@@ -23,6 +23,36 @@ const ICONS: Record<NavigationItemId, ComponentType<IconProps>> = {
   healthProfile: User,
 };
 
+/** Exact user-provided artwork; existing SVG icons remain available as fallback. */
+const NAV_IMAGE_SRC: Partial<Record<NavigationItemId, string>> = {
+  home: "/nav-assets/nav-home.webp",
+  overview: "/nav-assets/nav-overview.webp",
+  couple: "/nav-assets/nav-couple.webp",
+  notes: "/nav-assets/nav-note.webp",
+};
+
+function NavArtwork({ id, size, className }: { id: NavigationItemId; size: number; className?: string }) {
+  const Icon = ICONS[id];
+  const imageSrc = NAV_IMAGE_SRC[id];
+
+  if (imageSrc) {
+    return (
+      <img
+        src={imageSrc}
+        alt=""
+        aria-hidden="true"
+        draggable={false}
+        width={size}
+        height={size}
+        className={className}
+        style={{ objectFit: "contain" }}
+      />
+    );
+  }
+
+  return <Icon size={size} className={className} />;
+}
+
 /** Desktop-only left navigation. Hidden below lg so the mobile UI is untouched. */
 export function SideNav({ mascotSrc }: { mascotSrc: string }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -75,7 +105,6 @@ export function SideNav({ mascotSrc }: { mascotSrc: string }) {
       <nav className="min-h-0 flex-1 overflow-y-auto">
         <ul className="flex flex-col gap-1.5">
           {navItems.map((navItem) => {
-            const Icon = ICONS[navItem.id];
             const label = navItem.label ?? BIXBO_NAVIGATION.find((candidate) => candidate.id === navItem.id)?.label ?? navItem.id;
 
             if (navItem.action === "log") {
@@ -86,7 +115,7 @@ export function SideNav({ mascotSrc }: { mascotSrc: string }) {
                     onClick={openLog}
                     className="flex min-h-[76px] w-full items-center gap-4 rounded-3xl px-3 py-2 text-left text-[15px] font-semibold text-[#415025] transition-transform hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.985] dark:text-[#dfe9bd] dark:hover:bg-white/5"
                   >
-                    <Icon size={60} className="-my-2 shrink-0 drop-shadow-[0_8px_9px_rgba(59,74,31,0.28)]" />
+                    <NavArtwork id={navItem.id} size={60} className="-my-2 h-[60px] w-[60px] shrink-0 object-contain drop-shadow-[0_8px_9px_rgba(59,74,31,0.28)]" />
                     <span>{t(label)}</span>
                   </button>
                 </li>
@@ -108,9 +137,10 @@ export function SideNav({ mascotSrc }: { mascotSrc: string }) {
                       : "text-[#4b5930] hover:bg-white/18 hover:text-[#34411f] dark:text-[#bdc99e] dark:hover:bg-white/5 dark:hover:text-[#e4edc7]"
                   }`}
                 >
-                  <Icon
+                  <NavArtwork
+                    id={navItem.id}
                     size={48}
-                    className={`shrink-0 drop-shadow-[0_6px_7px_rgba(59,74,31,0.24)] transition-transform ${active ? "scale-[1.04]" : ""}`}
+                    className={`h-[48px] w-[48px] shrink-0 object-contain drop-shadow-[0_6px_7px_rgba(59,74,31,0.24)] transition-transform ${active ? "scale-[1.04]" : ""}`}
                   />
                   <span className="truncate">{t(label)}</span>
                 </Link>
