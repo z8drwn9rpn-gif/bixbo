@@ -1,5 +1,4 @@
 from pathlib import Path
-import re
 
 p = Path('src/components/LogSheet.tsx')
 s = p.read_text()
@@ -22,8 +21,11 @@ if old_effect not in s:
 s = s.replace(old_effect, new_effect, 1)
 
 # saveAdminCustomFields: link by effective id; migrate legacy edit-time/day-level record to stable id.
-s = s.replace('''      const linkedIndex = editSourceId ? existing.findIndex((entry) => entry.sourceEntryId === editSourceId) : -1;\n      let legacyIndex = -1;\n      if (linkedIndex < 0 && editSourceId && editSourceTime) {\n        for (let index = existing.length - 1; index >= 0; index -= 1) {\n          const entry = existing[index];\n          if (!entry.sourceEntryId && entry.time === editSourceTime) {\n            legacyIndex = index;\n            break;\n          }\n        }\n      }\n      const matchIndex = linkedIndex >= 0 ? linkedIndex : legacyIndex;''', '''      const linkedIndex = existing.findIndex((entry) => entry.sourceEntryId === activeSourceEntryId);\n      let legacyIndex = -1;\n      if (linkedIndex < 0) {\n        for (let index = existing.length - 1; index >= 0; index -= 1) {\n          const entry = existing[index];\n          const legacyTimeMatch = Boolean(editSourceTime && !entry.sourceEntryId && entry.time === editSourceTime);\n          const legacyDayMatch = dayLevelAdminFeatures.has(activeRegistryFeature) && !entry.sourceEntryId;\n          if (legacyTimeMatch || legacyDayMatch) {\n            legacyIndex = index;\n            break;\n          }\n        }\n      }\n      const matchIndex = linkedIndex >= 0 ? linkedIndex : legacyIndex;''', 1)
-
+old_link = '''      const linkedIndex = editSourceId ? existing.findIndex((entry) => entry.sourceEntryId === editSourceId) : -1;\n      let legacyIndex = -1;\n      if (linkedIndex < 0 && editSourceId && editSourceTime) {\n        for (let index = existing.length - 1; index >= 0; index -= 1) {\n          const entry = existing[index];\n          if (!entry.sourceEntryId && entry.time === editSourceTime) {\n            legacyIndex = index;\n            break;\n          }\n        }\n      }\n      const matchIndex = linkedIndex >= 0 ? linkedIndex : legacyIndex;'''
+new_link = '''      const linkedIndex = existing.findIndex((entry) => entry.sourceEntryId === activeSourceEntryId);\n      let legacyIndex = -1;\n      if (linkedIndex < 0) {\n        for (let index = existing.length - 1; index >= 0; index -= 1) {\n          const entry = existing[index];\n          const legacyTimeMatch = Boolean(editSourceTime && !entry.sourceEntryId && entry.time === editSourceTime);\n          const legacyDayMatch = dayLevelAdminFeatures.has(activeRegistryFeature) && !entry.sourceEntryId;\n          if (legacyTimeMatch || legacyDayMatch) {\n            legacyIndex = index;\n            break;\n          }\n        }\n      }\n      const matchIndex = linkedIndex >= 0 ? linkedIndex : legacyIndex;'''
+if old_link not in s:
+    raise SystemExit('save source matcher not found')
+s = s.replace(old_link, new_link, 1)
 s = s.replace('''        else if (!editSourceId) return current;''', '''        else return current;''', 1)
 s = s.replace('''          ? { ...entry, values, sourceEntryId: editSourceId ?? entry.sourceEntryId }''', '''          ? { ...entry, values, sourceEntryId: activeSourceEntryId }''', 1)
 s = s.replace('''          ...(editSourceId ? { sourceEntryId: editSourceId } : {}),''', '''          sourceEntryId: activeSourceEntryId,''', 1)
@@ -35,7 +37,7 @@ if old_provider not in s:
     raise SystemExit('provider marker not found')
 s = s.replace(old_provider, new_provider, 1)
 
-# Patch multi-entry core forms to use same new-entry ID as adminFields.
+# Patch multi-entry core forms to use the same new-entry ID as their adminFields record.
 form_names = ['PainWizard','PanicForm','TetanyForm','SexForm','ThermoForm','FoodForm','BowelForm','WorkoutForm','EventForm','TaskForm']
 for name in form_names:
     start = s.find(f'function {name}(')
@@ -46,22 +48,28 @@ for name in form_names:
         next_fn = len(s)
     chunk = s[start:next_fn]
     if 'const schema = useLogSchema();' not in chunk:
-        # put after useI18n declaration when present
-        marker = '  const { t } = useI18n();\n'
-        if marker not in chunk:
-            raise SystemExit(f'useI18n marker missing in {name}')
-        chunk = chunk.replace(marker, marker + '  const schema = useLogSchema();\n', 1)
+        i18n_marker = '  const { t } = useI18n();\n'
+        if i18n_marker in chunk:
+            chunk = chunk.replace(i18n_marker, i18n_marker + '  const schema = useLogSchema();\n', 1)
+        else:
+            # Some forms (currently SexForm) do not call useI18n directly.
+            body_marker = '}) {\n'
+            if body_marker not in chunk:
+                raise SystemExit(f'function body marker missing in {name}')
+            chunk = chunk.replace(body_marker, body_marker + '  const schema = useLogSchema();\n', 1)
     old_id = 'initialEntry?.id ?? crypto.randomUUID()'
     if old_id not in chunk:
         raise SystemExit(f'main id marker missing in {name}')
     chunk = chunk.replace(old_id, 'initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID()', 1)
     s = s[:start] + chunk + s[next_fn:]
 
-# Note is multi-entry but historically lacked an id. Add stable id to new note object.
+# Note is multi-entry but historically lacked an id. Add stable id to new note objects.
 note_start = s.find('function NoteForm(')
 note_end = s.find('\nfunction ', note_start + 10)
 chunk = s[note_start:note_end]
 old_note_type = '(string | { text: string; time?: string })[]'
+if old_note_type not in chunk:
+    raise SystemExit('Note list type marker not found')
 chunk = chunk.replace(old_note_type, '(string | { id?: string; text: string; time?: string })[]', 1)
 chunk = chunk.replace('const next: { text: string; time?: string }[] = list.map', 'const next: { id?: string; text: string; time?: string }[] = list.map', 1)
 chunk = chunk.replace('next.push({ text: text.trim(), time: time || undefined });', 'next.push({ id: schema?.sourceEntryId, text: text.trim(), time: time || undefined });', 1)
