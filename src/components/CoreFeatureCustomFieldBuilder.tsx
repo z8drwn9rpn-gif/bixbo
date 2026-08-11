@@ -15,6 +15,26 @@ import type { BixboData } from "@/lib/storage";
 
 const FIELD_KINDS: RegistryFieldKind[] = ["text", "number", "toggle", "chips", "scale"];
 
+function sanitizeOptions(options: string[] | undefined): string[] {
+  const seen = new Set<string>();
+  return (options ?? [])
+    .map((option) => option.trim())
+    .filter((option) => option.length > 0 && !seen.has(option) && Boolean(seen.add(option)));
+}
+
+function sanitizeScale(scale: RegistryFieldDefinition["scale"]): NonNullable<RegistryFieldDefinition["scale"]> {
+  const rawMin = Number(scale?.min);
+  const rawMax = Number(scale?.max);
+  const rawStep = Number(scale?.step);
+  const min = Number.isFinite(rawMin) ? rawMin : 1;
+  const maxCandidate = Number.isFinite(rawMax) ? rawMax : 10;
+  const max = maxCandidate > min ? maxCandidate : min + 1;
+  const stepCandidate = Number.isFinite(rawStep) && rawStep > 0 ? rawStep : 1;
+  const span = max - min;
+  const step = Math.min(stepCandidate, span);
+  return { min, max, step };
+}
+
 function makeFieldId() {
   return `admin_field_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -67,7 +87,16 @@ export function CoreFeatureCustomFieldBuilder({ data }: { data: BixboData }) {
   const patchField = (featureId: RegistryFeatureId, fieldId: string, patch: Partial<RegistryFieldDefinition>) => {
     const current = getDeviceAdminConfig();
     const fields = current.features?.[featureId]?.customFields ?? [];
-    writeFields(featureId, fields.map((field) => field.id === fieldId ? { ...field, ...patch, id: field.id } : field));
+    writeFields(featureId, fields.map((field) => {
+      if (field.id !== fieldId) return field;
+      const next = { ...field, ...patch, id: field.id };
+      return {
+        ...next,
+        label: next.label.trimStart(),
+        ...(next.kind === "chips" ? { options: sanitizeOptions(next.options) } : { options: undefined }),
+        ...(next.kind === "scale" ? { scale: sanitizeScale(next.scale) } : { scale: undefined }),
+      };
+    }));
   };
 
   const unifiedFieldIds = (featureId: RegistryFeatureId) => {
@@ -318,10 +347,16 @@ export function CoreFeatureCustomFieldBuilder({ data }: { data: BixboData }) {
                                 aria-label={t("Drag to reorder")}
                               >⋮⋮</button>
                               <input value={option} onChange={(event) => { const options = [...(field.options ?? [])]; options[index] = event.target.value; patchField(feature.id, field.id, { options }); }} className="h-7 min-w-0 flex-1 rounded-lg bg-tint px-2 text-[9px] ring-1 ring-border" />
-                              <button type="button" onClick={() => patchField(feature.id, field.id, { options: (field.options ?? []).filter((_, optionIndex) => optionIndex !== index) })} className="rounded-full px-2 text-[10px] ring-1 ring-border">×</button>
+                              <button type="button" disabled={(field.options?.length ?? 0) <= 1} onClick={() => patchField(feature.id, field.id, { options: (field.options ?? []).filter((_, optionIndex) => optionIndex !== index) })} className="rounded-full px-2 text-[10px] ring-1 ring-border">×</button>
                             </div>
                           ))}
-                          <button type="button" onClick={() => patchField(feature.id, field.id, { options: [...(field.options ?? []), `${t("Option")} ${(field.options?.length ?? 0) + 1}`] })} className="rounded-full bg-tint px-3 py-1 text-[9px] font-semibold ring-1 ring-border">+ {t("Add option")}</button>
+                          <button type="button" onClick={() => {
+                            const existing = sanitizeOptions(field.options);
+                            let index = existing.length + 1;
+                            let label = `${t("Option")} ${index}`;
+                            while (existing.includes(label)) { index += 1; label = `${t("Option")} ${index}`; }
+                            patchField(feature.id, field.id, { options: [...existing, label] });
+                          }} className="rounded-full bg-tint px-3 py-1 text-[9px] font-semibold ring-1 ring-border">+ {t("Add option")}</button>
                         </div>
                       ) : null}
 
