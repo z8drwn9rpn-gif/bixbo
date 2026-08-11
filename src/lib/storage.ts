@@ -235,6 +235,8 @@ export interface CustomLogEntry {
   time: string;
   values: Record<string, CustomLogValue>;
   note?: string;
+  /** Optional link to the concrete built-in log entry this supplementary record belongs to. */
+  sourceEntryId?: string;
 }
 
 /** A single time-stamped weight or body-temperature measurement. */
