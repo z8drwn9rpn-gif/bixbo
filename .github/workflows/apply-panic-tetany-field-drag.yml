@@ -1,0 +1,32 @@
+name: Apply panic tetany field drag
+
+on:
+  push:
+    branches:
+      - agent/panic-tetany-field-drag
+    paths:
+      - .github/scripts/apply_panic_tetany_field_drag.py
+      - .github/workflows/apply-panic-tetany-field-drag.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/panic-tetany-field-drag
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python .github/scripts/apply_panic_tetany_field_drag.py
+      - run: rm .github/scripts/apply_panic_tetany_field_drag.py .github/workflows/apply-panic-tetany-field-drag.yml
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/lib/appRegistry.ts src/components/LogSheet.tsx src/components/AdminEditOverlay.tsx src/lib/__tests__/panic-tetany-field-order.test.ts .github/scripts/apply_panic_tetany_field_drag.py .github/workflows/apply-panic-tetany-field-drag.yml
+          git commit -m 'make panic tetany fields truly reorderable'
+          git push
