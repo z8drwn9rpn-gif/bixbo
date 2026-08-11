@@ -20,20 +20,16 @@ jobs:
           p = Path('src/routes/profile.tsx')
           s = p.read_text(encoding='utf-8')
           if 'to="/report"' not in s:
-              needle = '''          <button
-            type="button"
-            onClick={exportJson}
-            className="min-h-11 w-full rounded-xl border border-input px-4 text-sm font-semibold"
-          ><TrText value="Export JSON" /></button>'''
-              insert = needle + '''
+              anchor = '<TrText value="Export JSON" /></button>'
+              if anchor not in s:
+                  raise SystemExit('Export JSON anchor not found')
+              addition = anchor + '''
 
           <Link
             to="/report"
             className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-input bg-primary/10 px-4 text-sm font-semibold text-primary"
           >{t("PDF reports")}</Link>'''
-              if needle not in s:
-                  raise SystemExit('Export JSON button anchor not found')
-              s = s.replace(needle, insert, 1)
+              s = s.replace(anchor, addition, 1)
               p.write_text(s, encoding='utf-8')
           PY
       - run: bun run build
