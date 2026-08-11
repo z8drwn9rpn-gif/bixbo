@@ -22,21 +22,21 @@ const ICONS: Record<NavigationItemId, ComponentType<IconProps>> = {
   healthProfile: BottomNavHomeIcon,
 };
 
+/** User-approved navigation artwork. Query version forces iOS/PWA to refresh stale cached assets. */
 const NAV_IMAGE_SRC: Partial<Record<NavigationItemId, string>> = {
-  home: "/nav-assets/nav-home.webp",
-  overview: "/nav-assets/nav-overview.webp",
-  couple: "/nav-assets/nav-couple.webp",
-  notes: "/nav-assets/nav-note.webp",
+  home: "/nav-assets/nav-home.webp?v=exact-20260811-2",
+  overview: "/nav-assets/nav-overview.webp?v=exact-20260811-2",
+  couple: "/nav-assets/nav-couple.webp?v=exact-20260811-2",
+  notes: "/nav-assets/nav-note.webp?v=exact-20260811-2",
 };
 
 function NavArtwork({ id, size, className }: { id: NavigationItemId; size: number; className?: string }) {
   const Icon = ICONS[id];
   const imageSrc = NAV_IMAGE_SRC[id];
   const [imageFailed, setImageFailed] = useState(false);
+  const mustUseUserArtwork = id === "home" || id === "couple";
 
-  // Never show Safari's broken-image placeholder. If a deployed PWA still has
-  // an older asset cache, fall back to the bundled BIXBO SVG immediately.
-  if (imageSrc && !imageFailed) {
+  if (imageSrc && (mustUseUserArtwork || !imageFailed)) {
     return (
       <img
         src={imageSrc}
@@ -47,7 +47,7 @@ function NavArtwork({ id, size, className }: { id: NavigationItemId; size: numbe
         height={size}
         className={className}
         style={{ objectFit: "contain" }}
-        onError={() => setImageFailed(true)}
+        onError={mustUseUserArtwork ? undefined : () => setImageFailed(true)}
       />
     );
   }
@@ -105,8 +105,8 @@ export function BottomNav() {
                 >
                   <NavArtwork
                     id={item.id}
-                    size={72}
-                    className="-mb-1 h-[72px] w-[72px] shrink-0 object-contain drop-shadow-[0_7px_8px_rgba(52,67,30,0.28)] landscape:h-[62px] landscape:w-[62px]"
+                    size={68}
+                    className="-mb-1 h-[68px] w-[68px] shrink-0 object-contain drop-shadow-[0_7px_8px_rgba(52,67,30,0.28)] landscape:h-[58px] landscape:w-[58px]"
                   />
                   <span className="max-w-full truncate text-center leading-none">{t(label)}</span>
                 </button>
