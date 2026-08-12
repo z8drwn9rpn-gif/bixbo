@@ -3472,8 +3472,8 @@ function DayPreview({
                     <p className="mt-2 text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">PCOS:</span> {p.pcosSymptoms.map(t).join(", ")}</p>
                   ) : null}
                   {p.mood?.length ? (
-                    <p className="text-xs text-muted-foreground">
-                      {t("Mood")}: <IcoText text={p.mood.map(t).join(", ")} size={13} />
+                    <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                      <span className="font-semibold text-foreground">{t("Mood")}:</span> <IcoText text={p.mood.map(t).join(", ")} size={13} />
                     </p>
                   ) : null}
                   {p.stress != null && <p className="mt-2 text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">{t("Stress")}:</span> {p.stress}/10</p>}
