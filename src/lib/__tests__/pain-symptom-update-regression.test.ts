@@ -16,7 +16,7 @@ describe("Pain symptom-only follow-ups", () => {
     const home = readFileSync(resolve(process.cwd(), "src/routes/index.tsx"), "utf8");
     expect(sheet).toContain('entryKind: quickSymptomUpdate ? "symptom-update" : undefined');
     expect(sheet).toContain('setSymptoms([])');
-    expect(sheet).toContain('Save symptoms ✓');
+    expect(sheet).toContain('t("Save symptoms")');
     expect(home).toContain('<Card title="Add symptoms" icon="➕">');
   });
 });

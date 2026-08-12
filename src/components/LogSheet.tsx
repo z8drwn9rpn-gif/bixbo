@@ -2465,6 +2465,7 @@ function PainWizard({
             onClick={() => {
               setQuickSymptomUpdate(false);
               setCopiedFromTime(undefined);
+              setCopiedFromId(undefined);
               setStep(0);
             }}
             className="flex items-center gap-1 px-1 text-sm font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -2478,7 +2479,7 @@ function PainWizard({
             onClick={save}
             className="inline-flex h-10 min-w-[104px] items-center justify-center gap-1.5 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
-            <span>{t("Save update")}</span>
+            <span>{t("Save symptoms")}</span>
             <span aria-hidden="true" className="text-base leading-none">✓</span>
           </button>
         </SheetFooter>
