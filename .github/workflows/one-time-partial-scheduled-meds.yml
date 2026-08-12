@@ -31,3 +31,4 @@ jobs:
           git diff --cached --check
           git commit -m "Track grouped scheduled meds individually"
           git push origin HEAD:main
+# Trigger granular scheduled meds patch
