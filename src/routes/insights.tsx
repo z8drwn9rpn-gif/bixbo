@@ -396,7 +396,7 @@ function InsightPeriodSelect({
   const { t } = useI18n();
   return (
     <div
-      className="grid h-8 w-[210px] grid-cols-3 rounded-xl bg-tint p-0.5 ring-1 ring-border/60"
+      className="grid h-8 w-full grid-cols-3 rounded-xl bg-tint p-0.5 ring-1 ring-border/60 sm:w-[210px]"
       role="group"
       aria-label={ariaLabel}
     >
@@ -494,10 +494,10 @@ function InsightPeriodControl({
   const unit = value === "W" ? "week" : value === "M" ? "month" : "year";
 
   return (
-    <div className="flex shrink-0 flex-col items-end gap-1">
+    <div className="flex w-full shrink-0 flex-col gap-1 sm:w-auto sm:items-end">
       <InsightPeriodSelect value={value} onChange={onChange} ariaLabel={ariaLabel} />
 
-      <div className="grid h-8 w-[210px] grid-cols-[32px_minmax(0,1fr)_32px] items-center rounded-xl bg-background/70 p-0.5 ring-1 ring-border/60">
+      <div className="grid h-8 w-full grid-cols-[32px_minmax(0,1fr)_32px] items-center rounded-xl bg-background/70 p-0.5 ring-1 ring-border/60 sm:w-[210px]">
         <button
           type="button"
           onClick={() => onShift(-1)}
@@ -530,6 +530,9 @@ function InsightsPage() {
   const view = hydrated ? data : EMPTY;
   const [anchor, setAnchor] = useState<Date>(() => new Date());
   const [overviewView, setOverviewView] = useState<"insights" | "patterns">("insights");
+  const [insightsFilter, setInsightsFilter] = useState<
+    "all" | "overview" | "pain" | "symptoms" | "bowel" | "meds"
+  >("all");
 
   // One Insights page. Every chart keeps its own Week / Month / Year range
   // AND its own independent date anchor for previous/next navigation.
@@ -698,11 +701,50 @@ function InsightsPage() {
         </div>
       </div>
 
+      {overviewView === "insights" ? (
+        <div className="px-5 pt-2 lg:px-0">
+          <div
+            className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            role="group"
+            aria-label={t("Insights sections")}
+          >
+            {([
+              ["all", "All"],
+              ["overview", "Overview"],
+              ["pain", "Pain"],
+              ["symptoms", "Symptoms"],
+              ["bowel", "Bowel"],
+              ["meds", "Meds"],
+            ] as const).map(([id, label]) => {
+              const selected = insightsFilter === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setInsightsFilter(id)}
+                  aria-pressed={selected}
+                  className={`shrink-0 rounded-full px-3 py-1.5 text-[11px] font-semibold transition ${
+                    selected
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-surface text-muted-foreground ring-1 ring-border/70 hover:text-foreground"
+                  }`}
+                >
+                  {t(label)}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+
       {overviewView === "patterns" ? (
         <PatternsContent />
       ) : (
         <div className="flex flex-col gap-3 px-5 pt-2 pb-[calc(96px+env(safe-area-inset-bottom))] lg:grid lg:grid-cols-2 lg:items-start lg:px-0 lg:pb-12">
-        <div className="lg:col-span-2" style={{ order: layoutOrder(view, "insights", "heatmap", 10) }}>
+        <div
+          className={insightsFilter === "all" || insightsFilter === "overview" ? "lg:col-span-2" : "hidden"}
+          style={{ order: layoutOrder(view, "insights", "heatmap", 10) }}
+        >
         <YearHealthHeatmap
           data={view}
           anchor={anchor}
@@ -710,8 +752,11 @@ function InsightsPage() {
         />
         </div>
 
-        <section style={{ order: layoutOrder(view, "insights", "pain", 20) }} className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
-          <div className="flex items-start justify-between gap-3">
+        <section
+          style={{ order: layoutOrder(view, "insights", "pain", 20) }}
+          className={`${insightsFilter === "all" || insightsFilter === "pain" ? "" : "hidden "}rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80`}
+        >
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t("Pain scale")}</p>
             <InsightPeriodControl
               value={painPeriod}
@@ -743,8 +788,11 @@ function InsightsPage() {
           />
         </section>
 
-        <section style={{ order: layoutOrder(view, "insights", "hotFlashes", 30) }} className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
-          <div className="flex items-start justify-between gap-3">
+        <section
+          style={{ order: layoutOrder(view, "insights", "hotFlashes", 30) }}
+          className={`${insightsFilter === "all" || insightsFilter === "symptoms" ? "" : "hidden "}rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80`}
+        >
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t("Hot flashes")}</p>
             <InsightPeriodControl
               value={hotFlashPeriod}
@@ -808,7 +856,10 @@ function InsightsPage() {
           )}
         </section>
 
-        <div style={{ order: layoutOrder(view, "insights", "bowel", 40) }}>
+        <div
+          className={insightsFilter === "all" || insightsFilter === "bowel" ? "" : "hidden"}
+          style={{ order: layoutOrder(view, "insights", "bowel", 40) }}
+        >
         <BristolChart
           bowelCounts={bowelCounts}
           period={bowelPeriod}
@@ -820,7 +871,10 @@ function InsightsPage() {
         />
         </div>
 
-        <div style={{ order: layoutOrder(view, "insights", "timeOfDay", 50) }}>
+        <div
+          className={insightsFilter === "all" || insightsFilter === "symptoms" ? "" : "hidden"}
+          style={{ order: layoutOrder(view, "insights", "timeOfDay", 50) }}
+        >
         <TimeOfDayPatternChart
           data={view}
           days={timeOfDayDays}
@@ -833,7 +887,10 @@ function InsightsPage() {
         />
         </div>
 
-        <div style={{ order: layoutOrder(view, "insights", "meds", 60) }}>
+        <div
+          className={insightsFilter === "all" || insightsFilter === "meds" ? "" : "hidden"}
+          style={{ order: layoutOrder(view, "insights", "meds", 60) }}
+        >
         <MedsAdherence
           data={view}
           period={medsPeriod}
@@ -1186,7 +1243,7 @@ function MedsAdherence({
 
   return (
     <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
-      <div className="flex items-start gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-3">
         <button
           type="button"
           onClick={() => setOpen((value) => !value)}
@@ -1694,7 +1751,7 @@ function BristolChart({
   ];
   return (
     <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t("Bowel")}</p>
         <InsightPeriodControl
           value={period}
@@ -2407,7 +2464,7 @@ function YearHealthHeatmap({
     <ChartCard title={t("Heatmap")}>
       <div className="-mt-6 mb-1 flex flex-col items-end gap-1">
         <div
-          className="grid h-8 w-[210px] grid-cols-3 rounded-xl bg-tint p-0.5 ring-1 ring-border/60"
+          className="grid h-8 w-full grid-cols-3 rounded-xl bg-tint p-0.5 ring-1 ring-border/60 sm:w-[210px]"
           role="group"
           aria-label={t("Heatmap period")}
         >
@@ -2436,7 +2493,7 @@ function YearHealthHeatmap({
           })}
         </div>
 
-        <div className="grid h-8 w-[210px] grid-cols-[32px_minmax(0,1fr)_32px] items-center rounded-xl bg-background/70 p-0.5 ring-1 ring-border/60">
+        <div className="grid h-8 w-full grid-cols-[32px_minmax(0,1fr)_32px] items-center rounded-xl bg-background/70 p-0.5 ring-1 ring-border/60 sm:w-[210px]">
           <button
             type="button"
             onClick={() => onShiftPeriod(heatmapPeriod, -1)}
@@ -2780,7 +2837,7 @@ function TimeOfDayPatternChart({
 
   return (
     <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t("Time of Day Pattern")}</p>
         <InsightPeriodControl
           value={period}
