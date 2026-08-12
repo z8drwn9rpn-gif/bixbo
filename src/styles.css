@@ -94,62 +94,43 @@
 
 :root {
   --radius: 1rem;
-
-  /* Final BIXBO Moss Green light palette */
   --background: #98A86A;
   --foreground: #18200F;
-
   --surface: #B0BC89;
   --surface-elevated: #BEC8A0;
   --surface-sunken: #88975D;
   --tint: #A7B47B;
-
   --card: #B0BC89;
   --card-foreground: #18200F;
-
   --popover: #C3CCAA;
   --popover-foreground: #18200F;
-
   --primary: #5F7033;
   --primary-foreground: #FFFDF3;
-
   --secondary: #A9B57E;
   --secondary-foreground: #202814;
-
   --muted: #AAB77E;
   --muted-foreground: #475234;
-
   --accent: #97A969;
   --accent-foreground: #1F2812;
-
   --destructive: oklch(0.5 0.22 25);
   --destructive-foreground: oklch(1 0 0);
-
   --danger: var(--destructive);
   --danger-foreground: var(--destructive-foreground);
-
   --success: oklch(0.4 0.13 145);
   --success-foreground: oklch(1 0 0);
-
   --warning: oklch(0.55 0.16 75);
   --warning-foreground: oklch(1 0 0);
-
   --info: oklch(0.45 0.13 240);
   --info-foreground: oklch(1 0 0);
-
   --border: #7D8D54;
   --input: #7D8D54;
   --ring: #5F7033;
-
   --chart-grid: #95A56A;
   --chart-axis: #37412B;
   --chart-tooltip-bg: #D0D8BC;
   --chart-tooltip-fg: #18200F;
-
   --bixbo-glass: rgba(176, 188, 137, 0.74);
   --bixbo-glass-strong: rgba(190, 200, 160, 0.90);
-
-  /* Period intensity - readable text always dark on light swatches, adjusted for contrast/step separation */
   --period-spotting: oklch(0.86 0.05 275);
   --period-spotting-fg: oklch(0.25 0.08 275);
   --period-light: oklch(0.72 0.13 275);
@@ -160,8 +141,6 @@
   --period-heavy-fg: oklch(1 0 0);
   --period-veryheavy: oklch(0.3 0.18 288);
   --period-veryheavy-fg: oklch(1 0 0);
-
-  /* Pain 0–10: exact vivid palette used by Insights */
   --pain-0: #72c64a;
   --pain-0-fg: #17320e;
   --pain-1: #91cd3a;
@@ -184,67 +163,48 @@
   --pain-9-fg: #ffffff;
   --pain-10: #c81746;
   --pain-10-fg: #ffffff;
-
   --today: oklch(0.8 0.16 95);
   --predicted: oklch(0.6 0.19 55);
 }
 
 .dark {
-  /* Final BIXBO Soft Olive dark palette */
   --background: #4B5133;
   --foreground: #F5F4E8;
-
   --surface: #5A6040;
   --surface-elevated: #666D49;
   --surface-sunken: #41472D;
   --tint: #626944;
-
   --card: #5A6040;
   --card-foreground: #F5F4E8;
-
   --popover: #626844;
   --popover-foreground: #F5F4E8;
-
   --primary: #B6C28E;
   --primary-foreground: #30351F;
-
   --secondary: #686F49;
   --secondary-foreground: #F4F2E5;
-
   --muted: #626847;
   --muted-foreground: #D5D7C2;
-
   --accent: #77805A;
   --accent-foreground: #F8F7EC;
-
   --destructive: oklch(0.72 0.2 25);
   --destructive-foreground: oklch(0.14 0.02 25);
-
   --danger: var(--destructive);
   --danger-foreground: var(--destructive-foreground);
-
   --success: oklch(0.78 0.16 145);
   --success-foreground: oklch(0.14 0.05 145);
-
   --warning: oklch(0.8 0.15 80);
   --warning-foreground: oklch(0.14 0.05 80);
-
   --info: oklch(0.78 0.11 235);
   --info-foreground: oklch(0.14 0.04 235);
-
   --border: #777D58;
   --input: #777D58;
   --ring: #C0CD98;
-
   --chart-grid: #6C7350;
   --chart-axis: #DDDCCB;
   --chart-tooltip-bg: #555B3B;
   --chart-tooltip-fg: #F7F5E9;
-
   --bixbo-glass: rgba(90, 96, 64, 0.82);
   --bixbo-glass-strong: rgba(102, 109, 73, 0.94);
-
-  /* Period intensity in dark mode - separated + readable fg */
   --period-spotting: oklch(0.8 0.08 275);
   --period-spotting-fg: oklch(0.14 0.05 275);
   --period-light: oklch(0.68 0.15 275);
@@ -255,8 +215,6 @@
   --period-heavy-fg: oklch(1 0 0);
   --period-veryheavy: oklch(0.34 0.19 288);
   --period-veryheavy-fg: oklch(1 0 0);
-
-  /* Pain 0–10 in dark mode: same exact vivid Insights palette */
   --pain-0: #72c64a;
   --pain-0-fg: #17320e;
   --pain-1: #91cd3a;
@@ -279,7 +237,6 @@
   --pain-9-fg: #ffffff;
   --pain-10: #c81746;
   --pain-10-fg: #ffffff;
-
   --today: oklch(0.8 0.16 95);
   --predicted: oklch(0.68 0.19 55);
 }
@@ -314,58 +271,29 @@
 }
 
 @layer base {
-  * {
-    border-color: var(--color-border);
-  }
-
-  html {
-    scroll-behavior: smooth;
-  }
-
-  html,
-  body {
+  * { border-color: var(--color-border); }
+  html { scroll-behavior: smooth; }
+  html, body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
   }
-
-  h1,
-  h2,
-  h3,
-  .font-serif {
+  h1, h2, h3, .font-serif {
     font-family: var(--font-serif);
     letter-spacing: -0.01em;
   }
-
-  a,
-  button,
-  input,
-  select,
-  textarea,
-  summary,
-  [tabindex] {
+  a, button, input, select, textarea, summary, [tabindex] {
     &:focus-visible {
       outline: 2px solid var(--color-ring);
       outline-offset: 2px;
       border-radius: var(--radius-sm);
     }
   }
-
-  :disabled,
-  [aria-disabled="true"] {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
+  :disabled, [aria-disabled="true"] { opacity: 0.6; cursor: not-allowed; }
   @media (prefers-reduced-motion: reduce) {
-    html {
-      scroll-behavior: auto;
-    }
-
-    *,
-    *::before,
-    *::after {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
@@ -374,22 +302,14 @@
   }
 }
 
-/* Reference-style soft olive UI polish. Palette, rings and shadows are
-   defined once in the final theme blocks below. */
 :root:not(.dark) .bg-surface,
-:root:not(.dark) .bg-card {
-  backdrop-filter: saturate(0.92);
-}
+:root:not(.dark) .bg-card { backdrop-filter: saturate(0.92); }
 
-/* Note editor placeholder */
 [contenteditable][data-placeholder]:empty::before {
   content: attr(data-placeholder);
   color: var(--muted-foreground);
   pointer-events: none;
 }
-/* ==========================================================
-   BIXBO Production UX Polish
-   ========================================================== */
 
 html {
   min-height: 100%;
@@ -398,375 +318,123 @@ html {
   -webkit-text-size-adjust: 100%;
   text-rendering: optimizeLegibility;
 }
-
-html.dark {
-  color-scheme: dark;
-}
-
+html.dark { color-scheme: dark; }
 body {
   min-height: 100dvh;
   overflow-x: hidden;
-  background: linear-gradient(
-    180deg,
-    #F3F2D3 0%,
-    var(--background) 46%,
-    #E9EBBE 100%
-  );
+  background: linear-gradient(180deg,#F3F2D3 0%,var(--background) 46%,#E9EBBE 100%);
   color: var(--foreground);
   overscroll-behavior-y: none;
   -webkit-font-smoothing: antialiased;
 }
-
-.dark body {
-  background: var(--background);
+.dark body { background: var(--background); }
+::selection { background: color-mix(in oklch,var(--primary) 28%,transparent); color: var(--foreground); }
+button,a,input,select,textarea { -webkit-tap-highlight-color: transparent; }
+button,[role="button"],a,input,select,textarea { touch-action: manipulation; }
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible {
+  outline: 2px solid var(--ring); outline-offset: 2px;
+}
+button:disabled,input:disabled,select:disabled,textarea:disabled { cursor:not-allowed; opacity:.55; }
+input,select,textarea { color:var(--foreground); }
+input[type="checkbox"],input[type="radio"],input[type="range"],progress { accent-color:var(--primary); }
+input::placeholder,textarea::placeholder { color:color-mix(in oklch,var(--muted-foreground) 82%,transparent); }
+.dark input[type="date"],.dark input[type="time"],.dark input[type="datetime-local"] { color-scheme:dark; }
+* { scrollbar-width:thin; scrollbar-color:var(--border) transparent; }
+*::-webkit-scrollbar { width:8px; height:8px; }
+*::-webkit-scrollbar-thumb { border:2px solid transparent; border-radius:999px; background:var(--border); background-clip:padding-box; }
+*::-webkit-scrollbar-track { background:transparent; }
+img { user-select:none; -webkit-user-drag:none; }
+svg { flex-shrink:0; }
+:target { scroll-margin-top:6rem; }
+input:-webkit-autofill,input:-webkit-autofill:hover,input:-webkit-autofill:focus,textarea:-webkit-autofill,select:-webkit-autofill {
+  -webkit-text-fill-color:var(--foreground); box-shadow:0 0 0 1000px var(--surface) inset; caret-color:var(--foreground);
 }
 
-::selection {
-  background: color-mix(in oklch, var(--primary) 28%, transparent);
-  color: var(--foreground);
-}
-
-button,
-a,
-input,
-select,
-textarea {
-  -webkit-tap-highlight-color: transparent;
-}
-
-button,
-[role="button"],
-a,
-input,
-select,
-textarea {
-  touch-action: manipulation;
-}
-
-button:focus-visible,
-a:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible,
-[tabindex]:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-}
-
-button:disabled,
-input:disabled,
-select:disabled,
-textarea:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
-}
-
-input,
-select,
-textarea {
-  color: var(--foreground);
-}
-
-input[type="checkbox"],
-input[type="radio"],
-input[type="range"],
-progress {
-  accent-color: var(--primary);
-}
-
-input::placeholder,
-textarea::placeholder {
-  color: color-mix(in oklch, var(--muted-foreground) 82%, transparent);
-}
-
-.dark input[type="date"],
-.dark input[type="time"],
-.dark input[type="datetime-local"] {
-  color-scheme: dark;
-}
-
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
-}
-
-*::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-*::-webkit-scrollbar-thumb {
-  border: 2px solid transparent;
-  border-radius: 999px;
-  background: var(--border);
-  background-clip: padding-box;
-}
-
-*::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-img {
-  user-select: none;
-  -webkit-user-drag: none;
-}
-
-svg {
-  flex-shrink: 0;
-}
-
-:target {
-  scroll-margin-top: 6rem;
-}
-
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus,
-textarea:-webkit-autofill,
-select:-webkit-autofill {
-  -webkit-text-fill-color: var(--foreground);
-  box-shadow: 0 0 0 1000px var(--surface) inset;
-  caret-color: var(--foreground);
-}
-/* BIXBO soft creamy olive theme revision: 2026-08-08 */
-
-/* Obsolete light-theme revision stack removed after consolidating the final BIXBO palette.
-   The active final light/dark palette begins below. */
-
-/* ==========================================================
-   BIXBO Moss Green light theme — #98A86A
-   Final consolidated palette.
-   HAK keeps its own local lavender theme and is not changed here.
-   ========================================================== */
-
-/* Final light tokens are defined once in :root above. */
-
-/* One Moss Green base behind html/body/safe-area. */
-:root:not(.dark),
+:root:not(.dark),:root:not(.dark) body { background-color:#98A86A; }
 :root:not(.dark) body {
-  background-color: #98A86A;
+  background:radial-gradient(circle at 50% -12%,rgba(226,232,216,.18) 0%,transparent 34%),linear-gradient(180deg,#9DAE71 0%,#98A86A 34%,#A3B274 68%,#AFBB85 100%);
 }
+:root:not(.dark) .ring-border { --tw-ring-color:color-mix(in srgb,#7D8D54 70%,transparent); }
+:root:not(.dark) .shadow-sm { --tw-shadow-color:color-mix(in srgb,#4E5C31 11%,transparent); }
+:root:not(.dark) .shadow-md,:root:not(.dark) .shadow-lg,:root:not(.dark) .shadow-xl { --tw-shadow-color:color-mix(in srgb,#4E5C31 16%,transparent); }
+html.dark,html.dark body { background-color:#4B5133; }
+.dark body { background:radial-gradient(circle at 50% -12%,rgba(202,211,164,.14) 0%,transparent 35%),linear-gradient(180deg,#565C3A 0%,#505637 30%,#4B5133 62%,#454B2F 100%); }
+.dark .ring-border { --tw-ring-color:rgba(130,138,96,.72); }
+.dark .shadow-sm { --tw-shadow-color:rgba(38,42,24,.18); }
+.dark .shadow-md,.dark .shadow-lg,.dark .shadow-xl { --tw-shadow-color:rgba(38,42,24,.26); }
 
-/* Truer moss gradient — more green, less gray than the previous revision. */
-:root:not(.dark) body {
-  background:
-    radial-gradient(circle at 50% -12%, rgba(226, 232, 216, 0.18) 0%, transparent 34%),
-    linear-gradient(
-      180deg,
-      #9DAE71 0%,
-      #98A86A 34%,
-      #A3B274 68%,
-      #AFBB85 100%
-    );
-}
-
-/* Keep rings/shadows in the same moss family. */
-:root:not(.dark) .ring-border {
-  --tw-ring-color: color-mix(in srgb, #7D8D54 70%, transparent);
-}
-
-:root:not(.dark) .shadow-sm {
-  --tw-shadow-color: color-mix(in srgb, #4E5C31 11%, transparent);
-}
-
-:root:not(.dark) .shadow-md,
-:root:not(.dark) .shadow-lg,
-:root:not(.dark) .shadow-xl {
-  --tw-shadow-color: color-mix(in srgb, #4E5C31 16%, transparent);
-}
-
-/* ==========================================================
-   BIXBO — SOFT OLIVE DARK
-   ========================================================== */
-
-/* Final dark tokens are defined once in .dark above. */
-
-html.dark,
-html.dark body {
-  background-color: #4B5133;
-}
-
-.dark body {
-  background:
-    radial-gradient(
-      circle at 50% -12%,
-      rgba(202, 211, 164, 0.14) 0%,
-      transparent 35%
-    ),
-    linear-gradient(
-      180deg,
-      #565C3A 0%,
-      #505637 30%,
-      #4B5133 62%,
-      #454B2F 100%
-    );
-}
-
-.dark .ring-border {
-  --tw-ring-color: rgba(130, 138, 96, 0.72);
-}
-
-.dark .shadow-sm {
-  --tw-shadow-color: rgba(38, 42, 24, 0.18);
-}
-
-.dark .shadow-md,
-.dark .shadow-lg,
-.dark .shadow-xl {
-  --tw-shadow-color: rgba(38, 42, 24, 0.26);
-}
-/* Mobile accessibility: keep compact arrow visuals, but give them a 44×44 px
-   interaction hit area without changing the approved layout dimensions. */
 @media (pointer: coarse) {
-  button[aria-label^="Previous"],
-  button[aria-label^="Next"] {
-    position: relative;
-  }
-
-  button[aria-label^="Previous"]::after,
-  button[aria-label^="Next"]::after {
-    content: "";
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 44px;
-    height: 44px;
-    transform: translate(-50%, -50%);
-    border-radius: 9999px;
+  button[aria-label^="Previous"],button[aria-label^="Next"] { position:relative; }
+  button[aria-label^="Previous"]::after,button[aria-label^="Next"]::after {
+    content:""; position:absolute; left:50%; top:50%; width:44px; height:44px; transform:translate(-50%,-50%); border-radius:9999px;
   }
 }
-
-/* ==========================================================
-   BIXBO Motion System — soft, calm, premium fades
-   Only opacity + transform. No layout properties.
-   ========================================================== */
 
 :root {
-  --bixbo-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --bixbo-dur-page: 200ms;
-  --bixbo-dur-panel: 180ms;
-  --bixbo-dur-popup: 200ms;
-  --bixbo-dur-micro: 160ms;
+  --bixbo-ease:cubic-bezier(.22,1,.36,1);
+  --bixbo-dur-page:200ms;
+  --bixbo-dur-panel:180ms;
+  --bixbo-dur-popup:200ms;
+  --bixbo-dur-micro:160ms;
+}
+@keyframes bixbo-page-in { from{opacity:0;transform:translate3d(0,4px,0)} to{opacity:1;transform:translate3d(0,0,0)} }
+@keyframes bixbo-panel-in { from{opacity:0;transform:translate3d(0,4px,0)} to{opacity:1;transform:translate3d(0,0,0)} }
+@keyframes bixbo-popup-in { from{opacity:0;transform:translate3d(0,6px,0) scale(.98)} to{opacity:1;transform:translate3d(0,0,0) scale(1)} }
+@keyframes bixbo-fade-in { from{opacity:0} to{opacity:1} }
+.bixbo-page-fade { animation:bixbo-page-in var(--bixbo-dur-page) var(--bixbo-ease) both; }
+.bixbo-panel-fade { animation:bixbo-panel-in var(--bixbo-dur-panel) var(--bixbo-ease) both; }
+.bixbo-popup-fade { animation:bixbo-popup-in var(--bixbo-dur-popup) var(--bixbo-ease) both; }
+.bixbo-chart-fade { animation:bixbo-fade-in var(--bixbo-dur-panel) var(--bixbo-ease) both; }
+.animate-in { animation-duration:var(--bixbo-dur-popup); animation-timing-function:var(--bixbo-ease); --tw-enter-opacity:0; }
+.animate-out { animation-duration:var(--bixbo-dur-micro); animation-timing-function:var(--bixbo-ease); }
+.zoom-in-95 { --tw-enter-scale:.98; }
+.zoom-out-95 { --tw-exit-scale:.98; }
+[data-slot="dialog-overlay"],[data-state].bg-black\/45,[data-state].bg-black\/80 { transition:opacity var(--bixbo-dur-popup) var(--bixbo-ease); }
+@media (prefers-reduced-motion:reduce) {
+  .bixbo-page-fade,.bixbo-panel-fade,.bixbo-popup-fade,.bixbo-chart-fade { animation:bixbo-fade-in 80ms ease both; }
+  .animate-in,.animate-out { animation-duration:.01ms !important; }
+  .zoom-in-95,.zoom-out-95 { --tw-enter-scale:1; --tw-exit-scale:1; }
 }
 
-@keyframes bixbo-page-in {
-  from {
-    opacity: 0;
-    transform: translate3d(0, 4px, 0);
-  }
-  to {
-    opacity: 1;
-    transform: translate3d(0, 0, 0);
-  }
-}
-
-@keyframes bixbo-panel-in {
-  from {
-    opacity: 0;
-    transform: translate3d(0, 4px, 0);
-  }
-  to {
-    opacity: 1;
-    transform: translate3d(0, 0, 0);
-  }
-}
-
-@keyframes bixbo-popup-in {
-  from {
-    opacity: 0;
-    transform: translate3d(0, 6px, 0) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-}
-
-@keyframes bixbo-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-/* Page content fade (AppShell main). */
-.bixbo-page-fade {
-  animation: bixbo-page-in var(--bixbo-dur-page) var(--bixbo-ease) both;
-}
-
-/* Dynamic panels / sections that appear after user action. */
-.bixbo-panel-fade {
-  animation: bixbo-panel-in var(--bixbo-dur-panel) var(--bixbo-ease) both;
-}
-
-/* Shared popup/sheet content feel. */
-.bixbo-popup-fade {
-  animation: bixbo-popup-in var(--bixbo-dur-popup) var(--bixbo-ease) both;
-}
-
-/* Chart / heatmap wrapper only — never the series themselves. */
-.bixbo-chart-fade {
-  animation: bixbo-fade-in var(--bixbo-dur-panel) var(--bixbo-ease) both;
-}
-
-/* Soften default tw-animate enter/exit durations app-wide. */
-.animate-in {
-  animation-duration: var(--bixbo-dur-popup);
-  animation-timing-function: var(--bixbo-ease);
-  --tw-enter-opacity: 0;
-}
-
-.animate-out {
-  animation-duration: var(--bixbo-dur-micro);
-  animation-timing-function: var(--bixbo-ease);
-}
-
-/* Milder zoom than zoom-in-95 / zoom-out-95 (0.95 → ~0.98). */
-.zoom-in-95 {
-  --tw-enter-scale: 0.98;
-}
-.zoom-out-95 {
-  --tw-exit-scale: 0.98;
-}
-
-/* Backdrop fades stay short. */
-[data-slot="dialog-overlay"],
-[data-state].bg-black\/45,
-[data-state].bg-black\/80 {
-  transition: opacity var(--bixbo-dur-popup) var(--bixbo-ease);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .bixbo-page-fade,
-  .bixbo-panel-fade,
-  .bixbo-popup-fade,
-  .bixbo-chart-fade {
-    animation: bixbo-fade-in 80ms ease both;
-  }
-
-  .animate-in,
-  .animate-out {
-    animation-duration: 0.01ms !important;
-  }
-
-  .zoom-in-95,
-  .zoom-out-95 {
-    --tw-enter-scale: 1;
-    --tw-exit-scale: 1;
-  }
-}
-
-
-/* BIXBO UI consistency pass */
 @layer base {
-  button, a, input, select, textarea {
-    -webkit-tap-highlight-color: transparent;
-  }
-  button, a {
-    text-underline-offset: 3px;
-  }
+  button,a,input,select,textarea { -webkit-tap-highlight-color:transparent; }
+  button,a { text-underline-offset:3px; }
 }
-
 @layer utilities {
   .bixbo-section-title { @apply font-serif text-lg font-bold leading-tight text-foreground; }
   .bixbo-caption { @apply text-[11px] leading-relaxed text-muted-foreground; }
   .bixbo-card { @apply rounded-3xl bg-surface shadow-sm ring-1 ring-border/80; }
+}
+
+/* PDF export fixes: iOS Custom date fields + remove legacy CSV export action. */
+.custom input[type="date"] {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--input);
+  border-radius: 14px;
+  background: var(--surface-elevated);
+  color: var(--foreground);
+  font: inherit;
+  line-height: 48px;
+  -webkit-appearance: auto;
+  appearance: auto;
+  pointer-events: auto;
+  touch-action: manipulation;
+  position: relative;
+  z-index: 2;
+}
+.custom input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
+  min-height: 48px;
+  line-height: 48px;
+}
+.custom input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 1;
+  pointer-events: auto;
+}
+/* The legacy CSV button is the button immediately before the PDF Reports link. */
+button:has(+ a[href="/report"]) {
+  display: none !important;
 }
