@@ -31,3 +31,4 @@ jobs:
           git diff --cached --check
           git commit -m "Match Bowel overview to health log style"
           git push origin HEAD:main
+# Trigger Bowel overview style patch
