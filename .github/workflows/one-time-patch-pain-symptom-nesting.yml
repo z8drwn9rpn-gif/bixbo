@@ -1,0 +1,37 @@
+name: One-time pain symptom nesting patch
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.event.head_commit.message == 'Trigger pain symptom nesting patch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Apply focused patch
+        run: python3 scripts/patch-pain-symptom-nesting.py
+      - name: Verify focused change
+        run: |
+          git diff --check
+          bun install --frozen-lockfile
+          bun run typecheck
+          bun test src/lib/__tests__/pain-symptom-update-regression.test.ts
+      - name: Commit focused change
+        run: |
+          rm -f scripts/patch-pain-symptom-nesting.py .github/workflows/one-time-patch-pain-symptom-nesting.yml
+          git config user.name "BIXBO Fix Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "Nest Add symptoms under source pain"
+          git push origin HEAD:main
