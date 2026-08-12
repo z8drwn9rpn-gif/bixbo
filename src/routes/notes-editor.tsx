@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { useI18n } from "@/hooks/useI18n";
 import { Ico } from "@/components/icons/BixboIcons";
@@ -90,16 +90,20 @@ export function NoteEditor({ note, folders, onBack, update }: {
   const [bodyText, setBodyText] = useState(contentRef.current);
   const firstRender = useRef(true);
 
-  const resizeEditor = () => {
-    const editor = editorRef.current;
-    if (!editor) return;
-    editor.style.height = "0px";
-    editor.style.height = `${Math.max(editor.scrollHeight, Math.round(window.innerHeight * 0.4))}px`;
+  const fitEditorToContent = (editor: HTMLTextAreaElement, allowShrink = false) => {
+    const minHeight = Math.round(window.innerHeight * 0.4);
+    if (allowShrink) editor.style.height = "auto";
+    const target = Math.max(editor.scrollHeight, minHeight);
+    if (allowShrink || target > editor.clientHeight) editor.style.height = `${target}px`;
   };
 
-  useLayoutEffect(() => {
-    resizeEditor();
-  }, [bodyText]);
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      const editor = editorRef.current;
+      if (editor) fitEditorToContent(editor, true);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [note.id]);
 
   useEffect(() => {
     if (firstRender.current) {
@@ -120,7 +124,7 @@ export function NoteEditor({ note, folders, onBack, update }: {
           updatedAt: Date.now(),
         } : item),
       }));
-    }, 500);
+    }, 700);
     return () => window.clearTimeout(timer);
   }, [bodyText, checklist, color, folderId, note.id, pinned, showChecklist, title, update]);
 
@@ -153,20 +157,22 @@ export function NoteEditor({ note, folders, onBack, update }: {
     if (!editor) return;
     const start = editor.selectionStart ?? 0;
     const end = editor.selectionEnd ?? start;
-    const next = `${bodyText.slice(0, start)}${marker}${bodyText.slice(start, end)}${marker}${bodyText.slice(end)}`;
+    const currentText = editor.value;
+    const next = `${currentText.slice(0, start)}${marker}${currentText.slice(start, end)}${marker}${currentText.slice(end)}`;
     contentRef.current = next;
     setBodyText(next);
     requestAnimationFrame(() => {
-      editor.focus({ preventScroll: true });
+      editor.focus();
       const caret = end + marker.length * 2;
       editor.setSelectionRange(caret, caret);
-      resizeEditor();
+      fitEditorToContent(editor);
     });
   };
 
-  const onBodyChange = (value: string) => {
-    contentRef.current = value;
-    setBodyText(value);
+  const onBodyChange = (editor: HTMLTextAreaElement) => {
+    contentRef.current = editor.value;
+    setBodyText(editor.value);
+    fitEditorToContent(editor);
   };
 
   return (
@@ -201,10 +207,7 @@ export function NoteEditor({ note, folders, onBack, update }: {
           <textarea
             ref={editorRef}
             value={bodyText}
-            onChange={(e) => onBodyChange(e.target.value)}
-            onInput={(e) => onBodyChange(e.currentTarget.value)}
-            onTouchEnd={() => editorRef.current?.focus({ preventScroll: true })}
-            onClick={() => editorRef.current?.focus({ preventScroll: true })}
+            onChange={(e) => onBodyChange(e.currentTarget)}
             inputMode="text"
             spellCheck
             autoCapitalize="sentences"
@@ -213,7 +216,7 @@ export function NoteEditor({ note, folders, onBack, update }: {
             data-bixbo-note-editor
             placeholder={t("Start writing…")}
             className="block w-full resize-none overflow-hidden bg-transparent text-base leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
-            style={{ minHeight: "40dvh", WebkitUserSelect: "text", userSelect: "text", pointerEvents: "auto", touchAction: "pan-y" }}
+            style={{ minHeight: "40dvh", WebkitUserSelect: "text", userSelect: "text" }}
           />
         </div>
 
