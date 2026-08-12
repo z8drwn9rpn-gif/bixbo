@@ -9,6 +9,7 @@ import {
   BottomNavNoteIcon,
   BottomNavLogIcon,
 } from "@/components/icons/BottomNavReferenceIcons";
+import exactHomeArtwork from "@/assets/nav-home-user.webp";
 import exactCoupleArtwork from "@/assets/nav-couple-exact.webp";
 import { DEVICE_ADMIN_CONFIG_CHANGED } from "@/lib/deviceAdminConfig";
 import { GLOBAL_ADMIN_CONFIG_CHANGED } from "@/lib/globalAdminConfig";
@@ -23,8 +24,9 @@ const ICONS: Record<NavigationItemId, ComponentType<IconProps>> = {
   healthProfile: BottomNavHomeIcon,
 };
 
-/** Image-backed artwork is used only where an exact bundled asset is required. */
+/** Home always uses the exact user-provided bundled artwork. */
 const NAV_IMAGE_SRC: Partial<Record<NavigationItemId, string>> = {
+  home: exactHomeArtwork,
   overview: "/nav-assets/nav-overview.webp",
   couple: exactCoupleArtwork,
   notes: "/nav-assets/nav-note.webp",
