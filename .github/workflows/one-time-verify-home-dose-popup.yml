@@ -33,3 +33,4 @@ jobs:
           git add -A
           git commit -m "Remove temporary Home dose quality workflow"
           git push origin HEAD:main
+# Trigger full quality check for Home dose popup
