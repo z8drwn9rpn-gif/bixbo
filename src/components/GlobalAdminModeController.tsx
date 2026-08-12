@@ -62,14 +62,33 @@ export function GlobalAdminModeController() {
 
   const owner = typeof window !== "undefined" && isAdminOwnerAccount();
 
+  const clickAdminTrigger = (name: string): boolean => {
+    if (typeof document === "undefined") return false;
+    const button = document.querySelector<HTMLButtonElement>(`[data-bixbo-admin-open="${name}"]`);
+    if (!button) return false;
+    button.click();
+    return true;
+  };
+
   const openAdminTool = (tool: "text" | "sections" | "navigation") => {
-    const hakOpen = Boolean(document.querySelector("[data-bixbo-hak-root]"));
-    if (hakOpen && tool !== "navigation") {
-      requestAdminCustomizeCurrentPage();
+    if (tool === "navigation") {
+      if (!clickAdminTrigger("navigation")) requestAdminCustomizeCurrentPage();
       return;
     }
-    const button = document.querySelector<HTMLButtonElement>(`[data-bixbo-admin-open="${tool}"]`);
-    button?.click();
+
+    if (tool === "text") {
+      if (!clickAdminTrigger("text")) requestAdminCustomizeCurrentPage();
+      return;
+    }
+
+    // There is no standalone `sections` trigger. Sections live in the page
+    // editor: primary on Home/Insights/Patterns, universal on other pages,
+    // and the request helper selects Couple/HAK editors where appropriate.
+    const specialized =
+      pathname === "/" || pathname.startsWith("/insights") || pathname.startsWith("/patterns");
+    if (!clickAdminTrigger(specialized ? "primary" : "universal")) {
+      requestAdminCustomizeCurrentPage();
+    }
   };
 
   useEffect(() => {
