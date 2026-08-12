@@ -31,3 +31,4 @@ jobs:
           git diff --cached --check
           git commit -m "Open compact scheduled dose popup from Home"
           git push origin HEAD:main
+# Trigger Home dose popup patch
