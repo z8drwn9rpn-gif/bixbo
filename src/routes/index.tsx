@@ -3318,6 +3318,7 @@ function DayPreview({
           <ul className="space-y-1 text-sm">
             {takenList.map((x) => {
               const actual = data.medLogTimes?.[date]?.[x.key];
+              const medNote = data.medLogNotes?.[date]?.[x.key];
               const shifted = actual && actual !== x.time;
               return (
                 <li key={x.key}>
@@ -3342,6 +3343,9 @@ function DayPreview({
                     {x.med.dose ? ` (${x.med.dose})` : ""}
                     {shifted && <span className="text-[10px] text-muted-foreground"> · {t("scheduled")} {x.time}</span>}
                     <span className="text-[10px] text-muted-foreground"> · {t("tap to uncheck")}</span>
+                    {medNote ? (
+                      <span className="mt-0.5 block text-[11px] text-muted-foreground"><span className="font-semibold text-foreground">{t("Note")}:</span> {medNote}</span>
+                    ) : null}
                   </button>
                 </li>
               );
@@ -3356,6 +3360,9 @@ function DayPreview({
                   {t("Missed")} · {x.time} — {x.med.name}
                   {x.med.dose ? ` (${x.med.dose})` : ""}{" "}
                   <span className="text-[10px] text-muted-foreground">· {t("missed (tap if taken)")}</span>
+                  {data.medLogNotes?.[date]?.[x.key] ? (
+                    <span className="mt-0.5 block text-[11px] text-muted-foreground"><span className="font-semibold text-foreground">{t("Note")}:</span> {data.medLogNotes[date][x.key]}</span>
+                  ) : null}
                 </button>
               </li>
             ))}

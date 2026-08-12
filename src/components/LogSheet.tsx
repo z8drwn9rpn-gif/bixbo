@@ -4122,6 +4122,15 @@ function MedsForm({
   const meds = data.meds;
   const taken = data.medLog[date] ?? {};
   const takenTimes = data.medLogTimes?.[date] ?? {};
+  const medNotes = data.medLogNotes?.[date] ?? {};
+  const setMedNote = (key: string, note: string) =>
+    update((d) => {
+      const notes = { ...(d.medLogNotes?.[date] ?? {}) };
+      const clean = note.trimStart();
+      if (clean) notes[key] = clean;
+      else delete notes[key];
+      return { ...d, medLogNotes: { ...(d.medLogNotes ?? {}), [date]: notes } };
+    });
   const toggle = (key: string, defaultTime?: string) =>
     update((d) => {
       const day = { ...(d.medLog[date] ?? {}) };
@@ -4205,6 +4214,13 @@ function MedsForm({
                       className="h-8 w-24"
                     />
                   )}
+                  <Input
+                    value={medNotes[`${m.id}@asneeded`] ?? ""}
+                    onChange={(e) => setMedNote(`${m.id}@asneeded`, e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    placeholder={t("Note (optional)")}
+                    className="h-8 min-w-0 flex-[0_1_150px]"
+                  />
                 </label>
               ) : (
                 m.times.map((scheduledTime) => {
@@ -4233,6 +4249,13 @@ function MedsForm({
                           title={t("Actual time taken")}
                         />
                       )}
+                      <Input
+                        value={medNotes[k] ?? ""}
+                        onChange={(e) => setMedNote(k, e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        placeholder={t("Note (optional)")}
+                        className="h-8 min-w-0 flex-[0_1_150px]"
+                      />
                     </label>
                   );
                 })

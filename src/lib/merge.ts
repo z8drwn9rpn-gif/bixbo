@@ -900,6 +900,7 @@ export function mergeBixbo(
       meds: unionById<Med>(effectiveLocal.meds, remote.meds, "meds"),
       medLog: mergeMedLog(effectiveLocal.medLog, remote.medLog),
       medLogTimes: mergeMedLogTimes(effectiveLocal.medLogTimes, remote.medLogTimes),
+      medLogNotes: mergeMedLogTimes(effectiveLocal.medLogNotes, remote.medLogNotes),
       medNames: mergeStringMap(effectiveLocal.medNames, remote.medNames, "medNames"),
       folders: unionById<NoteFolder>(effectiveLocal.folders, remote.folders, "folders"),
       notebook: unionById<Note>(effectiveLocal.notebook, remote.notebook, "notebook"),

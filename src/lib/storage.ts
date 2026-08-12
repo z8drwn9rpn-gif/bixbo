@@ -858,6 +858,8 @@ export interface BixboData {
   meds: Med[];
   medLog: Record<string, Record<string, boolean>>;
   medLogTimes: Record<string, Record<string, string>>;
+  /** Optional user note attached to a concrete scheduled medication slot. */
+  medLogNotes?: Record<string, Record<string, string>>;
   medNames?: Record<string, string>;
   folders: NoteFolder[];
   notebook: Note[];
@@ -899,6 +901,7 @@ export const EMPTY: BixboData = {
   meds: [],
   medLog: {},
   medLogTimes: {},
+  medLogNotes: {},
   medNames: {},
   folders: DEFAULT_FOLDERS,
   notebook: [],
