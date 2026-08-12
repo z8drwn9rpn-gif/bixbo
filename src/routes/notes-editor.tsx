@@ -93,14 +93,14 @@ export function NoteEditor({
   const [tick, setTick] = useState(0);
   const [editorReady, setEditorReady] = useState(false);
 
-  const editorRef = useRef<HTMLDivElement | null>(null);
-  const keyboardBridgeRef = useRef<HTMLTextAreaElement | null>(null);
+  const editorRef = useRef<HTMLTextAreaElement | null>(null);
   const initialContentRef = useRef(
     sanitizeNoteHtml(
       (note.content || "").replaceAll("#fef3c7", "#b4be80").replaceAll("rgb(254, 243, 199)", "rgb(223, 230, 184)"),
     ),
   );
-  const contentRef = useRef(initialContentRef.current);
+  const contentRef = useRef(initialContentRef.current.replace(/<br\s*\/?>(?!$)/gi, "\n").replace(/<\/div>/gi, "\n").replace(/<[^>]+>/g, ""));
+  const [bodyText, setBodyText] = useState(contentRef.current);
   const firstRender = useRef(true);
 
   useEffect(() => {
@@ -126,7 +126,7 @@ export function NoteEditor({
                 folderId,
                 color,
                 pinned,
-                content: sanitizeNoteHtml(contentRef.current),
+                content: contentRef.current,
                 checklist: showChecklist ? checklist : undefined,
                 updatedAt: Date.now(),
               }
@@ -149,7 +149,7 @@ export function NoteEditor({
               folderId,
               color,
               pinned,
-              content: sanitizeNoteHtml(contentRef.current),
+              content: contentRef.current,
               checklist: showChecklist ? checklist : undefined,
               updatedAt: Date.now(),
             }
@@ -175,70 +175,28 @@ export function NoteEditor({
   };
 
   const exec = (command: "bold" | "highlight") => {
-    editorRef.current?.focus();
-
-    if (command === "bold") {
-      document.execCommand("bold");
-    } else {
-      const selection = window.getSelection();
-      if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return;
-
-      const range = selection.getRangeAt(0);
-      const mark = document.createElement("mark");
-      mark.style.background = "#b4be80";
-      mark.style.color = "#2f3518";
-      mark.style.padding = "0 2px";
-      mark.style.borderRadius = "2px";
-
-      try {
-        range.surroundContents(mark);
-      } catch {
-        const fragment = range.extractContents();
-        mark.appendChild(fragment);
-        range.insertNode(mark);
-      }
-
-      selection.removeAllRanges();
-    }
-
-    if (editorRef.current) {
-      contentRef.current = sanitizeNoteHtml(editorRef.current.innerHTML);
-      if (editorRef.current.innerHTML !== contentRef.current) {
-        editorRef.current.innerHTML = contentRef.current;
-      }
-      setTick((value) => value + 1);
-    }
-  };
-
-  const onInput = () => {
-    if (!editorRef.current) return;
-
-    // Keep the live DOM completely native while the user is typing. Rewriting
-    // innerHTML from an input/touch gesture can destroy iOS WebKit's selection
-    // and dismiss the software keyboard. We still sanitize before persistence.
-    contentRef.current = editorRef.current.innerHTML;
-    setTick((value) => value + 1);
-  };
-
-  const primeIOSKeyboard = () => {
-    const bridge = keyboardBridgeRef.current;
     const editor = editorRef.current;
-    if (!bridge || !editor) return;
-
-    // iOS reliably opens its software keyboard for a native textarea during the
-    // user gesture. Transfer focus to the rich editor on the next animation frame
-    // so typing lands in the note body while the keyboard stays open.
-    bridge.focus({ preventScroll: true });
-    editor.focus({ preventScroll: true });
-    window.requestAnimationFrame(() => {
-      editor.focus({ preventScroll: true });
-      const selection = window.getSelection();
-      if (!selection || selection.rangeCount > 0) return;
-      const range = document.createRange();
-      range.selectNodeContents(editor);
-      range.collapse(false);
-      selection.addRange(range);
+    if (!editor) return;
+    const start = editor.selectionStart ?? 0;
+    const end = editor.selectionEnd ?? start;
+    const selected = bodyText.slice(start, end);
+    const left = command === "bold" ? "**" : "==";
+    const right = left;
+    const next = `${bodyText.slice(0, start)}${left}${selected}${right}${bodyText.slice(end)}`;
+    setBodyText(next);
+    contentRef.current = next;
+    setTick((value) => value + 1);
+    requestAnimationFrame(() => {
+      editor.focus();
+      const caret = selected ? end + left.length * 2 : start + left.length;
+      editor.setSelectionRange(caret, caret);
     });
+  };
+
+  const onInput = (value: string) => {
+    setBodyText(value);
+    contentRef.current = value;
+    setTick((current) => current + 1);
   };
 
   return (
@@ -363,35 +321,19 @@ export function NoteEditor({
 
         <div className="rounded-3xl p-4 ring-1 ring-border/70" style={{ background: NOTE_COLORS[color] }}>
           <textarea
-            ref={keyboardBridgeRef}
-            tabIndex={0}
-            inputMode="text"
-            autoCapitalize="sentences"
-            className="fixed left-0 top-0 h-px w-px opacity-0 text-base"
-            aria-label={t("Note keyboard input")}
-          />
-          <div
             key={`${note.id}:${editorReady ? "ready" : "boot"}`}
             ref={editorRef}
-            contentEditable
-            suppressContentEditableWarning
-            role="textbox"
-            aria-multiline="true"
-            tabIndex={0}
+            value={bodyText}
+            onChange={(event) => onInput(event.target.value)}
+            onBlur={(event) => onInput(event.target.value)}
+            rows={14}
             inputMode="text"
             spellCheck
             autoCapitalize="sentences"
             autoCorrect="on"
             data-bixbo-note-editor
-            dangerouslySetInnerHTML={{ __html: initialContentRef.current }}
-            onPointerDown={(event) => {
-              if (event.pointerType === "touch") primeIOSKeyboard();
-            }}
-            onInput={onInput}
-            onBlur={onInput}
-            className="relative z-10 min-h-[40dvh] touch-manipulation select-text text-base leading-relaxed whitespace-pre-wrap outline-none empty:before:pointer-events-none empty:before:text-muted-foreground empty:before:content-[attr(data-placeholder)]"
-            style={{ WebkitUserSelect: "text", userSelect: "text" }}
-            data-placeholder={t("Start writing…")}
+            placeholder={t("Start writing…")}
+            className="block min-h-[40dvh] w-full resize-none bg-transparent text-base leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
           />
         </div>
 

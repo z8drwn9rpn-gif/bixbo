@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { ArrowLeft } from "@/components/icons/BixboIcons";
 import { EMPTY, useBixbo, type DayLog, type Med } from "@/lib/storage";
@@ -162,6 +162,37 @@ function ReportPage() {
   const title = monthLabel(month, locale);
 
   const [printPreviewOpen, setPrintPreviewOpen] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const printPreviewRef = useRef<HTMLDivElement | null>(null);
+
+  const savePdf = async () => {
+    const page = printPreviewRef.current?.querySelector<HTMLElement>(".pdf-page");
+    if (!page || pdfBusy) return;
+    setPdfBusy(true);
+    try {
+      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
+      const canvas = await html2canvas(page, { scale: 2, backgroundColor: "#ffffff", useCORS: true, logging: false });
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pageWidth;
+      const imgHeight = canvas.height * imgWidth / canvas.width;
+      const image = canvas.toDataURL("image/jpeg", 0.92);
+      let y = 0;
+      let remaining = imgHeight;
+      pdf.addImage(image, "JPEG", 0, y, imgWidth, imgHeight, undefined, "FAST");
+      remaining -= pageHeight;
+      while (remaining > 0) {
+        y -= pageHeight;
+        pdf.addPage();
+        pdf.addImage(image, "JPEG", 0, y, imgWidth, imgHeight, undefined, "FAST");
+        remaining -= pageHeight;
+      }
+      pdf.save(`BIXBO-${month}-${style}.pdf`);
+    } finally {
+      setPdfBusy(false);
+    }
+  };
 
   return <AppShell title={<Link to="/profile" className="flex items-center gap-2"><ArrowLeft className="h-5 w-5" />{t("PDF reports")}</Link>}>
     <style data-bixbo-pdf-styles>{`
@@ -185,11 +216,11 @@ function ReportPage() {
     </div>
 
     {printPreviewOpen ? (
-      <div className="pdf-print-preview fixed inset-0 z-[10050] overflow-y-auto bg-background p-3 pb-24">
-        <div className="pdf-preview-toolbar sticky top-0 z-10 mx-auto mb-3 flex max-w-[820px] items-center gap-2 rounded-2xl bg-background/95 p-2 shadow-lg ring-1 ring-border backdrop-blur">
+      <div ref={printPreviewRef} className="pdf-print-preview fixed inset-0 z-[10050] overflow-y-auto bg-background px-3 pb-24 pt-[calc(env(safe-area-inset-top)+.75rem)]">
+        <div className="pdf-preview-toolbar sticky top-[env(safe-area-inset-top)] z-10 mx-auto mb-3 flex max-w-[820px] items-center gap-2 rounded-2xl bg-background/95 p-2 shadow-lg ring-1 ring-border backdrop-blur">
           <button type="button" onClick={() => setPrintPreviewOpen(false)} className="h-10 rounded-xl bg-tint px-4 text-sm font-semibold ring-1 ring-border">← {t("Back")}</button>
           <div className="min-w-0 flex-1 text-center text-xs font-semibold text-muted-foreground">{title}</div>
-          <button type="button" onClick={() => window.print()} className="h-10 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground">{t("Print / Save PDF")}</button>
+          <button type="button" onClick={savePdf} disabled={pdfBusy} className="h-10 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-60">{pdfBusy ? t("Creating PDF…") : t("Save PDF")}</button>
         </div>
         {style === "soft" ? <SoftReport title={title} days={days} meds={view.meds} avgPain={avgPain} loggedDays={loggedDays} locale={locale} /> : null}
         {style === "dashboard" ? <DashboardReport title={title} days={days} avgPain={avgPain} loggedDays={loggedDays} /> : null}
