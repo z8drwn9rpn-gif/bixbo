@@ -21,6 +21,8 @@ describe("Pain symptom-only follow-ups", () => {
     expect(sheet).toContain('t("Save symptoms")');
     expect(home).toContain('<Card title="Add symptoms" icon="➕">');
     expect(home).toContain('entry.sourcePainId === p.id');
+    expect(home).toContain('p.symptoms.map(t).join(", ")');
+    expect(home).toContain('{t("Nausea")} {t("symptoms")}:');
     expect(home).toContain('entry.entryKind === "symptom-update" && !entry.sourcePainId');
   });
 });

@@ -3408,11 +3408,16 @@ function DayPreview({
                   </p>
                   {p.parts.length > 0 && <p className="text-[15px] font-medium leading-snug">{p.parts.map(t).join(", ")}</p>}
                   <div className="my-2 border-t border-border/60" />
-                  {(p.quality.length > 0 || p.symptoms.length > 0) && (
+                  {p.quality.length > 0 && (
                     <p className="text-xs leading-relaxed text-muted-foreground">
                       <span className="font-semibold text-foreground">{t("Symptoms")}:</span>{" "}
                       {p.quality.map(t).join(", ")}
-                      {p.symptoms.length > 0 ? `${p.quality.length ? " + " : ""}${p.symptoms.map(t).join(", ")}` : ""}
+                    </p>
+                  )}
+                  {p.symptoms.length > 0 && (
+                    <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                      <span className="font-semibold text-foreground">{t("Other")}:</span>{" "}
+                      {p.symptoms.map(t).join(", ")}
                       {p.symptoms.includes("Flu") && p.fluNote ? ` (Flu: ${p.fluNote})` : ""}
                     </p>
                   )}
@@ -3433,8 +3438,8 @@ function DayPreview({
                     </p>
                   ) : null}
                   {p.nauseaSymptoms?.length ? (
-                    <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                      <span className="font-semibold text-foreground">{t("Other")}:</span> {t("symptoms")}: {p.nauseaSymptoms.map(t).join(", ")}
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                      <span className="font-semibold text-foreground">{t("Nausea")} {t("symptoms")}:</span> {p.nauseaSymptoms.map(t).join(", ")}
                     </p>
                   ) : null}
                   {p.nauseaHelped?.length ? (
