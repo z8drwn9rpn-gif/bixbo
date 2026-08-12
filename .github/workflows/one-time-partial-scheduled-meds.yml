@@ -1,0 +1,33 @@
+name: One-time granular scheduled meds
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: github.event.head_commit.message == 'Trigger granular scheduled meds patch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Apply patch
+        run: python3 scripts/patch-partial-scheduled-meds.py
+      - name: Verify
+        run: |
+          git diff --check
+          bun install --frozen-lockfile
+          bun run typecheck
+      - name: Commit
+        run: |
+          rm -f scripts/patch-partial-scheduled-meds.py .github/workflows/one-time-partial-scheduled-meds.yml
+          git config user.name "BIXBO Fix Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "Track grouped scheduled meds individually"
+          git push origin HEAD:main
