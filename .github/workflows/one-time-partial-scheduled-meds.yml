@@ -6,7 +6,7 @@ permissions:
   contents: write
 jobs:
   patch:
-    if: github.event.head_commit.message == 'Trigger granular scheduled meds patch v2'
+    if: github.event.head_commit.message == 'Trigger granular scheduled meds patch v3'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,7 +16,7 @@ jobs:
         with:
           bun-version: latest
       - name: Apply patch
-        run: python3 scripts/patch-partial-scheduled-meds-v2.py
+        run: python3 scripts/patch-partial-scheduled-meds-v3.py
       - name: Verify
         run: |
           git diff --check
@@ -24,11 +24,11 @@ jobs:
           bun run typecheck
       - name: Commit
         run: |
-          rm -f scripts/patch-partial-scheduled-meds.py scripts/patch-partial-scheduled-meds-v2.py .github/workflows/one-time-partial-scheduled-meds.yml
+          rm -f scripts/patch-partial-scheduled-meds.py scripts/patch-partial-scheduled-meds-v2.py scripts/patch-partial-scheduled-meds-v3.py .github/workflows/one-time-partial-scheduled-meds.yml
           git config user.name "BIXBO Fix Bot"
           git config user.email "actions@users.noreply.github.com"
           git add -A
           git diff --cached --check
           git commit -m "Track grouped scheduled meds individually"
           git push origin HEAD:main
-# Trigger granular scheduled meds patch v2
+# Trigger granular scheduled meds patch v3
