@@ -12,11 +12,13 @@ describe("Admin BIXBO icons and HAK overlay regressions", () => {
     expect(source).not.toContain("<select value={feature.icon}");
   });
 
-  it("marks HAK as an admin-editable root and routes HAK tools to its editor", () => {
+  it("marks HAK as an admin-editable root and keeps HAK editor wiring available", () => {
     const index = read("src/routes/index.tsx");
     const admin = read("src/components/GlobalAdminModeController.tsx");
+    const hak = read("src/components/HakAdminEditOverlay.tsx");
     expect(index).toContain('data-bixbo-hak-root="1"');
-    expect(admin).toContain('document.querySelector("[data-bixbo-hak-root]")');
-    expect(admin).toContain('if (hakOpen && tool !== "navigation")');
+    expect(admin).toContain('requestAdminTool("page")');
+    expect(admin).toContain('requestAdminTool("sections")');
+    expect(hak).toContain('data-bixbo-admin-open="hak"');
   });
 });
