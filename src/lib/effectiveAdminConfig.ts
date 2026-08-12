@@ -113,7 +113,16 @@ export function mergeAdminConfigs(globalConfig: AdminConfig = {}, localConfig: A
   };
 }
 
+const BUILTIN_ADMIN_DEFAULTS: AdminConfig = {
+  features: {
+    sex: {
+      surfaces: { heatmap: true },
+    },
+  },
+};
+
 export function getEffectiveAdminConfig(ssrFallback: AdminConfig = {}): AdminConfig {
-  if (typeof window === "undefined") return ssrFallback;
-  return mergeAdminConfigs(getCachedGlobalAdminConfig(), getDeviceAdminConfig());
+  if (typeof window === "undefined") return mergeAdminConfigs(BUILTIN_ADMIN_DEFAULTS, ssrFallback);
+  const saved = mergeAdminConfigs(getCachedGlobalAdminConfig(), getDeviceAdminConfig());
+  return mergeAdminConfigs(BUILTIN_ADMIN_DEFAULTS, saved);
 }
