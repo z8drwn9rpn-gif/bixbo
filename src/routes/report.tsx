@@ -277,7 +277,7 @@ function Report({ days, meds, medLog, range, locale }: { days: RDay[]; meds: Med
   if (bowel.length) patterns.push(`Most common recorded bowel value: Type ${common}.`);
 
   const timelineRows = [...logged].reverse();
-  const maxRowsPerDetailPage = 11;
+  const maxRowsPerDetailPage = 6;
   const timelinePages = chunk(timelineRows, maxRowsPerDetailPage);
   if (!timelinePages.length) timelinePages.push([]);
   const totalPages = 3 + timelinePages.length;
