@@ -3389,10 +3389,10 @@ function DayPreview({
         </Card>
       )}
 
-      {(log?.pain?.length && (
+      {(log?.pain?.some((entry) => entry.entryKind !== "symptom-update") && (
         <Card title="Pain" icon="🔥">
           <ul className="space-y-2">
-            {log.pain.map((p) => (
+            {log.pain.filter((p) => p.entryKind !== "symptom-update").map((p) => (
               <li key={p.id} className="flex items-start gap-3">
                 <button
                   onClick={() => onEditPain?.(p)}
@@ -3486,6 +3486,48 @@ function DayPreview({
         </Card>
       )) ||
         null}
+
+      {log?.pain?.some((entry) => entry.entryKind === "symptom-update") ? (
+        <Card title="Add symptoms" icon="➕">
+          <ul className="space-y-2">
+            {log.pain
+              .filter((entry) => entry.entryKind === "symptom-update")
+              .map((entry) => (
+                <li key={entry.id} className="flex items-start gap-2">
+                  <button onClick={() => onEditPain?.(entry)} className="min-w-0 flex-1 text-left">
+                    <p className="text-xs font-semibold text-muted-foreground">{entry.time} · {t("Add symptoms")}</p>
+                    {entry.symptoms.length > 0 ? <p className="text-sm">{entry.symptoms.map(t).join(", ")}</p> : null}
+                    {entry.nausea || entry.nauseaSeverity != null || entry.nauseaTypes?.length ? (
+                      <p className="text-sm">{t("Nausea")}{entry.nauseaSeverity != null ? ` ${entry.nauseaSeverity}/10` : ""}{entry.nauseaTypes?.length ? ` · ${entry.nauseaTypes.map(t).join(", ")}` : ""}</p>
+                    ) : null}
+                    {entry.headache || entry.headacheIntensity != null || entry.headacheTypes?.length ? (
+                      <p className="text-sm">{t("Headache")}{entry.headacheIntensity != null ? ` ${entry.headacheIntensity}/10` : ""}{entry.headacheTypes?.length ? ` · ${entry.headacheTypes.map(t).join(", ")}` : ""}</p>
+                    ) : null}
+                    {entry.hotFlashesOn || entry.hotFlashes != null ? <p className="text-sm">{t("Hot flashes")}{entry.hotFlashes != null ? ` ${entry.hotFlashes}/5` : ""}</p> : null}
+                    {entry.pcosSymptoms?.length ? <p className="text-sm">PCOS: {entry.pcosSymptoms.map(t).join(", ")}</p> : null}
+                    {entry.fluNote ? <p className="text-sm">Flu: {entry.fluNote}</p> : null}
+                    {entry.note ? <p className="mt-1 whitespace-pre-line text-sm">{entry.note}</p> : null}
+                    <p className="mt-1 text-[10px] text-primary">{t("Tap to edit")}</p>
+                  </button>
+                  <DeleteBtn
+                    onClick={() =>
+                      update((d) => ({
+                        ...d,
+                        dayLogs: {
+                          ...d.dayLogs,
+                          [date]: {
+                            ...d.dayLogs[date],
+                            pain: (d.dayLogs[date]?.pain ?? []).filter((item) => item.id !== entry.id),
+                          },
+                        },
+                      }))
+                    }
+                  />
+                </li>
+              ))}
+          </ul>
+        </Card>
+      ) : null}
 
       {log?.panic?.length ? (
         <Card title="Panic episode" icon="🫯">

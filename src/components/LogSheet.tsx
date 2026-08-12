@@ -1518,54 +1518,45 @@ function PainWizard({
   // Quick update: copy the latest state, use the current time and jump to symptoms.
   const [quickSymptomUpdate, setQuickSymptomUpdate] = useState(false);
   const [copiedFromTime, setCopiedFromTime] = useState<string | undefined>();
+  const [copiedFromId, setCopiedFromId] = useState<string | undefined>();
   const startSymptomUpdate = () => {
     if (!latestPain) return;
 
-    // Core pain state.
+    // NEW symptom-only follow-up: never clone the previous pain details.
+    // score stays only as required internal context and is excluded from pain averages.
     setScore(latestPain.score);
-    setParts([...(latestPain.parts ?? [])]);
-    setQuality([...(latestPain.quality ?? [])]);
-    setSymptoms([...(latestPain.symptoms ?? [])]);
-    setPressureTypes([...(latestPain.pressureTypes ?? [])]);
-    setPressureIntensity(latestPain.pressureIntensity);
-
-    // Body battery, stress and mood are momentary measurements. Do not duplicate
-    // their older values into the new time point.
+    setParts([]);
+    setQuality([]);
+    setSymptoms([]);
+    setPressureTypes([]);
+    setPressureIntensity(undefined);
     setBodyBattery(undefined);
     setStress(undefined);
     setMood([]);
-
-    // Carry forward symptom details; the user only changes what is new.
-    setHotFlashesOn(!!latestPain.hotFlashesOn);
-    setHotFlashes(latestPain.hotFlashes);
-    setPcosSymptoms([...(latestPain.pcosSymptoms ?? [])]);
-    setFluNote(latestPain.fluNote ?? "");
-
-    setNausea(!!latestPain.nausea);
-    setNauseaTypes([...(latestPain.nauseaTypes ?? [])]);
-    setNauseaSeverity(latestPain.nauseaSeverity);
-    setNauseaMinutes(latestPain.nauseaMinutes != null ? String(latestPain.nauseaMinutes) : "");
-    setNauseaOngoing(!!latestPain.nauseaOngoing);
-    setNauseaTriggers([...(latestPain.nauseaTriggers ?? [])]);
-    setNauseaSymptoms([...(latestPain.nauseaSymptoms ?? [])]);
-    setNauseaHelped([...(latestPain.nauseaHelped ?? [])]);
-
-    // Preserve the previous headache state; this shortcut is for adding any symptoms.
-    setHeadache(!!latestPain.headache);
-    setHeadacheTypes([...(latestPain.headacheTypes ?? [])]);
-    setHeadacheIntensity(latestPain.headacheIntensity);
-    setHeadacheMedOn(!!latestPain.headacheMed);
-    setHeadacheMed(latestPain.headacheMed ?? "");
-    setHeadacheMedTime(latestPain.headacheMedTime ?? nowHHMM());
-
-    // A copied note would look like a new note, so leave it blank.
+    setHotFlashesOn(false);
+    setHotFlashes(undefined);
+    setPcosSymptoms([]);
+    setFluNote("");
+    setNausea(false);
+    setNauseaTypes([]);
+    setNauseaSeverity(undefined);
+    setNauseaMinutes("");
+    setNauseaOngoing(false);
+    setNauseaTriggers([]);
+    setNauseaSymptoms([]);
+    setNauseaHelped([]);
+    setHeadache(false);
+    setHeadacheTypes([]);
+    setHeadacheIntensity(undefined);
+    setHeadacheMedOn(false);
+    setHeadacheMed("");
+    setHeadacheMedTime(nowHHMM());
     setNote("");
     setTime(nowHHMM());
-
-    // Never duplicate separate inline episodes when carrying a pain state forward.
     setTetany(false);
     setPanic(false);
 
+    setCopiedFromId(latestPain.id);
     setCopiedFromTime(latestPain.time);
     setQuickSymptomUpdate(true);
     setStep(symptomsStepIndex >= 0 ? symptomsStepIndex : 0);
@@ -1618,6 +1609,8 @@ function PainWizard({
     const p: PainEntry = {
       id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
       time,
+      entryKind: quickSymptomUpdate ? "symptom-update" : undefined,
+      sourcePainId: quickSymptomUpdate ? copiedFromId : undefined,
       score,
       parts,
       quality,
@@ -1713,9 +1706,9 @@ function PainWizard({
       onTouchEnd={onTouchEnd}
     >
       {quickSymptomUpdate ? (
-        <div className="flex items-center justify-between px-1 pb-3">
+        <div className="flex items-center justify-between px-1 pb-3 pt-[68px]">
           <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-            {t("Quick symptom update")}
+            {t("Add symptoms")}
           </span>
           <span className="text-xs text-muted-foreground">{t("New entry ·")} {time}</span>
         </div>

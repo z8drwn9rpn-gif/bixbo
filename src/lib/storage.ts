@@ -46,6 +46,10 @@ export type Gender = "female" | "male";
 export interface PainEntry {
   id: string;
   time: string;
+  /** Normal pain measurement vs. a symptom-only follow-up linked to an earlier pain log. */
+  entryKind?: "pain" | "symptom-update";
+  /** Source pain entry for symptom-only follow-ups. Older entries safely omit this. */
+  sourcePainId?: string;
   score: number;
   parts: string[];
   quality: string[];
@@ -2248,9 +2252,10 @@ export function painColor(score: number): string {
   return `var(--pain-${n})`;
 }
 export function avgDayPain(log?: DayLog): number | undefined {
-  if (!log?.pain?.length) return undefined;
-  const sum = log.pain.reduce((s, p) => s + p.score, 0);
-  return sum / log.pain.length;
+  const measurements = (log?.pain ?? []).filter((entry) => entry.entryKind !== "symptom-update");
+  if (!measurements.length) return undefined;
+  const sum = measurements.reduce((s, entry) => s + entry.score, 0);
+  return sum / measurements.length;
 }
 
 /** Return valid vital measurements sorted from earliest to latest. */
