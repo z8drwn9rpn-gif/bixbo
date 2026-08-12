@@ -19,10 +19,12 @@ describe("live Admin / Heatmap / Notes regressions", () => {
     expect(source).toContain("yearTooltipAnchor.leftPct");
   });
 
-  it("mounts Notes content without an imperative innerHTML rewrite", () => {
+  it("mounts Notes with one native textarea and no imperative innerHTML rewrite", () => {
     const source = read("src/routes/notes-editor.tsx");
-    expect(source).toContain("dangerouslySetInnerHTML={{ __html: initialContentRef.current }}");
+    expect(source).toContain("<textarea");
+    expect(source).toContain("data-bixbo-note-editor");
+    expect(source).toContain("defaultValue={contentRef.current}");
     expect(source).not.toContain("editorRef.current.innerHTML = migratedContent");
-    expect(source).toContain("contentRef.current = editorRef.current.innerHTML");
+    expect(source).not.toContain("contentEditable");
   });
 });
