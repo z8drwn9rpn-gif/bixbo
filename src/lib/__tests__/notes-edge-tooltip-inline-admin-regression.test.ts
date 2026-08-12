@@ -5,14 +5,15 @@ import { resolve } from "node:path";
 const read = (path: string) => readFileSync(resolve(process.cwd(), path), "utf8");
 
 describe("Notes keyboard, Heatmap edge tooltip and live Admin regressions", () => {
-  it("primes iOS keyboard once and forces the post-mount editor rerender that makes typing available", () => {
+  it("keeps Notes on the stable native iOS textarea path", () => {
     const source = read("src/routes/notes-editor.tsx");
-    expect(source).toContain("keyboardBridgeRef");
-    expect(source).toContain("bridge.focus({ preventScroll: true })");
-    expect(source).toContain('if (event.pointerType === "touch") primeIOSKeyboard()');
-    expect(source).toContain("editorReady");
-    expect(source).toContain('key={`${note.id}:${editorReady ? "ready" : "boot"}`}');
-    expect(source).not.toContain("onTouchStart={primeIOSKeyboard}");
+    expect(source).toContain("<textarea");
+    expect(source).toContain("data-bixbo-note-editor");
+    expect(source).toContain('inputMode="text"');
+    expect(source).toContain("fitEditorToContent(editor)");
+    expect(source).not.toContain("keyboardBridgeRef");
+    expect(source).not.toContain("editorReady");
+    expect(source).not.toContain("contentEditable");
   });
 
   it("always renders the Year Heatmap tooltip with a deterministic edge-safe fallback", () => {
