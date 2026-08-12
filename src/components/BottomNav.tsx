@@ -9,7 +9,6 @@ import {
   BottomNavNoteIcon,
   BottomNavLogIcon,
 } from "@/components/icons/BottomNavReferenceIcons";
-import exactHomeArtwork from "@/assets/nav-home-exact.webp";
 import exactCoupleArtwork from "@/assets/nav-couple-exact.webp";
 import { DEVICE_ADMIN_CONFIG_CHANGED } from "@/lib/deviceAdminConfig";
 import { GLOBAL_ADMIN_CONFIG_CHANGED } from "@/lib/globalAdminConfig";
@@ -24,9 +23,8 @@ const ICONS: Record<NavigationItemId, ComponentType<IconProps>> = {
   healthProfile: BottomNavHomeIcon,
 };
 
-/** Home and Couple are bundled imports so Vite fingerprints them and iOS/PWA cannot serve stale public URLs. */
+/** Image-backed artwork is used only where an exact bundled asset is required. */
 const NAV_IMAGE_SRC: Partial<Record<NavigationItemId, string>> = {
-  home: exactHomeArtwork,
   overview: "/nav-assets/nav-overview.webp",
   couple: exactCoupleArtwork,
   notes: "/nav-assets/nav-note.webp",
