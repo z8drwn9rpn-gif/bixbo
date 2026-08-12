@@ -91,7 +91,6 @@ export function NoteEditor({
   const [showChecklist, setShowChecklist] = useState(Boolean(note.checklist?.length));
   const [newItem, setNewItem] = useState("");
   const [tick, setTick] = useState(0);
-  const [editorReady, setEditorReady] = useState(false);
 
   const editorRef = useRef<HTMLTextAreaElement | null>(null);
   const initialContentRef = useRef(
@@ -102,12 +101,6 @@ export function NoteEditor({
   const contentRef = useRef(initialContentRef.current.replace(/<br\s*\/?>(?!$)/gi, "\n").replace(/<\/div>/gi, "\n").replace(/<[^>]+>/g, ""));
   const [bodyText, setBodyText] = useState(contentRef.current);
   const firstRender = useRef(true);
-
-  useEffect(() => {
-    setEditorReady(false);
-    const frame = window.requestAnimationFrame(() => setEditorReady(true));
-    return () => window.cancelAnimationFrame(frame);
-  }, [note.id]);
 
   useEffect(() => {
     if (firstRender.current) {
@@ -321,7 +314,6 @@ export function NoteEditor({
 
         <div className="rounded-3xl p-4 ring-1 ring-border/70" style={{ background: NOTE_COLORS[color] }}>
           <textarea
-            key={`${note.id}:${editorReady ? "ready" : "boot"}`}
             ref={editorRef}
             value={bodyText}
             onChange={(event) => onInput(event.target.value)}
@@ -333,7 +325,8 @@ export function NoteEditor({
             autoCorrect="on"
             data-bixbo-note-editor
             placeholder={t("Start writing…")}
-            className="block min-h-[40dvh] w-full resize-none bg-transparent text-base leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
+            className="relative z-10 block min-h-[40dvh] w-full touch-manipulation resize-none bg-transparent text-base leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
+            style={{ WebkitUserSelect: "text", userSelect: "text", pointerEvents: "auto" }}
           />
         </div>
 
