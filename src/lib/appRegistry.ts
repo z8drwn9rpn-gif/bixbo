@@ -214,7 +214,7 @@ export const BIXBO_LOG_FIELDS: Partial<Record<RegistryFeatureId, RegistryFieldDe
     { id: "dischargeNote", label: "Discharge note (optional)", kind: "text", order: 40 },
     { id: "note", label: "Day note (optional)", kind: "text", order: 50 },
     { id: "birthControlSince", label: "Birth control since (optional)", kind: "text", order: 60 },
-    { id: "pregnant", label: "Pregnant?", kind: "toggle", order: 70 },
+    { id: "pregnant", label: "Pregnant?", kind: "toggle", order: 70, enabled: false },
   ],
   workout: [
     { id: "kind", label: "Type", kind: "chips", order: 10 },

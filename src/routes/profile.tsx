@@ -493,21 +493,6 @@ function HealthHub({
       }
     >
       <div className="space-y-5 px-5 pb-28 pt-4">
-        <section className="overflow-hidden rounded-3xl bg-primary/10 p-5 ring-1 ring-primary/20">
-          <div className="flex items-center gap-4">
-            <span className="grid h-16 w-16 shrink-0 place-items-center rounded-3xl bg-surface ring-1 ring-border/60">
-              <ProfileIcon size={38} />
-            </span>
-
-            <div className="min-w-0">
-              <p className="font-serif text-2xl font-bold text-foreground">{t("Your health hub")}</p>
-              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                {t("Your health profile, journey, milestones and app preferences.")}
-              </p>
-            </div>
-          </div>
-        </section>
-
         <div>
           <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
             {t("Health Hub")}

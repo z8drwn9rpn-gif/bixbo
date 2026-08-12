@@ -1874,6 +1874,9 @@ function YearHealthHeatmap({
       .map((option) => ({ ...option, label: getRegistryFeature(data, option.id as RegistryFeatureId).label }));
     const customs = customLogDefinitions(data).flatMap((log) => {
       if (!log.heatmapFieldId) return [];
+      if (log.heatmapFieldId === "__count__") {
+        return [{ id: `custom:${log.id}:__count__` as HeatmapMetric, label: log.label }];
+      }
       const field = log.fields.find((item) => item.id === log.heatmapFieldId && item.enabled !== false && (item.kind === "number" || item.kind === "scale"));
       if (!field) return [];
       return [{ id: `custom:${log.id}:${field.id}` as HeatmapMetric, label: `${log.label} · ${field.label}` }];
@@ -1943,10 +1946,21 @@ function YearHealthHeatmap({
       if (selectedMetric.startsWith("custom:")) {
         const [, logId, fieldId] = selectedMetric.split(":");
         const definition = customLogDefinitions(data).find((item) => item.id === logId);
-        const field = definition?.fields.find((item) => item.id === fieldId);
         const entries = log.customLogs?.[logId] ?? [];
+        if (!definition || !entries.length) return null;
+        if (fieldId === "__count__") {
+          return {
+            color: definition.color,
+            tooltipColor: definition.color,
+            value: `${entries.length}×`,
+            popupValue: `${definition.label} · ${entries.length}×`,
+            description: entries.length === 1 ? "1 entry" : `${entries.length} entries`,
+            entryCount: entries.length,
+          };
+        }
+        const field = definition.fields.find((item) => item.id === fieldId);
         const values = entries.map((entry) => strictAdminNumericValue(entry.values[fieldId])).filter((value) => Number.isFinite(value));
-        if (!definition || !field || !values.length) return null;
+        if (!field || !values.length) return null;
         const value = values.reduce((sum, item) => sum + item, 0) / values.length;
         const min = field.scale?.min ?? Math.min(...values, 0);
         const max = field.scale?.max ?? Math.max(...values, 10);

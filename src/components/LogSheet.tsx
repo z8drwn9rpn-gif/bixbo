@@ -4162,6 +4162,7 @@ function MedsForm({
 
   return (
     <div className="flex flex-col gap-4">
+      <SaveBar onCancel={onDone} onSave={() => { schema?.saveAdminCustomFields(); onDone(); }} />
       <div className="flex flex-col gap-4">
       <RegistryFieldBlock fieldId="scheduled">
       {meds.length === 0 ? (
@@ -4266,18 +4267,6 @@ function MedsForm({
       </div>
       </RegistryFieldBlock>
       </div>
-      <SheetFooter className="mt-2">
-        <div className="mt-5 flex justify-end border-t border-border/50 pt-4">
-          <button
-            type="button"
-            onClick={() => { schema?.saveAdminCustomFields(); onDone(); }}
-            className="inline-flex h-10 min-w-[78px] items-center justify-center gap-1.5 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          >
-            <span>{t("Done")}</span>
-            <span aria-hidden="true" className="text-base leading-none">✓</span>
-          </button>
-        </div>
-      </SheetFooter>
     </div>
   );
 }

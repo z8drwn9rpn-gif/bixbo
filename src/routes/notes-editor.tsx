@@ -229,6 +229,7 @@ export function NoteEditor({
     // user gesture. Transfer focus to the rich editor on the next animation frame
     // so typing lands in the note body while the keyboard stays open.
     bridge.focus({ preventScroll: true });
+    editor.focus({ preventScroll: true });
     window.requestAnimationFrame(() => {
       editor.focus({ preventScroll: true });
       const selection = window.getSelection();
@@ -363,9 +364,11 @@ export function NoteEditor({
         <div className="rounded-3xl p-4 ring-1 ring-border/70" style={{ background: NOTE_COLORS[color] }}>
           <textarea
             ref={keyboardBridgeRef}
-            aria-hidden="true"
-            tabIndex={-1}
-            className="pointer-events-none fixed left-0 top-0 h-px w-px opacity-0 text-base"
+            tabIndex={0}
+            inputMode="text"
+            autoCapitalize="sentences"
+            className="fixed left-0 top-0 h-px w-px opacity-0 text-base"
+            aria-label={t("Note keyboard input")}
           />
           <div
             key={`${note.id}:${editorReady ? "ready" : "boot"}`}

@@ -232,9 +232,10 @@ export function CustomLogBuilder({ data, update }: { data: BixboData; update: Up
               return (
                 <div className="mt-2 rounded-2xl bg-tint px-3 py-2 ring-1 ring-border/70">
                   <p className="text-xs font-semibold">{t("Heatmap metric")}</p>
-                  <p className="text-[10px] text-muted-foreground">{t("Choose a numeric or scale field to expose in Insights Heatmap.")}</p>
+                  <p className="text-[10px] text-muted-foreground">{t("Choose entry presence or a numeric/scale field to expose in Insights Heatmap.")}</p>
                   <select value={log.heatmapFieldId ?? ""} onChange={(event) => patchLog(log.id, { heatmapFieldId: event.target.value || undefined })} className="mt-2 h-9 w-full rounded-xl bg-background px-3 text-xs ring-1 ring-border">
                     <option value="">{t("Off")}</option>
+                    <option value="__count__">{t("Entries / days logged")}</option>
                     {metricFields.map((field) => <option key={field.id} value={field.id}>{field.label}</option>)}
                   </select>
                 </div>
