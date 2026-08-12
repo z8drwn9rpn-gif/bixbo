@@ -3,7 +3,7 @@ import { useRouterState } from "@tanstack/react-router";
 
 import { useI18n } from "@/hooks/useI18n";
 import { isAdminOwnerAccount } from "@/lib/deviceAdmin";
-import { requestAdminCustomizeCurrentPage } from "@/lib/adminCustomizeEvents";
+import { requestAdminCustomizeCurrentPage, requestAdminTool } from "@/lib/adminCustomizeEvents";
 
 export const ADMIN_UNLOCK_KEY = "bixbo-admin-unlocked";
 export const ADMIN_MODE_CHANGED = "bixbo:admin-mode-changed";
@@ -117,10 +117,10 @@ export function GlobalAdminModeController() {
         >
           <span className="whitespace-nowrap text-[10px] font-black uppercase tracking-[0.12em]">✦ {t("Admin mode")}</span>
           <div className="flex items-center gap-1">
-            <button type="button" onClick={requestAdminCustomizeCurrentPage} className="rounded-full bg-background/15 px-2 py-1 text-[9px] font-bold">{t("Page")}</button>
-            <button type="button" onClick={() => openAdminTool("text")} className="rounded-full bg-background/15 px-2 py-1 text-[9px] font-bold">{t("Text")}</button>
-            <button type="button" onClick={() => openAdminTool("sections")} className="rounded-full bg-background/15 px-2 py-1 text-[9px] font-bold">{t("Sections")}</button>
-            <button type="button" onClick={() => openAdminTool("navigation")} className="rounded-full bg-background/15 px-2 py-1 text-[9px] font-bold">{t("Nav")}</button>
+            <button type="button" onClick={() => requestAdminTool("page")} className="rounded-full bg-background/15 px-2 py-1 text-[9px] font-bold">{t("Page")}</button>
+            <button type="button" onClick={() => requestAdminTool("text")} className="rounded-full bg-background/15 px-2 py-1 text-[9px] font-bold">{t("Text")}</button>
+            <button type="button" onClick={() => requestAdminTool("sections")} className="rounded-full bg-background/15 px-2 py-1 text-[9px] font-bold">{t("Sections")}</button>
+            <button type="button" onClick={() => requestAdminTool("navigation")} className="rounded-full bg-background/15 px-2 py-1 text-[9px] font-bold">{t("Nav")}</button>
           </div>
           <button
             type="button"

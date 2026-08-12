@@ -6,6 +6,7 @@ import { isAdminOwnerAccount } from "@/lib/deviceAdmin";
 import { DEVICE_ADMIN_CONFIG_CHANGED, getDeviceAdminConfig, setDeviceAdminConfig } from "@/lib/deviceAdminConfig";
 import { BIXBO_NAVIGATION, navigationItemOverrides, type NavigationItemId } from "@/lib/navigationRegistry";
 import { ADMIN_MODE_CHANGED, isGlobalAdminModeActive } from "@/components/GlobalAdminModeController";
+import { ADMIN_TOOL_REQUESTED } from "@/lib/adminCustomizeEvents";
 
 type NavAdminConfig = AdminConfig & {
   navigation?: {
@@ -36,6 +37,14 @@ export function NavigationAdminEditor() {
 
   useEffect(() => {
     if (!active) setOpen(false);
+  }, [active]);
+
+  useEffect(() => {
+    const onTool = (event: Event) => {
+      if ((event as CustomEvent<{ tool?: string }>).detail?.tool === "navigation" && active) setOpen(true);
+    };
+    window.addEventListener(ADMIN_TOOL_REQUESTED, onTool);
+    return () => window.removeEventListener(ADMIN_TOOL_REQUESTED, onTool);
   }, [active]);
 
   const items = useMemo(() => {

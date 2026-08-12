@@ -10,7 +10,7 @@ import {
   setDeviceAdminConfig,
 } from "@/lib/deviceAdminConfig";
 import { ADMIN_MODE_CHANGED, isGlobalAdminModeActive } from "@/components/GlobalAdminModeController";
-import { ADMIN_CUSTOMIZE_REQUESTED } from "@/lib/adminCustomizeEvents";
+import { ADMIN_CUSTOMIZE_REQUESTED, ADMIN_TOOL_REQUESTED } from "@/lib/adminCustomizeEvents";
 import { getEffectiveAdminConfig } from "@/lib/effectiveAdminConfig";
 
 type UniversalBlockOverride = {
@@ -221,6 +221,15 @@ export function UniversalAdminPageEditor() {
     };
     window.addEventListener(ADMIN_CUSTOMIZE_REQUESTED, openCurrentPageEditor);
     return () => window.removeEventListener(ADMIN_CUSTOMIZE_REQUESTED, openCurrentPageEditor);
+  }, [adminMode, supported]);
+
+  useEffect(() => {
+    const onTool = (event: Event) => {
+      const tool = (event as CustomEvent<{ tool?: string }>).detail?.tool;
+      if (adminMode && supported && (tool === "page" || tool === "sections")) setOpen(true);
+    };
+    window.addEventListener(ADMIN_TOOL_REQUESTED, onTool);
+    return () => window.removeEventListener(ADMIN_TOOL_REQUESTED, onTool);
   }, [adminMode, supported]);
 
   useEffect(() => {

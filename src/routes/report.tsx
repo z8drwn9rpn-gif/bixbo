@@ -161,32 +161,13 @@ function ReportPage() {
   const loggedDays = days.filter((day) => Object.keys(day.log).length > 0 || day.notes.length).length;
   const title = monthLabel(month, locale);
 
-  const printReport = () => {
-    const reportPage = document.querySelector<HTMLElement>(".pdf-page");
-    const styleNode = document.querySelector<HTMLStyleElement>("style[data-bixbo-pdf-styles]");
-    if (!reportPage || !styleNode) {
-      window.print();
-      return;
-    }
-
-    const popup = window.open("", "_blank");
-    if (!popup) {
-      window.print();
-      return;
-    }
-
-    popup.document.open();
-    popup.document.write(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} — BIXBO</title><style>${styleNode.textContent ?? ""}</style></head><body><div class="pdf-report-root">${reportPage.outerHTML}</div></body></html>`);
-    popup.document.close();
-    popup.focus();
-    window.setTimeout(() => popup.print(), 180);
-  };
+  const [printPreviewOpen, setPrintPreviewOpen] = useState(false);
 
   return <AppShell title={<Link to="/profile" className="flex items-center gap-2"><ArrowLeft className="h-5 w-5" />{t("PDF reports")}</Link>}>
     <style data-bixbo-pdf-styles>{`
       .pdf-report-root{--olive:#8f9f54;--olive-dark:#596532;--soft:#f3f5e8;--sand:#f7f2e8;--ink:#283020;--muted:#737a67}.pdf-page{background:#fff;color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,sans-serif;max-width:820px;margin:0 auto;padding:34px;border-radius:28px;box-shadow:0 12px 40px rgba(48,58,30,.08)}.pdf-header{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;border-bottom:1px solid #dfe4cb;padding-bottom:22px;margin-bottom:22px}.pdf-brand{font-size:13px;letter-spacing:.28em;font-weight:800;color:var(--olive-dark)}.pdf-header h1{font-family:"Instrument Serif",Georgia,serif;font-size:31px;line-height:1;margin:8px 0 4px}.pdf-header p,.pdf-muted{color:var(--muted);font-size:12px}.pdf-badge{border:1px solid #dce2c4;background:var(--soft);padding:8px 12px;border-radius:999px;font-size:10px;font-weight:700}.pdf-page section{margin:20px 0}.pdf-page h2{font-family:"Instrument Serif",Georgia,serif;font-size:21px;margin:0 0 3px}.pdf-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}.pdf-metrics-4{grid-template-columns:repeat(4,minmax(0,1fr))}.pdf-metric{background:var(--soft);border:1px solid #e0e6ca;border-radius:18px;padding:14px}.pdf-metric span{display:block;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}.pdf-metric strong{display:block;font-family:"Instrument Serif",Georgia,serif;font-size:25px;margin-top:4px}.pdf-metric small{color:var(--muted)}.pdf-list{display:grid;gap:7px;margin-top:10px}.pdf-row{display:grid;grid-template-columns:110px 1fr;gap:14px;align-items:start;padding:10px 12px;border-radius:13px;background:#fafbf5}.pdf-row strong{font-size:11px}.pdf-row span{font-size:11px;color:#4c5540}.pdf-chart{display:block;width:100%;height:auto;background:#fbfcf7;border-radius:16px;margin-top:10px}.pdf-gridline{stroke:#e7eadc;stroke-width:1}.pdf-line{fill:none;stroke:var(--olive-dark);stroke-width:3}.pdf-dot{fill:var(--olive)}.pdf-empty{padding:30px;text-align:center;background:#fbfcf7;border-radius:16px;color:var(--muted);font-size:12px}.pdf-bars{display:grid;gap:12px;margin-top:12px}.pdf-bar-label{display:flex;justify-content:space-between;font-size:11px}.pdf-bar-track{height:9px;background:#edf0e3;border-radius:999px;overflow:hidden;margin-top:5px}.pdf-bar-track i{display:block;height:100%;background:var(--olive);border-radius:999px}.pdf-note{background:var(--soft);border-radius:18px;padding:16px}.pdf-note p{font-size:11px;color:var(--muted)}.pdf-journal-list{display:grid;gap:12px}.pdf-journal-day{display:grid;grid-template-columns:62px 1fr;gap:14px;padding:14px;border:1px solid #e1e5d3;border-radius:18px;background:#fbfcf7;break-inside:avoid}.pdf-datebox{display:grid;place-items:center;background:var(--soft);border-radius:14px;padding:7px}.pdf-datebox span{font-size:9px;text-transform:uppercase;color:var(--muted)}.pdf-datebox strong{font-family:"Instrument Serif",Georgia,serif;font-size:27px}.pdf-journal-day h3{font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin:2px 0 7px}.pdf-facts{font-size:12px;font-weight:600}.pdf-table{width:100%;border-collapse:collapse;font-size:10px;margin-top:10px}.pdf-table th{text-align:left;padding:9px;background:var(--soft);color:var(--olive-dark)}.pdf-table td{padding:9px;border-bottom:1px solid #e8ebdf;vertical-align:top}.pdf-table tbody tr:nth-child(even){background:#fbfcf7}.pdf-clinical{border-radius:10px;box-shadow:none;border:1px solid #dfe3d2}.pdf-clinical .pdf-header h1{font-family:Inter,sans-serif;font-weight:700;font-size:25px}.pdf-controls{max-width:820px;margin:0 auto 16px;display:grid;gap:12px}.pdf-style-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.pdf-style-btn{border:1px solid hsl(var(--border));background:hsl(var(--surface));padding:12px;border-radius:16px;text-align:left}.pdf-style-btn[data-active="true"]{border-color:#8f9f54;background:#f3f5e8}.pdf-style-btn strong{display:block;font-size:12px}.pdf-style-btn span{display:block;font-size:10px;color:hsl(var(--muted-foreground));margin-top:2px}
       @media(max-width:640px){.pdf-page{padding:20px;border-radius:20px}.pdf-metrics-4{grid-template-columns:repeat(2,minmax(0,1fr))}.pdf-style-grid{grid-template-columns:1fr}.pdf-row{grid-template-columns:82px 1fr}.pdf-header{gap:12px}.pdf-badge{display:none}}
-      @media print{body{background:#fff!important}.pdf-no-print,header,nav,.bottom-nav{display:none!important}.pdf-report-root{position:absolute;inset:0;background:#fff!important}.pdf-page{max-width:none;width:100%;margin:0;padding:11mm;box-shadow:none;border-radius:0;border:none}.pdf-page section,.pdf-journal-day,.pdf-row{break-inside:avoid}.pdf-header{margin-top:0}@page{size:A4;margin:8mm}}
+      @media print{body{background:#fff!important}.pdf-no-print,header,nav,.bottom-nav,.pdf-preview-toolbar{display:none!important}.pdf-print-preview{position:static!important;inset:auto!important;overflow:visible!important;background:#fff!important;padding:0!important}.pdf-print-preview>.pdf-page{display:block!important}.pdf-report-root:not(.pdf-print-preview){display:none!important}.pdf-report-root{position:absolute;inset:0;background:#fff!important}.pdf-page{max-width:none;width:100%;margin:0;padding:11mm;box-shadow:none;border-radius:0;border:none}.pdf-page section,.pdf-journal-day,.pdf-row{break-inside:avoid}.pdf-header{margin-top:0}@page{size:A4;margin:8mm}}
     `}</style>
     <div className="pdf-report-root px-4 pb-28 pt-3 lg:px-0">
       <div className="pdf-controls pdf-no-print">
@@ -194,7 +175,7 @@ function ReportPage() {
           <p className="font-serif text-xl font-bold">{t("PDF reports")}</p><p className="mt-1 text-xs text-muted-foreground">{t("Choose a report style and month, then save or print as PDF.")}</p>
           <label className="mt-4 block text-xs font-semibold text-muted-foreground">{t("Reporting month")}<input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="mt-1 h-11 w-full rounded-2xl bg-tint px-3 text-sm ring-1 ring-border" /></label>
           <div className="pdf-style-grid mt-4">{STYLE_OPTIONS.map((option) => <button key={option.id} type="button" data-active={style === option.id} onClick={() => setStyle(option.id)} className="pdf-style-btn"><strong>{t(option.title)}</strong><span>{t(option.subtitle)}</span></button>)}</div>
-          <button type="button" onClick={printReport} className="mt-4 h-11 w-full rounded-2xl bg-primary text-sm font-semibold text-primary-foreground">{t("Save / Print PDF")}</button>
+          <button type="button" onClick={() => setPrintPreviewOpen(true)} className="mt-4 h-11 w-full rounded-2xl bg-primary text-sm font-semibold text-primary-foreground">{t("Save / Print PDF")}</button>
         </section>
       </div>
       {style === "soft" ? <SoftReport title={title} days={days} meds={view.meds} avgPain={avgPain} loggedDays={loggedDays} locale={locale} /> : null}
@@ -202,5 +183,19 @@ function ReportPage() {
       {style === "journal" ? <JournalReport title={title} days={days} locale={locale} /> : null}
       {style === "clinical" ? <ClinicalReport title={title} days={days} meds={view.meds} avgPain={avgPain} loggedDays={loggedDays} locale={locale} /> : null}
     </div>
+
+    {printPreviewOpen ? (
+      <div className="pdf-print-preview fixed inset-0 z-[10050] overflow-y-auto bg-background p-3 pb-24">
+        <div className="pdf-preview-toolbar sticky top-0 z-10 mx-auto mb-3 flex max-w-[820px] items-center gap-2 rounded-2xl bg-background/95 p-2 shadow-lg ring-1 ring-border backdrop-blur">
+          <button type="button" onClick={() => setPrintPreviewOpen(false)} className="h-10 rounded-xl bg-tint px-4 text-sm font-semibold ring-1 ring-border">← {t("Back")}</button>
+          <div className="min-w-0 flex-1 text-center text-xs font-semibold text-muted-foreground">{title}</div>
+          <button type="button" onClick={() => window.print()} className="h-10 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground">{t("Print / Save PDF")}</button>
+        </div>
+        {style === "soft" ? <SoftReport title={title} days={days} meds={view.meds} avgPain={avgPain} loggedDays={loggedDays} locale={locale} /> : null}
+        {style === "dashboard" ? <DashboardReport title={title} days={days} avgPain={avgPain} loggedDays={loggedDays} /> : null}
+        {style === "journal" ? <JournalReport title={title} days={days} locale={locale} /> : null}
+        {style === "clinical" ? <ClinicalReport title={title} days={days} meds={view.meds} avgPain={avgPain} loggedDays={loggedDays} locale={locale} /> : null}
+      </div>
+    ) : null}
   </AppShell>;
 }

@@ -7,6 +7,7 @@ import { DEVICE_ADMIN_CONFIG_CHANGED, getDeviceAdminConfig, setDeviceAdminConfig
 import { getEffectiveAdminConfig } from "@/lib/effectiveAdminConfig";
 import type { AdminConfig } from "@/lib/appRegistry";
 import { ADMIN_MODE_CHANGED, isGlobalAdminModeActive } from "@/components/GlobalAdminModeController";
+import { ADMIN_TOOL_REQUESTED } from "@/lib/adminCustomizeEvents";
 
 type TextOverride = { label?: string; hidden?: boolean };
 type TextItem = { key: string; original: string; label: string; hidden: boolean; tag: string };
@@ -160,6 +161,14 @@ export function UniversalTextAdminEditor() {
 
   useEffect(() => {
     if (!adminMode) setOpen(false);
+  }, [adminMode]);
+
+  useEffect(() => {
+    const onTool = (event: Event) => {
+      if ((event as CustomEvent<{ tool?: string }>).detail?.tool === "text" && adminMode) setOpen(true);
+    };
+    window.addEventListener(ADMIN_TOOL_REQUESTED, onTool);
+    return () => window.removeEventListener(ADMIN_TOOL_REQUESTED, onTool);
   }, [adminMode]);
 
   const items = useMemo(() => currentTextItems(pathname), [pathname, revision, open]);

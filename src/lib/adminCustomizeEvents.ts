@@ -22,3 +22,10 @@ export function requestAdminCustomizeCurrentPage() {
   // Fallback for an editor that mounted between pointer-down and click.
   window.dispatchEvent(new CustomEvent(ADMIN_CUSTOMIZE_REQUESTED, { detail: { target } }));
 }
+
+export const ADMIN_TOOL_REQUESTED = "bixbo:admin-tool-requested";
+export type AdminTool = "page" | "text" | "sections" | "navigation";
+export function requestAdminTool(tool: AdminTool) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(ADMIN_TOOL_REQUESTED, { detail: { tool } }));
+}

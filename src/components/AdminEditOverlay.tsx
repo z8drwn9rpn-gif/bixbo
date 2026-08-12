@@ -37,7 +37,7 @@ import {
   setDeviceAdminConfig,
 } from "@/lib/deviceAdminConfig";
 import { publishGlobalAdminConfig } from "@/lib/globalAdminConfig";
-import { ADMIN_CUSTOMIZE_REQUESTED } from "@/lib/adminCustomizeEvents";
+import { ADMIN_CUSTOMIZE_REQUESTED, ADMIN_TOOL_REQUESTED } from "@/lib/adminCustomizeEvents";
 import { BIXBO_LAYOUT_SECTIONS, layoutOrder, type LayoutPageId } from "@/lib/layoutRegistry";
 import { EMPTY, useBixbo, type BixboData } from "@/lib/storage";
 import { ADMIN_MODE_CHANGED, isGlobalAdminModeActive } from "@/components/GlobalAdminModeController";
@@ -199,6 +199,18 @@ export function AdminEditOverlay() {
     };
     window.addEventListener(ADMIN_CUSTOMIZE_REQUESTED, openCurrentPageEditor);
     return () => window.removeEventListener(ADMIN_CUSTOMIZE_REQUESTED, openCurrentPageEditor);
+  }, [adminMode, page, pathname]);
+
+  useEffect(() => {
+    const onTool = (event: Event) => {
+      const tool = (event as CustomEvent<{ tool?: string }>).detail?.tool;
+      if (!adminMode || !page || (tool !== "page" && tool !== "sections")) return;
+      if (pathname === "/" && document.querySelector("[data-bixbo-hak-root]")) return;
+      setTab("page");
+      setOpen(true);
+    };
+    window.addEventListener(ADMIN_TOOL_REQUESTED, onTool);
+    return () => window.removeEventListener(ADMIN_TOOL_REQUESTED, onTool);
   }, [adminMode, page, pathname]);
 
   useEffect(() => {
