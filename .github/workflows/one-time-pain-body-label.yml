@@ -31,3 +31,4 @@ jobs:
           git diff --cached --check
           git commit -m "Label Pain body locations above symptoms"
           git push origin HEAD:main
+# Trigger Pain body label patch
