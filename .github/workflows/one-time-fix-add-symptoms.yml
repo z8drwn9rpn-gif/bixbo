@@ -17,7 +17,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Apply patch
-        run: python3 scripts/fix-add-symptoms-once.py
+        run: python3 scripts/fix-add-symptoms-once-v2.py
       - name: Commit
         run: |
           git config user.name "BIXBO Fix Bot"
