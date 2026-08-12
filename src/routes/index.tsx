@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperti
 import { ChevronLeft, ChevronRight, Share2, Trash2 } from "@/components/icons/BixboIcons";
 
 import { layoutOrder } from "@/lib/layoutRegistry";
+import { isAdminOwnerAccount } from "@/lib/deviceAdmin";
 import { customLogDefinitions, type RegistryFieldDefinition } from "@/lib/appRegistry";
 import {
   ClockIcon,
@@ -899,7 +900,7 @@ function HomePage() {
       </div>
       </div>
 
-      {!maleMode && (
+      {!maleMode && isAdminOwnerAccount() && (
         <div style={{ order: layoutOrder(view, "home", "birthControl", 20) }}>
         <BirthControlSummaryCard
           data={view}
@@ -1561,7 +1562,7 @@ function HomePage() {
           );
         })()}
 
-      {!maleMode && hakOpen && hakAnchor && (
+      {!maleMode && isAdminOwnerAccount() && hakOpen && hakAnchor && (
         <BirthControlOverlay
           data={view}
           anchor={hakAnchor}
