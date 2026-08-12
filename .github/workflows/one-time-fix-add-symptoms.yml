@@ -1,0 +1,227 @@
+name: One-time Add symptoms fix
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+env:
+  FIX_COMMIT_MESSAGE: "Fix Pain add symptoms flow without duplicating pain"
+
+jobs:
+  patch:
+    if: github.event.head_commit.message == 'Add one-time Add symptoms fix workflow'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Patch Add symptoms flow
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+
+          def replace_once(text, old, new, label):
+              if old not in text:
+                  raise SystemExit(f"Missing expected block: {label}")
+              return text.replace(old, new, 1)
+
+          # 1) Backward-compatible PainEntry metadata + pain averages ignore symptom-only updates.
+          p = Path('src/lib/storage.ts')
+          s = p.read_text()
+          s = replace_once(
+              s,
+              'export interface PainEntry {\n  id: string;\n  time: string;\n  score: number;',
+              'export interface PainEntry {\n  id: string;\n  time: string;\n  /** Normal pain measurement vs. a symptom-only follow-up linked to an earlier pain log. */\n  entryKind?: "pain" | "symptom-update";\n  /** Source pain entry for symptom-only follow-ups. Older entries safely omit this. */\n  sourcePainId?: string;\n  score: number;',
+              'PainEntry metadata',
+          )
+          s = replace_once(
+              s,
+              'export function avgDayPain(log?: DayLog): number | undefined {\n  if (!log?.pain?.length) return undefined;\n  const sum = log.pain.reduce((s, p) => s + p.score, 0);\n  return sum / log.pain.length;\n}',
+              'export function avgDayPain(log?: DayLog): number | undefined {\n  const measurements = (log?.pain ?? []).filter((entry) => entry.entryKind !== "symptom-update");\n  if (!measurements.length) return undefined;\n  const sum = measurements.reduce((s, entry) => s + entry.score, 0);\n  return sum / measurements.length;\n}',
+              'avgDayPain filter',
+          )
+          p.write_text(s)
+
+          # 2) Pain wizard: symptom update starts empty, is tagged, and no longer sits under fixed action bar.
+          p = Path('src/components/LogSheet.tsx')
+          s = p.read_text()
+
+          s = replace_once(
+              s,
+              '  const [quickSymptomUpdate, setQuickSymptomUpdate] = useState(false);\n  const [copiedFromTime, setCopiedFromTime] = useState<string | undefined>();',
+              '  const [quickSymptomUpdate, setQuickSymptomUpdate] = useState(false);\n  const [copiedFromTime, setCopiedFromTime] = useState<string | undefined>();\n  const [copiedFromId, setCopiedFromId] = useState<string | undefined>();',
+              'copied source id state',
+          )
+
+          start_pattern = re.compile(
+              r'  const startSymptomUpdate = \(\) => \{\n    if \(!latestPain\) return;\n.*?    setQuickSymptomUpdate\(true\);\n    setStep\(symptomsStepIndex >= 0 \? symptomsStepIndex : 0\);\n  \};',
+              re.S,
+          )
+          start_replacement = '''  const startSymptomUpdate = () => {
+    if (!latestPain) return;
+
+    // A symptom update is a NEW symptom-only record linked to the latest pain log.
+    // Keep the score only as internal context because PainEntry.score remains required;
+    // do not copy any old pain/symptom details into the new record.
+    setScore(latestPain.score);
+    setParts([]);
+    setQuality([]);
+    setSymptoms([]);
+    setPressureTypes([]);
+    setPressureIntensity(undefined);
+    setBodyBattery(undefined);
+    setStress(undefined);
+    setMood([]);
+    setHotFlashesOn(false);
+    setHotFlashes(undefined);
+    setPcosSymptoms([]);
+    setFluNote("");
+    setNausea(false);
+    setNauseaTypes([]);
+    setNauseaSeverity(undefined);
+    setNauseaMinutes("");
+    setNauseaOngoing(false);
+    setNauseaTriggers([]);
+    setNauseaSymptoms([]);
+    setNauseaHelped([]);
+    setHeadache(false);
+    setHeadacheTypes([]);
+    setHeadacheIntensity(undefined);
+    setHeadacheMedOn(false);
+    setHeadacheMed("");
+    setHeadacheMedTime(nowHHMM());
+    setNote("");
+    setTime(nowHHMM());
+    setTetany(false);
+    setPanic(false);
+
+    setCopiedFromId(latestPain.id);
+    setCopiedFromTime(latestPain.time);
+    setQuickSymptomUpdate(true);
+    setStep(symptomsStepIndex >= 0 ? symptomsStepIndex : 0);
+  };'''
+          s, n = start_pattern.subn(start_replacement, s, count=1)
+          if n != 1:
+              raise SystemExit(f'Expected one startSymptomUpdate block, replaced {n}')
+
+          s = replace_once(
+              s,
+              '    const p: PainEntry = {\n      id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),\n      time,\n      score,',
+              '    const p: PainEntry = {\n      id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),\n      time,\n      entryKind: quickSymptomUpdate ? "symptom-update" : undefined,\n      sourcePainId: quickSymptomUpdate ? copiedFromId : undefined,\n      score,',
+              'tag symptom update entry',
+          )
+
+          # Reserve space beneath the fixed quick action bar and use user-facing labels.
+          s = replace_once(
+              s,
+              '<div className="flex items-center justify-between px-1 pb-3">\n    <span className="rounded-full',
+              '<div className="flex items-center justify-between px-1 pb-3 pt-[68px]">\n    <span className="rounded-full',
+              'quick header safe spacing',
+          )
+          s = s.replace('{t("Quick symptom update")}', '{t("Add symptoms")}', 1)
+          s = s.replace('Save update ✓', 'Save symptoms ✓', 1)
+
+          p.write_text(s)
+
+          # 3) Today/DayPreview: normal pain stays unchanged; symptom updates get their own compact card.
+          p = Path('src/routes/index.tsx')
+          s = p.read_text()
+
+          s = replace_once(
+              s,
+              '{(log?.pain?.length && (\n        <Card title="Pain" icon="🔥">',
+              '{(log?.pain?.some((entry) => entry.entryKind !== "symptom-update") && (\n        <Card title="Pain" icon="🔥">',
+              'normal pain card condition',
+          )
+          s = replace_once(
+              s,
+              '{log.pain.map((p) => (',
+              '{log.pain.filter((p) => p.entryKind !== "symptom-update").map((p) => (',
+              'normal pain map filter',
+          )
+
+          marker = '''      {log?.panic?.length ? (
+        <Card title="Panic episode" icon="🫯">'''
+          symptom_card = '''      {log?.pain?.some((entry) => entry.entryKind === "symptom-update") ? (
+        <Card title="Add symptoms" icon="➕">
+          <ul className="space-y-2">
+            {log.pain
+              .filter((entry) => entry.entryKind === "symptom-update")
+              .map((entry) => (
+                <li key={entry.id} className="flex items-start gap-2">
+                  <button onClick={() => onEditPain?.(entry)} className="min-w-0 flex-1 text-left">
+                    <p className="text-xs font-semibold text-muted-foreground">{entry.time} · {t("Add symptoms")}</p>
+                    {entry.symptoms.length > 0 ? (
+                      <p className="text-sm">{entry.symptoms.map(t).join(", ")}</p>
+                    ) : null}
+                    {entry.nausea || entry.nauseaSeverity != null || entry.nauseaTypes?.length ? (
+                      <p className="text-sm">
+                        {t("Nausea")}
+                        {entry.nauseaSeverity != null ? ` ${entry.nauseaSeverity}/10` : ""}
+                        {entry.nauseaTypes?.length ? ` · ${entry.nauseaTypes.map(t).join(", ")}` : ""}
+                      </p>
+                    ) : null}
+                    {entry.headache || entry.headacheIntensity != null || entry.headacheTypes?.length ? (
+                      <p className="text-sm">
+                        {t("Headache")}
+                        {entry.headacheIntensity != null ? ` ${entry.headacheIntensity}/10` : ""}
+                        {entry.headacheTypes?.length ? ` · ${entry.headacheTypes.map(t).join(", ")}` : ""}
+                      </p>
+                    ) : null}
+                    {entry.hotFlashesOn || entry.hotFlashes != null ? (
+                      <p className="text-sm">{t("Hot flashes")} {entry.hotFlashes != null ? `${entry.hotFlashes}/5` : ""}</p>
+                    ) : null}
+                    {entry.pcosSymptoms?.length ? (
+                      <p className="text-sm">PCOS: {entry.pcosSymptoms.map(t).join(", ")}</p>
+                    ) : null}
+                    {entry.fluNote ? <p className="text-sm">Flu: {entry.fluNote}</p> : null}
+                    {entry.note ? <p className="mt-1 whitespace-pre-line text-sm">{entry.note}</p> : null}
+                    <p className="mt-1 text-[10px] text-primary">{t("Tap to edit")}</p>
+                  </button>
+                  <DeleteBtn
+                    onClick={() =>
+                      update((d) => ({
+                        ...d,
+                        dayLogs: {
+                          ...d.dayLogs,
+                          [date]: {
+                            ...d.dayLogs[date],
+                            pain: (d.dayLogs[date]?.pain ?? []).filter((item) => item.id !== entry.id),
+                          },
+                        },
+                      }))
+                    }
+                  />
+                </li>
+              ))}
+          </ul>
+        </Card>
+      ) : null}
+
+'''
+          if marker not in s:
+              raise SystemExit('Missing insertion marker before panic card')
+          s = s.replace(marker, symptom_card + marker, 1)
+          p.write_text(s)
+
+          # 4) Regression test: symptom-only entries never alter avg pain and source code keeps separate rendering.
+          test = Path('src/lib/__tests__/pain-symptom-update-regression.test.ts')
+          test.write_text('''import { describe, expect, it } from "vitest";\nimport { readFileSync } from "node:fs";\nimport { resolve } from "node:path";\nimport { avgDayPain, type DayLog, type PainEntry } from "../storage";\n\nconst pain = (overrides: Partial<PainEntry>): PainEntry => ({\n  id: crypto.randomUUID(), time: "12:00", score: 8, parts: [], quality: [], symptoms: [], note: "", ...overrides,\n});\n\ndescribe("Pain symptom-only follow-ups", () => {\n  it("does not count symptom updates as a second pain measurement", () => {\n    const log: DayLog = { pain: [pain({ score: 8 }), pain({ score: 8, entryKind: "symptom-update", nausea: true, nauseaSeverity: 5 })] };\n    expect(avgDayPain(log)).toBe(8);\n  });\n\n  it("keeps quick symptom updates separate in the editor and Today preview", () => {\n    const sheet = readFileSync(resolve(process.cwd(), "src/components/LogSheet.tsx"), "utf8");\n    const home = readFileSync(resolve(process.cwd(), "src/routes/index.tsx"), "utf8");\n    expect(sheet).toContain('entryKind: quickSymptomUpdate ? "symptom-update" : undefined');\n    expect(sheet).toContain('setSymptoms([])');\n    expect(sheet).toContain('Save symptoms ✓');\n    expect(home).toContain('<Card title="Add symptoms" icon="➕">');\n    expect(home).toContain('entry.entryKind === "symptom-update"');\n  });\n});\n''')
+
+          # Remove this temporary workflow from the resulting app commit.
+          Path('.github/workflows/one-time-fix-add-symptoms.yml').unlink()
+          PY
+
+      - name: Commit patch
+        run: |
+          git config user.name "BIXBO Fix Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "$FIX_COMMIT_MESSAGE"
+          git push origin HEAD:main
