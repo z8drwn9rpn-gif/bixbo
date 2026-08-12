@@ -16,6 +16,8 @@ describe("Pain symptom-only follow-ups", () => {
     const home = readFileSync(resolve(process.cwd(), "src/routes/index.tsx"), "utf8");
     expect(sheet).toContain('entryKind: quickSymptomUpdate ? "symptom-update" : undefined');
     expect(sheet).toContain('setSymptoms([])');
+    expect(sheet).toContain('setNauseaSymptoms([])');
+    expect(sheet).toContain('nauseaSymptoms.map(stripEmoji)');
     expect(sheet).toContain('t("Save symptoms")');
     expect(home).toContain('<Card title="Add symptoms" icon="➕">');
     expect(home).toContain('entry.sourcePainId === p.id');

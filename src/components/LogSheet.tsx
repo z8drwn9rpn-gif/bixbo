@@ -1505,15 +1505,15 @@ function PainWizard({
   const [pressureIntensity, setPressureIntensity] = useState<number | undefined>(initialEntry?.pressureIntensity);
   // Nausea section
   const [nausea, setNausea] = useState<boolean>(!!initialEntry?.nausea);
-  const [nauseaTypes, setNauseaTypes] = useState<string[]>(initialEntry?.nauseaTypes ?? []);
+  const [nauseaTypes, setNauseaTypes] = useState<string[]>((initialEntry?.nauseaTypes ?? []).map(stripEmoji));
   const [nauseaSeverity, setNauseaSeverity] = useState<number | undefined>(initialEntry?.nauseaSeverity);
   const [nauseaMinutes, setNauseaMinutes] = useState<string>(
     initialEntry?.nauseaMinutes != null ? String(initialEntry.nauseaMinutes) : "",
   );
   const [nauseaOngoing, setNauseaOngoing] = useState<boolean>(!!initialEntry?.nauseaOngoing);
-  const [nauseaTriggers, setNauseaTriggers] = useState<string[]>(initialEntry?.nauseaTriggers ?? []);
-  const [nauseaSymptoms, setNauseaSymptoms] = useState<string[]>(initialEntry?.nauseaSymptoms ?? []);
-  const [nauseaHelped, setNauseaHelped] = useState<string[]>(initialEntry?.nauseaHelped ?? []);
+  const [nauseaTriggers, setNauseaTriggers] = useState<string[]>((initialEntry?.nauseaTriggers ?? []).map(stripEmoji));
+  const [nauseaSymptoms, setNauseaSymptoms] = useState<string[]>((initialEntry?.nauseaSymptoms ?? []).map(stripEmoji));
+  const [nauseaHelped, setNauseaHelped] = useState<string[]>((initialEntry?.nauseaHelped ?? []).map(stripEmoji));
 
   // Quick update: copy the latest state, use the current time and jump to symptoms.
   const [quickSymptomUpdate, setQuickSymptomUpdate] = useState(false);
@@ -1629,13 +1629,13 @@ function PainWizard({
       pressureTypes: quality.includes("Pressure") && pressureTypes.length ? pressureTypes : undefined,
       pressureIntensity: quality.includes("Pressure") ? pressureIntensity : undefined,
       nausea: nausea || undefined,
-      nauseaTypes: nausea && nauseaTypes.length ? nauseaTypes : undefined,
+      nauseaTypes: nausea && nauseaTypes.length ? [...new Set(nauseaTypes.map(stripEmoji))] : undefined,
       nauseaSeverity: nausea ? nauseaSeverity : undefined,
       nauseaMinutes: nausea && !nauseaOngoing && nauseaMinutes !== "" ? Number(nauseaMinutes) : undefined,
       nauseaOngoing: nausea ? nauseaOngoing || undefined : undefined,
-      nauseaTriggers: nausea && nauseaTriggers.length ? nauseaTriggers : undefined,
-      nauseaSymptoms: nausea && nauseaSymptoms.length ? nauseaSymptoms : undefined,
-      nauseaHelped: nausea && nauseaHelped.length ? nauseaHelped : undefined,
+      nauseaTriggers: nausea && nauseaTriggers.length ? [...new Set(nauseaTriggers.map(stripEmoji))] : undefined,
+      nauseaSymptoms: nausea && nauseaSymptoms.length ? [...new Set(nauseaSymptoms.map(stripEmoji))] : undefined,
+      nauseaHelped: nausea && nauseaHelped.length ? [...new Set(nauseaHelped.map(stripEmoji))] : undefined,
       fluNote: symptoms.includes("Flu") && fluNote.trim() ? fluNote.trim() : undefined,
       pcosSymptoms: pcosSymptoms.length ? pcosSymptoms : undefined,
     };
@@ -1933,7 +1933,19 @@ function PainWizard({
           )}
           <Field label="Nausea?">
             <div className="mt-1 flex gap-2">
-              <Chip active={!nausea} onClick={() => setNausea(false)}>
+              <Chip
+                active={!nausea}
+                onClick={() => {
+                  setNausea(false);
+                  setNauseaTypes([]);
+                  setNauseaSeverity(undefined);
+                  setNauseaMinutes("");
+                  setNauseaOngoing(false);
+                  setNauseaTriggers([]);
+                  setNauseaSymptoms([]);
+                  setNauseaHelped([]);
+                }}
+              >
                 No
               </Chip>
               <Chip active={nausea} onClick={() => setNausea(true)}>
