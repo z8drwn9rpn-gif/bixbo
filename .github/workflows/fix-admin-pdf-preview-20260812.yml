@@ -1,0 +1,37 @@
+name: Fix admin and PDF preview 2026-08-12
+on:
+  push:
+    paths:
+      - scripts/fix_admin_pdf_preview_20260812.py
+      - .github/workflows/fix-admin-pdf-preview-20260812.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply fixes
+        run: python scripts/fix_admin_pdf_preview_20260812.py
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Typecheck
+        run: bun run typecheck
+      - name: Build
+        run: bun run build
+      - name: Commit fixes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/lib/adminCustomizeEvents.ts src/components/GlobalAdminModeController.tsx src/components/AdminEditOverlay.tsx src/components/UniversalAdminPageEditor.tsx src/components/UniversalTextAdminEditor.tsx src/components/NavigationAdminEditor.tsx src/routes/report.tsx
+          if git diff --cached --quiet; then
+            echo "No changes"
+          else
+            git commit -m "Fix admin toolbar actions and PDF preview"
+            git push origin HEAD:main
+          fi
