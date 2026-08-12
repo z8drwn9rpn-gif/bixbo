@@ -3406,7 +3406,7 @@ function DayPreview({
                   <p className="text-xs text-muted-foreground">
                     {p.time} · {t(PAIN_DESCRIPTIONS[Math.round(p.score)])}
                   </p>
-                  {p.parts.length > 0 && <p className="text-[15px] font-medium leading-snug">{p.parts.map(t).join(", ")}</p>}
+                  {p.parts.length > 0 && <p className="text-xs leading-relaxed text-muted-foreground">{p.parts.map(t).join(", ")}</p>}
                   <div className="my-2 border-t border-border/60" />
                   {p.quality.length > 0 && (
                     <p className="text-xs leading-relaxed text-muted-foreground">
@@ -3448,18 +3448,18 @@ function DayPreview({
                     </p>
                   ) : null}
                   {p.hotFlashes != null && (
-                    <p className="text-xs text-muted-foreground">
-                      <Ico e="🥵" size={13} /> {t("Hot flashes intensity")} {p.hotFlashes}/5
+                    <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                      <span className="font-semibold text-foreground">{t("Hot flashes")}:</span>{" "}{p.hotFlashes}/5
                     </p>
                   )}
                   {p.headacheTypes?.length ? (
-                    <p className="text-xs text-muted-foreground">
-                      <Ico e="🤕" size={13} /> {t("Headache")}: {p.headacheTypes.map(t).join(", ")}
-                      {p.headacheIntensity != null ? ` · ${p.headacheIntensity}/10` : ""}
+                    <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                      <span className="font-semibold text-foreground">{t("Headache")}:</span>{" "}{p.headacheTypes.map(t).join(", ")}
+                      {p.headacheIntensity != null ? ` ${p.headacheIntensity}/10` : ""}
                     </p>
                   ) : p.headacheIntensity != null ? (
-                    <p className="text-xs text-muted-foreground">
-                      <Ico e="🤕" size={13} /> {t("Headache intensity")} {p.headacheIntensity}/10
+                    <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                      <span className="font-semibold text-foreground">{t("Headache")}:</span>{" "}{p.headacheIntensity}/10
                     </p>
                   ) : null}
                   {p.headacheMed ? (
@@ -3476,7 +3476,7 @@ function DayPreview({
                       {t("Mood")}: <IcoText text={p.mood.map(t).join(", ")} size={13} />
                     </p>
                   ) : null}
-                  {p.stress != null && <p className="text-xs text-muted-foreground">{t("Stress")} {p.stress}/10</p>}
+                  {p.stress != null && <p className="mt-2 text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">{t("Stress")}:</span> {p.stress}/10</p>}
                   {p.bodyBattery != null && <p className="mt-2 text-xs text-muted-foreground"><span className="font-semibold text-foreground">{t("Battery")}:</span> {p.bodyBattery}/5</p>}
                   {p.note && <p className="mt-1 text-sm whitespace-pre-line">"{p.note}"</p>}
                   <p className="mt-1 text-[10px] text-primary">{t("Tap to edit")}</p>
