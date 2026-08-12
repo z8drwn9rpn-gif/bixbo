@@ -4,10 +4,9 @@ import { useI18n } from "@/hooks/useI18n";
 import { DEVICE_ADMIN_CONFIG_CHANGED } from "@/lib/deviceAdminConfig";
 import { GLOBAL_ADMIN_CONFIG_CHANGED } from "@/lib/globalAdminConfig";
 import { BIXBO_NAVIGATION, resolvedNavigation, type NavigationItemId } from "@/lib/navigationRegistry";
-import exactHomeArtwork from "@/assets/nav-home-exact.webp";
 import exactCoupleArtwork from "@/assets/nav-couple-exact.webp";
+import { BottomNavHomeIcon } from "@/components/icons/BottomNavReferenceIcons";
 import {
-  NavHomeIcon,
   NavOverviewIcon,
   NavCoupleIcon,
   NavNoteIcon,
@@ -17,7 +16,7 @@ import {
 } from "@/components/icons/BixboIcons";
 
 const ICONS: Record<NavigationItemId, ComponentType<IconProps>> = {
-  home: NavHomeIcon,
+  home: BottomNavHomeIcon,
   overview: NavOverviewIcon,
   log: NavLogIcon,
   couple: NavCoupleIcon,
@@ -25,9 +24,8 @@ const ICONS: Record<NavigationItemId, ComponentType<IconProps>> = {
   healthProfile: User,
 };
 
-/** Home and Couple use the same bundled, fingerprinted user artwork as BottomNav. */
+/** Couple keeps its bundled, fingerprinted artwork. Home uses the SVG icon so it cannot fall back to a broken image. */
 const NAV_IMAGE_SRC: Partial<Record<NavigationItemId, string>> = {
-  home: exactHomeArtwork,
   overview: "/nav-assets/nav-overview.webp",
   couple: exactCoupleArtwork,
   notes: "/nav-assets/nav-note.webp",
