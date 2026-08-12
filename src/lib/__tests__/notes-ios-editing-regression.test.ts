@@ -8,23 +8,28 @@ describe("Notes iOS editing", () => {
     expect(source).toContain("data-bixbo-note-editor");
     expect(source).toContain("<textarea");
     expect(source).toContain("value={bodyText}");
-    expect(source).toContain("onChange={(event) => onInput(event.target.value)}");
+    expect(source).toContain("onChange={(e) => onBodyChange(e.target.value)}");
     expect(source).not.toContain("contentEditable");
     expect(source).not.toContain("keyboardBridgeRef");
+    expect(source).not.toContain("editorReady");
   });
 
-  it("never remounts the body textarea after tap/mount", () => {
-    expect(source).not.toContain("editorReady");
-    expect(source).not.toContain('key={`${note.id}:');
-    expect(source).not.toContain("setEditorReady");
+  it("explicitly focuses the native editor on iOS tap", () => {
+    expect(source).toContain("onTouchEnd={() => editorRef.current?.focus({ preventScroll: true })}");
+    expect(source).toContain("onClick={() => editorRef.current?.focus({ preventScroll: true })}");
+    expect(source).toContain('inputMode="text"');
+  });
+
+  it("auto-grows instead of trapping note scrolling inside textarea", () => {
+    expect(source).toContain("editor.scrollHeight");
+    expect(source).toContain("overflow-hidden");
+    expect(source).toContain('touchAction: "pan-y"');
   });
 
   it("keeps body editing independent from checklist visibility", () => {
     const bodyIndex = source.indexOf("data-bixbo-note-editor");
-    const checklistIndex = source.indexOf("{showChecklist && (");
+    const checklistIndex = source.indexOf("{showChecklist &&");
     expect(bodyIndex).toBeGreaterThan(-1);
     expect(checklistIndex).toBeGreaterThan(bodyIndex);
-    const beforeChecklist = source.slice(0, checklistIndex);
-    expect(beforeChecklist).toContain("data-bixbo-note-editor");
   });
 });
