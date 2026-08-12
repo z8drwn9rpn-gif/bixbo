@@ -3406,7 +3406,12 @@ function DayPreview({
                   <p className="text-xs text-muted-foreground">
                     {p.time} · {t(PAIN_DESCRIPTIONS[Math.round(p.score)])}
                   </p>
-                  {p.parts.length > 0 && <p className="text-xs leading-relaxed text-muted-foreground">{p.parts.map(t).join(", ")}</p>}
+                  {p.parts.length > 0 && (
+                    <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                      <span className="font-semibold text-foreground">{t("Body")}:</span>{" "}
+                      {p.parts.map(t).join(", ")}
+                    </p>
+                  )}
                   <div className="my-2 border-t border-border/60" />
                   {p.quality.length > 0 && (
                     <p className="text-xs leading-relaxed text-muted-foreground">
