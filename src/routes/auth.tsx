@@ -7,7 +7,13 @@ import { useI18n } from "@/hooks/useI18n";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 
+function safeNext(value: unknown): string {
+  if (typeof value !== "string" || !value.startsWith("/") || value.startsWith("//")) return "";
+  return value;
+}
+
 export const Route = createFileRoute("/auth")({
+  validateSearch: (s: Record<string, unknown>) => ({ next: safeNext(s.next) }),
   head: () => ({
     meta: [
       { title: "BIXBO — Sign in" },
@@ -19,8 +25,10 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
+
 function AuthPage() {
   const navigate = useNavigate();
+  const { next } = Route.useSearch();
   const { t } = useI18n();
   const [mode, setMode] = useState<"in" | "up">("in");
   const [email, setEmail] = useState("");
@@ -29,6 +37,14 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
+  const goNext = () => {
+    if (next) {
+      window.location.href = next;
+      return;
+    }
+    navigate({ to: "/settings" });
+  };
+
   useEffect(() => {
     let cancelled = false;
 
@@ -36,7 +52,10 @@ function AuthPage() {
       .getSession()
       .then(({ data, error }) => {
         if (error) throw error;
-        if (!cancelled && data.session) navigate({ to: "/settings" });
+        if (!cancelled && data.session) {
+          if (next) window.location.href = next;
+          else navigate({ to: "/settings" });
+        }
       })
       .catch((error) => {
         if (!cancelled) setMsg(error instanceof Error ? error.message : String(error));
@@ -45,7 +64,7 @@ function AuthPage() {
     return () => {
       cancelled = true;
     };
-  }, [navigate]);
+  }, [navigate, next]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,15 +75,18 @@ function AuthPage() {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: `${window.location.origin}/`, data: { display_name: name || undefined } },
+          options: {
+            emailRedirectTo: `${window.location.origin}${next || "/"}`,
+            data: { display_name: name || undefined },
+          },
         });
         if (error) throw error;
         setMsg(t("Account created. If email confirmation is on, check your inbox — otherwise you're signed in."));
-        setTimeout(() => navigate({ to: "/settings" }), 400);
+        setTimeout(goNext, 400);
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate({ to: "/settings" });
+        goNext();
       }
     } catch (err) {
       setMsg(err instanceof Error ? err.message : String(err));
@@ -79,19 +101,20 @@ function AuthPage() {
 
     try {
       const result = await lovable.auth.signInWithOAuth(provider, {
-        redirect_uri: window.location.origin,
+        redirect_uri: `${window.location.origin}${next || ""}`,
       });
 
       if (result.error) throw result.error;
       if (result.redirected) return;
 
-      navigate({ to: "/settings" });
+      goNext();
     } catch (err) {
       setMsg(err instanceof Error ? err.message : String(err));
     } finally {
       setBusy(false);
     }
   };
+
 
   const google = () => void startOAuth("google");
   const apple = () => void startOAuth("apple");
