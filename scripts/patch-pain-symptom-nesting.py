@@ -20,10 +20,10 @@ if close_pos < 0:
     raise SystemExit("Pain row closing marker not found")
 
 nested = '''                />
-                {log.pain.some((entry) => entry.entryKind === "symptom-update" && entry.sourcePainId === p.id) ? (
+                {(log.pain ?? []).some((entry) => entry.entryKind === "symptom-update" && entry.sourcePainId === p.id) ? (
                   <div className="basis-full pl-12 pr-7">
                     <div className="mt-1 space-y-2 border-l-2 border-primary/25 pl-3">
-                      {log.pain
+                      {(log.pain ?? [])
                         .filter((entry) => entry.entryKind === "symptom-update" && entry.sourcePainId === p.id)
                         .map((entry) => (
                           <div key={entry.id} className="flex items-start gap-2 rounded-xl bg-primary/5 px-2.5 py-2 ring-1 ring-primary/15">
