@@ -17,7 +17,7 @@ describe("Period and Workout admin field order", () => {
 
   it("respects admin order without changing stable IDs", () => {
     const data = { ...EMPTY, settings: { ...EMPTY.settings, adminConfig: { enabled: true, features: {
-      period: { fields: { pregnant: { order: 1 }, flow: { order: 999 } } },
+      period: { fields: { pregnant: { enabled: true, order: 1 }, flow: { order: 999 } } },
       workout: { fields: { note: { order: 1 }, kind: { order: 999 } } },
     } } } };
     expect(registryFieldsForFeature(data, "period").map((f) => f.id)[0]).toBe("pregnant");
