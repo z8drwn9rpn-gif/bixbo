@@ -7,8 +7,8 @@ describe("Notes iOS editing", () => {
   it("uses one stable native textarea for the note body", () => {
     expect(source).toContain("data-bixbo-note-editor");
     expect(source).toContain("<textarea");
-    expect(source).toContain("value={bodyText}");
-    expect(source).toContain("onChange={(e) => onBodyChange(e.currentTarget)}");
+    expect(source).toContain("defaultValue={contentRef.current}");
+    expect(source).toContain("onInput={(event) => scheduleBodySave(event.currentTarget)}");
     expect(source).not.toContain("contentEditable");
     expect(source).not.toContain("keyboardBridgeRef");
     expect(source).not.toContain("editorReady");
