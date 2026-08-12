@@ -11,12 +11,14 @@ describe("Pain symptom-only follow-ups", () => {
     expect(avgDayPain(log)).toBe(8);
   });
 
-  it("keeps symptom-only updates separate in editor and Today preview", () => {
+  it("keeps symptom-only data separate but nests linked updates under source pain", () => {
     const sheet = readFileSync(resolve(process.cwd(), "src/components/LogSheet.tsx"), "utf8");
     const home = readFileSync(resolve(process.cwd(), "src/routes/index.tsx"), "utf8");
     expect(sheet).toContain('entryKind: quickSymptomUpdate ? "symptom-update" : undefined');
     expect(sheet).toContain('setSymptoms([])');
     expect(sheet).toContain('t("Save symptoms")');
     expect(home).toContain('<Card title="Add symptoms" icon="➕">');
+    expect(home).toContain('entry.sourcePainId === p.id');
+    expect(home).toContain('entry.entryKind === "symptom-update" && !entry.sourcePainId');
   });
 });

@@ -3393,7 +3393,7 @@ function DayPreview({
         <Card title="Pain" icon="🔥">
           <ul className="space-y-2">
             {log.pain.filter((p) => p.entryKind !== "symptom-update").map((p) => (
-              <li key={p.id} className="flex items-start gap-3">
+              <li key={p.id} className="flex flex-wrap items-start gap-3">
                 <button
                   onClick={() => onEditPain?.(p)}
                   className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-sm font-bold text-white"
@@ -3480,6 +3480,47 @@ function DayPreview({
                     }))
                   }
                 />
+                {(log.pain ?? []).some((entry) => entry.entryKind === "symptom-update" && entry.sourcePainId === p.id) ? (
+                  <div className="basis-full pl-12 pr-7">
+                    <div className="mt-1 space-y-2 border-l-2 border-primary/25 pl-3">
+                      {(log.pain ?? [])
+                        .filter((entry) => entry.entryKind === "symptom-update" && entry.sourcePainId === p.id)
+                        .map((entry) => (
+                          <div key={entry.id} className="flex items-start gap-2 rounded-xl bg-primary/5 px-2.5 py-2 ring-1 ring-primary/15">
+                            <button onClick={() => onEditPain?.(entry)} className="min-w-0 flex-1 text-left">
+                              <p className="text-[11px] font-semibold text-primary">{entry.time} · {t("Add symptoms")}</p>
+                              {entry.symptoms.length > 0 ? <p className="mt-0.5 text-sm">{entry.symptoms.map(t).join(", ")}</p> : null}
+                              {entry.nausea || entry.nauseaSeverity != null || entry.nauseaTypes?.length ? (
+                                <p className="text-sm">{t("Nausea")}{entry.nauseaSeverity != null ? ` ${entry.nauseaSeverity}/10` : ""}{entry.nauseaTypes?.length ? ` · ${entry.nauseaTypes.map(t).join(", ")}` : ""}</p>
+                              ) : null}
+                              {entry.headache || entry.headacheIntensity != null || entry.headacheTypes?.length ? (
+                                <p className="text-sm">{t("Headache")}{entry.headacheIntensity != null ? ` ${entry.headacheIntensity}/10` : ""}{entry.headacheTypes?.length ? ` · ${entry.headacheTypes.map(t).join(", ")}` : ""}</p>
+                              ) : null}
+                              {entry.hotFlashesOn || entry.hotFlashes != null ? <p className="text-sm">{t("Hot flashes")}{entry.hotFlashes != null ? ` ${entry.hotFlashes}/5` : ""}</p> : null}
+                              {entry.pcosSymptoms?.length ? <p className="text-sm">PCOS: {entry.pcosSymptoms.map(t).join(", ")}</p> : null}
+                              {entry.fluNote ? <p className="text-sm">Flu: {entry.fluNote}</p> : null}
+                              {entry.note ? <p className="mt-1 whitespace-pre-line text-sm">{entry.note}</p> : null}
+                              <p className="mt-1 text-[10px] text-primary">{t("Tap to edit")}</p>
+                            </button>
+                            <DeleteBtn
+                              onClick={() =>
+                                update((d) => ({
+                                  ...d,
+                                  dayLogs: {
+                                    ...d.dayLogs,
+                                    [date]: {
+                                      ...d.dayLogs[date],
+                                      pain: (d.dayLogs[date]?.pain ?? []).filter((item) => item.id !== entry.id),
+                                    },
+                                  },
+                                }))
+                              }
+                            />
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                ) : null}
               </li>
             ))}
           </ul>
@@ -3487,11 +3528,11 @@ function DayPreview({
       )) ||
         null}
 
-      {log?.pain?.some((entry) => entry.entryKind === "symptom-update") ? (
+      {log?.pain?.some((entry) => entry.entryKind === "symptom-update" && !entry.sourcePainId) ? (
         <Card title="Add symptoms" icon="➕">
           <ul className="space-y-2">
             {log.pain
-              .filter((entry) => entry.entryKind === "symptom-update")
+              .filter((entry) => entry.entryKind === "symptom-update" && !entry.sourcePainId)
               .map((entry) => (
                 <li key={entry.id} className="flex items-start gap-2">
                   <button onClick={() => onEditPain?.(entry)} className="min-w-0 flex-1 text-left">
