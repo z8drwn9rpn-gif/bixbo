@@ -20,6 +20,7 @@ import {
   PAIN_DESCRIPTIONS,
   painColor,
   avgDayPain,
+  medScheduleItems,
 } from "@/lib/storage";
 
 const WD_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -943,26 +944,32 @@ function MedsAdherence({
   const perDay = useMemo(
     () =>
       days.map((date) => {
-        const missed: { medName: string; time: string; key: string }[] = [];
-        const takenList: { medName: string; time: string; key: string }[] = [];
+        const missed: { medName: string; time: string; key: string; item: string }[] = [];
+        const takenList: { medName: string; time: string; key: string; item: string }[] = [];
         let expected = 0;
         let taken = 0;
 
         scheduled.forEach((med) => {
+          const scheduleItems = medScheduleItems(med);
           med.times.forEach((time) => {
             const key = `${med.id}@${time}`;
             const isTaken = !!data.medLog[date]?.[key];
 
             if (!isDoseEligibleNow(date, time, isTaken, adherenceNow)) return;
 
-            expected += 1;
+            expected += scheduleItems.length;
+            const storedItems = data.medLogItems?.[date]?.[key];
+            const selectedItems = storedItems ?? (isTaken ? scheduleItems : []);
+            const selectedSet = new Set(selectedItems.filter((item) => scheduleItems.includes(item)));
 
-            if (isTaken) {
-              taken += 1;
-              takenList.push({ medName: med.name, time, key });
-            } else {
-              missed.push({ medName: med.name, time, key });
-            }
+            scheduleItems.forEach((item) => {
+              if (selectedSet.has(item)) {
+                taken += 1;
+                takenList.push({ medName: item, time, key, item });
+              } else {
+                missed.push({ medName: item, time, key, item });
+              }
+            });
           });
         });
 
@@ -977,6 +984,7 @@ function MedsAdherence({
       }),
     [
       data.medLog,
+      data.medLogItems,
       days,
       scheduled,
       adherenceNow.getFullYear(),
@@ -1003,37 +1011,43 @@ function MedsAdherence({
     () =>
       scheduled
         .flatMap((med) =>
-          med.times.map((time) => {
-            let expected = 0;
-            let taken = 0;
+          med.times.flatMap((time) =>
+            medScheduleItems(med).map((item) => {
+              let expected = 0;
+              let taken = 0;
 
-            days.forEach((date) => {
-              const key = `${med.id}@${time}`;
-              const isTaken = !!data.medLog[date]?.[key];
+              days.forEach((date) => {
+                const key = `${med.id}@${time}`;
+                const isTaken = !!data.medLog[date]?.[key];
 
-              if (!isDoseEligibleNow(date, time, isTaken, adherenceNow)) return;
+                if (!isDoseEligibleNow(date, time, isTaken, adherenceNow)) return;
 
-              expected += 1;
-              if (isTaken) taken += 1;
-            });
+                expected += 1;
+                const allItems = medScheduleItems(med);
+                const storedItems = data.medLogItems?.[date]?.[key];
+                const selectedItems = storedItems ?? (isTaken ? allItems : []);
+                if (selectedItems.includes(item)) taken += 1;
+              });
 
-            const pct = expected ? Math.round((taken / expected) * 100) : null;
+              const pct = expected ? Math.round((taken / expected) * 100) : null;
 
-            return {
-              id: `${med.id}@${time}`,
-              name: med.name,
-              dose: med.dose,
-              time,
-              taken,
-              expected,
-              pct,
-            };
-          }),
+              return {
+                id: `${med.id}@${time}@${item}`,
+                name: item,
+                dose: med.dose,
+                time,
+                taken,
+                expected,
+                pct,
+              };
+            }),
+          ),
         )
         .filter((entry) => entry.expected > 0)
         .sort((a, b) => (a.pct ?? 0) - (b.pct ?? 0)),
     [
       data.medLog,
+      data.medLogItems,
       days,
       scheduled,
       adherenceNow.getFullYear(),
@@ -1088,18 +1102,47 @@ function MedsAdherence({
     }));
   }, [data.medLog, data.medNames, days, knownIds]);
 
-  const toggleDose = (dayKey: string, medKey: string) =>
+  const toggleDose = (dayKey: string, medKey: string, item?: string) =>
     update((current) => {
       const day = { ...(current.medLog[dayKey] ?? {}) };
+      const dayItems = { ...(current.medLogItems?.[dayKey] ?? {}) };
 
-      if (day[medKey]) delete day[medKey];
-      else day[medKey] = true;
+      if (!item) {
+        if (day[medKey]) {
+          delete day[medKey];
+          delete dayItems[medKey];
+        } else {
+          day[medKey] = true;
+        }
+      } else {
+        const [medId, time] = medKey.split("@");
+        const med = current.meds.find((entry) => entry.id === medId);
+        const allItems = med ? medScheduleItems(med) : [item];
+        const existing = dayItems[medKey] ?? (day[medKey] ? allItems : []);
+        const next = new Set(existing.filter((name) => allItems.includes(name)));
+
+        if (next.has(item)) next.delete(item);
+        else next.add(item);
+
+        const selected = allItems.filter((name) => next.has(name));
+        if (selected.length) {
+          day[medKey] = true;
+          dayItems[medKey] = selected;
+        } else {
+          delete day[medKey];
+          delete dayItems[medKey];
+        }
+      }
 
       return {
         ...current,
         medLog: {
           ...current.medLog,
           [dayKey]: day,
+        },
+        medLogItems: {
+          ...(current.medLogItems ?? {}),
+          [dayKey]: dayItems,
         },
       };
     });
@@ -1291,7 +1334,7 @@ function MedsAdherence({
                               <li key={med.key}>
                                 <button
                                   type="button"
-                                  onClick={() => toggleDose(day.date, med.key)}
+                                  onClick={() => toggleDose(day.date, med.key, med.item)}
                                   className="text-left hover:underline"
                                   style={{ color: "#28A85B" }}
                                   title={t("Tap to uncheck")}
@@ -1310,7 +1353,7 @@ function MedsAdherence({
                               <li key={med.key}>
                                 <button
                                   type="button"
-                                  onClick={() => toggleDose(day.date, med.key)}
+                                  onClick={() => toggleDose(day.date, med.key, med.item)}
                                   className="text-left hover:underline"
                                   title={t("Tap to mark taken")}
                                 >
