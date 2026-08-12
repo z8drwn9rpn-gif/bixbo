@@ -30,3 +30,4 @@ jobs:
           git diff --cached --check
           git commit -m "Compact medication rows"
           git push origin HEAD:main
+# Trigger compact meds rows patch
