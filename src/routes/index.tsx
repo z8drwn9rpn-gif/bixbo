@@ -1075,7 +1075,15 @@ function HomePage() {
       {/* Top vitals row */}
       <div className="mt-3 grid grid-cols-5 gap-2 px-5 lg:grid-cols-4 lg:px-1" style={{ order: layoutOrder(view, "home", "vitals", 60) }}>
         <div className="col-span-2 lg:col-span-1">
-          <MedsProgress data={view} />
+          <MedsProgress
+            data={view}
+            onClick={() => {
+              setQuickCat("meds");
+              setEditPain(undefined);
+              setEditEntry(undefined);
+              setLogOpen(true);
+            }}
+          />
         </div>
 
         <VitalTile
@@ -2794,14 +2802,19 @@ function VitalTile({
   );
 }
 
-function MedsProgress({ data }: { data: BixboData }) {
+function MedsProgress({ data, onClick }: { data: BixboData; onClick: () => void }) {
   const { t } = useI18n();
   const k = todayKey();
   const scheduled = data.meds.filter((m) => !m.asNeeded);
   const total = scheduled.reduce((s, m) => s + m.times.length, 0);
   const taken = scheduled.reduce((s, m) => s + m.times.filter((t) => data.medLog[k]?.[`${m.id}@${t}`]).length, 0);
   return (
-    <div className="flex items-center justify-between rounded-2xl bg-surface p-3 ring-1 ring-border">
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center justify-between rounded-2xl bg-surface p-3 text-left ring-1 ring-border transition hover:bg-tint active:scale-[0.99]"
+      aria-label={t("Open meds log")}
+    >
       <div>
         <p className="text-xs text-muted-foreground">{t("Meds today")}</p>
         <p className="font-serif text-lg font-bold">
@@ -2811,7 +2824,7 @@ function MedsProgress({ data }: { data: BixboData }) {
       <div className="grid h-10 w-10 place-items-center rounded-full bg-primary/15 text-primary">
         <PillIcon size={20} />
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -3296,21 +3309,7 @@ function DayPreview({
     return String(value);
   };
 
-  const markMissedTaken = (medKey: string) =>
-    update((d) => ({
-      ...d,
-      medLog: { ...d.medLog, [date]: { ...(d.medLog[date] ?? {}), [medKey]: true } },
-      medLogTimes: {
-        ...(d.medLogTimes ?? {}),
-        [date]: {
-          ...(d.medLogTimes?.[date] ?? {}),
-          [medKey]: (() => {
-            const n = new Date();
-            return `${String(n.getHours()).padStart(2, "0")}:${String(n.getMinutes()).padStart(2, "0")}`;
-          })(),
-        },
-      },
-    }));
+
 
   return (
     <div className="space-y-3 px-5 pt-3 pb-32">
@@ -3324,19 +3323,9 @@ function DayPreview({
               return (
                 <li key={x.key}>
                   <button
-                    onClick={() =>
-                      update((d) => {
-                        const day = { ...(d.medLog[date] ?? {}) };
-                        delete day[x.key];
-                        const times = { ...(d.medLogTimes?.[date] ?? {}) };
-                        delete times[x.key];
-                        const items = { ...(d.medLogItems?.[date] ?? {}) };
-                        delete items[x.key];
-                        return { ...d, medLog: { ...d.medLog, [date]: day }, medLogTimes: { ...(d.medLogTimes ?? {}), [date]: times }, medLogItems: { ...(d.medLogItems ?? {}), [date]: items } };
-                      })
-                    }
+                    onClick={() => onEdit?.("meds", undefined)}
                     className="text-left text-green-700 hover:underline"
-                    title={t("Tap to uncheck")}
+                    title={t("Tap to edit meds")}
                   >
                     {(() => {
                       const all = medScheduleItems(x.med);
@@ -3348,7 +3337,7 @@ function DayPreview({
                         {shifted && <span className="text-[10px] text-muted-foreground"> · {t("scheduled")} {x.time}</span>}
                         {omitted.length ? <span className="block text-[10px] text-destructive">{t("Not taken")}: {omitted.join(", ")}</span> : null}
                         {data.medLogNotes?.[date]?.[x.key] ? <span className="block text-[10px] text-muted-foreground">{t("Note")}: {data.medLogNotes?.[date]?.[x.key]}</span> : null}
-                        <span className="text-[10px] text-muted-foreground"> · {t("tap to uncheck")}</span>
+                        <span className="text-[10px] text-primary"> · {t("Tap to edit")}</span>
                       </>;
                     })()}
                     {medNote ? (
@@ -3361,13 +3350,13 @@ function DayPreview({
             {missedList.map((x) => (
               <li key={x.key} className="flex items-start gap-2">
                 <button
-                  onClick={() => markMissedTaken(x.key)}
+                  onClick={() => onEdit?.("meds", undefined)}
                   className="flex-1 text-left text-destructive/90"
-                  title={t("Tap to mark taken")}
+                  title={t("Tap to edit meds")}
                 >
                   {t("Missed")} · {x.time} — {x.med.name}
                   {x.med.dose ? ` (${x.med.dose})` : ""}{" "}
-                  <span className="text-[10px] text-muted-foreground">· {t("missed (tap if taken)")}</span>
+                  <span className="text-[10px] text-primary">· {t("Tap to edit")}</span>
                   {data.medLogNotes?.[date]?.[x.key] ? (
                     <span className="mt-0.5 block text-[11px] text-muted-foreground"><span className="font-semibold text-foreground">{t("Note")}:</span> {data.medLogNotes[date][x.key]}</span>
                   ) : null}
