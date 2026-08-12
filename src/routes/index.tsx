@@ -3500,7 +3500,6 @@ function DayPreview({
           <ul className="space-y-1 text-sm">
             {takenList.map((x) => {
               const actual = data.medLogTimes?.[date]?.[x.key];
-              const medNote = data.medLogNotes?.[date]?.[x.key];
               const shifted = actual && actual !== x.time;
               return (
                 <li key={x.key}>
@@ -3522,9 +3521,6 @@ function DayPreview({
                         <span className="text-[10px] text-primary"> · {t("Tap to edit")}</span>
                       </>;
                     })()}
-                    {medNote ? (
-                      <span className="mt-0.5 block text-[11px] text-muted-foreground"><span className="font-semibold text-foreground">{t("Note")}:</span> {medNote}</span>
-                    ) : null}
                   </button>
                 </li>
               );
