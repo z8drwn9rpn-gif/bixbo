@@ -7,6 +7,7 @@ import { layoutOrder } from "@/lib/layoutRegistry";
 import { isAdminOwnerAccount } from "@/lib/deviceAdmin";
 import { customLogDefinitions, type RegistryFieldDefinition } from "@/lib/appRegistry";
 import {
+  BlueberryIcon,
   ClockIcon,
   FlameIcon,
   HeartIcon,
@@ -1655,7 +1656,7 @@ function BirthControlSummaryCard({
     >
       <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/15 text-primary">
-          <Ico e="💊" size={20} />
+          <BlueberryIcon size={20} />
         </span>
 
         <div className="min-w-0">
