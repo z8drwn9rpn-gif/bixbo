@@ -754,7 +754,7 @@ export function LogSheet({
               }`}
             >
               <button onClick={back} className="flex items-center gap-1 text-sm text-muted-foreground">
-                <ChevronLeft className="h-4 w-4" /> {t("Back to Log")}
+                <ChevronLeft className="h-3.5 w-3.5 shrink-0" /> {t("Back to Log")}
               </button>
               <SheetTitle className="font-serif text-lg">{t(orderedCats.find((c) => c.id === active)?.label ?? CATEGORIES.find((c) => c.id === active)?.label ?? "")}</SheetTitle>
               <button onClick={close} aria-label={t("Close")} className="rounded-full p-1 hover:bg-tint">
@@ -4024,7 +4024,7 @@ function TempForm({
                   aria-label={`Delete temperature ${entry.value}`}
                   className="rounded-full p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-3.5 w-3.5 shrink-0" />
                 </button>
               </div>
             ))}
@@ -4070,7 +4070,7 @@ function TempForm({
                   aria-label={`Delete weight ${entry.value}`}
                   className="rounded-full p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-3.5 w-3.5 shrink-0" />
                 </button>
               </div>
             ))}
@@ -4190,16 +4190,16 @@ function MedsForm({
           <div className="mt-2 space-y-2">
             {meds.map((m) =>
               m.asNeeded ? (
-                <label key={m.id} className="flex items-center gap-3 rounded-2xl bg-surface p-3 ring-1 ring-border">
+                <label key={m.id} className="flex items-center gap-2 rounded-xl bg-surface px-2.5 py-2 ring-1 ring-border">
                   <input
                     type="checkbox"
                     checked={!!taken[`${m.id}@asneeded`]}
                     onChange={() => toggle(`${m.id}@asneeded`, nowHHMM())}
-                    className="h-4 w-4"
+                    className="h-3.5 w-3.5 shrink-0"
                   />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">{m.name}</p>
-                    <p className="text-xs text-muted-foreground">{t("As needed")}{m.dose ? ` · ${m.dose}` : ""}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium leading-tight">{m.name}</p>
+                    <p className="text-[10px] leading-tight text-muted-foreground">{t("As needed")}{m.dose ? ` · ${m.dose}` : ""}</p>
                     {m.note && (
                       <p className="text-[11px] text-muted-foreground">
                         <Ico e="📝" size={13} /> <IcoText text={m.note} size={12} />
@@ -4211,7 +4211,7 @@ function MedsForm({
                       type="time"
                       value={takenTimes[`${m.id}@asneeded`] ?? nowHHMM()}
                       onChange={(e) => setTakenTime(`${m.id}@asneeded`, e.target.value)}
-                      className="h-8 w-24"
+                      className="h-7 w-20 px-2 text-xs"
                     />
                   )}
                   <Input
@@ -4219,7 +4219,7 @@ function MedsForm({
                     onChange={(e) => setMedNote(`${m.id}@asneeded`, e.target.value)}
                     onClick={(e) => e.stopPropagation()}
                     placeholder={t("Note (optional)")}
-                    className="h-8 min-w-0 flex-[0_1_150px]"
+                    className="h-7 min-w-0 flex-[0_1_125px] px-2 text-xs"
                   />
                 </label>
               ) : (
@@ -4227,13 +4227,13 @@ function MedsForm({
                   const k = `${m.id}@${scheduledTime}`;
                   const isTaken = !!taken[k];
                   return (
-                    <label key={k} className="flex items-center gap-3 rounded-2xl bg-surface p-3 ring-1 ring-border">
-                      <input type="checkbox" checked={isTaken} onChange={() => toggle(k, scheduledTime)} className="h-4 w-4" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">
-                          {m.name} <span className="text-xs text-muted-foreground">· scheduled {scheduledTime}</span>
+                    <label key={k} className="flex items-center gap-2 rounded-xl bg-surface px-2.5 py-2 ring-1 ring-border">
+                      <input type="checkbox" checked={isTaken} onChange={() => toggle(k, scheduledTime)} className="h-3.5 w-3.5 shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium leading-tight">
+                          {m.name} <span className="text-[10px] font-normal text-muted-foreground">· scheduled {scheduledTime}</span>
                         </p>
-                        {m.dose && <p className="text-xs text-muted-foreground">{m.dose}</p>}
+                        {m.dose && <p className="text-[10px] leading-tight text-muted-foreground">{m.dose}</p>}
                         {m.note && (
                           <p className="text-[11px] text-muted-foreground">
                             <Ico e="📝" size={13} /> <IcoText text={m.note} size={12} />
@@ -4245,7 +4245,7 @@ function MedsForm({
                           type="time"
                           value={takenTimes[k] ?? scheduledTime}
                           onChange={(e) => setTakenTime(k, e.target.value)}
-                          className="h-8 w-24"
+                          className="h-7 w-20 px-2 text-xs"
                           title={t("Actual time taken")}
                         />
                       )}
@@ -4254,7 +4254,7 @@ function MedsForm({
                         onChange={(e) => setMedNote(k, e.target.value)}
                         onClick={(e) => e.stopPropagation()}
                         placeholder={t("Note (optional)")}
-                        className="h-8 min-w-0 flex-[0_1_150px]"
+                        className="h-7 min-w-0 flex-[0_1_125px] px-2 text-xs"
                       />
                     </label>
                   );
@@ -4428,7 +4428,7 @@ function WorkoutForm({
                     onClick={() => setExercises((a) => a.filter((_, j) => j !== i))}
                     className="rounded-full p-2 text-muted-foreground hover:text-destructive"
                   >
-                    <X className="h-4 w-4" />
+                    <X className="h-3.5 w-3.5 shrink-0" />
                   </button>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
@@ -4481,7 +4481,7 @@ function WorkoutForm({
               size="sm"
               onClick={() => setExercises((a) => [...a, { id: crypto.randomUUID(), name: "" }])}
             >
-              <Plus className="h-4 w-4" /><TrText value="Add exercise" /></Button>
+              <Plus className="h-3.5 w-3.5 shrink-0" /><TrText value="Add exercise" /></Button>
           </div>
         </Field>
       )}
