@@ -8,22 +8,25 @@ describe("Notes iOS editing", () => {
     expect(source).toContain("data-bixbo-note-editor");
     expect(source).toContain("<textarea");
     expect(source).toContain("value={bodyText}");
-    expect(source).toContain("onChange={(e) => onBodyChange(e.target.value)}");
+    expect(source).toContain("onChange={(e) => onBodyChange(e.currentTarget)}");
     expect(source).not.toContain("contentEditable");
     expect(source).not.toContain("keyboardBridgeRef");
     expect(source).not.toContain("editorReady");
   });
 
-  it("explicitly focuses the native editor on iOS tap", () => {
-    expect(source).toContain("onTouchEnd={() => editorRef.current?.focus({ preventScroll: true })}");
-    expect(source).toContain("onClick={() => editorRef.current?.focus({ preventScroll: true })}");
+  it("leaves tap-to-focus to the native iOS textarea", () => {
+    expect(source).not.toContain("onTouchEnd={() => editorRef.current?.focus");
+    expect(source).not.toContain("onClick={() => editorRef.current?.focus");
+    expect(source).not.toContain('touchAction: "pan-y"');
     expect(source).toContain('inputMode="text"');
   });
 
-  it("auto-grows instead of trapping note scrolling inside textarea", () => {
+  it("does not collapse and recreate the textarea height on each keystroke", () => {
+    expect(source).not.toContain("useLayoutEffect");
+    expect(source).not.toContain('editor.style.height = "0px"');
     expect(source).toContain("editor.scrollHeight");
+    expect(source).toContain("fitEditorToContent(editor)");
     expect(source).toContain("overflow-hidden");
-    expect(source).toContain('touchAction: "pan-y"');
   });
 
   it("keeps body editing independent from checklist visibility", () => {
