@@ -900,6 +900,7 @@ export function mergeBixbo(
       meds: unionById<Med>(effectiveLocal.meds, remote.meds, "meds"),
       medLog: mergeMedLog(effectiveLocal.medLog, remote.medLog),
       medLogTimes: mergeMedLogTimes(effectiveLocal.medLogTimes, remote.medLogTimes),
+      medLogItems: mergeStructured("medLogItems", effectiveLocal.medLogItems ?? {}, remote.medLogItems ?? {}) as BixboData["medLogItems"],
       medLogNotes: mergeMedLogTimes(effectiveLocal.medLogNotes, remote.medLogNotes),
       medNames: mergeStringMap(effectiveLocal.medNames, remote.medNames, "medNames"),
       folders: unionById<NoteFolder>(effectiveLocal.folders, remote.folders, "folders"),

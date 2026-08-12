@@ -34,6 +34,7 @@ import {
   todayKey,
   PAIN_DESCRIPTIONS,
   painColor,
+  medScheduleItems,
   avgDayPain,
   latestDayWeight,
   averageDayTemperature,
@@ -3329,20 +3330,27 @@ function DayPreview({
                         delete day[x.key];
                         const times = { ...(d.medLogTimes?.[date] ?? {}) };
                         delete times[x.key];
-                        return {
-                          ...d,
-                          medLog: { ...d.medLog, [date]: day },
-                          medLogTimes: { ...(d.medLogTimes ?? {}), [date]: times },
-                        };
+                        const items = { ...(d.medLogItems?.[date] ?? {}) };
+                        delete items[x.key];
+                        return { ...d, medLog: { ...d.medLog, [date]: day }, medLogTimes: { ...(d.medLogTimes ?? {}), [date]: times }, medLogItems: { ...(d.medLogItems ?? {}), [date]: items } };
                       })
                     }
                     className="text-left text-green-700 hover:underline"
                     title={t("Tap to uncheck")}
                   >
-                    {t("Taken")} · {actual ?? x.time} — {x.med.name}
-                    {x.med.dose ? ` (${x.med.dose})` : ""}
-                    {shifted && <span className="text-[10px] text-muted-foreground"> · {t("scheduled")} {x.time}</span>}
-                    <span className="text-[10px] text-muted-foreground"> · {t("tap to uncheck")}</span>
+                    {(() => {
+                      const all = medScheduleItems(x.med);
+                      const selected = data.medLogItems?.[date]?.[x.key] ?? all;
+                      const omitted = all.filter((item) => !selected.includes(item));
+                      return <>
+                        {t("Taken")} · {actual ?? x.time} — {selected.join(", ")}
+                        {x.med.dose ? ` (${x.med.dose})` : ""}
+                        {shifted && <span className="text-[10px] text-muted-foreground"> · {t("scheduled")} {x.time}</span>}
+                        {omitted.length ? <span className="block text-[10px] text-destructive">{t("Not taken")}: {omitted.join(", ")}</span> : null}
+                        {data.medLogNotes?.[date]?.[x.key] ? <span className="block text-[10px] text-muted-foreground">{t("Note")}: {data.medLogNotes?.[date]?.[x.key]}</span> : null}
+                        <span className="text-[10px] text-muted-foreground"> · {t("tap to uncheck")}</span>
+                      </>;
+                    })()}
                     {medNote ? (
                       <span className="mt-0.5 block text-[11px] text-muted-foreground"><span className="font-semibold text-foreground">{t("Note")}:</span> {medNote}</span>
                     ) : null}

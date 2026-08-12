@@ -14,6 +14,7 @@ import { X, Plus, ChevronLeft, Check, Pencil, Trash2 } from "@/components/icons/
 import {
   PAIN_DESCRIPTIONS,
   painColor,
+  medScheduleItems,
   BODY_PARTS_DEFAULT,
   PAIN_QUALITY_DEFAULT,
   OTHER_SYMPTOMS_DEFAULT,
@@ -4123,6 +4124,8 @@ function MedsForm({
   const taken = data.medLog[date] ?? {};
   const takenTimes = data.medLogTimes?.[date] ?? {};
   const medNotes = data.medLogNotes?.[date] ?? {};
+  const medItems = data.medLogItems?.[date] ?? {};
+  const [editingScheduledKey, setEditingScheduledKey] = useState<string | null>(null);
   const setMedNote = (key: string, note: string) =>
     update((d) => {
       const notes = { ...(d.medLogNotes?.[date] ?? {}) };
@@ -4226,37 +4229,58 @@ function MedsForm({
                 m.times.map((scheduledTime) => {
                   const k = `${m.id}@${scheduledTime}`;
                   const isTaken = !!taken[k];
+                  const items = medScheduleItems(m);
+                  const grouped = items.length > 1;
+                  const selectedItems = medItems[k] ?? (isTaken ? items : []);
+                  const partial = grouped && selectedItems.length > 0 && selectedItems.length < items.length;
                   return (
-                    <label key={k} className="flex items-center gap-2 rounded-xl bg-surface px-2.5 py-2 ring-1 ring-border">
-                      <input type="checkbox" checked={isTaken} onChange={() => toggle(k, scheduledTime)} className="h-3.5 w-3.5 shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-medium leading-tight">
-                          {m.name} <span className="text-[10px] font-normal text-muted-foreground">· scheduled {scheduledTime}</span>
-                        </p>
-                        {m.dose && <p className="text-[10px] leading-tight text-muted-foreground">{m.dose}</p>}
-                        {m.note && (
-                          <p className="text-[11px] text-muted-foreground">
-                            <Ico e="📝" size={13} /> <IcoText text={m.note} size={12} />
-                          </p>
+                    <div key={k} className="rounded-xl bg-surface px-2.5 py-2 ring-1 ring-border">
+                      <div className="flex items-center gap-2">
+                        {grouped ? (
+                          <button type="button" onClick={() => setEditingScheduledKey(editingScheduledKey === k ? null : k)} className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border text-[10px] font-bold ${selectedItems.length ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-muted-foreground"}`}>
+                            {selectedItems.length === items.length ? "✓" : selectedItems.length ? "–" : ""}
+                          </button>
+                        ) : (
+                          <input type="checkbox" checked={isTaken} onChange={() => toggle(k, nowHHMM())} className="h-3.5 w-3.5 shrink-0" />
                         )}
+                        <button type="button" onClick={() => grouped && setEditingScheduledKey(editingScheduledKey === k ? null : k)} className="min-w-0 flex-1 text-left">
+                          <p className="text-xs font-medium leading-tight">{m.name} <span className="text-[10px] font-normal text-muted-foreground">· scheduled {scheduledTime}</span></p>
+                          {grouped && selectedItems.length > 0 && <p className="mt-0.5 text-[10px] leading-tight text-primary">{partial ? `${t("Taken")}: ${selectedItems.join(", ")}` : t("All taken")}</p>}
+                          {m.dose && <p className="text-[10px] leading-tight text-muted-foreground">{m.dose}</p>}
+                        </button>
+                        {isTaken && <Input type="time" value={takenTimes[k] ?? scheduledTime} onChange={(e) => setTakenTime(k, e.target.value)} className="h-7 w-20 px-2 text-xs" title={t("Actual time taken")} />}
                       </div>
-                      {isTaken && (
-                        <Input
-                          type="time"
-                          value={takenTimes[k] ?? scheduledTime}
-                          onChange={(e) => setTakenTime(k, e.target.value)}
-                          className="h-7 w-20 px-2 text-xs"
-                          title={t("Actual time taken")}
-                        />
-                      )}
-                      <Input
-                        value={medNotes[k] ?? ""}
-                        onChange={(e) => setMedNote(k, e.target.value)}
-                        onClick={(e) => e.stopPropagation()}
-                        placeholder={t("Note (optional)")}
-                        className="h-7 min-w-0 flex-[0_1_125px] px-2 text-xs"
-                      />
-                    </label>
+                      {grouped && editingScheduledKey === k ? (
+                        <div className="mt-2 rounded-xl bg-tint/70 p-2 ring-1 ring-border/60">
+                          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{t("What did you take?")}</p>
+                          <div className="space-y-1">
+                            {items.map((item) => {
+                              const checked = selectedItems.includes(item);
+                              return (
+                                <label key={item} className="flex items-center gap-2 rounded-lg bg-background/70 px-2 py-1.5 text-xs">
+                                  <input type="checkbox" checked={checked} onChange={() => {
+                                    const next = checked ? selectedItems.filter((x) => x !== item) : [...selectedItems, item];
+                                    update((d) => {
+                                      const day = { ...(d.medLog[date] ?? {}) };
+                                      const allItems = { ...(d.medLogItems?.[date] ?? {}) };
+                                      const times = { ...(d.medLogTimes?.[date] ?? {}) };
+                                      if (next.length) { day[k] = true; allItems[k] = next; if (!times[k]) times[k] = nowHHMM(); }
+                                      else { delete day[k]; delete allItems[k]; delete times[k]; }
+                                      return { ...d, medLog: { ...d.medLog, [date]: day }, medLogItems: { ...(d.medLogItems ?? {}), [date]: allItems }, medLogTimes: { ...(d.medLogTimes ?? {}), [date]: times } };
+                                    });
+                                  }} className="h-3.5 w-3.5" />
+                                  <span>{item}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                          <Input value={medNotes[k] ?? ""} onChange={(e) => setMedNote(k, e.target.value)} placeholder={t("Note (optional)")} className="mt-2 h-7 px-2 text-xs" />
+                          <button type="button" onClick={() => setEditingScheduledKey(null)} className="mt-2 w-full rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">{t("Done")}</button>
+                        </div>
+                      ) : !grouped ? (
+                        <Input value={medNotes[k] ?? ""} onChange={(e) => setMedNote(k, e.target.value)} placeholder={t("Note (optional)")} className="mt-1.5 h-7 px-2 text-xs" />
+                      ) : null}
+                    </div>
                   );
                 })
               ),

@@ -550,6 +550,12 @@ export interface Med {
   color?: string;
   note?: string;
 }
+
+/** Existing grouped names (comma separated) can be tracked item-by-item. */
+export function medScheduleItems(med: Pick<Med, "name">): string[] {
+  const items = med.name.split(",").map((item) => item.trim()).filter(Boolean);
+  return items.length ? items : [med.name.trim()].filter(Boolean);
+}
 export interface NoteFolder {
   id: string;
   name: string;
@@ -860,6 +866,8 @@ export interface BixboData {
   medLogTimes: Record<string, Record<string, string>>;
   /** Optional user note attached to a concrete scheduled medication slot. */
   medLogNotes?: Record<string, Record<string, string>>;
+  /** Granular taken items for a grouped scheduled medication slot. */
+  medLogItems?: Record<string, Record<string, string[]>>;
   medNames?: Record<string, string>;
   folders: NoteFolder[];
   notebook: Note[];
@@ -902,6 +910,7 @@ export const EMPTY: BixboData = {
   medLog: {},
   medLogTimes: {},
   medLogNotes: {},
+  medLogItems: {},
   medNames: {},
   folders: DEFAULT_FOLDERS,
   notebook: [],
