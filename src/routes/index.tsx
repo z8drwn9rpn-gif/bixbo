@@ -3843,35 +3843,42 @@ function DayPreview({
 
       {log?.bowel?.length ? (
         <Card title="Bowel" icon="💩">
-          <ul className="space-y-1 text-sm">
-            {log.bowel.map((b: BowelEntry) => {
+          <ul className="space-y-3">
+            {log.bowel.map((b: BowelEntry, index) => {
               const bristol = b.bristol >= 0 ? BRISTOL.find((x) => x.n === b.bristol) : null;
-              const label = bristol
-                ? `Type ${bristol.n} — ${bristol.sub}`
+              const typeLabel = bristol
+                ? `Type ${bristol.n}`
                 : b.bristol === 0
-                  ? t("Type 0 — Mystery")
+                  ? t("Type 0")
                   : t("No bowel movement");
+              const typeDescription = bristol?.sub ?? (b.bristol === 0 ? t("Mystery") : "");
               return (
-                <li key={b.id} className="flex items-start gap-2">
-                  <button onClick={() => onEdit?.("bowel", b)} className="flex-1 text-left">
-                    {b.time} · <IcoText text={label} size={14} />
+                <li key={b.id} className={`flex items-start gap-2 ${index ? "border-t border-border/60 pt-3" : ""}`}>
+                  <button onClick={() => onEdit?.("bowel", b)} className="min-w-0 flex-1 text-left">
+                    <p className="text-xs text-muted-foreground">{b.time}</p>
+                    <div className="my-2 border-t border-border/60" />
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                      <span className="font-semibold text-foreground">{t("Type")}:</span>{" "}
+                      <IcoText text={`${typeLabel}${typeDescription ? ` — ${typeDescription}` : ""}`} size={13} />
+                    </p>
                     {b.feelings?.length ? (
-                      <>
-                        {" "}
-                        · <IcoText text={b.feelings.join(", ")} size={13} />
-                      </>
-                    ) : (
-                      ""
-                    )}
+                      <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                        <span className="font-semibold text-foreground">{t("Feelings")}:</span>{" "}
+                        <IcoText text={b.feelings.join(", ")} size={13} />
+                      </p>
+                    ) : null}
                     {b.symptoms?.length ? (
-                      <>
-                        {" "}
-                        · <IcoText text={b.symptoms.join(", ")} size={13} />
-                      </>
-                    ) : (
-                      ""
-                    )}
-                    {b.note ? ` — ${b.note}` : ""}
+                      <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                        <span className="font-semibold text-foreground">{t("Symptoms")}:</span>{" "}
+                        <IcoText text={b.symptoms.join(", ")} size={13} />
+                      </p>
+                    ) : null}
+                    {b.note ? (
+                      <p className="mt-2 text-sm whitespace-pre-line">
+                        <span className="font-semibold">{t("Note")}:</span> {b.note}
+                      </p>
+                    ) : null}
+                    <p className="mt-1 text-[10px] text-primary">{t("Tap to edit")}</p>
                   </button>
                   <DeleteBtn
                     onClick={() =>
