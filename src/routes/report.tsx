@@ -216,8 +216,8 @@ function ReportPage() {
     </div>
 
     {printPreviewOpen ? (
-      <div ref={printPreviewRef} className="pdf-print-preview fixed inset-0 z-[10050] overflow-y-auto bg-background px-3 pb-24 pt-[calc(env(safe-area-inset-top)+.75rem)]">
-        <div className="pdf-preview-toolbar sticky top-[env(safe-area-inset-top)] z-10 mx-auto mb-3 flex max-w-[820px] items-center gap-2 rounded-2xl bg-background/95 p-2 shadow-lg ring-1 ring-border backdrop-blur">
+      <div ref={printPreviewRef} className="pdf-print-preview fixed inset-0 z-[10050] overflow-y-auto bg-background px-3 pb-24 pt-[max(calc(env(safe-area-inset-top)+.75rem),4rem)]">
+        <div className="pdf-preview-toolbar sticky top-0 z-10 mx-auto mb-3 flex max-w-[820px] items-center gap-2 rounded-2xl bg-background/95 p-2 shadow-lg ring-1 ring-border backdrop-blur">
           <button type="button" onClick={() => setPrintPreviewOpen(false)} className="h-10 rounded-xl bg-tint px-4 text-sm font-semibold ring-1 ring-border">← {t("Back")}</button>
           <div className="min-w-0 flex-1 text-center text-xs font-semibold text-muted-foreground">{title}</div>
           <button type="button" onClick={savePdf} disabled={pdfBusy} className="h-10 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-60">{pdfBusy ? t("Creating PDF…") : t("Save PDF")}</button>
