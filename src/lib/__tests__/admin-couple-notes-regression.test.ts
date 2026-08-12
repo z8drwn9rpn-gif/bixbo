@@ -16,9 +16,10 @@ describe("admin / Couple / Notes regressions", () => {
 
   it("keeps Notes natively editable on iOS", () => {
     const source = read("src/routes/notes-editor.tsx");
-    expect(source).toContain('role="textbox"');
+    expect(source).toContain("<textarea");
     expect(source).toContain('inputMode="text"');
     expect(source).toContain("data-bixbo-note-editor");
+    expect(source).not.toContain("contentEditable");
     expect(source).not.toContain("onTouchStart={focusEditorForTyping}");
   });
 
