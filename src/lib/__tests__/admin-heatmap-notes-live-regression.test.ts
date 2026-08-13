@@ -12,7 +12,7 @@ describe("live Admin / Heatmap / Notes regressions", () => {
   });
 
   it("anchors Year Heatmap tooltip to the actual tapped dot", () => {
-    const source = read("src/routes/insights.tsx");
+    const source = read("src/features/insights/YearHealthHeatmap.tsx");
     expect(source).toContain("data-bixbo-heatmap-half={halfIndex}");
     expect(source).toContain("event.currentTarget.getBoundingClientRect()");
     expect(source).toContain("halfElement.getBoundingClientRect()");
