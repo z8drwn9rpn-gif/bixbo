@@ -1,0 +1,80 @@
+name: Episodes single scroll once
+on:
+  push:
+    branches: [agent/episodes-single-scroll-form]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: "!contains(github.event.head_commit.message, '[episodes-single-scroll]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/episodes-single-scroll-form
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+      - name: Patch episode forms to one scrollable page
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p = Path('src/features/logging/EpisodeForms.tsx')
+          s = p.read_text()
+
+          # SaveBar replaces the 4-step wizard navigation.
+          s = s.replace(
+              'import { Chip, CustomChipList, DurationField, Field, IntensityScale, toggleIn } from "./LogFormPrimitives";',
+              'import { Chip, CustomChipList, DurationField, Field, IntensityScale, SaveBar, toggleIn } from "./LogFormPrimitives";'
+          )
+
+          # Remove per-form wizard state (Panic + Tetany).
+          s = re.sub(r'\n  const \[step, setStep\] = useState\(0\);\n  const steps = \["Episode", "Symptoms", "Trigger & relief", "Notes"\];', '', s)
+
+          # Replace both rendered wizard nav bars with a normal save/cancel bar.
+          s = re.sub(
+              r'      <EpisodeWizardNav step=\{step\} steps=\{steps\} onBack=\{\(\) => setStep\(\(v\) => Math\.max\(0, v - 1\)\)\} onNext=\{\(\) => setStep\(\(v\) => Math\.min\(steps\.length - 1, v \+ 1\)\)\} onSave=\{save\} />',
+              '      <SaveBar onCancel={onDone} onSave={save} />',
+              s,
+          )
+
+          # Make all four former wizard sections render one after another.
+          lines = s.splitlines()
+          out = []
+          section_open = re.compile(r'^(\s*)\{step === [0-3] && (<div className="space-y-4">)$')
+          for line in lines:
+              m = section_open.match(line)
+              if m:
+                  out.append(m.group(1) + m.group(2))
+                  continue
+              # The closing brace for each former step section is on a standalone </div>} line.
+              if line == '      </div>}':
+                  out.append('      </div>')
+                  continue
+              out.append(line)
+          s = '\n'.join(out) + ('\n' if s.endswith('\n') else '')
+
+          if 'step ===' in s:
+              raise SystemExit('Wizard step condition remains in EpisodeForms.tsx')
+          if '<EpisodeWizardNav step=' in s:
+              raise SystemExit('Rendered EpisodeWizardNav remains in EpisodeForms.tsx')
+          p.write_text(s)
+          PY
+      - name: Install
+        run: bun install --frozen-lockfile
+      - name: Typecheck
+        run: bun run typecheck
+      - name: Lint
+        run: bun run lint
+      - name: Build
+        run: bun run build
+      - name: Commit
+        shell: bash
+        run: |
+          rm .github/workflows/episodes-single-scroll-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix: show panic and tetany forms on one page [episodes-single-scroll]"
+          git push origin HEAD:agent/episodes-single-scroll-form
