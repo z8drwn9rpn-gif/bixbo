@@ -957,7 +957,6 @@ button:has(+ a[href="/report"]) {
 
 .bixbo-unified-log input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
 .bixbo-unified-log select {
-  width: 100%;
   max-width: 100%;
   min-width: 0;
   min-height: 40px;
