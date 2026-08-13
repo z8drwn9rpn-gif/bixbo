@@ -13,7 +13,10 @@ describe("Pain symptom-only follow-ups", () => {
 
   it("keeps symptom-only data separate but nests linked updates under source pain", () => {
     const sheet = readFileSync(resolve(process.cwd(), "src/components/LogSheet.tsx"), "utf8");
-    const home = readFileSync(resolve(process.cwd(), "src/routes/index.tsx"), "utf8");
+    const home = [
+      readFileSync(resolve(process.cwd(), "src/routes/index.tsx"), "utf8"),
+      readFileSync(resolve(process.cwd(), "src/components/home/DayOverview.tsx"), "utf8"),
+    ].join("\n");
     expect(sheet).toContain('entryKind: quickSymptomUpdate ? "symptom-update" : undefined');
     expect(sheet).toContain('setSymptoms([])');
     expect(sheet).toContain('setNauseaSymptoms([])');
