@@ -1,4 +1,4 @@
-name: Apply BIXBO Home icon polish once
+name: Apply BIXBO calendar heart marker once
 
 on:
   push:
@@ -20,20 +20,31 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-      - name: Patch Home greeting icon
+      - name: Patch calendar marker rendering
         shell: python
         run: |
           from pathlib import Path
-          p = Path('src/features/home/HomePage.tsx')
+          import re
+          p = Path('src/components/MonthCalendar.tsx')
           s = p.read_text()
-          old_import = 'import { ChevronLeft, ChevronRight, HeartIcon, Ico } from "@/components/icons/BixboIcons";'
-          new_import = 'import { ChevronLeft, ChevronRight, HeartIcon, StarIcon } from "@/components/icons/BixboIcons";'
-          old_title = '<span className="text-xs font-normal text-muted-foreground">{t("Hi")}, {view.settings.userName?.trim() || t("there")} <Ico e="❤️" size={12} /></span>'
-          new_title = '<span className="text-xs font-normal text-muted-foreground">{t("Hi")}, {view.settings.userName?.trim() || t("there")} <StarIcon size={12} /></span>'
-          if old_import not in s or old_title not in s:
-              raise SystemExit('Home greeting targets not found')
-          s = s.replace(old_import, new_import, 1).replace(old_title, new_title, 1)
-          p.write_text(s)
+          pattern = re.compile(
+              r'<div className="mt-0\.5 flex h-4 max-w-full items-center justify-center gap-px overflow-hidden leading-none lg:mt-1 lg:h-5 lg:gap-0\.5">\s*'
+              r'\{icons\.length > 0 \? \(.*?\) : \(\s*'
+              r'<span aria-hidden className="block h-\[14px\] w-\[14px\] lg:h-\[17px\] lg:w-\[17px\]" />\s*'
+              r'\)\}\s*</div>',
+              re.S,
+          )
+          replacement = '''<div className="mt-0.5 flex h-4 items-center justify-center leading-none lg:mt-1 lg:h-5">
+                        {icons.includes("❤️") ? (
+                          <Ico e="❤️" size={14} className="h-[14px] w-[14px] lg:h-[17px] lg:w-[17px] xl:h-[18px] xl:w-[18px]" />
+                        ) : (
+                          <span aria-hidden className="block h-[14px] w-[14px] lg:h-[17px] lg:w-[17px]" />
+                        )}
+                      </div>'''
+          s2, count = pattern.subn(replacement, s, count=1)
+          if count != 1:
+              raise SystemExit(f'Expected one calendar marker block, found {count}')
+          p.write_text(s2)
       - name: Install and validate
         run: |
           bun install --frozen-lockfile
@@ -45,7 +56,7 @@ jobs:
         run: |
           git config user.name "BIXBO UI bot"
           git config user.email "actions@users.noreply.github.com"
-          git add src/features/home/HomePage.tsx
+          git add src/components/MonthCalendar.tsx
           git diff --cached --quiet && exit 0
-          git commit -m "replace Home greeting heart with BIXBO star"
+          git commit -m "fix: keep only calendar heart marker"
           git push origin HEAD:agent/ui-ux-consistency-pass
