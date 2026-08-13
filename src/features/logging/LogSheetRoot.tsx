@@ -700,7 +700,11 @@ export function LogSheet({
               key={`${active}-${openToken}-${(edit as { id?: string } | undefined)?.id ?? initialPain?.id ?? "new"}`}
               data-bixbo-log-surface={active === "pain" ? "pain" : "standard"}
               className={`min-h-0 flex-1 overflow-y-auto ${
-                active === "pain" ? "pt-[60px]" : "bixbo-unified-log px-4 pb-5 sm:px-5"
+                active === "pain"
+                  ? "pt-[60px]"
+                  : active === "meds"
+                    ? "px-5 pb-4"
+                    : "bixbo-unified-log px-4 pb-5 sm:px-5"
               }`}
             >
               {active?.startsWith("custom:") && (() => {

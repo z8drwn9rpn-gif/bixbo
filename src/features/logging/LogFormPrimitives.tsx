@@ -319,7 +319,7 @@ export function CustomChipList({
   const [editMode, setEditMode] = useState(false);
   const [text, setText] = useState("");
   const [infoFor, setInfoFor] = useState<string | null>(null);
-  const canEdit = !!(onRenameCustom || onRemoveCustom) && custom.length > 0;
+  const canEdit = true;
   return (
     <div className="mt-2">
       {(canEdit || true) && (
