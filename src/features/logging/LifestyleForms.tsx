@@ -612,7 +612,7 @@ export function TempForm({
   type VitalRow = { id: string; time: string; value: number; method?: "basal" | "oral" | "other"; note?: string; bodyFatPercent?: number };
   type Tab = "temperature" | "sleep" | "weight";
   const cur = data.dayLogs[date] ?? {};
-  const [tab, setTab] = useState<Tab>("temperature");
+  const [tab, setTab] = useState<Tab>("sleep");
   const [temperature, setTemperature] = useState("");
   const [temperatureTime, setTemperatureTime] = useState(nowHHMM());
   const [temperatureUnit, setTemperatureUnit] = useState<"C" | "F">("C");
@@ -663,9 +663,6 @@ export function TempForm({
   };
   const calculatedSleepMinutes = minutesBetween(bedtime,wakeTime);
   const effectiveSleepHours = calculatedSleepMinutes != null ? calculatedSleepMinutes / 60 : Number(sleepHours.replace(",",".")) || 0;
-  const qualityScores: Record<string,number> = { "Very poor":20, "Poor":40, "Okay":60, "Good":80, "Excellent":100 };
-  const sleepScore = Math.max(0, Math.min(100, Math.round((qualityScores[quality] ?? 60)*0.55 + Math.min(100,(effectiveSleepHours/8)*100)*0.35 + Math.max(0,100-awakenings*12)*0.10)));
-  const sleepScoreLabel = sleepScore >= 85 ? "Excellent" : sleepScore >= 70 ? "Good" : sleepScore >= 55 ? "Okay" : sleepScore >= 40 ? "Poor" : "Very poor";
   const parseValue = (v:string) => v.trim()==="" ? undefined : Number(v.replace(",","."));
   const toCelsius = (v:number) => temperatureUnit === "F" ? (v - 32) * 5 / 9 : v;
   const save = () => {
@@ -702,7 +699,6 @@ export function TempForm({
       <div className="rounded-2xl bg-tint p-3 text-xs"><p className="font-semibold">💡 Tips</p><ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground"><li>Measure at about the same time every morning.</li><li>For basal tracking, measure before getting out of bed.</li><li>Small changes are normal.</li></ul></div>
     </>}
     {tab==="sleep"&&<>
-      <div className="rounded-2xl bg-surface p-4 ring-1 ring-border"><div className="flex items-center gap-4"><div className="grid h-24 w-24 shrink-0 place-items-center rounded-full border-[7px] border-primary/70"><div className="text-center"><p className="font-serif text-3xl">{sleepScore}</p><p className="text-[10px] text-muted-foreground">{sleepScoreLabel}</p></div></div><div><p className="text-sm font-semibold">Sleep score</p><p className="mt-1 text-xs text-muted-foreground">Based on duration, quality and night awakenings.</p></div></div><div className="mt-4 grid grid-cols-2 gap-2"><div className="rounded-xl bg-tint p-3"><p className="text-[10px] text-muted-foreground">Total sleep</p><p className="text-lg font-semibold">{effectiveSleepHours?`${Math.floor(effectiveSleepHours)}h ${Math.round((effectiveSleepHours%1)*60)}m`:'—'}</p></div><div className="rounded-xl bg-tint p-3"><p className="text-[10px] text-muted-foreground">Time in bed</p><p className="text-lg font-semibold">{calculatedSleepMinutes!=null?`${Math.floor(calculatedSleepMinutes/60)}h ${calculatedSleepMinutes%60}m`:'—'}</p></div></div></div>
       <Field label="Bedtime / Wake up"><div className="grid grid-cols-2 gap-2"><div><p className="mb-1 text-[10px] text-muted-foreground">Bedtime</p><Input type="time" value={bedtime} onChange={e=>setBedtime(e.target.value)}/></div><div><p className="mb-1 text-[10px] text-muted-foreground">Wake up</p><Input type="time" value={wakeTime} onChange={e=>setWakeTime(e.target.value)}/></div></div>{!bedtime&&!wakeTime&&<div className="mt-2"><p className="mb-1 text-[10px] text-muted-foreground">Or enter total sleep manually</p><Input inputMode="decimal" value={sleepHours} onChange={e=>setSleepHours(e.target.value.replace(/[^0-9.,]/g,""))} placeholder="8"/></div>}</Field>
       <Field label="Sleep quality"><div className="mt-2 grid grid-cols-5 gap-1">{["Very poor","Poor","Okay","Good","Excellent"].map((q,i)=><button key={q} type="button" onClick={()=>setQuality(q)} className={`rounded-2xl px-1 py-3 text-center text-[10px] ring-1 ${quality===q?"bg-primary/15 ring-primary":"bg-surface ring-border"}`}><div className="mb-1 text-xl">{["☹","🙁","😐","🙂","☺"][i]}</div>{q}</button>)}</div></Field>
       <Field label="Night awakenings"><div className="mt-1 flex items-center justify-between rounded-2xl bg-surface p-2 ring-1 ring-border"><button type="button" onClick={()=>setAwakenings(v=>Math.max(0,v-1))} className="grid h-10 w-10 place-items-center rounded-full bg-tint text-xl">−</button><span className="text-lg font-semibold">{awakenings}</span><button type="button" onClick={()=>setAwakenings(v=>Math.min(20,v+1))} className="grid h-10 w-10 place-items-center rounded-full bg-tint text-xl">+</button></div></Field>
