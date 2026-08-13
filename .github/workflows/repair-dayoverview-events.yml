@@ -1,0 +1,47 @@
+name: Repair DayOverview and Events
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  repair:
+    if: github.event.head_commit.message == 'Run DayOverview repair'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Restore last good DayOverview and compact Events
+        run: |
+          git cat-file blob 8b06022dc6928e1704eca0fbbe77e0f05d81a62e > src/components/home/DayOverview.tsx
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('src/components/home/DayOverview.tsx')
+          s=p.read_text()
+          old='''      {events.length > 0 && (\n        <Card title="Events" icon="📅">\n          <ul className="space-y-1 text-sm">\n            {events.map((e) => (\n              <li key={e.id} className="flex items-start gap-2">\n                <span className="mt-1 h-2 w-2 rounded-full" style={{ background: e.color ?? "var(--primary)" }} />\n                <button onClick={() => onEdit?.("event", e)} className="flex-1 text-left">\n                  {e.title}\n                  {e.time ? ` · ${e.time}${e.timeEnd ? `–${e.timeEnd}` : ""}` : ""}\n                  {e.startDate !== e.endDate ? ` (${e.startDate}→${e.endDate})` : ""}\n                  {e.note ? ` — ${e.note}` : ""}\n                </button>\n                <DeleteBtn onClick={() => update((d) => ({ ...d, events: d.events.filter((x) => x.id !== e.id) }))} />\n              </li>\n            ))}\n          </ul>\n        </Card>\n      )}\n'''
+          new='''      {events.length > 0 && (\n        <Card title="Events" icon="📅" compact>\n          <ul className="space-y-1">\n            {events.map((e, index) => (\n              <li key={e.id} className={`flex items-start gap-2 ${index ? "border-t border-border/60 pt-1.5" : ""}`}>\n                <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full" style={{ background: e.color ?? "var(--primary)" }} />\n                <button onClick={() => onEdit?.("event", e)} className="min-w-0 flex-1 text-left">\n                  <p className="text-xs leading-relaxed text-muted-foreground">\n                    <span className="font-semibold text-foreground">{e.title}</span>\n                    {e.time ? ` · ${e.time}${e.timeEnd ? `–${e.timeEnd}` : ""}` : ""}\n                  </p>\n                  {e.startDate !== e.endDate ? (\n                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">\n                      <span className="font-semibold text-foreground">{t("Date")}:</span> {e.startDate}→{e.endDate}\n                    </p>\n                  ) : null}\n                  {e.note ? (\n                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">\n                      <span className="font-semibold text-foreground">{t("Note")}:</span> {e.note}\n                    </p>\n                  ) : null}\n                  <p className="mt-0.5 text-[10px] text-primary">{t("Tap to edit")}</p>\n                </button>\n                <DeleteBtn onClick={() => update((d) => ({ ...d, events: d.events.filter((x) => x.id !== e.id) }))} />\n              </li>\n            ))}\n          </ul>\n        </Card>\n      )}\n'''
+          if old not in s:
+              raise SystemExit('Events block not found')
+          p.write_text(s.replace(old,new,1))
+          PY
+      - name: Quality check
+        run: |
+          git diff --check
+          bun install --frozen-lockfile
+          bun run typecheck
+          bun run lint
+          bun test
+          bun run build
+      - name: Commit verified repair
+        run: |
+          rm -f .github/workflows/repair-dayoverview-events.yml
+          git config user.name "BIXBO Fix Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "Restore DayOverview and compact Events card"
+          git push origin HEAD:main
