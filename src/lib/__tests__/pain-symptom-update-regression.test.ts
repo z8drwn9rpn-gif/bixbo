@@ -29,3 +29,17 @@ describe("Pain symptom-only follow-ups", () => {
     expect(home).toContain('entry.entryKind === "symptom-update" && !entry.sourcePainId');
   });
 });
+
+
+it("quick Add symptoms keeps an optional note field", () => {
+  const source = readFileSync(resolve(process.cwd(), "src/components/LogSheet.tsx"), "utf8");
+  expect(source).toContain('quickSymptomUpdate && activePainStepId === "symptoms"');
+  expect(source).toContain('placeholder={t("Add a note about what changed, what you were doing, or anything else…")}');
+  expect(source).toContain('note: note.trim()');
+});
+
+it("PainWizard no longer contains hidden duplicate Tetany/Panic forms", () => {
+  const source = readFileSync(resolve(process.cwd(), "src/components/LogSheet.tsx"), "utf8");
+  expect(source).not.toContain('<div className="hidden" aria-hidden="true">\n          <Field label="Tetany episode?">');
+  expect(source).not.toContain('// Panic (full inline log — under Tetany)');
+});

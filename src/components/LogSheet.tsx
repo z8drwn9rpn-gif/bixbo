@@ -1524,30 +1524,6 @@ function PainWizard({
   const [quality, setQuality] = useState<string[]>(initialEntry?.quality ?? []);
   const [symptoms, setSymptoms] = useState<string[]>(initialEntry?.symptoms ?? []);
   const [note, setNote] = useState(initialEntry?.note ?? "");
-  // Extended
-  const [tetany, setTetany] = useState(false);
-  const [tetanyTypes, setTetanyTypes] = useState<string[]>([]);
-  const [tetanyLoc, setTetanyLoc] = useState<string[]>([]);
-  const [tetanyIntensity, setTetanyIntensity] = useState(1);
-  const [tetanyMin, setTetanyMin] = useState("5");
-  const [tetanyOngoing, setTetanyOngoing] = useState(false);
-  const [tetanyTriggers, setTetanyTriggers] = useState<string[]>([]);
-  const [tetanyHelped, setTetanyHelped] = useState<string[]>([]);
-  const [tetanyNote, setTetanyNote] = useState("");
-  // Panic (full inline log — under Tetany)
-  const [panic, setPanic] = useState(false);
-  const [panicTime, setPanicTime] = useState(nowHHMM());
-  const [panicIntensity, setPanicIntensity] = useState(5);
-  const [panicMinutes, setPanicMinutes] = useState("10");
-  const [panicOngoing, setPanicOngoing] = useState(false);
-  const [panicPhysical, setPanicPhysical] = useState<string[]>([]);
-  const [panicCognitive, setPanicCognitive] = useState<string[]>([]);
-  const [panicTrigger, setPanicTrigger] = useState("");
-  const [panicPlace, setPanicPlace] = useState("");
-  const [panicHyper, setPanicHyper] = useState<"no" | "before" | "during" | "unknown">("unknown");
-  const [panicTetany, setPanicTetany] = useState(false);
-  const [panicHelped, setPanicHelped] = useState<string[]>([]);
-  const [panicNote, setPanicNote] = useState("");
   const [bodyBattery, setBodyBattery] = useState<number | undefined>(initialEntry?.bodyBattery);
   const [stress, setStress] = useState<number | undefined>(initialEntry?.stress);
   const [mood, setMood] = useState<string[]>(initialEntry?.mood ?? []);
@@ -1614,9 +1590,6 @@ function PainWizard({
     setHeadacheMedTime(nowHHMM());
     setNote("");
     setTime(nowHHMM());
-    setTetany(false);
-    setPanic(false);
-
     setCopiedFromId(latestPain.id);
     setCopiedFromTime(latestPain.time);
     setQuickSymptomUpdate(true);
@@ -1704,37 +1677,6 @@ function PainWizard({
       ...l,
       pain: editing ? (l.pain ?? []).map((x) => (x.id === p.id ? p : x)) : [...(l.pain ?? []), p],
     }));
-    if (tetany) {
-      const t: TetanyEpisode = {
-        id: crypto.randomUUID(),
-        time: nowHHMM(),
-        types: tetanyTypes,
-        location: tetanyLoc,
-        intensity: tetanyIntensity,
-        minutes: tetanyOngoing ? undefined : tetanyMin === "" ? undefined : Number(tetanyMin),
-        triggers: tetanyTriggers,
-        helped: tetanyHelped,
-        note: tetanyNote.trim() || undefined,
-      };
-      updateDayLog(update, date, (l) => ({ ...l, tetany: [...(l.tetany ?? []), t] }));
-    }
-    if (panic) {
-      const pk: PanicAttack = {
-        id: crypto.randomUUID(),
-        time: panicTime,
-        minutes: panicOngoing ? undefined : panicMinutes === "" ? undefined : Number(panicMinutes),
-        intensity: panicIntensity,
-        physical: panicPhysical,
-        cognitive: panicCognitive,
-        trigger: panicTrigger.trim(),
-        place: panicPlace.trim() || undefined,
-        hyperventilation: panicHyper,
-        tetanyPresent: panicTetany,
-        helped: panicHelped,
-        note: panicNote.trim() || undefined,
-      };
-      updateDayLog(update, date, (l) => ({ ...l, panic: [...(l.panic ?? []), pk] }));
-    }
     schema?.saveAdminCustomFields();
     onDone();
   };
@@ -2312,250 +2254,6 @@ function PainWizard({
               onToggle={(v) => setPcosSymptoms((a) => toggleIn(a, v))}
             />
           </Field>
-          <div className="hidden" aria-hidden="true">
-          <Field label="Tetany episode?">
-            <div className="mt-1 flex gap-2">
-              <Chip active={!tetany} onClick={() => setTetany(false)}>
-                No
-              </Chip>
-              <Chip active={tetany} onClick={() => setTetany(true)}>
-                Yes — log it
-              </Chip>
-            </div>
-          </Field>
-          {tetany && (
-            <div className="rounded-2xl border border-border p-3 space-y-3">
-              <Field label="Type">
-                <CustomChipList
-                  base={TETANY_TYPES}
-                  custom={data.custom.tetanyTypes}
-                  descriptions={TETANY_TYPE_DESC}
-                  onAddCustom={(v) => addCustom("tetanyTypes", v)}
-                  onRemoveCustom={(v) => {
-                    removeCustom("tetanyTypes", v);
-                    setTetanyTypes((a) => a.filter((x) => x !== v));
-                  }}
-                  onRenameCustom={(o, n) => {
-                    renameCustom("tetanyTypes", o, n);
-                    setTetanyTypes((a) => a.map((x) => (x === o ? n : x)));
-                  }}
-                  selected={tetanyTypes}
-                  onToggle={(v) => setTetanyTypes((a) => toggleIn(a, v))}
-                />
-              </Field>
-              <Field label="Location">
-                <CustomChipList
-                  base={TETANY_LOCATIONS_DEFAULT}
-                  custom={data.custom.tetanyLocations}
-                  onAddCustom={(v) => addCustom("tetanyLocations", v)}
-                  onRemoveCustom={(v) => {
-                    removeCustom("tetanyLocations", v);
-                    setTetanyLoc((a) => a.filter((x) => x !== v));
-                  }}
-                  onRenameCustom={(o, n) => {
-                    renameCustom("tetanyLocations", o, n);
-                    setTetanyLoc((a) => a.map((x) => (x === o ? n : x)));
-                  }}
-                  selected={tetanyLoc}
-                  onToggle={(v) => setTetanyLoc((a) => toggleIn(a, v))}
-                />
-              </Field>
-              <Field label={`Intensity ${tetanyIntensity}/5`}>
-                <IntensityScale
-                  value={tetanyIntensity}
-                  onChange={setTetanyIntensity}
-                  max={5}
-                  from={1}
-                  step={1}
-                  descriptions={getScaleDesc(data, "tetany")}
-                  legendTitle="Tetany intensity scale" schemaFieldId="intensity"
-                  compactSingleRow
-                />
-              </Field>
-              <DurationField
-                minutes={tetanyMin}
-                setMinutes={setTetanyMin}
-                ongoing={tetanyOngoing}
-                setOngoing={setTetanyOngoing}
-              />
-              <Field label="Triggers">
-                <CustomChipList
-                  base={TETANY_TRIGGERS}
-                  custom={data.custom.tetanyTriggers}
-                  onAddCustom={(v) => addCustom("tetanyTriggers", v)}
-                  onRemoveCustom={(v) => {
-                    removeCustom("tetanyTriggers", v);
-                    setTetanyTriggers((a) => a.filter((x) => x !== v));
-                  }}
-                  onRenameCustom={(o, n) => {
-                    renameCustom("tetanyTriggers", o, n);
-                    setTetanyTriggers((a) => a.map((x) => (x === o ? n : x)));
-                  }}
-                  selected={tetanyTriggers}
-                  onToggle={(v) => setTetanyTriggers((a) => toggleIn(a, v))}
-                />
-              </Field>
-              <Field label="What helped">
-                <CustomChipList
-                  base={TETANY_HELPED_DEFAULT}
-                  custom={data.custom.tetanyHelped}
-                  onAddCustom={(v) => addCustom("tetanyHelped", v)}
-                  onRemoveCustom={(v) => {
-                    removeCustom("tetanyHelped", v);
-                    setTetanyHelped((a) => a.filter((x) => x !== v));
-                  }}
-                  onRenameCustom={(o, n) => {
-                    renameCustom("tetanyHelped", o, n);
-                    setTetanyHelped((a) => a.map((x) => (x === o ? n : x)));
-                  }}
-                  selected={tetanyHelped}
-                  onToggle={(v) => setTetanyHelped((a) => toggleIn(a, v))}
-                />
-              </Field>
-              <Field label="Note (optional)">
-                <Textarea rows={2} value={tetanyNote} onChange={(e) => setTetanyNote(e.target.value)} />
-              </Field>
-            </div>
-          )}
-          <Field label="Panic attack?">
-            <div className="mt-1 flex gap-2">
-              <Chip active={!panic} onClick={() => setPanic(false)}>
-                No
-              </Chip>
-              <Chip active={panic} onClick={() => setPanic(true)}>
-                Yes — log it
-              </Chip>
-            </div>
-          </Field>
-          {panic && (
-            <div className="rounded-2xl border border-border p-3 space-y-3">
-              <Field label="Time">
-                <Input type="time" value={panicTime} onChange={(e) => setPanicTime(e.target.value)} />
-              </Field>
-              <DurationField
-                minutes={panicMinutes}
-                setMinutes={setPanicMinutes}
-                ongoing={panicOngoing}
-                setOngoing={setPanicOngoing}
-              />
-              <Field label={`Intensity ${panicIntensity}/10`}>
-                <IntensityScale
-                  value={panicIntensity}
-                  onChange={setPanicIntensity}
-                  max={10}
-                  from={1}
-                  step={1}
-                  descriptions={getScaleDesc(data, "panic")}
-                  legendTitle="Panic intensity scale" schemaFieldId="intensity"
-                  compactSingleRow
-                />
-              </Field>
-              <Field label="Physical symptoms">
-                <CustomChipList
-                  base={PANIC_PHYSICAL}
-                  custom={data.custom.panicPhysical}
-                  onAddCustom={(v) =>
-                    update((d) => ({ ...d, custom: { ...d.custom, panicPhysical: [...d.custom.panicPhysical, v] } }))
-                  }
-                  onRemoveCustom={(v) => {
-                    update((d) => ({
-                      ...d,
-                      custom: { ...d.custom, panicPhysical: d.custom.panicPhysical.filter((x) => x !== v) },
-                    }));
-                    setPanicPhysical((a) => a.filter((x) => x !== v));
-                  }}
-                  onRenameCustom={(o, n) => {
-                    update((d) => ({
-                      ...d,
-                      custom: { ...d.custom, panicPhysical: d.custom.panicPhysical.map((x) => (x === o ? n : x)) },
-                    }));
-                    setPanicPhysical((a) => a.map((x) => (x === o ? n : x)));
-                  }}
-                  selected={panicPhysical}
-                  onToggle={(v) => setPanicPhysical((a) => toggleIn(a, v))}
-                 schemaFieldId="physical"/>
-              </Field>
-              <Field label="Cognitive symptoms">
-                <CustomChipList
-                  base={PANIC_COGNITIVE}
-                  custom={data.custom.panicCognitive}
-                  onAddCustom={(v) =>
-                    update((d) => ({ ...d, custom: { ...d.custom, panicCognitive: [...d.custom.panicCognitive, v] } }))
-                  }
-                  onRemoveCustom={(v) => {
-                    update((d) => ({
-                      ...d,
-                      custom: { ...d.custom, panicCognitive: d.custom.panicCognitive.filter((x) => x !== v) },
-                    }));
-                    setPanicCognitive((a) => a.filter((x) => x !== v));
-                  }}
-                  onRenameCustom={(o, n) => {
-                    update((d) => ({
-                      ...d,
-                      custom: { ...d.custom, panicCognitive: d.custom.panicCognitive.map((x) => (x === o ? n : x)) },
-                    }));
-                    setPanicCognitive((a) => a.map((x) => (x === o ? n : x)));
-                  }}
-                  selected={panicCognitive}
-                  onToggle={(v) => setPanicCognitive((a) => toggleIn(a, v))}
-                 schemaFieldId="cognitive"/>
-              </Field>
-              <Field label="Trigger (or 'no obvious trigger')">
-                <Textarea rows={2} value={panicTrigger} onChange={(e) => setPanicTrigger(e.target.value)} />
-              </Field>
-              <Field label="Place (optional)">
-                <Input value={panicPlace} onChange={(e) => setPanicPlace(e.target.value)} />
-              </Field>
-              <Field label="Hyperventilation">
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {(["no", "before", "during", "unknown"] as const).map((v) => (
-                    <Chip key={v} active={panicHyper === v} onClick={() => setPanicHyper(v)}>
-                      {v}
-                    </Chip>
-                  ))}
-                </div>
-              </Field>
-              <Field label="Tetany present?">
-                <div className="mt-2 flex gap-2">
-                  <Chip active={!panicTetany} onClick={() => setPanicTetany(false)}>
-                    No
-                  </Chip>
-                  <Chip active={panicTetany} onClick={() => setPanicTetany(true)}>
-                    Yes
-                  </Chip>
-                </div>
-              </Field>
-              <Field label="What helped">
-                <CustomChipList
-                  base={PANIC_HELPED_DEFAULT}
-                  custom={data.custom.panicHelped}
-                  onAddCustom={(v) =>
-                    update((d) => ({ ...d, custom: { ...d.custom, panicHelped: [...d.custom.panicHelped, v] } }))
-                  }
-                  onRemoveCustom={(v) => {
-                    update((d) => ({
-                      ...d,
-                      custom: { ...d.custom, panicHelped: d.custom.panicHelped.filter((x) => x !== v) },
-                    }));
-                    setPanicHelped((a) => a.filter((x) => x !== v));
-                  }}
-                  onRenameCustom={(o, n) => {
-                    update((d) => ({
-                      ...d,
-                      custom: { ...d.custom, panicHelped: d.custom.panicHelped.map((x) => (x === o ? n : x)) },
-                    }));
-                    setPanicHelped((a) => a.map((x) => (x === o ? n : x)));
-                  }}
-                  selected={panicHelped}
-                  onToggle={(v) => setPanicHelped((a) => toggleIn(a, v))}
-                />
-              </Field>
-              <Field label="Note (optional)">
-                <Textarea rows={2} value={panicNote} onChange={(e) => setPanicNote(e.target.value)} />
-              </Field>
-            </div>
-          )}
-          </div>
         </div>
       )}
 
@@ -2617,6 +2315,19 @@ function PainWizard({
           </Field>
           <Field label="Note (optional)">
             <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder={t("Anything else…")} />
+          </Field>
+        </div>
+      )}
+
+      {quickSymptomUpdate && activePainStepId === "symptoms" && (
+        <div className="mt-1 rounded-2xl border border-border/70 bg-surface/70 p-3">
+          <Field label="Note (optional)">
+            <Textarea
+              rows={3}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder={t("Add a note about what changed, what you were doing, or anything else…")}
+            />
           </Field>
         </div>
       )}
