@@ -1,0 +1,116 @@
+/* Shared component polish for BIXBO feature pages. */
+
+#main-content button,
+#main-content [role="button"] {
+  transition-property: background-color, border-color, color, box-shadow, transform, opacity;
+  transition-duration: 140ms;
+  transition-timing-function: var(--bixbo-ease, ease-out);
+}
+
+#main-content button:active:not(:disabled),
+#main-content [role="button"]:active {
+  transform: scale(.985);
+}
+
+#main-content :where(.rounded-3xl, .rounded-2xl).ring-1.ring-border {
+  box-shadow: 0 7px 20px -18px rgba(39, 52, 20, .42);
+}
+
+.dark #main-content :where(.rounded-3xl, .rounded-2xl).ring-1.ring-border {
+  box-shadow: 0 8px 22px -18px rgba(18, 22, 12, .62);
+}
+
+#main-content p,
+#main-content li,
+#main-content dd,
+#main-content td {
+  overflow-wrap: anywhere;
+}
+
+#main-content h1,
+#main-content h2,
+#main-content h3 {
+  text-wrap: balance;
+}
+
+[data-slot="dialog-content"],
+[data-slot="sheet-content"] {
+  overscroll-behavior: contain;
+  border-color: color-mix(in srgb, var(--border) 76%, transparent);
+}
+
+[data-slot="dialog-content"] button,
+[data-slot="sheet-content"] button {
+  touch-action: manipulation;
+}
+
+[data-slot="sheet-footer"] {
+  padding-bottom: max(.75rem, env(safe-area-inset-bottom));
+}
+
+[data-radix-popper-content-wrapper] {
+  max-width: min(calc(100vw - 16px), 32rem);
+}
+
+#main-content svg.recharts-surface,
+#main-content .recharts-wrapper,
+#main-content .recharts-responsive-container {
+  max-width: 100%;
+}
+
+#main-content .recharts-wrapper {
+  touch-action: pan-y;
+}
+
+#main-content .recharts-tooltip-wrapper {
+  pointer-events: none;
+  max-width: min(82vw, 320px);
+}
+
+#main-content .recharts-default-tooltip {
+  border-radius: 14px !important;
+  border-color: var(--border) !important;
+  background: var(--chart-tooltip-bg) !important;
+  color: var(--chart-tooltip-fg) !important;
+  box-shadow: 0 10px 30px -20px rgba(26, 34, 15, .6) !important;
+}
+
+#main-content table {
+  max-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+#main-content :where(th, td) {
+  vertical-align: top;
+}
+
+@media (min-width: 1024px) {
+  #main-content .max-w-sm,
+  #main-content .max-w-md,
+  #main-content .max-w-lg,
+  #main-content .max-w-xl,
+  #main-content .max-w-2xl {
+    width: 100%;
+  }
+}
+
+@media (max-width: 430px) {
+  #main-content input,
+  #main-content select,
+  #main-content textarea {
+    font-size: max(14px, 1em);
+  }
+
+  #main-content .overflow-x-auto {
+    overscroll-behavior-inline: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #main-content button,
+  #main-content [role="button"] {
+    transition-duration: .01ms !important;
+  }
+}
