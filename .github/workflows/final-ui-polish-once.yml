@@ -1,0 +1,87 @@
+name: Final BIXBO secondary UI polish once
+
+on:
+  push:
+    branches: [agent/ui-ux-consistency-pass]
+    paths:
+      - .github/workflows/final-ui-polish-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ui-ux-consistency-pass
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Polish Notes and root states
+        shell: python
+        run: |
+          from pathlib import Path
+
+          notes = Path('src/routes/notes.tsx')
+          s = notes.read_text()
+          replacements = [
+            ('<div className="space-y-5 px-5 pt-3 pb-[calc(104px+env(safe-area-inset-bottom))]">', '<div className="mx-auto w-full max-w-[980px] space-y-5 px-5 pt-3 pb-[calc(104px+env(safe-area-inset-bottom))] lg:px-0 lg:pb-12">'),
+            ('className="h-11 rounded-2xl bg-surface pl-10 pr-10 ring-1 ring-border/70"', 'className="h-12 rounded-2xl border-border/70 bg-surface pl-10 pr-11 shadow-sm ring-1 ring-border/70"'),
+            ('className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"', 'className="absolute right-1.5 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-xl text-muted-foreground transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"'),
+            ('<div className="grid grid-cols-3 gap-2 rounded-2xl bg-primary/15 p-1">', '<div className="grid grid-cols-3 gap-1 rounded-2xl bg-tint p-1 ring-1 ring-border/60">'),
+            ('className={`rounded-xl px-2 py-2 text-xs font-semibold transition ${', 'className={`min-h-11 rounded-xl px-2 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${'),
+            ('className="overflow-hidden rounded-3xl bg-surface ring-1 ring-border/80"', 'className="overflow-hidden rounded-3xl border border-border/70 bg-surface shadow-sm ring-1 ring-border/80"'),
+            ('className="flex min-w-0 flex-1 items-center gap-3 text-left"', 'className="flex min-h-[64px] min-w-0 flex-1 items-center gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"'),
+            ('className="rounded-full p-2 text-muted-foreground hover:bg-tint hover:text-destructive"', 'className="grid h-11 w-11 place-items-center rounded-full text-muted-foreground transition hover:bg-tint hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"'),
+            ('className="rounded-3xl bg-surface px-4 py-8 text-center text-sm text-muted-foreground ring-1 ring-border/70"', 'className="rounded-3xl border border-border/70 bg-surface px-5 py-10 text-center text-sm leading-relaxed text-muted-foreground shadow-sm ring-1 ring-border/70"'),
+            ('className="relative overflow-visible rounded-3xl p-4 shadow-sm ring-1 ring-border/70"', 'className="relative overflow-visible rounded-3xl border border-border/65 p-4 shadow-sm ring-1 ring-border/70 transition-shadow hover:shadow-md"'),
+            ('className="block w-full pr-8 text-left"', 'className="block min-h-[58px] w-full pr-9 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"'),
+            ('className="absolute right-2 top-8 rounded-full p-1.5 text-muted-foreground hover:bg-background/60"', 'className="absolute right-1.5 top-6 grid h-10 w-10 place-items-center rounded-full text-muted-foreground transition hover:bg-background/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"'),
+            ('className="absolute right-2 top-14 z-20 w-44 overflow-hidden rounded-2xl bg-background shadow-xl ring-1 ring-border"', 'className="absolute right-2 top-16 z-20 w-44 overflow-hidden rounded-2xl border border-border/70 bg-background/98 shadow-xl ring-1 ring-border backdrop-blur-xl"'),
+            ('className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-xs hover:bg-tint"', 'className="flex min-h-11 w-full items-center gap-2 px-3 py-2.5 text-left text-xs transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"'),
+            ('className="flex w-full items-center gap-2 border-t border-border/60 px-3 py-2.5 text-left text-xs hover:bg-tint"', 'className="flex min-h-11 w-full items-center gap-2 border-t border-border/60 px-3 py-2.5 text-left text-xs transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"'),
+            ('className="flex w-full items-center gap-2 border-t border-border/60 px-3 py-2.5 text-left text-xs text-destructive hover:bg-tint"', 'className="flex min-h-11 w-full items-center gap-2 border-t border-border/60 px-3 py-2.5 text-left text-xs text-destructive transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"'),
+          ]
+          for old, new in replacements:
+              if old not in s:
+                  raise SystemExit(f'Notes target not found: {old}')
+              s = s.replace(old, new, 1)
+          notes.write_text(s)
+
+          root = Path('src/routes/__root.tsx')
+          r = root.read_text()
+          root_replacements = [
+            ('<div className="max-w-md text-center">', '<div className="w-full max-w-md rounded-3xl border border-border/70 bg-surface p-6 text-center shadow-sm ring-1 ring-border/70 sm:p-8">'),
+            ('className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"', 'className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"'),
+          ]
+          for old, new in root_replacements:
+              if old not in r:
+                  raise SystemExit(f'Root target not found: {old}')
+              r = r.replace(old, new, 1)
+          # Error component uses the same max-width wrapper a second time.
+          old_wrap = '<div className="max-w-md text-center">'
+          if old_wrap in r:
+              r = r.replace(old_wrap, '<div className="w-full max-w-md rounded-3xl border border-border/70 bg-surface p-6 text-center shadow-sm ring-1 ring-border/70 sm:p-8">', 1)
+          # Remaining root action buttons use older radius; normalize without changing behavior.
+          r = r.replace('rounded-md bg-primary px-4 py-2 text-sm font-medium', 'rounded-xl bg-primary px-4 py-2 text-sm font-semibold')
+          r = r.replace('rounded-md border border-input bg-background px-4 py-2 text-sm font-medium', 'rounded-xl border border-input bg-background px-4 py-2 text-sm font-semibold')
+          root.write_text(r)
+
+      - name: Install and validate
+        run: |
+          bun install --frozen-lockfile
+          bun run typecheck
+          bun run lint
+          bun test
+          bun run build
+      - name: Commit changes
+        run: |
+          git config user.name "BIXBO UI bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add src/routes/notes.tsx src/routes/__root.tsx
+          git diff --cached --quiet && exit 0
+          git commit -m "polish Notes and secondary UI states"
+          git push origin HEAD:agent/ui-ux-consistency-pass
