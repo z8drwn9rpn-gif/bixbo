@@ -665,6 +665,111 @@ export function PainWizard({
               />
             </Field>
           )}
+          <Field label="PCOS symptoms">
+            <CustomChipList
+              base={PCOS_SYMPTOMS}
+              custom={data.custom.pcosSymptoms ?? []}
+              onAddCustom={(v) => addCustom("pcosSymptoms", v)}
+              onRemoveCustom={(v) => {
+                removeCustom("pcosSymptoms", v);
+                setPcosSymptoms((a) => a.filter((x) => x !== v));
+              }}
+              onRenameCustom={(o, n) => {
+                renameCustom("pcosSymptoms", o, n);
+                setPcosSymptoms((a) => a.map((x) => (x === o ? n : x)));
+              }}
+              selected={pcosSymptoms}
+              onToggle={(v) => setPcosSymptoms((a) => toggleIn(a, v))}
+            />
+          </Field>
+        </div>
+      )}
+
+      {activePainStepId === "episodes" && (
+        <div className="space-y-4 pt-1">
+          <div>
+            <h2 className="font-serif text-xl text-foreground">{t("Episodes")}</h2>
+          </div>
+          <div>
+            <Field label="Headache?">
+              <div className="mt-1 flex gap-2">
+                <Chip active={!headache} onClick={() => setHeadache(false)}>
+                  No
+                </Chip>
+                <Chip active={headache} onClick={() => setHeadache(true)}>
+                  Yes — log it
+                </Chip>
+              </div>
+            </Field>
+            {headache && (
+              <div className="mt-3 rounded-2xl border border-border p-3 space-y-3">
+                <Field label={`Headache intensity ${headacheIntensity ?? "-"}/10`}>
+                  <IntensityScale
+                    value={headacheIntensity ?? 0}
+                    onChange={(n) => setHeadacheIntensity(headacheIntensity === n ? undefined : n)}
+                    max={10}
+                    from={1}
+                    step={1}
+                    descriptions={getScaleDesc(data, "headache")}
+                    legendTitle="Headache scale"
+                    compactSingleRow
+                  />
+                </Field>
+                <Field label="Headache type">
+                  <CustomChipList
+                    base={HEADACHE_TYPES}
+                    custom={data.custom.headacheTypes ?? []}
+                    descriptions={HEADACHE_TYPE_DESC}
+                    onAddCustom={(v) => addCustom("headacheTypes", v)}
+                    onRemoveCustom={(v) => {
+                      removeCustom("headacheTypes", v);
+                      setHeadacheTypes((a) => a.filter((x) => x !== v));
+                    }}
+                    onRenameCustom={(o, n) => {
+                      renameCustom("headacheTypes", o, n);
+                      setHeadacheTypes((a) => a.map((x) => (x === o ? n : x)));
+                    }}
+                    selected={headacheTypes}
+                    onToggle={(v) => setHeadacheTypes((a) => toggleIn(a, v))}
+                  />
+                </Field>
+                <Field label="Medication taken">
+                  <div className="mt-1 flex gap-2">
+                    <Chip active={!headacheMedOn} onClick={() => setHeadacheMedOn(false)}>
+                      No
+                    </Chip>
+                    <Chip active={headacheMedOn} onClick={() => setHeadacheMedOn(true)}>
+                      Yes
+                    </Chip>
+                  </div>
+                  {headacheMedOn && (
+                    <div className="mt-2 space-y-2">
+                      {data.meds.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {data.meds.map((m) => {
+                            const label = `${m.name}${m.dose ? ` ${m.dose}` : ""}`;
+                            return (
+                              <Chip
+                                key={m.id}
+                                active={headacheMed === label}
+                                onClick={() => setHeadacheMed(headacheMed === label ? "" : label)}
+                              ><TrText value={label} /></Chip>
+                            );
+                          })}
+                        </div>
+                      )}
+                      <Input
+                        value={headacheMed}
+                        onChange={(e) => setHeadacheMed(e.target.value)}
+                        placeholder={t("Medication + dose")}
+                      />
+                      <Input type="time" value={headacheMedTime} onChange={(e) => setHeadacheMedTime(e.target.value)} />
+                    </div>
+                  )}
+                </Field>
+              </div>
+            )}
+          </div>
           <Field label="Nausea?">
             <div className="mt-1 flex gap-2">
               <Chip
@@ -778,86 +883,6 @@ export function PainWizard({
               </Field>
             </div>
           )}
-          <div>
-            <Field label="Headache?">
-              <div className="mt-1 flex gap-2">
-                <Chip active={!headache} onClick={() => setHeadache(false)}>
-                  No
-                </Chip>
-                <Chip active={headache} onClick={() => setHeadache(true)}>
-                  Yes — log it
-                </Chip>
-              </div>
-            </Field>
-            {headache && (
-              <div className="mt-3 rounded-2xl border border-border p-3 space-y-3">
-                <Field label={`Headache intensity ${headacheIntensity ?? "-"}/10`}>
-                  <IntensityScale
-                    value={headacheIntensity ?? 0}
-                    onChange={(n) => setHeadacheIntensity(headacheIntensity === n ? undefined : n)}
-                    max={10}
-                    from={1}
-                    step={1}
-                    descriptions={getScaleDesc(data, "headache")}
-                    legendTitle="Headache scale"
-                    compactSingleRow
-                  />
-                </Field>
-                <Field label="Headache type">
-                  <CustomChipList
-                    base={HEADACHE_TYPES}
-                    custom={data.custom.headacheTypes ?? []}
-                    descriptions={HEADACHE_TYPE_DESC}
-                    onAddCustom={(v) => addCustom("headacheTypes", v)}
-                    onRemoveCustom={(v) => {
-                      removeCustom("headacheTypes", v);
-                      setHeadacheTypes((a) => a.filter((x) => x !== v));
-                    }}
-                    onRenameCustom={(o, n) => {
-                      renameCustom("headacheTypes", o, n);
-                      setHeadacheTypes((a) => a.map((x) => (x === o ? n : x)));
-                    }}
-                    selected={headacheTypes}
-                    onToggle={(v) => setHeadacheTypes((a) => toggleIn(a, v))}
-                  />
-                </Field>
-                <Field label="Medication taken">
-                  <div className="mt-1 flex gap-2">
-                    <Chip active={!headacheMedOn} onClick={() => setHeadacheMedOn(false)}>
-                      No
-                    </Chip>
-                    <Chip active={headacheMedOn} onClick={() => setHeadacheMedOn(true)}>
-                      Yes
-                    </Chip>
-                  </div>
-                  {headacheMedOn && (
-                    <div className="mt-2 space-y-2">
-                      {data.meds.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {data.meds.map((m) => {
-                            const label = `${m.name}${m.dose ? ` ${m.dose}` : ""}`;
-                            return (
-                              <Chip
-                                key={m.id}
-                                active={headacheMed === label}
-                                onClick={() => setHeadacheMed(headacheMed === label ? "" : label)}
-                              ><TrText value={label} /></Chip>
-                            );
-                          })}
-                        </div>
-                      )}
-                      <Input
-                        value={headacheMed}
-                        onChange={(e) => setHeadacheMed(e.target.value)}
-                        placeholder={t("Medication + dose")}
-                      />
-                      <Input type="time" value={headacheMedTime} onChange={(e) => setHeadacheMedTime(e.target.value)} />
-                    </div>
-                  )}
-                </Field>
-              </div>
-            )}
-          </div>
           <Field label="Hot flashes?">
             <div className="mt-1 flex gap-2">
               <Chip active={!hotFlashesOn} onClick={() => setHotFlashesOn(false)}>
@@ -882,70 +907,44 @@ export function PainWizard({
               />
             </Field>
           )}
-          <Field label="PCOS symptoms">
-            <CustomChipList
-              base={PCOS_SYMPTOMS}
-              custom={data.custom.pcosSymptoms ?? []}
-              onAddCustom={(v) => addCustom("pcosSymptoms", v)}
-              onRemoveCustom={(v) => {
-                removeCustom("pcosSymptoms", v);
-                setPcosSymptoms((a) => a.filter((x) => x !== v));
-              }}
-              onRenameCustom={(o, n) => {
-                renameCustom("pcosSymptoms", o, n);
-                setPcosSymptoms((a) => a.map((x) => (x === o ? n : x)));
-              }}
-              selected={pcosSymptoms}
-              onToggle={(v) => setPcosSymptoms((a) => toggleIn(a, v))}
-            />
-          </Field>
-        </div>
-      )}
-
-      {activePainStepId === "episodes" && (
-        <div className="space-y-4 pt-1">
           <div>
-            <h2 className="font-serif text-xl text-foreground">{t("Episodes")}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{t("Log a tetany episode or panic attack if one happened with this pain entry.")}</p>
+            <Field label="Tetany episode?">
+              <div className="mt-1 flex gap-2">
+                <Chip active={episodeMode !== "tetany"} onClick={() => episodeMode === "tetany" && setEpisodeMode(null)}>
+                  No
+                </Chip>
+                <Chip active={episodeMode === "tetany"} onClick={() => setEpisodeMode("tetany")}>
+                  Yes — log it
+                </Chip>
+              </div>
+            </Field>
+            {episodeMode === "tetany" && (
+              <div className="mt-3 rounded-2xl border border-border p-3">
+                <LogSchemaContext.Provider value={null}>
+                  <TetanyForm date={date} data={data} update={update} onDone={() => setEpisodeMode(null)} />
+                </LogSchemaContext.Provider>
+              </div>
+            )}
           </div>
-          {([
-            ["tetany", "⭐", "Tetany episode"],
-            ["panic", "✨", "Panic attack"],
-          ] as const).map(([mode, icon, label]) => (
-            <div key={mode} className="rounded-2xl border border-border bg-surface p-3">
-              <div className="flex items-center gap-3">
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-primary/10"><Ico e={icon} size={24} /></span>
-                <p className="min-w-0 flex-1 text-sm font-semibold text-foreground">{t(label)}</p>
+          <div>
+            <Field label="Panic attack?">
+              <div className="mt-1 flex gap-2">
+                <Chip active={episodeMode !== "panic"} onClick={() => episodeMode === "panic" && setEpisodeMode(null)}>
+                  No
+                </Chip>
+                <Chip active={episodeMode === "panic"} onClick={() => setEpisodeMode("panic")}>
+                  Yes — log it
+                </Chip>
               </div>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => episodeMode === mode && setEpisodeMode(null)}
-                  className={`h-10 rounded-xl border text-sm font-semibold ${episodeMode !== mode ? "border-primary bg-primary/10 text-primary" : "border-border bg-background text-foreground"}`}
-                >
-                  {t("No")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEpisodeMode(mode)}
-                  className={`h-10 rounded-xl border text-sm font-semibold ${episodeMode === mode ? "border-primary bg-primary text-primary-foreground" : "border-primary bg-primary/10 text-primary"}`}
-                >
-                  {t("Yes, log it")}
-                </button>
+            </Field>
+            {episodeMode === "panic" && (
+              <div className="mt-3 rounded-2xl border border-border p-3">
+                <LogSchemaContext.Provider value={null}>
+                  <PanicForm date={date} data={data} update={update} onDone={() => setEpisodeMode(null)} />
+                </LogSchemaContext.Provider>
               </div>
-              {episodeMode === mode && (
-                <div className="mt-4 border-t border-border/70 pt-4">
-                  <LogSchemaContext.Provider value={null}>
-                    {mode === "tetany" ? (
-                      <TetanyForm date={date} data={data} update={update} onDone={() => setEpisodeMode(null)} />
-                    ) : (
-                      <PanicForm date={date} data={data} update={update} onDone={() => setEpisodeMode(null)} />
-                    )}
-                  </LogSchemaContext.Provider>
-                </div>
-              )}
-            </div>
-          ))}
+            )}
+          </div>
         </div>
       )}
 
