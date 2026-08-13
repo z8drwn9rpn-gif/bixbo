@@ -17,7 +17,7 @@ describe("Notes keyboard, Heatmap edge tooltip and live Admin regressions", () =
   });
 
   it("always renders the Year Heatmap tooltip with a deterministic edge-safe fallback", () => {
-    const source = read("src/routes/insights.tsx");
+    const source = read("src/features/insights/YearHealthHeatmap.tsx");
     expect(source).toContain("hasActive && activeTooltip && activePosition && activeTooltipLayout");
     expect(source).toContain("Math.max(2, Math.min(98, yearTooltipAnchor.leftPct))");
     expect(source).toContain("activePosition.weekIndex");
