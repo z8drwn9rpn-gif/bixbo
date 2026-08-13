@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { CouplePage } from "@/features/couple/CouplePage";
 
 export const Route = createFileRoute("/couple")({
@@ -16,5 +16,21 @@ export const Route = createFileRoute("/couple")({
       },
     ],
   }),
-  component: CouplePage,
+  component: CoupleRoutePage,
 });
+
+function CoupleRoutePage() {
+  return (
+    <>
+      <CouplePage />
+      <Link
+        to="/settings"
+        className="fixed right-4 z-40 rounded-full bg-surface/95 px-3 py-2 text-xs font-semibold text-foreground shadow-sm ring-1 ring-border backdrop-blur"
+        style={{ top: "calc(env(safe-area-inset-top) + 0.75rem)" }}
+        aria-label="Couple settings"
+      >
+        Settings
+      </Link>
+    </>
+  );
+}
