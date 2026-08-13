@@ -1846,7 +1846,7 @@ function PainWizard({
           <div className="w-full max-w-md px-3">
             <Slider value={[score * 2]} min={0} max={20} step={1} onValueChange={([v]) => setScore(v / 2)} />
           </div>
-          <div className="flex max-w-md flex-wrap justify-center gap-1.5 px-2">
+          <div className="grid w-fit max-w-full grid-cols-7 justify-center gap-1.5 px-2">
             {Array.from({ length: 21 }, (_, i) => i / 2).map((n) => (
               <button
                 key={n}
