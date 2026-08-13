@@ -1474,7 +1474,7 @@ function PainWizard({
   const [tetanyTriggers, setTetanyTriggers] = useState<string[]>([]);
   const [tetanyHelped, setTetanyHelped] = useState<string[]>([]);
   const [tetanyNote, setTetanyNote] = useState("");
-  // Panic (full inline log — under Tetany)
+  // Panic inline log section
   const [panic, setPanic] = useState(false);
   const [panicTime, setPanicTime] = useState(nowHHMM());
   const [panicIntensity, setPanicIntensity] = useState(5);
