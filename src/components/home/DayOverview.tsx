@@ -98,6 +98,8 @@ export function DayPreview({
     .map((definition) => ({ definition, entries: log?.customLogs?.[definition.id] ?? [] }))
     .filter((item) => item.entries.length > 0);
   const cycleTrackingHidden = isCycleTrackingHidden(data);
+  const urinaryOnlyEntries = (log?.bowel ?? []).filter((entry) => entry.urinaryOnly || entry.bristol === -2);
+  const bowelEntries = (log?.bowel ?? []).filter((entry) => !entry.urinaryOnly && entry.bristol !== -2);
   const flowLabel = (level?: string | null): string => {
     switch (level) {
       case "spotting":
@@ -755,10 +757,10 @@ export function DayPreview({
         </Card>
       ) : null}
 
-      {log?.bowel?.length ? (
+      {bowelEntries.length ? (
         <Card title="Bowel" icon="💩" compact>
           <ul className="space-y-1">
-            {log.bowel.map((b: BowelEntry, index) => {
+            {bowelEntries.map((b: BowelEntry, index) => {
               const bristol = b.bristol >= 0 ? BRISTOL.find((x) => x.n === b.bristol) : null;
               const typeLabel = bristol
                 ? `Type ${bristol.n}`
@@ -811,6 +813,47 @@ export function DayPreview({
                 </li>
               );
             })}
+          </ul>
+        </Card>
+      ) : null}
+
+      {urinaryOnlyEntries.length ? (
+        <Card title="Urinary" icon="💧" compact>
+          <ul className="space-y-1">
+            {urinaryOnlyEntries.map((b: BowelEntry, index) => (
+              <li key={b.id} className={`flex items-start gap-2 ${index ? "border-t border-border/60 pt-1.5" : ""}`}>
+                <button onClick={() => onEdit?.("bowel", b)} className="min-w-0 flex-1 text-left">
+                  <p className="text-xs text-muted-foreground">{b.time}</p>
+                  <div className="my-1 border-t border-border/60" />
+                  {b.urinary?.length ? (
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                      <span className="font-semibold text-foreground">{t("Urinary")}:</span>{" "}
+                      <IcoText text={b.urinary.map(t).join(", ")} size={13} />
+                    </p>
+                  ) : null}
+                  {b.note ? (
+                    <p className="mt-1 text-xs leading-snug whitespace-pre-line">
+                      <span className="font-semibold">{t("Note")}:</span> {b.note}
+                    </p>
+                  ) : null}
+                  <p className="mt-0.5 text-[10px] text-primary">{t("Tap to edit")}</p>
+                </button>
+                <DeleteBtn
+                  onClick={() =>
+                    update((d) => ({
+                      ...d,
+                      dayLogs: {
+                        ...d.dayLogs,
+                        [date]: {
+                          ...d.dayLogs[date],
+                          bowel: (d.dayLogs[date]?.bowel ?? []).filter((x) => x.id !== b.id),
+                        },
+                      },
+                    }))
+                  }
+                />
+              </li>
+            ))}
           </ul>
         </Card>
       ) : null}

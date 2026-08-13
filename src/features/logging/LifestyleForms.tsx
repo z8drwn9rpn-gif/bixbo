@@ -444,7 +444,7 @@ export function BowelForm({
   const { t } = useI18n();
   const schema = useLogSchema();
   const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
-  const [bristol, setBristol] = useState<number>(initialEntry?.bristol ?? 4);
+  const [bristol, setBristol] = useState<number | null>(initialEntry?.urinaryOnly ? null : (initialEntry?.bristol ?? null));
   const [feelings, setFeelings] = useState<string[]>((initialEntry?.feelings ?? []).map(stripEmoji));
   const [symptoms, setSymptoms] = useState<string[]>(initialEntry?.symptoms ?? []);
   const [urinary, setUrinary] = useState<string[]>(initialEntry?.urinary ?? []);
@@ -472,11 +472,14 @@ export function BowelForm({
     setSymptoms((a) => a.filter((x) => x !== v));
   };
   const save = () => {
+    if (bristol == null && urinary.length === 0) return;
     const editing = !!initialEntry;
+    const urinaryOnly = bristol == null && urinary.length > 0;
     const entry: BowelEntry = {
       id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
       time,
-      bristol,
+      bristol: urinaryOnly ? -2 : (bristol as number),
+      urinaryOnly: urinaryOnly || undefined,
       feelings: feelings.length ? feelings : undefined,
       symptoms: symptoms.length ? symptoms : undefined,
       urinary: urinary.length ? urinary : undefined,

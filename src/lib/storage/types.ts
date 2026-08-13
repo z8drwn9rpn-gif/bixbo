@@ -135,6 +135,8 @@ export interface BowelEntry {
   id: string;
   time: string;
   bristol: number;
+  /** True when this entry contains urinary data only and no bowel movement was logged. */
+  urinaryOnly?: boolean;
   note?: string;
   feelings?: string[];
   symptoms?: string[];
