@@ -2,7 +2,10 @@ import { type ReactNode } from "react";
 import { BottomNav } from "./BottomNav";
 import { SideNav } from "./SideNav";
 
-const BIXBO_MASCOT_SRC = "/bixbo-mascot.png";
+// The old /bixbo-mascot.png in the repository is corrupted (base64 text saved as .png).
+// Use the known-good clean penguin PWA asset instead and cache-bust it so iOS/Safari
+// does not keep rendering the previous broken-image question mark.
+const BIXBO_MASCOT_SRC = "/icon-192.png?v=20260813b";
 
 export function AppShell({
   children,
@@ -43,7 +46,6 @@ export function AppShell({
                     display: "block",
                     opacity: 1,
                     visibility: "visible",
-                    /* Home greeting (big): full-color Bixbo penguin + chili next to BIXBO / Hi, … */
                     filter: "none",
                     mixBlendMode: "normal",
                   }}
