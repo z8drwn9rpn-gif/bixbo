@@ -1,1 +1,1 @@
-export { LogSheet } from "@/features/logging/LogSheetRootV2";
+export { LogSheet } from "@/features/logging/LogSheetRoot";

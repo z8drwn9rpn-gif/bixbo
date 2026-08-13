@@ -197,38 +197,6 @@ export function PeriodForm({
           </p>
         )}
       </Field>
-      <div className="rounded-2xl bg-tint p-3 text-[11px] leading-relaxed text-muted-foreground">
-        Cycle prediction is based on your last period and cycle length (edit in Settings later).
-      </div>
-      {cur && (
-        <button
-          type="button"
-          onClick={() => {
-            update((current) => {
-              const day = current.dayLogs[date] ?? {};
-              const { period: _p, periodInfo: _pi, ...rest } = day;
-              void _p;
-              void _pi;
-              const adminFields = { ...(rest.adminFields ?? {}) };
-              const periodAdmin = adminFields.period ?? [];
-              const nextPeriodAdmin = periodAdmin.filter((entry) => entry.sourceEntryId !== `day:period:${date}`);
-              if (nextPeriodAdmin.length) adminFields.period = nextPeriodAdmin;
-              else delete adminFields.period;
-              return {
-                ...current,
-                dayLogs: {
-                  ...current.dayLogs,
-                  [date]: { ...rest, adminFields: Object.keys(adminFields).length ? adminFields : undefined },
-                },
-              };
-            });
-            onDone();
-          }}
-          className="w-full rounded-2xl bg-destructive/10 py-2.5 text-sm font-medium text-destructive ring-1 ring-destructive/30"
-        >
-          Delete Blueberry entry
-        </button>
-      )}
       <Field label="Pregnant?" schemaFieldId="pregnant">
         <div className="mt-1 flex gap-2">
           <Chip
@@ -301,6 +269,38 @@ export function PeriodForm({
           </div>
         )}
       </Field>
+      <div className="rounded-2xl bg-tint p-3 text-[11px] leading-relaxed text-muted-foreground">
+        Cycle prediction is based on your last period and cycle length (edit in Settings later).
+      </div>
+      {cur && (
+        <button
+          type="button"
+          onClick={() => {
+            update((current) => {
+              const day = current.dayLogs[date] ?? {};
+              const { period: _p, periodInfo: _pi, ...rest } = day;
+              void _p;
+              void _pi;
+              const adminFields = { ...(rest.adminFields ?? {}) };
+              const periodAdmin = adminFields.period ?? [];
+              const nextPeriodAdmin = periodAdmin.filter((entry) => entry.sourceEntryId !== `day:period:${date}`);
+              if (nextPeriodAdmin.length) adminFields.period = nextPeriodAdmin;
+              else delete adminFields.period;
+              return {
+                ...current,
+                dayLogs: {
+                  ...current.dayLogs,
+                  [date]: { ...rest, adminFields: Object.keys(adminFields).length ? adminFields : undefined },
+                },
+              };
+            });
+            onDone();
+          }}
+          className="w-full rounded-2xl bg-destructive/10 py-2.5 text-sm font-medium text-destructive ring-1 ring-destructive/30"
+        >
+          Delete Blueberry entry
+        </button>
+      )}
     </div>
   );
 }

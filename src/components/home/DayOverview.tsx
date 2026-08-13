@@ -760,9 +760,6 @@ export function DayPreview({
           <ul className="space-y-1">
             {log.bowel.map((b: BowelEntry, index) => {
               const bristol = b.bristol >= 0 ? BRISTOL.find((x) => x.n === b.bristol) : null;
-              const urinaryOnly =
-                b.urinaryOnly === true ||
-                (b.bristol < 0 && (b.urinary?.length ?? 0) > 0 && !b.feelings?.length && !b.symptoms?.length);
               const typeLabel = bristol
                 ? `Type ${bristol.n}`
                 : b.bristol === 0
@@ -774,18 +771,10 @@ export function DayPreview({
                   <button onClick={() => onEdit?.("bowel", b)} className="min-w-0 flex-1 text-left">
                     <p className="text-xs text-muted-foreground">{b.time}</p>
                     <div className="my-1 border-t border-border/60" />
-                    {!urinaryOnly ? (
-                      <p className="text-xs leading-relaxed text-muted-foreground">
-                        <span className="font-semibold text-foreground">{t("Type")}:</span>{" "}
-                        <IcoText text={`${typeLabel}${typeDescription ? ` — ${typeDescription}` : ""}`} size={13} />
-                      </p>
-                    ) : null}
-                    {b.urinary?.length ? (
-                      <p className={`${!urinaryOnly ? "mt-1 " : ""}text-xs leading-snug text-muted-foreground`}>
-                        <span className="font-semibold text-foreground">{t("Urinary")}:</span>{" "}
-                        <IcoText text={b.urinary.join(", ")} size={13} />
-                      </p>
-                    ) : null}
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                      <span className="font-semibold text-foreground">{t("Type")}:</span>{" "}
+                      <IcoText text={`${typeLabel}${typeDescription ? ` — ${typeDescription}` : ""}`} size={13} />
+                    </p>
                     {b.feelings?.length ? (
                       <p className="mt-1 text-xs leading-snug text-muted-foreground">
                         <span className="font-semibold text-foreground">{t("Feelings")}:</span>{" "}
