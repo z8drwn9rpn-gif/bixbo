@@ -1,0 +1,74 @@
+name: Apply Pain and SukSuk flow once
+on:
+  push:
+    branches: [agent/pain-other-symptoms-suksuk-flow]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: "!contains(github.event.head_commit.message, '[flow-patched]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pain-other-symptoms-suksuk-flow
+      - name: Patch logging flows
+        shell: python
+        run: |
+          from pathlib import Path
+
+          root = Path('src/features/logging/LogSheetRootV2.tsx')
+          s = root.read_text()
+          old = '''  const renderActive: Category | undefined = active === "pain"\n    ? (painTarget ?? undefined)\n    : active === "note" && planTarget\n      ? planTarget\n      : active;'''
+          new = '''  const renderActive: Category | undefined = active === "pain"\n    ? (painTarget ?? "pain")\n    : active === "note" && planTarget\n      ? planTarget\n      : active;'''
+          assert old in s, 'renderActive anchor not found'
+          s = s.replace(old, new, 1)
+          s = s.replace('''                {active === "pain" && !painTarget && <PainChooser data={data} onPick={setPainTarget} />}\n''', '', 1)
+          old_call = '''                {renderActive === "pain" && <PainWizard date={date} data={data} update={update} onDone={close} initialEntry={initialPain ?? (edit as PainEntry | undefined)} />}'''
+          new_call = '''                {renderActive === "pain" && <PainWizard date={date} data={data} update={update} onDone={close} onOpenEpisode={setPainTarget} initialEntry={initialPain ?? (edit as PainEntry | undefined)} />}'''
+          assert old_call in s, 'PainWizard call anchor not found'
+          s = s.replace(old_call, new_call, 1)
+          root.write_text(s)
+
+          pain = Path('src/features/logging/PainWizard.tsx')
+          s = pain.read_text()
+          old_sig = '''export function PainWizard({\n  date,\n  data,\n  update,\n  onDone,\n  initialEntry,\n}: {\n  date: string;\n  data: BixboData;\n  update: UpdateFn;\n  onDone: () => void;\n  initialEntry?: PainEntry;\n}) {'''
+          new_sig = '''export function PainWizard({\n  date,\n  data,\n  update,\n  onDone,\n  onOpenEpisode,\n  initialEntry,\n}: {\n  date: string;\n  data: BixboData;\n  update: UpdateFn;\n  onDone: () => void;\n  onOpenEpisode?: (target: "tetany" | "panic") => void;\n  initialEntry?: PainEntry;\n}) {'''
+          assert old_sig in s, 'PainWizard signature anchor not found'
+          s = s.replace(old_sig, new_sig, 1)
+          anchor = '''             schemaFieldId="symptoms"/>\n          </Field>\n          {symptoms.includes("Flu") && ('''
+          replacement = '''             schemaFieldId="symptoms"/>\n            {onOpenEpisode && (\n              <div className="mt-2 flex flex-wrap gap-2">\n                <Chip active={false} onClick={() => onOpenEpisode("tetany")}>\n                  ⭐ {t("Tetany episode")}\n                </Chip>\n                <Chip active={false} onClick={() => onOpenEpisode("panic")}>\n                  ✨ {t("Panic attack")}\n                </Chip>\n              </div>\n            )}\n          </Field>\n          {symptoms.includes("Flu") && ('''
+          assert anchor in s, 'Other symptoms anchor not found'
+          s = s.replace(anchor, replacement, 1)
+          pain.write_text(s)
+
+          sex = Path('src/features/logging/EnhancedForms2.tsx')
+          s = sex.read_text()
+          for line in [
+            '  const [painScore, setPainScore] = useState<number | undefined>(initial?.painScore);\n',
+            '  const [painLocation, setPainLocation] = useState(initial?.painLocation ?? "");\n',
+            '  const [bleedingLevel, setBleedingLevel] = useState(initial?.bleedingLevel ?? "");\n',
+            '  const [note, setNote] = useState(initial?.note ?? "");\n',
+          ]:
+            assert line in s, f'state anchor missing: {line.strip()}'
+            s = s.replace(line, '', 1)
+
+          old_full = '''      activity,\n      protection: protection || undefined,\n      contraception: contraception || undefined,\n      symptoms: symptoms.length ? symptoms : undefined,\n      painScore: symptoms.includes("Pain") ? painScore : undefined,\n      painLocation: symptoms.includes("Pain") && painLocation ? painLocation : undefined,\n      bleedingLevel: symptoms.includes("Bleeding") && bleedingLevel ? bleedingLevel : undefined,\n      orgasm: orgasm || undefined,\n      feelingAfter: feelingAfter.length ? feelingAfter : undefined,\n      painful: symptoms.includes("Pain") ? "during" : "no",\n      note: note.trim() || undefined,'''
+          new_full = '''      activity,\n      orgasm: orgasm || undefined,\n      protection: protection || undefined,\n      contraception: contraception || undefined,\n      symptoms: symptoms.length ? symptoms : undefined,\n      feelingAfter: feelingAfter.length ? feelingAfter : undefined,\n      painful: symptoms.includes("Pain") ? "during" : "no",'''
+          assert old_full in s, 'Sex save block anchor not found'
+          s = s.replace(old_full, new_full, 1)
+
+          start = s.index('  return <div className="flex flex-col gap-4">', s.index('export function EnhancedSexForm'))
+          end_marker = '\n  </div>;\n}\n\nexport function EnhancedThermoForm'
+          end = s.index(end_marker, start)
+          new_ui = '''  return <div className="flex flex-col gap-4">\n    <SaveBar onCancel={onDone} onSave={save} />\n    <Field label="Time" schemaFieldId="time"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></Field>\n    <Field label="Type" schemaFieldId="type"><div className="mt-2 flex flex-wrap gap-2">{SEX_ACTIVITY_TYPES.map((value) => <Chip key={value} active={activity === value} onClick={() => setActivity(value)}>{value}</Chip>)}</div></Field>\n    <Field label="Orgasm"><div className="mt-2 flex flex-wrap gap-2">{["Yes", "No", "Multiple", "Not tracked"].map((value) => <Chip key={value} active={orgasm === value} onClick={() => setOrgasm(orgasm === value ? "" : value)}>{value}</Chip>)}</div></Field>\n    <Field label="Protection"><div className="mt-2 flex flex-wrap gap-2">{SEX_PROTECTION.map((value) => <Chip key={value} active={protection === value} onClick={() => setProtection(protection === value ? "" : value)}>{value}</Chip>)}</div></Field>\n    <Field label="Contraception"><div className="mt-2 flex flex-wrap gap-2">{["Pill taken correctly", "Late / missed pill", "Emergency contraception", "Not tracked"].map((value) => <Chip key={value} active={contraception === value} onClick={() => setContraception(contraception === value ? "" : value)}>{value}</Chip>)}</div></Field>\n    <Field label="Symptoms after"><div className="mt-2 flex flex-wrap gap-2">{SEX_SYMPTOMS.map((value) => <Chip key={value} active={symptoms.includes(value)} onClick={() => setSymptoms((current) => toggleIn(current, value))}>{value}</Chip>)}</div></Field>\n    <Field label="How I feel" schemaFieldId="feelingAfter"><CustomChipList base={SEX_FEELINGS_DEFAULT} custom={data.custom.sexFeelings ?? []} onAddCustom={(value) => update((current) => ({ ...current, custom: { ...current.custom, sexFeelings: [...(current.custom.sexFeelings ?? []), value] } }))} onRemoveCustom={(value) => { update((current) => ({ ...current, custom: { ...current.custom, sexFeelings: (current.custom.sexFeelings ?? []).filter((item) => item !== value) } })); setFeelingAfter((current) => current.filter((item) => item !== value)); }} selected={feelingAfter} onToggle={(value) => setFeelingAfter((current) => toggleIn(current, value))} /></Field>\n  </div>;'''
+          s = s[:start] + new_ui + s[end + len('\n  </div>;'):]
+          sex.write_text(s)
+      - name: Remove one-shot workflow and commit
+        run: |
+          git rm .github/workflows/apply-pain-suksuk-flow-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/features/logging/LogSheetRootV2.tsx src/features/logging/PainWizard.tsx src/features/logging/EnhancedForms2.tsx
+          git commit -m "fix: restore Pain episode entry and simplify SukSuk [flow-patched]"
+          git push origin HEAD:agent/pain-other-symptoms-suksuk-flow
