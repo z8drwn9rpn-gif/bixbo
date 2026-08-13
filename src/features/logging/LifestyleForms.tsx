@@ -479,6 +479,7 @@ export function BowelForm({
       time,
       // Urinary-only entries must not invent a stool type. -1 is the existing "No bowel movement" sentinel.
       bristol: bristol ?? -1,
+      urinaryOnly: bristol == null && urinary.length > 0 ? true : undefined,
       feelings: feelings.length ? feelings : undefined,
       symptoms: symptoms.length ? symptoms : undefined,
       urinary: urinary.length ? urinary : undefined,

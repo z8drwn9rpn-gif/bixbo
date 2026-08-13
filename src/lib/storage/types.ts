@@ -139,6 +139,8 @@ export interface BowelEntry {
   feelings?: string[];
   symptoms?: string[];
   urinary?: string[];
+  /** True when urinary data was logged without selecting a bowel movement. */
+  urinaryOnly?: boolean;
 }
 
 export interface SexEntry {
