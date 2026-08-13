@@ -23,8 +23,10 @@ jobs:
             echo "$tracked_env"
             exit 1
           fi
-          if git grep -nE 'SUPABASE_SERVICE_ROLE(_KEY)?|VAPID_PRIVATE_KEY|VITE_[A-Z0-9_]*(SECRET|PRIVATE_KEY)' -- ':!*.example' ':!.github/workflows/ci.yml'; then
-            echo "Potential server secret reference found in tracked application files."
+          # Server-side code may reference secret environment variable NAMES; that is expected.
+          # What must never exist is a client-exposed VITE secret/private key variable.
+          if git grep -nE 'VITE_[A-Z0-9_]*(SECRET|PRIVATE_KEY|SERVICE_ROLE)' -- ':!*.example' ':!.github/workflows/ci.yml'; then
+            echo "Potential server secret exposed through a client VITE_ variable."
             exit 1
           fi
       - name: Install dependencies
