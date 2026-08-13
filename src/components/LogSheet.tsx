@@ -1,5 +1,7 @@
 import { Children, createContext, isValidElement, useContext, useState, useMemo, useRef, useEffect, type ReactNode } from "react";
 import { useI18n } from "@/hooks/useI18n";
+import { TrText } from "@/features/logging/TrText";
+import { CATEGORIES, type Category } from "@/features/logging/logCategories";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Ico, IcoText } from "@/components/icons/BixboIcons";
 import { CustomLogForm } from "@/components/CustomLogForm";
@@ -87,64 +89,6 @@ import {
 } from "@/lib/storage";
 
 
-function TrText({ value }: { value: unknown }) {
-  const { t, language } = useI18n();
-  const raw = String(value ?? "");
-  const exact = t(raw);
-  if (exact !== raw) return <>{exact}</>;
-  if (language !== "sk") return <>{raw}</>;
-
-  let out = raw;
-  const exactSk: Record<string, string> = {
-    Before: "Pred",
-    During: "Počas",
-    After: "Po",
-    "Very-Heavy": "Veľmi silná",
-    "Very heavy": "Veľmi silná",
-    Heavy: "Silná",
-    Medium: "Stredná",
-    Light: "Slabá",
-    Spotting: "Špinenie",
-    "Overall improvement": "Celkové zlepšenie",
-    "Overall worsening": "Celkové zhoršenie",
-    "No clear change": "Bez jasnej zmeny",
-    "High caffeine (≥200 mg)": "Vysoký príjem kofeínu (≥200 mg)",
-    "Tetany episode": "Tetánická epizóda",
-    "Hot flash": "Nával tepla",
-    "Low energy": "Nízka energia",
-    Headache: "Bolesť hlavy",
-    "Daily adherence": "Denné dodržiavanie",
-    doses: "dávok",
-    "logged days": "zaznamenaných dní",
-  };
-  if (exactSk[out]) return <>{exactSk[out]}</>;
-
-  out = out
-    .replace(/^Panic attacks:/, "Panické záchvaty:")
-    .replace(/^Medication adherence:/, "Dodržiavanie liekov:")
-    .replace(/^Workouts:/, "Cvičenia:")
-    .replace(/^Pain: improved/, "Bolesť: zlepšenie")
-    .replace(/^Pain: worsened/, "Bolesť: zhoršenie")
-    .replace(/^(\d+) logged days$/, "$1 zaznamenaných dní")
-    .replace(/^Based on (\d+) logged days in (.+)$/i, "Na základe $1 zaznamenaných dní v $2")
-    .replace(/^Based on (\d+) days before and (\d+) days after$/i, "Na základe $1 dní pred a $2 dní po")
-    .replace(/^(\d+) before · (\d+) after$/, "$1 pred · $2 po")
-    .replace(/^0× in this month$/, "0× v tomto mesiaci")
-    .replace(/^(\d+)× in this month$/, "$1× v tomto mesiaci")
-    .replace(/^The outcome was (.+) percentage points more common on days with this trigger\.$/, "Výsledok bol o $1 percentuálnych bodov častejší v dňoch s týmto spúšťačom.")
-    .replace(/^Based on (\d+) days with and (\d+) days without the trigger\.$/, "Na základe $1 dní so spúšťačom a $2 dní bez spúšťača.")
-    .replace(/^Correlations show associations in your logs\. They do not prove that one factor caused another\.$/, "Korelácie ukazujú súvislosti v tvojich záznamoch. Nedokazujú, že jeden faktor spôsobil druhý.")
-    .replace(/^This shows an association in your logs, not proof that the selected trigger caused the outcome\.$/, "Toto ukazuje súvislosť v tvojich záznamoch, nie dôkaz, že vybraný spúšťač spôsobil výsledok.")
-    .replace(/^Compare how often an outcome occurred on days with and without a possible trigger\.$/, "Porovnaj, ako často sa výsledok objavil v dňoch s možným spúšťačom a bez neho.")
-    .replace(/^Automatically ranked associations calculated only from your own logs\.$/, "Automaticky zoradené súvislosti vypočítané iba z tvojich vlastných záznamov.");
-
-  if (out.includes(" → ")) {
-    const [a, b] = out.split(" → ");
-    return <>{t(a)} → {t(b)}</>;
-  }
-
-  return <>{out}</>;
-}
 
 type UpdateFn = (u: (d: BixboData) => BixboData) => void;
 
@@ -160,41 +104,6 @@ type LogSchemaContextValue = {
 const LogSchemaContext = createContext<LogSchemaContextValue>(null);
 function useLogSchema() { return useContext(LogSchemaContext); }
 
-type Category =
-  | "postpartum"
-  | "meds"
-  | "pain"
-  | "panic"
-  | "tetany"
-  | "period"
-  | "sex"
-  | "heat"
-  | "food"
-  | "bowel"
-  | "workout"
-  | "temp"
-  | "task"
-  | "event"
-  | "note"
-  | `custom:${string}`;
-
-const CATEGORIES: { id: Category; label: string; emoji: string; hint: string }[] = [
-  { id: "postpartum", label: "Postpartum symptoms", emoji: "🤱", hint: "Recovery symptoms · notes" },
-  { id: "pain", label: "Pain", emoji: "🔥", hint: "0–10, body, quality" },
-  { id: "tetany", label: "Episodes", emoji: "⭐", hint: "Tetany · panic attack" },
-  { id: "panic", label: "Panic attack", emoji: "✨", hint: "Intensity · symptoms · trigger" },
-  { id: "period", label: "Blueberry", emoji: "🫐", hint: "Flow · discharge · notes" },
-  { id: "heat", label: "Heat / Cold / TENS", emoji: "♨️", hint: "Heating, ice or TENS session" },
-  { id: "food", label: "Food", emoji: "🍽️", hint: "What & how you feel" },
-  { id: "bowel", label: "Bowel", emoji: "💩", hint: "Bristol type" },
-  { id: "sex", label: "ŠukŠuk!", emoji: "❤️", hint: "All kinds of activity" },
-  { id: "workout", label: "Workout", emoji: "🧘🏼‍♀️", hint: "Type · duration · weight" },
-  { id: "temp", label: "Temp / Sleep / Weight", emoji: "🌡️", hint: "°C · kg · hours" },
-  { id: "meds", label: "Meds", emoji: "💊", hint: "Taken · extra dose" },
-  { id: "event", label: "Event", emoji: "📅", hint: "Multi-day · time · note" },
-  { id: "task", label: "Task", emoji: "✅", hint: "To-do with date & time" },
-  { id: "note", label: "Notes", emoji: "📝", hint: "Any thought for today" },
-];
 
 export function LogSheet({
   open,
