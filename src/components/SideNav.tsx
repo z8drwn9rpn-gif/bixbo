@@ -56,7 +56,7 @@ function NavArtwork({ id, size, className }: { id: NavigationItemId; size: numbe
 }
 
 /** Desktop-only left navigation. Hidden below lg so the mobile UI is untouched. */
-export function SideNav({ mascotSrc }: { mascotSrc: string }) {
+export function SideNav({ mascotSrc, mascotFallbackSrc }: { mascotSrc: string; mascotFallbackSrc?: string }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const { t } = useI18n();
@@ -98,6 +98,13 @@ export function SideNav({ mascotSrc }: { mascotSrc: string }) {
           src={mascotSrc}
           alt="BIXBO"
           draggable={false}
+          onError={(event) => {
+            if (!mascotFallbackSrc) return;
+            const img = event.currentTarget;
+            if (img.dataset.fallbackApplied === "1") return;
+            img.dataset.fallbackApplied = "1";
+            img.src = mascotFallbackSrc;
+          }}
           className="h-11 w-auto max-w-[46px] select-none object-contain"
           style={{ filter: "none", opacity: 1, mixBlendMode: "normal" }}
         />
