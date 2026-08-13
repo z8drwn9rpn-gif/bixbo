@@ -152,7 +152,7 @@ export function SelectField({
       id={id}
       value={value ?? ""}
       onChange={(e) => onChange(e.target.value)}
-      className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <option value="">{placeholder ? t(placeholder) : t("— Select —")}</option>
       {options.map((o) => (
@@ -272,7 +272,7 @@ export function DoctorForm({
   return (
     <div className="rounded-xl border border-border p-3">
       <p className="mb-2 text-xs font-semibold text-foreground">{t(title)}</p>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <Field label="Name" htmlFor={`${idBase}-name`}>
           <Input
             id={`${idBase}-name`}

@@ -145,7 +145,7 @@ export function DayPreview({
 
   if (!anything)
     return (
-      <div className="mx-5 mt-4 rounded-3xl bg-surface p-6 text-center ring-1 ring-border">
+      <div className="mx-5 mt-4 rounded-3xl border border-border/70 bg-surface p-6 text-center shadow-sm ring-1 ring-border lg:mx-0">
         <p className="text-sm text-muted-foreground">{isToday ? t("Nothing logged today yet.") : t("Nothing logged this day yet.")}</p>
         <p className="mt-1 text-xs text-muted-foreground">
           {t("Tap the")} <span className="font-bold">+ {t("Log")}</span> {t("button below.")}
@@ -163,7 +163,7 @@ export function DayPreview({
 
 
   return (
-    <div className="space-y-3 px-5 pt-3 pb-32">
+    <div className="space-y-3 px-5 pt-3 pb-32 lg:px-0 lg:pb-12">
       {(takenList.length > 0 || extraMeds.length > 0 || missedList.length > 0) && (
         <Card title="Meds" icon="💊">
           <ul className="space-y-1 text-sm">
@@ -1091,7 +1091,7 @@ export function Card({
 }) {
   const { t } = useI18n();
   return (
-    <div className={`rounded-3xl bg-surface ring-1 ring-border ${compact ? "px-4 py-3" : "p-4"}`}>
+    <div className={`rounded-3xl border border-border/70 bg-surface shadow-sm ring-1 ring-border ${compact ? "px-4 py-3" : "p-4"}`}>
       <div className={`${compact ? "mb-1" : "mb-2"} flex items-center gap-2`}>
         <Ico e={icon} size={22} />
         <h3 className="font-serif text-lg font-semibold">{t(title)}</h3>
