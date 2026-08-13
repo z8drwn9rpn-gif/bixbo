@@ -1488,7 +1488,9 @@ function PainWizard({
    */
   const latestPain = useMemo(() => {
     if (initialEntry) return undefined;
-    const entries = data.dayLogs[date]?.pain ?? [];
+    // Symptom-only follow-ups are children of a real pain entry, not new pain measurements.
+    // Always attach repeated Add symptoms entries to the newest REAL pain entry.
+    const entries = (data.dayLogs[date]?.pain ?? []).filter((entry) => entry.entryKind !== "symptom-update");
     if (!entries.length) return undefined;
 
     return entries.reduce((latest, entry) =>

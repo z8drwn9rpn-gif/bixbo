@@ -31,6 +31,12 @@ describe("Pain symptom-only follow-ups", () => {
 });
 
 
+it("repeated Add symptoms entries always attach to the latest real pain entry", () => {
+  const source = readFileSync(resolve(process.cwd(), "src/components/LogSheet.tsx"), "utf8");
+  expect(source).toContain('(data.dayLogs[date]?.pain ?? []).filter((entry) => entry.entryKind !== "symptom-update")');
+  expect(source).toContain('setCopiedFromId(latestPain.id)');
+});
+
 it("quick Add symptoms keeps an optional note field", () => {
   const source = readFileSync(resolve(process.cwd(), "src/components/LogSheet.tsx"), "utf8");
   expect(source).toContain('quickSymptomUpdate && activePainStepId === "symptoms"');
