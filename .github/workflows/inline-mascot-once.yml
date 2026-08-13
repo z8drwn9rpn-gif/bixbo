@@ -1,0 +1,60 @@
+name: Inline mascot once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/inline-mascot-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Inline exact mascot
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64, re
+
+          app = Path('src/components/AppShell.tsx')
+          png = Path('src/assets/bixbo-mascot-user.png')
+          src = app.read_text()
+          data = base64.b64encode(png.read_bytes()).decode('ascii')
+          uri = 'data:image/png;base64,' + data
+
+          src = re.sub(r'import bixboMascot from "@/assets/bixbo-mascot-user\.png";\n', '', src)
+          src = re.sub(r'const BIXBO_MASCOT_SRC = (?:bixboMascot|"[^"]*");', 'const BIXBO_MASCOT_SRC = "' + uri + '";', src, count=1)
+
+          if 'data:image/png;base64,' not in src:
+              raise SystemExit('Failed to inline mascot')
+          app.write_text(src)
+          PY
+
+      - name: Verify build
+        shell: bash
+        run: |
+          if command -v bun >/dev/null 2>&1; then
+            bun install --frozen-lockfile || bun install
+            bun run build
+          else
+            npm ci
+            npm run build
+          fi
+
+      - name: Commit
+        shell: bash
+        run: |
+          rm -f .github/workflows/inline-mascot-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/AppShell.tsx .github/workflows/inline-mascot-once.yml
+          git commit -m "fix: inline exact BIXBO mascot for preview"
+          git push origin HEAD:main
