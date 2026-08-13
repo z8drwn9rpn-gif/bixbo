@@ -3,7 +3,8 @@ import { useI18n } from "@/hooks/useI18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Ico, Plus, X } from "@/components/icons/BixboIcons";
+import { Check, Ico, Plus, X } from "@/components/icons/BixboIcons";
+import { BixboSemanticIcon, type BixboSemanticIconName } from "@/components/icons/BixboSemanticIcons";
 import {
   DISCHARGE_OPTS,
   SEX_FEELINGS_DEFAULT,
@@ -86,6 +87,8 @@ type SexEntryUi = SexEntry & {
   painLocations?: string[];
 };
 
+type SemanticOption<T extends string = string> = { value: T; icon: BixboSemanticIconName; label?: string };
+
 export function SexForm({ date, data, update, onDone, initialEntry }: { date: string; data: BixboData; update: UpdateFn; onDone: () => void; initialEntry?: SexEntry }) {
   const { t } = useI18n();
   const schema = useLogSchema();
@@ -105,63 +108,68 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
   const [orgasm, setOrgasm] = useState<"yes" | "no" | undefined>(initial?.orgasm === "yes" || initial?.orgasm === "no" ? initial.orgasm : undefined);
   const [note, setNote] = useState(initial?.note ?? "");
 
-  const typeOptions: { value: SexKind; icon: string; label: string }[] = [
-    { value: "sex", icon: "❤️", label: "Sex" },
-    { value: "oral", icon: "💋", label: "Oral" },
-    { value: "fingering", icon: "✋", label: "Masturbation" },
-    { value: "other", icon: "•••", label: "Other" },
+  const typeOptions: SemanticOption<SexKind>[] = [
+    { value: "sex", icon: "orgasmYes", label: "Sex" },
+    { value: "oral", icon: "oral", label: "Oral" },
+    { value: "fingering", icon: "masturbation", label: "Masturbation" },
+    { value: "other", icon: "more", label: "Other" },
   ];
-  const protectionOptions = [
-    { value: "None", icon: "🚫" },
-    { value: "Condom", icon: "🛡️" },
-    { value: "Other", icon: "•••" },
+  const protectionOptions: SemanticOption[] = [
+    { value: "None", icon: "prohibited" },
+    { value: "Condom", icon: "shield" },
+    { value: "Other", icon: "more" },
   ];
-  const feelingOptions = [
-    { value: "Great", icon: "😃" },
-    { value: "Good", icon: "🙂" },
-    { value: "Okay", icon: "😐" },
-    { value: "Uncomfortable", icon: "😣" },
-    { value: "Bad", icon: "😞" },
+  const feelingOptions: SemanticOption[] = [
+    { value: "Great", icon: "great" },
+    { value: "Good", icon: "good" },
+    { value: "Okay", icon: "okay" },
+    { value: "Uncomfortable", icon: "uncomfortable" },
+    { value: "Bad", icon: "bad" },
   ];
-  const painWhenOptions = [
-    { value: "during" as const, icon: "🌊", label: "During" },
-    { value: "after" as const, icon: "🕒", label: "After" },
-    { value: "both" as const, icon: "◎", label: "Both" },
+  const painWhenOptions: SemanticOption<"during" | "after" | "both">[] = [
+    { value: "during", icon: "during", label: "During" },
+    { value: "after", icon: "after", label: "After" },
+    { value: "both", icon: "both", label: "Both" },
   ];
-  const painLocationOptions = [
-    { value: "Lower belly", icon: "🎯" },
-    { value: "Pelvis", icon: "○" },
-    { value: "Vagina", icon: "💧" },
-    { value: "Vulva", icon: "🌸" },
-    { value: "Lower back", icon: "⚡" },
-    { value: "Other", icon: "•••" },
+  const painLocationOptions: SemanticOption[] = [
+    { value: "Lower belly", icon: "lowerBelly" },
+    { value: "Pelvis", icon: "pelvis" },
+    { value: "Vagina", icon: "vagina" },
+    { value: "Vulva", icon: "vulva" },
+    { value: "Lower back", icon: "lowerBack" },
+    { value: "Other", icon: "more" },
   ];
-  const symptomOptions = [
-    { value: "Cramps", icon: "⚡" },
-    { value: "Lower belly pain", icon: "🎯" },
-    { value: "Pelvic pain", icon: "○" },
-    { value: "Vaginal pain", icon: "💧" },
-    { value: "Burning", icon: "🔥" },
-    { value: "Irritation", icon: "◌" },
-    { value: "Dryness", icon: "💧" },
-    { value: "Itching", icon: "◌" },
-    { value: "Spotting", icon: "🩸" },
-    { value: "Bleeding", icon: "🩸" },
-    { value: "Discharge", icon: "💧" },
-    { value: "Bloating", icon: "🫧" },
-    { value: "Nausea", icon: "🤢" },
-    { value: "Headache", icon: "🎯" },
-    { value: "Dizziness", icon: "◎" },
-    { value: "Fatigue", icon: "🔋" },
-    { value: "Hot flash", icon: "♨️" },
-    { value: "Tetany symptoms", icon: "⚡" },
-    { value: "Panic / anxiety", icon: "😰" },
-    { value: "Urinary discomfort", icon: "💧" },
+  const symptomOptions: SemanticOption[] = [
+    { value: "Cramps", icon: "cramps" },
+    { value: "Lower belly pain", icon: "lowerBelly" },
+    { value: "Pelvic pain", icon: "pelvicPain" },
+    { value: "Vaginal pain", icon: "vaginalPain" },
+    { value: "Burning", icon: "burning" },
+    { value: "Irritation", icon: "irritation" },
+    { value: "Dryness", icon: "dryness" },
+    { value: "Itching", icon: "itching" },
+    { value: "Spotting", icon: "spotting" },
+    { value: "Bleeding", icon: "bleeding" },
+    { value: "Discharge", icon: "discharge" },
+    { value: "Bloating", icon: "bloating" },
+    { value: "Nausea", icon: "nausea" },
+    { value: "Headache", icon: "headache" },
+    { value: "Dizziness", icon: "dizziness" },
+    { value: "Fatigue", icon: "fatigue" },
+    { value: "Hot flash", icon: "hotFlash" },
+    { value: "Tetany symptoms", icon: "tetany" },
+    { value: "Panic / anxiety", icon: "panic" },
+    { value: "Urinary discomfort", icon: "urinary" },
   ];
 
   const chipClass = (active: boolean) => `inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
     active
       ? "bg-primary text-primary-foreground shadow-sm ring-2 ring-foreground/75 ring-offset-2 ring-offset-background"
+      : "bg-tint text-foreground ring-1 ring-border"
+  }`;
+  const symptomChipClass = (active: boolean) => `inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+    active
+      ? "bg-primary text-primary-foreground shadow-sm ring-2 ring-foreground/75 ring-offset-1 ring-offset-background"
       : "bg-tint text-foreground ring-1 ring-border"
   }`;
 
@@ -198,8 +206,8 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
       <div className="flex flex-wrap gap-2.5">
         {typeOptions.map((option) => (
           <button key={option.value} type="button" onClick={() => setKind(option.value)} className={chipClass(kind === option.value)}>
-            <Ico e={option.icon} size={17} />
-            <span>{t(option.label)}</span>
+            <BixboSemanticIcon name={option.icon} size={17} />
+            <span>{t(option.label ?? option.value)}</span>
           </button>
         ))}
       </div>
@@ -210,7 +218,7 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
       <div className="flex flex-wrap gap-2.5">
         {protectionOptions.map((option) => (
           <button key={option.value} type="button" onClick={() => setProtection(option.value)} className={chipClass(protection === option.value)}>
-            <Ico e={option.icon} size={17} />
+            <BixboSemanticIcon name={option.icon} size={17} />
             <span>{t(option.value)}</span>
           </button>
         ))}
@@ -222,7 +230,7 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
       <div className="flex flex-wrap gap-2.5">
         {feelingOptions.map((option) => (
           <button key={option.value} type="button" onClick={() => setFeelingAfter(feelingAfter === option.value ? "" : option.value)} className={chipClass(feelingAfter === option.value)}>
-            <Ico e={option.icon} size={17} />
+            <BixboSemanticIcon name={option.icon} size={17} />
             <span>{t(option.value)}</span>
           </button>
         ))}
@@ -232,8 +240,8 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
     <section>
       <p className="mb-2 text-sm font-semibold text-foreground">4. {t("Pain")}</p>
       <div className="flex flex-wrap gap-2.5">
-        <button type="button" onClick={() => setPainOn(false)} className={chipClass(!painOn)}><Ico e="🙂" size={17} /> {t("No")}</button>
-        <button type="button" onClick={() => setPainOn(true)} className={chipClass(painOn)}><Ico e="❗" size={17} /> {t("Yes")}</button>
+        <button type="button" onClick={() => setPainOn(false)} className={chipClass(!painOn)}><BixboSemanticIcon name="good" size={17} /> {t("No")}</button>
+        <button type="button" onClick={() => setPainOn(true)} className={chipClass(painOn)}><BixboSemanticIcon name="painYes" size={17} /> {t("Yes")}</button>
       </div>
 
       {painOn && (
@@ -244,7 +252,7 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
               <div className="flex flex-wrap gap-2">
                 {painWhenOptions.map((option) => (
                   <button key={option.value} type="button" onClick={() => setPainWhen(option.value)} className={chipClass(painWhen === option.value)}>
-                    <Ico e={option.icon} size={15} /> {t(option.label)}
+                    <BixboSemanticIcon name={option.icon} size={15} /> {t(option.label ?? option.value)}
                   </button>
                 ))}
               </div>
@@ -275,7 +283,7 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
                 const active = painLocations.includes(option.value);
                 return (
                   <button key={option.value} type="button" onClick={() => setPainLocations((current) => toggleIn(current, option.value))} className={chipClass(active)}>
-                    <Ico e={option.icon} size={15} /> {t(option.value)}
+                    <BixboSemanticIcon name={option.icon} size={15} /> {t(option.value)}
                   </button>
                 );
               })}
@@ -291,15 +299,15 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
         {symptomOptions.map((option) => {
           const active = symptomsAfter.includes(option.value);
           return (
-            <button key={option.value} type="button" onClick={() => setSymptomsAfter((current) => toggleIn(current, option.value))} className={chipClass(active)}>
-              <Ico e={option.icon} size={15} />
+            <button key={option.value} type="button" onClick={() => setSymptomsAfter((current) => toggleIn(current, option.value))} className={symptomChipClass(active)}>
+              <BixboSemanticIcon name={option.icon} size={15} />
               <span>{t(option.value)}</span>
-              {active ? <span aria-hidden="true" className="text-[10px]">✓</span> : null}
+              {active ? <Check className="h-3 w-3" /> : null}
             </button>
           );
         })}
-        <button type="button" onClick={() => setSymptomsAfter([])} className={chipClass(symptomsAfter.length === 0)}>
-          <Ico e="🌿" size={15} /> {t("None")}
+        <button type="button" onClick={() => setSymptomsAfter([])} className={symptomChipClass(symptomsAfter.length === 0)}>
+          <BixboSemanticIcon name="none" size={15} /> {t("None")}
         </button>
       </div>
     </section>
@@ -307,8 +315,8 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
     <section>
       <p className="mb-2 text-sm font-semibold text-foreground">6. {t("Orgasm")}</p>
       <div className="flex flex-wrap gap-2.5">
-        <button type="button" onClick={() => setOrgasm(orgasm === "yes" ? undefined : "yes")} className={chipClass(orgasm === "yes")}><Ico e="❤️" size={17} /> {t("Yes")}</button>
-        <button type="button" onClick={() => setOrgasm(orgasm === "no" ? undefined : "no")} className={chipClass(orgasm === "no")}><Ico e="○" size={17} /> {t("No")}</button>
+        <button type="button" onClick={() => setOrgasm(orgasm === "yes" ? undefined : "yes")} className={chipClass(orgasm === "yes")}><BixboSemanticIcon name="orgasmYes" size={17} /> {t("Yes")}</button>
+        <button type="button" onClick={() => setOrgasm(orgasm === "no" ? undefined : "no")} className={chipClass(orgasm === "no")}><BixboSemanticIcon name="orgasmNo" size={17} /> {t("No")}</button>
       </div>
     </section>
 
@@ -318,7 +326,7 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
     </section>
 
     <div className="flex items-center gap-2 rounded-2xl border border-border/70 bg-surface/35 px-3 py-2.5 text-[11px] text-muted-foreground">
-      <Ico e="ℹ️" size={16} />
+      <BixboSemanticIcon name="privacy" size={16} />
       <span>{t("Only you can see this. Your data is private and secure.")}</span>
     </div>
   </div>;
