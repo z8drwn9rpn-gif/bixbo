@@ -1,0 +1,57 @@
+name: Fix Home mascot clipping once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/fix-home-mascot-clipping-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Move Home mascot outside clipped title
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          p = Path('src/features/home/HomePage.tsx')
+          s = p.read_text()
+
+          s = re.sub(r'\nconst HOME_MASCOT_DATA_URI = .*?;\n', '\n', s, count=1)
+
+          pattern = re.compile(
+              r'''  return <AppShell\n    big\n    showMascot=\{false\}\n    title=\{\n      <div className="flex items-center gap-3 leading-tight">\n        <img\n          src=\{HOME_MASCOT_DATA_URI\}\n          alt="BIXBO penguin"\n          draggable=\{false\}\n          className="h-\[52px\] w-\[52px\] shrink-0 object-contain"\n          style=\{\{ display: "block", opacity: 1, visibility: "visible", filter: "none", mixBlendMode: "normal" \}\}\n        />\n        <div className="flex flex-col">\n          <span>BIXBO</span>\n          <span className="text-xs font-normal text-muted-foreground">\{t\("Hi"\)\}, \{view\.settings\.userName\?\.trim\(\) \|\| t\("there"\)\} <Ico e="❤️" size=\{12\} /></span>\n        </div>\n      </div>\n    \}'''
+          )
+          replacement = '''  return <AppShell\n    big\n    title={<div className="flex flex-col leading-tight"><span>BIXBO</span><span className="text-xs font-normal text-muted-foreground">{t("Hi")}, {view.settings.userName?.trim() || t("there")} <Ico e="❤️" size={12} /></span></div>}'''
+
+          s2, n = pattern.subn(replacement, s, count=1)
+          if n != 1:
+              raise SystemExit(f'Expected one Home title block, replaced {n}')
+          p.write_text(s2)
+          PY
+
+      - name: Verify build
+        run: |
+          npm install
+          npm run build
+
+      - name: Commit
+        shell: bash
+        run: |
+          rm -f .github/workflows/fix-home-mascot-clipping-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/features/home/HomePage.tsx .github/workflows/fix-home-mascot-clipping-once.yml
+          git commit -m "fix: stop clipping Home penguin mascot"
+          git pull --rebase origin main
+          git push origin HEAD:main
