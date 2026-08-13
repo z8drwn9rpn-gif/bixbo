@@ -16,6 +16,8 @@ export type Category =
   | "note"
   | `custom:${string}`;
 
+// Tetany and panic remain valid internal categories for historic/edit flows,
+// but new logging is intentionally available only inside Pain → Episodes.
 export const CATEGORIES: { id: Category; label: string; emoji: string; hint: string }[] = [
   { id: "postpartum", label: "Postpartum symptoms", emoji: "🤱", hint: "Recovery symptoms · notes" },
   { id: "pain", label: "Pain", emoji: "🔥", hint: "0–10, body, quality" },
