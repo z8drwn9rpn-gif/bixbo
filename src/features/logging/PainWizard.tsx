@@ -155,6 +155,7 @@ export function PainWizard({
   const activePainStepId = activePainStep?.id ?? "score";
   const activePainStepIsCustom = !!activePainStep && activePainStep.id !== "episodes" && !(BIXBO_LOG_FIELDS.pain ?? []).some((field) => field.id === activePainStep.id);
   const symptomsStepIndex = painSteps.findIndex((field) => field.id === "symptoms");
+  const episodesStepIndex = painSteps.findIndex((field) => field.id === "episodes");
   const [score, setScore] = useState(initialEntry?.score ?? 0);
   const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
   const [parts, setParts] = useState<string[]>(initialEntry?.parts ?? []);
@@ -343,6 +344,11 @@ export function PainWizard({
     if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy)) return;
     const target = e.target as HTMLElement;
     if (target.closest('input,textarea,select,button,[role="slider"],.no-swipe')) return;
+    if (quickSymptomUpdate) {
+      if (dx < 0 && activePainStepId === "symptoms" && episodesStepIndex >= 0) setStep(episodesStepIndex);
+      else if (dx > 0 && activePainStepId === "episodes" && symptomsStepIndex >= 0) setStep(symptomsStepIndex);
+      return;
+    }
     if (dx < 0 && safeStep < painSteps.length - 1) setStep(safeStep + 1);
     else if (dx > 0 && safeStep > 0) setStep(safeStep - 1);
   };
@@ -1023,11 +1029,15 @@ export function PainWizard({
         </div>
       )}
 
-      {quickSymptomUpdate && activePainStepId === "symptoms" && (
+      {quickSymptomUpdate && (activePainStepId === "symptoms" || activePainStepId === "episodes") && (
         <SheetFooter className="fixed inset-x-0 z-30 h-[60px] flex-row items-center justify-between gap-3 border-b border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur" style={{ top: "calc(env(safe-area-inset-top) + 56px)" }}>
           <button
             type="button"
             onClick={() => {
+              if (activePainStepId === "episodes" && symptomsStepIndex >= 0) {
+                setStep(symptomsStepIndex);
+                return;
+              }
               setQuickSymptomUpdate(false);
               setCopiedFromTime(undefined);
               setCopiedFromId(undefined);
@@ -1036,16 +1046,22 @@ export function PainWizard({
             className="flex items-center gap-1 px-1 text-sm font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <span aria-hidden="true" className="text-xl leading-none">←</span>
-            <span>{t("Edit full log")}</span>
+            <span>{t(activePainStepId === "episodes" ? "Back" : "Edit full log")}</span>
           </button>
 
           <button
             type="button"
-            onClick={save}
+            onClick={() => {
+              if (activePainStepId === "symptoms" && episodesStepIndex >= 0) {
+                setStep(episodesStepIndex);
+                return;
+              }
+              save();
+            }}
             className="inline-flex h-10 min-w-[104px] items-center justify-center gap-1.5 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
-            <span>{t("Save symptoms")}</span>
-            <span aria-hidden="true" className="text-base leading-none">✓</span>
+            <span>{t(activePainStepId === "symptoms" ? "Next" : "Save")}</span>
+            <span aria-hidden="true" className="text-base leading-none">{activePainStepId === "symptoms" ? "→" : "✓"}</span>
           </button>
         </SheetFooter>
       )}
