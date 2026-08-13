@@ -333,7 +333,7 @@ export function DayPreview({
                   ) : null}
                   {p.stress != null && <p className="mt-2 text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">{t("Stress")}:</span> {p.stress}/10</p>}
                   {p.bodyBattery != null && <p className="mt-2 text-xs text-muted-foreground"><span className="font-semibold text-foreground">{t("Battery")}:</span> {p.bodyBattery}/5</p>}
-                  {p.note && <p className="mt-1 text-sm whitespace-pre-line">"{p.note}"</p>}
+                  {p.note && <p className="mt-2 text-sm whitespace-pre-line"><span className="font-semibold">{t("Note")}:</span> {p.note}</p>}
                   <p className="mt-1 text-[10px] text-primary">{t("Tap to edit")}</p>
                 </button>
                 <DeleteBtn
@@ -369,7 +369,7 @@ export function DayPreview({
                               {entry.hotFlashesOn || entry.hotFlashes != null ? <p className="text-sm">{t("Hot flashes")}{entry.hotFlashes != null ? ` ${entry.hotFlashes}/5` : ""}</p> : null}
                               {entry.pcosSymptoms?.length ? <p className="text-sm">PCOS: {entry.pcosSymptoms.map(t).join(", ")}</p> : null}
                               {entry.fluNote ? <p className="text-sm">Flu: {entry.fluNote}</p> : null}
-                              {entry.note ? <p className="mt-1 whitespace-pre-line text-sm">{entry.note}</p> : null}
+                              {entry.note ? <p className="mt-1 whitespace-pre-line text-sm"><span className="font-semibold">{t("Note")}:</span> {entry.note}</p> : null}
                               <p className="mt-1 text-[10px] text-primary">{t("Tap to edit")}</p>
                             </button>
                             <DeleteBtn
@@ -417,7 +417,7 @@ export function DayPreview({
                     {entry.hotFlashesOn || entry.hotFlashes != null ? <p className="text-sm">{t("Hot flashes")}{entry.hotFlashes != null ? ` ${entry.hotFlashes}/5` : ""}</p> : null}
                     {entry.pcosSymptoms?.length ? <p className="text-sm">PCOS: {entry.pcosSymptoms.map(t).join(", ")}</p> : null}
                     {entry.fluNote ? <p className="text-sm">Flu: {entry.fluNote}</p> : null}
-                    {entry.note ? <p className="mt-1 whitespace-pre-line text-sm">{entry.note}</p> : null}
+                    {entry.note ? <p className="mt-1 whitespace-pre-line text-sm"><span className="font-semibold">{t("Note")}:</span> {entry.note}</p> : null}
                     <p className="mt-1 text-[10px] text-primary">{t("Tap to edit")}</p>
                   </button>
                   <DeleteBtn
@@ -549,26 +549,34 @@ export function DayPreview({
         ) && (
           <Card title="Blueberry" icon="🫐">
             <button onClick={() => onEdit?.("period", undefined)} className="w-full text-left">
+              <div className="my-2 border-t border-border/60" />
               {(log?.periodInfo?.level || log?.period) && (
-                <p className="text-sm">{t("Flow")}: {flowLabel(log?.periodInfo?.level ?? log?.period)}</p>
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  <span className="font-semibold text-foreground">{t("Flow")}:</span>{" "}
+                  {flowLabel(log?.periodInfo?.level ?? log?.period)}
+                </p>
               )}
               {log?.periodInfo?.cramps != null && (
-                <p className="text-xs" style={{ color: painColor(log.periodInfo.cramps) }}>
-                  {t("Cramp pain")}:{" "}
-                  <span className="font-semibold">
-                    {Number.isInteger(log.periodInfo.cramps) ? log.periodInfo.cramps : log.periodInfo.cramps.toFixed(1)}
-                    /10
-                  </span>{" "}
-                  — {t(PAIN_DESCRIPTIONS[Math.round(log.periodInfo.cramps)])}
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                  <span className="font-semibold text-foreground">{t("Cramp pain")}:</span>{" "}
+                  <span style={{ color: painColor(log.periodInfo.cramps) }}>
+                    {Number.isInteger(log.periodInfo.cramps) ? log.periodInfo.cramps : log.periodInfo.cramps.toFixed(1)}/10
+                    {" — "}{t(PAIN_DESCRIPTIONS[Math.round(log.periodInfo.cramps)])}
+                  </span>
                 </p>
               )}
               {log?.periodInfo?.discharge && (
-                <p className="text-xs text-muted-foreground">
-                  {t("Discharge")}: {t(log.periodInfo.discharge)}
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                  <span className="font-semibold text-foreground">{t("Discharge")}:</span>{" "}
+                  {t(log.periodInfo.discharge)}
                   {log.periodInfo.dischargeNote ? ` — ${log.periodInfo.dischargeNote}` : ""}
                 </p>
               )}
-              {log?.periodInfo?.note && <p className="mt-1 text-sm whitespace-pre-line">"{log.periodInfo.note}"</p>}
+              {log?.periodInfo?.note && (
+                <p className="mt-2 text-sm whitespace-pre-line">
+                  <span className="font-semibold">{t("Note")}:</span> {log.periodInfo.note}
+                </p>
+              )}
               <p className="mt-1 text-[10px] text-primary">{t("Tap to edit")}</p>
             </button>
           </Card>
