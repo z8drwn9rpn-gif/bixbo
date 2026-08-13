@@ -2,35 +2,30 @@ name: Restore Aug 12 logs keep Aug 13 Meds
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
 
 permissions:
   contents: write
 
 jobs:
   restore:
-    if: github.event.head_commit.message == 'chore: trigger selective log rollback'
+    if: github.event.head_commit.message == 'Trigger selective log rollback'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-
       - name: Build selective LogSheet
         run: python3 scripts/restore_logs_keep_meds_20260813.py
-
       - name: Validate patch
         run: |
           git diff --check
           bun install --frozen-lockfile
           bun run typecheck
           bun run build
-
       - name: Commit selective rollback
         run: |
           rm -f scripts/restore_logs_keep_meds_20260813.py .github/workflows/restore-logs-keep-meds-20260813.yml .bixbo-trigger-selective-log-rollback
