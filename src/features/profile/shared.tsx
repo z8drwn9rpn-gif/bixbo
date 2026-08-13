@@ -432,7 +432,7 @@ export function HubRow({
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-tint"
+      className="flex min-h-[68px] w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
     >
       <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-tint ring-1 ring-border/50">
         {icon}
@@ -470,7 +470,7 @@ export function HealthHub({
         </button>
       }
     >
-      <div className="space-y-5 px-5 pb-28 pt-4">
+      <div className="space-y-5 px-5 pb-28 pt-4 lg:px-0 lg:pb-12">
         <div>
           <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
             {t("Health & progress")}
@@ -594,7 +594,7 @@ export function HealthSubpage({ title, onBack, children }: { title: string; onBa
         </button>
       }
     >
-      <div className="space-y-4 px-5 pb-28 pt-4">{children}</div>
+      <div className="space-y-4 px-5 pb-28 pt-4 lg:px-0 lg:pb-12">{children}</div>
     </AppShell>
   );
 }
