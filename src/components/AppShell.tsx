@@ -39,20 +39,12 @@ export function AppShell({
                   aria-hidden="true"
                   draggable={false}
                   className="block h-full w-full object-contain object-center opacity-100 visible"
-                  style={{
-                    display: "block",
-                    opacity: 1,
-                    visibility: "visible",
-                    filter: "none",
-                    mixBlendMode: "normal",
-                  }}
+                  style={{ display: "block", opacity: 1, visibility: "visible", filter: "none", mixBlendMode: "normal" }}
                 />
               </span>
 
               <h1
-                className={`min-w-0 truncate font-serif font-bold leading-none text-foreground ${
-                  big ? "text-3xl" : "text-2xl"
-                }`}
+                className={`min-w-0 truncate font-serif font-bold leading-none text-foreground ${big ? "text-3xl" : "text-2xl"}`}
               >
                 {title}
               </h1>
@@ -62,10 +54,7 @@ export function AppShell({
           </header>
         )}
 
-        <main
-          id="main-content"
-          className="min-w-0 overflow-x-hidden"
-        >
+        <main id="main-content" className="min-w-0 overflow-x-hidden">
           {children}
         </main>
         </div>
