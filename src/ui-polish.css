@@ -158,6 +158,118 @@
   overscroll-behavior: contain;
 }
 
+/* SUKSUK -----------------------------------------------------------------
+   Exact approved compact layout from the reference screen. SexForm currently
+   has this unique direct-child class combination, so these rules do not alter
+   the other logs. */
+.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 {
+  gap: 12px;
+  padding-bottom: 18px;
+}
+
+.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section {
+  margin: 0;
+}
+
+.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section > p:first-child {
+  margin-bottom: 8px;
+  font-size: 13px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--foreground);
+}
+
+.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section > div.flex.flex-wrap {
+  gap: 8px;
+}
+
+.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section button.rounded-full {
+  min-height: 31px;
+  padding: 5px 12px;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  box-shadow: none;
+}
+
+/* Selected chips in Type / Protection / Feeling / Pain / Orgasm use the
+   thin double-outline treatment from the approved mockup instead of a large
+   solid olive capsule. */
+.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:not(:nth-of-type(5)) button.rounded-full.bg-primary {
+  background: color-mix(in srgb, var(--primary) 18%, var(--background)) !important;
+  color: var(--foreground) !important;
+  box-shadow: 0 0 0 1px var(--background), 0 0 0 3px color-mix(in srgb, var(--foreground) 78%, transparent) !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+}
+
+/* Symptoms use the filled olive selected state, with the small check mark. */
+.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:nth-of-type(5) {
+  padding: 12px;
+  border-radius: 18px;
+  background: transparent;
+}
+
+.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:nth-of-type(5) > div {
+  gap: 7px;
+}
+
+.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:nth-of-type(5) button.rounded-full {
+  min-height: 30px;
+  padding: 5px 10px;
+  font-size: 11.5px;
+}
+
+.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:nth-of-type(5) button.rounded-full.bg-primary {
+  background: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+  box-shadow: 0 0 0 1px var(--background), 0 0 0 2.5px color-mix(in srgb, var(--foreground) 72%, transparent) !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+}
+
+/* Pain detail card follows the tighter reference proportions. */
+.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:nth-of-type(4) > .rounded-3xl {
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 18px;
+  box-shadow: none;
+}
+
+.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:nth-of-type(4) > .rounded-3xl .grid {
+  gap: 12px;
+}
+
+.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:nth-of-type(4) > .rounded-3xl p {
+  font-size: 11px;
+}
+
+.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:nth-of-type(4) > .rounded-3xl button.rounded-full {
+  min-height: 29px;
+  padding: 4px 10px;
+  font-size: 11px;
+}
+
+.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:nth-of-type(4) > .rounded-3xl button.h-8.w-8 {
+  width: 29px;
+  height: 29px;
+  min-height: 29px;
+  padding: 0;
+  font-size: 11px;
+}
+
+.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 textarea.rounded-3xl {
+  min-height: 92px;
+  border-radius: 18px;
+}
+
+.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > div:last-child {
+  padding-block: 9px;
+  border-radius: 14px;
+  font-size: 10.5px;
+}
+
 /* NAV / PAGE ACCESSIBILITY ------------------------------------------------ */
 @media (pointer: coarse) {
   #main-content button:not(.rounded-full),
@@ -191,6 +303,14 @@
   .bixbo-unified-log input[type="date"] {
     -webkit-appearance: none;
     appearance: none;
+  }
+
+  .bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 {
+    gap: 11px;
+  }
+
+  .bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section button.rounded-full {
+    padding-inline: 10px;
   }
 }
 
