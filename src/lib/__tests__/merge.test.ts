@@ -71,4 +71,28 @@ describe("BIXBO sync regression protection", () => {
     const merged = mergeBixbo(local, remote, { legacyLocalCanonical: true });
     expect(merged.postpartum?.active).toBe(false);
   });
+
+  it("syncs granular grouped-med selections from cloud to a fresh device", () => {
+    const local = clone();
+    const remote = clone();
+    remote.medLog["2026-08-12"] = { "evening@18:00": true };
+    remote.medLogItems = { "2026-08-12": { "evening@18:00": ["Iron"] } };
+    remote.medLogNotes = { "2026-08-12": { "evening@18:00": "Skipped omega-3" } };
+
+    const merged = mergeBixbo(local, remote, { legacyLocalCanonical: false });
+    expect(merged.medLogItems?.["2026-08-12"]?.["evening@18:00"]).toEqual(["Iron"]);
+    expect(merged.medLogNotes?.["2026-08-12"]?.["evening@18:00"]).toBe("Skipped omega-3");
+  });
+
+  it("does not replace an existing device's granular grouped-med selection with stale legacy group data", () => {
+    const local = clone();
+    const remote = clone();
+    local.medLog["2026-08-12"] = { "evening@18:00": true };
+    local.medLogItems = { "2026-08-12": { "evening@18:00": ["Iron"] } };
+    remote.medLog["2026-08-12"] = { "evening@18:00": true };
+
+    const merged = mergeBixbo(local, remote, { legacyLocalCanonical: true });
+    expect(merged.medLogItems?.["2026-08-12"]?.["evening@18:00"]).toEqual(["Iron"]);
+  });
+
 });

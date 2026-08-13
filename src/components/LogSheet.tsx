@@ -1074,6 +1074,21 @@ function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave:
   );
 }
 
+function QuickSaveAction({ label, onSave }: { label: string; onSave: () => void }) {
+  const { t } = useI18n();
+  return (
+    <button
+      type="button"
+      onClick={onSave}
+      className="flex min-h-10 w-full items-center justify-center gap-2 rounded-2xl bg-primary/10 px-4 text-sm font-semibold text-primary ring-1 ring-primary/25 transition active:scale-[0.99]"
+    >
+      <span aria-hidden="true">✓</span>
+      <span>{t(label)}</span>
+    </button>
+  );
+}
+
+
 function CustomChipList({
   base,
   custom,
@@ -1820,6 +1835,11 @@ function PainWizard({
               title={t("Pain scale (Mankosky)")}
             />
           </div>
+          {!initialEntry && !quickSymptomUpdate ? (
+            <div className="w-full px-2">
+              <QuickSaveAction label="Save pain now — add details later" onSave={save} />
+            </div>
+          ) : null}
         </div>
       )}
 
@@ -2580,6 +2600,7 @@ function PanicForm({
           legendTitle="Panic intensity scale" schemaFieldId="intensity"
         />
       </Field>
+      <QuickSaveAction label="Save basic panic episode" onSave={save} />
       <Field label="Physical symptoms" schemaFieldId="physical">
         <CustomChipList
           base={PANIC_PHYSICAL}
@@ -2808,6 +2829,7 @@ function TetanyForm({
           legendTitle="Tetany intensity scale" schemaFieldId="intensity"
         />
       </Field>
+      <QuickSaveAction label="Save basic tetany episode" onSave={save} />
       <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} schemaFieldId="duration" />
       <Field label="Triggers" schemaFieldId="triggers">
         <CustomChipList

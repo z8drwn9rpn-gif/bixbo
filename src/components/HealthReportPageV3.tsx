@@ -2,8 +2,9 @@ import { Link } from "@tanstack/react-router";
 import { useMemo, useRef, useState, type CSSProperties } from "react";
 import { AppShell } from "@/components/AppShell";
 import { ArrowLeft } from "@/components/icons/BixboIcons";
-import { BRISTOL, EMPTY, medScheduleItems, useBixbo, type DayLog, type Med } from "@/lib/storage";
+import { BRISTOL, EMPTY, useBixbo, type DayLog, type Med } from "@/lib/storage";
 import { useI18n } from "@/hooks/useI18n";
+import { resolveScheduledDose, summarizeMedicationAdherence } from "@/lib/medicationAdherence";
 
 type Preset = "7" | "30" | "90" | "365" | "custom";
 type PickerTarget = "from" | "to";
@@ -138,33 +139,14 @@ function BowelChart({days}:{days:RDay[]}) {
   return <div className="bowelSection"><h2>Bowel frequency <small>(Bristol type counts)</small></h2><svg viewBox={`0 0 ${w} ${h}`} className="bowelSvg"><defs><linearGradient id="bowel0" x1="0" x2="1"><stop offset="0%" stopColor="#ef4444"/><stop offset="20%" stopColor="#f59e0b"/><stop offset="40%" stopColor="#eab308"/><stop offset="60%" stopColor="#22c55e"/><stop offset="80%" stopColor="#3b82f6"/><stop offset="100%" stopColor="#8b5cf6"/></linearGradient></defs><line x1={L} x2={w-R} y1={y(0)} y2={y(0)} stroke="#dfe3d7"/>{counts.map((c,i)=>{const item=BRISTOL.find(b=>b.n===i);return <g key={i}><rect x={x(i)-bw/2} y={c?y(c):y(0)-2} width={bw} height={c?Math.max(2,y(0)-y(c)):2} rx="3" fill={i===0?"url(#bowel0)":item?.color??"#70A65B"}/><text x={x(i)} y={c?y(c)-7:y(0)-7} textAnchor="middle" className="bowelCount">{c}</text><text x={x(i)} y={h-14} textAnchor="middle" className="barLabel">T{i}</text></g>;})}</svg><div className="bowelLegend">{Array.from({length:8},(_,i)=>{const item=BRISTOL.find(b=>b.n===i);return <div key={i}><i style={{background:i===0?BRISTOL_MYSTERY:item?.color??"#70A65B"}}/><b>Type {i}</b><span>{i===0?"Unknown / mixed":item?.sub??"Bowel entry"}</span><strong>{counts[i]}×</strong></div>;})}</div></div>;
 }
 
-function scheduledTimeMinutes(time?:string) {
-  if(!time)return null;const m=/^(\d{1,2}):(\d{2})/.exec(time.trim());if(!m)return null;const h=Number(m[1]),min=Number(m[2]);if(!Number.isInteger(h)||!Number.isInteger(min)||h<0||h>23||min<0||min>59)return null;return h*60+min;
-}
-function isDoseEligibleNow(dateKey:string,time:string,taken:boolean,now:Date) {
-  const today=iso(now);if(dateKey<today)return true;if(dateKey>today)return false;if(taken)return true;const scheduled=scheduledTimeMinutes(time);if(scheduled==null)return false;return scheduled<=now.getHours()*60+now.getMinutes();
-}
 function doseSummary(m:Med,days:RDay[],medLog:MedLog,medLogItems:MedLogItems,now:Date) {
-  let expected=0,taken=0;
-  const scheduledItems=medScheduleItems(m);
-  days.forEach(d=>(m.times??[]).forEach(time=>{
-    const key=`${m.id}@${time}`,isTaken=!!medLog[d.key]?.[key];
-    if(!isDoseEligibleNow(d.key,time,isTaken,now))return;
-    expected+=scheduledItems.length;
-    const selected=medLogItems[d.key]?.[key]??(isTaken?scheduledItems:[]);
-    const validSelected=new Set(selected.filter(item=>scheduledItems.includes(item)));
-    taken+=validSelected.size;
-  }));
-  return expected?{taken,expected,pct:pct(taken,expected)}:null;
+  return summarizeMedicationAdherence(m, days.map(d=>d.key), medLog, medLogItems, now);
 }
 function takenText(d:RDay,meds:Med[],medLog:MedLog,medLogItems:MedLogItems) {
-  const counts=new Map<string,number>();
+  const counts=new Map<string,number>(),now=new Date(`${d.key}T23:59:59`);
   meds.filter(m=>!m.asNeeded).forEach(m=>(m.times??[]).forEach(time=>{
-    const key=`${m.id}@${time}`;
-    if(medLog[d.key]?.[key]!==true)return;
-    const all=medScheduleItems(m);
-    const selected=medLogItems[d.key]?.[key]??all;
-    selected.filter(item=>all.includes(item)).forEach(item=>counts.set(item,(counts.get(item)??0)+1));
+    const state=resolveScheduledDose(m,d.key,time,medLog,medLogItems,now);
+    state.selectedItems.forEach(item=>counts.set(item,(counts.get(item)??0)+1));
   }));
   return [...counts].map(([name,count])=>`${name}${count>1?` ${count}x`:""}`).join(", ")||"—";
 }

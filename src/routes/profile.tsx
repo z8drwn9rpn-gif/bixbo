@@ -495,7 +495,7 @@ function HealthHub({
       <div className="space-y-5 px-5 pb-28 pt-4">
         <div>
           <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-            {t("Health Hub")}
+            {t("Health & progress")}
           </p>
 
           <section className="overflow-hidden rounded-3xl bg-surface shadow-sm ring-1 ring-border/80">
@@ -538,7 +538,7 @@ function HealthHub({
 
         <div>
           <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-            {t("Preferences")}
+            {t("Preferences & app")}
           </p>
 
           <section className="overflow-hidden rounded-3xl bg-surface shadow-sm ring-1 ring-border/80">

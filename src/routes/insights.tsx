@@ -22,6 +22,7 @@ import {
   avgDayPain,
   medScheduleItems,
 } from "@/lib/storage";
+import { resolveScheduledDose } from "@/lib/medicationAdherence";
 
 const WD_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MON_SHORT3 = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -341,48 +342,6 @@ function eachDay(startK: string, endK: string): string[] {
   }
   return out;
 }
-
-function scheduledTimeMinutes(time?: string): number | null {
-  if (!time) return null;
-  const match = /^(\d{1,2}):(\d{2})/.exec(time.trim());
-  if (!match) return null;
-
-  const hours = Number(match[1]);
-  const minutes = Number(match[2]);
-
-  if (
-    !Number.isInteger(hours) ||
-    !Number.isInteger(minutes) ||
-    hours < 0 ||
-    hours > 23 ||
-    minutes < 0 ||
-    minutes > 59
-  ) {
-    return null;
-  }
-
-  return hours * 60 + minutes;
-}
-
-/**
- * Past days count in full. Future days never count.
- * On today, only doses whose scheduled time has already passed count;
- * a dose already marked taken also counts immediately.
- */
-function isDoseEligibleNow(dateKey: string, time: string, taken: boolean, now: Date): boolean {
-  const today = toKey(now);
-
-  if (dateKey < today) return true;
-  if (dateKey > today) return false;
-  if (taken) return true;
-
-  const scheduledMinutes = scheduledTimeMinutes(time);
-  if (scheduledMinutes == null) return false;
-
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
-  return scheduledMinutes <= nowMinutes;
-}
-
 
 function InsightPeriodSelect({
   value,
@@ -1007,26 +966,25 @@ function MedsAdherence({
         let taken = 0;
 
         scheduled.forEach((med) => {
-          const scheduleItems = medScheduleItems(med);
           med.times.forEach((time) => {
-            const key = `${med.id}@${time}`;
-            const isTaken = !!data.medLog[date]?.[key];
+            const state = resolveScheduledDose(
+              med,
+              date,
+              time,
+              data.medLog,
+              data.medLogItems ?? {},
+              adherenceNow,
+            );
+            if (!state.eligible) return;
 
-            if (!isDoseEligibleNow(date, time, isTaken, adherenceNow)) return;
-
-            expected += scheduleItems.length;
-            const storedItems = data.medLogItems?.[date]?.[key];
-            const selectedItems = storedItems ?? (isTaken ? scheduleItems : []);
-            const selectedSet = new Set(selectedItems.filter((item) => scheduleItems.includes(item)));
-
-            scheduleItems.forEach((item) => {
-              if (selectedSet.has(item)) {
-                taken += 1;
-                takenList.push({ medName: item, time, key, item });
-              } else {
-                missed.push({ medName: item, time, key, item });
-              }
-            });
+            expected += state.allItems.length;
+            taken += state.selectedItems.length;
+            state.selectedItems.forEach((item) =>
+              takenList.push({ medName: item, time, key: state.key, item }),
+            );
+            state.missedItems.forEach((item) =>
+              missed.push({ medName: item, time, key: state.key, item }),
+            );
           });
         });
 
@@ -1074,16 +1032,18 @@ function MedsAdherence({
               let taken = 0;
 
               days.forEach((date) => {
-                const key = `${med.id}@${time}`;
-                const isTaken = !!data.medLog[date]?.[key];
-
-                if (!isDoseEligibleNow(date, time, isTaken, adherenceNow)) return;
+                const state = resolveScheduledDose(
+                  med,
+                  date,
+                  time,
+                  data.medLog,
+                  data.medLogItems ?? {},
+                  adherenceNow,
+                );
+                if (!state.eligible) return;
 
                 expected += 1;
-                const allItems = medScheduleItems(med);
-                const storedItems = data.medLogItems?.[date]?.[key];
-                const selectedItems = storedItems ?? (isTaken ? allItems : []);
-                if (selectedItems.includes(item)) taken += 1;
+                if (state.selectedItems.includes(item)) taken += 1;
               });
 
               const pct = expected ? Math.round((taken / expected) * 100) : null;
