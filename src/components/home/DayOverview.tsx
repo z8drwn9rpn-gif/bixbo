@@ -361,24 +361,27 @@ export function DayPreview({
                 />
                 {(log.pain ?? []).some((entry) => entry.entryKind === "symptom-update" && entry.sourcePainId === p.id) ? (
                   <div className="basis-full pl-12 pr-7">
-                    <div className="mt-1 space-y-2 border-l-2 border-primary/25 pl-3">
+                    <div className="mt-1 border-l border-border/70 pl-3">
                       {(log.pain ?? [])
                         .filter((entry) => entry.entryKind === "symptom-update" && entry.sourcePainId === p.id)
-                        .map((entry) => (
-                          <div key={entry.id} className="flex items-start gap-2 rounded-xl bg-primary/5 px-2.5 py-2 ring-1 ring-primary/15">
+                        .map((entry, index) => (
+                          <div key={entry.id} className={`flex items-start gap-2 py-2 ${index ? "border-t border-border/60" : ""}`}>
                             <button onClick={() => onEditPain?.(entry)} className="min-w-0 flex-1 text-left">
-                              <p className="text-[11px] font-semibold text-primary">{entry.time} · {t("Add symptoms")}</p>
-                              {entry.symptoms.length > 0 ? <p className="mt-0.5 text-sm">{entry.symptoms.map(t).join(", ")}</p> : null}
+                              <p className="text-xs text-muted-foreground">{entry.time} · {t("Add symptoms")}</p>
+                              <div className="my-1.5 border-t border-border/60" />
+                              {entry.symptoms.length > 0 ? (
+                                <p className="text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">{t("Symptoms")}:</span> {entry.symptoms.map(t).join(", ")}</p>
+                              ) : null}
                               {entry.nausea || entry.nauseaSeverity != null || entry.nauseaTypes?.length ? (
-                                <p className="text-sm">{t("Nausea")}{entry.nauseaSeverity != null ? ` ${entry.nauseaSeverity}/10` : ""}{entry.nauseaTypes?.length ? ` · ${entry.nauseaTypes.map(t).join(", ")}` : ""}</p>
+                                <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">{t("Nausea")}:</span>{entry.nauseaSeverity != null ? ` ${entry.nauseaSeverity}/10` : ""}{entry.nauseaTypes?.length ? ` · ${entry.nauseaTypes.map(t).join(", ")}` : ""}</p>
                               ) : null}
                               {entry.headache || entry.headacheIntensity != null || entry.headacheTypes?.length ? (
-                                <p className="text-sm">{t("Headache")}{entry.headacheIntensity != null ? ` ${entry.headacheIntensity}/10` : ""}{entry.headacheTypes?.length ? ` · ${entry.headacheTypes.map(t).join(", ")}` : ""}</p>
+                                <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">{t("Headache")}:</span>{entry.headacheIntensity != null ? ` ${entry.headacheIntensity}/10` : ""}{entry.headacheTypes?.length ? ` · ${entry.headacheTypes.map(t).join(", ")}` : ""}</p>
                               ) : null}
-                              {entry.hotFlashesOn || entry.hotFlashes != null ? <p className="text-sm">{t("Hot flashes")}{entry.hotFlashes != null ? ` ${entry.hotFlashes}/5` : ""}</p> : null}
-                              {entry.pcosSymptoms?.length ? <p className="text-sm">PCOS: {entry.pcosSymptoms.map(t).join(", ")}</p> : null}
-                              {entry.fluNote ? <p className="text-sm">Flu: {entry.fluNote}</p> : null}
-                              {entry.note ? <p className="mt-1 whitespace-pre-line text-sm"><span className="font-semibold">{t("Note")}:</span> {entry.note}</p> : null}
+                              {entry.hotFlashesOn || entry.hotFlashes != null ? <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">{t("Hot flashes")}:</span>{entry.hotFlashes != null ? ` ${entry.hotFlashes}/5` : ""}</p> : null}
+                              {entry.pcosSymptoms?.length ? <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">PCOS:</span> {entry.pcosSymptoms.map(t).join(", ")}</p> : null}
+                              {entry.fluNote ? <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">Flu:</span> {entry.fluNote}</p> : null}
+                              {entry.note ? <p className="mt-1.5 whitespace-pre-line text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">{t("Note")}:</span> {entry.note}</p> : null}
                               <p className="mt-1 text-[10px] text-primary">{t("Tap to edit")}</p>
                             </button>
                             <DeleteBtn
