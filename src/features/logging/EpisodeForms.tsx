@@ -89,7 +89,7 @@ import {
   withoutCustomTombstones,
 } from "@/lib/storage";
 import { getScaleDesc } from "@/lib/scaleDescriptions";
-import { Chip, CustomChipList, DurationField, Field, IntensityScale, toggleIn } from "./LogFormPrimitives";
+import { Chip, CustomChipList, DurationField, Field, IntensityScale, SaveBar, toggleIn } from "./LogFormPrimitives";
 import type { UpdateFn } from "./LogFormPrimitives";
 
 export function EpisodeWizardNav({
@@ -137,8 +137,6 @@ export function EpisodeWizardNav({
 export function PanicForm({ date, data, update, onDone, initialEntry }: { date: string; data: BixboData; update: UpdateFn; onDone: () => void; initialEntry?: PanicAttack; }) {
   const { t } = useI18n();
   const schema = useLogSchema();
-  const [step, setStep] = useState(0);
-  const steps = ["Episode", "Symptoms", "Trigger & relief", "Notes"];
   const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
   const [minutes, setMinutes] = useState(initialEntry?.minutes != null ? String(initialEntry.minutes) : "10");
   const [ongoing, setOngoing] = useState(initialEntry?.minutes == null && !!initialEntry);
@@ -171,13 +169,13 @@ export function PanicForm({ date, data, update, onDone, initialEntry }: { date: 
   };
   return (
     <div className="flex flex-col gap-3">
-      <EpisodeWizardNav step={step} steps={steps} onBack={() => setStep((v) => Math.max(0, v - 1))} onNext={() => setStep((v) => Math.min(steps.length - 1, v + 1))} onSave={save} />
-      {step === 0 && <div className="space-y-4">
+      <SaveBar onCancel={onDone} onSave={save} />
+      <div className="space-y-4">
         <Field label="Time" schemaFieldId="time"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="w-full" /></Field>
         <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} schemaFieldId="duration" />
         <Field label={`Intensity ${intensity}/10`} schemaFieldId="intensity"><IntensityScale value={intensity} onChange={setIntensity} max={10} from={1} step={1} compactSingleRow descriptions={getScaleDesc(data, "panic")} legendTitle="Panic intensity scale" schemaFieldId="intensity" /></Field>
-      </div>}
-      {step === 1 && <div className="space-y-4">
+      </div>
+      <div className="space-y-4">
         <Field label="Physical symptoms" schemaFieldId="physical"><CustomChipList base={PANIC_PHYSICAL} custom={data.custom.panicPhysical}
           onAddCustom={(v) => update((d) => ({ ...d, custom: { ...d.custom, panicPhysical: [...d.custom.panicPhysical, v] } }))}
           onRemoveCustom={(v) => { update((d) => ({ ...d, custom: { ...d.custom, panicPhysical: d.custom.panicPhysical.filter((x) => x !== v) } })); setPhysical((a) => a.filter((x) => x !== v)); }}
@@ -188,18 +186,18 @@ export function PanicForm({ date, data, update, onDone, initialEntry }: { date: 
           onRemoveCustom={(v) => { update((d) => ({ ...d, custom: { ...d.custom, panicCognitive: d.custom.panicCognitive.filter((x) => x !== v) } })); setCognitive((a) => a.filter((x) => x !== v)); }}
           onRenameCustom={(o,n) => { update((d) => ({ ...d, custom: { ...d.custom, panicCognitive: d.custom.panicCognitive.map((x) => x === o ? n : x) } })); setCognitive((a) => a.map((x) => x === o ? n : x)); }}
           selected={cognitive} onToggle={(v) => setCognitive((a) => toggleIn(a,v))} schemaFieldId="cognitive" /></Field>
-      </div>}
-      {step === 2 && <div className="space-y-4">
+      </div>
+      <div className="space-y-4">
         <Field label="Trigger (or 'no obvious trigger')" schemaFieldId="trigger"><Textarea rows={2} value={trigger} onChange={(e) => setTrigger(e.target.value)} /></Field>
         <Field label="Place (optional)" schemaFieldId="place"><Input value={place} onChange={(e) => setPlace(e.target.value)} /></Field>
         <Field label="Hyperventilation" schemaFieldId="hyperventilation"><div className="mt-2 flex flex-wrap gap-2">{(["no","before","during","unknown"] as const).map((v) => <Chip key={v} active={hyper===v} onClick={() => setHyper(v)}>{v}</Chip>)}</div></Field>
         <Field label="Tetany present?" schemaFieldId="tetanyPresent"><div className="mt-2 flex gap-2"><Chip active={!tetanyPresent} onClick={() => setTetanyPresent(false)}>No</Chip><Chip active={tetanyPresent} onClick={() => setTetanyPresent(true)}>Yes</Chip></div></Field>
         <Field label="What helped" schemaFieldId="helped"><CustomChipList base={PANIC_HELPED_DEFAULT} custom={data.custom.panicHelped} onAddCustom={addHelped} onRemoveCustom={rmHelped} selected={helped} onToggle={(v) => setHelped((a) => toggleIn(a,v))} /></Field>
-      </div>}
-      {step === 3 && <div className="space-y-4">
+      </div>
+      <div className="space-y-4">
         <Field label="Rescue med (what you took)" schemaFieldId="rescueMed"><Input value={rescueMed} onChange={(e) => setRescueMed(e.target.value)} placeholder={t("e.g. Frontin 0.25 mg")} />{data.meds.length > 0 && <div className="mt-2 flex flex-wrap gap-1.5">{data.meds.map((m) => <button key={m.id} type="button" onClick={() => setRescueMed(m.dose ? `${m.name} ${m.dose}` : m.name)} className="rounded-full bg-tint px-3 py-1 text-xs font-medium text-foreground ring-1 ring-border">{m.name}{m.dose ? ` ${m.dose}` : ""}</button>)}</div>}</Field>
         <Field label="Note (optional)" schemaFieldId="note"><Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} /></Field>
-      </div>}
+      </div>
     </div>
   );
 }
@@ -207,8 +205,6 @@ export function PanicForm({ date, data, update, onDone, initialEntry }: { date: 
 export function TetanyForm({ date, data, update, onDone, initialEntry }: { date: string; data: BixboData; update: UpdateFn; onDone: () => void; initialEntry?: TetanyEpisode; }) {
   const { t } = useI18n();
   const schema = useLogSchema();
-  const [step, setStep] = useState(0);
-  const steps = ["Episode", "Symptoms", "Trigger & relief", "Notes"];
   const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
   const [types, setTypes] = useState<string[]>(initialEntry?.types ?? []);
   const [loc, setLoc] = useState<string[]>(initialEntry?.location ?? []);
@@ -232,24 +228,24 @@ export function TetanyForm({ date, data, update, onDone, initialEntry }: { date:
   };
   return (
     <div className="flex flex-col gap-3">
-      <EpisodeWizardNav step={step} steps={steps} onBack={() => setStep((v) => Math.max(0,v-1))} onNext={() => setStep((v) => Math.min(steps.length-1,v+1))} onSave={save} />
-      {step === 0 && <div className="space-y-4">
+      <SaveBar onCancel={onDone} onSave={save} />
+      <div className="space-y-4">
         <Field label="Time" schemaFieldId="time"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></Field>
         <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} schemaFieldId="duration" />
         <Field label={`Intensity ${intensity}/5`} schemaFieldId="intensity"><IntensityScale value={intensity} onChange={setIntensity} max={5} from={1} step={1} compactSingleRow descriptions={getScaleDesc(data,"tetany")} legendTitle="Tetany intensity scale" schemaFieldId="intensity" /></Field>
-      </div>}
-      {step === 1 && <div className="space-y-4">
+      </div>
+      <div className="space-y-4">
         <Field label="Type" schemaFieldId="types"><CustomChipList base={TETANY_TYPES} custom={data.custom.tetanyTypes} descriptions={TETANY_TYPE_DESC} onAddCustom={(v) => addC("tetanyTypes",v)} onRemoveCustom={(v) => { rmC("tetanyTypes",v); setTypes((a) => a.filter((x) => x!==v)); }} onRenameCustom={(o,n) => { rnC("tetanyTypes",o,n); setTypes((a) => a.map((x) => x===o?n:x)); }} selected={types} onToggle={(v) => setTypes((a) => toggleIn(a,v))} /></Field>
         <Field label="Location" schemaFieldId="location"><CustomChipList base={TETANY_LOCATIONS_DEFAULT} custom={data.custom.tetanyLocations} onAddCustom={(v) => addC("tetanyLocations",v)} onRemoveCustom={(v) => { rmC("tetanyLocations",v); setLoc((a) => a.filter((x) => x!==v)); }} onRenameCustom={(o,n) => { rnC("tetanyLocations",o,n); setLoc((a) => a.map((x) => x===o?n:x)); }} selected={loc} onToggle={(v) => setLoc((a) => toggleIn(a,v))} /></Field>
-      </div>}
-      {step === 2 && <div className="space-y-4">
+      </div>
+      <div className="space-y-4">
         <Field label="Triggers" schemaFieldId="triggers"><CustomChipList base={TETANY_TRIGGERS} custom={data.custom.tetanyTriggers} onAddCustom={(v) => addC("tetanyTriggers",v)} onRemoveCustom={(v) => { rmC("tetanyTriggers",v); setTriggers((a) => a.filter((x) => x!==v)); }} onRenameCustom={(o,n) => { rnC("tetanyTriggers",o,n); setTriggers((a) => a.map((x) => x===o?n:x)); }} selected={triggers} onToggle={(v) => setTriggers((a) => toggleIn(a,v))} /></Field>
         <Field label="What helped" schemaFieldId="helped"><CustomChipList base={TETANY_HELPED_DEFAULT} custom={data.custom.tetanyHelped} onAddCustom={(v) => addC("tetanyHelped",v)} onRemoveCustom={(v) => { rmC("tetanyHelped",v); setHelped((a) => a.filter((x) => x!==v)); }} onRenameCustom={(o,n) => { rnC("tetanyHelped",o,n); setHelped((a) => a.map((x) => x===o?n:x)); }} selected={helped} onToggle={(v) => setHelped((a) => toggleIn(a,v))} /></Field>
-      </div>}
-      {step === 3 && <div className="space-y-4">
+      </div>
+      <div className="space-y-4">
         <Field label="Rescue med (what you took)" schemaFieldId="rescueMed"><Input value={rescueMed} onChange={(e) => setRescueMed(e.target.value)} placeholder={t("e.g. Magnesium 400 mg")} />{data.meds.length > 0 && <div className="mt-2 flex flex-wrap gap-1.5">{data.meds.map((m) => <button key={m.id} type="button" onClick={() => setRescueMed(m.dose ? `${m.name} ${m.dose}` : m.name)} className="rounded-full bg-tint px-3 py-1 text-xs font-medium text-foreground ring-1 ring-border">{m.name}{m.dose ? ` ${m.dose}` : ""}</button>)}</div>}</Field>
         <Field label="Note (optional)" schemaFieldId="note"><Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} /></Field>
-      </div>}
+      </div>
     </div>
   );
 }
