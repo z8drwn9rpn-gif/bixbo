@@ -134,7 +134,7 @@ export function EpisodeWizardNav({
   );
 }
 
-export function PanicForm({ date, data, update, onDone, initialEntry }: { date: string; data: BixboData; update: UpdateFn; onDone: () => void; initialEntry?: PanicAttack; }) {
+export function PanicForm({ date, data, update, onDone, initialEntry, embedded = false, onDraftChange }: { date: string; data: BixboData; update: UpdateFn; onDone: () => void; initialEntry?: PanicAttack; embedded?: boolean; onDraftChange?: (entry: PanicAttack) => void; }) {
   const { t } = useI18n();
   const schema = useLogSchema();
   const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
@@ -150,6 +150,14 @@ export function PanicForm({ date, data, update, onDone, initialEntry }: { date: 
   const [helped, setHelped] = useState<string[]>(initialEntry?.helped ?? []);
   const [rescueMed, setRescueMed] = useState<string>(initialEntry?.rescueMed ?? "");
   const [note, setNote] = useState(initialEntry?.note ?? "");
+  const draftId = useRef(initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID()).current;
+  const panicDraft = useMemo<PanicAttack>(() => ({
+    id: draftId, time,
+    minutes: ongoing ? undefined : minutes === "" ? undefined : Number(minutes), intensity, physical, cognitive,
+    trigger: trigger.trim(), place: place.trim() || undefined, hyperventilation: hyper, tetanyPresent, helped,
+    rescueMed: rescueMed.trim() || undefined, note: note.trim() || undefined,
+  }), [draftId, time, ongoing, minutes, intensity, physical, cognitive, trigger, place, hyper, tetanyPresent, helped, rescueMed, note]);
+  useEffect(() => { if (embedded) onDraftChange?.(panicDraft); }, [embedded, onDraftChange, panicDraft]);
   const addHelped = (v: string) => update((d) => ({ ...d, custom: { ...d.custom, panicHelped: [...d.custom.panicHelped, v] } }));
   const rmHelped = (v: string) => {
     update((d) => ({ ...d, custom: { ...d.custom, panicHelped: d.custom.panicHelped.filter((x) => x !== v) } }));
@@ -157,19 +165,14 @@ export function PanicForm({ date, data, update, onDone, initialEntry }: { date: 
   };
   const save = () => {
     const editing = !!initialEntry;
-    const p: PanicAttack = {
-      id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(), time,
-      minutes: ongoing ? undefined : minutes === "" ? undefined : Number(minutes), intensity, physical, cognitive,
-      trigger: trigger.trim(), place: place.trim() || undefined, hyperventilation: hyper, tetanyPresent, helped,
-      rescueMed: rescueMed.trim() || undefined, note: note.trim() || undefined,
-    };
+    const p = panicDraft;
     updateDayLog(update, date, (l) => ({ ...l, panic: editing ? (l.panic ?? []).map((x) => (x.id === p.id ? p : x)) : [...(l.panic ?? []), p] }));
     schema?.saveAdminCustomFields();
     onDone();
   };
   return (
     <div className="flex flex-col gap-3">
-      <SaveBar onCancel={onDone} onSave={save} />
+      {!embedded && <SaveBar onCancel={onDone} onSave={save} />}
       <div className="space-y-4">
         <Field label="Time" schemaFieldId="time"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="w-full" /></Field>
         <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} schemaFieldId="duration" />
@@ -202,7 +205,7 @@ export function PanicForm({ date, data, update, onDone, initialEntry }: { date: 
   );
 }
 
-export function TetanyForm({ date, data, update, onDone, initialEntry }: { date: string; data: BixboData; update: UpdateFn; onDone: () => void; initialEntry?: TetanyEpisode; }) {
+export function TetanyForm({ date, data, update, onDone, initialEntry, embedded = false, onDraftChange }: { date: string; data: BixboData; update: UpdateFn; onDone: () => void; initialEntry?: TetanyEpisode; embedded?: boolean; onDraftChange?: (entry: TetanyEpisode) => void; }) {
   const { t } = useI18n();
   const schema = useLogSchema();
   const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
@@ -215,20 +218,27 @@ export function TetanyForm({ date, data, update, onDone, initialEntry }: { date:
   const [helped, setHelped] = useState<string[]>(initialEntry?.helped ?? []);
   const [rescueMed, setRescueMed] = useState<string>(initialEntry?.rescueMed ?? "");
   const [note, setNote] = useState(initialEntry?.note ?? "");
+  const draftId = useRef(initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID()).current;
+  const tetanyDraft = useMemo<TetanyEpisode>(() => ({
+    id: draftId, time, types, location: loc, intensity,
+    minutes: ongoing ? undefined : minutes === "" ? undefined : Number(minutes),
+    triggers, helped, rescueMed: rescueMed.trim() || undefined, note: note.trim() || undefined,
+  }), [draftId, time, types, loc, intensity, ongoing, minutes, triggers, helped, rescueMed, note]);
+  useEffect(() => { if (embedded) onDraftChange?.(tetanyDraft); }, [embedded, onDraftChange, tetanyDraft]);
   type CK = "tetanyTypes" | "tetanyLocations" | "tetanyTriggers" | "tetanyHelped";
   const addC = (k: CK, v: string) => update((d) => withoutCustomTombstones({ ...d, custom: { ...d.custom, [k]: [...d.custom[k], v] } }, k, [v]));
   const rmC = (k: CK, v: string) => update((d) => withCustomTombstones({ ...d, custom: { ...d.custom, [k]: d.custom[k].filter((x) => x !== v) } }, k, [v]));
   const rnC = (k: CK, o: string, n: string) => update((d) => withoutCustomTombstones(withCustomTombstones({ ...d, custom: { ...d.custom, [k]: d.custom[k].map((x) => x === o ? n : x) } }, k, [o]), k, [n]));
   const save = () => {
     const editing = !!initialEntry;
-    const entry: TetanyEpisode = { id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(), time, types, location: loc, intensity, minutes: ongoing ? undefined : minutes === "" ? undefined : Number(minutes), triggers, helped, rescueMed: rescueMed.trim() || undefined, note: note.trim() || undefined };
+    const entry = tetanyDraft;
     updateDayLog(update, date, (l) => ({ ...l, tetany: editing ? (l.tetany ?? []).map((x) => x.id === entry.id ? entry : x) : [...(l.tetany ?? []), entry] }));
     schema?.saveAdminCustomFields();
     onDone();
   };
   return (
     <div className="flex flex-col gap-3">
-      <SaveBar onCancel={onDone} onSave={save} />
+      {!embedded && <SaveBar onCancel={onDone} onSave={save} />}
       <div className="space-y-4">
         <Field label="Time" schemaFieldId="time"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></Field>
         <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} schemaFieldId="duration" />

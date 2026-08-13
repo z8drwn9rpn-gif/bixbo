@@ -51,12 +51,14 @@ export interface PainEntry {
   /** Hot flashes section (own Yes/No trigger) */
   hotFlashesOn?: boolean;
   hotFlashes?: number;
+  hotFlashesNote?: string;
   /** Headache section (own Yes/No trigger) */
   headache?: boolean;
   headacheTypes?: string[];
   headacheIntensity?: number;
   headacheMed?: string;
   headacheMedTime?: string;
+  headacheNote?: string;
   /** Pressure detail, shown when "Pressure" quality is selected */
   pressureTypes?: string[];
   pressureIntensity?: number;
@@ -69,6 +71,7 @@ export interface PainEntry {
   nauseaTriggers?: string[];
   nauseaSymptoms?: string[];
   nauseaHelped?: string[];
+  nauseaNote?: string;
   /** Flu-specific note (separate from the general note) */
   fluNote?: string;
   pcosSymptoms?: string[];
