@@ -1,5 +1,4 @@
 import type { BixboData } from "./storage";
-import { getEffectiveAdminConfig } from "./effectiveAdminConfig";
 
 export type LayoutPageId =
   | "home"
@@ -54,9 +53,7 @@ export const BIXBO_LAYOUT_SECTIONS: Record<LayoutPageId, LayoutSectionDefinition
     { id: "customMetrics", label: "Custom metrics", order: 20 },
     { id: "history", label: "Treatment history", order: 30 },
   ],
-  "patterns.triggers": [
-    { id: "correlations", label: "Smart correlations", order: 10 },
-  ],
+  "patterns.triggers": [{ id: "correlations", label: "Smart correlations", order: 10 }],
   "couple.overview": [
     { id: "similarity", label: "Health similarity", order: 10 },
     { id: "stats", label: "Health summary", order: 20 },
@@ -78,16 +75,11 @@ export function layoutOrder(
   sectionId: string,
   fallback = 999,
 ): number {
-  const saved = getEffectiveAdminConfig(data.settings.adminConfig ?? {}).layoutOrder?.[page];
-  if (saved?.length) {
-    const index = saved.indexOf(sectionId);
-    if (index >= 0) return (index + 1) * 10;
-  }
+  void data;
   return BIXBO_LAYOUT_SECTIONS[page]?.find((section) => section.id === sectionId)?.order ?? fallback;
 }
 
 export function orderedLayoutSections(data: Pick<BixboData, "settings">, page: LayoutPageId) {
-  return [...(BIXBO_LAYOUT_SECTIONS[page] ?? [])].sort(
-    (a, b) => layoutOrder(data, page, a.id, a.order) - layoutOrder(data, page, b.id, b.order),
-  );
+  void data;
+  return [...(BIXBO_LAYOUT_SECTIONS[page] ?? [])].sort((a, b) => a.order - b.order);
 }
