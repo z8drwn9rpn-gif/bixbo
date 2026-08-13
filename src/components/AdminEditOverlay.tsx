@@ -1,35 +1,30 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import { Link, useRouter, useRouterState } from "@tanstack/react-router";
+import { useRouter, useRouterState } from "@tanstack/react-router";
 
 import { CustomLogBuilder } from "@/components/CustomLogBuilder";
-import { CoreFeatureCustomFieldBuilder } from "@/components/CoreFeatureCustomFieldBuilder";
-import { Ico } from "@/components/icons/BixboIcons";
+import { ADMIN_MODE_CHANGED, isGlobalAdminModeActive } from "@/components/GlobalAdminModeController";
+import { AdminFeaturesTab } from "@/components/admin/AdminFeaturesTab";
+import { AdminFieldsTab, type AdminUnifiedField } from "@/components/admin/AdminFieldsTab";
+import { AdminPageTab } from "@/components/admin/AdminPageTab";
+import { AdminPublishTab } from "@/components/admin/AdminPublishTab";
+import { AdminLayoutDomRuntime, pageFromPath, pageSurface, type EditorTab } from "@/components/admin/AdminEditRuntime";
 import { useI18n } from "@/hooks/useI18n";
 import {
   BIXBO_LOG_FIELDS,
   BIXBO_REGISTRY,
   getRegistryFeature,
   getRegistryField,
-  isRegistryFeatureEnabled,
-  isRegistryOptionEnabled,
-  isRegistrySurfaceEnabled,
-  registryOptionLabel,
   type AdminConfig,
   type RegistryFeatureId,
   type RegistryFeatureOverride,
   type RegistryFieldDefinition,
   type RegistryFieldOverride,
-  type RegistrySurface,
 } from "@/lib/appRegistry";
 import {
-  getEffectiveLayoutSectionLabel,
-  getEffectiveLayoutSectionOverride,
-  isEffectiveLayoutSectionVisible,
-  layoutSectionOverridesFromConfig,
   withLayoutSectionOverride,
   withoutLayoutSectionOverride,
-  withoutPageLayoutOverrides,
 } from "@/lib/adminLayoutOverrides";
+import { ADMIN_CUSTOMIZE_REQUESTED, ADMIN_TOOL_REQUESTED } from "@/lib/adminCustomizeEvents";
 import { isAdminOwnerAccount } from "@/lib/deviceAdmin";
 import {
   DEVICE_ADMIN_CONFIG_CHANGED,
@@ -37,132 +32,8 @@ import {
   setDeviceAdminConfig,
 } from "@/lib/deviceAdminConfig";
 import { publishGlobalAdminConfig } from "@/lib/globalAdminConfig";
-import { ADMIN_CUSTOMIZE_REQUESTED, ADMIN_TOOL_REQUESTED } from "@/lib/adminCustomizeEvents";
-import { BIXBO_LAYOUT_SECTIONS, layoutOrder, type LayoutPageId } from "@/lib/layoutRegistry";
+import { BIXBO_LAYOUT_SECTIONS, layoutOrder } from "@/lib/layoutRegistry";
 import { EMPTY, useBixbo, type BixboData } from "@/lib/storage";
-import { ADMIN_MODE_CHANGED, isGlobalAdminModeActive } from "@/components/GlobalAdminModeController";
-
-const SURFACES: { id: RegistrySurface; label: string }[] = [
-  { id: "log", label: "Log" },
-  { id: "quickLog", label: "Quick Log" },
-  { id: "calendar", label: "Calendar" },
-  { id: "heatmap", label: "Heatmap" },
-  { id: "monthly", label: "Monthly" },
-  { id: "patterns", label: "Patterns" },
-];
-
-const ICONS = ["🔥", "⚡", "✨", "🫐", "❤️", "♨️", "🍽️", "💩", "🧘🏼‍♀️", "🌡️", "💊", "📅", "✅", "📝", "🤱", "🤕", "🥵", "🌙"];
-
-type EditorTab = "page" | "features" | "fields" | "custom" | "publish";
-
-const REQUIRED_CORE_FIELDS = new Set<string>([
-  "event:title",
-  "task:title",
-  "note:text",
-]);
-
-function isRequiredCoreField(featureId: RegistryFeatureId, fieldId: string): boolean {
-  return REQUIRED_CORE_FIELDS.has(`${featureId}:${fieldId}`);
-}
-
-function activePatternsPage(): LayoutPageId {
-  if (typeof document === "undefined") return "patterns.monthly";
-  const selected = document.querySelector<HTMLElement>('[data-bixbo-pattern-tab][aria-selected="true"]');
-  const tab = selected?.dataset.bixboPatternTab;
-  if (tab === "cycle" || tab === "monthly" || tab === "treatment" || tab === "triggers") {
-    return `patterns.${tab}` as LayoutPageId;
-  }
-  return "patterns.monthly";
-}
-
-function pageFromPath(pathname: string): LayoutPageId | null {
-  if (pathname === "/") return "home";
-  if (pathname.startsWith("/insights")) return "insights";
-  if (pathname.startsWith("/patterns")) return activePatternsPage();
-  return null;
-}
-
-function pageSurface(page: LayoutPageId | null): RegistrySurface {
-  if (page === "home") return "calendar";
-  if (page === "insights") return "heatmap";
-  return "patterns";
-}
-
-function AdminLayoutDomRuntime({ page, revision }: { page: LayoutPageId; revision: number }) {
-  useEffect(() => {
-    let disposed = false;
-    let scheduled = false;
-    const changed = new Set<HTMLElement>();
-
-    const restore = () => {
-      changed.forEach((element) => {
-        const display = element.dataset.bixboAdminOriginalDisplay;
-        if (display !== undefined) {
-          element.style.display = display;
-          delete element.dataset.bixboAdminOriginalDisplay;
-        }
-        const text = element.dataset.bixboAdminOriginalText;
-        if (text !== undefined && element.children.length === 0) {
-          element.textContent = text;
-          delete element.dataset.bixboAdminOriginalText;
-        }
-      });
-      changed.clear();
-    };
-
-    const apply = () => {
-      scheduled = false;
-      if (disposed) return;
-      restore();
-
-      const candidates = Array.from(
-        document.querySelectorAll<HTMLElement>("h1,h2,h3,h4,p,span,button,label"),
-      ).filter((element) => !element.closest("[data-bixbo-admin-ui]"));
-
-      (BIXBO_LAYOUT_SECTIONS[page] ?? []).forEach((section) => {
-        const override = getEffectiveLayoutSectionOverride(page, section.id);
-        if (!override.label && override.hidden !== true) return;
-
-        const labelElement = candidates.find(
-          (element) => element.children.length === 0 && element.textContent?.trim() === section.label.trim(),
-        );
-        if (!labelElement) return;
-
-        if (override.label?.trim() && override.label.trim() !== section.label.trim()) {
-          labelElement.dataset.bixboAdminOriginalText = labelElement.textContent ?? section.label;
-          labelElement.textContent = override.label.trim();
-          changed.add(labelElement);
-        }
-
-        if (override.hidden === true) {
-          const container = labelElement.closest<HTMLElement>("section") ?? labelElement.parentElement;
-          if (container && !container.closest("[data-bixbo-admin-ui]")) {
-            container.dataset.bixboAdminOriginalDisplay = container.style.display;
-            container.style.display = "none";
-            changed.add(container);
-          }
-        }
-      });
-    };
-
-    const schedule = () => {
-      if (scheduled) return;
-      scheduled = true;
-      window.requestAnimationFrame(apply);
-    };
-
-    apply();
-    const observer = new MutationObserver(schedule);
-    observer.observe(document.body, { childList: true, subtree: true });
-    return () => {
-      disposed = true;
-      observer.disconnect();
-      restore();
-    };
-  }, [page, revision]);
-
-  return null;
-}
 
 export function AdminEditOverlay() {
   const { t } = useI18n();
@@ -171,6 +42,7 @@ export function AdminEditOverlay() {
   const page = pageFromPath(pathname);
   const { data, hydrated } = useBixbo();
   const view = hydrated ? data : EMPTY;
+
   const [revision, setRevision] = useState(0);
   const [adminMode, setAdminMode] = useState(() => isGlobalAdminModeActive());
   const [open, setOpen] = useState(false);
@@ -247,6 +119,7 @@ export function AdminEditOverlay() {
   const features = BIXBO_REGISTRY.map((base) => getRegistryFeature(adminView, base.id)).sort(
     (a, b) => a.order - b.order,
   );
+  const featureIds = features.map((feature) => feature.id);
 
   const persist = (next: AdminConfig, snapshot = true) => {
     if (snapshot) undoStack.current.push(JSON.stringify(getDeviceAdminConfig()));
@@ -369,7 +242,9 @@ export function AdminEditOverlay() {
     const field = feature.fields?.[fieldId] ?? {};
     const options = field.options ?? {};
     const stableValue = `custom:${Date.now().toString(36)}:${Math.random().toString(36).slice(2, 8)}`;
-    patchField(featureId, fieldId, { options: { [stableValue]: { label, enabled: true, order: Object.keys(options).length + 1000 } } });
+    patchField(featureId, fieldId, {
+      options: { [stableValue]: { label, enabled: true, order: Object.keys(options).length + 1000 } },
+    });
   };
 
   const deleteCustomFieldOption = (featureId: RegistryFeatureId, fieldId: string, value: string) => {
@@ -395,7 +270,9 @@ export function AdminEditOverlay() {
   const orderedFieldOptionValues = (featureId: RegistryFeatureId, fieldId: string, baseOptions: string[]) => {
     const overrides = getDeviceAdminConfig().features?.[featureId]?.fields?.[fieldId]?.options ?? {};
     const values = [...new Set([...baseOptions, ...Object.keys(overrides)])];
-    return values.sort((a, b) => (overrides[a]?.order ?? values.indexOf(a)) - (overrides[b]?.order ?? values.indexOf(b)));
+    return values.sort(
+      (a, b) => (overrides[a]?.order ?? values.indexOf(a)) - (overrides[b]?.order ?? values.indexOf(b)),
+    );
   };
 
   const writeFieldOptionOrder = (featureId: RegistryFeatureId, fieldId: string, values: string[]) => {
@@ -409,7 +286,13 @@ export function AdminEditOverlay() {
     patchField(featureId, fieldId, { options });
   };
 
-  const moveFieldOption = (featureId: RegistryFeatureId, fieldId: string, baseOptions: string[], value: string, delta: number) => {
+  const moveFieldOption = (
+    featureId: RegistryFeatureId,
+    fieldId: string,
+    baseOptions: string[],
+    value: string,
+    delta: number,
+  ) => {
     const values = orderedFieldOptionValues(featureId, fieldId, baseOptions);
     const from = values.indexOf(value);
     const to = from + delta;
@@ -418,7 +301,12 @@ export function AdminEditOverlay() {
     writeFieldOptionOrder(featureId, fieldId, values);
   };
 
-  const dropFieldOption = (featureId: RegistryFeatureId, fieldId: string, baseOptions: string[], targetValue: string) => {
+  const dropFieldOption = (
+    featureId: RegistryFeatureId,
+    fieldId: string,
+    baseOptions: string[],
+    targetValue: string,
+  ) => {
     if (!draggedOption || draggedOption.featureId !== featureId || draggedOption.fieldId !== fieldId || draggedOption.value === targetValue) return;
     const values = orderedFieldOptionValues(featureId, fieldId, baseOptions);
     const from = values.indexOf(draggedOption.value);
@@ -429,16 +317,26 @@ export function AdminEditOverlay() {
     writeFieldOptionOrder(featureId, fieldId, values);
   };
 
-  const moveDraggedOptionByPointer = (event: ReactPointerEvent<HTMLElement>, featureId: RegistryFeatureId, fieldId: string, baseOptions: string[]) => {
+  const moveDraggedOptionByPointer = (
+    event: ReactPointerEvent<HTMLElement>,
+    featureId: RegistryFeatureId,
+    fieldId: string,
+    baseOptions: string[],
+  ) => {
     if (!draggedOption) return;
     const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>("[data-admin-option-sort-value]");
     const targetValue = target?.dataset.adminOptionSortValue;
-    if (targetValue && target?.dataset.adminOptionFeature === featureId && target?.dataset.adminOptionField === fieldId && targetValue !== draggedOption.value) {
+    if (
+      targetValue &&
+      target?.dataset.adminOptionFeature === featureId &&
+      target?.dataset.adminOptionField === fieldId &&
+      targetValue !== draggedOption.value
+    ) {
       dropFieldOption(featureId, fieldId, baseOptions, targetValue);
     }
   };
 
-  const orderedUnifiedFields = (featureId: RegistryFeatureId) => {
+  const orderedUnifiedFields = (featureId: RegistryFeatureId): AdminUnifiedField[] => {
     const builtins = (BIXBO_LOG_FIELDS[featureId] ?? []).map((baseField) => ({
       source: "builtin" as const,
       id: baseField.id,
@@ -451,8 +349,8 @@ export function AdminEditOverlay() {
       order: customField.order,
       customField,
     }));
-    return [...builtins, ...custom].sort((a, b) =>
-      a.order - b.order || (a.source === b.source ? a.id.localeCompare(b.id) : a.source === "builtin" ? -1 : 1),
+    return [...builtins, ...custom].sort(
+      (a, b) => a.order - b.order || (a.source === b.source ? a.id.localeCompare(b.id) : a.source === "builtin" ? -1 : 1),
     );
   };
 
@@ -576,8 +474,12 @@ export function AdminEditOverlay() {
       <AdminLayoutDomRuntime page={page} revision={revision} />
 
       <div data-bixbo-admin-ui className="fixed bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] right-4 z-[90] lg:bottom-6 lg:right-6">
-        <button type="button" data-bixbo-admin-open="primary"
-          onClick={() => setOpen((value) => !value)} className="rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-lg ring-1 ring-primary/30">
+        <button
+          type="button"
+          data-bixbo-admin-open="primary"
+          onClick={() => setOpen((value) => !value)}
+          className="rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-lg ring-1 ring-primary/30"
+        >
           {open ? t("Done") : `✦ ${t("Edit")}`}
         </button>
       </div>
@@ -588,18 +490,33 @@ export function AdminEditOverlay() {
           data-bixbo-admin-live-editor
           className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+5.6rem)] z-[10010] lg:inset-0 lg:pointer-events-auto lg:bg-black/10"
         >
-          <aside className="pointer-events-auto relative mx-2 max-h-[48dvh] overflow-y-auto rounded-[28px] bg-background pb-4 shadow-2xl ring-1 ring-border lg:absolute lg:inset-y-4 lg:left-auto lg:right-4 lg:mx-0 lg:w-[460px] lg:max-h-none lg:rounded-[28px] lg:pb-[calc(env(safe-area-inset-bottom)+1rem)]" onClick={(event) => event.stopPropagation()}>
+          <aside
+            className="pointer-events-auto relative mx-2 max-h-[48dvh] overflow-y-auto rounded-[28px] bg-background pb-4 shadow-2xl ring-1 ring-border lg:absolute lg:inset-y-4 lg:left-auto lg:right-4 lg:mx-0 lg:w-[460px] lg:max-h-none lg:rounded-[28px] lg:pb-[calc(env(safe-area-inset-bottom)+1rem)]"
+            onClick={(event) => event.stopPropagation()}
+          >
             <div className="sticky top-0 z-10 border-b border-border bg-background/95 px-4 pb-3 pt-4 backdrop-blur">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="font-serif text-xl font-bold">{t("Admin edit mode")}</p>
                   <p className="mt-0.5 text-[11px] text-muted-foreground">{t("Device-local draft. Health data and chart calculations are untouched.")}</p>
                 </div>
-                <button type="button" onClick={undo} disabled={!undoStack.current.length} className="rounded-full bg-tint px-3 py-1.5 text-[10px] font-semibold text-muted-foreground ring-1 ring-border disabled:opacity-40">↶ {t("Undo")}</button>
+                <button
+                  type="button"
+                  onClick={undo}
+                  disabled={!undoStack.current.length}
+                  className="rounded-full bg-tint px-3 py-1.5 text-[10px] font-semibold text-muted-foreground ring-1 ring-border disabled:opacity-40"
+                >
+                  ↶ {t("Undo")}
+                </button>
               </div>
               <div className="mt-3 grid grid-cols-5 gap-1 rounded-2xl bg-tint p-1">
                 {(["page", "features", "fields", "custom", "publish"] as EditorTab[]).map((key) => (
-                  <button key={key} type="button" onClick={() => setTab(key)} className={`rounded-xl px-1 py-2 text-[9px] font-bold ${tab === key ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setTab(key)}
+                    className={`rounded-xl px-1 py-2 text-[9px] font-bold ${tab === key ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+                  >
                     {t(key === "page" ? "Page" : key === "features" ? "Features" : key === "fields" ? "Fields" : key === "custom" ? "Custom" : "Publish")}
                   </button>
                 ))}
@@ -608,222 +525,67 @@ export function AdminEditOverlay() {
 
             <div className="space-y-3 px-4 py-4">
               {tab === "page" ? (
-                <>
-                  <section className="rounded-3xl bg-primary/10 p-4 ring-1 ring-primary/20">
-                    <p className="text-sm font-bold">{t("Current page layout")}</p>
-                    <p className="mt-1 text-[11px] text-muted-foreground">{t("Rename, hide or reorder whole sections. Stable section IDs never change.")}</p>
-                  </section>
-                  {sectionDefinitions.map((section, index) => {
-                    const label = getEffectiveLayoutSectionLabel(page, section.id);
-                    const visible = isEffectiveLayoutSectionVisible(page, section.id);
-                    const localOverride = layoutSectionOverridesFromConfig(localConfig)[page]?.[section.id];
-                    return (
-                      <section key={section.id} data-admin-section-sort-id={section.id} className={`rounded-2xl bg-surface p-3 ring-1 ring-border/80 ${draggedSection === section.id ? "opacity-60" : ""}`}>
-                        <div className="flex items-center gap-2">
-                          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-tint text-[10px] font-bold text-muted-foreground">{index + 1}</span>
-                          <input value={label} onChange={(event) => patchSection(section.id, { label: event.target.value })} className="h-9 min-w-0 flex-1 rounded-xl bg-tint px-3 text-xs font-semibold ring-1 ring-border" />
-                          <button type="button" onClick={() => patchSection(section.id, { hidden: visible })} className={`rounded-full px-2.5 py-1.5 text-[9px] font-bold ${visible ? "bg-primary text-primary-foreground" : "bg-tint text-muted-foreground ring-1 ring-border"}`}>{visible ? t("Shown") : t("Hidden")}</button>
-                        </div>
-                        <div className="mt-2 flex items-center gap-1.5">
-                          <button type="button" disabled={index === 0} onClick={() => moveSection(section.id, -1)} className="rounded-full bg-tint px-3 py-1.5 text-[10px] font-semibold ring-1 ring-border disabled:opacity-30">↑</button>
-                          <button type="button" disabled={index === sectionDefinitions.length - 1} onClick={() => moveSection(section.id, 1)} className="rounded-full bg-tint px-3 py-1.5 text-[10px] font-semibold ring-1 ring-border disabled:opacity-30">↓</button>
-                          <button type="button" onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setDraggedSection(section.id); }} onPointerMove={moveDraggedSectionByPointer} onPointerUp={() => setDraggedSection(null)} onPointerCancel={() => setDraggedSection(null)} style={{ touchAction: "none" }} className="inline-flex h-7 items-center gap-1 rounded-full bg-tint px-2.5 text-[9px] font-semibold text-muted-foreground ring-1 ring-border cursor-grab active:cursor-grabbing" aria-label={t("Drag to reorder")}><span className="text-sm">⋮⋮</span>{t("Drag")}</button>
-                          <span className="min-w-0 flex-1 truncate text-[9px] text-muted-foreground">ID: {section.id}</span>
-                          {localOverride ? <button type="button" onClick={() => resetSection(section.id)} className="rounded-full bg-tint px-3 py-1.5 text-[9px] font-semibold text-muted-foreground ring-1 ring-border">{t("Reset")}</button> : null}
-                        </div>
-                      </section>
-                    );
-                  })}
-                  <button type="button" onClick={() => persist(withoutPageLayoutOverrides(getDeviceAdminConfig(), page))} className="w-full rounded-2xl bg-tint px-4 py-2.5 text-xs font-semibold text-muted-foreground ring-1 ring-border">{t("Reset current page customizations")}</button>
-                </>
+                <AdminPageTab
+                  page={page}
+                  sections={sectionDefinitions}
+                  localConfig={localConfig}
+                  draggedSection={draggedSection}
+                  onPatchSection={patchSection}
+                  onMoveSection={moveSection}
+                  onDragStart={setDraggedSection}
+                  onDragMove={moveDraggedSectionByPointer}
+                  onDragEnd={() => setDraggedSection(null)}
+                  onResetSection={resetSection}
+                  onPersist={persist}
+                />
               ) : null}
 
               {tab === "features" ? (
-                <>
-                  <section className="rounded-3xl bg-primary/10 p-4 ring-1 ring-primary/20">
-                    <p className="text-sm font-bold">{t("Features & surfaces")}</p>
-                    <p className="mt-1 text-[11px] text-muted-foreground">{t("Core features can be hidden but are never deleted. Current page surface is highlighted.")}</p>
-                  </section>
-                  {features.map((feature, featureIndex) => {
-                    const local = localConfig.features?.[feature.id];
-                    const enabled = isRegistryFeatureEnabled(adminView, feature.id);
-                    return (
-                      <section key={feature.id} data-admin-feature-sort-id={feature.id} className={`rounded-2xl bg-surface p-3 ring-1 ring-border/80 ${draggedFeature === feature.id ? "opacity-60" : ""}`}>
-                        <div className="flex items-center gap-2">
-                          <details className="group relative shrink-0">
-                            <summary
-                              className="grid h-9 w-11 cursor-pointer list-none place-items-center rounded-xl bg-tint ring-1 ring-border [&::-webkit-details-marker]:hidden"
-                              aria-label={t("Choose BIXBO icon")}
-                            >
-                              <Ico e={feature.icon} size={24} />
-                            </summary>
-                            <div className="absolute left-0 top-11 z-30 grid w-[184px] grid-cols-5 gap-1 rounded-2xl bg-background p-2 shadow-xl ring-1 ring-border">
-                              {[...new Set([feature.icon, ...ICONS])].map((icon) => (
-                                <button
-                                  key={icon}
-                                  type="button"
-                                  onClick={(event) => {
-                                    patchFeature(feature.id, { icon });
-                                    event.currentTarget.closest("details")?.removeAttribute("open");
-                                  }}
-                                  className="grid h-8 w-8 place-items-center rounded-lg bg-tint ring-1 ring-border/60 transition hover:bg-primary/10"
-                                  aria-label={`${t("Use icon")} ${icon}`}
-                                >
-                                  <Ico e={icon} size={21} />
-                                </button>
-                              ))}
-                            </div>
-                          </details>
-                          <input value={feature.label} onChange={(event) => patchFeature(feature.id, { label: event.target.value })} className="h-9 min-w-0 flex-1 rounded-xl bg-tint px-3 text-xs font-bold ring-1 ring-border" />
-                          <input type="color" value={feature.color} onChange={(event) => patchFeature(feature.id, { color: event.target.value })} className="h-9 w-10 rounded-xl bg-tint p-1 ring-1 ring-border" />
-                          <button type="button" onClick={() => patchFeature(feature.id, { enabled: !enabled })} className={`rounded-full px-2.5 py-1.5 text-[9px] font-bold ${enabled ? "bg-primary text-primary-foreground" : "bg-tint text-muted-foreground ring-1 ring-border"}`}>{enabled ? t("On") : t("Hidden")}</button>
-                        </div>
-                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                          <button type="button" disabled={featureIndex === 0} onClick={() => moveFeature(feature.id, -1)} className="rounded-full bg-tint px-2.5 py-1 text-[9px] font-semibold ring-1 ring-border disabled:opacity-25" aria-label={`${t("Move up")} ${feature.label}`}>↑</button>
-                          <button type="button" disabled={featureIndex === features.length - 1} onClick={() => moveFeature(feature.id, 1)} className="rounded-full bg-tint px-2.5 py-1 text-[9px] font-semibold ring-1 ring-border disabled:opacity-25" aria-label={`${t("Move down")} ${feature.label}`}>↓</button>
-                          <button type="button" onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setDraggedFeature(feature.id); }} onPointerMove={moveDraggedFeatureByPointer} onPointerUp={() => setDraggedFeature(null)} onPointerCancel={() => setDraggedFeature(null)} style={{ touchAction: "none" }} className="inline-flex h-7 items-center gap-1 rounded-full bg-tint px-2.5 text-[9px] font-semibold text-muted-foreground ring-1 ring-border cursor-grab active:cursor-grabbing" aria-label={t("Drag to reorder")}><span className="text-sm">⋮⋮</span>{t("Drag")}</button>
-                          {SURFACES.map((surface) => {
-                            const protectedPeriodHeatmap = feature.id === "period" && surface.id === "heatmap";
-                            const on = isRegistrySurfaceEnabled(adminView, feature.id, surface.id);
-                            return <button key={surface.id} type="button" disabled={protectedPeriodHeatmap} title={protectedPeriodHeatmap ? t("Period is a required Heatmap metric") : undefined} onClick={() => patchFeature(feature.id, { surfaces: { [surface.id]: !on } })} className={`rounded-full px-2.5 py-1 text-[9px] font-semibold ring-1 ${on ? "bg-primary/10 text-primary ring-primary/25" : "bg-tint text-muted-foreground ring-border"} ${surface.id === currentSurface ? "outline outline-1 outline-primary/50" : ""} disabled:cursor-default disabled:opacity-100`}>{protectedPeriodHeatmap ? `${surface.label} · ${t("Required")}` : surface.label}</button>;
-                          })}
-                        </div>
-                        <div className="mt-2 flex items-center justify-between">
-                          <span className="text-[9px] text-muted-foreground">ID: {feature.id}</span>
-                          {local ? <button type="button" onClick={() => resetFeature(feature.id)} className="rounded-full bg-tint px-3 py-1 text-[9px] font-semibold text-muted-foreground ring-1 ring-border">{t("Reset")}</button> : null}
-                        </div>
-                      </section>
-                    );
-                  })}
-                </>
+                <AdminFeaturesTab
+                  adminView={adminView}
+                  localConfig={localConfig}
+                  currentSurface={currentSurface}
+                  featureIds={featureIds}
+                  draggedFeature={draggedFeature}
+                  onPatchFeature={patchFeature}
+                  onMoveFeature={moveFeature}
+                  onDragStart={setDraggedFeature}
+                  onDragMove={moveDraggedFeatureByPointer}
+                  onDragEnd={() => setDraggedFeature(null)}
+                  onResetFeature={resetFeature}
+                />
               ) : null}
 
               {tab === "fields" ? (
-                <>
-                  <section className="rounded-3xl bg-primary/10 p-4 ring-1 ring-primary/20">
-                    <p className="text-sm font-bold">{t("Log fields, choices & scales")}</p>
-                    <p className="mt-1 text-[11px] text-muted-foreground">{t("Historical values keep their stable field IDs.")}</p>
-                  </section>
-                  {(Object.keys(BIXBO_LOG_FIELDS) as RegistryFeatureId[]).map((featureId) => {
-                    const feature = getRegistryFeature(adminView, featureId);
-                    return (
-                      <section key={featureId} className="rounded-2xl bg-surface p-3 ring-1 ring-border/80">
-                        <p className="flex items-center gap-1.5 text-xs font-bold"><Ico e={feature.icon} size={16} /><span>{feature.label}</span></p>
-                        <div className="mt-2 space-y-2">
-                          {orderedUnifiedFields(featureId).map((item) => {
-                            if (item.source === "custom") {
-                              const customField = item.customField;
-                              return (
-                                <div
-                                  key={customField.id}
-                                  data-admin-field-sort-id={customField.id}
-                                  data-admin-field-feature={featureId}
-                                  className={`rounded-xl border border-dashed border-primary/35 bg-primary/5 p-2 ring-1 ring-primary/10 ${draggedField?.featureId === featureId && draggedField.fieldId === customField.id ? "opacity-60" : ""}`}
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <button
-                                      type="button"
-                                      onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setDraggedField({ featureId, fieldId: customField.id }); }}
-                                      onPointerMove={(event) => moveDraggedFieldByPointer(event, featureId)}
-                                      onPointerUp={() => setDraggedField(null)}
-                                      onPointerCancel={() => setDraggedField(null)}
-                                      style={{ touchAction: "none" }}
-                                      className="inline-flex h-8 shrink-0 items-center gap-1 rounded-lg bg-background px-2 text-[9px] font-semibold text-muted-foreground ring-1 ring-border cursor-grab active:cursor-grabbing"
-                                      aria-label={t("Drag to reorder")}
-                                    ><span className="text-sm">⋮⋮</span>{t("Drag")}</button>
-                                    <input
-                                      value={customField.label}
-                                      onChange={(event) => patchCustomField(featureId, customField.id, { label: event.target.value })}
-                                      className="h-8 min-w-0 flex-1 rounded-lg bg-background px-2 text-[11px] font-semibold ring-1 ring-border"
-                                    />
-                                    <button
-                                      type="button"
-                                      onClick={() => patchCustomField(featureId, customField.id, { enabled: customField.enabled === false })}
-                                      className="rounded-full bg-background px-2 py-1 text-[9px] ring-1 ring-border"
-                                    >{customField.enabled === false ? t("Hidden") : t("Shown")}</button>
-                                  </div>
-                                  <div className="mt-1 flex items-center justify-between gap-2">
-                                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[8px] font-bold text-primary">{t("Custom field")} · {customField.kind}</span>
-                                    <span className="min-w-0 truncate text-[8px] text-muted-foreground">Field ID: {customField.id}</span>
-                                  </div>
-                                </div>
-                              );
-                            }
-                            const baseField = item.baseField;
-                            const field = getRegistryField(adminView, featureId, baseField.id) ?? baseField;
-                            const localField = localConfig.features?.[featureId]?.fields?.[baseField.id];
-                            const optionValues = orderedFieldOptionValues(featureId, baseField.id, baseField.options ?? []);
-                            return (
-                              <div key={baseField.id} data-admin-field-sort-id={baseField.id} data-admin-field-feature={featureId} className={`rounded-xl bg-tint p-2 ring-1 ring-border/70 ${draggedField?.featureId === featureId && draggedField.fieldId === baseField.id ? "opacity-60" : ""}`}>
-                                <div className="flex items-center gap-2">
-                                  {(featureId === "pain" || featureId === "panic" || featureId === "tetany" || featureId === "bowel" || featureId === "period" || featureId === "workout" || featureId === "event" || featureId === "task" || featureId === "food" || featureId === "temp" || featureId === "note" || featureId === "postpartum" || featureId === "meds" || featureId === "sex" || featureId === "heat") ? (
-                                    <button type="button" onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setDraggedField({ featureId, fieldId: baseField.id }); }} onPointerMove={(event) => moveDraggedFieldByPointer(event, featureId)} onPointerUp={() => setDraggedField(null)} onPointerCancel={() => setDraggedField(null)} style={{ touchAction: "none" }} className="inline-flex h-8 shrink-0 items-center gap-1 rounded-lg bg-background px-2 text-[9px] font-semibold text-muted-foreground ring-1 ring-border cursor-grab active:cursor-grabbing" aria-label={t("Drag to reorder")}><span className="text-sm">⋮⋮</span>{t("Drag")}</button>
-                                  ) : null}
-                                  <input value={field.label} onChange={(event) => patchField(featureId, baseField.id, { label: event.target.value })} className="h-8 min-w-0 flex-1 rounded-lg bg-background px-2 text-[11px] font-semibold ring-1 ring-border" />
-                                  {isRequiredCoreField(featureId, baseField.id) ? (
-                                    <span title={t("Required to save this log")} className="rounded-full bg-primary/10 px-2 py-1 text-[9px] font-bold text-primary ring-1 ring-primary/20">{t("Required")}</span>
-                                  ) : (
-                                    <button type="button" onClick={() => patchField(featureId, baseField.id, { enabled: field.enabled === false })} className="rounded-full bg-background px-2 py-1 text-[9px] ring-1 ring-border">{field.enabled === false ? t("Hidden") : t("Shown")}</button>
-                                  )}
-                                </div>
-                                {field.scale ? (
-                                  <div className="mt-2 grid grid-cols-3 gap-1.5">
-                                    {(["min", "max", "step"] as const).map((key) => (
-                                      <label key={key} className="text-[8px] text-muted-foreground">{key}
-                                        <input type="number" step="0.5" value={field.scale?.[key] ?? ""} onChange={(event) => patchField(featureId, baseField.id, { scale: { [key]: Number(event.target.value) } })} className="mt-1 h-7 w-full rounded-lg bg-background px-2 text-[10px] ring-1 ring-border" />
-                                      </label>
-                                    ))}
-                                  </div>
-                                ) : null}
-                                {baseField.kind === "chips" ? (
-                                  <div className="mt-2 space-y-1">
-                                    {optionValues.map((option, optionIndex) => {
-                                      const override = localField?.options?.[option];
-                                      const shown = isRegistryOptionEnabled(adminView, featureId, baseField.id, option);
-                                      const label = registryOptionLabel(adminView, featureId, baseField.id, option);
-                                      const custom = option.startsWith("custom:");
-                                      return (
-                                        <div key={option} data-admin-option-sort-value={option} data-admin-option-feature={featureId} data-admin-option-field={baseField.id} className={`flex items-center gap-1.5 ${draggedOption?.featureId === featureId && draggedOption.fieldId === baseField.id && draggedOption.value === option ? "opacity-60" : ""}`}>
-                                          <button type="button" disabled={optionIndex === 0} onClick={() => moveFieldOption(featureId, baseField.id, baseField.options ?? [], option, -1)} className="rounded-full bg-background px-2 py-1 text-[8px] ring-1 ring-border disabled:opacity-25" aria-label={`${t("Move up")} ${label}`}>↑</button>
-                                          <button type="button" disabled={optionIndex === optionValues.length - 1} onClick={() => moveFieldOption(featureId, baseField.id, baseField.options ?? [], option, 1)} className="rounded-full bg-background px-2 py-1 text-[8px] ring-1 ring-border disabled:opacity-25" aria-label={`${t("Move down")} ${label}`}>↓</button>
-                                          <button type="button" onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); setDraggedOption({ featureId, fieldId: baseField.id, value: option }); }} onPointerMove={(event) => moveDraggedOptionByPointer(event, featureId, baseField.id, baseField.options ?? [])} onPointerUp={() => setDraggedOption(null)} onPointerCancel={() => setDraggedOption(null)} style={{ touchAction: "none" }} className="inline-flex h-7 items-center rounded-full bg-background px-2 text-[8px] text-muted-foreground ring-1 ring-border cursor-grab active:cursor-grabbing" aria-label={t("Drag to reorder")}>⋮⋮</button>
-                                          <input value={label} onChange={(event) => patchField(featureId, baseField.id, { options: { [option]: { ...override, label: event.target.value, order: override?.order ?? (optionIndex + 1) * 10 } } })} className="h-7 min-w-0 flex-1 rounded-lg bg-background px-2 text-[10px] ring-1 ring-border" />
-                                          {custom ? (
-                                            <button type="button" onClick={() => deleteCustomFieldOption(featureId, baseField.id, option)} className="rounded-full bg-background px-2 py-1 text-[8px] font-semibold text-destructive ring-1 ring-border">{t("Delete")}</button>
-                                          ) : (
-                                            <button type="button" onClick={() => patchField(featureId, baseField.id, { options: { [option]: { ...override, enabled: !shown, order: override?.order ?? optionIndex } } })} className="rounded-full bg-background px-2 py-1 text-[8px] ring-1 ring-border">{shown ? t("On") : t("Hidden")}</button>
-                                          )}
-                                        </div>
-                                      );
-                                    })}
-                                    <button type="button" onClick={() => addFieldOption(featureId, baseField.id)} className="mt-1 w-full rounded-lg border border-dashed border-primary/40 bg-background px-2 py-1.5 text-[9px] font-bold text-primary">+ {t("Add custom")}</button>
-                                  </div>
-                                ) : null}
-                                <p className="mt-1 text-[8px] text-muted-foreground">Field ID: {baseField.id}</p>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </section>
-                    );
-                  })}
-                  <CoreFeatureCustomFieldBuilder data={adminView} />
-                </>
+                <AdminFieldsTab
+                  adminView={adminView}
+                  localConfig={localConfig}
+                  orderedUnifiedFields={orderedUnifiedFields}
+                  orderedFieldOptionValues={orderedFieldOptionValues}
+                  draggedField={draggedField}
+                  draggedOption={draggedOption}
+                  onPatchCustomField={patchCustomField}
+                  onPatchField={patchField}
+                  onSetDraggedField={setDraggedField}
+                  onMoveDraggedField={moveDraggedFieldByPointer}
+                  onSetDraggedOption={setDraggedOption}
+                  onMoveDraggedOption={moveDraggedOptionByPointer}
+                  onMoveFieldOption={moveFieldOption}
+                  onDeleteCustomOption={deleteCustomFieldOption}
+                  onAddFieldOption={addFieldOption}
+                />
               ) : null}
 
               {tab === "custom" ? <CustomLogBuilder data={adminView} update={deviceUpdate} /> : null}
 
               {tab === "publish" ? (
-                <section className="rounded-3xl bg-surface p-4 ring-1 ring-border/80">
-                  <p className="font-serif text-lg font-bold">{t("Publish admin configuration")}</p>
-                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t("Your edits stay device-local until you explicitly publish them globally.")}</p>
-                  <div className="mt-3 flex gap-2">
-                    <input type="password" inputMode="numeric" maxLength={4} value={publishPin} onChange={(event) => setPublishPin(event.target.value.replace(/\D/g, "").slice(0, 4))} placeholder={t("Admin PIN")} className="h-10 min-w-0 flex-1 rounded-xl bg-tint px-3 text-center font-bold tracking-[0.35em] ring-1 ring-border" />
-                    <button type="button" disabled={publishing || publishPin.length !== 4} onClick={() => void publish()} className="rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground disabled:opacity-40">{publishing ? t("Publishing…") : t("Publish globally")}</button>
-                  </div>
-                  {publishStatus ? <p className="mt-2 text-xs font-semibold text-primary">{publishStatus}</p> : null}
-                  <Link to="/admin" className="mt-4 block rounded-xl bg-tint px-3 py-2 text-center text-xs font-semibold text-muted-foreground ring-1 ring-border">{t("Open full Admin page")}</Link>
-                </section>
+                <AdminPublishTab
+                  publishPin={publishPin}
+                  publishStatus={publishStatus}
+                  publishing={publishing}
+                  onPinChange={setPublishPin}
+                  onPublish={() => void publish()}
+                />
               ) : null}
             </div>
           </aside>
