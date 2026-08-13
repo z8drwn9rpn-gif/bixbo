@@ -8,6 +8,7 @@ import { POSTPARTUM_SYMPTOMS } from "@/lib/health";
 import { BIXBO_LOG_FIELDS, getRegistryFeature, getRegistryField, isRegistrySurfaceEnabled, registryCustomFieldsForFeature, registryFieldLabel, registryFieldOptions, registryFieldScale, registryFieldsForFeature, registryOptionLabel, customLogDefinitions, type RegistryFeatureId } from "@/lib/appRegistry";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { X, Plus, ChevronLeft, Check, Pencil, Trash2 } from "@/components/icons/BixboIcons";
 import {
@@ -1489,7 +1490,7 @@ function PainWizard({
   const activePainStepId = activePainStep?.id ?? "score";
   const activePainStepIsCustom = !!activePainStep && !(BIXBO_LOG_FIELDS.pain ?? []).some((field) => field.id === activePainStep.id);
   const symptomsStepIndex = painSteps.findIndex((field) => field.id === "symptoms");
-  const [score, setScore] = useState(initialEntry?.score ?? 1);
+  const [score, setScore] = useState(initialEntry?.score ?? 0);
   const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
   const [parts, setParts] = useState<string[]>(initialEntry?.parts ?? []);
   const [quality, setQuality] = useState<string[]>(initialEntry?.quality ?? []);
@@ -1834,20 +1835,23 @@ function PainWizard({
               i
             </button>
           </div>
-          <div className="flex w-full flex-nowrap items-center justify-center gap-0.5 px-0">
-            {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+          <div className="w-full px-4">
+            <Slider value={[score * 2]} min={0} max={20} step={1} onValueChange={([v]) => setScore(v / 2)} />
+          </div>
+          <div className="flex flex-wrap justify-center gap-1.5 px-4">
+            {Array.from({ length: 21 }, (_, i) => i / 2).map((n) => (
               <button
                 key={n}
                 type="button"
                 onClick={() => setScore(n)}
-                title={`${n} — ${t(getScaleDesc(data, "pain")[n])}`}
-                aria-label={`${n} — ${t(getScaleDesc(data, "pain")[n])}`}
+                title={`${n} — ${t(getScaleDesc(data, "pain")[Math.round(n)])}`}
+                aria-label={`${n} — ${t(getScaleDesc(data, "pain")[Math.round(n)])}`}
                 className={`h-7 w-7 shrink-0 rounded-full text-[10px] font-semibold transition ${
                   score === n ? "text-white ring-2 ring-foreground" : "text-foreground"
                 }`}
                 style={{ background: painColor(n) }}
               >
-                {n}
+                {Number.isInteger(n) ? n : n.toFixed(1)}
               </button>
             ))}
           </div>
@@ -1855,7 +1859,7 @@ function PainWizard({
             <div className="w-full px-2">
               <ScaleLegend
                 max={10}
-                from={1}
+                from={0}
                 descriptions={getScaleDesc(data, "pain")}
                 value={Math.round(score)}
                 title={t("Pain scale (Mankosky)")}
