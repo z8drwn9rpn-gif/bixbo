@@ -20,7 +20,25 @@ jobs:
       - name: Typecheck
         run: bun run typecheck
       - name: Lint
-        run: bun run lint
+        shell: bash
+        run: |
+          set +e
+          bunx eslint . --format json > eslint-report.json
+          status=$?
+          node <<'NODE'
+          const fs = require('fs');
+          const rows = JSON.parse(fs.readFileSync('eslint-report.json', 'utf8'));
+          for (const row of rows) {
+            for (const message of row.messages || []) {
+              if (message.severity < 2) continue;
+              const file = row.filePath.replace(process.cwd() + '/', '');
+              const text = String(message.message || 'ESLint error').replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+              const rule = message.ruleId ? ` [${message.ruleId}]` : '';
+              console.log(`::error file=${file},line=${message.line || 1},col=${message.column || 1}::${text}${rule}`);
+            }
+          }
+          NODE
+          exit $status
       - name: Tests
         run: bun test
       - name: Build
