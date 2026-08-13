@@ -91,6 +91,7 @@ import {
 import { getScaleDesc } from "@/lib/scaleDescriptions";
 import { Chip, CustomChipList, DurationField, Field, IntensityScale, stripEmoji, toggleIn } from "./LogFormPrimitives";
 import type { UpdateFn } from "./LogFormPrimitives";
+import { PanicForm, TetanyForm } from "./EpisodeForms";
 
 export function PainWizard({
   date,
@@ -125,24 +126,34 @@ export function PainWizard({
 
   const [step, setStep] = useState(0);
   const [painScaleInfoOpen, setPainScaleInfoOpen] = useState(false);
+  const [episodeMode, setEpisodeMode] = useState<"tetany" | "panic" | null>(null);
   const schema = useLogSchema();
   const painSteps = useMemo(() => {
     const configured = [
       ...registryFieldsForFeature(data, "pain"),
       ...registryCustomFieldsForFeature(data, "pain"),
     ].sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));
-    return configured.length ? configured : [
+    const base = configured.length ? configured : [
       { id: "score", label: "Pain scale", kind: "scale" as const, order: 10 },
       { id: "parts", label: "Where does it hurt?", kind: "chips" as const, order: 20 },
       { id: "quality", label: "How does it hurt?", kind: "chips" as const, order: 30 },
       { id: "symptoms", label: "Other symptoms", kind: "chips" as const, order: 40 },
       { id: "details", label: "Details", kind: "text" as const, order: 50 },
     ];
+    const withoutEpisodes = base.filter((field) => field.id !== "episodes");
+    const detailsIndex = withoutEpisodes.findIndex((field) => field.id === "details");
+    const symptomsIndex = withoutEpisodes.findIndex((field) => field.id === "symptoms");
+    const insertAt = detailsIndex >= 0 ? detailsIndex : symptomsIndex >= 0 ? symptomsIndex + 1 : withoutEpisodes.length;
+    return [
+      ...withoutEpisodes.slice(0, insertAt),
+      { id: "episodes", label: "Episodes", kind: "chips" as const, order: 45 },
+      ...withoutEpisodes.slice(insertAt),
+    ];
   }, [data]);
   const safeStep = Math.min(step, Math.max(0, painSteps.length - 1));
   const activePainStep = painSteps[safeStep];
   const activePainStepId = activePainStep?.id ?? "score";
-  const activePainStepIsCustom = !!activePainStep && !(BIXBO_LOG_FIELDS.pain ?? []).some((field) => field.id === activePainStep.id);
+  const activePainStepIsCustom = !!activePainStep && activePainStep.id !== "episodes" && !(BIXBO_LOG_FIELDS.pain ?? []).some((field) => field.id === activePainStep.id);
   const symptomsStepIndex = painSteps.findIndex((field) => field.id === "symptoms");
   const [score, setScore] = useState(initialEntry?.score ?? 0);
   const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
@@ -335,6 +346,25 @@ export function PainWizard({
     if (dx < 0 && safeStep < painSteps.length - 1) setStep(safeStep + 1);
     else if (dx > 0 && safeStep > 0) setStep(safeStep - 1);
   };
+
+  if (episodeMode === "tetany") {
+    return (
+      <LogSchemaContext.Provider value={null}>
+        <div className="px-5 pb-4">
+          <TetanyForm date={date} data={data} update={update} onDone={() => setEpisodeMode(null)} />
+        </div>
+      </LogSchemaContext.Provider>
+    );
+  }
+  if (episodeMode === "panic") {
+    return (
+      <LogSchemaContext.Provider value={null}>
+        <div className="px-5 pb-4">
+          <PanicForm date={date} data={data} update={update} onDone={() => setEpisodeMode(null)} />
+        </div>
+      </LogSchemaContext.Provider>
+    );
+  }
 
   return (
     <div
@@ -888,6 +918,30 @@ export function PainWizard({
               onToggle={(v) => setPcosSymptoms((a) => toggleIn(a, v))}
             />
           </Field>
+        </div>
+      )}
+
+      {activePainStepId === "episodes" && (
+        <div className="space-y-4 pt-1">
+          <div>
+            <h2 className="font-serif text-xl text-foreground">{t("Episodes")}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">{t("Log a tetany episode or panic attack if one happened with this pain entry.")}</p>
+          </div>
+          {([
+            ["tetany", "⭐", "Tetany episode"],
+            ["panic", "✨", "Panic attack"],
+          ] as const).map(([mode, icon, label]) => (
+            <div key={mode} className="rounded-2xl border border-border bg-surface p-3">
+              <div className="flex items-center gap-3">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-primary/10"><Ico e={icon} size={24} /></span>
+                <p className="min-w-0 flex-1 text-sm font-semibold text-foreground">{t(label)}</p>
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <button type="button" className="h-10 rounded-xl border border-border bg-background text-sm font-semibold text-foreground">{t("No")}</button>
+                <button type="button" onClick={() => setEpisodeMode(mode)} className="h-10 rounded-xl border border-primary bg-primary/10 text-sm font-semibold text-primary">{t("Yes, log it")}</button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
