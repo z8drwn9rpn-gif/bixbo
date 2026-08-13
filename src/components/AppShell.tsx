@@ -2,10 +2,7 @@ import { type ReactNode } from "react";
 import { BottomNav } from "./BottomNav";
 import { SideNav } from "./SideNav";
 
-// Use only known-good binary image assets. The old /bixbo-mascot.png is corrupted.
-// favicon.png is the primary mascot source; icon-192.png is a safe fallback.
-const BIXBO_MASCOT_SRC = "/favicon.png?v=20260813c";
-const BIXBO_MASCOT_FALLBACK_SRC = "/icon-192.png?v=20260813c";
+const BIXBO_MASCOT_SRC = "/bixbo-mascot-user.png?v=20260813d";
 
 export function AppShell({
   children,
@@ -21,7 +18,7 @@ export function AppShell({
   return (
     <div className="min-h-dvh overflow-x-hidden bg-background text-foreground" style={{ overscrollBehaviorX: "none" }}>
       {/* Desktop navigation is fixed and hidden below lg. Mobile keeps BottomNav. */}
-      <SideNav mascotSrc={BIXBO_MASCOT_SRC} mascotFallbackSrc={BIXBO_MASCOT_FALLBACK_SRC} />
+      <SideNav mascotSrc={BIXBO_MASCOT_SRC} />
 
       <div className="min-h-dvh lg:pl-60">
         <div className="relative isolate mx-auto min-h-dvh w-full overflow-x-hidden bg-background/92 pb-[calc(6rem+env(safe-area-inset-bottom))] portrait:max-w-[430px] portrait:shadow-[0_0_40px_-24px_color-mix(in_oklch,var(--primary)_45%,transparent)] landscape:max-lg:max-w-none lg:max-w-[1200px] lg:px-6 lg:pb-8 xl:max-w-[1320px]">
@@ -41,12 +38,6 @@ export function AppShell({
                   alt=""
                   aria-hidden="true"
                   draggable={false}
-                  onError={(event) => {
-                    const img = event.currentTarget;
-                    if (img.dataset.fallbackApplied === "1") return;
-                    img.dataset.fallbackApplied = "1";
-                    img.src = BIXBO_MASCOT_FALLBACK_SRC;
-                  }}
                   className="block h-full w-full object-contain object-center opacity-100 visible"
                   style={{
                     display: "block",
