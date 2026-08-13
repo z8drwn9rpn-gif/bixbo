@@ -1,0 +1,85 @@
+name: Fix Add symptoms follow-up once
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/fix-add-symptoms-followup-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Fix chained Add symptoms parent and add regression test
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          sheet_path = Path('src/components/LogSheet.tsx')
+          src = sheet_path.read_text()
+          old = '''    const entries = data.dayLogs[date]?.pain ?? [];
+    if (!entries.length) return undefined;
+
+    return entries.reduce((latest, entry) =>
+      (entry.time ?? "").localeCompare(latest.time ?? "") >= 0 ? entry : latest,
+    );'''
+          new = '''    // Symptom-only follow-ups are children of a real pain entry, not new pain measurements.
+    // Always attach a new Add symptoms entry to the newest REAL pain entry so repeated
+    // follow-ups remain siblings under the same Pain card instead of chaining to each other.
+    const entries = (data.dayLogs[date]?.pain ?? []).filter((entry) => entry.entryKind !== "symptom-update");
+    if (!entries.length) return undefined;
+
+    return entries.reduce((latest, entry) =>
+      (entry.time ?? "").localeCompare(latest.time ?? "") >= 0 ? entry : latest,
+    );'''
+          if old not in src:
+              raise SystemExit('latestPain block not found; refusing unsafe patch')
+          src = src.replace(old, new, 1)
+          sheet_path.write_text(src)
+
+          test_path = Path('src/lib/__tests__/pain-symptom-update-regression.test.ts')
+          test = test_path.read_text()
+          marker = '''it("quick Add symptoms keeps an optional note field", () => {'''
+          addition = '''it("repeated Add symptoms entries always attach to the latest real pain entry", () => {
+  const source = readFileSync(resolve(process.cwd(), "src/components/LogSheet.tsx"), "utf8");
+  expect(source).toContain('(data.dayLogs[date]?.pain ?? []).filter((entry) => entry.entryKind !== "symptom-update")');
+  expect(source).toContain('setCopiedFromId(latestPain.id)');
+});
+
+'''
+          if addition.strip() not in test:
+              if marker not in test:
+                  raise SystemExit('test insertion marker not found')
+              test = test.replace(marker, addition + marker, 1)
+              test_path.write_text(test)
+          PY
+
+      - name: Verify
+        run: |
+          bun install --frozen-lockfile
+          bun run typecheck
+          bun test src/lib/__tests__/pain-symptom-update-regression.test.ts
+
+      - name: Commit fix
+        run: |
+          rm -f .github/workflows/fix-add-symptoms-followup-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/LogSheet.tsx src/lib/__tests__/pain-symptom-update-regression.test.ts .github/workflows/fix-add-symptoms-followup-once.yml
+          git commit -m "fix: keep repeated Add symptoms under source pain"
+          git push origin HEAD:main
