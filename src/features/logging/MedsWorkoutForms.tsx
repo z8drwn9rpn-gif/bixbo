@@ -340,7 +340,6 @@ export function WorkoutForm({
   const [exercises, setExercises] = useState<WorkoutExercise[]>(initialEntry?.exercises ?? []);
   const [rpe, setRpe] = useState<number | undefined>(initialEntry?.rpe);
   const [magnesium, setMagnesium] = useState<boolean>(initialEntry?.magnesiumBefore ?? false);
-  const [trigger, setTrigger] = useState<WorkoutEntry["triggeredSymptom"]>(initialEntry?.triggeredSymptom);
   const [feeling, setFeeling] = useState<string[]>(asArr(initialEntry?.feeling).map(stripEmoji));
   const [note, setNote] = useState<string>(initialEntry?.note ?? "");
   const addKind = (v: string) =>
@@ -349,16 +348,6 @@ export function WorkoutForm({
     update((d) => ({ ...d, custom: { ...d.custom, workoutKinds: d.custom.workoutKinds.filter((x) => x !== v) } }));
     if (kind === v) setKind(WORKOUT_KINDS_DEFAULT[0]);
   };
-
-  const log = data.dayLogs[date];
-  const symptomOptions = [
-    ...(log?.tetany ?? []).map((t) => ({
-      type: "tetany" as const,
-      id: t.id,
-      label: `${t.time} tetany ${t.intensity}/5`,
-    })),
-    ...(log?.pain ?? []).map((p) => ({ type: "pain" as const, id: p.id, label: `${p.time} pain ${p.score}/10` })),
-  ];
 
   const save = () => {
     const editing = !!initialEntry;
@@ -373,7 +362,7 @@ export function WorkoutForm({
       exercises: workoutIsStrength(kind) && exercises.length ? exercises : undefined,
       rpe,
       magnesiumBefore: magnesium || undefined,
-      triggeredSymptom: trigger,
+      triggeredSymptom: initialEntry?.triggeredSymptom,
       feeling: feeling.length ? feeling : undefined,
       note: note.trim() || undefined,
     };
@@ -525,29 +514,6 @@ export function WorkoutForm({
             Yes
           </Chip>
         </div>
-      </Field>
-
-      <Field label="Triggered a symptom? (optional)" schemaFieldId="triggeredSymptom">
-        {symptomOptions.length === 0 ? (
-          <p className="text-[11px] text-muted-foreground">{t("No tetany or pain entries logged for this day yet.")}</p>
-        ) : (
-          <div className="mt-1 flex flex-wrap gap-2">
-            <Chip active={!trigger} onClick={() => setTrigger(undefined)}>
-              No
-            </Chip>
-            {symptomOptions.map((o) => (
-              <Chip
-                key={o.id}
-                active={trigger?.id === o.id}
-                onClick={() =>
-                  setTrigger(trigger?.id === o.id ? undefined : { type: o.type, id: o.id, label: o.label })
-                }
-              >
-                {o.label}
-              </Chip>
-            ))}
-          </div>
-        )}
       </Field>
 
       <Field label="Weight after (kg, optional)" schemaFieldId="weightKg">
