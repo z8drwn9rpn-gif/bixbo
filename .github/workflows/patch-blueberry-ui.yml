@@ -1,0 +1,199 @@
+name: Apply Blueberry UI polish
+
+on:
+  push:
+    paths:
+      - .github/workflows/patch-blueberry-ui.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Patch Blueberry form
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('src/features/logging/CycleForms.tsx')
+          text = path.read_text()
+          replacement = r'''export function PeriodForm({ date, data, update, onDone }: { date: string; data: BixboData; update: UpdateFn; onDone: () => void }) {
+  const { t } = useI18n();
+  const cur = data.dayLogs[date]?.periodInfo;
+  const [level, setLevel] = useState<PeriodLevel>(cur?.level ?? "");
+  const [discharge, setDischarge] = useState<string>(cur?.discharge ?? "");
+  const [dNote, setDNote] = useState<string>(cur?.dischargeNote ?? "");
+  const [note, setNote] = useState<string>(cur?.note ?? "");
+
+  const save = () => {
+    updateDayLog(update, date, (l) => ({
+      ...l,
+      period: level || undefined,
+      periodInfo: {
+        level,
+        discharge: discharge || undefined,
+        dischargeNote: dNote.trim() || undefined,
+        note: note.trim() || undefined,
+        cramps: cur?.cramps,
+      },
+    }));
+    onDone();
+  };
+
+  const LEVELS: { v: PeriodLevel; label: string; color: string }[] = [
+    { v: "spotting", label: "Spotting", color: "var(--period-spotting)" },
+    { v: "light", label: "Light", color: "var(--period-light)" },
+    { v: "medium", label: "Medium", color: "var(--period-medium)" },
+    { v: "heavy", label: "Heavy", color: "var(--period-heavy)" },
+    { v: "very-heavy", label: "Very heavy", color: "var(--period-veryheavy)" },
+  ];
+
+  const sectionClass = "rounded-3xl border border-border/70 bg-surface/22 p-3.5 shadow-sm";
+  const labelClass = "mb-2 text-xs font-bold uppercase tracking-[0.035em] text-muted-foreground";
+
+  return (
+    <div className="mx-auto flex w-full max-w-xl flex-col gap-3 pb-5">
+      <SaveBar onCancel={onDone} onSave={save} />
+
+      <section className={sectionClass}>
+        <p className={labelClass}>{t("Flow")}</p>
+        <div className="grid grid-cols-5 gap-1.5">
+          {LEVELS.map((L) => {
+            const active = level === L.v;
+            return (
+              <button
+                key={L.v}
+                type="button"
+                onClick={() => setLevel(active ? "" : L.v)}
+                className={`min-w-0 rounded-full px-1.5 py-2 text-[11px] font-semibold leading-tight transition ${
+                  active
+                    ? "text-white shadow-sm ring-2 ring-foreground/80 ring-offset-1 ring-offset-background"
+                    : "bg-tint text-foreground ring-1 ring-border"
+                }`}
+                style={active ? { background: L.color } : undefined}
+              >
+                {t(L.label)}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className={sectionClass}>
+        <p className={labelClass}>{t("Discharge (optional)")}</p>
+        <div className="flex flex-wrap gap-2">
+          {DISCHARGE_OPTS.map((d) => (
+            <Chip
+              key={d.value}
+              active={discharge === d.value}
+              onClick={() => setDischarge(discharge === d.value ? "" : d.value)}
+              color={d.color}
+            >
+              {d.label}
+            </Chip>
+          ))}
+        </div>
+
+        <div className="mt-3 border-t border-border/60 pt-3">
+          <p className="mb-1.5 text-xs font-medium text-muted-foreground">{t("Discharge note (optional)")}</p>
+          <Input
+            value={dNote}
+            onChange={(e) => setDNote(e.target.value)}
+            placeholder={t("Add discharge note…")}
+            className="h-10 rounded-2xl bg-background/25"
+          />
+        </div>
+      </section>
+
+      <section className={sectionClass}>
+        <p className={labelClass}>{t("Day note (optional)")}</p>
+        <Textarea
+          rows={3}
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder={t("Add a note about today…")}
+          className="min-h-[92px] rounded-2xl bg-background/25"
+        />
+      </section>
+
+      <section className={sectionClass}>
+        <div className="flex items-start gap-3">
+          <div className="min-w-0 flex-1">
+            <p className={labelClass}>{t("Birth control since (optional)")}</p>
+            <Input
+              type="date"
+              value={data.settings.birthControlSince ?? ""}
+              onChange={(e) => update((d) => ({ ...d, settings: { ...d.settings, birthControlSince: e.target.value || undefined } }))}
+              className="h-10 rounded-2xl bg-background/25"
+            />
+            {data.settings.birthControlSince ? (
+              <p className="mt-1.5 text-[10px] leading-relaxed text-muted-foreground">
+                {t("Taking birth control since")} {data.settings.birthControlSince}
+              </p>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="mt-3 rounded-2xl bg-tint/75 px-3 py-2.5 text-[10px] leading-relaxed text-muted-foreground ring-1 ring-border/55">
+          {t("Cycle prediction is based on your last period and cycle length (edit in Settings later).")}
+        </div>
+      </section>
+
+      {cur ? (
+        <button
+          type="button"
+          onClick={() => {
+            update((current) => {
+              const day = current.dayLogs[date] ?? {};
+              const { period: _p, periodInfo: _pi, ...rest } = day;
+              void _p;
+              void _pi;
+              const adminFields = { ...(rest.adminFields ?? {}) };
+              const periodAdmin = adminFields.period ?? [];
+              const nextPeriodAdmin = periodAdmin.filter((entry) => entry.sourceEntryId !== `day:period:${date}`);
+              if (nextPeriodAdmin.length) adminFields.period = nextPeriodAdmin;
+              else delete adminFields.period;
+              return {
+                ...current,
+                dayLogs: {
+                  ...current.dayLogs,
+                  [date]: {
+                    ...rest,
+                    adminFields: Object.keys(adminFields).length ? adminFields : undefined,
+                  },
+                },
+              };
+            });
+            onDone();
+          }}
+          className="mx-auto mt-1 rounded-full bg-destructive/8 px-5 py-2 text-xs font-semibold text-destructive ring-1 ring-destructive/35 transition hover:bg-destructive/12"
+        >
+          {t("Delete Blueberry entry")}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+'''
+          pattern = r'export function PeriodForm\([\s\S]*?\n}\n\ntype SexEntryUi'
+          new_text, count = re.subn(pattern, replacement + '\n\ntype SexEntryUi', text, count=1)
+          if count != 1:
+              raise SystemExit(f'Expected one PeriodForm block, found {count}')
+          path.write_text(new_text)
+          PY
+      - name: Commit patched UI and remove one-time workflow
+        shell: bash
+        run: |
+          rm .github/workflows/patch-blueberry-ui.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/features/logging/CycleForms.tsx .github/workflows/patch-blueberry-ui.yml
+          git commit -m "Polish Blueberry log layout"
+          git push
