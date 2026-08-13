@@ -18,6 +18,7 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "paths": {
+      "@/components/icons/BixboIcons": ["./src/components/icons/BixboExtraIcons.tsx"],
       "@/*": ["./src/*"]
     }
   }
