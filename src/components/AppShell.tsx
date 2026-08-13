@@ -2,6 +2,7 @@ import { type ReactNode } from "react";
 import { BottomNav } from "./BottomNav";
 import { SideNav } from "./SideNav";
 import bixboMascot from "@/assets/bixbo-mascot-user.png";
+import "@/ui-polish.css";
 
 const BIXBO_MASCOT_SRC = bixboMascot;
 
