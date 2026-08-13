@@ -19,6 +19,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
       - name: Extract LogSheet translation and category modules
         shell: bash
         run: |
@@ -30,7 +35,6 @@ jobs:
           out_dir = Path('src/features/logging')
           out_dir.mkdir(parents=True, exist_ok=True)
 
-          # Extract TrText using stable source markers instead of a brittle regex.
           tr_start = src.index('\nfunction TrText(')
           tr_end = src.index('\ntype UpdateFn', tr_start)
           tr_body = src[tr_start + 1:tr_end].rstrip()
@@ -40,7 +44,6 @@ jobs:
           )
           src = src[:tr_start] + '\n' + src[tr_end:]
 
-          # Extract the category type + built-in category registry.
           cat_start = src.index('\ntype Category =')
           cat_end = src.index('\nexport function LogSheet', cat_start)
           cat_body = src[cat_start + 1:cat_end].rstrip()
