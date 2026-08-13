@@ -1,0 +1,104 @@
+name: Refactor i18n locales once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/refactor-i18n-locales-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  refactor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+      - name: Split locale catalogs
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          path = Path('src/lib/i18n.ts')
+          src = path.read_text()
+
+          def extract_object(decl: str):
+              start = src.index(decl)
+              brace = src.index('{', start)
+              depth = 0
+              in_string = None
+              escape = False
+              i = brace
+              while i < len(src):
+                  ch = src[i]
+                  if in_string:
+                      if escape:
+                          escape = False
+                      elif ch == '\\':
+                          escape = True
+                      elif ch == in_string:
+                          in_string = None
+                  else:
+                      if ch in ('"', "'", '`'):
+                          in_string = ch
+                      elif ch == '{':
+                          depth += 1
+                      elif ch == '}':
+                          depth -= 1
+                          if depth == 0:
+                              end = i + 1
+                              while end < len(src) and src[end] in ' \t':
+                                  end += 1
+                              if end < len(src) and src[end] == ';':
+                                  end += 1
+                              return start, end, src[brace:i+1]
+                  i += 1
+              raise RuntimeError(f'Could not find end for {decl}')
+
+          en_start, en_end, en_obj = extract_object('const EN: Record<string, string> =')
+          sk_start, sk_end, sk_obj = extract_object('const SK: Record<string, string> =')
+          if not (en_start < en_end <= sk_start < sk_end):
+              raise RuntimeError('Unexpected EN/SK declaration order')
+
+          locale_dir = Path('src/lib/i18n')
+          locale_dir.mkdir(parents=True, exist_ok=True)
+          (locale_dir / 'en.ts').write_text(
+              'export const EN: Record<string, string> = ' + en_obj + ';\n'
+          )
+          (locale_dir / 'sk.ts').write_text(
+              'export const SK: Record<string, string> = ' + sk_obj + ';\n'
+          )
+
+          before = src[:en_start]
+          between = src[en_end:sk_start]
+          after = src[sk_end:]
+          # The content between EN and SK should only be whitespace; keep one clean import block.
+          if between.strip():
+              raise RuntimeError('Unexpected code between EN and SK declarations')
+          imports = 'import { EN } from "./i18n/en";\nimport { SK } from "./i18n/sk";\n\n'
+          path.write_text(before + imports + after.lstrip('\n'))
+
+          final = path.read_text()
+          if 'const EN: Record<string, string>' in final or 'const SK: Record<string, string>' in final:
+              raise RuntimeError('Locale declarations still present in i18n.ts')
+          print('i18n.ts bytes:', path.stat().st_size)
+          print('en.ts bytes:', (locale_dir / 'en.ts').stat().st_size)
+          print('sk.ts bytes:', (locale_dir / 'sk.ts').stat().st_size)
+          PY
+      - name: Verify
+        run: |
+          bun install --frozen-lockfile
+          bun run typecheck
+          bun test
+          bun run build
+      - name: Commit
+        run: |
+          rm .github/workflows/refactor-i18n-locales-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/lib/i18n.ts src/lib/i18n/en.ts src/lib/i18n/sk.ts .github/workflows/refactor-i18n-locales-once.yml
+          git commit -m "refactor: split i18n locale catalogs"
+          git push
