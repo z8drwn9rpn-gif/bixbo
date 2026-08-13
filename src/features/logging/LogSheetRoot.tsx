@@ -124,30 +124,14 @@ export function LogSheet({
   }, [open]);
   const [editingOrder, setEditingOrder] = useState(false);
   const [customEditEntry, setCustomEditEntry] = useState<CustomLogEntry | null | undefined>();
-  const [episodeChooserOpen, setEpisodeChooserOpen] = useState(false);
-  const [episodeFlowStarted, setEpisodeFlowStarted] = useState(false);
   const close = () => {
     setCat(null);
     setEditingOrder(false);
     setCustomEditEntry(undefined);
-    setEpisodeChooserOpen(false);
-    setEpisodeFlowStarted(false);
     onOpenChange(false);
   };
   const back = () => {
     setCustomEditEntry(undefined);
-    if (episodeChooserOpen) {
-      setEpisodeChooserOpen(false);
-      setEpisodeFlowStarted(false);
-      if (initial) close();
-      else setCat(null);
-      return;
-    }
-    if (episodeFlowStarted && (cat === "tetany" || cat === "panic")) {
-      setCat("tetany");
-      setEpisodeChooserOpen(true);
-      return;
-    }
     if (initial) {
       close();
       return;
@@ -535,13 +519,7 @@ export function LogSheet({
                                 e.stopPropagation();
                                 return;
                               }
-                              if (c.id === "tetany") {
-                                setCat("tetany");
-                                setEpisodeFlowStarted(true);
-                                setEpisodeChooserOpen(true);
-                              } else {
-                                setCat(c.id);
-                              }
+                              setCat(c.id);
                             }}
                             aria-label={editingOrder ? `Drag $<TrText value={c.label} /> to reorder` : `Log $<TrText value={c.label} />`}
                             className={`pointer-events-auto absolute z-20 touch-none select-none outline-none transition-[filter,opacity] duration-150 focus-visible:ring-2 focus-visible:ring-[#edf2cf] ${
@@ -696,13 +674,9 @@ export function LogSheet({
               </button>
               <SheetTitle className="font-serif text-lg">
                 {t(
-                  episodeChooserOpen
+                  active === "tetany" || active === "panic"
                     ? "Episodes"
-                    : active === "tetany"
-                      ? "Tetany episode"
-                      : active === "panic"
-                        ? "Panic attack"
-                        : orderedCats.find((c) => c.id === active)?.label ?? CATEGORIES.find((c) => c.id === active)?.label ?? "",
+                    : orderedCats.find((c) => c.id === active)?.label ?? CATEGORIES.find((c) => c.id === active)?.label ?? "",
                 )}
               </SheetTitle>
               <button onClick={close} aria-label={t("Close")} className="rounded-full p-1 hover:bg-tint">
@@ -820,69 +794,55 @@ export function LogSheet({
                   initialEntry={initialPain ?? (edit as PainEntry | undefined)}
                 />
               )}
-              {episodeChooserOpen && (active === "tetany" || active === "panic") && (
-                <div className="mx-auto flex w-full max-w-md flex-col gap-3 py-5">
-                  <div className="px-1 pb-2 text-center">
-                    <h2 className="font-serif text-xl font-semibold">{t("Episodes")}</h2>
-                    <p className="mt-1 text-xs text-muted-foreground">{t("What would you like to log?")}</p>
+              {(active === "tetany" || active === "panic") && (
+                <div className="mx-auto flex w-full max-w-md flex-col gap-4 py-4">
+                  <div className="grid grid-cols-2 gap-2 rounded-2xl bg-tint p-1">
+                    {isRegistrySurfaceEnabled(data, "tetany", "log") && (
+                      <button
+                        type="button"
+                        onClick={() => setCat("tetany")}
+                        className={`rounded-xl px-3 py-2.5 text-sm font-semibold transition ${
+                          active === "tetany"
+                            ? "bg-background text-foreground shadow-sm ring-1 ring-border"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        <span className="inline-flex items-center gap-2"><Ico e="⭐" size={18} /> {t("Tetany")}</span>
+                      </button>
+                    )}
+                    {isRegistrySurfaceEnabled(data, "panic", "log") && (
+                      <button
+                        type="button"
+                        onClick={() => setCat("panic")}
+                        className={`rounded-xl px-3 py-2.5 text-sm font-semibold transition ${
+                          active === "panic"
+                            ? "bg-background text-foreground shadow-sm ring-1 ring-border"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        <span className="inline-flex items-center gap-2"><Ico e="✨" size={18} /> {t("Panic attack")}</span>
+                      </button>
+                    )}
                   </div>
-                  {isRegistrySurfaceEnabled(data, "tetany", "log") && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCat("tetany");
-                        setEpisodeChooserOpen(false);
-                      }}
-                      className="flex items-center gap-3 rounded-3xl border border-border bg-surface p-4 text-left shadow-sm transition active:scale-[0.99]"
-                    >
-                      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary/10">
-                        <Ico e="⭐" size={26} />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-sm font-semibold">{t("Tetany episode")}</span>
-                        <span className="mt-0.5 block text-xs text-muted-foreground">{t("Type · location · intensity")}</span>
-                      </span>
-                      <span className="text-lg text-muted-foreground" aria-hidden="true">→</span>
-                    </button>
-                  )}
-                  {isRegistrySurfaceEnabled(data, "panic", "log") && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCat("panic");
-                        setEpisodeChooserOpen(false);
-                      }}
-                      className="flex items-center gap-3 rounded-3xl border border-border bg-surface p-4 text-left shadow-sm transition active:scale-[0.99]"
-                    >
-                      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary/10">
-                        <Ico e="✨" size={26} />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-sm font-semibold">{t("Panic attack")}</span>
-                        <span className="mt-0.5 block text-xs text-muted-foreground">{t("Intensity · symptoms · trigger")}</span>
-                      </span>
-                      <span className="text-lg text-muted-foreground" aria-hidden="true">→</span>
-                    </button>
+
+                  {active === "panic" ? (
+                    <PanicForm
+                      date={date}
+                      data={data}
+                      update={update}
+                      onDone={close}
+                      initialEntry={edit as PanicAttack | undefined}
+                    />
+                  ) : (
+                    <TetanyForm
+                      date={date}
+                      data={data}
+                      update={update}
+                      onDone={close}
+                      initialEntry={edit as TetanyEpisode | undefined}
+                    />
                   )}
                 </div>
-              )}
-              {!episodeChooserOpen && active === "panic" && (
-                <PanicForm
-                  date={date}
-                  data={data}
-                  update={update}
-                  onDone={close}
-                  initialEntry={edit as PanicAttack | undefined}
-                />
-              )}
-              {!episodeChooserOpen && active === "tetany" && (
-                <TetanyForm
-                  date={date}
-                  data={data}
-                  update={update}
-                  onDone={close}
-                  initialEntry={edit as TetanyEpisode | undefined}
-                />
               )}
               {active === "period" && <PeriodForm date={date} data={data} update={update} onDone={close} />}
               {active === "sex" && (
