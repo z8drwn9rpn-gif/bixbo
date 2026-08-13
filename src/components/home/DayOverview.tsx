@@ -313,11 +313,13 @@ export function DayPreview({
                       <span className="font-semibold text-foreground">{t("Relieved by")}:</span> {p.nauseaHelped.map(t).join(", ")}
                     </p>
                   ) : null}
+                  {p.nauseaNote ? <p className="text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">{t("Nausea note")}:</span> {p.nauseaNote}</p> : null}
                   {p.hotFlashes != null && (
                     <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
                       <span className="font-semibold text-foreground">{t("Hot flashes")}:</span>{" "}{p.hotFlashes}/5
                     </p>
                   )}
+                  {p.hotFlashesNote ? <p className="text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">{t("Hot flashes note")}:</span> {p.hotFlashesNote}</p> : null}
                   {p.headacheTypes?.length ? (
                     <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
                       <span className="font-semibold text-foreground">{t("Headache")}:</span>{" "}{p.headacheTypes.map(t).join(", ")}
@@ -328,6 +330,7 @@ export function DayPreview({
                       <span className="font-semibold text-foreground">{t("Headache")}:</span>{" "}{p.headacheIntensity}/10
                     </p>
                   ) : null}
+                  {p.headacheNote ? <p className="text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">{t("Headache note")}:</span> {p.headacheNote}</p> : null}
                   {p.headacheMed ? (
                     <p className="text-xs text-muted-foreground">
                       <Ico e="💊" size={13} /> {t("Headache med")}: {p.headacheMed}
@@ -344,7 +347,7 @@ export function DayPreview({
                   ) : null}
                   {p.stress != null && <p className="mt-2 text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">{t("Stress")}:</span> {p.stress}/10</p>}
                   {p.bodyBattery != null && <p className="mt-2 text-xs text-muted-foreground"><span className="font-semibold text-foreground">{t("Battery")}:</span> {p.bodyBattery}/5</p>}
-                  {p.note && <p className="mt-2 text-sm whitespace-pre-line"><span className="font-semibold">{t("Note")}:</span> {p.note}</p>}
+                  {p.note && <p className="mt-2 whitespace-pre-line text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">{t("Note")}:</span> {p.note}</p>}
                   <p className="mt-1 text-[10px] text-primary">{t("Tap to edit")}</p>
                 </button>
                 <DeleteBtn
@@ -377,10 +380,13 @@ export function DayPreview({
                               {entry.nausea || entry.nauseaSeverity != null || entry.nauseaTypes?.length ? (
                                 <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">{t("Nausea")}:</span>{entry.nauseaSeverity != null ? ` ${entry.nauseaSeverity}/10` : ""}{entry.nauseaTypes?.length ? ` · ${entry.nauseaTypes.map(t).join(", ")}` : ""}</p>
                               ) : null}
+                              {entry.nauseaNote ? <p className="text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">{t("Nausea note")}:</span> {entry.nauseaNote}</p> : null}
                               {entry.headache || entry.headacheIntensity != null || entry.headacheTypes?.length ? (
                                 <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">{t("Headache")}:</span>{entry.headacheIntensity != null ? ` ${entry.headacheIntensity}/10` : ""}{entry.headacheTypes?.length ? ` · ${entry.headacheTypes.map(t).join(", ")}` : ""}</p>
                               ) : null}
+                              {entry.headacheNote ? <p className="text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">{t("Headache note")}:</span> {entry.headacheNote}</p> : null}
                               {entry.hotFlashesOn || entry.hotFlashes != null ? <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">{t("Hot flashes")}:</span>{entry.hotFlashes != null ? ` ${entry.hotFlashes}/5` : ""}</p> : null}
+                              {entry.hotFlashesNote ? <p className="text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">{t("Hot flashes note")}:</span> {entry.hotFlashesNote}</p> : null}
                               {entry.pcosSymptoms?.length ? <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">PCOS:</span> {entry.pcosSymptoms.map(t).join(", ")}</p> : null}
                               {entry.fluNote ? <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">Flu:</span> {entry.fluNote}</p> : null}
                               {entry.note ? <p className="mt-1.5 whitespace-pre-line text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">{t("Note")}:</span> {entry.note}</p> : null}

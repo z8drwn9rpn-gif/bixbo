@@ -126,7 +126,10 @@ export function PainWizard({
 
   const [step, setStep] = useState(0);
   const [painScaleInfoOpen, setPainScaleInfoOpen] = useState(false);
-  const [episodeMode, setEpisodeMode] = useState<"tetany" | "panic" | null>(null);
+  const [tetanyOn, setTetanyOn] = useState(false);
+  const [panicOn, setPanicOn] = useState(false);
+  const [tetanyDraft, setTetanyDraft] = useState<TetanyEpisode | undefined>();
+  const [panicDraft, setPanicDraft] = useState<PanicAttack | undefined>();
   const schema = useLogSchema();
   const painSteps = useMemo(() => {
     const configured = [
@@ -167,12 +170,14 @@ export function PainWizard({
   const [mood, setMood] = useState<string[]>(initialEntry?.mood ?? []);
   const [hotFlashesOn, setHotFlashesOn] = useState<boolean>(!!initialEntry?.hotFlashesOn);
   const [hotFlashes, setHotFlashes] = useState<number | undefined>(initialEntry?.hotFlashes);
+  const [hotFlashesNote, setHotFlashesNote] = useState(initialEntry?.hotFlashesNote ?? "");
   const [headache, setHeadache] = useState<boolean>(!!initialEntry?.headache);
   const [headacheTypes, setHeadacheTypes] = useState<string[]>(initialEntry?.headacheTypes ?? []);
   const [headacheIntensity, setHeadacheIntensity] = useState<number | undefined>(initialEntry?.headacheIntensity);
   const [headacheMedOn, setHeadacheMedOn] = useState<boolean>(!!initialEntry?.headacheMed);
   const [headacheMed, setHeadacheMed] = useState<string>(initialEntry?.headacheMed ?? "");
   const [headacheMedTime, setHeadacheMedTime] = useState<string>(initialEntry?.headacheMedTime ?? nowHHMM());
+  const [headacheNote, setHeadacheNote] = useState(initialEntry?.headacheNote ?? "");
   const [pcosSymptoms, setPcosSymptoms] = useState<string[]>(initialEntry?.pcosSymptoms ?? []);
   const [fluNote, setFluNote] = useState<string>(initialEntry?.fluNote ?? "");
   // Pressure detail (shown when "Pressure" quality is selected)
@@ -189,6 +194,7 @@ export function PainWizard({
   const [nauseaTriggers, setNauseaTriggers] = useState<string[]>((initialEntry?.nauseaTriggers ?? []).map(stripEmoji));
   const [nauseaSymptoms, setNauseaSymptoms] = useState<string[]>((initialEntry?.nauseaSymptoms ?? []).map(stripEmoji));
   const [nauseaHelped, setNauseaHelped] = useState<string[]>((initialEntry?.nauseaHelped ?? []).map(stripEmoji));
+  const [nauseaNote, setNauseaNote] = useState(initialEntry?.nauseaNote ?? "");
 
   // Quick update: copy the latest state, use the current time and jump to symptoms.
   const editingSymptomUpdate = initialEntry?.entryKind === "symptom-update";
@@ -218,6 +224,7 @@ export function PainWizard({
     setMood([]);
     setHotFlashesOn(false);
     setHotFlashes(undefined);
+    setHotFlashesNote("");
     setPcosSymptoms([]);
     setFluNote("");
     setNausea(false);
@@ -228,12 +235,18 @@ export function PainWizard({
     setNauseaTriggers([]);
     setNauseaSymptoms([]);
     setNauseaHelped([]);
+    setNauseaNote("");
     setHeadache(false);
     setHeadacheTypes([]);
     setHeadacheIntensity(undefined);
     setHeadacheMedOn(false);
     setHeadacheMed("");
     setHeadacheMedTime(nowHHMM());
+    setHeadacheNote("");
+    setTetanyOn(false);
+    setPanicOn(false);
+    setTetanyDraft(undefined);
+    setPanicDraft(undefined);
     setNote("");
     setTime(nowHHMM());
     setCopiedFromId(latestPain.id);
@@ -301,11 +314,13 @@ export function PainWizard({
       mood: mood.length ? mood : undefined,
       hotFlashesOn: hotFlashesOn || undefined,
       hotFlashes: hotFlashesOn ? hotFlashes : undefined,
+      hotFlashesNote: hotFlashesOn && hotFlashesNote.trim() ? hotFlashesNote.trim() : undefined,
       headache: headache || undefined,
       headacheTypes: headache && headacheTypes.length ? headacheTypes : undefined,
       headacheIntensity: headache ? headacheIntensity : undefined,
       headacheMed: headache && headacheMedOn && headacheMed.trim() ? headacheMed.trim() : undefined,
       headacheMedTime: headache && headacheMedOn && headacheMed.trim() ? headacheMedTime : undefined,
+      headacheNote: headache && headacheNote.trim() ? headacheNote.trim() : undefined,
       pressureTypes: quality.includes("Pressure") && pressureTypes.length ? pressureTypes : undefined,
       pressureIntensity: quality.includes("Pressure") ? pressureIntensity : undefined,
       nausea: nausea || undefined,
@@ -316,12 +331,15 @@ export function PainWizard({
       nauseaTriggers: nausea && nauseaTriggers.length ? [...new Set(nauseaTriggers.map(stripEmoji))] : undefined,
       nauseaSymptoms: nausea && nauseaSymptoms.length ? [...new Set(nauseaSymptoms.map(stripEmoji))] : undefined,
       nauseaHelped: nausea && nauseaHelped.length ? [...new Set(nauseaHelped.map(stripEmoji))] : undefined,
+      nauseaNote: nausea && nauseaNote.trim() ? nauseaNote.trim() : undefined,
       fluNote: symptoms.includes("Flu") && fluNote.trim() ? fluNote.trim() : undefined,
       pcosSymptoms: pcosSymptoms.length ? pcosSymptoms : undefined,
     };
     updateDayLog(update, date, (l) => ({
       ...l,
       pain: editing ? (l.pain ?? []).map((x) => (x.id === p.id ? p : x)) : [...(l.pain ?? []), p],
+      tetany: tetanyOn && tetanyDraft ? [...(l.tetany ?? []), tetanyDraft] : l.tetany,
+      panic: panicOn && panicDraft ? [...(l.panic ?? []), panicDraft] : l.panic,
     }));
     schema?.saveAdminCustomFields();
     onDone();
@@ -773,6 +791,7 @@ export function PainWizard({
                     </div>
                   )}
                 </Field>
+                <Field label="Note (optional)"><Textarea rows={2} value={headacheNote} onChange={(e) => setHeadacheNote(e.target.value)} placeholder={t("Headache note…")} /></Field>
               </div>
             )}
           </div>
@@ -789,6 +808,7 @@ export function PainWizard({
                   setNauseaTriggers([]);
                   setNauseaSymptoms([]);
                   setNauseaHelped([]);
+                  setNauseaNote("");
                 }}
               >
                 No
@@ -887,11 +907,12 @@ export function PainWizard({
                   onToggle={(v) => setNauseaHelped((a) => toggleIn(a, v))}
                 />
               </Field>
+              <Field label="Note (optional)"><Textarea rows={2} value={nauseaNote} onChange={(e) => setNauseaNote(e.target.value)} placeholder={t("Nausea note…")} /></Field>
             </div>
           )}
           <Field label="Hot flashes?">
             <div className="mt-1 flex gap-2">
-              <Chip active={!hotFlashesOn} onClick={() => setHotFlashesOn(false)}>
+              <Chip active={!hotFlashesOn} onClick={() => { setHotFlashesOn(false); setHotFlashes(undefined); setHotFlashesNote(""); }}>
                 No
               </Chip>
               <Chip active={hotFlashesOn} onClick={() => setHotFlashesOn(true)}>
@@ -900,34 +921,37 @@ export function PainWizard({
             </div>
           </Field>
           {hotFlashesOn && (
-            <Field label={`Hot flashes intensity ${hotFlashes ?? "-"}/5`}>
-              <IntensityScale
-                value={hotFlashes ?? 0}
-                onChange={(n) => setHotFlashes(hotFlashes === n ? undefined : n)}
-                max={5}
-                from={1}
-                step={1}
-                descriptions={getScaleDesc(data, "hotFlashes")}
-                legendTitle="Hot flashes scale"
-                compactSingleRow
-              />
-            </Field>
+            <div className="rounded-2xl border border-border p-3 space-y-3">
+              <Field label={`Hot flashes intensity ${hotFlashes ?? "-"}/5`}>
+                <IntensityScale
+                  value={hotFlashes ?? 0}
+                  onChange={(n) => setHotFlashes(hotFlashes === n ? undefined : n)}
+                  max={5}
+                  from={1}
+                  step={1}
+                  descriptions={getScaleDesc(data, "hotFlashes")}
+                  legendTitle="Hot flashes scale"
+                  compactSingleRow
+                />
+              </Field>
+              <Field label="Note (optional)"><Textarea rows={2} value={hotFlashesNote} onChange={(e) => setHotFlashesNote(e.target.value)} placeholder={t("Hot flashes note…")} /></Field>
+            </div>
           )}
           <div>
             <Field label="Tetany episode?">
               <div className="mt-1 flex gap-2">
-                <Chip active={episodeMode !== "tetany"} onClick={() => episodeMode === "tetany" && setEpisodeMode(null)}>
+                <Chip active={!tetanyOn} onClick={() => { setTetanyOn(false); setTetanyDraft(undefined); }}>
                   No
                 </Chip>
-                <Chip active={episodeMode === "tetany"} onClick={() => setEpisodeMode("tetany")}>
+                <Chip active={tetanyOn} onClick={() => setTetanyOn(true)}>
                   Yes — log it
                 </Chip>
               </div>
             </Field>
-            {episodeMode === "tetany" && (
+            {tetanyOn && (
               <div className="mt-3 rounded-2xl border border-border p-3">
                 <LogSchemaContext.Provider value={null}>
-                  <TetanyForm date={date} data={data} update={update} onDone={() => setEpisodeMode(null)} />
+                  <TetanyForm date={date} data={data} update={update} onDone={() => setTetanyOn(false)} embedded onDraftChange={setTetanyDraft} />
                 </LogSchemaContext.Provider>
               </div>
             )}
@@ -935,18 +959,18 @@ export function PainWizard({
           <div>
             <Field label="Panic attack?">
               <div className="mt-1 flex gap-2">
-                <Chip active={episodeMode !== "panic"} onClick={() => episodeMode === "panic" && setEpisodeMode(null)}>
+                <Chip active={!panicOn} onClick={() => { setPanicOn(false); setPanicDraft(undefined); }}>
                   No
                 </Chip>
-                <Chip active={episodeMode === "panic"} onClick={() => setEpisodeMode("panic")}>
+                <Chip active={panicOn} onClick={() => setPanicOn(true)}>
                   Yes — log it
                 </Chip>
               </div>
             </Field>
-            {episodeMode === "panic" && (
+            {panicOn && (
               <div className="mt-3 rounded-2xl border border-border p-3">
                 <LogSchemaContext.Provider value={null}>
-                  <PanicForm date={date} data={data} update={update} onDone={() => setEpisodeMode(null)} />
+                  <PanicForm date={date} data={data} update={update} onDone={() => setPanicOn(false)} embedded onDraftChange={setPanicDraft} />
                 </LogSchemaContext.Provider>
               </div>
             )}
