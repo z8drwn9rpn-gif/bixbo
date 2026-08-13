@@ -1,0 +1,50 @@
+name: Clip mascot background once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/clip-mascot-background-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Clip white outer background in Home
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('src/features/home/HomePage.tsx')
+          s=p.read_text()
+          old='style={{ display: "block", opacity: 1, visibility: "visible", filter: "none", mixBlendMode: "normal" }}'
+          new='style={{ display: "block", opacity: 1, visibility: "visible", filter: "none", mixBlendMode: "normal", clipPath: "polygon(45.8% 4.2%, 29.2% 17.7%, 31.3% 40.6%, 24% 50%, 20.8% 67.7%, 33.3% 85.4%, 29.2% 91.7%, 38.5% 93.8%, 54.2% 87.5%, 54.2% 91.7%, 64.6% 93.8%, 71.9% 90.6%, 67.7% 85.4%, 74% 75%, 71.9% 59.4%, 83.3% 53.1%, 84.4% 30.2%, 79.2% 25%, 81.3% 31.3%, 69.8% 41.7%, 68.8% 14.6%, 57.3% 5.2%)" }}'
+          if old not in s:
+              raise SystemExit('Home mascot style marker not found')
+          p.write_text(s.replace(old,new,1))
+          PY
+
+      - name: Build
+        run: |
+          npm install
+          npm run build
+
+      - name: Commit
+        run: |
+          rm -f .github/workflows/clip-mascot-background-once.yml
+          rm -f .github/workflows/rebuild-mascot-from-b64-once.yml
+          rm -f .github/workflows/make-mascot-transparent-once.yml
+          rm -f .github/workflows/force-transparent-mascot-once.yml
+          rm -f .github/workflows/finalize-transparent-mascot-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/features/home/HomePage.tsx .github/workflows/
+          git commit -m "fix: clip white background from Home mascot"
+          git pull --rebase origin main
+          git push origin HEAD:main
