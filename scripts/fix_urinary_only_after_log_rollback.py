@@ -1,5 +1,6 @@
 from pathlib import Path
 
+# trigger selective urinary-only repair
 p = Path('src/components/LogSheet.tsx')
 s = p.read_text()
 
