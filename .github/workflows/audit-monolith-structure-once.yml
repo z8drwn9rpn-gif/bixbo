@@ -1,0 +1,46 @@
+name: Audit monolith structure once
+on:
+  push:
+    paths:
+      - '.github/workflows/audit-monolith-structure-once.yml'
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Report top-level declarations
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+
+          files = [
+              'src/components/LogSheet.tsx',
+              'src/routes/patterns.tsx',
+              'src/routes/profile.tsx',
+              'src/lib/storage.ts',
+              'src/lib/i18n.ts',
+          ]
+
+          def scan(path):
+              text = Path(path).read_text()
+              lines = text.splitlines(True)
+              starts=[]
+              # top-level declarations only, heuristic by no leading whitespace
+              pat = re.compile(r'^(?:export\s+)?(?:async\s+)?(?:function|const|let|var|class|type|interface|enum)\s+([A-Za-z_$][\w$]*)')
+              for i,line in enumerate(lines):
+                  if line[:1].isspace():
+                      continue
+                  m=pat.match(line)
+                  if m:
+                      starts.append((i,m.group(1),line.strip()[:120]))
+              print(f'\n=== {path} bytes={len(text.encode())} lines={len(lines)} ===')
+              for idx,(i,name,head) in enumerate(starts):
+                  j = starts[idx+1][0] if idx+1 < len(starts) else len(lines)
+                  chunk=''.join(lines[i:j])
+                  print(f'{i+1:5d}-{j:5d} {len(chunk.encode()):7d} {name:36s} | {head}')
+          for f in files:
+              scan(f)
+          PY
