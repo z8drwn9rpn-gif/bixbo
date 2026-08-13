@@ -181,7 +181,7 @@ type Category =
 const CATEGORIES: { id: Category; label: string; emoji: string; hint: string }[] = [
   { id: "postpartum", label: "Postpartum symptoms", emoji: "🤱", hint: "Recovery symptoms · notes" },
   { id: "pain", label: "Pain", emoji: "🔥", hint: "0–10, body, quality" },
-  { id: "tetany", label: "Tetany episode", emoji: "⭐", hint: "Type · location · intensity" },
+  { id: "tetany", label: "Episodes", emoji: "⭐", hint: "Tetany · panic attack" },
   { id: "panic", label: "Panic attack", emoji: "✨", hint: "Intensity · symptoms · trigger" },
   { id: "period", label: "Blueberry", emoji: "🫐", hint: "Flow · discharge · notes" },
   { id: "heat", label: "Heat / Cold / TENS", emoji: "♨️", hint: "Heating, ice or TENS session" },
@@ -223,14 +223,34 @@ export function LogSheet({
   }, [open]);
   const [editingOrder, setEditingOrder] = useState(false);
   const [customEditEntry, setCustomEditEntry] = useState<CustomLogEntry | null | undefined>();
+  const [episodeChooserOpen, setEpisodeChooserOpen] = useState(false);
+  const [episodeFlowStarted, setEpisodeFlowStarted] = useState(false);
   const close = () => {
     setCat(null);
     setEditingOrder(false);
     setCustomEditEntry(undefined);
+    setEpisodeChooserOpen(false);
+    setEpisodeFlowStarted(false);
     onOpenChange(false);
   };
   const back = () => {
     setCustomEditEntry(undefined);
+    if (episodeChooserOpen) {
+      setEpisodeChooserOpen(false);
+      setEpisodeFlowStarted(false);
+      if (initial) close();
+      else setCat(null);
+      return;
+    }
+    if (episodeFlowStarted && (cat === "tetany" || cat === "panic")) {
+      setCat("tetany");
+      setEpisodeChooserOpen(true);
+      return;
+    }
+    if (initial) {
+      close();
+      return;
+    }
     setCat(null);
   };
   const active = cat ?? initial;
@@ -341,10 +361,18 @@ export function LogSheet({
     const builtins = CATEGORIES
       .map((category) => {
         const feature = getRegistryFeature(data, category.id as RegistryFeatureId);
+        if (category.id === "tetany") {
+          return { ...category, label: "Episodes", emoji: "⭐", registryOrder: feature.order };
+        }
         return { ...category, label: feature.label, emoji: feature.icon, registryOrder: feature.order };
       })
       .filter((category) => {
-        if (!isRegistrySurfaceEnabled(data, category.id as RegistryFeatureId, "log")) return false;
+        if (category.id === "panic") return false;
+        if (category.id === "tetany") {
+          const anyEpisodeEnabled =
+            isRegistrySurfaceEnabled(data, "tetany", "log") || isRegistrySurfaceEnabled(data, "panic", "log");
+          if (!anyEpisodeEnabled) return false;
+        } else if (!isRegistrySurfaceEnabled(data, category.id as RegistryFeatureId, "log")) return false;
         if (category.id === "period" && cycleTrackingHidden) return false;
         if (category.id === "postpartum" && !postpartumActive) return false;
         return true;
@@ -606,7 +634,13 @@ export function LogSheet({
                                 e.stopPropagation();
                                 return;
                               }
-                              setCat(c.id);
+                              if (c.id === "tetany") {
+                                setCat("tetany");
+                                setEpisodeFlowStarted(true);
+                                setEpisodeChooserOpen(true);
+                              } else {
+                                setCat(c.id);
+                              }
                             }}
                             aria-label={editingOrder ? `Drag $<TrText value={c.label} /> to reorder` : `Log $<TrText value={c.label} />`}
                             className={`pointer-events-auto absolute z-20 touch-none select-none outline-none transition-[filter,opacity] duration-150 focus-visible:ring-2 focus-visible:ring-[#edf2cf] ${
@@ -759,7 +793,17 @@ export function LogSheet({
               <button onClick={back} className="flex items-center gap-1 text-sm text-muted-foreground">
                 <ChevronLeft className="h-3.5 w-3.5 shrink-0" /> {t("Back to Log")}
               </button>
-              <SheetTitle className="font-serif text-lg">{t(orderedCats.find((c) => c.id === active)?.label ?? CATEGORIES.find((c) => c.id === active)?.label ?? "")}</SheetTitle>
+              <SheetTitle className="font-serif text-lg">
+                {t(
+                  episodeChooserOpen
+                    ? "Episodes"
+                    : active === "tetany"
+                      ? "Tetany episode"
+                      : active === "panic"
+                        ? "Panic attack"
+                        : orderedCats.find((c) => c.id === active)?.label ?? CATEGORIES.find((c) => c.id === active)?.label ?? "",
+                )}
+              </SheetTitle>
               <button onClick={close} aria-label={t("Close")} className="rounded-full p-1 hover:bg-tint">
                 <X className="h-5 w-5" />
               </button>
@@ -875,7 +919,53 @@ export function LogSheet({
                   initialEntry={initialPain ?? (edit as PainEntry | undefined)}
                 />
               )}
-              {active === "panic" && (
+              {episodeChooserOpen && (active === "tetany" || active === "panic") && (
+                <div className="mx-auto flex w-full max-w-md flex-col gap-3 py-5">
+                  <div className="px-1 pb-2 text-center">
+                    <h2 className="font-serif text-xl font-semibold">{t("Episodes")}</h2>
+                    <p className="mt-1 text-xs text-muted-foreground">{t("What would you like to log?")}</p>
+                  </div>
+                  {isRegistrySurfaceEnabled(data, "tetany", "log") && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCat("tetany");
+                        setEpisodeChooserOpen(false);
+                      }}
+                      className="flex items-center gap-3 rounded-3xl border border-border bg-surface p-4 text-left shadow-sm transition active:scale-[0.99]"
+                    >
+                      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary/10">
+                        <Ico e="⭐" size={26} />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-semibold">{t("Tetany episode")}</span>
+                        <span className="mt-0.5 block text-xs text-muted-foreground">{t("Type · location · intensity")}</span>
+                      </span>
+                      <span className="text-lg text-muted-foreground" aria-hidden="true">→</span>
+                    </button>
+                  )}
+                  {isRegistrySurfaceEnabled(data, "panic", "log") && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCat("panic");
+                        setEpisodeChooserOpen(false);
+                      }}
+                      className="flex items-center gap-3 rounded-3xl border border-border bg-surface p-4 text-left shadow-sm transition active:scale-[0.99]"
+                    >
+                      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary/10">
+                        <Ico e="✨" size={26} />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-semibold">{t("Panic attack")}</span>
+                        <span className="mt-0.5 block text-xs text-muted-foreground">{t("Intensity · symptoms · trigger")}</span>
+                      </span>
+                      <span className="text-lg text-muted-foreground" aria-hidden="true">→</span>
+                    </button>
+                  )}
+                </div>
+              )}
+              {!episodeChooserOpen && active === "panic" && (
                 <PanicForm
                   date={date}
                   data={data}
@@ -884,7 +974,7 @@ export function LogSheet({
                   initialEntry={edit as PanicAttack | undefined}
                 />
               )}
-              {active === "tetany" && (
+              {!episodeChooserOpen && active === "tetany" && (
                 <TetanyForm
                   date={date}
                   data={data}
@@ -2370,22 +2460,55 @@ function PainWizard({
   );
 }
 
-/* ------------------- PANIC attack ------------------- */
-function PanicForm({
-  date,
-  data,
-  update,
-  onDone,
-  initialEntry,
+/* ------------------- EPISODE wizard primitives ------------------- */
+function EpisodeWizardNav({
+  step,
+  steps,
+  onBack,
+  onNext,
+  onSave,
 }: {
-  date: string;
-  data: BixboData;
-  update: UpdateFn;
-  onDone: () => void;
-  initialEntry?: PanicAttack;
+  step: number;
+  steps: string[];
+  onBack: () => void;
+  onNext: () => void;
+  onSave: () => void;
 }) {
   const { t } = useI18n();
+  const last = step >= steps.length - 1;
+  return (
+    <div className="sticky top-0 z-30 -mx-5 mb-4 flex h-[60px] items-center justify-between gap-2 border-b border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur">
+      {step > 0 ? (
+        <button type="button" onClick={onBack} className="flex min-w-[64px] items-center gap-1 text-sm font-semibold text-foreground/80 transition hover:text-foreground">
+          <span aria-hidden="true" className="text-base leading-none">←</span>
+          <span>{t("Back")}</span>
+        </button>
+      ) : (
+        <span className="min-w-[64px]" aria-hidden="true" />
+      )}
+      <div className="flex min-w-0 flex-1 items-center justify-center gap-2">
+        <div className="flex gap-1">
+          {steps.map((label, index) => (
+            <span key={label} className={`h-1.5 w-5 rounded-full transition-colors ${index <= step ? "bg-primary" : "bg-tint"}`} />
+          ))}
+        </div>
+        <span className="min-w-0 truncate text-xs font-semibold text-foreground/75">{t(steps[step] ?? "")}</span>
+        <span className="shrink-0 text-xs font-semibold text-foreground/75">{step + 1}/{steps.length}</span>
+      </div>
+      <button type="button" onClick={last ? onSave : onNext} className="flex h-[52px] min-w-[64px] flex-col items-center justify-center rounded-[1.15rem] bg-primary px-3 text-primary-foreground shadow-sm transition active:scale-[0.98]">
+        <span className="text-sm font-semibold leading-none">{t(last ? "Save" : "Next")}</span>
+        <span aria-hidden="true" className="mt-0.5 text-base leading-none">{last ? "✓" : "→"}</span>
+      </button>
+    </div>
+  );
+}
+
+/* ------------------- PANIC attack ------------------- */
+function PanicForm({ date, data, update, onDone, initialEntry }: { date: string; data: BixboData; update: UpdateFn; onDone: () => void; initialEntry?: PanicAttack; }) {
+  const { t } = useI18n();
   const schema = useLogSchema();
+  const [step, setStep] = useState(0);
+  const steps = ["Episode", "Symptoms", "Trigger & relief", "Notes"];
   const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
   const [minutes, setMinutes] = useState(initialEntry?.minutes != null ? String(initialEntry.minutes) : "10");
   const [ongoing, setOngoing] = useState(initialEntry?.minutes == null && !!initialEntry);
@@ -2394,185 +2517,69 @@ function PanicForm({
   const [cognitive, setCognitive] = useState<string[]>(initialEntry?.cognitive ?? []);
   const [trigger, setTrigger] = useState(initialEntry?.trigger ?? "");
   const [place, setPlace] = useState(initialEntry?.place ?? "");
-  const [hyper, setHyper] = useState<"no" | "before" | "during" | "unknown">(
-    initialEntry?.hyperventilation ?? "unknown",
-  );
+  const [hyper, setHyper] = useState<"no" | "before" | "during" | "unknown">(initialEntry?.hyperventilation ?? "unknown");
   const [tetanyPresent, setTetanyPresent] = useState(initialEntry?.tetanyPresent ?? false);
   const [helped, setHelped] = useState<string[]>(initialEntry?.helped ?? []);
   const [rescueMed, setRescueMed] = useState<string>(initialEntry?.rescueMed ?? "");
   const [note, setNote] = useState(initialEntry?.note ?? "");
-  const addHelped = (v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, panicHelped: [...d.custom.panicHelped, v] } }));
+  const addHelped = (v: string) => update((d) => ({ ...d, custom: { ...d.custom, panicHelped: [...d.custom.panicHelped, v] } }));
   const rmHelped = (v: string) => {
     update((d) => ({ ...d, custom: { ...d.custom, panicHelped: d.custom.panicHelped.filter((x) => x !== v) } }));
     setHelped((a) => a.filter((x) => x !== v));
   };
-
   const save = () => {
     const editing = !!initialEntry;
     const p: PanicAttack = {
-      id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
-      time,
-      minutes: ongoing ? undefined : minutes === "" ? undefined : Number(minutes),
-      intensity,
-      physical,
-      cognitive,
-      trigger: trigger.trim(),
-      place: place.trim() || undefined,
-      hyperventilation: hyper,
-      tetanyPresent,
-      helped,
-      rescueMed: rescueMed.trim() || undefined,
-      note: note.trim() || undefined,
+      id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(), time,
+      minutes: ongoing ? undefined : minutes === "" ? undefined : Number(minutes), intensity, physical, cognitive,
+      trigger: trigger.trim(), place: place.trim() || undefined, hyperventilation: hyper, tetanyPresent, helped,
+      rescueMed: rescueMed.trim() || undefined, note: note.trim() || undefined,
     };
-    updateDayLog(update, date, (l) => ({
-      ...l,
-      panic: editing ? (l.panic ?? []).map((x) => (x.id === p.id ? p : x)) : [...(l.panic ?? []), p],
-    }));
+    updateDayLog(update, date, (l) => ({ ...l, panic: editing ? (l.panic ?? []).map((x) => (x.id === p.id ? p : x)) : [...(l.panic ?? []), p] }));
+    schema?.saveAdminCustomFields();
     onDone();
   };
   return (
     <div className="flex flex-col gap-3">
-      <SaveBar onCancel={onDone} onSave={save} />
-      <Field label="Time" schemaFieldId="time">
-        <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="w-full" />
-      </Field>
-      <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} schemaFieldId="duration" />
-      <Field label={`Intensity ${intensity}/10`} schemaFieldId="intensity">
-        <IntensityScale
-          value={intensity}
-          onChange={setIntensity}
-          max={10}
-          descriptions={getScaleDesc(data, "panic")}
-          legendTitle="Panic intensity scale" schemaFieldId="intensity"
-        />
-      </Field>
-      <Field label="Physical symptoms" schemaFieldId="physical">
-        <CustomChipList
-          base={PANIC_PHYSICAL}
-          custom={data.custom.panicPhysical}
-          onAddCustom={(v) =>
-            update((d) => ({ ...d, custom: { ...d.custom, panicPhysical: [...d.custom.panicPhysical, v] } }))
-          }
-          onRemoveCustom={(v) => {
-            update((d) => ({
-              ...d,
-              custom: { ...d.custom, panicPhysical: d.custom.panicPhysical.filter((x) => x !== v) },
-            }));
-            setPhysical((a) => a.filter((x) => x !== v));
-          }}
-          onRenameCustom={(o, n) => {
-            update((d) => ({
-              ...d,
-              custom: { ...d.custom, panicPhysical: d.custom.panicPhysical.map((x) => (x === o ? n : x)) },
-            }));
-            setPhysical((a) => a.map((x) => (x === o ? n : x)));
-          }}
-          selected={physical}
-          onToggle={(v) => setPhysical((a) => toggleIn(a, v))}
-         schemaFieldId="physical"/>
-      </Field>
-      <Field label="Cognitive symptoms" schemaFieldId="cognitive">
-        <CustomChipList
-          base={PANIC_COGNITIVE}
-          custom={data.custom.panicCognitive}
-          onAddCustom={(v) =>
-            update((d) => ({ ...d, custom: { ...d.custom, panicCognitive: [...d.custom.panicCognitive, v] } }))
-          }
-          onRemoveCustom={(v) => {
-            update((d) => ({
-              ...d,
-              custom: { ...d.custom, panicCognitive: d.custom.panicCognitive.filter((x) => x !== v) },
-            }));
-            setCognitive((a) => a.filter((x) => x !== v));
-          }}
-          onRenameCustom={(o, n) => {
-            update((d) => ({
-              ...d,
-              custom: { ...d.custom, panicCognitive: d.custom.panicCognitive.map((x) => (x === o ? n : x)) },
-            }));
-            setCognitive((a) => a.map((x) => (x === o ? n : x)));
-          }}
-          selected={cognitive}
-          onToggle={(v) => setCognitive((a) => toggleIn(a, v))}
-         schemaFieldId="cognitive"/>
-      </Field>
-      <Field label="Trigger (or 'no obvious trigger')" schemaFieldId="trigger">
-        <Textarea rows={2} value={trigger} onChange={(e) => setTrigger(e.target.value)} />
-      </Field>
-      <Field label="Place (optional)" schemaFieldId="place">
-        <Input value={place} onChange={(e) => setPlace(e.target.value)} />
-      </Field>
-      <Field label="Hyperventilation" schemaFieldId="hyperventilation">
-        <div className="mt-2 flex flex-wrap gap-2">
-          {(["no", "before", "during", "unknown"] as const).map((v) => (
-            <Chip key={v} active={hyper === v} onClick={() => setHyper(v)}>
-              {v}
-            </Chip>
-          ))}
-        </div>
-      </Field>
-      <Field label="Tetany present?" schemaFieldId="tetanyPresent">
-        <div className="mt-2 flex gap-2">
-          <Chip active={!tetanyPresent} onClick={() => setTetanyPresent(false)}>
-            No
-          </Chip>
-          <Chip active={tetanyPresent} onClick={() => setTetanyPresent(true)}>
-            Yes
-          </Chip>
-        </div>
-      </Field>
-      <Field label="What helped" schemaFieldId="helped">
-        <CustomChipList
-          base={PANIC_HELPED_DEFAULT}
-          custom={data.custom.panicHelped}
-          onAddCustom={addHelped}
-          onRemoveCustom={rmHelped}
-          selected={helped}
-          onToggle={(v) => setHelped((a) => toggleIn(a, v))}
-        />
-      </Field>
-      <Field label="Rescue med (what you took)" schemaFieldId="rescueMed">
-        <Input value={rescueMed} onChange={(e) => setRescueMed(e.target.value)} placeholder={t("e.g. Frontin 0.25 mg")} />
-        {data.meds.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {data.meds.map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => setRescueMed(m.dose ? `${m.name} ${m.dose}` : m.name)}
-                className="rounded-full bg-tint px-3 py-1 text-xs font-medium text-foreground ring-1 ring-border"
-              >
-                {m.name}
-                {m.dose ? ` ${m.dose}` : ""}
-              </button>
-            ))}
-          </div>
-        )}
-      </Field>
-      <Field label="Note (optional)" schemaFieldId="note">
-        <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
-      </Field>
+      <EpisodeWizardNav step={step} steps={steps} onBack={() => setStep((v) => Math.max(0, v - 1))} onNext={() => setStep((v) => Math.min(steps.length - 1, v + 1))} onSave={save} />
+      {step === 0 && <div className="space-y-4">
+        <Field label="Time" schemaFieldId="time"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="w-full" /></Field>
+        <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} schemaFieldId="duration" />
+        <Field label={`Intensity ${intensity}/10`} schemaFieldId="intensity"><IntensityScale value={intensity} onChange={setIntensity} max={10} from={1} step={1} compactSingleRow descriptions={getScaleDesc(data, "panic")} legendTitle="Panic intensity scale" schemaFieldId="intensity" /></Field>
+      </div>}
+      {step === 1 && <div className="space-y-4">
+        <Field label="Physical symptoms" schemaFieldId="physical"><CustomChipList base={PANIC_PHYSICAL} custom={data.custom.panicPhysical}
+          onAddCustom={(v) => update((d) => ({ ...d, custom: { ...d.custom, panicPhysical: [...d.custom.panicPhysical, v] } }))}
+          onRemoveCustom={(v) => { update((d) => ({ ...d, custom: { ...d.custom, panicPhysical: d.custom.panicPhysical.filter((x) => x !== v) } })); setPhysical((a) => a.filter((x) => x !== v)); }}
+          onRenameCustom={(o,n) => { update((d) => ({ ...d, custom: { ...d.custom, panicPhysical: d.custom.panicPhysical.map((x) => x === o ? n : x) } })); setPhysical((a) => a.map((x) => x === o ? n : x)); }}
+          selected={physical} onToggle={(v) => setPhysical((a) => toggleIn(a,v))} schemaFieldId="physical" /></Field>
+        <Field label="Cognitive symptoms" schemaFieldId="cognitive"><CustomChipList base={PANIC_COGNITIVE} custom={data.custom.panicCognitive}
+          onAddCustom={(v) => update((d) => ({ ...d, custom: { ...d.custom, panicCognitive: [...d.custom.panicCognitive, v] } }))}
+          onRemoveCustom={(v) => { update((d) => ({ ...d, custom: { ...d.custom, panicCognitive: d.custom.panicCognitive.filter((x) => x !== v) } })); setCognitive((a) => a.filter((x) => x !== v)); }}
+          onRenameCustom={(o,n) => { update((d) => ({ ...d, custom: { ...d.custom, panicCognitive: d.custom.panicCognitive.map((x) => x === o ? n : x) } })); setCognitive((a) => a.map((x) => x === o ? n : x)); }}
+          selected={cognitive} onToggle={(v) => setCognitive((a) => toggleIn(a,v))} schemaFieldId="cognitive" /></Field>
+      </div>}
+      {step === 2 && <div className="space-y-4">
+        <Field label="Trigger (or 'no obvious trigger')" schemaFieldId="trigger"><Textarea rows={2} value={trigger} onChange={(e) => setTrigger(e.target.value)} /></Field>
+        <Field label="Place (optional)" schemaFieldId="place"><Input value={place} onChange={(e) => setPlace(e.target.value)} /></Field>
+        <Field label="Hyperventilation" schemaFieldId="hyperventilation"><div className="mt-2 flex flex-wrap gap-2">{(["no","before","during","unknown"] as const).map((v) => <Chip key={v} active={hyper===v} onClick={() => setHyper(v)}>{v}</Chip>)}</div></Field>
+        <Field label="Tetany present?" schemaFieldId="tetanyPresent"><div className="mt-2 flex gap-2"><Chip active={!tetanyPresent} onClick={() => setTetanyPresent(false)}>No</Chip><Chip active={tetanyPresent} onClick={() => setTetanyPresent(true)}>Yes</Chip></div></Field>
+        <Field label="What helped" schemaFieldId="helped"><CustomChipList base={PANIC_HELPED_DEFAULT} custom={data.custom.panicHelped} onAddCustom={addHelped} onRemoveCustom={rmHelped} selected={helped} onToggle={(v) => setHelped((a) => toggleIn(a,v))} /></Field>
+      </div>}
+      {step === 3 && <div className="space-y-4">
+        <Field label="Rescue med (what you took)" schemaFieldId="rescueMed"><Input value={rescueMed} onChange={(e) => setRescueMed(e.target.value)} placeholder={t("e.g. Frontin 0.25 mg")} />{data.meds.length > 0 && <div className="mt-2 flex flex-wrap gap-1.5">{data.meds.map((m) => <button key={m.id} type="button" onClick={() => setRescueMed(m.dose ? `${m.name} ${m.dose}` : m.name)} className="rounded-full bg-tint px-3 py-1 text-xs font-medium text-foreground ring-1 ring-border">{m.name}{m.dose ? ` ${m.dose}` : ""}</button>)}</div>}</Field>
+        <Field label="Note (optional)" schemaFieldId="note"><Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} /></Field>
+      </div>}
     </div>
   );
 }
 
 /* ------------------- TETANY episode ------------------- */
-function TetanyForm({
-  date,
-  data,
-  update,
-  onDone,
-  initialEntry,
-}: {
-  date: string;
-  data: BixboData;
-  update: UpdateFn;
-  onDone: () => void;
-  initialEntry?: TetanyEpisode;
-}) {
+function TetanyForm({ date, data, update, onDone, initialEntry }: { date: string; data: BixboData; update: UpdateFn; onDone: () => void; initialEntry?: TetanyEpisode; }) {
   const { t } = useI18n();
   const schema = useLogSchema();
+  const [step, setStep] = useState(0);
+  const steps = ["Episode", "Symptoms", "Trigger & relief", "Notes"];
   const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
   const [types, setTypes] = useState<string[]>(initialEntry?.types ?? []);
   const [loc, setLoc] = useState<string[]>(initialEntry?.location ?? []);
@@ -2583,154 +2590,37 @@ function TetanyForm({
   const [helped, setHelped] = useState<string[]>(initialEntry?.helped ?? []);
   const [rescueMed, setRescueMed] = useState<string>(initialEntry?.rescueMed ?? "");
   const [note, setNote] = useState(initialEntry?.note ?? "");
-
   type CK = "tetanyTypes" | "tetanyLocations" | "tetanyTriggers" | "tetanyHelped";
-  const addC = (k: CK, v: string) =>
-    update((d) => withoutCustomTombstones({ ...d, custom: { ...d.custom, [k]: [...d.custom[k], v] } }, k, [v]));
-  const rmC = (k: CK, v: string) =>
-    update((d) =>
-      withCustomTombstones({ ...d, custom: { ...d.custom, [k]: d.custom[k].filter((x) => x !== v) } }, k, [v]),
-    );
-  const rnC = (k: CK, o: string, n: string) =>
-    update((d) =>
-      withoutCustomTombstones(
-        withCustomTombstones(
-          { ...d, custom: { ...d.custom, [k]: d.custom[k].map((x) => (x === o ? n : x)) } },
-          k,
-          [o],
-        ),
-        k,
-        [n],
-      ),
-    );
-
+  const addC = (k: CK, v: string) => update((d) => withoutCustomTombstones({ ...d, custom: { ...d.custom, [k]: [...d.custom[k], v] } }, k, [v]));
+  const rmC = (k: CK, v: string) => update((d) => withCustomTombstones({ ...d, custom: { ...d.custom, [k]: d.custom[k].filter((x) => x !== v) } }, k, [v]));
+  const rnC = (k: CK, o: string, n: string) => update((d) => withoutCustomTombstones(withCustomTombstones({ ...d, custom: { ...d.custom, [k]: d.custom[k].map((x) => x === o ? n : x) } }, k, [o]), k, [n]));
   const save = () => {
     const editing = !!initialEntry;
-    const t: TetanyEpisode = {
-      id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
-      time,
-      types,
-      location: loc,
-      intensity,
-      minutes: ongoing ? undefined : minutes === "" ? undefined : Number(minutes),
-      triggers,
-      helped,
-      rescueMed: rescueMed.trim() || undefined,
-      note: note.trim() || undefined,
-    };
-    updateDayLog(update, date, (l) => ({
-      ...l,
-      tetany: editing ? (l.tetany ?? []).map((x) => (x.id === t.id ? t : x)) : [...(l.tetany ?? []), t],
-    }));
+    const entry: TetanyEpisode = { id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(), time, types, location: loc, intensity, minutes: ongoing ? undefined : minutes === "" ? undefined : Number(minutes), triggers, helped, rescueMed: rescueMed.trim() || undefined, note: note.trim() || undefined };
+    updateDayLog(update, date, (l) => ({ ...l, tetany: editing ? (l.tetany ?? []).map((x) => x.id === entry.id ? entry : x) : [...(l.tetany ?? []), entry] }));
+    schema?.saveAdminCustomFields();
     onDone();
   };
-
   return (
     <div className="flex flex-col gap-3">
-      <SaveBar onCancel={onDone} onSave={save} />
-      <Field label="Time" schemaFieldId="time">
-        <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
-      </Field>
-      <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} schemaFieldId="duration" />
-      <Field label={`Intensity ${intensity}/5`} schemaFieldId="intensity">
-        <IntensityScale
-          value={intensity}
-          onChange={setIntensity}
-          max={5}
-          descriptions={getScaleDesc(data, "tetany")}
-          legendTitle="Tetany intensity scale" schemaFieldId="intensity"
-        />
-      </Field>
-      <Field label="Type" schemaFieldId="types">
-        <CustomChipList
-          base={TETANY_TYPES}
-          custom={data.custom.tetanyTypes}
-          descriptions={TETANY_TYPE_DESC}
-          onAddCustom={(v) => addC("tetanyTypes", v)}
-          onRemoveCustom={(v) => {
-            rmC("tetanyTypes", v);
-            setTypes((a) => a.filter((x) => x !== v));
-          }}
-          onRenameCustom={(o, n) => {
-            rnC("tetanyTypes", o, n);
-            setTypes((a) => a.map((x) => (x === o ? n : x)));
-          }}
-          selected={types}
-          onToggle={(v) => setTypes((a) => toggleIn(a, v))}
-        />
-      </Field>
-      <Field label="Location" schemaFieldId="location">
-        <CustomChipList
-          base={TETANY_LOCATIONS_DEFAULT}
-          custom={data.custom.tetanyLocations}
-          onAddCustom={(v) => addC("tetanyLocations", v)}
-          onRemoveCustom={(v) => {
-            rmC("tetanyLocations", v);
-            setLoc((a) => a.filter((x) => x !== v));
-          }}
-          onRenameCustom={(o, n) => {
-            rnC("tetanyLocations", o, n);
-            setLoc((a) => a.map((x) => (x === o ? n : x)));
-          }}
-          selected={loc}
-          onToggle={(v) => setLoc((a) => toggleIn(a, v))}
-        />
-      </Field>
-      <Field label="Triggers" schemaFieldId="triggers">
-        <CustomChipList
-          base={TETANY_TRIGGERS}
-          custom={data.custom.tetanyTriggers}
-          onAddCustom={(v) => addC("tetanyTriggers", v)}
-          onRemoveCustom={(v) => {
-            rmC("tetanyTriggers", v);
-            setTriggers((a) => a.filter((x) => x !== v));
-          }}
-          onRenameCustom={(o, n) => {
-            rnC("tetanyTriggers", o, n);
-            setTriggers((a) => a.map((x) => (x === o ? n : x)));
-          }}
-          selected={triggers}
-          onToggle={(v) => setTriggers((a) => toggleIn(a, v))}
-        />
-      </Field>
-      <Field label="What helped" schemaFieldId="helped">
-        <CustomChipList
-          base={TETANY_HELPED_DEFAULT}
-          custom={data.custom.tetanyHelped}
-          onAddCustom={(v) => addC("tetanyHelped", v)}
-          onRemoveCustom={(v) => {
-            rmC("tetanyHelped", v);
-            setHelped((a) => a.filter((x) => x !== v));
-          }}
-          onRenameCustom={(o, n) => {
-            rnC("tetanyHelped", o, n);
-            setHelped((a) => a.map((x) => (x === o ? n : x)));
-          }}
-          selected={helped}
-          onToggle={(v) => setHelped((a) => toggleIn(a, v))}
-        />
-      </Field>
-      <Field label="Rescue med (what you took)" schemaFieldId="rescueMed">
-        <Input value={rescueMed} onChange={(e) => setRescueMed(e.target.value)} placeholder={t("e.g. Magnesium 400 mg")} />
-        {data.meds.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {data.meds.map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => setRescueMed(m.dose ? `${m.name} ${m.dose}` : m.name)}
-                className="rounded-full bg-tint px-3 py-1 text-xs font-medium text-foreground ring-1 ring-border"
-              >
-                {m.name}
-                {m.dose ? ` ${m.dose}` : ""}
-              </button>
-            ))}
-          </div>
-        )}
-      </Field>
-      <Field label="Note (optional)" schemaFieldId="note">
-        <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
-      </Field>
+      <EpisodeWizardNav step={step} steps={steps} onBack={() => setStep((v) => Math.max(0,v-1))} onNext={() => setStep((v) => Math.min(steps.length-1,v+1))} onSave={save} />
+      {step === 0 && <div className="space-y-4">
+        <Field label="Time" schemaFieldId="time"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></Field>
+        <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} schemaFieldId="duration" />
+        <Field label={`Intensity ${intensity}/5`} schemaFieldId="intensity"><IntensityScale value={intensity} onChange={setIntensity} max={5} from={1} step={1} compactSingleRow descriptions={getScaleDesc(data,"tetany")} legendTitle="Tetany intensity scale" schemaFieldId="intensity" /></Field>
+      </div>}
+      {step === 1 && <div className="space-y-4">
+        <Field label="Type" schemaFieldId="types"><CustomChipList base={TETANY_TYPES} custom={data.custom.tetanyTypes} descriptions={TETANY_TYPE_DESC} onAddCustom={(v) => addC("tetanyTypes",v)} onRemoveCustom={(v) => { rmC("tetanyTypes",v); setTypes((a) => a.filter((x) => x!==v)); }} onRenameCustom={(o,n) => { rnC("tetanyTypes",o,n); setTypes((a) => a.map((x) => x===o?n:x)); }} selected={types} onToggle={(v) => setTypes((a) => toggleIn(a,v))} /></Field>
+        <Field label="Location" schemaFieldId="location"><CustomChipList base={TETANY_LOCATIONS_DEFAULT} custom={data.custom.tetanyLocations} onAddCustom={(v) => addC("tetanyLocations",v)} onRemoveCustom={(v) => { rmC("tetanyLocations",v); setLoc((a) => a.filter((x) => x!==v)); }} onRenameCustom={(o,n) => { rnC("tetanyLocations",o,n); setLoc((a) => a.map((x) => x===o?n:x)); }} selected={loc} onToggle={(v) => setLoc((a) => toggleIn(a,v))} /></Field>
+      </div>}
+      {step === 2 && <div className="space-y-4">
+        <Field label="Triggers" schemaFieldId="triggers"><CustomChipList base={TETANY_TRIGGERS} custom={data.custom.tetanyTriggers} onAddCustom={(v) => addC("tetanyTriggers",v)} onRemoveCustom={(v) => { rmC("tetanyTriggers",v); setTriggers((a) => a.filter((x) => x!==v)); }} onRenameCustom={(o,n) => { rnC("tetanyTriggers",o,n); setTriggers((a) => a.map((x) => x===o?n:x)); }} selected={triggers} onToggle={(v) => setTriggers((a) => toggleIn(a,v))} /></Field>
+        <Field label="What helped" schemaFieldId="helped"><CustomChipList base={TETANY_HELPED_DEFAULT} custom={data.custom.tetanyHelped} onAddCustom={(v) => addC("tetanyHelped",v)} onRemoveCustom={(v) => { rmC("tetanyHelped",v); setHelped((a) => a.filter((x) => x!==v)); }} onRenameCustom={(o,n) => { rnC("tetanyHelped",o,n); setHelped((a) => a.map((x) => x===o?n:x)); }} selected={helped} onToggle={(v) => setHelped((a) => toggleIn(a,v))} /></Field>
+      </div>}
+      {step === 3 && <div className="space-y-4">
+        <Field label="Rescue med (what you took)" schemaFieldId="rescueMed"><Input value={rescueMed} onChange={(e) => setRescueMed(e.target.value)} placeholder={t("e.g. Magnesium 400 mg")} />{data.meds.length > 0 && <div className="mt-2 flex flex-wrap gap-1.5">{data.meds.map((m) => <button key={m.id} type="button" onClick={() => setRescueMed(m.dose ? `${m.name} ${m.dose}` : m.name)} className="rounded-full bg-tint px-3 py-1 text-xs font-medium text-foreground ring-1 ring-border">{m.name}{m.dose ? ` ${m.dose}` : ""}</button>)}</div>}</Field>
+        <Field label="Note (optional)" schemaFieldId="note"><Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} /></Field>
+      </div>}
     </div>
   );
 }
