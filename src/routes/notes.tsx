@@ -470,20 +470,20 @@ function NotesPage() {
         </button>
       }
     >
-      <div className="space-y-5 px-5 pt-3 pb-[calc(104px+env(safe-area-inset-bottom))]">
+      <div className="mx-auto w-full max-w-[980px] space-y-5 px-5 pt-3 pb-[calc(104px+env(safe-area-inset-bottom))] lg:px-0 lg:pb-12">
         <div className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder={t("Search notes…")}
-            className="h-11 rounded-2xl bg-surface pl-10 pr-10 ring-1 ring-border/70"
+            className="h-12 rounded-2xl border-border/70 bg-surface pl-10 pr-11 shadow-sm ring-1 ring-border/70"
           />
           {query && (
             <button
               type="button"
               onClick={() => setQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+              className="absolute right-1.5 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-xl text-muted-foreground transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label={t("Clear search")}
             >
               <X className="h-4 w-4" />
@@ -492,7 +492,7 @@ function NotesPage() {
         </div>
 
         {!openFolder && (
-          <div className="grid grid-cols-3 gap-2 rounded-2xl bg-primary/15 p-1">
+          <div className="grid grid-cols-3 gap-1 rounded-2xl bg-tint p-1 ring-1 ring-border/60">
             {[
               { key: "all" as const, label: "Notes" },
               { key: "folders" as const, label: "Folders" },
@@ -502,7 +502,7 @@ function NotesPage() {
                 key={item.key}
                 type="button"
                 onClick={() => setScreen(item.key)}
-                className={`rounded-xl px-2 py-2 text-xs font-semibold transition ${
+                className={`min-h-11 rounded-xl px-2 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                   screen === item.key ? "bg-primary text-primary-foreground shadow-sm" : "text-foreground/75"
                 }`}
               >
@@ -522,7 +522,7 @@ function NotesPage() {
               </Button>
             </div>
 
-            <div className="overflow-hidden rounded-3xl bg-surface ring-1 ring-border/80">
+            <div className="overflow-hidden rounded-3xl border border-border/70 bg-surface shadow-sm ring-1 ring-border/80">
               {view.folders.map((folder, index) => {
                 const count = view.notebook.filter((note) => note.folderId === folder.id && !note.archived).length;
 
@@ -537,7 +537,7 @@ function NotesPage() {
                         setOpenFolder(folder.id);
                         setScreen("all");
                       }}
-                      className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                      className="flex min-h-[64px] min-w-0 flex-1 items-center gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-tint ring-1 ring-border/50">
                         <FolderBixboIcon folder={folder} size={30} />
@@ -557,7 +557,7 @@ function NotesPage() {
                       <button
                         type="button"
                         onClick={() => deleteFolder(folder.id)}
-                        className="rounded-full p-2 text-muted-foreground hover:bg-tint hover:text-destructive"
+                        className="grid h-11 w-11 place-items-center rounded-full text-muted-foreground transition hover:bg-tint hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         aria-label={`${t("Delete")} ${folder.name}`}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -638,7 +638,7 @@ function NoteSection({
       </h2>
 
       {notes.length === 0 ? (
-        <div className="rounded-3xl bg-surface px-4 py-8 text-center text-sm text-muted-foreground ring-1 ring-border/70">
+        <div className="rounded-3xl border border-border/70 bg-surface px-5 py-10 text-center text-sm leading-relaxed text-muted-foreground shadow-sm ring-1 ring-border/70">
           {t(emptyText ?? "No notes.")}
         </div>
       ) : (
@@ -646,10 +646,10 @@ function NoteSection({
           {notes.map((note) => (
             <article
               key={note.id}
-              className="relative overflow-visible rounded-3xl p-4 shadow-sm ring-1 ring-border/70"
+              className="relative overflow-visible rounded-3xl border border-border/65 p-4 shadow-sm ring-1 ring-border/70 transition-shadow hover:shadow-md"
               style={{ background: NOTE_COLORS[note.color ?? "default"] }}
             >
-              <button type="button" onClick={() => onOpen(note.id)} className="block w-full pr-8 text-left">
+              <button type="button" onClick={() => onOpen(note.id)} className="block min-h-[58px] w-full pr-9 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                 <div className="flex items-start justify-between gap-3">
                   <h3 className="line-clamp-1 text-sm font-semibold">
                     <NoteRichText text={note.title.trim() || t("Untitled")} size={16} />
@@ -665,18 +665,18 @@ function NoteSection({
               <button
                 type="button"
                 onClick={() => setMenuNoteId(menuNoteId === note.id ? null : note.id)}
-                className="absolute right-2 top-8 rounded-full p-1.5 text-muted-foreground hover:bg-background/60"
+                className="absolute right-1.5 top-6 grid h-10 w-10 place-items-center rounded-full text-muted-foreground transition hover:bg-background/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 aria-label={t("Note options")}
               >
                 <MoreVertical className="h-4 w-4" />
               </button>
 
               {menuNoteId === note.id && (
-                <div className="absolute right-2 top-14 z-20 w-44 overflow-hidden rounded-2xl bg-background shadow-xl ring-1 ring-border">
+                <div className="absolute right-2 top-16 z-20 w-44 overflow-hidden rounded-2xl border border-border/70 bg-background/98 shadow-xl ring-1 ring-border backdrop-blur-xl">
                   <button
                     type="button"
                     onClick={() => onPin(note.id)}
-                    className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-xs hover:bg-tint"
+                    className="flex min-h-11 w-full items-center gap-2 px-3 py-2.5 text-left text-xs transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                   >
                     {note.pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
                     {note.pinned ? t("Unpin") : t("Pin")}
@@ -685,7 +685,7 @@ function NoteSection({
                   <button
                     type="button"
                     onClick={() => onArchive(note.id)}
-                    className="flex w-full items-center gap-2 border-t border-border/60 px-3 py-2.5 text-left text-xs hover:bg-tint"
+                    className="flex min-h-11 w-full items-center gap-2 border-t border-border/60 px-3 py-2.5 text-left text-xs transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                   >
                     <Archive className="h-4 w-4" />
                     {note.archived ? t("Restore") : t("Archive")}
@@ -694,7 +694,7 @@ function NoteSection({
                   <button
                     type="button"
                     onClick={() => onDelete(note.id)}
-                    className="flex w-full items-center gap-2 border-t border-border/60 px-3 py-2.5 text-left text-xs text-destructive hover:bg-tint"
+                    className="flex min-h-11 w-full items-center gap-2 border-t border-border/60 px-3 py-2.5 text-left text-xs text-destructive transition hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                   >
                     <Trash2 className="h-4 w-4" />
                     Delete
