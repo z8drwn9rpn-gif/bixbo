@@ -1,0 +1,91 @@
+name: Apply urinary and Blueberry fix once
+on:
+  push:
+    branches: [agent/fix-urinary-overview-blueberry-order]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: "!contains(github.event.head_commit.message, '[urinary-blueberry-patched]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/fix-urinary-overview-blueberry-order
+      - name: Patch urinary overview and Blueberry ordering
+        shell: python
+        run: |
+          from pathlib import Path
+
+          # 1) Mark urinary-only Bowel entries explicitly.
+          types = Path('src/lib/storage/types.ts')
+          s = types.read_text()
+          start = s.index('export interface BowelEntry {')
+          end = s.index('\n}\n', start) + 3
+          block = s[start:end]
+          anchor = '  urinary?: string[];\n'
+          assert anchor in block, 'BowelEntry urinary field anchor not found'
+          if 'urinaryOnly?: boolean;' not in block:
+              block = block.replace(
+                  anchor,
+                  anchor + '  /** True when urinary data was logged without selecting a bowel movement. */\n  urinaryOnly?: boolean;\n',
+                  1,
+              )
+          s = s[:start] + block + s[end:]
+          types.write_text(s)
+
+          # 2) Save urinary-only entries without pretending the user selected "No bowel movement".
+          lifestyle = Path('src/features/logging/LifestyleForms.tsx')
+          s = lifestyle.read_text()
+          start = s.index('export function BowelForm')
+          end = s.index('export function TempForm', start)
+          block = s[start:end]
+          old = '      bristol: bristol ?? -1,\n      feelings:'
+          new = '      bristol: bristol ?? -1,\n      urinaryOnly: bristol == null && urinary.length > 0 ? true : undefined,\n      feelings:'
+          assert old in block, 'Bowel save anchor not found'
+          block = block.replace(old, new, 1)
+          s = s[:start] + block + s[end:]
+          lifestyle.write_text(s)
+
+          # 3) Day overview: urinary-only shows Urinary, not No bowel movement.
+          overview = Path('src/components/home/DayOverview.tsx')
+          s = overview.read_text()
+          bowel_start = s.index('{log.bowel.map((b: BowelEntry, index) => {')
+          bristol_anchor = '              const bristol = b.bristol >= 0 ? BRISTOL.find((x) => x.n === b.bristol) : null;\n'
+          assert bristol_anchor in s[bowel_start:], 'DayOverview bristol anchor not found'
+          s = s.replace(
+              bristol_anchor,
+              bristol_anchor + '              const urinaryOnly =\n                b.urinaryOnly === true ||\n                (b.bristol < 0 && (b.urinary?.length ?? 0) > 0 && !b.feelings?.length && !b.symptoms?.length);\n',
+              1,
+          )
+          bowel_start = s.index('{log.bowel.map((b: BowelEntry, index) => {')
+          type_start = s.index('                    <p className="text-xs leading-relaxed text-muted-foreground">', bowel_start)
+          type_end = s.index('                    {b.feelings?.length ? (', type_start)
+          old_type = s[type_start:type_end]
+          assert '{t("Type")}' in old_type and 'typeLabel' in old_type, 'DayOverview bowel type UI anchor not found'
+          new_type = '''                    {!urinaryOnly ? (\n                      <p className="text-xs leading-relaxed text-muted-foreground">\n                        <span className="font-semibold text-foreground">{t("Type")}:</span>{" "}\n                        <IcoText text={`${typeLabel}${typeDescription ? ` — ${typeDescription}` : ""}`} size={13} />\n                      </p>\n                    ) : null}\n                    {b.urinary?.length ? (\n                      <p className={`${!urinaryOnly ? "mt-1 " : ""}text-xs leading-snug text-muted-foreground`}>\n                        <span className="font-semibold text-foreground">{t("Urinary")}:</span>{" "}\n                        <IcoText text={b.urinary.join(", ")} size={13} />\n                      </p>\n                    ) : null}\n'''
+          s = s[:type_start] + new_type + s[type_end:]
+          overview.write_text(s)
+
+          # 4) Blueberry: move Cycle prediction + Delete directly below Birth control, before Pregnant.
+          cycle = Path('src/features/logging/CycleForms.tsx')
+          s = cycle.read_text()
+          move_start = s.index('      <div className="rounded-2xl bg-tint p-3 text-[11px] leading-relaxed text-muted-foreground">\n        Cycle prediction')
+          period_end = s.index('    </div>\n  );\n}\n\nexport function SexForm', move_start)
+          moving = s[move_start:period_end]
+          assert 'Delete Blueberry entry' in moving, 'Delete Blueberry block not found with Cycle prediction'
+          s = s[:move_start] + s[period_end:]
+          pregnant_anchor = '      <Field label="Pregnant?" schemaFieldId="pregnant">'
+          assert pregnant_anchor in s, 'Pregnant field anchor not found'
+          s = s.replace(pregnant_anchor, moving + pregnant_anchor, 1)
+          cycle.write_text(s)
+
+      - name: Remove one-shot workflow and commit
+        shell: bash
+        run: |
+          rm .github/workflows/apply-urinary-blueberry-fix-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/lib/storage/types.ts src/features/logging/LifestyleForms.tsx src/components/home/DayOverview.tsx src/features/logging/CycleForms.tsx .github/workflows/apply-urinary-blueberry-fix-once.yml
+          git commit -m "fix: urinary overview and Blueberry field order [urinary-blueberry-patched]"
+          git push origin HEAD:agent/fix-urinary-overview-blueberry-order
