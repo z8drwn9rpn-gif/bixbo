@@ -21,7 +21,7 @@ describe("Pain symptom-only follow-ups", () => {
     expect(sheet).toContain('setSymptoms([])');
     expect(sheet).toContain('setNauseaSymptoms([])');
     expect(sheet).toContain('nauseaSymptoms.map(stripEmoji)');
-    expect(sheet).toContain('t("Save symptoms")');
+    expect(sheet).toContain('activePainStepId === "symptoms" ? "Next" : "Save"');
     expect(home).toContain('<Card title="Add symptoms" icon="➕">');
     expect(home).toContain('entry.sourcePainId === p.id');
     expect(home).toContain('p.symptoms.map(t).join(", ")');
