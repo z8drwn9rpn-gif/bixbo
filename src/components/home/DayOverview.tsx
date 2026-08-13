@@ -597,7 +597,7 @@ export function DayPreview({
             {log.sex.map((s: SexEntry, index) => (
               <li key={s.id} className={`flex items-start gap-2 ${index ? "border-t border-border/60 pt-1.5" : ""}`}>
                 <button onClick={() => onEdit?.("sex", s)} className="min-w-0 flex-1 text-left">
-                  <p className="text-[11px] leading-none text-muted-foreground">{s.time}</p>
+                  <p className="text-xs text-muted-foreground">{s.time}</p>
                   <div className="my-1 border-t border-border/60" />
                   <p className="text-xs leading-relaxed text-muted-foreground">
                     <span className="font-semibold text-foreground">{t("Type")}:</span>{" "}
@@ -619,7 +619,7 @@ export function DayPreview({
                       <span className="font-semibold">{t("Note")}:</span> {s.note}
                     </p>
                   ) : null}
-                  <p className="mt-0.5 text-[9px] leading-tight text-primary">{t("Tap to edit")}</p>
+                  <p className="mt-0.5 text-[10px] text-primary">{t("Tap to edit")}</p>
                 </button>
                 <DeleteBtn
                   onClick={() =>
@@ -687,50 +687,50 @@ export function DayPreview({
             {log.food.map((f, index) => (
               <li key={f.id} className={`flex items-start gap-2 ${index ? "border-t border-border/60 pt-0.5" : ""}`}>
                 <button onClick={() => onEdit?.("food", f)} className="min-w-0 flex-1 text-left">
-                  <p className="text-[11px] leading-none text-muted-foreground">{f.time}</p>
+                  <p className="text-xs text-muted-foreground">{f.time}</p>
                   <div className="my-0.5 border-t border-border/60" />
-                  <p className="text-[11px] leading-tight text-muted-foreground">
+                  <p className="text-xs leading-relaxed text-muted-foreground">
                     <span className="font-semibold text-foreground">{t("Food")}:</span>{" "}
                     <IcoText text={f.what || (f.histamineFlare ? t("(histamine flare)") : "—")} size={13} />
                   </p>
                   {f.highHistamine ? (
-                    <p className="mt-px text-[11px] leading-tight text-muted-foreground">
+                    <p className="mt-px text-xs leading-relaxed text-muted-foreground">
                       <span className="font-semibold text-foreground">{t("Histamine")}:</span> {t("high histamine")}
                     </p>
                   ) : null}
                   {f.hydrationMl != null ? (
-                    <p className="mt-px text-[11px] leading-tight text-muted-foreground"><span className="font-semibold text-foreground">{t("Hydration")}:</span> {f.hydrationMl} ml</p>
+                    <p className="mt-px text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">{t("Hydration")}:</span> {f.hydrationMl} ml</p>
                   ) : null}
                   {f.caffeineMg != null ? (
-                    <p className="mt-px text-[11px] leading-tight text-muted-foreground"><span className="font-semibold text-foreground">{t("Caffeine")}:</span> {f.caffeineMg} mg</p>
+                    <p className="mt-px text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">{t("Caffeine")}:</span> {f.caffeineMg} mg</p>
                   ) : null}
                   {f.alcoholDrinks != null ? (
-                    <p className="mt-px text-[11px] leading-tight text-muted-foreground"><span className="font-semibold text-foreground">{t("Drinks")}:</span> {f.alcoholDrinks}</p>
+                    <p className="mt-px text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">{t("Drinks")}:</span> {f.alcoholDrinks}</p>
                   ) : null}
                   {f.feelings.length ? (
-                    <p className="mt-px text-[11px] leading-tight text-muted-foreground">
+                    <p className="mt-px text-xs leading-relaxed text-muted-foreground">
                       <span className="font-semibold text-foreground">{t("Feel")}:</span>{" "}
                       <IcoText text={f.feelings.map(t).join(", ")} size={13} />
                     </p>
                   ) : null}
                   {f.symptomsAfter?.length ? (
-                    <p className="mt-px text-[11px] leading-tight text-muted-foreground">
+                    <p className="mt-px text-xs leading-relaxed text-muted-foreground">
                       <span className="font-semibold text-foreground">{t("After")}:</span>{" "}
                       <IcoText text={f.symptomsAfter.map(t).join(", ")} size={13} />
                     </p>
                   ) : null}
                   {f.histamineFlare ? (
-                    <p className="mt-px text-[11px] leading-tight text-destructive">
+                    <p className="mt-px text-xs leading-relaxed text-destructive">
                       <span className="font-semibold"><Ico e="🔥" size={13} /> {t("Histamine flare")}:</span>{" "}
                       {f.histamineSymptoms?.length ? f.histamineSymptoms.join(", ") : t("Yes")}
                     </p>
                   ) : null}
                   {f.after ? (
-                    <p className="mt-px whitespace-pre-line text-[11px] leading-tight">
+                    <p className="mt-px whitespace-pre-line text-xs leading-relaxed">
                       <span className="font-semibold">{t("Note")}:</span> {f.after}
                     </p>
                   ) : null}
-                  <p className="mt-0 text-[9px] leading-tight text-primary">{t("Tap to edit")}</p>
+                  <p className="mt-0 text-[10px] text-primary">{t("Tap to edit")}</p>
                 </button>
                 <DeleteBtn
                   onClick={() =>
@@ -766,7 +766,7 @@ export function DayPreview({
               return (
                 <li key={b.id} className={`flex items-start gap-2 ${index ? "border-t border-border/60 pt-1.5" : ""}`}>
                   <button onClick={() => onEdit?.("bowel", b)} className="min-w-0 flex-1 text-left">
-                    <p className="text-[11px] leading-none text-muted-foreground">{b.time}</p>
+                    <p className="text-xs text-muted-foreground">{b.time}</p>
                     <div className="my-1 border-t border-border/60" />
                     <p className="text-xs leading-relaxed text-muted-foreground">
                       <span className="font-semibold text-foreground">{t("Type")}:</span>{" "}
@@ -789,7 +789,7 @@ export function DayPreview({
                         <span className="font-semibold">{t("Note")}:</span> {b.note}
                       </p>
                     ) : null}
-                    <p className="mt-0.5 text-[9px] leading-tight text-primary">{t("Tap to edit")}</p>
+                    <p className="mt-0.5 text-[10px] text-primary">{t("Tap to edit")}</p>
                   </button>
                   <DeleteBtn
                     onClick={() =>
@@ -857,28 +857,28 @@ export function DayPreview({
           <button onClick={() => onEdit?.("temp", undefined)} className="w-full text-left">
             <div className="mb-1 border-t border-border/60" />
             {log?.temperature != null && (
-              <p className="text-[11px] leading-tight text-muted-foreground">
+              <p className="text-xs leading-relaxed text-muted-foreground">
                 <span className="font-semibold text-foreground">{t("Temperature")}:</span> {log.temperature}°C
               </p>
             )}
             {log?.weight != null && (
-              <p className={`${log?.temperature != null ? "mt-0.5 " : ""}text-[11px] leading-tight text-muted-foreground`}>
+              <p className={`${log?.temperature != null ? "mt-0.5 " : ""}text-xs leading-relaxed text-muted-foreground`}>
                 <span className="font-semibold text-foreground">{t("Weight")}:</span> {log.weight} kg
               </p>
             )}
             {log?.sleepHours != null && (
-              <p className={`${log?.temperature != null || log?.weight != null ? "mt-0.5 " : ""}text-[11px] leading-tight text-muted-foreground`}>
+              <p className={`${log?.temperature != null || log?.weight != null ? "mt-0.5 " : ""}text-xs leading-relaxed text-muted-foreground`}>
                 <span className="font-semibold text-foreground">{t("Sleep")}:</span> {log.sleepHours} h
                 {asArr(log.sleepQuality).length ? <> · <IcoText text={asArr(log.sleepQuality).map(t).join(", ")} size={12} /></> : null}
               </p>
             )}
             {asArr(log?.sleepQuality).length > 0 && log?.sleepHours == null && (
-              <p className={`${log?.temperature != null || log?.weight != null ? "mt-0.5 " : ""}text-[11px] leading-tight text-muted-foreground`}>
+              <p className={`${log?.temperature != null || log?.weight != null ? "mt-0.5 " : ""}text-xs leading-relaxed text-muted-foreground`}>
                 <span className="font-semibold text-foreground">{t("Sleep quality")}:</span>{" "}
                 <IcoText text={asArr(log.sleepQuality).map(t).join(", ")} size={12} />
               </p>
             )}
-            <p className="mt-0 text-[9px] leading-tight text-primary">{t("Tap to edit")}</p>
+            <p className="mt-0 text-[10px] text-primary">{t("Tap to edit")}</p>
           </button>
         </Card>
       )}
@@ -1030,8 +1030,8 @@ export function Card({
   return (
     <div className={`rounded-3xl bg-surface ring-1 ring-border ${compact ? "px-4 py-3" : "p-4"}`}>
       <div className={`${compact ? "mb-1" : "mb-2"} flex items-center gap-2`}>
-        <Ico e={icon} size={compact ? 20 : 22} />
-        <h3 className={`font-serif font-semibold ${compact ? "text-[17px]" : "text-lg"}`}>{t(title)}</h3>
+        <Ico e={icon} size={22} />
+        <h3 className="font-serif text-lg font-semibold">{t(title)}</h3>
       </div>
       {children}
     </div>
