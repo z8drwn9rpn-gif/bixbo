@@ -1,95 +1,29 @@
-import { Children, isValidElement, useState, useMemo, useRef, useEffect, type ReactNode } from "react";
+import { useState } from "react";
 import { useI18n } from "@/hooks/useI18n";
-import { TrText } from "@/features/logging/TrText";
-import { CATEGORIES, type Category } from "@/features/logging/logCategories";
-import { LogSchemaContext, useLogSchema, type LogSchemaContextValue } from "@/features/logging/LogSchemaContext";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
-import { Ico, IcoText } from "@/components/icons/BixboIcons";
-import { CustomLogForm } from "@/components/CustomLogForm";
-import { CoreFeatureCustomFieldInput } from "@/components/CoreFeatureCustomFieldsForm";
-import { POSTPARTUM_SYMPTOMS } from "@/lib/health";
-import { BIXBO_LOG_FIELDS, getRegistryFeature, getRegistryField, isRegistrySurfaceEnabled, registryCustomFieldsForFeature, registryFieldLabel, registryFieldOptions, registryFieldScale, registryFieldsForFeature, registryOptionLabel, customLogDefinitions, type RegistryFeatureId } from "@/lib/appRegistry";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
-import { X, Plus, ChevronLeft, Check, Pencil, Trash2 } from "@/components/icons/BixboIcons";
+import { Ico, Plus, X } from "@/components/icons/BixboIcons";
 import {
-  PAIN_DESCRIPTIONS,
-  painColor,
-  medScheduleItems,
-  BODY_PARTS_DEFAULT,
-  PAIN_QUALITY_DEFAULT,
-  OTHER_SYMPTOMS_DEFAULT,
-  FOOD_FEELINGS_DEFAULT,
-  WORKOUT_KINDS_DEFAULT,
-  BRISTOL,
   DISCHARGE_OPTS,
-  MOODS_DEFAULT,
-  TETANY_TYPES,
-  TETANY_TYPE_DESC,
-  TETANY_LOCATIONS_DEFAULT,
-  TETANY_TRIGGERS,
-  TETANY_HELPED_DEFAULT,
-  HEADACHE_TYPES,
-  HEADACHE_TYPE_DESC,
-  PRESSURE_TYPES,
-  NAUSEA_TYPES,
-  NAUSEA_TYPE_DESC,
-  NAUSEA_SEVERITY_DESC,
-  NAUSEA_TRIGGERS,
-  NAUSEA_SYMPTOMS,
-  NAUSEA_HELPED,
-  PANIC_PHYSICAL,
-  PANIC_COGNITIVE,
-  PANIC_HELPED_DEFAULT,
-  SEX_TYPES_DEFAULT,
-  BODY_BATTERY,
-  SLEEP_QUALITY,
   SEX_FEELINGS_DEFAULT,
-  EVENT_COLORS,
-  BOWEL_FEELINGS_DEFAULT,
-  BOWEL_SYMPTOMS_DEFAULT,
-  PCOS_SYMPTOMS,
-  HISTAMINE_SYMPTOMS,
-  FOOD_SYMPTOMS_AFTER,
-  todayKey,
-  nowHHMM,
-  updateDayLog,
+  SEX_TYPES_DEFAULT,
   asArr,
-  workoutHasDistance,
-  workoutIsHike,
-  workoutIsStrength,
+  nowHHMM,
   pregnancyInfo,
-  isCycleTrackingHidden,
-  URINARY_DEFAULT,
-  ALLERGENS_DEFAULT,
+  todayKey,
+  updateDayLog,
   type BixboData,
-  type DayLog,
-  type PainEntry,
+  type PainfulWhen,
   type PeriodLevel,
-  type FoodEntry,
-  type BowelEntry,
-  type ThermoSession,
-  type ThermoKind,
   type SexEntry,
   type SexKind,
-  type ExtraMed,
-  type WorkoutEntry,
-  type WorkoutExercise,
-  type EventEntry,
-  type TaskEntry,
-  type TetanyEpisode,
-  type PanicAttack,
-  type PainfulWhen,
-  type PostpartumDayLog,
-  type CustomLogEntry,
-  type CustomLogValue,
-  withCustomTombstones,
-  withoutCustomTombstones,
+  type ThermoKind,
+  type ThermoSession,
 } from "@/lib/storage";
 import { getScaleDesc } from "@/lib/scaleDescriptions";
-import { Chip, CustomChipList, DurationField, Field, IntensityScale, SaveBar, toggleIn } from "./LogFormPrimitives";
+import { useLogSchema } from "./LogSchemaContext";
+import { Chip, CustomChipList, Field, IntensityScale, SaveBar, toggleIn } from "./LogFormPrimitives";
 import type { UpdateFn } from "./LogFormPrimitives";
 
 export function PeriodForm({ date, data, update, onDone }: { date: string; data: BixboData; update: UpdateFn; onDone: () => void }) {
@@ -201,42 +135,34 @@ export function ThermoForm({ date, update, onDone, initialEntry }: { date: strin
   };
   const adjustPain = (value: number | undefined, delta: number) => Math.max(0, Math.min(10, (value ?? 0) + delta));
   return <div className="mx-auto flex w-full max-w-xl flex-col gap-4 pb-6">
+    <SaveBar onCancel={onDone} onSave={save} />
     <section>
       <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">{t("Therapy type")}</p>
       <div className="grid grid-cols-3 gap-2">
         {([ ["heat", "♨️", "Heat"], ["cold", "🧊", "Cold"], ["tens", "⭐", "TENS"] ] as const).map(([value, icon, label]) => <button key={value} type="button" onClick={() => setKind(value)} className={`flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-3xl border text-sm font-semibold transition ${kind === value ? "border-primary bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20" : "border-border bg-surface text-foreground"}`}><Ico e={icon} size={30} /><span>{t(label)}</span></button>)}
       </div>
     </section>
-
     <section className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.7fr)] gap-3 border-t border-border pt-4">
       <Field label="Start time" schemaFieldId="start"><Input type="time" value={start} onChange={(e) => setStart(e.target.value)} className="h-11" /></Field>
       <Field label="Duration" schemaFieldId="duration"><div className="flex flex-wrap gap-2">{durationOptions.map((value) => <Chip key={value} active={!ongoing && Number(minutes) === value} onClick={() => { setOngoing(false); setMinutes(String(value)); }}>{value} min</Chip>)}<div className="min-w-[92px] flex-1"><Input type="number" min={1} inputMode="numeric" value={ongoing ? "" : minutes} placeholder="Custom" onChange={(e) => { setOngoing(false); setMinutes(e.target.value); }} /></div></div></Field>
     </section>
-
     <button type="button" onClick={() => setOngoing((value) => !value)} className={`flex h-12 items-center justify-between rounded-2xl border px-4 text-sm font-medium ${ongoing ? "border-primary bg-primary/10" : "border-border bg-surface"}`}><span>{t("Still using now")}</span><span className={`relative h-6 w-11 rounded-full transition ${ongoing ? "bg-primary" : "bg-muted"}`}><span className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-all ${ongoing ? "left-6" : "left-1"}`} /></span></button>
-
     <section className="border-t border-border pt-4">
       <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">{t("Body area")}</p>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">{bodyAreas.map((value) => <button key={value} type="button" onClick={() => setBodyArea(bodyArea === value ? "" : value)} className={`rounded-2xl border px-3 py-3 text-xs font-medium ${bodyArea === value ? "border-primary bg-primary/10 text-primary" : "border-border bg-surface"}`}>{t(value)}</button>)}</div>
     </section>
-
     <section className="border-t border-border pt-4">
       <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">{t(kind === "tens" ? "TENS intensity" : "Intensity")}</p>
       <div className="grid grid-cols-3 gap-2">{(["low", "medium", "high"] as const).map((value) => <button key={value} type="button" onClick={() => setLevel(level === value ? undefined : value)} className={`rounded-2xl border px-3 py-3 text-xs font-medium capitalize ${level === value ? "border-primary bg-primary/10 text-primary" : "border-border bg-surface"}`}>{t(value)}</button>)}</div>
     </section>
-
     <section className="border-t border-border pt-4">
       <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">{t("Did it help?")}</p>
       <div className="grid grid-cols-5 gap-1.5">{([ ["not-yet", "◷", "Not yet"], ["no", "☹", "No"], ["little", "🙂", "A little"], ["moderate", "😊", "Moderate"], ["lot", "😁", "A lot"] ] as const).map(([value, icon, label]) => <button key={value} type="button" onClick={() => setEffectiveness(value)} className={`flex min-h-[66px] flex-col items-center justify-center gap-1 rounded-2xl border px-1 text-[10px] font-medium ${effectiveness === value ? "border-primary bg-primary/10 text-primary" : "border-border bg-surface"}`}><span className="text-lg leading-none">{icon}</span><span>{t(label)}</span></button>)}</div>
     </section>
-
     <section className="border-t border-border pt-4">
       <div className="mb-2 flex items-center justify-between"><p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">{t("Pain before / after")} <span className="normal-case font-normal">({t("optional")})</span></p><span className="text-xs text-muted-foreground">/10</span></div>
       <div className="grid grid-cols-2 gap-3">{([ ["Before", painBefore, setPainBefore], ["After", painAfter, setPainAfter] ] as const).map(([label, value, setter]) => <div key={label} className="rounded-2xl border border-border bg-surface p-3"><p className="mb-2 text-xs font-medium">{t(label)}</p><div className="grid grid-cols-[38px_1fr_38px] items-center gap-2"><button type="button" onClick={() => setter(adjustPain(value, -1))} className="h-9 rounded-xl bg-tint text-lg text-primary">−</button><button type="button" onClick={() => setter(value == null ? 0 : undefined)} className="h-9 rounded-xl bg-background text-center text-base font-semibold ring-1 ring-border">{value ?? "—"}</button><button type="button" onClick={() => setter(adjustPain(value, 1))} className="h-9 rounded-xl bg-tint text-lg text-primary">+</button></div></div>)}</div>
     </section>
-
     <Field label="Note (optional)" schemaFieldId="note"><Textarea rows={2} maxLength={200} value={note} placeholder={t("Add note…")} onChange={(e) => setNote(e.target.value)} /><p className="mt-1 text-right text-[10px] text-muted-foreground">{note.length}/200</p></Field>
-
-    <button type="button" onClick={save} className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-primary text-sm font-semibold text-primary-foreground shadow-sm active:scale-[0.99]"><Check className="h-5 w-5" /> {t("Save")}</button>
   </div>;
 }
