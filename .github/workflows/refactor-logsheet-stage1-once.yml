@@ -1,5 +1,6 @@
 name: Refactor LogSheet stage 1 once
 
+# Safe one-time refactor: typecheck must pass before any source changes are committed.
 on:
   push:
     branches:
