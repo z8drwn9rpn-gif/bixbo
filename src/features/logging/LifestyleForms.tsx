@@ -444,7 +444,7 @@ export function BowelForm({
   const { t } = useI18n();
   const schema = useLogSchema();
   const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
-  const [bristol, setBristol] = useState<number>(initialEntry?.bristol ?? 4);
+  const [bristol, setBristol] = useState<number | null>(initialEntry?.bristol ?? null);
   const [feelings, setFeelings] = useState<string[]>((initialEntry?.feelings ?? []).map(stripEmoji));
   const [symptoms, setSymptoms] = useState<string[]>(initialEntry?.symptoms ?? []);
   const [urinary, setUrinary] = useState<string[]>(initialEntry?.urinary ?? []);
@@ -472,11 +472,13 @@ export function BowelForm({
     setSymptoms((a) => a.filter((x) => x !== v));
   };
   const save = () => {
+    if (bristol == null && urinary.length === 0 && feelings.length === 0 && symptoms.length === 0 && !note.trim()) return;
     const editing = !!initialEntry;
     const entry: BowelEntry = {
       id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
       time,
-      bristol,
+      // Urinary-only entries must not invent a stool type. -1 is the existing "No bowel movement" sentinel.
+      bristol: bristol ?? -1,
       feelings: feelings.length ? feelings : undefined,
       symptoms: symptoms.length ? symptoms : undefined,
       urinary: urinary.length ? urinary : undefined,
