@@ -1,12 +1,12 @@
-name: Move food reaction under allergens once
+name: Move food reaction field
 on:
   push:
-    branches: [agent/move-food-reaction]
+    branches:
+      - agent/move-food-reaction
 permissions:
   contents: write
 jobs:
   patch:
-    if: "!contains(github.event.head_commit.message, '[food-reaction-order]')"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -14,45 +14,20 @@ jobs:
           ref: agent/move-food-reaction
           fetch-depth: 0
       - uses: oven-sh/setup-bun@v2
-      - name: Move Reaction under Allergens
+      - name: Patch
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
-          p = Path('src/features/logging/LifestyleForms.tsx')
+          p = Path("src/features/logging/LifestyleForms.tsx")
           s = p.read_text()
-          reaction = '''      <Field label="Reaction?" schemaFieldId="reaction">
-        <div className="mt-1 flex gap-2">
-          <Chip active={!allergicReaction} onClick={() => setAllergicReaction(false)}>
-            No / not sure
-          </Chip>
-          <Chip active={allergicReaction} onClick={() => setAllergicReaction(true)}>
-            Yes — log it
-          </Chip>
-        </div>
-        {allergicReaction && (
-          <div className="mt-2 flex gap-2">
-            {(["mild", "moderate", "severe"] as const).map((s2) => (
-              <Chip key={s2} active={reactionSeverity === s2} onClick={() => setReactionSeverity(s2)}>
-                {s2[0].toUpperCase() + s2.slice(1)}
-              </Chip>
-            ))}
-          </div>
-        )}
-      </Field>
-'''
-          if s.count(reaction) != 1:
-              raise SystemExit(f'Expected exactly one Reaction block, found {s.count(reaction)}')
-          s = s.replace(reaction, '', 1)
-          marker = '      <Field label="Allergens in this meal" schemaFieldId="allergens">\n'
-          start = s.find(marker)
-          if start < 0:
-              raise SystemExit('Allergens field not found')
-          intake = '      <RegistryFieldBlock fieldId="intake">\n'
-          end = s.find(intake, start)
-          if end < 0:
-              raise SystemExit('Intake block after allergens not found')
-          s = s[:end] + reaction + s[end:]
+          a = s.index('      <Field label="Reaction?" schemaFieldId="reaction">')
+          b = s.index('      <Field label="How do I feel after food?"', a)
+          reaction = s[a:b]
+          s = s[:a] + s[b:]
+          allergens = s.index('      <Field label="Allergens in this meal" schemaFieldId="allergens">')
+          intake = s.index('      <RegistryFieldBlock fieldId="intake">', allergens)
+          s = s[:intake] + reaction + s[intake:]
           p.write_text(s)
           PY
       - name: Install
@@ -72,5 +47,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -m "fix: move food reaction under allergens [food-reaction-order]"
+          git commit -m "fix: move food reaction under allergens"
           git push origin HEAD:agent/move-food-reaction
