@@ -1,15 +1,20 @@
-import { useState, useMemo, useRef, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useState, useMemo, useRef, useEffect, type ReactNode } from "react";
+import { useI18n } from "@/hooks/useI18n";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Ico, IcoText } from "@/components/icons/BixboIcons";
+import { CustomLogForm } from "@/components/CustomLogForm";
+import { CoreFeatureCustomFieldInput } from "@/components/CoreFeatureCustomFieldsForm";
 import { POSTPARTUM_SYMPTOMS } from "@/lib/health";
+import { BIXBO_LOG_FIELDS, getRegistryFeature, getRegistryField, isRegistrySurfaceEnabled, registryCustomFieldsForFeature, registryFieldLabel, registryFieldOptions, registryFieldScale, registryFieldsForFeature, registryOptionLabel, customLogDefinitions, type RegistryFeatureId } from "@/lib/appRegistry";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
-import { X, Plus, ChevronLeft, ChevronUp, ChevronDown, GripVertical, Check, Pencil } from "lucide-react";
+import { X, Plus, ChevronLeft, Check, Pencil, Trash2 } from "@/components/icons/BixboIcons";
 import {
   PAIN_DESCRIPTIONS,
   painColor,
+  medScheduleItems,
   BODY_PARTS_DEFAULT,
   PAIN_QUALITY_DEFAULT,
   OTHER_SYMPTOMS_DEFAULT,
@@ -75,11 +80,86 @@ import {
   type PanicAttack,
   type PainfulWhen,
   type PostpartumDayLog,
+  type CustomLogEntry,
+  type CustomLogValue,
   withCustomTombstones,
   withoutCustomTombstones,
 } from "@/lib/storage";
 
+
+function TrText({ value }: { value: unknown }) {
+  const { t, language } = useI18n();
+  const raw = String(value ?? "");
+  const exact = t(raw);
+  if (exact !== raw) return <>{exact}</>;
+  if (language !== "sk") return <>{raw}</>;
+
+  let out = raw;
+  const exactSk: Record<string, string> = {
+    Before: "Pred",
+    During: "Počas",
+    After: "Po",
+    "Very-Heavy": "Veľmi silná",
+    "Very heavy": "Veľmi silná",
+    Heavy: "Silná",
+    Medium: "Stredná",
+    Light: "Slabá",
+    Spotting: "Špinenie",
+    "Overall improvement": "Celkové zlepšenie",
+    "Overall worsening": "Celkové zhoršenie",
+    "No clear change": "Bez jasnej zmeny",
+    "High caffeine (≥200 mg)": "Vysoký príjem kofeínu (≥200 mg)",
+    "Tetany episode": "Tetánická epizóda",
+    "Hot flash": "Nával tepla",
+    "Low energy": "Nízka energia",
+    Headache: "Bolesť hlavy",
+    "Daily adherence": "Denné dodržiavanie",
+    doses: "dávok",
+    "logged days": "zaznamenaných dní",
+  };
+  if (exactSk[out]) return <>{exactSk[out]}</>;
+
+  out = out
+    .replace(/^Panic attacks:/, "Panické záchvaty:")
+    .replace(/^Medication adherence:/, "Dodržiavanie liekov:")
+    .replace(/^Workouts:/, "Cvičenia:")
+    .replace(/^Pain: improved/, "Bolesť: zlepšenie")
+    .replace(/^Pain: worsened/, "Bolesť: zhoršenie")
+    .replace(/^(\d+) logged days$/, "$1 zaznamenaných dní")
+    .replace(/^Based on (\d+) logged days in (.+)$/i, "Na základe $1 zaznamenaných dní v $2")
+    .replace(/^Based on (\d+) days before and (\d+) days after$/i, "Na základe $1 dní pred a $2 dní po")
+    .replace(/^(\d+) before · (\d+) after$/, "$1 pred · $2 po")
+    .replace(/^0× in this month$/, "0× v tomto mesiaci")
+    .replace(/^(\d+)× in this month$/, "$1× v tomto mesiaci")
+    .replace(/^The outcome was (.+) percentage points more common on days with this trigger\.$/, "Výsledok bol o $1 percentuálnych bodov častejší v dňoch s týmto spúšťačom.")
+    .replace(/^Based on (\d+) days with and (\d+) days without the trigger\.$/, "Na základe $1 dní so spúšťačom a $2 dní bez spúšťača.")
+    .replace(/^Correlations show associations in your logs\. They do not prove that one factor caused another\.$/, "Korelácie ukazujú súvislosti v tvojich záznamoch. Nedokazujú, že jeden faktor spôsobil druhý.")
+    .replace(/^This shows an association in your logs, not proof that the selected trigger caused the outcome\.$/, "Toto ukazuje súvislosť v tvojich záznamoch, nie dôkaz, že vybraný spúšťač spôsobil výsledok.")
+    .replace(/^Compare how often an outcome occurred on days with and without a possible trigger\.$/, "Porovnaj, ako často sa výsledok objavil v dňoch s možným spúšťačom a bez neho.")
+    .replace(/^Automatically ranked associations calculated only from your own logs\.$/, "Automaticky zoradené súvislosti vypočítané iba z tvojich vlastných záznamov.");
+
+  if (out.includes(" → ")) {
+    const [a, b] = out.split(" → ");
+    return <>{t(a)} → {t(b)}</>;
+  }
+
+  return <>{out}</>;
+}
+
 type UpdateFn = (u: (d: BixboData) => BixboData) => void;
+
+type LogSchemaContextValue = {
+  data: BixboData;
+  featureId: RegistryFeatureId;
+  adminFields: ReturnType<typeof registryCustomFieldsForFeature>;
+  adminFieldValues: Record<string, CustomLogValue>;
+  setAdminFieldValue: (fieldId: string, value: CustomLogValue) => void;
+  saveAdminCustomFields: () => void;
+  sourceEntryId: string;
+} | null;
+const LogSchemaContext = createContext<LogSchemaContextValue>(null);
+function useLogSchema() { return useContext(LogSchemaContext); }
+
 type Category =
   | "postpartum"
   | "meds"
@@ -95,13 +175,14 @@ type Category =
   | "temp"
   | "task"
   | "event"
-  | "note";
+  | "note"
+  | `custom:${string}`;
 
 const CATEGORIES: { id: Category; label: string; emoji: string; hint: string }[] = [
   { id: "postpartum", label: "Postpartum symptoms", emoji: "🤱", hint: "Recovery symptoms · notes" },
   { id: "pain", label: "Pain", emoji: "🔥", hint: "0–10, body, quality" },
   { id: "period", label: "Blueberry", emoji: "🫐", hint: "Flow · discharge · notes" },
-  { id: "heat", label: "Heat / Cold / TENS session", emoji: "♨️", hint: "Heating, ice or TENS session" },
+  { id: "heat", label: "Heat / Cold / TENS", emoji: "♨️", hint: "Heating, ice or TENS session" },
   { id: "food", label: "Food", emoji: "🍽️", hint: "What & how you feel" },
   { id: "bowel", label: "Bowel", emoji: "💩", hint: "Bristol type" },
   { id: "sex", label: "ŠukŠuk!", emoji: "❤️", hint: "All kinds of activity" },
@@ -110,7 +191,7 @@ const CATEGORIES: { id: Category; label: string; emoji: string; hint: string }[]
   { id: "meds", label: "Meds", emoji: "💊", hint: "Taken · extra dose" },
   { id: "event", label: "Event", emoji: "📅", hint: "Multi-day · time · note" },
   { id: "task", label: "Task", emoji: "✅", hint: "To-do with date & time" },
-  { id: "note", label: "Note", emoji: "📝", hint: "Any thought for today" },
+  { id: "note", label: "Notes", emoji: "📝", hint: "Any thought for today" },
 ];
 
 export function LogSheet({
@@ -132,34 +213,151 @@ export function LogSheet({
   initialPain?: PainEntry;
   editEntry?: unknown;
 }) {
+  const { t } = useI18n();
   const [cat, setCat] = useState<Category | null>(initial ?? null);
   const [openToken, setOpenToken] = useState(0);
   useEffect(() => {
     if (open) setOpenToken((t) => t + 1);
   }, [open]);
   const [editingOrder, setEditingOrder] = useState(false);
+  const [customEditEntry, setCustomEditEntry] = useState<CustomLogEntry | null | undefined>();
   const close = () => {
     setCat(null);
     setEditingOrder(false);
+    setCustomEditEntry(undefined);
     onOpenChange(false);
   };
-  const back = () => setCat(null);
+  const back = () => {
+    setCustomEditEntry(undefined);
+    setCat(null);
+  };
   const active = cat ?? initial;
   const edit = editEntry;
+  const editSource = edit && typeof edit === "object" ? edit as { id?: unknown; time?: unknown } : null;
+  const editSourceId = typeof editSource?.id === "string" ? editSource.id : undefined;
+  const editSourceTime = typeof editSource?.time === "string" ? editSource.time : undefined;
+  const [adminFieldValues, setAdminFieldValues] = useState<Record<string, CustomLogValue>>({});
+
+  const activeRegistryFeature = active && !active.startsWith("custom:") ? active as RegistryFeatureId : null;
+  const dayLevelAdminFeatures = new Set<RegistryFeatureId>(["period", "temp", "meds", "postpartum"]);
+  const draftSourceEntryId = useMemo(
+    () => globalThis.crypto?.randomUUID?.() ?? `core-entry-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    [active, date, openToken],
+  );
+  const activeSourceEntryId = activeRegistryFeature
+    ? editSourceId ?? (dayLevelAdminFeatures.has(activeRegistryFeature) ? `day:${activeRegistryFeature}:${date}` : draftSourceEntryId)
+    : draftSourceEntryId;
+  const activeAdminFields = activeRegistryFeature ? registryCustomFieldsForFeature(data, activeRegistryFeature) : [];
+  useEffect(() => {
+    if (!activeRegistryFeature) {
+      setAdminFieldValues({});
+      return;
+    }
+    const entries = data.dayLogs[date]?.adminFields?.[activeRegistryFeature] ?? [];
+    const linked = entries.find((entry) => entry.sourceEntryId === activeSourceEntryId);
+    const legacyByTime = editSourceTime
+      ? [...entries].reverse().find((entry) => !entry.sourceEntryId && entry.time === editSourceTime)
+      : undefined;
+    const legacyDayLevel = dayLevelAdminFeatures.has(activeRegistryFeature)
+      ? [...entries].reverse().find((entry) => !entry.sourceEntryId)
+      : undefined;
+    setAdminFieldValues((linked ?? legacyByTime ?? legacyDayLevel)?.values ?? {});
+  }, [active, activeRegistryFeature, activeSourceEntryId, data.dayLogs, date, editSourceTime, openToken]);
+
+  const saveAdminCustomFields = () => {
+    if (!activeRegistryFeature || !activeAdminFields.length) return;
+    const editableFieldIds = new Set(activeAdminFields.map((field) => field.id));
+    update((current) => {
+      const day = current.dayLogs[date] ?? {};
+      const adminFields = day.adminFields ?? {};
+      const existing = adminFields[activeRegistryFeature] ?? [];
+      const linkedIndex = existing.findIndex((entry) => entry.sourceEntryId === activeSourceEntryId);
+      let legacyIndex = -1;
+      if (linkedIndex < 0) {
+        for (let index = existing.length - 1; index >= 0; index -= 1) {
+          const entry = existing[index];
+          const legacyTimeMatch = Boolean(editSourceTime && !entry.sourceEntryId && entry.time === editSourceTime);
+          const legacyDayMatch = dayLevelAdminFeatures.has(activeRegistryFeature) && !entry.sourceEntryId;
+          if (legacyTimeMatch || legacyDayMatch) {
+            legacyIndex = index;
+            break;
+          }
+        }
+      }
+      const matchIndex = linkedIndex >= 0 ? linkedIndex : legacyIndex;
+
+      // Only fields currently exposed by Admin are editable in this form.
+      // Preserve values belonging to hidden, removed or legacy admin fields so
+      // "Hide" never becomes an accidental historical-data deletion on edit.
+      const previousValues = matchIndex >= 0 ? existing[matchIndex]?.values ?? {} : {};
+      const values: Record<string, CustomLogValue> = { ...previousValues };
+      editableFieldIds.forEach((fieldId) => {
+        const value = adminFieldValues[fieldId];
+        if (value === "" || value === undefined) delete values[fieldId];
+        else values[fieldId] = value;
+      });
+
+      let nextEntries = existing;
+      if (!Object.keys(values).length) {
+        if (matchIndex >= 0) nextEntries = existing.filter((_, index) => index !== matchIndex);
+        else return current;
+      } else if (matchIndex >= 0) {
+        nextEntries = existing.map((entry, index) => index === matchIndex
+          ? { ...entry, values, sourceEntryId: activeSourceEntryId }
+          : entry);
+      } else {
+        const entry = {
+          id: globalThis.crypto?.randomUUID?.() ?? `admin-field-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          time: editSourceTime ?? nowHHMM(),
+          values,
+          sourceEntryId: activeSourceEntryId,
+        };
+        nextEntries = [...existing, entry];
+      }
+
+      return {
+        ...current,
+        dayLogs: {
+          ...current.dayLogs,
+          [date]: {
+            ...day,
+            adminFields: {
+              ...adminFields,
+              [activeRegistryFeature]: nextEntries,
+            },
+          },
+        },
+      };
+    });
+  };
 
   const cycleTrackingHidden = isCycleTrackingHidden(data);
   const postpartumActive = Boolean(data.postpartum?.active);
 
   const orderedCats = useMemo(() => {
     const saved = data.settings.logOrder ?? [];
-    const source = CATEGORIES.filter((category) => {
-      if (category.id === "period" && cycleTrackingHidden) return false;
-      if (category.id === "postpartum" && !postpartumActive) return false;
-      return true;
-    });
+    const builtins = CATEGORIES
+      .map((category) => {
+        const feature = getRegistryFeature(data, category.id as RegistryFeatureId);
+        return { ...category, label: feature.label, emoji: feature.icon, registryOrder: feature.order };
+      })
+      .filter((category) => {
+        if (!isRegistrySurfaceEnabled(data, category.id as RegistryFeatureId, "log")) return false;
+        if (category.id === "period" && cycleTrackingHidden) return false;
+        if (category.id === "postpartum" && !postpartumActive) return false;
+        return true;
+      });
+    const customs = customLogDefinitions(data).map((definition) => ({
+      id: `custom:${definition.id}` as Category,
+      label: definition.label,
+      emoji: definition.icon,
+      hint: "Custom log",
+      registryOrder: 1000 + definition.order,
+    }));
+    const source = [...builtins, ...customs].sort((a, b) => a.registryOrder - b.registryOrder);
     const byId = new Map(source.map((c) => [c.id, c]));
     const seen = new Set<string>();
-    const out: typeof CATEGORIES = [];
+    const out: typeof source = [];
     for (const id of saved) {
       const c = byId.get(id as Category);
       if (c && !seen.has(id)) {
@@ -169,14 +367,82 @@ export function LogSheet({
     }
     for (const c of source) if (!seen.has(c.id)) out.push(c);
     return out;
-  }, [cycleTrackingHidden, data.settings.logOrder, postpartumActive]);
+  }, [cycleTrackingHidden, data, postpartumActive]);
 
-  const moveCat = (idx: number, dir: -1 | 1) => {
-    const j = idx + dir;
-    if (j < 0 || j >= orderedCats.length) return;
-    const next = orderedCats.slice();
-    [next[idx], next[j]] = [next[j], next[idx]];
-    update((d) => ({ ...d, settings: { ...d.settings, logOrder: next.map((c) => c.id) } }));
+  const [draggingCat, setDraggingCat] = useState<Category | null>(null);
+  const draggingCatRef = useRef<Category | null>(null);
+  const dragOrderRef = useRef<Category[]>([]);
+  const lastDragTargetRef = useRef<Category | null>(null);
+
+  const persistVisibleOrder = (nextVisible: Category[]) => {
+    update((d) => {
+      const visible = new Set(nextVisible);
+      const hiddenSaved = (d.settings.logOrder ?? []).filter((id) => !visible.has(id as Category));
+
+      return {
+        ...d,
+        settings: {
+          ...d.settings,
+          logOrder: [...nextVisible, ...hiddenSaved],
+        },
+      };
+    });
+  };
+
+  const startDirectReorder = (e: React.PointerEvent<HTMLButtonElement>, id: Category) => {
+    if (!editingOrder) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    draggingCatRef.current = id;
+    dragOrderRef.current = orderedCats.map((c) => c.id);
+    lastDragTargetRef.current = id;
+    setDraggingCat(id);
+
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // Older WebKit may not support pointer capture here.
+    }
+  };
+
+  const moveDirectReorder = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const fromId = draggingCatRef.current;
+    if (!editingOrder || !fromId) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const hit = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+    const target = hit?.closest<HTMLElement>("[data-log-category]");
+    const toId = target?.dataset.logCategory as Category | undefined;
+
+    if (!toId || toId === fromId || toId === lastDragTargetRef.current) return;
+
+    const next = dragOrderRef.current.slice();
+    const from = next.indexOf(fromId);
+    const to = next.indexOf(toId);
+    if (from < 0 || to < 0) return;
+
+    next.splice(from, 1);
+    next.splice(to, 0, fromId);
+
+    dragOrderRef.current = next;
+    lastDragTargetRef.current = toId;
+    persistVisibleOrder(next);
+  };
+
+  const endDirectReorder = (e?: React.PointerEvent<HTMLButtonElement>) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    draggingCatRef.current = null;
+    dragOrderRef.current = [];
+    lastDragTargetRef.current = null;
+    setDraggingCat(null);
   };
 
   return (
@@ -193,81 +459,291 @@ export function LogSheet({
             ? `flex h-[100dvh] max-h-[100dvh] flex-col rounded-t-none bg-background p-0 ${
                 active === "pain" ? "pt-[env(safe-area-inset-top)]" : "pt-0"
               }`
-            : "fixed !left-1/2 !right-auto !bottom-4 !top-auto -translate-x-1/2 flex !h-[466px] !max-h-[94dvh] !w-[67vw] !max-w-[320px] min-h-0 flex-col gap-0 overflow-hidden rounded-[1.5rem] border border-border/70 bg-background/95 p-0 shadow-2xl backdrop-blur-xl") + " [&>button.absolute]:hidden"
+            : "fixed !inset-0 !left-0 !right-0 !top-0 !bottom-0 flex !h-[100dvh] !max-h-none !w-full !max-w-none min-h-0 flex-col overflow-hidden !rounded-none !border-0 !bg-transparent !p-0 !shadow-none") + " [&>button.absolute]:hidden"
         }
       >
         {!active ? (
           <>
-            <SheetHeader className="relative h-10 shrink-0 border-b border-border/60 px-3 py-0">
-              <SheetTitle className="flex h-full items-center justify-center text-center font-serif text-xl">Log</SheetTitle>
+            <SheetTitle className="sr-only">{t("Log")}</SheetTitle>
+
+            <button
+              type="button"
+              aria-label={t("Close log menu")}
+              onClick={close}
+              className="absolute inset-0 z-0 cursor-default bg-transparent"
+            />
+
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 z-[5] bg-[#596330]/45 backdrop-blur-[2px]"
+            />
+
+            <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
+              <div
+                className="absolute left-1/2 h-[430px] w-[390px] max-w-[100vw] -translate-x-1/2"
+                style={{ bottom: "calc(max(8px, env(safe-area-inset-bottom)) + 22px)" }}
+              >
+                {(() => {
+                  const radialCats = orderedCats;
+                  const count = Math.max(1, radialCats.length);
+
+                  const centerUp = 205;
+                  const radiusX = 112;
+                  const radiusY = 145;
+                  const categoryButtonSize = 54;
+                  const categoryCircleSize = 48;
+
+                  const slots = radialCats.map((_, index) => {
+                    const angle = -Math.PI / 2 + (index * Math.PI * 2) / count;
+                    const cos = Math.cos(angle);
+                    const sin = Math.sin(angle);
+
+                    const x = Math.round(radiusX * cos);
+                    const up = Math.round(centerUp - radiusY * sin);
+
+                    const labelSide =
+                      sin < -0.58
+                        ? ("top" as const)
+                        : sin > 0.58
+                          ? ("bottom" as const)
+                          : cos >= 0
+                            ? ("right" as const)
+                            : ("left" as const);
+
+                    return { x, up, labelSide };
+                  });
+
+                  return (
+                    <>
+                      <svg
+                        aria-hidden="true"
+                        viewBox="-195 -430 390 430"
+                        className="pointer-events-none absolute bottom-0 left-1/2 h-[430px] w-[390px] max-w-[100vw] -translate-x-1/2 overflow-visible"
+                      >
+                        <ellipse
+                          cx="0"
+                          cy={-centerUp}
+                          rx="88"
+                          ry="88"
+                          fill="none"
+                          stroke="rgba(241,244,220,0.20)"
+                          strokeWidth="1"
+                          strokeDasharray="3 5"
+                        />
+
+                        {slots.map((slot, index) => {
+                          const dx = slot.x;
+                          const dy = -(slot.up - centerUp);
+                          const len = Math.hypot(dx, dy) || 1;
+                          const ux = dx / len;
+                          const uy = dy / len;
+
+                          const startPad = 44;
+                          const endPad = categoryCircleSize / 2 + 5;
+
+                          const x1 = ux * startPad;
+                          const y1 = -centerUp + uy * startPad;
+                          const x2 = dx - ux * endPad;
+                          const y2 = -centerUp + dy - uy * endPad;
+
+                          const arrowT = 0.78;
+                          const ax = x1 + (x2 - x1) * arrowT;
+                          const ay = y1 + (y2 - y1) * arrowT;
+                          const back = 6;
+                          const wing = 3.5;
+                          const px = -uy;
+                          const py = ux;
+
+                          const a1x = ax - ux * back + px * wing;
+                          const a1y = ay - uy * back + py * wing;
+                          const a2x = ax - ux * back - px * wing;
+                          const a2y = ay - uy * back - py * wing;
+
+                          return (
+                            <g key={`spoke-${index}`}>
+                              <line
+                                x1={x1}
+                                y1={y1}
+                                x2={x2}
+                                y2={y2}
+                                stroke="rgba(241,244,220,0.52)"
+                                strokeWidth="1"
+                                strokeDasharray="3 5"
+                              />
+                              <path
+                                d={`M ${a1x} ${a1y} L ${ax} ${ay} L ${a2x} ${a2y}`}
+                                fill="none"
+                                stroke="rgba(241,244,220,0.58)"
+                                strokeWidth="1.25"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </g>
+                          );
+                        })}
+                      </svg>
+
+                      {radialCats.map((c, index) => {
+                        const slot = slots[index];
+                        if (!slot) return null;
+
+                        const side = slot.labelSide;
+
+                        return (
+                          <button
+                            key={c.id}
+                            type="button"
+                            data-log-category={c.id}
+                            onPointerDown={(e) => startDirectReorder(e, c.id)}
+                            onPointerMove={moveDirectReorder}
+                            onPointerUp={endDirectReorder}
+                            onPointerCancel={endDirectReorder}
+                            onClick={(e) => {
+                              if (editingOrder) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                return;
+                              }
+                              setCat(c.id);
+                            }}
+                            aria-label={editingOrder ? `Drag $<TrText value={c.label} /> to reorder` : `Log $<TrText value={c.label} />`}
+                            className={`pointer-events-auto absolute z-20 touch-none select-none outline-none transition-[filter,opacity] duration-150 focus-visible:ring-2 focus-visible:ring-[#edf2cf] ${
+                              editingOrder ? "cursor-grab active:cursor-grabbing" : ""
+                            } ${draggingCat === c.id ? "z-50 brightness-110 drop-shadow-[0_0_10px_rgba(238,243,207,0.8)]" : ""}`}
+                            style={{
+                              width: `${categoryButtonSize}px`,
+                              height: `${categoryButtonSize}px`,
+                              left: "50%",
+                              bottom: 0,
+                              transform: `translate(calc(-50% + ${slot.x}px), -${slot.up - categoryButtonSize / 2}px)`,
+                            }}
+                          >
+                            <span
+                              className="
+                                absolute left-1/2 top-1/2 grid -translate-x-1/2 -translate-y-1/2
+                                place-items-center rounded-full border border-[#edf2cf]/65
+                                bg-[#dce5b2]/38
+                                shadow-[0_6px_16px_rgba(20,28,9,0.28),inset_0_1px_0_rgba(255,255,255,0.35)]
+                                ring-[3px] ring-[#e8edc5]/38 backdrop-blur-[7px]
+                              "
+                              style={{ width: `${categoryCircleSize}px`, height: `${categoryCircleSize}px` }}
+                            >
+                              <Ico e={c.emoji} size={26} />
+                            </span>
+
+                            <span
+                              className="
+                                absolute z-30 w-[64px] whitespace-normal text-[10px] font-semibold leading-[1.08]
+                                text-white drop-shadow-[0_1px_2px_rgba(31,37,16,0.95)]
+                              "
+                              style={{
+                                ...(side === "left"
+                                  ? {
+                                      right: "calc(100% + 3px)",
+                                      top: "50%",
+                                      transform: "translateY(-50%)",
+                                      textAlign: "right" as const,
+                                    }
+                                  : side === "right"
+                                    ? {
+                                        left: "calc(100% + 3px)",
+                                        top: "50%",
+                                        transform: "translateY(-50%)",
+                                        textAlign: "left" as const,
+                                      }
+                                    : side === "bottom"
+                                      ? {
+                                          left: "50%",
+                                          top: "calc(100% + 5px)",
+                                          transform: "translateX(-50%)",
+                                          textAlign: "center" as const,
+                                        }
+                                      : {
+                                          left: "50%",
+                                          bottom: "calc(100% + 5px)",
+                                          transform: "translateX(-50%)",
+                                          textAlign: "center" as const,
+                                        }),
+                              }}
+                            >
+                              {t(c.label)}
+                            </span>
+                          </button>
+                        );
+                      })}
+
+                      <span
+                        aria-hidden="true"
+                        className="
+                          pointer-events-none absolute left-1/2 z-30 h-0 w-0 -translate-x-1/2
+                          border-x-[7px] border-b-0 border-t-[9px]
+                          border-x-transparent border-t-[#eef2d1]/90
+                        "
+                        style={{ bottom: `${centerUp + 43}px` }}
+                      />
+
+                      <button
+                        type="button"
+                        onClick={close}
+                        aria-label={t("Close Log")}
+                        className="
+                          pointer-events-auto absolute left-1/2 z-40 grid h-[76px] w-[76px]
+                          -translate-x-1/2 place-items-center rounded-full
+                          border border-[#f1f4dc]/80 bg-[#657632] text-white
+                          shadow-[0_0_0_7px_rgba(231,238,190,0.44),0_0_24px_rgba(232,238,190,0.48),0_10px_26px_rgba(20,28,9,0.36)]
+                          ring-2 ring-[#dfe7b4]/70 transition-transform duration-150 active:scale-95
+                        "
+                        style={{ bottom: `${centerUp - 38}px` }}
+                      >
+                        <Plus className="h-9 w-9" strokeWidth={2.15} />
+                      </button>
+                    </>
+                  );
+                })()}
+              </div>
+
               <button
-                onClick={() => setEditingOrder((v) => !v)}
-                className="absolute left-2 top-1/2 flex -translate-y-1/2 items-center gap-0.5 rounded-full px-1.5 py-1 text-[9px] text-muted-foreground hover:bg-tint"
+                type="button"
+                onClick={() => {
+                  endDirectReorder();
+                  setEditingOrder((v) => !v);
+                }}
+                aria-label={editingOrder ? "Finish reordering log categories" : "Reorder log categories"}
+                className="
+                  pointer-events-auto absolute bottom-[calc(max(12px,env(safe-area-inset-bottom))+14px)] right-4 z-40
+                  flex h-[52px] w-[52px] items-center justify-center rounded-full
+                  border border-[#edf2cf]/65 bg-[#dce5b2]/38
+                  shadow-[0_6px_16px_rgba(20,28,9,0.28)] ring-[3px] ring-[#e8edc5]/38
+                  backdrop-blur-[7px] transition active:scale-95
+                "
               >
                 {editingOrder ? (
-                  <>
-                    <Check className="h-3 w-3" /> Done
-                  </>
+                  <Check className="h-6 w-6 text-white" strokeWidth={2.6} />
                 ) : (
-                  <>
-                    <GripVertical className="h-3 w-3" /> Reorder
-                  </>
+                  <span className="grid grid-cols-2 gap-[3px]" aria-hidden="true">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <span key={i} className="h-[5px] w-[5px] rounded-full bg-white/90" />
+                    ))}
+                  </span>
                 )}
+                <span className="absolute bottom-[calc(100%+5px)] left-1/2 w-[64px] -translate-x-1/2 text-center text-[10px] font-semibold text-white drop-shadow-[0_1px_2px_rgba(31,37,16,0.95)]">
+                  {editingOrder ? t("Done") : t("Reorder")}
+                </span>
               </button>
-              <button
-                onClick={close}
-                aria-label="Close"
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 hover:bg-tint"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </SheetHeader>
-            <ul className="m-0 min-h-0 flex-1 list-none overflow-y-auto divide-y divide-border/70 bg-surface/55 px-2 py-0">
-              {orderedCats.map((c, i) => (
-                <li key={c.id}>
-                  {editingOrder ? (
-                    <div className="flex h-9 w-full items-center gap-2 bg-surface/70 px-2">
-                      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-tint">
-                        <Ico e={c.emoji} size={20} />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-[13px] font-semibold leading-none">{c.label}</p>
-                      </div>
-                      <button
-                        onClick={() => moveCat(i, -1)}
-                        disabled={i === 0}
-                        className="rounded-full p-1 hover:bg-tint disabled:opacity-30"
-                        aria-label="Move up"
-                      >
-                        <ChevronUp className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => moveCat(i, 1)}
-                        disabled={i === orderedCats.length - 1}
-                        className="rounded-full p-1 hover:bg-tint disabled:opacity-30"
-                        aria-label="Move down"
-                      >
-                        <ChevronDown className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setCat(c.id)}
-                      className="flex h-9 w-full items-center gap-2 bg-surface/70 px-2 text-left transition hover:bg-tint"
-                    >
-                      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-tint">
-                        <Ico e={c.emoji} size={20} />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-[13px] font-semibold leading-none">{c.label}</p>
-                        <p className="hidden truncate text-xs text-muted-foreground">{c.hint}</p>
-                      </div>
-                      <span className="shrink-0 text-sm text-muted-foreground">›</span>
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ul>
+
+              {editingOrder && (
+                <div
+                  className="
+                    pointer-events-none absolute bottom-[calc(max(12px,env(safe-area-inset-bottom))+18px)]
+                    left-1/2 z-40 -translate-x-1/2 rounded-full border border-white/20
+                    bg-black/20 px-3 py-1 text-[10px] font-semibold text-white/90
+                    shadow-sm backdrop-blur-md
+                  "
+                >
+                  {t("Drag circles to reorder")}
+                </div>
+              )}
+            </div>
           </>
         ) : (
           <div className="flex h-full min-h-0 flex-col">
@@ -279,19 +755,111 @@ export function LogSheet({
               }`}
             >
               <button onClick={back} className="flex items-center gap-1 text-sm text-muted-foreground">
-                <ChevronLeft className="h-4 w-4" /> Back to Log
+                <ChevronLeft className="h-3.5 w-3.5 shrink-0" /> {t("Back to Log")}
               </button>
-              <SheetTitle className="font-serif text-lg">{CATEGORIES.find((c) => c.id === active)?.label}</SheetTitle>
-              <button onClick={close} aria-label="Close" className="rounded-full p-1 hover:bg-tint">
+              <SheetTitle className="font-serif text-lg">{t(orderedCats.find((c) => c.id === active)?.label ?? CATEGORIES.find((c) => c.id === active)?.label ?? "")}</SheetTitle>
+              <button onClick={close} aria-label={t("Close")} className="rounded-full p-1 hover:bg-tint">
                 <X className="h-5 w-5" />
               </button>
             </SheetHeader>
+            <LogSchemaContext.Provider value={activeRegistryFeature ? {
+              data,
+              featureId: activeRegistryFeature,
+              adminFields: activeAdminFields,
+              adminFieldValues,
+              setAdminFieldValue: (fieldId, value) => setAdminFieldValues((current) => ({ ...current, [fieldId]: value })),
+              saveAdminCustomFields,
+              sourceEntryId: activeSourceEntryId,
+            } : null}>
             <div
               key={`${active}-${openToken}-${(edit as { id?: string } | undefined)?.id ?? initialPain?.id ?? "new"}`}
               className={`min-h-0 flex-1 overflow-y-auto ${
                 active === "pain" ? "pt-[60px]" : "px-5 pb-4"
               }`}
             >
+              {active?.startsWith("custom:") && (() => {
+                const id = active.slice("custom:".length);
+                const definition = customLogDefinitions(data).find((item) => item.id === id);
+                if (!definition) return null;
+                const savedEntries = data.dayLogs[date]?.customLogs?.[id] ?? [];
+                const initialCustomEntry = customEditEntry === null ? undefined : customEditEntry ?? (edit as CustomLogEntry | undefined);
+                return (
+                  <div className="space-y-4">
+                    {savedEntries.length ? (
+                      <section className="rounded-2xl bg-tint p-3 ring-1 ring-border/70">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-xs font-bold">{t("Saved entries")}</p>
+                            <p className="text-[10px] text-muted-foreground">{t("Tap an entry to edit it without creating a duplicate.")}</p>
+                          </div>
+                          {initialCustomEntry ? (
+                            <button
+                              type="button"
+                              onClick={() => setCustomEditEntry(null)}
+                              className="rounded-full bg-background px-3 py-1 text-[10px] font-semibold ring-1 ring-border"
+                            >
+                              {t("New entry")}
+                            </button>
+                          ) : null}
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {savedEntries.map((entry, index) => (
+                            <div key={entry.id} className="inline-flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => setCustomEditEntry(entry)}
+                                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-semibold ring-1 ring-border ${
+                                  initialCustomEntry?.id === entry.id ? "bg-primary text-primary-foreground" : "bg-background text-foreground"
+                                }`}
+                              >
+                                <Pencil className="h-3 w-3" />
+                                {entry.time || `${t("Entry")} ${index + 1}`}
+                              </button>
+                              <button
+                                type="button"
+                                aria-label={`${t("Delete")} ${entry.time || `${t("Entry")} ${index + 1}`}`}
+                                onClick={() => {
+                                  if (!window.confirm(t("Delete this saved entry? Other entries and the selected day will stay unchanged."))) return;
+                                  update((current) => {
+                                    const day = current.dayLogs[date];
+                                    if (!day) return current;
+                                    const customLogs = { ...(day.customLogs ?? {}) };
+                                    const existing = customLogs[id] ?? [];
+                                    const nextEntries = existing.filter((saved) => saved.id !== entry.id);
+                                    if (nextEntries.length) customLogs[id] = nextEntries;
+                                    else delete customLogs[id];
+                                    return {
+                                      ...current,
+                                      dayLogs: {
+                                        ...current.dayLogs,
+                                        [date]: { ...day, customLogs },
+                                      },
+                                    };
+                                  });
+                                  if (initialCustomEntry?.id === entry.id) setCustomEditEntry(null);
+                                }}
+                                className="grid h-7 w-7 place-items-center rounded-full bg-background text-destructive ring-1 ring-border"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                    ) : null}
+                    <CustomLogForm
+                      key={`${definition.id}:${initialCustomEntry?.id ?? "new"}`}
+                      definition={definition}
+                      date={date}
+                      data={data}
+                      update={update}
+                      onDone={close}
+                      initialEntry={initialCustomEntry}
+                    />
+                  </div>
+                );
+              })()}
+
               {active === "postpartum" && (
                 <PostpartumSymptomsForm date={date} data={data} update={update} onDone={close} />
               )}
@@ -378,6 +946,7 @@ export function LogSheet({
               )}
               {active === "note" && <NoteForm date={date} update={update} onDone={close} />}
             </div>
+            </LogSchemaContext.Provider>
           </div>
         )}
       </SheetContent>
@@ -386,17 +955,66 @@ export function LogSheet({
 }
 
 /* ------------------- Primitives ------------------- */
-function Field({ label, children }: { label: string; children: ReactNode }) {
+function InlineAdminCustomFields({ anchorFieldId }: { anchorFieldId?: string }) {
+  const schema = useLogSchema();
+  if (!schema || schema.featureId === "pain" || !anchorFieldId || !schema.adminFields.length) return null;
+  const firstCoreFieldId = BIXBO_LOG_FIELDS[schema.featureId]?.[0]?.id;
+  if (firstCoreFieldId !== anchorFieldId) return null;
+  return (
+    <>
+      {schema.adminFields.map((field) => (
+        <CoreFeatureCustomFieldInput
+          key={field.id}
+          field={field}
+          value={schema.adminFieldValues[field.id]}
+          onChange={(value) => schema.setAdminFieldValue(field.id, value)}
+          style={{ order: field.order }}
+        />
+      ))}
+    </>
+  );
+}
+
+function Field({ label, children, schemaFieldId }: { label: string; children: ReactNode; schemaFieldId?: string }) {
+  const { t } = useI18n();
+  const schema = useLogSchema();
+  const fieldIdByLabel: Record<string, string> = { "Pain scale": "score", "Where does it hurt?": "parts", "How does it hurt?": "quality", "Other symptoms": "symptoms", "Intensity": "intensity", "Type": "types", "Location": "location", "Triggers": "triggers", "What helped?": "helped", "Bleeding": "flow", "Cramp pain": "cramps", "Discharge (optional)": "discharge", "Duration (minutes)": "minutes", "Intensity (RPE)": "rpe", "How you feel": "feel", "Urinary": "urinary" };
+  const fieldId = schemaFieldId ?? fieldIdByLabel[label];
+  const configuredField = schema && fieldId ? getRegistryField(schema.data, schema.featureId, fieldId) : undefined;
+  const dynamicSuffix = fieldId === "intensity" && label.startsWith("Intensity ") ? label.slice("Intensity".length) : "";
+  const displayLabel = configuredField
+    ? `${configuredField.label}${dynamicSuffix}`
+    : (schema && fieldId ? registryFieldLabel(schema.data, schema.featureId, fieldId, label) : label);
   // Intentionally a <div>, not <label>. Wrapping chip/button groups in <label>
   // caused stray click activations on the first focusable descendant, which
   // manifested as chips getting "auto-selected" in the Pain wizard.
   return (
-    <div className="block">
-      <span className="text-xs font-medium text-muted-foreground">{label}</span>
-      <div className="mt-1">{children}</div>
-    </div>
+    <>
+      <InlineAdminCustomFields anchorFieldId={fieldId} />
+      <div className={configuredField?.enabled === false ? "hidden" : "block"} style={configuredField ? { order: configuredField.order } : undefined} data-bixbo-log-field-id={fieldId || undefined}>
+        <span className="text-xs font-medium text-muted-foreground">{t(displayLabel)}</span>
+        <div className="mt-1">{children}</div>
+      </div>
+    </>
   );
 }
+function RegistryFieldBlock({ fieldId, children }: { fieldId: string; children: ReactNode }) {
+  const schema = useLogSchema();
+  const configuredField = schema ? getRegistryField(schema.data, schema.featureId, fieldId) : undefined;
+  return (
+    <>
+      <InlineAdminCustomFields anchorFieldId={fieldId} />
+      <div
+        className={configuredField?.enabled === false ? "hidden" : "block"}
+        style={configuredField ? { order: configuredField.order } : undefined}
+        data-bixbo-log-field-id={fieldId}
+      >
+        {children}
+      </div>
+    </>
+  );
+}
+
 function Chip({
   active,
   onClick,
@@ -410,6 +1028,7 @@ function Chip({
   color?: string;
   title?: string;
 }) {
+  const { t } = useI18n();
   return (
     <button
       type="button"
@@ -422,11 +1041,13 @@ function Chip({
       }`}
       style={active && color ? { background: color } : active ? { background: "var(--primary)" } : undefined}
     >
-      {typeof children === "string" ? <IcoText text={children} size={14} /> : children}
+      {typeof children === "string" ? <IcoText text={t(children)} size={14} /> : children}
     </button>
   );
 }
 function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave: () => void; disabled?: boolean }) {
+  const { t } = useI18n();
+  const schema = useLogSchema();
   return (
     <SheetFooter className="sticky top-0 z-30 -mx-5 mt-0 flex-row items-center justify-between gap-2 border-b border-border/50 bg-background px-5 py-1.5">
       <button
@@ -435,18 +1056,18 @@ function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave:
         className="flex min-w-[58px] items-center gap-1 text-xs font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <span aria-hidden="true" className="text-sm leading-none">←</span>
-        <span>Back</span>
+        <span>{t("Back")}</span>
       </button>
 
       <span className="min-w-0 flex-1" aria-hidden="true" />
 
       <button
         type="button"
-        onClick={onSave}
+        onClick={() => { schema?.saveAdminCustomFields(); onSave(); }}
         disabled={disabled}
         className="inline-flex h-8 min-w-[68px] items-center justify-center gap-1 rounded-full bg-primary px-3 text-xs font-semibold text-primary-foreground shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
-        <span>Save</span>
+        <span>{t("Save")}</span>
         <span aria-hidden="true" className="text-sm leading-none">✓</span>
       </button>
     </SheetFooter>
@@ -462,6 +1083,7 @@ function CustomChipList({
   selected,
   onToggle,
   descriptions,
+  schemaFieldId,
 }: {
   base: string[];
   custom: string[];
@@ -471,7 +1093,12 @@ function CustomChipList({
   selected: string[];
   onToggle: (v: string) => void;
   descriptions?: Record<string, string>;
+  schemaFieldId?: string;
 }) {
+  const { t } = useI18n();
+  const schema = useLogSchema();
+  const configuredBase = schema && schemaFieldId ? registryFieldOptions(schema.data, schema.featureId, schemaFieldId, base) : base;
+  const optionLabel = (value: string) => schema && schemaFieldId ? registryOptionLabel(schema.data, schema.featureId, schemaFieldId, value) : value;
   const [adding, setAdding] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [text, setText] = useState("");
@@ -487,7 +1114,7 @@ function CustomChipList({
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 className="h-8 flex-1"
-                placeholder="Custom…"
+                placeholder={t("Custom…")}
                 autoFocus
               />
               <Button
@@ -511,9 +1138,7 @@ function CustomChipList({
                   setText("");
                   setAdding(false);
                 }}
-              >
-                Cancel
-              </Button>
+              ><TrText value="Cancel" /></Button>
             </div>
           ) : (
             <button
@@ -521,7 +1146,7 @@ function CustomChipList({
               onClick={() => setAdding(true)}
               className="flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary hover:bg-primary/20"
             >
-              <Plus className="h-3 w-3" /> Add custom
+              <Plus className="h-3 w-3" /> {t("Add custom")}
             </button>
           )}
           {canEdit && !adding && (
@@ -530,16 +1155,16 @@ function CustomChipList({
               onClick={() => setEditMode((v) => !v)}
               className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${editMode ? "bg-primary text-primary-foreground" : "bg-tint text-muted-foreground hover:text-foreground"}`}
             >
-              <Pencil className="h-3 w-3" /> {editMode ? "Done" : "Edit"}
+              <Pencil className="h-3 w-3" /> {editMode ? t("Done") : t("Edit")}
             </button>
           )}
         </div>
       )}
       <div className="flex flex-wrap gap-2">
-        {base.map((v) => (
+        {configuredBase.map((v) => (
           <span key={v} className="inline-flex items-center gap-0.5">
-            <Chip active={selected.includes(v)} onClick={() => onToggle(v)} title={descriptions?.[v]}>
-              {v}
+            <Chip active={selected.includes(v)} onClick={() => onToggle(v)} title={descriptions?.[v] ? t(descriptions[v]) : undefined}>
+              {t(optionLabel(v))}
             </Chip>
             {descriptions?.[v] && (
               <button
@@ -565,7 +1190,7 @@ function CustomChipList({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  const next = prompt(`Rename "${v}" to:`, v);
+                  const next = prompt(`${t("Rename")} "${v}" ${t("to")}:`, v);
                   if (next && next.trim() && next.trim() !== v) onRenameCustom(v, next.trim());
                 }}
                 aria-label={`Rename ${v}`}
@@ -578,7 +1203,7 @@ function CustomChipList({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (confirm(`Remove "${v}" from your custom list?`)) onRemoveCustom(v);
+                  if (confirm(`${t("Remove")} "${v}" ${t("from your custom list?")}`)) onRemoveCustom(v);
                 }}
                 aria-label={`Remove ${v}`}
                 className="ml-1 grid h-5 w-5 place-items-center rounded-full bg-tint text-muted-foreground hover:bg-destructive/15 hover:text-destructive"
@@ -591,7 +1216,7 @@ function CustomChipList({
       </div>
       {infoFor && descriptions?.[infoFor] && (
         <div className="mt-2 rounded-lg bg-tint px-2.5 py-1.5 text-[11px] leading-snug text-foreground">
-          <span className="font-semibold">{infoFor}:</span> {descriptions[infoFor]}
+          <span className="font-semibold">{t(infoFor)}:</span> {t(descriptions[infoFor])}
         </div>
       )}
     </div>
@@ -622,24 +1247,25 @@ function ScaleLegend({
   title: string;
   from?: number;
 }) {
+  const { t } = useI18n();
   const items: number[] = [];
   for (let i = Math.ceil(from); i <= max; i++) items.push(i);
   const activeLegendValue = value == null || value < from ? undefined : Math.round(value);
 
   return (
     <div className="mt-2 rounded-xl border border-border/60 bg-surface/50 p-2.5">
-      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>
+      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{t(title)}</p>
       <div className="space-y-1 text-[11px] leading-tight">
         {items.map((n) => (
           <div key={n} className="flex items-start gap-2">
             <span
-              className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full text-[9px] font-bold text-white"
+              className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full text-[10px] font-bold text-white"
               style={{ background: scaleColor(n, from, max) }}
             >
               {n}
             </span>
             <span className={activeLegendValue === n ? "font-semibold text-foreground" : "text-muted-foreground"}>
-              {descriptions[n]}
+              {t(descriptions[n])}
             </span>
           </div>
         ))}
@@ -657,6 +1283,7 @@ function IntensityScale({
   from = 0,
   compactSingleRow = false,
   step = 0.5,
+  schemaFieldId,
 }: {
   value: number;
   onChange: (n: number) => void;
@@ -666,10 +1293,17 @@ function IntensityScale({
   from?: number;
   compactSingleRow?: boolean;
   step?: number;
+  schemaFieldId?: string;
 }) {
+  const { t } = useI18n();
+  const schema = useLogSchema();
+  const effective = schema && schemaFieldId ? registryFieldScale(schema.data, schema.featureId, schemaFieldId, { min: from, max, step }) : { min: from, max, step };
+  const effectiveFrom = effective.min;
+  const effectiveMax = effective.max;
+  const effectiveStep = effective.step;
   const nums = Array.from(
-    { length: Math.floor((max - from) / step) + 1 },
-    (_, i) => Number((from + i * step).toFixed(1)),
+    { length: Math.floor((effectiveMax - effectiveFrom) / effectiveStep) + 1 },
+    (_, i) => Number((effectiveFrom + i * effectiveStep).toFixed(2)),
   );
 
   const roundedValue = Math.round(value);
@@ -687,15 +1321,15 @@ function IntensityScale({
         {nums.map((n) => {
           const active = value === n;
           const description = descriptions?.[Math.round(n)];
-          const bg = scaleColor(n, from, max);
+          const bg = scaleColor(n, effectiveFrom, effectiveMax);
 
           return (
             <button
               key={n}
               type="button"
               onClick={() => onChange(n)}
-              title={description ? `${n} — ${description}` : String(n)}
-              aria-label={description ? `${n} — ${description}` : `Intensity ${n}`}
+              title={description ? `${n} — ${t(description)}` : String(n)}
+              aria-label={description ? `${n} — ${t(description)}` : `${t("Intensity")} ${n}`}
               className={`${
                 compactSingleRow ? "h-7 w-7 text-[10px]" : "h-8 w-8 text-[11px]"
               } shrink-0 rounded-full font-semibold transition ${
@@ -709,19 +1343,19 @@ function IntensityScale({
         })}
       </div>
 
-      {descriptions && value >= from && selectedDescription && (
+      {descriptions && value >= effectiveFrom && selectedDescription && (
         <div className="mt-2 rounded-lg bg-tint px-2.5 py-1.5 text-[11px] leading-snug text-foreground">
           <span className="font-semibold">
-            Level {Number.isInteger(value) ? value : value.toFixed(1)}:
+            {t("Level")} {Number.isInteger(value) ? value : value.toFixed(1)}:
           </span>{" "}
-          {selectedDescription}
+          {t(selectedDescription)}
         </div>
       )}
 
       {descriptions && legendTitle && (
         <ScaleLegend
-          max={max}
-          from={from}
+          max={effectiveMax}
+          from={effectiveFrom}
           descriptions={descriptions}
           value={value}
           title={legendTitle}
@@ -736,15 +1370,21 @@ function DurationField({
   setMinutes,
   ongoing,
   setOngoing,
+  schemaFieldId,
 }: {
   minutes: string;
   setMinutes: (s: string) => void;
   ongoing: boolean;
   setOngoing: (b: boolean) => void;
+  schemaFieldId?: string;
 }) {
+  const { t } = useI18n();
+  const schema = useLogSchema();
+  const configuredField = schema && schemaFieldId ? getRegistryField(schema.data, schema.featureId, schemaFieldId) : undefined;
+  const displayLabel = configuredField?.label ?? "Duration (min)";
   return (
-    <div className="space-y-1">
-      <span className="text-xs font-medium text-muted-foreground">Duration (min)</span>
+    <div className={configuredField?.enabled === false ? "hidden" : "space-y-1"} style={configuredField ? { order: configuredField.order } : undefined} data-bixbo-log-field-id={schemaFieldId || undefined}>
+      <span className="text-xs font-medium text-muted-foreground">{t(displayLabel)}</span>
       <div className="flex items-center gap-2">
         <Input
           type="number"
@@ -761,7 +1401,7 @@ function DurationField({
           onClick={() => setOngoing(!ongoing)}
           className={`rounded-full px-3 py-1.5 text-xs font-semibold ring-1 ring-border ${ongoing ? "bg-primary text-white" : "bg-tint text-foreground"}`}
         >
-          Ongoing
+          {t("Ongoing")}
         </button>
       </div>
     </div>
@@ -782,6 +1422,7 @@ function PainWizard({
   onDone: () => void;
   initialEntry?: PainEntry;
 }) {
+  const { t } = useI18n();
   /**
    * The newest pain entry for the selected day. A new entry can reuse this
    * state and only add what changed (for example a headache several hours later).
@@ -798,6 +1439,25 @@ function PainWizard({
   }, [data.dayLogs, date, initialEntry]);
 
   const [step, setStep] = useState(0);
+  const schema = useLogSchema();
+  const painSteps = useMemo(() => {
+    const configured = [
+      ...registryFieldsForFeature(data, "pain"),
+      ...registryCustomFieldsForFeature(data, "pain"),
+    ].sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));
+    return configured.length ? configured : [
+      { id: "score", label: "Pain scale", kind: "scale" as const, order: 10 },
+      { id: "parts", label: "Where does it hurt?", kind: "chips" as const, order: 20 },
+      { id: "quality", label: "How does it hurt?", kind: "chips" as const, order: 30 },
+      { id: "symptoms", label: "Other symptoms", kind: "chips" as const, order: 40 },
+      { id: "details", label: "Details", kind: "text" as const, order: 50 },
+    ];
+  }, [data]);
+  const safeStep = Math.min(step, Math.max(0, painSteps.length - 1));
+  const activePainStep = painSteps[safeStep];
+  const activePainStepId = activePainStep?.id ?? "score";
+  const activePainStepIsCustom = !!activePainStep && !(BIXBO_LOG_FIELDS.pain ?? []).some((field) => field.id === activePainStep.id);
+  const symptomsStepIndex = painSteps.findIndex((field) => field.id === "symptoms");
   const [score, setScore] = useState(initialEntry?.score ?? 0);
   const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
   const [parts, setParts] = useState<string[]>(initialEntry?.parts ?? []);
@@ -846,70 +1506,61 @@ function PainWizard({
   const [pressureIntensity, setPressureIntensity] = useState<number | undefined>(initialEntry?.pressureIntensity);
   // Nausea section
   const [nausea, setNausea] = useState<boolean>(!!initialEntry?.nausea);
-  const [nauseaTypes, setNauseaTypes] = useState<string[]>(initialEntry?.nauseaTypes ?? []);
+  const [nauseaTypes, setNauseaTypes] = useState<string[]>((initialEntry?.nauseaTypes ?? []).map(stripEmoji));
   const [nauseaSeverity, setNauseaSeverity] = useState<number | undefined>(initialEntry?.nauseaSeverity);
   const [nauseaMinutes, setNauseaMinutes] = useState<string>(
     initialEntry?.nauseaMinutes != null ? String(initialEntry.nauseaMinutes) : "",
   );
   const [nauseaOngoing, setNauseaOngoing] = useState<boolean>(!!initialEntry?.nauseaOngoing);
-  const [nauseaTriggers, setNauseaTriggers] = useState<string[]>(initialEntry?.nauseaTriggers ?? []);
-  const [nauseaSymptoms, setNauseaSymptoms] = useState<string[]>(initialEntry?.nauseaSymptoms ?? []);
-  const [nauseaHelped, setNauseaHelped] = useState<string[]>(initialEntry?.nauseaHelped ?? []);
+  const [nauseaTriggers, setNauseaTriggers] = useState<string[]>((initialEntry?.nauseaTriggers ?? []).map(stripEmoji));
+  const [nauseaSymptoms, setNauseaSymptoms] = useState<string[]>((initialEntry?.nauseaSymptoms ?? []).map(stripEmoji));
+  const [nauseaHelped, setNauseaHelped] = useState<string[]>((initialEntry?.nauseaHelped ?? []).map(stripEmoji));
 
   // Quick update: copy the latest state, use the current time and jump to symptoms.
   const [quickSymptomUpdate, setQuickSymptomUpdate] = useState(false);
   const [copiedFromTime, setCopiedFromTime] = useState<string | undefined>();
+  const [copiedFromId, setCopiedFromId] = useState<string | undefined>();
   const startSymptomUpdate = () => {
     if (!latestPain) return;
 
-    // Core pain state.
+    // NEW symptom-only follow-up: never clone the previous pain details.
+    // score stays only as required internal context and is excluded from pain averages.
     setScore(latestPain.score);
-    setParts([...(latestPain.parts ?? [])]);
-    setQuality([...(latestPain.quality ?? [])]);
-    setSymptoms([...(latestPain.symptoms ?? [])]);
-    setPressureTypes([...(latestPain.pressureTypes ?? [])]);
-    setPressureIntensity(latestPain.pressureIntensity);
-
-    // Body battery, stress and mood are momentary measurements. Do not duplicate
-    // their older values into the new time point.
+    setParts([]);
+    setQuality([]);
+    setSymptoms([]);
+    setPressureTypes([]);
+    setPressureIntensity(undefined);
     setBodyBattery(undefined);
     setStress(undefined);
     setMood([]);
-
-    // Carry forward symptom details; the user only changes what is new.
-    setHotFlashesOn(!!latestPain.hotFlashesOn);
-    setHotFlashes(latestPain.hotFlashes);
-    setPcosSymptoms([...(latestPain.pcosSymptoms ?? [])]);
-    setFluNote(latestPain.fluNote ?? "");
-
-    setNausea(!!latestPain.nausea);
-    setNauseaTypes([...(latestPain.nauseaTypes ?? [])]);
-    setNauseaSeverity(latestPain.nauseaSeverity);
-    setNauseaMinutes(latestPain.nauseaMinutes != null ? String(latestPain.nauseaMinutes) : "");
-    setNauseaOngoing(!!latestPain.nauseaOngoing);
-    setNauseaTriggers([...(latestPain.nauseaTriggers ?? [])]);
-    setNauseaSymptoms([...(latestPain.nauseaSymptoms ?? [])]);
-    setNauseaHelped([...(latestPain.nauseaHelped ?? [])]);
-
-    // Preserve the previous headache state; this shortcut is for adding any symptoms.
-    setHeadache(!!latestPain.headache);
-    setHeadacheTypes([...(latestPain.headacheTypes ?? [])]);
-    setHeadacheIntensity(latestPain.headacheIntensity);
-    setHeadacheMedOn(!!latestPain.headacheMed);
-    setHeadacheMed(latestPain.headacheMed ?? "");
-    setHeadacheMedTime(latestPain.headacheMedTime ?? nowHHMM());
-
-    // A copied note would look like a new note, so leave it blank.
+    setHotFlashesOn(false);
+    setHotFlashes(undefined);
+    setPcosSymptoms([]);
+    setFluNote("");
+    setNausea(false);
+    setNauseaTypes([]);
+    setNauseaSeverity(undefined);
+    setNauseaMinutes("");
+    setNauseaOngoing(false);
+    setNauseaTriggers([]);
+    setNauseaSymptoms([]);
+    setNauseaHelped([]);
+    setHeadache(false);
+    setHeadacheTypes([]);
+    setHeadacheIntensity(undefined);
+    setHeadacheMedOn(false);
+    setHeadacheMed("");
+    setHeadacheMedTime(nowHHMM());
     setNote("");
     setTime(nowHHMM());
-
-    // Never duplicate separate inline episodes when carrying a pain state forward.
     setTetany(false);
     setPanic(false);
 
+    setCopiedFromId(latestPain.id);
     setCopiedFromTime(latestPain.time);
     setQuickSymptomUpdate(true);
-    setStep(3);
+    setStep(symptomsStepIndex >= 0 ? symptomsStepIndex : 0);
   };
 
 
@@ -957,8 +1608,10 @@ function PainWizard({
   const save = () => {
     const editing = !!initialEntry;
     const p: PainEntry = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
+      id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
       time,
+      entryKind: quickSymptomUpdate ? "symptom-update" : undefined,
+      sourcePainId: quickSymptomUpdate ? copiedFromId : undefined,
       score,
       parts,
       quality,
@@ -977,13 +1630,13 @@ function PainWizard({
       pressureTypes: quality.includes("Pressure") && pressureTypes.length ? pressureTypes : undefined,
       pressureIntensity: quality.includes("Pressure") ? pressureIntensity : undefined,
       nausea: nausea || undefined,
-      nauseaTypes: nausea && nauseaTypes.length ? nauseaTypes : undefined,
+      nauseaTypes: nausea && nauseaTypes.length ? [...new Set(nauseaTypes.map(stripEmoji))] : undefined,
       nauseaSeverity: nausea ? nauseaSeverity : undefined,
       nauseaMinutes: nausea && !nauseaOngoing && nauseaMinutes !== "" ? Number(nauseaMinutes) : undefined,
       nauseaOngoing: nausea ? nauseaOngoing || undefined : undefined,
-      nauseaTriggers: nausea && nauseaTriggers.length ? nauseaTriggers : undefined,
-      nauseaSymptoms: nausea && nauseaSymptoms.length ? nauseaSymptoms : undefined,
-      nauseaHelped: nausea && nauseaHelped.length ? nauseaHelped : undefined,
+      nauseaTriggers: nausea && nauseaTriggers.length ? [...new Set(nauseaTriggers.map(stripEmoji))] : undefined,
+      nauseaSymptoms: nausea && nauseaSymptoms.length ? [...new Set(nauseaSymptoms.map(stripEmoji))] : undefined,
+      nauseaHelped: nausea && nauseaHelped.length ? [...new Set(nauseaHelped.map(stripEmoji))] : undefined,
       fluNote: symptoms.includes("Flu") && fluNote.trim() ? fluNote.trim() : undefined,
       pcosSymptoms: pcosSymptoms.length ? pcosSymptoms : undefined,
     };
@@ -1022,6 +1675,7 @@ function PainWizard({
       };
       updateDayLog(update, date, (l) => ({ ...l, panic: [...(l.panic ?? []), pk] }));
     }
+    schema?.saveAdminCustomFields();
     onDone();
   };
 
@@ -1042,8 +1696,8 @@ function PainWizard({
     if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy)) return;
     const target = e.target as HTMLElement;
     if (target.closest('input,textarea,select,button,[role="slider"],.no-swipe')) return;
-    if (dx < 0 && step < 4) setStep(step + 1);
-    else if (dx > 0 && step > 0) setStep(step - 1);
+    if (dx < 0 && safeStep < painSteps.length - 1) setStep(safeStep + 1);
+    else if (dx > 0 && safeStep > 0) setStep(safeStep - 1);
   };
 
   return (
@@ -1053,25 +1707,25 @@ function PainWizard({
       onTouchEnd={onTouchEnd}
     >
       {quickSymptomUpdate ? (
-        <div className="flex items-center justify-between px-1 pb-3">
+        <div className="flex items-center justify-between px-1 pb-3 pt-[68px]">
           <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-            Quick symptom update
+            {t("Add symptoms")}
           </span>
-          <span className="text-xs text-muted-foreground">New entry · {time}</span>
+          <span className="text-xs text-muted-foreground">{t("New entry ·")} {time}</span>
         </div>
       ) : (
         <div
           className="fixed inset-x-0 z-30 h-[60px] flex items-center justify-between gap-2 border-b border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur"
           style={{ top: "calc(env(safe-area-inset-top) + 56px)" }}
         >
-          {step > 0 ? (
+          {safeStep > 0 ? (
             <button
               type="button"
-              onClick={() => setStep(step - 1)}
+              onClick={() => setStep(safeStep - 1)}
               className="flex min-w-[68px] items-center gap-1 text-sm font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <span aria-hidden="true" className="text-base leading-none">←</span>
-              <span>Back</span>
+              <span>{t("Back")}</span>
             </button>
           ) : (
             <span className="min-w-[68px]" aria-hidden="true" />
@@ -1079,36 +1733,46 @@ function PainWizard({
 
           <div className="flex min-w-0 flex-1 items-center justify-center gap-2">
             <div className="flex gap-1">
-              {[0, 1, 2, 3, 4].map((i) => (
+              {painSteps.map((painStep, i) => (
                 <span
-                  key={i}
-                  className={`h-1.5 w-5 rounded-full transition-colors ${i <= step ? "bg-primary" : "bg-tint"}`}
+                  key={painStep.id}
+                  className={`h-1.5 w-5 rounded-full transition-colors ${i <= safeStep ? "bg-primary" : "bg-tint"}`}
                 />
               ))}
             </div>
-            <span className="shrink-0 text-xs font-semibold text-foreground/75">{step + 1}/5</span>
+            <span className="min-w-0 truncate text-xs font-semibold text-foreground/75">{t(activePainStep?.label ?? "")}</span>
+            <span className="shrink-0 text-xs font-semibold text-foreground/75">{safeStep + 1}/{painSteps.length}</span>
           </div>
 
           <button
             type="button"
-            onClick={step < 4 ? () => setStep(step + 1) : save}
+            onClick={safeStep < painSteps.length - 1 ? () => setStep(safeStep + 1) : save}
             className="flex h-[52px] min-w-[64px] flex-col items-center justify-center rounded-[1.15rem] bg-primary px-3 text-primary-foreground shadow-sm transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
-            <span className="text-sm font-semibold leading-none">{step < 4 ? "Next" : "Save"}</span>
-            <span aria-hidden="true" className="mt-0.5 text-base leading-none">{step < 4 ? "→" : "✓"}</span>
+            <span className="text-sm font-semibold leading-none">{t(safeStep < painSteps.length - 1 ? "Next" : "Save")}</span>
+            <span aria-hidden="true" className="mt-0.5 text-base leading-none">{safeStep < painSteps.length - 1 ? "→" : "✓"}</span>
           </button>
         </div>
       )}
 
-      {step === 0 && (
+      {activePainStepIsCustom && activePainStep && schema ? (
+        <CoreFeatureCustomFieldInput
+          field={activePainStep}
+          value={schema.adminFieldValues[activePainStep.id]}
+          onChange={(value) => schema.setAdminFieldValue(activePainStep.id, value)}
+          className="mx-1"
+        />
+      ) : null}
+
+      {activePainStepId === "score" && (
         <div className="flex flex-col items-center gap-4 py-6">
-          {latestPain && !initialEntry && (
+          {latestPain && !initialEntry && symptomsStepIndex >= 0 && (
             <div className="w-full rounded-2xl border border-primary/30 bg-surface/90 p-3 shadow-sm">
               <div className="mb-3 flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold">Pain still feels the same?</p>
+                  <p className="text-sm font-semibold">{t("Pain still feels the same?")}</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    Last log: {latestPain.time} · pain {latestPain.score}/10. Reuse it and add only the new symptoms.
+                    {t("Last log:")} {latestPain.time} {t("· pain")} {latestPain.score}{t("/10. Reuse it and add only the new symptoms.")}
                   </p>
                 </div>
                 <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10">
@@ -1116,7 +1780,7 @@ function PainWizard({
                 </span>
               </div>
               <Button type="button" onClick={startSymptomUpdate} className="w-full">
-                Same pain — add symptoms
+                {t("Same pain — add symptoms")}
               </Button>
             </div>
           )}
@@ -1127,7 +1791,7 @@ function PainWizard({
           >
             {Number.isInteger(score) ? score : score.toFixed(1)}
           </div>
-          <p className="text-center font-medium">{getScaleDesc(data, "pain")[Math.round(score)]}</p>
+          <p className="text-center font-medium">{t(getScaleDesc(data, "pain")[Math.round(score)])}</p>
           <div className="w-full px-4">
             <Slider value={[score * 2]} min={0} max={20} step={1} onValueChange={([v]) => setScore(v / 2)} />
           </div>
@@ -1137,8 +1801,8 @@ function PainWizard({
                 key={n}
                 type="button"
                 onClick={() => setScore(n)}
-                title={`${n} — ${getScaleDesc(data, "pain")[Math.round(n)]}`}
-                className={`h-8 w-8 rounded-full text-[11px] font-semibold transition ${
+                title={`${n} — ${t(getScaleDesc(data, "pain")[Math.round(n)])}`}
+                className={`h-7 w-7 shrink-0 rounded-full text-[10px] font-semibold transition ${
                   score === n ? "text-white ring-2 ring-foreground" : "text-foreground"
                 }`}
                 style={{ background: painColor(n) }}
@@ -1153,13 +1817,13 @@ function PainWizard({
               from={0}
               descriptions={getScaleDesc(data, "pain")}
               value={Math.round(score)}
-              title="Pain scale (Mankosky)"
+              title={t("Pain scale (Mankosky)")}
             />
           </div>
         </div>
       )}
 
-      {step === 1 && (
+      {activePainStepId === "parts" && (
         <Field label="Where does it hurt?">
           <CustomChipList
             base={BODY_PARTS_DEFAULT}
@@ -1175,10 +1839,10 @@ function PainWizard({
             }}
             selected={parts}
             onToggle={(v) => setParts((a) => toggleIn(a, v))}
-          />
+           schemaFieldId="parts"/>
         </Field>
       )}
-      {step === 2 && (
+      {activePainStepId === "quality" && (
         <div className="space-y-4">
           <Field label="How does it hurt?">
             <CustomChipList
@@ -1195,7 +1859,7 @@ function PainWizard({
               }}
               selected={quality}
               onToggle={(v) => setQuality((a) => toggleIn(a, v))}
-            />
+             schemaFieldId="quality"/>
           </Field>
           {quality.includes("Pressure") && (
             <div className="rounded-2xl border border-border p-3 space-y-3">
@@ -1228,15 +1892,15 @@ function PainWizard({
           )}
         </div>
       )}
-      {step === 3 && (
+      {activePainStepId === "symptoms" && (
         <div className="space-y-4">
           {quickSymptomUpdate && (
             <div className="rounded-2xl border border-primary/30 bg-primary/10 p-3 text-sm">
               <p className="font-semibold">
-                Pain {score}/10 copied from {copiedFromTime ?? "the latest log"}
+                {t("Pain")} {score}{t("/10 copied from")} {copiedFromTime ?? t("the latest log")}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                This saves a new entry at {time}; the older log stays unchanged. Add or adjust the symptoms below.
+                {t("This saves a new entry at")} {time}{t("; the older log stays unchanged. Add or adjust the symptoms below.")}
               </p>
             </div>
           )}
@@ -1256,7 +1920,7 @@ function PainWizard({
               }}
               selected={symptoms}
               onToggle={(v) => setSymptoms((a) => toggleIn(a, v))}
-            />
+             schemaFieldId="symptoms"/>
           </Field>
           {symptoms.includes("Flu") && (
             <Field label="Flu symptoms note">
@@ -1264,13 +1928,25 @@ function PainWizard({
                 rows={2}
                 value={fluNote}
                 onChange={(e) => setFluNote(e.target.value)}
-                placeholder="e.g. stuffy nose, sore throat"
+                placeholder={t("e.g. stuffy nose, sore throat")}
               />
             </Field>
           )}
           <Field label="Nausea?">
             <div className="mt-1 flex gap-2">
-              <Chip active={!nausea} onClick={() => setNausea(false)}>
+              <Chip
+                active={!nausea}
+                onClick={() => {
+                  setNausea(false);
+                  setNauseaTypes([]);
+                  setNauseaSeverity(undefined);
+                  setNauseaMinutes("");
+                  setNauseaOngoing(false);
+                  setNauseaTriggers([]);
+                  setNauseaSymptoms([]);
+                  setNauseaHelped([]);
+                }}
+              >
                 No
               </Chip>
               <Chip active={nausea} onClick={() => setNausea(true)}>
@@ -1432,9 +2108,7 @@ function PainWizard({
                                 key={m.id}
                                 active={headacheMed === label}
                                 onClick={() => setHeadacheMed(headacheMed === label ? "" : label)}
-                              >
-                                {label}
-                              </Chip>
+                              ><TrText value={label} /></Chip>
                             );
                           })}
                         </div>
@@ -1442,7 +2116,7 @@ function PainWizard({
                       <Input
                         value={headacheMed}
                         onChange={(e) => setHeadacheMed(e.target.value)}
-                        placeholder="Medication + dose"
+                        placeholder={t("Medication + dose")}
                       />
                       <Input type="time" value={headacheMedTime} onChange={(e) => setHeadacheMedTime(e.target.value)} />
                     </div>
@@ -1547,7 +2221,7 @@ function PainWizard({
                   from={1}
                   step={1}
                   descriptions={getScaleDesc(data, "tetany")}
-                  legendTitle="Tetany intensity scale"
+                  legendTitle="Tetany intensity scale" schemaFieldId="intensity"
                   compactSingleRow
                 />
               </Field>
@@ -1625,7 +2299,7 @@ function PainWizard({
                   from={1}
                   step={1}
                   descriptions={getScaleDesc(data, "panic")}
-                  legendTitle="Panic intensity scale"
+                  legendTitle="Panic intensity scale" schemaFieldId="intensity"
                   compactSingleRow
                 />
               </Field>
@@ -1652,7 +2326,7 @@ function PainWizard({
                   }}
                   selected={panicPhysical}
                   onToggle={(v) => setPanicPhysical((a) => toggleIn(a, v))}
-                />
+                 schemaFieldId="physical"/>
               </Field>
               <Field label="Cognitive symptoms">
                 <CustomChipList
@@ -1677,7 +2351,7 @@ function PainWizard({
                   }}
                   selected={panicCognitive}
                   onToggle={(v) => setPanicCognitive((a) => toggleIn(a, v))}
-                />
+                 schemaFieldId="cognitive"/>
               </Field>
               <Field label="Trigger (or 'no obvious trigger')">
                 <Textarea rows={2} value={panicTrigger} onChange={(e) => setPanicTrigger(e.target.value)} />
@@ -1737,7 +2411,7 @@ function PainWizard({
         </div>
       )}
 
-      {step === 4 && (
+      {activePainStepId === "details" && (
         <div className="space-y-4">
           {(() => {
             const STRESS_DESC = getScaleDesc(data, "stress");
@@ -1747,9 +2421,11 @@ function PainWizard({
                   value={stress ?? -1}
                   onChange={(n) => setStress(stress === n ? undefined : n)}
                   max={10}
-                  from={0}
+                  from={1}
+                  step={1}
                   descriptions={STRESS_DESC}
                   legendTitle="Stress scale"
+                  compactSingleRow
                 />
               </Field>
             );
@@ -1792,24 +2468,25 @@ function PainWizard({
             <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
           </Field>
           <Field label="Note (optional)">
-            <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Anything else…" />
+            <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder={t("Anything else…")} />
           </Field>
         </div>
       )}
 
-      {quickSymptomUpdate && step === 3 && (
+      {quickSymptomUpdate && activePainStepId === "symptoms" && (
         <SheetFooter className="fixed inset-x-0 z-30 h-[60px] flex-row items-center justify-between gap-3 border-b border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur" style={{ top: "calc(env(safe-area-inset-top) + 56px)" }}>
           <button
             type="button"
             onClick={() => {
               setQuickSymptomUpdate(false);
               setCopiedFromTime(undefined);
+              setCopiedFromId(undefined);
               setStep(0);
             }}
             className="flex items-center gap-1 px-1 text-sm font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <span aria-hidden="true" className="text-xl leading-none">←</span>
-            <span>Edit full log</span>
+            <span>{t("Edit full log")}</span>
           </button>
 
           <button
@@ -1817,7 +2494,7 @@ function PainWizard({
             onClick={save}
             className="inline-flex h-10 min-w-[104px] items-center justify-center gap-1.5 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
-            <span>Save update</span>
+            <span>{t("Save symptoms")}</span>
             <span aria-hidden="true" className="text-base leading-none">✓</span>
           </button>
         </SheetFooter>
@@ -1840,6 +2517,8 @@ function PanicForm({
   onDone: () => void;
   initialEntry?: PanicAttack;
 }) {
+  const { t } = useI18n();
+  const schema = useLogSchema();
   const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
   const [minutes, setMinutes] = useState(initialEntry?.minutes != null ? String(initialEntry.minutes) : "10");
   const [ongoing, setOngoing] = useState(initialEntry?.minutes == null && !!initialEntry);
@@ -1865,7 +2544,7 @@ function PanicForm({
   const save = () => {
     const editing = !!initialEntry;
     const p: PanicAttack = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
+      id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
       time,
       minutes: ongoing ? undefined : minutes === "" ? undefined : Number(minutes),
       intensity,
@@ -1886,22 +2565,22 @@ function PanicForm({
     onDone();
   };
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       <SaveBar onCancel={onDone} onSave={save} />
-      <Field label="Time">
+      <Field label="Time" schemaFieldId="time">
         <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="w-full" />
       </Field>
-      <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} />
-      <Field label={`Intensity ${intensity}/10`}>
+      <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} schemaFieldId="duration" />
+      <Field label={`Intensity ${intensity}/10`} schemaFieldId="intensity">
         <IntensityScale
           value={intensity}
           onChange={setIntensity}
           max={10}
           descriptions={getScaleDesc(data, "panic")}
-          legendTitle="Panic intensity scale"
+          legendTitle="Panic intensity scale" schemaFieldId="intensity"
         />
       </Field>
-      <Field label="Physical symptoms">
+      <Field label="Physical symptoms" schemaFieldId="physical">
         <CustomChipList
           base={PANIC_PHYSICAL}
           custom={data.custom.panicPhysical}
@@ -1924,9 +2603,9 @@ function PanicForm({
           }}
           selected={physical}
           onToggle={(v) => setPhysical((a) => toggleIn(a, v))}
-        />
+         schemaFieldId="physical"/>
       </Field>
-      <Field label="Cognitive symptoms">
+      <Field label="Cognitive symptoms" schemaFieldId="cognitive">
         <CustomChipList
           base={PANIC_COGNITIVE}
           custom={data.custom.panicCognitive}
@@ -1949,15 +2628,15 @@ function PanicForm({
           }}
           selected={cognitive}
           onToggle={(v) => setCognitive((a) => toggleIn(a, v))}
-        />
+         schemaFieldId="cognitive"/>
       </Field>
-      <Field label="Trigger (or 'no obvious trigger')">
+      <Field label="Trigger (or 'no obvious trigger')" schemaFieldId="trigger">
         <Textarea rows={2} value={trigger} onChange={(e) => setTrigger(e.target.value)} />
       </Field>
-      <Field label="Place (optional)">
+      <Field label="Place (optional)" schemaFieldId="place">
         <Input value={place} onChange={(e) => setPlace(e.target.value)} />
       </Field>
-      <Field label="Hyperventilation">
+      <Field label="Hyperventilation" schemaFieldId="hyperventilation">
         <div className="mt-2 flex flex-wrap gap-2">
           {(["no", "before", "during", "unknown"] as const).map((v) => (
             <Chip key={v} active={hyper === v} onClick={() => setHyper(v)}>
@@ -1966,7 +2645,7 @@ function PanicForm({
           ))}
         </div>
       </Field>
-      <Field label="Tetany present?">
+      <Field label="Tetany present?" schemaFieldId="tetanyPresent">
         <div className="mt-2 flex gap-2">
           <Chip active={!tetanyPresent} onClick={() => setTetanyPresent(false)}>
             No
@@ -1976,7 +2655,7 @@ function PanicForm({
           </Chip>
         </div>
       </Field>
-      <Field label="What helped">
+      <Field label="What helped" schemaFieldId="helped">
         <CustomChipList
           base={PANIC_HELPED_DEFAULT}
           custom={data.custom.panicHelped}
@@ -1986,8 +2665,8 @@ function PanicForm({
           onToggle={(v) => setHelped((a) => toggleIn(a, v))}
         />
       </Field>
-      <Field label="Rescue med (what you took)">
-        <Input value={rescueMed} onChange={(e) => setRescueMed(e.target.value)} placeholder="e.g. Frontin 0.25 mg" />
+      <Field label="Rescue med (what you took)" schemaFieldId="rescueMed">
+        <Input value={rescueMed} onChange={(e) => setRescueMed(e.target.value)} placeholder={t("e.g. Frontin 0.25 mg")} />
         {data.meds.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1.5">
             {data.meds.map((m) => (
@@ -2004,7 +2683,7 @@ function PanicForm({
           </div>
         )}
       </Field>
-      <Field label="Note (optional)">
+      <Field label="Note (optional)" schemaFieldId="note">
         <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
     </div>
@@ -2025,6 +2704,8 @@ function TetanyForm({
   onDone: () => void;
   initialEntry?: TetanyEpisode;
 }) {
+  const { t } = useI18n();
+  const schema = useLogSchema();
   const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
   const [types, setTypes] = useState<string[]>(initialEntry?.types ?? []);
   const [loc, setLoc] = useState<string[]>(initialEntry?.location ?? []);
@@ -2037,16 +2718,29 @@ function TetanyForm({
   const [note, setNote] = useState(initialEntry?.note ?? "");
 
   type CK = "tetanyTypes" | "tetanyLocations" | "tetanyTriggers" | "tetanyHelped";
-  const addC = (k: CK, v: string) => update((d) => ({ ...d, custom: { ...d.custom, [k]: [...d.custom[k], v] } }));
+  const addC = (k: CK, v: string) =>
+    update((d) => withoutCustomTombstones({ ...d, custom: { ...d.custom, [k]: [...d.custom[k], v] } }, k, [v]));
   const rmC = (k: CK, v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [k]: d.custom[k].filter((x) => x !== v) } }));
+    update((d) =>
+      withCustomTombstones({ ...d, custom: { ...d.custom, [k]: d.custom[k].filter((x) => x !== v) } }, k, [v]),
+    );
   const rnC = (k: CK, o: string, n: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [k]: d.custom[k].map((x) => (x === o ? n : x)) } }));
+    update((d) =>
+      withoutCustomTombstones(
+        withCustomTombstones(
+          { ...d, custom: { ...d.custom, [k]: d.custom[k].map((x) => (x === o ? n : x)) } },
+          k,
+          [o],
+        ),
+        k,
+        [n],
+      ),
+    );
 
   const save = () => {
     const editing = !!initialEntry;
     const t: TetanyEpisode = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
+      id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
       time,
       types,
       location: loc,
@@ -2065,12 +2759,12 @@ function TetanyForm({
   };
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       <SaveBar onCancel={onDone} onSave={save} />
-      <Field label="Time">
+      <Field label="Time" schemaFieldId="time">
         <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
       </Field>
-      <Field label="Type">
+      <Field label="Type" schemaFieldId="types">
         <CustomChipList
           base={TETANY_TYPES}
           custom={data.custom.tetanyTypes}
@@ -2088,7 +2782,7 @@ function TetanyForm({
           onToggle={(v) => setTypes((a) => toggleIn(a, v))}
         />
       </Field>
-      <Field label="Location">
+      <Field label="Location" schemaFieldId="location">
         <CustomChipList
           base={TETANY_LOCATIONS_DEFAULT}
           custom={data.custom.tetanyLocations}
@@ -2105,17 +2799,17 @@ function TetanyForm({
           onToggle={(v) => setLoc((a) => toggleIn(a, v))}
         />
       </Field>
-      <Field label={`Intensity ${intensity}/5`}>
+      <Field label={`Intensity ${intensity}/5`} schemaFieldId="intensity">
         <IntensityScale
           value={intensity}
           onChange={setIntensity}
           max={5}
           descriptions={getScaleDesc(data, "tetany")}
-          legendTitle="Tetany intensity scale"
+          legendTitle="Tetany intensity scale" schemaFieldId="intensity"
         />
       </Field>
-      <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} />
-      <Field label="Triggers">
+      <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} schemaFieldId="duration" />
+      <Field label="Triggers" schemaFieldId="triggers">
         <CustomChipList
           base={TETANY_TRIGGERS}
           custom={data.custom.tetanyTriggers}
@@ -2132,7 +2826,7 @@ function TetanyForm({
           onToggle={(v) => setTriggers((a) => toggleIn(a, v))}
         />
       </Field>
-      <Field label="What helped">
+      <Field label="What helped" schemaFieldId="helped">
         <CustomChipList
           base={TETANY_HELPED_DEFAULT}
           custom={data.custom.tetanyHelped}
@@ -2149,8 +2843,8 @@ function TetanyForm({
           onToggle={(v) => setHelped((a) => toggleIn(a, v))}
         />
       </Field>
-      <Field label="Rescue med (what you took)">
-        <Input value={rescueMed} onChange={(e) => setRescueMed(e.target.value)} placeholder="e.g. Magnesium 400 mg" />
+      <Field label="Rescue med (what you took)" schemaFieldId="rescueMed">
+        <Input value={rescueMed} onChange={(e) => setRescueMed(e.target.value)} placeholder={t("e.g. Magnesium 400 mg")} />
         {data.meds.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1.5">
             {data.meds.map((m) => (
@@ -2167,7 +2861,7 @@ function TetanyForm({
           </div>
         )}
       </Field>
-      <Field label="Note (optional)">
+      <Field label="Note (optional)" schemaFieldId="note">
         <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
     </div>
@@ -2186,12 +2880,13 @@ function PeriodForm({
   update: UpdateFn;
   onDone: () => void;
 }) {
+  const { t } = useI18n();
   const cur = data.dayLogs[date]?.periodInfo;
   const [level, setLevel] = useState<PeriodLevel>(cur?.level ?? "");
   const [discharge, setDischarge] = useState<string>(cur?.discharge ?? "");
   const [dNote, setDNote] = useState<string>(cur?.dischargeNote ?? "");
   const [note, setNote] = useState<string>(cur?.note ?? "");
-  const [cramps, setCramps] = useState<number | undefined>(cur?.cramps);
+  const [cramps, setCramps] = useState<number | undefined>(cur?.cramps == null ? undefined : Math.max(1, Math.min(10, Math.round(cur.cramps))));
   const painDesc = getScaleDesc(data, "pain");
 
   const save = () => {
@@ -2216,9 +2911,9 @@ function PeriodForm({
     { v: "very-heavy", label: "Very heavy", color: "var(--period-veryheavy)" },
   ];
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       <SaveBar onCancel={onDone} onSave={save} />
-      <Field label="Flow">
+      <Field label="Flow" schemaFieldId="flow">
         <div className="mt-2 grid grid-cols-5 gap-1.5">
           {LEVELS.map((L) => (
             <button
@@ -2227,53 +2922,38 @@ function PeriodForm({
               className={`rounded-2xl p-2 text-[11px] font-medium ${level === L.v ? "text-white ring-2 ring-foreground" : "bg-tint text-foreground"}`}
               style={level === L.v ? { background: L.color } : undefined}
             >
-              {L.label}
+              {t(L.label)}
             </button>
           ))}
         </div>
       </Field>
-      <Field label={`Cramp pain ${cramps == null ? "—" : Number.isInteger(cramps) ? cramps : cramps.toFixed(1)} / 10`}>
-        <div className="mt-2 flex items-center gap-3">
-          <div
-            className="grid h-14 w-14 shrink-0 place-items-center rounded-full text-lg font-bold text-white"
-            style={{ background: cramps == null ? "hsl(var(--muted-foreground))" : painColor(cramps) }}
-          >
-            {cramps == null ? "—" : Number.isInteger(cramps) ? cramps : cramps.toFixed(1)}
-          </div>
-          <div className="flex-1">
-            <Slider value={[(cramps ?? 0) * 2]} min={0} max={20} step={1} onValueChange={([v]) => setCramps(v / 2)} />
-          </div>
-        </div>
-        <div className="mt-2 flex flex-wrap justify-center gap-1.5 px-1">
-          {Array.from({ length: 21 }, (_, i) => i / 2).map((n) => (
+      <Field label={`${t("Cramp pain")} ${cramps ?? "—"} / 10`} schemaFieldId="cramps">
+        <div className="mt-2 flex flex-nowrap items-center justify-center gap-0.5 px-0">
+          {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
             <button
               key={n}
               type="button"
               onClick={() => setCramps(cramps === n ? undefined : n)}
-              title={`${n} — ${painDesc[Math.round(n)]}`}
-              className={`h-8 w-8 rounded-full text-[11px] font-semibold transition ${
+              title={`${n} — ${t(painDesc[n])}`}
+              aria-label={`${n} — ${t(painDesc[n])}`}
+              className={`h-7 w-7 shrink-0 rounded-full text-[10px] font-semibold transition ${
                 cramps === n ? "text-white ring-2 ring-foreground" : "text-foreground"
               }`}
               style={{ background: painColor(n) }}
             >
-              {Number.isInteger(n) ? n : n.toFixed(1)}
+              {n}
             </button>
           ))}
         </div>
-        {cramps != null && (
-          <div className="mt-2 rounded-lg bg-tint px-2.5 py-1.5 text-[11px] leading-snug text-foreground">
-            <span className="font-semibold">Level {Math.round(cramps)}:</span> {painDesc[Math.round(cramps)]}
-          </div>
-        )}
         <ScaleLegend
           max={10}
-          from={0}
+          from={1}
           descriptions={painDesc}
-          value={cramps == null ? undefined : Math.round(cramps)}
-          title="Pain scale (Mankosky)"
+          value={cramps}
+          title={t("Pain scale (Mankosky)")}
         />
       </Field>
-      <Field label="Discharge (optional)">
+      <Field label="Discharge (optional)" schemaFieldId="discharge">
         <div className="mt-2 flex flex-wrap gap-2">
           {DISCHARGE_OPTS.map((d) => (
             <Chip
@@ -2287,13 +2967,13 @@ function PeriodForm({
           ))}
         </div>
       </Field>
-      <Field label="Discharge note (optional)">
+      <Field label="Discharge note (optional)" schemaFieldId="dischargeNote">
         <Input value={dNote} onChange={(e) => setDNote(e.target.value)} />
       </Field>
-      <Field label="Day note (optional)">
+      <Field label="Day note (optional)" schemaFieldId="note">
         <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
-      <Field label="Birth control since (optional)">
+      <Field label="Birth control since (optional)" schemaFieldId="birthControlSince">
         <Input
           type="date"
           value={data.settings.birthControlSince ?? ""}
@@ -2307,39 +2987,69 @@ function PeriodForm({
           </p>
         )}
       </Field>
-      <Field label="Pregnant?">
+      <Field label="Pregnant?" schemaFieldId="pregnant">
         <div className="mt-1 flex gap-2">
           <Chip
-            active={!data.settings.pregnantSince}
-            onClick={() => update((d) => ({ ...d, settings: { ...d.settings, pregnantSince: undefined } }))}
+            active={!data.pregnancy?.active}
+            onClick={() =>
+              update((d) => ({
+                ...d,
+                pregnancy: {
+                  ...(d.pregnancy ?? { active: false, hospitalBag: [], vaccinations: [], supplements: [], appointments: [] }),
+                  active: false,
+                  endedAt: d.pregnancy?.active ? todayKey() : d.pregnancy?.endedAt,
+                },
+                settings: { ...d.settings, pregnantSince: undefined },
+              }))
+            }
           >
             No
           </Chip>
           <Chip
-            active={!!data.settings.pregnantSince}
+            active={!!data.pregnancy?.active}
             onClick={() =>
               update((d) => ({
                 ...d,
-                settings: { ...d.settings, pregnantSince: d.settings.pregnantSince ?? todayKey() },
+                pregnancy: {
+                  ...(d.pregnancy ?? { active: false, hospitalBag: [], vaccinations: [], supplements: [], appointments: [] }),
+                  active: true,
+                  lmp: d.pregnancy?.lmp,
+                  endedAt: undefined,
+                },
+                postpartum: {
+                  ...(d.postpartum ?? { active: false, visits: [] }),
+                  active: false,
+                  endedAt: d.postpartum?.active ? (d.postpartum.endedAt ?? todayKey()) : d.postpartum?.endedAt,
+                },
+                settings: { ...d.settings, pregnantSince: undefined },
               }))
             }
           >
             Yes
           </Chip>
         </div>
-        {data.settings.pregnantSince && (
+        {data.pregnancy?.active && (
           <div className="mt-2">
-            <span className="text-xs font-medium text-muted-foreground">Since when</span>
+            <span className="text-xs font-medium text-muted-foreground">{t("First day of last menstrual period")}</span>
             <Input
               type="date"
               className="mt-1"
-              value={data.settings.pregnantSince}
+              value={data.pregnancy?.lmp ?? ""}
               onChange={(e) =>
-                update((d) => ({ ...d, settings: { ...d.settings, pregnantSince: e.target.value || undefined } }))
+                update((d) => ({
+                  ...d,
+                  pregnancy: {
+                    ...(d.pregnancy ?? { active: true, hospitalBag: [], vaccinations: [], supplements: [], appointments: [] }),
+                    active: true,
+                    lmp: e.target.value || undefined,
+                    endedAt: undefined,
+                  },
+                  settings: { ...d.settings, pregnantSince: undefined },
+                }))
               }
             />
             {(() => {
-              const p = pregnancyInfo(data.settings.pregnantSince);
+              const p = pregnancyInfo(data.pregnancy?.lmp);
               return p ? (
                 <p className="mt-1 text-[11px] text-muted-foreground">
                   Week {p.week} · Trimester {p.trimester} — cycle predictions are paused.
@@ -2356,11 +3066,23 @@ function PeriodForm({
         <button
           type="button"
           onClick={() => {
-            updateDayLog(update, date, (l) => {
-              const { period: _p, periodInfo: _pi, ...rest } = l;
+            update((current) => {
+              const day = current.dayLogs[date] ?? {};
+              const { period: _p, periodInfo: _pi, ...rest } = day;
               void _p;
               void _pi;
-              return rest;
+              const adminFields = { ...(rest.adminFields ?? {}) };
+              const periodAdmin = adminFields.period ?? [];
+              const nextPeriodAdmin = periodAdmin.filter((entry) => entry.sourceEntryId !== `day:period:${date}`);
+              if (nextPeriodAdmin.length) adminFields.period = nextPeriodAdmin;
+              else delete adminFields.period;
+              return {
+                ...current,
+                dayLogs: {
+                  ...current.dayLogs,
+                  [date]: { ...rest, adminFields: Object.keys(adminFields).length ? adminFields : undefined },
+                },
+              };
             });
             onDone();
           }}
@@ -2387,6 +3109,7 @@ function SexForm({
   onDone: () => void;
   initialEntry?: SexEntry;
 }) {
+  const schema = useLogSchema();
   const [kind, setKind] = useState<SexKind>(initialEntry?.kind ?? "sex");
   const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
   const [feelingAfter, setFeelingAfter] = useState<string[]>(asArr(initialEntry?.feelingAfter));
@@ -2403,7 +3126,7 @@ function SexForm({
   const save = () => {
     const editing = !!initialEntry;
     const e: SexEntry = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
+      id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
       time,
       kind,
       feelingAfter: feelingAfter.length ? feelingAfter : undefined,
@@ -2417,12 +3140,12 @@ function SexForm({
     onDone();
   };
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       <SaveBar onCancel={onDone} onSave={save} />
-      <Field label="Time">
+      <Field label="Time" schemaFieldId="time">
         <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
       </Field>
-      <Field label="Type">
+      <Field label="Type" schemaFieldId="type">
         <div className="mt-2 flex flex-wrap gap-2">
           {SEX_TYPES_DEFAULT.map((o) => (
             <Chip key={o.value} active={kind === o.value} onClick={() => setKind(o.value)}>
@@ -2449,7 +3172,7 @@ function SexForm({
           <AddCustomInline onAdd={addCustom} />
         </div>
       </Field>
-      <Field label="How I feel after">
+      <Field label="How I feel after" schemaFieldId="feelingAfter">
         <CustomChipList
           base={SEX_FEELINGS_DEFAULT}
           custom={data.custom.sexFeelings ?? []}
@@ -2472,9 +3195,10 @@ function SexForm({
           }}
           selected={feelingAfter}
           onToggle={(v) => setFeelingAfter((a) => toggleIn(a, v))}
+          schemaFieldId="feelingAfter"
         />
       </Field>
-      <Field label="Painful?">
+      <Field label="Painful?" schemaFieldId="painful">
         <div className="mt-2 flex gap-2">
           {(["no", "before", "during", "after"] as const).map((v) => (
             <Chip key={v} active={painful === v} onClick={() => setPainful(v)}>
@@ -2483,13 +3207,14 @@ function SexForm({
           ))}
         </div>
       </Field>
-      <Field label="Note (optional)">
+      <Field label="Note (optional)" schemaFieldId="note">
         <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
     </div>
   );
 }
 function AddCustomInline({ onAdd }: { onAdd: (v: string) => void }) {
+  const { t } = useI18n();
   const [adding, setAdding] = useState(false);
   const [text, setText] = useState("");
   if (!adding)
@@ -2499,7 +3224,7 @@ function AddCustomInline({ onAdd }: { onAdd: (v: string) => void }) {
         onClick={() => setAdding(true)}
         className="flex items-center gap-1 rounded-full bg-tint px-3 py-1.5 text-xs font-medium text-muted-foreground"
       >
-        <Plus className="h-3 w-3" /> Add
+        <Plus className="h-3 w-3" /> {t("Add")}
       </button>
     );
   const commit = () => {
@@ -2521,11 +3246,11 @@ function AddCustomInline({ onAdd }: { onAdd: (v: string) => void }) {
           }
         }}
         className="h-8 w-32"
-        placeholder="Custom…"
+        placeholder={t("Custom…")}
         autoFocus
       />
       <Button type="button" size="sm" onClick={commit}>
-        Add
+        {t("Add")}
       </Button>
     </div>
   );
@@ -2543,6 +3268,8 @@ function ThermoForm({
   onDone: () => void;
   initialEntry?: ThermoSession;
 }) {
+  const { t } = useI18n();
+  const schema = useLogSchema();
   const [kind, setKind] = useState<ThermoKind>(initialEntry?.kind ?? "heat");
   const [start, setStart] = useState(initialEntry?.start ?? nowHHMM());
   const [minutes, setMinutes] = useState<string>(
@@ -2554,7 +3281,7 @@ function ThermoForm({
     const editing = !!initialEntry;
     const mins = ongoing ? 0 : minutes === "" ? 0 : Number(minutes);
     const e: ThermoSession = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
+      id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
       kind,
       start,
       minutes: mins,
@@ -2568,26 +3295,26 @@ function ThermoForm({
     onDone();
   };
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       <SaveBar onCancel={onDone} onSave={save} />
-      <Field label="Type">
+      <Field label="Type" schemaFieldId="type">
         <div className="mt-2 flex gap-2">
           <Chip active={kind === "heat"} onClick={() => setKind("heat")}>
-            <Ico e="♨️" size={16} /> Heat
+            <Ico e="♨️" size={16} /> {t("Heat")}
           </Chip>
           <Chip active={kind === "cold"} onClick={() => setKind("cold")}>
-            <Ico e="🧊" size={16} /> Cold
+            <Ico e="🧊" size={16} /> {t("Cold")}
           </Chip>
           <Chip active={kind === "tens"} onClick={() => setKind("tens")}>
-            <Ico e="⭐" size={16} /> TENS
+            <Ico e="⭐" size={16} /> {t("TENS")}
           </Chip>
         </div>
       </Field>
-      <Field label="Start">
+      <Field label="Start" schemaFieldId="start">
         <Input type="time" value={start} onChange={(e) => setStart(e.target.value)} className="w-full" />
       </Field>
-      <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} />
-      <Field label="Note (optional)">
+      <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} schemaFieldId="duration" />
+      <Field label="Note (optional)" schemaFieldId="note">
         <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
     </div>
@@ -2608,6 +3335,8 @@ function FoodForm({
   onDone: () => void;
   initialEntry?: FoodEntry;
 }) {
+  const { t } = useI18n();
+  const schema = useLogSchema();
   const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
   const [what, setWhat] = useState(initialEntry?.what ?? "");
   const [feelings, setFeelings] = useState<string[]>(initialEntry?.feelings ?? []);
@@ -2632,18 +3361,36 @@ function FoodForm({
   );
   const allergensBase = data.settings.allergens ?? ALLERGENS_DEFAULT;
   const addCustom = (v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, foodFeelings: [...d.custom.foodFeelings, v] } }));
+    update((d) =>
+      withoutCustomTombstones(
+        { ...d, custom: { ...d.custom, foodFeelings: [...d.custom.foodFeelings, v] } },
+        "foodFeelings",
+        [v],
+      ),
+    );
   const addCustomList = (k: "histamineSymptoms" | "foodSymptomsAfter", v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [k]: [...(d.custom[k] ?? []), v] } }));
+    update((d) => withoutCustomTombstones({ ...d, custom: { ...d.custom, [k]: [...(d.custom[k] ?? []), v] } }, k, [v]));
   const removeCustomList = (k: "histamineSymptoms" | "foodSymptomsAfter", v: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [k]: (d.custom[k] ?? []).filter((x) => x !== v) } }));
+    update((d) =>
+      withCustomTombstones({ ...d, custom: { ...d.custom, [k]: (d.custom[k] ?? []).filter((x) => x !== v) } }, k, [v]),
+    );
   const renameCustomList = (k: "histamineSymptoms" | "foodSymptomsAfter", o: string, n: string) =>
-    update((d) => ({ ...d, custom: { ...d.custom, [k]: (d.custom[k] ?? []).map((x) => (x === o ? n : x)) } }));
+    update((d) =>
+      withoutCustomTombstones(
+        withCustomTombstones(
+          { ...d, custom: { ...d.custom, [k]: (d.custom[k] ?? []).map((x) => (x === o ? n : x)) } },
+          k,
+          [o],
+        ),
+        k,
+        [n],
+      ),
+    );
   const save = () => {
     if (!what.trim() && !hydration && !caffeine && !alcohol && !histFlare && symptomsAfter.length === 0) return;
     const editing = !!initialEntry;
     const entry: FoodEntry = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
+      id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
       time,
       what: what.trim(),
       feelings,
@@ -2666,20 +3413,20 @@ function FoodForm({
     onDone();
   };
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       <SaveBar onCancel={onDone} onSave={save} />
-      <Field label="Time">
+      <Field label="Time" schemaFieldId="time">
         <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
       </Field>
-      <Field label="What did you eat?">
+      <Field label="What did you eat?" schemaFieldId="what">
         <Textarea
           rows={2}
           value={what}
           onChange={(e) => setWhat(e.target.value)}
-          placeholder="e.g. chicken, rice, tomato"
+          placeholder={t("e.g. chicken, rice, tomato")}
         />
       </Field>
-      <Field label="Quick add">
+      <Field label="Quick add" schemaFieldId="quickAdd">
         <div className="mt-2 flex flex-wrap gap-2">
           {[
             { l: "🍵 Matcha", w: "Matcha", caf: 70 },
@@ -2733,7 +3480,7 @@ function FoodForm({
           />
         </div>
       </Field>
-      <Field label="Reaction?">
+      <Field label="Reaction?" schemaFieldId="reaction">
         <div className="mt-1 flex gap-2">
           <Chip active={!allergicReaction} onClick={() => setAllergicReaction(false)}>
             No / not sure
@@ -2752,7 +3499,7 @@ function FoodForm({
           </div>
         )}
       </Field>
-      <Field label="How do I feel after food?">
+      <Field label="How do I feel after food?" schemaFieldId="feelings">
         <CustomChipList
           base={FOOD_FEELINGS_DEFAULT}
           custom={data.custom.foodFeelings}
@@ -2768,7 +3515,7 @@ function FoodForm({
           onToggle={(v) => setFeelings((a) => toggleIn(a, v))}
         />
       </Field>
-      <Field label="Symptoms after food">
+      <Field label="Symptoms after food" schemaFieldId="symptomsAfter">
         <CustomChipList
           base={FOOD_SYMPTOMS_AFTER}
           custom={data.custom.foodSymptomsAfter ?? []}
@@ -2785,7 +3532,7 @@ function FoodForm({
           onToggle={(v) => setSymptomsAfter((a) => toggleIn(a, v))}
         />
       </Field>
-      <Field label="High histamine food?">
+      <Field label="High histamine food?" schemaFieldId="highHistamine">
         <div className="mt-1 flex gap-2">
           <Chip active={!highHist} onClick={() => setHighHist(false)}>
             No
@@ -2795,7 +3542,7 @@ function FoodForm({
           </Chip>
         </div>
       </Field>
-      <Field label="Histamine flare?">
+      <Field label="Histamine flare?" schemaFieldId="histamineFlare">
         <div className="mt-1 flex gap-2">
           <Chip active={!histFlare} onClick={() => setHistFlare(false)}>
             No
@@ -2826,7 +3573,7 @@ function FoodForm({
           </Field>
         </div>
       )}
-      <Field label="Allergens in this meal">
+      <Field label="Allergens in this meal" schemaFieldId="allergens">
         <CustomChipList
           base={allergensBase}
           custom={data.custom.allergens}
@@ -2852,6 +3599,7 @@ function FoodForm({
           onToggle={(v) => setAllergensInMeal((a) => toggleIn(a, v))}
         />
       </Field>
+      <RegistryFieldBlock fieldId="intake">
       <div className="grid grid-cols-3 gap-2">
         <Field label="Water (ml)">
           <Input type="number" value={hydration} onChange={(e) => setHydration(e.target.value)} placeholder="300" />
@@ -2863,7 +3611,8 @@ function FoodForm({
           <Input type="number" value={alcohol} onChange={(e) => setAlcohol(e.target.value)} placeholder="0" />
         </Field>
       </div>
-      <Field label="Additional note (optional)">
+      </RegistryFieldBlock>
+      <Field label="Additional note (optional)" schemaFieldId="note">
         <Textarea rows={2} value={after} onChange={(e) => setAfter(e.target.value)} />
       </Field>
     </div>
@@ -2921,6 +3670,8 @@ function BowelForm({
   onDone: () => void;
   initialEntry?: BowelEntry;
 }) {
+  const { t } = useI18n();
+  const schema = useLogSchema();
   const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
   const [bristol, setBristol] = useState<number>(initialEntry?.bristol ?? 4);
   const [feelings, setFeelings] = useState<string[]>((initialEntry?.feelings ?? []).map(stripEmoji));
@@ -2952,7 +3703,7 @@ function BowelForm({
   const save = () => {
     const editing = !!initialEntry;
     const entry: BowelEntry = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
+      id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
       time,
       bristol,
       feelings: feelings.length ? feelings : undefined,
@@ -2967,12 +3718,12 @@ function BowelForm({
     onDone();
   };
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       <SaveBar onCancel={onDone} onSave={save} />
-      <Field label="Time">
+      <Field label="Time" schemaFieldId="time">
         <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
       </Field>
-      <Field label="Bristol stool scale">
+      <Field label="Bristol stool scale" schemaFieldId="bristol">
         <div className="mt-1 space-y-1.5">
           <button
             onClick={() => setBristol(-1)}
@@ -2984,9 +3735,9 @@ function BowelForm({
               ∅
             </span>
             <span className="flex-1">
-              <span className="font-medium">No bowel movement</span>
+              <span className="font-medium">{t("No bowel movement")}</span>
               <br />
-              <span className="text-[11px] text-muted-foreground">Didn't go today</span>
+              <span className="text-[11px] text-muted-foreground">{t("Didn't go today")}</span>
             </span>
           </button>
           <button
@@ -3002,9 +3753,9 @@ function BowelForm({
               0
             </span>
             <span className="flex-1">
-              <span className="font-medium">Type 0 — Mystery</span>
+              <span className="font-medium">{t("Type 0 — Mystery")}</span>
               <br />
-              <span className="text-[11px] text-muted-foreground">Unknown / mixed</span>
+              <span className="text-[11px] text-muted-foreground">{t("Unknown / mixed")}</span>
             </span>
           </button>
 
@@ -3025,17 +3776,17 @@ function BowelForm({
               <BristolIcon shape={b.shape} color={b.color} />
               <div className="flex-1">
                 <p className="font-medium">
-                  <IcoText text={b.label} size={14} />
+                  <IcoText text={t(b.label)} size={14} />
                 </p>
                 <p className="text-[11px] text-muted-foreground">
-                  <IcoText text={b.sub} size={12} />
+                  <IcoText text={t(b.sub)} size={12} />
                 </p>
               </div>
             </button>
           ))}
         </div>
       </Field>
-      <Field label="Urinary">
+      <Field label="Urinary" schemaFieldId="urinary">
         <CustomChipList
           base={URINARY_DEFAULT}
           custom={data.custom.urinary}
@@ -3046,7 +3797,7 @@ function BowelForm({
           onToggle={(v) => setUrinary((a) => toggleIn(a, v))}
         />
       </Field>
-      <Field label="How do you feel?">
+      <Field label="How do you feel?" schemaFieldId="feelings">
         <CustomChipList
           base={BOWEL_FEELINGS_DEFAULT}
           custom={data.custom.bowelFeelings}
@@ -3056,7 +3807,7 @@ function BowelForm({
           onToggle={(v) => setFeelings((a) => toggleIn(a, v))}
         />
       </Field>
-      <Field label="Symptoms">
+      <Field label="Symptoms" schemaFieldId="symptoms">
         <CustomChipList
           base={BOWEL_SYMPTOMS_DEFAULT}
           custom={data.custom.bowelSymptoms}
@@ -3066,7 +3817,7 @@ function BowelForm({
           onToggle={(v) => setSymptoms((a) => toggleIn(a, v))}
         />
       </Field>
-      <Field label="Note (optional)">
+      <Field label="Note (optional)" schemaFieldId="note">
         <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
     </div>
@@ -3085,6 +3836,7 @@ function TempForm({
   update: UpdateFn;
   onDone: () => void;
 }) {
+  const { t } = useI18n();
   type VitalRow = {
     id: string;
     time: string;
@@ -3231,16 +3983,16 @@ function TempForm({
   };
 
   return (
-    <div className="space-y-5">
+    <div className="flex flex-col gap-5">
       <SaveBar onCancel={onDone} onSave={save} />
-      <Field label="New temperature measurement">
+      <Field label="New temperature measurement" schemaFieldId="temperature">
         <div className="grid grid-cols-[1fr_120px] gap-2">
           <Input
             type="text"
             inputMode="decimal"
             value={temperature}
             onChange={(e) => setTemperature(e.target.value.replace(/[^0-9.,]/g, "").replace(/([.,].*)[.,]/g, "$1"))}
-            placeholder="36,6 °C"
+            placeholder={t("36,6 °C")}
           />
 
           <Input type="time" value={temperatureTime} onChange={(e) => setTemperatureTime(e.target.value)} />
@@ -3273,7 +4025,7 @@ function TempForm({
                   aria-label={`Delete temperature ${entry.value}`}
                   className="rounded-full p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-3.5 w-3.5 shrink-0" />
                 </button>
               </div>
             ))}
@@ -3281,14 +4033,14 @@ function TempForm({
         )}
       </Field>
 
-      <Field label="New weight measurement">
+      <Field label="New weight measurement" schemaFieldId="weight">
         <div className="grid grid-cols-[1fr_120px] gap-2">
           <Input
             type="text"
             inputMode="decimal"
             value={weight}
             onChange={(e) => setWeight(e.target.value.replace(/[^0-9.,]/g, "").replace(/([.,].*)[.,]/g, "$1"))}
-            placeholder="62,5 kg"
+            placeholder={t("62,5 kg")}
           />
 
           <Input type="time" value={weightTime} onChange={(e) => setWeightTime(e.target.value)} />
@@ -3296,9 +4048,7 @@ function TempForm({
 
         {weightEntries.length > 0 && (
           <div className="mt-3 space-y-2">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Saved weight measurements
-            </p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t("Saved weight measurements")}</p>
 
             {weightEntries.map((entry) => (
               <div
@@ -3321,7 +4071,7 @@ function TempForm({
                   aria-label={`Delete weight ${entry.value}`}
                   className="rounded-full p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-3.5 w-3.5 shrink-0" />
                 </button>
               </div>
             ))}
@@ -3329,7 +4079,7 @@ function TempForm({
         )}
       </Field>
 
-      <Field label="Sleep (hours)">
+      <Field label="Sleep (hours)" schemaFieldId="sleepHours">
         <Input
           type="text"
           inputMode="decimal"
@@ -3339,7 +4089,7 @@ function TempForm({
         />
       </Field>
 
-      <Field label="How I slept">
+      <Field label="How I slept" schemaFieldId="sleepQuality">
         <div className="mt-2 flex flex-wrap gap-2">
           {SLEEP_QUALITY.map((item) => (
             <Chip
@@ -3368,9 +4118,22 @@ function MedsForm({
   update: UpdateFn;
   onDone: () => void;
 }) {
+  const { t } = useI18n();
+  const schema = useLogSchema();
   const meds = data.meds;
   const taken = data.medLog[date] ?? {};
   const takenTimes = data.medLogTimes?.[date] ?? {};
+  const medNotes = data.medLogNotes?.[date] ?? {};
+  const medItems = data.medLogItems?.[date] ?? {};
+  const [editingScheduledKey, setEditingScheduledKey] = useState<string | null>(null);
+  const setMedNote = (key: string, note: string) =>
+    update((d) => {
+      const notes = { ...(d.medLogNotes?.[date] ?? {}) };
+      const clean = note.trimStart();
+      if (clean) notes[key] = clean;
+      else delete notes[key];
+      return { ...d, medLogNotes: { ...(d.medLogNotes ?? {}), [date]: notes } };
+    });
   const toggle = (key: string, defaultTime?: string) =>
     update((d) => {
       const day = { ...(d.medLog[date] ?? {}) };
@@ -3409,27 +4172,37 @@ function MedsForm({
   };
   const today = date === todayKey();
   const extras = data.dayLogs[date]?.extraMeds ?? [];
+  const scheduledField = getRegistryField(data, "meds", "scheduled");
+  const extraDoseField = getRegistryField(data, "meds", "extraDose");
+  const dateLabel = today ? t("Today") : date;
+  const scheduledHeading = scheduledField?.label && scheduledField.label !== "Scheduled meds"
+    ? `${t(scheduledField.label)} · ${dateLabel}`
+    : dateLabel;
+  const extraDoseHeading = t(extraDoseField?.label ?? "Extra dose (one-off)");
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4">
+      <SaveBar onCancel={onDone} onSave={() => { schema?.saveAdminCustomFields(); onDone(); }} />
+      <div className="flex flex-col gap-4">
+      <RegistryFieldBlock fieldId="scheduled">
       {meds.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No medications yet. Add them from Meds settings.</p>
+        <p className="text-sm text-muted-foreground">{t("No medications yet. Add them from Meds settings.")}</p>
       ) : (
         <div>
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">{today ? "Today" : date}</p>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">{scheduledHeading}</p>
           <div className="mt-2 space-y-2">
             {meds.map((m) =>
               m.asNeeded ? (
-                <label key={m.id} className="flex items-center gap-3 rounded-2xl bg-surface p-3 ring-1 ring-border">
+                <label key={m.id} className="flex items-center gap-2 rounded-xl bg-surface px-2.5 py-2 ring-1 ring-border">
                   <input
                     type="checkbox"
                     checked={!!taken[`${m.id}@asneeded`]}
                     onChange={() => toggle(`${m.id}@asneeded`, nowHHMM())}
-                    className="h-4 w-4"
+                    className="h-3.5 w-3.5 shrink-0"
                   />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">{m.name}</p>
-                    <p className="text-xs text-muted-foreground">As needed{m.dose ? ` · ${m.dose}` : ""}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium leading-tight">{m.name}</p>
+                    <p className="text-[10px] leading-tight text-muted-foreground">{t("As needed")}{m.dose ? ` · ${m.dose}` : ""}</p>
                     {m.note && (
                       <p className="text-[11px] text-muted-foreground">
                         <Ico e="📝" size={13} /> <IcoText text={m.note} size={12} />
@@ -3441,38 +4214,73 @@ function MedsForm({
                       type="time"
                       value={takenTimes[`${m.id}@asneeded`] ?? nowHHMM()}
                       onChange={(e) => setTakenTime(`${m.id}@asneeded`, e.target.value)}
-                      className="h-8 w-24"
+                      className="h-7 w-20 px-2 text-xs"
                     />
                   )}
+                  <Input
+                    value={medNotes[`${m.id}@asneeded`] ?? ""}
+                    onChange={(e) => setMedNote(`${m.id}@asneeded`, e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    placeholder={t("Note (optional)")}
+                    className="h-7 min-w-0 flex-[0_1_125px] px-2 text-xs"
+                  />
                 </label>
               ) : (
-                m.times.map((t) => {
-                  const k = `${m.id}@${t}`;
+                m.times.map((scheduledTime) => {
+                  const k = `${m.id}@${scheduledTime}`;
                   const isTaken = !!taken[k];
+                  const items = medScheduleItems(m);
+                  const grouped = items.length > 1;
+                  const selectedItems = medItems[k] ?? (isTaken ? items : []);
+                  const partial = grouped && selectedItems.length > 0 && selectedItems.length < items.length;
                   return (
-                    <label key={k} className="flex items-center gap-3 rounded-2xl bg-surface p-3 ring-1 ring-border">
-                      <input type="checkbox" checked={isTaken} onChange={() => toggle(k, t)} className="h-4 w-4" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">
-                          {m.name} <span className="text-xs text-muted-foreground">· scheduled {t}</span>
-                        </p>
-                        {m.dose && <p className="text-xs text-muted-foreground">{m.dose}</p>}
-                        {m.note && (
-                          <p className="text-[11px] text-muted-foreground">
-                            <Ico e="📝" size={13} /> <IcoText text={m.note} size={12} />
-                          </p>
+                    <div key={k} className="rounded-xl bg-surface px-2.5 py-2 ring-1 ring-border">
+                      <div className="flex items-center gap-2">
+                        {grouped ? (
+                          <button type="button" onClick={() => setEditingScheduledKey(editingScheduledKey === k ? null : k)} className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border text-[10px] font-bold ${selectedItems.length ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-muted-foreground"}`}>
+                            {selectedItems.length === items.length ? "✓" : selectedItems.length ? "–" : ""}
+                          </button>
+                        ) : (
+                          <input type="checkbox" checked={isTaken} onChange={() => toggle(k, nowHHMM())} className="h-3.5 w-3.5 shrink-0" />
                         )}
+                        <button type="button" onClick={() => grouped && setEditingScheduledKey(editingScheduledKey === k ? null : k)} className="min-w-0 flex-1 text-left">
+                          <p className="text-xs font-medium leading-tight">{m.name} <span className="text-[10px] font-normal text-muted-foreground">· scheduled {scheduledTime}</span></p>
+                          {grouped && selectedItems.length > 0 && <p className="mt-0.5 text-[10px] leading-tight text-primary">{partial ? `${t("Taken")}: ${selectedItems.join(", ")}` : t("All taken")}</p>}
+                          {m.dose && <p className="text-[10px] leading-tight text-muted-foreground">{m.dose}</p>}
+                        </button>
+                        {isTaken && <Input type="time" value={takenTimes[k] ?? scheduledTime} onChange={(e) => setTakenTime(k, e.target.value)} className="h-7 w-20 px-2 text-xs" title={t("Actual time taken")} />}
                       </div>
-                      {isTaken && (
-                        <Input
-                          type="time"
-                          value={takenTimes[k] ?? t}
-                          onChange={(e) => setTakenTime(k, e.target.value)}
-                          className="h-8 w-24"
-                          title="Actual time taken"
-                        />
-                      )}
-                    </label>
+                      {grouped && editingScheduledKey === k ? (
+                        <div className="mt-2 rounded-xl bg-tint/70 p-2 ring-1 ring-border/60">
+                          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{t("What did you take?")}</p>
+                          <div className="space-y-1">
+                            {items.map((item) => {
+                              const checked = selectedItems.includes(item);
+                              return (
+                                <label key={item} className="flex items-center gap-2 rounded-lg bg-background/70 px-2 py-1.5 text-xs">
+                                  <input type="checkbox" checked={checked} onChange={() => {
+                                    const next = checked ? selectedItems.filter((x) => x !== item) : [...selectedItems, item];
+                                    update((d) => {
+                                      const day = { ...(d.medLog[date] ?? {}) };
+                                      const allItems = { ...(d.medLogItems?.[date] ?? {}) };
+                                      const times = { ...(d.medLogTimes?.[date] ?? {}) };
+                                      if (next.length) { day[k] = true; allItems[k] = next; if (!times[k]) times[k] = nowHHMM(); }
+                                      else { delete day[k]; delete allItems[k]; delete times[k]; }
+                                      return { ...d, medLog: { ...d.medLog, [date]: day }, medLogItems: { ...(d.medLogItems ?? {}), [date]: allItems }, medLogTimes: { ...(d.medLogTimes ?? {}), [date]: times } };
+                                    });
+                                  }} className="h-3.5 w-3.5" />
+                                  <span>{item}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                          <Input value={medNotes[k] ?? ""} onChange={(e) => setMedNote(k, e.target.value)} placeholder={t("Note (optional)")} className="mt-2 h-7 px-2 text-xs" />
+                          <button type="button" onClick={() => setEditingScheduledKey(null)} className="mt-2 w-full rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">{t("Done")}</button>
+                        </div>
+                      ) : !grouped ? (
+                        <Input value={medNotes[k] ?? ""} onChange={(e) => setMedNote(k, e.target.value)} placeholder={t("Note (optional)")} className="mt-1.5 h-7 px-2 text-xs" />
+                      ) : null}
+                    </div>
                   );
                 })
               ),
@@ -3480,11 +4288,13 @@ function MedsForm({
           </div>
         </div>
       )}
+      </RegistryFieldBlock>
+      <RegistryFieldBlock fieldId="extraDose">
       <div>
-        <p className="text-xs uppercase tracking-wider text-muted-foreground">Extra dose (one-off)</p>
+        <p className="text-xs uppercase tracking-wider text-muted-foreground">{extraDoseHeading}</p>
         <div className="mt-2 grid grid-cols-3 gap-2">
           <Input
-            placeholder="Name"
+            placeholder={t("Name")}
             value={extraName}
             onChange={(e) => setExtraName(e.target.value)}
             className="col-span-2"
@@ -3492,11 +4302,11 @@ function MedsForm({
           <Input type="time" value={extraTime} onChange={(e) => setExtraTime(e.target.value)} />
         </div>
         <div className="mt-2 grid grid-cols-2 gap-2">
-          <Input placeholder="Dose (optional)" value={extraDose} onChange={(e) => setExtraDose(e.target.value)} />
-          <Input placeholder="Note (optional)" value={extraNote} onChange={(e) => setExtraNote(e.target.value)} />
+          <Input placeholder={t("Dose (optional)")} value={extraDose} onChange={(e) => setExtraDose(e.target.value)} />
+          <Input placeholder={t("Note (optional)")} value={extraNote} onChange={(e) => setExtraNote(e.target.value)} />
         </div>
         <Button className="mt-2 w-full" onClick={addExtra} disabled={!extraName.trim()}>
-          Add extra dose
+          {t("Add extra dose")}
         </Button>
         {extras.length > 0 && (
           <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
@@ -3510,18 +4320,8 @@ function MedsForm({
           </ul>
         )}
       </div>
-      <SheetFooter className="mt-2">
-        <div className="mt-5 flex justify-end border-t border-border/50 pt-4">
-          <button
-            type="button"
-            onClick={onDone}
-            className="inline-flex h-10 min-w-[78px] items-center justify-center gap-1.5 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          >
-            <span>Done</span>
-            <span aria-hidden="true" className="text-base leading-none">✓</span>
-          </button>
-        </div>
-      </SheetFooter>
+      </RegistryFieldBlock>
+      </div>
     </div>
   );
 }
@@ -3540,6 +4340,8 @@ function WorkoutForm({
   onDone: () => void;
   initialEntry?: WorkoutEntry;
 }) {
+  const { t } = useI18n();
+  const schema = useLogSchema();
   const [kind, setKind] = useState<string>(
     initialEntry?.kind ? stripEmoji(initialEntry.kind) : WORKOUT_KINDS_DEFAULT[0],
   );
@@ -3577,7 +4379,7 @@ function WorkoutForm({
   const save = () => {
     const editing = !!initialEntry;
     const e: WorkoutEntry = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
+      id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
       time: initialEntry?.time ?? nowHHMM(),
       kind,
       minutes,
@@ -3600,9 +4402,9 @@ function WorkoutForm({
     onDone();
   };
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       <SaveBar onCancel={onDone} onSave={save} />
-      <Field label="Type">
+      <Field label="Type" schemaFieldId="kind">
         <CustomChipList
           base={WORKOUT_KINDS_DEFAULT}
           custom={data.custom.workoutKinds}
@@ -3612,11 +4414,12 @@ function WorkoutForm({
           onToggle={(v) => setKind(v)}
         />
       </Field>
-      <Field label="Duration (minutes)">
+      <Field label="Duration (minutes)" schemaFieldId="minutes">
         <Input type="number" min={1} value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} />
       </Field>
 
       {workoutHasDistance(kind) && (
+        <RegistryFieldBlock fieldId="distance">
         <div className="grid grid-cols-2 gap-2">
           <Field label="Distance (km)">
             <Input type="number" step="0.1" min={0} value={distance} onChange={(e) => setDistance(e.target.value)} />
@@ -3627,35 +4430,36 @@ function WorkoutForm({
             </Field>
           )}
         </div>
+        </RegistryFieldBlock>
       )}
 
       {workoutIsStrength(kind) && (
-        <Field label="Exercises">
+        <Field label="Exercises" schemaFieldId="exercises">
           <div className="space-y-2">
             {exercises.map((ex, i) => (
               <div key={ex.id} className="rounded-2xl border border-border p-2 space-y-2">
                 <div className="flex items-center gap-2">
                   <Input
                     value={ex.name}
-                    placeholder="Exercise name"
+                    placeholder={t("Exercise name")}
                     onChange={(e) =>
                       setExercises((a) => a.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))
                     }
                   />
                   <button
                     type="button"
-                    aria-label="Remove exercise"
+                    aria-label={t("Remove exercise")}
                     onClick={() => setExercises((a) => a.filter((_, j) => j !== i))}
                     className="rounded-full p-2 text-muted-foreground hover:text-destructive"
                   >
-                    <X className="h-4 w-4" />
+                    <X className="h-3.5 w-3.5 shrink-0" />
                   </button>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <Input
                     type="number"
                     min={0}
-                    placeholder="Sets"
+                    placeholder={t("Sets")}
                     value={ex.sets ?? ""}
                     onChange={(e) =>
                       setExercises((a) =>
@@ -3668,7 +4472,7 @@ function WorkoutForm({
                   <Input
                     type="number"
                     min={0}
-                    placeholder="Reps"
+                    placeholder={t("Reps")}
                     value={ex.reps ?? ""}
                     onChange={(e) =>
                       setExercises((a) =>
@@ -3682,7 +4486,7 @@ function WorkoutForm({
                     type="number"
                     min={0}
                     step="0.5"
-                    placeholder="kg"
+                    placeholder={t("kg")}
                     value={ex.weightKg ?? ""}
                     onChange={(e) =>
                       setExercises((a) =>
@@ -3701,14 +4505,13 @@ function WorkoutForm({
               size="sm"
               onClick={() => setExercises((a) => [...a, { id: crypto.randomUUID(), name: "" }])}
             >
-              <Plus className="h-4 w-4" /> Add exercise
-            </Button>
+              <Plus className="h-3.5 w-3.5 shrink-0" /><TrText value="Add exercise" /></Button>
           </div>
         </Field>
       )}
 
-      <Field label={`Intensity (RPE) ${rpe ?? "-"} / 10`}>
-        <div className="mt-2 flex flex-wrap justify-center gap-1.5 px-1">
+      <Field label={`${t("Intensity (RPE)")} ${rpe ?? "—"} / 10`} schemaFieldId="rpe">
+        <div className="mt-2 flex flex-nowrap items-center justify-center gap-0.5 px-0">
           {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => {
             const active = rpe === n;
             return (
@@ -3717,7 +4520,7 @@ function WorkoutForm({
                 type="button"
                 onClick={() => setRpe(rpe === n ? undefined : n)}
                 aria-label={`RPE ${n}`}
-                className={`h-8 w-8 rounded-full text-[11px] font-semibold transition ${
+                className={`h-7 w-7 shrink-0 rounded-full text-[10px] font-semibold transition ${
                   active ? "text-white ring-2 ring-foreground" : "text-foreground"
                 }`}
                 style={{ background: painColor(n) }}
@@ -3729,7 +4532,7 @@ function WorkoutForm({
         </div>
       </Field>
 
-      <Field label="Magnesium before workout?">
+      <Field label="Magnesium before workout?" schemaFieldId="magnesiumBefore">
         <div className="mt-1 flex gap-2">
           <Chip active={!magnesium} onClick={() => setMagnesium(false)}>
             No
@@ -3740,9 +4543,9 @@ function WorkoutForm({
         </div>
       </Field>
 
-      <Field label="Triggered a symptom? (optional)">
+      <Field label="Triggered a symptom? (optional)" schemaFieldId="triggeredSymptom">
         {symptomOptions.length === 0 ? (
-          <p className="text-[11px] text-muted-foreground">No tetany or pain entries logged for this day yet.</p>
+          <p className="text-[11px] text-muted-foreground">{t("No tetany or pain entries logged for this day yet.")}</p>
         ) : (
           <div className="mt-1 flex flex-wrap gap-2">
             <Chip active={!trigger} onClick={() => setTrigger(undefined)}>
@@ -3763,13 +4566,13 @@ function WorkoutForm({
         )}
       </Field>
 
-      <Field label="Weight after (kg, optional)">
+      <Field label="Weight after (kg, optional)" schemaFieldId="weightKg">
         <Input type="number" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} />
         <p className="mt-1 text-[11px] text-muted-foreground">
-          Saved with this workout only — it doesn't change your daily weight.
+          {t("Saved with this workout only — it doesn't change your daily weight.")}
         </p>
       </Field>
-      <Field label="How you feel">
+      <Field label="How you feel" schemaFieldId="feel">
         <div className="mt-2 flex flex-wrap gap-2">
           {["Great", "Good", "Ok", "Tired", "Sore"].map((f) => (
             <Chip key={f} active={feeling.includes(f)} onClick={() => setFeeling((a) => toggleIn(a, f))}>
@@ -3778,7 +4581,7 @@ function WorkoutForm({
           ))}
         </div>
       </Field>
-      <Field label="Note (optional)">
+      <Field label="Note (optional)" schemaFieldId="note">
         <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
     </div>
@@ -3797,6 +4600,8 @@ function EventForm({
   onDone: () => void;
   initialEntry?: EventEntry;
 }) {
+  const { t } = useI18n();
+  const schema = useLogSchema();
   const [title, setTitle] = useState(initialEntry?.title ?? "");
   const [startDate, setStartDate] = useState(initialEntry?.startDate ?? date);
   const [endDate, setEndDate] = useState(initialEntry?.endDate ?? date);
@@ -3808,7 +4613,7 @@ function EventForm({
     if (!title.trim()) return;
     const editing = !!initialEntry;
     const e: EventEntry = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
+      id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
       title: title.trim(),
       startDate,
       endDate: endDate < startDate ? startDate : endDate,
@@ -3821,11 +4626,12 @@ function EventForm({
     onDone();
   };
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       <SaveBar onCancel={onDone} onSave={save} disabled={!title.trim()} />
-      <Field label="Title">
-        <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Doctor visit" />
+      <Field label="Title" schemaFieldId="title">
+        <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("e.g. Doctor visit")} />
       </Field>
+      <RegistryFieldBlock fieldId="dates">
       <div className="grid grid-cols-2 gap-2">
         <Field label="From">
           <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
@@ -3834,6 +4640,8 @@ function EventForm({
           <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
         </Field>
       </div>
+      </RegistryFieldBlock>
+      <RegistryFieldBlock fieldId="times">
       <div className="grid grid-cols-2 gap-2">
         <Field label="Time from">
           <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
@@ -3842,7 +4650,8 @@ function EventForm({
           <Input type="time" value={timeEnd} onChange={(e) => setTimeEnd(e.target.value)} />
         </Field>
       </div>
-      <Field label="Color">
+      </RegistryFieldBlock>
+      <Field label="Color" schemaFieldId="color">
         <div className="mt-2 flex gap-2 flex-wrap">
           {EVENT_COLORS.map((c) => (
             <button
@@ -3854,7 +4663,7 @@ function EventForm({
           ))}
         </div>
       </Field>
-      <Field label="Note (optional)">
+      <Field label="Note (optional)" schemaFieldId="note">
         <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
     </div>
@@ -3873,6 +4682,8 @@ function TaskForm({
   onDone: () => void;
   initialEntry?: TaskEntry;
 }) {
+  const { t } = useI18n();
+  const schema = useLogSchema();
   const [title, setTitle] = useState(initialEntry?.title ?? "");
   const [startDate, setStartDate] = useState(initialEntry?.startDate ?? date);
   const [endDate, setEndDate] = useState(initialEntry?.endDate ?? date);
@@ -3883,7 +4694,7 @@ function TaskForm({
     if (!title.trim()) return;
     const editing = !!initialEntry;
     const t: TaskEntry = {
-      id: initialEntry?.id ?? crypto.randomUUID(),
+      id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
       title: title.trim(),
       startDate,
       endDate: endDate < startDate ? startDate : endDate,
@@ -3896,11 +4707,12 @@ function TaskForm({
     onDone();
   };
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       <SaveBar onCancel={onDone} onSave={save} disabled={!title.trim()} />
-      <Field label="Task">
-        <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="What to do…" />
+      <Field label="Task" schemaFieldId="title">
+        <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("What to do…")} />
       </Field>
+      <RegistryFieldBlock fieldId="dates">
       <div className="grid grid-cols-2 gap-2">
         <Field label="From">
           <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
@@ -3909,6 +4721,8 @@ function TaskForm({
           <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
         </Field>
       </div>
+      </RegistryFieldBlock>
+      <RegistryFieldBlock fieldId="times">
       <div className="grid grid-cols-2 gap-2">
         <Field label="Time from">
           <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
@@ -3917,7 +4731,8 @@ function TaskForm({
           <Input type="time" value={timeEnd} onChange={(e) => setTimeEnd(e.target.value)} />
         </Field>
       </div>
-      <Field label="Note (optional)">
+      </RegistryFieldBlock>
+      <Field label="Note (optional)" schemaFieldId="note">
         <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
     </div>
@@ -3926,25 +4741,32 @@ function TaskForm({
 
 /* ------------------- NOTE ------------------- */
 function NoteForm({ date, update, onDone }: { date: string; update: UpdateFn; onDone: () => void }) {
-  const [t, setT] = useState("");
+  const { t } = useI18n();
+  const schema = useLogSchema();
+  const noteTextPlaceholder = schema ? (getRegistryField(schema.data, schema.featureId, "text")?.label ?? "Anything about today…") : "Anything about today…";
+  const [text, setText] = useState("");
   const [time, setTime] = useState("");
   const save = () => {
-    if (!t.trim()) return;
+    if (!text.trim()) return;
     update((d) => {
-      const list = (d.dayNotes[date] ?? []) as (string | { text: string; time?: string })[];
-      const next: { text: string; time?: string }[] = list.map((x) => (typeof x === "string" ? { text: x } : x));
-      next.push({ text: t.trim(), time: time || undefined });
+      const list = (d.dayNotes[date] ?? []) as (string | { id?: string; text: string; time?: string })[];
+      const next: { id?: string; text: string; time?: string }[] = list.map((x) => (typeof x === "string" ? { text: x } : x));
+      next.push({ id: schema?.sourceEntryId, text: text.trim(), time: time || undefined });
       return { ...d, dayNotes: { ...d.dayNotes, [date]: next } };
     });
     onDone();
   };
   return (
-    <div className="space-y-3">
-      <SaveBar onCancel={onDone} onSave={save} disabled={!t.trim()} />
-      <Field label="Time (optional)">
+    <div className="flex flex-col gap-3">
+      <SaveBar onCancel={onDone} onSave={save} disabled={!text.trim()} />
+      <div className="flex flex-col gap-3">
+      <Field label="Time (optional)" schemaFieldId="time">
         <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
       </Field>
-      <Textarea rows={6} value={t} onChange={(e) => setT(e.target.value)} placeholder="Anything about today…" />
+      <RegistryFieldBlock fieldId="text">
+        <Textarea rows={6} value={text} onChange={(e) => setText(e.target.value)} placeholder={t(noteTextPlaceholder)} />
+      </RegistryFieldBlock>
+      </div>
     </div>
   );
 }
@@ -3962,6 +4784,7 @@ function PostpartumSymptomsForm({
   update: UpdateFn;
   onDone: () => void;
 }) {
+  const { t } = useI18n();
   const current: PostpartumDayLog = data.dayLogs[date]?.postpartum ?? {};
   const [symptoms, setSymptoms] = useState<string[]>(current.symptoms ?? []);
   const [note, setNote] = useState(current.note ?? "");
@@ -3988,7 +4811,7 @@ function PostpartumSymptomsForm({
   };
 
   return (
-    <div className="space-y-5">
+    <div className="flex flex-col gap-5">
       <SaveBar onCancel={onDone} onSave={save} />
       <div className="flex items-start gap-3 rounded-3xl bg-tint p-4 ring-1 ring-border/50">
         <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-surface ring-1 ring-border/50">
@@ -3996,44 +4819,59 @@ function PostpartumSymptomsForm({
         </span>
 
         <div>
-          <h3 className="text-sm font-semibold text-foreground">Postpartum recovery</h3>
+          <h3 className="text-sm font-semibold text-foreground">{t("Postpartum recovery")}</h3>
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-            Select every symptom you experienced today. The BIXBO icon is used instead of an Apple emoji.
+            {t("Select every symptom you experienced today.")}
           </p>
         </div>
       </div>
 
-      <Field label="Symptoms today">
+      <div className="flex flex-col gap-5">
+      <Field label={t("Symptoms today")} schemaFieldId="symptoms">
         <div className="mt-2 flex flex-wrap gap-2">
           {POSTPARTUM_SYMPTOMS.map((symptom) => (
-            <Chip key={symptom} active={symptoms.includes(symptom)} onClick={() => toggleSymptom(symptom)}>
-              {symptom}
-            </Chip>
+            <Chip key={symptom} active={symptoms.includes(symptom)} onClick={() => toggleSymptom(symptom)}><TrText value={symptom} /></Chip>
           ))}
         </div>
       </Field>
 
-      <Field label="Recovery note (optional)">
+      <Field label={t("Recovery note (optional)")} schemaFieldId="note">
         <Textarea
           rows={4}
           value={note}
           onChange={(event) => setNote(event.target.value)}
-          placeholder="Add anything important about recovery, bleeding, feeding or how you feel."
+          placeholder={t("Add anything important about recovery, bleeding, feeding or how you feel.")}
         />
       </Field>
+      </div>
 
       {current.symptoms?.length || current.note ? (
         <button
           type="button"
           onClick={() => {
-            updateDayLog(update, date, (dayLog) => ({
-              ...dayLog,
-              postpartum: {
-                ...(dayLog.postpartum ?? {}),
-                symptoms: undefined,
-                note: undefined,
-              },
-            }));
+            update((current) => {
+              const dayLog = current.dayLogs[date] ?? {};
+              const adminFields = { ...(dayLog.adminFields ?? {}) };
+              const postpartumAdmin = adminFields.postpartum ?? [];
+              const nextPostpartumAdmin = postpartumAdmin.filter((entry) => entry.sourceEntryId !== `day:postpartum:${date}`);
+              if (nextPostpartumAdmin.length) adminFields.postpartum = nextPostpartumAdmin;
+              else delete adminFields.postpartum;
+              return {
+                ...current,
+                dayLogs: {
+                  ...current.dayLogs,
+                  [date]: {
+                    ...dayLog,
+                    postpartum: {
+                      ...(dayLog.postpartum ?? {}),
+                      symptoms: undefined,
+                      note: undefined,
+                    },
+                    adminFields: Object.keys(adminFields).length ? adminFields : undefined,
+                  },
+                },
+              };
+            });
             onDone();
           }}
           className="w-full rounded-2xl bg-destructive/10 py-2.5 text-sm font-medium text-destructive ring-1 ring-destructive/30"
