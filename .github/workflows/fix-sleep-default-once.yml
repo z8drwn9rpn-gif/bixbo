@@ -18,14 +18,16 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-          import re
           p=Path('src/features/logging/LifestyleForms.tsx')
           s=p.read_text()
           s=s.replace('const [tab, setTab] = useState<Tab>("temperature");','const [tab, setTab] = useState<Tab>("sleep");')
-          s=re.sub(r'\n\s*const qualityScores: Record<string,number> = \{[^\n]*\};\n\s*const sleepScore = [^\n]*;\n\s*const sleepScoreLabel = [^\n]*;','',s)
-          start=s.find('<div className="rounded-2xl bg-surface p-4 ring-1 ring-border"><div className="flex items-center gap-4"><div className="grid h-24 w-24 shrink-0 place-items-center rounded-full border-[7px] border-primary/70">')
+          lines=s.splitlines()
+          lines=[line for line in lines if not line.strip().startswith('const qualityScores:') and not line.strip().startswith('const sleepScore =') and not line.strip().startswith('const sleepScoreLabel =')]
+          s='\n'.join(lines)+'\n'
+          marker='<div className="rounded-2xl bg-surface p-4 ring-1 ring-border"><div className="flex items-center gap-4"><div className="grid h-24 w-24 shrink-0 place-items-center rounded-full border-[7px] border-primary/70">'
+          start=s.find(marker)
           if start != -1:
-              end=s.find('<Field label="Bedtime & wake time">', start)
+              end=s.find('<Field label="Bedtime / Wake up">', start)
               if end == -1: raise SystemExit('sleep score block end not found')
               s=s[:start]+s[end:]
           if 'useState<Tab>("sleep")' not in s:
