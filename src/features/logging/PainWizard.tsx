@@ -97,12 +97,14 @@ export function PainWizard({
   data,
   update,
   onDone,
+  onOpenEpisode,
   initialEntry,
 }: {
   date: string;
   data: BixboData;
   update: UpdateFn;
   onDone: () => void;
+  onOpenEpisode?: (target: "tetany" | "panic") => void;
   initialEntry?: PainEntry;
 }) {
   const { t } = useI18n();
@@ -643,6 +645,16 @@ export function PainWizard({
               selected={symptoms}
               onToggle={(v) => setSymptoms((a) => toggleIn(a, v))}
              schemaFieldId="symptoms"/>
+            {onOpenEpisode && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                <Chip active={false} onClick={() => onOpenEpisode("tetany")}>
+                  ⭐ {t("Tetany episode")}
+                </Chip>
+                <Chip active={false} onClick={() => onOpenEpisode("panic")}>
+                  ✨ {t("Panic attack")}
+                </Chip>
+              </div>
+            )}
           </Field>
           {symptoms.includes("Flu") && (
             <Field label="Flu symptoms note">

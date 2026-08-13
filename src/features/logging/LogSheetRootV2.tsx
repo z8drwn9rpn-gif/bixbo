@@ -100,7 +100,7 @@ export function LogSheet({
 
   const active = cat ?? initial;
   const renderActive: Category | undefined = active === "pain"
-    ? (painTarget ?? undefined)
+    ? (painTarget ?? "pain")
     : active === "note" && planTarget
       ? planTarget
       : active;
@@ -440,10 +440,9 @@ export function LogSheet({
                   </div>;
                 })()}
 
-                {active === "pain" && !painTarget && <PainChooser data={data} onPick={setPainTarget} />}
                 {active === "note" && !planTarget && <PlanChooser onPick={setPlanTarget} />}
                 {renderActive === "postpartum" && <PostpartumSymptomsForm date={date} data={data} update={update} onDone={close} />}
-                {renderActive === "pain" && <PainWizard date={date} data={data} update={update} onDone={close} initialEntry={initialPain ?? (edit as PainEntry | undefined)} />}
+                {renderActive === "pain" && <PainWizard date={date} data={data} update={update} onDone={close} onOpenEpisode={setPainTarget} initialEntry={initialPain ?? (edit as PainEntry | undefined)} />}
                 {renderActive === "panic" && <PanicForm date={date} data={data} update={update} onDone={close} initialEntry={edit as PanicAttack | undefined} />}
                 {renderActive === "tetany" && <TetanyForm date={date} data={data} update={update} onDone={close} initialEntry={edit as TetanyEpisode | undefined} />}
                 {renderActive === "period" && <PeriodForm date={date} data={data} update={update} onDone={close} />}
