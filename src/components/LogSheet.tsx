@@ -1037,13 +1037,41 @@ function Field({ label, children, schemaFieldId }: { label: string; children: Re
         </div>
         <div className="mt-1">{children}</div>
         {scaleInfoOpen && scaleProps?.descriptions && infoRange ? (
-          <ScaleLegend
-            max={infoRange.max}
-            from={infoRange.from}
-            descriptions={scaleProps.descriptions}
-            value={scaleProps.value}
-            title={scaleProps.legendTitle ?? `${displayLabel} scale`}
-          />
+          <div
+            className="fixed inset-0 z-[90] flex items-end justify-center bg-black/20 px-3 pb-[calc(12px+env(safe-area-inset-bottom))] backdrop-blur-[1px]"
+            role="presentation"
+            onClick={() => setScaleInfoOpen(false)}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label={t(scaleProps.legendTitle ?? `${displayLabel} scale`)}
+              className="max-h-[78dvh] w-full max-w-md overflow-y-auto rounded-[1.6rem] border border-border/70 bg-background p-4 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="grid h-7 w-7 place-items-center rounded-full bg-primary/15 text-sm font-bold text-primary">i</span>
+                  <h3 className="font-serif text-lg font-semibold">{t(scaleProps.legendTitle ?? `${displayLabel} scale`)}</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setScaleInfoOpen(false)}
+                  aria-label={t("Close")}
+                  className="grid h-8 w-8 place-items-center rounded-full bg-tint text-foreground ring-1 ring-border"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <ScaleLegend
+                max={infoRange.max}
+                from={infoRange.from}
+                descriptions={scaleProps.descriptions}
+                value={scaleProps.value}
+                title={scaleProps.legendTitle ?? `${displayLabel} scale`}
+              />
+            </div>
+          </div>
         ) : null}
       </div>
     </>
@@ -2001,7 +2029,7 @@ function PainWizard({
                   max={10}
                   from={1}
                   step={1}
-                  descriptions={getScaleDesc(data, "pain")}
+                  descriptions={getScaleDesc(data, "pressure")}
                   legendTitle="Pressure intensity scale"
                   compactSingleRow
                 />
@@ -2099,7 +2127,7 @@ function PainWizard({
                   max={10}
                   from={1}
                   step={1}
-                  descriptions={NAUSEA_SEVERITY_DESC}
+                  descriptions={getScaleDesc(data, "nausea")}
                   legendTitle="Nausea severity scale"
                   compactSingleRow
                 />
@@ -3048,29 +3076,16 @@ function PeriodForm({
         </div>
       </Field>
       <Field label={`${t("Cramp pain")} ${cramps ?? "—"} / 10`} schemaFieldId="cramps">
-        <div className="mt-2 flex flex-nowrap items-center justify-center gap-0.5 px-0">
-          {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-            <button
-              key={n}
-              type="button"
-              onClick={() => setCramps(cramps === n ? undefined : n)}
-              title={`${n} — ${t(painDesc[n])}`}
-              aria-label={`${n} — ${t(painDesc[n])}`}
-              className={`h-7 w-7 shrink-0 rounded-full text-[10px] font-semibold transition ${
-                cramps === n ? "text-white ring-2 ring-foreground" : "text-foreground"
-              }`}
-              style={{ background: painColor(n) }}
-            >
-              {n}
-            </button>
-          ))}
-        </div>
-        <ScaleLegend
+        <IntensityScale
+          value={cramps ?? -1}
+          onChange={(n) => setCramps(cramps === n ? undefined : n)}
           max={10}
           from={1}
+          step={1}
           descriptions={painDesc}
-          value={cramps}
-          title={t("Pain scale (Mankosky)")}
+          legendTitle="Cramp pain scale"
+          compactSingleRow
+          schemaFieldId="cramps"
         />
       </Field>
       <Field label="Discharge (optional)" schemaFieldId="discharge">
