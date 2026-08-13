@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96">
+  <defs>
+    <mask id="penguinMask" maskUnits="userSpaceOnUse" x="0" y="0" width="96" height="96">
+      <rect width="96" height="96" fill="black"/>
+      <!-- head + body: intentionally just inside the black outline so no white square can leak through -->
+      <ellipse cx="47" cy="48" rx="25" ry="42" fill="white"/>
+      <ellipse cx="47" cy="29" rx="24" ry="24" fill="white"/>
+      <!-- left wing -->
+      <path d="M25 34 C17 42 13 54 14 68 C15 76 18 78 21 72 C25 63 28 52 31 42 Z" fill="white"/>
+      <!-- right flipper / hand holding chilli -->
+      <path d="M64 42 C72 43 80 48 82 57 C83 64 78 70 70 68 C65 66 62 60 61 53 Z" fill="white"/>
+      <!-- chilli -->
+      <path d="M61 41 C66 35 72 29 79 25 C83 22 86 24 86 29 C86 39 80 49 71 55 C66 58 60 57 57 53 C55 49 57 45 61 41 Z" fill="white"/>
+      <path d="M82 25 C82 19 80 16 77 14 C82 14 87 18 88 23 C88 26 86 28 83 29 Z" fill="white"/>
+      <!-- feet -->
+      <ellipse cx="32" cy="88" rx="11" ry="6" fill="white"/>
+      <ellipse cx="62" cy="88" rx="11" ry="6" fill="white"/>
+    </mask>
+  </defs>
+  <image href="/bixbo-mascot-user.png?v=20260813-full" width="96" height="96" preserveAspectRatio="xMidYMid meet" mask="url(#penguinMask)"/>
+</svg>
