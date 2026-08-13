@@ -256,6 +256,10 @@ export interface VitalMeasurement {
   id: string;
   time: string;
   value: number;
+  /** Optional context used by the richer Temperature / Weight log UI. */
+  method?: "basal" | "oral" | "other";
+  note?: string;
+  bodyFatPercent?: number;
 }
 
 export interface DayLog {
@@ -278,6 +282,11 @@ export interface DayLog {
   weight?: number;
   sleepHours?: number;
   sleepQuality?: string | string[];
+  sleepBedtime?: string;
+  sleepWakeTime?: string;
+  sleepAwakenings?: number;
+  sleepEnergy?: number;
+  sleepNote?: string;
   extraMeds?: ExtraMed[];
   workout?: WorkoutEntry[];
   mood?: MoodEntry[];
