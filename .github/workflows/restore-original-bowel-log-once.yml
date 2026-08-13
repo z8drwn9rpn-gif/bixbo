@@ -1,0 +1,31 @@
+name: Restore original Bowel log once
+
+on:
+  push:
+    branches:
+      - agent/restore-original-bowel-log
+    paths:
+      - .github/workflows/restore-original-bowel-log-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/restore-original-bowel-log
+          fetch-depth: 0
+      - name: Apply Bowel restore
+        run: python3 scripts/restore_original_bowel_log_once.py
+      - name: Commit source changes
+        run: |
+          rm .github/workflows/restore-original-bowel-log-once.yml
+          rm scripts/restore_original_bowel_log_once.py
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/features/logging/LogSheetRootV2.tsx src/features/logging/LifestyleForms.tsx .github/workflows/restore-original-bowel-log-once.yml scripts/restore_original_bowel_log_once.py
+          git commit -m "fix: restore original bowel log"
+          git push origin HEAD:agent/restore-original-bowel-log
