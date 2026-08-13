@@ -25,7 +25,6 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
-
 function AuthPage() {
   const navigate = useNavigate();
   const { next } = Route.useSearch();
@@ -47,15 +46,26 @@ function AuthPage() {
 
   useEffect(() => {
     let cancelled = false;
+    let handled = false;
+
+    const finishSignedIn = () => {
+      if (cancelled || handled) return;
+      handled = true;
+      if (next) window.location.href = next;
+      else navigate({ to: "/settings" });
+    };
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) finishSignedIn();
+    });
 
     supabase.auth
       .getSession()
       .then(({ data, error }) => {
         if (error) throw error;
-        if (!cancelled && data.session) {
-          if (next) window.location.href = next;
-          else navigate({ to: "/settings" });
-        }
+        if (data.session) finishSignedIn();
       })
       .catch((error) => {
         if (!cancelled) setMsg(error instanceof Error ? error.message : String(error));
@@ -63,6 +73,7 @@ function AuthPage() {
 
     return () => {
       cancelled = true;
+      subscription.unsubscribe();
     };
   }, [navigate, next]);
 
@@ -100,12 +111,20 @@ function AuthPage() {
     setMsg(null);
 
     try {
+      const authReturnPath = next ? `/auth?next=${encodeURIComponent(next)}` : "/auth";
       const result = await lovable.auth.signInWithOAuth(provider, {
-        redirect_uri: `${window.location.origin}${next || ""}`,
+        redirect_uri: `${window.location.origin}${authReturnPath}`,
       });
 
       if (result.error) throw result.error;
       if (result.redirected) return;
+
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
+      if (error) throw error;
+      if (!session) throw new Error("Sign-in finished, but BIXBO did not receive a Supabase session. Please try again.");
 
       goNext();
     } catch (err) {
@@ -114,7 +133,6 @@ function AuthPage() {
       setBusy(false);
     }
   };
-
 
   const google = () => void startOAuth("google");
   const apple = () => void startOAuth("apple");
