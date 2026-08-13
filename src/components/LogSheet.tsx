@@ -2631,6 +2631,16 @@ function TetanyForm({
       <Field label="Time" schemaFieldId="time">
         <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
       </Field>
+      <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} schemaFieldId="duration" />
+      <Field label={`Intensity ${intensity}/5`} schemaFieldId="intensity">
+        <IntensityScale
+          value={intensity}
+          onChange={setIntensity}
+          max={5}
+          descriptions={getScaleDesc(data, "tetany")}
+          legendTitle="Tetany intensity scale" schemaFieldId="intensity"
+        />
+      </Field>
       <Field label="Type" schemaFieldId="types">
         <CustomChipList
           base={TETANY_TYPES}
@@ -2666,16 +2676,6 @@ function TetanyForm({
           onToggle={(v) => setLoc((a) => toggleIn(a, v))}
         />
       </Field>
-      <Field label={`Intensity ${intensity}/5`} schemaFieldId="intensity">
-        <IntensityScale
-          value={intensity}
-          onChange={setIntensity}
-          max={5}
-          descriptions={getScaleDesc(data, "tetany")}
-          legendTitle="Tetany intensity scale" schemaFieldId="intensity"
-        />
-      </Field>
-      <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} schemaFieldId="duration" />
       <Field label="Triggers" schemaFieldId="triggers">
         <CustomChipList
           base={TETANY_TRIGGERS}

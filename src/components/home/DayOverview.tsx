@@ -683,54 +683,54 @@ export function DayPreview({
 
       {log?.food?.length ? (
         <Card title="Food" icon="🍽️">
-          <ul className="space-y-2">
+          <ul className="space-y-1.5">
             {log.food.map((f, index) => (
-              <li key={f.id} className={`flex items-start gap-2 ${index ? "border-t border-border/60 pt-2" : ""}`}>
+              <li key={f.id} className={`flex items-start gap-2 ${index ? "border-t border-border/60 pt-1.5" : ""}`}>
                 <button onClick={() => onEdit?.("food", f)} className="min-w-0 flex-1 text-left">
                   <p className="text-xs text-muted-foreground">{f.time}</p>
-                  <div className="my-1.5 border-t border-border/60" />
+                  <div className="my-1 border-t border-border/60" />
                   <p className="text-xs leading-relaxed text-muted-foreground">
                     <span className="font-semibold text-foreground">{t("Food")}:</span>{" "}
                     <IcoText text={f.what || (f.histamineFlare ? t("(histamine flare)") : "—")} size={13} />
                   </p>
                   {f.highHistamine ? (
-                    <p className="mt-1 text-xs leading-snug text-muted-foreground">
+                    <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
                       <span className="font-semibold text-foreground">{t("Histamine")}:</span> {t("high histamine")}
                     </p>
                   ) : null}
                   {f.hydrationMl != null ? (
-                    <p className="mt-1 text-xs leading-snug text-muted-foreground"><span className="font-semibold text-foreground">{t("Hydration")}:</span> {f.hydrationMl} ml</p>
+                    <p className="mt-0.5 text-xs leading-snug text-muted-foreground"><span className="font-semibold text-foreground">{t("Hydration")}:</span> {f.hydrationMl} ml</p>
                   ) : null}
                   {f.caffeineMg != null ? (
-                    <p className="mt-1 text-xs leading-snug text-muted-foreground"><span className="font-semibold text-foreground">{t("Caffeine")}:</span> {f.caffeineMg} mg</p>
+                    <p className="mt-0.5 text-xs leading-snug text-muted-foreground"><span className="font-semibold text-foreground">{t("Caffeine")}:</span> {f.caffeineMg} mg</p>
                   ) : null}
                   {f.alcoholDrinks != null ? (
-                    <p className="mt-1 text-xs leading-snug text-muted-foreground"><span className="font-semibold text-foreground">{t("Drinks")}:</span> {f.alcoholDrinks}</p>
+                    <p className="mt-0.5 text-xs leading-snug text-muted-foreground"><span className="font-semibold text-foreground">{t("Drinks")}:</span> {f.alcoholDrinks}</p>
                   ) : null}
                   {f.feelings.length ? (
-                    <p className="mt-1 text-xs leading-snug text-muted-foreground">
+                    <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
                       <span className="font-semibold text-foreground">{t("Feel")}:</span>{" "}
                       <IcoText text={f.feelings.map(t).join(", ")} size={13} />
                     </p>
                   ) : null}
                   {f.symptomsAfter?.length ? (
-                    <p className="mt-1 text-xs leading-snug text-muted-foreground">
+                    <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
                       <span className="font-semibold text-foreground">{t("After")}:</span>{" "}
                       <IcoText text={f.symptomsAfter.map(t).join(", ")} size={13} />
                     </p>
                   ) : null}
                   {f.histamineFlare ? (
-                    <p className="mt-1 text-xs leading-snug text-destructive">
+                    <p className="mt-0.5 text-xs leading-snug text-destructive">
                       <span className="font-semibold"><Ico e="🔥" size={13} /> {t("Histamine flare")}:</span>{" "}
                       {f.histamineSymptoms?.length ? f.histamineSymptoms.join(", ") : t("Yes")}
                     </p>
                   ) : null}
                   {f.after ? (
-                    <p className="mt-1 whitespace-pre-line text-xs leading-snug">
+                    <p className="mt-0.5 whitespace-pre-line text-xs leading-snug">
                       <span className="font-semibold">{t("Note")}:</span> {f.after}
                     </p>
                   ) : null}
-                  <p className="mt-0.5 text-[10px] text-primary">{t("Tap to edit")}</p>
+                  <p className="mt-0 text-[10px] text-primary">{t("Tap to edit")}</p>
                 </button>
                 <DeleteBtn
                   onClick={() =>
@@ -850,22 +850,35 @@ export function DayPreview({
             ))}
           </ul>
         </Card>
-      ) : null}      {(log?.temperature != null || log?.weight != null || log?.sleepHours != null || log?.sleepQuality) && (
+      ) : null}
+
+      {(log?.temperature != null || log?.weight != null || log?.sleepHours != null || log?.sleepQuality) && (
         <Card title="Temp / Sleep / Weight" icon="🌡️">
           <button onClick={() => onEdit?.("temp", undefined)} className="w-full text-left">
-            {log?.temperature != null && <p className="text-sm">{t("Temperature")}: {log.temperature}°C</p>}
-            {log?.weight != null && <p className="text-sm">{t("Weight")}: {log.weight} kg</p>}
+            <div className="my-1 border-t border-border/60" />
+            {log?.temperature != null && (
+              <p className="text-xs leading-snug text-muted-foreground">
+                <span className="font-semibold text-foreground">{t("Temperature")}:</span> {log.temperature}°C
+              </p>
+            )}
+            {log?.weight != null && (
+              <p className={`${log?.temperature != null ? "mt-0.5 " : ""}text-xs leading-snug text-muted-foreground`}>
+                <span className="font-semibold text-foreground">{t("Weight")}:</span> {log.weight} kg
+              </p>
+            )}
             {log?.sleepHours != null && (
-              <p className="text-sm">
-                {t("Sleep")}: {log.sleepHours} h <IcoText text={asArr(log.sleepQuality).join(", ")} size={14} />
+              <p className={`${log?.temperature != null || log?.weight != null ? "mt-0.5 " : ""}text-xs leading-snug text-muted-foreground`}>
+                <span className="font-semibold text-foreground">{t("Sleep")}:</span> {log.sleepHours} h
+                {asArr(log.sleepQuality).length ? <> · <IcoText text={asArr(log.sleepQuality).map(t).join(", ")} size={13} /></> : null}
               </p>
             )}
             {asArr(log?.sleepQuality).length > 0 && log?.sleepHours == null && (
-              <p className="text-sm">
-                {t("Sleep quality")}: <IcoText text={asArr(log.sleepQuality).map(t).join(", ")} size={14} />
+              <p className={`${log?.temperature != null || log?.weight != null ? "mt-0.5 " : ""}text-xs leading-snug text-muted-foreground`}>
+                <span className="font-semibold text-foreground">{t("Sleep quality")}:</span>{" "}
+                <IcoText text={asArr(log.sleepQuality).map(t).join(", ")} size={13} />
               </p>
             )}
-            <p className="mt-1 text-[10px] text-primary">{t("Tap to edit")}</p>
+            <p className="mt-0.5 text-[10px] text-primary">{t("Tap to edit")}</p>
           </button>
         </Card>
       )}
