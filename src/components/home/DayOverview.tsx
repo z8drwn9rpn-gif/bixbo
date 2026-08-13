@@ -51,6 +51,7 @@ import {
   type SexEntry,
 } from "@/lib/storage";
 import { ScheduledDosePopup, type ScheduledDoseTarget } from "@/components/home/ScheduledDosePopup";
+import { getTakenScheduledItems, isScheduledDoseTaken, scheduledDoseKey } from "@/lib/medicationAdherence";
 
 export function DayPreview({
   date,
@@ -176,7 +177,7 @@ export function DayPreview({
                   >
                     {(() => {
                       const all = medScheduleItems(x.med);
-                      const selected = data.medLogItems?.[date]?.[x.key] ?? all;
+                      const selected = getTakenScheduledItems(x.med, date, x.time, data.medLog, data.medLogItems ?? {});
                       const omitted = all.filter((item) => !selected.includes(item));
                       return <>
                         {t("Taken")} · {actual ?? x.time} — {selected.join(", ")}

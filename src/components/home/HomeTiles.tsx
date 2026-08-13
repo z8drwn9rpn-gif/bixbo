@@ -20,6 +20,7 @@ import {
   StarIcon,
 } from "@/components/icons/BixboIcons";
 import { AppShell } from "@/components/AppShell";
+import { isScheduledDoseTaken } from "@/lib/medicationAdherence";
 import { pregnancyProgress, postpartumProgress } from "@/lib/health";
 import { Button } from "@/components/ui/button";
 import { MonthCalendar, monthLabel } from "@/components/MonthCalendar";
@@ -81,7 +82,10 @@ export function MedsProgress({ data, onClick }: { data: BixboData; onClick: () =
   const k = todayKey();
   const scheduled = data.meds.filter((m) => !m.asNeeded);
   const total = scheduled.reduce((s, m) => s + m.times.length, 0);
-  const taken = scheduled.reduce((s, m) => s + m.times.filter((t) => data.medLog[k]?.[`${m.id}@${t}`]).length, 0);
+  const taken = scheduled.reduce(
+    (s, m) => s + m.times.filter((t) => isScheduledDoseTaken(m, k, t, data.medLog, data.medLogItems ?? {})).length,
+    0,
+  );
   return (
     <button
       type="button"
