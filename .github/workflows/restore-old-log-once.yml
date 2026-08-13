@@ -18,14 +18,16 @@ jobs:
         run: |
           git checkout f462b9afdc70160bb7fde3e7643e431ebfe58df4 -- \
             src/components/LogSheet.tsx \
-            src/features/logging/LogSheetRootV2.tsx \
             src/features/logging/logCategories.ts \
             src/features/logging/LifestyleForms.tsx \
             src/features/logging/PainWizard.tsx \
             src/components/home/DayOverview.tsx \
             src/features/logging/CycleForms.tsx \
             src/lib/storage/types.ts
-          git rm -f src/features/logging/EnhancedForms.tsx src/features/logging/EnhancedForms2.tsx
+          git rm -f \
+            src/features/logging/LogSheetRootV2.tsx \
+            src/features/logging/EnhancedForms.tsx \
+            src/features/logging/EnhancedForms2.tsx
       - name: Commit restoration
         shell: bash
         run: |
