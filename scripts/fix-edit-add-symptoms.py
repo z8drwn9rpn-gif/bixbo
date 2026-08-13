@@ -8,6 +8,8 @@ p.write_text(s)
 
 t=Path('src/lib/__tests__/pain-symptom-update-regression.test.ts')
 text=t.read_text()
-append='''\n\ntest("editing an Add symptoms entry preserves symptom-update identity", () => {\n  const source = readFileSync(new URL("../../components/LogSheet.tsx", import.meta.url), "utf8");\n  expect(source).toContain('const editingSymptomUpdate = initialEntry?.entryKind === "symptom-update";');\n  expect(source).toContain('useState(editingSymptomUpdate)');\n  expect(source).toContain('if (editingSymptomUpdate && symptomsStepIndex >= 0) setStep(symptomsStepIndex);');\n  expect(source).toContain('entryKind: quickSymptomUpdate || editingSymptomUpdate ? "symptom-update" : undefined');\n  expect(source).toContain('(copiedFromId ?? initialEntry?.sourcePainId)');\n});\n'''
+text=text.replace('''    expect(sheet).toContain('entryKind: quickSymptomUpdate ? "symptom-update" : undefined');''','''    expect(sheet).toContain('entryKind: quickSymptomUpdate || editingSymptomUpdate ? "symptom-update" : undefined');''')
+append='''\n\nit("editing an Add symptoms entry preserves symptom-update identity", () => {\n  const source = readFileSync(resolve(process.cwd(), "src/components/LogSheet.tsx"), "utf8");\n  expect(source).toContain('const editingSymptomUpdate = initialEntry?.entryKind === "symptom-update";');\n  expect(source).toContain('useState(editingSymptomUpdate)');\n  expect(source).toContain('if (editingSymptomUpdate && symptomsStepIndex >= 0) setStep(symptomsStepIndex);');\n  expect(source).toContain('entryKind: quickSymptomUpdate || editingSymptomUpdate ? "symptom-update" : undefined');\n  expect(source).toContain('(copiedFromId ?? initialEntry?.sourcePainId)');\n});\n'''
 if 'editing an Add symptoms entry preserves symptom-update identity' not in text:
-    t.write_text(text+append)
+    text += append
+t.write_text(text)
