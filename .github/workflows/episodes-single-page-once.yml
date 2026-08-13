@@ -13,6 +13,7 @@ jobs:
         with:
           ref: agent/episodes-single-page
           fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
       - name: Patch Episodes to one page
         shell: bash
         run: |
@@ -45,18 +46,16 @@ jobs:
           s2, n = pattern.subn(replacement, s, count=1)
           if n != 1:
               raise SystemExit(f'Expected to replace episode block once, got {n}')
-          s = s2
-
-          p.write_text(s)
+          p.write_text(s2)
           PY
       - name: Install
-        run: npm ci
+        run: bun install --frozen-lockfile
       - name: Typecheck
-        run: npm run typecheck
+        run: bun run typecheck
       - name: Lint
-        run: npm run lint
+        run: bun run lint
       - name: Build
-        run: npm run build
+        run: bun run build
       - name: Commit
         shell: bash
         run: |
