@@ -83,7 +83,12 @@ export function DayPreview({
   const scheduled = data.meds
     .filter((m) => !m.asNeeded)
     .flatMap((m) =>
-      m.times.map((t) => ({ key: `${m.id}@${t}`, med: m, time: t, taken: !!data.medLog[date]?.[`${m.id}@${t}`] })),
+      m.times.map((t) => ({
+        key: scheduledDoseKey(m, t),
+        med: m,
+        time: t,
+        taken: isScheduledDoseTaken(m, date, t, data.medLog, data.medLogItems ?? {}),
+      })),
     );
   const takenList = scheduled.filter((x) => x.taken);
   const missedList = scheduled.filter((x) => !x.taken && (date < k || (date === k && x.time < nowHHMM)));
