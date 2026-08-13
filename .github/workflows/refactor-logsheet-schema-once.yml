@@ -1,0 +1,59 @@
+name: Refactor LogSheet schema once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/refactor-logsheet-schema-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  refactor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Extract LogSheet schema context
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/components/LogSheet.tsx')
+          s = p.read_text()
+          old_import = 'import { Children, createContext, isValidElement, useContext, useState, useMemo, useRef, useEffect, type ReactNode } from "react";'
+          new_import = 'import { Children, isValidElement, useState, useMemo, useRef, useEffect, type ReactNode } from "react";'
+          if old_import not in s:
+              raise SystemExit('Expected React import not found')
+          s = s.replace(old_import, new_import, 1)
+          anchor = 'import { CATEGORIES, type Category } from "@/features/logging/logCategories";'
+          add = anchor + '\nimport { LogSchemaContext, useLogSchema, type LogSchemaContextValue } from "@/features/logging/LogSchemaContext";'
+          if anchor not in s:
+              raise SystemExit('Category import anchor not found')
+          s = s.replace(anchor, add, 1)
+          block = '''type LogSchemaContextValue = {\n  data: BixboData;\n  featureId: RegistryFeatureId;\n  adminFields: ReturnType<typeof registryCustomFieldsForFeature>;\n  adminFieldValues: Record<string, CustomLogValue>;\n  setAdminFieldValue: (fieldId: string, value: CustomLogValue) => void;\n  saveAdminCustomFields: () => void;\n  sourceEntryId: string;\n} | null;\nconst LogSchemaContext = createContext<LogSchemaContextValue>(null);\nfunction useLogSchema() { return useContext(LogSchemaContext); }\n\n'''
+          if block not in s:
+              raise SystemExit('LogSchemaContext block not found')
+          s = s.replace(block, '', 1)
+          p.write_text(s)
+
+          q = Path('src/features/logging/LogSchemaContext.tsx')
+          q.write_text('''import { createContext, useContext } from "react";\nimport { registryCustomFieldsForFeature, type RegistryFeatureId } from "@/lib/appRegistry";\nimport type { BixboData, CustomLogValue } from "@/lib/storage";\n\nexport type LogSchemaContextValue = {\n  data: BixboData;\n  featureId: RegistryFeatureId;\n  adminFields: ReturnType<typeof registryCustomFieldsForFeature>;\n  adminFieldValues: Record<string, CustomLogValue>;\n  setAdminFieldValue: (fieldId: string, value: CustomLogValue) => void;\n  saveAdminCustomFields: () => void;\n  sourceEntryId: string;\n} | null;\n\nexport const LogSchemaContext = createContext<LogSchemaContextValue>(null);\n\nexport function useLogSchema() {\n  return useContext(LogSchemaContext);\n}\n''')
+          PY
+      - name: Verify
+        run: |
+          bun install --frozen-lockfile
+          bun run typecheck
+          bun test
+          bun run build
+      - name: Commit
+        run: |
+          rm .github/workflows/refactor-logsheet-schema-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/LogSheet.tsx src/features/logging/LogSchemaContext.tsx .github/workflows/refactor-logsheet-schema-once.yml
+          git commit -m "refactor: extract LogSheet schema context"
+          git push
