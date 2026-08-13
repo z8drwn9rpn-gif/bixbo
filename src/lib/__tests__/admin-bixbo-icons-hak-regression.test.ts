@@ -6,7 +6,7 @@ const read = (path: string) => readFileSync(resolve(process.cwd(), path), "utf8"
 
 describe("Admin BIXBO icons and HAK overlay regressions", () => {
   it("renders branded BIXBO icons in the feature icon picker", () => {
-    const source = read("src/components/AdminEditOverlay.tsx");
+    const source = read("src/components/admin/AdminFeaturesTab.tsx");
     expect(source).toContain('import { Ico } from "@/components/icons/BixboIcons"');
     expect(source).toContain("<Ico e={feature.icon} size={24} />");
     expect(source).not.toContain("<select value={feature.icon}");
