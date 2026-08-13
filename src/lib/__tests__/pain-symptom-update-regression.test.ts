@@ -12,7 +12,7 @@ describe("Pain symptom-only follow-ups", () => {
   });
 
   it("keeps symptom-only data separate but nests linked updates under source pain", () => {
-    const sheet = readFileSync(resolve(process.cwd(), "src/components/LogSheet.tsx"), "utf8");
+    const sheet = [readFileSync(resolve(process.cwd(), "src/components/LogSheet.tsx"), "utf8"), readFileSync(resolve(process.cwd(), "src/features/logging/LogSheetRoot.tsx"), "utf8"), readFileSync(resolve(process.cwd(), "src/features/logging/PainWizard.tsx"), "utf8")].join("\n");
     const home = [
       readFileSync(resolve(process.cwd(), "src/routes/index.tsx"), "utf8"),
       readFileSync(resolve(process.cwd(), "src/components/home/DayOverview.tsx"), "utf8"),
@@ -32,27 +32,27 @@ describe("Pain symptom-only follow-ups", () => {
 
 
 it("repeated Add symptoms entries always attach to the latest real pain entry", () => {
-  const source = readFileSync(resolve(process.cwd(), "src/components/LogSheet.tsx"), "utf8");
+  const source = [readFileSync(resolve(process.cwd(), "src/components/LogSheet.tsx"), "utf8"), readFileSync(resolve(process.cwd(), "src/features/logging/LogSheetRoot.tsx"), "utf8"), readFileSync(resolve(process.cwd(), "src/features/logging/PainWizard.tsx"), "utf8")].join("\n");
   expect(source).toContain('(data.dayLogs[date]?.pain ?? []).filter((entry) => entry.entryKind !== "symptom-update")');
   expect(source).toContain('setCopiedFromId(latestPain.id)');
 });
 
 it("quick Add symptoms keeps an optional note field", () => {
-  const source = readFileSync(resolve(process.cwd(), "src/components/LogSheet.tsx"), "utf8");
+  const source = [readFileSync(resolve(process.cwd(), "src/components/LogSheet.tsx"), "utf8"), readFileSync(resolve(process.cwd(), "src/features/logging/LogSheetRoot.tsx"), "utf8"), readFileSync(resolve(process.cwd(), "src/features/logging/PainWizard.tsx"), "utf8")].join("\n");
   expect(source).toContain('quickSymptomUpdate && activePainStepId === "symptoms"');
   expect(source).toContain('placeholder={t("Add a note about what changed, what you were doing, or anything else…")}');
   expect(source).toContain('note: note.trim()');
 });
 
 it("PainWizard no longer contains hidden duplicate Tetany/Panic forms", () => {
-  const source = readFileSync(resolve(process.cwd(), "src/components/LogSheet.tsx"), "utf8");
+  const source = [readFileSync(resolve(process.cwd(), "src/components/LogSheet.tsx"), "utf8"), readFileSync(resolve(process.cwd(), "src/features/logging/LogSheetRoot.tsx"), "utf8"), readFileSync(resolve(process.cwd(), "src/features/logging/PainWizard.tsx"), "utf8")].join("\n");
   expect(source).not.toContain('<div className="hidden" aria-hidden="true">\n          <Field label="Tetany episode?">');
   expect(source).not.toContain('// Panic (full inline log — under Tetany)');
 });
 
 
 it("editing an Add symptoms entry preserves symptom-update identity", () => {
-  const source = readFileSync(resolve(process.cwd(), "src/components/LogSheet.tsx"), "utf8");
+  const source = [readFileSync(resolve(process.cwd(), "src/components/LogSheet.tsx"), "utf8"), readFileSync(resolve(process.cwd(), "src/features/logging/LogSheetRoot.tsx"), "utf8"), readFileSync(resolve(process.cwd(), "src/features/logging/PainWizard.tsx"), "utf8")].join("\n");
   expect(source).toContain('const editingSymptomUpdate = initialEntry?.entryKind === "symptom-update";');
   expect(source).toContain('useState(editingSymptomUpdate)');
   expect(source).toContain('if (editingSymptomUpdate && symptomsStepIndex >= 0) setStep(symptomsStepIndex);');

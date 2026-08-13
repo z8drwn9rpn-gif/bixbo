@@ -284,7 +284,7 @@ export function CustomLogBuilder({ data, update }: { data: BixboData; update: Up
                   {field.kind === "scale" && field.scale ? <div className="mt-3 grid grid-cols-3 gap-2">{(["min", "max", "step"] as const).map((key) => <label key={key} className="text-[9px] text-muted-foreground">{t(key === "min" ? "Minimum" : key === "max" ? "Maximum" : "Step")}<input type="number" step="0.5" value={field.scale?.[key] ?? ""} onChange={(event) => patchField(log, field.id, { scale: { ...field.scale!, [key]: Number(event.target.value) } })} className="mt-1 h-8 w-full rounded-lg bg-background px-2 text-xs ring-1 ring-border" /></label>)}</div> : null}
 
                   {field.kind === "chips" ? <div className="mt-3 space-y-1.5">
-                    {(field.options ?? []).map((option, optionIndex) => (
+                    {(field.options ?? []).map((option: string, optionIndex: number) => (
                       <div key={`${field.id}-${option}`} className="flex gap-2">
                         <input
                           value={displayOptionLabel(field, option)}
@@ -295,7 +295,7 @@ export function CustomLogBuilder({ data, update }: { data: BixboData; update: Up
                           type="button"
                           disabled={(field.options?.length ?? 0) <= 1}
                           onClick={() => {
-                            const options = (field.options ?? []).filter((_, i) => i !== optionIndex);
+                            const options = (field.options ?? []).filter((_: string, i: number) => i !== optionIndex);
                             const optionLabels = { ...(field.optionLabels ?? {}) };
                             delete optionLabels[option];
                             patchField(log, field.id, { options, optionLabels });

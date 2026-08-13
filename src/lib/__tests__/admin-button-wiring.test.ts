@@ -18,7 +18,7 @@ describe("admin button wiring regression guards", () => {
   });
 
   it("keeps Patterns page editing tied to the active sub-tab", () => {
-    expect(src("src/routes/patterns.tsx")).toContain("data-bixbo-pattern-tab");
+    expect(src("src/features/patterns/shared.tsx")).toContain("data-bixbo-pattern-tab");
     expect(src("src/components/admin/AdminEditRuntime.tsx")).toContain("patterns.${tab}");
   });
 
