@@ -1,0 +1,39 @@
+name: Restore pre-radial BIXBO logs
+
+on:
+  push:
+    paths:
+      - '.github/workflows/restore-pre-radial-logs.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Restore exact pre-radial LogSheet
+        run: |
+          git show 883a6c6d3ab982350b8b12c332c43d00d5ca4f83:src/components/LogSheet.tsx > src/components/LogSheet.tsx
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Remove one-shot workflow
+        run: rm .github/workflows/restore-pre-radial-logs.yml
+
+      - name: Commit restored logs
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/LogSheet.tsx .github/workflows/restore-pre-radial-logs.yml
+          git commit -m "restore: pre-radial BIXBO logs"
+          git push
