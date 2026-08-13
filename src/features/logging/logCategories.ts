@@ -19,8 +19,6 @@ export type Category =
 export const CATEGORIES: { id: Category; label: string; emoji: string; hint: string }[] = [
   { id: "postpartum", label: "Postpartum symptoms", emoji: "🤱", hint: "Recovery symptoms · notes" },
   { id: "pain", label: "Pain", emoji: "🔥", hint: "0–10, body, quality" },
-  { id: "tetany", label: "Episodes", emoji: "⭐", hint: "Tetany · panic attack" },
-  { id: "panic", label: "Panic attack", emoji: "✨", hint: "Intensity · symptoms · trigger" },
   { id: "period", label: "Blueberry", emoji: "🫐", hint: "Flow · discharge · notes" },
   { id: "heat", label: "Heat / Cold / TENS", emoji: "♨️", hint: "Heating, ice or TENS session" },
   { id: "food", label: "Food", emoji: "🍽️", hint: "What & how you feel" },
