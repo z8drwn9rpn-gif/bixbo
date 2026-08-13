@@ -94,19 +94,18 @@ export function SideNav({ mascotSrc, mascotFallbackSrc }: { mascotSrc: string; m
       }}
     >
       <Link to="/" className="mb-6 flex items-center gap-3 px-2">
-        <img
-          src={mascotSrc}
-          alt="BIXBO"
-          draggable={false}
-          onError={(event) => {
-            if (!mascotFallbackSrc) return;
-            const img = event.currentTarget;
-            if (img.dataset.fallbackApplied === "1") return;
-            img.dataset.fallbackApplied = "1";
-            img.src = mascotFallbackSrc;
+        <span
+          aria-label="BIXBO"
+          role="img"
+          className="block h-11 w-[46px] shrink-0 select-none"
+          style={{
+            backgroundImage: `url(${mascotSrc})`,
+            backgroundRepeat: "no-repeat",
+            backgroundPosition: "center",
+            backgroundSize: "contain",
+            opacity: 1,
+            visibility: "visible",
           }}
-          className="h-11 w-auto max-w-[46px] select-none object-contain"
-          style={{ filter: "none", opacity: 1, mixBlendMode: "normal" }}
         />
         <span className="font-serif text-2xl font-bold leading-none text-[#3f4f22] dark:text-[#e3edc4]">BIXBO</span>
       </Link>

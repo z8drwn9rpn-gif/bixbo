@@ -16,9 +16,18 @@ export function AppShell({ children, title, right, big = false }: { children: Re
           {title !== undefined && (
             <header className="sticky top-0 z-30 flex min-h-14 items-center justify-between border-b border-border/70 bg-background/88 px-5 py-2 pt-[max(0.5rem,env(safe-area-inset-top))] shadow-[0_1px_0_0_var(--border)] backdrop-blur-xl supports-[backdrop-filter]:bg-background/82">
               <div className="flex min-w-0 items-center gap-3">
-                <span className={big ? "relative block h-[52px] w-[52px] shrink-0 overflow-visible" : "relative block h-10 w-10 shrink-0 overflow-visible"} aria-hidden="true">
-                  <img src={BIXBO_MASCOT_SRC} alt="" aria-hidden="true" draggable={false} className="block h-full w-full object-contain object-center opacity-100 visible" style={{ display: "block", opacity: 1, visibility: "visible", filter: "none", mixBlendMode: "normal" }} />
-                </span>
+                <span
+                  className={big ? "relative block h-[52px] w-[52px] shrink-0" : "relative block h-10 w-10 shrink-0"}
+                  aria-hidden="true"
+                  style={{
+                    backgroundImage: `url(${BIXBO_MASCOT_SRC})`,
+                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: "center",
+                    backgroundSize: "contain",
+                    opacity: 1,
+                    visibility: "visible",
+                  }}
+                />
                 <h1 className={`min-w-0 truncate font-serif font-bold leading-none text-foreground ${big ? "text-3xl" : "text-2xl"}`}>{title}</h1>
               </div>
               {right ? <div className="ml-3 flex shrink-0 items-center">{right}</div> : null}
