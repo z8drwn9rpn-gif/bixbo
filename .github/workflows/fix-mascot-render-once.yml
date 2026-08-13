@@ -53,4 +53,5 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/components/AppShell.tsx src/components/SideNav.tsx .github/workflows/fix-mascot-render-once.yml
           git commit -m "fix: render exact BIXBO mascot without img element"
+          git pull --rebase origin main
           git push origin HEAD:main
