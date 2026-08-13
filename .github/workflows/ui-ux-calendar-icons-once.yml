@@ -24,16 +24,18 @@ jobs:
         shell: python
         run: |
           from pathlib import Path
+          import re
           p = Path('src/components/MonthCalendar.tsx')
           s = p.read_text()
-          old = '''                      <div className="mt-0.5 flex h-4 items-center justify-center leading-none lg:mt-1 lg:h-5">
-                        {icons.length > 0 ? (
-                          <Ico e="❤️" size={14} className="h-[14px] w-[14px] lg:h-[17px] lg:w-[17px] xl:h-[18px] xl:w-[18px]" />
-                        ) : (
-                          <span aria-hidden className="block h-[14px] w-[14px] lg:h-[17px] lg:w-[17px]" />
-                        )}
-                      </div>'''
-          new = '''                      <div className="mt-0.5 flex h-4 max-w-full items-center justify-center gap-px overflow-hidden leading-none lg:mt-1 lg:h-5 lg:gap-0.5">
+          pattern = re.compile(
+              r'<div className="mt-0\.5 flex h-4 items-center justify-center leading-none lg:mt-1 lg:h-5">\s*'
+              r'\{icons\.length > 0 \? \(\s*'
+              r'<Ico e="❤️" size=\{14\} className="h-\[14px\] w-\[14px\] lg:h-\[17px\] lg:w-\[17px\] xl:h-\[18px\] xl:w-\[18px\]" />\s*'
+              r'\) : \(\s*'
+              r'<span aria-hidden className="block h-\[14px\] w-\[14px\] lg:h-\[17px\] lg:w-\[17px\]" />\s*'
+              r'\)\}\s*</div>'
+          )
+          replacement = '''<div className="mt-0.5 flex h-4 max-w-full items-center justify-center gap-px overflow-hidden leading-none lg:mt-1 lg:h-5 lg:gap-0.5">
                         {icons.length > 0 ? (
                           icons.map((icon, iconIndex) => (
                             <Ico
@@ -49,9 +51,10 @@ jobs:
                           <span aria-hidden className="block h-[14px] w-[14px] lg:h-[17px] lg:w-[17px]" />
                         )}
                       </div>'''
-          if old not in s:
-              raise SystemExit('Expected calendar icon block not found')
-          p.write_text(s.replace(old, new, 1))
+          s2, count = pattern.subn(replacement, s, count=1)
+          if count != 1:
+              raise SystemExit(f'Expected one calendar icon block, found {count}')
+          p.write_text(s2)
       - name: Install and validate
         run: |
           bun install --frozen-lockfile
