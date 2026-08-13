@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,9 +7,39 @@ import { useI18n } from "@/hooks/useI18n";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 
+const OAUTH_NEXT_KEY = "bixbo:oauth-next";
+
 function safeNext(value: unknown): string {
   if (typeof value !== "string" || !value.startsWith("/") || value.startsWith("//")) return "";
   return value;
+}
+
+function readPendingOAuthNext(): string {
+  if (typeof window === "undefined") return "";
+  try {
+    return safeNext(window.sessionStorage.getItem(OAUTH_NEXT_KEY));
+  } catch {
+    return "";
+  }
+}
+
+function savePendingOAuthNext(next: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (next) window.sessionStorage.setItem(OAUTH_NEXT_KEY, next);
+    else window.sessionStorage.removeItem(OAUTH_NEXT_KEY);
+  } catch {
+    // Restricted/private browser storage must not block sign-in.
+  }
+}
+
+function clearPendingOAuthNext(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.removeItem(OAUTH_NEXT_KEY);
+  } catch {
+    // Ignore unavailable storage.
+  }
 }
 
 export const Route = createFileRoute("/auth")({
@@ -35,10 +65,12 @@ function AuthPage() {
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const resolvedNext = useMemo(() => next || readPendingOAuthNext(), [next]);
 
   const goNext = () => {
-    if (next) {
-      window.location.href = next;
+    clearPendingOAuthNext();
+    if (resolvedNext) {
+      window.location.href = resolvedNext;
       return;
     }
     navigate({ to: "/settings" });
@@ -51,7 +83,8 @@ function AuthPage() {
     const finishSignedIn = () => {
       if (cancelled || handled) return;
       handled = true;
-      if (next) window.location.href = next;
+      clearPendingOAuthNext();
+      if (resolvedNext) window.location.href = resolvedNext;
       else navigate({ to: "/settings" });
     };
 
@@ -75,7 +108,7 @@ function AuthPage() {
       cancelled = true;
       subscription.unsubscribe();
     };
-  }, [navigate, next]);
+  }, [navigate, resolvedNext]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,7 +120,7 @@ function AuthPage() {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}${next || "/"}`,
+            emailRedirectTo: `${window.location.origin}/auth`,
             data: { display_name: name || undefined },
           },
         });
@@ -111,9 +144,11 @@ function AuthPage() {
     setMsg(null);
 
     try {
-      const authReturnPath = next ? `/auth?next=${encodeURIComponent(next)}` : "/auth";
+      savePendingOAuthNext(next);
       const result = await lovable.auth.signInWithOAuth(provider, {
-        redirect_uri: `${window.location.origin}${authReturnPath}`,
+        // Keep one stable callback URL. This avoids iOS/PWA and Supabase
+        // redirect allow-list failures caused by dynamic ?next= callbacks.
+        redirect_uri: `${window.location.origin}/auth`,
       });
 
       if (result.error) throw result.error;
@@ -128,6 +163,7 @@ function AuthPage() {
 
       goNext();
     } catch (err) {
+      clearPendingOAuthNext();
       setMsg(err instanceof Error ? err.message : String(err));
     } finally {
       setBusy(false);
