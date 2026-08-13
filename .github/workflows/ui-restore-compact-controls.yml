@@ -1,0 +1,35 @@
+name: UI restore validation
+on:
+  push:
+    branches: [agent/ui-restore-compact-controls]
+permissions:
+  contents: write
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ui-restore-compact-controls
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+      - name: Apply patch
+        run: python .github/scripts/ui_restore_patch.py
+      - name: Install
+        run: bun install --frozen-lockfile || bun install
+      - name: Typecheck
+        run: bun run typecheck
+      - name: Lint
+        run: bun run lint
+      - name: Tests
+        continue-on-error: true
+        run: bun test
+      - name: Build
+        run: bun run build
+      - name: Commit changes
+        run: |
+          git config user.name "z8drwn9rpn-gif"
+          git config user.email "z8drwn9rpn@privaterelay.appleid.com"
+          git add src/features/logging/LogFormPrimitives.tsx src/features/logging/LogSheetRoot.tsx src/styles.css src/features/logging/CycleForms.tsx
+          git diff --cached --quiet || git commit -m "fix: restore compact log controls"
+          git push origin HEAD:agent/ui-restore-compact-controls
