@@ -4,6 +4,7 @@ import { SideNav } from "./SideNav";
 import bixboMascot from "@/assets/bixbo-mascot-user.png";
 
 const BIXBO_MASCOT_SRC = bixboMascot;
+const BIXBO_MASCOT_CLIP = "polygon(45.8% 4.2%, 29.2% 17.7%, 31.3% 40.6%, 24% 50%, 20.8% 67.7%, 33.3% 85.4%, 29.2% 91.7%, 38.5% 93.8%, 54.2% 87.5%, 54.2% 91.7%, 64.6% 93.8%, 71.9% 90.6%, 67.7% 85.4%, 74% 75%, 71.9% 59.4%, 83.3% 53.1%, 84.4% 30.2%, 79.2% 25%, 81.3% 31.3%, 69.8% 41.7%, 68.8% 14.6%, 57.3% 5.2%)";
 
 export function AppShell({ children, title, right, big = false, showMascot = true }: { children: ReactNode; title?: ReactNode; right?: ReactNode; big?: boolean; showMascot?: boolean; }) {
   return (
@@ -16,7 +17,14 @@ export function AppShell({ children, title, right, big = false, showMascot = tru
               <div className="flex min-w-0 items-center gap-3">
                 {showMascot && (
                   <span className={big ? "relative block h-[52px] w-[52px] shrink-0 overflow-visible" : "relative block h-10 w-10 shrink-0 overflow-visible"} aria-hidden="true">
-                    <img src={BIXBO_MASCOT_SRC} alt="" aria-hidden="true" draggable={false} className="block h-full w-full object-contain object-center opacity-100 visible" />
+                    <img
+                      src={BIXBO_MASCOT_SRC}
+                      alt=""
+                      aria-hidden="true"
+                      draggable={false}
+                      className="block h-full w-full object-contain object-center opacity-100 visible"
+                      style={{ clipPath: BIXBO_MASCOT_CLIP }}
+                    />
                   </span>
                 )}
                 <h1 className={`min-w-0 truncate font-serif font-bold leading-none text-foreground ${big ? "text-3xl" : "text-2xl"}`}>{title}</h1>
