@@ -1,5 +1,4 @@
 from pathlib import Path
-import re
 
 # 1) Tetany form: make the first three fields match Panic: Time -> Duration -> Intensity.
 p = Path('src/components/LogSheet.tsx')
@@ -62,7 +61,6 @@ food = food.replace('mt-1 whitespace-pre-line text-xs leading-snug', 'mt-0.5 whi
 food = food.replace('mt-0.5 text-[10px] text-primary', 'mt-0 text-[9px] leading-tight text-primary')
 s = s[:food_start] + food + s[food_end:]
 
-old_temp = '''      {log?.workout?.length ? ('''
 # Find the Temp/Sleep/Weight block independently, after Workout.
 temp_start = s.index('      {(log?.temperature != null || log?.weight != null || log?.sleepHours != null || log?.sleepQuality) && (')
 temp_end = s.index('      {tasks.length > 0 && (', temp_start)
@@ -80,7 +78,7 @@ needle = 'describe("Panic/Tetany built-in admin field order", () => {'
 if needle not in s:
     raise SystemExit('Panic/Tetany test suite not found')
 if 'keeps Tetany Time, Duration and Intensity first' not in s:
-    insert = '''\n  test("keeps Tetany Time, Duration and Intensity first", () => {\n    expect((BIXBO_LOG_FIELDS.tetany ?? []).slice().sort((a, b) => a.order - b.order).slice(0, 3).map((field) => field.id)).toEqual([\n      "time",\n      "duration",\n      "intensity",\n    ]);\n  });\n'''
+    insert = '''\n  it("keeps Tetany Time, Duration and Intensity first", () => {\n    expect((BIXBO_LOG_FIELDS.tetany ?? []).slice().sort((a, b) => a.order - b.order).slice(0, 3).map((field) => field.id)).toEqual([\n      "time",\n      "duration",\n      "intensity",\n    ]);\n  });\n'''
     pos = s.index(needle) + len(needle)
     s = s[:pos] + insert + s[pos:]
 p.write_text(s)
