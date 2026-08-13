@@ -24,7 +24,7 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Fix chained Add symptoms parent and add regression test
+      - name: Fix repeated Add symptoms parent
         shell: bash
         run: |
           python3 - <<'PY'
@@ -32,41 +32,40 @@ jobs:
 
           sheet_path = Path('src/components/LogSheet.tsx')
           src = sheet_path.read_text()
-          old = '''    const entries = data.dayLogs[date]?.pain ?? [];
-    if (!entries.length) return undefined;
-
-    return entries.reduce((latest, entry) =>
-      (entry.time ?? "").localeCompare(latest.time ?? "") >= 0 ? entry : latest,
-    );'''
-          new = '''    // Symptom-only follow-ups are children of a real pain entry, not new pain measurements.
-    // Always attach a new Add symptoms entry to the newest REAL pain entry so repeated
-    // follow-ups remain siblings under the same Pain card instead of chaining to each other.
-    const entries = (data.dayLogs[date]?.pain ?? []).filter((entry) => entry.entryKind !== "symptom-update");
-    if (!entries.length) return undefined;
-
-    return entries.reduce((latest, entry) =>
-      (entry.time ?? "").localeCompare(latest.time ?? "") >= 0 ? entry : latest,
-    );'''
+          old = (
+              '    const entries = data.dayLogs[date]?.pain ?? [];\n'
+              '    if (!entries.length) return undefined;\n\n'
+              '    return entries.reduce((latest, entry) =>\n'
+              '      (entry.time ?? "").localeCompare(latest.time ?? "") >= 0 ? entry : latest,\n'
+              '    );'
+          )
+          new = (
+              '    // Symptom-only follow-ups are children of a real pain entry, not new pain measurements.\n'
+              '    // Always attach repeated Add symptoms entries to the newest REAL pain entry.\n'
+              '    const entries = (data.dayLogs[date]?.pain ?? []).filter((entry) => entry.entryKind !== "symptom-update");\n'
+              '    if (!entries.length) return undefined;\n\n'
+              '    return entries.reduce((latest, entry) =>\n'
+              '      (entry.time ?? "").localeCompare(latest.time ?? "") >= 0 ? entry : latest,\n'
+              '    );'
+          )
           if old not in src:
               raise SystemExit('latestPain block not found; refusing unsafe patch')
-          src = src.replace(old, new, 1)
-          sheet_path.write_text(src)
+          sheet_path.write_text(src.replace(old, new, 1))
 
           test_path = Path('src/lib/__tests__/pain-symptom-update-regression.test.ts')
           test = test_path.read_text()
-          marker = '''it("quick Add symptoms keeps an optional note field", () => {'''
-          addition = '''it("repeated Add symptoms entries always attach to the latest real pain entry", () => {
-  const source = readFileSync(resolve(process.cwd(), "src/components/LogSheet.tsx"), "utf8");
-  expect(source).toContain('(data.dayLogs[date]?.pain ?? []).filter((entry) => entry.entryKind !== "symptom-update")');
-  expect(source).toContain('setCopiedFromId(latestPain.id)');
-});
-
-'''
-          if addition.strip() not in test:
+          marker = 'it("quick Add symptoms keeps an optional note field", () => {'
+          addition = (
+              'it("repeated Add symptoms entries always attach to the latest real pain entry", () => {\n'
+              '  const source = readFileSync(resolve(process.cwd(), "src/components/LogSheet.tsx"), "utf8");\n'
+              '  expect(source).toContain(\'(data.dayLogs[date]?.pain ?? []).filter((entry) => entry.entryKind !== "symptom-update")\');\n'
+              '  expect(source).toContain(\'setCopiedFromId(latestPain.id)\');\n'
+              '});\n\n'
+          )
+          if 'repeated Add symptoms entries always attach' not in test:
               if marker not in test:
                   raise SystemExit('test insertion marker not found')
-              test = test.replace(marker, addition + marker, 1)
-              test_path.write_text(test)
+              test_path.write_text(test.replace(marker, addition + marker, 1))
           PY
 
       - name: Verify
