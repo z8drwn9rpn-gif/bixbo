@@ -73,12 +73,9 @@ if old_button not in s:
 s = s.replace(old_button, new_button, 1)
 idx.write_text(s)
 
-# Remove imports now made unnecessary by extracted Today header if unused elsewhere.
-# PillIcon and medScheduleItems are still used elsewhere in index, so leave them intact.
-
-# Add regression test that proves the Home-facing shared resolver handles partial groups.
+# Add a regression test using the existing bun:test style and the actual Med type.
 test = Path('src/lib/__tests__/medication-adherence.test.ts')
 t = test.read_text()
 if 'domain meds facade preserves partial grouped doses' not in t:
-    t += '''\n\ntest("domain meds facade preserves partial grouped doses", async () => {\n  const { resolveScheduledDose } = await import("../domain/meds");\n  const med = { id: "supplements", name: "Supplements", dose: "Omega-3 2x, Iron", times: ["15:00"], asNeeded: false };\n  const state = resolveScheduledDose(\n    med as any,\n    "2026-08-12",\n    "15:00",\n    { "2026-08-12": { "supplements@15:00": true } },\n    { "2026-08-12": { "supplements@15:00": ["Iron"] } },\n    new Date(2026, 7, 13, 12, 0),\n  );\n  expect(state.allItems.length).toBe(2);\n  expect(state.selectedItems).toEqual(["Iron"]);\n  expect(state.missedItems).toEqual(["Omega-3 2x"]);\n});\n'''
+    t += '''\n\nit("domain meds facade preserves partial grouped doses", async () => {\n  const { resolveScheduledDose: resolveFromDomain } = await import("../domain/meds");\n  const domainMed: Med = { id: "supplements", name: "Omega-3 2x, Iron", times: ["15:00"] };\n  const state = resolveFromDomain(\n    domainMed,\n    "2026-08-12",\n    "15:00",\n    { "2026-08-12": { "supplements@15:00": true } },\n    { "2026-08-12": { "supplements@15:00": ["Iron"] } },\n    new Date("2026-08-13T12:00:00"),\n  );\n  expect(state.allItems).toEqual(["Omega-3 2x", "Iron"]);\n  expect(state.selectedItems).toEqual(["Iron"]);\n  expect(state.missedItems).toEqual(["Omega-3 2x"]);\n});\n'''
     test.write_text(t)
