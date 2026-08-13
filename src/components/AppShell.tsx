@@ -4,17 +4,7 @@ import { SideNav } from "./SideNav";
 
 const BIXBO_MASCOT_SRC = "/bixbo-mascot-user.png?v=20260813d";
 
-export function AppShell({
-  children,
-  title,
-  right,
-  big = false,
-}: {
-  children: ReactNode;
-  title?: ReactNode;
-  right?: ReactNode;
-  big?: boolean;
-}) {
+export function AppShell({ children, title, right, big = false }: { children: ReactNode; title?: ReactNode; right?: ReactNode; big?: boolean; }) {
   return (
     <div className="min-h-dvh overflow-x-hidden bg-background text-foreground" style={{ overscrollBehaviorX: "none" }}>
       <SideNav mascotSrc={BIXBO_MASCOT_SRC} />
