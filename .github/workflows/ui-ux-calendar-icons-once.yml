@@ -1,0 +1,69 @@
+name: Apply calendar BIXBO icon fix once
+
+on:
+  push:
+    branches: [agent/ui-ux-consistency-pass]
+    paths:
+      - .github/workflows/ui-ux-calendar-icons-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ui-ux-consistency-pass
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Patch calendar icon rendering
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('src/components/MonthCalendar.tsx')
+          s = p.read_text()
+          old = '''                      <div className="mt-0.5 flex h-4 items-center justify-center leading-none lg:mt-1 lg:h-5">
+                        {icons.length > 0 ? (
+                          <Ico e="❤️" size={14} className="h-[14px] w-[14px] lg:h-[17px] lg:w-[17px] xl:h-[18px] xl:w-[18px]" />
+                        ) : (
+                          <span aria-hidden className="block h-[14px] w-[14px] lg:h-[17px] lg:w-[17px]" />
+                        )}
+                      </div>'''
+          new = '''                      <div className="mt-0.5 flex h-4 max-w-full items-center justify-center gap-px overflow-hidden leading-none lg:mt-1 lg:h-5 lg:gap-0.5">
+                        {icons.length > 0 ? (
+                          icons.map((icon, iconIndex) => (
+                            <Ico
+                              key={`${key}-${icon}-${iconIndex}`}
+                              e={icon}
+                              size={icons.length > 1 ? 12 : 14}
+                              className={icons.length > 1
+                                ? "h-3 w-3 shrink-0 lg:h-[15px] lg:w-[15px] xl:h-4 xl:w-4"
+                                : "h-[14px] w-[14px] shrink-0 lg:h-[17px] lg:w-[17px] xl:h-[18px] xl:w-[18px]"}
+                            />
+                          ))
+                        ) : (
+                          <span aria-hidden className="block h-[14px] w-[14px] lg:h-[17px] lg:w-[17px]" />
+                        )}
+                      </div>'''
+          if old not in s:
+              raise SystemExit('Expected calendar icon block not found')
+          p.write_text(s.replace(old, new, 1))
+      - name: Install and validate
+        run: |
+          bun install --frozen-lockfile
+          bun run typecheck
+          bun run lint
+          bun test
+          bun run build
+      - name: Commit fix
+        run: |
+          git config user.name "BIXBO UI bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add src/components/MonthCalendar.tsx
+          git diff --cached --quiet && exit 0
+          git commit -m "fix: render correct BIXBO calendar icons"
+          git push origin HEAD:agent/ui-ux-consistency-pass
