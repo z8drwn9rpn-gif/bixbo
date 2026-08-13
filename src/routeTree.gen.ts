@@ -15,7 +15,6 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CoupleRouteImport } from './routes/couple'
 import { Route as InsightsRouteImport } from './routes/insights'
-import { Route as McpRouteImport } from './routes/mcp'
 import { Route as MedsRouteImport } from './routes/meds'
 import { Route as NotesRouteImport } from './routes/notes'
 import { Route as NotificationsRouteImport } from './routes/notifications'
@@ -59,11 +58,6 @@ const CoupleRoute = CoupleRouteImport.update({
 const InsightsRoute = InsightsRouteImport.update({
   id: '/insights',
   path: '/insights',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const McpRoute = McpRouteImport.update({
-  id: '/mcp',
-  path: '/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MedsRoute = MedsRouteImport.update({
@@ -147,7 +141,6 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/couple': typeof CoupleRoute
   '/insights': typeof InsightsRoute
-  '/mcp': typeof McpRoute
   '/meds': typeof MedsRoute
   '/notes': typeof NotesRoute
   '/notifications': typeof NotificationsRoute
@@ -170,7 +163,6 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/couple': typeof CoupleRoute
   '/insights': typeof InsightsRoute
-  '/mcp': typeof McpRoute
   '/meds': typeof MedsRoute
   '/notes': typeof NotesRoute
   '/notifications': typeof NotificationsRoute
@@ -194,7 +186,6 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/couple': typeof CoupleRoute
   '/insights': typeof InsightsRoute
-  '/mcp': typeof McpRoute
   '/meds': typeof MedsRoute
   '/notes': typeof NotesRoute
   '/notifications': typeof NotificationsRoute
@@ -219,7 +210,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/couple'
     | '/insights'
-    | '/mcp'
     | '/meds'
     | '/notes'
     | '/notifications'
@@ -242,7 +232,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/couple'
     | '/insights'
-    | '/mcp'
     | '/meds'
     | '/notes'
     | '/notifications'
@@ -265,7 +254,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/couple'
     | '/insights'
-    | '/mcp'
     | '/meds'
     | '/notes'
     | '/notifications'
@@ -289,7 +277,6 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   CoupleRoute: typeof CoupleRoute
   InsightsRoute: typeof InsightsRoute
-  McpRoute: typeof McpRoute
   MedsRoute: typeof MedsRoute
   NotesRoute: typeof NotesRoute
   NotificationsRoute: typeof NotificationsRoute
@@ -348,13 +335,6 @@ declare module '@tanstack/react-router' {
       path: '/insights'
       fullPath: '/insights'
       preLoaderRoute: typeof InsightsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/mcp': {
-      id: '/mcp'
-      path: '/mcp'
-      fullPath: '/mcp'
-      preLoaderRoute: typeof McpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/meds': {
@@ -465,7 +445,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   CoupleRoute: CoupleRoute,
   InsightsRoute: InsightsRoute,
-  McpRoute: McpRoute,
   MedsRoute: MedsRoute,
   NotesRoute: NotesRoute,
   NotificationsRoute: NotificationsRoute,
