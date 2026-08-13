@@ -121,8 +121,38 @@ const BUILTIN_ADMIN_DEFAULTS: AdminConfig = {
   },
 };
 
+const PERIOD_CORE_ORDER: Record<string, number> = {
+  flow: -70,
+  cramps: -60,
+  discharge: -50,
+  dischargeNote: -40,
+  note: -30,
+  birthControlSince: -20,
+  pregnant: -10,
+};
+
+function enforceRequiredLogFieldOrder(config: AdminConfig): AdminConfig {
+  const features = { ...(config.features ?? {}) };
+
+  const period = { ...(features.period ?? {}) };
+  const periodFields = { ...(period.fields ?? {}) };
+  Object.entries(PERIOD_CORE_ORDER).forEach(([fieldId, order]) => {
+    periodFields[fieldId] = { ...(periodFields[fieldId] ?? {}), order };
+  });
+  features.period = { ...period, fields: periodFields };
+
+  const food = { ...(features.food ?? {}) };
+  const foodFields = { ...(food.fields ?? {}) };
+  foodFields.reaction = { ...(foodFields.reaction ?? {}), order: 95 };
+  features.food = { ...food, fields: foodFields };
+
+  return { ...config, features };
+}
+
 export function getEffectiveAdminConfig(ssrFallback: AdminConfig = {}): AdminConfig {
-  if (typeof window === "undefined") return mergeAdminConfigs(BUILTIN_ADMIN_DEFAULTS, ssrFallback);
+  if (typeof window === "undefined") {
+    return enforceRequiredLogFieldOrder(mergeAdminConfigs(BUILTIN_ADMIN_DEFAULTS, ssrFallback));
+  }
   const saved = mergeAdminConfigs(getCachedGlobalAdminConfig(), getDeviceAdminConfig());
-  return mergeAdminConfigs(BUILTIN_ADMIN_DEFAULTS, saved);
+  return enforceRequiredLogFieldOrder(mergeAdminConfigs(BUILTIN_ADMIN_DEFAULTS, saved));
 }
