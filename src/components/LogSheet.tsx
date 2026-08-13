@@ -3480,25 +3480,6 @@ function FoodForm({
           />
         </div>
       </Field>
-      <Field label="Reaction?" schemaFieldId="reaction">
-        <div className="mt-1 flex gap-2">
-          <Chip active={!allergicReaction} onClick={() => setAllergicReaction(false)}>
-            No / not sure
-          </Chip>
-          <Chip active={allergicReaction} onClick={() => setAllergicReaction(true)}>
-            Yes — log it
-          </Chip>
-        </div>
-        {allergicReaction && (
-          <div className="mt-2 flex gap-2">
-            {(["mild", "moderate", "severe"] as const).map((s2) => (
-              <Chip key={s2} active={reactionSeverity === s2} onClick={() => setReactionSeverity(s2)}>
-                {s2[0].toUpperCase() + s2.slice(1)}
-              </Chip>
-            ))}
-          </div>
-        )}
-      </Field>
       <Field label="How do I feel after food?" schemaFieldId="feelings">
         <CustomChipList
           base={FOOD_FEELINGS_DEFAULT}
@@ -3598,6 +3579,25 @@ function FoodForm({
           selected={allergensInMeal}
           onToggle={(v) => setAllergensInMeal((a) => toggleIn(a, v))}
         />
+      </Field>
+      <Field label="Reaction?" schemaFieldId="reaction">
+        <div className="mt-1 flex gap-2">
+          <Chip active={!allergicReaction} onClick={() => setAllergicReaction(false)}>
+            No / not sure
+          </Chip>
+          <Chip active={allergicReaction} onClick={() => setAllergicReaction(true)}>
+            Yes — log it
+          </Chip>
+        </div>
+        {allergicReaction && (
+          <div className="mt-2 flex gap-2">
+            {(["mild", "moderate", "severe"] as const).map((s2) => (
+              <Chip key={s2} active={reactionSeverity === s2} onClick={() => setReactionSeverity(s2)}>
+                {s2[0].toUpperCase() + s2.slice(1)}
+              </Chip>
+            ))}
+          </div>
+        )}
       </Field>
       <RegistryFieldBlock fieldId="intake">
       <div className="grid grid-cols-3 gap-2">
