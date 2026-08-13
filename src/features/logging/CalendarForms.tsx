@@ -135,7 +135,7 @@ export function EventForm({
         <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("e.g. Doctor visit")} />
       </Field>
       <RegistryFieldBlock fieldId="dates">
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid min-w-0 grid-cols-2 gap-2 [&>*]:min-w-0">
         <Field label="From">
           <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
         </Field>
@@ -145,7 +145,7 @@ export function EventForm({
       </div>
       </RegistryFieldBlock>
       <RegistryFieldBlock fieldId="times">
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid min-w-0 grid-cols-2 gap-2 [&>*]:min-w-0">
         <Field label="Time from">
           <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
         </Field>
@@ -215,7 +215,7 @@ export function TaskForm({
         <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("What to do…")} />
       </Field>
       <RegistryFieldBlock fieldId="dates">
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid min-w-0 grid-cols-2 gap-2 [&>*]:min-w-0">
         <Field label="From">
           <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
         </Field>
@@ -225,7 +225,7 @@ export function TaskForm({
       </div>
       </RegistryFieldBlock>
       <RegistryFieldBlock fieldId="times">
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid min-w-0 grid-cols-2 gap-2 [&>*]:min-w-0">
         <Field label="Time from">
           <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
         </Field>

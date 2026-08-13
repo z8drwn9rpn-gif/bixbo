@@ -936,3 +936,84 @@ button:has(+ a[href="/report"]) {
 .dark .bixbo-unified-log select {
   background: color-mix(in srgb, var(--surface) 86%, var(--surface-sunken));
 }
+
+
+/* BIXBO true Pain-style log sizing */
+.bixbo-unified-log {
+  overflow-x: hidden;
+}
+
+.bixbo-unified-log *,
+.bixbo-unified-log *::before,
+.bixbo-unified-log *::after {
+  box-sizing: border-box;
+}
+
+/* Grid children must be allowed to shrink on iPhone; otherwise date/time inputs overlap. */
+.bixbo-unified-log .grid > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.bixbo-unified-log input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.bixbo-unified-log select {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  height: 40px;
+  border-radius: 14px;
+  padding-inline: 12px;
+  font-size: 14px;
+}
+
+.bixbo-unified-log textarea {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 72px;
+  border-radius: 16px;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+/* Keep section rhythm close to Pain instead of large card stacks. */
+.bixbo-unified-log section {
+  min-width: 0;
+}
+
+.bixbo-unified-log section[class*="border-t"] {
+  padding-top: 12px;
+}
+
+/* Compact selectable buttons that already use pill semantics. */
+.bixbo-unified-log button.rounded-full {
+  min-height: 30px;
+  max-width: 100%;
+  white-space: normal;
+  line-height: 1.15;
+}
+
+/* Information cards can stay cards, but never exceed the viewport. */
+.bixbo-unified-log .rounded-3xl,
+.bixbo-unified-log .rounded-2xl,
+.bixbo-unified-log .rounded-xl {
+  max-width: 100%;
+}
+
+/* Medication rows and other compound controls may contain inputs: force them to shrink instead of overlap. */
+.bixbo-unified-log [class*="grid-cols-"] input,
+.bixbo-unified-log [class*="grid-cols-"] textarea,
+.bixbo-unified-log [class*="grid-cols-"] select {
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (max-width: 430px) {
+  .bixbo-unified-log {
+    padding-inline: 16px;
+  }
+
+  .bixbo-unified-log .gap-4 { gap: 12px; }
+  .bixbo-unified-log .gap-3 { gap: 10px; }
+}
