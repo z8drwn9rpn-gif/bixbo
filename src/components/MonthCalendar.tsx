@@ -448,18 +448,9 @@ export function MonthCalendar({
                         </div>
                       </div>
 
-                      <div className="mt-0.5 flex h-4 max-w-full items-center justify-center gap-px overflow-hidden leading-none lg:mt-1 lg:h-5 lg:gap-0.5">
-              {icons.length > 0 ? (
-                icons.map((icon, iconIndex) => (
-                  <Ico
-                    key={`${key}-${icon}-${iconIndex}`}
-                    e={icon}
-                    size={icons.length > 1 ? 12 : 14}
-                    className={icons.length > 1
-                      ? "h-3 w-3 shrink-0 lg:h-[15px] lg:w-[15px] xl:h-4 xl:w-4"
-                      : "h-[14px] w-[14px] shrink-0 lg:h-[17px] lg:w-[17px] xl:h-[18px] xl:w-[18px]"}
-                  />
-                ))
+                      <div className="mt-0.5 flex h-4 items-center justify-center leading-none lg:mt-1 lg:h-5">
+              {icons.includes("❤️") ? (
+                <Ico e="❤️" size={14} className="h-[14px] w-[14px] lg:h-[17px] lg:w-[17px] xl:h-[18px] xl:w-[18px]" />
               ) : (
                 <span aria-hidden className="block h-[14px] w-[14px] lg:h-[17px] lg:w-[17px]" />
               )}
