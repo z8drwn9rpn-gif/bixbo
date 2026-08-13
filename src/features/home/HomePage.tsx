@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, HeartIcon, Ico } from "@/components/icons/Bi
 import { layoutOrder } from "@/lib/layoutRegistry";
 import { isAdminOwnerAccount } from "@/lib/deviceAdmin";
 import { AppShell } from "@/components/AppShell";
+import bixboMascot from "@/assets/bixbo-mascot-user.png";
 import { MonthCalendar, monthLabel } from "@/components/MonthCalendar";
 import { LogSheet } from "@/components/LogSheet";
 import { QuickTags } from "@/components/QuickTags";
@@ -78,7 +79,22 @@ export function HomePage() {
 
   return <AppShell
     big
-    title={<div className="flex flex-col leading-tight"><span>BIXBO</span><span className="text-xs font-normal text-muted-foreground">{t("Hi")}, {view.settings.userName?.trim() || t("there")} <Ico e="❤️" size={12} /></span></div>}
+    showMascot={false}
+    title={
+      <div className="flex items-center gap-3 leading-tight">
+        <img
+          src={bixboMascot}
+          alt="BIXBO penguin"
+          draggable={false}
+          className="h-[52px] w-[52px] shrink-0 object-contain"
+          style={{ display: "block", opacity: 1, visibility: "visible", filter: "none", mixBlendMode: "normal" }}
+        />
+        <div className="flex flex-col">
+          <span>BIXBO</span>
+          <span className="text-xs font-normal text-muted-foreground">{t("Hi")}, {view.settings.userName?.trim() || t("there")} <Ico e="❤️" size={12} /></span>
+        </div>
+      </div>
+    }
     right={<div className="flex items-center gap-1"><TodayHeaderSummary data={view} onOpen={() => setTodayOpen(true)} /><Link to="/profile" className="flex min-w-[52px] flex-col items-center justify-center rounded-2xl px-2 py-1.5 text-primary transition hover:bg-tint" aria-label={t("Health")} title={t("Health")}><HeartIcon size={24} /><span className="mt-0.5 text-[10px] font-semibold leading-none">{t("Health")}</span></Link></div>}
   >
     <div className="lg:mx-auto lg:grid lg:w-full lg:max-w-[1480px] lg:grid-cols-[minmax(0,1.62fr)_minmax(340px,0.95fr)] lg:items-start lg:gap-4 lg:px-0 xl:grid-cols-[minmax(0,1.72fr)_minmax(380px,1fr)] xl:gap-5">
