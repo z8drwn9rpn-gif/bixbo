@@ -1797,7 +1797,7 @@ function PainWizard({
       ) : null}
 
       {activePainStepId === "score" && (
-        <div className="flex flex-1 flex-col items-center justify-center gap-4 py-6">
+        <div className="flex flex-1 flex-col items-center gap-5 px-1 pb-6 pt-5">
           {latestPain && !initialEntry && symptomsStepIndex >= 0 && (
             <div className="w-full rounded-2xl border border-primary/30 bg-surface/90 p-3 shadow-sm">
               <div className="mb-3 flex items-start justify-between gap-3">
@@ -1817,14 +1817,22 @@ function PainWizard({
             </div>
           )}
 
+          <div className="mt-1 text-center">
+            <h2 className="font-serif text-[22px] leading-tight text-foreground">{t("How intense is your pain right now?")}</h2>
+            <p className="mt-1.5 text-sm text-foreground/80">{t("Rate from 0 (no pain) to 10 (worst pain imaginable).")}</p>
+          </div>
+
           <div
-            className="grid h-32 w-32 place-items-center rounded-full text-5xl font-bold text-white"
+            className="grid h-32 w-32 place-items-center rounded-full text-white shadow-sm"
             style={{ background: bg }}
           >
-            {Number.isInteger(score) ? score : score.toFixed(1)}
+            <div className="text-center">
+              <div className="text-5xl font-bold leading-none">{Number.isInteger(score) ? score : score.toFixed(1)}</div>
+              <div className="mt-2 text-sm font-semibold">{t(getScaleDesc(data, "pain")[Math.round(score)])}</div>
+            </div>
           </div>
           <div className="flex items-center justify-center gap-1.5">
-            <p className="text-center text-xs font-medium text-muted-foreground">{t("Pain scale")}</p>
+            <p className="text-center text-sm font-semibold text-foreground">{t("Pain scale")}</p>
             <button
               type="button"
               onClick={() => setPainScaleInfoOpen((open) => !open)}
@@ -1835,10 +1843,10 @@ function PainWizard({
               i
             </button>
           </div>
-          <div className="w-full px-4">
+          <div className="w-full max-w-md px-3">
             <Slider value={[score * 2]} min={0} max={20} step={1} onValueChange={([v]) => setScore(v / 2)} />
           </div>
-          <div className="flex flex-wrap justify-center gap-1.5 px-4">
+          <div className="flex max-w-md flex-wrap justify-center gap-1.5 px-2">
             {Array.from({ length: 21 }, (_, i) => i / 2).map((n) => (
               <button
                 key={n}
@@ -1854,6 +1862,10 @@ function PainWizard({
                 {Number.isInteger(n) ? n : n.toFixed(1)}
               </button>
             ))}
+          </div>
+          <div className="mt-1 flex max-w-[300px] items-center gap-2 rounded-2xl bg-primary/5 px-3 py-2 text-left text-xs leading-relaxed text-foreground/80">
+            <span aria-hidden="true" className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary/10 text-base">💡</span>
+            <span>{t("Use this scale to track your pain and see patterns over time.")}</span>
           </div>
           {painScaleInfoOpen ? (
             <div
