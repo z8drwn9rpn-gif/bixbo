@@ -181,6 +181,8 @@ type Category =
 const CATEGORIES: { id: Category; label: string; emoji: string; hint: string }[] = [
   { id: "postpartum", label: "Postpartum symptoms", emoji: "🤱", hint: "Recovery symptoms · notes" },
   { id: "pain", label: "Pain", emoji: "🔥", hint: "0–10, body, quality" },
+  { id: "tetany", label: "Tetany episode", emoji: "⭐", hint: "Type · location · intensity" },
+  { id: "panic", label: "Panic attack", emoji: "✨", hint: "Intensity · symptoms · trigger" },
   { id: "period", label: "Blueberry", emoji: "🫐", hint: "Flow · discharge · notes" },
   { id: "heat", label: "Heat / Cold / TENS", emoji: "♨️", hint: "Heating, ice or TENS session" },
   { id: "food", label: "Food", emoji: "🍽️", hint: "What & how you feel" },
@@ -1781,6 +1783,11 @@ function PainWizard({
 
       {activePainStepId === "score" && (
         <div className="flex flex-col items-center gap-4 py-6">
+          {!initialEntry && !quickSymptomUpdate ? (
+            <div className="sticky top-0 z-20 w-full px-2 pb-1 bg-background/95 backdrop-blur">
+              <QuickSaveAction label="Save pain now — add details later" onSave={save} />
+            </div>
+          ) : null}
           {latestPain && !initialEntry && symptomsStepIndex >= 0 && (
             <div className="w-full rounded-2xl border border-primary/30 bg-surface/90 p-3 shadow-sm">
               <div className="mb-3 flex items-start justify-between gap-3">
@@ -1835,11 +1842,6 @@ function PainWizard({
               title={t("Pain scale (Mankosky)")}
             />
           </div>
-          {!initialEntry && !quickSymptomUpdate ? (
-            <div className="w-full px-2">
-              <QuickSaveAction label="Save pain now — add details later" onSave={save} />
-            </div>
-          ) : null}
         </div>
       )}
 
@@ -2186,6 +2188,7 @@ function PainWizard({
               onToggle={(v) => setPcosSymptoms((a) => toggleIn(a, v))}
             />
           </Field>
+          <div className="hidden" aria-hidden="true">
           <Field label="Tetany episode?">
             <div className="mt-1 flex gap-2">
               <Chip active={!tetany} onClick={() => setTetany(false)}>
@@ -2428,6 +2431,7 @@ function PainWizard({
               </Field>
             </div>
           )}
+          </div>
         </div>
       )}
 
