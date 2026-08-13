@@ -142,3 +142,40 @@ export function isScheduledDoseTaken(
 
 /** Alias of {@link summarizeMedicationAdherence} kept for a stable public name. */
 export const calculateMedicationAdherence = summarizeMedicationAdherence;
+
+export type MedicationProgressSummary = { taken: number; expected: number; pct?: number };
+
+/**
+ * Canonical cross-medication progress summary. Counts individual items inside grouped
+ * scheduled doses via medLogItems and preserves legacy whole-group records.
+ * Set includeFutureScheduled=true for a full-day plan (for example the Home header);
+ * otherwise only eligible/due doses are counted.
+ */
+export function summarizeMedicationProgress(
+  meds: Med[],
+  dates: string[],
+  medLog: MedicationLog,
+  medLogItems: MedicationLogItems,
+  now: Date,
+  includeFutureScheduled = false,
+): MedicationProgressSummary {
+  let taken = 0;
+  let expected = 0;
+
+  meds.filter((med) => !med.asNeeded).forEach((med) => {
+    dates.forEach((dateKey) => {
+      (med.times ?? []).forEach((time) => {
+        const state = resolveScheduledDose(med, dateKey, time, medLog, medLogItems, now);
+        if (!includeFutureScheduled && !state.eligible) return;
+        expected += state.allItems.length;
+        taken += state.selectedItems.length;
+      });
+    });
+  });
+
+  return {
+    taken,
+    expected,
+    pct: expected > 0 ? Math.round((taken / expected) * 100) : undefined,
+  };
+}

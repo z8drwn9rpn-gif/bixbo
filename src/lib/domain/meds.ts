@@ -15,5 +15,6 @@ export {
   scheduledTimeMinutes,
   summarizeMedicationAdherence,
   calculateMedicationAdherence,
+  summarizeMedicationProgress,
 } from "@/lib/medicationAdherence";
-export type { MedicationLog, MedicationLogItems, ScheduledDoseState } from "@/lib/medicationAdherence";
+export type { MedicationLog, MedicationLogItems, ScheduledDoseState, MedicationProgressSummary } from "@/lib/medicationAdherence";

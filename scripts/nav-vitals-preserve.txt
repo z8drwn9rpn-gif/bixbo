@@ -1,1 +1,0 @@
-Preserve all existing app features and calculations while fixing tooltips and navigation imagery.

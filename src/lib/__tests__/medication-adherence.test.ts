@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import { resolveScheduledDose, summarizeMedicationAdherence } from "../medicationAdherence";
+import { resolveScheduledDose, summarizeMedicationAdherence, summarizeMedicationProgress } from "../medicationAdherence";
 import type { Med } from "../storage";
 
 const med: Med = {
@@ -54,4 +54,26 @@ it("domain meds facade preserves partial grouped doses", async () => {
   expect(state.allItems).toEqual(["Omega-3 2x", "Iron"]);
   expect(state.selectedItems).toEqual(["Iron"]);
   expect(state.missedItems).toEqual(["Omega-3 2x"]);
+});
+
+
+it("counts grouped items consistently across the whole medication plan", () => {
+  const meds: Med[] = [
+    { id: "morning", name: "HAK, Probiotic", times: ["09:00"] },
+    { id: "evening", name: "Omega-3 2x, Iron", times: ["18:00"] },
+  ];
+  const medLog = {
+    "2026-08-12": { "morning@09:00": true, "evening@18:00": true },
+  };
+  const medLogItems = {
+    "2026-08-12": {
+      "morning@09:00": ["HAK", "Probiotic"],
+      "evening@18:00": ["Iron"],
+    },
+  };
+  expect(summarizeMedicationProgress(meds, ["2026-08-12"], medLog, medLogItems, new Date("2026-08-13T12:00:00"))).toEqual({
+    taken: 3,
+    expected: 4,
+    pct: 75,
+  });
 });

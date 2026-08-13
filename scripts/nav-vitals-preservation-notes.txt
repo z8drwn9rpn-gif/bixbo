@@ -1,1 +1,0 @@
-This file documents the user's requirement: do not remove existing app features; add assets and fix behavior in place.

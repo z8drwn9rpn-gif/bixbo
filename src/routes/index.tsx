@@ -26,6 +26,7 @@ import { MonthCalendar, monthLabel } from "@/components/MonthCalendar";
 import { LogSheet } from "@/components/LogSheet";
 import { QuickTags } from "@/components/QuickTags";
 import { useI18n } from "@/hooks/useI18n";
+import { summarizeMedicationProgress } from "@/lib/domain/meds";
 import {
   useBixbo,
   EMPTY,
@@ -35,7 +36,6 @@ import {
   todayKey,
   PAIN_DESCRIPTIONS,
   painColor,
-  medScheduleItems,
   avgDayPain,
   latestDayWeight,
   averageDayTemperature,
@@ -196,10 +196,14 @@ function HomePage() {
   const todayDateKey = todayKey();
   const todayLog = view.dayLogs[todayDateKey];
   const todayPain = avgDayPain(todayLog);
-  const todayScheduled = view.meds
-    .filter((med) => !med.asNeeded)
-    .flatMap((med) => med.times.map((time) => `${med.id}@${time}`));
-  const todayMedsTaken = todayScheduled.filter((key) => view.medLog[todayDateKey]?.[key]).length;
+  const todayMedicationProgress = summarizeMedicationProgress(
+    view.meds,
+    [todayDateKey],
+    view.medLog,
+    view.medLogItems ?? {},
+    new Date(),
+    true,
+  );
 
   return (
     <AppShell
@@ -589,7 +593,7 @@ function HomePage() {
               key: "meds",
               icon: <PillIcon size={22} />,
               label: "Medication",
-              value: `${todayMedsTaken} ${t("of")} ${todayScheduled.length} ${t("taken")}`,
+              value: `${todayMedicationProgress.taken} ${t("of")} ${todayMedicationProgress.expected} ${t("taken")}`,
             },
             {
               key: "sleep",
@@ -692,39 +696,14 @@ function HomePage() {
             .filter((value): value is number => value != null && Number.isFinite(value));
           const monthSleepAvg = averageNumbers(monthSleepValues);
 
-          const summaryNow = new Date();
-          const summaryTodayKey = toKey(summaryNow);
-          const summaryNowMinutes = summaryNow.getHours() * 60 + summaryNow.getMinutes();
-
-          let monthScheduledTotal = 0;
-          let monthMedsTaken = 0;
-
-          monthKeys.forEach((dateKey) => {
-            todayScheduled.forEach((medKey) => {
-              const atIndex = medKey.lastIndexOf("@");
-              const time = atIndex >= 0 ? medKey.slice(atIndex + 1) : "";
-              const isTaken = !!view.medLog[dateKey]?.[medKey];
-
-              // Never count future dates.
-              if (dateKey > summaryTodayKey) return;
-
-              // Today counts only doses whose scheduled time already passed,
-              // unless the dose was already marked taken.
-              if (dateKey === summaryTodayKey && !isTaken) {
-                const match = /^(\d{1,2}):(\d{2})/.exec(time);
-                if (!match) return;
-
-                const scheduledMinutes = Number(match[1]) * 60 + Number(match[2]);
-                if (scheduledMinutes > summaryNowMinutes) return;
-              }
-
-              monthScheduledTotal += 1;
-              if (isTaken) monthMedsTaken += 1;
-            });
-          });
-
-          const monthMedsPct =
-            monthScheduledTotal > 0 ? Math.round((monthMedsTaken / monthScheduledTotal) * 100) : undefined;
+          const monthMedicationProgress = summarizeMedicationProgress(
+            view.meds,
+            monthKeys,
+            view.medLog,
+            view.medLogItems ?? {},
+            new Date(),
+          );
+          const monthMedsPct = monthMedicationProgress.pct;
 
           const monthRows = [
             {

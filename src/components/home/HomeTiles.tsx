@@ -1,57 +1,7 @@
-import { Link } from "@tanstack/react-router";
-import { createPortal } from "react-dom";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { ChevronLeft, ChevronRight, Share2, Trash2 } from "@/components/icons/BixboIcons";
-
-import { layoutOrder } from "@/lib/layoutRegistry";
-import { isAdminOwnerAccount } from "@/lib/deviceAdmin";
-import { customLogDefinitions, type RegistryFieldDefinition } from "@/lib/appRegistry";
-import {
-  BlueberryIcon,
-  ClockIcon,
-  FlameIcon,
-  HeartIcon,
-  Ico,
-  IcoText,
-  NoteIcon,
-  PanicIcon,
-  PillIcon,
-  PoopIcon,
-  StarIcon,
-} from "@/components/icons/BixboIcons";
-import { AppShell } from "@/components/AppShell";
-import { isScheduledDoseTaken } from "@/lib/medicationAdherence";
-import { pregnancyProgress, postpartumProgress } from "@/lib/health";
-import { Button } from "@/components/ui/button";
-import { MonthCalendar, monthLabel } from "@/components/MonthCalendar";
-import { LogSheet } from "@/components/LogSheet";
-import { QuickTags } from "@/components/QuickTags";
+import { Ico, PillIcon } from "@/components/icons/BixboIcons";
 import { useI18n } from "@/hooks/useI18n";
-import {
-  useBixbo,
-  EMPTY,
-  addDays,
-  toKey,
-  fromKey,
-  todayKey,
-  PAIN_DESCRIPTIONS,
-  painColor,
-  medScheduleItems,
-  avgDayPain,
-  latestDayWeight,
-  averageDayTemperature,
-  BRISTOL,
-  nextPredictedPeriod,
-  asArr,
-  isCycleTrackingHidden,
-  isPregnancyActive,
-  isPostpartumActive,
-  isIntercourseKind,
-  type BixboData,
-  type BowelEntry,
-  type SexEntry,
-} from "@/lib/storage";
-
+import { summarizeMedicationProgress } from "@/lib/domain/meds";
+import { todayKey, type BixboData } from "@/lib/storage";
 
 export function VitalTile({
   emoji,
@@ -79,12 +29,13 @@ export function VitalTile({
 
 export function MedsProgress({ data, onClick }: { data: BixboData; onClick: () => void }) {
   const { t } = useI18n();
-  const k = todayKey();
-  const scheduled = data.meds.filter((m) => !m.asNeeded);
-  const total = scheduled.reduce((s, m) => s + m.times.length, 0);
-  const taken = scheduled.reduce(
-    (s, m) => s + m.times.filter((t) => isScheduledDoseTaken(m, k, t, data.medLog, data.medLogItems ?? {})).length,
-    0,
+  const progress = summarizeMedicationProgress(
+    data.meds,
+    [todayKey()],
+    data.medLog,
+    data.medLogItems ?? {},
+    new Date(),
+    true,
   );
   return (
     <button
@@ -96,7 +47,7 @@ export function MedsProgress({ data, onClick }: { data: BixboData; onClick: () =
       <div>
         <p className="text-xs text-muted-foreground">{t("Meds today")}</p>
         <p className="font-serif text-lg font-bold">
-          {taken}/{total || 0}
+          {progress.taken}/{progress.expected}
         </p>
       </div>
       <div className="grid h-10 w-10 place-items-center rounded-full bg-primary/15 text-primary">

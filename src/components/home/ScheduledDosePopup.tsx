@@ -1,56 +1,8 @@
-import { Link } from "@tanstack/react-router";
 import { createPortal } from "react-dom";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { ChevronLeft, ChevronRight, Share2, Trash2 } from "@/components/icons/BixboIcons";
-
-import { layoutOrder } from "@/lib/layoutRegistry";
-import { isAdminOwnerAccount } from "@/lib/deviceAdmin";
-import { customLogDefinitions, type RegistryFieldDefinition } from "@/lib/appRegistry";
-import {
-  BlueberryIcon,
-  ClockIcon,
-  FlameIcon,
-  HeartIcon,
-  Ico,
-  IcoText,
-  NoteIcon,
-  PanicIcon,
-  PillIcon,
-  PoopIcon,
-  StarIcon,
-} from "@/components/icons/BixboIcons";
-import { AppShell } from "@/components/AppShell";
-import { pregnancyProgress, postpartumProgress } from "@/lib/health";
-import { Button } from "@/components/ui/button";
-import { MonthCalendar, monthLabel } from "@/components/MonthCalendar";
-import { LogSheet } from "@/components/LogSheet";
-import { QuickTags } from "@/components/QuickTags";
+import { useState } from "react";
 import { useI18n } from "@/hooks/useI18n";
 import { getTakenScheduledItems, medScheduleItems } from "@/lib/domain/meds";
-import {
-  useBixbo,
-  EMPTY,
-  addDays,
-  toKey,
-  fromKey,
-  todayKey,
-  PAIN_DESCRIPTIONS,
-  painColor,
-  avgDayPain,
-  latestDayWeight,
-  averageDayTemperature,
-  BRISTOL,
-  nextPredictedPeriod,
-  asArr,
-  isCycleTrackingHidden,
-  isPregnancyActive,
-  isPostpartumActive,
-  isIntercourseKind,
-  type BixboData,
-  type BowelEntry,
-  type SexEntry,
-} from "@/lib/storage";
-
+import { todayKey, type BixboData } from "@/lib/storage";
 
 export type ScheduledDoseTarget = {
   key: string;
