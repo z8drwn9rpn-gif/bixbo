@@ -1,10 +1,9 @@
 name: One-shot Pain Episodes insertion
 
-on:
+"on":
   push:
-    branches: [main]
-    paths:
-      - .github/workflows/temp-add-pain-episodes.yml
+    branches:
+      - main
 
 permissions:
   contents: write
@@ -13,129 +12,117 @@ jobs:
   patch:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout
+        uses: actions/checkout@v4
       - name: Insert Episodes into Pain wizard
-        shell: bash
         run: |
-          python - <<'PY'
+          python3 <<'PY'
           from pathlib import Path
-
-          path = Path('src/features/logging/PainWizard.tsx')
+          path = Path("src/features/logging/PainWizard.tsx")
           s = path.read_text()
 
-          old = 'import type { UpdateFn } from "./LogFormPrimitives";'
-          new = old + '\nimport { PanicForm, TetanyForm } from "./EpisodeForms";'
-          assert old in s and 'from "./EpisodeForms"' not in s
-          s = s.replace(old, new, 1)
+          def one(old, new):
+              global s
+              if old not in s:
+                  raise SystemExit("Expected source block not found")
+              s = s.replace(old, new, 1)
 
-          old = '''    return configured.length ? configured : [
-      { id: "score", label: "Pain scale", kind: "scale" as const, order: 10 },
-      { id: "parts", label: "Where does it hurt?", kind: "chips" as const, order: 20 },
-      { id: "quality", label: "How does it hurt?", kind: "chips" as const, order: 30 },
-      { id: "symptoms", label: "Other symptoms", kind: "chips" as const, order: 40 },
-      { id: "details", label: "Details", kind: "text" as const, order: 50 },
-    ];'''
-          new = '''    const base = configured.length ? configured : [
-      { id: "score", label: "Pain scale", kind: "scale" as const, order: 10 },
-      { id: "parts", label: "Where does it hurt?", kind: "chips" as const, order: 20 },
-      { id: "quality", label: "How does it hurt?", kind: "chips" as const, order: 30 },
-      { id: "symptoms", label: "Other symptoms", kind: "chips" as const, order: 40 },
-      { id: "details", label: "Details", kind: "text" as const, order: 50 },
-    ];
-    const withoutEpisodes = base.filter((field) => field.id !== "episodes");
-    const detailsIndex = withoutEpisodes.findIndex((field) => field.id === "details");
-    const symptomsIndex = withoutEpisodes.findIndex((field) => field.id === "symptoms");
-    const insertAt = detailsIndex >= 0 ? detailsIndex : symptomsIndex >= 0 ? symptomsIndex + 1 : withoutEpisodes.length;
-    return [
-      ...withoutEpisodes.slice(0, insertAt),
-      { id: "episodes", label: "Episodes", kind: "chips" as const, order: 45 },
-      ...withoutEpisodes.slice(insertAt),
-    ];'''
-          assert old in s
-          s = s.replace(old, new, 1)
+          one(
+              'import type { UpdateFn } from "./LogFormPrimitives";',
+              'import type { UpdateFn } from "./LogFormPrimitives";\nimport { PanicForm, TetanyForm } from "./EpisodeForms";'
+          )
 
-          old = '  const [painScaleInfoOpen, setPainScaleInfoOpen] = useState(false);'
-          new = old + '\n  const [episodeMode, setEpisodeMode] = useState<"tetany" | "panic" | null>(null);'
-          assert old in s
-          s = s.replace(old, new, 1)
+          one(
+          '''    return configured.length ? configured : [
+            { id: "score", label: "Pain scale", kind: "scale" as const, order: 10 },
+            { id: "parts", label: "Where does it hurt?", kind: "chips" as const, order: 20 },
+            { id: "quality", label: "How does it hurt?", kind: "chips" as const, order: 30 },
+            { id: "symptoms", label: "Other symptoms", kind: "chips" as const, order: 40 },
+            { id: "details", label: "Details", kind: "text" as const, order: 50 },
+          ];'''.replace('          ', ''),
+          '''    const base = configured.length ? configured : [
+            { id: "score", label: "Pain scale", kind: "scale" as const, order: 10 },
+            { id: "parts", label: "Where does it hurt?", kind: "chips" as const, order: 20 },
+            { id: "quality", label: "How does it hurt?", kind: "chips" as const, order: 30 },
+            { id: "symptoms", label: "Other symptoms", kind: "chips" as const, order: 40 },
+            { id: "details", label: "Details", kind: "text" as const, order: 50 },
+          ];
+          const withoutEpisodes = base.filter((field) => field.id !== "episodes");
+          const detailsIndex = withoutEpisodes.findIndex((field) => field.id === "details");
+          const symptomsIndex = withoutEpisodes.findIndex((field) => field.id === "symptoms");
+          const insertAt = detailsIndex >= 0 ? detailsIndex : symptomsIndex >= 0 ? symptomsIndex + 1 : withoutEpisodes.length;
+          return [
+            ...withoutEpisodes.slice(0, insertAt),
+            { id: "episodes", label: "Episodes", kind: "chips" as const, order: 45 },
+            ...withoutEpisodes.slice(insertAt),
+          ];'''.replace('          ', '')
+          )
 
-          old = '  const activePainStepIsCustom = !!activePainStep && !(BIXBO_LOG_FIELDS.pain ?? []).some((field) => field.id === activePainStep.id);'
-          new = '  const activePainStepIsCustom = !!activePainStep && activePainStep.id !== "episodes" && !(BIXBO_LOG_FIELDS.pain ?? []).some((field) => field.id === activePainStep.id);'
-          assert old in s
-          s = s.replace(old, new, 1)
+          one(
+              '  const [painScaleInfoOpen, setPainScaleInfoOpen] = useState(false);',
+              '  const [painScaleInfoOpen, setPainScaleInfoOpen] = useState(false);\n  const [episodeMode, setEpisodeMode] = useState<"tetany" | "panic" | null>(null);'
+          )
+          one(
+              '  const activePainStepIsCustom = !!activePainStep && !(BIXBO_LOG_FIELDS.pain ?? []).some((field) => field.id === activePainStep.id);',
+              '  const activePainStepIsCustom = !!activePainStep && activePainStep.id !== "episodes" && !(BIXBO_LOG_FIELDS.pain ?? []).some((field) => field.id === activePainStep.id);'
+          )
 
-          old = '''  return (
-    <div
-      className="flex min-h-full flex-col px-5 pb-4 pt-0 transition-colors touch-pan-y"'''
-          new = '''  if (episodeMode === "tetany") {
-    return (
-      <LogSchemaContext.Provider value={null}>
-        <div className="px-5 pb-4">
-          <TetanyForm date={date} data={data} update={update} onDone={() => setEpisodeMode(null)} />
-        </div>
-      </LogSchemaContext.Provider>
-    );
-  }
-  if (episodeMode === "panic") {
-    return (
-      <LogSchemaContext.Provider value={null}>
-        <div className="px-5 pb-4">
-          <PanicForm date={date} data={data} update={update} onDone={() => setEpisodeMode(null)} />
-        </div>
-      </LogSchemaContext.Provider>
-    );
-  }
-
-  return (
-    <div
-      className="flex min-h-full flex-col px-5 pb-4 pt-0 transition-colors touch-pan-y"'''
-          assert old in s
-          s = s.replace(old, new, 1)
-
-          old = '''      {activePainStepId === "details" && (
-        <div className="space-y-4">'''
-          new = '''      {activePainStepId === "episodes" && (
-        <div className="space-y-4 pt-1">
-          <div>
-            <h2 className="font-serif text-xl text-foreground">{t("Episodes")}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{t("Log a tetany episode or panic attack if one happened with this pain entry.")}</p>
-          </div>
-          {([
-            ["tetany", "⭐", "Tetany episode"],
-            ["panic", "✨", "Panic attack"],
-          ] as const).map(([mode, icon, label]) => (
-            <div key={mode} className="rounded-2xl border border-border bg-surface p-3">
-              <div className="flex items-center gap-3">
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-primary/10">
-                  <Ico e={icon} size={24} />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-foreground">{t(label)}</p>
+          marker = '''  return (
+            <div
+              className="flex min-h-full flex-col px-5 pb-4 pt-0 transition-colors touch-pan-y"'''.replace('          ', '')
+          replacement = '''  if (episodeMode === "tetany") {
+            return (
+              <LogSchemaContext.Provider value={null}>
+                <div className="px-5 pb-4">
+                  <TetanyForm date={date} data={data} update={update} onDone={() => setEpisodeMode(null)} />
                 </div>
-              </div>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <button type="button" className="h-10 rounded-xl border border-border bg-background text-sm font-semibold text-foreground">
-                  {t("No")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEpisodeMode(mode)}
-                  className="h-10 rounded-xl border border-primary bg-primary/10 text-sm font-semibold text-primary"
-                >
-                  {t("Yes, log it")}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+              </LogSchemaContext.Provider>
+            );
+          }
+          if (episodeMode === "panic") {
+            return (
+              <LogSchemaContext.Provider value={null}>
+                <div className="px-5 pb-4">
+                  <PanicForm date={date} data={data} update={update} onDone={() => setEpisodeMode(null)} />
+                </div>
+              </LogSchemaContext.Provider>
+            );
+          }
 
-      {activePainStepId === "details" && (
-        <div className="space-y-4">'''
-          assert old in s
-          s = s.replace(old, new, 1)
+          return (
+            <div
+              className="flex min-h-full flex-col px-5 pb-4 pt-0 transition-colors touch-pan-y"'''.replace('          ', '')
+          one(marker, replacement)
+
+          marker = '''      {activePainStepId === "details" && (
+            <div className="space-y-4">'''.replace('          ', '')
+          replacement = '''      {activePainStepId === "episodes" && (
+            <div className="space-y-4 pt-1">
+              <div>
+                <h2 className="font-serif text-xl text-foreground">{t("Episodes")}</h2>
+                <p className="mt-1 text-sm text-muted-foreground">{t("Log a tetany episode or panic attack if one happened with this pain entry.")}</p>
+              </div>
+              {([
+                ["tetany", "⭐", "Tetany episode"],
+                ["panic", "✨", "Panic attack"],
+              ] as const).map(([mode, icon, label]) => (
+                <div key={mode} className="rounded-2xl border border-border bg-surface p-3">
+                  <div className="flex items-center gap-3">
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-primary/10"><Ico e={icon} size={24} /></span>
+                    <p className="min-w-0 flex-1 text-sm font-semibold text-foreground">{t(label)}</p>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <button type="button" className="h-10 rounded-xl border border-border bg-background text-sm font-semibold text-foreground">{t("No")}</button>
+                    <button type="button" onClick={() => setEpisodeMode(mode)} className="h-10 rounded-xl border border-primary bg-primary/10 text-sm font-semibold text-primary">{t("Yes, log it")}</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {activePainStepId === "details" && (
+            <div className="space-y-4">'''.replace('          ', '')
+          one(marker, replacement)
 
           path.write_text(s)
           PY
