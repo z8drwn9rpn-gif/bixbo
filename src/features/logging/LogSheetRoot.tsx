@@ -97,6 +97,56 @@ import { PeriodForm, SexForm, ThermoForm } from "./CycleForms";
 import { BowelForm, FoodForm, TempForm } from "./LifestyleForms";
 import { MedsForm, WorkoutForm } from "./MedsWorkoutForms";
 
+function BodyRecoveryForm({
+  date,
+  data,
+  update,
+  onDone,
+}: {
+  date: string;
+  data: BixboData;
+  update: UpdateFn;
+  onDone: () => void;
+}) {
+  const { t } = useI18n();
+  const [section, setSection] = useState<"body" | "recovery">("body");
+
+  return (
+    <div className="bixbo-log-flow mx-auto flex w-full max-w-xl flex-col gap-4 py-4">
+      <div className="grid grid-cols-2 gap-2 rounded-2xl bg-tint p-1">
+        <button
+          type="button"
+          onClick={() => setSection("body")}
+          className={`rounded-xl px-3 py-2.5 text-xs font-semibold transition ${
+            section === "body"
+              ? "bg-background text-foreground shadow-sm ring-1 ring-border"
+              : "text-muted-foreground"
+          }`}
+        >
+          <span className="inline-flex items-center gap-2"><Ico e="🌿" size={17} /> {t("Temp / Sleep / Weight")}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setSection("recovery")}
+          className={`rounded-xl px-3 py-2.5 text-xs font-semibold transition ${
+            section === "recovery"
+              ? "bg-background text-foreground shadow-sm ring-1 ring-border"
+              : "text-muted-foreground"
+          }`}
+        >
+          <span className="inline-flex items-center gap-2"><Ico e="♨️" size={17} /> {t("Heat / Cold / TENS")}</span>
+        </button>
+      </div>
+
+      {section === "body" ? (
+        <TempForm date={date} data={data} update={update} onDone={onDone} />
+      ) : (
+        <ThermoForm date={date} update={update} onDone={onDone} />
+      )}
+    </div>
+  );
+}
+
 export function LogSheet({
   open,
   onOpenChange,
@@ -257,6 +307,7 @@ export function LogSheet({
       .filter((category) => {
         if (category.id === "panic") return false;
         if (category.id === "task" || category.id === "note") return false;
+        if (category.id === "heat") return false;
         if (category.id === "tetany") {
           const anyEpisodeEnabled =
             isRegistrySurfaceEnabled(data, "tetany", "log") || isRegistrySurfaceEnabled(data, "panic", "log");
@@ -898,7 +949,7 @@ export function LogSheet({
                   initialEntry={edit as WorkoutEntry | undefined}
                 />
               )}
-              {active === "temp" && <TempForm date={date} data={data} update={update} onDone={close} />}
+              {active === "temp" && <BodyRecoveryForm date={date} data={data} update={update} onDone={close} />}
               {active === "meds" && <MedsForm date={date} data={data} update={update} onDone={close} />}
               {(active === "event" || active === "task" || active === "note") && (
                 <div className="bixbo-log-flow mx-auto flex w-full max-w-xl flex-col gap-4 py-4">
