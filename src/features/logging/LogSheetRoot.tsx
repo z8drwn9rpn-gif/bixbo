@@ -381,9 +381,7 @@ export function LogSheet({
         side="bottom"
         className={
           (active
-            ? `fixed !inset-0 !left-0 !right-0 !top-0 !bottom-0 flex !h-[100svh] !max-h-[100svh] !w-full !max-w-none min-h-0 flex-col overflow-hidden !rounded-none !border-0 bg-background p-0 !shadow-none !transition-none !animate-none ${
-                active === "pain" ? "pt-[env(safe-area-inset-top)]" : "pt-0"
-              }`
+            ? `fixed !inset-0 !left-0 !right-0 !top-0 !bottom-0 flex !h-[100svh] !max-h-[100svh] !w-full !max-w-none min-h-0 flex-col overflow-hidden !rounded-none !border-0 bg-background p-0 pt-[env(safe-area-inset-top)] !shadow-none !transition-none !animate-none`
             : "fixed !inset-0 !left-0 !right-0 !top-0 !bottom-0 flex !h-[100dvh] !max-h-none !w-full !max-w-none min-h-0 flex-col overflow-hidden !rounded-none !border-0 !bg-transparent !p-0 !shadow-none") + " [&>button.absolute]:hidden"
         }
       >
@@ -672,13 +670,7 @@ export function LogSheet({
           </>
         ) : (
           <div className="flex h-full min-h-0 flex-col">
-            <SheetHeader
-              className={`shrink-0 flex-row items-end justify-between gap-0 border-b border-border px-5 pb-2 ${
-                active === "pain"
-                  ? "h-14 pt-0"
-                  : "h-[calc(40px+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)]"
-              }`}
-            >
+            <SheetHeader className="h-14 shrink-0 flex-row items-end justify-between gap-0 border-b border-border px-5 pb-2 pt-0">
               <button onClick={back} className="flex items-center gap-1 text-sm text-muted-foreground">
                 <ChevronLeft className="h-3.5 w-3.5 shrink-0" /> {t("Back to Log")}
               </button>
@@ -706,8 +698,9 @@ export function LogSheet({
             } : null}>
             <div
               key={`${active}-${openToken}-${(edit as { id?: string } | undefined)?.id ?? initialPain?.id ?? "new"}`}
+              data-bixbo-log-surface={active === "pain" ? "pain" : "standard"}
               className={`min-h-0 flex-1 overflow-y-auto ${
-                active === "pain" ? "pt-[60px]" : "px-5 pb-4"
+                active === "pain" ? "pt-[60px]" : "bixbo-unified-log px-4 pb-5 sm:px-5"
               }`}
             >
               {active?.startsWith("custom:") && (() => {
@@ -807,7 +800,7 @@ export function LogSheet({
                 />
               )}
               {(active === "tetany" || active === "panic") && (
-                <div className="mx-auto flex w-full max-w-md flex-col gap-4 py-4">
+                <div className="bixbo-log-flow mx-auto flex w-full max-w-xl flex-col gap-4 py-4">
                   <div className="grid grid-cols-2 gap-2 rounded-2xl bg-tint p-1">
                     {isRegistrySurfaceEnabled(data, "tetany", "log") && (
                       <button
@@ -904,7 +897,7 @@ export function LogSheet({
               {active === "temp" && <TempForm date={date} data={data} update={update} onDone={close} />}
               {active === "meds" && <MedsForm date={date} data={data} update={update} onDone={close} />}
               {(active === "event" || active === "task" || active === "note") && (
-                <div className="mx-auto flex w-full max-w-md flex-col gap-4 py-4">
+                <div className="bixbo-log-flow mx-auto flex w-full max-w-xl flex-col gap-4 py-4">
                   <div className="grid grid-cols-3 gap-2 rounded-2xl bg-tint p-1">
                     {isRegistrySurfaceEnabled(data, "event", "log") && (
                       <button
