@@ -1,4 +1,4 @@
-name: Apply BIXBO calendar heart marker once
+name: Activate BIXBO UI polish once
 
 on:
   push:
@@ -20,31 +20,19 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-      - name: Patch calendar marker rendering
+      - name: Import final UI polish layers
         shell: python
         run: |
           from pathlib import Path
-          import re
-          p = Path('src/components/MonthCalendar.tsx')
+          p = Path('src/styles.css')
           s = p.read_text()
-          pattern = re.compile(
-              r'<div className="mt-0\.5 flex h-4 max-w-full items-center justify-center gap-px overflow-hidden leading-none lg:mt-1 lg:h-5 lg:gap-0\.5">\s*'
-              r'\{icons\.length > 0 \? \(.*?\) : \(\s*'
-              r'<span aria-hidden className="block h-\[14px\] w-\[14px\] lg:h-\[17px\] lg:w-\[17px\]" />\s*'
-              r'\)\}\s*</div>',
-              re.S,
-          )
-          replacement = '''<div className="mt-0.5 flex h-4 items-center justify-center leading-none lg:mt-1 lg:h-5">
-                        {icons.includes("❤️") ? (
-                          <Ico e="❤️" size={14} className="h-[14px] w-[14px] lg:h-[17px] lg:w-[17px] xl:h-[18px] xl:w-[18px]" />
-                        ) : (
-                          <span aria-hidden className="block h-[14px] w-[14px] lg:h-[17px] lg:w-[17px]" />
-                        )}
-                      </div>'''
-          s2, count = pattern.subn(replacement, s, count=1)
-          if count != 1:
-              raise SystemExit(f'Expected one calendar marker block, found {count}')
-          p.write_text(s2)
+          marker = '@import "tw-animate-css";\n'
+          addition = '@import "./ui-polish.css";\n@import "./ui-components-polish.css";\n'
+          if addition not in s:
+              if marker not in s:
+                  raise SystemExit('styles.css import marker not found')
+              s = s.replace(marker, marker + addition, 1)
+          p.write_text(s)
       - name: Install and validate
         run: |
           bun install --frozen-lockfile
@@ -56,7 +44,7 @@ jobs:
         run: |
           git config user.name "BIXBO UI bot"
           git config user.email "actions@users.noreply.github.com"
-          git add src/components/MonthCalendar.tsx
+          git add src/styles.css
           git diff --cached --quiet && exit 0
-          git commit -m "fix: keep only calendar heart marker"
+          git commit -m "style: activate final UI polish layers"
           git push origin HEAD:agent/ui-ux-consistency-pass
