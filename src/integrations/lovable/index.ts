@@ -8,7 +8,7 @@ type SignInOptions = {
   extraParams?: Record<string, string>;
 };
 
-type OAuthProvider = "google" | "apple" | "microsoft" | "lovable";
+type OAuthProvider = "google" | "apple" | "lovable";
 
 export const lovable = {
   auth: {
