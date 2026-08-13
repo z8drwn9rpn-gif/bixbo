@@ -1,4 +1,7 @@
-import type { SVGProps } from "react";
+import type { ComponentType, SVGProps } from "react";
+import { Ico as BaseIco, type BixboIconName } from "./BixboIcons";
+
+export * from "./BixboIcons";
 
 export type ExtraIconProps = SVGProps<SVGSVGElement> & { size?: number };
 
@@ -30,3 +33,36 @@ export function BixboDryIcon(p: ExtraIconProps) { return <Base {...p}><Shadow/><
 export function BixboItchIcon(p: ExtraIconProps) { return <Base {...p}><Shadow/><path d="M16 39c8-2 9-11 16-14 7-3 10 3 16 1M17 47c9-1 13-7 16-12 3-6 8-8 14-7" stroke="#6d9867" strokeWidth="4" strokeLinecap="round"/><circle cx="19" cy="21" r="3" fill="#7fa97a"/><circle cx="46" cy="43" r="3" fill="#7fa97a"/></Base>; }
 export function BixboUrinaryIcon(p: ExtraIconProps) { return <Base {...p}><Shadow/><path d="M32 10c9 12 15 20 15 29a15 15 0 0 1-30 0c0-9 6-17 15-29Z" fill="#78acd5" stroke="#4f82ad" strokeWidth="2"/><path d="M25 41c4 3 10 3 14-1" stroke="#eff8ff" strokeWidth="3" strokeLinecap="round"/></Base>; }
 export function BixboIrritationIcon(p: ExtraIconProps) { return <Base {...p}><Shadow/><circle cx="32" cy="31" r="12" fill="#ef9a91"/><path d="M32 9v9M32 44v9M10 31h9M45 31h9M16 15l7 7M41 40l7 7M48 15l-7 7M23 40l-7 7" stroke="#bd544c" strokeWidth="4" strokeLinecap="round"/></Base>; }
+
+type ExtraIconComponent = ComponentType<ExtraIconProps>;
+const EXTRA_SYMBOL_ICONS: Record<string, ExtraIconComponent> = {
+  ["\u{1F48B}"]: BixboLipsIcon,
+  ["\u270B"]: BixboHandIcon,
+  ["\u2022\u2022\u2022"]: BixboMoreIcon,
+  ["\u2026"]: BixboMoreIcon,
+  ["\u22EF"]: BixboMoreIcon,
+  ["\u{1F6AB}"]: BixboBanIcon,
+  ["\u{1F6E1}\uFE0F"]: BixboShieldIcon,
+  ["\u{1F6E1}"]: BixboShieldIcon,
+  ["\u{1F30A}"]: BixboWaveIcon,
+  ["\u{1F552}"]: BixboClockIcon,
+  ["\u25CE"]: BixboBothIcon,
+  ["\u{1F3AF}"]: BixboTargetIcon,
+  ["\u25CB"]: BixboRingIcon,
+  ["\u25EF"]: BixboRingIcon,
+  ["\u{1F338}"]: BixboPetalIcon,
+  ["\u25CC"]: BixboIrritationIcon,
+  ["\u{1FAE7}"]: BixboBubbleIcon,
+  ["\u{1F50B}"]: BixboBatteryIcon,
+  ["\u{1F300}"]: BixboSpiralIcon,
+  ["\u2139\uFE0F"]: BixboInfoIcon,
+  ["\u2139"]: BixboInfoIcon,
+};
+
+export function Ico({ name, e, size = 20, className }: { name?: BixboIconName; e?: string; size?: number; className?: string }) {
+  if (!name && e) {
+    const Extra = EXTRA_SYMBOL_ICONS[e];
+    if (Extra) return <Extra size={size} className={["inline-block shrink-0 align-[-0.15em]", className].filter(Boolean).join(" ")} />;
+  }
+  return <BaseIco name={name} e={e} size={size} className={className} />;
+}
