@@ -36,9 +36,9 @@ import { PainWizard } from "./PainWizard";
 import { PanicForm, TetanyForm } from "./EpisodeForms";
 import { PeriodForm } from "./CycleForms";
 import { MedsForm } from "./MedsWorkoutForms";
+import { BowelForm } from "./LifestyleForms";
 import { EventForm, NoteForm, PostpartumSymptomsForm, TaskForm } from "./CalendarForms";
 import {
-  EnhancedBowelForm,
   EnhancedFoodForm,
   EnhancedSexForm,
   EnhancedTempForm,
@@ -450,7 +450,7 @@ export function LogSheet({
                 {renderActive === "sex" && <EnhancedSexForm date={date} data={data} update={update} onDone={close} initialEntry={edit as SexEntry | undefined} />}
                 {renderActive === "heat" && <EnhancedThermoForm date={date} update={update} onDone={close} initialEntry={edit as ThermoSession | undefined} />}
                 {renderActive === "food" && <EnhancedFoodForm date={date} data={data} update={update} onDone={close} initialEntry={edit as FoodEntry | undefined} />}
-                {renderActive === "bowel" && <EnhancedBowelForm date={date} data={data} update={update} onDone={close} initialEntry={edit as BowelEntry | undefined} />}
+                {renderActive === "bowel" && <BowelForm date={date} data={data} update={update} onDone={close} initialEntry={edit as BowelEntry | undefined} />}
                 {renderActive === "workout" && <EnhancedWorkoutForm date={date} data={data} update={update} onDone={close} initialEntry={edit as WorkoutEntry | undefined} />}
                 {renderActive === "temp" && <EnhancedTempForm date={date} data={data} update={update} onDone={close} />}
                 {renderActive === "meds" && <MedsForm date={date} data={data} update={update} onDone={close} />}
