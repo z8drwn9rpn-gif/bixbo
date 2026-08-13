@@ -92,3 +92,53 @@ export function summarizeMedicationAdherence(
     ? { taken, expected, pct: Math.round((taken / expected) * 100) }
     : null;
 }
+
+/** Canonical key for a scheduled dose of a medication at a given time. */
+export function scheduledDoseKey(med: Med, time: string): string {
+  return `${med.id}@${time}`;
+}
+
+/**
+ * Items of a scheduled group that count as taken.
+ * Legacy records (medLog=true, no medLogItems) mean the whole group was taken.
+ */
+export function getTakenScheduledItems(
+  med: Med,
+  dateKey: string,
+  time: string,
+  medLog: MedicationLog,
+  medLogItems: MedicationLogItems,
+): string[] {
+  const allItems = medScheduleItems(med);
+  const key = scheduledDoseKey(med, time);
+  const legacyTaken = medLog[dateKey]?.[key] === true;
+  const raw = medLogItems[dateKey]?.[key] ?? (legacyTaken ? allItems : []);
+  const set = new Set(raw);
+  return allItems.filter((item) => set.has(item));
+}
+
+/** Items of a scheduled group that were not marked as taken. */
+export function getMissedScheduledItems(
+  med: Med,
+  dateKey: string,
+  time: string,
+  medLog: MedicationLog,
+  medLogItems: MedicationLogItems,
+): string[] {
+  const taken = new Set(getTakenScheduledItems(med, dateKey, time, medLog, medLogItems));
+  return medScheduleItems(med).filter((item) => !taken.has(item));
+}
+
+/** True when at least one item of the scheduled dose is recorded as taken. */
+export function isScheduledDoseTaken(
+  med: Med,
+  dateKey: string,
+  time: string,
+  medLog: MedicationLog,
+  medLogItems: MedicationLogItems,
+): boolean {
+  return getTakenScheduledItems(med, dateKey, time, medLog, medLogItems).length > 0;
+}
+
+/** Alias of {@link summarizeMedicationAdherence} kept for a stable public name. */
+export const calculateMedicationAdherence = summarizeMedicationAdherence;
