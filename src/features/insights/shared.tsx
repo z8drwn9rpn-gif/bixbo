@@ -221,7 +221,7 @@ export function TrText({ value }: { value: unknown }) {
     "Daily adherence": "Denné dodržiavanie", doses: "dávok", "logged days": "zaznamenaných dní",
   };
   if (exactSk[raw]) return <>{exactSk[raw]}</>;
-  let out = raw
+  const out = raw
     .replace(/^Panic attacks:/, "Panické záchvaty:")
     .replace(/^Medication adherence:/, "Dodržiavanie liekov:")
     .replace(/^Workouts:/, "Cvičenia:")
