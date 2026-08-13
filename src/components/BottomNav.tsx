@@ -32,10 +32,7 @@ const NAV_IMAGE_SRC: Partial<Record<NavigationItemId, string>> = {
 function NavArtwork({ id, size, className }: { id: NavigationItemId; size: number; className?: string }) {
   const Icon = ICONS[id];
   const imageSrc = NAV_IMAGE_SRC[id];
-
-  if (imageSrc) {
-    return <img src={imageSrc} alt="" aria-hidden="true" draggable={false} width={size} height={size} className={className} style={{ objectFit: "contain" }} />;
-  }
+  if (imageSrc) return <img src={imageSrc} alt="" aria-hidden="true" draggable={false} width={size} height={size} className={className} style={{ objectFit: "contain" }} />;
   return <Icon size={size} className={className} />;
 }
 
@@ -51,16 +48,16 @@ export function BottomNav() {
   };
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 w-full border-t border-[#7f8d58]/55 bg-[#a8b27b] pb-[max(8px,env(safe-area-inset-bottom))] lg:hidden dark:border-border/70 dark:bg-[#303827]" style={{ boxShadow: "0 -8px 22px -17px rgba(45,58,26,.55), inset 0 1px 0 rgba(255,255,255,.16)" }}>
-      <ul className="mx-auto flex min-h-[96px] w-full items-end justify-around gap-0 px-2 pb-2 pt-1.5 sm:px-4 landscape:min-h-[84px] landscape:py-1.5">
+    <nav aria-label="Primary navigation" className="fixed inset-x-0 bottom-0 z-40 w-full border-t border-[#7f8d58]/55 bg-[#a8b27b]/95 pb-[max(8px,env(safe-area-inset-bottom))] backdrop-blur-xl supports-[backdrop-filter]:bg-[#a8b27b]/88 lg:hidden dark:border-border/70 dark:bg-[#303827]/94" style={{ boxShadow: "0 -8px 22px -17px rgba(45,58,26,.55), inset 0 1px 0 rgba(255,255,255,.16)" }}>
+      <ul className="mx-auto flex min-h-[88px] w-full max-w-[430px] items-end justify-around gap-0 px-2 pb-1.5 pt-1 sm:px-4 landscape:min-h-[76px] landscape:py-1">
         {items.map((item) => {
           const label = item.label ?? BIXBO_NAVIGATION.find((candidate) => candidate.id === item.id)?.label ?? item.id;
           if (item.action === "log") {
-            return <li key={item.id} className="flex min-w-0 flex-1 justify-center"><button type="button" onClick={openLog} className="flex min-h-[80px] w-full flex-col items-center justify-end gap-0 px-1 pb-0.5 text-[11px] font-semibold text-[#3f4e27] transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] dark:text-[#dce7b8] landscape:min-h-[68px]" aria-label={t(label)}><NavArtwork id={item.id} size={68} className="-mb-1 h-[68px] w-[68px] shrink-0 object-contain drop-shadow-[0_7px_8px_rgba(52,67,30,0.28)] landscape:h-[58px] landscape:w-[58px]" /><span className="max-w-full truncate text-center leading-none">{t(label)}</span></button></li>;
+            return <li key={item.id} className="flex min-w-0 flex-1 justify-center"><button type="button" onClick={openLog} className="flex min-h-[72px] w-full flex-col items-center justify-end gap-0 px-1 pb-0.5 text-[11px] font-semibold text-[#3f4e27] transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] dark:text-[#dce7b8] landscape:min-h-[62px]" aria-label={t(label)}><NavArtwork id={item.id} size={64} className="-mb-1 h-[64px] w-[64px] shrink-0 object-contain drop-shadow-[0_7px_8px_rgba(52,67,30,0.28)] landscape:h-[54px] landscape:w-[54px]" /><span className="max-w-full truncate text-center leading-none">{t(label)}</span></button></li>;
           }
           const to = item.to ?? "/";
           const active = item.id === "overview" ? pathname.startsWith("/insights") || pathname.startsWith("/patterns") : to === "/" ? pathname === "/" : pathname.startsWith(to);
-          return <li key={item.id} className="flex min-w-0 flex-1 justify-center"><Link to={to as never} className={`flex min-h-[80px] w-full flex-col items-center justify-end gap-0 px-1 pb-0.5 text-[11px] font-semibold transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] landscape:min-h-[68px] ${active ? "text-[#34431f] dark:text-[#e3edc4]" : "text-[#45542b]/95 hover:text-[#34411f] dark:text-[#bdc99e] dark:hover:text-[#e3edc4]"}`}><NavArtwork id={item.id} size={58} className={`mb-0 h-[58px] w-[58px] shrink-0 object-contain drop-shadow-[0_6px_7px_rgba(52,67,30,0.22)] transition-transform landscape:h-[48px] landscape:w-[48px] ${active ? "scale-[1.02]" : ""}`} /><span className="max-w-full truncate text-center leading-none">{t(label)}</span></Link></li>;
+          return <li key={item.id} className="flex min-w-0 flex-1 justify-center"><Link to={to as never} aria-current={active ? "page" : undefined} className={`relative flex min-h-[72px] w-full flex-col items-center justify-end gap-0 px-1 pb-0.5 text-[11px] font-semibold transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] landscape:min-h-[62px] ${active ? "text-[#34431f] dark:text-[#e3edc4]" : "text-[#45542b]/95 hover:text-[#34411f] dark:text-[#bdc99e] dark:hover:text-[#e3edc4]"}`}><NavArtwork id={item.id} size={54} className={`mb-0 h-[54px] w-[54px] shrink-0 object-contain drop-shadow-[0_6px_7px_rgba(52,67,30,0.22)] transition-transform landscape:h-[46px] landscape:w-[46px] ${active ? "scale-[1.04]" : ""}`} /><span className="max-w-full truncate text-center leading-none">{t(label)}</span>{active ? <span aria-hidden="true" className="absolute bottom-[-3px] h-1 w-5 rounded-full bg-current opacity-70" /> : null}</Link></li>;
         })}
       </ul>
     </nav>
