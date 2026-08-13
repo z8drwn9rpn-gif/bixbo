@@ -1,0 +1,53 @@
+name: Remove Blueberry pregnant once
+on:
+  push:
+    branches: [agent/move-blueberry-controls]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/move-blueberry-controls
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+      - name: Remove Pregnant field from Blueberry
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/features/logging/CycleForms.tsx')
+          s = p.read_text()
+          block_start = '    <Field label="Pregnant?" schemaFieldId="pregnant">'
+          start = s.find(block_start)
+          if start < 0:
+              raise SystemExit('Pregnant field not found')
+          end = s.find('\n  </div>;', start)
+          if end < 0:
+              raise SystemExit('PeriodForm end not found')
+          s = s[:start] + s[end:]
+          s = s.replace('  pregnancyInfo,\n', '')
+          s = s.replace('  todayKey,\n', '')
+          p.write_text(s)
+          PY
+      - name: Install
+        run: bun install --frozen-lockfile
+      - name: Typecheck
+        run: bun run typecheck
+      - name: Lint
+        run: bun run lint
+      - name: Test
+        run: bun test
+      - name: Build
+        run: bun run build
+      - name: Commit
+        shell: bash
+        run: |
+          rm .github/workflows/remove-blueberry-pregnant-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix: remove Pregnant from Blueberry log"
+          git push origin HEAD:agent/move-blueberry-controls
