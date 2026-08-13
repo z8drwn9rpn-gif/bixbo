@@ -19,12 +19,19 @@ describe("admin button wiring regression guards", () => {
 
   it("keeps Patterns page editing tied to the active sub-tab", () => {
     expect(src("src/routes/patterns.tsx")).toContain("data-bixbo-pattern-tab");
-    expect(src("src/components/AdminEditOverlay.tsx")).toContain("patterns.${tab}");
+    expect(src("src/components/admin/AdminEditRuntime.tsx")).toContain("patterns.${tab}");
   });
 
   it("keeps touch drag wired on every reorder editor", () => {
+    const modularAdminEditor = [
+      src("src/components/admin/AdminPageTab.tsx"),
+      src("src/components/admin/AdminFeaturesTab.tsx"),
+      src("src/components/admin/AdminFieldsTab.tsx"),
+    ].join("\n");
+    expect(modularAdminEditor).toContain("onPointerDown");
+    expect(modularAdminEditor).toContain('touchAction: "none"');
+
     for (const path of [
-      "src/components/AdminEditOverlay.tsx",
       "src/components/CoupleAdminEditOverlay.tsx",
       "src/components/HakAdminEditOverlay.tsx",
       "src/components/UniversalAdminPageEditor.tsx",
