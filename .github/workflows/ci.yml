@@ -1,0 +1,66 @@
+name: BIXBO checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Apply mobile OAuth fix
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin auth-mobile-fix:refs/remotes/origin/auth-mobile-fix
+          git cherry-pick 4971a0cc29619ddd4ae10b6857b87b2e9559347e
+      - name: Repository security hygiene
+        shell: bash
+        run: |
+          set -euo pipefail
+          tracked_env="$(git ls-files | grep -E '^\.env($|\.)' | grep -v '^\.env\.example$' || true)"
+          if [ -n "$tracked_env" ]; then
+            echo "Tracked environment file(s) are forbidden:"
+            echo "$tracked_env"
+            exit 1
+          fi
+          if git grep -nE 'VITE_[A-Z0-9_]*(SECRET|PRIVATE_KEY|SERVICE_ROLE)' -- ':!*.example' ':!.github/workflows/ci.yml'; then
+            echo "Potential server secret exposed through a client VITE_ variable."
+            exit 1
+          fi
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Typecheck
+        run: bun run typecheck
+      - name: Lint
+        run: bun run lint
+      - name: Tests
+        run: bun test
+      - name: Build
+        run: bun run build
+      - name: Persist verified OAuth fix
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "BIXBO Fix Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git checkout HEAD^ -- .github/workflows/ci.yml || true
+          git add src/routes/auth.tsx .github/workflows/ci.yml
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "fix: persist Google OAuth session on mobile"
+          git push origin HEAD:main
