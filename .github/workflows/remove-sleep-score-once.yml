@@ -1,0 +1,31 @@
+name: Remove sleep score once
+on:
+  push:
+    paths: [.github/workflows/remove-sleep-score-once.yml]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remove sleep score UI
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('src/features/logging/LifestyleForms.tsx')
+          s=p.read_text()
+          a=s.index('  const qualityScores: Record<string,number>')
+          b=s.index('\n\n  const parseValue', a)
+          s=s[:a]+s[b:]
+          a=s.index('      <div className="rounded-2xl bg-surface p-4 ring-1 ring-border"><div className="flex items-center gap-4"><div className="grid h-24 w-24')
+          b=s.index('\n      <Field label="Bedtime">', a)
+          s=s[:a]+s[b:]
+          p.write_text(s)
+          PY
+          rm .github/workflows/remove-sleep-score-once.yml
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add src/features/logging/LifestyleForms.tsx .github/workflows/remove-sleep-score-once.yml
+          git commit -m "fix: remove sleep score from sleep log"
+          git push
