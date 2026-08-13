@@ -1,116 +1,14 @@
-import { Children, isValidElement, useState, useMemo, useRef, useEffect, type ReactNode } from "react";
+import { Children, isValidElement, useState, type ReactNode } from "react";
 import { useI18n } from "@/hooks/useI18n";
 import { TrText } from "@/features/logging/TrText";
-import { CATEGORIES, type Category } from "@/features/logging/logCategories";
-import { LogSchemaContext, useLogSchema, type LogSchemaContextValue } from "@/features/logging/LogSchemaContext";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
-import { Ico, IcoText } from "@/components/icons/BixboIcons";
-import { CustomLogForm } from "@/components/CustomLogForm";
-import { CoreFeatureCustomFieldInput } from "@/components/CoreFeatureCustomFieldsForm";
-import { POSTPARTUM_SYMPTOMS } from "@/lib/health";
-import { BIXBO_LOG_FIELDS, getRegistryFeature, getRegistryField, isRegistrySurfaceEnabled, registryCustomFieldsForFeature, registryFieldLabel, registryFieldOptions, registryFieldScale, registryFieldsForFeature, registryOptionLabel, customLogDefinitions, type RegistryFeatureId } from "@/lib/appRegistry";
+import { SheetFooter } from "@/components/ui/sheet";
+import { IcoText } from "@/components/icons/BixboIcons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Slider } from "@/components/ui/slider";
-import { Textarea } from "@/components/ui/textarea";
-import { X, Plus, ChevronLeft, Check, Pencil, Trash2 } from "@/components/icons/BixboIcons";
-import {
-  PAIN_DESCRIPTIONS,
-  painColor,
-  medScheduleItems,
-  BODY_PARTS_DEFAULT,
-  PAIN_QUALITY_DEFAULT,
-  OTHER_SYMPTOMS_DEFAULT,
-  FOOD_FEELINGS_DEFAULT,
-  WORKOUT_KINDS_DEFAULT,
-  BRISTOL,
-  DISCHARGE_OPTS,
-  MOODS_DEFAULT,
-  TETANY_TYPES,
-  TETANY_TYPE_DESC,
-  TETANY_LOCATIONS_DEFAULT,
-  TETANY_TRIGGERS,
-  TETANY_HELPED_DEFAULT,
-  HEADACHE_TYPES,
-  HEADACHE_TYPE_DESC,
-  PRESSURE_TYPES,
-  NAUSEA_TYPES,
-  NAUSEA_TYPE_DESC,
-  NAUSEA_SEVERITY_DESC,
-  NAUSEA_TRIGGERS,
-  NAUSEA_SYMPTOMS,
-  NAUSEA_HELPED,
-  PANIC_PHYSICAL,
-  PANIC_COGNITIVE,
-  PANIC_HELPED_DEFAULT,
-  SEX_TYPES_DEFAULT,
-  BODY_BATTERY,
-  SLEEP_QUALITY,
-  SEX_FEELINGS_DEFAULT,
-  EVENT_COLORS,
-  BOWEL_FEELINGS_DEFAULT,
-  BOWEL_SYMPTOMS_DEFAULT,
-  PCOS_SYMPTOMS,
-  HISTAMINE_SYMPTOMS,
-  FOOD_SYMPTOMS_AFTER,
-  todayKey,
-  nowHHMM,
-  updateDayLog,
-  asArr,
-  workoutHasDistance,
-  workoutIsHike,
-  workoutIsStrength,
-  pregnancyInfo,
-  isCycleTrackingHidden,
-  URINARY_DEFAULT,
-  ALLERGENS_DEFAULT,
-  type BixboData,
-  type DayLog,
-  type PainEntry,
-  type PeriodLevel,
-  type FoodEntry,
-  type BowelEntry,
-  type ThermoSession,
-  type ThermoKind,
-  type SexEntry,
-  type SexKind,
-  type ExtraMed,
-  type WorkoutEntry,
-  type WorkoutExercise,
-  type EventEntry,
-  type TaskEntry,
-  type TetanyEpisode,
-  type PanicAttack,
-  type PainfulWhen,
-  type PostpartumDayLog,
-  type CustomLogEntry,
-  type CustomLogValue,
-  withCustomTombstones,
-  withoutCustomTombstones,
-} from "@/lib/storage";
-import { getScaleDesc } from "@/lib/scaleDescriptions";
+import { X, Plus, Pencil } from "@/components/icons/BixboIcons";
+import { painColor, type BixboData } from "@/lib/storage";
 
 export type UpdateFn = (u: (d: BixboData) => BixboData) => void;
-
-export function InlineAdminCustomFields({ anchorFieldId }: { anchorFieldId?: string }) {
-  const schema = useLogSchema();
-  if (!schema || schema.featureId === "pain" || !anchorFieldId || !schema.adminFields.length) return null;
-  const firstCoreFieldId = BIXBO_LOG_FIELDS[schema.featureId]?.[0]?.id;
-  if (firstCoreFieldId !== anchorFieldId) return null;
-  return (
-    <>
-      {schema.adminFields.map((field) => (
-        <CoreFeatureCustomFieldInput
-          key={field.id}
-          field={field}
-          value={schema.adminFieldValues[field.id]}
-          onChange={(value) => schema.setAdminFieldValue(field.id, value)}
-          style={{ order: field.order }}
-        />
-      ))}
-    </>
-  );
-}
 
 export type ScaleInfoChildProps = {
   descriptions?: Record<number, string>;
@@ -121,23 +19,14 @@ export type ScaleInfoChildProps = {
 };
 
 export function normalizeLogScaleRange(from: number, max: number) {
-  // BIXBO log scales are intentionally integer-only and start at 1.
-  // Historical 0 values remain readable/editable in stored data, but new choices are 1–5 or 1–10.
   if (max === 5 || max === 10) return { from: 1, max };
   return { from, max };
 }
 
 export function Field({ label, children, schemaFieldId }: { label: string; children: ReactNode; schemaFieldId?: string }) {
   const { t } = useI18n();
-  const schema = useLogSchema();
   const [scaleInfoOpen, setScaleInfoOpen] = useState(false);
-  const fieldIdByLabel: Record<string, string> = { "Pain scale": "score", "Where does it hurt?": "parts", "How does it hurt?": "quality", "Other symptoms": "symptoms", "Intensity": "intensity", "Type": "types", "Location": "location", "Triggers": "triggers", "What helped?": "helped", "Bleeding": "flow", "Cramp pain": "cramps", "Discharge (optional)": "discharge", "Duration (minutes)": "minutes", "Intensity (RPE)": "rpe", "How you feel": "feel", "Urinary": "urinary" };
-  const fieldId = schemaFieldId ?? fieldIdByLabel[label];
-  const configuredField = schema && fieldId ? getRegistryField(schema.data, schema.featureId, fieldId) : undefined;
-  const dynamicSuffix = fieldId === "intensity" && label.startsWith("Intensity ") ? label.slice("Intensity".length) : "";
-  const displayLabel = configuredField
-    ? `${configuredField.label}${dynamicSuffix}`
-    : (schema && fieldId ? registryFieldLabel(schema.data, schema.featureId, fieldId, label) : label);
+  const displayLabel = label;
 
   const scaleChild = Children.toArray(children).find((child) => {
     if (!isValidElement(child)) return false;
@@ -149,84 +38,69 @@ export function Field({ label, children, schemaFieldId }: { label: string; child
     ? normalizeLogScaleRange(scaleProps.from ?? 1, scaleProps.max)
     : undefined;
 
-  // Intentionally a <div>, not <label>. Wrapping chip/button groups in <label>
-  // caused stray click activations on the first focusable descendant, which
-  // manifested as chips getting "auto-selected" in the Pain wizard.
   return (
-    <>
-      <InlineAdminCustomFields anchorFieldId={fieldId} />
-      <div className={configuredField?.enabled === false ? "hidden" : "block"} style={configuredField ? { order: configuredField.order } : undefined} data-bixbo-log-field-id={fieldId || undefined}>
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs font-medium text-muted-foreground">{t(displayLabel)}</span>
-          {scaleProps?.descriptions && infoRange ? (
-            <button
-              type="button"
-              onClick={() => setScaleInfoOpen((open) => !open)}
-              aria-label={t(`Scale information for ${displayLabel}`)}
-              aria-expanded={scaleInfoOpen}
-              className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-primary/10 text-[10px] font-bold leading-none text-primary ring-1 ring-primary/25 transition hover:bg-primary/20"
-            >
-              i
-            </button>
-          ) : null}
-        </div>
-        <div className="mt-1">{children}</div>
-        {scaleInfoOpen && scaleProps?.descriptions && infoRange ? (
-          <div
-            className="fixed inset-0 z-[90] flex items-end justify-center bg-black/20 px-3 pb-[calc(12px+env(safe-area-inset-bottom))] backdrop-blur-[1px]"
-            role="presentation"
-            onClick={() => setScaleInfoOpen(false)}
+    <div className="block" data-bixbo-log-field-id={schemaFieldId || undefined}>
+      <div className="flex items-center gap-1.5">
+        <span className="text-xs font-medium text-muted-foreground">{t(displayLabel)}</span>
+        {scaleProps?.descriptions && infoRange ? (
+          <button
+            type="button"
+            onClick={() => setScaleInfoOpen((open) => !open)}
+            aria-label={t(`Scale information for ${displayLabel}`)}
+            aria-expanded={scaleInfoOpen}
+            className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-primary/10 text-[10px] font-bold leading-none text-primary ring-1 ring-primary/25 transition hover:bg-primary/20"
           >
-            <div
-              role="dialog"
-              aria-modal="true"
-              aria-label={t(scaleProps.legendTitle ?? `${displayLabel} scale`)}
-              className="max-h-[90dvh] w-[calc(100vw-16px)] max-w-lg overflow-y-auto rounded-[1.8rem] border border-border/70 bg-background p-5 shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="grid h-9 w-9 place-items-center rounded-full bg-primary/15 text-base font-bold text-primary">i</span>
-                  <h3 className="font-serif text-xl font-semibold">{t(scaleProps.legendTitle ?? `${displayLabel} scale`)}</h3>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setScaleInfoOpen(false)}
-                  aria-label={t("Close")}
-                  className="grid h-10 w-10 place-items-center rounded-full bg-tint text-foreground ring-1 ring-border"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-              <ScaleLegend
-                max={infoRange.max}
-                from={infoRange.from}
-                descriptions={scaleProps.descriptions}
-                value={scaleProps.value}
-                title={scaleProps.legendTitle ?? `${displayLabel} scale`}
-              />
-            </div>
-          </div>
+            i
+          </button>
         ) : null}
       </div>
-    </>
+      <div className="mt-1">{children}</div>
+      {scaleInfoOpen && scaleProps?.descriptions && infoRange ? (
+        <div
+          className="fixed inset-0 z-[90] flex items-end justify-center bg-black/20 px-3 pb-[calc(12px+env(safe-area-inset-bottom))] backdrop-blur-[1px]"
+          role="presentation"
+          onClick={() => setScaleInfoOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={t(scaleProps.legendTitle ?? `${displayLabel} scale`)}
+            className="max-h-[90dvh] w-[calc(100vw-16px)] max-w-lg overflow-y-auto rounded-[1.8rem] border border-border/70 bg-background p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="grid h-9 w-9 place-items-center rounded-full bg-primary/15 text-base font-bold text-primary">i</span>
+                <h3 className="font-serif text-xl font-semibold">{t(scaleProps.legendTitle ?? `${displayLabel} scale`)}</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setScaleInfoOpen(false)}
+                aria-label={t("Close")}
+                className="grid h-10 w-10 place-items-center rounded-full bg-tint text-foreground ring-1 ring-border"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <ScaleLegend
+              max={infoRange.max}
+              from={infoRange.from}
+              descriptions={scaleProps.descriptions}
+              value={scaleProps.value}
+              title={scaleProps.legendTitle ?? `${displayLabel} scale`}
+            />
+          </div>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
 export function RegistryFieldBlock({ fieldId, children }: { fieldId: string; children: ReactNode }) {
-  const schema = useLogSchema();
-  const configuredField = schema ? getRegistryField(schema.data, schema.featureId, fieldId) : undefined;
   return (
-    <>
-      <InlineAdminCustomFields anchorFieldId={fieldId} />
-      <div
-        className={configuredField?.enabled === false ? "hidden" : "block"}
-        style={configuredField ? { order: configuredField.order } : undefined}
-        data-bixbo-log-field-id={fieldId}
-      >
-        {children}
-      </div>
-    </>
+    <div className="block" data-bixbo-log-field-id={fieldId}>
+      {children}
+    </div>
   );
 }
 
@@ -251,7 +125,7 @@ export function Chip({
       title={title}
       className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
         active
-          ? "text-white shadow-md ring-2 ring-foreground/70 ring-offset-2 ring-offset-background scale-[1.03]"
+          ? "scale-[1.03] text-white shadow-md ring-2 ring-foreground/70 ring-offset-2 ring-offset-background"
           : "bg-tint text-foreground ring-1 ring-border"
       }`}
       style={active && color ? { background: color } : active ? { background: "var(--primary)" } : undefined}
@@ -263,7 +137,6 @@ export function Chip({
 
 export function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave: () => void; disabled?: boolean }) {
   const { t } = useI18n();
-  const schema = useLogSchema();
   return (
     <SheetFooter className="sticky top-0 z-30 -mx-5 mt-0 flex-row items-center justify-between gap-2 border-b border-border/50 bg-background px-5 py-1.5">
       <button
@@ -274,12 +147,10 @@ export function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; 
         <span aria-hidden="true" className="text-sm leading-none">←</span>
         <span>{t("Back")}</span>
       </button>
-
       <span className="min-w-0 flex-1" aria-hidden="true" />
-
       <button
         type="button"
-        onClick={() => { schema?.saveAdminCustomFields(); onSave(); }}
+        onClick={onSave}
         disabled={disabled}
         className="inline-flex h-8 min-w-[68px] items-center justify-center gap-1 rounded-full bg-primary px-3 text-xs font-semibold text-primary-foreground shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
@@ -299,7 +170,6 @@ export function CustomChipList({
   selected,
   onToggle,
   descriptions,
-  schemaFieldId,
 }: {
   base: string[];
   custom: string[];
@@ -312,75 +182,72 @@ export function CustomChipList({
   schemaFieldId?: string;
 }) {
   const { t } = useI18n();
-  const schema = useLogSchema();
-  const configuredBase = schema && schemaFieldId ? registryFieldOptions(schema.data, schema.featureId, schemaFieldId, base) : base;
-  const optionLabel = (value: string) => schema && schemaFieldId ? registryOptionLabel(schema.data, schema.featureId, schemaFieldId, value) : value;
   const [adding, setAdding] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [text, setText] = useState("");
   const [infoFor, setInfoFor] = useState<string | null>(null);
-  const canEdit = true;
+
   return (
     <div className="mt-2">
-      {(canEdit || true) && (
-        <div className="mb-2 flex items-center gap-2">
-          {adding ? (
-            <div className="flex flex-1 items-center gap-1">
-              <Input
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                className="h-8 flex-1"
-                placeholder={t("Custom…")}
-                autoFocus
-              />
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => {
-                  if (text.trim()) {
-                    onAddCustom(text.trim());
-                    setText("");
-                    setAdding(false);
-                  }
-                }}
-              >
-                Add
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                onClick={() => {
+      <div className="mb-2 flex items-center gap-2">
+        {adding ? (
+          <div className="flex flex-1 items-center gap-1">
+            <Input
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              className="h-8 flex-1"
+              placeholder={t("Custom…")}
+              autoFocus
+            />
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => {
+                if (text.trim()) {
+                  onAddCustom(text.trim());
                   setText("");
                   setAdding(false);
-                }}
-              ><TrText value="Cancel" /></Button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setAdding(true)}
-              className="flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary hover:bg-primary/20"
+                }
+              }}
             >
-              <Plus className="h-3 w-3" /> {t("Add custom")}
-            </button>
-          )}
-          {canEdit && !adding && (
-            <button
+              Add
+            </Button>
+            <Button
               type="button"
-              onClick={() => setEditMode((v) => !v)}
-              className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${editMode ? "bg-primary text-primary-foreground" : "bg-tint text-muted-foreground hover:text-foreground"}`}
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setText("");
+                setAdding(false);
+              }}
             >
-              <Pencil className="h-3 w-3" /> {editMode ? t("Done") : t("Edit")}
-            </button>
-          )}
-        </div>
-      )}
+              <TrText value="Cancel" />
+            </Button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setAdding(true)}
+            className="flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary hover:bg-primary/20"
+          >
+            <Plus className="h-3 w-3" /> {t("Add custom")}
+          </button>
+        )}
+        {!adding && (
+          <button
+            type="button"
+            onClick={() => setEditMode((v) => !v)}
+            className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${editMode ? "bg-primary text-primary-foreground" : "bg-tint text-muted-foreground hover:text-foreground"}`}
+          >
+            <Pencil className="h-3 w-3" /> {editMode ? t("Done") : t("Edit")}
+          </button>
+        )}
+      </div>
       <div className="flex flex-wrap gap-2">
-        {configuredBase.map((v) => (
+        {base.map((v) => (
           <span key={v} className="inline-flex items-center gap-0.5">
             <Chip active={selected.includes(v)} onClick={() => onToggle(v)} title={descriptions?.[v] ? t(descriptions[v]) : undefined}>
-              {t(optionLabel(v))}
+              {t(v)}
             </Chip>
             {descriptions?.[v] && (
               <button
@@ -399,11 +266,10 @@ export function CustomChipList({
         ))}
         {custom.map((v) => (
           <span key={v} className="relative inline-flex items-center">
-            <Chip active={selected.includes(v)} onClick={() => onToggle(v)}>
-              {v}
-            </Chip>
+            <Chip active={selected.includes(v)} onClick={() => onToggle(v)}>{v}</Chip>
             {editMode && onRenameCustom && (
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   const next = prompt(`${t("Rename")} "${v}" ${t("to")}:`, v);
@@ -417,6 +283,7 @@ export function CustomChipList({
             )}
             {editMode && onRemoveCustom && (
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   if (confirm(`${t("Remove")} "${v}" ${t("from your custom list?")}`)) onRemoveCustom(v);
@@ -498,7 +365,6 @@ export function IntensityScale({
   from = 0,
   compactSingleRow = false,
   step = 0.5,
-  schemaFieldId,
 }: {
   value: number;
   onChange: (n: number) => void;
@@ -511,12 +377,10 @@ export function IntensityScale({
   schemaFieldId?: string;
 }) {
   const { t } = useI18n();
-  const schema = useLogSchema();
-  const effective = schema && schemaFieldId ? registryFieldScale(schema.data, schema.featureId, schemaFieldId, { min: from, max, step }) : { min: from, max, step };
-  const normalizedRange = normalizeLogScaleRange(effective.min, effective.max);
+  const normalizedRange = normalizeLogScaleRange(from, max);
   const effectiveFrom = normalizedRange.from;
   const effectiveMax = normalizedRange.max;
-  const effectiveStep = effectiveMax === 5 || effectiveMax === 10 ? 1 : effective.step;
+  const effectiveStep = effectiveMax === 5 || effectiveMax === 10 ? 1 : step;
   const nums = Array.from(
     { length: Math.floor((effectiveMax - effectiveFrom) / effectiveStep) + 1 },
     (_, i) => Number((effectiveFrom + i * effectiveStep).toFixed(2)),
@@ -535,7 +399,6 @@ export function IntensityScale({
           const active = value === n;
           const description = descriptions?.[Math.round(n)];
           const bg = scaleColor(n, effectiveFrom, effectiveMax);
-
           return (
             <button
               key={n}
@@ -543,11 +406,7 @@ export function IntensityScale({
               onClick={() => onChange(n)}
               title={description ? `${n} — ${t(description)}` : String(n)}
               aria-label={description ? `${n} — ${t(description)}` : `${t("Intensity")} ${n}`}
-              className={`${
-                compactSingleRow || ((effectiveMax === 5 || effectiveMax === 10) && effectiveStep === 1) ? "h-7 w-7 text-[10px]" : "h-8 w-8 text-[11px]"
-              } shrink-0 rounded-full font-semibold transition ${
-                active ? "text-white ring-2 ring-foreground" : "text-foreground"
-              }`}
+              className={`${compactSingleRow || ((effectiveMax === 5 || effectiveMax === 10) && effectiveStep === 1) ? "h-7 w-7 text-[10px]" : "h-8 w-8 text-[11px]"} shrink-0 rounded-full font-semibold transition ${active ? "text-white ring-2 ring-foreground" : "text-foreground"}`}
               style={{ background: bg }}
             >
               {Number.isInteger(n) ? n : n.toFixed(1)}
@@ -555,7 +414,6 @@ export function IntensityScale({
           );
         })}
       </div>
-
     </div>
   );
 }
@@ -574,12 +432,9 @@ export function DurationField({
   schemaFieldId?: string;
 }) {
   const { t } = useI18n();
-  const schema = useLogSchema();
-  const configuredField = schema && schemaFieldId ? getRegistryField(schema.data, schema.featureId, schemaFieldId) : undefined;
-  const displayLabel = configuredField?.label ?? "Duration (min)";
   return (
-    <div className={configuredField?.enabled === false ? "hidden" : "space-y-1"} style={configuredField ? { order: configuredField.order } : undefined} data-bixbo-log-field-id={schemaFieldId || undefined}>
-      <span className="text-xs font-medium text-muted-foreground">{t(displayLabel)}</span>
+    <div className="space-y-1" data-bixbo-log-field-id={schemaFieldId || undefined}>
+      <span className="text-xs font-medium text-muted-foreground">{t("Duration (min)")}</span>
       <div className="flex items-center gap-2">
         <Input
           type="number"
