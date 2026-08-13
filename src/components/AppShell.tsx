@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { useRouterState } from "@tanstack/react-router";
+import { type ReactNode } from "react";
 import { BottomNav } from "./BottomNav";
 import { SideNav } from "./SideNav";
 
@@ -17,18 +16,6 @@ export function AppShell({
   right?: ReactNode;
   big?: boolean;
 }) {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const isFirst = useRef(true);
-  const [fadeKey, setFadeKey] = useState(0);
-
-  useEffect(() => {
-    if (isFirst.current) {
-      isFirst.current = false;
-      return;
-    }
-    setFadeKey((k) => k + 1);
-  }, [pathname]);
-
   return (
     <div className="min-h-dvh overflow-x-hidden bg-background text-foreground" style={{ overscrollBehaviorX: "none" }}>
       {/* Desktop navigation is fixed and hidden below lg. Mobile keeps BottomNav. */}
@@ -78,9 +65,8 @@ export function AppShell({
         )}
 
         <main
-          key={fadeKey}
           id="main-content"
-          className={`min-w-0 overflow-x-hidden${fadeKey > 0 ? " bixbo-page-fade" : ""}`}
+          className="min-w-0 overflow-x-hidden"
         >
           {children}
         </main>
