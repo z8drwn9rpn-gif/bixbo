@@ -1046,19 +1046,19 @@ function Field({ label, children, schemaFieldId }: { label: string; children: Re
               role="dialog"
               aria-modal="true"
               aria-label={t(scaleProps.legendTitle ?? `${displayLabel} scale`)}
-              className="max-h-[78dvh] w-full max-w-md overflow-y-auto rounded-[1.6rem] border border-border/70 bg-background p-4 shadow-2xl"
+              className="max-h-[90dvh] w-[calc(100vw-16px)] max-w-lg overflow-y-auto rounded-[1.8rem] border border-border/70 bg-background p-5 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="mb-2 flex items-center justify-between gap-3">
+              <div className="mb-3 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <span className="grid h-7 w-7 place-items-center rounded-full bg-primary/15 text-sm font-bold text-primary">i</span>
-                  <h3 className="font-serif text-lg font-semibold">{t(scaleProps.legendTitle ?? `${displayLabel} scale`)}</h3>
+                  <span className="grid h-9 w-9 place-items-center rounded-full bg-primary/15 text-base font-bold text-primary">i</span>
+                  <h3 className="font-serif text-xl font-semibold">{t(scaleProps.legendTitle ?? `${displayLabel} scale`)}</h3>
                 </div>
                 <button
                   type="button"
                   onClick={() => setScaleInfoOpen(false)}
                   aria-label={t("Close")}
-                  className="grid h-8 w-8 place-items-center rounded-full bg-tint text-foreground ring-1 ring-border"
+                  className="grid h-10 w-10 place-items-center rounded-full bg-tint text-foreground ring-1 ring-border"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -1332,13 +1332,13 @@ function ScaleLegend({
   const activeLegendValue = value == null || value < from ? undefined : Math.round(value);
 
   return (
-    <div className="mt-2 rounded-xl border border-border/60 bg-surface/50 p-2.5">
-      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{t(title)}</p>
-      <div className="space-y-1 text-[11px] leading-tight">
+    <div className="mt-2 rounded-2xl border border-border/60 bg-surface/50 p-4">
+      <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t(title)}</p>
+      <div className="space-y-2.5 text-sm leading-snug">
         {items.map((n) => (
           <div key={n} className="flex items-start gap-2">
             <span
-              className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full text-[10px] font-bold text-white"
+              className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-bold text-white"
               style={{ background: scaleColor(n, from, max) }}
             >
               {n}
@@ -1905,7 +1905,7 @@ function PainWizard({
                 role="dialog"
                 aria-modal="true"
                 aria-label={t("The Pain Scale")}
-                className="w-full max-w-md rounded-[1.6rem] border border-border/70 bg-background p-4 shadow-2xl"
+                className="max-h-[90dvh] w-[calc(100vw-16px)] max-w-lg overflow-y-auto rounded-[1.8rem] border border-border/70 bg-background p-5 shadow-2xl"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="mb-2 flex items-center justify-between gap-3">
@@ -2005,6 +2005,18 @@ function PainWizard({
           </Field>
           {quality.includes("Pressure") && (
             <div className="rounded-2xl border border-border p-3 space-y-3">
+              <Field label={`Pressure intensity ${pressureIntensity ?? "-"}/10`}>
+                <IntensityScale
+                  value={pressureIntensity ?? -1}
+                  onChange={(n) => setPressureIntensity(pressureIntensity === n ? undefined : n)}
+                  max={10}
+                  from={1}
+                  step={1}
+                  descriptions={getScaleDesc(data, "pressure")}
+                  legendTitle="Pressure intensity scale"
+                  compactSingleRow
+                />
+              </Field>
               <Field label="Type of pressure">
                 <CustomChipList
                   base={PRESSURE_TYPES}
@@ -2020,18 +2032,6 @@ function PainWizard({
                   }}
                   selected={pressureTypes}
                   onToggle={(v) => setPressureTypes((a) => toggleIn(a, v))}
-                />
-              </Field>
-              <Field label={`Pressure intensity ${pressureIntensity ?? "-"}/10`}>
-                <IntensityScale
-                  value={pressureIntensity ?? -1}
-                  onChange={(n) => setPressureIntensity(pressureIntensity === n ? undefined : n)}
-                  max={10}
-                  from={1}
-                  step={1}
-                  descriptions={getScaleDesc(data, "pressure")}
-                  legendTitle="Pressure intensity scale"
-                  compactSingleRow
                 />
               </Field>
             </div>
@@ -2102,6 +2102,18 @@ function PainWizard({
           </Field>
           {nausea && (
             <div className="rounded-2xl border border-border p-3 space-y-3">
+              <Field label={`Nausea severity ${nauseaSeverity ?? "-"}/10`}>
+                <IntensityScale
+                  value={nauseaSeverity ?? -1}
+                  onChange={(n) => setNauseaSeverity(nauseaSeverity === n ? undefined : n)}
+                  max={10}
+                  from={1}
+                  step={1}
+                  descriptions={getScaleDesc(data, "nausea")}
+                  legendTitle="Nausea severity scale"
+                  compactSingleRow
+                />
+              </Field>
               <Field label="Type of nausea">
                 <CustomChipList
                   base={NAUSEA_TYPES}
@@ -2118,18 +2130,6 @@ function PainWizard({
                   }}
                   selected={nauseaTypes}
                   onToggle={(v) => setNauseaTypes((a) => toggleIn(a, v))}
-                />
-              </Field>
-              <Field label={`Nausea severity ${nauseaSeverity ?? "-"}/10`}>
-                <IntensityScale
-                  value={nauseaSeverity ?? -1}
-                  onChange={(n) => setNauseaSeverity(nauseaSeverity === n ? undefined : n)}
-                  max={10}
-                  from={1}
-                  step={1}
-                  descriptions={getScaleDesc(data, "nausea")}
-                  legendTitle="Nausea severity scale"
-                  compactSingleRow
                 />
               </Field>
               <DurationField
@@ -2204,6 +2204,18 @@ function PainWizard({
             </Field>
             {headache && (
               <div className="mt-3 rounded-2xl border border-border p-3 space-y-3">
+                <Field label={`Headache intensity ${headacheIntensity ?? "-"}/10`}>
+                  <IntensityScale
+                    value={headacheIntensity ?? 0}
+                    onChange={(n) => setHeadacheIntensity(headacheIntensity === n ? undefined : n)}
+                    max={10}
+                    from={1}
+                    step={1}
+                    descriptions={getScaleDesc(data, "headache")}
+                    legendTitle="Headache scale"
+                    compactSingleRow
+                  />
+                </Field>
                 <Field label="Headache type">
                   <CustomChipList
                     base={HEADACHE_TYPES}
@@ -2220,18 +2232,6 @@ function PainWizard({
                     }}
                     selected={headacheTypes}
                     onToggle={(v) => setHeadacheTypes((a) => toggleIn(a, v))}
-                  />
-                </Field>
-                <Field label={`Headache intensity ${headacheIntensity ?? "-"}/10`}>
-                  <IntensityScale
-                    value={headacheIntensity ?? 0}
-                    onChange={(n) => setHeadacheIntensity(headacheIntensity === n ? undefined : n)}
-                    max={10}
-                    from={1}
-                    step={1}
-                    descriptions={getScaleDesc(data, "headache")}
-                    legendTitle="Headache scale"
-                    compactSingleRow
                   />
                 </Field>
                 <Field label="Medication taken">
