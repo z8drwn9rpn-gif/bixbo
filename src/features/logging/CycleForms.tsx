@@ -53,14 +53,12 @@ import {
   PCOS_SYMPTOMS,
   HISTAMINE_SYMPTOMS,
   FOOD_SYMPTOMS_AFTER,
-  todayKey,
   nowHHMM,
   updateDayLog,
   asArr,
   workoutHasDistance,
   workoutIsHike,
   workoutIsStrength,
-  pregnancyInfo,
   isCycleTrackingHidden,
   URINARY_DEFAULT,
   ALLERGENS_DEFAULT,
@@ -122,7 +120,7 @@ export function PeriodForm({ date, data, update, onDone }: { date: string; data:
     <Field label="Birth control since (optional)" schemaFieldId="birthControlSince"><Input type="date" value={data.settings.birthControlSince ?? ""} onChange={(e) => update((d) => ({ ...d, settings: { ...d.settings, birthControlSince: e.target.value || undefined } }))} />{data.settings.birthControlSince && <p className="mt-1 text-[11px] text-muted-foreground">Taking birth control since {data.settings.birthControlSince}</p>}</Field>
     <div className="rounded-2xl bg-tint p-3 text-[11px] leading-relaxed text-muted-foreground">Cycle prediction is based on your last period and cycle length (edit in Settings later).</div>
     {cur && <button type="button" onClick={() => { update((current) => { const day = current.dayLogs[date] ?? {}; const { period: _p, periodInfo: _pi, ...rest } = day; void _p; void _pi; const adminFields = { ...(rest.adminFields ?? {}) }; const periodAdmin = adminFields.period ?? []; const nextPeriodAdmin = periodAdmin.filter((entry) => entry.sourceEntryId !== `day:period:${date}`); if (nextPeriodAdmin.length) adminFields.period = nextPeriodAdmin; else delete adminFields.period; return { ...current, dayLogs: { ...current.dayLogs, [date]: { ...rest, adminFields: Object.keys(adminFields).length ? adminFields : undefined } } }; }); onDone(); }} className="w-full rounded-2xl bg-destructive/10 py-2.5 text-sm font-medium text-destructive ring-1 ring-destructive/30">Delete Blueberry entry</button>}
-    <Field label="Pregnant?" schemaFieldId="pregnant"><div className="mt-1 flex gap-2"><Chip active={!data.pregnancy?.active} onClick={() => update((d) => ({ ...d, pregnancy: { ...(d.pregnancy ?? { active: false, hospitalBag: [], vaccinations: [], supplements: [], appointments: [] }), active: false, endedAt: d.pregnancy?.active ? todayKey() : d.pregnancy?.endedAt }, settings: { ...d.settings, pregnantSince: undefined } }))}>No</Chip><Chip active={!!data.pregnancy?.active} onClick={() => update((d) => ({ ...d, pregnancy: { ...(d.pregnancy ?? { active: false, hospitalBag: [], vaccinations: [], supplements: [], appointments: [] }), active: true, lmp: d.pregnancy?.lmp, endedAt: undefined }, postpartum: { ...(d.postpartum ?? { active: false, visits: [] }), active: false, endedAt: d.postpartum?.active ? (d.postpartum.endedAt ?? todayKey()) : d.postpartum?.endedAt }, settings: { ...d.settings, pregnantSince: undefined } }))}>Yes</Chip></div>{data.pregnancy?.active && <div className="mt-2"><span className="text-xs font-medium text-muted-foreground">{t("First day of last menstrual period")}</span><Input type="date" className="mt-1" value={data.pregnancy?.lmp ?? ""} onChange={(e) => update((d) => ({ ...d, pregnancy: { ...(d.pregnancy ?? { active: true, hospitalBag: [], vaccinations: [], supplements: [], appointments: [] }), active: true, lmp: e.target.value || undefined, endedAt: undefined }, settings: { ...d.settings, pregnantSince: undefined } }))} />{(() => { const p = pregnancyInfo(data.pregnancy?.lmp); return p ? <p className="mt-1 text-[11px] text-muted-foreground">Week {p.week} · Trimester {p.trimester} — cycle predictions are paused.</p> : null; })()}</div>}</Field>
+
   </div>;
 }
 
