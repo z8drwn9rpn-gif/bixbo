@@ -1,9 +1,4 @@
 import type { BixboData } from "./storage";
-import { getEffectiveAdminConfig } from "./effectiveAdminConfig";
-
-function activeAdminConfig(data: Pick<BixboData, "settings">): AdminConfig {
-  return getEffectiveAdminConfig(data.settings.adminConfig ?? {});
-}
 
 export type RegistrySurface = "log" | "quickLog" | "calendar" | "heatmap" | "monthly" | "patterns";
 
@@ -42,21 +37,13 @@ export interface RegistryFieldDefinition {
   kind: RegistryFieldKind;
   order: number;
   enabled?: boolean;
-  /** Stable stored option values. Renaming an option must not change these keys. */
   options?: string[];
-  /** Optional display labels keyed by the stable stored option value. */
   optionLabels?: Record<string, string>;
   scale?: RegistryScaleDefinition;
 }
 
-export interface RegistryFieldOverride {
-  label?: string;
-  enabled?: boolean;
-  order?: number;
-  options?: Record<string, { label?: string; enabled?: boolean; order?: number }>;
-  scale?: Partial<RegistryScaleDefinition>;
-  fields?: Record<string, RegistryFieldOverride>;
-}
+/** Legacy type kept only so older backups with an adminConfig key can still parse. */
+export interface AdminConfig {}
 
 export interface CustomLogDefinition {
   id: string;
@@ -64,13 +51,9 @@ export interface CustomLogDefinition {
   icon: string;
   color: string;
   enabled?: boolean;
-  /** Soft-deleted definitions stay in config so historical entries can be restored safely. */
   deleted?: boolean;
-  /** Show the custom log icon on calendar days that contain entries. */
   calendar?: boolean;
-  /** Show a shortcut in Quick Log. */
   quickLog?: boolean;
-  /** Numeric/scale field exposed as a Heatmap metric. */
   heatmapFieldId?: string;
   order: number;
   fields: RegistryFieldDefinition[];
@@ -88,60 +71,8 @@ export interface RegistryFeatureDefinition {
 }
 
 export type RegistryCorrelationThreshold = { operator: "gte" | "lte"; value: number };
-
-export type AdminPageBlock = {
-  id: string;
-  title: string;
-  body: string;
-  order: number;
-  hidden?: boolean;
-};
-
-export interface RegistryFeatureOverride {
-  label?: string;
-  icon?: string;
-  color?: string;
-  enabled?: boolean;
-  order?: number;
-  surfaces?: Partial<Record<RegistrySurface, boolean>>;
-  scale?: Partial<RegistryScaleDefinition>;
-  fields?: Record<string, RegistryFieldOverride>;
-  /** Admin-created supplementary fields. Core calculations never depend on these. */
-  customFields?: RegistryFieldDefinition[];
-  /** Supplementary numeric/scale field IDs explicitly exposed to Heatmap. */
-  heatmapFieldIds?: string[];
-  /** Supplementary numeric/scale field IDs explicitly exposed to Patterns → Monthly. */
-  monthlyFieldIds?: string[];
-  /** Supplementary numeric/scale field IDs explicitly exposed to Patterns → Cycle. */
-  cycleFieldIds?: string[];
-  /** Supplementary numeric/scale field IDs explicitly exposed to Patterns → Treatment. */
-  treatmentFieldIds?: string[];
-  /** Supplementary fields explicitly exposed to Patterns → Triggers/Correlations. */
-  correlationFieldIds?: string[];
-  /** Explicit daily-average thresholds required before Number/Scale fields can act as correlation events. */
-  correlationThresholds?: Record<string, RegistryCorrelationThreshold>;
-}
-
-export interface AdminConfig {
-  enabled?: boolean;
-  features?: Partial<Record<RegistryFeatureId, RegistryFeatureOverride>>;
-  customLogs?: CustomLogDefinition[];
-  /** Per-page whole-section ordering. IDs are stable layout section IDs. */
-  layoutOrder?: Record<string, string[]>;
-  /** Admin overrides for stable navigation item IDs. BIXBO branding is not a navigation item. */
-  navigation?: { items?: Record<string, { label?: string; hidden?: boolean; order?: number }> };
-  /** Route-scoped visible text overrides. BIXBO brand strings are rejected by the editor runtime. */
-  textOverrides?: Record<string, { label?: string; hidden?: boolean }>;
-  /** Route-scoped admin-created content blocks. These never participate in health calculations. */
-  pageBlocks?: Record<string, AdminPageBlock[]>;
-  /** HAK overlay labels/layout. Stable item IDs; HAK calculations never depend on these values. */
-  hak?: {
-    items?: Record<string, { label?: string; hidden?: boolean; order?: number }>;
-    blocks?: Array<AdminPageBlock & { placement?: "top" | "bottom" }>;
-  };
-  /** Reserved for Google-account ownership once app authentication is enabled. */
-  ownerEmail?: string;
-}
+export interface RegistryFeatureOverride {}
+export interface RegistryFieldOverride {}
 
 const s = (
   log: boolean,
@@ -157,7 +88,7 @@ export const BIXBO_REGISTRY: RegistryFeatureDefinition[] = [
   { id: "tetany", label: "Tetany episode", icon: "⚡", color: "#E99BC0", order: 20, surfaces: s(true, true, false, true, true, true), scale: { min: 1, max: 5, step: 1 } },
   { id: "panic", label: "Panic episode", icon: "✨", color: "#C84C78", order: 30, surfaces: s(true, true, false, true, true, true), scale: { min: 1, max: 10, step: 1 } },
   { id: "period", label: "Blueberry", icon: "🫐", color: "#8B5CF6", order: 40, surfaces: s(true, true, true, true, false, true) },
-  { id: "sex", label: "ŠukŠuk!", icon: "❤️", color: "#E45B87", order: 50, surfaces: s(true, true, true, false, false, false) },
+  { id: "sex", label: "ŠukŠuk!", icon: "❤️", color: "#E45B87", order: 50, surfaces: s(true, true, true, true, false, false) },
   { id: "heat", label: "Heat / Cold / TENS", icon: "♨️", color: "#F07B4A", order: 60, surfaces: s(true, false, false, false, false, false) },
   { id: "food", label: "Food", icon: "🍽️", color: "#D9A441", order: 70, surfaces: s(true, false, false, false, false, true) },
   { id: "bowel", label: "Bowel", icon: "💩", color: "#A66A46", order: 80, surfaces: s(true, true, false, true, false, true) },
@@ -184,10 +115,10 @@ export const BIXBO_LOG_FIELDS: Partial<Record<RegistryFeatureId, RegistryFieldDe
   ],
   tetany: [
     { id: "time", label: "Time", kind: "text", order: 10 },
+    { id: "duration", label: "Duration (min)", kind: "number", order: 20 },
+    { id: "intensity", label: "Intensity", kind: "scale", order: 30, scale: { min: 1, max: 5, step: 1 } },
     { id: "types", label: "Type", kind: "chips", order: 40 },
     { id: "location", label: "Location", kind: "chips", order: 50 },
-    { id: "intensity", label: "Intensity", kind: "scale", order: 30, scale: { min: 1, max: 5, step: 1 } },
-    { id: "duration", label: "Duration (min)", kind: "number", order: 20 },
     { id: "triggers", label: "Triggers", kind: "chips", order: 60 },
     { id: "helped", label: "What helped?", kind: "chips", order: 70 },
     { id: "rescueMed", label: "Rescue med (what you took)", kind: "text", order: 80 },
@@ -253,12 +184,12 @@ export const BIXBO_LOG_FIELDS: Partial<Record<RegistryFeatureId, RegistryFieldDe
     { id: "time", label: "Time", kind: "text", order: 10 },
     { id: "what", label: "What did you eat?", kind: "text", order: 20 },
     { id: "quickAdd", label: "Quick add", kind: "chips", order: 30 },
-    { id: "reaction", label: "Reaction?", kind: "toggle", order: 40 },
-    { id: "feelings", label: "How do I feel after food?", kind: "chips", order: 50 },
-    { id: "symptomsAfter", label: "Symptoms after food", kind: "chips", order: 60 },
-    { id: "highHistamine", label: "High histamine food?", kind: "toggle", order: 70 },
-    { id: "histamineFlare", label: "Histamine flare?", kind: "toggle", order: 80 },
-    { id: "allergens", label: "Allergens in this meal", kind: "chips", order: 90 },
+    { id: "feelings", label: "How do I feel after food?", kind: "chips", order: 40 },
+    { id: "symptomsAfter", label: "Symptoms after food", kind: "chips", order: 50 },
+    { id: "highHistamine", label: "High histamine food?", kind: "toggle", order: 60 },
+    { id: "histamineFlare", label: "Histamine flare?", kind: "toggle", order: 70 },
+    { id: "allergens", label: "Allergens in this meal", kind: "chips", order: 80 },
+    { id: "reaction", label: "Reaction?", kind: "toggle", order: 90 },
     { id: "intake", label: "Water / caffeine / alcohol", kind: "number", order: 100 },
     { id: "note", label: "Additional note (optional)", kind: "text", order: 110 },
   ],
@@ -295,168 +226,122 @@ export const BIXBO_LOG_FIELDS: Partial<Record<RegistryFeatureId, RegistryFieldDe
   ],
 };
 
-export function getRegistryField(data: Pick<BixboData, "settings">, featureId: RegistryFeatureId, fieldId: string): RegistryFieldDefinition | undefined {
+const byId = new Map(BIXBO_REGISTRY.map((feature) => [feature.id, feature]));
+
+export function getRegistryField(
+  data: Pick<BixboData, "settings">,
+  featureId: RegistryFeatureId,
+  fieldId: string,
+): RegistryFieldDefinition | undefined {
+  void data;
   const base = BIXBO_LOG_FIELDS[featureId]?.find((field) => field.id === fieldId);
   if (!base) return undefined;
-  const override = activeAdminConfig(data)?.features?.[featureId]?.fields?.[fieldId];
   return {
     ...base,
-    ...override,
-    id: base.id,
-    options: base.options,
-    scale: base.scale ? { ...base.scale, ...(override?.scale ?? {}) } : undefined,
+    options: base.options ? [...base.options] : undefined,
+    optionLabels: base.optionLabels ? { ...base.optionLabels } : undefined,
+    scale: base.scale ? { ...base.scale } : undefined,
   };
 }
 
 export function registryFieldsForFeature(data: Pick<BixboData, "settings">, featureId: RegistryFeatureId): RegistryFieldDefinition[] {
-  return (BIXBO_LOG_FIELDS[featureId] ?? [])
-    .map((field) => getRegistryField(data, featureId, field.id)!)
+  void data;
+  return [...(BIXBO_LOG_FIELDS[featureId] ?? [])]
     .filter((field) => field.enabled !== false)
     .sort((a, b) => a.order - b.order);
 }
 
-export function registryCustomFieldsForFeature(
-  data: Pick<BixboData, "settings">,
-  featureId: RegistryFeatureId,
-): RegistryFieldDefinition[] {
-  return [...(activeAdminConfig(data)?.features?.[featureId]?.customFields ?? [])]
-    .filter((field) => field.enabled !== false)
-    .sort((a, b) => a.order - b.order);
+export function registryCustomFieldsForFeature(_data: Pick<BixboData, "settings">, _featureId: RegistryFeatureId): RegistryFieldDefinition[] {
+  return [];
 }
 
-export function registryAdminHeatmapFieldsForFeature(
-  data: Pick<BixboData, "settings">,
-  featureId: RegistryFeatureId,
-): RegistryFieldDefinition[] {
-  const feature = activeAdminConfig(data)?.features?.[featureId];
-  const selected = new Set(feature?.heatmapFieldIds ?? []);
-  return [...(feature?.customFields ?? [])]
-    .filter((field) => field.enabled !== false && (field.kind === "number" || field.kind === "scale") && selected.has(field.id))
-    .sort((a, b) => a.order - b.order);
+export function registryAdminHeatmapFieldsForFeature(_data: Pick<BixboData, "settings">, _featureId: RegistryFeatureId): RegistryFieldDefinition[] {
+  return [];
 }
 
-export function registryAdminMonthlyFieldsForFeature(
-  data: Pick<BixboData, "settings">,
-  featureId: RegistryFeatureId,
-): RegistryFieldDefinition[] {
-  const feature = activeAdminConfig(data)?.features?.[featureId];
-  const selected = new Set(feature?.monthlyFieldIds ?? []);
-  return [...(feature?.customFields ?? [])]
-    .filter((field) => field.enabled !== false && (field.kind === "number" || field.kind === "scale") && selected.has(field.id))
-    .sort((a, b) => a.order - b.order);
+export function registryAdminMonthlyFieldsForFeature(_data: Pick<BixboData, "settings">, _featureId: RegistryFeatureId): RegistryFieldDefinition[] {
+  return [];
 }
 
-export function registryAdminCycleFieldsForFeature(
-  data: Pick<BixboData, "settings">,
-  featureId: RegistryFeatureId,
-): RegistryFieldDefinition[] {
-  const feature = activeAdminConfig(data)?.features?.[featureId];
-  const selected = new Set(feature?.cycleFieldIds ?? []);
-  return [...(feature?.customFields ?? [])]
-    .filter((field) => field.enabled !== false && (field.kind === "number" || field.kind === "scale") && selected.has(field.id))
-    .sort((a, b) => a.order - b.order);
+export function registryAdminCycleFieldsForFeature(_data: Pick<BixboData, "settings">, _featureId: RegistryFeatureId): RegistryFieldDefinition[] {
+  return [];
 }
 
-export function registryAdminTreatmentFieldsForFeature(
-  data: Pick<BixboData, "settings">,
-  featureId: RegistryFeatureId,
-): RegistryFieldDefinition[] {
-  const feature = activeAdminConfig(data)?.features?.[featureId];
-  const selected = new Set(feature?.treatmentFieldIds ?? []);
-  return [...(feature?.customFields ?? [])]
-    .filter((field) => field.enabled !== false && (field.kind === "number" || field.kind === "scale") && selected.has(field.id))
-    .sort((a, b) => a.order - b.order);
+export function registryAdminTreatmentFieldsForFeature(_data: Pick<BixboData, "settings">, _featureId: RegistryFeatureId): RegistryFieldDefinition[] {
+  return [];
 }
 
 export function registryAdminCorrelationThreshold(
-  data: Pick<BixboData, "settings">,
-  featureId: RegistryFeatureId,
-  fieldId: string,
+  _data: Pick<BixboData, "settings">,
+  _featureId: RegistryFeatureId,
+  _fieldId: string,
 ): RegistryCorrelationThreshold | undefined {
-  const threshold = activeAdminConfig(data)?.features?.[featureId]?.correlationThresholds?.[fieldId];
-  if (!threshold || !Number.isFinite(threshold.value) || (threshold.operator !== "gte" && threshold.operator !== "lte")) return undefined;
-  return threshold;
+  return undefined;
 }
 
-export function registryAdminCorrelationFieldsForFeature(
-  data: Pick<BixboData, "settings">,
-  featureId: RegistryFeatureId,
-): RegistryFieldDefinition[] {
-  const feature = activeAdminConfig(data)?.features?.[featureId];
-  const selected = new Set(feature?.correlationFieldIds ?? []);
-  return [...(feature?.customFields ?? [])]
-    .filter((field) => {
-      if (field.enabled === false || !selected.has(field.id)) return false;
-      if (field.kind === "toggle" || field.kind === "chips") return true;
-      if (field.kind === "number" || field.kind === "scale") return Boolean(registryAdminCorrelationThreshold(data, featureId, field.id));
-      return false;
-    })
-    .sort((a, b) => a.order - b.order);
+export function registryAdminCorrelationFieldsForFeature(_data: Pick<BixboData, "settings">, _featureId: RegistryFeatureId): RegistryFieldDefinition[] {
+  return [];
 }
 
 export function registryFieldLabel(data: Pick<BixboData, "settings">, featureId: RegistryFeatureId, fieldId: string, fallback: string): string {
   return getRegistryField(data, featureId, fieldId)?.label ?? fallback;
 }
 
-export function registryFieldScale(data: Pick<BixboData, "settings">, featureId: RegistryFeatureId, fieldId: string, fallback: RegistryScaleDefinition): RegistryScaleDefinition {
-  const configured = getRegistryField(data, featureId, fieldId)?.scale;
-  if (!configured) return fallback;
-  const min = Number.isFinite(configured.min) ? configured.min : fallback.min;
-  const max = Number.isFinite(configured.max) ? configured.max : fallback.max;
-  const step = Number.isFinite(configured.step) && configured.step > 0 ? configured.step : fallback.step;
-  return { min: Math.min(min, max), max: Math.max(min, max), step };
-}
-
-export function registryFieldOptions(data: Pick<BixboData, "settings">, featureId: RegistryFeatureId, fieldId: string, base: string[]): string[] {
-  const overrides = activeAdminConfig(data)?.features?.[featureId]?.fields?.[fieldId]?.options ?? {};
-  const values = [...base];
-  for (const value of Object.keys(overrides)) {
-    if (!values.includes(value)) values.push(value);
-  }
-  return values
-    .filter((value) => overrides[value]?.enabled !== false)
-    .sort((a, b) => (overrides[a]?.order ?? values.indexOf(a)) - (overrides[b]?.order ?? values.indexOf(b)));
-}
-
-export function registryOptionLabel(data: Pick<BixboData, "settings">, featureId: RegistryFeatureId, fieldId: string, value: string): string {
-  return activeAdminConfig(data)?.features?.[featureId]?.fields?.[fieldId]?.options?.[value]?.label ?? value;
-}
-
-export function isRegistryOptionEnabled(
+export function registryFieldScale(
   data: Pick<BixboData, "settings">,
   featureId: RegistryFeatureId,
   fieldId: string,
+  fallback: RegistryScaleDefinition,
+): RegistryScaleDefinition {
+  const configured = getRegistryField(data, featureId, fieldId)?.scale;
+  return configured ? { ...configured } : fallback;
+}
+
+export function registryFieldOptions(
+  _data: Pick<BixboData, "settings">,
+  _featureId: RegistryFeatureId,
+  _fieldId: string,
+  base: string[],
+): string[] {
+  return [...base];
+}
+
+export function registryOptionLabel(
+  _data: Pick<BixboData, "settings">,
+  _featureId: RegistryFeatureId,
+  _fieldId: string,
   value: string,
+): string {
+  return value;
+}
+
+export function isRegistryOptionEnabled(
+  _data: Pick<BixboData, "settings">,
+  _featureId: RegistryFeatureId,
+  _fieldId: string,
+  _value: string,
 ): boolean {
-  return activeAdminConfig(data)?.features?.[featureId]?.fields?.[fieldId]?.options?.[value]?.enabled !== false;
+  return true;
 }
 
-export function customLogDefinitions(data: Pick<BixboData, "settings">): CustomLogDefinition[] {
-  return [...(activeAdminConfig(data)?.customLogs ?? [])]
-    .filter((log) => log.enabled !== false && log.deleted !== true)
-    .map((log) => ({ ...log, fields: [...(log.fields ?? [])].sort((a, b) => a.order - b.order) }))
-    .sort((a, b) => a.order - b.order);
+export function customLogDefinitions(_data: Pick<BixboData, "settings">): CustomLogDefinition[] {
+  return [];
 }
-
-const byId = new Map(BIXBO_REGISTRY.map((feature) => [feature.id, feature]));
 
 export function getRegistryFeature(data: Pick<BixboData, "settings">, id: RegistryFeatureId): RegistryFeatureDefinition {
+  void data;
   const base = byId.get(id);
   if (!base) throw new Error(`Unknown BIXBO registry feature: ${id}`);
-  const override = activeAdminConfig(data)?.features?.[id];
   return {
     ...base,
-    ...override,
-    id: base.id,
-    enabled: undefined,
-    order: override?.order ?? base.order,
-    surfaces: { ...base.surfaces, ...(override?.surfaces ?? {}) },
-    scale: base.scale ? { ...base.scale, ...(override?.scale ?? {}) } : undefined,
-  } as RegistryFeatureDefinition;
+    surfaces: { ...base.surfaces },
+    scale: base.scale ? { ...base.scale } : undefined,
+    fields: base.fields ? [...base.fields] : undefined,
+  };
 }
 
-export function isRegistryFeatureEnabled(data: Pick<BixboData, "settings">, id: RegistryFeatureId): boolean {
-  return activeAdminConfig(data)?.features?.[id]?.enabled !== false;
+export function isRegistryFeatureEnabled(_data: Pick<BixboData, "settings">, _id: RegistryFeatureId): boolean {
+  return true;
 }
 
 export function isRegistrySurfaceEnabled(
@@ -464,10 +349,7 @@ export function isRegistrySurfaceEnabled(
   id: RegistryFeatureId,
   surface: RegistrySurface,
 ): boolean {
-  // Period is a core Heatmap metric. A stale local/global admin override must
-  // never make it impossible to get Period back into the Heatmap selector.
-  if (id === "period" && surface === "heatmap") return true;
-  return isRegistryFeatureEnabled(data, id) && getRegistryFeature(data, id).surfaces[surface];
+  return getRegistryFeature(data, id).surfaces[surface];
 }
 
 export function registryFeaturesForSurface(
@@ -476,6 +358,6 @@ export function registryFeaturesForSurface(
 ): RegistryFeatureDefinition[] {
   return BIXBO_REGISTRY
     .map((definition) => getRegistryFeature(data, definition.id))
-    .filter((feature) => isRegistrySurfaceEnabled(data, feature.id, surface))
+    .filter((feature) => feature.surfaces[surface])
     .sort((a, b) => a.order - b.order);
 }

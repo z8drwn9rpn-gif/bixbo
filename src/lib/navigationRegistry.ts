@@ -1,5 +1,3 @@
-import { getEffectiveAdminConfig } from "./effectiveAdminConfig";
-
 export type NavigationItemId = "home" | "overview" | "log" | "couple" | "notes" | "healthProfile";
 export type NavigationSurface = "mobile" | "desktop";
 
@@ -23,27 +21,12 @@ export const BIXBO_NAVIGATION: NavigationDefinition[] = [
   { id: "healthProfile", to: "/profile", label: "nav.healthProfile", order: 60, desktopOrder: 60, mobile: false, desktop: true },
 ];
 
-export type NavigationItemOverride = {
-  label?: string;
-  hidden?: boolean;
-  order?: number;
-};
-
-export function navigationItemOverrides(): Record<string, NavigationItemOverride> {
-  return getEffectiveAdminConfig().navigation?.items ?? {};
-}
-
-export function resolvedNavigation(surface: NavigationSurface): (NavigationDefinition & NavigationItemOverride)[] {
-  const overrides = navigationItemOverrides();
+export function resolvedNavigation(surface: NavigationSurface): NavigationDefinition[] {
   return BIXBO_NAVIGATION
-    .filter((item) => surface === "mobile" ? item.mobile : item.desktop)
-    .map((item) => ({ ...item, ...(overrides[item.id] ?? {}) }))
-    .filter((item) => item.hidden !== true)
+    .filter((item) => (surface === "mobile" ? item.mobile : item.desktop))
     .sort((a, b) => {
-      const aOverride = overrides[a.id]?.order;
-      const bOverride = overrides[b.id]?.order;
-      const aOrder = aOverride ?? (surface === "desktop" ? (a.desktopOrder ?? a.order) : a.order);
-      const bOrder = bOverride ?? (surface === "desktop" ? (b.desktopOrder ?? b.order) : b.order);
+      const aOrder = surface === "desktop" ? (a.desktopOrder ?? a.order) : a.order;
+      const bOrder = surface === "desktop" ? (b.desktopOrder ?? b.order) : b.order;
       return aOrder - bOrder;
     });
 }

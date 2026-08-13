@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { CouplePage } from "@/features/couple/CouplePage";
+import { CoupleSettings } from "@/features/couple/CoupleSettings";
 
 export const Route = createFileRoute("/couple")({
   head: () => ({
@@ -16,5 +18,25 @@ export const Route = createFileRoute("/couple")({
       },
     ],
   }),
-  component: CouplePage,
+  component: CoupleRoutePage,
 });
+
+function CoupleRoutePage() {
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
+  if (settingsOpen) return <CoupleSettings onBack={() => setSettingsOpen(false)} />;
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setSettingsOpen(true)}
+        aria-label="Couple settings"
+        className="fixed right-4 top-[max(12px,env(safe-area-inset-top))] z-50 inline-flex min-h-9 items-center justify-center rounded-full border border-border/80 bg-background/90 px-3 text-xs font-semibold text-foreground shadow-sm backdrop-blur-md lg:right-8"
+      >
+        Settings
+      </button>
+      <CouplePage />
+    </div>
+  );
+}
