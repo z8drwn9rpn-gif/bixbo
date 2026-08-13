@@ -347,25 +347,6 @@ export function PainWizard({
     else if (dx > 0 && safeStep > 0) setStep(safeStep - 1);
   };
 
-  if (episodeMode === "tetany") {
-    return (
-      <LogSchemaContext.Provider value={null}>
-        <div className="px-5 pb-4">
-          <TetanyForm date={date} data={data} update={update} onDone={() => setEpisodeMode(null)} />
-        </div>
-      </LogSchemaContext.Provider>
-    );
-  }
-  if (episodeMode === "panic") {
-    return (
-      <LogSchemaContext.Provider value={null}>
-        <div className="px-5 pb-4">
-          <PanicForm date={date} data={data} update={update} onDone={() => setEpisodeMode(null)} />
-        </div>
-      </LogSchemaContext.Provider>
-    );
-  }
-
   return (
     <div
       className="flex min-h-full flex-col px-5 pb-4 pt-0 transition-colors touch-pan-y"
@@ -937,9 +918,32 @@ export function PainWizard({
                 <p className="min-w-0 flex-1 text-sm font-semibold text-foreground">{t(label)}</p>
               </div>
               <div className="mt-3 grid grid-cols-2 gap-2">
-                <button type="button" className="h-10 rounded-xl border border-border bg-background text-sm font-semibold text-foreground">{t("No")}</button>
-                <button type="button" onClick={() => setEpisodeMode(mode)} className="h-10 rounded-xl border border-primary bg-primary/10 text-sm font-semibold text-primary">{t("Yes, log it")}</button>
+                <button
+                  type="button"
+                  onClick={() => episodeMode === mode && setEpisodeMode(null)}
+                  className={`h-10 rounded-xl border text-sm font-semibold ${episodeMode !== mode ? "border-primary bg-primary/10 text-primary" : "border-border bg-background text-foreground"}`}
+                >
+                  {t("No")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEpisodeMode(mode)}
+                  className={`h-10 rounded-xl border text-sm font-semibold ${episodeMode === mode ? "border-primary bg-primary text-primary-foreground" : "border-primary bg-primary/10 text-primary"}`}
+                >
+                  {t("Yes, log it")}
+                </button>
               </div>
+              {episodeMode === mode && (
+                <div className="mt-4 border-t border-border/70 pt-4">
+                  <LogSchemaContext.Provider value={null}>
+                    {mode === "tetany" ? (
+                      <TetanyForm date={date} data={data} update={update} onDone={() => setEpisodeMode(null)} />
+                    ) : (
+                      <PanicForm date={date} data={data} update={update} onDone={() => setEpisodeMode(null)} />
+                    )}
+                  </LogSchemaContext.Provider>
+                </div>
+              )}
             </div>
           ))}
         </div>
