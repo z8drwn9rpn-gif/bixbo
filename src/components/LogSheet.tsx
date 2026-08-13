@@ -1874,7 +1874,7 @@ function PainWizard({
           <div className="w-full max-w-md px-3">
             <Slider value={[score * 2]} min={0} max={20} step={1} onValueChange={([v]) => setScore(v / 2)} />
           </div>
-          <div className="grid w-fit max-w-full grid-cols-7 justify-center gap-1.5 px-2">
+          <div className="grid w-fit max-w-full grid-cols-7 justify-center gap-2 px-1">
             {Array.from({ length: 21 }, (_, i) => i / 2).map((n) => (
               <button
                 key={n}
@@ -1882,8 +1882,8 @@ function PainWizard({
                 onClick={() => setScore(n)}
                 title={`${n} — ${t(getScaleDesc(data, "pain")[Math.round(n)])}`}
                 aria-label={`${n} — ${t(getScaleDesc(data, "pain")[Math.round(n)])}`}
-                className={`h-7 w-7 shrink-0 rounded-full text-[10px] font-semibold transition ${
-                  score === n ? "text-white ring-2 ring-foreground" : "text-foreground"
+                className={`h-9 w-9 shrink-0 rounded-full text-xs font-semibold transition ${
+                  score === n ? "text-white ring-[3px] ring-foreground" : "text-foreground"
                 }`}
                 style={{ background: painColor(n) }}
               >
