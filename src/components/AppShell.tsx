@@ -1,8 +1,9 @@
 import { type ReactNode } from "react";
 import { BottomNav } from "./BottomNav";
 import { SideNav } from "./SideNav";
+import bixboMascot from "@/assets/bixbo-mascot-user.png";
 
-const BIXBO_MASCOT_SRC = "/bixbo-mascot-user.png?v=20260813d";
+const BIXBO_MASCOT_SRC = bixboMascot;
 
 export function AppShell({ children, title, right, big = false }: { children: ReactNode; title?: ReactNode; right?: ReactNode; big?: boolean; }) {
   return (
