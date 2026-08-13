@@ -1,0 +1,72 @@
+name: Note and plan single flow once
+on:
+  push:
+    branches: [agent/note-plan-single-flow]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: "!contains(github.event.head_commit.message, '[note-plan-single-flow]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/note-plan-single-flow
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+      - name: Patch Note and plan flow
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('src/features/logging/logCategories.ts')
+          s = p.read_text()
+          s = s.replace('{ id: "event", label: "Event", emoji: "📅", hint: "Multi-day · time · note" },', '{ id: "event", label: "Note & plan", emoji: "📝", hint: "Event · To do · Note" },')
+          p.write_text(s)
+
+          p = Path('src/features/logging/LogSheetRoot.tsx')
+          s = p.read_text()
+
+          old_map = '''        if (category.id === "tetany") {\n          return { ...category, label: "Episodes", emoji: "⭐", registryOrder: feature.order };\n        }\n        return { ...category, label: feature.label, emoji: feature.icon, registryOrder: feature.order };'''
+          new_map = '''        if (category.id === "tetany") {\n          return { ...category, label: "Episodes", emoji: "⭐", registryOrder: feature.order };\n        }\n        if (category.id === "event") {\n          return { ...category, label: "Note & plan", emoji: "📝", registryOrder: feature.order };\n        }\n        return { ...category, label: feature.label, emoji: feature.icon, registryOrder: feature.order };'''
+          if old_map not in s:
+              raise SystemExit('orderedCats map block not found')
+          s = s.replace(old_map, new_map, 1)
+
+          old_filter = '''        if (category.id === "panic") return false;\n        if (category.id === "tetany") {\n          const anyEpisodeEnabled =\n            isRegistrySurfaceEnabled(data, "tetany", "log") || isRegistrySurfaceEnabled(data, "panic", "log");\n          if (!anyEpisodeEnabled) return false;\n        } else if (!isRegistrySurfaceEnabled(data, category.id as RegistryFeatureId, "log")) return false;'''
+          new_filter = '''        if (category.id === "panic") return false;\n        if (category.id === "task" || category.id === "note") return false;\n        if (category.id === "tetany") {\n          const anyEpisodeEnabled =\n            isRegistrySurfaceEnabled(data, "tetany", "log") || isRegistrySurfaceEnabled(data, "panic", "log");\n          if (!anyEpisodeEnabled) return false;\n        } else if (category.id === "event") {\n          const anyNotePlanEnabled =\n            isRegistrySurfaceEnabled(data, "event", "log") ||\n            isRegistrySurfaceEnabled(data, "task", "log") ||\n            isRegistrySurfaceEnabled(data, "note", "log");\n          if (!anyNotePlanEnabled) return false;\n        } else if (!isRegistrySurfaceEnabled(data, category.id as RegistryFeatureId, "log")) return false;'''
+          if old_filter not in s:
+              raise SystemExit('orderedCats filter block not found')
+          s = s.replace(old_filter, new_filter, 1)
+
+          old_title = '''                  active === "tetany" || active === "panic"\n                    ? "Episodes"\n                    : orderedCats.find((c) => c.id === active)?.label ?? CATEGORIES.find((c) => c.id === active)?.label ?? "",'''
+          new_title = '''                  active === "tetany" || active === "panic"\n                    ? "Episodes"\n                    : active === "event" || active === "task" || active === "note"\n                      ? "Note & plan"\n                      : orderedCats.find((c) => c.id === active)?.label ?? CATEGORIES.find((c) => c.id === active)?.label ?? "",'''
+          if old_title not in s:
+              raise SystemExit('title block not found')
+          s = s.replace(old_title, new_title, 1)
+
+          old_forms = '''              {active === "task" && (\n                <TaskForm date={date} update={update} onDone={close} initialEntry={edit as TaskEntry | undefined} />\n              )}\n              {active === "event" && (\n                <EventForm date={date} update={update} onDone={close} initialEntry={edit as EventEntry | undefined} />\n              )}\n              {active === "note" && <NoteForm date={date} update={update} onDone={close} />}'''
+          new_forms = '''              {(active === "event" || active === "task" || active === "note") && (\n                <div className="mx-auto flex w-full max-w-md flex-col gap-4 py-4">\n                  <div className="grid grid-cols-3 gap-2 rounded-2xl bg-tint p-1">\n                    {isRegistrySurfaceEnabled(data, "event", "log") && (\n                      <button\n                        type="button"\n                        onClick={() => setCat("event")}\n                        className={`rounded-xl px-2 py-2.5 text-xs font-semibold transition ${\n                          active === "event"\n                            ? "bg-background text-foreground shadow-sm ring-1 ring-border"\n                            : "text-muted-foreground"\n                        }`}\n                      >\n                        <span className="inline-flex items-center gap-1.5"><Ico e="📅" size={16} /> {t("Event")}</span>\n                      </button>\n                    )}\n                    {isRegistrySurfaceEnabled(data, "task", "log") && (\n                      <button\n                        type="button"\n                        onClick={() => setCat("task")}\n                        className={`rounded-xl px-2 py-2.5 text-xs font-semibold transition ${\n                          active === "task"\n                            ? "bg-background text-foreground shadow-sm ring-1 ring-border"\n                            : "text-muted-foreground"\n                        }`}\n                      >\n                        <span className="inline-flex items-center gap-1.5"><Ico e="✅" size={16} /> {t("To do")}</span>\n                      </button>\n                    )}\n                    {isRegistrySurfaceEnabled(data, "note", "log") && (\n                      <button\n                        type="button"\n                        onClick={() => setCat("note")}\n                        className={`rounded-xl px-2 py-2.5 text-xs font-semibold transition ${\n                          active === "note"\n                            ? "bg-background text-foreground shadow-sm ring-1 ring-border"\n                            : "text-muted-foreground"\n                        }`}\n                      >\n                        <span className="inline-flex items-center gap-1.5"><Ico e="📝" size={16} /> {t("Note")}</span>\n                      </button>\n                    )}\n                  </div>\n\n                  {active === "event" && (\n                    <EventForm date={date} update={update} onDone={close} initialEntry={edit as EventEntry | undefined} />\n                  )}\n                  {active === "task" && (\n                    <TaskForm date={date} update={update} onDone={close} initialEntry={edit as TaskEntry | undefined} />\n                  )}\n                  {active === "note" && <NoteForm date={date} update={update} onDone={close} />}\n                </div>\n              )}'''
+          if old_forms not in s:
+              raise SystemExit('calendar forms block not found')
+          s = s.replace(old_forms, new_forms, 1)
+          p.write_text(s)
+          PY
+      - name: Install
+        run: bun install --frozen-lockfile
+      - name: Typecheck
+        run: bun run typecheck
+      - name: Lint
+        run: bun run lint
+      - name: Build
+        run: bun run build
+      - name: Commit
+        shell: bash
+        run: |
+          rm .github/workflows/note-plan-single-flow-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat: combine Event To do Note into Note and plan [note-plan-single-flow]"
+          git push origin HEAD:agent/note-plan-single-flow
