@@ -26,6 +26,7 @@ import { MonthCalendar, monthLabel } from "@/components/MonthCalendar";
 import { LogSheet } from "@/components/LogSheet";
 import { QuickTags } from "@/components/QuickTags";
 import { useI18n } from "@/hooks/useI18n";
+import { getTakenScheduledItems, medScheduleItems } from "@/lib/domain/meds";
 import {
   useBixbo,
   EMPTY,
@@ -35,7 +36,6 @@ import {
   todayKey,
   PAIN_DESCRIPTIONS,
   painColor,
-  medScheduleItems,
   avgDayPain,
   latestDayWeight,
   averageDayTemperature,
@@ -73,8 +73,13 @@ export function ScheduledDosePopup({
 }) {
   const { t } = useI18n();
   const allItems = medScheduleItems(target.med);
-  const alreadyTaken = !!data.medLog[date]?.[target.key];
-  const initialItems = data.medLogItems?.[date]?.[target.key] ?? (alreadyTaken ? allItems : []);
+  const initialItems = getTakenScheduledItems(
+    target.med,
+    date,
+    target.time,
+    data.medLog,
+    data.medLogItems ?? {},
+  );
   const [selectedItems, setSelectedItems] = useState<string[]>(initialItems);
   const [note, setNote] = useState(data.medLogNotes?.[date]?.[target.key] ?? "");
 

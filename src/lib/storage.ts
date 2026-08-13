@@ -12,23 +12,9 @@ import {
 } from "./preferences";
 
 /* ------------------- Types ------------------- */
-export type PeriodLevel = "" | "spotting" | "light" | "medium" | "heavy" | "very-heavy";
-export function periodLabel(level?: PeriodLevel | null): string {
-  switch (level) {
-    case "spotting":
-      return "Spotting";
-    case "light":
-      return "Light";
-    case "medium":
-      return "Medium";
-    case "heavy":
-      return "Heavy";
-    case "very-heavy":
-      return "Very heavy";
-    default:
-      return "";
-  }
-}
+export type { PeriodLevel } from "./domain/cycle";
+export { periodLabel } from "./domain/cycle";
+import type { PeriodLevel } from "./domain/cycle";
 export type SexKind =
   | "sex"
   | "fingering"
@@ -2259,16 +2245,7 @@ export const PAIN_DESCRIPTIONS: Record<number, string> = {
   9: "Unable to speak, crying out",
   10: "Unconscious — passes out",
 };
-export function painColor(score: number): string {
-  const n = Math.max(0, Math.min(10, Math.round(score)));
-  return `var(--pain-${n})`;
-}
-export function avgDayPain(log?: DayLog): number | undefined {
-  const measurements = (log?.pain ?? []).filter((entry) => entry.entryKind !== "symptom-update");
-  if (!measurements.length) return undefined;
-  const sum = measurements.reduce((s, entry) => s + entry.score, 0);
-  return sum / measurements.length;
-}
+export { painColor, avgDayPain } from "./domain/pain";
 
 /** Return valid vital measurements sorted from earliest to latest. */
 export function vitalEntriesFor(log: DayLog | undefined, field: VitalField): VitalMeasurement[] {

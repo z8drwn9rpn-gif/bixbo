@@ -22,7 +22,7 @@ import {
   avgDayPain,
   medScheduleItems,
 } from "@/lib/storage";
-import { resolveScheduledDose } from "@/lib/medicationAdherence";
+import { resolveScheduledDose } from "@/lib/domain/meds";
 
 const WD_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MON_SHORT3 = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];

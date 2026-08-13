@@ -71,6 +71,7 @@ import { VitalTrendPopup, averageNumbers, daysBetweenInclusive, type VitalTrendM
 import { VitalTile, MedsProgress } from "@/components/home/HomeTiles";
 import { BirthControlSummaryCard, BirthControlOverlay } from "@/components/home/BirthControlCard";
 import { DayPreview, ShareDayButton } from "@/components/home/DayOverview";
+import { TodayHeaderSummary } from "@/components/home/TodayHeaderSummary";
 
 function HomePage() {
   const { t, language } = useI18n();
@@ -214,23 +215,14 @@ function HomePage() {
       }
       right={
         <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => {
+          <TodayHeaderSummary
+            data={view}
+            onOpen={() => {
               setSummaryMode("today");
               setSummaryMonthAnchor(new Date());
               setTodayOpen(true);
             }}
-            className="flex min-w-[82px] flex-col items-end justify-center rounded-2xl px-2 py-1 transition hover:bg-tint"
-            aria-label={t("Open today's summary")}
-          >
-            <span className="text-[10px] font-semibold leading-none text-muted-foreground">{t("Today")}</span>
-            <span className="mt-1 flex items-center gap-1 whitespace-nowrap text-[11px] font-semibold leading-none text-foreground">
-              <Ico name="flame" size={14} /> {todayPain != null ? todayPain.toFixed(1) : "—"}
-              <span className="text-muted-foreground">·</span>
-              <PillIcon size={14} /> {todayMedsTaken}/{todayScheduled.length}
-            </span>
-          </button>
+          />
 
           <Link
             to="/profile"

@@ -38,3 +38,20 @@ describe("grouped scheduled medication adherence", () => {
     expect(summarizeMedicationAdherence(med, ["2026-08-12"], {}, {}, now)).toBeNull();
   });
 });
+
+
+it("domain meds facade preserves partial grouped doses", async () => {
+  const { resolveScheduledDose: resolveFromDomain } = await import("../domain/meds");
+  const domainMed: Med = { id: "supplements", name: "Omega-3 2x, Iron", times: ["15:00"] };
+  const state = resolveFromDomain(
+    domainMed,
+    "2026-08-12",
+    "15:00",
+    { "2026-08-12": { "supplements@15:00": true } },
+    { "2026-08-12": { "supplements@15:00": ["Iron"] } },
+    new Date("2026-08-13T12:00:00"),
+  );
+  expect(state.allItems).toEqual(["Omega-3 2x", "Iron"]);
+  expect(state.selectedItems).toEqual(["Iron"]);
+  expect(state.missedItems).toEqual(["Omega-3 2x"]);
+});
