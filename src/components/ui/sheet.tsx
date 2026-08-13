@@ -53,18 +53,31 @@ interface SheetContentProps
   extends React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>, VariantProps<typeof sheetVariants> {}
 
 const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Content>, SheetContentProps>(
-  ({ side = "right", className, children, ...props }, ref) => (
-    <SheetPortal>
-      <SheetOverlay />
-      <SheetPrimitive.Content ref={ref} className={cn(sheetVariants({ side }), className)} {...props}>
-        <SheetPrimitive.Close className="absolute right-4 top-4 rounded-full p-2 opacity-80 ring-offset-background cursor-pointer transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
-          <X size={18} />
-          <span className="sr-only">Close</span>
-        </SheetPrimitive.Close>
-        {children}
-      </SheetPrimitive.Content>
-    </SheetPortal>
-  ),
+  ({ side = "right", className, children, ...props }, ref) => {
+    // Full-screen Log sheets deliberately use stable `100svh` for their inner
+    // layout so iOS browser chrome changes do not make the form jump. However,
+    // a fixed element with top + bottom + an explicit 100svh height can leave a
+    // strip of the underlying page visible when the visual viewport grows.
+    // Let top/bottom stretch only that full-screen shell; ordinary sheets keep
+    // their existing sizing and animations.
+    const fullScreenLog = typeof className === "string" && className.includes("!inset-0") && className.includes("!h-[100svh]");
+    const resolvedClassName = fullScreenLog
+      ? className.replace("!h-[100svh]", "!h-auto").replace("!max-h-[100svh]", "!max-h-none")
+      : className;
+
+    return (
+      <SheetPortal>
+        <SheetOverlay />
+        <SheetPrimitive.Content ref={ref} className={cn(sheetVariants({ side }), resolvedClassName)} {...props}>
+          <SheetPrimitive.Close className="absolute right-4 top-4 rounded-full p-2 opacity-80 ring-offset-background cursor-pointer transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
+            <X size={18} />
+            <span className="sr-only">Close</span>
+          </SheetPrimitive.Close>
+          {children}
+        </SheetPrimitive.Content>
+      </SheetPortal>
+    );
+  },
 );
 SheetContent.displayName = SheetPrimitive.Content.displayName;
 
