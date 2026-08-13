@@ -22,15 +22,21 @@ jobs:
       - name: Decode mascot into real PNG
         shell: bash
         run: |
-          cp public/bixbo-mascot.png /tmp/mascot.b64
-          base64 --decode /tmp/mascot.b64 > public/bixbo-mascot.png
-          file public/bixbo-mascot.png
           python3 - <<'PY'
           from pathlib import Path
-          p = Path('public/bixbo-mascot.png').read_bytes()
-          assert p.startswith(b'\x89PNG\r\n\x1a\n'), 'Mascot is not a valid PNG after decode'
-          print('PNG signature OK, bytes:', len(p))
+          import base64, re
+
+          path = Path('public/bixbo-mascot.png')
+          raw = path.read_text(encoding='utf-8', errors='strict')
+          compact = re.sub(r'\s+', '', raw)
+          compact += '=' * ((4 - len(compact) % 4) % 4)
+          decoded = base64.b64decode(compact, validate=False)
+          if not decoded.startswith(b'\x89PNG\r\n\x1a\n'):
+              raise SystemExit('Decoded mascot does not have PNG signature')
+          path.write_bytes(decoded)
+          print('PNG signature OK, bytes:', len(decoded))
           PY
+          file public/bixbo-mascot.png
 
       - name: Commit fix
         run: |
