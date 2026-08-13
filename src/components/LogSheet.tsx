@@ -1,7 +1,8 @@
-import { Children, createContext, isValidElement, useContext, useState, useMemo, useRef, useEffect, type ReactNode } from "react";
+import { Children, isValidElement, useState, useMemo, useRef, useEffect, type ReactNode } from "react";
 import { useI18n } from "@/hooks/useI18n";
 import { TrText } from "@/features/logging/TrText";
 import { CATEGORIES, type Category } from "@/features/logging/logCategories";
+import { LogSchemaContext, useLogSchema, type LogSchemaContextValue } from "@/features/logging/LogSchemaContext";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Ico, IcoText } from "@/components/icons/BixboIcons";
 import { CustomLogForm } from "@/components/CustomLogForm";
@@ -91,18 +92,6 @@ import {
 
 
 type UpdateFn = (u: (d: BixboData) => BixboData) => void;
-
-type LogSchemaContextValue = {
-  data: BixboData;
-  featureId: RegistryFeatureId;
-  adminFields: ReturnType<typeof registryCustomFieldsForFeature>;
-  adminFieldValues: Record<string, CustomLogValue>;
-  setAdminFieldValue: (fieldId: string, value: CustomLogValue) => void;
-  saveAdminCustomFields: () => void;
-  sourceEntryId: string;
-} | null;
-const LogSchemaContext = createContext<LogSchemaContextValue>(null);
-function useLogSchema() { return useContext(LogSchemaContext); }
 
 
 export function LogSheet({
