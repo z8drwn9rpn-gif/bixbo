@@ -1,0 +1,175 @@
+name: Move episodes under Pain once
+
+on:
+  push:
+    branches: [agent/move-episodes-under-pain]
+    paths:
+      - .github/workflows/move-episodes-under-pain-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/move-episodes-under-pain
+          fetch-depth: 0
+
+      - name: Move Tetany and Panic under Pain
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/features/logging/LogSheetRootV2.tsx')
+          s = p.read_text()
+
+          def rep(old, new):
+              global s
+              if old not in s:
+                  raise SystemExit(f'Expected block not found:\n{old[:180]}')
+              s = s.replace(old, new, 1)
+
+          rep('type PlanTarget = "event" | "task" | "note" | null;\n', 'type PlanTarget = "event" | "task" | "note" | null;\ntype PainTarget = "pain" | "tetany" | "panic" | null;\n')
+
+          rep('''  const [planTarget, setPlanTarget] = useState<PlanTarget>(
+    initial === "event" || initial === "task" || initial === "note" ? initial : null,
+  );
+''', '''  const [planTarget, setPlanTarget] = useState<PlanTarget>(
+    initial === "event" || initial === "task" || initial === "note" ? initial : null,
+  );
+  const [painTarget, setPainTarget] = useState<PainTarget>(
+    initial === "pain" || initial === "tetany" || initial === "panic" ? initial : null,
+  );
+''')
+
+          rep('''      setCat(initial ?? null);
+      setPlanTarget(initial === "event" || initial === "task" || initial === "note" ? initial : null);
+''', '''      setCat(initial ?? null);
+      setPlanTarget(initial === "event" || initial === "task" || initial === "note" ? initial : null);
+      setPainTarget(initial === "pain" || initial === "tetany" || initial === "panic" ? initial : null);
+''')
+
+          rep('''    setCustomEditEntry(undefined);
+    setPlanTarget(null);
+    onOpenChange(false);
+''', '''    setCustomEditEntry(undefined);
+    setPlanTarget(null);
+    setPainTarget(null);
+    onOpenChange(false);
+''')
+
+          rep('''  const active = cat ?? initial;
+  const renderActive: Category | undefined = active === "note" && planTarget ? planTarget : active;
+''', '''  const active = cat ?? initial;
+  const renderActive: Category | undefined = active === "pain"
+    ? (painTarget ?? undefined)
+    : active === "note" && planTarget
+      ? planTarget
+      : active;
+''')
+
+          rep('''    if (active === "note" && planTarget) {
+      setPlanTarget(null);
+      return;
+    }
+    if (initial) {
+''', '''    if (active === "note" && planTarget) {
+      setPlanTarget(null);
+      return;
+    }
+    if (active === "pain" && painTarget && !initial) {
+      setPainTarget(null);
+      return;
+    }
+    if (initial) {
+''')
+
+          rep('''    setCat(null);
+    setPlanTarget(null);
+  };
+''', '''    setCat(null);
+    setPlanTarget(null);
+    setPainTarget(null);
+  };
+''')
+
+          rep('''      .filter((category) => {
+        if (category.id === "event" || category.id === "task") return false;
+        if (!isRegistrySurfaceEnabled(data, category.id as RegistryFeatureId, "log")) return false;
+''', '''      .filter((category) => {
+        if (category.id === "event" || category.id === "task" || category.id === "tetany" || category.id === "panic") return false;
+        if (category.id === "pain") {
+          const anyPainLogEnabled = ["pain", "tetany", "panic"].some((id) =>
+            isRegistrySurfaceEnabled(data, id as RegistryFeatureId, "log"),
+          );
+          if (!anyPainLogEnabled) return false;
+        } else if (!isRegistrySurfaceEnabled(data, category.id as RegistryFeatureId, "log")) return false;
+''')
+
+          rep('''  const title = active === "note" && !planTarget
+    ? "Note & plan"
+    : renderActive === "tetany"
+''', '''  const title = active === "pain" && !painTarget
+    ? "Pain"
+    : active === "note" && !planTarget
+      ? "Note & plan"
+      : renderActive === "tetany"
+''')
+
+          rep('''                          setCat(c.id);
+                          setPlanTarget(null);
+''', '''                          setCat(c.id);
+                          setPlanTarget(null);
+                          setPainTarget(c.id === "pain" ? null : painTarget);
+''')
+
+          rep('''                {active === "note" && !planTarget && <PlanChooser onPick={setPlanTarget} />}
+                {renderActive === "postpartum" && <PostpartumSymptomsForm date={date} data={data} update={update} onDone={close} />}
+''', '''                {active === "pain" && !painTarget && <PainChooser data={data} onPick={setPainTarget} />}
+                {active === "note" && !planTarget && <PlanChooser onPick={setPlanTarget} />}
+                {renderActive === "postpartum" && <PostpartumSymptomsForm date={date} data={data} update={update} onDone={close} />}
+''')
+
+          rep('''                {activeAdminFields.length > 0 && renderActive !== "pain" && !active?.startsWith("custom:") && !(active === "note" && !planTarget) ? (
+''', '''                {activeAdminFields.length > 0 && renderActive !== "pain" && !active?.startsWith("custom:") && !(active === "note" && !planTarget) && !(active === "pain" && !painTarget) ? (
+''')
+
+          marker = '\nfunction PlanChooser({ onPick }: { onPick: (target: Exclude<PlanTarget, null>) => void }) {'
+          chooser = r'''
+function PainChooser({ data, onPick }: { data: BixboData; onPick: (target: Exclude<PainTarget, null>) => void }) {
+  const { t } = useI18n();
+  const options = [
+    { id: "pain" as const, icon: "🔥", title: "Pain", hint: "Pain level · body · symptoms" },
+    { id: "tetany" as const, icon: "⭐", title: "Tetany", hint: "Tetany episode" },
+    { id: "panic" as const, icon: "✨", title: "Panic attack", hint: "Panic attack episode" },
+  ].filter((option) => isRegistrySurfaceEnabled(data, option.id as RegistryFeatureId, "log"));
+  return <div className="mx-auto flex w-full max-w-md flex-col gap-3 py-5">
+    <div className="px-1 pb-2 text-center"><h2 className="font-serif text-xl font-semibold">{t("Pain")}</h2><p className="mt-1 text-xs text-muted-foreground">{t("What would you like to log?")}</p></div>
+    {options.map((option) => <button key={option.id} type="button" onClick={() => onPick(option.id)} className="flex items-center gap-3 rounded-3xl border border-border bg-surface p-4 text-left shadow-sm transition active:scale-[0.99]"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary/10"><Ico e={option.icon} size={26} /></span><span className="min-w-0 flex-1"><span className="block text-sm font-semibold">{t(option.title)}</span><span className="mt-0.5 block text-xs text-muted-foreground">{t(option.hint)}</span></span><span className="text-lg text-muted-foreground" aria-hidden="true">→</span></button>)}
+  </div>;
+}
+'''
+          if marker not in s:
+              raise SystemExit('PlanChooser marker not found')
+          s = s.replace(marker, '\n' + chooser + marker, 1)
+          p.write_text(s)
+          PY
+
+      - name: Validate
+        run: |
+          npm install
+          npm run typecheck
+          npm run lint
+          npm test -- --run
+          npm run build
+
+      - name: Commit patch and remove one-shot workflow
+        run: |
+          rm .github/workflows/move-episodes-under-pain-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/features/logging/LogSheetRootV2.tsx .github/workflows/move-episodes-under-pain-once.yml
+          git commit -m "fix: move tetany and panic under pain log"
+          git push origin HEAD:agent/move-episodes-under-pain
