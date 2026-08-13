@@ -8,6 +8,7 @@ function replaceOnce(code: string, search: string, replacement: string, label: s
 }
 
 function transformCycleForms(source: string) {
+  const t = (value: string) => value;
   let code = source;
 
   code = replaceOnce(
