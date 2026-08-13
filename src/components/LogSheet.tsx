@@ -1797,7 +1797,7 @@ function PainWizard({
       ) : null}
 
       {activePainStepId === "score" && (
-        <div className="flex flex-col items-center gap-4 py-6">
+        <div className="flex flex-1 flex-col items-center justify-center gap-4 py-6">
           {latestPain && !initialEntry && symptomsStepIndex >= 0 && (
             <div className="w-full rounded-2xl border border-primary/30 bg-surface/90 p-3 shadow-sm">
               <div className="mb-3 flex items-start justify-between gap-3">
@@ -1856,14 +1856,40 @@ function PainWizard({
             ))}
           </div>
           {painScaleInfoOpen ? (
-            <div className="w-full px-2">
-              <ScaleLegend
-                max={10}
-                from={0}
-                descriptions={getScaleDesc(data, "pain")}
-                value={Math.round(score)}
-                title={t("Pain scale (Mankosky)")}
-              />
+            <div
+              className="fixed inset-0 z-[90] flex items-end justify-center bg-black/20 px-3 pb-[calc(12px+env(safe-area-inset-bottom))] backdrop-blur-[1px]"
+              role="presentation"
+              onClick={() => setPainScaleInfoOpen(false)}
+            >
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-label={t("Pain scale guide")}
+                className="w-full max-w-md rounded-[1.6rem] border border-border/70 bg-background p-4 shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="grid h-7 w-7 place-items-center rounded-full bg-primary/15 text-sm font-bold text-primary">i</span>
+                    <h3 className="font-serif text-lg font-semibold">{t("Pain scale guide")}</h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPainScaleInfoOpen(false)}
+                    aria-label={t("Close")}
+                    className="grid h-8 w-8 place-items-center rounded-full bg-tint text-foreground ring-1 ring-border"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <ScaleLegend
+                  max={10}
+                  from={0}
+                  descriptions={getScaleDesc(data, "pain")}
+                  value={Math.round(score)}
+                  title={t("Pain scale (Mankosky)")}
+                />
+              </div>
             </div>
           ) : null}
         </div>
