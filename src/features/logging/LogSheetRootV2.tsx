@@ -47,6 +47,7 @@ import {
 } from "./EnhancedForms";
 
 type PlanTarget = "event" | "task" | "note" | null;
+type PainTarget = "pain" | "tetany" | "panic" | null;
 
 export function LogSheet({
   open,
@@ -75,12 +76,16 @@ export function LogSheet({
   const [planTarget, setPlanTarget] = useState<PlanTarget>(
     initial === "event" || initial === "task" || initial === "note" ? initial : null,
   );
+  const [painTarget, setPainTarget] = useState<PainTarget>(
+    initial === "pain" || initial === "tetany" || initial === "panic" ? initial : null,
+  );
 
   useEffect(() => {
     if (open) {
       setOpenToken((v) => v + 1);
       setCat(initial ?? null);
       setPlanTarget(initial === "event" || initial === "task" || initial === "note" ? initial : null);
+      setPainTarget(initial === "pain" || initial === "tetany" || initial === "panic" ? initial : null);
     }
   }, [open, initial]);
 
@@ -89,16 +94,25 @@ export function LogSheet({
     setEditingOrder(false);
     setCustomEditEntry(undefined);
     setPlanTarget(null);
+    setPainTarget(null);
     onOpenChange(false);
   };
 
   const active = cat ?? initial;
-  const renderActive: Category | undefined = active === "note" && planTarget ? planTarget : active;
+  const renderActive: Category | undefined = active === "pain"
+    ? (painTarget ?? undefined)
+    : active === "note" && planTarget
+      ? planTarget
+      : active;
 
   const back = () => {
     setCustomEditEntry(undefined);
     if (active === "note" && planTarget) {
       setPlanTarget(null);
+      return;
+    }
+    if (active === "pain" && painTarget && !initial) {
+      setPainTarget(null);
       return;
     }
     if (initial) {
@@ -107,6 +121,7 @@ export function LogSheet({
     }
     setCat(null);
     setPlanTarget(null);
+    setPainTarget(null);
   };
 
   const edit = editEntry;
@@ -217,8 +232,13 @@ export function LogSheet({
         return { ...category, label: feature.label || category.label, emoji: feature.icon || category.emoji, registryOrder: feature.order };
       })
       .filter((category) => {
-        if (category.id === "event" || category.id === "task") return false;
-        if (!isRegistrySurfaceEnabled(data, category.id as RegistryFeatureId, "log")) return false;
+        if (category.id === "event" || category.id === "task" || category.id === "tetany" || category.id === "panic") return false;
+        if (category.id === "pain") {
+          const anyPainLogEnabled = ["pain", "tetany", "panic"].some((id) =>
+            isRegistrySurfaceEnabled(data, id as RegistryFeatureId, "log"),
+          );
+          if (!anyPainLogEnabled) return false;
+        } else if (!isRegistrySurfaceEnabled(data, category.id as RegistryFeatureId, "log")) return false;
         if (category.id === "period" && cycleTrackingHidden) return false;
         if (category.id === "postpartum" && !postpartumActive) return false;
         return true;
@@ -297,9 +317,11 @@ export function LogSheet({
     setDraggingCat(null);
   };
 
-  const title = active === "note" && !planTarget
-    ? "Note & plan"
-    : renderActive === "tetany"
+  const title = active === "pain" && !painTarget
+    ? "Pain"
+    : active === "note" && !planTarget
+      ? "Note & plan"
+      : renderActive === "tetany"
       ? "Tetany episode"
       : renderActive === "panic"
         ? "Panic attack"
@@ -369,6 +391,7 @@ export function LogSheet({
                           if (editingOrder) { e.preventDefault(); e.stopPropagation(); return; }
                           setCat(c.id);
                           setPlanTarget(null);
+                          setPainTarget(c.id === "pain" ? null : painTarget);
                         }}
                         aria-label={editingOrder ? `Drag ${c.label} to reorder` : `Log ${c.label}`}
                         className={`pointer-events-auto absolute z-20 touch-none select-none outline-none transition-[filter,opacity] duration-150 focus-visible:ring-2 focus-visible:ring-[#edf2cf] ${editingOrder ? "cursor-grab active:cursor-grabbing" : ""} ${draggingCat === c.id ? "z-50 brightness-110 drop-shadow-[0_0_10px_rgba(238,243,207,0.8)]" : ""}`}
@@ -417,6 +440,7 @@ export function LogSheet({
                   </div>;
                 })()}
 
+                {active === "pain" && !painTarget && <PainChooser data={data} onPick={setPainTarget} />}
                 {active === "note" && !planTarget && <PlanChooser onPick={setPlanTarget} />}
                 {renderActive === "postpartum" && <PostpartumSymptomsForm date={date} data={data} update={update} onDone={close} />}
                 {renderActive === "pain" && <PainWizard date={date} data={data} update={update} onDone={close} initialEntry={initialPain ?? (edit as PainEntry | undefined)} />}
@@ -434,7 +458,7 @@ export function LogSheet({
                 {renderActive === "event" && <EventForm date={date} update={update} onDone={close} initialEntry={edit as EventEntry | undefined} />}
                 {renderActive === "note" && planTarget === "note" && <NoteForm date={date} update={update} onDone={close} />}
 
-                {activeAdminFields.length > 0 && renderActive !== "pain" && !active?.startsWith("custom:") && !(active === "note" && !planTarget) ? (
+                {activeAdminFields.length > 0 && renderActive !== "pain" && !active?.startsWith("custom:") && !(active === "note" && !planTarget) && !(active === "pain" && !painTarget) ? (
                   <div className="mt-4 rounded-2xl border border-border p-3">
                     <p className="mb-2 text-xs font-semibold text-muted-foreground">{t("Custom fields")}</p>
                     <div className="space-y-3">{activeAdminFields.map((field) => <CoreFeatureCustomFieldInput key={field.id} field={field} value={adminFieldValues[field.id]} onChange={(value) => setAdminFieldValues((current) => ({ ...current, [field.id]: value }))} />)}</div>
@@ -447,6 +471,20 @@ export function LogSheet({
       </SheetContent>
     </Sheet>
   );
+}
+
+
+function PainChooser({ data, onPick }: { data: BixboData; onPick: (target: Exclude<PainTarget, null>) => void }) {
+  const { t } = useI18n();
+  const options = [
+    { id: "pain" as const, icon: "🔥", title: "Pain", hint: "Pain level · body · symptoms" },
+    { id: "tetany" as const, icon: "⭐", title: "Tetany", hint: "Tetany episode" },
+    { id: "panic" as const, icon: "✨", title: "Panic attack", hint: "Panic attack episode" },
+  ].filter((option) => isRegistrySurfaceEnabled(data, option.id as RegistryFeatureId, "log"));
+  return <div className="mx-auto flex w-full max-w-md flex-col gap-3 py-5">
+    <div className="px-1 pb-2 text-center"><h2 className="font-serif text-xl font-semibold">{t("Pain")}</h2><p className="mt-1 text-xs text-muted-foreground">{t("What would you like to log?")}</p></div>
+    {options.map((option) => <button key={option.id} type="button" onClick={() => onPick(option.id)} className="flex items-center gap-3 rounded-3xl border border-border bg-surface p-4 text-left shadow-sm transition active:scale-[0.99]"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary/10"><Ico e={option.icon} size={26} /></span><span className="min-w-0 flex-1"><span className="block text-sm font-semibold">{t(option.title)}</span><span className="mt-0.5 block text-xs text-muted-foreground">{t(option.hint)}</span></span><span className="text-lg text-muted-foreground" aria-hidden="true">→</span></button>)}
+  </div>;
 }
 
 function PlanChooser({ onPick }: { onPick: (target: Exclude<PlanTarget, null>) => void }) {
