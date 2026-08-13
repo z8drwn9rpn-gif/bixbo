@@ -41,13 +41,8 @@ jobs:
       - name: Verify build
         shell: bash
         run: |
-          if command -v bun >/dev/null 2>&1; then
-            bun install --frozen-lockfile || bun install
-            bun run build
-          else
-            npm ci
-            npm run build
-          fi
+          npm install --no-audit --no-fund
+          npm run build
 
       - name: Commit
         shell: bash
