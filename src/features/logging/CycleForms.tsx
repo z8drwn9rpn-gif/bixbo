@@ -56,16 +56,14 @@ export function PeriodForm({ date, data, update, onDone }: { date: string; data:
     { v: "heavy", label: "Heavy", color: "var(--period-heavy)" },
     { v: "very-heavy", label: "Very heavy", color: "var(--period-veryheavy)" },
   ];
-
-  const cardClass = "rounded-3xl border border-border/70 bg-surface/28 p-3.5 shadow-sm ring-1 ring-border/45";
-  const labelClass = "mb-2 text-xs font-bold uppercase tracking-[0.035em] text-muted-foreground";
+  const sectionLabel = "mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground";
 
   return (
-    <div className="mx-auto flex w-full max-w-xl flex-col gap-3 pb-5">
+    <div className="mx-auto flex w-full max-w-xl flex-col gap-4 pb-5">
       <SaveBar onCancel={onDone} onSave={save} />
 
-      <section className={cardClass}>
-        <p className={labelClass}>{t("Flow")}</p>
+      <section>
+        <p className={sectionLabel}>{t("Flow")}</p>
         <div className="grid grid-cols-5 gap-1.5">
           {LEVELS.map((L) => {
             const active = level === L.v;
@@ -74,11 +72,7 @@ export function PeriodForm({ date, data, update, onDone }: { date: string; data:
                 key={L.v}
                 type="button"
                 onClick={() => setLevel(active ? "" : L.v)}
-                className={`min-w-0 rounded-full px-1 py-2.5 text-[11px] font-semibold leading-tight transition ${
-                  active
-                    ? "text-white shadow-sm ring-2 ring-foreground/80 ring-offset-1 ring-offset-background"
-                    : "bg-tint text-foreground ring-1 ring-border"
-                }`}
+                className={`min-w-0 rounded-full px-1 py-2.5 text-[11px] font-semibold leading-tight transition ${active ? "text-white shadow-sm ring-2 ring-foreground/75" : "bg-tint text-foreground ring-1 ring-border"}`}
                 style={active ? { background: L.color } : undefined}
               >
                 {t(L.label)}
@@ -88,60 +82,39 @@ export function PeriodForm({ date, data, update, onDone }: { date: string; data:
         </div>
       </section>
 
-      <section className={cardClass}>
-        <p className={labelClass}>{t("Discharge (optional)")}</p>
+      <div className="border-t border-border/60" />
+
+      <section>
+        <p className={sectionLabel}>{t("Discharge (optional)")}</p>
         <div className="flex flex-wrap gap-2">
           {DISCHARGE_OPTS.map((d) => (
-            <Chip
-              key={d.value}
-              active={discharge === d.value}
-              onClick={() => setDischarge(discharge === d.value ? "" : d.value)}
-              color={d.color}
-            >
+            <Chip key={d.value} active={discharge === d.value} onClick={() => setDischarge(discharge === d.value ? "" : d.value)} color={d.color}>
               {d.label}
             </Chip>
           ))}
         </div>
-
-        <div className="mt-3 border-t border-border/60 pt-3">
-          <p className="mb-1.5 text-xs font-medium text-muted-foreground">{t("Discharge note (optional)")}</p>
-          <Input
-            value={dNote}
-            onChange={(e) => setDNote(e.target.value)}
-            placeholder={t("Add discharge note…")}
-            className="h-10 rounded-2xl bg-background/20"
-          />
-        </div>
-      </section>
-
-      <section className={cardClass}>
-        <p className={labelClass}>{t("Day note (optional)")}</p>
-        <Textarea
-          rows={3}
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder={t("Add a note about today…")}
-          className="min-h-[92px] rounded-2xl bg-background/20"
-        />
-      </section>
-
-      <section className={cardClass}>
-        <p className={labelClass}>{t("Birth control since (optional)")}</p>
-        <Input
-          type="date"
-          value={data.settings.birthControlSince ?? ""}
-          onChange={(e) => update((d) => ({ ...d, settings: { ...d.settings, birthControlSince: e.target.value || undefined } }))}
-          className="h-10 rounded-2xl bg-background/20"
-        />
-        {data.settings.birthControlSince ? (
-          <p className="mt-1.5 text-[10px] leading-relaxed text-muted-foreground">
-            {t("Taking birth control since")} {data.settings.birthControlSince}
-          </p>
+        {discharge ? (
+          <div className="mt-3">
+            <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">{t("Discharge note (optional)")}</p>
+            <Input value={dNote} onChange={(e) => setDNote(e.target.value)} placeholder={t("Add discharge note…")} className="h-10 rounded-2xl" />
+          </div>
         ) : null}
+      </section>
 
-        <div className="mt-3 rounded-2xl bg-tint/70 px-3 py-2.5 text-[10px] leading-relaxed text-muted-foreground ring-1 ring-border/55">
-          {t("Cycle prediction is based on your last period and cycle length (edit in Settings later).")}
-        </div>
+      <div className="border-t border-border/60" />
+
+      <section>
+        <p className={sectionLabel}>{t("Day note (optional)")}</p>
+        <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder={t("Add a note about today…")} className="min-h-[76px] rounded-2xl" />
+      </section>
+
+      <div className="border-t border-border/60" />
+
+      <section>
+        <p className={sectionLabel}>{t("Birth control since (optional)")}</p>
+        <Input type="date" value={data.settings.birthControlSince ?? ""} onChange={(e) => update((d) => ({ ...d, settings: { ...d.settings, birthControlSince: e.target.value || undefined } }))} className="h-10 rounded-2xl" />
+        {data.settings.birthControlSince ? <p className="mt-1 text-[10px] text-muted-foreground">{t("Taking birth control since")} {data.settings.birthControlSince}</p> : null}
+        <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">{t("Cycle prediction is based on your last period and cycle length (edit in Settings later).")}</p>
       </section>
 
       {cur ? (
@@ -158,20 +131,11 @@ export function PeriodForm({ date, data, update, onDone }: { date: string; data:
               const nextPeriodAdmin = periodAdmin.filter((entry) => entry.sourceEntryId !== `day:period:${date}`);
               if (nextPeriodAdmin.length) adminFields.period = nextPeriodAdmin;
               else delete adminFields.period;
-              return {
-                ...current,
-                dayLogs: {
-                  ...current.dayLogs,
-                  [date]: {
-                    ...rest,
-                    adminFields: Object.keys(adminFields).length ? adminFields : undefined,
-                  },
-                },
-              };
+              return { ...current, dayLogs: { ...current.dayLogs, [date]: { ...rest, adminFields: Object.keys(adminFields).length ? adminFields : undefined } } };
             });
             onDone();
           }}
-          className="mx-auto mt-1 rounded-full bg-destructive/8 px-5 py-2 text-xs font-semibold text-destructive ring-1 ring-destructive/35 transition hover:bg-destructive/12"
+          className="mt-1 w-full rounded-2xl bg-destructive/10 py-2.5 text-sm font-medium text-destructive ring-1 ring-destructive/30"
         >
           {t("Delete Blueberry entry")}
         </button>
@@ -489,15 +453,7 @@ export function ThermoForm({ date, update, onDone, initialEntry }: { date: strin
       <p className="text-xs font-medium">{t(label)}</p>
       <div className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {painValues.map((n) => (
-          <button
-            key={n}
-            type="button"
-            onClick={() => setter(value === n ? undefined : n)}
-            className={`h-9 w-9 shrink-0 rounded-full text-xs font-semibold transition ${value === n ? "text-white ring-[3px] ring-foreground" : "text-foreground"}`}
-            style={{ background: painColor(n) }}
-          >
-            {n}
-          </button>
+          <button key={n} type="button" onClick={() => setter(value === n ? undefined : n)} className={`h-9 w-9 shrink-0 rounded-full text-xs font-semibold transition ${value === n ? "text-white ring-[3px] ring-foreground" : "text-foreground"}`} style={{ background: painColor(n) }}>{n}</button>
         ))}
       </div>
     </div>
