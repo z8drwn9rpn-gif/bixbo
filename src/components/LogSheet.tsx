@@ -1553,9 +1553,17 @@ function PainWizard({
   const [nauseaHelped, setNauseaHelped] = useState<string[]>((initialEntry?.nauseaHelped ?? []).map(stripEmoji));
 
   // Quick update: copy the latest state, use the current time and jump to symptoms.
-  const [quickSymptomUpdate, setQuickSymptomUpdate] = useState(false);
-  const [copiedFromTime, setCopiedFromTime] = useState<string | undefined>();
-  const [copiedFromId, setCopiedFromId] = useState<string | undefined>();
+  const editingSymptomUpdate = initialEntry?.entryKind === "symptom-update";
+  const [quickSymptomUpdate, setQuickSymptomUpdate] = useState(editingSymptomUpdate);
+  const sourcePainForEdit = editingSymptomUpdate
+    ? (data.dayLogs[date]?.pain ?? []).find((entry) => entry.id === initialEntry?.sourcePainId)
+    : undefined;
+  const [copiedFromTime, setCopiedFromTime] = useState<string | undefined>(sourcePainForEdit?.time);
+  const [copiedFromId, setCopiedFromId] = useState<string | undefined>(initialEntry?.sourcePainId);
+
+  useEffect(() => {
+    if (editingSymptomUpdate && symptomsStepIndex >= 0) setStep(symptomsStepIndex);
+  }, [editingSymptomUpdate, symptomsStepIndex]);
   const startSymptomUpdate = () => {
     if (!latestPain) return;
 
@@ -1643,8 +1651,8 @@ function PainWizard({
     const p: PainEntry = {
       id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
       time,
-      entryKind: quickSymptomUpdate ? "symptom-update" : undefined,
-      sourcePainId: quickSymptomUpdate ? copiedFromId : undefined,
+      entryKind: quickSymptomUpdate || editingSymptomUpdate ? "symptom-update" : undefined,
+      sourcePainId: quickSymptomUpdate || editingSymptomUpdate ? (copiedFromId ?? initialEntry?.sourcePainId) : undefined,
       score,
       parts,
       quality,
@@ -1713,7 +1721,7 @@ function PainWizard({
           <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
             {t("Add symptoms")}
           </span>
-          <span className="text-xs text-muted-foreground">{t("New entry ·")} {time}</span>
+          <span className="text-xs text-muted-foreground">{t(editingSymptomUpdate ? "Editing ·" : "New entry ·")} {time}</span>
         </div>
       ) : (
         <div

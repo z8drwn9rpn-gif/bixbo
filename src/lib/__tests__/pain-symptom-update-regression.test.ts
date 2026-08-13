@@ -17,7 +17,7 @@ describe("Pain symptom-only follow-ups", () => {
       readFileSync(resolve(process.cwd(), "src/routes/index.tsx"), "utf8"),
       readFileSync(resolve(process.cwd(), "src/components/home/DayOverview.tsx"), "utf8"),
     ].join("\n");
-    expect(sheet).toContain('entryKind: quickSymptomUpdate ? "symptom-update" : undefined');
+    expect(sheet).toContain('entryKind: quickSymptomUpdate || editingSymptomUpdate ? "symptom-update" : undefined');
     expect(sheet).toContain('setSymptoms([])');
     expect(sheet).toContain('setNauseaSymptoms([])');
     expect(sheet).toContain('nauseaSymptoms.map(stripEmoji)');
@@ -42,4 +42,14 @@ it("PainWizard no longer contains hidden duplicate Tetany/Panic forms", () => {
   const source = readFileSync(resolve(process.cwd(), "src/components/LogSheet.tsx"), "utf8");
   expect(source).not.toContain('<div className="hidden" aria-hidden="true">\n          <Field label="Tetany episode?">');
   expect(source).not.toContain('// Panic (full inline log — under Tetany)');
+});
+
+
+it("editing an Add symptoms entry preserves symptom-update identity", () => {
+  const source = readFileSync(resolve(process.cwd(), "src/components/LogSheet.tsx"), "utf8");
+  expect(source).toContain('const editingSymptomUpdate = initialEntry?.entryKind === "symptom-update";');
+  expect(source).toContain('useState(editingSymptomUpdate)');
+  expect(source).toContain('if (editingSymptomUpdate && symptomsStepIndex >= 0) setStep(symptomsStepIndex);');
+  expect(source).toContain('entryKind: quickSymptomUpdate || editingSymptomUpdate ? "symptom-update" : undefined');
+  expect(source).toContain('(copiedFromId ?? initialEntry?.sourcePainId)');
 });
