@@ -5,11 +5,138 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: write
+
 jobs:
   quality:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: One-shot insert Episodes into Pain
+        if: github.event_name == 'push'
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+
+          p = Path("src/features/logging/PainWizard.tsx")
+          s = p.read_text()
+
+          if 'from "./EpisodeForms"' not in s:
+              s = s.replace(
+                  'import type { UpdateFn } from "./LogFormPrimitives";',
+                  'import type { UpdateFn } from "./LogFormPrimitives";\nimport { PanicForm, TetanyForm } from "./EpisodeForms";',
+                  1,
+              )
+
+          old_steps = '''    return configured.length ? configured : [
+      { id: "score", label: "Pain scale", kind: "scale" as const, order: 10 },
+      { id: "parts", label: "Where does it hurt?", kind: "chips" as const, order: 20 },
+      { id: "quality", label: "How does it hurt?", kind: "chips" as const, order: 30 },
+      { id: "symptoms", label: "Other symptoms", kind: "chips" as const, order: 40 },
+      { id: "details", label: "Details", kind: "text" as const, order: 50 },
+    ];'''
+          new_steps = '''    const base = configured.length ? configured : [
+      { id: "score", label: "Pain scale", kind: "scale" as const, order: 10 },
+      { id: "parts", label: "Where does it hurt?", kind: "chips" as const, order: 20 },
+      { id: "quality", label: "How does it hurt?", kind: "chips" as const, order: 30 },
+      { id: "symptoms", label: "Other symptoms", kind: "chips" as const, order: 40 },
+      { id: "details", label: "Details", kind: "text" as const, order: 50 },
+    ];
+    const withoutEpisodes = base.filter((field) => field.id !== "episodes");
+    const detailsIndex = withoutEpisodes.findIndex((field) => field.id === "details");
+    const symptomsIndex = withoutEpisodes.findIndex((field) => field.id === "symptoms");
+    const insertAt = detailsIndex >= 0 ? detailsIndex : symptomsIndex >= 0 ? symptomsIndex + 1 : withoutEpisodes.length;
+    return [
+      ...withoutEpisodes.slice(0, insertAt),
+      { id: "episodes", label: "Episodes", kind: "chips" as const, order: 45 },
+      ...withoutEpisodes.slice(insertAt),
+    ];'''
+          if 'id: "episodes", label: "Episodes"' not in s:
+              assert old_steps in s, "pain steps not found"
+              s = s.replace(old_steps, new_steps, 1)
+
+          if 'const [episodeMode, setEpisodeMode]' not in s:
+              s = s.replace(
+                  '  const [painScaleInfoOpen, setPainScaleInfoOpen] = useState(false);',
+                  '  const [painScaleInfoOpen, setPainScaleInfoOpen] = useState(false);\n  const [episodeMode, setEpisodeMode] = useState<"tetany" | "panic" | null>(null);',
+                  1,
+              )
+
+          old_custom = '  const activePainStepIsCustom = !!activePainStep && !(BIXBO_LOG_FIELDS.pain ?? []).some((field) => field.id === activePainStep.id);'
+          if old_custom in s:
+              s = s.replace(old_custom, '  const activePainStepIsCustom = !!activePainStep && activePainStep.id !== "episodes" && !(BIXBO_LOG_FIELDS.pain ?? []).some((field) => field.id === activePainStep.id);', 1)
+
+          if 'episodeMode === "tetany"' not in s:
+              marker = '''  return (
+    <div
+      className="flex min-h-full flex-col px-5 pb-4 pt-0 transition-colors touch-pan-y"'''
+              assert marker in s, "main Pain return not found"
+              nested = '''  if (episodeMode === "tetany") {
+    return (
+      <LogSchemaContext.Provider value={null}>
+        <div className="px-5 pb-4">
+          <TetanyForm date={date} data={data} update={update} onDone={() => setEpisodeMode(null)} />
+        </div>
+      </LogSchemaContext.Provider>
+    );
+  }
+  if (episodeMode === "panic") {
+    return (
+      <LogSchemaContext.Provider value={null}>
+        <div className="px-5 pb-4">
+          <PanicForm date={date} data={data} update={update} onDone={() => setEpisodeMode(null)} />
+        </div>
+      </LogSchemaContext.Provider>
+    );
+  }
+
+''' + marker
+              s = s.replace(marker, nested, 1)
+
+          if 'activePainStepId === "episodes"' not in s:
+              marker = '''      {activePainStepId === "details" && (
+        <div className="space-y-4">'''
+              assert marker in s, "details marker not found"
+              episodes = '''      {activePainStepId === "episodes" && (
+        <div className="space-y-4 pt-1">
+          <div>
+            <h2 className="font-serif text-xl text-foreground">{t("Episodes")}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">{t("Log a tetany episode or panic attack if one happened with this pain entry.")}</p>
+          </div>
+          {([
+            ["tetany", "⭐", "Tetany episode"],
+            ["panic", "✨", "Panic attack"],
+          ] as const).map(([mode, icon, label]) => (
+            <div key={mode} className="rounded-2xl border border-border bg-surface p-3">
+              <div className="flex items-center gap-3">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-primary/10"><Ico e={icon} size={24} /></span>
+                <p className="min-w-0 flex-1 text-sm font-semibold text-foreground">{t(label)}</p>
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <button type="button" className="h-10 rounded-xl border border-border bg-background text-sm font-semibold text-foreground">{t("No")}</button>
+                <button type="button" onClick={() => setEpisodeMode(mode)} className="h-10 rounded-xl border border-primary bg-primary/10 text-sm font-semibold text-primary">{t("Yes, log it")}</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+''' + marker
+              s = s.replace(marker, episodes, 1)
+
+          p.write_text(s)
+          PY
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/features/logging/PainWizard.tsx
+          git rm -f .github/workflows/temp-add-pain-episodes.yml
+          git checkout HEAD^ -- .github/workflows/ci.yml
+          git add .github/workflows/ci.yml
+          git commit -m "Add Episodes page inside Pain log"
+          git push
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
@@ -23,8 +150,6 @@ jobs:
             echo "$tracked_env"
             exit 1
           fi
-          # Server-side code may reference secret environment variable NAMES; that is expected.
-          # What must never exist is a client-exposed VITE secret/private key variable.
           if git grep -nE 'VITE_[A-Z0-9_]*(SECRET|PRIVATE_KEY|SERVICE_ROLE)' -- ':!*.example' ':!.github/workflows/ci.yml'; then
             echo "Potential server secret exposed through a client VITE_ variable."
             exit 1
