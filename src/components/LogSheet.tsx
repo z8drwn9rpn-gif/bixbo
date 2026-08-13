@@ -1,1 +1,4628 @@
-export * from "@/features/logging/LogSheet";
+import { Children, createContext, isValidElement, useContext, useState, useMemo, useRef, useEffect, type ReactNode } from "react";
+import { useI18n } from "@/hooks/useI18n";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
+import { Ico, IcoText } from "@/components/icons/BixboIcons";
+import { CustomLogForm } from "@/components/CustomLogForm";
+import { CoreFeatureCustomFieldInput } from "@/components/CoreFeatureCustomFieldsForm";
+import { POSTPARTUM_SYMPTOMS } from "@/lib/health";
+import { BIXBO_LOG_FIELDS, getRegistryFeature, getRegistryField, isRegistrySurfaceEnabled, registryCustomFieldsForFeature, registryFieldLabel, registryFieldOptions, registryFieldScale, registryFieldsForFeature, registryOptionLabel, customLogDefinitions, type RegistryFeatureId } from "@/lib/appRegistry";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
+import { Textarea } from "@/components/ui/textarea";
+import { X, Plus, ChevronLeft, Check, Pencil, Trash2 } from "@/components/icons/BixboIcons";
+import {
+  PAIN_DESCRIPTIONS,
+  painColor,
+  medScheduleItems,
+  BODY_PARTS_DEFAULT,
+  PAIN_QUALITY_DEFAULT,
+  OTHER_SYMPTOMS_DEFAULT,
+  FOOD_FEELINGS_DEFAULT,
+  WORKOUT_KINDS_DEFAULT,
+  BRISTOL,
+  DISCHARGE_OPTS,
+  MOODS_DEFAULT,
+  TETANY_TYPES,
+  TETANY_TYPE_DESC,
+  TETANY_LOCATIONS_DEFAULT,
+  TETANY_TRIGGERS,
+  TETANY_HELPED_DEFAULT,
+  HEADACHE_TYPES,
+  HEADACHE_TYPE_DESC,
+  PRESSURE_TYPES,
+  NAUSEA_TYPES,
+  NAUSEA_TYPE_DESC,
+  NAUSEA_SEVERITY_DESC,
+  NAUSEA_TRIGGERS,
+  NAUSEA_SYMPTOMS,
+  NAUSEA_HELPED,
+  PANIC_PHYSICAL,
+  PANIC_COGNITIVE,
+  PANIC_HELPED_DEFAULT,
+  SEX_TYPES_DEFAULT,
+  BODY_BATTERY,
+  SLEEP_QUALITY,
+  SEX_FEELINGS_DEFAULT,
+  EVENT_COLORS,
+  BOWEL_FEELINGS_DEFAULT,
+  BOWEL_SYMPTOMS_DEFAULT,
+  PCOS_SYMPTOMS,
+  HISTAMINE_SYMPTOMS,
+  FOOD_SYMPTOMS_AFTER,
+  todayKey,
+  nowHHMM,
+  updateDayLog,
+  asArr,
+  workoutHasDistance,
+  workoutIsHike,
+  workoutIsStrength,
+  pregnancyInfo,
+  isCycleTrackingHidden,
+  URINARY_DEFAULT,
+  ALLERGENS_DEFAULT,
+  type BixboData,
+  type DayLog,
+  type PainEntry,
+  type PeriodLevel,
+  type FoodEntry,
+  type BowelEntry,
+  type ThermoSession,
+  type ThermoKind,
+  type SexEntry,
+  type SexKind,
+  type ExtraMed,
+  type WorkoutEntry,
+  type WorkoutExercise,
+  type EventEntry,
+  type TaskEntry,
+  type TetanyEpisode,
+  type PanicAttack,
+  type PainfulWhen,
+  type PostpartumDayLog,
+  type CustomLogEntry,
+  type CustomLogValue,
+  withCustomTombstones,
+  withoutCustomTombstones,
+} from "@/lib/storage";
+
+
+function TrText({ value }: { value: unknown }) {
+  const { t, language } = useI18n();
+  const raw = String(value ?? "");
+  const exact = t(raw);
+  if (exact !== raw) return <>{exact}</>;
+  if (language !== "sk") return <>{raw}</>;
+
+  let out = raw;
+  const exactSk: Record<string, string> = {
+    Before: "Pred",
+    During: "Počas",
+    After: "Po",
+    "Very-Heavy": "Veľmi silná",
+    "Very heavy": "Veľmi silná",
+    Heavy: "Silná",
+    Medium: "Stredná",
+    Light: "Slabá",
+    Spotting: "Špinenie",
+    "Overall improvement": "Celkové zlepšenie",
+    "Overall worsening": "Celkové zhoršenie",
+    "No clear change": "Bez jasnej zmeny",
+    "High caffeine (≥200 mg)": "Vysoký príjem kofeínu (≥200 mg)",
+    "Tetany episode": "Tetánická epizóda",
+    "Hot flash": "Nával tepla",
+    "Low energy": "Nízka energia",
+    Headache: "Bolesť hlavy",
+    "Daily adherence": "Denné dodržiavanie",
+    doses: "dávok",
+    "logged days": "zaznamenaných dní",
+  };
+  if (exactSk[out]) return <>{exactSk[out]}</>;
+
+  out = out
+    .replace(/^Panic attacks:/, "Panické záchvaty:")
+    .replace(/^Medication adherence:/, "Dodržiavanie liekov:")
+    .replace(/^Workouts:/, "Cvičenia:")
+    .replace(/^Pain: improved/, "Bolesť: zlepšenie")
+    .replace(/^Pain: worsened/, "Bolesť: zhoršenie")
+    .replace(/^(\d+) logged days$/, "$1 zaznamenaných dní")
+    .replace(/^Based on (\d+) logged days in (.+)$/i, "Na základe $1 zaznamenaných dní v $2")
+    .replace(/^Based on (\d+) days before and (\d+) days after$/i, "Na základe $1 dní pred a $2 dní po")
+    .replace(/^(\d+) before · (\d+) after$/, "$1 pred · $2 po")
+    .replace(/^0× in this month$/, "0× v tomto mesiaci")
+    .replace(/^(\d+)× in this month$/, "$1× v tomto mesiaci")
+    .replace(/^The outcome was (.+) percentage points more common on days with this trigger\.$/, "Výsledok bol o $1 percentuálnych bodov častejší v dňoch s týmto spúšťačom.")
+    .replace(/^Based on (\d+) days with and (\d+) days without the trigger\.$/, "Na základe $1 dní so spúšťačom a $2 dní bez spúšťača.")
+    .replace(/^Correlations show associations in your logs\. They do not prove that one factor caused another\.$/, "Korelácie ukazujú súvislosti v tvojich záznamoch. Nedokazujú, že jeden faktor spôsobil druhý.")
+    .replace(/^This shows an association in your logs, not proof that the selected trigger caused the outcome\.$/, "Toto ukazuje súvislosť v tvojich záznamoch, nie dôkaz, že vybraný spúšťač spôsobil výsledok.")
+    .replace(/^Compare how often an outcome occurred on days with and without a possible trigger\.$/, "Porovnaj, ako často sa výsledok objavil v dňoch s možným spúšťačom a bez neho.")
+    .replace(/^Automatically ranked associations calculated only from your own logs\.$/, "Automaticky zoradené súvislosti vypočítané iba z tvojich vlastných záznamov.");
+
+  if (out.includes(" → ")) {
+    const [a, b] = out.split(" → ");
+    return <>{t(a)} → {t(b)}</>;
+  }
+
+  return <>{out}</>;
+}
+
+type UpdateFn = (u: (d: BixboData) => BixboData) => void;
+
+type LogSchemaContextValue = {
+  data: BixboData;
+  featureId: RegistryFeatureId;
+  adminFields: ReturnType<typeof registryCustomFieldsForFeature>;
+  adminFieldValues: Record<string, CustomLogValue>;
+  setAdminFieldValue: (fieldId: string, value: CustomLogValue) => void;
+  saveAdminCustomFields: () => void;
+  sourceEntryId: string;
+} | null;
+const LogSchemaContext = createContext<LogSchemaContextValue>(null);
+function useLogSchema() { return useContext(LogSchemaContext); }
+
+type Category =
+  | "postpartum"
+  | "meds"
+  | "pain"
+  | "panic"
+  | "tetany"
+  | "period"
+  | "sex"
+  | "heat"
+  | "food"
+  | "bowel"
+  | "workout"
+  | "temp"
+  | "task"
+  | "event"
+  | "note"
+  | `custom:${string}`;
+
+const CATEGORIES: { id: Category; label: string; emoji: string; hint: string }[] = [
+  { id: "postpartum", label: "Postpartum symptoms", emoji: "🤱", hint: "Recovery symptoms · notes" },
+  { id: "pain", label: "Pain", emoji: "🔥", hint: "0–10, body, quality" },
+  { id: "tetany", label: "Episodes", emoji: "⭐", hint: "Tetany · panic attack" },
+  { id: "panic", label: "Panic attack", emoji: "✨", hint: "Intensity · symptoms · trigger" },
+  { id: "period", label: "Blueberry", emoji: "🫐", hint: "Flow · discharge · notes" },
+  { id: "heat", label: "Heat / Cold / TENS", emoji: "♨️", hint: "Heating, ice or TENS session" },
+  { id: "food", label: "Food", emoji: "🍽️", hint: "What & how you feel" },
+  { id: "bowel", label: "Bowel", emoji: "💩", hint: "Bristol type" },
+  { id: "sex", label: "ŠukŠuk!", emoji: "❤️", hint: "All kinds of activity" },
+  { id: "workout", label: "Workout", emoji: "🧘🏼‍♀️", hint: "Type · duration · weight" },
+  { id: "temp", label: "Temp / Sleep / Weight", emoji: "🌡️", hint: "°C · kg · hours" },
+  { id: "meds", label: "Meds", emoji: "💊", hint: "Taken · extra dose" },
+  { id: "event", label: "Event", emoji: "📅", hint: "Multi-day · time · note" },
+  { id: "task", label: "Task", emoji: "✅", hint: "To-do with date & time" },
+  { id: "note", label: "Notes", emoji: "📝", hint: "Any thought for today" },
+];
+
+export function LogSheet({
+  open,
+  onOpenChange,
+  date,
+  data,
+  update,
+  initial,
+  initialPain,
+  editEntry,
+}: {
+  open: boolean;
+  onOpenChange: (b: boolean) => void;
+  date: string;
+  data: BixboData;
+  update: UpdateFn;
+  initial?: Category;
+  initialPain?: PainEntry;
+  editEntry?: unknown;
+}) {
+  const { t } = useI18n();
+  const [cat, setCat] = useState<Category | null>(initial ?? null);
+  const [openToken, setOpenToken] = useState(0);
+  useEffect(() => {
+    if (open) setOpenToken((t) => t + 1);
+  }, [open]);
+  const [editingOrder, setEditingOrder] = useState(false);
+  const [customEditEntry, setCustomEditEntry] = useState<CustomLogEntry | null | undefined>();
+  const [episodeChooserOpen, setEpisodeChooserOpen] = useState(false);
+  const [episodeFlowStarted, setEpisodeFlowStarted] = useState(false);
+  const close = () => {
+    setCat(null);
+    setEditingOrder(false);
+    setCustomEditEntry(undefined);
+    setEpisodeChooserOpen(false);
+    setEpisodeFlowStarted(false);
+    onOpenChange(false);
+  };
+  const back = () => {
+    setCustomEditEntry(undefined);
+    if (episodeChooserOpen) {
+      setEpisodeChooserOpen(false);
+      setEpisodeFlowStarted(false);
+      if (initial) close();
+      else setCat(null);
+      return;
+    }
+    if (episodeFlowStarted && (cat === "tetany" || cat === "panic")) {
+      setCat("tetany");
+      setEpisodeChooserOpen(true);
+      return;
+    }
+    if (initial) {
+      close();
+      return;
+    }
+    setCat(null);
+  };
+  const active = cat ?? initial;
+  const edit = editEntry;
+  const editSource = edit && typeof edit === "object" ? edit as { id?: unknown; time?: unknown } : null;
+  const editSourceId = typeof editSource?.id === "string" ? editSource.id : undefined;
+  const editSourceTime = typeof editSource?.time === "string" ? editSource.time : undefined;
+  const [adminFieldValues, setAdminFieldValues] = useState<Record<string, CustomLogValue>>({});
+
+  const activeRegistryFeature = active && !active.startsWith("custom:") ? active as RegistryFeatureId : null;
+  const dayLevelAdminFeatures = new Set<RegistryFeatureId>(["period", "temp", "meds", "postpartum"]);
+  const draftSourceEntryId = useMemo(
+    () => globalThis.crypto?.randomUUID?.() ?? `core-entry-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    [active, date, openToken],
+  );
+  const activeSourceEntryId = activeRegistryFeature
+    ? editSourceId ?? (dayLevelAdminFeatures.has(activeRegistryFeature) ? `day:${activeRegistryFeature}:${date}` : draftSourceEntryId)
+    : draftSourceEntryId;
+  const activeAdminFields = activeRegistryFeature ? registryCustomFieldsForFeature(data, activeRegistryFeature) : [];
+  useEffect(() => {
+    if (!activeRegistryFeature) {
+      setAdminFieldValues({});
+      return;
+    }
+    const entries = data.dayLogs[date]?.adminFields?.[activeRegistryFeature] ?? [];
+    const linked = entries.find((entry) => entry.sourceEntryId === activeSourceEntryId);
+    const legacyByTime = editSourceTime
+      ? [...entries].reverse().find((entry) => !entry.sourceEntryId && entry.time === editSourceTime)
+      : undefined;
+    const legacyDayLevel = dayLevelAdminFeatures.has(activeRegistryFeature)
+      ? [...entries].reverse().find((entry) => !entry.sourceEntryId)
+      : undefined;
+    setAdminFieldValues((linked ?? legacyByTime ?? legacyDayLevel)?.values ?? {});
+  }, [active, activeRegistryFeature, activeSourceEntryId, data.dayLogs, date, editSourceTime, openToken]);
+
+  const saveAdminCustomFields = () => {
+    if (!activeRegistryFeature || !activeAdminFields.length) return;
+    const editableFieldIds = new Set(activeAdminFields.map((field) => field.id));
+    update((current) => {
+      const day = current.dayLogs[date] ?? {};
+      const adminFields = day.adminFields ?? {};
+      const existing = adminFields[activeRegistryFeature] ?? [];
+      const linkedIndex = existing.findIndex((entry) => entry.sourceEntryId === activeSourceEntryId);
+      let legacyIndex = -1;
+      if (linkedIndex < 0) {
+        for (let index = existing.length - 1; index >= 0; index -= 1) {
+          const entry = existing[index];
+          const legacyTimeMatch = Boolean(editSourceTime && !entry.sourceEntryId && entry.time === editSourceTime);
+          const legacyDayMatch = dayLevelAdminFeatures.has(activeRegistryFeature) && !entry.sourceEntryId;
+          if (legacyTimeMatch || legacyDayMatch) {
+            legacyIndex = index;
+            break;
+          }
+        }
+      }
+      const matchIndex = linkedIndex >= 0 ? linkedIndex : legacyIndex;
+
+      // Only fields currently exposed by Admin are editable in this form.
+      // Preserve values belonging to hidden, removed or legacy admin fields so
+      // "Hide" never becomes an accidental historical-data deletion on edit.
+      const previousValues = matchIndex >= 0 ? existing[matchIndex]?.values ?? {} : {};
+      const values: Record<string, CustomLogValue> = { ...previousValues };
+      editableFieldIds.forEach((fieldId) => {
+        const value = adminFieldValues[fieldId];
+        if (value === "" || value === undefined) delete values[fieldId];
+        else values[fieldId] = value;
+      });
+
+      let nextEntries = existing;
+      if (!Object.keys(values).length) {
+        if (matchIndex >= 0) nextEntries = existing.filter((_, index) => index !== matchIndex);
+        else return current;
+      } else if (matchIndex >= 0) {
+        nextEntries = existing.map((entry, index) => index === matchIndex
+          ? { ...entry, values, sourceEntryId: activeSourceEntryId }
+          : entry);
+      } else {
+        const entry = {
+          id: globalThis.crypto?.randomUUID?.() ?? `admin-field-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          time: editSourceTime ?? nowHHMM(),
+          values,
+          sourceEntryId: activeSourceEntryId,
+        };
+        nextEntries = [...existing, entry];
+      }
+
+      return {
+        ...current,
+        dayLogs: {
+          ...current.dayLogs,
+          [date]: {
+            ...day,
+            adminFields: {
+              ...adminFields,
+              [activeRegistryFeature]: nextEntries,
+            },
+          },
+        },
+      };
+    });
+  };
+
+  const cycleTrackingHidden = isCycleTrackingHidden(data);
+  const postpartumActive = Boolean(data.postpartum?.active);
+
+  const orderedCats = useMemo(() => {
+    const saved = data.settings.logOrder ?? [];
+    const builtins = CATEGORIES
+      .map((category) => {
+        const feature = getRegistryFeature(data, category.id as RegistryFeatureId);
+        if (category.id === "tetany") {
+          return { ...category, label: "Episodes", emoji: "⭐", registryOrder: feature.order };
+        }
+        return { ...category, label: feature.label, emoji: feature.icon, registryOrder: feature.order };
+      })
+      .filter((category) => {
+        if (category.id === "panic") return false;
+        if (category.id === "tetany") {
+          const anyEpisodeEnabled =
+            isRegistrySurfaceEnabled(data, "tetany", "log") || isRegistrySurfaceEnabled(data, "panic", "log");
+          if (!anyEpisodeEnabled) return false;
+        } else if (!isRegistrySurfaceEnabled(data, category.id as RegistryFeatureId, "log")) return false;
+        if (category.id === "period" && cycleTrackingHidden) return false;
+        if (category.id === "postpartum" && !postpartumActive) return false;
+        return true;
+      });
+    const customs = customLogDefinitions(data).map((definition) => ({
+      id: `custom:${definition.id}` as Category,
+      label: definition.label,
+      emoji: definition.icon,
+      hint: "Custom log",
+      registryOrder: 1000 + definition.order,
+    }));
+    const source = [...builtins, ...customs].sort((a, b) => a.registryOrder - b.registryOrder);
+    const byId = new Map(source.map((c) => [c.id, c]));
+    const seen = new Set<string>();
+    const out: typeof source = [];
+    for (const id of saved) {
+      const c = byId.get(id as Category);
+      if (c && !seen.has(id)) {
+        out.push(c);
+        seen.add(id);
+      }
+    }
+    for (const c of source) if (!seen.has(c.id)) out.push(c);
+    return out;
+  }, [cycleTrackingHidden, data, postpartumActive]);
+
+  const [draggingCat, setDraggingCat] = useState<Category | null>(null);
+  const draggingCatRef = useRef<Category | null>(null);
+  const dragOrderRef = useRef<Category[]>([]);
+  const lastDragTargetRef = useRef<Category | null>(null);
+
+  const persistVisibleOrder = (nextVisible: Category[]) => {
+    update((d) => {
+      const visible = new Set(nextVisible);
+      const hiddenSaved = (d.settings.logOrder ?? []).filter((id) => !visible.has(id as Category));
+
+      return {
+        ...d,
+        settings: {
+          ...d.settings,
+          logOrder: [...nextVisible, ...hiddenSaved],
+        },
+      };
+    });
+  };
+
+  const startDirectReorder = (e: React.PointerEvent<HTMLButtonElement>, id: Category) => {
+    if (!editingOrder) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    draggingCatRef.current = id;
+    dragOrderRef.current = orderedCats.map((c) => c.id);
+    lastDragTargetRef.current = id;
+    setDraggingCat(id);
+
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // Older WebKit may not support pointer capture here.
+    }
+  };
+
+  const moveDirectReorder = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const fromId = draggingCatRef.current;
+    if (!editingOrder || !fromId) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const hit = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+    const target = hit?.closest<HTMLElement>("[data-log-category]");
+    const toId = target?.dataset.logCategory as Category | undefined;
+
+    if (!toId || toId === fromId || toId === lastDragTargetRef.current) return;
+
+    const next = dragOrderRef.current.slice();
+    const from = next.indexOf(fromId);
+    const to = next.indexOf(toId);
+    if (from < 0 || to < 0) return;
+
+    next.splice(from, 1);
+    next.splice(to, 0, fromId);
+
+    dragOrderRef.current = next;
+    lastDragTargetRef.current = toId;
+    persistVisibleOrder(next);
+  };
+
+  const endDirectReorder = (e?: React.PointerEvent<HTMLButtonElement>) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    draggingCatRef.current = null;
+    dragOrderRef.current = [];
+    lastDragTargetRef.current = null;
+    setDraggingCat(null);
+  };
+
+  return (
+    <Sheet
+      open={open}
+      onOpenChange={(b) => {
+        if (!b) close();
+      }}
+    >
+      <SheetContent
+        side="bottom"
+        className={
+          (active
+            ? `flex h-[100dvh] max-h-[100dvh] flex-col rounded-t-none bg-background p-0 ${
+                active === "pain" ? "pt-[env(safe-area-inset-top)]" : "pt-0"
+              }`
+            : "fixed !inset-0 !left-0 !right-0 !top-0 !bottom-0 flex !h-[100dvh] !max-h-none !w-full !max-w-none min-h-0 flex-col overflow-hidden !rounded-none !border-0 !bg-transparent !p-0 !shadow-none") + " [&>button.absolute]:hidden"
+        }
+      >
+        {!active ? (
+          <>
+            <SheetTitle className="sr-only">{t("Log")}</SheetTitle>
+
+            <button
+              type="button"
+              aria-label={t("Close log menu")}
+              onClick={close}
+              className="absolute inset-0 z-0 cursor-default bg-transparent"
+            />
+
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 z-[5] bg-[#596330]/45 backdrop-blur-[2px]"
+            />
+
+            <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
+              <div
+                className="absolute left-1/2 h-[430px] w-[390px] max-w-[100vw] -translate-x-1/2"
+                style={{ bottom: "calc(max(8px, env(safe-area-inset-bottom)) + 22px)" }}
+              >
+                {(() => {
+                  const radialCats = orderedCats;
+                  const count = Math.max(1, radialCats.length);
+
+                  const centerUp = 205;
+                  const radiusX = 112;
+                  const radiusY = 145;
+                  const categoryButtonSize = 54;
+                  const categoryCircleSize = 48;
+
+                  const slots = radialCats.map((_, index) => {
+                    const angle = -Math.PI / 2 + (index * Math.PI * 2) / count;
+                    const cos = Math.cos(angle);
+                    const sin = Math.sin(angle);
+
+                    const x = Math.round(radiusX * cos);
+                    const up = Math.round(centerUp - radiusY * sin);
+
+                    const labelSide =
+                      sin < -0.58
+                        ? ("top" as const)
+                        : sin > 0.58
+                          ? ("bottom" as const)
+                          : cos >= 0
+                            ? ("right" as const)
+                            : ("left" as const);
+
+                    return { x, up, labelSide };
+                  });
+
+                  return (
+                    <>
+                      <svg
+                        aria-hidden="true"
+                        viewBox="-195 -430 390 430"
+                        className="pointer-events-none absolute bottom-0 left-1/2 h-[430px] w-[390px] max-w-[100vw] -translate-x-1/2 overflow-visible"
+                      >
+                        <ellipse
+                          cx="0"
+                          cy={-centerUp}
+                          rx="88"
+                          ry="88"
+                          fill="none"
+                          stroke="rgba(241,244,220,0.20)"
+                          strokeWidth="1"
+                          strokeDasharray="3 5"
+                        />
+
+                        {slots.map((slot, index) => {
+                          const dx = slot.x;
+                          const dy = -(slot.up - centerUp);
+                          const len = Math.hypot(dx, dy) || 1;
+                          const ux = dx / len;
+                          const uy = dy / len;
+
+                          const startPad = 44;
+                          const endPad = categoryCircleSize / 2 + 5;
+
+                          const x1 = ux * startPad;
+                          const y1 = -centerUp + uy * startPad;
+                          const x2 = dx - ux * endPad;
+                          const y2 = -centerUp + dy - uy * endPad;
+
+                          const arrowT = 0.78;
+                          const ax = x1 + (x2 - x1) * arrowT;
+                          const ay = y1 + (y2 - y1) * arrowT;
+                          const back = 6;
+                          const wing = 3.5;
+                          const px = -uy;
+                          const py = ux;
+
+                          const a1x = ax - ux * back + px * wing;
+                          const a1y = ay - uy * back + py * wing;
+                          const a2x = ax - ux * back - px * wing;
+                          const a2y = ay - uy * back - py * wing;
+
+                          return (
+                            <g key={`spoke-${index}`}>
+                              <line
+                                x1={x1}
+                                y1={y1}
+                                x2={x2}
+                                y2={y2}
+                                stroke="rgba(241,244,220,0.52)"
+                                strokeWidth="1"
+                                strokeDasharray="3 5"
+                              />
+                              <path
+                                d={`M ${a1x} ${a1y} L ${ax} ${ay} L ${a2x} ${a2y}`}
+                                fill="none"
+                                stroke="rgba(241,244,220,0.58)"
+                                strokeWidth="1.25"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </g>
+                          );
+                        })}
+                      </svg>
+
+                      {radialCats.map((c, index) => {
+                        const slot = slots[index];
+                        if (!slot) return null;
+
+                        const side = slot.labelSide;
+
+                        return (
+                          <button
+                            key={c.id}
+                            type="button"
+                            data-log-category={c.id}
+                            onPointerDown={(e) => startDirectReorder(e, c.id)}
+                            onPointerMove={moveDirectReorder}
+                            onPointerUp={endDirectReorder}
+                            onPointerCancel={endDirectReorder}
+                            onClick={(e) => {
+                              if (editingOrder) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                return;
+                              }
+                              if (c.id === "tetany") {
+                                setCat("tetany");
+                                setEpisodeFlowStarted(true);
+                                setEpisodeChooserOpen(true);
+                              } else {
+                                setCat(c.id);
+                              }
+                            }}
+                            aria-label={editingOrder ? `Drag $<TrText value={c.label} /> to reorder` : `Log $<TrText value={c.label} />`}
+                            className={`pointer-events-auto absolute z-20 touch-none select-none outline-none transition-[filter,opacity] duration-150 focus-visible:ring-2 focus-visible:ring-[#edf2cf] ${
+                              editingOrder ? "cursor-grab active:cursor-grabbing" : ""
+                            } ${draggingCat === c.id ? "z-50 brightness-110 drop-shadow-[0_0_10px_rgba(238,243,207,0.8)]" : ""}`}
+                            style={{
+                              width: `${categoryButtonSize}px`,
+                              height: `${categoryButtonSize}px`,
+                              left: "50%",
+                              bottom: 0,
+                              transform: `translate(calc(-50% + ${slot.x}px), -${slot.up - categoryButtonSize / 2}px)`,
+                            }}
+                          >
+                            <span
+                              className="
+                                absolute left-1/2 top-1/2 grid -translate-x-1/2 -translate-y-1/2
+                                place-items-center rounded-full border border-[#edf2cf]/65
+                                bg-[#dce5b2]/38
+                                shadow-[0_6px_16px_rgba(20,28,9,0.28),inset_0_1px_0_rgba(255,255,255,0.35)]
+                                ring-[3px] ring-[#e8edc5]/38 backdrop-blur-[7px]
+                              "
+                              style={{ width: `${categoryCircleSize}px`, height: `${categoryCircleSize}px` }}
+                            >
+                              <Ico e={c.emoji} size={26} />
+                            </span>
+
+                            <span
+                              className="
+                                absolute z-30 w-[64px] whitespace-normal text-[10px] font-semibold leading-[1.08]
+                                text-white drop-shadow-[0_1px_2px_rgba(31,37,16,0.95)]
+                              "
+                              style={{
+                                ...(side === "left"
+                                  ? {
+                                      right: "calc(100% + 3px)",
+                                      top: "50%",
+                                      transform: "translateY(-50%)",
+                                      textAlign: "right" as const,
+                                    }
+                                  : side === "right"
+                                    ? {
+                                        left: "calc(100% + 3px)",
+                                        top: "50%",
+                                        transform: "translateY(-50%)",
+                                        textAlign: "left" as const,
+                                      }
+                                    : side === "bottom"
+                                      ? {
+                                          left: "50%",
+                                          top: "calc(100% + 5px)",
+                                          transform: "translateX(-50%)",
+                                          textAlign: "center" as const,
+                                        }
+                                      : {
+                                          left: "50%",
+                                          bottom: "calc(100% + 5px)",
+                                          transform: "translateX(-50%)",
+                                          textAlign: "center" as const,
+                                        }),
+                              }}
+                            >
+                              {t(c.label)}
+                            </span>
+                          </button>
+                        );
+                      })}
+
+                      <span
+                        aria-hidden="true"
+                        className="
+                          pointer-events-none absolute left-1/2 z-30 h-0 w-0 -translate-x-1/2
+                          border-x-[7px] border-b-0 border-t-[9px]
+                          border-x-transparent border-t-[#eef2d1]/90
+                        "
+                        style={{ bottom: `${centerUp + 43}px` }}
+                      />
+
+                      <button
+                        type="button"
+                        onClick={close}
+                        aria-label={t("Close Log")}
+                        className="
+                          pointer-events-auto absolute left-1/2 z-40 grid h-[76px] w-[76px]
+                          -translate-x-1/2 place-items-center rounded-full
+                          border border-[#f1f4dc]/80 bg-[#657632] text-white
+                          shadow-[0_0_0_7px_rgba(231,238,190,0.44),0_0_24px_rgba(232,238,190,0.48),0_10px_26px_rgba(20,28,9,0.36)]
+                          ring-2 ring-[#dfe7b4]/70 transition-transform duration-150 active:scale-95
+                        "
+                        style={{ bottom: `${centerUp - 38}px` }}
+                      >
+                        <Plus className="h-9 w-9" strokeWidth={2.15} />
+                      </button>
+                    </>
+                  );
+                })()}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  endDirectReorder();
+                  setEditingOrder((v) => !v);
+                }}
+                aria-label={editingOrder ? "Finish reordering log categories" : "Reorder log categories"}
+                className="
+                  pointer-events-auto absolute bottom-[calc(max(12px,env(safe-area-inset-bottom))+14px)] right-4 z-40
+                  flex h-[52px] w-[52px] items-center justify-center rounded-full
+                  border border-[#edf2cf]/65 bg-[#dce5b2]/38
+                  shadow-[0_6px_16px_rgba(20,28,9,0.28)] ring-[3px] ring-[#e8edc5]/38
+                  backdrop-blur-[7px] transition active:scale-95
+                "
+              >
+                {editingOrder ? (
+                  <Check className="h-6 w-6 text-white" strokeWidth={2.6} />
+                ) : (
+                  <span className="grid grid-cols-2 gap-[3px]" aria-hidden="true">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <span key={i} className="h-[5px] w-[5px] rounded-full bg-white/90" />
+                    ))}
+                  </span>
+                )}
+                <span className="absolute bottom-[calc(100%+5px)] left-1/2 w-[64px] -translate-x-1/2 text-center text-[10px] font-semibold text-white drop-shadow-[0_1px_2px_rgba(31,37,16,0.95)]">
+                  {editingOrder ? t("Done") : t("Reorder")}
+                </span>
+              </button>
+
+              {editingOrder && (
+                <div
+                  className="
+                    pointer-events-none absolute bottom-[calc(max(12px,env(safe-area-inset-bottom))+18px)]
+                    left-1/2 z-40 -translate-x-1/2 rounded-full border border-white/20
+                    bg-black/20 px-3 py-1 text-[10px] font-semibold text-white/90
+                    shadow-sm backdrop-blur-md
+                  "
+                >
+                  {t("Drag circles to reorder")}
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="flex h-full min-h-0 flex-col">
+            <SheetHeader
+              className={`shrink-0 flex-row items-end justify-between gap-0 border-b border-border px-5 pb-2 ${
+                active === "pain"
+                  ? "h-14 pt-0"
+                  : "h-[calc(40px+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)]"
+              }`}
+            >
+              <button onClick={back} className="flex items-center gap-1 text-sm text-muted-foreground">
+                <ChevronLeft className="h-3.5 w-3.5 shrink-0" /> {t("Back to Log")}
+              </button>
+              <SheetTitle className="font-serif text-lg">
+                {t(
+                  episodeChooserOpen
+                    ? "Episodes"
+                    : active === "tetany"
+                      ? "Tetany episode"
+                      : active === "panic"
+                        ? "Panic attack"
+                        : orderedCats.find((c) => c.id === active)?.label ?? CATEGORIES.find((c) => c.id === active)?.label ?? "",
+                )}
+              </SheetTitle>
+              <button onClick={close} aria-label={t("Close")} className="rounded-full p-1 hover:bg-tint">
+                <X className="h-5 w-5" />
+              </button>
+            </SheetHeader>
+            <LogSchemaContext.Provider value={activeRegistryFeature ? {
+              data,
+              featureId: activeRegistryFeature,
+              adminFields: activeAdminFields,
+              adminFieldValues,
+              setAdminFieldValue: (fieldId, value) => setAdminFieldValues((current) => ({ ...current, [fieldId]: value })),
+              saveAdminCustomFields,
+              sourceEntryId: activeSourceEntryId,
+            } : null}>
+            <div
+              key={`${active}-${openToken}-${(edit as { id?: string } | undefined)?.id ?? initialPain?.id ?? "new"}`}
+              className={`min-h-0 flex-1 overflow-y-auto ${
+                active === "pain" ? "pt-[60px]" : "px-5 pb-4"
+              }`}
+            >
+              {active?.startsWith("custom:") && (() => {
+                const id = active.slice("custom:".length);
+                const definition = customLogDefinitions(data).find((item) => item.id === id);
+                if (!definition) return null;
+                const savedEntries = data.dayLogs[date]?.customLogs?.[id] ?? [];
+                const initialCustomEntry = customEditEntry === null ? undefined : customEditEntry ?? (edit as CustomLogEntry | undefined);
+                return (
+                  <div className="space-y-4">
+                    {savedEntries.length ? (
+                      <section className="rounded-2xl bg-tint p-3 ring-1 ring-border/70">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-xs font-bold">{t("Saved entries")}</p>
+                            <p className="text-[10px] text-muted-foreground">{t("Tap an entry to edit it without creating a duplicate.")}</p>
+                          </div>
+                          {initialCustomEntry ? (
+                            <button
+                              type="button"
+                              onClick={() => setCustomEditEntry(null)}
+                              className="rounded-full bg-background px-3 py-1 text-[10px] font-semibold ring-1 ring-border"
+                            >
+                              {t("New entry")}
+                            </button>
+                          ) : null}
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {savedEntries.map((entry, index) => (
+                            <div key={entry.id} className="inline-flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => setCustomEditEntry(entry)}
+                                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-semibold ring-1 ring-border ${
+                                  initialCustomEntry?.id === entry.id ? "bg-primary text-primary-foreground" : "bg-background text-foreground"
+                                }`}
+                              >
+                                <Pencil className="h-3 w-3" />
+                                {entry.time || `${t("Entry")} ${index + 1}`}
+                              </button>
+                              <button
+                                type="button"
+                                aria-label={`${t("Delete")} ${entry.time || `${t("Entry")} ${index + 1}`}`}
+                                onClick={() => {
+                                  if (!window.confirm(t("Delete this saved entry? Other entries and the selected day will stay unchanged."))) return;
+                                  update((current) => {
+                                    const day = current.dayLogs[date];
+                                    if (!day) return current;
+                                    const customLogs = { ...(day.customLogs ?? {}) };
+                                    const existing = customLogs[id] ?? [];
+                                    const nextEntries = existing.filter((saved) => saved.id !== entry.id);
+                                    if (nextEntries.length) customLogs[id] = nextEntries;
+                                    else delete customLogs[id];
+                                    return {
+                                      ...current,
+                                      dayLogs: {
+                                        ...current.dayLogs,
+                                        [date]: { ...day, customLogs },
+                                      },
+                                    };
+                                  });
+                                  if (initialCustomEntry?.id === entry.id) setCustomEditEntry(null);
+                                }}
+                                className="grid h-7 w-7 place-items-center rounded-full bg-background text-destructive ring-1 ring-border"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                    ) : null}
+                    <CustomLogForm
+                      key={`${definition.id}:${initialCustomEntry?.id ?? "new"}`}
+                      definition={definition}
+                      date={date}
+                      data={data}
+                      update={update}
+                      onDone={close}
+                      initialEntry={initialCustomEntry}
+                    />
+                  </div>
+                );
+              })()}
+
+              {active === "postpartum" && (
+                <PostpartumSymptomsForm date={date} data={data} update={update} onDone={close} />
+              )}
+
+              {active === "pain" && (
+                <PainWizard
+                  date={date}
+                  data={data}
+                  update={update}
+                  onDone={close}
+                  initialEntry={initialPain ?? (edit as PainEntry | undefined)}
+                />
+              )}
+              {episodeChooserOpen && (active === "tetany" || active === "panic") && (
+                <div className="mx-auto flex w-full max-w-md flex-col gap-3 py-5">
+                  <div className="px-1 pb-2 text-center">
+                    <h2 className="font-serif text-xl font-semibold">{t("Episodes")}</h2>
+                    <p className="mt-1 text-xs text-muted-foreground">{t("What would you like to log?")}</p>
+                  </div>
+                  {isRegistrySurfaceEnabled(data, "tetany", "log") && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCat("tetany");
+                        setEpisodeChooserOpen(false);
+                      }}
+                      className="flex items-center gap-3 rounded-3xl border border-border bg-surface p-4 text-left shadow-sm transition active:scale-[0.99]"
+                    >
+                      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary/10">
+                        <Ico e="⭐" size={26} />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-semibold">{t("Tetany episode")}</span>
+                        <span className="mt-0.5 block text-xs text-muted-foreground">{t("Type · location · intensity")}</span>
+                      </span>
+                      <span className="text-lg text-muted-foreground" aria-hidden="true">→</span>
+                    </button>
+                  )}
+                  {isRegistrySurfaceEnabled(data, "panic", "log") && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCat("panic");
+                        setEpisodeChooserOpen(false);
+                      }}
+                      className="flex items-center gap-3 rounded-3xl border border-border bg-surface p-4 text-left shadow-sm transition active:scale-[0.99]"
+                    >
+                      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary/10">
+                        <Ico e="✨" size={26} />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-semibold">{t("Panic attack")}</span>
+                        <span className="mt-0.5 block text-xs text-muted-foreground">{t("Intensity · symptoms · trigger")}</span>
+                      </span>
+                      <span className="text-lg text-muted-foreground" aria-hidden="true">→</span>
+                    </button>
+                  )}
+                </div>
+              )}
+              {!episodeChooserOpen && active === "panic" && (
+                <PanicForm
+                  date={date}
+                  data={data}
+                  update={update}
+                  onDone={close}
+                  initialEntry={edit as PanicAttack | undefined}
+                />
+              )}
+              {!episodeChooserOpen && active === "tetany" && (
+                <TetanyForm
+                  date={date}
+                  data={data}
+                  update={update}
+                  onDone={close}
+                  initialEntry={edit as TetanyEpisode | undefined}
+                />
+              )}
+              {active === "period" && <PeriodForm date={date} data={data} update={update} onDone={close} />}
+              {active === "sex" && (
+                <SexForm
+                  date={date}
+                  data={data}
+                  update={update}
+                  onDone={close}
+                  initialEntry={edit as SexEntry | undefined}
+                />
+              )}
+              {active === "heat" && (
+                <ThermoForm
+                  date={date}
+                  update={update}
+                  onDone={close}
+                  initialEntry={edit as ThermoSession | undefined}
+                />
+              )}
+              {active === "food" && (
+                <FoodForm
+                  date={date}
+                  data={data}
+                  update={update}
+                  onDone={close}
+                  initialEntry={edit as FoodEntry | undefined}
+                />
+              )}
+              {active === "bowel" && (
+                <BowelForm
+                  date={date}
+                  data={data}
+                  update={update}
+                  onDone={close}
+                  initialEntry={edit as BowelEntry | undefined}
+                />
+              )}
+              {active === "workout" && (
+                <WorkoutForm
+                  date={date}
+                  data={data}
+                  update={update}
+                  onDone={close}
+                  initialEntry={edit as WorkoutEntry | undefined}
+                />
+              )}
+              {active === "temp" && <TempForm date={date} data={data} update={update} onDone={close} />}
+              {active === "meds" && <MedsForm date={date} data={data} update={update} onDone={close} />}
+              {active === "task" && (
+                <TaskForm date={date} update={update} onDone={close} initialEntry={edit as TaskEntry | undefined} />
+              )}
+              {active === "event" && (
+                <EventForm date={date} update={update} onDone={close} initialEntry={edit as EventEntry | undefined} />
+              )}
+              {active === "note" && <NoteForm date={date} update={update} onDone={close} />}
+            </div>
+            </LogSchemaContext.Provider>
+          </div>
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+/* ------------------- Primitives ------------------- */
+function InlineAdminCustomFields({ anchorFieldId }: { anchorFieldId?: string }) {
+  const schema = useLogSchema();
+  if (!schema || schema.featureId === "pain" || !anchorFieldId || !schema.adminFields.length) return null;
+  const firstCoreFieldId = BIXBO_LOG_FIELDS[schema.featureId]?.[0]?.id;
+  if (firstCoreFieldId !== anchorFieldId) return null;
+  return (
+    <>
+      {schema.adminFields.map((field) => (
+        <CoreFeatureCustomFieldInput
+          key={field.id}
+          field={field}
+          value={schema.adminFieldValues[field.id]}
+          onChange={(value) => schema.setAdminFieldValue(field.id, value)}
+          style={{ order: field.order }}
+        />
+      ))}
+    </>
+  );
+}
+
+type ScaleInfoChildProps = {
+  descriptions?: Record<number, string>;
+  legendTitle?: string;
+  value?: number;
+  max?: number;
+  from?: number;
+};
+
+function normalizeLogScaleRange(from: number, max: number) {
+  // BIXBO log scales are intentionally integer-only and start at 1.
+  // Historical 0 values remain readable/editable in stored data, but new choices are 1–5 or 1–10.
+  if (max === 5 || max === 10) return { from: 1, max };
+  return { from, max };
+}
+
+function Field({ label, children, schemaFieldId }: { label: string; children: ReactNode; schemaFieldId?: string }) {
+  const { t } = useI18n();
+  const schema = useLogSchema();
+  const [scaleInfoOpen, setScaleInfoOpen] = useState(false);
+  const fieldIdByLabel: Record<string, string> = { "Pain scale": "score", "Where does it hurt?": "parts", "How does it hurt?": "quality", "Other symptoms": "symptoms", "Intensity": "intensity", "Type": "types", "Location": "location", "Triggers": "triggers", "What helped?": "helped", "Bleeding": "flow", "Cramp pain": "cramps", "Discharge (optional)": "discharge", "Duration (minutes)": "minutes", "Intensity (RPE)": "rpe", "How you feel": "feel", "Urinary": "urinary" };
+  const fieldId = schemaFieldId ?? fieldIdByLabel[label];
+  const configuredField = schema && fieldId ? getRegistryField(schema.data, schema.featureId, fieldId) : undefined;
+  const dynamicSuffix = fieldId === "intensity" && label.startsWith("Intensity ") ? label.slice("Intensity".length) : "";
+  const displayLabel = configuredField
+    ? `${configuredField.label}${dynamicSuffix}`
+    : (schema && fieldId ? registryFieldLabel(schema.data, schema.featureId, fieldId, label) : label);
+
+  const scaleChild = Children.toArray(children).find((child) => {
+    if (!isValidElement(child)) return false;
+    const props = child.props as ScaleInfoChildProps;
+    return Boolean(props.descriptions && props.max != null);
+  });
+  const scaleProps = isValidElement(scaleChild) ? (scaleChild.props as ScaleInfoChildProps) : undefined;
+  const infoRange = scaleProps?.max != null
+    ? normalizeLogScaleRange(scaleProps.from ?? 1, scaleProps.max)
+    : undefined;
+
+  // Intentionally a <div>, not <label>. Wrapping chip/button groups in <label>
+  // caused stray click activations on the first focusable descendant, which
+  // manifested as chips getting "auto-selected" in the Pain wizard.
+  return (
+    <>
+      <InlineAdminCustomFields anchorFieldId={fieldId} />
+      <div className={configuredField?.enabled === false ? "hidden" : "block"} style={configuredField ? { order: configuredField.order } : undefined} data-bixbo-log-field-id={fieldId || undefined}>
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs font-medium text-muted-foreground">{t(displayLabel)}</span>
+          {scaleProps?.descriptions && infoRange ? (
+            <button
+              type="button"
+              onClick={() => setScaleInfoOpen((open) => !open)}
+              aria-label={t(`Scale information for ${displayLabel}`)}
+              aria-expanded={scaleInfoOpen}
+              className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-primary/10 text-[10px] font-bold leading-none text-primary ring-1 ring-primary/25 transition hover:bg-primary/20"
+            >
+              i
+            </button>
+          ) : null}
+        </div>
+        <div className="mt-1">{children}</div>
+        {scaleInfoOpen && scaleProps?.descriptions && infoRange ? (
+          <div
+            className="fixed inset-0 z-[90] flex items-end justify-center bg-black/20 px-3 pb-[calc(12px+env(safe-area-inset-bottom))] backdrop-blur-[1px]"
+            role="presentation"
+            onClick={() => setScaleInfoOpen(false)}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label={t(scaleProps.legendTitle ?? `${displayLabel} scale`)}
+              className="max-h-[90dvh] w-[calc(100vw-16px)] max-w-lg overflow-y-auto rounded-[1.8rem] border border-border/70 bg-background p-5 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="grid h-9 w-9 place-items-center rounded-full bg-primary/15 text-base font-bold text-primary">i</span>
+                  <h3 className="font-serif text-xl font-semibold">{t(scaleProps.legendTitle ?? `${displayLabel} scale`)}</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setScaleInfoOpen(false)}
+                  aria-label={t("Close")}
+                  className="grid h-10 w-10 place-items-center rounded-full bg-tint text-foreground ring-1 ring-border"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <ScaleLegend
+                max={infoRange.max}
+                from={infoRange.from}
+                descriptions={scaleProps.descriptions}
+                value={scaleProps.value}
+                title={scaleProps.legendTitle ?? `${displayLabel} scale`}
+              />
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </>
+  );
+}
+function RegistryFieldBlock({ fieldId, children }: { fieldId: string; children: ReactNode }) {
+  const schema = useLogSchema();
+  const configuredField = schema ? getRegistryField(schema.data, schema.featureId, fieldId) : undefined;
+  return (
+    <>
+      <InlineAdminCustomFields anchorFieldId={fieldId} />
+      <div
+        className={configuredField?.enabled === false ? "hidden" : "block"}
+        style={configuredField ? { order: configuredField.order } : undefined}
+        data-bixbo-log-field-id={fieldId}
+      >
+        {children}
+      </div>
+    </>
+  );
+}
+
+function Chip({
+  active,
+  onClick,
+  children,
+  color,
+  title,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
+  color?: string;
+  title?: string;
+}) {
+  const { t } = useI18n();
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+        active
+          ? "text-white shadow-md ring-2 ring-foreground/70 ring-offset-2 ring-offset-background scale-[1.03]"
+          : "bg-tint text-foreground ring-1 ring-border"
+      }`}
+      style={active && color ? { background: color } : active ? { background: "var(--primary)" } : undefined}
+    >
+      {typeof children === "string" ? <IcoText text={t(children)} size={14} /> : children}
+    </button>
+  );
+}
+function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave: () => void; disabled?: boolean }) {
+  const { t } = useI18n();
+  const schema = useLogSchema();
+  return (
+    <SheetFooter className="sticky top-0 z-30 -mx-5 mt-0 flex-row items-center justify-between gap-2 border-b border-border/50 bg-background px-5 py-1.5">
+      <button
+        type="button"
+        onClick={onCancel}
+        className="flex min-w-[58px] items-center gap-1 text-xs font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <span aria-hidden="true" className="text-sm leading-none">←</span>
+        <span>{t("Back")}</span>
+      </button>
+
+      <span className="min-w-0 flex-1" aria-hidden="true" />
+
+      <button
+        type="button"
+        onClick={() => { schema?.saveAdminCustomFields(); onSave(); }}
+        disabled={disabled}
+        className="inline-flex h-8 min-w-[68px] items-center justify-center gap-1 rounded-full bg-primary px-3 text-xs font-semibold text-primary-foreground shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      >
+        <span>{t("Save")}</span>
+        <span aria-hidden="true" className="text-sm leading-none">✓</span>
+      </button>
+    </SheetFooter>
+  );
+}
+
+function CustomChipList({
+  base,
+  custom,
+  onAddCustom,
+  onRemoveCustom,
+  onRenameCustom,
+  selected,
+  onToggle,
+  descriptions,
+  schemaFieldId,
+}: {
+  base: string[];
+  custom: string[];
+  onAddCustom: (v: string) => void;
+  onRemoveCustom?: (v: string) => void;
+  onRenameCustom?: (oldV: string, newV: string) => void;
+  selected: string[];
+  onToggle: (v: string) => void;
+  descriptions?: Record<string, string>;
+  schemaFieldId?: string;
+}) {
+  const { t } = useI18n();
+  const schema = useLogSchema();
+  const configuredBase = schema && schemaFieldId ? registryFieldOptions(schema.data, schema.featureId, schemaFieldId, base) : base;
+  const optionLabel = (value: string) => schema && schemaFieldId ? registryOptionLabel(schema.data, schema.featureId, schemaFieldId, value) : value;
+  const [adding, setAdding] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [text, setText] = useState("");
+  const [infoFor, setInfoFor] = useState<string | null>(null);
+  const canEdit = !!(onRenameCustom || onRemoveCustom) && custom.length > 0;
+  return (
+    <div className="mt-2">
+      {(canEdit || true) && (
+        <div className="mb-2 flex items-center gap-2">
+          {adding ? (
+            <div className="flex flex-1 items-center gap-1">
+              <Input
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                className="h-8 flex-1"
+                placeholder={t("Custom…")}
+                autoFocus
+              />
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => {
+                  if (text.trim()) {
+                    onAddCustom(text.trim());
+                    setText("");
+                    setAdding(false);
+                  }
+                }}
+              >
+                Add
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setText("");
+                  setAdding(false);
+                }}
+              ><TrText value="Cancel" /></Button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setAdding(true)}
+              className="flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary hover:bg-primary/20"
+            >
+              <Plus className="h-3 w-3" /> {t("Add custom")}
+            </button>
+          )}
+          {canEdit && !adding && (
+            <button
+              type="button"
+              onClick={() => setEditMode((v) => !v)}
+              className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${editMode ? "bg-primary text-primary-foreground" : "bg-tint text-muted-foreground hover:text-foreground"}`}
+            >
+              <Pencil className="h-3 w-3" /> {editMode ? t("Done") : t("Edit")}
+            </button>
+          )}
+        </div>
+      )}
+      <div className="flex flex-wrap gap-2">
+        {configuredBase.map((v) => (
+          <span key={v} className="inline-flex items-center gap-0.5">
+            <Chip active={selected.includes(v)} onClick={() => onToggle(v)} title={descriptions?.[v] ? t(descriptions[v]) : undefined}>
+              {t(optionLabel(v))}
+            </Chip>
+            {descriptions?.[v] && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setInfoFor(infoFor === v ? null : v);
+                }}
+                aria-label={`Info ${v}`}
+                className="grid h-4 w-4 place-items-center rounded-full bg-tint text-[10px] font-bold text-muted-foreground hover:bg-primary/15 hover:text-primary"
+              >
+                i
+              </button>
+            )}
+          </span>
+        ))}
+        {custom.map((v) => (
+          <span key={v} className="relative inline-flex items-center">
+            <Chip active={selected.includes(v)} onClick={() => onToggle(v)}>
+              {v}
+            </Chip>
+            {editMode && onRenameCustom && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const next = prompt(`${t("Rename")} "${v}" ${t("to")}:`, v);
+                  if (next && next.trim() && next.trim() !== v) onRenameCustom(v, next.trim());
+                }}
+                aria-label={`Rename ${v}`}
+                className="ml-1 grid h-5 w-5 place-items-center rounded-full bg-tint text-muted-foreground hover:bg-primary/15 hover:text-primary"
+              >
+                <Pencil className="h-3 w-3" />
+              </button>
+            )}
+            {editMode && onRemoveCustom && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (confirm(`${t("Remove")} "${v}" ${t("from your custom list?")}`)) onRemoveCustom(v);
+                }}
+                aria-label={`Remove ${v}`}
+                className="ml-1 grid h-5 w-5 place-items-center rounded-full bg-tint text-muted-foreground hover:bg-destructive/15 hover:text-destructive"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </span>
+        ))}
+      </div>
+      {infoFor && descriptions?.[infoFor] && (
+        <div className="mt-2 rounded-lg bg-tint px-2.5 py-1.5 text-[11px] leading-snug text-foreground">
+          <span className="font-semibold">{t(infoFor)}:</span> {t(descriptions[infoFor])}
+        </div>
+      )}
+    </div>
+  );
+}
+const toggleIn = (arr: string[], v: string) => (arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
+/** Strips a leading emoji (+ following space) so legacy saved values with emoji prefixes still match emoji-free option lists. */
+const stripEmoji = (v: string) => v.replace(/^[\p{Extended_Pictographic}\u200d\ufe0f]+\s*/u, "").trim();
+
+import { getScaleDesc } from "@/lib/scaleDescriptions";
+
+function scaleColor(value: number, from: number, max: number): string {
+  const span = Math.max(0.5, max - from);
+  const normalized = ((value - from) / span) * 10;
+  return painColor(Math.max(0, Math.min(10, normalized)));
+}
+
+function ScaleLegend({
+  max,
+  descriptions,
+  value,
+  title,
+  from = 0,
+}: {
+  max: number;
+  descriptions: Record<number, string>;
+  value?: number;
+  title: string;
+  from?: number;
+}) {
+  const { t } = useI18n();
+  const items: number[] = [];
+  for (let i = Math.ceil(from); i <= max; i++) items.push(i);
+  const activeLegendValue = value == null || value < from ? undefined : Math.round(value);
+
+  return (
+    <div className="mt-2 rounded-2xl border border-border/60 bg-surface/50 p-4">
+      <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t(title)}</p>
+      <div className="space-y-2.5 text-sm leading-snug">
+        {items.map((n) => (
+          <div key={n} className="flex items-start gap-2">
+            <span
+              className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-bold text-white"
+              style={{ background: scaleColor(n, from, max) }}
+            >
+              {n}
+            </span>
+            <span className={activeLegendValue === n ? "font-semibold text-foreground" : "text-muted-foreground"}>
+              {t(descriptions[n])}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function IntensityScale({
+  value,
+  onChange,
+  max,
+  descriptions,
+  legendTitle,
+  from = 0,
+  compactSingleRow = false,
+  step = 0.5,
+  schemaFieldId,
+}: {
+  value: number;
+  onChange: (n: number) => void;
+  max: number;
+  descriptions?: Record<number, string>;
+  legendTitle?: string;
+  from?: number;
+  compactSingleRow?: boolean;
+  step?: number;
+  schemaFieldId?: string;
+}) {
+  const { t } = useI18n();
+  const schema = useLogSchema();
+  const effective = schema && schemaFieldId ? registryFieldScale(schema.data, schema.featureId, schemaFieldId, { min: from, max, step }) : { min: from, max, step };
+  const normalizedRange = normalizeLogScaleRange(effective.min, effective.max);
+  const effectiveFrom = normalizedRange.from;
+  const effectiveMax = normalizedRange.max;
+  const effectiveStep = effectiveMax === 5 || effectiveMax === 10 ? 1 : effective.step;
+  const nums = Array.from(
+    { length: Math.floor((effectiveMax - effectiveFrom) / effectiveStep) + 1 },
+    (_, i) => Number((effectiveFrom + i * effectiveStep).toFixed(2)),
+  );
+
+  return (
+    <div className="mt-2 space-y-1.5">
+      <div
+        className={
+          compactSingleRow || ((effectiveMax === 5 || effectiveMax === 10) && effectiveStep === 1)
+            ? "flex flex-nowrap items-center justify-center gap-0.5 px-0"
+            : "flex flex-wrap justify-center gap-1.5 px-1"
+        }
+      >
+        {nums.map((n) => {
+          const active = value === n;
+          const description = descriptions?.[Math.round(n)];
+          const bg = scaleColor(n, effectiveFrom, effectiveMax);
+
+          return (
+            <button
+              key={n}
+              type="button"
+              onClick={() => onChange(n)}
+              title={description ? `${n} — ${t(description)}` : String(n)}
+              aria-label={description ? `${n} — ${t(description)}` : `${t("Intensity")} ${n}`}
+              className={`${
+                compactSingleRow || ((effectiveMax === 5 || effectiveMax === 10) && effectiveStep === 1) ? "h-7 w-7 text-[10px]" : "h-8 w-8 text-[11px]"
+              } shrink-0 rounded-full font-semibold transition ${
+                active ? "text-white ring-2 ring-foreground" : "text-foreground"
+              }`}
+              style={{ background: bg }}
+            >
+              {Number.isInteger(n) ? n : n.toFixed(1)}
+            </button>
+          );
+        })}
+      </div>
+
+    </div>
+  );
+}
+
+function DurationField({
+  minutes,
+  setMinutes,
+  ongoing,
+  setOngoing,
+  schemaFieldId,
+}: {
+  minutes: string;
+  setMinutes: (s: string) => void;
+  ongoing: boolean;
+  setOngoing: (b: boolean) => void;
+  schemaFieldId?: string;
+}) {
+  const { t } = useI18n();
+  const schema = useLogSchema();
+  const configuredField = schema && schemaFieldId ? getRegistryField(schema.data, schema.featureId, schemaFieldId) : undefined;
+  const displayLabel = configuredField?.label ?? "Duration (min)";
+  return (
+    <div className={configuredField?.enabled === false ? "hidden" : "space-y-1"} style={configuredField ? { order: configuredField.order } : undefined} data-bixbo-log-field-id={schemaFieldId || undefined}>
+      <span className="text-xs font-medium text-muted-foreground">{t(displayLabel)}</span>
+      <div className="flex items-center gap-2">
+        <Input
+          type="number"
+          inputMode="numeric"
+          min={0}
+          value={ongoing ? "" : minutes}
+          disabled={ongoing}
+          onChange={(e) => setMinutes(e.target.value)}
+          className="flex-1"
+          placeholder="—"
+        />
+        <button
+          type="button"
+          onClick={() => setOngoing(!ongoing)}
+          className={`rounded-full px-3 py-1.5 text-xs font-semibold ring-1 ring-border ${ongoing ? "bg-primary text-white" : "bg-tint text-foreground"}`}
+        >
+          {t("Ongoing")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------- PAIN wizard ------------------- */
+function PainWizard({
+  date,
+  data,
+  update,
+  onDone,
+  initialEntry,
+}: {
+  date: string;
+  data: BixboData;
+  update: UpdateFn;
+  onDone: () => void;
+  initialEntry?: PainEntry;
+}) {
+  const { t } = useI18n();
+  /**
+   * The newest pain entry for the selected day. A new entry can reuse this
+   * state and only add what changed (for example a headache several hours later).
+   * Editing an existing entry never uses this shortcut.
+   */
+  const latestPain = useMemo(() => {
+    if (initialEntry) return undefined;
+    const entries = data.dayLogs[date]?.pain ?? [];
+    if (!entries.length) return undefined;
+
+    return entries.reduce((latest, entry) =>
+      (entry.time ?? "").localeCompare(latest.time ?? "") >= 0 ? entry : latest,
+    );
+  }, [data.dayLogs, date, initialEntry]);
+
+  const [step, setStep] = useState(0);
+  const [painScaleInfoOpen, setPainScaleInfoOpen] = useState(false);
+  const schema = useLogSchema();
+  const painSteps = useMemo(() => {
+    const configured = [
+      ...registryFieldsForFeature(data, "pain"),
+      ...registryCustomFieldsForFeature(data, "pain"),
+    ].sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));
+    return configured.length ? configured : [
+      { id: "score", label: "Pain scale", kind: "scale" as const, order: 10 },
+      { id: "parts", label: "Where does it hurt?", kind: "chips" as const, order: 20 },
+      { id: "quality", label: "How does it hurt?", kind: "chips" as const, order: 30 },
+      { id: "symptoms", label: "Other symptoms", kind: "chips" as const, order: 40 },
+      { id: "details", label: "Details", kind: "text" as const, order: 50 },
+    ];
+  }, [data]);
+  const safeStep = Math.min(step, Math.max(0, painSteps.length - 1));
+  const activePainStep = painSteps[safeStep];
+  const activePainStepId = activePainStep?.id ?? "score";
+  const activePainStepIsCustom = !!activePainStep && !(BIXBO_LOG_FIELDS.pain ?? []).some((field) => field.id === activePainStep.id);
+  const symptomsStepIndex = painSteps.findIndex((field) => field.id === "symptoms");
+  const [score, setScore] = useState(initialEntry?.score ?? 0);
+  const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
+  const [parts, setParts] = useState<string[]>(initialEntry?.parts ?? []);
+  const [quality, setQuality] = useState<string[]>(initialEntry?.quality ?? []);
+  const [symptoms, setSymptoms] = useState<string[]>(initialEntry?.symptoms ?? []);
+  const [note, setNote] = useState(initialEntry?.note ?? "");
+  const [bodyBattery, setBodyBattery] = useState<number | undefined>(initialEntry?.bodyBattery);
+  const [stress, setStress] = useState<number | undefined>(initialEntry?.stress);
+  const [mood, setMood] = useState<string[]>(initialEntry?.mood ?? []);
+  const [hotFlashesOn, setHotFlashesOn] = useState<boolean>(!!initialEntry?.hotFlashesOn);
+  const [hotFlashes, setHotFlashes] = useState<number | undefined>(initialEntry?.hotFlashes);
+  const [headache, setHeadache] = useState<boolean>(!!initialEntry?.headache);
+  const [headacheTypes, setHeadacheTypes] = useState<string[]>(initialEntry?.headacheTypes ?? []);
+  const [headacheIntensity, setHeadacheIntensity] = useState<number | undefined>(initialEntry?.headacheIntensity);
+  const [headacheMedOn, setHeadacheMedOn] = useState<boolean>(!!initialEntry?.headacheMed);
+  const [headacheMed, setHeadacheMed] = useState<string>(initialEntry?.headacheMed ?? "");
+  const [headacheMedTime, setHeadacheMedTime] = useState<string>(initialEntry?.headacheMedTime ?? nowHHMM());
+  const [pcosSymptoms, setPcosSymptoms] = useState<string[]>(initialEntry?.pcosSymptoms ?? []);
+  const [fluNote, setFluNote] = useState<string>(initialEntry?.fluNote ?? "");
+  // Pressure detail (shown when "Pressure" quality is selected)
+  const [pressureTypes, setPressureTypes] = useState<string[]>(initialEntry?.pressureTypes ?? []);
+  const [pressureIntensity, setPressureIntensity] = useState<number | undefined>(initialEntry?.pressureIntensity);
+  // Nausea section
+  const [nausea, setNausea] = useState<boolean>(!!initialEntry?.nausea);
+  const [nauseaTypes, setNauseaTypes] = useState<string[]>((initialEntry?.nauseaTypes ?? []).map(stripEmoji));
+  const [nauseaSeverity, setNauseaSeverity] = useState<number | undefined>(initialEntry?.nauseaSeverity);
+  const [nauseaMinutes, setNauseaMinutes] = useState<string>(
+    initialEntry?.nauseaMinutes != null ? String(initialEntry.nauseaMinutes) : "",
+  );
+  const [nauseaOngoing, setNauseaOngoing] = useState<boolean>(!!initialEntry?.nauseaOngoing);
+  const [nauseaTriggers, setNauseaTriggers] = useState<string[]>((initialEntry?.nauseaTriggers ?? []).map(stripEmoji));
+  const [nauseaSymptoms, setNauseaSymptoms] = useState<string[]>((initialEntry?.nauseaSymptoms ?? []).map(stripEmoji));
+  const [nauseaHelped, setNauseaHelped] = useState<string[]>((initialEntry?.nauseaHelped ?? []).map(stripEmoji));
+
+  // Quick update: copy the latest state, use the current time and jump to symptoms.
+  const editingSymptomUpdate = initialEntry?.entryKind === "symptom-update";
+  const [quickSymptomUpdate, setQuickSymptomUpdate] = useState(editingSymptomUpdate);
+  const sourcePainForEdit = editingSymptomUpdate
+    ? (data.dayLogs[date]?.pain ?? []).find((entry) => entry.id === initialEntry?.sourcePainId)
+    : undefined;
+  const [copiedFromTime, setCopiedFromTime] = useState<string | undefined>(sourcePainForEdit?.time);
+  const [copiedFromId, setCopiedFromId] = useState<string | undefined>(initialEntry?.sourcePainId);
+
+  useEffect(() => {
+    if (editingSymptomUpdate && symptomsStepIndex >= 0) setStep(symptomsStepIndex);
+  }, [editingSymptomUpdate, symptomsStepIndex]);
+  const startSymptomUpdate = () => {
+    if (!latestPain) return;
+
+    // NEW symptom-only follow-up: never clone the previous pain details.
+    // score stays only as required internal context and is excluded from pain averages.
+    setScore(latestPain.score);
+    setParts([]);
+    setQuality([]);
+    setSymptoms([]);
+    setPressureTypes([]);
+    setPressureIntensity(undefined);
+    setBodyBattery(undefined);
+    setStress(undefined);
+    setMood([]);
+    setHotFlashesOn(false);
+    setHotFlashes(undefined);
+    setPcosSymptoms([]);
+    setFluNote("");
+    setNausea(false);
+    setNauseaTypes([]);
+    setNauseaSeverity(undefined);
+    setNauseaMinutes("");
+    setNauseaOngoing(false);
+    setNauseaTriggers([]);
+    setNauseaSymptoms([]);
+    setNauseaHelped([]);
+    setHeadache(false);
+    setHeadacheTypes([]);
+    setHeadacheIntensity(undefined);
+    setHeadacheMedOn(false);
+    setHeadacheMed("");
+    setHeadacheMedTime(nowHHMM());
+    setNote("");
+    setTime(nowHHMM());
+    setCopiedFromId(latestPain.id);
+    setCopiedFromTime(latestPain.time);
+    setQuickSymptomUpdate(true);
+    setStep(symptomsStepIndex >= 0 ? symptomsStepIndex : 0);
+  };
+
+
+  type CKey =
+    | "bodyParts"
+    | "quality"
+    | "symptoms"
+    | "moods"
+    | "tetanyTypes"
+    | "tetanyLocations"
+    | "tetanyTriggers"
+    | "tetanyHelped"
+    | "pcosSymptoms"
+    | "headacheTypes"
+    | "pressureTypes"
+    | "nauseaTypes"
+    | "nauseaTriggers"
+    | "nauseaSymptoms"
+    | "nauseaHelped";
+  const addCustom = (key: CKey, v: string) =>
+    update((d) =>
+      withoutCustomTombstones({ ...d, custom: { ...d.custom, [key]: [...(d.custom[key] ?? []), v] } }, key, [v]),
+    );
+  const removeCustom = (key: CKey, v: string) =>
+    update((d) =>
+      withCustomTombstones(
+        { ...d, custom: { ...d.custom, [key]: (d.custom[key] ?? []).filter((x) => x !== v) } },
+        key,
+        [v],
+      ),
+    );
+  const renameCustom = (key: CKey, oldV: string, newV: string) =>
+    update((d) =>
+      withoutCustomTombstones(
+        withCustomTombstones(
+          { ...d, custom: { ...d.custom, [key]: (d.custom[key] ?? []).map((x) => (x === oldV ? newV : x)) } },
+          key,
+          [oldV],
+        ),
+        key,
+        [newV],
+      ),
+    );
+
+  const save = () => {
+    const editing = !!initialEntry;
+    const p: PainEntry = {
+      id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
+      time,
+      entryKind: quickSymptomUpdate || editingSymptomUpdate ? "symptom-update" : undefined,
+      sourcePainId: quickSymptomUpdate || editingSymptomUpdate ? (copiedFromId ?? initialEntry?.sourcePainId) : undefined,
+      score,
+      parts,
+      quality,
+      symptoms,
+      note: note.trim(),
+      bodyBattery,
+      stress,
+      mood: mood.length ? mood : undefined,
+      hotFlashesOn: hotFlashesOn || undefined,
+      hotFlashes: hotFlashesOn ? hotFlashes : undefined,
+      headache: headache || undefined,
+      headacheTypes: headache && headacheTypes.length ? headacheTypes : undefined,
+      headacheIntensity: headache ? headacheIntensity : undefined,
+      headacheMed: headache && headacheMedOn && headacheMed.trim() ? headacheMed.trim() : undefined,
+      headacheMedTime: headache && headacheMedOn && headacheMed.trim() ? headacheMedTime : undefined,
+      pressureTypes: quality.includes("Pressure") && pressureTypes.length ? pressureTypes : undefined,
+      pressureIntensity: quality.includes("Pressure") ? pressureIntensity : undefined,
+      nausea: nausea || undefined,
+      nauseaTypes: nausea && nauseaTypes.length ? [...new Set(nauseaTypes.map(stripEmoji))] : undefined,
+      nauseaSeverity: nausea ? nauseaSeverity : undefined,
+      nauseaMinutes: nausea && !nauseaOngoing && nauseaMinutes !== "" ? Number(nauseaMinutes) : undefined,
+      nauseaOngoing: nausea ? nauseaOngoing || undefined : undefined,
+      nauseaTriggers: nausea && nauseaTriggers.length ? [...new Set(nauseaTriggers.map(stripEmoji))] : undefined,
+      nauseaSymptoms: nausea && nauseaSymptoms.length ? [...new Set(nauseaSymptoms.map(stripEmoji))] : undefined,
+      nauseaHelped: nausea && nauseaHelped.length ? [...new Set(nauseaHelped.map(stripEmoji))] : undefined,
+      fluNote: symptoms.includes("Flu") && fluNote.trim() ? fluNote.trim() : undefined,
+      pcosSymptoms: pcosSymptoms.length ? pcosSymptoms : undefined,
+    };
+    updateDayLog(update, date, (l) => ({
+      ...l,
+      pain: editing ? (l.pain ?? []).map((x) => (x.id === p.id ? p : x)) : [...(l.pain ?? []), p],
+    }));
+    schema?.saveAdminCustomFields();
+    onDone();
+  };
+
+  const bg = painColor(score);
+
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const onTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    touchStartRef.current = { x: t.clientX, y: t.clientY };
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    const s = touchStartRef.current;
+    if (!s) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - s.x;
+    const dy = t.clientY - s.y;
+    touchStartRef.current = null;
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy)) return;
+    const target = e.target as HTMLElement;
+    if (target.closest('input,textarea,select,button,[role="slider"],.no-swipe')) return;
+    if (dx < 0 && safeStep < painSteps.length - 1) setStep(safeStep + 1);
+    else if (dx > 0 && safeStep > 0) setStep(safeStep - 1);
+  };
+
+  return (
+    <div
+      className="flex min-h-full flex-col px-5 pb-4 pt-0 transition-colors touch-pan-y"
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+    >
+      {quickSymptomUpdate ? (
+        <div className="flex items-center justify-between px-1 pb-3 pt-[68px]">
+          <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+            {t("Add symptoms")}
+          </span>
+          <span className="text-xs text-muted-foreground">{t(editingSymptomUpdate ? "Editing ·" : "New entry ·")} {time}</span>
+        </div>
+      ) : (
+        <div
+          className="fixed inset-x-0 z-30 h-[60px] flex items-center justify-between gap-2 border-b border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur"
+          style={{ top: "calc(env(safe-area-inset-top) + 56px)" }}
+        >
+          {safeStep > 0 ? (
+            <button
+              type="button"
+              onClick={() => setStep(safeStep - 1)}
+              className="flex min-w-[68px] items-center gap-1 text-sm font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <span aria-hidden="true" className="text-base leading-none">←</span>
+              <span>{t("Back")}</span>
+            </button>
+          ) : (
+            <span className="min-w-[68px]" aria-hidden="true" />
+          )}
+
+          <div className="flex min-w-0 flex-1 items-center justify-center gap-2">
+            <div className="flex gap-1">
+              {painSteps.map((painStep, i) => (
+                <span
+                  key={painStep.id}
+                  className={`h-1.5 w-5 rounded-full transition-colors ${i <= safeStep ? "bg-primary" : "bg-tint"}`}
+                />
+              ))}
+            </div>
+            <span className="min-w-0 truncate text-xs font-semibold text-foreground/75">{t(activePainStep?.label ?? "")}</span>
+            <span className="shrink-0 text-xs font-semibold text-foreground/75">{safeStep + 1}/{painSteps.length}</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={safeStep < painSteps.length - 1 ? () => setStep(safeStep + 1) : save}
+            className="flex h-[52px] min-w-[64px] flex-col items-center justify-center rounded-[1.15rem] bg-primary px-3 text-primary-foreground shadow-sm transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            <span className="text-sm font-semibold leading-none">{t(safeStep < painSteps.length - 1 ? "Next" : "Save")}</span>
+            <span aria-hidden="true" className="mt-0.5 text-base leading-none">{safeStep < painSteps.length - 1 ? "→" : "✓"}</span>
+          </button>
+        </div>
+      )}
+
+      {activePainStepIsCustom && activePainStep && schema ? (
+        <CoreFeatureCustomFieldInput
+          field={activePainStep}
+          value={schema.adminFieldValues[activePainStep.id]}
+          onChange={(value) => schema.setAdminFieldValue(activePainStep.id, value)}
+          className="mx-1"
+        />
+      ) : null}
+
+      {activePainStepId === "score" && (
+        <div className="flex flex-1 flex-col items-center gap-5 px-1 pb-6 pt-5">
+          {latestPain && !initialEntry && symptomsStepIndex >= 0 && (
+            <div className="w-full rounded-2xl border border-primary/30 bg-surface/90 p-3 shadow-sm">
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold">{t("Pain still feels the same?")}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {t("Last log:")} {latestPain.time} {t("· pain")} {latestPain.score}{t("/10. Reuse it and add only the new symptoms.")}
+                  </p>
+                </div>
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10">
+                  <Ico e="🤕" size={22} />
+                </span>
+              </div>
+              <Button type="button" onClick={startSymptomUpdate} className="w-full">
+                {t("Same pain — add symptoms")}
+              </Button>
+            </div>
+          )}
+
+          <div className="mt-1 text-center">
+            <h2 className="font-serif text-[22px] leading-tight text-foreground">{t("How intense is your pain right now?")}</h2>
+            <p className="mt-1.5 text-sm text-foreground/80">{t("Rate from 0 (no pain) to 10 (worst pain imaginable).")}</p>
+          </div>
+
+          <div
+            className="grid h-32 w-32 place-items-center rounded-full text-white shadow-sm"
+            style={{ background: bg }}
+          >
+            <div className="text-5xl font-bold leading-none">{Number.isInteger(score) ? score : score.toFixed(1)}</div>
+          </div>
+          <p className="-mt-2 text-center text-sm font-semibold text-foreground">
+            {t(getScaleDesc(data, "pain")[Math.round(score)])}
+          </p>
+          <div className="flex items-center justify-center gap-1.5">
+            <p className="text-center text-sm font-semibold text-foreground">{t("Pain scale")}</p>
+            <button
+              type="button"
+              onClick={() => setPainScaleInfoOpen((open) => !open)}
+              aria-label={t("Pain scale information")}
+              aria-expanded={painScaleInfoOpen}
+              className="grid h-4 w-4 place-items-center rounded-full bg-primary/10 text-[10px] font-bold leading-none text-primary ring-1 ring-primary/25"
+            >
+              i
+            </button>
+          </div>
+          <div className="w-full max-w-md px-3">
+            <Slider value={[score * 2]} min={0} max={20} step={1} onValueChange={([v]) => setScore(v / 2)} />
+          </div>
+          <div className="grid w-fit max-w-full grid-cols-7 justify-center gap-2 px-1">
+            {Array.from({ length: 21 }, (_, i) => i / 2).map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setScore(n)}
+                title={`${n} — ${t(getScaleDesc(data, "pain")[Math.round(n)])}`}
+                aria-label={`${n} — ${t(getScaleDesc(data, "pain")[Math.round(n)])}`}
+                className={`h-9 w-9 shrink-0 rounded-full text-xs font-semibold transition ${
+                  score === n ? "text-white ring-[3px] ring-foreground" : "text-foreground"
+                }`}
+                style={{ background: painColor(n) }}
+              >
+                {Number.isInteger(n) ? n : n.toFixed(1)}
+              </button>
+            ))}
+          </div>
+          <div className="mt-1 flex max-w-[300px] items-center gap-2 rounded-2xl bg-primary/5 px-3 py-2 text-left text-xs leading-relaxed text-foreground/80">
+            <span aria-hidden="true" className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary/10 text-base">💡</span>
+            <span>{t("Use this scale to track your pain and see patterns over time.")}</span>
+          </div>
+          {painScaleInfoOpen ? (
+            <div
+              className="fixed inset-0 z-[90] flex items-end justify-center bg-black/20 px-3 pb-[calc(12px+env(safe-area-inset-bottom))] backdrop-blur-[1px]"
+              role="presentation"
+              onClick={() => setPainScaleInfoOpen(false)}
+            >
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-label={t("The Pain Scale")}
+                className="max-h-[90dvh] w-[calc(100vw-16px)] max-w-lg overflow-y-auto rounded-[1.8rem] border border-border/70 bg-background p-5 shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="grid h-7 w-7 place-items-center rounded-full bg-primary/15 text-sm font-bold text-primary">i</span>
+                    <h3 className="font-serif text-lg font-semibold">{t("The Pain Scale")}</h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPainScaleInfoOpen(false)}
+                    aria-label={t("Close")}
+                    className="grid h-8 w-8 place-items-center rounded-full bg-tint text-foreground ring-1 ring-border"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="max-h-[72dvh] overflow-y-auto rounded-2xl border border-border/60 bg-surface/40">
+                  {[
+                    [0, "Pain free", "You've been okay for the past 24 hours."],
+                    [1, "Very minor annoyance", "Occasional minor twinges. No medication needed."],
+                    [2, "Minor annoyance", "Occasional strong twinges. No medication needed."],
+                    [3, "Annoying enough to be distracting", "Mild painkillers are effective (aspirin, ibuprofen)."],
+                    [4, "Can be ignored if you are really involved in your work", "But still distracting. Mild painkillers relieve pain for 3–4 hours."],
+                    [5, "Can't be ignored for more than 30 minutes", "Mild painkillers reduce pain for 3–4 hours."],
+                    [6, "Can't be ignored for any length of time", "But you can still go to work and participate in social activities. Stronger painkillers (codeine) reduce pain for 3–4 hours."],
+                    [7, "Makes it difficult to concentrate, interferes with sleep", "You can still function with effort. Stronger painkillers are only partially effective. Strongest painkillers relieve pain."],
+                    [8, "Physical activity severely limited", "You can read and converse with effort. Nausea and dizziness are common. Strongest painkillers reduce pain for 3–4 hours."],
+                    [9, "Unable to speak", "Crying out or moaning uncontrollably — near delirium. Strongest painkillers are only partially effective."],
+                    [10, "Unconscious", "Pain makes you pass out. Strongest painkillers are only partially effective."],
+                  ].map(([n, label, description]) => {
+                    const level = Number(n);
+                    const active = Math.round(score) === level;
+                    return (
+                      <div
+                        key={level}
+                        className={`flex gap-3 border-b border-border/50 px-3 py-2.5 last:border-b-0 ${active ? "bg-primary/10" : "bg-background/60"}`}
+                      >
+                        <span
+                          className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm font-bold text-white"
+                          style={{ background: painColor(level) }}
+                        >
+                          {level}
+                        </span>
+                        <div className="min-w-0 pt-0.5">
+                          <p className={`text-sm leading-tight ${active ? "font-bold text-foreground" : "font-semibold text-foreground"}`}>
+                            {t(String(label))}
+                          </p>
+                          <p className="mt-0.5 text-xs leading-snug text-muted-foreground">{t(String(description))}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      )}
+
+      {activePainStepId === "parts" && (
+        <Field label="Where does it hurt?">
+          <CustomChipList
+            base={BODY_PARTS_DEFAULT}
+            custom={data.custom.bodyParts}
+            onAddCustom={(v) => addCustom("bodyParts", v)}
+            onRemoveCustom={(v) => {
+              removeCustom("bodyParts", v);
+              setParts((a) => a.filter((x) => x !== v));
+            }}
+            onRenameCustom={(o, n) => {
+              renameCustom("bodyParts", o, n);
+              setParts((a) => a.map((x) => (x === o ? n : x)));
+            }}
+            selected={parts}
+            onToggle={(v) => setParts((a) => toggleIn(a, v))}
+           schemaFieldId="parts"/>
+        </Field>
+      )}
+      {activePainStepId === "quality" && (
+        <div className="space-y-4">
+          <Field label="How does it hurt?">
+            <CustomChipList
+              base={PAIN_QUALITY_DEFAULT}
+              custom={data.custom.quality}
+              onAddCustom={(v) => addCustom("quality", v)}
+              onRemoveCustom={(v) => {
+                removeCustom("quality", v);
+                setQuality((a) => a.filter((x) => x !== v));
+              }}
+              onRenameCustom={(o, n) => {
+                renameCustom("quality", o, n);
+                setQuality((a) => a.map((x) => (x === o ? n : x)));
+              }}
+              selected={quality}
+              onToggle={(v) => setQuality((a) => toggleIn(a, v))}
+             schemaFieldId="quality"/>
+          </Field>
+          {quality.includes("Pressure") && (
+            <div className="rounded-2xl border border-border p-3 space-y-3">
+              <Field label={`Pressure intensity ${pressureIntensity ?? "-"}/10`}>
+                <IntensityScale
+                  value={pressureIntensity ?? -1}
+                  onChange={(n) => setPressureIntensity(pressureIntensity === n ? undefined : n)}
+                  max={10}
+                  from={1}
+                  step={1}
+                  descriptions={getScaleDesc(data, "pressure")}
+                  legendTitle="Pressure intensity scale"
+                  compactSingleRow
+                />
+              </Field>
+              <Field label="Type of pressure">
+                <CustomChipList
+                  base={PRESSURE_TYPES}
+                  custom={data.custom.pressureTypes ?? []}
+                  onAddCustom={(v) => addCustom("pressureTypes", v)}
+                  onRemoveCustom={(v) => {
+                    removeCustom("pressureTypes", v);
+                    setPressureTypes((a) => a.filter((x) => x !== v));
+                  }}
+                  onRenameCustom={(o, n) => {
+                    renameCustom("pressureTypes", o, n);
+                    setPressureTypes((a) => a.map((x) => (x === o ? n : x)));
+                  }}
+                  selected={pressureTypes}
+                  onToggle={(v) => setPressureTypes((a) => toggleIn(a, v))}
+                />
+              </Field>
+            </div>
+          )}
+        </div>
+      )}
+      {activePainStepId === "symptoms" && (
+        <div className="space-y-4">
+          {quickSymptomUpdate && (
+            <div className="rounded-2xl border border-primary/30 bg-primary/10 p-3 text-sm">
+              <p className="font-semibold">
+                {t("Pain")} {score}{t("/10 copied from")} {copiedFromTime ?? t("the latest log")}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {t("This saves a new entry at")} {time}{t("; the older log stays unchanged. Add or adjust the symptoms below.")}
+              </p>
+            </div>
+          )}
+
+          <Field label="Other symptoms">
+            <CustomChipList
+              base={OTHER_SYMPTOMS_DEFAULT}
+              custom={data.custom.symptoms}
+              onAddCustom={(v) => addCustom("symptoms", v)}
+              onRemoveCustom={(v) => {
+                removeCustom("symptoms", v);
+                setSymptoms((a) => a.filter((x) => x !== v));
+              }}
+              onRenameCustom={(o, n) => {
+                renameCustom("symptoms", o, n);
+                setSymptoms((a) => a.map((x) => (x === o ? n : x)));
+              }}
+              selected={symptoms}
+              onToggle={(v) => setSymptoms((a) => toggleIn(a, v))}
+             schemaFieldId="symptoms"/>
+          </Field>
+          {symptoms.includes("Flu") && (
+            <Field label="Flu symptoms note">
+              <Textarea
+                rows={2}
+                value={fluNote}
+                onChange={(e) => setFluNote(e.target.value)}
+                placeholder={t("e.g. stuffy nose, sore throat")}
+              />
+            </Field>
+          )}
+          <Field label="Nausea?">
+            <div className="mt-1 flex gap-2">
+              <Chip
+                active={!nausea}
+                onClick={() => {
+                  setNausea(false);
+                  setNauseaTypes([]);
+                  setNauseaSeverity(undefined);
+                  setNauseaMinutes("");
+                  setNauseaOngoing(false);
+                  setNauseaTriggers([]);
+                  setNauseaSymptoms([]);
+                  setNauseaHelped([]);
+                }}
+              >
+                No
+              </Chip>
+              <Chip active={nausea} onClick={() => setNausea(true)}>
+                Yes — log it
+              </Chip>
+            </div>
+          </Field>
+          {nausea && (
+            <div className="rounded-2xl border border-border p-3 space-y-3">
+              <Field label={`Nausea severity ${nauseaSeverity ?? "-"}/10`}>
+                <IntensityScale
+                  value={nauseaSeverity ?? -1}
+                  onChange={(n) => setNauseaSeverity(nauseaSeverity === n ? undefined : n)}
+                  max={10}
+                  from={1}
+                  step={1}
+                  descriptions={getScaleDesc(data, "nausea")}
+                  legendTitle="Nausea severity scale"
+                  compactSingleRow
+                />
+              </Field>
+              <Field label="Type of nausea">
+                <CustomChipList
+                  base={NAUSEA_TYPES}
+                  custom={data.custom.nauseaTypes ?? []}
+                  descriptions={NAUSEA_TYPE_DESC}
+                  onAddCustom={(v) => addCustom("nauseaTypes", v)}
+                  onRemoveCustom={(v) => {
+                    removeCustom("nauseaTypes", v);
+                    setNauseaTypes((a) => a.filter((x) => x !== v));
+                  }}
+                  onRenameCustom={(o, n) => {
+                    renameCustom("nauseaTypes", o, n);
+                    setNauseaTypes((a) => a.map((x) => (x === o ? n : x)));
+                  }}
+                  selected={nauseaTypes}
+                  onToggle={(v) => setNauseaTypes((a) => toggleIn(a, v))}
+                />
+              </Field>
+              <DurationField
+                minutes={nauseaMinutes}
+                setMinutes={setNauseaMinutes}
+                ongoing={nauseaOngoing}
+                setOngoing={setNauseaOngoing}
+              />
+              <Field label="Triggers">
+                <CustomChipList
+                  base={NAUSEA_TRIGGERS}
+                  custom={data.custom.nauseaTriggers ?? []}
+                  onAddCustom={(v) => addCustom("nauseaTriggers", v)}
+                  onRemoveCustom={(v) => {
+                    removeCustom("nauseaTriggers", v);
+                    setNauseaTriggers((a) => a.filter((x) => x !== v));
+                  }}
+                  onRenameCustom={(o, n) => {
+                    renameCustom("nauseaTriggers", o, n);
+                    setNauseaTriggers((a) => a.map((x) => (x === o ? n : x)));
+                  }}
+                  selected={nauseaTriggers}
+                  onToggle={(v) => setNauseaTriggers((a) => toggleIn(a, v))}
+                />
+              </Field>
+              <Field label="Associated symptoms">
+                <CustomChipList
+                  base={NAUSEA_SYMPTOMS}
+                  custom={data.custom.nauseaSymptoms ?? []}
+                  onAddCustom={(v) => addCustom("nauseaSymptoms", v)}
+                  onRemoveCustom={(v) => {
+                    removeCustom("nauseaSymptoms", v);
+                    setNauseaSymptoms((a) => a.filter((x) => x !== v));
+                  }}
+                  onRenameCustom={(o, n) => {
+                    renameCustom("nauseaSymptoms", o, n);
+                    setNauseaSymptoms((a) => a.map((x) => (x === o ? n : x)));
+                  }}
+                  selected={nauseaSymptoms}
+                  onToggle={(v) => setNauseaSymptoms((a) => toggleIn(a, v))}
+                />
+              </Field>
+              <Field label="Relieved by">
+                <CustomChipList
+                  base={NAUSEA_HELPED}
+                  custom={data.custom.nauseaHelped ?? []}
+                  onAddCustom={(v) => addCustom("nauseaHelped", v)}
+                  onRemoveCustom={(v) => {
+                    removeCustom("nauseaHelped", v);
+                    setNauseaHelped((a) => a.filter((x) => x !== v));
+                  }}
+                  onRenameCustom={(o, n) => {
+                    renameCustom("nauseaHelped", o, n);
+                    setNauseaHelped((a) => a.map((x) => (x === o ? n : x)));
+                  }}
+                  selected={nauseaHelped}
+                  onToggle={(v) => setNauseaHelped((a) => toggleIn(a, v))}
+                />
+              </Field>
+            </div>
+          )}
+          <div>
+            <Field label="Headache?">
+              <div className="mt-1 flex gap-2">
+                <Chip active={!headache} onClick={() => setHeadache(false)}>
+                  No
+                </Chip>
+                <Chip active={headache} onClick={() => setHeadache(true)}>
+                  Yes — log it
+                </Chip>
+              </div>
+            </Field>
+            {headache && (
+              <div className="mt-3 rounded-2xl border border-border p-3 space-y-3">
+                <Field label={`Headache intensity ${headacheIntensity ?? "-"}/10`}>
+                  <IntensityScale
+                    value={headacheIntensity ?? 0}
+                    onChange={(n) => setHeadacheIntensity(headacheIntensity === n ? undefined : n)}
+                    max={10}
+                    from={1}
+                    step={1}
+                    descriptions={getScaleDesc(data, "headache")}
+                    legendTitle="Headache scale"
+                    compactSingleRow
+                  />
+                </Field>
+                <Field label="Headache type">
+                  <CustomChipList
+                    base={HEADACHE_TYPES}
+                    custom={data.custom.headacheTypes ?? []}
+                    descriptions={HEADACHE_TYPE_DESC}
+                    onAddCustom={(v) => addCustom("headacheTypes", v)}
+                    onRemoveCustom={(v) => {
+                      removeCustom("headacheTypes", v);
+                      setHeadacheTypes((a) => a.filter((x) => x !== v));
+                    }}
+                    onRenameCustom={(o, n) => {
+                      renameCustom("headacheTypes", o, n);
+                      setHeadacheTypes((a) => a.map((x) => (x === o ? n : x)));
+                    }}
+                    selected={headacheTypes}
+                    onToggle={(v) => setHeadacheTypes((a) => toggleIn(a, v))}
+                  />
+                </Field>
+                <Field label="Medication taken">
+                  <div className="mt-1 flex gap-2">
+                    <Chip active={!headacheMedOn} onClick={() => setHeadacheMedOn(false)}>
+                      No
+                    </Chip>
+                    <Chip active={headacheMedOn} onClick={() => setHeadacheMedOn(true)}>
+                      Yes
+                    </Chip>
+                  </div>
+                  {headacheMedOn && (
+                    <div className="mt-2 space-y-2">
+                      {data.meds.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {data.meds.map((m) => {
+                            const label = `${m.name}${m.dose ? ` ${m.dose}` : ""}`;
+                            return (
+                              <Chip
+                                key={m.id}
+                                active={headacheMed === label}
+                                onClick={() => setHeadacheMed(headacheMed === label ? "" : label)}
+                              ><TrText value={label} /></Chip>
+                            );
+                          })}
+                        </div>
+                      )}
+                      <Input
+                        value={headacheMed}
+                        onChange={(e) => setHeadacheMed(e.target.value)}
+                        placeholder={t("Medication + dose")}
+                      />
+                      <Input type="time" value={headacheMedTime} onChange={(e) => setHeadacheMedTime(e.target.value)} />
+                    </div>
+                  )}
+                </Field>
+              </div>
+            )}
+          </div>
+          <Field label="Hot flashes?">
+            <div className="mt-1 flex gap-2">
+              <Chip active={!hotFlashesOn} onClick={() => setHotFlashesOn(false)}>
+                No
+              </Chip>
+              <Chip active={hotFlashesOn} onClick={() => setHotFlashesOn(true)}>
+                Yes — log it
+              </Chip>
+            </div>
+          </Field>
+          {hotFlashesOn && (
+            <Field label={`Hot flashes intensity ${hotFlashes ?? "-"}/5`}>
+              <IntensityScale
+                value={hotFlashes ?? 0}
+                onChange={(n) => setHotFlashes(hotFlashes === n ? undefined : n)}
+                max={5}
+                from={1}
+                step={1}
+                descriptions={getScaleDesc(data, "hotFlashes")}
+                legendTitle="Hot flashes scale"
+                compactSingleRow
+              />
+            </Field>
+          )}
+          <Field label="PCOS symptoms">
+            <CustomChipList
+              base={PCOS_SYMPTOMS}
+              custom={data.custom.pcosSymptoms ?? []}
+              onAddCustom={(v) => addCustom("pcosSymptoms", v)}
+              onRemoveCustom={(v) => {
+                removeCustom("pcosSymptoms", v);
+                setPcosSymptoms((a) => a.filter((x) => x !== v));
+              }}
+              onRenameCustom={(o, n) => {
+                renameCustom("pcosSymptoms", o, n);
+                setPcosSymptoms((a) => a.map((x) => (x === o ? n : x)));
+              }}
+              selected={pcosSymptoms}
+              onToggle={(v) => setPcosSymptoms((a) => toggleIn(a, v))}
+            />
+          </Field>
+        </div>
+      )}
+
+      {activePainStepId === "details" && (
+        <div className="space-y-4">
+          {(() => {
+            const STRESS_DESC = getScaleDesc(data, "stress");
+            return (
+              <Field label={`Stress ${stress ?? "-"} / 10`}>
+                <IntensityScale
+                  value={stress ?? -1}
+                  onChange={(n) => setStress(stress === n ? undefined : n)}
+                  max={10}
+                  from={1}
+                  step={1}
+                  descriptions={STRESS_DESC}
+                  legendTitle="Stress scale"
+                  compactSingleRow
+                />
+              </Field>
+            );
+          })()}
+          <Field label="Body battery">
+            <div className="mt-2 flex justify-between gap-2">
+              {BODY_BATTERY.map((b) => (
+                <button
+                  key={b.n}
+                  type="button"
+                  onClick={() => setBodyBattery(bodyBattery === b.n ? undefined : b.n)}
+                  className={`flex flex-1 flex-col items-center gap-1 rounded-2xl border p-2 transition ${bodyBattery === b.n ? "border-primary bg-primary/10" : "border-border bg-surface"}`}
+                >
+                  <div className="grid h-10 w-6 place-items-end rounded-md border-2 border-foreground/60 p-0.5">
+                    <div className="w-full rounded" style={{ height: `${b.n * 18}%`, background: b.color }} />
+                  </div>
+                  <span className="text-[10px]">{b.emoji}</span>
+                </button>
+              ))}
+            </div>
+          </Field>
+          <Field label="Mood">
+            <CustomChipList
+              base={MOODS_DEFAULT}
+              custom={data.custom.moods}
+              onAddCustom={(v) => addCustom("moods", v)}
+              onRemoveCustom={(v) => {
+                removeCustom("moods", v);
+                setMood((a) => a.filter((x) => x !== v));
+              }}
+              onRenameCustom={(o, n) => {
+                renameCustom("moods", o, n);
+                setMood((a) => a.map((x) => (x === o ? n : x)));
+              }}
+              selected={mood}
+              onToggle={(v) => setMood((a) => toggleIn(a, v))}
+            />
+          </Field>
+          <Field label="Time of entry">
+            <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+          </Field>
+          <Field label="Note (optional)">
+            <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder={t("Anything else…")} />
+          </Field>
+        </div>
+      )}
+
+      {quickSymptomUpdate && activePainStepId === "symptoms" && (
+        <div className="mt-1 rounded-2xl border border-border/70 bg-surface/70 p-3">
+          <Field label="Note (optional)">
+            <Textarea
+              rows={3}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder={t("Add a note about what changed, what you were doing, or anything else…")}
+            />
+          </Field>
+        </div>
+      )}
+
+      {quickSymptomUpdate && activePainStepId === "symptoms" && (
+        <SheetFooter className="fixed inset-x-0 z-30 h-[60px] flex-row items-center justify-between gap-3 border-b border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur" style={{ top: "calc(env(safe-area-inset-top) + 56px)" }}>
+          <button
+            type="button"
+            onClick={() => {
+              setQuickSymptomUpdate(false);
+              setCopiedFromTime(undefined);
+              setCopiedFromId(undefined);
+              setStep(0);
+            }}
+            className="flex items-center gap-1 px-1 text-sm font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <span aria-hidden="true" className="text-xl leading-none">←</span>
+            <span>{t("Edit full log")}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={save}
+            className="inline-flex h-10 min-w-[104px] items-center justify-center gap-1.5 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            <span>{t("Save symptoms")}</span>
+            <span aria-hidden="true" className="text-base leading-none">✓</span>
+          </button>
+        </SheetFooter>
+      )}
+    </div>
+  );
+}
+
+/* ------------------- EPISODE wizard primitives ------------------- */
+function EpisodeWizardNav({
+  step,
+  steps,
+  onBack,
+  onNext,
+  onSave,
+}: {
+  step: number;
+  steps: string[];
+  onBack: () => void;
+  onNext: () => void;
+  onSave: () => void;
+}) {
+  const { t } = useI18n();
+  const last = step >= steps.length - 1;
+  return (
+    <div className="sticky top-0 z-30 -mx-5 mb-4 flex h-[60px] items-center justify-between gap-2 border-b border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur">
+      {step > 0 ? (
+        <button type="button" onClick={onBack} className="flex min-w-[64px] items-center gap-1 text-sm font-semibold text-foreground/80 transition hover:text-foreground">
+          <span aria-hidden="true" className="text-base leading-none">←</span>
+          <span>{t("Back")}</span>
+        </button>
+      ) : (
+        <span className="min-w-[64px]" aria-hidden="true" />
+      )}
+      <div className="flex min-w-0 flex-1 items-center justify-center gap-2">
+        <div className="flex gap-1">
+          {steps.map((label, index) => (
+            <span key={label} className={`h-1.5 w-5 rounded-full transition-colors ${index <= step ? "bg-primary" : "bg-tint"}`} />
+          ))}
+        </div>
+        <span className="min-w-0 truncate text-xs font-semibold text-foreground/75">{t(steps[step] ?? "")}</span>
+        <span className="shrink-0 text-xs font-semibold text-foreground/75">{step + 1}/{steps.length}</span>
+      </div>
+      <button type="button" onClick={last ? onSave : onNext} className="flex h-[52px] min-w-[64px] flex-col items-center justify-center rounded-[1.15rem] bg-primary px-3 text-primary-foreground shadow-sm transition active:scale-[0.98]">
+        <span className="text-sm font-semibold leading-none">{t(last ? "Save" : "Next")}</span>
+        <span aria-hidden="true" className="mt-0.5 text-base leading-none">{last ? "✓" : "→"}</span>
+      </button>
+    </div>
+  );
+}
+
+/* ------------------- PANIC attack ------------------- */
+function PanicForm({ date, data, update, onDone, initialEntry }: { date: string; data: BixboData; update: UpdateFn; onDone: () => void; initialEntry?: PanicAttack; }) {
+  const { t } = useI18n();
+  const schema = useLogSchema();
+  const [step, setStep] = useState(0);
+  const steps = ["Episode", "Symptoms", "Trigger & relief", "Notes"];
+  const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
+  const [minutes, setMinutes] = useState(initialEntry?.minutes != null ? String(initialEntry.minutes) : "10");
+  const [ongoing, setOngoing] = useState(initialEntry?.minutes == null && !!initialEntry);
+  const [intensity, setIntensity] = useState(initialEntry?.intensity ?? 5);
+  const [physical, setPhysical] = useState<string[]>(initialEntry?.physical ?? []);
+  const [cognitive, setCognitive] = useState<string[]>(initialEntry?.cognitive ?? []);
+  const [trigger, setTrigger] = useState(initialEntry?.trigger ?? "");
+  const [place, setPlace] = useState(initialEntry?.place ?? "");
+  const [hyper, setHyper] = useState<"no" | "before" | "during" | "unknown">(initialEntry?.hyperventilation ?? "unknown");
+  const [tetanyPresent, setTetanyPresent] = useState(initialEntry?.tetanyPresent ?? false);
+  const [helped, setHelped] = useState<string[]>(initialEntry?.helped ?? []);
+  const [rescueMed, setRescueMed] = useState<string>(initialEntry?.rescueMed ?? "");
+  const [note, setNote] = useState(initialEntry?.note ?? "");
+  const addHelped = (v: string) => update((d) => ({ ...d, custom: { ...d.custom, panicHelped: [...d.custom.panicHelped, v] } }));
+  const rmHelped = (v: string) => {
+    update((d) => ({ ...d, custom: { ...d.custom, panicHelped: d.custom.panicHelped.filter((x) => x !== v) } }));
+    setHelped((a) => a.filter((x) => x !== v));
+  };
+  const save = () => {
+    const editing = !!initialEntry;
+    const p: PanicAttack = {
+      id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(), time,
+      minutes: ongoing ? undefined : minutes === "" ? undefined : Number(minutes), intensity, physical, cognitive,
+      trigger: trigger.trim(), place: place.trim() || undefined, hyperventilation: hyper, tetanyPresent, helped,
+      rescueMed: rescueMed.trim() || undefined, note: note.trim() || undefined,
+    };
+    updateDayLog(update, date, (l) => ({ ...l, panic: editing ? (l.panic ?? []).map((x) => (x.id === p.id ? p : x)) : [...(l.panic ?? []), p] }));
+    schema?.saveAdminCustomFields();
+    onDone();
+  };
+  return (
+    <div className="flex flex-col gap-3">
+      <EpisodeWizardNav step={step} steps={steps} onBack={() => setStep((v) => Math.max(0, v - 1))} onNext={() => setStep((v) => Math.min(steps.length - 1, v + 1))} onSave={save} />
+      {step === 0 && <div className="space-y-4">
+        <Field label="Time" schemaFieldId="time"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="w-full" /></Field>
+        <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} schemaFieldId="duration" />
+        <Field label={`Intensity ${intensity}/10`} schemaFieldId="intensity"><IntensityScale value={intensity} onChange={setIntensity} max={10} from={1} step={1} compactSingleRow descriptions={getScaleDesc(data, "panic")} legendTitle="Panic intensity scale" schemaFieldId="intensity" /></Field>
+      </div>}
+      {step === 1 && <div className="space-y-4">
+        <Field label="Physical symptoms" schemaFieldId="physical"><CustomChipList base={PANIC_PHYSICAL} custom={data.custom.panicPhysical}
+          onAddCustom={(v) => update((d) => ({ ...d, custom: { ...d.custom, panicPhysical: [...d.custom.panicPhysical, v] } }))}
+          onRemoveCustom={(v) => { update((d) => ({ ...d, custom: { ...d.custom, panicPhysical: d.custom.panicPhysical.filter((x) => x !== v) } })); setPhysical((a) => a.filter((x) => x !== v)); }}
+          onRenameCustom={(o,n) => { update((d) => ({ ...d, custom: { ...d.custom, panicPhysical: d.custom.panicPhysical.map((x) => x === o ? n : x) } })); setPhysical((a) => a.map((x) => x === o ? n : x)); }}
+          selected={physical} onToggle={(v) => setPhysical((a) => toggleIn(a,v))} schemaFieldId="physical" /></Field>
+        <Field label="Cognitive symptoms" schemaFieldId="cognitive"><CustomChipList base={PANIC_COGNITIVE} custom={data.custom.panicCognitive}
+          onAddCustom={(v) => update((d) => ({ ...d, custom: { ...d.custom, panicCognitive: [...d.custom.panicCognitive, v] } }))}
+          onRemoveCustom={(v) => { update((d) => ({ ...d, custom: { ...d.custom, panicCognitive: d.custom.panicCognitive.filter((x) => x !== v) } })); setCognitive((a) => a.filter((x) => x !== v)); }}
+          onRenameCustom={(o,n) => { update((d) => ({ ...d, custom: { ...d.custom, panicCognitive: d.custom.panicCognitive.map((x) => x === o ? n : x) } })); setCognitive((a) => a.map((x) => x === o ? n : x)); }}
+          selected={cognitive} onToggle={(v) => setCognitive((a) => toggleIn(a,v))} schemaFieldId="cognitive" /></Field>
+      </div>}
+      {step === 2 && <div className="space-y-4">
+        <Field label="Trigger (or 'no obvious trigger')" schemaFieldId="trigger"><Textarea rows={2} value={trigger} onChange={(e) => setTrigger(e.target.value)} /></Field>
+        <Field label="Place (optional)" schemaFieldId="place"><Input value={place} onChange={(e) => setPlace(e.target.value)} /></Field>
+        <Field label="Hyperventilation" schemaFieldId="hyperventilation"><div className="mt-2 flex flex-wrap gap-2">{(["no","before","during","unknown"] as const).map((v) => <Chip key={v} active={hyper===v} onClick={() => setHyper(v)}>{v}</Chip>)}</div></Field>
+        <Field label="Tetany present?" schemaFieldId="tetanyPresent"><div className="mt-2 flex gap-2"><Chip active={!tetanyPresent} onClick={() => setTetanyPresent(false)}>No</Chip><Chip active={tetanyPresent} onClick={() => setTetanyPresent(true)}>Yes</Chip></div></Field>
+        <Field label="What helped" schemaFieldId="helped"><CustomChipList base={PANIC_HELPED_DEFAULT} custom={data.custom.panicHelped} onAddCustom={addHelped} onRemoveCustom={rmHelped} selected={helped} onToggle={(v) => setHelped((a) => toggleIn(a,v))} /></Field>
+      </div>}
+      {step === 3 && <div className="space-y-4">
+        <Field label="Rescue med (what you took)" schemaFieldId="rescueMed"><Input value={rescueMed} onChange={(e) => setRescueMed(e.target.value)} placeholder={t("e.g. Frontin 0.25 mg")} />{data.meds.length > 0 && <div className="mt-2 flex flex-wrap gap-1.5">{data.meds.map((m) => <button key={m.id} type="button" onClick={() => setRescueMed(m.dose ? `${m.name} ${m.dose}` : m.name)} className="rounded-full bg-tint px-3 py-1 text-xs font-medium text-foreground ring-1 ring-border">{m.name}{m.dose ? ` ${m.dose}` : ""}</button>)}</div>}</Field>
+        <Field label="Note (optional)" schemaFieldId="note"><Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} /></Field>
+      </div>}
+    </div>
+  );
+}
+
+/* ------------------- TETANY episode ------------------- */
+function TetanyForm({ date, data, update, onDone, initialEntry }: { date: string; data: BixboData; update: UpdateFn; onDone: () => void; initialEntry?: TetanyEpisode; }) {
+  const { t } = useI18n();
+  const schema = useLogSchema();
+  const [step, setStep] = useState(0);
+  const steps = ["Episode", "Symptoms", "Trigger & relief", "Notes"];
+  const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
+  const [types, setTypes] = useState<string[]>(initialEntry?.types ?? []);
+  const [loc, setLoc] = useState<string[]>(initialEntry?.location ?? []);
+  const [intensity, setIntensity] = useState(initialEntry?.intensity ?? 1);
+  const [minutes, setMinutes] = useState(initialEntry?.minutes != null ? String(initialEntry.minutes) : "5");
+  const [ongoing, setOngoing] = useState(initialEntry?.minutes == null && !!initialEntry);
+  const [triggers, setTriggers] = useState<string[]>(initialEntry?.triggers ?? []);
+  const [helped, setHelped] = useState<string[]>(initialEntry?.helped ?? []);
+  const [rescueMed, setRescueMed] = useState<string>(initialEntry?.rescueMed ?? "");
+  const [note, setNote] = useState(initialEntry?.note ?? "");
+  type CK = "tetanyTypes" | "tetanyLocations" | "tetanyTriggers" | "tetanyHelped";
+  const addC = (k: CK, v: string) => update((d) => withoutCustomTombstones({ ...d, custom: { ...d.custom, [k]: [...d.custom[k], v] } }, k, [v]));
+  const rmC = (k: CK, v: string) => update((d) => withCustomTombstones({ ...d, custom: { ...d.custom, [k]: d.custom[k].filter((x) => x !== v) } }, k, [v]));
+  const rnC = (k: CK, o: string, n: string) => update((d) => withoutCustomTombstones(withCustomTombstones({ ...d, custom: { ...d.custom, [k]: d.custom[k].map((x) => x === o ? n : x) } }, k, [o]), k, [n]));
+  const save = () => {
+    const editing = !!initialEntry;
+    const entry: TetanyEpisode = { id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(), time, types, location: loc, intensity, minutes: ongoing ? undefined : minutes === "" ? undefined : Number(minutes), triggers, helped, rescueMed: rescueMed.trim() || undefined, note: note.trim() || undefined };
+    updateDayLog(update, date, (l) => ({ ...l, tetany: editing ? (l.tetany ?? []).map((x) => x.id === entry.id ? entry : x) : [...(l.tetany ?? []), entry] }));
+    schema?.saveAdminCustomFields();
+    onDone();
+  };
+  return (
+    <div className="flex flex-col gap-3">
+      <EpisodeWizardNav step={step} steps={steps} onBack={() => setStep((v) => Math.max(0,v-1))} onNext={() => setStep((v) => Math.min(steps.length-1,v+1))} onSave={save} />
+      {step === 0 && <div className="space-y-4">
+        <Field label="Time" schemaFieldId="time"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></Field>
+        <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} schemaFieldId="duration" />
+        <Field label={`Intensity ${intensity}/5`} schemaFieldId="intensity"><IntensityScale value={intensity} onChange={setIntensity} max={5} from={1} step={1} compactSingleRow descriptions={getScaleDesc(data,"tetany")} legendTitle="Tetany intensity scale" schemaFieldId="intensity" /></Field>
+      </div>}
+      {step === 1 && <div className="space-y-4">
+        <Field label="Type" schemaFieldId="types"><CustomChipList base={TETANY_TYPES} custom={data.custom.tetanyTypes} descriptions={TETANY_TYPE_DESC} onAddCustom={(v) => addC("tetanyTypes",v)} onRemoveCustom={(v) => { rmC("tetanyTypes",v); setTypes((a) => a.filter((x) => x!==v)); }} onRenameCustom={(o,n) => { rnC("tetanyTypes",o,n); setTypes((a) => a.map((x) => x===o?n:x)); }} selected={types} onToggle={(v) => setTypes((a) => toggleIn(a,v))} /></Field>
+        <Field label="Location" schemaFieldId="location"><CustomChipList base={TETANY_LOCATIONS_DEFAULT} custom={data.custom.tetanyLocations} onAddCustom={(v) => addC("tetanyLocations",v)} onRemoveCustom={(v) => { rmC("tetanyLocations",v); setLoc((a) => a.filter((x) => x!==v)); }} onRenameCustom={(o,n) => { rnC("tetanyLocations",o,n); setLoc((a) => a.map((x) => x===o?n:x)); }} selected={loc} onToggle={(v) => setLoc((a) => toggleIn(a,v))} /></Field>
+      </div>}
+      {step === 2 && <div className="space-y-4">
+        <Field label="Triggers" schemaFieldId="triggers"><CustomChipList base={TETANY_TRIGGERS} custom={data.custom.tetanyTriggers} onAddCustom={(v) => addC("tetanyTriggers",v)} onRemoveCustom={(v) => { rmC("tetanyTriggers",v); setTriggers((a) => a.filter((x) => x!==v)); }} onRenameCustom={(o,n) => { rnC("tetanyTriggers",o,n); setTriggers((a) => a.map((x) => x===o?n:x)); }} selected={triggers} onToggle={(v) => setTriggers((a) => toggleIn(a,v))} /></Field>
+        <Field label="What helped" schemaFieldId="helped"><CustomChipList base={TETANY_HELPED_DEFAULT} custom={data.custom.tetanyHelped} onAddCustom={(v) => addC("tetanyHelped",v)} onRemoveCustom={(v) => { rmC("tetanyHelped",v); setHelped((a) => a.filter((x) => x!==v)); }} onRenameCustom={(o,n) => { rnC("tetanyHelped",o,n); setHelped((a) => a.map((x) => x===o?n:x)); }} selected={helped} onToggle={(v) => setHelped((a) => toggleIn(a,v))} /></Field>
+      </div>}
+      {step === 3 && <div className="space-y-4">
+        <Field label="Rescue med (what you took)" schemaFieldId="rescueMed"><Input value={rescueMed} onChange={(e) => setRescueMed(e.target.value)} placeholder={t("e.g. Magnesium 400 mg")} />{data.meds.length > 0 && <div className="mt-2 flex flex-wrap gap-1.5">{data.meds.map((m) => <button key={m.id} type="button" onClick={() => setRescueMed(m.dose ? `${m.name} ${m.dose}` : m.name)} className="rounded-full bg-tint px-3 py-1 text-xs font-medium text-foreground ring-1 ring-border">{m.name}{m.dose ? ` ${m.dose}` : ""}</button>)}</div>}</Field>
+        <Field label="Note (optional)" schemaFieldId="note"><Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} /></Field>
+      </div>}
+    </div>
+  );
+}
+
+/* ------------------- PERIOD (Blueberry) ------------------- */
+function PeriodForm({
+  date,
+  data,
+  update,
+  onDone,
+}: {
+  date: string;
+  data: BixboData;
+  update: UpdateFn;
+  onDone: () => void;
+}) {
+  const { t } = useI18n();
+  const cur = data.dayLogs[date]?.periodInfo;
+  const [level, setLevel] = useState<PeriodLevel>(cur?.level ?? "");
+  const [discharge, setDischarge] = useState<string>(cur?.discharge ?? "");
+  const [dNote, setDNote] = useState<string>(cur?.dischargeNote ?? "");
+  const [note, setNote] = useState<string>(cur?.note ?? "");
+  const [cramps, setCramps] = useState<number | undefined>(cur?.cramps == null ? undefined : Math.max(1, Math.min(10, Math.round(cur.cramps))));
+  const painDesc = getScaleDesc(data, "pain");
+
+  const save = () => {
+    updateDayLog(update, date, (l) => ({
+      ...l,
+      period: level || undefined,
+      periodInfo: {
+        level,
+        discharge: discharge || undefined,
+        dischargeNote: dNote.trim() || undefined,
+        note: note.trim() || undefined,
+        cramps,
+      },
+    }));
+    onDone();
+  };
+  const LEVELS: { v: PeriodLevel; label: string; color: string }[] = [
+    { v: "spotting", label: "Spotting", color: "var(--period-spotting)" },
+    { v: "light", label: "Light", color: "var(--period-light)" },
+    { v: "medium", label: "Medium", color: "var(--period-medium)" },
+    { v: "heavy", label: "Heavy", color: "var(--period-heavy)" },
+    { v: "very-heavy", label: "Very heavy", color: "var(--period-veryheavy)" },
+  ];
+  return (
+    <div className="flex flex-col gap-3">
+      <SaveBar onCancel={onDone} onSave={save} />
+      <Field label="Flow" schemaFieldId="flow">
+        <div className="mt-2 grid grid-cols-5 gap-1.5">
+          {LEVELS.map((L) => (
+            <button
+              key={L.v}
+              onClick={() => setLevel(L.v)}
+              className={`rounded-2xl p-2 text-[11px] font-medium ${level === L.v ? "text-white ring-2 ring-foreground" : "bg-tint text-foreground"}`}
+              style={level === L.v ? { background: L.color } : undefined}
+            >
+              {t(L.label)}
+            </button>
+          ))}
+        </div>
+      </Field>
+      <Field label={`${t("Cramp pain")} ${cramps ?? "—"} / 10`} schemaFieldId="cramps">
+        <IntensityScale
+          value={cramps ?? -1}
+          onChange={(n) => setCramps(cramps === n ? undefined : n)}
+          max={10}
+          from={1}
+          step={1}
+          descriptions={painDesc}
+          legendTitle="Cramp pain scale"
+          compactSingleRow
+          schemaFieldId="cramps"
+        />
+      </Field>
+      <Field label="Discharge (optional)" schemaFieldId="discharge">
+        <div className="mt-2 flex flex-wrap gap-2">
+          {DISCHARGE_OPTS.map((d) => (
+            <Chip
+              key={d.value}
+              active={discharge === d.value}
+              onClick={() => setDischarge(discharge === d.value ? "" : d.value)}
+              color={d.color}
+            >
+              {d.label}
+            </Chip>
+          ))}
+        </div>
+      </Field>
+      <Field label="Discharge note (optional)" schemaFieldId="dischargeNote">
+        <Input value={dNote} onChange={(e) => setDNote(e.target.value)} />
+      </Field>
+      <Field label="Day note (optional)" schemaFieldId="note">
+        <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
+      </Field>
+      <Field label="Birth control since (optional)" schemaFieldId="birthControlSince">
+        <Input
+          type="date"
+          value={data.settings.birthControlSince ?? ""}
+          onChange={(e) =>
+            update((d) => ({ ...d, settings: { ...d.settings, birthControlSince: e.target.value || undefined } }))
+          }
+        />
+        {data.settings.birthControlSince && (
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Taking birth control since {data.settings.birthControlSince}
+          </p>
+        )}
+      </Field>
+      <Field label="Pregnant?" schemaFieldId="pregnant">
+        <div className="mt-1 flex gap-2">
+          <Chip
+            active={!data.pregnancy?.active}
+            onClick={() =>
+              update((d) => ({
+                ...d,
+                pregnancy: {
+                  ...(d.pregnancy ?? { active: false, hospitalBag: [], vaccinations: [], supplements: [], appointments: [] }),
+                  active: false,
+                  endedAt: d.pregnancy?.active ? todayKey() : d.pregnancy?.endedAt,
+                },
+                settings: { ...d.settings, pregnantSince: undefined },
+              }))
+            }
+          >
+            No
+          </Chip>
+          <Chip
+            active={!!data.pregnancy?.active}
+            onClick={() =>
+              update((d) => ({
+                ...d,
+                pregnancy: {
+                  ...(d.pregnancy ?? { active: false, hospitalBag: [], vaccinations: [], supplements: [], appointments: [] }),
+                  active: true,
+                  lmp: d.pregnancy?.lmp,
+                  endedAt: undefined,
+                },
+                postpartum: {
+                  ...(d.postpartum ?? { active: false, visits: [] }),
+                  active: false,
+                  endedAt: d.postpartum?.active ? (d.postpartum.endedAt ?? todayKey()) : d.postpartum?.endedAt,
+                },
+                settings: { ...d.settings, pregnantSince: undefined },
+              }))
+            }
+          >
+            Yes
+          </Chip>
+        </div>
+        {data.pregnancy?.active && (
+          <div className="mt-2">
+            <span className="text-xs font-medium text-muted-foreground">{t("First day of last menstrual period")}</span>
+            <Input
+              type="date"
+              className="mt-1"
+              value={data.pregnancy?.lmp ?? ""}
+              onChange={(e) =>
+                update((d) => ({
+                  ...d,
+                  pregnancy: {
+                    ...(d.pregnancy ?? { active: true, hospitalBag: [], vaccinations: [], supplements: [], appointments: [] }),
+                    active: true,
+                    lmp: e.target.value || undefined,
+                    endedAt: undefined,
+                  },
+                  settings: { ...d.settings, pregnantSince: undefined },
+                }))
+              }
+            />
+            {(() => {
+              const p = pregnancyInfo(data.pregnancy?.lmp);
+              return p ? (
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Week {p.week} · Trimester {p.trimester} — cycle predictions are paused.
+                </p>
+              ) : null;
+            })()}
+          </div>
+        )}
+      </Field>
+      <div className="rounded-2xl bg-tint p-3 text-[11px] leading-relaxed text-muted-foreground">
+        Cycle prediction is based on your last period and cycle length (edit in Settings later).
+      </div>
+      {cur && (
+        <button
+          type="button"
+          onClick={() => {
+            update((current) => {
+              const day = current.dayLogs[date] ?? {};
+              const { period: _p, periodInfo: _pi, ...rest } = day;
+              void _p;
+              void _pi;
+              const adminFields = { ...(rest.adminFields ?? {}) };
+              const periodAdmin = adminFields.period ?? [];
+              const nextPeriodAdmin = periodAdmin.filter((entry) => entry.sourceEntryId !== `day:period:${date}`);
+              if (nextPeriodAdmin.length) adminFields.period = nextPeriodAdmin;
+              else delete adminFields.period;
+              return {
+                ...current,
+                dayLogs: {
+                  ...current.dayLogs,
+                  [date]: { ...rest, adminFields: Object.keys(adminFields).length ? adminFields : undefined },
+                },
+              };
+            });
+            onDone();
+          }}
+          className="w-full rounded-2xl bg-destructive/10 py-2.5 text-sm font-medium text-destructive ring-1 ring-destructive/30"
+        >
+          Delete Blueberry entry
+        </button>
+      )}
+    </div>
+  );
+}
+
+/* ------------------- ŠukŠuk (Sex) ------------------- */
+function SexForm({
+  date,
+  data,
+  update,
+  onDone,
+  initialEntry,
+}: {
+  date: string;
+  data: BixboData;
+  update: UpdateFn;
+  onDone: () => void;
+  initialEntry?: SexEntry;
+}) {
+  const schema = useLogSchema();
+  const [kind, setKind] = useState<SexKind>(initialEntry?.kind ?? "sex");
+  const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
+  const [feelingAfter, setFeelingAfter] = useState<string[]>(asArr(initialEntry?.feelingAfter));
+  const [painful, setPainful] = useState<PainfulWhen>(initialEntry?.painful ?? "no");
+  const [note, setNote] = useState(initialEntry?.note ?? "");
+  const addCustom = (v: string) =>
+    update((d) => ({ ...d, custom: { ...d.custom, sexTypes: [...d.custom.sexTypes, v] } }));
+  const rmCustom = (v: string) => {
+    if (!confirm(`Remove "${v}" from your list?`)) return;
+    update((d) => ({ ...d, custom: { ...d.custom, sexTypes: d.custom.sexTypes.filter((x) => x !== v) } }));
+    if (kind === (`other:${v}` as SexKind)) setKind("sex");
+  };
+  const custom = data.custom.sexTypes;
+  const save = () => {
+    const editing = !!initialEntry;
+    const e: SexEntry = {
+      id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
+      time,
+      kind,
+      feelingAfter: feelingAfter.length ? feelingAfter : undefined,
+      painful,
+      note: note.trim() || undefined,
+    };
+    updateDayLog(update, date, (l) => ({
+      ...l,
+      sex: editing ? (l.sex ?? []).map((x) => (x.id === e.id ? e : x)) : [...(l.sex ?? []), e],
+    }));
+    onDone();
+  };
+  return (
+    <div className="flex flex-col gap-3">
+      <SaveBar onCancel={onDone} onSave={save} />
+      <Field label="Time" schemaFieldId="time">
+        <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+      </Field>
+      <Field label="Type" schemaFieldId="type">
+        <div className="mt-2 flex flex-wrap gap-2">
+          {SEX_TYPES_DEFAULT.map((o) => (
+            <Chip key={o.value} active={kind === o.value} onClick={() => setKind(o.value)}>
+              {o.label}
+            </Chip>
+          ))}
+          {custom.map((c) => (
+            <span key={c} className="relative inline-flex items-center">
+              <Chip active={kind === (`other:${c}` as SexKind)} onClick={() => setKind(`other:${c}` as SexKind)}>
+                {c}
+              </Chip>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  rmCustom(c);
+                }}
+                aria-label={`Remove ${c}`}
+                className="ml-1 grid h-5 w-5 place-items-center rounded-full bg-tint text-muted-foreground hover:bg-destructive/15 hover:text-destructive"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+          <AddCustomInline onAdd={addCustom} />
+        </div>
+      </Field>
+      <Field label="How I feel after" schemaFieldId="feelingAfter">
+        <CustomChipList
+          base={SEX_FEELINGS_DEFAULT}
+          custom={data.custom.sexFeelings ?? []}
+          onAddCustom={(v) =>
+            update((d) => ({ ...d, custom: { ...d.custom, sexFeelings: [...(d.custom.sexFeelings ?? []), v] } }))
+          }
+          onRemoveCustom={(v) => {
+            update((d) => ({
+              ...d,
+              custom: { ...d.custom, sexFeelings: (d.custom.sexFeelings ?? []).filter((x) => x !== v) },
+            }));
+            setFeelingAfter((a) => a.filter((x) => x !== v));
+          }}
+          onRenameCustom={(o, n) => {
+            update((d) => ({
+              ...d,
+              custom: { ...d.custom, sexFeelings: (d.custom.sexFeelings ?? []).map((x) => (x === o ? n : x)) },
+            }));
+            setFeelingAfter((a) => a.map((x) => (x === o ? n : x)));
+          }}
+          selected={feelingAfter}
+          onToggle={(v) => setFeelingAfter((a) => toggleIn(a, v))}
+          schemaFieldId="feelingAfter"
+        />
+      </Field>
+      <Field label="Painful?" schemaFieldId="painful">
+        <div className="mt-2 flex gap-2">
+          {(["no", "before", "during", "after"] as const).map((v) => (
+            <Chip key={v} active={painful === v} onClick={() => setPainful(v)}>
+              {v}
+            </Chip>
+          ))}
+        </div>
+      </Field>
+      <Field label="Note (optional)" schemaFieldId="note">
+        <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
+      </Field>
+    </div>
+  );
+}
+function AddCustomInline({ onAdd }: { onAdd: (v: string) => void }) {
+  const { t } = useI18n();
+  const [adding, setAdding] = useState(false);
+  const [text, setText] = useState("");
+  if (!adding)
+    return (
+      <button
+        type="button"
+        onClick={() => setAdding(true)}
+        className="flex items-center gap-1 rounded-full bg-tint px-3 py-1.5 text-xs font-medium text-muted-foreground"
+      >
+        <Plus className="h-3 w-3" /> {t("Add")}
+      </button>
+    );
+  const commit = () => {
+    if (text.trim()) {
+      onAdd(text.trim());
+      setText("");
+      setAdding(false);
+    }
+  };
+  return (
+    <div className="flex items-center gap-1">
+      <Input
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            commit();
+          }
+        }}
+        className="h-8 w-32"
+        placeholder={t("Custom…")}
+        autoFocus
+      />
+      <Button type="button" size="sm" onClick={commit}>
+        {t("Add")}
+      </Button>
+    </div>
+  );
+}
+
+/* ------------------- Heat / Cold / TENS ------------------- */
+function ThermoForm({
+  date,
+  update,
+  onDone,
+  initialEntry,
+}: {
+  date: string;
+  update: UpdateFn;
+  onDone: () => void;
+  initialEntry?: ThermoSession;
+}) {
+  const { t } = useI18n();
+  const schema = useLogSchema();
+  const [kind, setKind] = useState<ThermoKind>(initialEntry?.kind ?? "heat");
+  const [start, setStart] = useState(initialEntry?.start ?? nowHHMM());
+  const [minutes, setMinutes] = useState<string>(
+    initialEntry ? (initialEntry.minutes != null ? String(initialEntry.minutes) : "") : "20",
+  );
+  const [ongoing, setOngoing] = useState(!!initialEntry?.ongoing);
+  const [note, setNote] = useState(initialEntry?.note ?? "");
+  const save = () => {
+    const editing = !!initialEntry;
+    const mins = ongoing ? 0 : minutes === "" ? 0 : Number(minutes);
+    const e: ThermoSession = {
+      id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
+      kind,
+      start,
+      minutes: mins,
+      ongoing: ongoing || undefined,
+      note: note.trim() || undefined,
+    };
+    updateDayLog(update, date, (l) => ({
+      ...l,
+      heat: editing ? (l.heat ?? []).map((x) => (x.id === e.id ? e : x)) : [...(l.heat ?? []), e],
+    }));
+    onDone();
+  };
+  return (
+    <div className="flex flex-col gap-3">
+      <SaveBar onCancel={onDone} onSave={save} />
+      <Field label="Type" schemaFieldId="type">
+        <div className="mt-2 flex gap-2">
+          <Chip active={kind === "heat"} onClick={() => setKind("heat")}>
+            <Ico e="♨️" size={16} /> {t("Heat")}
+          </Chip>
+          <Chip active={kind === "cold"} onClick={() => setKind("cold")}>
+            <Ico e="🧊" size={16} /> {t("Cold")}
+          </Chip>
+          <Chip active={kind === "tens"} onClick={() => setKind("tens")}>
+            <Ico e="⭐" size={16} /> {t("TENS")}
+          </Chip>
+        </div>
+      </Field>
+      <Field label="Start" schemaFieldId="start">
+        <Input type="time" value={start} onChange={(e) => setStart(e.target.value)} className="w-full" />
+      </Field>
+      <DurationField minutes={minutes} setMinutes={setMinutes} ongoing={ongoing} setOngoing={setOngoing} schemaFieldId="duration" />
+      <Field label="Note (optional)" schemaFieldId="note">
+        <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
+      </Field>
+    </div>
+  );
+}
+
+/* ------------------- FOOD ------------------- */
+function FoodForm({
+  date,
+  data,
+  update,
+  onDone,
+  initialEntry,
+}: {
+  date: string;
+  data: BixboData;
+  update: UpdateFn;
+  onDone: () => void;
+  initialEntry?: FoodEntry;
+}) {
+  const { t } = useI18n();
+  const schema = useLogSchema();
+  const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
+  const [what, setWhat] = useState(initialEntry?.what ?? "");
+  const [feelings, setFeelings] = useState<string[]>(initialEntry?.feelings ?? []);
+  const [after, setAfter] = useState(initialEntry?.after ?? "");
+  const [hydration, setHydration] = useState<string>(
+    initialEntry?.hydrationMl != null ? String(initialEntry.hydrationMl) : "",
+  );
+  const [caffeine, setCaffeine] = useState<string>(
+    initialEntry?.caffeineMg != null ? String(initialEntry.caffeineMg) : "",
+  );
+  const [alcohol, setAlcohol] = useState<string>(
+    initialEntry?.alcoholDrinks != null ? String(initialEntry.alcoholDrinks) : "",
+  );
+  const [symptomsAfter, setSymptomsAfter] = useState<string[]>(initialEntry?.symptomsAfter ?? []);
+  const [histFlare, setHistFlare] = useState<boolean>(!!initialEntry?.histamineFlare);
+  const [histSymptoms, setHistSymptoms] = useState<string[]>(initialEntry?.histamineSymptoms ?? []);
+  const [highHist, setHighHist] = useState<boolean>(!!initialEntry?.highHistamine);
+  const [allergensInMeal, setAllergensInMeal] = useState<string[]>(initialEntry?.allergensInMeal ?? []);
+  const [allergicReaction, setAllergicReaction] = useState<boolean>(!!initialEntry?.allergicReaction);
+  const [reactionSeverity, setReactionSeverity] = useState<"mild" | "moderate" | "severe" | undefined>(
+    initialEntry?.reactionSeverity,
+  );
+  const allergensBase = data.settings.allergens ?? ALLERGENS_DEFAULT;
+  const addCustom = (v: string) =>
+    update((d) =>
+      withoutCustomTombstones(
+        { ...d, custom: { ...d.custom, foodFeelings: [...d.custom.foodFeelings, v] } },
+        "foodFeelings",
+        [v],
+      ),
+    );
+  const addCustomList = (k: "histamineSymptoms" | "foodSymptomsAfter", v: string) =>
+    update((d) => withoutCustomTombstones({ ...d, custom: { ...d.custom, [k]: [...(d.custom[k] ?? []), v] } }, k, [v]));
+  const removeCustomList = (k: "histamineSymptoms" | "foodSymptomsAfter", v: string) =>
+    update((d) =>
+      withCustomTombstones({ ...d, custom: { ...d.custom, [k]: (d.custom[k] ?? []).filter((x) => x !== v) } }, k, [v]),
+    );
+  const renameCustomList = (k: "histamineSymptoms" | "foodSymptomsAfter", o: string, n: string) =>
+    update((d) =>
+      withoutCustomTombstones(
+        withCustomTombstones(
+          { ...d, custom: { ...d.custom, [k]: (d.custom[k] ?? []).map((x) => (x === o ? n : x)) } },
+          k,
+          [o],
+        ),
+        k,
+        [n],
+      ),
+    );
+  const save = () => {
+    if (!what.trim() && !hydration && !caffeine && !alcohol && !histFlare && symptomsAfter.length === 0) return;
+    const editing = !!initialEntry;
+    const entry: FoodEntry = {
+      id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
+      time,
+      what: what.trim(),
+      feelings,
+      after: after.trim() || undefined,
+      hydrationMl: hydration === "" ? undefined : Number(hydration),
+      caffeineMg: caffeine === "" ? undefined : Number(caffeine),
+      alcoholDrinks: alcohol === "" ? undefined : Number(alcohol),
+      symptomsAfter: symptomsAfter.length ? symptomsAfter : undefined,
+      histamineFlare: histFlare || undefined,
+      histamineSymptoms: histFlare && histSymptoms.length ? histSymptoms : undefined,
+      highHistamine: highHist || undefined,
+      allergensInMeal: allergensInMeal.length ? allergensInMeal : undefined,
+      allergicReaction: allergicReaction || undefined,
+      reactionSeverity: allergicReaction ? reactionSeverity : undefined,
+    };
+    updateDayLog(update, date, (l) => ({
+      ...l,
+      food: editing ? (l.food ?? []).map((x) => (x.id === entry.id ? entry : x)) : [...(l.food ?? []), entry],
+    }));
+    onDone();
+  };
+  return (
+    <div className="flex flex-col gap-3">
+      <SaveBar onCancel={onDone} onSave={save} />
+      <Field label="Time" schemaFieldId="time">
+        <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+      </Field>
+      <Field label="What did you eat?" schemaFieldId="what">
+        <Textarea
+          rows={2}
+          value={what}
+          onChange={(e) => setWhat(e.target.value)}
+          placeholder={t("e.g. chicken, rice, tomato")}
+        />
+      </Field>
+      <Field label="Quick add" schemaFieldId="quickAdd">
+        <div className="mt-2 flex flex-wrap gap-2">
+          {[
+            { l: "🍵 Matcha", w: "Matcha", caf: 70 },
+            { l: "☕ Coffee", w: "Coffee", caf: 95 },
+            { l: "🫖 Tea", w: "Tea", caf: 40 },
+            { l: "💧 Water", w: "Water", hyd: 250 },
+            { l: "🥑 Avocado", w: "Avocado" },
+          ].map((q) => (
+            <button
+              key={q.l}
+              type="button"
+              onClick={() => {
+                setWhat((w) => (w ? `${w}, ${q.w}` : q.w));
+                if (q.caf) setCaffeine(String((Number(caffeine) || 0) + q.caf));
+                if (q.hyd) setHydration(String((Number(hydration) || 0) + q.hyd));
+              }}
+              className="rounded-full bg-tint px-3 py-1.5 text-xs font-semibold ring-1 ring-border hover:bg-primary/10"
+            >
+              <IcoText text={q.l} size={14} />
+            </button>
+          ))}
+          {data.custom.foodQuickAdd.map((c) => (
+            <span key={c} className="relative inline-flex items-center">
+              <button
+                type="button"
+                onClick={() => setWhat((w) => (w ? `${w}, ${c}` : c))}
+                className="rounded-full bg-tint px-3 py-1.5 text-xs font-semibold ring-1 ring-border hover:bg-primary/10"
+              >
+                <IcoText text={c} size={14} />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (confirm(`Remove "${c}" from quick add?`))
+                    update((d) => ({
+                      ...d,
+                      custom: { ...d.custom, foodQuickAdd: d.custom.foodQuickAdd.filter((x) => x !== c) },
+                    }));
+                }}
+                aria-label={`Remove ${c}`}
+                className="ml-1 grid h-5 w-5 place-items-center rounded-full bg-tint text-muted-foreground hover:bg-destructive/15 hover:text-destructive"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+          <AddCustomInline
+            onAdd={(v) =>
+              update((d) => ({ ...d, custom: { ...d.custom, foodQuickAdd: [...d.custom.foodQuickAdd, v] } }))
+            }
+          />
+        </div>
+      </Field>
+      <Field label="Reaction?" schemaFieldId="reaction">
+        <div className="mt-1 flex gap-2">
+          <Chip active={!allergicReaction} onClick={() => setAllergicReaction(false)}>
+            No / not sure
+          </Chip>
+          <Chip active={allergicReaction} onClick={() => setAllergicReaction(true)}>
+            Yes — log it
+          </Chip>
+        </div>
+        {allergicReaction && (
+          <div className="mt-2 flex gap-2">
+            {(["mild", "moderate", "severe"] as const).map((s2) => (
+              <Chip key={s2} active={reactionSeverity === s2} onClick={() => setReactionSeverity(s2)}>
+                {s2[0].toUpperCase() + s2.slice(1)}
+              </Chip>
+            ))}
+          </div>
+        )}
+      </Field>
+      <Field label="How do I feel after food?" schemaFieldId="feelings">
+        <CustomChipList
+          base={FOOD_FEELINGS_DEFAULT}
+          custom={data.custom.foodFeelings}
+          onAddCustom={addCustom}
+          onRemoveCustom={(v) => {
+            update((d) => ({
+              ...d,
+              custom: { ...d.custom, foodFeelings: d.custom.foodFeelings.filter((x) => x !== v) },
+            }));
+            setFeelings((a) => a.filter((x) => x !== v));
+          }}
+          selected={feelings}
+          onToggle={(v) => setFeelings((a) => toggleIn(a, v))}
+        />
+      </Field>
+      <Field label="Symptoms after food" schemaFieldId="symptomsAfter">
+        <CustomChipList
+          base={FOOD_SYMPTOMS_AFTER}
+          custom={data.custom.foodSymptomsAfter ?? []}
+          onAddCustom={(v) => addCustomList("foodSymptomsAfter", v)}
+          onRemoveCustom={(v) => {
+            removeCustomList("foodSymptomsAfter", v);
+            setSymptomsAfter((a) => a.filter((x) => x !== v));
+          }}
+          onRenameCustom={(o, n) => {
+            renameCustomList("foodSymptomsAfter", o, n);
+            setSymptomsAfter((a) => a.map((x) => (x === o ? n : x)));
+          }}
+          selected={symptomsAfter}
+          onToggle={(v) => setSymptomsAfter((a) => toggleIn(a, v))}
+        />
+      </Field>
+      <Field label="High histamine food?" schemaFieldId="highHistamine">
+        <div className="mt-1 flex gap-2">
+          <Chip active={!highHist} onClick={() => setHighHist(false)}>
+            No
+          </Chip>
+          <Chip active={highHist} onClick={() => setHighHist(true)}>
+            Yes
+          </Chip>
+        </div>
+      </Field>
+      <Field label="Histamine flare?" schemaFieldId="histamineFlare">
+        <div className="mt-1 flex gap-2">
+          <Chip active={!histFlare} onClick={() => setHistFlare(false)}>
+            No
+          </Chip>
+          <Chip active={histFlare} onClick={() => setHistFlare(true)}>
+            Yes — log it
+          </Chip>
+        </div>
+      </Field>
+      {histFlare && (
+        <div className="rounded-2xl border border-border p-3">
+          <Field label="Histamine flare symptoms">
+            <CustomChipList
+              base={HISTAMINE_SYMPTOMS}
+              custom={data.custom.histamineSymptoms ?? []}
+              onAddCustom={(v) => addCustomList("histamineSymptoms", v)}
+              onRemoveCustom={(v) => {
+                removeCustomList("histamineSymptoms", v);
+                setHistSymptoms((a) => a.filter((x) => x !== v));
+              }}
+              onRenameCustom={(o, n) => {
+                renameCustomList("histamineSymptoms", o, n);
+                setHistSymptoms((a) => a.map((x) => (x === o ? n : x)));
+              }}
+              selected={histSymptoms}
+              onToggle={(v) => setHistSymptoms((a) => toggleIn(a, v))}
+            />
+          </Field>
+        </div>
+      )}
+      <Field label="Allergens in this meal" schemaFieldId="allergens">
+        <CustomChipList
+          base={allergensBase}
+          custom={data.custom.allergens}
+          onAddCustom={(v) =>
+            update((d) => ({
+              ...d,
+              settings: { ...d.settings, allergens: [...(d.settings.allergens ?? ALLERGENS_DEFAULT), v] },
+              custom: { ...d.custom, allergens: [...d.custom.allergens, v] },
+            }))
+          }
+          onRemoveCustom={(v) => {
+            update((d) => ({ ...d, custom: { ...d.custom, allergens: d.custom.allergens.filter((x) => x !== v) } }));
+            setAllergensInMeal((a) => a.filter((x) => x !== v));
+          }}
+          onRenameCustom={(o, n) => {
+            update((d) => ({
+              ...d,
+              custom: { ...d.custom, allergens: d.custom.allergens.map((x) => (x === o ? n : x)) },
+            }));
+            setAllergensInMeal((a) => a.map((x) => (x === o ? n : x)));
+          }}
+          selected={allergensInMeal}
+          onToggle={(v) => setAllergensInMeal((a) => toggleIn(a, v))}
+        />
+      </Field>
+      <RegistryFieldBlock fieldId="intake">
+      <div className="grid grid-cols-3 gap-2">
+        <Field label="Water (ml)">
+          <Input type="number" value={hydration} onChange={(e) => setHydration(e.target.value)} placeholder="300" />
+        </Field>
+        <Field label="Caffeine (mg)">
+          <Input type="number" value={caffeine} onChange={(e) => setCaffeine(e.target.value)} placeholder="80" />
+        </Field>
+        <Field label="Alcohol (drinks)">
+          <Input type="number" value={alcohol} onChange={(e) => setAlcohol(e.target.value)} placeholder="0" />
+        </Field>
+      </div>
+      </RegistryFieldBlock>
+      <Field label="Additional note (optional)" schemaFieldId="note">
+        <Textarea rows={2} value={after} onChange={(e) => setAfter(e.target.value)} />
+      </Field>
+    </div>
+  );
+}
+
+/* ------------------- BOWEL ------------------- */
+function BristolIcon({ shape, color }: { shape: string; color: string }) {
+  const s = shape;
+  return (
+    <svg viewBox="0 0 60 40" className="h-8 w-14 shrink-0">
+      {s === "lumps" &&
+        Array.from({ length: 5 }).map((_, i) => <circle key={i} cx={8 + i * 11} cy={20} r={4.5} fill={color} />)}
+      {s === "lumpy" && (
+        <rect x={4} y={12} width={52} height={16} rx={7} fill={color} stroke="#0002" strokeDasharray="4 3" />
+      )}
+      {s === "cracked" && (
+        <>
+          <rect x={4} y={12} width={52} height={16} rx={8} fill={color} />
+          {[16, 26, 36, 46].map((x) => (
+            <line key={x} x1={x} y1={13} x2={x} y2={27} stroke="#0004" strokeWidth={1.5} />
+          ))}
+        </>
+      )}
+      {s === "smooth" && <rect x={4} y={13} width={52} height={14} rx={7} fill={color} />}
+      {s === "blobs" && (
+        <>
+          <ellipse cx={16} cy={20} rx={10} ry={7} fill={color} />
+          <ellipse cx={32} cy={20} rx={9} ry={6} fill={color} />
+          <ellipse cx={46} cy={20} rx={8} ry={6} fill={color} />
+        </>
+      )}
+      {s === "mushy" && <path d="M4 22 Q10 10 20 22 T36 22 T56 22 L56 30 L4 30 Z" fill={color} />}
+      {s === "liquid" && (
+        <>
+          <rect x={4} y={22} width={52} height={8} rx={4} fill={color} />
+          {[12, 24, 36, 48].map((x) => (
+            <circle key={x} cx={x} cy={16} r={2} fill={color} opacity={0.6} />
+          ))}
+        </>
+      )}
+    </svg>
+  );
+}
+function BowelForm({
+  date,
+  data,
+  update,
+  onDone,
+  initialEntry,
+}: {
+  date: string;
+  data: BixboData;
+  update: UpdateFn;
+  onDone: () => void;
+  initialEntry?: BowelEntry;
+}) {
+  const { t } = useI18n();
+  const schema = useLogSchema();
+  const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
+  const [bristol, setBristol] = useState<number>(initialEntry?.bristol ?? 4);
+  const [feelings, setFeelings] = useState<string[]>((initialEntry?.feelings ?? []).map(stripEmoji));
+  const [symptoms, setSymptoms] = useState<string[]>(initialEntry?.symptoms ?? []);
+  const [urinary, setUrinary] = useState<string[]>(initialEntry?.urinary ?? []);
+  const [note, setNote] = useState(initialEntry?.note ?? "");
+  const addUrinary = (v: string) =>
+    update((d) => ({ ...d, custom: { ...d.custom, urinary: [...d.custom.urinary, v] } }));
+  const rmUrinary = (v: string) => {
+    update((d) => ({ ...d, custom: { ...d.custom, urinary: d.custom.urinary.filter((x) => x !== v) } }));
+    setUrinary((a) => a.filter((x) => x !== v));
+  };
+  const rnUrinary = (o: string, n: string) => {
+    update((d) => ({ ...d, custom: { ...d.custom, urinary: d.custom.urinary.map((x) => (x === o ? n : x)) } }));
+    setUrinary((a) => a.map((x) => (x === o ? n : x)));
+  };
+  const addFeel = (v: string) =>
+    update((d) => ({ ...d, custom: { ...d.custom, bowelFeelings: [...d.custom.bowelFeelings, v] } }));
+  const rmFeel = (v: string) => {
+    update((d) => ({ ...d, custom: { ...d.custom, bowelFeelings: d.custom.bowelFeelings.filter((x) => x !== v) } }));
+    setFeelings((a) => a.filter((x) => x !== v));
+  };
+  const addSym = (v: string) =>
+    update((d) => ({ ...d, custom: { ...d.custom, bowelSymptoms: [...d.custom.bowelSymptoms, v] } }));
+  const rmSym = (v: string) => {
+    update((d) => ({ ...d, custom: { ...d.custom, bowelSymptoms: d.custom.bowelSymptoms.filter((x) => x !== v) } }));
+    setSymptoms((a) => a.filter((x) => x !== v));
+  };
+  const save = () => {
+    const editing = !!initialEntry;
+    const entry: BowelEntry = {
+      id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
+      time,
+      bristol,
+      feelings: feelings.length ? feelings : undefined,
+      symptoms: symptoms.length ? symptoms : undefined,
+      urinary: urinary.length ? urinary : undefined,
+      note: note.trim() || undefined,
+    };
+    updateDayLog(update, date, (l) => ({
+      ...l,
+      bowel: editing ? (l.bowel ?? []).map((x) => (x.id === entry.id ? entry : x)) : [...(l.bowel ?? []), entry],
+    }));
+    onDone();
+  };
+  return (
+    <div className="flex flex-col gap-3">
+      <SaveBar onCancel={onDone} onSave={save} />
+      <Field label="Time" schemaFieldId="time">
+        <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+      </Field>
+      <Field label="Bristol stool scale" schemaFieldId="bristol">
+        <div className="mt-1 space-y-1.5">
+          <button
+            onClick={() => setBristol(-1)}
+            className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-2 text-left text-sm transition ${
+              bristol === -1 ? "border-primary bg-primary/10" : "border-border bg-surface"
+            }`}
+          >
+            <span className="grid h-8 w-8 place-items-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">
+              ∅
+            </span>
+            <span className="flex-1">
+              <span className="font-medium">{t("No bowel movement")}</span>
+              <br />
+              <span className="text-[11px] text-muted-foreground">{t("Didn't go today")}</span>
+            </span>
+          </button>
+          <button
+            onClick={() => setBristol(0)}
+            className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-2 text-left text-sm transition ${
+              bristol === 0 ? "border-primary bg-primary/10" : "border-border bg-surface"
+            }`}
+          >
+            <span
+              className="grid h-8 w-8 place-items-center rounded-full text-xs font-semibold text-white"
+              style={{ background: "linear-gradient(135deg,#ef4444,#f59e0b,#eab308,#22c55e,#3b82f6,#8b5cf6)" }}
+            >
+              0
+            </span>
+            <span className="flex-1">
+              <span className="font-medium">{t("Type 0 — Mystery")}</span>
+              <br />
+              <span className="text-[11px] text-muted-foreground">{t("Unknown / mixed")}</span>
+            </span>
+          </button>
+
+          {BRISTOL.map((b) => (
+            <button
+              key={b.n}
+              onClick={() => setBristol(b.n)}
+              className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-2 text-left text-sm transition ${
+                bristol === b.n ? "border-primary bg-primary/10" : "border-border bg-surface"
+              }`}
+            >
+              <span
+                className="grid h-8 w-8 place-items-center rounded-full text-xs font-semibold text-white"
+                style={{ background: b.color }}
+              >
+                {b.n}
+              </span>
+              <BristolIcon shape={b.shape} color={b.color} />
+              <div className="flex-1">
+                <p className="font-medium">
+                  <IcoText text={t(b.label)} size={14} />
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  <IcoText text={t(b.sub)} size={12} />
+                </p>
+              </div>
+            </button>
+          ))}
+        </div>
+      </Field>
+      <Field label="Urinary" schemaFieldId="urinary">
+        <CustomChipList
+          base={URINARY_DEFAULT}
+          custom={data.custom.urinary}
+          onAddCustom={addUrinary}
+          onRemoveCustom={rmUrinary}
+          onRenameCustom={rnUrinary}
+          selected={urinary}
+          onToggle={(v) => setUrinary((a) => toggleIn(a, v))}
+        />
+      </Field>
+      <Field label="How do you feel?" schemaFieldId="feelings">
+        <CustomChipList
+          base={BOWEL_FEELINGS_DEFAULT}
+          custom={data.custom.bowelFeelings}
+          onAddCustom={addFeel}
+          onRemoveCustom={rmFeel}
+          selected={feelings}
+          onToggle={(v) => setFeelings((a) => toggleIn(a, v))}
+        />
+      </Field>
+      <Field label="Symptoms" schemaFieldId="symptoms">
+        <CustomChipList
+          base={BOWEL_SYMPTOMS_DEFAULT}
+          custom={data.custom.bowelSymptoms}
+          onAddCustom={addSym}
+          onRemoveCustom={rmSym}
+          selected={symptoms}
+          onToggle={(v) => setSymptoms((a) => toggleIn(a, v))}
+        />
+      </Field>
+      <Field label="Note (optional)" schemaFieldId="note">
+        <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
+      </Field>
+    </div>
+  );
+}
+
+/* ------------------- TEMP / WEIGHT / SLEEP ------------------- */
+function TempForm({
+  date,
+  data,
+  update,
+  onDone,
+}: {
+  date: string;
+  data: BixboData;
+  update: UpdateFn;
+  onDone: () => void;
+}) {
+  const { t } = useI18n();
+  type VitalRow = {
+    id: string;
+    time: string;
+    value: number;
+  };
+
+  const cur = data.dayLogs[date] ?? {};
+
+  const [temperature, setTemperature] = useState("");
+  const [temperatureTime, setTemperatureTime] = useState(nowHHMM());
+
+  const [weight, setWeight] = useState("");
+  const [weightTime, setWeightTime] = useState(nowHHMM());
+
+  const [sleep, setSleep] = useState(cur.sleepHours != null ? String(cur.sleepHours) : "");
+
+  const [quality, setQuality] = useState<string[]>(asArr(cur.sleepQuality));
+
+  const sortVitals = (entries: VitalRow[]): VitalRow[] =>
+    entries.slice().sort((a, b) => a.time.localeCompare(b.time) || a.id.localeCompare(b.id));
+
+  const latestVitalValue = (entries: VitalRow[]): number | undefined => {
+    const sorted = sortVitals(entries);
+
+    return sorted.length ? sorted[sorted.length - 1].value : undefined;
+  };
+
+  const existingVitals = (
+    entries: VitalRow[] | undefined,
+    legacyValue: number | undefined,
+    legacyId: string,
+  ): VitalRow[] => {
+    if (entries?.length) {
+      return sortVitals(entries);
+    }
+
+    if (legacyValue != null && Number.isFinite(legacyValue)) {
+      return [
+        {
+          id: legacyId,
+          time: "00:00",
+          value: legacyValue,
+        },
+      ];
+    }
+
+    return [];
+  };
+
+  const temperatureEntries = useMemo(
+    () => existingVitals(cur.temperatureEntries, cur.temperature, `${date}-legacy-temperature`),
+    [cur.temperatureEntries, cur.temperature, date],
+  );
+
+  const weightEntries = useMemo(
+    () => existingVitals(cur.weightEntries, cur.weight, `${date}-legacy-weight`),
+    [cur.weightEntries, cur.weight, date],
+  );
+
+  const deleteTemperature = (id: string) => {
+    updateDayLog(update, date, (log) => {
+      const current = existingVitals(log.temperatureEntries, log.temperature, `${date}-legacy-temperature`);
+
+      const next = sortVitals(current.filter((entry) => entry.id !== id));
+
+      return {
+        ...log,
+        temperatureEntries: next.length ? next : undefined,
+        temperature: latestVitalValue(next),
+      };
+    });
+  };
+
+  const deleteWeight = (id: string) => {
+    updateDayLog(update, date, (log) => {
+      const current = existingVitals(log.weightEntries, log.weight, `${date}-legacy-weight`);
+
+      const next = sortVitals(current.filter((entry) => entry.id !== id));
+
+      return {
+        ...log,
+        weightEntries: next.length ? next : undefined,
+        weight: latestVitalValue(next),
+      };
+    });
+  };
+
+  const save = () => {
+    const temperatureValue = temperature.trim() === "" ? undefined : Number(temperature.replace(",", "."));
+
+    const weightValue = weight.trim() === "" ? undefined : Number(weight.replace(",", "."));
+
+    const sleepValue = sleep.trim() === "" ? undefined : Number(sleep.replace(",", "."));
+
+    updateDayLog(update, date, (log) => {
+      const currentTemperatures = existingVitals(log.temperatureEntries, log.temperature, `${date}-legacy-temperature`);
+
+      const currentWeights = existingVitals(log.weightEntries, log.weight, `${date}-legacy-weight`);
+
+      const nextTemperatures =
+        temperatureValue != null && Number.isFinite(temperatureValue)
+          ? sortVitals([
+              ...currentTemperatures,
+              {
+                id: crypto.randomUUID(),
+                time: temperatureTime || nowHHMM(),
+                value: temperatureValue,
+              },
+            ])
+          : currentTemperatures;
+
+      const nextWeights =
+        weightValue != null && Number.isFinite(weightValue)
+          ? sortVitals([
+              ...currentWeights,
+              {
+                id: crypto.randomUUID(),
+                time: weightTime || nowHHMM(),
+                value: weightValue,
+              },
+            ])
+          : currentWeights;
+
+      return {
+        ...log,
+
+        temperatureEntries: nextTemperatures.length ? nextTemperatures : undefined,
+
+        weightEntries: nextWeights.length ? nextWeights : undefined,
+
+        // Posledná hodnota zostáva aj v starom poli,
+        // aby fungoval Home, Calendar a staršie grafy.
+        temperature: latestVitalValue(nextTemperatures),
+
+        weight: latestVitalValue(nextWeights),
+
+        sleepHours: sleepValue != null && Number.isFinite(sleepValue) ? sleepValue : undefined,
+
+        sleepQuality: quality.length ? quality : undefined,
+      };
+    });
+
+    onDone();
+  };
+
+  return (
+    <div className="flex flex-col gap-5">
+      <SaveBar onCancel={onDone} onSave={save} />
+      <Field label="New temperature measurement" schemaFieldId="temperature">
+        <div className="grid grid-cols-[1fr_120px] gap-2">
+          <Input
+            type="text"
+            inputMode="decimal"
+            value={temperature}
+            onChange={(e) => setTemperature(e.target.value.replace(/[^0-9.,]/g, "").replace(/([.,].*)[.,]/g, "$1"))}
+            placeholder={t("36,6 °C")}
+          />
+
+          <Input type="time" value={temperatureTime} onChange={(e) => setTemperatureTime(e.target.value)} />
+        </div>
+
+        {temperatureEntries.length > 0 && (
+          <div className="mt-3 space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Saved temperature measurements
+            </p>
+
+            {temperatureEntries.map((entry) => (
+              <div
+                key={entry.id}
+                className="flex items-center gap-3 rounded-2xl bg-surface px-3 py-2 ring-1 ring-border"
+              >
+                <span className="grid h-8 w-8 place-items-center rounded-full bg-tint">
+                  <Ico e="🌡️" size={19} />
+                </span>
+
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold">{entry.value.toFixed(1).replace(".", ",")} °C</p>
+
+                  <p className="text-xs text-muted-foreground">{entry.time}</p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => deleteTemperature(entry.id)}
+                  aria-label={`Delete temperature ${entry.value}`}
+                  className="rounded-full p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <X className="h-3.5 w-3.5 shrink-0" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </Field>
+
+      <Field label="New weight measurement" schemaFieldId="weight">
+        <div className="grid grid-cols-[1fr_120px] gap-2">
+          <Input
+            type="text"
+            inputMode="decimal"
+            value={weight}
+            onChange={(e) => setWeight(e.target.value.replace(/[^0-9.,]/g, "").replace(/([.,].*)[.,]/g, "$1"))}
+            placeholder={t("62,5 kg")}
+          />
+
+          <Input type="time" value={weightTime} onChange={(e) => setWeightTime(e.target.value)} />
+        </div>
+
+        {weightEntries.length > 0 && (
+          <div className="mt-3 space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t("Saved weight measurements")}</p>
+
+            {weightEntries.map((entry) => (
+              <div
+                key={entry.id}
+                className="flex items-center gap-3 rounded-2xl bg-surface px-3 py-2 ring-1 ring-border"
+              >
+                <span className="grid h-8 w-8 place-items-center rounded-full bg-tint">
+                  <Ico e="⚖️" size={19} />
+                </span>
+
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold">{entry.value.toFixed(1).replace(".", ",")} kg</p>
+
+                  <p className="text-xs text-muted-foreground">{entry.time}</p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => deleteWeight(entry.id)}
+                  aria-label={`Delete weight ${entry.value}`}
+                  className="rounded-full p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <X className="h-3.5 w-3.5 shrink-0" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </Field>
+
+      <Field label="Sleep (hours)" schemaFieldId="sleepHours">
+        <Input
+          type="text"
+          inputMode="decimal"
+          value={sleep}
+          onChange={(e) => setSleep(e.target.value.replace(/[^0-9.,]/g, "").replace(/([.,].*)[.,]/g, "$1"))}
+          placeholder="8"
+        />
+      </Field>
+
+      <Field label="How I slept" schemaFieldId="sleepQuality">
+        <div className="mt-2 flex flex-wrap gap-2">
+          {SLEEP_QUALITY.map((item) => (
+            <Chip
+              key={item}
+              active={quality.includes(item)}
+              onClick={() => setQuality((current) => toggleIn(current, item))}
+            >
+              {item}
+            </Chip>
+          ))}
+        </div>
+      </Field>
+    </div>
+  );
+}
+
+/* ------------------- MEDS ------------------- */
+function MedsForm({
+  date,
+  data,
+  update,
+  onDone,
+}: {
+  date: string;
+  data: BixboData;
+  update: UpdateFn;
+  onDone: () => void;
+}) {
+  const { t } = useI18n();
+  const schema = useLogSchema();
+  const meds = data.meds;
+  const taken = data.medLog[date] ?? {};
+  const takenTimes = data.medLogTimes?.[date] ?? {};
+  const medNotes = data.medLogNotes?.[date] ?? {};
+  const medItems = data.medLogItems?.[date] ?? {};
+  const [editingScheduledKey, setEditingScheduledKey] = useState<string | null>(null);
+  const setMedNote = (key: string, note: string) =>
+    update((d) => {
+      const notes = { ...(d.medLogNotes?.[date] ?? {}) };
+      const clean = note.trimStart();
+      if (clean) notes[key] = clean;
+      else delete notes[key];
+      return { ...d, medLogNotes: { ...(d.medLogNotes ?? {}), [date]: notes } };
+    });
+  const toggle = (key: string, defaultTime?: string) =>
+    update((d) => {
+      const day = { ...(d.medLog[date] ?? {}) };
+      const times = { ...(d.medLogTimes?.[date] ?? {}) };
+      const nextOn = !day[key];
+      day[key] = nextOn;
+      if (nextOn && defaultTime && !times[key]) times[key] = defaultTime;
+      if (!nextOn) delete times[key];
+      return { ...d, medLog: { ...d.medLog, [date]: day }, medLogTimes: { ...(d.medLogTimes ?? {}), [date]: times } };
+    });
+  const setTakenTime = (key: string, time: string) =>
+    update((d) => {
+      const times = { ...(d.medLogTimes?.[date] ?? {}) };
+      times[key] = time;
+      return { ...d, medLogTimes: { ...(d.medLogTimes ?? {}), [date]: times } };
+    });
+
+  const [extraName, setExtraName] = useState("");
+  const [extraDose, setExtraDose] = useState("");
+  const [extraTime, setExtraTime] = useState(nowHHMM());
+  const [extraNote, setExtraNote] = useState("");
+  const addExtra = () => {
+    if (!extraName.trim()) return;
+    const e: ExtraMed = {
+      id: crypto.randomUUID(),
+      time: extraTime,
+      name: extraName.trim(),
+      dose: extraDose.trim() || undefined,
+      note: extraNote.trim() || undefined,
+    };
+    updateDayLog(update, date, (l) => ({ ...l, extraMeds: [...(l.extraMeds ?? []), e] }));
+    setExtraName("");
+    setExtraDose("");
+    setExtraNote("");
+    setExtraTime(nowHHMM());
+  };
+  const today = date === todayKey();
+  const extras = data.dayLogs[date]?.extraMeds ?? [];
+  const scheduledField = getRegistryField(data, "meds", "scheduled");
+  const extraDoseField = getRegistryField(data, "meds", "extraDose");
+  const dateLabel = today ? t("Today") : date;
+  const scheduledHeading = scheduledField?.label && scheduledField.label !== "Scheduled meds"
+    ? `${t(scheduledField.label)} · ${dateLabel}`
+    : dateLabel;
+  const extraDoseHeading = t(extraDoseField?.label ?? "Extra dose (one-off)");
+
+  return (
+    <div className="flex flex-col gap-4">
+      <SaveBar onCancel={onDone} onSave={() => { schema?.saveAdminCustomFields(); onDone(); }} />
+      <div className="flex flex-col gap-4">
+      <RegistryFieldBlock fieldId="scheduled">
+      {meds.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{t("No medications yet. Add them from Meds settings.")}</p>
+      ) : (
+        <div>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">{scheduledHeading}</p>
+          <div className="mt-2 space-y-2">
+            {meds.map((m) =>
+              m.asNeeded ? (
+                <label key={m.id} className="flex items-center gap-2 rounded-xl bg-surface px-2.5 py-2 ring-1 ring-border">
+                  <input
+                    type="checkbox"
+                    checked={!!taken[`${m.id}@asneeded`]}
+                    onChange={() => toggle(`${m.id}@asneeded`, nowHHMM())}
+                    className="h-3.5 w-3.5 shrink-0"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium leading-tight">{m.name}</p>
+                    <p className="text-[10px] leading-tight text-muted-foreground">{t("As needed")}{m.dose ? ` · ${m.dose}` : ""}</p>
+                    {m.note && (
+                      <p className="text-[11px] text-muted-foreground">
+                        <Ico e="📝" size={13} /> <IcoText text={m.note} size={12} />
+                      </p>
+                    )}
+                  </div>
+                  {taken[`${m.id}@asneeded`] && (
+                    <Input
+                      type="time"
+                      value={takenTimes[`${m.id}@asneeded`] ?? nowHHMM()}
+                      onChange={(e) => setTakenTime(`${m.id}@asneeded`, e.target.value)}
+                      className="h-7 w-20 px-2 text-xs"
+                    />
+                  )}
+                  <Input
+                    value={medNotes[`${m.id}@asneeded`] ?? ""}
+                    onChange={(e) => setMedNote(`${m.id}@asneeded`, e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    placeholder={t("Note (optional)")}
+                    className="h-7 min-w-0 flex-[0_1_125px] px-2 text-xs"
+                  />
+                </label>
+              ) : (
+                m.times.map((scheduledTime) => {
+                  const k = `${m.id}@${scheduledTime}`;
+                  const isTaken = !!taken[k];
+                  const items = medScheduleItems(m);
+                  const grouped = items.length > 1;
+                  const selectedItems = medItems[k] ?? (isTaken ? items : []);
+                  const partial = grouped && selectedItems.length > 0 && selectedItems.length < items.length;
+                  return (
+                    <div key={k} className="rounded-xl bg-surface px-2.5 py-2 ring-1 ring-border">
+                      <div className="flex items-center gap-2">
+                        {grouped ? (
+                          <button type="button" onClick={() => setEditingScheduledKey(editingScheduledKey === k ? null : k)} className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border text-[10px] font-bold ${selectedItems.length ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-muted-foreground"}`}>
+                            {selectedItems.length === items.length ? "✓" : selectedItems.length ? "–" : ""}
+                          </button>
+                        ) : (
+                          <input type="checkbox" checked={isTaken} onChange={() => toggle(k, nowHHMM())} className="h-3.5 w-3.5 shrink-0" />
+                        )}
+                        <button type="button" onClick={() => grouped && setEditingScheduledKey(editingScheduledKey === k ? null : k)} className="min-w-0 flex-1 text-left">
+                          <p className="text-xs font-medium leading-tight">{m.name} <span className="text-[10px] font-normal text-muted-foreground">· scheduled {scheduledTime}</span></p>
+                          {grouped && selectedItems.length > 0 && <p className="mt-0.5 text-[10px] leading-tight text-primary">{partial ? `${t("Taken")}: ${selectedItems.join(", ")}` : t("All taken")}</p>}
+                          {m.dose && <p className="text-[10px] leading-tight text-muted-foreground">{m.dose}</p>}
+                        </button>
+                        {isTaken && <Input type="time" value={takenTimes[k] ?? scheduledTime} onChange={(e) => setTakenTime(k, e.target.value)} className="h-7 w-20 px-2 text-xs" title={t("Actual time taken")} />}
+                      </div>
+                      {grouped && editingScheduledKey === k ? (
+                        <div className="mt-2 rounded-xl bg-tint/70 p-2 ring-1 ring-border/60">
+                          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{t("What did you take?")}</p>
+                          <div className="space-y-1">
+                            {items.map((item) => {
+                              const checked = selectedItems.includes(item);
+                              return (
+                                <label key={item} className="flex items-center gap-2 rounded-lg bg-background/70 px-2 py-1.5 text-xs">
+                                  <input type="checkbox" checked={checked} onChange={() => {
+                                    const next = checked ? selectedItems.filter((x) => x !== item) : [...selectedItems, item];
+                                    update((d) => {
+                                      const day = { ...(d.medLog[date] ?? {}) };
+                                      const allItems = { ...(d.medLogItems?.[date] ?? {}) };
+                                      const times = { ...(d.medLogTimes?.[date] ?? {}) };
+                                      if (next.length) { day[k] = true; allItems[k] = next; if (!times[k]) times[k] = nowHHMM(); }
+                                      else { delete day[k]; delete allItems[k]; delete times[k]; }
+                                      return { ...d, medLog: { ...d.medLog, [date]: day }, medLogItems: { ...(d.medLogItems ?? {}), [date]: allItems }, medLogTimes: { ...(d.medLogTimes ?? {}), [date]: times } };
+                                    });
+                                  }} className="h-3.5 w-3.5" />
+                                  <span>{item}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                          <Input value={medNotes[k] ?? ""} onChange={(e) => setMedNote(k, e.target.value)} placeholder={t("Note (optional)")} className="mt-2 h-7 px-2 text-xs" />
+                          <button type="button" onClick={() => setEditingScheduledKey(null)} className="mt-2 w-full rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">{t("Done")}</button>
+                        </div>
+                      ) : !grouped ? (
+                        <Input value={medNotes[k] ?? ""} onChange={(e) => setMedNote(k, e.target.value)} placeholder={t("Note (optional)")} className="mt-1.5 h-7 px-2 text-xs" />
+                      ) : null}
+                    </div>
+                  );
+                })
+              ),
+            )}
+          </div>
+        </div>
+      )}
+      </RegistryFieldBlock>
+      <RegistryFieldBlock fieldId="extraDose">
+      <div>
+        <p className="text-xs uppercase tracking-wider text-muted-foreground">{extraDoseHeading}</p>
+        <div className="mt-2 grid grid-cols-3 gap-2">
+          <Input
+            placeholder={t("Name")}
+            value={extraName}
+            onChange={(e) => setExtraName(e.target.value)}
+            className="col-span-2"
+          />
+          <Input type="time" value={extraTime} onChange={(e) => setExtraTime(e.target.value)} />
+        </div>
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <Input placeholder={t("Dose (optional)")} value={extraDose} onChange={(e) => setExtraDose(e.target.value)} />
+          <Input placeholder={t("Note (optional)")} value={extraNote} onChange={(e) => setExtraNote(e.target.value)} />
+        </div>
+        <Button className="mt-2 w-full" onClick={addExtra} disabled={!extraName.trim()}>
+          {t("Add extra dose")}
+        </Button>
+        {extras.length > 0 && (
+          <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+            {extras.map((e) => (
+              <li key={e.id}>
+                • {e.time} — {e.name}
+                {e.dose ? ` (${e.dose})` : ""}
+                {e.note ? ` — ${e.note}` : ""}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      </RegistryFieldBlock>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------- WORKOUT ------------------- */
+function WorkoutForm({
+  date,
+  data,
+  update,
+  onDone,
+  initialEntry,
+}: {
+  date: string;
+  data: BixboData;
+  update: UpdateFn;
+  onDone: () => void;
+  initialEntry?: WorkoutEntry;
+}) {
+  const { t } = useI18n();
+  const schema = useLogSchema();
+  const [kind, setKind] = useState<string>(
+    initialEntry?.kind ? stripEmoji(initialEntry.kind) : WORKOUT_KINDS_DEFAULT[0],
+  );
+  const [minutes, setMinutes] = useState<number>(initialEntry?.minutes ?? 30);
+  const [weight, setWeight] = useState<string>(initialEntry?.weightKg != null ? String(initialEntry.weightKg) : "");
+  const [distance, setDistance] = useState<string>(
+    initialEntry?.distanceKm != null ? String(initialEntry.distanceKm) : "",
+  );
+  const [elevation, setElevation] = useState<string>(
+    initialEntry?.elevationM != null ? String(initialEntry.elevationM) : "",
+  );
+  const [exercises, setExercises] = useState<WorkoutExercise[]>(initialEntry?.exercises ?? []);
+  const [rpe, setRpe] = useState<number | undefined>(initialEntry?.rpe);
+  const [magnesium, setMagnesium] = useState<boolean>(initialEntry?.magnesiumBefore ?? false);
+  const [trigger, setTrigger] = useState<WorkoutEntry["triggeredSymptom"]>(initialEntry?.triggeredSymptom);
+  const [feeling, setFeeling] = useState<string[]>(asArr(initialEntry?.feeling).map(stripEmoji));
+  const [note, setNote] = useState<string>(initialEntry?.note ?? "");
+  const addKind = (v: string) =>
+    update((d) => ({ ...d, custom: { ...d.custom, workoutKinds: [...d.custom.workoutKinds, v] } }));
+  const rmKind = (v: string) => {
+    update((d) => ({ ...d, custom: { ...d.custom, workoutKinds: d.custom.workoutKinds.filter((x) => x !== v) } }));
+    if (kind === v) setKind(WORKOUT_KINDS_DEFAULT[0]);
+  };
+
+  const log = data.dayLogs[date];
+  const symptomOptions = [
+    ...(log?.tetany ?? []).map((t) => ({
+      type: "tetany" as const,
+      id: t.id,
+      label: `${t.time} tetany ${t.intensity}/5`,
+    })),
+    ...(log?.pain ?? []).map((p) => ({ type: "pain" as const, id: p.id, label: `${p.time} pain ${p.score}/10` })),
+  ];
+
+  const save = () => {
+    const editing = !!initialEntry;
+    const e: WorkoutEntry = {
+      id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
+      time: initialEntry?.time ?? nowHHMM(),
+      kind,
+      minutes,
+      weightKg: weight === "" ? undefined : Number(weight),
+      distanceKm: workoutHasDistance(kind) && distance !== "" ? Number(distance) : undefined,
+      elevationM: workoutIsHike(kind) && elevation !== "" ? Number(elevation) : undefined,
+      exercises: workoutIsStrength(kind) && exercises.length ? exercises : undefined,
+      rpe,
+      magnesiumBefore: magnesium || undefined,
+      triggeredSymptom: trigger,
+      feeling: feeling.length ? feeling : undefined,
+      note: note.trim() || undefined,
+    };
+    updateDayLog(update, date, (l) => ({
+      ...l,
+      workout: editing ? (l.workout ?? []).map((x) => (x.id === e.id ? e : x)) : [...(l.workout ?? []), e],
+    }));
+    // NOTE: workout "weight after" is stored on the workout entry only — it must not
+    // overwrite the day's body-weight metric used by the Weight chart.
+    onDone();
+  };
+  return (
+    <div className="flex flex-col gap-3">
+      <SaveBar onCancel={onDone} onSave={save} />
+      <Field label="Type" schemaFieldId="kind">
+        <CustomChipList
+          base={WORKOUT_KINDS_DEFAULT}
+          custom={data.custom.workoutKinds}
+          onAddCustom={addKind}
+          onRemoveCustom={rmKind}
+          selected={[kind]}
+          onToggle={(v) => setKind(v)}
+        />
+      </Field>
+      <Field label="Duration (minutes)" schemaFieldId="minutes">
+        <Input type="number" min={1} value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} />
+      </Field>
+
+      {workoutHasDistance(kind) && (
+        <RegistryFieldBlock fieldId="distance">
+        <div className="grid grid-cols-2 gap-2">
+          <Field label="Distance (km)">
+            <Input type="number" step="0.1" min={0} value={distance} onChange={(e) => setDistance(e.target.value)} />
+          </Field>
+          {workoutIsHike(kind) && (
+            <Field label="Elevation gain (m)">
+              <Input type="number" step="1" min={0} value={elevation} onChange={(e) => setElevation(e.target.value)} />
+            </Field>
+          )}
+        </div>
+        </RegistryFieldBlock>
+      )}
+
+      {workoutIsStrength(kind) && (
+        <Field label="Exercises" schemaFieldId="exercises">
+          <div className="space-y-2">
+            {exercises.map((ex, i) => (
+              <div key={ex.id} className="rounded-2xl border border-border p-2 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={ex.name}
+                    placeholder={t("Exercise name")}
+                    onChange={(e) =>
+                      setExercises((a) => a.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))
+                    }
+                  />
+                  <button
+                    type="button"
+                    aria-label={t("Remove exercise")}
+                    onClick={() => setExercises((a) => a.filter((_, j) => j !== i))}
+                    className="rounded-full p-2 text-muted-foreground hover:text-destructive"
+                  >
+                    <X className="h-3.5 w-3.5 shrink-0" />
+                  </button>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <Input
+                    type="number"
+                    min={0}
+                    placeholder={t("Sets")}
+                    value={ex.sets ?? ""}
+                    onChange={(e) =>
+                      setExercises((a) =>
+                        a.map((x, j) =>
+                          j === i ? { ...x, sets: e.target.value === "" ? undefined : Number(e.target.value) } : x,
+                        ),
+                      )
+                    }
+                  />
+                  <Input
+                    type="number"
+                    min={0}
+                    placeholder={t("Reps")}
+                    value={ex.reps ?? ""}
+                    onChange={(e) =>
+                      setExercises((a) =>
+                        a.map((x, j) =>
+                          j === i ? { ...x, reps: e.target.value === "" ? undefined : Number(e.target.value) } : x,
+                        ),
+                      )
+                    }
+                  />
+                  <Input
+                    type="number"
+                    min={0}
+                    step="0.5"
+                    placeholder={t("kg")}
+                    value={ex.weightKg ?? ""}
+                    onChange={(e) =>
+                      setExercises((a) =>
+                        a.map((x, j) =>
+                          j === i ? { ...x, weightKg: e.target.value === "" ? undefined : Number(e.target.value) } : x,
+                        ),
+                      )
+                    }
+                  />
+                </div>
+              </div>
+            ))}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setExercises((a) => [...a, { id: crypto.randomUUID(), name: "" }])}
+            >
+              <Plus className="h-3.5 w-3.5 shrink-0" /><TrText value="Add exercise" /></Button>
+          </div>
+        </Field>
+      )}
+
+      <Field label={`${t("Intensity (RPE)")} ${rpe ?? "—"} / 10`} schemaFieldId="rpe">
+        <div className="mt-2 flex flex-nowrap items-center justify-center gap-0.5 px-0">
+          {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => {
+            const active = rpe === n;
+            return (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setRpe(rpe === n ? undefined : n)}
+                aria-label={`RPE ${n}`}
+                className={`h-7 w-7 shrink-0 rounded-full text-[10px] font-semibold transition ${
+                  active ? "text-white ring-2 ring-foreground" : "text-foreground"
+                }`}
+                style={{ background: painColor(n) }}
+              >
+                {n}
+              </button>
+            );
+          })}
+        </div>
+      </Field>
+
+      <Field label="Magnesium before workout?" schemaFieldId="magnesiumBefore">
+        <div className="mt-1 flex gap-2">
+          <Chip active={!magnesium} onClick={() => setMagnesium(false)}>
+            No
+          </Chip>
+          <Chip active={magnesium} onClick={() => setMagnesium(true)}>
+            Yes
+          </Chip>
+        </div>
+      </Field>
+
+      <Field label="Triggered a symptom? (optional)" schemaFieldId="triggeredSymptom">
+        {symptomOptions.length === 0 ? (
+          <p className="text-[11px] text-muted-foreground">{t("No tetany or pain entries logged for this day yet.")}</p>
+        ) : (
+          <div className="mt-1 flex flex-wrap gap-2">
+            <Chip active={!trigger} onClick={() => setTrigger(undefined)}>
+              No
+            </Chip>
+            {symptomOptions.map((o) => (
+              <Chip
+                key={o.id}
+                active={trigger?.id === o.id}
+                onClick={() =>
+                  setTrigger(trigger?.id === o.id ? undefined : { type: o.type, id: o.id, label: o.label })
+                }
+              >
+                {o.label}
+              </Chip>
+            ))}
+          </div>
+        )}
+      </Field>
+
+      <Field label="Weight after (kg, optional)" schemaFieldId="weightKg">
+        <Input type="number" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} />
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          {t("Saved with this workout only — it doesn't change your daily weight.")}
+        </p>
+      </Field>
+      <Field label="How you feel" schemaFieldId="feel">
+        <div className="mt-2 flex flex-wrap gap-2">
+          {["Great", "Good", "Ok", "Tired", "Sore"].map((f) => (
+            <Chip key={f} active={feeling.includes(f)} onClick={() => setFeeling((a) => toggleIn(a, f))}>
+              {f}
+            </Chip>
+          ))}
+        </div>
+      </Field>
+      <Field label="Note (optional)" schemaFieldId="note">
+        <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
+      </Field>
+    </div>
+  );
+}
+
+/* ------------------- EVENT ------------------- */
+function EventForm({
+  date,
+  update,
+  onDone,
+  initialEntry,
+}: {
+  date: string;
+  update: UpdateFn;
+  onDone: () => void;
+  initialEntry?: EventEntry;
+}) {
+  const { t } = useI18n();
+  const schema = useLogSchema();
+  const [title, setTitle] = useState(initialEntry?.title ?? "");
+  const [startDate, setStartDate] = useState(initialEntry?.startDate ?? date);
+  const [endDate, setEndDate] = useState(initialEntry?.endDate ?? date);
+  const [time, setTime] = useState(initialEntry?.time ?? "");
+  const [timeEnd, setTimeEnd] = useState(initialEntry?.timeEnd ?? "");
+  const [note, setNote] = useState(initialEntry?.note ?? "");
+  const [color, setColor] = useState(initialEntry?.color ?? EVENT_COLORS[0]);
+  const save = () => {
+    if (!title.trim()) return;
+    const editing = !!initialEntry;
+    const e: EventEntry = {
+      id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
+      title: title.trim(),
+      startDate,
+      endDate: endDate < startDate ? startDate : endDate,
+      time: time || undefined,
+      timeEnd: timeEnd || undefined,
+      note: note.trim() || undefined,
+      color,
+    };
+    update((d) => ({ ...d, events: editing ? d.events.map((x) => (x.id === e.id ? e : x)) : [...d.events, e] }));
+    onDone();
+  };
+  return (
+    <div className="flex flex-col gap-3">
+      <SaveBar onCancel={onDone} onSave={save} disabled={!title.trim()} />
+      <Field label="Title" schemaFieldId="title">
+        <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("e.g. Doctor visit")} />
+      </Field>
+      <RegistryFieldBlock fieldId="dates">
+      <div className="grid grid-cols-2 gap-2">
+        <Field label="From">
+          <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+        </Field>
+        <Field label="To">
+          <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+        </Field>
+      </div>
+      </RegistryFieldBlock>
+      <RegistryFieldBlock fieldId="times">
+      <div className="grid grid-cols-2 gap-2">
+        <Field label="Time from">
+          <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+        </Field>
+        <Field label="Time to">
+          <Input type="time" value={timeEnd} onChange={(e) => setTimeEnd(e.target.value)} />
+        </Field>
+      </div>
+      </RegistryFieldBlock>
+      <Field label="Color" schemaFieldId="color">
+        <div className="mt-2 flex gap-2 flex-wrap">
+          {EVENT_COLORS.map((c) => (
+            <button
+              key={c}
+              onClick={() => setColor(c)}
+              className={`h-8 w-8 rounded-full ${color === c ? "ring-2 ring-foreground" : ""}`}
+              style={{ background: c }}
+            />
+          ))}
+        </div>
+      </Field>
+      <Field label="Note (optional)" schemaFieldId="note">
+        <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
+      </Field>
+    </div>
+  );
+}
+
+/* ------------------- TASK ------------------- */
+function TaskForm({
+  date,
+  update,
+  onDone,
+  initialEntry,
+}: {
+  date: string;
+  update: UpdateFn;
+  onDone: () => void;
+  initialEntry?: TaskEntry;
+}) {
+  const { t } = useI18n();
+  const schema = useLogSchema();
+  const [title, setTitle] = useState(initialEntry?.title ?? "");
+  const [startDate, setStartDate] = useState(initialEntry?.startDate ?? date);
+  const [endDate, setEndDate] = useState(initialEntry?.endDate ?? date);
+  const [time, setTime] = useState(initialEntry?.time ?? "");
+  const [timeEnd, setTimeEnd] = useState(initialEntry?.timeEnd ?? "");
+  const [note, setNote] = useState(initialEntry?.note ?? "");
+  const save = () => {
+    if (!title.trim()) return;
+    const editing = !!initialEntry;
+    const t: TaskEntry = {
+      id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
+      title: title.trim(),
+      startDate,
+      endDate: endDate < startDate ? startDate : endDate,
+      time: time || undefined,
+      timeEnd: timeEnd || undefined,
+      done: initialEntry?.done ?? false,
+      note: note.trim() || undefined,
+    };
+    update((d) => ({ ...d, tasks: editing ? d.tasks.map((x) => (x.id === t.id ? t : x)) : [...d.tasks, t] }));
+    onDone();
+  };
+  return (
+    <div className="flex flex-col gap-3">
+      <SaveBar onCancel={onDone} onSave={save} disabled={!title.trim()} />
+      <Field label="Task" schemaFieldId="title">
+        <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("What to do…")} />
+      </Field>
+      <RegistryFieldBlock fieldId="dates">
+      <div className="grid grid-cols-2 gap-2">
+        <Field label="From">
+          <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+        </Field>
+        <Field label="To">
+          <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+        </Field>
+      </div>
+      </RegistryFieldBlock>
+      <RegistryFieldBlock fieldId="times">
+      <div className="grid grid-cols-2 gap-2">
+        <Field label="Time from">
+          <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+        </Field>
+        <Field label="Time to">
+          <Input type="time" value={timeEnd} onChange={(e) => setTimeEnd(e.target.value)} />
+        </Field>
+      </div>
+      </RegistryFieldBlock>
+      <Field label="Note (optional)" schemaFieldId="note">
+        <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
+      </Field>
+    </div>
+  );
+}
+
+/* ------------------- NOTE ------------------- */
+function NoteForm({ date, update, onDone }: { date: string; update: UpdateFn; onDone: () => void }) {
+  const { t } = useI18n();
+  const schema = useLogSchema();
+  const noteTextPlaceholder = schema ? (getRegistryField(schema.data, schema.featureId, "text")?.label ?? "Anything about today…") : "Anything about today…";
+  const [text, setText] = useState("");
+  const [time, setTime] = useState("");
+  const save = () => {
+    if (!text.trim()) return;
+    update((d) => {
+      const list = (d.dayNotes[date] ?? []) as (string | { id?: string; text: string; time?: string })[];
+      const next: { id?: string; text: string; time?: string }[] = list.map((x) => (typeof x === "string" ? { text: x } : x));
+      next.push({ id: schema?.sourceEntryId, text: text.trim(), time: time || undefined });
+      return { ...d, dayNotes: { ...d.dayNotes, [date]: next } };
+    });
+    onDone();
+  };
+  return (
+    <div className="flex flex-col gap-3">
+      <SaveBar onCancel={onDone} onSave={save} disabled={!text.trim()} />
+      <div className="flex flex-col gap-3">
+      <Field label="Time (optional)" schemaFieldId="time">
+        <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+      </Field>
+      <RegistryFieldBlock fieldId="text">
+        <Textarea rows={6} value={text} onChange={(e) => setText(e.target.value)} placeholder={t(noteTextPlaceholder)} />
+      </RegistryFieldBlock>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------- Postpartum symptoms ------------------- */
+
+function PostpartumSymptomsForm({
+  date,
+  data,
+  update,
+  onDone,
+}: {
+  date: string;
+  data: BixboData;
+  update: UpdateFn;
+  onDone: () => void;
+}) {
+  const { t } = useI18n();
+  const current: PostpartumDayLog = data.dayLogs[date]?.postpartum ?? {};
+  const [symptoms, setSymptoms] = useState<string[]>(current.symptoms ?? []);
+  const [note, setNote] = useState(current.note ?? "");
+
+  const toggleSymptom = (symptom: string) => {
+    setSymptoms((currentSymptoms) =>
+      currentSymptoms.includes(symptom)
+        ? currentSymptoms.filter((item) => item !== symptom)
+        : [...currentSymptoms, symptom],
+    );
+  };
+
+  const save = () => {
+    updateDayLog(update, date, (dayLog) => ({
+      ...dayLog,
+      postpartum: {
+        ...(dayLog.postpartum ?? {}),
+        symptoms: symptoms.length ? symptoms : undefined,
+        note: note.trim() || undefined,
+      },
+    }));
+
+    onDone();
+  };
+
+  return (
+    <div className="flex flex-col gap-5">
+      <SaveBar onCancel={onDone} onSave={save} />
+      <div className="flex items-start gap-3 rounded-3xl bg-tint p-4 ring-1 ring-border/50">
+        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-surface ring-1 ring-border/50">
+          <Ico e="🤱" size={30} />
+        </span>
+
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">{t("Postpartum recovery")}</h3>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            {t("Select every symptom you experienced today.")}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-5">
+      <Field label={t("Symptoms today")} schemaFieldId="symptoms">
+        <div className="mt-2 flex flex-wrap gap-2">
+          {POSTPARTUM_SYMPTOMS.map((symptom) => (
+            <Chip key={symptom} active={symptoms.includes(symptom)} onClick={() => toggleSymptom(symptom)}><TrText value={symptom} /></Chip>
+          ))}
+        </div>
+      </Field>
+
+      <Field label={t("Recovery note (optional)")} schemaFieldId="note">
+        <Textarea
+          rows={4}
+          value={note}
+          onChange={(event) => setNote(event.target.value)}
+          placeholder={t("Add anything important about recovery, bleeding, feeding or how you feel.")}
+        />
+      </Field>
+      </div>
+
+      {current.symptoms?.length || current.note ? (
+        <button
+          type="button"
+          onClick={() => {
+            update((current) => {
+              const dayLog = current.dayLogs[date] ?? {};
+              const adminFields = { ...(dayLog.adminFields ?? {}) };
+              const postpartumAdmin = adminFields.postpartum ?? [];
+              const nextPostpartumAdmin = postpartumAdmin.filter((entry) => entry.sourceEntryId !== `day:postpartum:${date}`);
+              if (nextPostpartumAdmin.length) adminFields.postpartum = nextPostpartumAdmin;
+              else delete adminFields.postpartum;
+              return {
+                ...current,
+                dayLogs: {
+                  ...current.dayLogs,
+                  [date]: {
+                    ...dayLog,
+                    postpartum: {
+                      ...(dayLog.postpartum ?? {}),
+                      symptoms: undefined,
+                      note: undefined,
+                    },
+                    adminFields: Object.keys(adminFields).length ? adminFields : undefined,
+                  },
+                },
+              };
+            });
+            onDone();
+          }}
+          className="w-full rounded-2xl bg-destructive/10 py-2.5 text-sm font-medium text-destructive ring-1 ring-destructive/30"
+        >
+          Clear postpartum symptoms
+        </button>
+      ) : null}
+    </div>
+  );
+}
