@@ -17,7 +17,7 @@ import { TodayHeaderSummary } from "@/components/home/TodayHeaderSummary";
 import { NextPeriodHomeCard, PostpartumHomeCard, PregnancyHomeCard } from "@/components/home/HomeModeCards";
 import { HomeSummaryOverlay } from "@/components/home/HomeSummaryOverlay";
 
-const HOME_MASCOT_DATA_URI = "/bixbo-mascot-user.png?v=20260813-real";
+const HOME_MASCOT_DATA_URI = "/bixbo-mascot-user.png?v=20260813-full";
 
 export function HomePage() {
   const { t, language } = useI18n();
