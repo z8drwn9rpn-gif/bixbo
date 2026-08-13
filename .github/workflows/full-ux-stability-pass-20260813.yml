@@ -17,6 +17,8 @@ jobs:
           bun-version: latest
       - name: Apply patch
         run: python3 scripts/full-ux-stability-pass-20260813.py
+      - name: Keep existing Insights schedule helper import
+        run: sed -i '/} from "@\/lib\/storage";/i\  medScheduleItems,' src/routes/insights.tsx
       - name: Full verification
         run: |
           git diff --check
