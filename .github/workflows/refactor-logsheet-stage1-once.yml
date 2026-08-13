@@ -24,38 +24,41 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          import re
 
           path = Path('src/components/LogSheet.tsx')
           src = path.read_text()
+          out_dir = Path('src/features/logging')
+          out_dir.mkdir(parents=True, exist_ok=True)
 
-          # Extract TrText into its own module.
-          tr_match = re.search(r'\nfunction TrText\(\{ value \}: \{ value: unknown \}\) \{.*?\n\}\n\ntype UpdateFn', src, re.S)
-          if not tr_match:
-              raise SystemExit('TrText block not found')
-          tr_block = tr_match.group(0)
-          tr_body = tr_block.rsplit('\n\ntype UpdateFn', 1)[0].lstrip('\n')
+          # Extract TrText using stable source markers instead of a brittle regex.
+          tr_start = src.index('\nfunction TrText(')
+          tr_end = src.index('\ntype UpdateFn', tr_start)
+          tr_body = src[tr_start + 1:tr_end].rstrip()
           tr_body = tr_body.replace('function TrText(', 'export function TrText(', 1)
-          tr_file = 'import { useI18n } from "@/hooks/useI18n";\n\n' + tr_body + '\n'
-          Path('src/features/logging/TrText.tsx').write_text(tr_file)
-          src = src[:tr_match.start()] + '\n\ntype UpdateFn' + src[tr_match.end():]
+          (out_dir / 'TrText.tsx').write_text(
+              'import { useI18n } from "@/hooks/useI18n";\n\n' + tr_body + '\n'
+          )
+          src = src[:tr_start] + '\n' + src[tr_end:]
 
-          # Extract Category + CATEGORIES into its own module.
-          cat_match = re.search(r'\ntype Category =.*?\nconst CATEGORIES: \{ id: Category; label: string; emoji: string; hint: string \}\[] = \[.*?\n\];\n\nexport function LogSheet', src, re.S)
-          if not cat_match:
-              raise SystemExit('Category block not found')
-          cat_block = cat_match.group(0)
-          cat_body = cat_block.rsplit('\n\nexport function LogSheet', 1)[0].lstrip('\n')
+          # Extract the category type + built-in category registry.
+          cat_start = src.index('\ntype Category =')
+          cat_end = src.index('\nexport function LogSheet', cat_start)
+          cat_body = src[cat_start + 1:cat_end].rstrip()
           cat_body = cat_body.replace('type Category =', 'export type Category =', 1)
           cat_body = cat_body.replace('const CATEGORIES:', 'export const CATEGORIES:', 1)
-          Path('src/features/logging/logCategories.ts').write_text(cat_body + '\n')
-          src = src[:cat_match.start()] + '\n\nexport function LogSheet' + src[cat_match.end():]
+          (out_dir / 'logCategories.ts').write_text(cat_body + '\n')
+          src = src[:cat_start] + '\n' + src[cat_end:]
 
-          # Add imports and remove the now-unused direct useI18n import only if it remains used elsewhere.
           anchor = 'import { useI18n } from "@/hooks/useI18n";\n'
           if anchor not in src:
               raise SystemExit('useI18n import anchor missing')
-          src = src.replace(anchor, anchor + 'import { TrText } from "@/features/logging/TrText";\nimport { CATEGORIES, type Category } from "@/features/logging/logCategories";\n', 1)
+          src = src.replace(
+              anchor,
+              anchor
+              + 'import { TrText } from "@/features/logging/TrText";\n'
+              + 'import { CATEGORIES, type Category } from "@/features/logging/logCategories";\n',
+              1,
+          )
 
           path.write_text(src)
           PY
