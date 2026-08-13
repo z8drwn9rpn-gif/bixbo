@@ -29,7 +29,7 @@ export const CATEGORIES: { id: Category; label: string; emoji: string; hint: str
   { id: "workout", label: "Workout", emoji: "🧘🏼‍♀️", hint: "Type · duration · weight" },
   { id: "temp", label: "Temp / Sleep / Weight", emoji: "🌡️", hint: "°C · kg · hours" },
   { id: "meds", label: "Meds", emoji: "💊", hint: "Taken · extra dose" },
-  { id: "event", label: "Event", emoji: "📅", hint: "Multi-day · time · note" },
+  { id: "event", label: "Note & plan", emoji: "📝", hint: "Event · To do · Note" },
   { id: "task", label: "Task", emoji: "✅", hint: "To-do with date & time" },
   { id: "note", label: "Notes", emoji: "📝", hint: "Any thought for today" },
 ];
