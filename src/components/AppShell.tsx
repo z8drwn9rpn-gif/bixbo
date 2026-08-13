@@ -1,8 +1,9 @@
 import { type ReactNode } from "react";
 import { BottomNav } from "./BottomNav";
 import { SideNav } from "./SideNav";
+import bixboMascot from "@/assets/bixbo-mascot-user.png";
 
-const BIXBO_MASCOT_SRC = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAAfTUlEQVR42u2deXxU1d3/33ebmUz2FcgChgCyKqIEkMUNtAEVdwGp1rYqbviIPtZW8KcVRW3V8tQWtT9XBJ5K3ajUDZciIAguIIQAWSEkZJvMZJbMcu89zx8zd0wArVUSgvW8XkngzsyZc76f737O9xxJCCH4sR21Jv9IgqPb1GNtwJbAHk5wJUnq9PdHAI4QwYUQmKaJoijfisiGYSCEQJZlZLlnC7nUU22AaZoIIVAUpdPzUChEU1MTjY2NeL1edF1H0zTS0tLo3bs3GRkZqKraCUALvB8B+JYc35FgPp+P9evXs3btWrZv3051dTUeTxsAiiLHJUQIgaZp5OTkUFRUxOjRo5k8eTJDhgzpJEk9TSJ6FACGYcQJv2fPHp566ineeOMN/H4/SUlJFBQUkJmZidPpjHO5aZrxn0gkQiAQoLGxkYaGBgKBAMOHD+eaa67h4osvPuQ7fgTgMMRvbW3l/vvvZ9myZSQnJzNy5Eiy...";
+const BIXBO_MASCOT_SRC = bixboMascot;
 
 export function AppShell({ children, title, right, big = false, showMascot = true }: { children: ReactNode; title?: ReactNode; right?: ReactNode; big?: boolean; showMascot?: boolean; }) {
   return (
