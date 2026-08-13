@@ -101,12 +101,8 @@ export function EnhancedSexForm({ date, data, update, onDone, initialEntry }: { 
   const [protection, setProtection] = useState(initial?.protection ?? "");
   const [contraception, setContraception] = useState(initial?.contraception ?? "");
   const [symptoms, setSymptoms] = useState<string[]>(initial?.symptoms ?? []);
-  const [painScore, setPainScore] = useState<number | undefined>(initial?.painScore);
-  const [painLocation, setPainLocation] = useState(initial?.painLocation ?? "");
-  const [bleedingLevel, setBleedingLevel] = useState(initial?.bleedingLevel ?? "");
   const [orgasm, setOrgasm] = useState(initial?.orgasm ?? "");
   const [feelingAfter, setFeelingAfter] = useState<string[]>(asArr(initial?.feelingAfter));
-  const [note, setNote] = useState(initial?.note ?? "");
 
   const save = () => {
     const entry = {
@@ -114,16 +110,12 @@ export function EnhancedSexForm({ date, data, update, onDone, initialEntry }: { 
       time,
       kind,
       activity,
+      orgasm: orgasm || undefined,
       protection: protection || undefined,
       contraception: contraception || undefined,
       symptoms: symptoms.length ? symptoms : undefined,
-      painScore: symptoms.includes("Pain") ? painScore : undefined,
-      painLocation: symptoms.includes("Pain") && painLocation ? painLocation : undefined,
-      bleedingLevel: symptoms.includes("Bleeding") && bleedingLevel ? bleedingLevel : undefined,
-      orgasm: orgasm || undefined,
       feelingAfter: feelingAfter.length ? feelingAfter : undefined,
       painful: symptoms.includes("Pain") ? "during" : "no",
-      note: note.trim() || undefined,
     } as SexEntryV2;
     updateDayLog(update, date, (log) => ({
       ...log,
@@ -136,15 +128,12 @@ export function EnhancedSexForm({ date, data, update, onDone, initialEntry }: { 
   return <div className="flex flex-col gap-4">
     <SaveBar onCancel={onDone} onSave={save} />
     <Field label="Time" schemaFieldId="time"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></Field>
-    <Field label="Activity" schemaFieldId="type"><div className="mt-2 flex flex-wrap gap-2">{SEX_ACTIVITY_TYPES.map((value) => <Chip key={value} active={activity === value} onClick={() => setActivity(value)}>{value}</Chip>)}</div></Field>
+    <Field label="Type" schemaFieldId="type"><div className="mt-2 flex flex-wrap gap-2">{SEX_ACTIVITY_TYPES.map((value) => <Chip key={value} active={activity === value} onClick={() => setActivity(value)}>{value}</Chip>)}</div></Field>
+    <Field label="Orgasm"><div className="mt-2 flex flex-wrap gap-2">{["Yes", "No", "Multiple", "Not tracked"].map((value) => <Chip key={value} active={orgasm === value} onClick={() => setOrgasm(orgasm === value ? "" : value)}>{value}</Chip>)}</div></Field>
     <Field label="Protection"><div className="mt-2 flex flex-wrap gap-2">{SEX_PROTECTION.map((value) => <Chip key={value} active={protection === value} onClick={() => setProtection(protection === value ? "" : value)}>{value}</Chip>)}</div></Field>
     <Field label="Contraception"><div className="mt-2 flex flex-wrap gap-2">{["Pill taken correctly", "Late / missed pill", "Emergency contraception", "Not tracked"].map((value) => <Chip key={value} active={contraception === value} onClick={() => setContraception(contraception === value ? "" : value)}>{value}</Chip>)}</div></Field>
-    <Field label="Symptoms after sex"><div className="mt-2 flex flex-wrap gap-2">{SEX_SYMPTOMS.map((value) => <Chip key={value} active={symptoms.includes(value)} onClick={() => setSymptoms((current) => toggleIn(current, value))}>{value}</Chip>)}</div></Field>
-    {symptoms.includes("Pain") && <div className="space-y-3 rounded-2xl border border-border p-3"><Field label={`Pain ${painScore ?? "—"}/10`}><IntensityScale value={painScore ?? -1} onChange={(value) => setPainScore(painScore === value ? undefined : value)} from={1} max={10} step={1} compactSingleRow /></Field><Field label="Pain location"><div className="mt-2 flex flex-wrap gap-2">{BODY_AREAS.map((value) => <Chip key={value} active={painLocation === value} onClick={() => setPainLocation(value)}>{value}</Chip>)}</div></Field></div>}
-    {symptoms.includes("Bleeding") && <Field label="Bleeding"><div className="mt-2 flex flex-wrap gap-2">{["Spotting", "Light", "Medium", "Heavy"].map((value) => <Chip key={value} active={bleedingLevel === value} onClick={() => setBleedingLevel(value)}>{value}</Chip>)}</div></Field>}
-    <Field label="Orgasm (optional)"><div className="mt-2 flex flex-wrap gap-2">{["Yes", "No", "Multiple", "Not tracked"].map((value) => <Chip key={value} active={orgasm === value} onClick={() => setOrgasm(orgasm === value ? "" : value)}>{value}</Chip>)}</div></Field>
-    <Field label="How I feel after" schemaFieldId="feelingAfter"><CustomChipList base={SEX_FEELINGS_DEFAULT} custom={data.custom.sexFeelings ?? []} onAddCustom={(value) => update((current) => ({ ...current, custom: { ...current.custom, sexFeelings: [...(current.custom.sexFeelings ?? []), value] } }))} onRemoveCustom={(value) => { update((current) => ({ ...current, custom: { ...current.custom, sexFeelings: (current.custom.sexFeelings ?? []).filter((item) => item !== value) } })); setFeelingAfter((current) => current.filter((item) => item !== value)); }} selected={feelingAfter} onToggle={(value) => setFeelingAfter((current) => toggleIn(current, value))} /></Field>
-    <Field label="Note (optional)" schemaFieldId="note"><Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} /></Field>
+    <Field label="Symptoms after"><div className="mt-2 flex flex-wrap gap-2">{SEX_SYMPTOMS.map((value) => <Chip key={value} active={symptoms.includes(value)} onClick={() => setSymptoms((current) => toggleIn(current, value))}>{value}</Chip>)}</div></Field>
+    <Field label="How I feel" schemaFieldId="feelingAfter"><CustomChipList base={SEX_FEELINGS_DEFAULT} custom={data.custom.sexFeelings ?? []} onAddCustom={(value) => update((current) => ({ ...current, custom: { ...current.custom, sexFeelings: [...(current.custom.sexFeelings ?? []), value] } }))} onRemoveCustom={(value) => { update((current) => ({ ...current, custom: { ...current.custom, sexFeelings: (current.custom.sexFeelings ?? []).filter((item) => item !== value) } })); setFeelingAfter((current) => current.filter((item) => item !== value)); }} selected={feelingAfter} onToggle={(value) => setFeelingAfter((current) => toggleIn(current, value))} /></Field>
   </div>;
 }
 
