@@ -10,7 +10,7 @@ describe("Period and Couple runtime regressions", () => {
   });
 
   it("uses the later first-comparison day for both Couple directions", () => {
-    const source = read("src/routes/couple.tsx");
+    const source = read("src/features/couple/CouplePage.tsx");
     expect(source).toContain("const myFirstComparisonDay");
     expect(source).toContain("const comparisonStartDay");
     expect(source).toContain("myFirstComparisonDay > partnerFirstComparisonDay");
