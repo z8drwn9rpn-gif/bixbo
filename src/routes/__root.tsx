@@ -16,18 +16,8 @@ import { useThemeSync } from "../lib/theme";
 import { useNotificationRuntime } from "../lib/notifications";
 import { NotificationPrompt } from "../components/NotificationPrompt";
 import { AppPrivacyGuard } from "../components/AppPrivacyGuard";
-import { AdminEditOverlay } from "../components/AdminEditOverlay";
-import { CoupleAdminEditOverlay } from "../components/CoupleAdminEditOverlay";
-import { AdminEditPinGate } from "../components/AdminEditPinGate";
-import { HakAdminEditOverlay } from "../components/HakAdminEditOverlay";
-import { GlobalAdminModeController } from "../components/GlobalAdminModeController";
-import { UniversalAdminPageEditor } from "../components/UniversalAdminPageEditor";
-import { NavigationAdminEditor } from "../components/NavigationAdminEditor";
-import { UniversalTextAdminEditor } from "../components/UniversalTextAdminEditor";
-import { AdminCustomPageBlocks } from "../components/AdminCustomPageBlocks";
 import { Toaster } from "../components/ui/sonner";
 import { useI18n } from "@/hooks/useI18n";
-import { useGlobalAdminConfigSync } from "@/lib/globalAdminConfig";
 import { useDeploymentFreshness } from "@/lib/deploymentFreshness";
 
 function NotFoundComponent() {
@@ -155,24 +145,13 @@ function RootComponent() {
   useCloudSync();
   useThemeSync();
   useNotificationRuntime();
-  useGlobalAdminConfigSync();
   useDeploymentFreshness();
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <AppPrivacyGuard>
         <Outlet />
       </AppPrivacyGuard>
-      <AdminEditOverlay />
-      <CoupleAdminEditOverlay />
-      <HakAdminEditOverlay />
-      <AdminEditPinGate />
-      <GlobalAdminModeController />
-      <UniversalAdminPageEditor />
-      <NavigationAdminEditor />
-      <UniversalTextAdminEditor />
-      <AdminCustomPageBlocks />
       <NotificationPrompt />
       <Toaster />
     </QueryClientProvider>
