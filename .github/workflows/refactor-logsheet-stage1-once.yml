@@ -1,0 +1,75 @@
+name: Refactor LogSheet stage 1 once
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/refactor-logsheet-stage1-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  refactor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract LogSheet translation and category modules
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('src/components/LogSheet.tsx')
+          src = path.read_text()
+
+          # Extract TrText into its own module.
+          tr_match = re.search(r'\nfunction TrText\(\{ value \}: \{ value: unknown \}\) \{.*?\n\}\n\ntype UpdateFn', src, re.S)
+          if not tr_match:
+              raise SystemExit('TrText block not found')
+          tr_block = tr_match.group(0)
+          tr_body = tr_block.rsplit('\n\ntype UpdateFn', 1)[0].lstrip('\n')
+          tr_body = tr_body.replace('function TrText(', 'export function TrText(', 1)
+          tr_file = 'import { useI18n } from "@/hooks/useI18n";\n\n' + tr_body + '\n'
+          Path('src/features/logging/TrText.tsx').write_text(tr_file)
+          src = src[:tr_match.start()] + '\n\ntype UpdateFn' + src[tr_match.end():]
+
+          # Extract Category + CATEGORIES into its own module.
+          cat_match = re.search(r'\ntype Category =.*?\nconst CATEGORIES: \{ id: Category; label: string; emoji: string; hint: string \}\[] = \[.*?\n\];\n\nexport function LogSheet', src, re.S)
+          if not cat_match:
+              raise SystemExit('Category block not found')
+          cat_block = cat_match.group(0)
+          cat_body = cat_block.rsplit('\n\nexport function LogSheet', 1)[0].lstrip('\n')
+          cat_body = cat_body.replace('type Category =', 'export type Category =', 1)
+          cat_body = cat_body.replace('const CATEGORIES:', 'export const CATEGORIES:', 1)
+          Path('src/features/logging/logCategories.ts').write_text(cat_body + '\n')
+          src = src[:cat_match.start()] + '\n\nexport function LogSheet' + src[cat_match.end():]
+
+          # Add imports and remove the now-unused direct useI18n import only if it remains used elsewhere.
+          anchor = 'import { useI18n } from "@/hooks/useI18n";\n'
+          if anchor not in src:
+              raise SystemExit('useI18n import anchor missing')
+          src = src.replace(anchor, anchor + 'import { TrText } from "@/features/logging/TrText";\nimport { CATEGORIES, type Category } from "@/features/logging/logCategories";\n', 1)
+
+          path.write_text(src)
+          PY
+
+      - name: Verify typecheck before commit
+        run: |
+          bun install --frozen-lockfile
+          bun run typecheck
+
+      - name: Commit refactor
+        run: |
+          rm -f .github/workflows/refactor-logsheet-stage1-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/LogSheet.tsx src/features/logging/TrText.tsx src/features/logging/logCategories.ts .github/workflows/refactor-logsheet-stage1-once.yml
+          git commit -m "refactor: extract LogSheet translation and categories"
+          git push origin HEAD:main
