@@ -147,6 +147,10 @@ export interface SexEntry {
   id: string;
   time: string;
   kind: SexKind;
+  orgasm?: "yes" | "no" | "unsure";
+  protection?: string;
+  contraception?: string;
+  symptomsAfter?: string[];
   feelingAfter?: string | string[];
   painful?: PainfulWhen;
   note?: string;
