@@ -2,10 +2,13 @@ import { type ReactNode } from "react";
 import { BottomNav } from "./BottomNav";
 import { SideNav } from "./SideNav";
 import bixboMascot from "@/assets/bixbo-mascot-user.png";
+import { useAppAutoUpdate } from "@/hooks/useAppAutoUpdate";
 
 const BIXBO_MASCOT_SRC = bixboMascot;
 
 export function AppShell({ children, title, right, big = false }: { children: ReactNode; title?: ReactNode; right?: ReactNode; big?: boolean; }) {
+  useAppAutoUpdate();
+
   return (
     <div className="min-h-dvh overflow-x-hidden bg-background text-foreground" style={{ overscrollBehaviorX: "none" }}>
       <SideNav mascotSrc={BIXBO_MASCOT_SRC} />
