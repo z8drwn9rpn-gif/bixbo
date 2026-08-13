@@ -1,10 +1,8 @@
 import { type ReactNode } from "react";
 import { BottomNav } from "./BottomNav";
 import { SideNav } from "./SideNav";
-import bixboMascot from "@/assets/bixbo-mascot-user.png";
 
-const BIXBO_MASCOT_SRC = bixboMascot;
-const BIXBO_MASCOT_CLIP = "polygon(45.8% 4.2%, 29.2% 17.7%, 31.3% 40.6%, 24% 50%, 20.8% 67.7%, 33.3% 85.4%, 29.2% 91.7%, 38.5% 93.8%, 54.2% 87.5%, 54.2% 91.7%, 64.6% 93.8%, 71.9% 90.6%, 67.7% 85.4%, 74% 75%, 71.9% 59.4%, 83.3% 53.1%, 84.4% 30.2%, 79.2% 25%, 81.3% 31.3%, 69.8% 41.7%, 68.8% 14.6%, 57.3% 5.2%)";
+const BIXBO_MASCOT_SRC = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAAfTUlEQVR42u2deXxU1d3/33ebmUz2FcgChgCyKqIEkMUNtAEVdwGp1rYqbviIPtZW8KcVRW3V8tQWtT9XBJ5K3ajUDZciIAguIIQAWSEkZJvMZJbMcu89zx8zd0wArVUSgvW8XkngzsyZc76f737O9xxJCCH4sR21Jv9IgqPb1GNtwJbAHk5wJUnq9PdHAI4QwYUQmKaJoijfisiGYSCEQJZlZLlnC7nUU22AaZoIIVAUpdPzUChEU1MTjY2NeL1edF1H0zTS0tLo3bs3GRkZqKraCUALvB8B+JYc35FgPp+P9evXs3btWrZv3051dTUeTxsAiiLHJUQIgaZp5OTkUFRUxOjRo5k8eTJDhgzpJEk9TSJ6FACGYcQJv2fPHp566ineeOMN/H4/SUlJFBQUkJmZidPpjHO5aZrxn0gkQiAQoLGxkYaGBgKBAMOHD+eaa67h4osvPuQ7fgTgMMRvbW3l/vvvZ9myZSQnJzNy5Eiy...";
 
 export function AppShell({ children, title, right, big = false, showMascot = true }: { children: ReactNode; title?: ReactNode; right?: ReactNode; big?: boolean; showMascot?: boolean; }) {
   return (
@@ -23,7 +21,6 @@ export function AppShell({ children, title, right, big = false, showMascot = tru
                       aria-hidden="true"
                       draggable={false}
                       className="block h-full w-full object-contain object-center opacity-100 visible"
-                      style={{ clipPath: BIXBO_MASCOT_CLIP }}
                     />
                   </span>
                 )}
