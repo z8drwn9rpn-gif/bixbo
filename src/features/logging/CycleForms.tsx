@@ -80,45 +80,112 @@ export function PeriodForm({ date, data, update, onDone }: { date: string; data:
   );
 }
 
+type SexEntryUi = SexEntry & {
+  painWhenUi?: "during" | "after" | "both";
+  painScale?: number;
+  painLocations?: string[];
+};
+
 export function SexForm({ date, data, update, onDone, initialEntry }: { date: string; data: BixboData; update: UpdateFn; onDone: () => void; initialEntry?: SexEntry }) {
   const { t } = useI18n();
   const schema = useLogSchema();
-  const [kind, setKind] = useState<SexKind>(initialEntry?.kind ?? "sex");
-  const [time, setTime] = useState(initialEntry?.time ?? nowHHMM());
-  const [orgasm, setOrgasm] = useState<"yes" | "no" | "unsure" | undefined>(initialEntry?.orgasm);
-  const [protection, setProtection] = useState<string>(initialEntry?.protection ?? "");
-  const [contraception, setContraception] = useState<string>(initialEntry?.contraception ?? "");
-  const [symptomsAfter, setSymptomsAfter] = useState<string[]>(asArr(initialEntry?.symptomsAfter));
-  const [feelingAfter, setFeelingAfter] = useState<string[]>(asArr(initialEntry?.feelingAfter));
+  const initial = initialEntry as SexEntryUi | undefined;
 
-  const addCustom = (v: string) => update((d) => ({ ...d, custom: { ...d.custom, sexTypes: [...d.custom.sexTypes, v] } }));
-  const rmCustom = (v: string) => {
-    if (!confirm(`Remove "${v}" from your list?`)) return;
-    update((d) => ({ ...d, custom: { ...d.custom, sexTypes: d.custom.sexTypes.filter((x) => x !== v) } }));
-    if (kind === (`other:${v}` as SexKind)) setKind("sex");
-  };
-  const custom = data.custom.sexTypes;
-  const protectionOptions = ["Condom", "Pull out", "None", "Other"];
-  const contraceptionOptions = ["HAK", "IUD", "Implant", "Ring", "Patch", "None", "Other"];
-  const symptomOptions = ["Pain / cramps", "Bleeding / spotting", "Burning", "Dryness", "Headache", "Nausea", "Other"];
+  const [kind, setKind] = useState<SexKind>(initial?.kind ?? "sex");
+  const [protection, setProtection] = useState<string>(initial?.protection ?? "None");
+  const initialFeeling = asArr(initial?.feelingAfter)[0] ?? "";
+  const [feelingAfter, setFeelingAfter] = useState(initialFeeling);
+  const [painOn, setPainOn] = useState(initial?.painful != null && initial.painful !== "no");
+  const [painWhen, setPainWhen] = useState<"during" | "after" | "both" | undefined>(
+    initial?.painWhenUi ?? (initial?.painful === "during" || initial?.painful === "after" ? initial.painful : undefined),
+  );
+  const [painScaleValue, setPainScaleValue] = useState<number | undefined>(initial?.painScale);
+  const [painLocations, setPainLocations] = useState<string[]>(initial?.painLocations ?? []);
+  const [symptomsAfter, setSymptomsAfter] = useState<string[]>(asArr(initial?.symptomsAfter));
+  const [orgasm, setOrgasm] = useState<"yes" | "no" | undefined>(initial?.orgasm === "yes" || initial?.orgasm === "no" ? initial.orgasm : undefined);
+  const [note, setNote] = useState(initial?.note ?? "");
+
+  const typeOptions: { value: SexKind; icon: string; label: string }[] = [
+    { value: "sex", icon: "❤️", label: "Sex" },
+    { value: "oral", icon: "💋", label: "Oral" },
+    { value: "fingering", icon: "✋", label: "Masturbation" },
+    { value: "other", icon: "•••", label: "Other" },
+  ];
+  const protectionOptions = [
+    { value: "None", icon: "🚫" },
+    { value: "Condom", icon: "🛡️" },
+    { value: "Other", icon: "•••" },
+  ];
+  const feelingOptions = [
+    { value: "Great", icon: "😃" },
+    { value: "Good", icon: "🙂" },
+    { value: "Okay", icon: "😐" },
+    { value: "Uncomfortable", icon: "😣" },
+    { value: "Bad", icon: "😞" },
+  ];
+  const painWhenOptions = [
+    { value: "during" as const, icon: "🌊", label: "During" },
+    { value: "after" as const, icon: "🕒", label: "After" },
+    { value: "both" as const, icon: "◎", label: "Both" },
+  ];
+  const painLocationOptions = [
+    { value: "Lower belly", icon: "🎯" },
+    { value: "Pelvis", icon: "○" },
+    { value: "Vagina", icon: "💧" },
+    { value: "Vulva", icon: "🌸" },
+    { value: "Lower back", icon: "⚡" },
+    { value: "Other", icon: "•••" },
+  ];
+  const symptomOptions = [
+    { value: "Cramps", icon: "⚡" },
+    { value: "Lower belly pain", icon: "🎯" },
+    { value: "Pelvic pain", icon: "○" },
+    { value: "Vaginal pain", icon: "💧" },
+    { value: "Burning", icon: "🔥" },
+    { value: "Irritation", icon: "◌" },
+    { value: "Dryness", icon: "💧" },
+    { value: "Itching", icon: "◌" },
+    { value: "Spotting", icon: "🩸" },
+    { value: "Bleeding", icon: "🩸" },
+    { value: "Discharge", icon: "💧" },
+    { value: "Bloating", icon: "🫧" },
+    { value: "Nausea", icon: "🤢" },
+    { value: "Headache", icon: "🎯" },
+    { value: "Dizziness", icon: "◎" },
+    { value: "Fatigue", icon: "🔋" },
+    { value: "Hot flash", icon: "♨️" },
+    { value: "Tetany symptoms", icon: "⚡" },
+    { value: "Panic / anxiety", icon: "😰" },
+    { value: "Urinary discomfort", icon: "💧" },
+  ];
+
+  const chipClass = (active: boolean) => `inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+    active
+      ? "bg-primary text-primary-foreground shadow-sm ring-2 ring-foreground/75 ring-offset-2 ring-offset-background"
+      : "bg-tint text-foreground ring-1 ring-border"
+  }`;
 
   const save = () => {
     const editing = !!initialEntry;
-    const e: SexEntry = {
-      id: initialEntry?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
-      time,
+    const painful: PainfulWhen = !painOn ? "no" : painWhen === "after" ? "after" : "during";
+    const entry: SexEntryUi = {
+      id: initial?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
+      time: initial?.time ?? nowHHMM(),
       kind,
       orgasm,
       protection: protection || undefined,
-      contraception: contraception || undefined,
+      contraception: initial?.contraception,
       symptomsAfter: symptomsAfter.length ? symptomsAfter : undefined,
-      feelingAfter: feelingAfter.length ? feelingAfter : undefined,
-      painful: initialEntry?.painful,
-      note: initialEntry?.note,
+      feelingAfter: feelingAfter ? [feelingAfter] : undefined,
+      painful,
+      painWhenUi: painOn ? painWhen : undefined,
+      painScale: painOn ? painScaleValue : undefined,
+      painLocations: painOn && painLocations.length ? painLocations : undefined,
+      note: note.trim() || undefined,
     };
     updateDayLog(update, date, (l) => ({
       ...l,
-      sex: editing ? (l.sex ?? []).map((x) => (x.id === e.id ? e : x)) : [...(l.sex ?? []), e],
+      sex: editing ? (l.sex ?? []).map((x) => (x.id === entry.id ? entry : x)) : [...(l.sex ?? []), entry],
     }));
     onDone();
   };
@@ -126,61 +193,133 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
   return <div className="mx-auto flex w-full max-w-xl flex-col gap-4 pb-5">
     <SaveBar onCancel={onDone} onSave={save} />
 
-    <section className="border-b border-border/60 pb-3">
-      <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">{t("Time")}</p>
-      <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="h-10 w-full rounded-xl text-sm" />
+    <section>
+      <p className="mb-2 text-sm font-semibold text-foreground">1. {t("Type")}</p>
+      <div className="flex flex-wrap gap-2.5">
+        {typeOptions.map((option) => (
+          <button key={option.value} type="button" onClick={() => setKind(option.value)} className={chipClass(kind === option.value)}>
+            <Ico e={option.icon} size={17} />
+            <span>{t(option.label)}</span>
+          </button>
+        ))}
+      </div>
     </section>
 
     <section>
-      <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">{t("Type")}</p>
+      <p className="mb-2 text-sm font-semibold text-foreground">2. {t("Protection")}</p>
+      <div className="flex flex-wrap gap-2.5">
+        {protectionOptions.map((option) => (
+          <button key={option.value} type="button" onClick={() => setProtection(option.value)} className={chipClass(protection === option.value)}>
+            <Ico e={option.icon} size={17} />
+            <span>{t(option.value)}</span>
+          </button>
+        ))}
+      </div>
+    </section>
+
+    <section>
+      <p className="mb-2 text-sm font-semibold text-foreground">3. {t("How I feel after")}</p>
+      <div className="flex flex-wrap gap-2.5">
+        {feelingOptions.map((option) => (
+          <button key={option.value} type="button" onClick={() => setFeelingAfter(feelingAfter === option.value ? "" : option.value)} className={chipClass(feelingAfter === option.value)}>
+            <Ico e={option.icon} size={17} />
+            <span>{t(option.value)}</span>
+          </button>
+        ))}
+      </div>
+    </section>
+
+    <section>
+      <p className="mb-2 text-sm font-semibold text-foreground">4. {t("Pain")}</p>
+      <div className="flex flex-wrap gap-2.5">
+        <button type="button" onClick={() => setPainOn(false)} className={chipClass(!painOn)}><Ico e="🙂" size={17} /> {t("No")}</button>
+        <button type="button" onClick={() => setPainOn(true)} className={chipClass(painOn)}><Ico e="❗" size={17} /> {t("Yes")}</button>
+      </div>
+
+      {painOn && (
+        <div className="mt-3 rounded-3xl border border-border/80 bg-surface/40 p-3.5 shadow-sm">
+          <div className="grid gap-4 sm:grid-cols-[1fr_1.15fr]">
+            <div>
+              <p className="mb-2 text-xs font-medium text-muted-foreground">{t("When")}</p>
+              <div className="flex flex-wrap gap-2">
+                {painWhenOptions.map((option) => (
+                  <button key={option.value} type="button" onClick={() => setPainWhen(option.value)} className={chipClass(painWhen === option.value)}>
+                    <Ico e={option.icon} size={15} /> {t(option.label)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-2 text-xs font-medium text-muted-foreground">{t("Pain scale (1–10)")}</p>
+              <div className="flex gap-1 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {Array.from({ length: 10 }, (_, index) => index + 1).map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setPainScaleValue(painScaleValue === value ? undefined : value)}
+                    className={`h-8 w-8 shrink-0 rounded-full text-xs font-semibold transition ${painScaleValue === value ? "text-white ring-2 ring-foreground" : "bg-tint text-foreground ring-1 ring-border"}`}
+                    style={painScaleValue === value ? { background: painColor(value) } : undefined}
+                  >
+                    {value}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <p className="mb-2 text-xs font-medium text-muted-foreground">{t("Where")}</p>
+            <div className="flex flex-wrap gap-2">
+              {painLocationOptions.map((option) => {
+                const active = painLocations.includes(option.value);
+                return (
+                  <button key={option.value} type="button" onClick={() => setPainLocations((current) => toggleIn(current, option.value))} className={chipClass(active)}>
+                    <Ico e={option.icon} size={15} /> {t(option.value)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
+
+    <section className="rounded-3xl border border-border/80 bg-surface/25 p-3.5">
+      <p className="mb-2 text-sm font-semibold text-foreground">5. {t("Symptoms after")}</p>
       <div className="flex flex-wrap gap-2">
-        {SEX_TYPES_DEFAULT.map((o) => <button key={o.value} type="button" onClick={() => setKind(o.value)} className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${kind === o.value ? "bg-primary text-primary-foreground shadow-md ring-2 ring-foreground/70 ring-offset-2 ring-offset-background" : "bg-tint text-foreground ring-1 ring-border"}`}>{o.label}</button>)}
-      </div>
-      <div className="mt-2 flex flex-wrap gap-2">
-        {custom.map((c) => <span key={c} className="relative inline-flex items-center"><Chip active={kind === (`other:${c}` as SexKind)} onClick={() => setKind(`other:${c}` as SexKind)}>{c}</Chip><button type="button" onClick={(e) => { e.stopPropagation(); rmCustom(c); }} aria-label={`Remove ${c}`} className="ml-1 grid h-5 w-5 place-items-center rounded-full bg-tint text-muted-foreground hover:bg-destructive/15 hover:text-destructive"><X className="h-3 w-3" /></button></span>)}
-        <AddCustomInline onAdd={addCustom} />
-      </div>
-    </section>
-
-    <section className="border-t border-border pt-4">
-      <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">{t("Orgasm")}</p>
-      <div className="flex flex-wrap gap-2">
-        {([ ["yes", "✨", "Yes"], ["no", "○", "No"], ["unsure", "?", "Not sure"] ] as const).map(([value, icon, label]) => <button key={value} type="button" onClick={() => setOrgasm(orgasm === value ? undefined : value)} className={`inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition ${orgasm === value ? "bg-primary text-primary-foreground shadow-md ring-2 ring-foreground/70 ring-offset-2 ring-offset-background" : "bg-tint text-foreground ring-1 ring-border"}`}><span className="text-base">{icon}</span><span>{t(label)}</span></button>)}
-      </div>
-    </section>
-
-    <section className="border-t border-border pt-4">
-      <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">{t("Protection")}</p>
-      <div className="flex flex-wrap gap-2">
-        {protectionOptions.map((value) => <button key={value} type="button" onClick={() => setProtection(protection === value ? "" : value)} className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${protection === value ? "bg-primary text-primary-foreground shadow-md ring-2 ring-foreground/70 ring-offset-2 ring-offset-background" : "bg-tint text-foreground ring-1 ring-border"}`}>{t(value)}</button>)}
+        {symptomOptions.map((option) => {
+          const active = symptomsAfter.includes(option.value);
+          return (
+            <button key={option.value} type="button" onClick={() => setSymptomsAfter((current) => toggleIn(current, option.value))} className={chipClass(active)}>
+              <Ico e={option.icon} size={15} />
+              <span>{t(option.value)}</span>
+              {active ? <span aria-hidden="true" className="text-[10px]">✓</span> : null}
+            </button>
+          );
+        })}
+        <button type="button" onClick={() => setSymptomsAfter([])} className={chipClass(symptomsAfter.length === 0)}>
+          <Ico e="🌿" size={15} /> {t("None")}
+        </button>
       </div>
     </section>
 
-    <section className="border-t border-border pt-4">
-      <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">{t("Contraception")}</p>
-      <div className="flex flex-wrap gap-2">
-        {contraceptionOptions.map((value) => <Chip key={value} active={contraception === value} onClick={() => setContraception(contraception === value ? "" : value)}>{value}</Chip>)}
-      </div>
-      {data.settings.birthControlSince && <div className="mt-2 rounded-2xl bg-tint px-3 py-2 text-[11px] text-muted-foreground"><span className="font-semibold text-foreground">HAK</span> · {t("Taking birth control since")} {data.settings.birthControlSince}</div>}
-    </section>
-
-    <section className="border-t border-border pt-4">
-      <div className="mb-2 flex items-center justify-between"><p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">{t("Symptoms after")}</p><button type="button" onClick={() => setSymptomsAfter([])} className={`text-[11px] font-semibold ${symptomsAfter.length === 0 ? "text-primary" : "text-muted-foreground"}`}>{t("None")}</button></div>
-      <div className="flex flex-wrap gap-2">
-        {symptomOptions.map((value) => <button key={value} type="button" onClick={() => setSymptomsAfter((current) => toggleIn(current, value))} className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${symptomsAfter.includes(value) ? "bg-primary text-primary-foreground shadow-md ring-2 ring-foreground/70 ring-offset-2 ring-offset-background" : "bg-tint text-foreground ring-1 ring-border"}`}>{t(value)}</button>)}
+    <section>
+      <p className="mb-2 text-sm font-semibold text-foreground">6. {t("Orgasm")}</p>
+      <div className="flex flex-wrap gap-2.5">
+        <button type="button" onClick={() => setOrgasm(orgasm === "yes" ? undefined : "yes")} className={chipClass(orgasm === "yes")}><Ico e="❤️" size={17} /> {t("Yes")}</button>
+        <button type="button" onClick={() => setOrgasm(orgasm === "no" ? undefined : "no")} className={chipClass(orgasm === "no")}><Ico e="○" size={17} /> {t("No")}</button>
       </div>
     </section>
 
-    <section className="border-t border-border pt-4">
-      <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">{t("How I feel")}</p>
-      <div className="rounded-3xl bg-surface p-3 ring-1 ring-border/80">
-        <CustomChipList base={SEX_FEELINGS_DEFAULT} custom={data.custom.sexFeelings ?? []} onAddCustom={(v) => update((d) => ({ ...d, custom: { ...d.custom, sexFeelings: [...(d.custom.sexFeelings ?? []), v] } }))} onRemoveCustom={(v) => { update((d) => ({ ...d, custom: { ...d.custom, sexFeelings: (d.custom.sexFeelings ?? []).filter((x) => x !== v) } })); setFeelingAfter((a) => a.filter((x) => x !== v)); }} onRenameCustom={(o, n) => { update((d) => ({ ...d, custom: { ...d.custom, sexFeelings: (d.custom.sexFeelings ?? []).map((x) => (x === o ? n : x)) } })); setFeelingAfter((a) => a.map((x) => (x === o ? n : x))); }} selected={feelingAfter} onToggle={(v) => setFeelingAfter((a) => toggleIn(a, v))} schemaFieldId="feelingAfter" />
-      </div>
+    <section>
+      <p className="mb-2 text-sm font-semibold text-foreground">7. {t("Note (optional)")}</p>
+      <Textarea rows={4} value={note} onChange={(event) => setNote(event.target.value)} placeholder={t("Add a note…")} className="rounded-3xl" />
     </section>
 
-    <div className="rounded-3xl bg-tint p-3 text-[11px] leading-relaxed text-muted-foreground">
-      <span className="font-semibold text-foreground">♡ {t("Private & personal")}</span><br />
-      {t("Keep the log quick and useful: what happened, protection, symptoms and how you felt.")}
+    <div className="flex items-center gap-2 rounded-2xl border border-border/70 bg-surface/35 px-3 py-2.5 text-[11px] text-muted-foreground">
+      <Ico e="ℹ️" size={16} />
+      <span>{t("Only you can see this. Your data is private and secure.")}</span>
     </div>
   </div>;
 }
