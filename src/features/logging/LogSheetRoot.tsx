@@ -249,14 +249,24 @@ export function LogSheet({
         if (category.id === "tetany") {
           return { ...category, label: "Episodes", emoji: "⭐", registryOrder: feature.order };
         }
+        if (category.id === "event") {
+          return { ...category, label: "Note & plan", emoji: "📝", registryOrder: feature.order };
+        }
         return { ...category, label: feature.label, emoji: feature.icon, registryOrder: feature.order };
       })
       .filter((category) => {
         if (category.id === "panic") return false;
+        if (category.id === "task" || category.id === "note") return false;
         if (category.id === "tetany") {
           const anyEpisodeEnabled =
             isRegistrySurfaceEnabled(data, "tetany", "log") || isRegistrySurfaceEnabled(data, "panic", "log");
           if (!anyEpisodeEnabled) return false;
+        } else if (category.id === "event") {
+          const anyNotePlanEnabled =
+            isRegistrySurfaceEnabled(data, "event", "log") ||
+            isRegistrySurfaceEnabled(data, "task", "log") ||
+            isRegistrySurfaceEnabled(data, "note", "log");
+          if (!anyNotePlanEnabled) return false;
         } else if (!isRegistrySurfaceEnabled(data, category.id as RegistryFeatureId, "log")) return false;
         if (category.id === "period" && cycleTrackingHidden) return false;
         if (category.id === "postpartum" && !postpartumActive) return false;
@@ -676,7 +686,9 @@ export function LogSheet({
                 {t(
                   active === "tetany" || active === "panic"
                     ? "Episodes"
-                    : orderedCats.find((c) => c.id === active)?.label ?? CATEGORIES.find((c) => c.id === active)?.label ?? "",
+                    : active === "event" || active === "task" || active === "note"
+                      ? "Note & plan"
+                      : orderedCats.find((c) => c.id === active)?.label ?? CATEGORIES.find((c) => c.id === active)?.label ?? "",
                 )}
               </SheetTitle>
               <button onClick={close} aria-label={t("Close")} className="rounded-full p-1 hover:bg-tint">
@@ -891,13 +903,59 @@ export function LogSheet({
               )}
               {active === "temp" && <TempForm date={date} data={data} update={update} onDone={close} />}
               {active === "meds" && <MedsForm date={date} data={data} update={update} onDone={close} />}
-              {active === "task" && (
-                <TaskForm date={date} update={update} onDone={close} initialEntry={edit as TaskEntry | undefined} />
+              {(active === "event" || active === "task" || active === "note") && (
+                <div className="mx-auto flex w-full max-w-md flex-col gap-4 py-4">
+                  <div className="grid grid-cols-3 gap-2 rounded-2xl bg-tint p-1">
+                    {isRegistrySurfaceEnabled(data, "event", "log") && (
+                      <button
+                        type="button"
+                        onClick={() => setCat("event")}
+                        className={`rounded-xl px-2 py-2.5 text-xs font-semibold transition ${
+                          active === "event"
+                            ? "bg-background text-foreground shadow-sm ring-1 ring-border"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        <span className="inline-flex items-center gap-1.5"><Ico e="📅" size={16} /> {t("Event")}</span>
+                      </button>
+                    )}
+                    {isRegistrySurfaceEnabled(data, "task", "log") && (
+                      <button
+                        type="button"
+                        onClick={() => setCat("task")}
+                        className={`rounded-xl px-2 py-2.5 text-xs font-semibold transition ${
+                          active === "task"
+                            ? "bg-background text-foreground shadow-sm ring-1 ring-border"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        <span className="inline-flex items-center gap-1.5"><Ico e="✅" size={16} /> {t("To do")}</span>
+                      </button>
+                    )}
+                    {isRegistrySurfaceEnabled(data, "note", "log") && (
+                      <button
+                        type="button"
+                        onClick={() => setCat("note")}
+                        className={`rounded-xl px-2 py-2.5 text-xs font-semibold transition ${
+                          active === "note"
+                            ? "bg-background text-foreground shadow-sm ring-1 ring-border"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        <span className="inline-flex items-center gap-1.5"><Ico e="📝" size={16} /> {t("Note")}</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {active === "event" && (
+                    <EventForm date={date} update={update} onDone={close} initialEntry={edit as EventEntry | undefined} />
+                  )}
+                  {active === "task" && (
+                    <TaskForm date={date} update={update} onDone={close} initialEntry={edit as TaskEntry | undefined} />
+                  )}
+                  {active === "note" && <NoteForm date={date} update={update} onDone={close} />}
+                </div>
               )}
-              {active === "event" && (
-                <EventForm date={date} update={update} onDone={close} initialEntry={edit as EventEntry | undefined} />
-              )}
-              {active === "note" && <NoteForm date={date} update={update} onDone={close} />}
             </div>
             </LogSchemaContext.Provider>
           </div>
