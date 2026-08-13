@@ -9,15 +9,9 @@
 // Do NOT add tanstackStart() manually here — doing so creates duplicate
 // TanStack Start route-tree plugins and can break production builds.
 
-import { fileURLToPath, URL } from "node:url";
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
-  resolve: {
-    alias: {
-      "@/components/icons/BixboIcons": fileURLToPath(new URL("./src/components/icons/BixboExtraIcons.tsx", import.meta.url)),
-    },
-  },
   tanstackStart: {
     server: {
       entry: "server",
