@@ -15,9 +15,9 @@ describe("Day Overview UX consistency", () => {
 
   it("keeps the compact cards on the same labelled hierarchy", () => {
     expect(source).toContain('<Card title="Blueberry" icon="🫐">');
-    expect(source).toContain('<Card title="ŠukŠuk!" icon="❤️">');
+    expect(source).toContain('<Card title="ŠukŠuk!" icon="❤️" compact>');
     expect(source).toContain('<Card title="Heat / Cold / TENS" icon="♨️">');
-    expect(source).toContain('<Card title="Food" icon="🍽️">');
+    expect(source).toContain('<Card title="Food" icon="🍽️" compact>');
     expect(source).toContain('<Card title="Workout" icon="👟">');
     expect(source.match(/border-t border-border\/60/g)?.length ?? 0).toBeGreaterThan(5);
   });

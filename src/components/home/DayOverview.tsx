@@ -592,34 +592,34 @@ export function DayPreview({
         )}
 
       {log?.sex?.length ? (
-        <Card title="ŠukŠuk!" icon="❤️">
-          <ul className="space-y-3">
+        <Card title="ŠukŠuk!" icon="❤️" compact>
+          <ul className="space-y-1">
             {log.sex.map((s: SexEntry, index) => (
-              <li key={s.id} className={`flex items-start gap-2 ${index ? "border-t border-border/60 pt-3" : ""}`}>
+              <li key={s.id} className={`flex items-start gap-2 ${index ? "border-t border-border/60 pt-1.5" : ""}`}>
                 <button onClick={() => onEdit?.("sex", s)} className="min-w-0 flex-1 text-left">
-                  <p className="text-xs text-muted-foreground">{s.time}</p>
-                  <div className="my-2 border-t border-border/60" />
+                  <p className="text-[11px] leading-none text-muted-foreground">{s.time}</p>
+                  <div className="my-1 border-t border-border/60" />
                   <p className="text-xs leading-relaxed text-muted-foreground">
                     <span className="font-semibold text-foreground">{t("Type")}:</span>{" "}
                     {t(String(s.kind).replace(/_/g, " "))}
                   </p>
                   {asArr(s.feelingAfter).length ? (
-                    <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                    <p className="mt-1 text-xs leading-snug text-muted-foreground">
                       <span className="font-semibold text-foreground">{t("Feeling after")}:</span>{" "}
                       <IcoText text={asArr(s.feelingAfter).join(", ")} size={13} />
                     </p>
                   ) : null}
                   {s.painful && s.painful !== "no" ? (
-                    <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                    <p className="mt-1 text-xs leading-snug text-muted-foreground">
                       <span className="font-semibold text-foreground">{t("Painful")}:</span> {t(s.painful)}
                     </p>
                   ) : null}
                   {s.note ? (
-                    <p className="mt-2 whitespace-pre-line text-sm">
+                    <p className="mt-1 whitespace-pre-line text-xs leading-snug">
                       <span className="font-semibold">{t("Note")}:</span> {s.note}
                     </p>
                   ) : null}
-                  <p className="mt-1 text-[10px] text-primary">{t("Tap to edit")}</p>
+                  <p className="mt-0.5 text-[9px] leading-tight text-primary">{t("Tap to edit")}</p>
                 </button>
                 <DeleteBtn
                   onClick={() =>
@@ -682,51 +682,51 @@ export function DayPreview({
       ) : null}
 
       {log?.food?.length ? (
-        <Card title="Food" icon="🍽️">
-          <ul className="space-y-1">
+        <Card title="Food" icon="🍽️" compact>
+          <ul className="space-y-0.5">
             {log.food.map((f, index) => (
-              <li key={f.id} className={`flex items-start gap-2 ${index ? "border-t border-border/60 pt-1" : ""}`}>
+              <li key={f.id} className={`flex items-start gap-2 ${index ? "border-t border-border/60 pt-0.5" : ""}`}>
                 <button onClick={() => onEdit?.("food", f)} className="min-w-0 flex-1 text-left">
                   <p className="text-[11px] leading-none text-muted-foreground">{f.time}</p>
-                  <div className="my-1 border-t border-border/60" />
+                  <div className="my-0.5 border-t border-border/60" />
                   <p className="text-[11px] leading-tight text-muted-foreground">
                     <span className="font-semibold text-foreground">{t("Food")}:</span>{" "}
                     <IcoText text={f.what || (f.histamineFlare ? t("(histamine flare)") : "—")} size={13} />
                   </p>
                   {f.highHistamine ? (
-                    <p className="mt-0.5 text-[11px] leading-tight text-muted-foreground">
+                    <p className="mt-px text-[11px] leading-tight text-muted-foreground">
                       <span className="font-semibold text-foreground">{t("Histamine")}:</span> {t("high histamine")}
                     </p>
                   ) : null}
                   {f.hydrationMl != null ? (
-                    <p className="mt-0.5 text-[11px] leading-tight text-muted-foreground"><span className="font-semibold text-foreground">{t("Hydration")}:</span> {f.hydrationMl} ml</p>
+                    <p className="mt-px text-[11px] leading-tight text-muted-foreground"><span className="font-semibold text-foreground">{t("Hydration")}:</span> {f.hydrationMl} ml</p>
                   ) : null}
                   {f.caffeineMg != null ? (
-                    <p className="mt-0.5 text-[11px] leading-tight text-muted-foreground"><span className="font-semibold text-foreground">{t("Caffeine")}:</span> {f.caffeineMg} mg</p>
+                    <p className="mt-px text-[11px] leading-tight text-muted-foreground"><span className="font-semibold text-foreground">{t("Caffeine")}:</span> {f.caffeineMg} mg</p>
                   ) : null}
                   {f.alcoholDrinks != null ? (
-                    <p className="mt-0.5 text-[11px] leading-tight text-muted-foreground"><span className="font-semibold text-foreground">{t("Drinks")}:</span> {f.alcoholDrinks}</p>
+                    <p className="mt-px text-[11px] leading-tight text-muted-foreground"><span className="font-semibold text-foreground">{t("Drinks")}:</span> {f.alcoholDrinks}</p>
                   ) : null}
                   {f.feelings.length ? (
-                    <p className="mt-0.5 text-[11px] leading-tight text-muted-foreground">
+                    <p className="mt-px text-[11px] leading-tight text-muted-foreground">
                       <span className="font-semibold text-foreground">{t("Feel")}:</span>{" "}
                       <IcoText text={f.feelings.map(t).join(", ")} size={13} />
                     </p>
                   ) : null}
                   {f.symptomsAfter?.length ? (
-                    <p className="mt-0.5 text-[11px] leading-tight text-muted-foreground">
+                    <p className="mt-px text-[11px] leading-tight text-muted-foreground">
                       <span className="font-semibold text-foreground">{t("After")}:</span>{" "}
                       <IcoText text={f.symptomsAfter.map(t).join(", ")} size={13} />
                     </p>
                   ) : null}
                   {f.histamineFlare ? (
-                    <p className="mt-0.5 text-[11px] leading-tight text-destructive">
+                    <p className="mt-px text-[11px] leading-tight text-destructive">
                       <span className="font-semibold"><Ico e="🔥" size={13} /> {t("Histamine flare")}:</span>{" "}
                       {f.histamineSymptoms?.length ? f.histamineSymptoms.join(", ") : t("Yes")}
                     </p>
                   ) : null}
                   {f.after ? (
-                    <p className="mt-0.5 whitespace-pre-line text-[11px] leading-tight">
+                    <p className="mt-px whitespace-pre-line text-[11px] leading-tight">
                       <span className="font-semibold">{t("Note")}:</span> {f.after}
                     </p>
                   ) : null}
@@ -753,8 +753,8 @@ export function DayPreview({
       ) : null}
 
       {log?.bowel?.length ? (
-        <Card title="Bowel" icon="💩">
-          <ul className="space-y-3">
+        <Card title="Bowel" icon="💩" compact>
+          <ul className="space-y-1">
             {log.bowel.map((b: BowelEntry, index) => {
               const bristol = b.bristol >= 0 ? BRISTOL.find((x) => x.n === b.bristol) : null;
               const typeLabel = bristol
@@ -764,32 +764,32 @@ export function DayPreview({
                   : t("No bowel movement");
               const typeDescription = bristol?.sub ?? (b.bristol === 0 ? t("Mystery") : "");
               return (
-                <li key={b.id} className={`flex items-start gap-2 ${index ? "border-t border-border/60 pt-3" : ""}`}>
+                <li key={b.id} className={`flex items-start gap-2 ${index ? "border-t border-border/60 pt-1.5" : ""}`}>
                   <button onClick={() => onEdit?.("bowel", b)} className="min-w-0 flex-1 text-left">
-                    <p className="text-xs text-muted-foreground">{b.time}</p>
-                    <div className="my-2 border-t border-border/60" />
+                    <p className="text-[11px] leading-none text-muted-foreground">{b.time}</p>
+                    <div className="my-1 border-t border-border/60" />
                     <p className="text-xs leading-relaxed text-muted-foreground">
                       <span className="font-semibold text-foreground">{t("Type")}:</span>{" "}
                       <IcoText text={`${typeLabel}${typeDescription ? ` — ${typeDescription}` : ""}`} size={13} />
                     </p>
                     {b.feelings?.length ? (
-                      <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                      <p className="mt-1 text-xs leading-snug text-muted-foreground">
                         <span className="font-semibold text-foreground">{t("Feelings")}:</span>{" "}
                         <IcoText text={b.feelings.join(", ")} size={13} />
                       </p>
                     ) : null}
                     {b.symptoms?.length ? (
-                      <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                      <p className="mt-1 text-xs leading-snug text-muted-foreground">
                         <span className="font-semibold text-foreground">{t("Symptoms")}:</span>{" "}
                         <IcoText text={b.symptoms.join(", ")} size={13} />
                       </p>
                     ) : null}
                     {b.note ? (
-                      <p className="mt-2 text-sm whitespace-pre-line">
+                      <p className="mt-1 text-xs leading-snug whitespace-pre-line">
                         <span className="font-semibold">{t("Note")}:</span> {b.note}
                       </p>
                     ) : null}
-                    <p className="mt-1 text-[10px] text-primary">{t("Tap to edit")}</p>
+                    <p className="mt-0.5 text-[9px] leading-tight text-primary">{t("Tap to edit")}</p>
                   </button>
                   <DeleteBtn
                     onClick={() =>
@@ -1015,13 +1015,23 @@ export function DeleteBtn({ onClick }: { onClick: () => void }) {
   );
 }
 
-export function Card({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) {
+export function Card({
+  title,
+  icon,
+  children,
+  compact = false,
+}: {
+  title: string;
+  icon: string;
+  children: React.ReactNode;
+  compact?: boolean;
+}) {
   const { t } = useI18n();
   return (
-    <div className="rounded-3xl bg-surface p-4 ring-1 ring-border">
-      <div className="mb-2 flex items-center gap-2">
-        <Ico e={icon} size={22} />
-        <h3 className="font-serif text-lg font-semibold">{t(title)}</h3>
+    <div className={`rounded-3xl bg-surface ring-1 ring-border ${compact ? "px-4 py-3" : "p-4"}`}>
+      <div className={`${compact ? "mb-1" : "mb-2"} flex items-center gap-2`}>
+        <Ico e={icon} size={compact ? 20 : 22} />
+        <h3 className={`font-serif font-semibold ${compact ? "text-[17px]" : "text-lg"}`}>{t(title)}</h3>
       </div>
       {children}
     </div>
