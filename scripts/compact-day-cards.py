@@ -8,7 +8,7 @@ s = s.replace('<Card title="ŠukŠuk!" icon="❤️">', '<Card title="ŠukŠuk!"
 s = s.replace('<Card title="Food" icon="🍽️">', '<Card title="Food" icon="🍽️" compact>', 1)
 s = s.replace('<Card title="Bowel" icon="💩">', '<Card title="Bowel" icon="💩" compact>', 1)
 
-# ŠukŠuk: reduce vertical space without changing content or typography semantics.
+# ŠukŠuk: reduce vertical space without changing content or stored data.
 sex_start = s.index('      {log?.sex?.length ? (')
 sex_end = s.index('      {log?.heat?.length ? (', sex_start)
 sex = s[sex_start:sex_end]
@@ -21,7 +21,7 @@ sex = sex.replace('mt-2 whitespace-pre-line text-sm', 'mt-1 whitespace-pre-line 
 sex = sex.replace('mt-1 text-[10px] text-primary', 'mt-0.5 text-[9px] leading-tight text-primary')
 s = s[:sex_start] + sex + s[sex_end:]
 
-# Food: keep readable 11px details but further reduce inter-entry and outer vertical rhythm.
+# Food: further reduce inter-entry spacing while keeping all fields readable.
 food_start = s.index('      {log?.food?.length ? (')
 food_end = s.index('      {log?.bowel?.length ? (', food_start)
 food = s[food_start:food_end]
@@ -32,7 +32,7 @@ food = food.replace('mt-0.5 text-[11px]', 'mt-px text-[11px]')
 food = food.replace('mt-0.5 whitespace-pre-line text-[11px]', 'mt-px whitespace-pre-line text-[11px]')
 s = s[:food_start] + food + s[food_end:]
 
-# Bowel: single/basic entries should be visibly shorter; preserve all optional details when present.
+# Bowel: make basic entries much shorter; optional details still render when present.
 bowel_start = s.index('      {log?.bowel?.length ? (')
 bowel_end = s.index('      {log?.workout?.length ? (', bowel_start)
 bowel = s[bowel_start:bowel_end]
@@ -45,7 +45,7 @@ bowel = bowel.replace('mt-2 text-sm whitespace-pre-line', 'mt-1 text-xs leading-
 bowel = bowel.replace('mt-1 text-[10px] text-primary', 'mt-0.5 text-[9px] leading-tight text-primary')
 s = s[:bowel_start] + bowel + s[bowel_end:]
 
-# Add an explicit compact variant to Card; default cards remain unchanged.
+# Add an explicit compact variant to Card; all other Day Overview cards stay unchanged.
 old = '''export function Card({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) {
   const { t } = useI18n();
   return (
@@ -83,5 +83,12 @@ new = '''export function Card({
 if old not in s:
     raise SystemExit('Card component block not found')
 s = s.replace(old, new, 1)
-
 p.write_text(s)
+
+# Keep the source-level regression test aligned with the intentional compact prop.
+p = Path('src/lib/__tests__/day-overview-ux-regression.test.ts')
+test = p.read_text()
+test = test.replace("expect(source).toContain('<Card title=\"ŠukŠuk!\" icon=\"❤️\">');", "expect(source).toContain('<Card title=\"ŠukŠuk!\" icon=\"❤️\" compact>');")
+test = test.replace("expect(source).toContain('<Card title=\"Food\" icon=\"🍽️\">');", "expect(source).toContain('<Card title=\"Food\" icon=\"🍽️\" compact>');")
+test = test.replace("expect(source).toContain('<Card title=\"Bowel\" icon=\"💩\">');", "expect(source).toContain('<Card title=\"Bowel\" icon=\"💩\" compact>');")
+p.write_text(test)
