@@ -33,6 +33,7 @@ export function PeriodForm({ date, data, update, onDone }: { date: string; data:
   const [discharge, setDischarge] = useState<string>(cur?.discharge ?? "");
   const [dNote, setDNote] = useState<string>(cur?.dischargeNote ?? "");
   const [note, setNote] = useState<string>(cur?.note ?? "");
+
   const save = () => {
     updateDayLog(update, date, (l) => ({
       ...l,
@@ -47,6 +48,7 @@ export function PeriodForm({ date, data, update, onDone }: { date: string; data:
     }));
     onDone();
   };
+
   const LEVELS: { v: PeriodLevel; label: string; color: string }[] = [
     { v: "spotting", label: "Spotting", color: "var(--period-spotting)" },
     { v: "light", label: "Light", color: "var(--period-light)" },
@@ -54,29 +56,126 @@ export function PeriodForm({ date, data, update, onDone }: { date: string; data:
     { v: "heavy", label: "Heavy", color: "var(--period-heavy)" },
     { v: "very-heavy", label: "Very heavy", color: "var(--period-veryheavy)" },
   ];
+
+  const cardClass = "rounded-3xl border border-border/70 bg-surface/28 p-3.5 shadow-sm ring-1 ring-border/45";
+  const labelClass = "mb-2 text-xs font-bold uppercase tracking-[0.035em] text-muted-foreground";
+
   return (
-    <div className="space-y-3">
+    <div className="mx-auto flex w-full max-w-xl flex-col gap-3 pb-5">
       <SaveBar onCancel={onDone} onSave={save} />
-      <Field label="Flow" schemaFieldId="flow">
-        <div className="mt-2 grid grid-cols-5 gap-1.5">
-          {LEVELS.map((L) => (
-            <button key={L.v} type="button" onClick={() => setLevel(L.v)} className={`min-w-0 rounded-2xl px-1 py-2 text-[11px] font-medium leading-tight ${level === L.v ? "text-white ring-2 ring-foreground" : "bg-tint text-foreground"}`} style={level === L.v ? { background: L.color } : undefined}>{t(L.label)}</button>
+
+      <section className={cardClass}>
+        <p className={labelClass}>{t("Flow")}</p>
+        <div className="grid grid-cols-5 gap-1.5">
+          {LEVELS.map((L) => {
+            const active = level === L.v;
+            return (
+              <button
+                key={L.v}
+                type="button"
+                onClick={() => setLevel(active ? "" : L.v)}
+                className={`min-w-0 rounded-full px-1 py-2.5 text-[11px] font-semibold leading-tight transition ${
+                  active
+                    ? "text-white shadow-sm ring-2 ring-foreground/80 ring-offset-1 ring-offset-background"
+                    : "bg-tint text-foreground ring-1 ring-border"
+                }`}
+                style={active ? { background: L.color } : undefined}
+              >
+                {t(L.label)}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className={cardClass}>
+        <p className={labelClass}>{t("Discharge (optional)")}</p>
+        <div className="flex flex-wrap gap-2">
+          {DISCHARGE_OPTS.map((d) => (
+            <Chip
+              key={d.value}
+              active={discharge === d.value}
+              onClick={() => setDischarge(discharge === d.value ? "" : d.value)}
+              color={d.color}
+            >
+              {d.label}
+            </Chip>
           ))}
         </div>
-      </Field>
-      <Field label="Discharge (optional)" schemaFieldId="discharge">
-        <div className="mt-2 flex flex-wrap gap-2">
-          {DISCHARGE_OPTS.map((d) => <Chip key={d.value} active={discharge === d.value} onClick={() => setDischarge(discharge === d.value ? "" : d.value)} color={d.color}>{d.label}</Chip>)}
+
+        <div className="mt-3 border-t border-border/60 pt-3">
+          <p className="mb-1.5 text-xs font-medium text-muted-foreground">{t("Discharge note (optional)")}</p>
+          <Input
+            value={dNote}
+            onChange={(e) => setDNote(e.target.value)}
+            placeholder={t("Add discharge note…")}
+            className="h-10 rounded-2xl bg-background/20"
+          />
         </div>
-      </Field>
-      <Field label="Discharge note (optional)" schemaFieldId="dischargeNote"><Input value={dNote} onChange={(e) => setDNote(e.target.value)} /></Field>
-      <Field label="Day note (optional)" schemaFieldId="note"><Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} /></Field>
-      <Field label="Birth control since (optional)" schemaFieldId="birthControlSince">
-        <Input type="date" value={data.settings.birthControlSince ?? ""} onChange={(e) => update((d) => ({ ...d, settings: { ...d.settings, birthControlSince: e.target.value || undefined } }))} />
-        {data.settings.birthControlSince && <p className="mt-1 text-[11px] text-muted-foreground">Taking birth control since {data.settings.birthControlSince}</p>}
-      </Field>
-      <div className="rounded-2xl bg-tint p-3 text-[11px] leading-relaxed text-muted-foreground">Cycle prediction is based on your last period and cycle length (edit in Settings later).</div>
-      {cur && <button type="button" onClick={() => { update((current) => { const day = current.dayLogs[date] ?? {}; const { period: _p, periodInfo: _pi, ...rest } = day; void _p; void _pi; const adminFields = { ...(rest.adminFields ?? {}) }; const periodAdmin = adminFields.period ?? []; const nextPeriodAdmin = periodAdmin.filter((entry) => entry.sourceEntryId !== `day:period:${date}`); if (nextPeriodAdmin.length) adminFields.period = nextPeriodAdmin; else delete adminFields.period; return { ...current, dayLogs: { ...current.dayLogs, [date]: { ...rest, adminFields: Object.keys(adminFields).length ? adminFields : undefined } } }; }); onDone(); }} className="w-full rounded-2xl bg-destructive/10 py-2.5 text-sm font-medium text-destructive ring-1 ring-destructive/30">Delete Blueberry entry</button>}
+      </section>
+
+      <section className={cardClass}>
+        <p className={labelClass}>{t("Day note (optional)")}</p>
+        <Textarea
+          rows={3}
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder={t("Add a note about today…")}
+          className="min-h-[92px] rounded-2xl bg-background/20"
+        />
+      </section>
+
+      <section className={cardClass}>
+        <p className={labelClass}>{t("Birth control since (optional)")}</p>
+        <Input
+          type="date"
+          value={data.settings.birthControlSince ?? ""}
+          onChange={(e) => update((d) => ({ ...d, settings: { ...d.settings, birthControlSince: e.target.value || undefined } }))}
+          className="h-10 rounded-2xl bg-background/20"
+        />
+        {data.settings.birthControlSince ? (
+          <p className="mt-1.5 text-[10px] leading-relaxed text-muted-foreground">
+            {t("Taking birth control since")} {data.settings.birthControlSince}
+          </p>
+        ) : null}
+
+        <div className="mt-3 rounded-2xl bg-tint/70 px-3 py-2.5 text-[10px] leading-relaxed text-muted-foreground ring-1 ring-border/55">
+          {t("Cycle prediction is based on your last period and cycle length (edit in Settings later).")}
+        </div>
+      </section>
+
+      {cur ? (
+        <button
+          type="button"
+          onClick={() => {
+            update((current) => {
+              const day = current.dayLogs[date] ?? {};
+              const { period: _p, periodInfo: _pi, ...rest } = day;
+              void _p;
+              void _pi;
+              const adminFields = { ...(rest.adminFields ?? {}) };
+              const periodAdmin = adminFields.period ?? [];
+              const nextPeriodAdmin = periodAdmin.filter((entry) => entry.sourceEntryId !== `day:period:${date}`);
+              if (nextPeriodAdmin.length) adminFields.period = nextPeriodAdmin;
+              else delete adminFields.period;
+              return {
+                ...current,
+                dayLogs: {
+                  ...current.dayLogs,
+                  [date]: {
+                    ...rest,
+                    adminFields: Object.keys(adminFields).length ? adminFields : undefined,
+                  },
+                },
+              };
+            });
+            onDone();
+          }}
+          className="mx-auto mt-1 rounded-full bg-destructive/8 px-5 py-2 text-xs font-semibold text-destructive ring-1 ring-destructive/35 transition hover:bg-destructive/12"
+        >
+          {t("Delete Blueberry entry")}
+        </button>
+      ) : null}
     </div>
   );
 }
