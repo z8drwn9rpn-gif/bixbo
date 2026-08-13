@@ -2,7 +2,9 @@ import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-const source = readFileSync(join(process.cwd(), "src/routes/index.tsx"), "utf8");
+const read = (path: string) => readFileSync(join(process.cwd(), path), "utf8");
+// The Home page is split into orchestration (route) + extracted day overview components.
+const source = [read("src/routes/index.tsx"), read("src/components/home/DayOverview.tsx")].join("\n");
 
 describe("DayPreview edit interaction contract", () => {
   it("keeps tap-to-edit wiring for every editable health log shown in the daily overview", () => {

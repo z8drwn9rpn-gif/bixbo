@@ -13,7 +13,7 @@ describe("Admin BIXBO icons and HAK overlay regressions", () => {
   });
 
   it("marks HAK as an admin-editable root and keeps HAK editor wiring available", () => {
-    const index = read("src/routes/index.tsx");
+    const index = [read("src/routes/index.tsx"), read("src/components/home/BirthControlCard.tsx")].join("\n");
     const admin = read("src/components/GlobalAdminModeController.tsx");
     const hak = read("src/components/HakAdminEditOverlay.tsx");
     expect(index).toContain('data-bixbo-hak-root="1"');
