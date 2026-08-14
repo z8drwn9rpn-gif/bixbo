@@ -1,0 +1,35 @@
+name: Temporary adherence lint fix
+
+on:
+  push:
+    branches: [audit-final-cleanup-no-notes]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: ${{ !contains(github.event.head_commit.message, 'Use minute key in adherence calculations') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: audit-final-cleanup-no-notes
+      - name: Use the memo minute key inside adherence calculations
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/features/insights/MedsAdherence.tsx')
+          s = p.read_text()
+          old = '    const adherenceNow = new Date();'
+          if s.count(old) != 2:
+              raise SystemExit(f'expected 2 adherence Date constructors, found {s.count(old)}')
+          p.write_text(s.replace(old, '    const adherenceNow = new Date(adherenceMinuteKey * 60_000);'))
+          PY
+      - name: Commit fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/features/insights/MedsAdherence.tsx
+          git commit -m "Use minute key in adherence calculations"
+          git push origin HEAD:audit-final-cleanup-no-notes
