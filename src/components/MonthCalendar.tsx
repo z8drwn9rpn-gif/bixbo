@@ -1,5 +1,4 @@
-import { SemanticIcoText } from "@/components/icons/BixboFoodIcons";
-import { Ico, IcoText } from "@/components/icons/BixboExtraIcons";
+import { Ico } from "@/components/icons/BixboExtraIcons";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "@/hooks/useI18n";
 import { customLogDefinitions, getRegistryFeature, isRegistrySurfaceEnabled, type RegistryFeatureId } from "@/lib/appRegistry";
@@ -13,7 +12,6 @@ import {
   isCycleTrackingHidden,
   type BixboData,
   type DayLog,
-  type EventEntry,
   type PeriodLevel,
 } from "@/lib/storage";
 
@@ -77,6 +75,7 @@ function periodColorVar(level?: PeriodLevel) {
       return null;
   }
 }
+
 function iconsFor(log: DayLog | undefined, data: BixboData): string[] {
   if (!log) return [];
   const out: string[] = [];
@@ -101,41 +100,114 @@ function iconsFor(log: DayLog | undefined, data: BixboData): string[] {
   return Array.from(new Set(out)).slice(0, 3);
 }
 
-function daySummaryLines(log: DayLog | undefined, cycleTrackingHidden: boolean, t: (key: string) => string): string[] {
+type DaySummaryRow = {
+  icon: string;
+  label: string;
+  meta?: string;
+  value: string;
+  accent?: string;
+};
+
+function average(values: number[]): number | null {
+  if (!values.length) return null;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function mode(values: number[]): number | null {
+  if (!values.length) return null;
+  const counts = new Map<number, number>();
+  for (const value of values) counts.set(value, (counts.get(value) ?? 0) + 1);
+  return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0]?.[0] ?? null;
+}
+
+function formatAverage(value: number, max: number) {
+  return `${value.toFixed(1)} /${max}`;
+}
+
+function daySummaryRows(log: DayLog | undefined, cycleTrackingHidden: boolean, t: (key: string) => string): DaySummaryRow[] {
   if (!log) return [];
-  const out: string[] = [];
-  if (log.pain?.length) out.push(`${"🔥"} ${t("Pain")}: ${log.pain.map((p) => `${p.time} ${p.score}/10`).join(", ")}`);
-  if (log.tetany?.length) out.push(`${"⚡"} ${t("Tetany episode")}: ${log.tetany.map((t) => `${t.time} ${t.intensity}/5`).join(", ")}`);
-  if (log.panic?.length) out.push(`${"🫯"} ${t("Panic episode")}: ${log.panic.map((p) => `${p.time} ${p.intensity}/10`).join(", ")}`);
-  const hf = log.pain?.filter((p) => (p.hotFlashes ?? 0) > 0) ?? [];
-  if (hf.length) out.push(`${"🥵"} ${t("Hot flashes")}: ${hf.map((p) => `${p.hotFlashes}/5`).join(", ")}`);
-  const ha = log.pain?.filter((p) => p.headacheIntensity != null || (p.headacheTypes?.length ?? 0) > 0) ?? [];
-  if (ha.length)
-    out.push(
-      `${"🤕"} ${t("Headache")}: ${ha.map((p) => `${p.headacheTypes?.join("/") ?? "yes"}${p.headacheIntensity != null ? ` ${p.headacheIntensity}/10` : ""}`).join(", ")}`,
-    );
-  if (log.extraMeds?.length) out.push(`${"💊"} ${t("Extra meds")}: ${log.extraMeds.map((m) => m.name).join(", ")}`);
-  if (log.sex?.length) out.push(`❤️ ŠukŠuk: ${log.sex.length}×`);
-  if (log.food?.length)
-    out.push(
-      `${"🍽️"} ${t("Food")}: ${
-        log.food
-          .map((f) => f.what)
-          .filter(Boolean)
-          .join(", ") || `${log.food.length} ${t("entries")}`
-      }`,
-    );
-  if (log.bowel?.length) out.push(`${"💩"} ${t("Bowel")}: ${log.bowel.map((b) => `${t("type")} ${b.bristol}`).join(", ")}`);
-  if (log.heat?.length)
-    out.push(`${"♨️"} ${t("Heat / Cold / TENS")}: ${log.heat.map((h) => (h.kind === "tens" ? "⭐ TENS" : h.kind)).join(", ")}`);
-  if (log.workout?.length) out.push(`${"🧘🏼‍♀️"} ${t("Workout")}: ${log.workout.map((w) => `${w.kind} ${w.minutes}min`).join(", ")}`);
-  if (log.weight != null) out.push(`${"⚖️"} ${t("Weight")}: ${log.weight} kg`);
-  if (log.temperature != null) out.push(`${"🌡️"} ${t("Temp")}: ${log.temperature} °C`);
-  if (log.sleepHours != null) out.push(`${"😴"} ${t("Sleep")}: ${log.sleepHours} h`);
-  if (!cycleTrackingHidden && (log.periodInfo?.level ?? log.period)) {
-    out.push(`${"🫐"} ${t("Period")}: ${periodLabel(log.periodInfo?.level ?? log.period)}`);
+  const rows: DaySummaryRow[] = [];
+
+  if (log.pain?.length) {
+    const value = average(log.pain.map((entry) => entry.score));
+    if (value != null) rows.push({ icon: "🔥", label: `${t("Pain")} (avg)`, meta: `${log.pain.length} ${log.pain.length === 1 ? "entry" : "entries"}`, value: formatAverage(value, 10), accent: calendarPainColor(value) });
   }
-  return out;
+
+  const headache = log.pain?.filter((entry) => entry.headacheIntensity != null || (entry.headacheTypes?.length ?? 0) > 0) ?? [];
+  const headacheAverage = average(headache.map((entry) => entry.headacheIntensity).filter((value): value is number => value != null));
+  if (headache.length) {
+    const types = Array.from(new Set(headache.flatMap((entry) => entry.headacheTypes ?? []).filter(Boolean)));
+    rows.push({ icon: "🤕", label: `${t("Headache")} (avg)`, meta: `${headache.length} ${headache.length === 1 ? "entry" : "entries"}`, value: headacheAverage != null ? formatAverage(headacheAverage, 10) : (types.join(" · ") || t("Logged")), accent: "#7467D8" });
+  }
+
+  const hotFlashes = log.pain?.filter((entry) => (entry.hotFlashes ?? 0) > 0) ?? [];
+  const hotFlashAverage = average(hotFlashes.map((entry) => entry.hotFlashes ?? 0));
+  if (hotFlashes.length && hotFlashAverage != null) rows.push({ icon: "🥵", label: `${t("Hot flashes")} (avg)`, meta: `${hotFlashes.length} ${hotFlashes.length === 1 ? "entry" : "entries"}`, value: formatAverage(hotFlashAverage, 5), accent: "#E65073" });
+
+  if (log.tetany?.length) {
+    const value = average(log.tetany.map((entry) => entry.intensity));
+    if (value != null) rows.push({ icon: "⚡", label: `${t("Tetany episode")} (avg)`, meta: `${log.tetany.length} ${log.tetany.length === 1 ? "entry" : "entries"}`, value: formatAverage(value, 5), accent: "#91A83B" });
+  }
+
+  if (log.panic?.length) {
+    const value = average(log.panic.map((entry) => entry.intensity));
+    if (value != null) rows.push({ icon: "✨", label: `${t("Panic episode")} (avg)`, meta: `${log.panic.length} ${log.panic.length === 1 ? "entry" : "entries"}`, value: formatAverage(value, 10), accent: "#B79C38" });
+  }
+
+  if (log.bowel?.length) {
+    const bristol = mode(log.bowel.map((entry) => entry.bristol).filter((value): value is number => typeof value === "number"));
+    rows.push({ icon: "💩", label: `${t("Bowel")} (mode)`, meta: `${log.bowel.length} ${log.bowel.length === 1 ? "entry" : "entries"}`, value: bristol != null ? `${t("type")} ${bristol}` : t("Logged"), accent: "#A66A4D" });
+  }
+
+  if (log.workout?.length) {
+    const kinds = Array.from(new Set(log.workout.map((entry) => entry.kind).filter(Boolean)));
+    const totalMinutes = log.workout.reduce((sum, entry) => sum + (entry.minutes ?? 0), 0);
+    rows.push({ icon: "🧘🏼‍♀️", label: t("Workout"), meta: `${log.workout.length} ${log.workout.length === 1 ? "entry" : "entries"}`, value: `${kinds.slice(0, 2).join(" · ") || t("Workout")}${totalMinutes ? ` · ${totalMinutes} min` : ""}`, accent: "#D9A525" });
+  }
+
+  if (log.extraMeds?.length) {
+    const names = Array.from(new Set(log.extraMeds.map((entry) => entry.name).filter(Boolean)));
+    rows.push({ icon: "💊", label: t("Extra meds"), meta: `${log.extraMeds.length} ${log.extraMeds.length === 1 ? "entry" : "entries"}`, value: names.slice(0, 3).join(" · ") || t("Logged"), accent: "#C98265" });
+  }
+
+  if (log.sex?.length) rows.push({ icon: "❤️", label: "ŠukŠuk", meta: `${log.sex.length} ${log.sex.length === 1 ? "entry" : "entries"}`, value: `${log.sex.length}×`, accent: "#E65073" });
+
+  if (log.food?.length) {
+    const foods = Array.from(new Set(log.food.map((entry) => entry.what).filter(Boolean)));
+    rows.push({ icon: "🍽️", label: t("Food"), meta: `${log.food.length} ${log.food.length === 1 ? "entry" : "entries"}`, value: foods.slice(0, 2).join(" · ") || `${log.food.length} ${t("entries")}`, accent: "#B88748" });
+  }
+
+  if (log.heat?.length) {
+    const kinds = Array.from(new Set(log.heat.map((entry) => entry.kind === "tens" ? "TENS" : entry.kind).filter(Boolean)));
+    rows.push({ icon: "♨️", label: t("Heat / Cold / TENS"), meta: `${log.heat.length} ${log.heat.length === 1 ? "entry" : "entries"}`, value: kinds.join(" · ") || t("Logged"), accent: "#D66E45" });
+  }
+
+  if (log.sleepHours != null) rows.push({ icon: "🌙", label: t("Sleep"), meta: "1 entry", value: `${log.sleepHours} h`, accent: "#7467D8" });
+  if (log.temperature != null) rows.push({ icon: "🌡️", label: t("Temp"), meta: "1 entry", value: `${log.temperature} °C`, accent: "#D86D64" });
+  if (log.weight != null) rows.push({ icon: "⚖️", label: t("Weight"), meta: "1 entry", value: `${log.weight} kg`, accent: "#83985A" });
+
+  if (!cycleTrackingHidden && (log.periodInfo?.level ?? log.period)) {
+    rows.push({ icon: "🫐", label: t("Period"), meta: "1 entry", value: periodLabel(log.periodInfo?.level ?? log.period), accent: "#7467D8" });
+  }
+
+  return rows;
+}
+
+function daySummaryEntryCount(log: DayLog | undefined) {
+  if (!log) return 0;
+  return (log.pain?.length ?? 0)
+    + (log.tetany?.length ?? 0)
+    + (log.panic?.length ?? 0)
+    + (log.bowel?.length ?? 0)
+    + (log.workout?.length ?? 0)
+    + (log.extraMeds?.length ?? 0)
+    + (log.sex?.length ?? 0)
+    + (log.food?.length ?? 0)
+    + (log.heat?.length ?? 0)
+    + (log.sleepHours != null ? 1 : 0)
+    + (log.temperature != null ? 1 : 0)
+    + (log.weight != null ? 1 : 0)
+    + ((log.periodInfo?.level ?? log.period) ? 1 : 0);
 }
 
 export function MonthCalendar({
@@ -152,8 +224,6 @@ export function MonthCalendar({
   onSwipeMonth?: (delta: -1 | 1) => void;
 }) {
   const { t } = useI18n();
-  const isMale = data.settings.gender === "male";
-  /** Shared rule: hide cycle UI for male, pregnancy and postpartum modes. */
   const cycleTrackingHidden = isCycleTrackingHidden(data);
   const hidePredictions = cycleTrackingHidden;
   const [peek, setPeek] = useState<string | null>(null);
@@ -315,7 +385,6 @@ export function MonthCalendar({
     });
   }, [data.events, weeks]);
 
-  // Swipe
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const onTouchStart = (e: React.TouchEvent) => {
     touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -329,7 +398,6 @@ export function MonthCalendar({
     }
     touchStart.current = null;
   };
-
 
   return (
     <div className="px-1 landscape:px-2 lg:px-2" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
@@ -408,14 +476,6 @@ export function MonthCalendar({
                     } ${isSel ? "bg-primary/5" : ""}`}
                   >
                     <div className="flex min-h-[62px] flex-col items-center justify-start pt-1 landscape:min-h-[44px] landscape:pt-0 lg:min-h-[84px] lg:pt-2 xl:min-h-[90px]">
-                      {/*
-                       * Keep every calendar signal in its own layer/row:
-                       * - pain = outer coloured ring
-                       * - predicted period = inner purple ring
-                       * - date = centre
-                       * - ŠukŠuk heart = dedicated row below the date
-                       * This mirrors the mobile calendar and prevents overlaps on desktop.
-                       */}
                       <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full lg:h-[52px] lg:w-[52px] xl:h-[56px] xl:w-[56px]">
                         {pAvg != null && (
                           <span
@@ -450,18 +510,17 @@ export function MonthCalendar({
                       </div>
 
                       <div className="mt-0.5 flex h-4 items-center justify-center leading-none lg:mt-1 lg:h-5">
-              {icons.includes("❤️") ? (
-                <Ico e="❤️" size={14} className="h-[14px] w-[14px] lg:h-[17px] lg:w-[17px] xl:h-[18px] xl:w-[18px]" />
-              ) : (
-                <span aria-hidden className="block h-[14px] w-[14px] lg:h-[17px] lg:w-[17px]" />
-              )}
-            </div>
+                        {icons.includes("❤️") ? (
+                          <Ico e="❤️" size={14} className="h-[14px] w-[14px] lg:h-[17px] lg:w-[17px] xl:h-[18px] xl:w-[18px]" />
+                        ) : (
+                          <span aria-hidden className="block h-[14px] w-[14px] lg:h-[17px] lg:w-[17px]" />
+                        )}
+                      </div>
                     </div>
                   </button>
                 );
               })}
 
-              {/* Event bar rows */}
               {rows.map((row, ri) =>
                 row.length ? (
                   <div key={`r-${ri}`} className="col-span-7 grid grid-cols-7 gap-0.5">
@@ -486,7 +545,6 @@ export function MonthCalendar({
                           </div>
                         );
                       }
-                      // if this cell is covered by a segment (mid), skip (it's part of prior span)
                       const covered = row.some((s) => ci > s.startIdx && ci <= s.endIdx);
                       if (covered) return null;
                       return <div key={ci} className="h-3 lg:h-3.5 xl:h-4" />;
@@ -510,43 +568,75 @@ export function MonthCalendar({
 
       {peek &&
         (() => {
-          const lines = daySummaryLines(data.dayLogs[peek], cycleTrackingHidden, t);
+          const log = data.dayLogs[peek];
+          const summary = daySummaryRows(log, cycleTrackingHidden, t);
+          const entryCount = daySummaryEntryCount(log);
           const d = new Date(`${peek}T00:00:00`);
           return (
-            <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-6" onClick={() => setPeek(null)}>
-              <div
-                className="max-h-[70dvh] w-full max-w-sm overflow-y-auto overscroll-contain touch-pan-y rounded-3xl bg-background p-4 ring-1 ring-border"
-                onClick={(e) => e.stopPropagation()}
+            <div className="fixed inset-0 z-[100] grid place-items-center bg-black/40 px-5 py-[max(20px,env(safe-area-inset-top))] backdrop-blur-[1px]" onClick={() => setPeek(null)}>
+              <section
+                role="dialog"
+                aria-modal="true"
+                aria-label={t("Day summary")}
+                className="flex max-h-[78dvh] w-full max-w-[350px] flex-col overflow-hidden rounded-[30px] border border-border/70 bg-background shadow-[0_24px_70px_-30px_rgba(24,31,17,.55),0_6px_20px_-12px_rgba(24,31,17,.35)]"
+                onClick={(event) => event.stopPropagation()}
               >
-                <p className="mb-2 font-serif text-lg">
-                  {d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}
-                </p>
-                {lines.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">{t("Nothing logged on this day.")}</p>
-                ) : (
-                  <ul className="space-y-1 text-sm">
-                    {lines.map((l, i) => (
-                      <li key={i} className="whitespace-pre-line">
-                        <SemanticIcoText text={l} size={15} />
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <div className="mt-4 flex gap-2">
-                  <button onClick={() => setPeek(null)} className="flex-1 rounded-2xl bg-tint py-2 text-sm">
-                    Close
-                  </button>
+                <div className="shrink-0 px-5 pb-3 pt-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.23em] text-muted-foreground">{t("Day summary")}</p>
+                      <h3 className="mt-1.5 text-[21px] font-black tracking-[-0.035em] text-foreground">
+                        {d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}
+                      </h3>
+                    </div>
+                    <button type="button" onClick={() => setPeek(null)} aria-label={t("Close")} className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-border/70 bg-tint/70 text-lg font-bold text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,.75)] transition active:scale-95">×</button>
+                  </div>
+
                   <button
+                    type="button"
                     onClick={() => {
                       onSelect(peek);
                       setPeek(null);
                     }}
-                    className="flex-1 rounded-2xl bg-primary py-2 text-sm text-primary-foreground"
+                    className="mt-3 flex w-full items-center gap-3 rounded-[19px] border border-border/55 bg-tint/45 px-3 py-2.5 text-left transition active:scale-[0.99]"
                   >
-                    Open day
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-border/60 bg-background/80 text-base">📅</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[13px] font-bold text-foreground">{entryCount} {entryCount === 1 ? "entry" : "entries"} · {summary.length} {summary.length === 1 ? "log" : "logs"}</span>
+                      <span className="mt-0.5 block text-[11px] text-muted-foreground">{t("Tap to open this day")}</span>
+                    </span>
+                    <span aria-hidden className="text-lg text-muted-foreground">›</span>
                   </button>
                 </div>
-              </div>
+
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 touch-pan-y">
+                  {summary.length === 0 ? (
+                    <div className="rounded-[20px] border border-border/55 bg-tint/30 px-4 py-5 text-center text-sm text-muted-foreground">{t("Nothing logged on this day.")}</div>
+                  ) : (
+                    <div className="overflow-hidden rounded-[22px] border border-border/55 bg-background/75">
+                      {summary.map((row, index) => (
+                        <button
+                          key={`${row.label}-${index}`}
+                          type="button"
+                          onClick={() => {
+                            onSelect(peek);
+                            setPeek(null);
+                          }}
+                          className={`grid w-full grid-cols-[34px_minmax(0,1fr)_auto_14px] items-center gap-2 px-3 py-2.5 text-left transition hover:bg-tint/35 active:bg-tint/55 ${index ? "border-t border-border/45" : ""}`}
+                        >
+                          <span className="grid h-8 w-8 place-items-center text-[18px] leading-none"><Ico e={row.icon} size={18} /></span>
+                          <span className="min-w-0">
+                            <span className="block truncate text-[12.5px] font-bold leading-tight text-foreground">{row.label}</span>
+                            {row.meta ? <span className="mt-0.5 block truncate text-[10.5px] leading-tight text-muted-foreground">{row.meta}</span> : null}
+                          </span>
+                          <span className="max-w-[118px] truncate text-right text-[12.5px] font-extrabold leading-tight" style={{ color: row.accent ?? "var(--foreground)" }}>{row.value}</span>
+                          <span aria-hidden className="text-[18px] leading-none text-muted-foreground">›</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </section>
             </div>
           );
         })()}
