@@ -46,6 +46,15 @@
   letter-spacing: -0.02em !important;
 }
 
+/* Small chart typography: rounded like the rest of BIXBO, but deliberately
+   regular-weight so axes, ticks, legends and tiny values stay light. */
+#main-content :where(svg text, .recharts-text, .recharts-cartesian-axis-tick-value, .recharts-legend-item-text),
+.bixbo-chart-fade :where(text, span, p) {
+  font-family: ui-rounded, "SF Pro Rounded", "Arial Rounded MT", var(--font-sans) !important;
+  font-weight: 400 !important;
+  letter-spacing: -0.01em;
+}
+
 /* LOGS */
 .bixbo-unified-log { width: 100%; overflow-x: clip; scroll-padding-top: 56px; }
 .bixbo-unified-log > * { width: 100%; max-width: var(--bixbo-content-max); margin-inline: auto; }
