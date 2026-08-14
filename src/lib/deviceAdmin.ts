@@ -1,40 +1,36 @@
+import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
 const DEVICE_ADMIN_KEY = "bixbo-admin-device";
-const ADMIN_USER_ID = "ec7819b0-aed8-4a77-a0d8-3ce2e82fc531";
 const ADMIN_UNLOCK_KEY = "bixbo-admin-unlocked";
 
 function normalizeUserId(value: unknown): string {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
 }
 
-/**
- * Supabase persists its current auth session in localStorage. This synchronous
- * reader is intentionally small so owner-only UI (including the HAK calendar)
- * can stay hidden before another asynchronous auth request is needed.
- *
- * This is a UI visibility hint, not a server authorization boundary. Any future
- * privileged database/server operation must still authorize the JWT server-side.
- */
-export function getCurrentStoredAuthUserId(): string | null {
+type StoredAuthUser = {
+  id?: unknown;
+  app_metadata?: { bixbo_owner?: unknown };
+};
+
+function getCurrentStoredAuthUser(): StoredAuthUser | null {
   if (typeof window === "undefined") return null;
 
   try {
     for (let index = 0; index < window.localStorage.length; index += 1) {
       const key = window.localStorage.key(index);
       if (!key || !key.startsWith("sb-") || !key.includes("-auth-token")) continue;
-
       const raw = window.localStorage.getItem(key);
       if (!raw) continue;
 
       try {
         const parsed = JSON.parse(raw) as {
-          user?: { id?: unknown };
-          currentSession?: { user?: { id?: unknown } };
-          session?: { user?: { id?: unknown } };
+          user?: StoredAuthUser;
+          currentSession?: { user?: StoredAuthUser };
+          session?: { user?: StoredAuthUser };
         };
-        const userId = normalizeUserId(
-          parsed?.user?.id ?? parsed?.currentSession?.user?.id ?? parsed?.session?.user?.id,
-        );
-        if (userId) return userId;
+        const user = parsed?.user ?? parsed?.currentSession?.user ?? parsed?.session?.user;
+        if (user && normalizeUserId(user.id)) return user;
       } catch {
         // Ignore unrelated/chunk metadata entries and continue looking.
       }
@@ -46,18 +42,78 @@ export function getCurrentStoredAuthUserId(): string | null {
   return null;
 }
 
+export function getCurrentStoredAuthUserId(): string | null {
+  return normalizeUserId(getCurrentStoredAuthUser()?.id) || null;
+}
+
 /** Backwards-compatible alias for older imports. */
 export function getCurrentStoredAuthEmail(): string | null {
   return null;
 }
 
 export function isAdminOwnerAccount(): boolean {
-  return getCurrentStoredAuthUserId() === ADMIN_USER_ID;
+  return getCurrentStoredAuthUser()?.app_metadata?.bixbo_owner === true;
+}
+
+let ownerRefreshInFlight: Promise<void> | null = null;
+
+/**
+ * Refresh the JWT once so server-owned `app_metadata` changes are reflected in
+ * Supabase's persisted session. No personal owner UUID/email and no editable
+ * local "owner=true" cache is embedded in the frontend.
+ */
+async function refreshOwnerClaim(): Promise<void> {
+  if (typeof window === "undefined") return;
+  if (ownerRefreshInFlight) return ownerRefreshInFlight;
+
+  const wasOwner = isAdminOwnerAccount();
+  ownerRefreshInFlight = (async () => {
+    try {
+      const { data, error } = await supabase.auth.refreshSession();
+      if (error) throw error;
+      const nextOwner = data.session?.user?.app_metadata?.bixbo_owner === true;
+
+      // Existing owner-only components read the persisted session synchronously.
+      // Reload only for the one-time transition from an old token to the newly
+      // issued signed owner claim.
+      if (nextOwner && !wasOwner) window.location.reload();
+    } catch {
+      // A refresh/network failure must never grant owner access.
+    } finally {
+      ownerRefreshInFlight = null;
+    }
+  })();
+
+  return ownerRefreshInFlight;
+}
+
+export function useOwnerAccessSync(): void {
+  useEffect(() => {
+    void refreshOwnerClaim();
+
+    const { data } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") {
+        try {
+          window.localStorage.removeItem(DEVICE_ADMIN_KEY);
+          window.sessionStorage.removeItem(ADMIN_UNLOCK_KEY);
+        } catch {
+          // Ignore unavailable storage.
+        }
+        return;
+      }
+
+      // SIGNED_IN can occur with a token minted before a server-side owner claim
+      // was added. Do not recurse on TOKEN_REFRESHED.
+      if (event === "SIGNED_IN") void refreshOwnerClaim();
+    });
+
+    return () => data.subscription.unsubscribe();
+  }, []);
 }
 
 /**
- * The owner-only/admin UI follows the authenticated owner account. The legacy
- * function name is retained because existing Profile components already use it.
+ * The owner-only/admin UI follows the authenticated server-issued owner claim.
+ * The legacy function name is retained because existing Profile components use it.
  */
 export function isDeviceAdminEnabled(): boolean {
   return isAdminOwnerAccount();
@@ -78,8 +134,8 @@ export function enableDeviceAdmin(): void {
   }
 
   try {
-    // Retained only for backwards compatibility with older installations.
-    // Visibility/access is determined by the authenticated owner user ID above.
+    // Kept only for backwards compatibility with older installations. It is not
+    // used as an authorization or owner-visibility signal.
     window.localStorage.setItem(DEVICE_ADMIN_KEY, "1");
   } catch {
     // Storage can be unavailable in restricted/private browser contexts.

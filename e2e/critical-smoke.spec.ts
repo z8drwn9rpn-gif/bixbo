@@ -5,10 +5,13 @@ test("auth screen renders and account modes work", async ({ page }) => {
   await page.goto("/auth");
   await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
   await expect(page.getByLabel("Email")).toBeVisible();
-  await expect(page.getByLabel("Password (min 6 chars)")).toBeVisible();
+  await expect(page.getByLabel("Password")).toBeVisible();
 
   await page.getByRole("button", { name: "Create account", exact: true }).first().click();
   await expect(page.getByLabel("Your name (optional)")).toBeVisible();
+  const signupPassword = page.getByLabel("Password (min 8 chars)");
+  await expect(signupPassword).toBeVisible();
+  await expect(signupPassword).toHaveAttribute("minlength", "8");
 });
 
 test("local Google OAuth returns to production BIXBO, never localhost", async ({ page }) => {
