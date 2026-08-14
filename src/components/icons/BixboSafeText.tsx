@@ -1,9 +1,12 @@
 import { Fragment } from "react";
 import { Ico, NoteIcon } from "./BixboExtraIcons";
 import { semanticIconForLabel } from "./BixboFoodIcons";
+import { keyboardEmojiIcon } from "./BixboKeyboardEmojiIcons";
 
-const EMOJI_RE = /(\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic}|\p{Emoji_Modifier})*)/gu;
-const HAS_EMOJI_RE = /\p{Extended_Pictographic}/u;
+// Covers normal pictographic emoji, ZWJ families/professions, skin tones,
+// flags and keycap emoji so iOS never gets a chance to render them natively.
+const EMOJI_RE = /(\p{Regional_Indicator}{2}|[#*0-9]\uFE0F?\u20E3|\p{Extended_Pictographic}(?:\uFE0F|\p{Emoji_Modifier})?(?:\u200D\p{Extended_Pictographic}(?:\uFE0F|\p{Emoji_Modifier})?)*)/gu;
+const HAS_EMOJI_RE = /(\p{Regional_Indicator}{2}|[#*0-9]\uFE0F?\u20E3|\p{Extended_Pictographic})/u;
 
 const FOOD_EMOJI_LABELS: Record<string, string> = {
   "🍎": "apple",
@@ -90,11 +93,19 @@ export function BixboSafeText({ text, size = 16, className }: { text: string; si
           if (FoodIcon) return <FoodIcon key={index} size={size} className="inline-block shrink-0 align-[-0.15em]" />;
         }
 
+        // Mega keyboard coverage: faces, people, hands, animals, nature,
+        // weather, travel, objects, celebration, food, sport and symbols.
+        const KeyboardIcon = keyboardEmojiIcon(part);
+        if (KeyboardIcon) {
+          return <KeyboardIcon key={index} size={size} className="inline-block shrink-0 align-[-0.15em]" />;
+        }
+
         if (SAFE_BIXBO_SYMBOLS.has(part) || SAFE_BIXBO_SYMBOLS.has(normalized)) {
           return <Ico key={index} e={part} size={size} className="inline-block shrink-0 align-[-0.15em]" />;
         }
 
-        // Never leak the platform/Apple emoji renderer into BIXBO.
+        // Unsupported/new Unicode emoji never leak the Apple renderer.
+        // Keep a neutral BIXBO glyph rather than the old star fallback.
         return <NoteIcon key={index} size={size} className="inline-block shrink-0 align-[-0.15em]" />;
       })}
     </span>
