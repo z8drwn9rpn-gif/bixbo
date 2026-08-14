@@ -8,7 +8,7 @@ describe("Day Overview UX consistency", () => {
   it("uses explicit Note labels instead of bare quoted notes", () => {
     expect(source).toContain('{t("Note")}:</span> {log.periodInfo.note}');
     expect(source).toContain('{t("Note")}:</span> {p.note}');
-    expect(source).toContain('{t("Note")}:</span> {s.note}');
+    expect(source).toContain('{t("Note")}:</span> {sx.note}');
     expect(source).toContain('{t("Note")}:</span> {h.note}');
     expect(source).toContain('{t("Note")}:</span> {w.note}');
   });
