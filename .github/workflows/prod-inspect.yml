@@ -1,0 +1,18 @@
+name: Inspect production fingerprint
+
+on:
+  push:
+    branches: [verify-production-audit-final]
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Read production assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          html="$(curl -fsS --max-time 20 -H 'Cache-Control: no-cache' "https://bixbo.z8drwn9rpn.workers.dev/?__fingerprint=$(date +%s)")"
+          printf '%s' "$html" | grep -oE '/assets/[^" ]+\.(js|css)' | sort -u
+          curl -fsS --max-time 20 "https://bixbo.z8drwn9rpn.workers.dev/manifest.json?__fingerprint=$(date +%s)" | head -c 500
+          echo
