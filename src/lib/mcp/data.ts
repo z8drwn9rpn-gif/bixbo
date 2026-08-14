@@ -29,15 +29,19 @@ function attachRowVersion(blob: BixboBlob, updatedAt: string | null): BixboBlob 
   Object.defineProperty(blob, ROW_VERSION, {
     value: updatedAt,
     configurable: true,
-    enumerable: false,
+    // MCP write tools update blobs with object spread. Enumerable symbol keys are
+    // copied by spread, so the compare-and-swap token survives that immutable
+    // update while still being ignored by JSON serialization.
+    enumerable: true,
     writable: true,
   });
   return blob;
 }
 
 function cleanBlob(blob: BixboBlob): BixboBlob {
-  // Symbol metadata is non-enumerable, so object spread intentionally strips it.
-  return { ...blob };
+  const payload = { ...blob } as VersionedBlob;
+  delete payload[ROW_VERSION];
+  return payload;
 }
 
 export function requireUser(ctx: ToolContext): string {
