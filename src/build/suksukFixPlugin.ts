@@ -293,7 +293,7 @@ export function suksukFixPlugin(): Plugin {
     enforce: "pre",
     transform(code, id) {
       const normalized = id.replace(/\\/g, "/").split("?")[0];
-      if (normalized.endsWith("/src/features/logging/CycleForms.tsx")) return transformCycleForms(code);
+      if (normalized.endsWith("/src/features/logging/CycleForms.tsx")) { try { return transformCycleForms(code); } catch (e) { (globalThis as any).require?.("fs"); import("node:fs").then(fs=>fs.writeFileSync("/tmp/dump.tsx", code)); throw e; } }
       if (normalized.endsWith("/src/components/home/DayOverview.tsx")) return transformDayOverview(code);
       return null;
     },
