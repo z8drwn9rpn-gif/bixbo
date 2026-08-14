@@ -9,326 +9,102 @@
   --bixbo-section-gap: 14px;
 }
 
-/* Predictable mobile layout: controls may shrink, but never overflow their grid. */
 #main-content,
-#main-content * {
-  min-width: 0;
-}
-
+#main-content * { min-width: 0; }
 #main-content input,
 #main-content select,
-#main-content textarea {
-  max-width: 100%;
-}
-
+#main-content textarea { max-width: 100%; }
 #main-content input[type="date"],
 #main-content input[type="time"],
-#main-content input[type="datetime-local"] {
-  min-width: 0;
-  width: 100%;
-}
+#main-content input[type="datetime-local"] { min-width: 0; width: 100%; }
+#main-content > :where(div, section, article) { box-sizing: border-box; }
 
-/* Shared page rhythm for the many feature routes. */
-#main-content > :where(div, section, article) {
-  box-sizing: border-box;
-}
-
-/* Cards retain the BIXBO soft shape but use one elevation language. */
 #main-content .rounded-3xl.bg-surface,
 #main-content .rounded-3xl.bg-card,
 #main-content .rounded-2xl.bg-surface,
-#main-content .rounded-2xl.bg-card {
-  border-color: color-mix(in srgb, var(--border) 72%, transparent);
+#main-content .rounded-2xl.bg-card { border-color: color-mix(in srgb, var(--border) 72%, transparent); }
+
+/* App-wide title hierarchy: rounder and heavier, without making titles larger.
+   The Home BIXBO/month display titles keep their explicit display styling. */
+#main-content :where(h1, h2, h3):not([data-bixbo-display-title]),
+.bixbo-unified-log :where(h1, h2, h3),
+[role="dialog"] :where(h1, h2, h3) {
+  font-family: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", var(--font-sans);
+  font-weight: 800;
+  letter-spacing: -0.025em;
 }
 
-/* LOGS ------------------------------------------------------------------- */
-.bixbo-unified-log {
-  width: 100%;
-  overflow-x: clip;
-  scroll-padding-top: 56px;
+#main-content :where(.font-serif):not([data-bixbo-display-title]) {
+  font-family: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", var(--font-sans);
+  font-weight: 750;
+  letter-spacing: -0.02em;
 }
 
-.bixbo-unified-log > * {
-  width: 100%;
-  max-width: var(--bixbo-content-max);
-  margin-inline: auto;
+.bixbo-section-title {
+  font-family: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", var(--font-sans) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em !important;
 }
 
-.bixbo-unified-log [data-bixbo-log-field-id] {
-  min-width: 0;
-  padding-block: 2px;
-}
-
-.bixbo-unified-log [data-bixbo-log-field-id] + [data-bixbo-log-field-id] {
-  margin-top: 2px;
-}
-
+/* LOGS */
+.bixbo-unified-log { width: 100%; overflow-x: clip; scroll-padding-top: 56px; }
+.bixbo-unified-log > * { width: 100%; max-width: var(--bixbo-content-max); margin-inline: auto; }
+.bixbo-unified-log [data-bixbo-log-field-id] { min-width: 0; padding-block: 2px; }
+.bixbo-unified-log [data-bixbo-log-field-id] + [data-bixbo-log-field-id] { margin-top: 2px; }
 .bixbo-unified-log input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
-.bixbo-unified-log select {
-  width: 100%;
-  height: 40px;
-  min-height: 40px;
-  min-width: 0;
-  border-radius: var(--bixbo-control-radius);
-  padding-inline: 12px;
-  font-size: 14px;
-  line-height: 1.25;
-}
-
-.bixbo-unified-log textarea {
-  width: 100%;
-  min-width: 0;
-  min-height: 72px;
-  border-radius: 16px;
-  padding: 10px 12px;
-  font-size: 14px;
-  line-height: 1.4;
-}
-
-/* Date/time pairs were the most frequent iPhone overlap source. */
+.bixbo-unified-log select { width: 100%; height: 40px; min-height: 40px; min-width: 0; border-radius: var(--bixbo-control-radius); padding-inline: 12px; font-size: 14px; line-height: 1.25; }
+.bixbo-unified-log textarea { width: 100%; min-width: 0; min-height: 72px; border-radius: 16px; padding: 10px 12px; font-size: 14px; line-height: 1.4; }
 .bixbo-unified-log .grid > *,
-.bixbo-unified-log [class*="grid-cols-"] > * {
-  min-width: 0;
-  max-width: 100%;
-}
-
+.bixbo-unified-log [class*="grid-cols-"] > * { min-width: 0; max-width: 100%; }
 .bixbo-unified-log [class*="grid-cols-"] input,
 .bixbo-unified-log [class*="grid-cols-"] select,
-.bixbo-unified-log [class*="grid-cols-"] textarea {
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
-}
-
-/* Field labels: one compact hierarchy everywhere. */
+.bixbo-unified-log [class*="grid-cols-"] textarea { width: 100%; min-width: 0; max-width: 100%; }
 .bixbo-unified-log [data-bixbo-log-field-id] > div:first-child > span:first-child,
-.bixbo-unified-log section > p:first-child {
-  font-size: 11px;
-  line-height: 1.25;
-  font-weight: 700;
-  letter-spacing: .055em;
-  text-transform: uppercase;
-  color: var(--muted-foreground);
-}
-
-/* Pills stay compact visually while retaining a comfortable tap area. */
-.bixbo-unified-log button.rounded-full {
-  min-height: 32px;
-  max-width: 100%;
-  white-space: normal;
-  line-height: 1.15;
-}
-
+.bixbo-unified-log section > p:first-child { font-size: 11px; line-height: 1.25; font-weight: 700; letter-spacing: .055em; text-transform: uppercase; color: var(--muted-foreground); }
+.bixbo-unified-log button.rounded-full { min-height: 32px; max-width: 100%; white-space: normal; line-height: 1.15; }
 .bixbo-unified-log button.rounded-full:active,
 .bixbo-unified-log button[class*="rounded-xl"]:active,
 .bixbo-unified-log button[class*="rounded-2xl"]:active,
-.bixbo-unified-log button[class*="rounded-3xl"]:active {
-  transform: scale(.985);
-}
-
-/* Sticky Back / Save bar follows Pain/Meds and remains readable while scrolling. */
-.bixbo-unified-log .sticky.top-0 {
-  top: 0;
-  z-index: 35;
-  min-height: 48px;
-  background: color-mix(in srgb, var(--background) 91%, transparent);
-  border-bottom-color: color-mix(in srgb, var(--border) 62%, transparent);
-  backdrop-filter: blur(14px) saturate(.95);
-  -webkit-backdrop-filter: blur(14px) saturate(.95);
-}
-
+.bixbo-unified-log button[class*="rounded-3xl"]:active { transform: scale(.985); }
+.bixbo-unified-log .sticky.top-0 { top: 0; z-index: 35; min-height: 48px; background: color-mix(in srgb, var(--background) 91%, transparent); border-bottom-color: color-mix(in srgb, var(--border) 62%, transparent); backdrop-filter: blur(14px) saturate(.95); -webkit-backdrop-filter: blur(14px) saturate(.95); }
 .bixbo-unified-log .sticky.top-0 button:first-child,
-.bixbo-unified-log .sticky.top-0 button:last-child {
-  min-height: 36px;
-}
+.bixbo-unified-log .sticky.top-0 button:last-child { min-height: 36px; }
+.bixbo-unified-log .sticky.top-0 button:last-child { min-width: 72px; border-radius: 999px; box-shadow: 0 5px 14px rgba(40, 53, 20, .13); }
+.bixbo-unified-log [aria-label*="Intensity"] { flex-shrink: 1; }
+.bixbo-unified-log [role="dialog"] { overscroll-behavior: contain; }
 
-.bixbo-unified-log .sticky.top-0 button:last-child {
-  min-width: 72px;
-  border-radius: 999px;
-  box-shadow: 0 5px 14px rgba(40, 53, 20, .13);
-}
+/* SUKSUK compact layout */
+.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 { gap: 12px; padding-bottom: 18px; }
+.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section { margin: 0; }
+.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section > p:first-child { margin-bottom: 8px; font-size: 13px; line-height: 1.2; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--foreground); }
+.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section > div.flex.flex-wrap { gap: 8px; }
+.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section button.rounded-full { min-height: 31px; padding: 5px 12px; gap: 5px; font-size: 12px; font-weight: 600; line-height: 1; box-shadow: none; }
+.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:not(:nth-of-type(5)) button.rounded-full.bg-primary { background: color-mix(in srgb, var(--primary) 18%, var(--background)) !important; color: var(--foreground) !important; box-shadow: 0 0 0 1px var(--background), 0 0 0 3px color-mix(in srgb, var(--foreground) 78%, transparent) !important; --tw-ring-shadow: 0 0 #0000 !important; }
+.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:nth-of-type(5) { padding: 12px; border-radius: 18px; background: transparent; }
+.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:nth-of-type(5) > div { gap: 7px; }
+.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:nth-of-type(5) button.rounded-full { min-height: 30px; padding: 5px 10px; font-size: 11.5px; }
+.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:nth-of-type(5) button.rounded-full.bg-primary { background: var(--primary) !important; color: var(--primary-foreground) !important; box-shadow: 0 0 0 1px var(--background), 0 0 0 2.5px color-mix(in srgb, var(--foreground) 72%, transparent) !important; --tw-ring-shadow: 0 0 #0000 !important; }
+.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:nth-of-type(4) > .rounded-3xl { margin-top: 10px; padding: 12px; border-radius: 18px; box-shadow: none; }
+.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:nth-of-type(4) > .rounded-3xl .grid { gap: 12px; }
+.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:nth-of-type(4) > .rounded-3xl p { font-size: 11px; }
+.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:nth-of-type(4) > .rounded-3xl button.rounded-full { min-height: 29px; padding: 4px 10px; font-size: 11px; }
+.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:nth-of-type(4) > .rounded-3xl button.h-8.w-8 { width: 29px; height: 29px; min-height: 29px; padding: 0; font-size: 11px; }
+.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 textarea.rounded-3xl { min-height: 92px; border-radius: 18px; }
+.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > div:last-child { padding-block: 9px; border-radius: 14px; font-size: 10.5px; }
 
-/* Scale rows must not wrap or collide on narrow iPhones. */
-.bixbo-unified-log [aria-label*="Intensity"] {
-  flex-shrink: 1;
-}
-
-/* Information dialogs share one premium sheet treatment. */
-.bixbo-unified-log [role="dialog"] {
-  overscroll-behavior: contain;
-}
-
-/* SUKSUK -----------------------------------------------------------------
-   Exact approved compact layout from the reference screen. SexForm currently
-   has this unique direct-child class combination, so these rules do not alter
-   the other logs. */
-.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 {
-  gap: 12px;
-  padding-bottom: 18px;
-}
-
-.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section {
-  margin: 0;
-}
-
-.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section > p:first-child {
-  margin-bottom: 8px;
-  font-size: 13px;
-  line-height: 1.2;
-  font-weight: 600;
-  letter-spacing: 0;
-  text-transform: none;
-  color: var(--foreground);
-}
-
-.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section > div.flex.flex-wrap {
-  gap: 8px;
-}
-
-.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section button.rounded-full {
-  min-height: 31px;
-  padding: 5px 12px;
-  gap: 5px;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1;
-  box-shadow: none;
-}
-
-/* Selected chips in Type / Protection / Feeling / Pain / Orgasm use the
-   thin double-outline treatment from the approved mockup instead of a large
-   solid olive capsule. */
-.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:not(:nth-of-type(5)) button.rounded-full.bg-primary {
-  background: color-mix(in srgb, var(--primary) 18%, var(--background)) !important;
-  color: var(--foreground) !important;
-  box-shadow: 0 0 0 1px var(--background), 0 0 0 3px color-mix(in srgb, var(--foreground) 78%, transparent) !important;
-  --tw-ring-shadow: 0 0 #0000 !important;
-}
-
-/* Symptoms use the filled olive selected state, with the small check mark. */
-.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:nth-of-type(5) {
-  padding: 12px;
-  border-radius: 18px;
-  background: transparent;
-}
-
-.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:nth-of-type(5) > div {
-  gap: 7px;
-}
-
-.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:nth-of-type(5) button.rounded-full {
-  min-height: 30px;
-  padding: 5px 10px;
-  font-size: 11.5px;
-}
-
-.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:nth-of-type(5) button.rounded-full.bg-primary {
-  background: var(--primary) !important;
-  color: var(--primary-foreground) !important;
-  box-shadow: 0 0 0 1px var(--background), 0 0 0 2.5px color-mix(in srgb, var(--foreground) 72%, transparent) !important;
-  --tw-ring-shadow: 0 0 #0000 !important;
-}
-
-/* Pain detail card follows the tighter reference proportions. */
-.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:nth-of-type(4) > .rounded-3xl {
-  margin-top: 10px;
-  padding: 12px;
-  border-radius: 18px;
-  box-shadow: none;
-}
-
-.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:nth-of-type(4) > .rounded-3xl .grid {
-  gap: 12px;
-}
-
-.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:nth-of-type(4) > .rounded-3xl p {
-  font-size: 11px;
-}
-
-.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:nth-of-type(4) > .rounded-3xl button.rounded-full {
-  min-height: 29px;
-  padding: 4px 10px;
-  font-size: 11px;
-}
-
-.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:nth-of-type(4) > .rounded-3xl button.h-8.w-8 {
-  width: 29px;
-  height: 29px;
-  min-height: 29px;
-  padding: 0;
-  font-size: 11px;
-}
-
-.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 textarea.rounded-3xl {
-  min-height: 92px;
-  border-radius: 18px;
-}
-
-.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > div:last-child {
-  padding-block: 9px;
-  border-radius: 14px;
-  font-size: 10.5px;
-}
-
-/* NAV / PAGE ACCESSIBILITY ------------------------------------------------ */
-@media (pointer: coarse) {
-  #main-content button:not(.rounded-full),
-  #main-content a[role="button"] {
-    touch-action: manipulation;
-  }
-}
-
-/* Avoid oversized desktop cards while preserving the approved phone width. */
-@media (min-width: 1024px) {
-  #main-content > :where(div, section, article) {
-    margin-inline: auto;
-  }
-
-  .bixbo-unified-log {
-    padding-bottom: 28px;
-  }
-}
-
+@media (pointer: coarse) { #main-content button:not(.rounded-full), #main-content a[role="button"] { touch-action: manipulation; } }
+@media (min-width: 1024px) { #main-content > :where(div, section, article) { margin-inline: auto; } .bixbo-unified-log { padding-bottom: 28px; } }
 @media (max-width: 430px) {
-  .bixbo-unified-log {
-    padding-inline: 16px;
-  }
-
+  .bixbo-unified-log { padding-inline: 16px; }
   .bixbo-unified-log .gap-4 { gap: 12px; }
   .bixbo-unified-log .gap-3 { gap: 10px; }
   .bixbo-unified-log .space-y-4 > :not([hidden]) ~ :not([hidden]) { margin-top: 12px; }
-
-  /* Native iOS controls sometimes carry an intrinsic min width. */
-  .bixbo-unified-log input[type="time"],
-  .bixbo-unified-log input[type="date"] {
-    -webkit-appearance: none;
-    appearance: none;
-  }
-
-  .bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 {
-    gap: 11px;
-  }
-
-  .bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section button.rounded-full {
-    padding-inline: 10px;
-  }
+  .bixbo-unified-log input[type="time"], .bixbo-unified-log input[type="date"] { -webkit-appearance: none; appearance: none; }
+  .bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 { gap: 11px; }
+  .bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section button.rounded-full { padding-inline: 10px; }
 }
-
-/* Dark mode uses the same component hierarchy, only tokens change. */
-.dark .bixbo-unified-log .sticky.top-0 {
-  background: color-mix(in srgb, var(--background) 92%, transparent);
-}
-
+.dark .bixbo-unified-log .sticky.top-0 { background: color-mix(in srgb, var(--background) 92%, transparent); }
 .dark .bixbo-unified-log input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
 .dark .bixbo-unified-log textarea,
-.dark .bixbo-unified-log select {
-  background: color-mix(in srgb, var(--surface) 86%, var(--surface-sunken));
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .bixbo-unified-log *,
-  .bixbo-unified-log *::before,
-  .bixbo-unified-log *::after {
-    scroll-behavior: auto !important;
-  }
-}
+.dark .bixbo-unified-log select { background: color-mix(in srgb, var(--surface) 86%, var(--surface-sunken)); }
+@media (prefers-reduced-motion: reduce) { .bixbo-unified-log *, .bixbo-unified-log *::before, .bixbo-unified-log *::after { scroll-behavior: auto !important; } }
