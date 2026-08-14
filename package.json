@@ -10,7 +10,8 @@
     "start": "node .output/server/index.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --rule '@typescript-eslint/no-empty-object-type: off'",
-    "check": "bun run typecheck && bun run lint && bun test && bun run build"
+    "smoke:ssr": "node scripts/ssr-smoke.mjs",
+    "check": "bun run typecheck && bun run lint && bun test && bun run build && bun run smoke:ssr"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
