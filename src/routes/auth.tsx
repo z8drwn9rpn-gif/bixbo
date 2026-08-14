@@ -55,7 +55,12 @@ function AuthPage() {
   }, [finishAuth]);
 
   const authReturnUrl = () => {
-    const url = new URL("/auth", window.location.origin);
+    const productionOrigin = "https://bixbo.z8drwn9rpn.workers.dev";
+    const { hostname, origin } = window.location;
+    const isLocal = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]";
+    const isLovablePreview = hostname === "bixbo.lovable.app" || hostname.endsWith(".lovable.app");
+    const returnOrigin = isLocal || isLovablePreview ? productionOrigin : (origin || productionOrigin);
+    const url = new URL("/auth", returnOrigin);
     if (next) url.searchParams.set("next", next);
     return url.toString();
   };
