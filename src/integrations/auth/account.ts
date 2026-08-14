@@ -10,18 +10,22 @@ type SignInOptions = {
 
 type OAuthProvider = "google" | "apple";
 
-const PRODUCTION_APP_ORIGIN = "https://bixbo.z8drwn9rpn.workers.dev";
+export const PRODUCTION_APP_ORIGIN = "https://bixbo.z8drwn9rpn.workers.dev";
 
-function defaultOAuthReturnUrl(): string {
-  if (typeof window === "undefined") return PRODUCTION_APP_ORIGIN;
-
-  const { hostname, origin } = window.location;
-  const isLocal = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]";
-  const isLovablePreview = hostname === "bixbo.lovable.app" || hostname.endsWith(".lovable.app");
+/** Pure redirect policy so the production/preview contract can be regression-tested. */
+export function oauthReturnUrlForLocation(hostname: string, origin: string): string {
+  const normalizedHost = hostname.trim().toLowerCase();
+  const isLocal = normalizedHost === "localhost" || normalizedHost === "127.0.0.1" || normalizedHost === "[::1]";
+  const isLovablePreview = normalizedHost === "bixbo.lovable.app" || normalizedHost.endsWith(".lovable.app");
 
   // Production auth must never fall back to localhost or an editor/preview host.
   if (isLocal || isLovablePreview) return PRODUCTION_APP_ORIGIN;
   return origin || PRODUCTION_APP_ORIGIN;
+}
+
+function defaultOAuthReturnUrl(): string {
+  if (typeof window === "undefined") return PRODUCTION_APP_ORIGIN;
+  return oauthReturnUrlForLocation(window.location.hostname, window.location.origin);
 }
 
 export const accountAuth = {
