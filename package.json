@@ -7,13 +7,13 @@
     "dev": "vite dev",
     "build": "vite build",
     "build:dev": "vite build --mode development",
-    "start": "node .output/server/index.mjs",
+    "start": "wrangler dev",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --rule '@typescript-eslint/no-empty-object-type: off'",
     "architecture": "node scripts/check-source-size.mjs",
     "smoke:ssr": "node scripts/ssr-smoke.mjs",
-    "check": "bun run architecture && bun run typecheck && bun run lint && bun test && bun run build && bun run smoke:ssr && bun run e2e",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "check": "bun run architecture && bun run typecheck && bun run lint && bun test && bun run build && bun run smoke:ssr && bun run e2e"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
