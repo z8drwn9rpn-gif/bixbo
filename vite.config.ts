@@ -14,7 +14,7 @@ import { suksukFixPlugin } from "./src/build/suksukFixPlugin";
 import { bixboIconMigrationPlugin } from "./src/build/bixboIconMigrationPlugin";
 
 export default defineConfig({
-  plugins: [bixboIconMigrationPlugin(), suksukFixPlugin()],
+  plugins: [suksukFixPlugin(), bixboIconMigrationPlugin()],
   tanstackStart: {
     server: {
       entry: "server",
