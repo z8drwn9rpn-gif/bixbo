@@ -185,12 +185,13 @@ export function CustomChipList({
   const { t } = useI18n();
   const [adding, setAdding] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [text, setText] = useState("");
   const [infoFor, setInfoFor] = useState<string | null>(null);
 
   return (
     <div className="mt-2">
-      <div className="mb-2 flex items-center gap-2">
+      <div className="relative mb-2 flex min-h-7 items-center justify-end">
         {adding ? (
           <div className="flex flex-1 items-center gap-1">
             <Input
@@ -226,22 +227,53 @@ export function CustomChipList({
             </Button>
           </div>
         ) : (
-          <button
-            type="button"
-            onClick={() => setAdding(true)}
-            className="flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary hover:bg-primary/20"
-          >
-            <Plus className="h-3 w-3" /> {t("Add custom")}
-          </button>
-        )}
-        {!adding && (
-          <button
-            type="button"
-            onClick={() => setEditMode((v) => !v)}
-            className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${editMode ? "bg-primary text-primary-foreground" : "bg-tint text-muted-foreground hover:text-foreground"}`}
-          >
-            <Pencil className="h-3 w-3" /> {editMode ? t("Done") : t("Edit")}
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={() => setMenuOpen((open) => !open)}
+              aria-label={t("More options")}
+              aria-expanded={menuOpen}
+              className="grid h-7 w-9 place-items-center rounded-full text-lg font-bold leading-none text-muted-foreground transition hover:bg-tint hover:text-foreground"
+            >
+              ⋯
+            </button>
+            {menuOpen ? (
+              <>
+                <button
+                  type="button"
+                  aria-label={t("Close")}
+                  className="fixed inset-0 z-40 cursor-default"
+                  onClick={() => setMenuOpen(false)}
+                />
+                <div className="absolute right-0 top-8 z-50 min-w-[160px] overflow-hidden rounded-2xl border border-border/70 bg-background p-1.5 shadow-xl">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setAdding(true);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-semibold text-foreground transition hover:bg-tint"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    {t("Add custom")}
+                  </button>
+                  {(onRenameCustom || onRemoveCustom) ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        setEditMode((value) => !value);
+                      }}
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-semibold text-foreground transition hover:bg-tint"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                      {editMode ? t("Done") : `${t("Edit")} / ${t("Delete")}`}
+                    </button>
+                  ) : null}
+                </div>
+              </>
+            ) : null}
+          </>
         )}
       </div>
       <div className="flex flex-wrap gap-2">
