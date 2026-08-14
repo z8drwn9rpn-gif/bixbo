@@ -32,7 +32,13 @@ export function HomeSummaryOverlay({ data, onClose, onOpenCalendar, initialMonth
   const month = useMemo(() => {
     const monthStart = new Date(monthAnchor.getFullYear(), monthAnchor.getMonth(), 1);
     const monthEnd = new Date(monthAnchor.getFullYear(), monthAnchor.getMonth() + 1, 0);
-    const keys = daysBetweenInclusive(monthStart, monthEnd);
+    const allKeys = daysBetweenInclusive(monthStart, monthEnd);
+    const currentKey = todayKey();
+
+    // Never let unfinished/future days dilute a monthly summary.
+    // Past months use the whole month; the current month stops at today;
+    // future months therefore contain no eligible days yet.
+    const keys = allKeys.filter((key) => key <= currentKey);
     const logs = keys.map((key) => ({ key, log: data.dayLogs[key] })).filter((item) => !!item.log);
 
     const painEntries = logs.flatMap(({ log }) => log?.pain ?? []);
@@ -61,6 +67,9 @@ export function HomeSummaryOverlay({ data, onClose, onOpenCalendar, initialMonth
 
     const sexEntries = logs.flatMap(({ log }) => log?.sex?.filter((entry) => isIntercourseKind(entry.kind)) ?? []);
     const noteEntries = keys.flatMap((key) => data.dayNotes[key] ?? []);
+
+    // Medication adherence is also limited to elapsed days, so future scheduled
+    // tablets in an unfinished month cannot lower the percentage.
     const meds = summarizeMedicationProgress(data.meds, keys, data.medLog, data.medLogItems ?? {}, new Date());
 
     const periodDays = logs
@@ -207,8 +216,8 @@ export function HomeSummaryOverlay({ data, onClose, onOpenCalendar, initialMonth
             >
               <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-border/60 bg-background/80 text-base">📅</span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-[12.5px] font-bold text-foreground">{month.keys.length} {t("days")} · {month.entryCount} {t("entries")} · {rows.length} {t("logs")}</span>
-                <span className="mt-0.5 block text-[10.5px] text-muted-foreground">{t("Averages for this month")}</span>
+                <span className="block truncate text-[12.5px] font-bold text-foreground">{month.logs.length} {t("days logged")} · {month.entryCount} {t("entries")} · {rows.length} {t("logs")}</span>
+                <span className="mt-0.5 block text-[10.5px] text-muted-foreground">{t("Averages from recorded days only")}</span>
               </span>
               <span aria-hidden className="text-lg text-muted-foreground">›</span>
             </button>
