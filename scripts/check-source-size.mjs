@@ -4,17 +4,18 @@ import path from "node:path";
 const root = path.resolve("src");
 const DEFAULT_LIMIT = 45_000;
 
-// Existing high-churn modules are allowed a frozen ceiling while they are
-// incrementally split. New modules must stay below the default. Notes are
-// intentionally excluded from this audit pass and will get their own refactor.
+// Legacy large modules are ratcheted to approximately their current size: they
+// may shrink/split, but CI blocks meaningful growth back into monoliths. New
+// modules stay below the default. Notes are intentionally excluded from this
+// pass and will get their own dedicated refactor.
 const LEGACY_LIMITS = new Map([
-  ["src/components/icons/BixboIcons.tsx", 75_000],
-  ["src/components/home/DayOverview.tsx", 62_000],
-  ["src/components/home/BirthControlCard.tsx", 53_000],
-  ["src/features/logging/PainWizard.tsx", 53_000],
-  ["src/features/patterns/usePatternsContentModel.tsx", 50_000],
-  ["src/features/patterns/PatternsContentViewPart1.tsx", 50_000],
-  ["src/components/QuickTags.tsx", 50_000],
+  ["src/components/icons/BixboIcons.tsx", 71_600],
+  ["src/components/home/DayOverview.tsx", 60_700],
+  ["src/components/home/BirthControlCard.tsx", 51_200],
+  ["src/features/logging/PainWizard.tsx", 50_900],
+  ["src/features/patterns/usePatternsContentModel.tsx", 47_550],
+  ["src/features/patterns/PatternsContentViewPart1.tsx", 47_200],
+  ["src/components/QuickTags.tsx", 46_600],
 ]);
 
 const EXCLUDED = new Set([
@@ -50,4 +51,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log(`BIXBO source-size guard passed (default ${DEFAULT_LIMIT} bytes; legacy ceilings frozen).`);
+console.log(`BIXBO source-size guard passed (default ${DEFAULT_LIMIT} bytes; legacy ceilings ratcheted).`);
