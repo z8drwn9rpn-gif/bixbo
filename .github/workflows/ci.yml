@@ -43,3 +43,7 @@ jobs:
         run: bun run build
       - name: Smoke built app
         run: bun run smoke:ssr
+      - name: Install Chromium
+        run: bunx playwright install --with-deps chromium
+      - name: Browser E2E
+        run: bun run e2e
