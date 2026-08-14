@@ -564,6 +564,8 @@ export function DayPreview({
           log?.periodInfo?.level ||
           log?.periodInfo?.discharge ||
           log?.periodInfo?.dischargeNote ||
+          log?.periodInfo?.symptoms?.length ||
+          log?.periodInfo?.clots ||
           log?.periodInfo?.cramps != null ||
           log?.periodInfo?.note
         ) && (
@@ -592,6 +594,18 @@ export function DayPreview({
                   {log.periodInfo.dischargeNote ? ` — ${log.periodInfo.dischargeNote}` : ""}
                 </p>
               )}
+              {log?.periodInfo?.symptoms?.length ? (
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                  <span className="font-semibold text-foreground">{t("Period symptoms")}:</span>{" "}
+                  {log.periodInfo.symptoms.map(t).join(", ")}
+                </p>
+              ) : null}
+              {log?.periodInfo?.clots ? (
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                  <span className="font-semibold text-foreground">{t("Clots")}:</span>{" "}
+                  {t(log.periodInfo.clots === "none" ? "None" : log.periodInfo.clots === "small" ? "Small" : log.periodInfo.clots === "medium" ? "Medium" : "Large")}
+                </p>
+              ) : null}
               {log?.periodInfo?.note && (
                 <p className="mt-2 text-sm whitespace-pre-line">
                   <span className="font-semibold">{t("Note")}:</span> {log.periodInfo.note}
