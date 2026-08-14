@@ -1,0 +1,6 @@
+/* Calendar period date contrast.
+   MonthCalendar assigns text-white only when the date has an actual period fill.
+   Keep ordinary/predicted dates on the normal foreground color. */
+#main-content span.text-white.font-semibold {
+  color: #fff !important;
+}
