@@ -1,5 +1,13 @@
 import type { Plugin } from "vite";
 
+// Dev tooling (TanStack devtools) injects data-tsd-source attributes before this
+// plugin runs, which breaks exact-string patching. Strip them first.
+function stripInjectedAttrs(code: string) {
+  return code
+    .replace(/\s*data-tsd-source="[^"]*"/g, "")
+    .replace(/\s+\/>/g, " />");
+}
+
 function replaceOnce(code: string, search: string, replacement: string, label: string) {
   const first = code.indexOf(search);
   if (first < 0) throw new Error(`[suksuk-fix] Missing ${label}`);
@@ -293,8 +301,8 @@ export function suksukFixPlugin(): Plugin {
     enforce: "pre",
     transform(code, id) {
       const normalized = id.replace(/\\/g, "/").split("?")[0];
-      if (normalized.endsWith("/src/features/logging/CycleForms.tsx")) { try { return transformCycleForms(code); } catch (e) { (globalThis as any).require?.("fs"); import("node:fs").then(fs=>fs.writeFileSync("/tmp/dump.tsx", code)); throw e; } }
-      if (normalized.endsWith("/src/components/home/DayOverview.tsx")) return transformDayOverview(code);
+      if (normalized.endsWith("/src/features/logging/CycleForms.tsx")) return transformCycleForms(stripInjectedAttrs(code));
+      if (normalized.endsWith("/src/components/home/DayOverview.tsx")) return transformDayOverview(stripInjectedAttrs(code));
       return null;
     },
   };
