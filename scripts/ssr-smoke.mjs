@@ -3,8 +3,13 @@ import { spawn } from "node:child_process";
 const port = Number(process.env.BIXBO_SMOKE_PORT ?? 4179);
 const host = "127.0.0.1";
 const base = `http://${host}:${port}`;
-const child = spawn(process.execPath, [".output/server/index.mjs"], {
-  env: { ...process.env, PORT: String(port), HOST: host, NITRO_HOST: host, NITRO_PORT: String(port) },
+
+// The production preset is Cloudflare Modules, so .output/server/index.mjs is
+// a Worker module rather than a standalone Node HTTP server. Nitro explicitly
+// supports previewing the prebuilt output through Vite; exercise that adapter
+// here instead of pretending the Worker entry is a Node server.
+const child = spawn(process.platform === "win32" ? "npx.cmd" : "npx", ["vite", "preview", "--host", host, "--port", String(port)], {
+  env: { ...process.env },
   stdio: ["ignore", "pipe", "pipe"],
 });
 
@@ -26,8 +31,8 @@ async function fetchWithTimeout(path, timeoutMs = 5000) {
 
 async function waitForServer() {
   let lastError;
-  for (let attempt = 0; attempt < 40; attempt += 1) {
-    if (child.exitCode != null) throw new Error(`BIXBO server exited early (${child.exitCode}).\n${output}`);
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    if (child.exitCode != null) throw new Error(`BIXBO preview exited early (${child.exitCode}).\n${output}`);
     try {
       const response = await fetchWithTimeout("/");
       if (response.status < 500) return;
@@ -37,7 +42,7 @@ async function waitForServer() {
     }
     await sleep(250);
   }
-  throw new Error(`BIXBO server did not become healthy: ${lastError}\n${output}`);
+  throw new Error(`BIXBO preview did not become healthy: ${lastError}\n${output}`);
 }
 
 async function assertRoute(path, { exactStatus, contentIncludes } = {}) {
@@ -61,7 +66,7 @@ try {
   await assertRoute("/profile");
   await assertRoute("/manifest.json", { exactStatus: 200, contentIncludes: '"name"' });
   await assertRoute("/bixbo-push-sw.js", { exactStatus: 200 });
-  console.log("BIXBO SSR smoke passed.");
+  console.log("BIXBO built-app smoke passed.");
 } finally {
   child.kill("SIGTERM");
   await Promise.race([
