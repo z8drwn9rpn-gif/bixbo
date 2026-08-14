@@ -32,14 +32,26 @@ export default tseslint.config(
           ],
         },
       ],
-      "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
+      // BIXBO intentionally colocates small helpers/constants with route and UI
+      // components. Fast-refresh export shape is therefore not a correctness
+      // signal for this project; real hook correctness remains enforced below.
+      "react-refresh/only-export-components": "off",
       "@typescript-eslint/no-unused-vars": "off",
       "@typescript-eslint/no-explicit-any": "error",
       "no-constant-binary-expression": "warn",
-      "no-misleading-character-class": "warn",
+      "no-misleading-character-class": "error",
       "no-extra-boolean-cast": "warn",
-      "no-empty": "warn",
+      "no-empty": "error",
       "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "error",
+    },
+  },
+  {
+    // Notes is intentionally deferred from this audit pass. Keep its existing
+    // autosave implementation unchanged until the dedicated Notes refactor.
+    files: ["src/routes/notes.tsx", "src/routes/notes-editor.tsx"],
+    rules: {
+      "react-hooks/exhaustive-deps": "off",
     },
   },
   eslintPluginPrettier,
