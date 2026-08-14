@@ -7,7 +7,7 @@ import listNotes from "./tools/list-notes";
 import createNote from "./tools/create-note";
 import listMedications from "./tools/list-medications";
 
-const projectRef = import.meta.env['VITE_SUPABASE_PROJECT_ID'] ?? "project-ref-unset";
+const supabaseUrl = (import.meta.env["VITE_SUPABASE_URL"] ?? "https://wgdydwttzsveevkljkmr.supabase.co").replace(/\/+$/, "");
 
 export default defineMcp({
   name: "bixbo-my-health-diary",
@@ -16,7 +16,7 @@ export default defineMcp({
   instructions:
     "Tools for the signed-in user's BIXBO health diary. Read a day with `get_day_log`, scan history with `list_recent_days`, add day notes and todos, browse or create private notebook notes, and check the medication schedule with `list_medications`. Dates are YYYY-MM-DD and default to today.",
   auth: auth.oauth.issuer({
-    issuer: `https://${projectRef}.supabase.co/auth/v1`,
+    issuer: `${supabaseUrl}/auth/v1`,
     acceptedAudiences: "authenticated",
   }),
   tools: [getDayLog, listRecentDays, addDayNote, addTodo, listNotes, createNote, listMedications],
