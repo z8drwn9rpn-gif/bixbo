@@ -1,10 +1,17 @@
-<!-- LOVABLE:BEGIN -->
-> [!IMPORTANT]
-> This project is connected to [Lovable](https://lovable.dev). Avoid rewriting
-> published git history — force pushing, or rebasing/amending/squashing commits
-> that are already pushed — as it rewrites history on Lovable's side and the
-> user will likely lose their project history.
->
-> Commits you push to the connected branch sync back to Lovable and show up in
-> the editor, so keep the branch in a working state.
-<!-- LOVABLE:END -->
+# BIXBO repository guidance
+
+BIXBO production is owned and deployed independently:
+
+- Source: GitHub `z8drwn9rpn-gif/bixbo`
+- Hosting: Cloudflare Workers
+- Production branch: `main`
+- Database, Auth, Realtime, backups and Edge Functions: BIXBO-owned Supabase project `wgdydwttzsveevkljkmr`
+
+## Change safety
+
+- Keep `main` deployable. Prefer small, reviewable changes and run the full BIXBO checks before merging.
+- Do not force-push or rewrite published history unless explicitly required for recovery.
+- Preserve health data compatibility and migration history; use corrective migrations instead of editing already-applied migrations.
+- Never commit service-role keys, VAPID private keys, cron secrets, or other server secrets.
+- Only public browser configuration may use `VITE_*` variables.
+- Do not reintroduce the retired Lovable Cloud Supabase project or its credentials.
