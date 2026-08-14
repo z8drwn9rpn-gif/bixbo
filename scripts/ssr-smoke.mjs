@@ -3,16 +3,19 @@ import { spawn } from "node:child_process";
 const port = Number(process.env.BIXBO_SMOKE_PORT ?? 4179);
 const host = "127.0.0.1";
 const base = `http://${host}:${port}`;
+const isWindows = process.platform === "win32";
+const wranglerBin = isWindows ? "node_modules/.bin/wrangler.cmd" : "node_modules/.bin/wrangler";
 
 // Production is a Cloudflare Worker. Exercise the actual built Worker module
 // and static assets through Wrangler instead of TanStack's generic Vite preview,
 // which expects a different dist/server layout.
 const child = spawn(
-  process.platform === "win32" ? "npx.cmd" : "npx",
-  ["wrangler", "dev", "--ip", host, "--port", String(port)],
+  wranglerBin,
+  ["dev", "--ip", host, "--port", String(port)],
   {
     env: { ...process.env, CI: process.env.CI ?? "true" },
     stdio: ["ignore", "pipe", "pipe"],
+    detached: !isWindows,
   },
 );
 
@@ -21,6 +24,15 @@ child.stdout.on("data", (chunk) => { output += chunk.toString(); });
 child.stderr.on("data", (chunk) => { output += chunk.toString(); });
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function stopWorker(signal = "SIGTERM") {
+  try {
+    if (!isWindows && child.pid) process.kill(-child.pid, signal);
+    else child.kill(signal);
+  } catch {
+    // It may already have exited; cleanup must not turn a passing smoke into a failure.
+  }
+}
 
 async function fetchWithTimeout(path, timeoutMs = 1500) {
   const controller = new AbortController();
@@ -71,9 +83,10 @@ try {
   await assertRoute("/bixbo-push-sw.js", { exactStatus: 200 });
   console.log("BIXBO production Worker smoke passed.");
 } finally {
-  child.kill("SIGTERM");
+  stopWorker("SIGTERM");
   await Promise.race([
     new Promise((resolve) => child.once("exit", resolve)),
-    sleep(2000).then(() => child.kill("SIGKILL")),
+    sleep(2000),
   ]);
+  if (child.exitCode == null) stopWorker("SIGKILL");
 }
