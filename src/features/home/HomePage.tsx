@@ -14,10 +14,8 @@ import { VitalTrendPopup, type VitalTrendMetric } from "@/components/home/vitalT
 import { VitalTile, MedsProgress } from "@/components/home/HomeTiles";
 import { BirthControlSummaryCard, BirthControlOverlay } from "@/components/home/BirthControlCard";
 import { DayPreview, ShareDayButton } from "@/components/home/DayOverview";
-import { TodayHeaderSummary } from "@/components/home/TodayHeaderSummary";
 import { NextPeriodHomeCard, PostpartumHomeCard, PregnancyHomeCard } from "@/components/home/HomeModeCards";
 import { HomeSummaryOverlay } from "@/components/home/HomeSummaryOverlay";
-
 
 export function HomePage() {
   const { t, language } = useI18n();
@@ -92,11 +90,7 @@ export function HomePage() {
     setSummaryMonth(new Date(monthAnchor.getFullYear(), monthAnchor.getMonth(), 1));
     setTodayOpen(true);
     if (navigator.vibrate) {
-      try {
-        navigator.vibrate(15);
-      } catch {
-        /* noop */
-      }
+      try { navigator.vibrate(15); } catch { /* noop */ }
     }
   };
 
@@ -107,7 +101,7 @@ export function HomePage() {
   return <AppShell
     big
     title={<div className="flex flex-col leading-tight"><span data-bixbo-display-title className="text-[37px] font-black tracking-[-0.045em] leading-[0.92] sm:text-[41px]" style={{ fontFamily: roundedDisplayFont, WebkitTextStroke: "0", textShadow: roundedDisplayShadow }}>BIXBO</span><span className="mt-1 inline-flex items-center gap-1 text-xs font-normal tracking-normal text-muted-foreground">{t("Hi")}, {view.settings.userName?.trim() || t("there")} <Ico e="❤️" size={12} /></span></div>}
-    right={<div className="flex items-center gap-1"><TodayHeaderSummary data={view} onOpen={() => { setSummaryMode("today"); setSummaryMonth(null); setTodayOpen(true); }} /><Link to="/profile" className="flex min-w-[52px] flex-col items-center justify-center rounded-2xl px-2 py-1.5 text-primary transition hover:bg-tint" aria-label={t("Health")} title={t("Health")}><HeartIcon size={24} /><span className="mt-0.5 text-[10px] font-semibold leading-none">{t("Health")}</span></Link></div>}
+    right={<Link to="/profile" className="flex min-w-[52px] flex-col items-center justify-center rounded-2xl px-2 py-1.5 text-primary transition hover:bg-tint" aria-label={t("Health")} title={t("Health")}><HeartIcon size={24} /><span className="mt-0.5 text-[10px] font-semibold leading-none">{t("Health")}</span></Link>}
   >
     <div className="lg:mx-auto lg:grid lg:w-full lg:max-w-[1480px] lg:grid-cols-[minmax(0,1.62fr)_minmax(340px,0.95fr)] lg:items-start lg:gap-4 lg:px-0 xl:grid-cols-[minmax(0,1.72fr)_minmax(380px,1fr)] xl:gap-5">
       <div className="flex min-w-0 flex-col">
