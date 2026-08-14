@@ -309,7 +309,7 @@ export function CustomChipList({
 
 export const toggleIn = (arr: string[], v: string) => (arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
 
-export const stripEmoji = (v: string) => v.replace(/^[\p{Extended_Pictographic}\u200d\ufe0f]+\s*/u, "").trim();
+export const stripEmoji = (v: string) => v.replace(/^(?:\p{Extended_Pictographic}|\u200d|\ufe0f)+\s*/u, "").trim();
 
 export function scaleColor(value: number, from: number, max: number): string {
   const span = Math.max(0.5, max - from);

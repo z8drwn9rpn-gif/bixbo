@@ -632,16 +632,17 @@ export function useSession() {
 
 export function useCloudSync() {
   const { session, ready } = useSession();
+  const sessionUserId = session?.user?.id ?? null;
 
   useEffect(() => {
     if (!ready) return;
 
-    if (!session) {
+    if (!sessionUserId) {
       setPartner(undefined);
       return;
     }
 
-    const userId = session.user.id;
+    const userId = sessionUserId;
     let cancelled = false;
     let pushTimer: ReturnType<typeof setTimeout> | null = null;
     let queuedPushData: BixboData | null = null;
@@ -876,5 +877,5 @@ export function useCloudSync() {
       document.removeEventListener("visibilitychange", retryWhenVisible);
       void supabase.removeChannel(channel);
     };
-  }, [ready, session?.user?.id]);
+  }, [ready, sessionUserId]);
 }

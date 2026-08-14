@@ -185,7 +185,7 @@ useEffect(() => {
       quietEnd: notif?.quietEnd ?? "08:00",
     }));
     setPrefsLoaded(true);
-  }, [hydrated, prefsSignature]);
+  }, [hydrated, prefsSignature, view.postpartum?.active, view.pregnancy?.active, view.settings.backup, view.settings.notif, view.settings.privacy, view.settings.tracking, view.settings.units]);
 
 useEffect(() => {
     if (!prefsLoaded) return;

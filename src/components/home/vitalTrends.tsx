@@ -424,7 +424,7 @@ export function VitalTrendPopup({
         recordCount: dailyVitalRecordCount(metric, key, data),
       };
     });
-  }, [anchor, data.dayLogs, metric, period]);
+  }, [anchor, data, language, metric, period]);
 
   useEffect(() => {
     // Keep the graph cheap to open: details are rendered only after the user taps a point/bar.
