@@ -45,7 +45,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
+import { accountAuth } from "@/integrations/auth/account";
 import { createCloudBackup } from "@/lib/cloudSync";
 import { useI18n } from "@/hooks/useI18n";
 import type { AppLanguage } from "@/lib/i18n";
@@ -260,7 +260,7 @@ const startAccountOAuth = async (provider: "google" | "apple") => {
     setAccountAuthError(null);
 
     try {
-      const result = await lovable.auth.signInWithOAuth(provider, {
+      const result = await accountAuth.signInWithOAuth(provider, {
         redirect_uri: window.location.origin,
       });
 

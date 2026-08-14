@@ -45,7 +45,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { createCloudBackup } from "@/lib/cloudSync";
 import { useI18n } from "@/hooks/useI18n";
 import type { AppLanguage } from "@/lib/i18n";
