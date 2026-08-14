@@ -6,6 +6,8 @@ import "@/ui-polish.css";
 import "@/ui-components-polish.css";
 
 const BIXBO_MASCOT_SRC = bixboMascot;
+const BIXBO_ROUNDED_DISPLAY_FONT = 'ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, -apple-system, BlinkMacSystemFont, sans-serif';
+const BIXBO_ROUNDED_DISPLAY_SHADOW = "0 1px 0 rgba(255,255,255,.92), 0 2px 1px rgba(57,72,34,.22), 0 4px 5px rgba(49,61,31,.16)";
 
 export function AppShell({ children, title, right, big = false }: { children: ReactNode; title?: ReactNode; right?: ReactNode; big?: boolean; }) {
   return (
@@ -20,7 +22,7 @@ export function AppShell({ children, title, right, big = false }: { children: Re
                 <span className={big ? "relative block h-[50px] w-[50px] shrink-0 overflow-visible" : "relative block h-10 w-10 shrink-0 overflow-visible"} aria-hidden="true">
                   <img src={BIXBO_MASCOT_SRC} alt="" aria-hidden="true" draggable={false} className="block h-full w-full object-contain object-center opacity-100 visible" />
                 </span>
-                <h1 className={`min-w-0 truncate font-serif font-bold leading-[1.05] text-foreground ${big ? "text-[28px] sm:text-3xl" : "text-[23px] sm:text-2xl"}`}>{title}</h1>
+                <h1 data-bixbo-app-title className={`min-w-0 truncate font-black tracking-[-0.045em] leading-[1.05] text-foreground ${big ? "text-[28px] sm:text-3xl" : "text-[23px] sm:text-2xl"}`} style={{ fontFamily: BIXBO_ROUNDED_DISPLAY_FONT, WebkitTextStroke: "0", textShadow: BIXBO_ROUNDED_DISPLAY_SHADOW }}>{title}</h1>
               </div>
               {right ? <div className="ml-2 flex min-w-0 shrink-0 items-center">{right}</div> : null}
             </header>
