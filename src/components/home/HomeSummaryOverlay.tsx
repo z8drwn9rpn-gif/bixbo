@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, ClockIcon, FlameIcon, HeartIcon, Ico, NoteIcon, PillIcon, PoopIcon } from "@/components/icons/BixboExtraIcons";
 import { useI18n } from "@/hooks/useI18n";
 import { summarizeMedicationProgress } from "@/lib/domain/meds";
-import { avgDayPain, fromKey, isIntercourseKind, toKey, todayKey, type BixboData } from "@/lib/storage";
+import { fromKey, isIntercourseKind, toKey, todayKey, type BixboData } from "@/lib/storage";
 import { averageNumbers, daysBetweenInclusive } from "./vitalTrends";
 
 export function HomeSummaryOverlay({ data, onClose, onOpenCalendar, initialMonth }: {
@@ -34,10 +34,6 @@ export function HomeSummaryOverlay({ data, onClose, onOpenCalendar, initialMonth
     const monthEnd = new Date(monthAnchor.getFullYear(), monthAnchor.getMonth() + 1, 0);
     const allKeys = daysBetweenInclusive(monthStart, monthEnd);
     const currentKey = todayKey();
-
-    // Never let unfinished/future days dilute a monthly summary.
-    // Past months use the whole month; the current month stops at today;
-    // future months therefore contain no eligible days yet.
     const keys = allKeys.filter((key) => key <= currentKey);
     const logs = keys.map((key) => ({ key, log: data.dayLogs[key] })).filter((item) => !!item.log);
 
@@ -67,9 +63,6 @@ export function HomeSummaryOverlay({ data, onClose, onOpenCalendar, initialMonth
 
     const sexEntries = logs.flatMap(({ log }) => log?.sex?.filter((entry) => isIntercourseKind(entry.kind)) ?? []);
     const noteEntries = keys.flatMap((key) => data.dayNotes[key] ?? []);
-
-    // Medication adherence is also limited to elapsed days, so future scheduled
-    // tablets in an unfinished month cannot lower the percentage.
     const meds = summarizeMedicationProgress(data.meds, keys, data.medLog, data.medLogItems ?? {}, new Date());
 
     const periodDays = logs
@@ -79,9 +72,9 @@ export function HomeSummaryOverlay({ data, onClose, onOpenCalendar, initialMonth
     const periodEnd = periodDays[periodDays.length - 1]?.key;
     const periodText = periodStart && periodEnd
       ? `${fromKey(periodStart).toLocaleDateString(language === "sk" ? "sk-SK" : "en-GB", { day: "numeric", month: "short" })}${periodEnd !== periodStart ? ` – ${fromKey(periodEnd).toLocaleDateString(language === "sk" ? "sk-SK" : "en-GB", { day: "numeric", month: "short" })}` : ""} · ${periodDays.length} ${periodDays.length === 1 ? t("day") : t("days")}`
-      : t("Not logged");
+      : "";
 
-    const entryCount = painEntries.length + bowelEntries.length + workoutEntries.length + sexEntries.length + sleepValues.length + noteEntries.length;
+    const entryCount = painEntries.length + bowelEntries.length + workoutEntries.length + sexEntries.length + sleepValues.length + noteEntries.length + periodDays.length + (meds.taken || 0);
 
     return {
       keys,
@@ -108,87 +101,87 @@ export function HomeSummaryOverlay({ data, onClose, onOpenCalendar, initialMonth
   }, [data, language, monthAnchor, t]);
 
   const rows = [
-    {
+    month.painEntries.length ? {
       key: "pain",
       icon: <FlameIcon size={21} />,
       label: `${t("Pain")} (avg)`,
       meta: `${month.painEntries.length} ${month.painEntries.length === 1 ? t("entry") : t("entries")}`,
       value: month.painAvg != null ? `${month.painAvg.toFixed(1)} /10` : "—",
       accent: "#F05A28",
-    },
-    {
+    } : null,
+    month.headacheEntries.length ? {
       key: "headache",
       icon: <Ico e="🤕" size={21} />,
       label: `${t("Headache")} (avg)`,
       meta: `${month.headacheEntries.length} ${month.headacheEntries.length === 1 ? t("entry") : t("entries")}`,
-      value: month.headacheAvg != null ? `${month.headacheAvg.toFixed(1)} /10` : "—",
+      value: month.headacheAvg != null ? `${month.headacheAvg.toFixed(1)} /10` : t("Logged"),
       accent: "#7467D8",
-    },
-    {
+    } : null,
+    month.hotFlashEntries.length ? {
       key: "hotFlashes",
       icon: <Ico e="🥵" size={21} />,
       label: `${t("Hot flashes")} (avg)`,
       meta: `${month.hotFlashEntries.length} ${month.hotFlashEntries.length === 1 ? t("entry") : t("entries")}`,
-      value: month.hotFlashAvg != null ? `${month.hotFlashAvg.toFixed(1)} /5` : "—",
+      value: month.hotFlashAvg != null ? `${month.hotFlashAvg.toFixed(1)} /5` : t("Logged"),
       accent: "#E65073",
-    },
-    {
+    } : null,
+    month.bowelEntries.length ? {
       key: "bowel",
       icon: <PoopIcon size={21} />,
       label: `${t("Bowel")} (mode)`,
       meta: `${month.bowelEntries.length} ${month.bowelEntries.length === 1 ? t("entry") : t("entries")}`,
-      value: month.bowelMode != null ? `${t("type")} ${month.bowelMode}` : "—",
+      value: month.bowelMode != null ? `${t("type")} ${month.bowelMode}` : t("Logged"),
       accent: "#A66A4D",
-    },
-    {
+    } : null,
+    month.workoutEntries.length ? {
       key: "workout",
       icon: <Ico e="👟" size={21} />,
       label: t("Workout"),
       meta: `${month.workoutEntries.length} ${month.workoutEntries.length === 1 ? t("entry") : t("entries")}`,
-      value: month.workoutMinutes ? `${month.workoutMinutes} min` : "—",
+      value: month.workoutMinutes ? `${month.workoutMinutes} min` : t("Logged"),
       accent: "#5F84D6",
-    },
-    {
+    } : null,
+    month.sleepValues.length ? {
       key: "sleep",
       icon: <ClockIcon size={21} />,
       label: `${t("Sleep")} (avg)`,
       meta: `${month.sleepValues.length} ${month.sleepValues.length === 1 ? t("entry") : t("entries")}`,
-      value: month.sleepAvg != null ? `${month.sleepAvg.toFixed(1)} h` : "—",
+      value: month.sleepAvg != null ? `${month.sleepAvg.toFixed(1)} h` : t("Logged"),
       accent: "#7467D8",
-    },
-    {
+    } : null,
+    month.meds.taken > 0 ? {
       key: "meds",
       icon: <PillIcon size={21} />,
       label: t("Medication"),
-      meta: month.meds.expected ? `${month.meds.taken} ${t("of")} ${month.meds.expected} ${t("taken")}` : t("No schedule"),
-      value: month.meds.pct != null ? `${month.meds.pct}%` : "—",
+      meta: `${month.meds.taken} ${t("taken")}`,
+      value: month.meds.pct != null ? `${month.meds.pct}%` : t("Logged"),
       accent: "#83985A",
-    },
-    {
+    } : null,
+    month.sexEntries.length ? {
       key: "sex",
       icon: <HeartIcon size={21} />,
       label: "ŠukŠuk",
       meta: `${month.sexEntries.length} ${month.sexEntries.length === 1 ? t("entry") : t("entries")}`,
-      value: month.sexEntries.length ? `${month.sexEntries.length}×` : "—",
+      value: `${month.sexEntries.length}×`,
       accent: "#6F963B",
-    },
-    {
+    } : null,
+    month.periodDays.length ? {
       key: "period",
       icon: <Ico e="🫐" size={21} />,
       label: t("Period"),
       meta: `${month.periodDays.length} ${month.periodDays.length === 1 ? t("day") : t("days")}`,
       value: month.periodText,
       accent: "#7467D8",
-    },
-    {
+    } : null,
+    month.noteEntries.length ? {
       key: "notes",
       icon: <NoteIcon size={21} />,
       label: t("Notes"),
       meta: `${month.noteEntries.length} ${month.noteEntries.length === 1 ? t("entry") : t("entries")}`,
-      value: month.noteEntries.length ? t("Logged") : "—",
+      value: t("Logged"),
       accent: "#B89A36",
-    },
-  ];
+    } : null,
+  ].filter((row): row is NonNullable<typeof row> => row !== null);
 
   if (typeof document === "undefined") return null;
 
@@ -209,11 +202,7 @@ export function HomeSummaryOverlay({ data, onClose, onOpenCalendar, initialMonth
 
           <div className="mt-3 flex items-center gap-2">
             <button type="button" onClick={() => setMonthAnchor((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1))} className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-tint ring-1 ring-border/60" aria-label={t("Previous month")}><ChevronLeft className="h-4 w-4" /></button>
-            <button
-              type="button"
-              onClick={() => { onOpenCalendar(toKey(new Date(monthAnchor.getFullYear(), monthAnchor.getMonth(), 1))); onClose(); }}
-              className="flex min-w-0 flex-1 items-center gap-3 rounded-[19px] border border-border/55 bg-tint/45 px-3 py-2.5 text-left"
-            >
+            <button type="button" onClick={() => { onOpenCalendar(toKey(new Date(monthAnchor.getFullYear(), monthAnchor.getMonth(), 1))); onClose(); }} className="flex min-w-0 flex-1 items-center gap-3 rounded-[19px] border border-border/55 bg-tint/45 px-3 py-2.5 text-left">
               <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-border/60 bg-background/80 text-base">📅</span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[12.5px] font-bold text-foreground">{month.logs.length} {t("days logged")} · {month.entryCount} {t("entries")} · {rows.length} {t("logs")}</span>
@@ -226,24 +215,20 @@ export function HomeSummaryOverlay({ data, onClose, onOpenCalendar, initialMonth
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 touch-pan-y">
-          <div className="overflow-hidden rounded-[22px] border border-border/55 bg-background/75">
-            {rows.map((row, index) => (
-              <button
-                key={row.key}
-                type="button"
-                onClick={() => { onOpenCalendar(toKey(new Date(monthAnchor.getFullYear(), monthAnchor.getMonth(), 1))); onClose(); }}
-                className={`grid w-full grid-cols-[34px_minmax(0,1fr)_auto_14px] items-center gap-2 px-3 py-2.5 text-left transition hover:bg-tint/35 active:bg-tint/55 ${index ? "border-t border-border/45" : ""}`}
-              >
-                <span className="grid h-8 w-8 place-items-center">{row.icon}</span>
-                <span className="min-w-0">
-                  <span className="block truncate text-[12.5px] font-bold leading-tight text-foreground">{row.label}</span>
-                  <span className="mt-0.5 block truncate text-[10.5px] leading-tight text-muted-foreground">{row.meta}</span>
-                </span>
-                <span className="max-w-[118px] truncate text-right text-[12.5px] font-extrabold leading-tight" style={{ color: row.accent }}>{row.value}</span>
-                <span aria-hidden className="text-[18px] leading-none text-muted-foreground">›</span>
-              </button>
-            ))}
-          </div>
+          {rows.length === 0 ? (
+            <div className="rounded-[22px] border border-border/55 bg-tint/30 px-4 py-6 text-center text-sm text-muted-foreground">{t("Nothing logged this month.")}</div>
+          ) : (
+            <div className="overflow-hidden rounded-[22px] border border-border/55 bg-background/75">
+              {rows.map((row, index) => (
+                <button key={row.key} type="button" onClick={() => { onOpenCalendar(toKey(new Date(monthAnchor.getFullYear(), monthAnchor.getMonth(), 1))); onClose(); }} className={`grid w-full grid-cols-[34px_minmax(0,1fr)_auto_14px] items-center gap-2 px-3 py-2.5 text-left transition hover:bg-tint/35 active:bg-tint/55 ${index ? "border-t border-border/45" : ""}`}>
+                  <span className="grid h-8 w-8 place-items-center">{row.icon}</span>
+                  <span className="min-w-0"><span className="block truncate text-[12.5px] font-bold leading-tight text-foreground">{row.label}</span><span className="mt-0.5 block truncate text-[10.5px] leading-tight text-muted-foreground">{row.meta}</span></span>
+                  <span className="max-w-[118px] truncate text-right text-[12.5px] font-extrabold leading-tight" style={{ color: row.accent }}>{row.value}</span>
+                  <span aria-hidden className="text-[18px] leading-none text-muted-foreground">›</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </section>
     </div>,
