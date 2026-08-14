@@ -1,4 +1,4 @@
-name: Materialize SukSuk source
+name: Materialize runtime source patches
 
 on:
   push:
@@ -9,15 +9,71 @@ permissions:
 
 jobs:
   materialize:
-    if: ${{ !contains(github.event.head_commit.message, 'Materialize SukSuk source') }}
+    if: ${{ !contains(github.event.head_commit.message, 'Materialize runtime source patches') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: code-audit-hardening-no-notes
           fetch-depth: 0
-      - name: Apply source patch
-        run: python3 scripts/apply_suksuk_customize.py
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Materialize current build transforms into source
+        shell: bash
+        run: |
+          cat > /tmp/materialize.ts <<'EOF'
+          import { readdir, readFile, writeFile } from "node:fs/promises";
+          import path from "node:path";
+          import { suksukFixPlugin } from process.cwd() + "/src/build/suksukFixPlugin.ts";
+          import { bixboIconMigrationPlugin } from process.cwd() + "/src/build/bixboIconMigrationPlugin.ts";
+
+          type TransformPlugin = ReturnType<typeof suksukFixPlugin> | ReturnType<typeof bixboIconMigrationPlugin>;
+
+          async function apply(plugin: TransformPlugin, file: string) {
+            const code = await readFile(file, "utf8");
+            const hook = plugin.transform;
+            if (typeof hook !== "function") throw new Error(`Transform hook unavailable for ${file}`);
+            const result = await hook.call({} as never, code, path.resolve(file));
+            if (!result) return false;
+            const next = typeof result === "string" ? result : result.code;
+            if (next === code) return false;
+            await writeFile(file, next, "utf8");
+            return true;
+          }
+
+          async function walk(dir: string): Promise<string[]> {
+            const out: string[] = [];
+            for (const entry of await readdir(dir, { withFileTypes: true })) {
+              const file = path.join(dir, entry.name);
+              if (entry.isDirectory()) out.push(...await walk(file));
+              else if (/\.(ts|tsx)$/.test(entry.name)) out.push(file);
+            }
+            return out;
+          }
+
+          const suksuk = suksukFixPlugin();
+          await apply(suksuk, "src/features/logging/CycleForms.tsx");
+          await apply(suksuk, "src/components/home/DayOverview.tsx");
+
+          const iconMigration = bixboIconMigrationPlugin();
+          const files = await walk("src");
+          for (const file of files) {
+            const normalized = file.replace(/\\/g, "/");
+            if (normalized.includes("/components/icons/") || normalized.includes("/build/")) continue;
+            // Notes are intentionally deferred from this audit pass.
+            if (normalized.endsWith("/routes/notes.tsx") || normalized.endsWith("/routes/notes-editor.tsx")) continue;
+            await apply(iconMigration, file);
+          }
+
+          const vitePath = "vite.config.ts";
+          let vite = await readFile(vitePath, "utf8");
+          vite = vite
+            .replace('import { suksukFixPlugin } from "./src/build/suksukFixPlugin";\n', "")
+            .replace('  plugins: [suksukFixPlugin(), bixboIconMigrationPlugin()],', '  plugins: [bixboIconMigrationPlugin()],');
+          await writeFile(vitePath, vite, "utf8");
+          EOF
+          bun /tmp/materialize.ts
       - name: Commit generated source
         shell: bash
         run: |
@@ -28,6 +84,6 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/lib/storage/types.ts src/lib/storage/defaults.ts src/features/logging/CycleForms.tsx src/components/home/DayOverview.tsx vite.config.ts
-          git commit -m "Materialize SukSuk source"
+          git add src vite.config.ts
+          git commit -m "Materialize runtime source patches"
           git push origin HEAD:code-audit-hardening-no-notes
