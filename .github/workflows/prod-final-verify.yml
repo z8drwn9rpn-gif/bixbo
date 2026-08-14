@@ -1,0 +1,38 @@
+name: Verify final audited production build
+
+on:
+  push:
+    branches: [verify-production-audit-final]
+
+jobs:
+  verify-production:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify latest audited build on Cloudflare
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://bixbo.z8drwn9rpn.workers.dev"
+          for attempt in $(seq 1 36); do
+            nonce="$(date +%s)-${attempt}"
+            root="$(curl -fsS --max-time 20 -H 'Cache-Control: no-cache' "$base/?__audit_final=$nonce" || true)"
+            auth="$(curl -fsSL --max-time 20 -H 'Cache-Control: no-cache' "$base/auth?__audit_final=$nonce" || true)"
+            manifest="$(curl -fsS --max-time 20 -H 'Cache-Control: no-cache' "$base/manifest.json?__audit_final=$nonce" || true)"
+            sw="$(curl -fsS --max-time 20 -H 'Cache-Control: no-cache' "$base/bixbo-push-sw.js?__audit_final=$nonce" || true)"
+
+            if printf '%s' "$root" | grep -q 'index-JhOx2vzQ.js' \
+              && printf '%s' "$root" | grep -q 'styles-C3qqL6Ik.css' \
+              && printf '%s' "$auth" | grep -qi 'sign in' \
+              && printf '%s' "$manifest" | grep -q '"name"' \
+              && [ -n "$sw" ]; then
+              echo "Latest audited BIXBO build is live on production."
+              echo "Verified fingerprint: index-JhOx2vzQ.js + styles-C3qqL6Ik.css"
+              exit 0
+            fi
+
+            echo "Latest fingerprint not fully live yet (${attempt}/36)."
+            sleep 10
+          done
+
+          echo "Latest audited fingerprint did not become fully verifiable in the retry window."
+          exit 1
