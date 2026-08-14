@@ -1,38 +1,55 @@
-# Bixbo: My Health Diary
+# BIXBO — My Health Diary
 
-Chcem urobit si apku ako Endolog ale chcem tam pridat veci navyse
+BIXBO is a personal health diary for tracking pain, cycle data, bowel symptoms, food, sexual activity, temperature, weight, medication, appointments, to-dos and private notes.
 
-Pozri si ako vypada ta apka - dizajn sa mi velmi paci - hlavne kalendar
+## Production architecture
 
-Potrebujem si zapisovat toto vsetko - Pain - Scale 1 az 10 Heat season Bowel time - yes or on Period - light, medium, heave, very heavy, spotting Food - co som jedla za cely den Sexual activity - with or without condom Temperature and weight - zapisovat si
+BIXBO is deployed independently of Lovable Cloud:
 
-Potom vtom istom kalendary chcem si zapisovat poznamky o dni ze napr. 27.7 idem lekarovi (ako normalny kalendar aby to fungovalo) K tomu aj to do list nech si tam viem zapisat
+- **Source control:** GitHub — `z8drwn9rpn-gif/bixbo`
+- **Frontend / app hosting:** Cloudflare Workers
+- **Production URL:** `https://bixbo.z8drwn9rpn.workers.dev`
+- **Database, Auth, Realtime, backups and Edge Functions:** the BIXBO-owned Supabase project
+- **Supabase project ref:** `wgdydwttzsveevkljkmr`
+- **Web Push:** VAPID + Supabase Edge Functions (`push-subscription`, `send-due-push`)
 
-Este si chcem zapisovat lieky ako beriem - Kazdy den aby som mala zapis ze som si zobrala lieky a aby mi prislo upozornenie na dany cas ze je cas na lieky 
+The app may still contain compatibility code or development tooling originating from Lovable, but production data, authentication, hosting, backups and push delivery do not depend on Lovable Cloud.
 
-Dalsia vec co by som tam chcela mat navyse je poznamkovy blok - kde si mozem zapisat co chcem a nebude to ukazovat v kalendari
+## Environment variables
 
-Apka by sa volala BIXBO
+Cloudflare build variables used by the frontend:
 
-This project was built with [Lovable](https://lovable.dev).
+```text
+VITE_SUPABASE_URL
+VITE_SUPABASE_PUBLISHABLE_KEY
+VITE_VAPID_PUBLIC_KEY
+```
 
-**Live app**: https://bixbo.lovable.app
+Server-only VAPID private material belongs in Supabase Edge Function secrets and must never be committed to GitHub or exposed through `VITE_*` variables.
 
-## Build with Lovable
+## Deployment
 
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/2497f404-c019-4199-8e55-81fbe32a43e5).
+Cloudflare is connected to the GitHub repository. A production build uses:
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+```sh
+bun run build
+```
+
+and deploys with:
+
+```sh
+npx wrangler deploy
+```
+
+Production branch: `main`.
 
 ## Development
 
-This repository uses **Bun** as its single package manager (`bun.lock` + `bunfig.toml`).
+This repository uses **Bun** as its package manager (`bun.lock` + `bunfig.toml`).
 
 ```sh
 git clone <this-repository-url>
-cd <repository-name>
+cd bixbo
 bun install --frozen-lockfile
 bun run dev
 ```
@@ -42,3 +59,9 @@ Quality checks:
 ```sh
 bun run check
 ```
+
+## Supabase migrations
+
+Production schema changes are stored under `supabase/migrations/`. Historical migrations are kept intact; newer corrective migrations define the final state for the owned BIXBO Supabase project.
+
+The scheduled reminder job `bixbo-send-due-push` calls the owned project Edge Function every minute. Do not hard-code service-role keys, VAPID private keys, or cron secrets in source control.
