@@ -90,16 +90,7 @@ function MedsPage() {
                     </p>
                   )}
                 </div>
-                <div className="flex items-center gap-1">
-                  <EditMedButton med={m} onSave={saveMed} />
-                  <button
-                    onClick={() => removeMed(m.id)}
-                    className="text-muted-foreground hover:text-destructive"
-                    aria-label={t("Remove")}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
+                <MedItemActions med={m} onSave={saveMed} onDelete={() => removeMed(m.id)} />
               </div>
             ))}
           </div>
@@ -109,33 +100,62 @@ function MedsPage() {
   );
 }
 
-function EditMedButton({ med, onSave }: { med: Med; onSave: (m: Med) => void }) {
+function MedItemActions({ med, onSave, onDelete }: { med: Med; onSave: (m: Med) => void; onDelete: () => void }) {
   const { t } = useI18n();
-  const [open, setOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+
   return (
-    <>
-      <button onClick={() => setOpen(true)} className="text-muted-foreground hover:text-primary" aria-label={t("Edit")}>
-        <Pencil className="h-4 w-4" />
+    <div className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => setMenuOpen((value) => !value)}
+        className="grid h-8 w-8 place-items-center rounded-full text-lg font-bold leading-none text-muted-foreground transition hover:bg-tint hover:text-foreground"
+        aria-label={t("More options")}
+        aria-expanded={menuOpen}
+      >
+        ⋯
       </button>
-      <Dialog open={open} onOpenChange={setOpen}>
+      {menuOpen ? (
+        <>
+          <button type="button" aria-label={t("Close")} className="fixed inset-0 z-40 cursor-default" onClick={() => setMenuOpen(false)} />
+          <div className="absolute right-0 top-9 z-50 min-w-[132px] rounded-2xl border border-border/70 bg-background p-1.5 shadow-xl">
+            <button
+              type="button"
+              onClick={() => { setMenuOpen(false); setEditOpen(true); }}
+              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-semibold text-foreground transition hover:bg-tint"
+            >
+              <Pencil className="h-3.5 w-3.5" /> {t("Edit")}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setMenuOpen(false); onDelete(); }}
+              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-semibold text-destructive transition hover:bg-destructive/10"
+            >
+              <Trash2 className="h-3.5 w-3.5" /> {t("Delete")}
+            </button>
+          </div>
+        </>
+      ) : null}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t("Edit medication")}</DialogTitle>
           </DialogHeader>
-          {open && (
+          {editOpen && (
             <MedFields
               key={med.id}
               initial={med}
-              onCancel={() => setOpen(false)}
+              onCancel={() => setEditOpen(false)}
               onSave={(m) => {
                 onSave({ ...m, id: med.id });
-                setOpen(false);
+                setEditOpen(false);
               }}
             />
           )}
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 }
 
