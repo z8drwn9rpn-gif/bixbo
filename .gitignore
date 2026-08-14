@@ -16,6 +16,9 @@ dist-ssr
 .nitro
 *.local
 
+# Generated production build metadata
+public/build-info.json
+
 # BIXBO uses Bun; do not let npm/Lovable add a second dependency lockfile.
 package-lock.json
 
