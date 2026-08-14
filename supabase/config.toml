@@ -1,5 +1,9 @@
 project_id = "wgdydwttzsveevkljkmr"
 
+[auth]
+site_url = "https://bixbo.z8drwn9rpn.workers.dev"
+additional_redirect_urls = ["https://bixbo.z8drwn9rpn.workers.dev/**"]
+
 [auth.oauth_server]
 enabled = true
 authorization_url_path = "/oauth/consent"
