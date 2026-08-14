@@ -5,7 +5,7 @@ import type { Plugin } from "vite";
 function stripInjectedAttrs(code: string) {
   return code
     .replace(/\s*data-tsd-source="[^"]*"/g, "")
-    .replace(/\s+\/>/g, " />");
+    .replace(/\s*\/>/g, " />");
 }
 
 function replaceOnce(code: string, search: string, replacement: string, label: string) {
