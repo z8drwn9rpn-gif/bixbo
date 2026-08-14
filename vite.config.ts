@@ -11,9 +11,10 @@
 
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import { suksukFixPlugin } from "./src/build/suksukFixPlugin";
+import { bixboIconMigrationPlugin } from "./src/build/bixboIconMigrationPlugin";
 
 export default defineConfig({
-  plugins: [suksukFixPlugin()],
+  plugins: [bixboIconMigrationPlugin(), suksukFixPlugin()],
   tanstackStart: {
     server: {
       entry: "server",
