@@ -1,33 +1,41 @@
 import type { Plugin } from "vite";
 
 /**
- * Temporary compatibility transform for the Notes feature only.
- *
- * All non-Notes icon migrations are now materialized in source so production
- * code matches what is reviewed in GitHub. Notes is intentionally deferred to
- * a later pass and keeps its previous runtime icon behavior until then.
+ * Compatibility transform for the last text surfaces that can contain stored
+ * unicode emoji. Icon slots elsewhere are already materialized through BIXBO
+ * components in source; this keeps Notes and the Home day-note preview from
+ * falling back to the platform/Apple emoji renderer.
  */
 export function bixboIconMigrationPlugin(): Plugin {
   return {
-    name: "bixbo-notes-icon-compat",
+    name: "bixbo-icon-compat",
     enforce: "pre",
     transform(code, id) {
       const normalized = id.replace(/\\/g, "/").split("?")[0];
-      const isDeferredNotesRoute =
+      const isNotesRoute =
         normalized.endsWith("/src/routes/notes.tsx") ||
         normalized.endsWith("/src/routes/notes-editor.tsx");
-      if (!isDeferredNotesRoute) return null;
+      const isDayOverview = normalized.endsWith("/src/components/home/DayOverview.tsx");
+      if (!isNotesRoute && !isDayOverview) return null;
 
       let next = code;
-      const legacyImport = "@/components/icons/BixboIcons";
-      if (next.includes(legacyImport)) {
-        next = next.replaceAll(legacyImport, "@/components/icons/BixboExtraIcons");
+
+      if (isNotesRoute) {
+        const legacyImport = "@/components/icons/BixboIcons";
+        if (next.includes(legacyImport)) {
+          next = next.replaceAll(legacyImport, "@/components/icons/BixboExtraIcons");
+        }
+
+        if (next.includes("<IcoText")) {
+          next = `import { BixboSafeText } from "@/components/icons/BixboSafeText";\n${next}`
+            .replaceAll("<IcoText", "<BixboSafeText")
+            .replaceAll("</IcoText>", "</BixboSafeText>");
+        }
       }
 
-      if (next.includes("<IcoText")) {
-        next = `import { SemanticIcoText } from "@/components/icons/BixboFoodIcons";\n${next}`
-          .replaceAll("<IcoText", "<SemanticIcoText")
-          .replaceAll("</IcoText>", "</SemanticIcoText>");
+      if (isDayOverview && next.includes("{n.text}")) {
+        next = `import { BixboSafeText } from "@/components/icons/BixboSafeText";\n${next}`
+          .replaceAll("{n.text}", "<BixboSafeText text={n.text} size={14} />");
       }
 
       return next === code ? null : { code: next, map: null };
