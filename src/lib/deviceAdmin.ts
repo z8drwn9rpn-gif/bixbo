@@ -3,7 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 
 const DEVICE_ADMIN_KEY = "bixbo-admin-device";
 const ADMIN_UNLOCK_KEY = "bixbo-admin-unlocked";
-const OWNER_CACHE_KEY = "bixbo-owner-account";
 
 function normalizeUserId(value: unknown): string {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
@@ -52,53 +51,49 @@ export function getCurrentStoredAuthEmail(): string | null {
   return null;
 }
 
-function cachedOwnerAccess(): boolean {
-  if (typeof window === "undefined") return false;
-  try {
-    return window.localStorage.getItem(OWNER_CACHE_KEY) === "1";
-  } catch {
-    return false;
-  }
+export function isAdminOwnerAccount(): boolean {
+  return getCurrentStoredAuthUser()?.app_metadata?.bixbo_owner === true;
 }
 
-export function isAdminOwnerAccount(): boolean {
-  const metadataOwner = getCurrentStoredAuthUser()?.app_metadata?.bixbo_owner === true;
-  return metadataOwner || cachedOwnerAccess();
-}
+let ownerRefreshInFlight: Promise<void> | null = null;
 
 /**
- * Refresh the owner claim from Supabase Auth. `app_metadata` is issued by the
- * auth server and cannot be changed through normal client profile updates.
- * No personal email/user UUID is embedded in the frontend bundle anymore.
+ * Refresh the JWT once so server-owned `app_metadata` changes are reflected in
+ * Supabase's persisted session. No personal owner UUID/email and no editable
+ * local "owner=true" cache is embedded in the frontend.
  */
-async function refreshOwnerAccess(): Promise<void> {
+async function refreshOwnerClaim(): Promise<void> {
   if (typeof window === "undefined") return;
-  try {
-    const { data, error } = await supabase.auth.getUser();
-    if (error) throw error;
-    const nextOwner = data.user?.app_metadata?.bixbo_owner === true;
-    const previousOwner = cachedOwnerAccess();
-    window.localStorage.setItem(OWNER_CACHE_KEY, nextOwner ? "1" : "0");
+  if (ownerRefreshInFlight) return ownerRefreshInFlight;
 
-    // Existing owner-only components read the flag synchronously. One reload on
-    // a newly issued owner claim makes the transition immediate and deterministic.
-    if (nextOwner && !previousOwner) window.location.reload();
-  } catch {
-    // A network failure must not grant access; retain only a currently signed
-    // token's server-issued metadata claim.
-    if (getCurrentStoredAuthUser()?.app_metadata?.bixbo_owner !== true) {
-      try { window.localStorage.removeItem(OWNER_CACHE_KEY); } catch { /* unavailable storage */ }
+  const wasOwner = isAdminOwnerAccount();
+  ownerRefreshInFlight = (async () => {
+    try {
+      const { data, error } = await supabase.auth.refreshSession();
+      if (error) throw error;
+      const nextOwner = data.session?.user?.app_metadata?.bixbo_owner === true;
+
+      // Existing owner-only components read the persisted session synchronously.
+      // Reload only for the one-time transition from an old token to the newly
+      // issued signed owner claim.
+      if (nextOwner && !wasOwner) window.location.reload();
+    } catch {
+      // A refresh/network failure must never grant owner access.
+    } finally {
+      ownerRefreshInFlight = null;
     }
-  }
+  })();
+
+  return ownerRefreshInFlight;
 }
 
 export function useOwnerAccessSync(): void {
   useEffect(() => {
-    void refreshOwnerAccess();
+    void refreshOwnerClaim();
+
     const { data } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_OUT") {
         try {
-          window.localStorage.removeItem(OWNER_CACHE_KEY);
           window.localStorage.removeItem(DEVICE_ADMIN_KEY);
           window.sessionStorage.removeItem(ADMIN_UNLOCK_KEY);
         } catch {
@@ -106,15 +101,19 @@ export function useOwnerAccessSync(): void {
         }
         return;
       }
-      void refreshOwnerAccess();
+
+      // SIGNED_IN can occur with a token minted before a server-side owner claim
+      // was added. Do not recurse on TOKEN_REFRESHED.
+      if (event === "SIGNED_IN") void refreshOwnerClaim();
     });
+
     return () => data.subscription.unsubscribe();
   }, []);
 }
 
 /**
- * The owner-only/admin UI follows the authenticated owner account. The legacy
- * function name is retained because existing Profile components already use it.
+ * The owner-only/admin UI follows the authenticated server-issued owner claim.
+ * The legacy function name is retained because existing Profile components use it.
  */
 export function isDeviceAdminEnabled(): boolean {
   return isAdminOwnerAccount();
@@ -135,8 +134,8 @@ export function enableDeviceAdmin(): void {
   }
 
   try {
-    // Retained only for backwards compatibility with older installations.
-    // Visibility/access is determined by the signed owner claim above.
+    // Kept only for backwards compatibility with older installations. It is not
+    // used as an authorization or owner-visibility signal.
     window.localStorage.setItem(DEVICE_ADMIN_KEY, "1");
   } catch {
     // Storage can be unavailable in restricted/private browser contexts.
