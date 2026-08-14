@@ -6,7 +6,7 @@ import { BottomNavHomeIcon } from "@/components/icons/BottomNavReferenceIcons";
 import { NavOverviewIcon, NavCoupleIcon, NavNoteIcon, NavLogIcon, User, type IconProps } from "@/components/icons/BixboExtraIcons";
 
 const ICONS: Record<NavigationItemId, ComponentType<IconProps>> = { home: BottomNavHomeIcon, overview: NavOverviewIcon, log: NavLogIcon, couple: NavCoupleIcon, notes: NavNoteIcon, healthProfile: User };
-const NAV_IMAGE_SRC: Partial<Record<NavigationItemId, string>> = { home: "/nav-assets/nav-home.webp?v=exact-20260814-1", overview: "/nav-assets/nav-overview.webp?v=exact-20260814-1", log: "/nav-assets/nav-log.svg?v=exact-20260814-1", couple: "/nav-assets/nav-couple.webp?v=exact-20260814-1", notes: "/nav-assets/nav-note.webp?v=exact-20260814-1" };
+const NAV_IMAGE_SRC: Partial<Record<NavigationItemId, string>> = { home: "/nav-assets/nav-home-approved.webp", overview: "/nav-assets/nav-overview-approved.webp", log: "/nav-assets/nav-log.svg?v=green-plus-2", couple: "/nav-assets/nav-couple-approved.webp", notes: "/nav-assets/nav-note-approved.webp" };
 
 function NavArtwork({ id, size, className }: { id: NavigationItemId; size: number; className?: string }) {
   const Icon = ICONS[id];
