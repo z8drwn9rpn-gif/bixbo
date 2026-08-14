@@ -218,6 +218,8 @@ export interface PeriodEntry {
   level: PeriodLevel;
   discharge?: string;
   dischargeNote?: string;
+  symptoms?: string[];
+  clots?: "none" | "small" | "medium" | "large";
   note?: string;
   cramps?: number;
 }

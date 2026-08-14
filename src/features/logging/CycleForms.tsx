@@ -32,6 +32,8 @@ export function PeriodForm({ date, data, update, onDone }: { date: string; data:
   const [level, setLevel] = useState<PeriodLevel>(cur?.level ?? "");
   const [discharge, setDischarge] = useState<string>(cur?.discharge ?? "");
   const [dNote, setDNote] = useState<string>(cur?.dischargeNote ?? "");
+  const [periodSymptoms, setPeriodSymptoms] = useState<string[]>(cur?.symptoms ?? []);
+  const [clots, setClots] = useState<"none" | "small" | "medium" | "large" | "">(cur?.clots ?? "");
   const [note, setNote] = useState<string>(cur?.note ?? "");
 
   const save = () => {
@@ -42,6 +44,8 @@ export function PeriodForm({ date, data, update, onDone }: { date: string; data:
         level,
         discharge: discharge || undefined,
         dischargeNote: dNote.trim() || undefined,
+        symptoms: periodSymptoms.length ? periodSymptoms : undefined,
+        clots: clots || undefined,
         note: note.trim() || undefined,
         cramps: cur?.cramps,
       },
@@ -56,6 +60,13 @@ export function PeriodForm({ date, data, update, onDone }: { date: string; data:
     { v: "heavy", label: "Heavy", color: "var(--period-heavy)" },
     { v: "very-heavy", label: "Very heavy", color: "var(--period-veryheavy)" },
   ];
+  const PERIOD_SYMPTOMS = [
+    "Cramps", "Lower belly pain", "Lower back pain", "Bloating", "Headache",
+    "Nausea", "Fatigue", "Mood changes", "Breast tenderness", "Acne",
+  ];
+  const CLOT_OPTIONS = [
+    ["none", "None"], ["small", "Small"], ["medium", "Medium"], ["large", "Large"],
+  ] as const;
   const sectionLabel = "mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground";
 
   return (
@@ -99,6 +110,38 @@ export function PeriodForm({ date, data, update, onDone }: { date: string; data:
             <Input value={dNote} onChange={(e) => setDNote(e.target.value)} placeholder={t("Add discharge note…")} className="h-10 rounded-2xl" />
           </div>
         ) : null}
+      </section>
+
+      <div className="border-t border-border/60" />
+
+      <section>
+        <p className={sectionLabel}>{t("Period symptoms (optional)")}</p>
+        <div className="flex flex-wrap gap-2">
+          {PERIOD_SYMPTOMS.map((symptom) => {
+            const active = periodSymptoms.includes(symptom);
+            return (
+              <button key={symptom} type="button" onClick={() => setPeriodSymptoms((current) => toggleIn(current, symptom))} className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${active ? "bg-primary text-primary-foreground shadow-sm ring-2 ring-foreground/60" : "bg-tint text-foreground ring-1 ring-border"}`}>
+                {t(symptom)}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <div className="border-t border-border/60" />
+
+      <section>
+        <p className={sectionLabel}>{t("Clots (optional)")}</p>
+        <div className="grid grid-cols-4 gap-2">
+          {CLOT_OPTIONS.map(([value, label]) => {
+            const active = clots === value;
+            return (
+              <button key={value} type="button" onClick={() => setClots(active ? "" : value)} className={`min-w-0 rounded-full px-2 py-2 text-xs font-semibold transition ${active ? "bg-primary text-primary-foreground shadow-sm ring-2 ring-foreground/60" : "bg-tint text-foreground ring-1 ring-border"}`}>
+                {t(label)}
+              </button>
+            );
+          })}
+        </div>
       </section>
 
       <div className="border-t border-border/60" />
