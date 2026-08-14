@@ -215,6 +215,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_backups: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+          schema_version: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data: Json
+          id?: string
+          schema_version?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          schema_version?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_data: {
         Row: {
           data: Json

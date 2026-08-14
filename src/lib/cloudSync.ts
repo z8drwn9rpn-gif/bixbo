@@ -392,7 +392,7 @@ export async function createCloudBackup(payload: BixboData = getBixbo()): Promis
   if (!user) throw new Error("Sign in to create a cloud backup.");
 
   const safePayload = normalizeRemotePayload(payload);
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("user_backups")
     .insert({ user_id: user.id, schema_version: 3, data: { ...safePayload, partner: undefined } })
     .select("id, created_at, schema_version")
@@ -414,7 +414,7 @@ export async function listCloudBackups(limit = 10): Promise<CloudBackupSummary[]
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("user_backups")
     .select("id, created_at, schema_version")
     .eq("user_id", user.id)
@@ -429,7 +429,7 @@ export async function getCloudBackup(id: string): Promise<BixboData> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Sign in to restore a cloud backup.");
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("user_backups")
     .select("data")
     .eq("user_id", user.id)

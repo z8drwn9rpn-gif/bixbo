@@ -322,7 +322,7 @@ export function FlameIcon(p: IconProps) {
 
 /** Bowel — friendly soft 3D poop with small eyes. `dots=false` renders the
  * plain swirl used for calendar markers (no dots). */
-function renderPoop(p: IconProps, dots: boolean) {
+function PoopGlyph({ dots, ...p }: IconProps & { dots: boolean }) {
   const a = useSvgId();
   const mini = (p.size ?? 24) <= 16;
   if (mini) {
@@ -386,11 +386,11 @@ function renderPoop(p: IconProps, dots: boolean) {
   );
 }
 export function PoopIcon(p: IconProps) {
-  return renderPoop(p, true);
+  return <PoopGlyph {...p} dots />;
 }
 /** Dot-free bowel swirl — use only for calendar day markers. */
 export function PoopIconPlain(p: IconProps) {
-  return renderPoop(p, false);
+  return <PoopGlyph {...p} dots={false} />;
 }
 
 /* ---------------------------------------------------------------- MEDS */
