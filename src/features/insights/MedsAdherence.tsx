@@ -50,7 +50,7 @@ export function MedsAdherence({ data, period, anchor, onPeriodChange, onPeriodSh
 
   const adherenceMinuteKey = Math.floor(Date.now() / 60_000);
   const perDay = useMemo(() => {
-    const adherenceNow = new Date();
+    const adherenceNow = new Date(adherenceMinuteKey * 60_000);
     return days.map((date) => {
     const missed: { medName: string; time: string; key: string; item: string }[] = [];
     const takenList: { medName: string; time: string; key: string; item: string }[] = [];
@@ -73,7 +73,7 @@ export function MedsAdherence({ data, period, anchor, onPeriodChange, onPeriodSh
   const adherenceColor = (pct: number | null): string => pct == null ? INSIGHT_COLORS.oliveLight : pct >= 90 ? "#28A85B" : pct >= 75 ? "#F0D33A" : pct >= 40 ? "#F7A21C" : "#D84343";
 
   const perMed = useMemo(() => {
-    const adherenceNow = new Date();
+    const adherenceNow = new Date(adherenceMinuteKey * 60_000);
     return scheduled.flatMap((med) => med.times.flatMap((time) => medScheduleItems(med).map((item) => {
     let expected = 0; let taken = 0;
     days.forEach((date) => {
