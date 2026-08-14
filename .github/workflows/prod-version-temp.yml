@@ -1,0 +1,26 @@
+name: Temporary production version check
+
+on:
+  push:
+    branches: [code-audit-hardening-no-notes]
+
+jobs:
+  prod-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify current production asset fingerprint
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="https://bixbo.z8drwn9rpn.workers.dev/?__audit_version=$(date +%s)"
+          for attempt in $(seq 1 30); do
+            html="$(curl -fsS --max-time 15 -H 'Cache-Control: no-cache' "$url" || true)"
+            if printf '%s' "$html" | grep -q 'index-D4JWgM3U.js' && printf '%s' "$html" | grep -q 'styles-C3qqL6Ik.css'; then
+              echo "Production is serving the audited main build fingerprint."
+              exit 0
+            fi
+            echo "Fingerprint not live yet (${attempt}/30); retrying."
+            sleep 10
+          done
+          echo "Expected audited build fingerprint did not appear in production."
+          exit 1
