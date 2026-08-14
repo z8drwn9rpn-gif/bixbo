@@ -52,6 +52,8 @@ import {
   type SexEntry,
 } from "@/lib/storage";
 import { ScheduledDosePopup, type ScheduledDoseTarget } from "@/components/home/ScheduledDosePopup";
+import { DayOverviewSexCard } from "@/components/home/DayOverviewSexCard";
+import { DayOverviewCard as Card, DayOverviewDeleteButton as DeleteBtn } from "@/components/home/DayOverviewPrimitives";
 import { getTakenScheduledItems, isScheduledDoseTaken, scheduledDoseKey } from "@/lib/medicationAdherence";
 
 export function DayPreview({
@@ -612,80 +614,7 @@ export function DayPreview({
           </Card>
         )}
 
-      {log?.sex?.length ? (
-        <Card title="ŠukŠuk!" icon="❤️" compact>
-          <ul className="space-y-1">
-            {log.sex.map((s: SexEntry, index) => {
-              const sx = s as SexEntry & {
-                painWhenUi?: "during" | "after" | "both";
-                painScale?: number;
-                painLocations?: string[];
-              };
-              const hasPain = Boolean(sx.painful && sx.painful !== "no");
-              return (
-                <li key={sx.id} className={`flex items-start gap-2 ${index ? "border-t border-border/60 pt-1.5" : ""}`}>
-                  <button onClick={() => onEdit?.("sex", sx)} className="min-w-0 flex-1 text-left">
-                    <p className="text-xs text-muted-foreground">{sx.time}</p>
-                    <div className="my-1 border-t border-border/60" />
-                    <p className="text-xs leading-relaxed text-muted-foreground">
-                      <span className="font-semibold text-foreground">{t("Type")}:</span>{" "}
-                      {t(String(sx.kind).replace(/_/g, " "))}
-                    </p>
-                    {sx.protection ? (
-                      <p className="mt-1 text-xs leading-snug text-muted-foreground">
-                        <span className="font-semibold text-foreground">{t("Protection")}:</span> {t(sx.protection)}
-                      </p>
-                    ) : null}
-                    {asArr(sx.feelingAfter).length ? (
-                      <p className="mt-1 text-xs leading-snug text-muted-foreground">
-                        <span className="font-semibold text-foreground">{t("Feeling after")}:</span>{" "}
-                        <SemanticIcoText text={asArr(sx.feelingAfter).join(", ")} size={13} />
-                      </p>
-                    ) : null}
-                    <p className="mt-1 text-xs leading-snug text-muted-foreground">
-                      <span className="font-semibold text-foreground">{t("Pain")}:</span> {t(hasPain ? "Yes" : "No")}
-                      {hasPain && sx.painWhenUi ? ` · ${t(sx.painWhenUi)}` : ""}
-                      {hasPain && sx.painScale != null ? ` · ${sx.painScale}/10` : ""}
-                    </p>
-                    {hasPain && sx.painLocations?.length ? (
-                      <p className="mt-1 text-xs leading-snug text-muted-foreground">
-                        <span className="font-semibold text-foreground">{t("Where")}:</span> {sx.painLocations.map(t).join(", ")}
-                      </p>
-                    ) : null}
-                    {sx.symptomsAfter?.length ? (
-                      <p className="mt-1 text-xs leading-snug text-muted-foreground">
-                        <span className="font-semibold text-foreground">{t("Symptoms after")}:</span> {sx.symptomsAfter.map(t).join(", ")}
-                      </p>
-                    ) : null}
-                    {sx.orgasm ? (
-                      <p className="mt-1 text-xs leading-snug text-muted-foreground">
-                        <span className="font-semibold text-foreground">{t("Orgasm")}:</span> {t(sx.orgasm === "yes" ? "Yes" : "No")}
-                      </p>
-                    ) : null}
-                    {sx.note ? (
-                      <p className="mt-1 whitespace-pre-line text-xs leading-snug">
-                        <span className="font-semibold">{t("Note")}:</span> {sx.note}
-                      </p>
-                    ) : null}
-                    <p className="mt-0.5 text-[10px] text-primary">{t("Tap to edit")}</p>
-                  </button>
-                  <DeleteBtn
-                    onClick={() =>
-                      update((d) => ({
-                        ...d,
-                        dayLogs: {
-                          ...d.dayLogs,
-                          [date]: { ...d.dayLogs[date], sex: (d.dayLogs[date]?.sex ?? []).filter((x) => x.id !== sx.id) },
-                        },
-                      }))
-                    }
-                  />
-                </li>
-              );
-            })}
-          </ul>
-        </Card>
-      ) : null}
+      <DayOverviewSexCard entries={log?.sex ?? []} date={date} update={update} onEdit={onEdit} />
 
       {log?.heat?.length ? (
         <Card title="Heat / Cold / TENS" icon="♨️">
@@ -1099,37 +1028,7 @@ export function DayPreview({
   );
 }
 
-export function DeleteBtn({ onClick }: { onClick: () => void }) {
-  const { t } = useI18n();
-  return (
-    <button onClick={onClick} className="text-muted-foreground hover:text-destructive" aria-label={t("Delete")}>
-      <Trash2 className="h-3.5 w-3.5" />
-    </button>
-  );
-}
-
-export function Card({
-  title,
-  icon,
-  children,
-  compact = false,
-}: {
-  title: string;
-  icon: string;
-  children: React.ReactNode;
-  compact?: boolean;
-}) {
-  const { t } = useI18n();
-  return (
-    <div className={`rounded-3xl border border-border/70 bg-surface shadow-sm ring-1 ring-border ${compact ? "px-4 py-3" : "p-4"}`}>
-      <div className={`${compact ? "mb-1" : "mb-2"} flex items-center gap-2`}>
-        <Ico e={icon} size={22} />
-        <h3 className="font-serif text-lg font-semibold">{t(title)}</h3>
-      </div>
-      {children}
-    </div>
-  );
-}
+export { DayOverviewCard as Card, DayOverviewDeleteButton as DeleteBtn } from "./DayOverviewPrimitives";
 
 export const stripEmoji = (value: string) =>
   value.replace(/^[\p{Extended_Pictographic}\u200d\ufe0f\p{Emoji_Modifier}]+\s*/u, "").trim();
