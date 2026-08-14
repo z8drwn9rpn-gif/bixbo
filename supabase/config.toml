@@ -1,5 +1,10 @@
 project_id = "wgdydwttzsveevkljkmr"
 
+[auth.oauth_server]
+enabled = true
+authorization_url_path = "/oauth/consent"
+allow_dynamic_registration = false
+
 [functions.push-subscription]
 verify_jwt = true
 
