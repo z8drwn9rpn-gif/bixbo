@@ -4,6 +4,7 @@ import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/hooks/useI18n";
+import { oauthReturnUrlForLocation } from "@/integrations/auth/account";
 import { supabase } from "@/integrations/supabase/client";
 
 function safeInternalNext(value: unknown): string {
@@ -55,11 +56,7 @@ function AuthPage() {
   }, [finishAuth]);
 
   const authReturnUrl = () => {
-    const productionOrigin = "https://bixbo.z8drwn9rpn.workers.dev";
-    const { hostname, origin } = window.location;
-    const isLocal = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]";
-    const isLovablePreview = hostname === "bixbo.lovable.app" || hostname.endsWith(".lovable.app");
-    const returnOrigin = isLocal || isLovablePreview ? productionOrigin : (origin || productionOrigin);
+    const returnOrigin = oauthReturnUrlForLocation(window.location.hostname, window.location.origin);
     const url = new URL("/auth", returnOrigin);
     if (next) url.searchParams.set("next", next);
     return url.toString();
