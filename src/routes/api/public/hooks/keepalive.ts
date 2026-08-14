@@ -1,15 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 
+const PUBLIC_SUPABASE_URL = "https://wgdydwttzsveevkljkmr.supabase.co";
+const PUBLIC_SUPABASE_PUBLISHABLE_KEY = "sb_publishable__K7x0Rsn4e7lT4Ut3_g04A_8w_WTaH3";
+
 async function ping() {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_PUBLISHABLE_KEY;
-  if (!url || !key) {
-    return new Response(JSON.stringify({ ok: false, error: "missing config" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
+  const url = process.env.SUPABASE_URL || PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_PUBLISHABLE_KEY || PUBLIC_SUPABASE_PUBLISHABLE_KEY;
   const supabase = createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
     global: {
