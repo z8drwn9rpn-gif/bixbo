@@ -21,11 +21,11 @@ const ICONS: Record<NavigationItemId, ComponentType<IconProps>> = {
 };
 
 const NAV_IMAGE_SRC: Partial<Record<NavigationItemId, string>> = {
-  home: "/nav-assets/nav-home.webp",
-  overview: "/nav-assets/nav-overview.webp",
-  log: "/nav-assets/nav-log.svg",
-  couple: "/nav-assets/nav-couple.webp",
-  notes: "/nav-assets/nav-note.webp",
+  home: "/nav-assets/nav-home.webp?v=exact-20260814-1",
+  overview: "/nav-assets/nav-overview.webp?v=exact-20260814-1",
+  log: "/nav-assets/nav-log.svg?v=exact-20260814-1",
+  couple: "/nav-assets/nav-couple.webp?v=exact-20260814-1",
+  notes: "/nav-assets/nav-note.webp?v=exact-20260814-1",
 };
 
 function NavArtwork({ id, size, className }: { id: NavigationItemId; size: number; className?: string }) {
