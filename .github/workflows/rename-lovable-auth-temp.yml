@@ -1,0 +1,70 @@
+name: Temporary auth adapter rename
+
+on:
+  push:
+    branches:
+      - rename-lovable-auth-adapter
+
+permissions:
+  contents: write
+
+jobs:
+  rename-auth-adapter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rename-lovable-auth-adapter
+      - name: Replace stale Lovable auth adapter imports
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          old_import = 'import { lovable } from "@/integrations/lovable/index";'
+          new_import = 'import { accountAuth } from "@/integrations/auth/account";'
+          old_call = 'lovable.auth.signInWithOAuth'
+          new_call = 'accountAuth.signInWithOAuth'
+
+          changed = []
+          for path in Path('src').rglob('*'):
+              if path.suffix not in {'.ts', '.tsx'}:
+                  continue
+              text = path.read_text()
+              if old_import not in text and old_call not in text:
+                  continue
+
+              if old_call in text:
+                  if old_import not in text:
+                      raise SystemExit(f'{path}: Lovable auth call found without expected import')
+                  next_text = text.replace(old_import, new_import).replace(old_call, new_call)
+              else:
+                  next_text = text.replace(old_import + '\n', '').replace(old_import, '')
+
+              if next_text != text:
+                  path.write_text(next_text)
+                  changed.append(str(path))
+
+          stale = []
+          for path in Path('src').rglob('*'):
+              if path.suffix not in {'.ts', '.tsx'}:
+                  continue
+              text = path.read_text()
+              if '@/integrations/lovable/index' in text or 'lovable.auth.signInWithOAuth' in text:
+                  stale.append(str(path))
+          if stale:
+              raise SystemExit('Stale Lovable auth references remain: ' + ', '.join(stale))
+
+          print('Updated:', *changed, sep='\n- ')
+          PY
+          git rm src/integrations/lovable/index.ts
+      - name: Commit auth cleanup
+        run: |
+          if git diff --quiet; then
+            echo "No auth cleanup changes needed"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src
+          git commit -m "Rename Supabase OAuth adapter and remove Lovable shim"
+          git push origin HEAD:rename-lovable-auth-adapter
