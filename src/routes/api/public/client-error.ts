@@ -39,7 +39,9 @@ async function handle(request: Request): Promise<Response> {
   return new Response(null, { status: 204 });
 }
 
-export const Route = createFileRoute("/api/public/client-error")({
+// The TanStack plugin regenerates routeTree.gen.ts during build. The cast keeps
+// the pre-build typecheck valid on the commit that first introduces this route.
+export const Route = createFileRoute("/api/public/client-error" as never)({
   server: {
     handlers: {
       POST: ({ request }) => handle(request),
