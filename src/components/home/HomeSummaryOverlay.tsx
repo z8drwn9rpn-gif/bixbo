@@ -6,18 +6,20 @@ import { summarizeMedicationProgress } from "@/lib/domain/meds";
 import { avgDayPain, fromKey, isIntercourseKind, toKey, todayKey, type BixboData } from "@/lib/storage";
 import { averageNumbers, daysBetweenInclusive } from "./vitalTrends";
 
-export function HomeSummaryOverlay({ data, onClose, onOpenCalendar }: {
+export function HomeSummaryOverlay({ data, onClose, onOpenCalendar, initialMode = "today", initialMonth }: {
   data: BixboData;
   onClose: () => void;
   onOpenCalendar: (dateKey: string) => void;
+  initialMode?: "today" | "month";
+  initialMonth?: Date;
 }) {
   const { t, language } = useI18n();
   const todayDateKey = todayKey();
   const todayLog = data.dayLogs[todayDateKey];
   const todayPain = avgDayPain(todayLog);
   const todayMedicationProgress = summarizeMedicationProgress(data.meds, [todayDateKey], data.medLog, data.medLogItems ?? {}, new Date(), true);
-  const [mode, setMode] = useState<"today" | "month">("today");
-  const [monthAnchor, setMonthAnchor] = useState<Date>(() => fromKey(todayDateKey));
+  const [mode, setMode] = useState<"today" | "month">(initialMode);
+  const [monthAnchor, setMonthAnchor] = useState<Date>(() => initialMonth ? new Date(initialMonth.getFullYear(), initialMonth.getMonth(), 1) : fromKey(todayDateKey));
 
   useEffect(() => {
     if (typeof document === "undefined") return;
