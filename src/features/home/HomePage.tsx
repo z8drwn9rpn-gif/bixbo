@@ -79,13 +79,13 @@ export function HomePage() {
 
   return <AppShell
     big
-    title={<div className="flex flex-col leading-tight"><span>BIXBO</span><span className="inline-flex items-center gap-1 text-xs font-normal text-muted-foreground">{t("Hi")}, {view.settings.userName?.trim() || t("there")} <Ico e="❤️" size={12} /></span></div>}
+    title={<div className="flex flex-col leading-tight"><span className="font-sans text-[36px] font-black tracking-[-0.045em] leading-[0.95] sm:text-[40px]">BIXBO</span><span className="mt-1 inline-flex items-center gap-1 text-xs font-normal tracking-normal text-muted-foreground">{t("Hi")}, {view.settings.userName?.trim() || t("there")} <Ico e="❤️" size={12} /></span></div>}
     right={<div className="flex items-center gap-1"><TodayHeaderSummary data={view} onOpen={() => setTodayOpen(true)} /><Link to="/profile" className="flex min-w-[52px] flex-col items-center justify-center rounded-2xl px-2 py-1.5 text-primary transition hover:bg-tint" aria-label={t("Health")} title={t("Health")}><HeartIcon size={24} /><span className="mt-0.5 text-[10px] font-semibold leading-none">{t("Health")}</span></Link></div>}
   >
     <div className="lg:mx-auto lg:grid lg:w-full lg:max-w-[1480px] lg:grid-cols-[minmax(0,1.62fr)_minmax(340px,0.95fr)] lg:items-start lg:gap-4 lg:px-0 xl:grid-cols-[minmax(0,1.72fr)_minmax(380px,1fr)] xl:gap-5">
       <div className="flex min-w-0 flex-col">
         <div style={{ order: layoutOrder(view, "home", "calendar", 10) }}>
-          <div className="px-5 pt-0.5 lg:px-1"><div className="flex items-center justify-between"><button type="button" onClick={() => moveCalendarMonth(-1)} aria-label={t("Previous month")} className="rounded-full p-1.5 hover:bg-tint"><ChevronLeft className="h-5 w-5" /></button><h2 className="font-serif text-xl font-bold lg:text-[22px]" suppressHydrationWarning>{hydrated ? monthLabel(monthAnchor) : ""}</h2><button type="button" onClick={() => moveCalendarMonth(1)} aria-label={t("Next month")} className="rounded-full p-1.5 hover:bg-tint"><ChevronRight className="h-5 w-5" /></button></div></div>
+          <div className="px-5 pt-1 lg:px-1"><div className="flex items-center justify-between"><button type="button" onClick={() => moveCalendarMonth(-1)} aria-label={t("Previous month")} className="rounded-full p-1.5 hover:bg-tint"><ChevronLeft className="h-5 w-5" /></button><h2 className="font-sans text-[28px] font-black tracking-[-0.035em] leading-none text-foreground sm:text-[30px] lg:text-[32px]" suppressHydrationWarning>{hydrated ? monthLabel(monthAnchor) : ""}</h2><button type="button" onClick={() => moveCalendarMonth(1)} aria-label={t("Next month")} className="rounded-full p-1.5 hover:bg-tint"><ChevronRight className="h-5 w-5" /></button></div></div>
           <div className="mt-1 lg:order-1 lg:overflow-hidden lg:rounded-[1.75rem] lg:bg-surface/28 lg:px-1 lg:pb-1 lg:ring-1 lg:ring-border/35" style={{ "--period-medium": "#7467D8" } as CSSProperties}>{hydrated ? <MonthCalendar month={monthAnchor} data={view} selected={selected} onSelect={setSelected} onSwipeMonth={moveCalendarMonth} /> : <div className="h-[360px]" />}</div>
         </div>
 
