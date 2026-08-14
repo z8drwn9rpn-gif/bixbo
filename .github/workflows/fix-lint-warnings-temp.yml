@@ -41,7 +41,9 @@ jobs:
           )'''
           if old not in s:
               raise SystemExit('BirthControl cleanup-script block missing')
-          p.write_text(s.replace(old, new, 1))
+          s = s.replace(old, new, 1)
+          s = s.replace('anchor = "export function LogSheetRoot("', 'anchor = "export function LogSheet("', 1)
+          p.write_text(s)
           PY
       - name: Apply focused lint correctness fixes
         run: python3 scripts/fix_lint_cleanup.py
