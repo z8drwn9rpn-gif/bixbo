@@ -189,7 +189,7 @@ export function DayPreview({
                         {omitted.length ? <span className="block text-[10px] text-destructive">{t("Not taken")}: {omitted.join(", ")}</span> : null}
                         {data.medLogNotes?.[date]?.[x.key] ? <span className="block text-[10px] text-muted-foreground">{t("Note")}: {data.medLogNotes?.[date]?.[x.key]}</span> : null}
                         <span className="text-[10px] text-primary"> · {t("Tap to edit")}</span>
-                      < />;
+                      </>;
                     })()}
                   </button>
                 </li>
@@ -954,7 +954,7 @@ export function DayPreview({
             {log?.sleepHours != null && (
               <p className={`${log?.temperature != null || log?.weight != null ? "mt-0.5 " : ""}text-xs leading-relaxed text-muted-foreground`}>
                 <span className="font-semibold text-foreground">{t("Sleep")}:</span> {log.sleepHours} h
-                {asArr(log.sleepQuality).length ? <> · <SemanticIcoText text={asArr(log.sleepQuality).map(t).join(", ")} size={12} />< /> : null}
+                {asArr(log.sleepQuality).length ? <> · <SemanticIcoText text={asArr(log.sleepQuality).map(t).join(", ")} size={12} /></> : null}
               </p>
             )}
             {asArr(log?.sleepQuality).length > 0 && log?.sleepHours == null && (
