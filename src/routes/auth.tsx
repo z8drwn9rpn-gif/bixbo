@@ -30,8 +30,12 @@ function AuthPage() {
       if (error) throw error;
       if (!cancelled && data.session) navigate({ to: "/settings" });
     }).catch((error) => { if (!cancelled) setMsg(error instanceof Error ? error.message : String(error)); });
-    return () => { cancelled = true; };
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!cancelled && session) navigate({ to: "/settings" });
+    });
+    return () => { cancelled = true; sub.subscription.unsubscribe(); };
   }, [navigate]);
+
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault(); setBusy(true); setMsg(null);
