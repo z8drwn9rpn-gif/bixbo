@@ -81,6 +81,7 @@ try {
   await assertRoute("/profile");
   await assertRoute("/manifest.json", { exactStatus: 200, contentIncludes: '"name"' });
   await assertRoute("/bixbo-push-sw.js", { exactStatus: 200 });
+  await assertRoute("/build-info.json", { exactStatus: 200, contentIncludes: '"app": "BIXBO"' });
   console.log("BIXBO production Worker smoke passed.");
 } finally {
   stopWorker("SIGTERM");
