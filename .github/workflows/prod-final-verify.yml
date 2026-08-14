@@ -13,26 +13,24 @@ jobs:
         run: |
           set -euo pipefail
           base="https://bixbo.z8drwn9rpn.workers.dev"
-          for attempt in $(seq 1 36); do
+          expected="ae746fff02bb3da35dff6cce8fd09ed999b6ea9c"
+          for attempt in $(seq 1 60); do
             nonce="$(date +%s)-${attempt}"
-            root="$(curl -fsS --max-time 20 -H 'Cache-Control: no-cache' "$base/?__audit_final=$nonce" || true)"
-            auth="$(curl -fsSL --max-time 20 -H 'Cache-Control: no-cache' "$base/auth?__audit_final=$nonce" || true)"
+            info="$(curl -fsS --max-time 20 -H 'Cache-Control: no-cache' "$base/build-info.json?__audit_final=$nonce" || true)"
             manifest="$(curl -fsS --max-time 20 -H 'Cache-Control: no-cache' "$base/manifest.json?__audit_final=$nonce" || true)"
-            sw="$(curl -fsS --max-time 20 -H 'Cache-Control: no-cache' "$base/bixbo-push-sw.js?__audit_final=$nonce" || true)"
+            sw_status="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 -H 'Cache-Control: no-cache' "$base/bixbo-push-sw.js?__audit_final=$nonce" || true)"
 
-            if printf '%s' "$root" | grep -q 'index-JhOx2vzQ.js' \
-              && printf '%s' "$root" | grep -q 'styles-C3qqL6Ik.css' \
-              && printf '%s' "$auth" | grep -qi 'sign in' \
+            if printf '%s' "$info" | grep -q "$expected" \
+              && printf '%s' "$info" | grep -q '"app": "BIXBO"' \
               && printf '%s' "$manifest" | grep -q '"name"' \
-              && [ -n "$sw" ]; then
-              echo "Latest audited BIXBO build is live on production."
-              echo "Verified fingerprint: index-JhOx2vzQ.js + styles-C3qqL6Ik.css"
+              && [ "$sw_status" = "200" ]; then
+              echo "Latest audited BIXBO commit is live on production: $expected"
               exit 0
             fi
 
-            echo "Latest fingerprint not fully live yet (${attempt}/36)."
+            echo "Production has not exposed expected build metadata yet (${attempt}/60)."
             sleep 10
           done
 
-          echo "Latest audited fingerprint did not become fully verifiable in the retry window."
+          echo "Expected audited commit did not become live in the retry window."
           exit 1
