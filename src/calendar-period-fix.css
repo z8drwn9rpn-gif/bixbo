@@ -4,3 +4,10 @@
 #main-content span.text-white.font-semibold {
   color: #fff !important;
 }
+
+/* Do not draw a separate green selection ring around the tapped calendar date.
+   Period/pain/prediction rings stay untouched. */
+#main-content .ring-2.ring-primary.ring-offset-1.ring-offset-background {
+  --tw-ring-shadow: 0 0 #0000 !important;
+  box-shadow: none !important;
+}
