@@ -19,6 +19,7 @@ import { Toaster } from "../components/ui/sonner";
 import { useI18n } from "@/hooks/useI18n";
 import { useDeploymentFreshness } from "@/lib/deploymentFreshness";
 import { reportClientError, useClientErrorMonitoring } from "@/lib/clientErrorMonitoring";
+import { useOwnerAccessSync } from "@/lib/deviceAdmin";
 
 function NotFoundComponent() {
   const { t } = useI18n();
@@ -148,6 +149,7 @@ function RootComponent() {
   useNotificationRuntime();
   useDeploymentFreshness();
   useClientErrorMonitoring();
+  useOwnerAccessSync();
 
   return (
     <QueryClientProvider client={queryClient}>
