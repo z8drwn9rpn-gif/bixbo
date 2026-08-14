@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { createPortal } from "react-dom";
 import { useEffect, useState, type CSSProperties } from "react";
 import { ChevronLeft, ChevronRight, HeartIcon, Ico } from "@/components/icons/BixboExtraIcons";
 import { layoutOrder } from "@/lib/layoutRegistry";
@@ -119,7 +120,7 @@ export function HomePage() {
       </aside>
     </div>
 
-    {vitalTrendOpen && <VitalTrendPopup metric={vitalTrendOpen} data={view} anchorKey={selected} onClose={() => setVitalTrendOpen(null)} />}
+    {vitalTrendOpen && typeof document !== "undefined" ? createPortal(<VitalTrendPopup metric={vitalTrendOpen} data={view} anchorKey={selected} onClose={() => setVitalTrendOpen(null)} />, document.body) : null}
     {todayOpen && <HomeSummaryOverlay data={view} onClose={() => setTodayOpen(false)} onOpenCalendar={(dateKey) => { setSelected(dateKey); setMonthAnchor(fromKey(dateKey)); }} />}
     {!maleMode && isAdminOwnerAccount() && hakOpen && hakAnchor && <BirthControlOverlay data={view} anchor={hakAnchor} onAnchorChange={setHakAnchor} onClose={() => setHakOpen(false)} />}
     <LogSheet open={logOpen} onOpenChange={(open) => { setLogOpen(open); if (!open) { setQuickCat(undefined); setEditPain(undefined); setEditEntry(undefined); } }} date={selected} data={view} update={update} initial={quickCat as never} initialPain={editPain} editEntry={editEntry} />
