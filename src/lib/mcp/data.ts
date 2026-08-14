@@ -22,6 +22,24 @@ export type BixboBlob = {
   [key: string]: unknown;
 };
 
+const ROW_VERSION = Symbol("bixbo-mcp-row-version");
+type VersionedBlob = BixboBlob & { [ROW_VERSION]?: string | null };
+
+function attachRowVersion(blob: BixboBlob, updatedAt: string | null): BixboBlob {
+  Object.defineProperty(blob, ROW_VERSION, {
+    value: updatedAt,
+    configurable: true,
+    enumerable: false,
+    writable: true,
+  });
+  return blob;
+}
+
+function cleanBlob(blob: BixboBlob): BixboBlob {
+  // Symbol metadata is non-enumerable, so object spread intentionally strips it.
+  return { ...blob };
+}
+
 export function requireUser(ctx: ToolContext): string {
   if (!ctx.isAuthenticated()) throw new ToolError("Not signed in to BIXBO.");
   const userId = ctx.getUserId();
@@ -34,20 +52,66 @@ export async function loadBlob(ctx: ToolContext): Promise<BixboBlob> {
   const supabase = supabaseForUser(ctx);
   const { data, error } = await supabase
     .from("user_data")
-    .select("data")
+    .select("data, updated_at")
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw new ToolError(error.message);
-  return ((data?.data as BixboBlob | null) ?? {}) as BixboBlob;
+
+  const blob = ((data?.data as BixboBlob | null) ?? {}) as BixboBlob;
+  return attachRowVersion(blob, data?.updated_at ?? null);
 }
 
+/**
+ * Persist a blob only if the row is still the version that `loadBlob` read.
+ *
+ * BIXBO's normal app sync already performs a conflict-safe merge. MCP tools,
+ * however, read and write the whole JSON document. Without optimistic locking,
+ * a simultaneous iPhone/cloud write could be overwritten by an older MCP copy.
+ * The database `updated_at` trigger gives us a cheap compare-and-swap token.
+ */
 export async function saveBlob(ctx: ToolContext, blob: BixboBlob): Promise<void> {
   const userId = requireUser(ctx);
   const supabase = supabaseForUser(ctx);
-  const { error } = await supabase
+  const expectedUpdatedAt = (blob as VersionedBlob)[ROW_VERSION] ?? null;
+  const payload = cleanBlob(blob);
+
+  if (expectedUpdatedAt) {
+    const { data, error } = await supabase
+      .from("user_data")
+      .update({ data: payload, updated_at: new Date().toISOString() })
+      .eq("user_id", userId)
+      .eq("updated_at", expectedUpdatedAt)
+      .select("updated_at")
+      .maybeSingle();
+
+    if (error) throw new ToolError(error.message);
+    if (!data) {
+      throw new ToolError(
+        "BIXBO data changed on another device while this tool was running. Nothing was overwritten; please retry the action.",
+      );
+    }
+
+    attachRowVersion(blob, data.updated_at);
+    return;
+  }
+
+  const { data, error } = await supabase
     .from("user_data")
-    .upsert({ user_id: userId, data: blob, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
-  if (error) throw new ToolError(error.message);
+    .insert({ user_id: userId, data: payload, updated_at: new Date().toISOString() })
+    .select("updated_at")
+    .maybeSingle();
+
+  if (error) {
+    // 23505 means another writer created the row after this tool loaded it.
+    if (error.code === "23505") {
+      throw new ToolError(
+        "BIXBO data changed on another device while this tool was running. Nothing was overwritten; please retry the action.",
+      );
+    }
+    throw new ToolError(error.message);
+  }
+
+  attachRowVersion(blob, data?.updated_at ?? null);
 }
 
 export function isoDate(value?: string): string {
