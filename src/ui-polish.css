@@ -7,6 +7,56 @@
   --bixbo-control-radius: 14px;
   --bixbo-card-radius: 24px;
   --bixbo-section-gap: 14px;
+  --bixbo-rounded-font: ui-rounded, "SF Pro Rounded", "Arial Rounded MT", "Trebuchet MS", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --bixbo-rounded-font-bold: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* One typography family across BIXBO.
+   1) large headings = large + heavy
+   2) smaller names/section labels = bold rounded
+   3) small/supporting text = rounded regular */
+html,
+body,
+button,
+a,
+input,
+select,
+textarea,
+label,
+summary,
+[role="button"],
+[role="dialog"] {
+  font-family: var(--bixbo-rounded-font);
+}
+
+.font-sans,
+.font-serif {
+  font-family: var(--bixbo-rounded-font) !important;
+}
+
+/* Primary page/dialog headings: keep their existing size, only unify the face + weight. */
+:where(h1, h2, h3),
+[role="dialog"] :where(h1, h2, h3),
+.bixbo-section-title,
+[data-bixbo-app-title],
+[data-bixbo-display-title] {
+  font-family: var(--bixbo-rounded-font-bold) !important;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+/* Smaller names and UI labels are bold/rounded, but are not enlarged. */
+#main-content :where(h4, h5, h6),
+#main-content :where(.font-semibold, .font-bold, .font-extrabold, .font-black),
+[role="dialog"] :where(.font-semibold, .font-bold, .font-extrabold, .font-black),
+nav :where(.font-semibold, .font-bold, .font-extrabold, .font-black) {
+  font-family: var(--bixbo-rounded-font-bold) !important;
+}
+
+/* Normal/small copy must stay light: rounded, not artificially emphasized. */
+#main-content :where(p, span, small, li, td, th, label):not(.font-semibold):not(.font-bold):not(.font-extrabold):not(.font-black),
+[role="dialog"] :where(p, span, small, li, td, th, label):not(.font-semibold):not(.font-bold):not(.font-extrabold):not(.font-black) {
+  font-family: var(--bixbo-rounded-font);
 }
 
 #main-content,
@@ -24,33 +74,35 @@
 #main-content .rounded-2xl.bg-surface,
 #main-content .rounded-2xl.bg-card { border-color: color-mix(in srgb, var(--border) 72%, transparent); }
 
-/* App-wide title hierarchy: rounder and heavier, without making titles larger.
-   The Home BIXBO/month display titles keep their explicit display styling. */
+/* Keep all ordinary content headings bold and rounded without changing size. */
 #main-content :where(h1, h2, h3):not([data-bixbo-display-title]),
 .bixbo-unified-log :where(h1, h2, h3),
 [role="dialog"] :where(h1, h2, h3) {
-  font-family: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", var(--font-sans);
+  font-family: var(--bixbo-rounded-font-bold);
   font-weight: 800;
   letter-spacing: -0.025em;
 }
 
+/* Serif utility no longer creates a different typeface or forces small text bold. */
 #main-content :where(.font-serif):not([data-bixbo-display-title]) {
-  font-family: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", var(--font-sans);
-  font-weight: 750;
-  letter-spacing: -0.02em;
+  font-family: var(--bixbo-rounded-font) !important;
+  letter-spacing: -0.015em;
+}
+
+#main-content :where(h1.font-serif, h2.font-serif, h3.font-serif, h4.font-serif, .font-serif.font-semibold, .font-serif.font-bold, .font-serif.font-extrabold, .font-serif.font-black) {
+  font-family: var(--bixbo-rounded-font-bold) !important;
 }
 
 .bixbo-section-title {
-  font-family: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", var(--font-sans) !important;
+  font-family: var(--bixbo-rounded-font-bold) !important;
   font-weight: 800 !important;
   letter-spacing: -0.02em !important;
 }
 
-/* Small chart typography: rounded like the rest of BIXBO, but deliberately
-   regular-weight so axes, ticks, legends and tiny values stay light. */
+/* Small chart typography: same rounded family, deliberately regular-weight. */
 #main-content :where(svg text, .recharts-text, .recharts-cartesian-axis-tick-value, .recharts-legend-item-text),
 .bixbo-chart-fade :where(text, span, p) {
-  font-family: ui-rounded, "SF Pro Rounded", "Arial Rounded MT", var(--font-sans) !important;
+  font-family: var(--bixbo-rounded-font) !important;
   font-weight: 400 !important;
   letter-spacing: -0.01em;
 }
@@ -69,7 +121,7 @@
 .bixbo-unified-log [class*="grid-cols-"] select,
 .bixbo-unified-log [class*="grid-cols-"] textarea { width: 100%; min-width: 0; max-width: 100%; }
 .bixbo-unified-log [data-bixbo-log-field-id] > div:first-child > span:first-child,
-.bixbo-unified-log section > p:first-child { font-size: 11px; line-height: 1.25; font-weight: 700; letter-spacing: .055em; text-transform: uppercase; color: var(--muted-foreground); }
+.bixbo-unified-log section > p:first-child { font-family: var(--bixbo-rounded-font-bold); font-size: 11px; line-height: 1.25; font-weight: 700; letter-spacing: .025em; text-transform: none; color: var(--muted-foreground); }
 .bixbo-unified-log button.rounded-full { min-height: 32px; max-width: 100%; white-space: normal; line-height: 1.15; }
 .bixbo-unified-log button.rounded-full:active,
 .bixbo-unified-log button[class*="rounded-xl"]:active,
@@ -85,7 +137,7 @@
 /* SUKSUK compact layout */
 .bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 { gap: 12px; padding-bottom: 18px; }
 .bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section { margin: 0; }
-.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section > p:first-child { margin-bottom: 8px; font-size: 13px; line-height: 1.2; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--foreground); }
+.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section > p:first-child { margin-bottom: 8px; font-family: var(--bixbo-rounded-font-bold); font-size: 13px; line-height: 1.2; font-weight: 700; letter-spacing: -0.01em; text-transform: none; color: var(--foreground); }
 .bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section > div.flex.flex-wrap { gap: 8px; }
 .bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section button.rounded-full { min-height: 31px; padding: 5px 12px; gap: 5px; font-size: 12px; font-weight: 600; line-height: 1; box-shadow: none; }
 .bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:not(:nth-of-type(5)) button.rounded-full.bg-primary { background: color-mix(in srgb, var(--primary) 18%, var(--background)) !important; color: var(--foreground) !important; box-shadow: 0 0 0 1px var(--background), 0 0 0 3px color-mix(in srgb, var(--foreground) 78%, transparent) !important; --tw-ring-shadow: 0 0 #0000 !important; }
