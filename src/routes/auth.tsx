@@ -1,12 +1,21 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/hooks/useI18n";
 import { supabase } from "@/integrations/supabase/client";
 
+function safeInternalNext(value: unknown): string {
+  if (typeof value !== "string") return "";
+  if (!value.startsWith("/") || value.startsWith("//")) return "";
+  return value;
+}
+
 export const Route = createFileRoute("/auth")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    next: safeInternalNext(search.next),
+  }),
   head: () => ({ meta: [
     { title: "BIXBO — Sign in" },
     { name: "description", content: "Sign in to sync your BIXBO diary across devices and share with your partner." },
@@ -16,6 +25,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
+  const { next } = Route.useSearch();
   const { t } = useI18n();
   const [mode, setMode] = useState<"in" | "up">("in");
   const [email, setEmail] = useState("");
@@ -24,31 +34,54 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
+  const finishAuth = useCallback(() => {
+    if (next) {
+      window.location.replace(next);
+      return;
+    }
+    void navigate({ to: "/settings" });
+  }, [navigate, next]);
+
   useEffect(() => {
     let cancelled = false;
     supabase.auth.getSession().then(({ data, error }) => {
       if (error) throw error;
-      if (!cancelled && data.session) navigate({ to: "/settings" });
+      if (!cancelled && data.session) finishAuth();
     }).catch((error) => { if (!cancelled) setMsg(error instanceof Error ? error.message : String(error)); });
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!cancelled && session) navigate({ to: "/settings" });
+      if (!cancelled && session) finishAuth();
     });
     return () => { cancelled = true; sub.subscription.unsubscribe(); };
-  }, [navigate]);
+  }, [finishAuth]);
 
+  const authReturnUrl = () => {
+    const url = new URL("/auth", window.location.origin);
+    if (next) url.searchParams.set("next", next);
+    return url.toString();
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault(); setBusy(true); setMsg(null);
     try {
       if (mode === "up") {
-        const { error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: `${window.location.origin}/`, data: { display_name: name || undefined } } });
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: authReturnUrl(),
+            data: { display_name: name || undefined },
+          },
+        });
         if (error) throw error;
-        setMsg(t("Account created. If email confirmation is on, check your inbox — otherwise you're signed in."));
-        setTimeout(() => navigate({ to: "/settings" }), 400);
+        if (data.session) {
+          finishAuth();
+        } else {
+          setMsg(t("Account created. If email confirmation is on, check your inbox — otherwise you're signed in."));
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate({ to: "/settings" });
+        finishAuth();
       }
     } catch (err) { setMsg(err instanceof Error ? err.message : String(err)); }
     finally { setBusy(false); }
@@ -60,7 +93,7 @@ function AuthPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/auth`,
+          redirectTo: authReturnUrl(),
           ...(provider === "google" ? { queryParams: { prompt: "select_account" } } : {}),
         },
       });
