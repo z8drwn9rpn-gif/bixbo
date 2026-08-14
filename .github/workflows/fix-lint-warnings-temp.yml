@@ -15,8 +15,34 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: audit-final-cleanup-no-notes
-      - name: Match current MonthCalendar source
-        run: sed -i 's/data.dayLogs, data.settings.adminConfig, data.settings.birthControlSince/data.cycle.lastPeriodEnd, data.cycle.lastPeriodStart, data.dayLogs/' scripts/fix_lint_cleanup.py
+      - name: Match current source shapes
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/fix_lint_cleanup.py')
+          s = p.read_text()
+          s = s.replace(
+              '"  }, [cells, cycleTrackingHidden, data.dayLogs, data.settings.adminConfig, data.settings.birthControlSince, predictedKeys]);",',
+              '"  }, [cells, cycleTrackingHidden, data.cycle.lastPeriodEnd, data.cycle.lastPeriodStart, data.dayLogs, predictedKeys]);",',
+              1,
+          )
+          old = '''one(
+              "src/components/home/BirthControlCard.tsx",
+              "  }, []);\\n",
+              "  }, [hakTheme.background]);\\n",
+              "BirthControl effect dependency",
+          )'''
+          new = '''one(
+              "src/components/home/BirthControlCard.tsx",
+              "      } else if (themeMeta) {\\n        themeMeta.content = previousThemeColor;\\n      }\\n    };\\n  }, []);",
+              "      } else if (themeMeta) {\\n        themeMeta.content = previousThemeColor;\\n      }\\n    };\\n  }, [hakTheme.background]);",
+              "BirthControl effect dependency",
+          )'''
+          if old not in s:
+              raise SystemExit('BirthControl cleanup-script block missing')
+          p.write_text(s.replace(old, new, 1))
+          PY
       - name: Apply focused lint correctness fixes
         run: python3 scripts/fix_lint_cleanup.py
       - name: Commit fixes
