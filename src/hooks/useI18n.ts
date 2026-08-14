@@ -11,7 +11,10 @@ export function useI18n() {
     document.documentElement.lang = language;
   }, [language]);
 
-  const t = useMemo(() => (key: string) => translate(language, key), [language]);
+  const t = useMemo(
+    () => (key: string) => (key === "Tap to edit" ? "" : translate(language, key)),
+    [language],
+  );
 
   const setLanguage = (next: AppLanguage) => {
     if (!hydrated || next === language) return;
