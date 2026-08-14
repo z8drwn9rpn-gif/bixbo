@@ -299,6 +299,8 @@ function BodyRecoveryForm({
   );
 }
 
+const DAY_LEVEL_ADMIN_FEATURES = new Set<RegistryFeatureId>(["period", "temp", "meds", "postpartum"]);
+
 export function LogSheet({
   open,
   onOpenChange,
@@ -348,13 +350,13 @@ export function LogSheet({
   const [adminFieldValues, setAdminFieldValues] = useState<Record<string, CustomLogValue>>({});
 
   const activeRegistryFeature = active && !active.startsWith("custom:") ? active as RegistryFeatureId : null;
-  const dayLevelAdminFeatures = new Set<RegistryFeatureId>(["period", "temp", "meds", "postpartum"]);
+  const draftSourceKey = `${active ?? ""}:${date}:${openToken}`;
   const draftSourceEntryId = useMemo(
-    () => globalThis.crypto?.randomUUID?.() ?? `core-entry-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    [active, date, openToken],
+    () => globalThis.crypto?.randomUUID?.() ?? `core-entry-${encodeURIComponent(draftSourceKey)}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    [draftSourceKey],
   );
   const activeSourceEntryId = activeRegistryFeature
-    ? editSourceId ?? (dayLevelAdminFeatures.has(activeRegistryFeature) ? `day:${activeRegistryFeature}:${date}` : draftSourceEntryId)
+    ? editSourceId ?? (DAY_LEVEL_ADMIN_FEATURES.has(activeRegistryFeature) ? `day:${activeRegistryFeature}:${date}` : draftSourceEntryId)
     : draftSourceEntryId;
   const activeAdminFields = activeRegistryFeature ? registryCustomFieldsForFeature(data, activeRegistryFeature) : [];
   useEffect(() => {
@@ -367,7 +369,7 @@ export function LogSheet({
     const legacyByTime = editSourceTime
       ? [...entries].reverse().find((entry) => !entry.sourceEntryId && entry.time === editSourceTime)
       : undefined;
-    const legacyDayLevel = dayLevelAdminFeatures.has(activeRegistryFeature)
+    const legacyDayLevel = DAY_LEVEL_ADMIN_FEATURES.has(activeRegistryFeature)
       ? [...entries].reverse().find((entry) => !entry.sourceEntryId)
       : undefined;
     setAdminFieldValues((linked ?? legacyByTime ?? legacyDayLevel)?.values ?? {});
@@ -386,7 +388,7 @@ export function LogSheet({
         for (let index = existing.length - 1; index >= 0; index -= 1) {
           const entry = existing[index];
           const legacyTimeMatch = Boolean(editSourceTime && !entry.sourceEntryId && entry.time === editSourceTime);
-          const legacyDayMatch = dayLevelAdminFeatures.has(activeRegistryFeature) && !entry.sourceEntryId;
+          const legacyDayMatch = DAY_LEVEL_ADMIN_FEATURES.has(activeRegistryFeature) && !entry.sourceEntryId;
           if (legacyTimeMatch || legacyDayMatch) {
             legacyIndex = index;
             break;
@@ -520,7 +522,9 @@ export function LogSheet({
     setDraggingCat(id);
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {}
+    } catch {
+      // Pointer capture is optional on browsers that do not support it.
+    }
   };
 
   const moveDirectReorder = (e: React.PointerEvent<HTMLButtonElement>) => {

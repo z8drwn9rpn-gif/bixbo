@@ -657,8 +657,8 @@ export function TempForm({
     if (legacyValue != null && Number.isFinite(legacyValue)) return [{ id: legacyId, time: "00:00", value: legacyValue }];
     return [];
   };
-  const temperatureEntries = useMemo(() => existingVitals(cur.temperatureEntries, cur.temperature, `${date}-legacy-temperature`), [cur.temperatureEntries, cur.temperature, date]);
-  const weightEntries = useMemo(() => existingVitals(cur.weightEntries, cur.weight, `${date}-legacy-weight`), [cur.weightEntries, cur.weight, date]);
+  const temperatureEntries = existingVitals(cur.temperatureEntries, cur.temperature, `${date}-legacy-temperature`);
+  const weightEntries = existingVitals(cur.weightEntries, cur.weight, `${date}-legacy-weight`);
   const daySeries = (kind: "temperature" | "weight", days: number) => Object.entries(data.dayLogs)
     .filter(([k]) => k <= date)
     .sort(([a],[b]) => a.localeCompare(b))

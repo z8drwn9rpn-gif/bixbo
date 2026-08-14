@@ -255,7 +255,7 @@ export function MonthCalendar({
     }
 
     return meta;
-  }, [cells, cycleTrackingHidden, data.cycle.lastPeriodEnd, data.cycle.lastPeriodStart, data.dayLogs, predictedKeys]);
+  }, [cells, cycleTrackingHidden, data, predictedKeys]);
 
   const weekLayouts = useMemo(() => {
     return weeks.map((week) => {

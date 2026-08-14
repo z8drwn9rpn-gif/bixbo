@@ -48,8 +48,10 @@ export function MedsAdherence({ data, period, anchor, onPeriodChange, onPeriodSh
     return out;
   }, [range.end, range.start]);
 
-  const adherenceNow = new Date();
-  const perDay = useMemo(() => days.map((date) => {
+  const adherenceMinuteKey = Math.floor(Date.now() / 60_000);
+  const perDay = useMemo(() => {
+    const adherenceNow = new Date(adherenceMinuteKey * 60_000);
+    return days.map((date) => {
     const missed: { medName: string; time: string; key: string; item: string }[] = [];
     const takenList: { medName: string; time: string; key: string; item: string }[] = [];
     let expected = 0; let taken = 0;
@@ -62,14 +64,17 @@ export function MedsAdherence({ data, period, anchor, onPeriodChange, onPeriodSh
       state.missedItems.forEach((item) => missed.push({ medName: item, time, key: state.key, item }));
     }));
     return { date, expected, taken, missed, takenList, pct: expected ? Math.round((taken / expected) * 100) : null };
-  }), [data.medLog, data.medLogItems, days, scheduled, adherenceNow.getFullYear(), adherenceNow.getMonth(), adherenceNow.getDate(), adherenceNow.getHours(), adherenceNow.getMinutes()]);
+    });
+  }, [adherenceMinuteKey, data.medLog, data.medLogItems, days, scheduled]);
 
   const totalExpected = perDay.reduce((sum, day) => sum + day.expected, 0);
   const totalTaken = perDay.reduce((sum, day) => sum + day.taken, 0);
   const overallPct = totalExpected ? Math.round((totalTaken / totalExpected) * 100) : null;
   const adherenceColor = (pct: number | null): string => pct == null ? INSIGHT_COLORS.oliveLight : pct >= 90 ? "#28A85B" : pct >= 75 ? "#F0D33A" : pct >= 40 ? "#F7A21C" : "#D84343";
 
-  const perMed = useMemo(() => scheduled.flatMap((med) => med.times.flatMap((time) => medScheduleItems(med).map((item) => {
+  const perMed = useMemo(() => {
+    const adherenceNow = new Date(adherenceMinuteKey * 60_000);
+    return scheduled.flatMap((med) => med.times.flatMap((time) => medScheduleItems(med).map((item) => {
     let expected = 0; let taken = 0;
     days.forEach((date) => {
       const state = resolveScheduledDose(med, date, time, data.medLog, data.medLogItems ?? {}, adherenceNow);
@@ -77,7 +82,8 @@ export function MedsAdherence({ data, period, anchor, onPeriodChange, onPeriodSh
       expected += 1; if (state.selectedItems.includes(item)) taken += 1;
     });
     return { id: `${med.id}@${time}@${item}`, name: item, dose: med.dose, time, taken, expected, pct: expected ? Math.round((taken / expected) * 100) : null };
-  }))).filter((entry) => entry.expected > 0).sort((a, b) => (a.pct ?? 0) - (b.pct ?? 0)), [data.medLog, data.medLogItems, days, scheduled, adherenceNow.getFullYear(), adherenceNow.getMonth(), adherenceNow.getDate(), adherenceNow.getHours(), adherenceNow.getMinutes()]);
+    }))).filter((entry) => entry.expected > 0).sort((a, b) => (a.pct ?? 0) - (b.pct ?? 0));
+  }, [adherenceMinuteKey, data.medLog, data.medLogItems, days, scheduled]);
 
   const asNeededCounts = useMemo(() => asNeeded.map((med) => {
     let count = 0;

@@ -305,7 +305,7 @@ export function BirthControlOverlay({
         themeMeta.content = previousThemeColor;
       }
     };
-  }, []);
+  }, [hakTheme.background]);
 
   useLayoutEffect(() => {
     // HAK now scrolls naturally at full 1:1 size on both mobile and desktop.

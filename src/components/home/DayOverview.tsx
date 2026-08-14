@@ -1031,7 +1031,7 @@ export function DayPreview({
 export { DayOverviewCard as Card, DayOverviewDeleteButton as DeleteBtn } from "./DayOverviewPrimitives";
 
 export const stripEmoji = (value: string) =>
-  value.replace(/^[\p{Extended_Pictographic}\u200d\ufe0f\p{Emoji_Modifier}]+\s*/u, "").trim();
+  value.replace(/^(?:\p{Extended_Pictographic}|\u200d|\ufe0f|\p{Emoji_Modifier})+\s*/u, "").trim();
 
 export function ShareDayButton({ date, view }: { date: string; view: BixboData }) {
   const { t, language } = useI18n();
@@ -1100,7 +1100,9 @@ export function ShareDayButton({ date, view }: { date: string; view: BixboData }
       try {
         await navigator.share({ title: `${t("How I feel")} · ${dateLabel}`, text });
         return;
-      } catch {}
+      } catch {
+        // Share cancellation/failure falls back to clipboard below.
+      }
     }
     try {
       await navigator.clipboard.writeText(text);

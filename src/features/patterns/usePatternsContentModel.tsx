@@ -1081,21 +1081,22 @@ const outcomeOptions: SelectOption[] = [
     ...customCorrelationOptions,
   ];
 
+const triggerOptionIdKey = triggerOptions.map((option) => option.id).join("\u0000");
+const outcomeOptionIdKey = outcomeOptions.map((option) => option.id).join("\u0000");
+
 const [selectedTrigger, setSelectedTrigger] = useState(triggerOptions[0]?.id ?? "");
 
 const [selectedOutcome, setSelectedOutcome] = useState(outcomeOptions[0]?.id ?? "");
 
 useEffect(() => {
-    if (!triggerOptions.some((option) => option.id === selectedTrigger)) {
-      setSelectedTrigger(triggerOptions[0]?.id ?? "");
-    }
-  }, [cycleTrackingHidden, customCorrelationOptionKey, selectedTrigger, view.custom.foodQuickAdd]);
+    const ids = triggerOptionIdKey ? triggerOptionIdKey.split("\u0000") : [];
+    if (!ids.includes(selectedTrigger)) setSelectedTrigger(ids[0] ?? "");
+  }, [selectedTrigger, triggerOptionIdKey]);
 
 useEffect(() => {
-    if (!outcomeOptions.some((option) => option.id === selectedOutcome)) {
-      setSelectedOutcome(outcomeOptions[0]?.id ?? "");
-    }
-  }, [customCorrelationOptionKey, selectedOutcome]);
+    const ids = outcomeOptionIdKey ? outcomeOptionIdKey.split("\u0000") : [];
+    if (!ids.includes(selectedOutcome)) setSelectedOutcome(ids[0] ?? "");
+  }, [outcomeOptionIdKey, selectedOutcome]);
 
 const hasScheduledMedicationMissed = (day: string): boolean => {
     const scheduledMeds = view.meds.filter((med) => !med.asNeeded);
