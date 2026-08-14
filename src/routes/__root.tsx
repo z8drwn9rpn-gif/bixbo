@@ -18,6 +18,7 @@ import { AppPrivacyGuard } from "../components/AppPrivacyGuard";
 import { Toaster } from "../components/ui/sonner";
 import { useI18n } from "@/hooks/useI18n";
 import { useDeploymentFreshness } from "@/lib/deploymentFreshness";
+import { reportClientError, useClientErrorMonitoring } from "@/lib/clientErrorMonitoring";
 
 function NotFoundComponent() {
   const { t } = useI18n();
@@ -49,8 +50,12 @@ function NotFoundComponent() {
 }
 
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
-  console.error(error);
   const router = useRouter();
+
+  useEffect(() => {
+    console.error(error);
+    reportClientError("route-error", error);
+  }, [error]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -142,6 +147,7 @@ function RootComponent() {
   useThemeSync();
   useNotificationRuntime();
   useDeploymentFreshness();
+  useClientErrorMonitoring();
 
   return (
     <QueryClientProvider client={queryClient}>
