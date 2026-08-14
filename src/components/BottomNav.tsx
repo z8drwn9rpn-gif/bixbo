@@ -21,18 +21,23 @@ const ICONS: Record<NavigationItemId, ComponentType<IconProps>> = {
 };
 
 const NAV_IMAGE_SRC: Partial<Record<NavigationItemId, string>> = {
-  home: "/nav-assets/nav-home-approved.webp",
-  overview: "/nav-assets/nav-overview-approved.webp",
+  home: "/nav-assets/nav-home.webp?v=visible-20260814-2",
+  overview: "/nav-assets/nav-overview-approved.webp?v=visible-20260814-2",
   log: "/nav-assets/nav-log.svg?v=green-plus-2",
-  couple: "/nav-assets/nav-couple-approved.webp",
-  notes: "/nav-assets/nav-note-approved.webp",
+  couple: "/nav-assets/nav-couple.webp?v=visible-20260814-2",
+  notes: "/nav-assets/nav-note-approved.webp?v=visible-20260814-2",
 };
 
 function NavArtwork({ id, size, className }: { id: NavigationItemId; size: number; className?: string }) {
   const Icon = ICONS[id];
   const imageSrc = NAV_IMAGE_SRC[id];
-  if (imageSrc) return <img src={imageSrc} alt="" aria-hidden="true" draggable={false} width={size} height={size} className={className} style={{ objectFit: "contain" }} />;
+  if (imageSrc) return <img src={imageSrc} alt="" aria-hidden="true" draggable={false} width={size} height={size} className={className} style={{ objectFit: "contain" }} onError={(event) => { event.currentTarget.style.display = "none"; event.currentTarget.parentElement?.querySelector<SVGElement>("svg[data-nav-fallback]")?.removeAttribute("hidden"); }} />;
   return <Icon size={size} className={className} />;
+}
+
+function NavArtworkSafe({ id, size, className }: { id: NavigationItemId; size: number; className?: string }) {
+  const Icon = ICONS[id];
+  return <span className="relative inline-flex shrink-0 items-center justify-center" style={{ width: size, height: size }}><NavArtwork id={id} size={size} className={className} /><Icon data-nav-fallback hidden size={size} className={className} /></span>;
 }
 
 export function BottomNav() {
@@ -52,11 +57,11 @@ export function BottomNav() {
         {items.map((item) => {
           const label = item.label ?? BIXBO_NAVIGATION.find((candidate) => candidate.id === item.id)?.label ?? item.id;
           if (item.action === "log") {
-            return <li key={item.id} className="flex min-w-0 flex-1 justify-center"><button type="button" onClick={openLog} className="flex min-h-[72px] w-full flex-col items-center justify-end gap-0 px-1 pb-0.5 text-[11px] font-semibold text-[#3f4e27] transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] dark:text-[#dce7b8] landscape:min-h-[62px]" aria-label={t(label)}><NavArtwork id={item.id} size={64} className="-mb-1 h-[64px] w-[64px] shrink-0 object-contain drop-shadow-[0_7px_8px_rgba(52,67,30,0.20)] landscape:h-[54px] landscape:w-[54px]" /><span className="max-w-full truncate text-center leading-none">{t(label)}</span></button></li>;
+            return <li key={item.id} className="flex min-w-0 flex-1 justify-center"><button type="button" onClick={openLog} className="flex min-h-[72px] w-full flex-col items-center justify-end gap-0 px-1 pb-0.5 text-[11px] font-semibold text-[#3f4e27] transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] dark:text-[#dce7b8] landscape:min-h-[62px]" aria-label={t(label)}><NavArtworkSafe id={item.id} size={64} className="-mb-1 h-[64px] w-[64px] shrink-0 object-contain drop-shadow-[0_7px_8px_rgba(52,67,30,0.20)] landscape:h-[54px] landscape:w-[54px]" /><span className="max-w-full truncate text-center leading-none">{t(label)}</span></button></li>;
           }
           const to = item.to ?? "/";
           const active = item.id === "overview" ? pathname.startsWith("/insights") || pathname.startsWith("/patterns") : to === "/" ? pathname === "/" : pathname.startsWith(to);
-          return <li key={item.id} className="flex min-w-0 flex-1 justify-center"><Link to={to as never} aria-current={active ? "page" : undefined} className={`relative flex min-h-[72px] w-full flex-col items-center justify-end gap-0 px-1 pb-0.5 text-[11px] font-semibold transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] landscape:min-h-[62px] ${active ? "text-[#34431f] dark:text-[#e3edc4]" : "text-[#45542b]/95 hover:text-[#34411f] dark:text-[#bdc99e] dark:hover:text-[#e3edc4]"}`}><NavArtwork id={item.id} size={54} className={`mb-0 h-[54px] w-[54px] shrink-0 object-contain drop-shadow-[0_6px_7px_rgba(52,67,30,0.18)] transition-transform landscape:h-[46px] landscape:w-[46px] ${active ? "scale-[1.04]" : ""}`} /><span className="max-w-full truncate text-center leading-none">{t(label)}</span>{active ? <span aria-hidden="true" className="absolute bottom-[-3px] h-1 w-5 rounded-full bg-current opacity-70" /> : null}</Link></li>;
+          return <li key={item.id} className="flex min-w-0 flex-1 justify-center"><Link to={to as never} aria-current={active ? "page" : undefined} className={`relative flex min-h-[72px] w-full flex-col items-center justify-end gap-0 px-1 pb-0.5 text-[11px] font-semibold transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] landscape:min-h-[62px] ${active ? "text-[#34431f] dark:text-[#e3edc4]" : "text-[#45542b]/95 hover:text-[#34411f] dark:text-[#bdc99e] dark:hover:text-[#e3edc4]"}`}><NavArtworkSafe id={item.id} size={54} className={`mb-0 h-[54px] w-[54px] shrink-0 object-contain drop-shadow-[0_6px_7px_rgba(52,67,30,0.18)] transition-transform landscape:h-[46px] landscape:w-[46px] ${active ? "scale-[1.04]" : ""}`} /><span className="max-w-full truncate text-center leading-none">{t(label)}</span>{active ? <span aria-hidden="true" className="absolute bottom-[-3px] h-1 w-5 rounded-full bg-current opacity-70" /> : null}</Link></li>;
         })}
       </ul>
     </nav>
