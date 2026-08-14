@@ -26,11 +26,7 @@ jobs:
           if old not in s: raise SystemExit("Supabase import marker missing")
           s = s.replace(old, new, 1)
           marker = 'export interface CloudProfile {\n'
-          helper = '''function toSupabaseJson(value: unknown): Json {
-  return JSON.parse(JSON.stringify(value)) as Json;
-}
-
-'''
+          helper = 'function toSupabaseJson(value: unknown): Json {\n  return JSON.parse(JSON.stringify(value)) as Json;\n}\n\n'
           if marker not in s: raise SystemExit("CloudProfile marker missing")
           s = s.replace(marker, helper + marker, 1)
           old_backup = '    .insert({ user_id: user.id, schema_version: 3, data: { ...safePayload, partner: undefined } })'
