@@ -23,6 +23,7 @@ const ICONS: Record<NavigationItemId, ComponentType<IconProps>> = {
 const NAV_IMAGE_SRC: Partial<Record<NavigationItemId, string>> = {
   home: "/nav-assets/nav-home.webp",
   overview: "/nav-assets/nav-overview.webp",
+  log: "/nav-assets/nav-log.svg",
   couple: "/nav-assets/nav-couple.webp",
   notes: "/nav-assets/nav-note.webp",
 };
