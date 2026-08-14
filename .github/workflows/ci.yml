@@ -39,3 +39,5 @@ jobs:
         run: bun test
       - name: Build
         run: bun run build
+      - name: Smoke built app
+        run: bun run smoke:ssr
