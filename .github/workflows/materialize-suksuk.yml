@@ -22,15 +22,15 @@ jobs:
       - name: Materialize current build transforms into source
         shell: bash
         run: |
-          cat > /tmp/materialize.ts <<'EOF'
+          cat > materialize-runtime-source.ts <<'EOF'
           import { readdir, readFile, writeFile } from "node:fs/promises";
           import path from "node:path";
-          import { suksukFixPlugin } from process.cwd() + "/src/build/suksukFixPlugin.ts";
-          import { bixboIconMigrationPlugin } from process.cwd() + "/src/build/bixboIconMigrationPlugin.ts";
+          import { pathToFileURL } from "node:url";
 
-          type TransformPlugin = ReturnType<typeof suksukFixPlugin> | ReturnType<typeof bixboIconMigrationPlugin>;
+          const { suksukFixPlugin } = await import(pathToFileURL(path.resolve("src/build/suksukFixPlugin.ts")).href);
+          const { bixboIconMigrationPlugin } = await import(pathToFileURL(path.resolve("src/build/bixboIconMigrationPlugin.ts")).href);
 
-          async function apply(plugin: TransformPlugin, file: string) {
+          async function apply(plugin: any, file: string) {
             const code = await readFile(file, "utf8");
             const hook = plugin.transform;
             if (typeof hook !== "function") throw new Error(`Transform hook unavailable for ${file}`);
@@ -59,7 +59,7 @@ jobs:
           const iconMigration = bixboIconMigrationPlugin();
           const files = await walk("src");
           for (const file of files) {
-            const normalized = file.replace(/\\/g, "/");
+            const normalized = `/${file.replace(/\\/g, "/")}`;
             if (normalized.includes("/components/icons/") || normalized.includes("/build/")) continue;
             // Notes are intentionally deferred from this audit pass.
             if (normalized.endsWith("/routes/notes.tsx") || normalized.endsWith("/routes/notes-editor.tsx")) continue;
@@ -73,7 +73,8 @@ jobs:
             .replace('  plugins: [suksukFixPlugin(), bixboIconMigrationPlugin()],', '  plugins: [bixboIconMigrationPlugin()],');
           await writeFile(vitePath, vite, "utf8");
           EOF
-          bun /tmp/materialize.ts
+          bun materialize-runtime-source.ts
+          rm materialize-runtime-source.ts
       - name: Commit generated source
         shell: bash
         run: |
