@@ -7,6 +7,9 @@ const HIDDEN_HELPER_COPY = new Set([
   "Tap to close",
   "Tap any pain bar to see the exact value.",
   "Tap a bar to see its value.",
+  "Tap a bar to see its value. Solid bars are yours; striped bars belong to",
+  "Tap a point or bar to see the exact saved entry.",
+  "Choose a metric, then tap a coloured day for its saved average/details.",
   "Tap to mark taken",
   "tap to mark taken",
   "tap to uncheck",
@@ -29,7 +32,12 @@ export function useI18n() {
       if (HIDDEN_HELPER_COPY.has(key)) return "";
       if (key === "missed (tap if taken)") return language === "sk" ? "vynechané" : "missed";
       if (key === "Hidden — tap to restore:") return language === "sk" ? "Skryté:" : "Hidden:";
-      if (key === "No medications yet. Tap Add.") return language === "sk" ? "Zatiaľ nemáš žiadne lieky." : "No medications yet.";
+      if (key === "No medications yet. Tap Add." || key === 'No medications yet. Tap "Add".') {
+        return language === "sk" ? "Zatiaľ nemáš žiadne lieky." : "No medications yet.";
+      }
+      if (key === "Daily average pain. Tap a bar to see its value. Solid bars are yours; striped bars belong to Partner.") {
+        return language === "sk" ? "Denný priemer bolesti." : "Daily average pain.";
+      }
       return translate(language, key);
     },
     [language],
