@@ -37,8 +37,8 @@ jobs:
         run: bun run typecheck
       - name: Lint
         run: bun run lint
-      - name: Tests
-        run: bun test
+      - name: Unit and regression tests
+        run: bun run test
       - name: Build
         run: bun run build
       - name: Smoke built app
