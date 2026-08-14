@@ -5,7 +5,7 @@ import { BIXBO_NAVIGATION, resolvedNavigation, type NavigationItemId } from "@/l
 import exactHomeArtwork from "@/assets/nav-home-user.webp";
 import exactCoupleArtwork from "@/assets/nav-couple-exact.webp";
 import { BottomNavHomeIcon } from "@/components/icons/BottomNavReferenceIcons";
-import { NavOverviewIcon, NavCoupleIcon, NavNoteIcon, NavLogIcon, User, type IconProps } from "@/components/icons/BixboIcons";
+import { NavOverviewIcon, NavCoupleIcon, NavNoteIcon, NavLogIcon, User, type IconProps } from "@/components/icons/BixboExtraIcons";
 
 const ICONS: Record<NavigationItemId, ComponentType<IconProps>> = { home: BottomNavHomeIcon, overview: NavOverviewIcon, log: NavLogIcon, couple: NavCoupleIcon, notes: NavNoteIcon, healthProfile: User };
 const NAV_IMAGE_SRC: Partial<Record<NavigationItemId, string>> = { home: exactHomeArtwork, overview: "/nav-assets/nav-overview.webp", couple: exactCoupleArtwork, notes: "/nav-assets/nav-note.webp" };

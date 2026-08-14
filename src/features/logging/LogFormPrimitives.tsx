@@ -1,11 +1,12 @@
+import { SemanticIcoText } from "@/components/icons/BixboFoodIcons";
 import { Children, isValidElement, useState, type ReactNode } from "react";
 import { useI18n } from "@/hooks/useI18n";
 import { TrText } from "@/features/logging/TrText";
 import { SheetFooter } from "@/components/ui/sheet";
-import { IcoText } from "@/components/icons/BixboIcons";
+import { IcoText } from "@/components/icons/BixboExtraIcons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { X, Plus, Pencil } from "@/components/icons/BixboIcons";
+import { X, Plus, Pencil } from "@/components/icons/BixboExtraIcons";
 import { painColor, type BixboData } from "@/lib/storage";
 
 export type UpdateFn = (u: (d: BixboData) => BixboData) => void;
@@ -130,7 +131,7 @@ export function Chip({
       }`}
       style={active && color ? { background: color } : active ? { background: "var(--primary)" } : undefined}
     >
-      {typeof children === "string" ? <IcoText text={t(children)} size={14} /> : children}
+      {typeof children === "string" ? <SemanticIcoText text={t(children)} size={14} /> : children}
     </button>
   );
 }

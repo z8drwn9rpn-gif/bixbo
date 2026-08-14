@@ -4,7 +4,7 @@ import { TrText } from "@/features/logging/TrText";
 import { CATEGORIES, type Category } from "@/features/logging/logCategories";
 import { LogSchemaContext, useLogSchema, type LogSchemaContextValue } from "@/features/logging/LogSchemaContext";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
-import { Ico, IcoText } from "@/components/icons/BixboIcons";
+import { Ico, IcoText } from "@/components/icons/BixboExtraIcons";
 import { CustomLogForm } from "@/components/CustomLogForm";
 import { CoreFeatureCustomFieldInput } from "@/components/CoreFeatureCustomFieldsForm";
 import { POSTPARTUM_SYMPTOMS } from "@/lib/health";
@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
-import { X, Plus, ChevronLeft, Check, Pencil, Trash2 } from "@/components/icons/BixboIcons";
+import { X, Plus, ChevronLeft, Check, Pencil, Trash2 } from "@/components/icons/BixboExtraIcons";
 import {
   PAIN_DESCRIPTIONS,
   painColor,

@@ -1,10 +1,11 @@
+import { SemanticIco } from "@/components/icons/BixboFoodIcons";
 import { Children, isValidElement, useState, useMemo, useRef, useEffect, type ReactNode } from "react";
 import { useI18n } from "@/hooks/useI18n";
 import { TrText } from "@/features/logging/TrText";
 import { CATEGORIES, type Category } from "@/features/logging/logCategories";
 import { LogSchemaContext, useLogSchema, type LogSchemaContextValue } from "@/features/logging/LogSchemaContext";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
-import { Ico, IcoText } from "@/components/icons/BixboIcons";
+import { Ico, IcoText } from "@/components/icons/BixboExtraIcons";
 import { CustomLogForm } from "@/components/CustomLogForm";
 import { CoreFeatureCustomFieldInput } from "@/components/CoreFeatureCustomFieldsForm";
 import { POSTPARTUM_SYMPTOMS } from "@/lib/health";
@@ -13,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
-import { X, Plus, ChevronLeft, Check, Pencil, Trash2 } from "@/components/icons/BixboIcons";
+import { X, Plus, ChevronLeft, Check, Pencil, Trash2 } from "@/components/icons/BixboExtraIcons";
 import {
   PAIN_DESCRIPTIONS,
   painColor,
@@ -129,12 +130,12 @@ function BodyRecoveryForm({
   };
 
   const sleepOptions = [
-    ["Awful", "🙁"], ["Terrible", "🌙"], ["Restless", "🌙"], ["Poor", "🙁"],
-    ["Ok", "😐"], ["Broken sleep", "🌙"], ["Woke up a lot", "🌙"],
+    ["Awful", "🙁"], ["Terrible", "🙁"], ["Restless", "🌀"], ["Poor", "🙁"],
+    ["Ok", "😐"], ["Broken sleep", "💤"], ["Woke up a lot", "⏰"],
     ["Good", "🙂"], ["Refreshed", "🌿"], ["Great", "🙂"], ["Perfect", "❤️"],
-    ["Slept in", "🌙"], ["Too short", "🕒"], ["Too long", "🌙"],
+    ["Slept in", "🛏️"], ["Too short", "🕒"], ["Too long", "🕒"],
     ["Groggy", "🙂"], ["Foggy head", "😵"], ["Nightmares", "😵"],
-    ["Vivid dreams", "🌙"], ["Sweaty night", "🌡️"], ["Cold night", "❄️"],
+    ["Vivid dreams", "✨"], ["Sweaty night", "🌡️"], ["Cold night", "❄️"],
     ["Woke with headache", "🎯"], ["Cramps at night", "⚡"], ["Up to the toilet", "💩"],
     ["Fell asleep late", "📝"], ["Woke up early", "⭐"], ["Hard to get up", "🌿"],
     ["Deep & calm", "👟"], ["Best sleep ever", "❤️"],
@@ -248,7 +249,7 @@ function BodyRecoveryForm({
                     }}
                     className={`inline-flex min-h-8 items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold ${active ? selectedClass : plainClass}`}
                   >
-                    <Ico e={icon} size={14} />
+                    <SemanticIco label={t(label)} fallbackEmoji={icon} size={14} />
                     <span>{t(label)}</span>
                   </button>
                 );

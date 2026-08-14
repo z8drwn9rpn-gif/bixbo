@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, ClockIcon, FlameIcon, HeartIcon, Ico, NoteIcon, PillIcon, PoopIcon } from "@/components/icons/BixboIcons";
+import { ChevronLeft, ChevronRight, ClockIcon, FlameIcon, HeartIcon, Ico, NoteIcon, PillIcon, PoopIcon } from "@/components/icons/BixboExtraIcons";
 import { useI18n } from "@/hooks/useI18n";
 import { summarizeMedicationProgress } from "@/lib/domain/meds";
 import { avgDayPain, fromKey, isIntercourseKind, toKey, todayKey, type BixboData } from "@/lib/storage";

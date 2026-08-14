@@ -1,5 +1,5 @@
 import { type ReactNode } from "react";
-import { BoltIcon, HeartIcon, PanicIcon, ProfileIcon, SparkleIcon, TaskIcon } from "@/components/icons/BixboIcons";
+import { BoltIcon, HeartIcon, PanicIcon, ProfileIcon, SparkleIcon, TaskIcon } from "@/components/icons/BixboExtraIcons";
 import { CHART_COLORS, CHART_TINTS } from "@/components/ui/chart";
 import { useI18n } from "@/hooks/useI18n";
 import { PAIN_DESCRIPTIONS, painColor, type ExtraMed, type Med, type PainEntry, type PanicAttack, type TetanyEpisode } from "@/lib/storage";

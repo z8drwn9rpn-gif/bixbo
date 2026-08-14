@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
-import { BoltIcon, ChevronLeft, ChevronRight, HeartIcon, LeafIcon, PanicIcon, PillIcon, ProfileIcon, SparkleIcon } from "@/components/icons/BixboIcons";
+import { BoltIcon, ChevronLeft, ChevronRight, HeartIcon, LeafIcon, PanicIcon, PillIcon, ProfileIcon, SparkleIcon } from "@/components/icons/BixboExtraIcons";
 import { layoutOrder } from "@/lib/layoutRegistry";
 import { EMPTY, getBixbo, setPartner, todayKey, useBixbo, type ExtraMed, type Med, type PainEntry, type PanicAttack, type TetanyEpisode } from "@/lib/storage";
 import { fetchPartner } from "@/lib/cloudSync";

@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useMemo, useRef, useState, type CSSProperties } from "react";
 import { AppShell } from "@/components/AppShell";
-import { ArrowLeft } from "@/components/icons/BixboIcons";
+import { ArrowLeft } from "@/components/icons/BixboExtraIcons";
 import { BRISTOL, EMPTY, useBixbo, type DayLog, type Med } from "@/lib/storage";
 import { useI18n } from "@/hooks/useI18n";
 import { resolveScheduledDose, summarizeMedicationAdherence } from "@/lib/domain/meds";

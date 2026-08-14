@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft } from "@/components/icons/BixboIcons";
+import { ChevronLeft } from "@/components/icons/BixboExtraIcons";
 import { ensureProfile, fetchPartner, linkPartnerByCode, unlinkPartner, useSession, type CloudProfile } from "@/lib/cloudSync";
 import { setPartner, useBixbo } from "@/lib/storage";
 import { useI18n } from "@/hooks/useI18n";

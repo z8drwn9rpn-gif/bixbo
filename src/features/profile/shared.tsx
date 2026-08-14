@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { postpartumProgress } from "@/lib/health";
-import { ArrowLeft, Plus, X, Pencil, ChevronRight, Check } from "@/components/icons/BixboIcons";
+import { ArrowLeft, Plus, X, Pencil, ChevronRight, Check } from "@/components/icons/BixboExtraIcons";
 import { AppShell } from "@/components/AppShell";
 import {
   BabyIcon,
@@ -20,7 +20,7 @@ import {
   WarningIcon,
   WeightIcon,
   WorkoutIcon,
-} from "@/components/icons/BixboIcons";
+} from "@/components/icons/BixboExtraIcons";
 import {
   useBixbo,
   getBixbo,

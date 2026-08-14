@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Ico } from "@/components/icons/BixboIcons";
+import { Ico } from "@/components/icons/BixboExtraIcons";
 import { useI18n } from "@/hooks/useI18n";
 import { fromKey, medScheduleItems, toKey, useBixbo } from "@/lib/storage";
 import { resolveScheduledDose } from "@/lib/domain/meds";

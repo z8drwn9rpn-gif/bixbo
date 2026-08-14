@@ -1,7 +1,7 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { type ComponentType } from "react";
 import { useI18n } from "@/hooks/useI18n";
-import type { IconProps } from "@/components/icons/BixboIcons";
+import type { IconProps } from "@/components/icons/BixboExtraIcons";
 import {
   BottomNavHomeIcon,
   BottomNavOverviewIcon,

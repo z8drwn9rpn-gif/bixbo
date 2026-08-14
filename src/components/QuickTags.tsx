@@ -1,9 +1,10 @@
-import { Ico } from "@/components/icons/BixboIcons";
+import { SemanticIco } from "@/components/icons/BixboFoodIcons";
+import { Ico } from "@/components/icons/BixboExtraIcons";
 import { POSTPARTUM_SYMPTOMS } from "@/lib/health";
 import { customLogDefinitions, isRegistrySurfaceEnabled, type RegistryFeatureId } from "@/lib/appRegistry";
 import { useEffect, useRef, useState } from "react";
 import { useI18n } from "@/hooks/useI18n";
-import { Check, Plus, X, Pencil, ChevronLeft, ChevronRight } from "@/components/icons/BixboIcons";
+import { Check, Plus, X, Pencil, ChevronLeft, ChevronRight } from "@/components/icons/BixboExtraIcons";
 import {
   todayKey,
   nowHHMM,
@@ -698,7 +699,7 @@ export function QuickTags({
                     <X className="h-3 w-3" strokeWidth={3} />
                   </button>
 
-                  <Ico e={tag.emoji} size={22} />
+                  <SemanticIco label={t(tag.label)} fallbackEmoji={tag.emoji} size={22} />
                   <span className="max-w-[64px] lg:max-w-[70px] text-[10px] lg:text-[11px] font-medium leading-[1.05] text-muted-foreground">
                     {t(tag.label)}
                   </span>
@@ -789,7 +790,7 @@ export function QuickTags({
                   isFlash ? "scale-105 bg-primary/10 ring-2 ring-primary shadow-md" : ""
                 }`}
               >
-                <Ico e={tag.emoji} size={22} />
+                <SemanticIco label={t(tag.label)} fallbackEmoji={tag.emoji} size={22} />
 
                 <span className="max-w-[64px] lg:max-w-[70px] text-[10px] lg:text-[11px] font-medium leading-[1.05] text-muted-foreground">
                   {t(tag.label)}
@@ -828,7 +829,7 @@ export function QuickTags({
                   }}
                   className="flex min-h-8 items-center gap-1 rounded-full bg-tint px-2.5 text-[10px] font-medium text-muted-foreground transition hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                  <Ico e={tag.emoji} size={12} />
+                  <SemanticIco label={t(tag.label)} fallbackEmoji={tag.emoji} size={12} />
                   {t(tag.label)}
                   <Plus className="h-3 w-3" />
                 </button>
@@ -955,7 +956,7 @@ export function QuickTags({
               }}
               className="flex min-h-8 items-center gap-1 rounded-full bg-tint px-2.5 text-[10px] font-medium text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <Ico e={tag.emoji} size={14} />
+              <SemanticIco label={t(tag.label)} fallbackEmoji={tag.emoji} size={14} />
               {t(tag.label)}
               <X className="h-3 w-3" />
             </button>

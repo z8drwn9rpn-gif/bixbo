@@ -1,10 +1,11 @@
+import { SemanticIcoText } from "@/components/icons/BixboFoodIcons";
 import { Children, isValidElement, useState, useMemo, useRef, useEffect, type ReactNode } from "react";
 import { useI18n } from "@/hooks/useI18n";
 import { TrText } from "@/features/logging/TrText";
 import { CATEGORIES, type Category } from "@/features/logging/logCategories";
 import { LogSchemaContext, useLogSchema, type LogSchemaContextValue } from "@/features/logging/LogSchemaContext";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
-import { Ico, IcoText } from "@/components/icons/BixboIcons";
+import { Ico, IcoText } from "@/components/icons/BixboExtraIcons";
 import { CustomLogForm } from "@/components/CustomLogForm";
 import { CoreFeatureCustomFieldInput } from "@/components/CoreFeatureCustomFieldsForm";
 import { POSTPARTUM_SYMPTOMS } from "@/lib/health";
@@ -13,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
-import { X, Plus, ChevronLeft, Check, Pencil, Trash2 } from "@/components/icons/BixboIcons";
+import { X, Plus, ChevronLeft, Check, Pencil, Trash2 } from "@/components/icons/BixboExtraIcons";
 import {
   PAIN_DESCRIPTIONS,
   painColor,
@@ -200,11 +201,27 @@ export function FoodForm({
       <Field label="Quick add" schemaFieldId="quickAdd">
         <div className="mt-2 flex flex-wrap gap-2">
           {[
-            { l: "🍵 Matcha", w: "Matcha", caf: 70 },
-            { l: "☕ Coffee", w: "Coffee", caf: 95 },
-            { l: "🫖 Tea", w: "Tea", caf: 40 },
-            { l: "💧 Water", w: "Water", hyd: 250 },
+            { l: "Matcha", w: "Matcha", caf: 70 },
+            { l: "Coffee", w: "Coffee", caf: 95 },
+            { l: "Tea", w: "Tea", caf: 40 },
+            { l: "Water", w: "Water", hyd: 250 },
             { l: "🥑 Avocado", w: "Avocado" },
+            { l: "Coca-Cola", w: "Coca-Cola" },
+            { l: "Banana", w: "Banana" },
+            { l: "Apple", w: "Apple" },
+            { l: "Bread", w: "Bread" },
+            { l: "Pasta", w: "Pasta" },
+            { l: "Rice", w: "Rice" },
+            { l: "Pizza", w: "Pizza" },
+            { l: "Egg", w: "Egg" },
+            { l: "Cheese", w: "Cheese" },
+            { l: "Chicken", w: "Chicken" },
+            { l: "Salmon", w: "Salmon" },
+            { l: "Salad", w: "Salad" },
+            { l: "Soup", w: "Soup" },
+            { l: "Milk", w: "Milk" },
+            { l: "Sandwich", w: "Sandwich" },
+            { l: "Cake", w: "Cake" },
           ].map((q) => (
             <button
               key={q.l}
@@ -216,7 +233,7 @@ export function FoodForm({
               }}
               className="rounded-full bg-tint px-3 py-1.5 text-xs font-semibold ring-1 ring-border hover:bg-primary/10"
             >
-              <IcoText text={q.l} size={14} />
+              <SemanticIcoText text={q.l} size={14} />
             </button>
           ))}
           {data.custom.foodQuickAdd.map((c) => (
@@ -227,7 +244,7 @@ export function FoodForm({
                 }
                 className="rounded-full bg-tint px-3 py-1.5 text-xs font-semibold ring-1 ring-border hover:bg-primary/10"
               >
-                <IcoText text={c} size={14} />
+                <SemanticIcoText text={c} size={14} />
               </button>
               <button
                 onClick={(e) => {
@@ -551,10 +568,10 @@ export function BowelForm({
               <BristolIcon shape={b.shape} color={b.color} />
               <div className="flex-1">
                 <p className="font-medium">
-                  <IcoText text={t(b.label)} size={14} />
+                  <SemanticIcoText text={t(b.label)} size={14} />
                 </p>
                 <p className="text-[11px] text-muted-foreground">
-                  <IcoText text={t(b.sub)} size={12} />
+                  <SemanticIcoText text={t(b.sub)} size={12} />
                 </p>
               </div>
             </button>

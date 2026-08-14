@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Ico } from "@/components/icons/BixboIcons";
+import { Ico } from "@/components/icons/BixboExtraIcons";
 import { useI18n } from "@/hooks/useI18n";
 import { pregnancyProgress, postpartumProgress } from "@/lib/health";
 import { fromKey, isPregnancyActive, isPostpartumActive, nextPredictedPeriod, todayKey, type BixboData } from "@/lib/storage";
