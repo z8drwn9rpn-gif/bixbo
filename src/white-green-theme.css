@@ -1,0 +1,106 @@
+/* BIXBO white + green light theme.
+   Loaded after styles.css so the app gets the new visual palette without
+   changing component structure or the HAK calendar's local theme. */
+
+:root:not(.dark) {
+  --background: #FBF7F3;
+  --foreground: #172014;
+
+  --surface: #FFFDFC;
+  --surface-elevated: #FFFFFF;
+  --surface-sunken: #F3F5EB;
+  --tint: #EEF2E3;
+
+  --card: #FFFDFC;
+  --card-foreground: #172014;
+
+  --popover: #FFFFFF;
+  --popover-foreground: #172014;
+
+  --primary: #6F7F3D;
+  --primary-foreground: #FFFDF8;
+
+  --secondary: #EEF2E3;
+  --secondary-foreground: #29351C;
+
+  --muted: #F2F3EA;
+  --muted-foreground: #66705C;
+
+  --accent: #E7EDD8;
+  --accent-foreground: #31431E;
+
+  --border: #DDDCCF;
+  --input: #D4D7C8;
+  --ring: #6F7F3D;
+
+  --chart-grid: #E2E2D8;
+  --chart-axis: #59634E;
+  --chart-tooltip-bg: #FFFFFF;
+  --chart-tooltip-fg: #172014;
+
+  --bixbo-glass: rgba(255, 253, 252, 0.78);
+  --bixbo-glass-strong: rgba(255, 255, 255, 0.94);
+}
+
+/* Clean warm off-white canvas instead of the previous all-green background. */
+:root:not(.dark),
+:root:not(.dark) body {
+  background-color: #FBF7F3;
+}
+
+:root:not(.dark) body {
+  background: #FBF7F3;
+}
+
+/* Cards remain white, with only a very soft green-neutral outline/shadow. */
+:root:not(.dark) .bg-surface,
+:root:not(.dark) .bg-card {
+  background-color: #FFFDFC;
+  backdrop-filter: none;
+}
+
+:root:not(.dark) .ring-border {
+  --tw-ring-color: color-mix(in srgb, #C8CCB9 68%, transparent);
+}
+
+:root:not(.dark) .shadow-sm {
+  --tw-shadow-color: color-mix(in srgb, #52603B 9%, transparent);
+}
+
+:root:not(.dark) .shadow-md,
+:root:not(.dark) .shadow-lg,
+:root:not(.dark) .shadow-xl {
+  --tw-shadow-color: color-mix(in srgb, #52603B 13%, transparent);
+}
+
+/* Green is the single interaction accent in light mode. */
+:root:not(.dark) .bg-primary {
+  background-color: var(--primary);
+}
+
+:root:not(.dark) .text-primary {
+  color: var(--primary);
+}
+
+:root:not(.dark) .border-primary {
+  border-color: var(--primary);
+}
+
+:root:not(.dark) .ring-primary {
+  --tw-ring-color: var(--primary);
+}
+
+/* Selected/active controls that use tint/accent stay soft green rather than purple. */
+:root:not(.dark) .bg-tint {
+  background-color: var(--tint);
+}
+
+:root:not(.dark) .bg-accent {
+  background-color: var(--accent);
+}
+
+/* Preserve the Birth Control / HAK overlay exactly. It defines its own local
+   palette and day-circle styling in BirthControlCard.tsx. Do not restyle it here. */
+[data-bixbo-hak-root="1"] {
+  isolation: isolate;
+}
