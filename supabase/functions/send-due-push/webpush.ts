@@ -66,7 +66,7 @@ export function readVapidConfig(): VapidConfig {
   // BIXBO_* holds the verified key pair; the legacy VAPID_* names are a fallback.
   const publicKey = (Deno.env.get("BIXBO_VAPID_PUBLIC_KEY") ?? Deno.env.get("VAPID_PUBLIC_KEY") ?? "").trim();
   const privateKey = (Deno.env.get("BIXBO_VAPID_PRIVATE_KEY") ?? Deno.env.get("VAPID_PRIVATE_KEY") ?? "").trim();
-  const subject = (Deno.env.get("VAPID_SUBJECT") ?? "").trim() || "mailto:notifications@bixbo.lovable.app";
+  const subject = (Deno.env.get("VAPID_SUBJECT") ?? "").trim() || "mailto:notifications@bixbo.app";
 
   const missing = [
     ...(publicKey ? [] : ["BIXBO_VAPID_PUBLIC_KEY"]),
