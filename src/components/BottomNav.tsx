@@ -9,8 +9,6 @@ import {
   BottomNavNoteIcon,
   BottomNavLogIcon,
 } from "@/components/icons/BottomNavReferenceIcons";
-import exactHomeArtwork from "@/assets/nav-home-user.webp";
-import exactCoupleArtwork from "@/assets/nav-couple-exact.webp";
 import { BIXBO_NAVIGATION, resolvedNavigation, type NavigationItemId } from "@/lib/navigationRegistry";
 
 const ICONS: Record<NavigationItemId, ComponentType<IconProps>> = {
@@ -23,9 +21,9 @@ const ICONS: Record<NavigationItemId, ComponentType<IconProps>> = {
 };
 
 const NAV_IMAGE_SRC: Partial<Record<NavigationItemId, string>> = {
-  home: exactHomeArtwork,
+  home: "/nav-assets/nav-home.webp",
   overview: "/nav-assets/nav-overview.webp",
-  couple: exactCoupleArtwork,
+  couple: "/nav-assets/nav-couple.webp",
   notes: "/nav-assets/nav-note.webp",
 };
 

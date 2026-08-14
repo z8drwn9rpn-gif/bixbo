@@ -2,13 +2,11 @@ import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { type ComponentType } from "react";
 import { useI18n } from "@/hooks/useI18n";
 import { BIXBO_NAVIGATION, resolvedNavigation, type NavigationItemId } from "@/lib/navigationRegistry";
-import exactHomeArtwork from "@/assets/nav-home-user.webp";
-import exactCoupleArtwork from "@/assets/nav-couple-exact.webp";
 import { BottomNavHomeIcon } from "@/components/icons/BottomNavReferenceIcons";
 import { NavOverviewIcon, NavCoupleIcon, NavNoteIcon, NavLogIcon, User, type IconProps } from "@/components/icons/BixboExtraIcons";
 
 const ICONS: Record<NavigationItemId, ComponentType<IconProps>> = { home: BottomNavHomeIcon, overview: NavOverviewIcon, log: NavLogIcon, couple: NavCoupleIcon, notes: NavNoteIcon, healthProfile: User };
-const NAV_IMAGE_SRC: Partial<Record<NavigationItemId, string>> = { home: exactHomeArtwork, overview: "/nav-assets/nav-overview.webp", couple: exactCoupleArtwork, notes: "/nav-assets/nav-note.webp" };
+const NAV_IMAGE_SRC: Partial<Record<NavigationItemId, string>> = { home: "/nav-assets/nav-home.webp", overview: "/nav-assets/nav-overview.webp", couple: "/nav-assets/nav-couple.webp", notes: "/nav-assets/nav-note.webp" };
 
 function NavArtwork({ id, size, className }: { id: NavigationItemId; size: number; className?: string }) {
   const Icon = ICONS[id];
