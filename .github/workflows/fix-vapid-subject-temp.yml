@@ -1,0 +1,46 @@
+name: Temporary VAPID subject cleanup
+
+on:
+  push:
+    branches:
+      - remove-lovable-vapid-fallback
+
+permissions:
+  contents: write
+
+jobs:
+  fix-vapid-subject:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: remove-lovable-vapid-fallback
+      - name: Replace stale Lovable VAPID fallback
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          paths = [
+              Path('supabase/functions/push-subscription/webpush.ts'),
+              Path('supabase/functions/send-due-push/webpush.ts'),
+          ]
+          old = 'mailto:notifications@bixbo.lovable.app'
+          new = 'mailto:notifications@bixbo.app'
+
+          for path in paths:
+              text = path.read_text()
+              if old not in text:
+                  raise SystemExit(f'{path}: expected stale VAPID subject not found')
+              path.write_text(text.replace(old, new))
+
+          for path in paths:
+              if old in path.read_text():
+                  raise SystemExit(f'{path}: stale VAPID subject remains')
+          PY
+      - name: Commit source parity cleanup
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add supabase/functions/push-subscription/webpush.ts supabase/functions/send-due-push/webpush.ts
+          git commit -m "Remove stale Lovable VAPID fallback"
+          git push origin HEAD:remove-lovable-vapid-fallback
