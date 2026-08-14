@@ -1,0 +1,50 @@
+name: Apply cloud JSON typing fix
+
+on:
+  push:
+    branches: [code-audit-hardening-no-notes]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: ${{ !contains(github.event.head_commit.message, 'Harden cloud JSON typing') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: code-audit-hardening-no-notes
+      - name: Update cloud JSON conversions
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("src/lib/cloudSync.ts")
+          s = p.read_text()
+          old = 'import { supabase } from "@/integrations/supabase/client";\n'
+          new = 'import { supabase } from "@/integrations/supabase/client";\nimport type { Json } from "@/integrations/supabase/types";\n'
+          if old not in s: raise SystemExit("Supabase import marker missing")
+          s = s.replace(old, new, 1)
+          marker = 'export interface CloudProfile {\n'
+          helper = '''function toSupabaseJson(value: unknown): Json {
+  return JSON.parse(JSON.stringify(value)) as Json;
+}
+
+'''
+          if marker not in s: raise SystemExit("CloudProfile marker missing")
+          s = s.replace(marker, helper + marker, 1)
+          old_backup = '    .insert({ user_id: user.id, schema_version: 3, data: { ...safePayload, partner: undefined } })'
+          new_backup = '    .insert({ user_id: user.id, schema_version: 3, data: toSupabaseJson({ ...safePayload, partner: undefined }) })'
+          if old_backup not in s: raise SystemExit("backup insert marker missing")
+          s = s.replace(old_backup, new_backup, 1)
+          s = s.replace('data: privatePayload as never,', 'data: toSupabaseJson(privatePayload),', 1)
+          s = s.replace('data: partnerPayload as never,', 'data: toSupabaseJson(partnerPayload),', 1)
+          p.write_text(s)
+          PY
+      - name: Commit cloud typing fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/lib/cloudSync.ts
+          git commit -m "Harden cloud JSON typing"
+          git push origin HEAD:code-audit-hardening-no-notes
