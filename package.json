@@ -12,9 +12,10 @@
     "lint": "eslint . --rule '@typescript-eslint/no-empty-object-type: off'",
     "test": "bun test src/lib/__tests__",
     "architecture": "node scripts/check-source-size.mjs",
+    "bundle:check": "node scripts/check-bundle-size.mjs",
     "smoke:ssr": "node scripts/ssr-smoke.mjs",
     "e2e": "playwright test",
-    "check": "bun run architecture && bun run typecheck && bun run lint && bun run test && bun run build && bun run smoke:ssr && bun run e2e"
+    "check": "bun run architecture && bun run typecheck && bun run lint && bun run test && bun run build && bun run bundle:check && bun run smoke:ssr && bun run e2e"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
