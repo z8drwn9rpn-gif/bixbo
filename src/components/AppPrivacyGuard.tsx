@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { LockKeyhole, ShieldCheck } from "@/components/icons/BixboIcons";
+import { LockKeyhole, ShieldCheck } from "@/components/icons/BixboExtraIcons";
 import { useI18n } from "@/hooks/useI18n";
 
 import {

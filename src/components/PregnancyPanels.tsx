@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useI18n } from "@/hooks/useI18n";
-import { X } from "@/components/icons/BixboIcons";
-import { Ico } from "@/components/icons/BixboIcons";
+import { X } from "@/components/icons/BixboExtraIcons";
+import { Ico } from "@/components/icons/BixboExtraIcons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";

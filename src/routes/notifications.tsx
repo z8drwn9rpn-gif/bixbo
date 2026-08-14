@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
-import { Bell, BellOff, ChevronLeft, Moon } from "@/components/icons/BixboIcons";
+import { Bell, BellOff, ChevronLeft, Moon } from "@/components/icons/BixboExtraIcons";
 
 import { AppShell } from "@/components/AppShell";
 import { Switch } from "@/components/ui/switch";

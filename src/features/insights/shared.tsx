@@ -1,5 +1,5 @@
 import { type CSSProperties } from "react";
-import { ChevronLeft, ChevronRight } from "@/components/icons/BixboIcons";
+import { ChevronLeft, ChevronRight } from "@/components/icons/BixboExtraIcons";
 import { useI18n } from "@/hooks/useI18n";
 import { addDays, fromKey, toKey } from "@/lib/storage";
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Bell } from "@/components/icons/BixboIcons";
+import { Bell } from "@/components/icons/BixboExtraIcons";
 
 import { useBixbo } from "@/lib/storage";
 import { useSession } from "@/lib/cloudSync";

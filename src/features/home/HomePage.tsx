@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState, type CSSProperties } from "react";
-import { ChevronLeft, ChevronRight, HeartIcon, Ico } from "@/components/icons/BixboIcons";
+import { ChevronLeft, ChevronRight, HeartIcon, Ico } from "@/components/icons/BixboExtraIcons";
 import { layoutOrder } from "@/lib/layoutRegistry";
 import { isAdminOwnerAccount } from "@/lib/deviceAdmin";
 import { AppShell } from "@/components/AppShell";

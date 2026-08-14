@@ -1,7 +1,8 @@
+import { SemanticIcoText } from "@/components/icons/BixboFoodIcons";
 import { Link } from "@tanstack/react-router";
 import { createPortal } from "react-dom";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { ChevronLeft, ChevronRight, Share2, Trash2 } from "@/components/icons/BixboIcons";
+import { ChevronLeft, ChevronRight, Share2, Trash2 } from "@/components/icons/BixboExtraIcons";
 
 import { layoutOrder } from "@/lib/layoutRegistry";
 import { isAdminOwnerAccount } from "@/lib/deviceAdmin";
@@ -18,7 +19,7 @@ import {
   PillIcon,
   PoopIcon,
   StarIcon,
-} from "@/components/icons/BixboIcons";
+} from "@/components/icons/BixboExtraIcons";
 import { AppShell } from "@/components/AppShell";
 import { pregnancyProgress, postpartumProgress } from "@/lib/health";
 import { Button } from "@/components/ui/button";
@@ -51,6 +52,8 @@ import {
   type SexEntry,
 } from "@/lib/storage";
 import { ScheduledDosePopup, type ScheduledDoseTarget } from "@/components/home/ScheduledDosePopup";
+import { DayOverviewSexCard } from "@/components/home/DayOverviewSexCard";
+import { DayOverviewCard as Card, DayOverviewDeleteButton as DeleteBtn } from "@/components/home/DayOverviewPrimitives";
 import { getTakenScheduledItems, isScheduledDoseTaken, scheduledDoseKey } from "@/lib/medicationAdherence";
 
 export function DayPreview({
@@ -342,7 +345,7 @@ export function DayPreview({
                   ) : null}
                   {p.mood?.length ? (
                     <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                      <span className="font-semibold text-foreground">{t("Mood")}:</span> <IcoText text={p.mood.map(t).join(", ")} size={13} />
+                      <span className="font-semibold text-foreground">{t("Mood")}:</span> <SemanticIcoText text={p.mood.map(t).join(", ")} size={13} />
                     </p>
                   ) : null}
                   {p.stress != null && <p className="mt-2 text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">{t("Stress")}:</span> {p.stress}/10</p>}
@@ -362,8 +365,7 @@ export function DayPreview({
                         },
                       },
                     }))
-                  }
-                />
+                  } />
                 {(log.pain ?? []).some((entry) => entry.entryKind === "symptom-update" && entry.sourcePainId === p.id) ? (
                   <div className="basis-full pl-12 pr-7">
                     <div className="mt-1 border-l border-border/70 pl-3">
@@ -404,8 +406,7 @@ export function DayPreview({
                                     },
                                   },
                                 }))
-                              }
-                            />
+                              } />
                           </div>
                         ))}
                     </div>
@@ -452,8 +453,7 @@ export function DayPreview({
                           },
                         },
                       }))
-                    }
-                  />
+                    } />
                 </li>
               ))}
           </ul>
@@ -504,8 +504,7 @@ export function DayPreview({
                         },
                       },
                     }))
-                  }
-                />
+                  } />
               </li>
             ))}
           </ul>
@@ -550,8 +549,7 @@ export function DayPreview({
                         },
                       },
                     }))
-                  }
-                />
+                  } />
               </li>
             ))}
           </ul>
@@ -616,52 +614,7 @@ export function DayPreview({
           </Card>
         )}
 
-      {log?.sex?.length ? (
-        <Card title="ŠukŠuk!" icon="❤️" compact>
-          <ul className="space-y-1">
-            {log.sex.map((s: SexEntry, index) => (
-              <li key={s.id} className={`flex items-start gap-2 ${index ? "border-t border-border/60 pt-1.5" : ""}`}>
-                <button onClick={() => onEdit?.("sex", s)} className="min-w-0 flex-1 text-left">
-                  <p className="text-xs text-muted-foreground">{s.time}</p>
-                  <div className="my-1 border-t border-border/60" />
-                  <p className="text-xs leading-relaxed text-muted-foreground">
-                    <span className="font-semibold text-foreground">{t("Type")}:</span>{" "}
-                    {t(String(s.kind).replace(/_/g, " "))}
-                  </p>
-                  {asArr(s.feelingAfter).length ? (
-                    <p className="mt-1 text-xs leading-snug text-muted-foreground">
-                      <span className="font-semibold text-foreground">{t("Feeling after")}:</span>{" "}
-                      <IcoText text={asArr(s.feelingAfter).join(", ")} size={13} />
-                    </p>
-                  ) : null}
-                  {s.painful && s.painful !== "no" ? (
-                    <p className="mt-1 text-xs leading-snug text-muted-foreground">
-                      <span className="font-semibold text-foreground">{t("Painful")}:</span> {t(s.painful)}
-                    </p>
-                  ) : null}
-                  {s.note ? (
-                    <p className="mt-1 whitespace-pre-line text-xs leading-snug">
-                      <span className="font-semibold">{t("Note")}:</span> {s.note}
-                    </p>
-                  ) : null}
-                  <p className="mt-0.5 text-[10px] text-primary">{t("Tap to edit")}</p>
-                </button>
-                <DeleteBtn
-                  onClick={() =>
-                    update((d) => ({
-                      ...d,
-                      dayLogs: {
-                        ...d.dayLogs,
-                        [date]: { ...d.dayLogs[date], sex: (d.dayLogs[date]?.sex ?? []).filter((x) => x.id !== s.id) },
-                      },
-                    }))
-                  }
-                />
-              </li>
-            ))}
-          </ul>
-        </Card>
-      ) : null}
+      <DayOverviewSexCard entries={log?.sex ?? []} date={date} update={update} onEdit={onEdit} />
 
       {log?.heat?.length ? (
         <Card title="Heat / Cold / TENS" icon="♨️">
@@ -698,8 +651,7 @@ export function DayPreview({
                         },
                       },
                     }))
-                  }
-                />
+                  } />
               </li>
             ))}
           </ul>
@@ -716,7 +668,7 @@ export function DayPreview({
                   <div className="my-0.5 border-t border-border/60" />
                   <p className="text-xs leading-relaxed text-muted-foreground">
                     <span className="font-semibold text-foreground">{t("Food")}:</span>{" "}
-                    <IcoText text={f.what || (f.histamineFlare ? t("(histamine flare)") : "—")} size={13} />
+                    <SemanticIcoText text={f.what || (f.histamineFlare ? t("(histamine flare)") : "—")} size={13} />
                   </p>
                   {f.highHistamine ? (
                     <p className="mt-px text-xs leading-relaxed text-muted-foreground">
@@ -735,13 +687,13 @@ export function DayPreview({
                   {f.feelings.length ? (
                     <p className="mt-px text-xs leading-relaxed text-muted-foreground">
                       <span className="font-semibold text-foreground">{t("Feel")}:</span>{" "}
-                      <IcoText text={f.feelings.map(t).join(", ")} size={13} />
+                      <SemanticIcoText text={f.feelings.map(t).join(", ")} size={13} />
                     </p>
                   ) : null}
                   {f.symptomsAfter?.length ? (
                     <p className="mt-px text-xs leading-relaxed text-muted-foreground">
                       <span className="font-semibold text-foreground">{t("After")}:</span>{" "}
-                      <IcoText text={f.symptomsAfter.map(t).join(", ")} size={13} />
+                      <SemanticIcoText text={f.symptomsAfter.map(t).join(", ")} size={13} />
                     </p>
                   ) : null}
                   {f.histamineFlare ? (
@@ -769,8 +721,7 @@ export function DayPreview({
                         },
                       },
                     }))
-                  }
-                />
+                  } />
               </li>
             ))}
           </ul>
@@ -795,18 +746,18 @@ export function DayPreview({
                     <div className="my-1 border-t border-border/60" />
                     <p className="text-xs leading-relaxed text-muted-foreground">
                       <span className="font-semibold text-foreground">{t("Type")}:</span>{" "}
-                      <IcoText text={`${typeLabel}${typeDescription ? ` — ${typeDescription}` : ""}`} size={13} />
+                      <SemanticIcoText text={`${typeLabel}${typeDescription ? ` — ${typeDescription}` : ""}`} size={13} />
                     </p>
                     {b.feelings?.length ? (
                       <p className="mt-1 text-xs leading-snug text-muted-foreground">
                         <span className="font-semibold text-foreground">{t("Feelings")}:</span>{" "}
-                        <IcoText text={b.feelings.join(", ")} size={13} />
+                        <SemanticIcoText text={b.feelings.join(", ")} size={13} />
                       </p>
                     ) : null}
                     {b.symptoms?.length ? (
                       <p className="mt-1 text-xs leading-snug text-muted-foreground">
                         <span className="font-semibold text-foreground">{t("Symptoms")}:</span>{" "}
-                        <IcoText text={b.symptoms.join(", ")} size={13} />
+                        <SemanticIcoText text={b.symptoms.join(", ")} size={13} />
                       </p>
                     ) : null}
                     {b.note ? (
@@ -828,8 +779,7 @@ export function DayPreview({
                           },
                         },
                       }))
-                    }
-                  />
+                    } />
                 </li>
               );
             })}
@@ -848,7 +798,7 @@ export function DayPreview({
                   {b.urinary?.length ? (
                     <p className="text-xs leading-relaxed text-muted-foreground">
                       <span className="font-semibold text-foreground">{t("Urinary")}:</span>{" "}
-                      <IcoText text={b.urinary.map(t).join(", ")} size={13} />
+                      <SemanticIcoText text={b.urinary.map(t).join(", ")} size={13} />
                     </p>
                   ) : null}
                   {b.note ? (
@@ -870,8 +820,7 @@ export function DayPreview({
                         },
                       },
                     }))
-                  }
-                />
+                  } />
               </li>
             ))}
           </ul>
@@ -886,7 +835,7 @@ export function DayPreview({
                 <button onClick={() => onEdit?.("workout", w)} className="min-w-0 flex-1 text-left">
                   <p className="text-xs text-muted-foreground">{w.time}</p>
                   <div className="my-2 border-t border-border/60" />
-                  <p className="text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">{t("Type")}:</span> <IcoText text={w.kind} size={13} /></p>
+                  <p className="text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">{t("Type")}:</span> <SemanticIcoText text={w.kind} size={13} /></p>
                   <p className="mt-2 text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">{t("Duration")}:</span> {w.minutes} min</p>
                   {w.distanceKm != null ? <p className="mt-2 text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">{t("Distance")}:</span> {w.distanceKm} km</p> : null}
                   {w.elevationM != null ? <p className="mt-2 text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">{t("Elevation")}:</span> {w.elevationM} m</p> : null}
@@ -900,7 +849,7 @@ export function DayPreview({
                   ) : null}
                   {w.weightKg != null ? <p className="mt-2 text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">{t("Weight after")}:</span> {w.weightKg} kg</p> : null}
                   {w.triggeredSymptom ? <p className="mt-2 text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">{t("Triggered")}:</span> {t(w.triggeredSymptom.label ?? w.triggeredSymptom.type)}</p> : null}
-                  {asArr(w.feeling).length ? <p className="mt-2 text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">{t("Feeling")}:</span> <IcoText text={asArr(w.feeling).join(", ")} size={13} /></p> : null}
+                  {asArr(w.feeling).length ? <p className="mt-2 text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">{t("Feeling")}:</span> <SemanticIcoText text={asArr(w.feeling).join(", ")} size={13} /></p> : null}
                   {w.note ? <p className="mt-2 whitespace-pre-line text-sm"><span className="font-semibold">{t("Note")}:</span> {w.note}</p> : null}
                   <p className="mt-1 text-[10px] text-primary">{t("Tap to edit")}</p>
                 </button>
@@ -910,8 +859,7 @@ export function DayPreview({
                       ...d,
                       dayLogs: { ...d.dayLogs, [date]: { ...d.dayLogs[date], workout: (d.dayLogs[date]?.workout ?? []).filter((x) => x.id !== w.id) } },
                     }))
-                  }
-                />
+                  } />
               </li>
             ))}
           </ul>
@@ -935,13 +883,13 @@ export function DayPreview({
             {log?.sleepHours != null && (
               <p className={`${log?.temperature != null || log?.weight != null ? "mt-0.5 " : ""}text-xs leading-relaxed text-muted-foreground`}>
                 <span className="font-semibold text-foreground">{t("Sleep")}:</span> {log.sleepHours} h
-                {asArr(log.sleepQuality).length ? <> · <IcoText text={asArr(log.sleepQuality).map(t).join(", ")} size={12} /></> : null}
+                {asArr(log.sleepQuality).length ? <> · <SemanticIcoText text={asArr(log.sleepQuality).map(t).join(", ")} size={12} /></> : null}
               </p>
             )}
             {asArr(log?.sleepQuality).length > 0 && log?.sleepHours == null && (
               <p className={`${log?.temperature != null || log?.weight != null ? "mt-0.5 " : ""}text-xs leading-relaxed text-muted-foreground`}>
                 <span className="font-semibold text-foreground">{t("Sleep quality")}:</span>{" "}
-                <IcoText text={asArr(log.sleepQuality).map(t).join(", ")} size={12} />
+                <SemanticIcoText text={asArr(log.sleepQuality).map(t).join(", ")} size={12} />
               </p>
             )}
             <p className="mt-0 text-[10px] text-primary">{t("Tap to edit")}</p>
@@ -959,8 +907,7 @@ export function DayPreview({
                   checked={t.done}
                   onChange={() =>
                     update((d) => ({ ...d, tasks: d.tasks.map((x) => (x.id === t.id ? { ...x, done: !x.done } : x)) }))
-                  }
-                />
+                  } />
                 <button
                   onClick={() => onEdit?.("task", t)}
                   className={`flex-1 text-left ${t.done ? "line-through text-muted-foreground" : ""}`}
@@ -1033,8 +980,7 @@ export function DayPreview({
                       else delete customLogs[definition.id];
                       return { ...d, dayLogs: { ...d.dayLogs, [date]: { ...day, customLogs } } };
                     })
-                  }
-                />
+                  } />
               </li>
             ))}
           </ul>
@@ -1076,44 +1022,13 @@ export function DayPreview({
           target={scheduledDoseTarget}
           data={data}
           update={update}
-          onClose={() => setScheduledDoseTarget(null)}
-        />
+          onClose={() => setScheduledDoseTarget(null)} />
       ) : null}
     </div>
   );
 }
 
-export function DeleteBtn({ onClick }: { onClick: () => void }) {
-  const { t } = useI18n();
-  return (
-    <button onClick={onClick} className="text-muted-foreground hover:text-destructive" aria-label={t("Delete")}>
-      <Trash2 className="h-3.5 w-3.5" />
-    </button>
-  );
-}
-
-export function Card({
-  title,
-  icon,
-  children,
-  compact = false,
-}: {
-  title: string;
-  icon: string;
-  children: React.ReactNode;
-  compact?: boolean;
-}) {
-  const { t } = useI18n();
-  return (
-    <div className={`rounded-3xl border border-border/70 bg-surface shadow-sm ring-1 ring-border ${compact ? "px-4 py-3" : "p-4"}`}>
-      <div className={`${compact ? "mb-1" : "mb-2"} flex items-center gap-2`}>
-        <Ico e={icon} size={22} />
-        <h3 className="font-serif text-lg font-semibold">{t(title)}</h3>
-      </div>
-      {children}
-    </div>
-  );
-}
+export { DayOverviewCard as Card, DayOverviewDeleteButton as DeleteBtn } from "./DayOverviewPrimitives";
 
 export const stripEmoji = (value: string) =>
   value.replace(/^[\p{Extended_Pictographic}\u200d\ufe0f\p{Emoji_Modifier}]+\s*/u, "").trim();

@@ -4,11 +4,10 @@
 // has already been verified to produce the .output layout consumed by Wrangler.
 
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
-import { suksukFixPlugin } from "./src/build/suksukFixPlugin";
 import { bixboIconMigrationPlugin } from "./src/build/bixboIconMigrationPlugin";
 
 export default defineConfig({
-  plugins: [suksukFixPlugin(), bixboIconMigrationPlugin()],
+  plugins: [bixboIconMigrationPlugin()],
   tanstackStart: {
     server: {
       entry: "server",

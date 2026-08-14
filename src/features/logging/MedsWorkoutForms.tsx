@@ -1,10 +1,11 @@
+import { SemanticIcoText } from "@/components/icons/BixboFoodIcons";
 import { Children, isValidElement, useState, useMemo, useRef, useEffect, type ReactNode } from "react";
 import { useI18n } from "@/hooks/useI18n";
 import { TrText } from "@/features/logging/TrText";
 import { CATEGORIES, type Category } from "@/features/logging/logCategories";
 import { LogSchemaContext, useLogSchema, type LogSchemaContextValue } from "@/features/logging/LogSchemaContext";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
-import { Ico, IcoText } from "@/components/icons/BixboIcons";
+import { Ico, IcoText } from "@/components/icons/BixboExtraIcons";
 import { CustomLogForm } from "@/components/CustomLogForm";
 import { CoreFeatureCustomFieldInput } from "@/components/CoreFeatureCustomFieldsForm";
 import { POSTPARTUM_SYMPTOMS } from "@/lib/health";
@@ -13,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
-import { X, Plus, ChevronLeft, Check, Pencil, Trash2 } from "@/components/icons/BixboIcons";
+import { X, Plus, ChevronLeft, Check, Pencil, Trash2 } from "@/components/icons/BixboExtraIcons";
 import {
   PAIN_DESCRIPTIONS,
   painColor,
@@ -190,7 +191,7 @@ export function MedsForm({
                     <p className="text-[10px] leading-tight text-muted-foreground">{t("As needed")}{m.dose ? ` · ${m.dose}` : ""}</p>
                     {m.note && (
                       <p className="text-[11px] text-muted-foreground">
-                        <Ico e="📝" size={13} /> <IcoText text={m.note} size={12} />
+                        <Ico e="📝" size={13} /> <SemanticIcoText text={m.note} size={12} />
                       </p>
                     )}
                   </div>

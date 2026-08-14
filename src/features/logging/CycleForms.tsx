@@ -3,7 +3,7 @@ import { useI18n } from "@/hooks/useI18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Check, Ico, Plus, X } from "@/components/icons/BixboIcons";
+import { Check, Ico, Pencil, Plus, X } from "@/components/icons/BixboExtraIcons";
 import { BixboSemanticIcon, type BixboSemanticIconName } from "@/components/icons/BixboSemanticIcons";
 import {
   DISCHARGE_OPTS,
@@ -200,19 +200,72 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
   const schema = useLogSchema();
   const initial = initialEntry as SexEntryUi | undefined;
 
-  const [kind, setKind] = useState<SexKind>(initial?.kind ?? "sex");
-  const [protection, setProtection] = useState<string>(initial?.protection ?? "None");
+  const [kind, setKind] = useState<SexKind | undefined>(initial?.kind);
+  const [protection, setProtection] = useState<string>(initial?.protection ?? "");
   const initialFeeling = asArr(initial?.feelingAfter)[0] ?? "";
   const [feelingAfter, setFeelingAfter] = useState(initialFeeling);
-  const [painOn, setPainOn] = useState(initial?.painful != null && initial.painful !== "no");
+  const [painOn, setPainOn] = useState<boolean | undefined>(initial ? initial.painful != null && initial.painful !== "no" : undefined);
   const [painWhen, setPainWhen] = useState<"during" | "after" | "both" | undefined>(
     initial?.painWhenUi ?? (initial?.painful === "during" || initial?.painful === "after" ? initial.painful : undefined),
   );
   const [painScaleValue, setPainScaleValue] = useState<number | undefined>(initial?.painScale);
   const [painLocations, setPainLocations] = useState<string[]>(initial?.painLocations ?? []);
   const [symptomsAfter, setSymptomsAfter] = useState<string[]>(asArr(initial?.symptomsAfter));
+  const [symptomsNone, setSymptomsNone] = useState(false);
   const [orgasm, setOrgasm] = useState<"yes" | "no" | undefined>(initial?.orgasm === "yes" || initial?.orgasm === "no" ? initial.orgasm : undefined);
   const [note, setNote] = useState(initial?.note ?? "");
+  const [customAddingKey, setCustomAddingKey] = useState<string | null>(null);
+  const [customEditKey, setCustomEditKey] = useState<string | null>(null);
+  const [customText, setCustomText] = useState("");
+  const suksukCustom = ((data.settings as typeof data.settings & { suksukCustom?: Record<string, string[]> }).suksukCustom ?? {});
+  const customValues = (key: string) => suksukCustom[key] ?? [];
+  const setCustomValues = (key: string, values: string[]) => update((current) => ({
+    ...current,
+    settings: {
+      ...current.settings,
+      suksukCustom: {
+        ...((current.settings as typeof current.settings & { suksukCustom?: Record<string, string[]> }).suksukCustom ?? {}),
+        [key]: values,
+      },
+    } as typeof current.settings & { suksukCustom?: Record<string, string[]> },
+  }));
+  const renderCustomControls = (key: string) => {
+    const values = customValues(key);
+    const adding = customAddingKey === key;
+    const editing = customEditKey === key;
+    return (
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        {adding ? (
+          <>
+            <Input value={customText} onChange={(event) => setCustomText(event.target.value)} placeholder={t("Custom…")} className="h-8 min-w-[140px] flex-1 rounded-full" autoFocus />
+            <button type="button" className="rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground" onClick={() => {
+              const next = customText.trim();
+              if (!next || values.includes(next)) return;
+              setCustomValues(key, [...values, next]);
+              setCustomText("");
+              setCustomAddingKey(null);
+            }}>{t("Add")}</button>
+            <button type="button" className="rounded-full bg-tint px-3 py-1.5 text-xs font-semibold text-foreground" onClick={() => { setCustomText(""); setCustomAddingKey(null); }}>{t("Cancel")}</button>
+          </>
+        ) : (
+          <>
+            <button type="button" onClick={() => { setCustomText(""); setCustomAddingKey(key); setCustomEditKey(null); }} className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary hover:bg-primary/20"><Plus className="h-3 w-3" /> {t("Add custom")}</button>
+            <button type="button" onClick={() => { setCustomAddingKey(null); setCustomEditKey(editing ? null : key); }} className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${editing ? "bg-primary text-primary-foreground" : "bg-tint text-muted-foreground"}`}><Pencil className="h-3 w-3" /> {editing ? t("Done") : t("Edit")}</button>
+          </>
+        )}
+        {editing && values.map((value) => (
+          <span key={value} className="inline-flex items-center gap-1 rounded-full bg-surface px-2 py-1 text-[11px] ring-1 ring-border">
+            <span>{value}</span>
+            <button type="button" aria-label={`Rename ${value}`} onClick={() => {
+              const next = prompt(`Rename “${value}”`, value)?.trim();
+              if (next && next !== value && !values.includes(next)) setCustomValues(key, values.map((item) => item === value ? next : item));
+            }}><Pencil className="h-3 w-3" /></button>
+            <button type="button" aria-label={`Remove ${value}`} onClick={() => setCustomValues(key, values.filter((item) => item !== value))}><X className="h-3 w-3" /></button>
+          </span>
+        ))}
+      </div>
+    );
+  };
 
   const typeOptions: SemanticOption<SexKind>[] = [
     { value: "sex", icon: "orgasmYes", label: "Sex" },
@@ -281,20 +334,20 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
 
   const save = () => {
     const editing = !!initialEntry;
-    const painful: PainfulWhen = !painOn ? "no" : painWhen === "after" ? "after" : "during";
+    const painful: PainfulWhen = painOn === true ? (painWhen === "after" ? "after" : "during") : "no";
     const entry: SexEntryUi = {
       id: initial?.id ?? schema?.sourceEntryId ?? crypto.randomUUID(),
       time: initial?.time ?? nowHHMM(),
-      kind,
+      kind: kind ?? "sex",
       orgasm,
       protection: protection || undefined,
       contraception: initial?.contraception,
       symptomsAfter: symptomsAfter.length ? symptomsAfter : undefined,
       feelingAfter: feelingAfter ? [feelingAfter] : undefined,
       painful,
-      painWhenUi: painOn ? painWhen : undefined,
-      painScale: painOn ? painScaleValue : undefined,
-      painLocations: painOn && painLocations.length ? painLocations : undefined,
+      painWhenUi: painOn === true ? painWhen : undefined,
+      painScale: painOn === true ? painScaleValue : undefined,
+      painLocations: painOn === true && painLocations.length ? painLocations : undefined,
       note: note.trim() || undefined,
     };
     updateDayLog(update, date, (l) => ({
@@ -308,7 +361,8 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
     <SaveBar onCancel={onDone} onSave={save} />
 
     <section>
-      <p className="mb-2 text-sm font-semibold text-foreground">1. {t("Type")}</p>
+      <p className="mb-2 font-serif text-lg font-semibold text-foreground">1. {t("Type")}</p>
+      {renderCustomControls("type")}
       <div className="flex flex-wrap gap-2.5">
         {typeOptions.map((option) => (
           <button key={option.value} type="button" onClick={() => setKind(option.value)} className={chipClass(kind === option.value)}>
@@ -316,11 +370,13 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
             <span>{t(option.label ?? option.value)}</span>
           </button>
         ))}
+        {customValues("type").map((value) => <button key={value} type="button" onClick={() => setKind(value as SexKind)} className={chipClass(kind === value)}><BixboSemanticIcon name="more" size={17} /><span>{value}</span></button>)}
       </div>
     </section>
 
     <section>
-      <p className="mb-2 text-sm font-semibold text-foreground">2. {t("Protection")}</p>
+      <p className="mb-2 font-serif text-lg font-semibold text-foreground">2. {t("Protection")}</p>
+      {renderCustomControls("protection")}
       <div className="flex flex-wrap gap-2.5">
         {protectionOptions.map((option) => (
           <button key={option.value} type="button" onClick={() => setProtection(option.value)} className={chipClass(protection === option.value)}>
@@ -328,11 +384,13 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
             <span>{t(option.value)}</span>
           </button>
         ))}
+        {customValues("protection").map((value) => <button key={value} type="button" onClick={() => setProtection(value)} className={chipClass(protection === value)}><BixboSemanticIcon name="shield" size={17} /><span>{value}</span></button>)}
       </div>
     </section>
 
     <section>
-      <p className="mb-2 text-sm font-semibold text-foreground">3. {t("How I feel after")}</p>
+      <p className="mb-2 font-serif text-lg font-semibold text-foreground">3. {t("How I feel after")}</p>
+      {renderCustomControls("feeling")}
       <div className="flex flex-wrap gap-2.5">
         {feelingOptions.map((option) => (
           <button key={option.value} type="button" onClick={() => setFeelingAfter(feelingAfter === option.value ? "" : option.value)} className={chipClass(feelingAfter === option.value)}>
@@ -340,17 +398,18 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
             <span>{t(option.value)}</span>
           </button>
         ))}
+        {customValues("feeling").map((value) => <button key={value} type="button" onClick={() => setFeelingAfter(feelingAfter === value ? "" : value)} className={chipClass(feelingAfter === value)}><BixboSemanticIcon name="good" size={17} /><span>{value}</span></button>)}
       </div>
     </section>
 
     <section>
-      <p className="mb-2 text-sm font-semibold text-foreground">4. {t("Pain")}</p>
+      <p className="mb-2 font-serif text-lg font-semibold text-foreground">4. {t("Pain")}</p>
       <div className="flex flex-wrap gap-2.5">
-        <button type="button" onClick={() => setPainOn(false)} className={chipClass(!painOn)}><BixboSemanticIcon name="good" size={17} /> {t("No")}</button>
-        <button type="button" onClick={() => setPainOn(true)} className={chipClass(painOn)}><BixboSemanticIcon name="painYes" size={17} /> {t("Yes")}</button>
+        <button type="button" onClick={() => setPainOn(false)} className={chipClass(painOn === false)}><BixboSemanticIcon name="good" size={17} /> {t("No")}</button>
+        <button type="button" onClick={() => setPainOn(true)} className={chipClass(painOn === true)}><BixboSemanticIcon name="painYes" size={17} /> {t("Yes")}</button>
       </div>
 
-      {painOn && (
+      {painOn === true && (
         <div className="mt-3 rounded-3xl border border-border/80 bg-surface/40 p-3.5 shadow-sm">
           <div className="grid gap-4 sm:grid-cols-[1fr_1.15fr]">
             <div>
@@ -383,7 +442,8 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
           </div>
 
           <div className="mt-4">
-            <p className="mb-2 text-xs font-medium text-muted-foreground">{t("Where")}</p>
+            <p className="mb-2 font-serif text-sm font-semibold text-foreground">{t("Where")}</p>
+            {renderCustomControls("where")}
             <div className="flex flex-wrap gap-2">
               {painLocationOptions.map((option) => {
                 const active = painLocations.includes(option.value);
@@ -393,6 +453,7 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
                   </button>
                 );
               })}
+              {customValues("where").map((value) => { const active = painLocations.includes(value); return <button key={value} type="button" onClick={() => setPainLocations((current) => toggleIn(current, value))} className={chipClass(active)}><BixboSemanticIcon name="pelvicPain" size={15} /> {value}</button>; })}
             </div>
           </div>
         </div>
@@ -400,26 +461,28 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
     </section>
 
     <section className="rounded-3xl border border-border/80 bg-surface/25 p-3.5">
-      <p className="mb-2 text-sm font-semibold text-foreground">5. {t("Symptoms after")}</p>
+      <p className="mb-2 font-serif text-lg font-semibold text-foreground">5. {t("Symptoms after")}</p>
+      {renderCustomControls("symptoms")}
       <div className="flex flex-wrap gap-2">
         {symptomOptions.map((option) => {
           const active = symptomsAfter.includes(option.value);
           return (
-            <button key={option.value} type="button" onClick={() => setSymptomsAfter((current) => toggleIn(current, option.value))} className={symptomChipClass(active)}>
+            <button key={option.value} type="button" onClick={() => { setSymptomsNone(false); setSymptomsAfter((current) => toggleIn(current, option.value)); }} className={symptomChipClass(active)}>
               <BixboSemanticIcon name={option.icon} size={15} />
               <span>{t(option.value)}</span>
               {active ? <Check className="h-3 w-3" /> : null}
             </button>
           );
         })}
-        <button type="button" onClick={() => setSymptomsAfter([])} className={symptomChipClass(symptomsAfter.length === 0)}>
+        {customValues("symptoms").map((value) => { const active = symptomsAfter.includes(value); return <button key={value} type="button" onClick={() => { setSymptomsNone(false); setSymptomsAfter((current) => toggleIn(current, value)); }} className={symptomChipClass(active)}><BixboSemanticIcon name="more" size={15} /><span>{value}</span>{active ? <Check className="h-3 w-3" /> : null}</button>; })}
+        <button type="button" onClick={() => { setSymptomsAfter([]); setSymptomsNone((current) => !current); }} className={symptomChipClass(symptomsNone)}>
           <BixboSemanticIcon name="none" size={15} /> {t("None")}
         </button>
       </div>
     </section>
 
     <section>
-      <p className="mb-2 text-sm font-semibold text-foreground">6. {t("Orgasm")}</p>
+      <p className="mb-2 font-serif text-lg font-semibold text-foreground">6. {t("Orgasm")}</p>
       <div className="flex flex-wrap gap-2.5">
         <button type="button" onClick={() => setOrgasm(orgasm === "yes" ? undefined : "yes")} className={chipClass(orgasm === "yes")}><BixboSemanticIcon name="orgasmYes" size={17} /> {t("Yes")}</button>
         <button type="button" onClick={() => setOrgasm(orgasm === "no" ? undefined : "no")} className={chipClass(orgasm === "no")}><BixboSemanticIcon name="orgasmNo" size={17} /> {t("No")}</button>
@@ -427,7 +490,7 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
     </section>
 
     <section>
-      <p className="mb-2 text-sm font-semibold text-foreground">7. {t("Note (optional)")}</p>
+      <p className="mb-2 font-serif text-lg font-semibold text-foreground">7. {t("Note (optional)")}</p>
       <Textarea rows={4} value={note} onChange={(event) => setNote(event.target.value)} placeholder={t("Add a note…")} className="rounded-3xl" />
     </section>
 

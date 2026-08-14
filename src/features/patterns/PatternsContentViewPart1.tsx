@@ -19,7 +19,7 @@ import {
   TrendingUp,
   Trash2,
   Waves,
-} from "@/components/icons/BixboIcons";
+} from "@/components/icons/BixboExtraIcons";
 import { AppShell } from "@/components/AppShell";
 import { CHART_COLORS, CHART_TINTS } from "@/components/ui/chart";
 import { useI18n } from "@/hooks/useI18n";

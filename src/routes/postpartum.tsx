@@ -1,8 +1,8 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowLeft, Plus, Trash2 } from "@/components/icons/BixboIcons";
+import { ArrowLeft, Plus, Trash2 } from "@/components/icons/BixboExtraIcons";
 import { AppShell } from "@/components/AppShell";
-import { Ico } from "@/components/icons/BixboIcons";
+import { Ico } from "@/components/icons/BixboExtraIcons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";

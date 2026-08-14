@@ -1,8 +1,9 @@
+import { SemanticIcoText } from "@/components/icons/BixboFoodIcons";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowLeft, Plus, Trash2, Pencil } from "@/components/icons/BixboIcons";
+import { ArrowLeft, Plus, Trash2, Pencil } from "@/components/icons/BixboExtraIcons";
 import { AppShell } from "@/components/AppShell";
-import { Ico, IcoText } from "@/components/icons/BixboIcons";
+import { Ico, IcoText } from "@/components/icons/BixboExtraIcons";
 import { useBixbo, EMPTY, type Med } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -85,7 +86,7 @@ function MedsPage() {
                   {m.note && (
                     <p className="mt-1 flex items-start gap-1 text-xs whitespace-pre-wrap text-muted-foreground">
                       <Ico e="📝" size={14} />
-                      <IcoText text={m.note} size={12} />
+                      <SemanticIcoText text={m.note} size={12} />
                     </p>
                   )}
                 </div>

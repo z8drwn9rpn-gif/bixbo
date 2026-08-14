@@ -2,6 +2,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import type { Session } from "@supabase/supabase-js";
 
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 import { mergeBixbo } from "./merge";
 import {
   EMPTY,
@@ -18,6 +19,10 @@ import {
   type PostpartumState,
   type PregnancyAppointment,
 } from "./storage";
+
+function toSupabaseJson(value: unknown): Json {
+  return JSON.parse(JSON.stringify(value)) as Json;
+}
 
 export interface CloudProfile {
   id: string;
@@ -392,9 +397,9 @@ export async function createCloudBackup(payload: BixboData = getBixbo()): Promis
   if (!user) throw new Error("Sign in to create a cloud backup.");
 
   const safePayload = normalizeRemotePayload(payload);
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("user_backups")
-    .insert({ user_id: user.id, schema_version: 3, data: { ...safePayload, partner: undefined } })
+    .insert({ user_id: user.id, schema_version: 3, data: toSupabaseJson({ ...safePayload, partner: undefined }) })
     .select("id, created_at, schema_version")
     .single();
 
@@ -414,7 +419,7 @@ export async function listCloudBackups(limit = 10): Promise<CloudBackupSummary[]
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("user_backups")
     .select("id, created_at, schema_version")
     .eq("user_id", user.id)
@@ -429,7 +434,7 @@ export async function getCloudBackup(id: string): Promise<BixboData> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Sign in to restore a cloud backup.");
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("user_backups")
     .select("data")
     .eq("user_id", user.id)
@@ -502,12 +507,12 @@ export async function pushMyData(payload: BixboData): Promise<void> {
   const [privateResult, sharedResult] = await Promise.all([
     supabase.from("user_data").upsert({
       user_id: user.id,
-      data: privatePayload as never,
+      data: toSupabaseJson(privatePayload),
     }),
 
     supabase.from("partner_shared_data").upsert({
       user_id: user.id,
-      data: partnerPayload as never,
+      data: toSupabaseJson(partnerPayload),
     }),
   ]);
 

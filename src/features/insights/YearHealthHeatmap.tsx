@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight } from "@/components/icons/BixboIcons";
+import { ChevronLeft, ChevronRight } from "@/components/icons/BixboExtraIcons";
 import { ChartCard } from "@/components/charts";
 import { useI18n } from "@/hooks/useI18n";
 import { BIXBO_REGISTRY, customLogDefinitions, getRegistryFeature, isRegistrySurfaceEnabled, registryAdminHeatmapFieldsForFeature, type RegistryFeatureId } from "@/lib/appRegistry";

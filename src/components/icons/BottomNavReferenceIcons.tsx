@@ -1,7 +1,7 @@
 import { useId } from "react";
 import type { IconProps } from "@/components/icons/BixboIcons";
 
-function gid(prefix: string) {
+function useGid(prefix: string) {
   const id = useId().replace(/[^a-zA-Z0-9]/g, "");
   return `${prefix}${id}`;
 }
@@ -24,9 +24,9 @@ function BaseSvg({ size = 56, children, ...rest }: IconProps) {
 }
 
 export function BottomNavHomeIcon(props: IconProps) {
-  const roof = gid("bnHomeRoof");
-  const wall = gid("bnHomeWall");
-  const bush = gid("bnHomeBush");
+  const roof = useGid("bnHomeRoof");
+  const wall = useGid("bnHomeWall");
+  const bush = useGid("bnHomeBush");
   return (
     <BaseSvg {...props}>
       <defs>
@@ -61,7 +61,7 @@ export function BottomNavHomeIcon(props: IconProps) {
 }
 
 export function BottomNavOverviewIcon(props: IconProps) {
-  const brain = gid("bnBrain");
+  const brain = useGid("bnBrain");
   return (
     <BaseSvg {...props}>
       <defs>
@@ -93,7 +93,7 @@ export function BottomNavOverviewIcon(props: IconProps) {
 }
 
 export function BottomNavLogIcon(props: IconProps) {
-  const button = gid("bnLog");
+  const button = useGid("bnLog");
   return (
     <BaseSvg {...props}>
       <defs>
@@ -114,9 +114,9 @@ export function BottomNavLogIcon(props: IconProps) {
 }
 
 export function BottomNavCoupleIcon(props: IconProps) {
-  const dark = gid("bnCoupleDark");
-  const light = gid("bnCoupleLight");
-  const heart = gid("bnCoupleHeart");
+  const dark = useGid("bnCoupleDark");
+  const light = useGid("bnCoupleLight");
+  const heart = useGid("bnCoupleHeart");
   return (
     <BaseSvg {...props}>
       <defs>
@@ -148,8 +148,8 @@ export function BottomNavCoupleIcon(props: IconProps) {
 }
 
 export function BottomNavNoteIcon(props: IconProps) {
-  const paper = gid("bnNotePaper");
-  const pencil = gid("bnNotePencil");
+  const paper = useGid("bnNotePaper");
+  const pencil = useGid("bnNotePencil");
   return (
     <BaseSvg {...props}>
       <defs>

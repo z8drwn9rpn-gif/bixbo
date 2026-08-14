@@ -1,4 +1,4 @@
-import { Ico, PillIcon } from "@/components/icons/BixboIcons";
+import { Ico, PillIcon } from "@/components/icons/BixboExtraIcons";
 import { useI18n } from "@/hooks/useI18n";
 import { summarizeMedicationProgress } from "@/lib/domain/meds";
 import { todayKey, type BixboData } from "@/lib/storage";

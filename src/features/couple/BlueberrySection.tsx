@@ -1,4 +1,4 @@
-import { BlueberryIcon, WaterIcon } from "@/components/icons/BixboIcons";
+import { BlueberryIcon, WaterIcon } from "@/components/icons/BixboExtraIcons";
 import { CHART_COLORS } from "@/components/ui/chart";
 import { useI18n } from "@/hooks/useI18n";
 import { nextPredictedPeriod, predictPeriods, todayKey, type PartnerData } from "@/lib/storage";

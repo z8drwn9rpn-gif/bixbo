@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { createPortal } from "react-dom";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { ChevronLeft, ChevronRight, Share2, Trash2 } from "@/components/icons/BixboIcons";
+import { ChevronLeft, ChevronRight, Share2, Trash2 } from "@/components/icons/BixboExtraIcons";
 
 import { layoutOrder } from "@/lib/layoutRegistry";
 import { isAdminOwnerAccount } from "@/lib/deviceAdmin";
@@ -18,7 +18,7 @@ import {
   PillIcon,
   PoopIcon,
   StarIcon,
-} from "@/components/icons/BixboIcons";
+} from "@/components/icons/BixboExtraIcons";
 import { AppShell } from "@/components/AppShell";
 import { pregnancyProgress, postpartumProgress } from "@/lib/health";
 import { Button } from "@/components/ui/button";

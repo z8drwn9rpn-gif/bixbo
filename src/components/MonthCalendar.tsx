@@ -1,4 +1,5 @@
-import { Ico, IcoText } from "@/components/icons/BixboIcons";
+import { SemanticIcoText } from "@/components/icons/BixboFoodIcons";
+import { Ico, IcoText } from "@/components/icons/BixboExtraIcons";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "@/hooks/useI18n";
 import { customLogDefinitions, getRegistryFeature, isRegistrySurfaceEnabled, type RegistryFeatureId } from "@/lib/appRegistry";
@@ -526,7 +527,7 @@ export function MonthCalendar({
                   <ul className="space-y-1 text-sm">
                     {lines.map((l, i) => (
                       <li key={i} className="whitespace-pre-line">
-                        <IcoText text={l} size={15} />
+                        <SemanticIcoText text={l} size={15} />
                       </li>
                     ))}
                   </ul>
