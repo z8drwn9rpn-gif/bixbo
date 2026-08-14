@@ -105,3 +105,17 @@
 [data-bixbo-hak-root="1"] {
   isolation: isolate;
 }
+
+/* Only the HAK page canvas follows the new BIXBO off-white background.
+   The actual HAK calendar, 3D day circles, placebo colours, Current HAK pack
+   and all local HAK surfaces keep their existing styling. */
+:root:not(.dark) [data-bixbo-hak-root="1"] {
+  background: #FBF7F3 !important;
+  background-color: #FBF7F3 !important;
+}
+
+:root:not(.dark) [data-bixbo-hak-root="1"] > [aria-hidden="true"],
+:root:not(.dark) [data-bixbo-hak-root="1"] > .bg-background {
+  background: #FBF7F3 !important;
+  background-color: #FBF7F3 !important;
+}
