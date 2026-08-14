@@ -21,29 +21,21 @@ export function bixboIconMigrationPlugin(): Plugin {
         next = next.replaceAll(from, "@/components/icons/BixboExtraIcons");
       }
 
-      // Wherever the app already renders icon-aware text, enrich plain labels
-      // such as Matcha, Coca-Cola, banana, pasta, rice, pizza, cheese, etc.
-      // Existing emoji remain handled by BixboExtraIcons and are not duplicated.
       if (next.includes("<IcoText")) {
-        next = `import { SemanticIcoText } from "@/components/icons/BixboSemanticIcons";\n${next}`
+        next = `import { SemanticIcoText } from "@/components/icons/BixboFoodIcons";\n${next}`
           .replaceAll("<IcoText", "<SemanticIcoText")
           .replaceAll("</IcoText>", "</SemanticIcoText>");
       }
 
-      // Quick Log may contain user-created labels with a generic/default emoji.
-      // Prefer the label meaning first, then fall back to the saved symbol.
       if (normalized.endsWith("/components/QuickTags.tsx")) {
-        next = `import { SemanticIco } from "@/components/icons/BixboSemanticIcons";\n${next}`
+        next = `import { SemanticIco } from "@/components/icons/BixboFoodIcons";\n${next}`
           .replaceAll('<Ico e={tag.emoji} size={22} />', '<SemanticIco label={t(tag.label)} fallbackEmoji={tag.emoji} size={22} />')
           .replaceAll('<Ico e={tag.emoji} size={14} />', '<SemanticIco label={t(tag.label)} fallbackEmoji={tag.emoji} size={14} />')
           .replaceAll('<Ico e={tag.emoji} size={12} />', '<SemanticIco label={t(tag.label)} fallbackEmoji={tag.emoji} size={12} />');
       }
 
-      // Body & Recovery used the same moon for many unrelated sleep states.
-      // Use the state label to choose a semantic BIXBO icon; the old symbol is
-      // only a fallback when no dedicated meaning exists.
       if (normalized.endsWith("/features/logging/LogSheetRoot.tsx")) {
-        next = `import { SemanticIco } from "@/components/icons/BixboSemanticIcons";\n${next}`
+        next = `import { SemanticIco } from "@/components/icons/BixboFoodIcons";\n${next}`
           .replace('<Ico e={icon} size={14} />', '<SemanticIco label={t(label)} fallbackEmoji={icon} size={14} />')
           .replace('["Terrible", "🌙"]', '["Terrible", "🙁"]')
           .replace('["Restless", "🌙"]', '["Restless", "🌀"]')
