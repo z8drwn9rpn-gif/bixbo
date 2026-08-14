@@ -1,6 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 import type { ToolContext } from "@lovable.dev/mcp-js";
 
+const PUBLIC_SUPABASE_URL = "https://wgdydwttzsveevkljkmr.supabase.co";
+const PUBLIC_SUPABASE_PUBLISHABLE_KEY = "sb_publishable__K7x0Rsn4e7lT4Ut3_g04A_8w_WTaH3";
+
 type RuntimeGlobals = typeof globalThis & {
   Deno?: { env?: { get?: (name: string) => string | undefined } };
   process?: { env?: Record<string, string | undefined> };
@@ -20,9 +23,7 @@ function configuredEnv(names: readonly string[]): string | undefined {
 }
 
 function supabaseProjectUrl(): string {
-  const url = configuredEnv(["SUPABASE_URL", "VITE_SUPABASE_URL"]);
-  if (!url) throw new Error("SUPABASE_URL (or VITE_SUPABASE_URL) is required");
-  return url;
+  return configuredEnv(["SUPABASE_URL", "VITE_SUPABASE_URL"]) ?? PUBLIC_SUPABASE_URL;
 }
 
 function supabasePublishableKey(): string {
@@ -41,13 +42,13 @@ function supabasePublishableKey(): string {
         if (key) return key;
       }
     } catch {
-      // Malformed dictionary; fall through to the legacy names.
+      // Malformed dictionary; fall through to the legacy names/default.
     }
   }
 
   const legacy = configuredEnv(["SUPABASE_ANON_KEY", "VITE_SUPABASE_ANON_KEY"]);
   if (legacy) return legacy;
-  throw new Error("SUPABASE_PUBLISHABLE_KEY, SUPABASE_PUBLISHABLE_KEYS, or SUPABASE_ANON_KEY is required");
+  return PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 }
 
 /** Forwards the verified bearer token so RLS runs as the signed-in user. */
