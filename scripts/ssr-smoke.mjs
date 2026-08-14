@@ -9,9 +9,9 @@ const base = `http://${host}:${port}`;
 // which expects a different dist/server layout.
 const child = spawn(
   process.platform === "win32" ? "npx.cmd" : "npx",
-  ["wrangler", "dev", "--local", "--ip", host, "--port", String(port)],
+  ["wrangler", "dev", "--ip", host, "--port", String(port)],
   {
-    env: { ...process.env },
+    env: { ...process.env, CI: process.env.CI ?? "true" },
     stdio: ["ignore", "pipe", "pipe"],
   },
 );
@@ -22,7 +22,7 @@ child.stderr.on("data", (chunk) => { output += chunk.toString(); });
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function fetchWithTimeout(path, timeoutMs = 5000) {
+async function fetchWithTimeout(path, timeoutMs = 1500) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -34,7 +34,7 @@ async function fetchWithTimeout(path, timeoutMs = 5000) {
 
 async function waitForServer() {
   let lastError;
-  for (let attempt = 0; attempt < 80; attempt += 1) {
+  for (let attempt = 0; attempt < 40; attempt += 1) {
     if (child.exitCode != null) throw new Error(`BIXBO Worker exited early (${child.exitCode}).\n${output}`);
     try {
       const response = await fetchWithTimeout("/");
@@ -49,7 +49,7 @@ async function waitForServer() {
 }
 
 async function assertRoute(path, { exactStatus, contentIncludes } = {}) {
-  const response = await fetchWithTimeout(path);
+  const response = await fetchWithTimeout(path, 4000);
   if (exactStatus != null ? response.status !== exactStatus : response.status >= 500) {
     throw new Error(`${path} returned HTTP ${response.status}.\n${output}`);
   }
@@ -74,6 +74,6 @@ try {
   child.kill("SIGTERM");
   await Promise.race([
     new Promise((resolve) => child.once("exit", resolve)),
-    sleep(3000).then(() => child.kill("SIGKILL")),
+    sleep(2000).then(() => child.kill("SIGKILL")),
   ]);
 }
