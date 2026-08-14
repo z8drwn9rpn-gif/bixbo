@@ -45,6 +45,8 @@ jobs:
         run: bun run test
       - name: Build
         run: bun run build
+      - name: Bundle budget
+        run: bun run bundle:check
       - name: Smoke built app
         run: timeout 75s bun run smoke:ssr
       - name: Install Chromium
