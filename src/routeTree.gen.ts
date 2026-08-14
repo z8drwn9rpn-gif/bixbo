@@ -29,6 +29,7 @@ import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } fr
 import { Route as OauthConsentRouteImport } from './routes/oauth.consent'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
+import { Route as ApiPublicClientErrorRouteImport } from './routes/api/public/client-error'
 import { Route as ApiPublicHooksKeepaliveRouteImport } from './routes/api/public/hooks/keepalive'
 
 const IndexRoute = IndexRouteImport.update({
@@ -134,6 +135,11 @@ const Char91DotmcpChar93InvokeToolToolRoute =
     path: '/.mcp/invoke-tool/$tool',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicClientErrorRoute = ApiPublicClientErrorRouteImport.update({
+  id: '/api/public/client-error',
+  path: '/api/public/client-error',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHooksKeepaliveRoute = ApiPublicHooksKeepaliveRouteImport.update({
   id: '/api/public/hooks/keepalive',
   path: '/api/public/hooks/keepalive',
@@ -161,6 +167,7 @@ export interface FileRoutesByFullPath {
   '/oauth/consent': typeof OauthConsentRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/api/public/client-error': typeof ApiPublicClientErrorRoute
   '/api/public/hooks/keepalive': typeof ApiPublicHooksKeepaliveRoute
 }
 export interface FileRoutesByTo {
@@ -184,6 +191,7 @@ export interface FileRoutesByTo {
   '/oauth/consent': typeof OauthConsentRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/api/public/client-error': typeof ApiPublicClientErrorRoute
   '/api/public/hooks/keepalive': typeof ApiPublicHooksKeepaliveRoute
 }
 export interface FileRoutesById {
@@ -208,6 +216,7 @@ export interface FileRoutesById {
   '/oauth/consent': typeof OauthConsentRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/api/public/client-error': typeof ApiPublicClientErrorRoute
   '/api/public/hooks/keepalive': typeof ApiPublicHooksKeepaliveRoute
 }
 export interface FileRouteTypes {
@@ -233,6 +242,7 @@ export interface FileRouteTypes {
     | '/oauth/consent'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/api/public/client-error'
     | '/api/public/hooks/keepalive'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -256,6 +266,7 @@ export interface FileRouteTypes {
     | '/oauth/consent'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/api/public/client-error'
     | '/api/public/hooks/keepalive'
   id:
     | '__root__'
@@ -279,6 +290,7 @@ export interface FileRouteTypes {
     | '/oauth/consent'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/api/public/client-error'
     | '/api/public/hooks/keepalive'
   fileRoutesById: FileRoutesById
 }
@@ -303,6 +315,7 @@ export interface RootRouteChildren {
   OauthConsentRoute: typeof OauthConsentRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
+  ApiPublicClientErrorRoute: typeof ApiPublicClientErrorRoute
   ApiPublicHooksKeepaliveRoute: typeof ApiPublicHooksKeepaliveRoute
 }
 
@@ -448,6 +461,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/client-error': {
+      id: '/api/public/client-error'
+      path: '/api/public/client-error'
+      fullPath: '/api/public/client-error'
+      preLoaderRoute: typeof ApiPublicClientErrorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/keepalive': {
       id: '/api/public/hooks/keepalive'
       path: '/api/public/hooks/keepalive'
@@ -480,6 +500,7 @@ const rootRouteChildren: RootRouteChildren = {
   OauthConsentRoute: OauthConsentRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
+  ApiPublicClientErrorRoute: ApiPublicClientErrorRoute,
   ApiPublicHooksKeepaliveRoute: ApiPublicHooksKeepaliveRoute,
 }
 export const routeTree = rootRouteImport
