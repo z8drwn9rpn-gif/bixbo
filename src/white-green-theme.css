@@ -52,28 +52,30 @@
   background: #FBF7F3;
 }
 
-/* Cards remain white, with only a very soft green-neutral outline/shadow. */
-:root:not(.dark) .bg-surface,
-:root:not(.dark) .bg-card {
+/* Cards remain white, with only a very soft green-neutral outline/shadow.
+   HAK is explicitly excluded because it owns its own palette and 3D circles. */
+:root:not(.dark) .bg-surface:not([data-bixbo-hak-root="1"] *),
+:root:not(.dark) .bg-card:not([data-bixbo-hak-root="1"] *) {
   background-color: #FFFDFC;
   backdrop-filter: none;
 }
 
-:root:not(.dark) .ring-border {
+:root:not(.dark) .ring-border:not([data-bixbo-hak-root="1"] *) {
   --tw-ring-color: color-mix(in srgb, #C8CCB9 68%, transparent);
 }
 
-:root:not(.dark) .shadow-sm {
+:root:not(.dark) .shadow-sm:not([data-bixbo-hak-root="1"] *) {
   --tw-shadow-color: color-mix(in srgb, #52603B 9%, transparent);
 }
 
-:root:not(.dark) .shadow-md,
-:root:not(.dark) .shadow-lg,
-:root:not(.dark) .shadow-xl {
+:root:not(.dark) .shadow-md:not([data-bixbo-hak-root="1"] *),
+:root:not(.dark) .shadow-lg:not([data-bixbo-hak-root="1"] *),
+:root:not(.dark) .shadow-xl:not([data-bixbo-hak-root="1"] *) {
   --tw-shadow-color: color-mix(in srgb, #52603B 13%, transparent);
 }
 
-/* Green is the single interaction accent in light mode. */
+/* Green is the single interaction accent in light mode. Variables are used here
+   so locally themed components can still override them safely. */
 :root:not(.dark) .bg-primary {
   background-color: var(--primary);
 }
@@ -90,17 +92,16 @@
   --tw-ring-color: var(--primary);
 }
 
-/* Selected/active controls that use tint/accent stay soft green rather than purple. */
-:root:not(.dark) .bg-tint {
+/* Selected/active controls stay soft green instead of purple outside HAK. */
+:root:not(.dark) .bg-tint:not([data-bixbo-hak-root="1"] *) {
   background-color: var(--tint);
 }
 
-:root:not(.dark) .bg-accent {
+:root:not(.dark) .bg-accent:not([data-bixbo-hak-root="1"] *) {
   background-color: var(--accent);
 }
 
-/* Preserve the Birth Control / HAK overlay exactly. It defines its own local
-   palette and day-circle styling in BirthControlCard.tsx. Do not restyle it here. */
+/* HAK keeps its original local palette, circle colors, gradients, borders and shadows. */
 [data-bixbo-hak-root="1"] {
   isolation: isolate;
 }
