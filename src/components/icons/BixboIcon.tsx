@@ -1,6 +1,7 @@
 import type { ComponentType, SVGProps } from "react";
 import { Ico, NoteIcon } from "./BixboExtraIcons";
-import { ChiliIcon } from "./BixboIcons";
+import { ChiliIcon, PoopIcon, SleepIcon } from "./BixboIcons";
+import { DevilIcon } from "./BixboSpecialEmojiIcons";
 import { semanticIconForLabel } from "./BixboFoodIcons";
 import { appEmojiIcon } from "./BixboAppEmojiIcons";
 import { pickerEmojiIcon } from "./BixboPickerEmojiIcons";
@@ -29,8 +30,11 @@ export function resolveBixboIcon(input: { emoji?: string; label?: string; fallba
   if (emoji) {
     const normalized = normalizeBixboEmoji(emoji);
 
-    // Brand rule: the chili is always the original glossy BIXBO chili.
+    // Exact BIXBO identity icons always win over category/general fallbacks.
     if (normalized === "🌶") return ChiliIcon;
+    if (normalized === "💩") return PoopIcon;
+    if (normalized === "🌙") return SleepIcon;
+    if (normalized === "😈") return DevilIcon;
 
     const foodLabel = FOOD_EMOJI_LABELS[normalized];
     if (foodLabel) {
@@ -38,7 +42,6 @@ export function resolveBixboIcon(input: { emoji?: string; label?: string; fallba
       if (food) return food;
     }
 
-    // Exact app and picker drawings win over broad category fallbacks.
     const appSpecific = appEmojiIcon(emoji);
     if (appSpecific) return appSpecific;
 
