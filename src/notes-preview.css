@@ -1,0 +1,30 @@
+/* Notes list: cards are previews, never full note renderings.
+   Keep the title on one line and show only two lines of body copy. */
+#main-content article > button.block.min-h-\[58px\] > h3.line-clamp-1,
+#main-content article > button.block.min-h-\[58px\] h3.line-clamp-1 {
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 1 !important;
+  overflow: hidden !important;
+  max-height: 1.45em !important;
+}
+
+#main-content article > button.block.min-h-\[58px\] > p.line-clamp-2,
+#main-content article > button.block.min-h-\[58px\] p.line-clamp-2 {
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
+  overflow: hidden !important;
+  max-height: 2.9em !important;
+  white-space: normal !important;
+}
+
+/* Prevent nested rich-text spans/icons from defeating the clamp on iOS/PWA. */
+#main-content article > button.block.min-h-\[58px\] p.line-clamp-2 > span {
+  display: inline !important;
+}
+
+#main-content article > button.block.min-h-\[58px\] p.line-clamp-2 svg {
+  display: inline-block !important;
+  vertical-align: -0.15em !important;
+}
