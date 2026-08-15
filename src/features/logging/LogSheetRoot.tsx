@@ -593,8 +593,8 @@ export function LogSheet({
               className="pointer-events-auto fixed left-3 right-3 z-20 mx-auto max-w-[365px] rounded-[26px] border border-border/70 bg-background px-3 pb-5 pt-4 shadow-xl dark:bg-surface-elevated"
               style={{ bottom: "calc(92px + env(safe-area-inset-bottom))" }}
             >
-              <div className="grid grid-cols-5 gap-x-1 gap-y-3">
-                {orderedCats.map((c) => (
+              <div className={`grid gap-x-1 gap-y-3 ${orderedCats.length === 9 ? "grid-cols-10" : "grid-cols-5"}`}>
+                {orderedCats.map((c, index) => (
                   <button
                     key={c.id}
                     type="button"
@@ -608,7 +608,7 @@ export function LogSheet({
                       setCat(c.id);
                     }}
                     aria-label={editingOrder ? `${t("Drag")} ${t(c.label)} ${t("to reorder")}` : `${t("Log")} ${t(c.label)}`}
-                    className={`flex min-h-[82px] min-w-0 touch-none select-none flex-col items-center justify-start gap-1.5 rounded-2xl px-0.5 py-1 text-foreground outline-none transition-[background-color,transform,opacity] focus-visible:ring-2 focus-visible:ring-ring ${editingOrder ? "cursor-grab active:cursor-grabbing" : "active:scale-[0.97]"} ${draggingCat === c.id ? "z-30 scale-[1.03] bg-tint shadow-md" : "hover:bg-tint/60"}`}
+                    className={`flex min-h-[82px] min-w-0 touch-none select-none flex-col items-center justify-start gap-1.5 rounded-2xl px-0.5 py-1 text-foreground outline-none transition-[background-color,transform,opacity] focus-visible:ring-2 focus-visible:ring-ring ${orderedCats.length === 9 ? "col-span-2" : ""} ${orderedCats.length === 9 && index === 5 ? "col-start-2" : ""} ${editingOrder ? "cursor-grab active:cursor-grabbing" : "active:scale-[0.97]"} ${draggingCat === c.id ? "z-30 scale-[1.03] bg-tint shadow-md" : "hover:bg-tint/60"}`}
                   >
                     <span className="grid h-10 w-10 shrink-0 place-items-center">
                       <Ico e={c.emoji} size={30} />
