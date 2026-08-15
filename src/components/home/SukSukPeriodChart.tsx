@@ -44,71 +44,63 @@ function compareValues(current: number, previous: number) {
   };
 }
 
-function PeriodBars({ items, accent, accentDark, muted }: {
+function PeriodBars({
+  items,
+  accent,
+  accentDark,
+  muted,
+}: {
   items: ChartItem[];
   accent: string;
   accentDark: string;
   muted: string;
 }) {
-  const maxValue = Math.max(3, ...items.map((item) => item.count));
+  const maxValue = Math.max(1, ...items.map((item) => item.count));
+  const dense = items.length > 8;
 
   return (
-    <div className="mt-4 grid grid-cols-[22px_minmax(0,1fr)] gap-2">
-      <div className="relative h-[116px] text-[9px] tabular-nums text-muted-foreground">
-        {[maxValue, Math.round((maxValue * 2) / 3), Math.round(maxValue / 3), 0].map((tick, index) => (
-          <span
-            key={`${tick}-${index}`}
-            className="absolute right-0 -translate-y-1/2"
-            style={{ top: `${index * 33.333}%` }}
-          >
-            {tick}
-          </span>
-        ))}
+    <div className="mt-2.5 px-1">
+      <div
+        className="grid h-[92px] items-end gap-1 border-b border-border/55"
+        style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
+      >
+        {items.map((item, index) => {
+          const height = item.count > 0 ? Math.max(8, Math.round((item.count / maxValue) * 58)) : 2;
+          return (
+            <div key={`${item.label}-${index}`} className="flex h-full min-w-0 flex-col items-center justify-end">
+              <span
+                className={`${dense ? "text-[8px]" : "text-[10px]"} mb-1 font-semibold tabular-nums text-foreground`}
+              >
+                {item.count}
+              </span>
+              <span
+                className={`${dense ? "max-w-[18px]" : "max-w-9"} w-[58%] rounded-t-[6px] transition-[height] duration-200`}
+                style={{
+                  height: `${height}px`,
+                  background:
+                    item.count > 0
+                      ? `linear-gradient(180deg, ${accent} 0%, ${accentDark} 100%)`
+                      : muted,
+                  opacity: item.count > 0 ? 1 : 0.3,
+                }}
+              />
+            </div>
+          );
+        })}
       </div>
 
-      <div className="relative h-[142px] min-w-0">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-[116px]">
-          {[0, 1, 2, 3].map((line) => (
-            <span
-              key={line}
-              className="absolute inset-x-0 border-t border-dashed border-border/55"
-              style={{ top: `${line * 33.333}%` }}
-            />
-          ))}
-        </div>
-
-        <div
-          className="relative grid h-[142px] gap-1"
-          style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
-        >
-          {items.map((item, index) => {
-            const height = item.count > 0 ? Math.max(8, (item.count / maxValue) * 96) : 2;
-            return (
-              <div key={`${item.label}-${index}`} className="flex min-w-0 flex-col items-center justify-end">
-                <span className="mb-0.5 text-[10px] font-semibold tabular-nums text-foreground">
-                  {item.count}
-                </span>
-                <div className="flex h-[104px] w-full items-end justify-center">
-                  <span
-                    className="w-[68%] max-w-8 rounded-t-[8px] transition-[height] duration-200"
-                    style={{
-                      height: `${height}px`,
-                      background:
-                        item.count > 0
-                          ? `linear-gradient(180deg, ${accent} 0%, ${accentDark} 100%)`
-                          : muted,
-                      opacity: item.count > 0 ? 1 : 0.45,
-                      boxShadow: item.count > 0 ? `0 7px 15px -10px ${accentDark}` : "none",
-                    }}
-                  />
-                </div>
-                <span className="mt-1.5 max-w-full truncate text-[9px] font-medium text-muted-foreground sm:text-[10px]">
-                  {item.label}
-                </span>
-              </div>
-            );
-          })}
-        </div>
+      <div
+        className="mt-1.5 grid gap-1"
+        style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
+      >
+        {items.map((item, index) => (
+          <span
+            key={`label-${item.label}-${index}`}
+            className={`${dense ? "text-[8px]" : "text-[10px]"} truncate text-center font-medium text-muted-foreground`}
+          >
+            {item.label}
+          </span>
+        ))}
       </div>
     </div>
   );
@@ -127,7 +119,9 @@ export function SukSukPeriodChart({
   const accent = darkMode ? "#B7C58C" : "#76953D";
   const accentDark = darkMode ? "#DDE7BE" : "#4F6928";
   const accentSoft = darkMode ? "#667048" : "#D9E5BB";
-  const cardBg = darkMode ? "#555B3B" : "#FFFDF8";
+  const cardBg = darkMode
+    ? "color-mix(in srgb, var(--surface) 92%, #77805A 8%)"
+    : "color-mix(in srgb, var(--background) 96%, #536A27 4%)";
 
   const [mode, setMode] = useState<ViewMode>("week");
   const [weekOffset, setWeekOffset] = useState(0);
@@ -258,108 +252,120 @@ export function SukSukPeriodChart({
   const bestYearIndex = year.bars.reduce((bestIndex, item, index, arr) =>
     item.count > arr[bestIndex].count ? index : bestIndex, 0);
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const weekdayNames: Record<string, string> = {
+    Mo: "Monday",
+    Tu: "Tuesday",
+    We: "Wednesday",
+    Th: "Thursday",
+    Fr: "Friday",
+    Sa: "Saturday",
+    Su: "Sunday",
+  };
 
   const insight = mode === "week"
-    ? bestWeek && bestWeek.count > 0 ? `Best day: ${bestWeek.label}` : "No entries this week"
+    ? bestWeek && bestWeek.count > 0 ? `Best day: ${weekdayNames[bestWeek.label] ?? bestWeek.label}` : "No entries this week"
     : mode === "month"
       ? bestMonth && bestMonth.count > 0 ? `Most active: ${bestMonth.label}` : "No entries this month"
       : year.bars[bestYearIndex]?.count > 0 ? `Peak: ${monthNames[bestYearIndex]}` : "No entries this year";
 
   return (
     <section
-      className="mt-4 overflow-hidden rounded-[28px] border border-border/70 p-4 pb-5 shadow-[0_14px_36px_-30px_rgba(52,68,28,.55)]"
+      className="mt-4 overflow-hidden rounded-[26px] border border-border/70 px-3.5 py-3.5 shadow-[0_10px_28px_-26px_rgba(52,68,28,.45)]"
       style={{ backgroundColor: cardBg }}
     >
-      <div className="flex items-center gap-3">
-        <span
-          className="grid h-12 w-12 shrink-0 place-items-center rounded-full border shadow-sm"
-          style={{ backgroundColor: accentSoft, borderColor: accent }}
+      <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full border"
+            style={{ backgroundColor: accentSoft, borderColor: accent }}
+          >
+            <Ico e="❤️" size={21} />
+          </span>
+          <h2 className="truncate font-serif text-[22px] font-bold leading-none tracking-[-0.02em] text-foreground">
+            ŠukŠuk!
+          </h2>
+        </div>
+
+        <div
+          role="tablist"
+          aria-label="ŠukŠuk period"
+          className="grid min-w-0 grid-cols-3 rounded-full border border-border/65 bg-muted/20 p-0.5"
         >
-          <Ico e="❤️" size={25} />
-        </span>
-        <h2 className="font-serif text-[26px] font-black leading-none tracking-[-0.025em] text-foreground">ŠukŠuk!</h2>
+          {(["week", "month", "year"] as const).map((tab) => {
+            const selected = mode === tab;
+            const label = tab === "week" ? t("Week") : tab === "month" ? t("Month") : t("Year");
+            return (
+              <button
+                key={tab}
+                type="button"
+                role="tab"
+                aria-selected={selected}
+                onClick={() => setMode(tab)}
+                className="min-h-8 rounded-full px-1.5 text-[11px] font-bold transition active:scale-[.98]"
+                style={selected ? {
+                  background: `linear-gradient(180deg, ${accent} 0%, ${accentDark} 100%)`,
+                  color: darkMode ? "#273016" : "#FFFDF7",
+                } : { color: "var(--muted-foreground)" }}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      <div
-        role="tablist"
-        aria-label="ŠukŠuk period"
-        className="mt-4 grid grid-cols-3 rounded-full border border-border/65 bg-muted/25 p-1"
-      >
-        {(["week", "month", "year"] as const).map((tab) => {
-          const selected = mode === tab;
-          const label = tab === "week" ? t("Week") : tab === "month" ? t("Month") : t("Year");
-          return (
-            <button
-              key={tab}
-              type="button"
-              role="tab"
-              aria-selected={selected}
-              onClick={() => setMode(tab)}
-              className="min-h-10 rounded-full px-3 text-[13px] font-bold transition-[background-color,color,box-shadow,transform] active:scale-[.98]"
-              style={selected ? {
-                background: `linear-gradient(180deg, ${accent} 0%, ${accentDark} 100%)`,
-                color: darkMode ? "#273016" : "#FFFDF7",
-                boxShadow: `0 7px 18px -12px ${accentDark}`,
-              } : { color: "var(--muted-foreground)" }}
-            >
-              {label}
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="mt-3 flex items-center justify-center gap-2">
-        <button
-          type="button"
-          onClick={() => movePeriod(-1)}
-          className="grid h-8 w-8 place-items-center rounded-full bg-tint/55 text-foreground transition active:scale-95"
-          aria-label="Previous period"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          onClick={resetPeriod}
-          className="min-w-[116px] rounded-full px-3 py-1.5 text-center text-[11px] font-semibold tabular-nums text-muted-foreground transition active:scale-[.98]"
-          title="Back to current period"
-        >
-          {periodLabel}
-        </button>
-        <button
-          type="button"
-          onClick={() => movePeriod(1)}
-          className="grid h-8 w-8 place-items-center rounded-full bg-tint/55 text-foreground transition active:scale-95"
-          aria-label="Next period"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
-      </div>
-
-      <div className="mt-3 flex items-end justify-between gap-3 px-1">
-        <div>
-          <p className="flex items-end gap-1.5 text-foreground">
-            <span className="font-serif text-[48px] font-black leading-[.9] tabular-nums">{active.count}</span>
-            <span className="pb-1 text-sm font-medium text-muted-foreground">{t("times")}</span>
+      <div className="mt-3 grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3">
+        <div className="min-w-[86px]">
+          <p className="flex items-end gap-1 text-foreground">
+            <span className="font-serif text-[36px] font-black leading-[.9] tabular-nums">{active.count}</span>
+            <span className="pb-0.5 text-[11px] font-medium text-muted-foreground">{t("times")}</span>
           </p>
-          <p className="mt-2 text-[12px] text-muted-foreground">
+          <p className="mt-1.5 whitespace-nowrap text-[10px] text-muted-foreground">
             vs last {mode}{" "}
             <span className="font-bold" style={{ color: comparison.diff === 0 ? "var(--muted-foreground)" : accentDark }}>
-              {comparison.symbol} {comparison.value}
+              {comparison.symbol}{comparison.value}
             </span>
           </p>
+        </div>
+
+        <div className="flex items-center justify-center gap-1.5 pt-0.5">
+          <button
+            type="button"
+            onClick={() => movePeriod(-1)}
+            className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-tint/55 text-foreground transition active:scale-95"
+            aria-label="Previous period"
+          >
+            <ChevronLeft className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={resetPeriod}
+            className="min-w-0 rounded-full px-2 py-1 text-center text-[11px] font-semibold tabular-nums text-muted-foreground transition active:scale-[.98]"
+            title="Back to current period"
+          >
+            {periodLabel}
+          </button>
+          <button
+            type="button"
+            onClick={() => movePeriod(1)}
+            className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-tint/55 text-foreground transition active:scale-95"
+            aria-label="Next period"
+          >
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
         </div>
       </div>
 
       <PeriodBars items={active.bars} accent={accent} accentDark={accentDark} muted={accentSoft} />
 
-      <div
-        className="mt-4 flex min-h-12 items-center justify-center gap-2 rounded-full border border-border/45 px-4 py-2.5 text-center"
-        style={{ background: `color-mix(in srgb, ${accentSoft} 52%, transparent)` }}
-      >
-        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full" style={{ backgroundColor: accentSoft }}>
-          <Ico e="✨" size={18} />
-        </span>
-        <span className="text-[13px] font-bold text-foreground">{insight}</span>
+      <div className="mt-2.5 flex justify-center">
+        <div
+          className="inline-flex min-h-8 max-w-full items-center justify-center gap-1.5 rounded-full border border-border/45 px-3 py-1.5"
+          style={{ background: `color-mix(in srgb, ${accentSoft} 42%, transparent)` }}
+        >
+          <Ico e="✨" size={14} />
+          <span className="truncate text-[10px] font-semibold text-foreground">{insight}</span>
+        </div>
       </div>
     </section>
   );
