@@ -133,6 +133,14 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"tex
             assignRef(forwardedRef, node);
           }}
           data-bixbo-rich-text="true"
+          // iOS/browser suggestion + prediction row is driven by these attributes.
+          // Defaults are off for BIXBO free-text fields; any call site can override
+          // them because {...props} is spread after these.
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="sentences"
+          spellCheck={false}
+
           value={controlled ? nativeValue : undefined}
           defaultValue={controlled ? undefined : encodeBixboNativeText(initialValue)}
           disabled={disabled}
