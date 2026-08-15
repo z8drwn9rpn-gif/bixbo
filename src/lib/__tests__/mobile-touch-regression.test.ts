@@ -7,17 +7,19 @@ const textareaSource = fs.readFileSync("src/components/ui/textarea.tsx", "utf8")
 const themeSource = fs.readFileSync("src/lib/theme.ts", "utf8");
 
 describe("mobile touch and text editing regressions", () => {
-  it("keeps native page zoom enabled and avoids iOS automatic focus zoom", () => {
+  it("keeps page zoom locked without JS gesture interception and avoids iOS focus zoom", () => {
     expect(rootSource).toContain(
-      'content: "width=device-width, initial-scale=1, viewport-fit=cover"',
+      'content: "width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"',
     );
-    expect(rootSource).not.toContain("maximum-scale=1");
-    expect(rootSource).not.toContain("minimum-scale=1");
-    expect(rootSource).not.toContain("user-scalable=no");
+    expect(rootSource).toContain("maximum-scale=1");
+    expect(rootSource).toContain("minimum-scale=1");
+    expect(rootSource).toContain("user-scalable=no");
     expect(rootSource).not.toContain("preventPinchTouch");
     expect(rootSource).not.toContain("preventGesture");
     expect(rootSource).not.toContain('document.addEventListener("gesturestart"');
-    expect(touchCss).toContain("touch-action: pan-x pan-y");
+    expect(rootSource).not.toContain('document.addEventListener("touchmove"');
+    expect(touchCss).toContain("touch-action: pan-x pan-y;");
+    expect(touchCss).not.toContain("touch-action: pan-x pan-y pinch-zoom");
     expect(touchCss).toMatch(/textarea,[\s\S]*select \{[\s\S]*font-size:\s*16px\s*!important/);
   });
 
