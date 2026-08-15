@@ -9,8 +9,8 @@ const replacements = [
     'className="flex max-h-[72dvh] w-full max-w-[370px] flex-col overflow-hidden rounded-[30px] border border-border/70 bg-background shadow-[0_24px_70px_-30px_rgba(24,31,17,.55),0_6px_20px_-12px_rgba(24,31,17,.35)] sm:max-h-[76dvh] lg:max-h-[78dvh]"',
   ],
   [
-    'aria-label={t("Close")} className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-border/70 bg-tint/70 text-lg font-bold text-foreground"',
-    'aria-label={t("Close")} className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-border/70 bg-tint/70 text-lg font-bold text-foreground"',
+    '<button type="button" onClick={()=>setEventsOpen(false)} aria-label={t("Close")} className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-border/70 bg-tint/70 text-lg font-bold text-foreground">×</button>',
+    '<button type="button" onClick={()=>setEventsOpen(false)} aria-label={t("Close")} className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-border/70 bg-tint/70 text-lg font-bold text-foreground">×</button>',
   ],
 ];
 
