@@ -60,12 +60,13 @@ export function useDismissTapTooltip(clear: () => void) {
 
 /**
  * Consistent card wrapper for every chart section: same corner radius,
- * padding, ring, title/subtitle typography and an optional right-side
- * control slot (e.g. Week/Month toggle, range switch).
+ * padding, ring, title typography and an optional right-side control slot
+ * (e.g. Week/Month toggle, range switch). Secondary subtitles are omitted
+ * to keep the Insights surface compact.
  */
 export function ChartCard({
   title,
-  subtitle,
+  subtitle: _subtitle,
   right,
   children,
   className = "",
@@ -89,7 +90,6 @@ export function ChartCard({
           {right}
         </div>
       )}
-      {subtitle}
       {children}
     </section>
   );
