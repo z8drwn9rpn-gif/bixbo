@@ -1,6 +1,7 @@
 import type { ComponentType, SVGProps } from "react";
 import { Ico, NoteIcon } from "./BixboExtraIcons";
 import { semanticIconForLabel } from "./BixboFoodIcons";
+import { specificEmojiIcon } from "./BixboSpecificEmojiIcons";
 import { keyboardEmojiIcon } from "./BixboKeyboardEmojiIcons";
 
 type IconProps = SVGProps<SVGSVGElement> & { size?: number };
@@ -29,6 +30,10 @@ export function resolveBixboIcon(input: { emoji?: string; label?: string; fallba
       const food = semanticIconForLabel(foodLabel);
       if (food) return food;
     }
+
+    // Exact BIXBO drawings win over broad category fallbacks such as Paw/Car.
+    const specific = specificEmojiIcon(emoji);
+    if (specific) return specific;
 
     const keyboard = keyboardEmojiIcon(emoji);
     if (keyboard) return keyboard;
@@ -62,8 +67,7 @@ export function BixboIcon({
   const Resolved = resolveBixboIcon({ emoji, label });
   if (Resolved) return <Resolved size={size} className={className} />;
 
-  // Important: never hand an unsupported emoji string to the platform renderer.
-  // The app either resolves it to a BIXBO SVG or uses a neutral BIXBO fallback.
+  // Never hand an unsupported emoji string to the platform renderer.
   if (fallback === "none") return null;
   return <NoteIcon size={size} className={className} />;
 }
