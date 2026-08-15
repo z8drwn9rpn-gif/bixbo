@@ -23,6 +23,37 @@ import { Toaster } from "../components/ui/sonner";
 import { useI18n } from "@/hooks/useI18n";
 import { useDeploymentFreshness } from "@/lib/deploymentFreshness";
 
+const THEME_BOOTSTRAP_SCRIPT = `(() => {
+  try {
+    const root = document.documentElement;
+    const valid = (value) => value === "light" || value === "dark" || value === "system";
+    let choice = localStorage.getItem("bixbo:theme-choice");
+
+    if (!valid(choice)) {
+      const raw = localStorage.getItem("bixbo:v2") || localStorage.getItem("bixbo:v1");
+      if (raw) {
+        try {
+          const stored = JSON.parse(raw);
+          const storedTheme = stored && stored.settings && stored.settings.theme;
+          if (valid(storedTheme)) choice = storedTheme;
+        } catch {}
+      }
+    }
+
+    if (!valid(choice)) choice = "system";
+    localStorage.setItem("bixbo:theme-choice", choice);
+
+    const systemDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const isDark = choice === "dark" || (choice === "system" && systemDark);
+
+    root.dataset.themeChoice = choice;
+    root.dataset.theme = isDark ? "dark" : "light";
+    root.classList.toggle("dark", isDark);
+    root.classList.toggle("light", !isDark);
+    root.style.colorScheme = isDark ? "dark" : "only light";
+  } catch {}
+})();`;
+
 function NotFoundComponent() {
   const { t } = useI18n();
   const router = useRouter();
@@ -132,8 +163,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }} />
         <HeadContent />
       </head>
       <body data-bixbo-app-root>
