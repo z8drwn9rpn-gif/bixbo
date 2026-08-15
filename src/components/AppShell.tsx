@@ -11,6 +11,7 @@ import "@/typography-hierarchy.css";
 import "@/notes-preview.css";
 import "@/log-menu-popover.css";
 import "@/ios-touch-stability.css";
+import "@/mobile-overlay-stability.css";
 import "@/calendar-3d.css";
 
 const BIXBO_MASCOT_SRC = bixboMascot;
