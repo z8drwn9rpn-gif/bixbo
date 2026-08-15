@@ -89,14 +89,13 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"tex
       if (!node || disabled) return;
       rememberCaret();
 
-      // Dismiss the native iOS keyboard, then keep the edited field visible
-      // above the BIXBO bottom picker instead of letting the panel cover it.
-      node.blur();
-      node.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
+      // Open the BIXBO layer first, then dismiss the native keyboard on the next
+      // frame. Do not scroll the sheet here: iOS viewport resizing + scrollIntoView
+      // caused full-screen flashing and visible jumps.
       setPickerOpen(true);
-      window.setTimeout(() => {
-        if (node.isConnected) node.scrollIntoView({ block: "center", inline: "nearest", behavior: "auto" });
-      }, 120);
+      requestAnimationFrame(() => {
+        if (node.isConnected) node.blur();
+      });
     }, [disabled, rememberCaret]);
 
     const chooseIcon = React.useCallback((emoji: string) => {
