@@ -18,21 +18,16 @@ jobs:
           from pathlib import Path
           p = Path('src/features/logging/LogSheetRoot.tsx')
           s = p.read_text()
-          old = '''              <div className="grid grid-cols-5 gap-x-1 gap-y-3">
-                {orderedCats.map((c) => (
-                  <button'''
-          new = '''              <div className={`grid gap-x-1 gap-y-3 ${orderedCats.length === 9 ? "grid-cols-10" : "grid-cols-5"}`}>
-                {orderedCats.map((c, index) => (
-                  <button'''
-          if old not in s:
-              raise SystemExit('Log grid start not found')
-          s = s.replace(old, new, 1)
-          old_class = '''                    className={`flex min-h-[82px] min-w-0 touch-none select-none flex-col items-center justify-start gap-1.5 rounded-2xl px-0.5 py-1 text-foreground outline-none transition-[background-color,transform,opacity] focus-visible:ring-2 focus-visible:ring-ring ${editingOrder ? "cursor-grab active:cursor-grabbing" : "active:scale-[0.97]"} ${draggingCat === c.id ? "z-30 scale-[1.03] bg-tint shadow-md" : "hover:bg-tint/60"}`}'''
-          new_class = '''                    className={`flex min-h-[82px] min-w-0 touch-none select-none flex-col items-center justify-start gap-1.5 rounded-2xl px-0.5 py-1 text-foreground outline-none transition-[background-color,transform,opacity] focus-visible:ring-2 focus-visible:ring-ring ${orderedCats.length === 9 ? "col-span-2" : ""} ${orderedCats.length === 9 && index === 5 ? "col-start-2" : ""} ${editingOrder ? "cursor-grab active:cursor-grabbing" : "active:scale-[0.97]"} ${draggingCat === c.id ? "z-30 scale-[1.03] bg-tint shadow-md" : "hover:bg-tint/60"}`}'''
-          if old_class not in s:
-              raise SystemExit('Log button class not found')
-          s = s.replace(old_class, new_class, 1)
-          p.write_text(s)
+          s2 = s.replace('className="grid grid-cols-5 gap-x-1 gap-y-3"', 'className={`grid gap-x-1 gap-y-3 ${orderedCats.length === 9 ? "grid-cols-10" : "grid-cols-5"}`}', 1)
+          s2 = s2.replace('{orderedCats.map((c) => (', '{orderedCats.map((c, index) => (', 1)
+          marker = 'focus-visible:ring-2 focus-visible:ring-ring ${editingOrder ?'
+          replacement = 'focus-visible:ring-2 focus-visible:ring-ring ${orderedCats.length === 9 ? "col-span-2" : ""} ${orderedCats.length === 9 && index === 5 ? "col-start-2" : ""} ${editingOrder ?'
+          s2 = s2.replace(marker, replacement, 1)
+          if s2 == s:
+              raise SystemExit('No Log layout changes were applied')
+          if 'grid-cols-10' not in s2 or 'col-start-2' not in s2:
+              raise SystemExit('Centered Log layout markers missing')
+          p.write_text(s2)
       - name: Remove one-shot workflow and commit
         run: |
           rm .github/workflows/center-log-second-row-once.yml
