@@ -1,33 +1,27 @@
 import * as React from "react";
 
 import { BixboIcon, resolveBixboIcon } from "@/components/icons/BixboIcon";
+import {
+  decodeBixboNativeText,
+  encodeBixboNativeText,
+  normalizeBixboText,
+  splitBixboGraphemes,
+} from "@/components/icons/BixboTextGlyphs";
 import { cn } from "@/lib/utils";
 
 const EMOJI_RE = /\p{Extended_Pictographic}/u;
 
-function graphemes(value: string) {
-  if (typeof Intl !== "undefined" && "Segmenter" in Intl) {
-    const Segmenter = (Intl as typeof Intl & {
-      Segmenter?: new (
-        locale?: string | string[],
-        options?: { granularity: "grapheme" },
-      ) => { segment: (input: string) => Iterable<{ segment: string }> };
-    }).Segmenter;
-    if (Segmenter) {
-      return Array.from(new Segmenter(undefined, { granularity: "grapheme" }).segment(value), (part) => part.segment);
-    }
-  }
-  return Array.from(value);
+function asText(value: React.ComponentProps<"textarea">["value"] | React.ComponentProps<"textarea">["defaultValue"]) {
+  if (value == null) return "";
+  return Array.isArray(value) ? value.join("\n") : String(value);
 }
 
 function BixboTextareaValue({ value }: { value: string }) {
   return (
     <>
-      {graphemes(value).map((part, index) => {
+      {splitBixboGraphemes(value).map((part, index) => {
         if (!EMOJI_RE.test(part)) return <React.Fragment key={`${index}-${part}`}>{part}</React.Fragment>;
 
-        // Never let the device emoji font define BIXBO's visual language. Known
-        // emoji resolve to their BIXBO SVG; unknown emoji use the BIXBO star.
         const supported = Boolean(resolveBixboIcon({ emoji: part }));
         const iconEmoji = supported ? part : "⭐";
         return (
@@ -46,29 +40,64 @@ function BixboTextareaValue({ value }: { value: string }) {
 
 const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"textarea">>(
   ({ className, value, defaultValue, onChange, onScroll, ...props }, ref) => {
-    const initialValue = defaultValue == null
-      ? ""
-      : Array.isArray(defaultValue)
-        ? defaultValue.join("\n")
-        : String(defaultValue);
+    const initialValue = normalizeBixboText(asText(defaultValue));
     const [uncontrolledValue, setUncontrolledValue] = React.useState(initialValue);
     const mirrorRef = React.useRef<HTMLDivElement>(null);
     const controlled = value !== undefined;
-    const visibleValue = controlled
-      ? Array.isArray(value)
-        ? value.join("\n")
-        : String(value ?? "")
-      : uncontrolledValue;
+    const canonicalValue = normalizeBixboText(controlled ? asText(value) : uncontrolledValue);
+    const nativeValue = encodeBixboNativeText(canonicalValue);
 
     return (
       <div className="relative w-full">
         <textarea
           ref={ref}
-          value={value}
-          defaultValue={defaultValue}
+          data-bixbo-rich-text="true"
+          value={controlled ? nativeValue : undefined}
+          defaultValue={controlled ? undefined : encodeBixboNativeText(initialValue)}
           onChange={(event) => {
-            if (!controlled) setUncontrolledValue(event.target.value);
-            onChange?.(event);
+            const node = event.currentTarget;
+            const rawNative = node.value;
+            const rawStart = node.selectionStart ?? rawNative.length;
+            const rawEnd = node.selectionEnd ?? rawStart;
+
+            const canonical = normalizeBixboText(decodeBixboNativeText(rawNative));
+            const encoded = encodeBixboNativeText(canonical);
+
+            // Map the native selection to the normalized one-character BIXBO glyph
+            // positions before replacing any emoji Safari may just have inserted.
+            const encodedStart = encodeBixboNativeText(
+              normalizeBixboText(decodeBixboNativeText(rawNative.slice(0, rawStart))),
+            ).length;
+            const encodedEnd = encodeBixboNativeText(
+              normalizeBixboText(decodeBixboNativeText(rawNative.slice(0, rawEnd))),
+            ).length;
+
+            if (!controlled) setUncontrolledValue(canonical);
+
+            // Crucial on iOS: the DOM textarea itself never keeps a Unicode emoji.
+            // Known BIXBO emoji become one private-use glyph; unknown emoji become
+            // the BIXBO star. The visible layer above renders the real SVG icons.
+            node.value = encoded;
+            try {
+              node.setSelectionRange(encodedStart, encodedEnd);
+            } catch {
+              // Some browser/input states do not expose a mutable text selection.
+            }
+
+            if (onChange) {
+              // Existing form code expects e.target.value to contain the normal
+              // persisted text (including normal emoji values). Expose that only
+              // synchronously to the React handler, then immediately restore the
+              // native-safe glyph string before the browser can paint it.
+              node.value = canonical;
+              onChange(event);
+              node.value = encoded;
+              try {
+                node.setSelectionRange(encodedStart, encodedEnd);
+              } catch {
+                // See note above.
+              }
+            }
           }}
           onScroll={(event) => {
             if (mirrorRef.current) {
@@ -89,13 +118,13 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"tex
           {...props}
         />
 
-        {visibleValue ? (
+        {canonicalValue ? (
           <div
             ref={mirrorRef}
             aria-hidden="true"
             className="pointer-events-none absolute inset-[1px] z-20 overflow-hidden rounded-[calc(0.75rem-1px)] px-3 py-2.5 text-base leading-normal text-foreground whitespace-pre-wrap break-words md:text-sm"
           >
-            <BixboTextareaValue value={visibleValue} />
+            <BixboTextareaValue value={canonicalValue} />
           </div>
         ) : null}
       </div>
