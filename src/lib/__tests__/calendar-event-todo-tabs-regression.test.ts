@@ -17,6 +17,10 @@ describe("calendar event / To Do tabs", () => {
     expect(calendar).toContain('t("No tasks this month")');
   });
 
+  it("keeps the popup reachable when the month has tasks but no calendar events", () => {
+    expect(calendar).toContain("monthEvents.length>0||monthTasks.length>0");
+  });
+
   it("renders task completion with a BIXBO icon rather than a system emoji", () => {
     expect(calendar).toContain('import { Check, Ico } from "@/components/icons/BixboExtraIcons"');
     expect(calendar).toContain('<Check className="h-3 w-3"');
