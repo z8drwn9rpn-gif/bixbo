@@ -20,6 +20,18 @@ jobs:
           ref: fix/auth-session-pattern-semantics
           fetch-depth: 0
       - uses: oven-sh/setup-bun@v2
+      - name: Repair temporary script syntax
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path("scripts/apply-auth-pattern-fix.mjs")
+          s = p.read_text()
+          needle = """.toBe(`${'${PRODUCTION_APP_ORIGIN}'}/auth`);"""
+          replacement = '.toBe(PRODUCTION_APP_ORIGIN + "/auth");'
+          if needle not in s:
+              raise SystemExit("temporary script syntax marker not found")
+          p.write_text(s.replace(needle, replacement))
+          PY
       - name: Apply patch
         run: |
           if ! node scripts/apply-auth-pattern-fix.mjs > /tmp/apply-fix.log 2>&1; then
