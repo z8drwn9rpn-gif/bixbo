@@ -42,11 +42,15 @@ const HIDDEN_HELPER_COPY = new Set([
   "Reproductive health",
   "Pregnancy, postpartum and hormonal status",
   "Daily health goals and habits",
+  "Basic information about you.",
   "Diagnoses, conditions and history.",
   "Reproductive and hormonal status.",
   "Habits that affect your health.",
   "In case of emergency — contact and care team.",
   "Medication schedules are managed from the Medications page.",
+  "This name is shown under BIXBO in the Hi greeting on Home.",
+  "Choose how BIXBO looks on this device.",
+  "profile.language.subtitle",
 
   // Settings subtitles whose heading/control is already self-explanatory.
   "Manage the local copy of your BIXBO data from the same place as backup and sync.",
