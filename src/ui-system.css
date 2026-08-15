@@ -165,6 +165,18 @@ nav :where(.font-medium, .font-semibold, .font-bold, .font-extrabold, .font-blac
 .dark .bixbo-unified-log select { background: color-mix(in srgb, var(--surface) 86%, var(--surface-sunken)); }
 @media (prefers-reduced-motion: reduce) { .bixbo-unified-log *, .bixbo-unified-log *::before, .bixbo-unified-log *::after { scroll-behavior: auto !important; } }
 
+/* Log menu interaction state. This is an explicit component contract, not a
+   DOM-order/Tailwind selector: the modal Sheet owns the body state and BottomNav
+   opts in with data-bixbo-bottom-nav so its Log toggle remains reachable. */
+body[data-bixbo-log-menu-open="true"] [data-bixbo-bottom-nav] {
+  pointer-events: auto;
+  z-index: 60;
+}
+
+body[data-bixbo-log-menu-open="true"] [data-bixbo-bottom-nav] * {
+  pointer-events: auto;
+}
+
 /* SHARED COMPONENT BEHAVIOUR */
 #main-content button,
 #main-content [role="button"] {

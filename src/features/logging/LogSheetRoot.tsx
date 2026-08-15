@@ -349,6 +349,13 @@ export function LogSheet({
     setCat(null);
   };
   const active = cat ?? initial;
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const body = document.body;
+    if (open && !active) body.dataset.bixboLogMenuOpen = "true";
+    else delete body.dataset.bixboLogMenuOpen;
+    return () => { delete body.dataset.bixboLogMenuOpen; };
+  }, [active, open]);
   // Mirror the iOS visible viewport (keyboard + suggestion + accessory bar) into
   // CSS vars while a full-screen log form is open.
   useKeyboardViewport(open && Boolean(active));
@@ -568,14 +575,14 @@ export function LogSheet({
   };
 
   return (
-    <Sheet open={open} modal={Boolean(active)} onOpenChange={(b) => { if (!b) close(); }}>
+    <Sheet open={open} onOpenChange={(b) => { if (!b) close(); }}>
       <SheetContent
         side="bottom"
         overlayClassName={active ? undefined : "!bg-transparent !backdrop-blur-none !transition-none data-[state=open]:!animate-none data-[state=closed]:!animate-none"}
         className={
           (active
             ? `fixed !left-0 !right-0 !bottom-auto !top-[var(--bixbo-viewport-offset,0px)] flex !h-[var(--bixbo-viewport-height,100svh)] !max-h-[var(--bixbo-viewport-height,100svh)] !w-full !max-w-none min-h-0 flex-col overflow-hidden !rounded-none !border-0 bg-background p-0 pt-[env(safe-area-inset-top)] !shadow-none !transition-none !animate-none`
-            : "fixed !inset-0 !left-0 !right-0 !top-0 !bottom-0 !pointer-events-none flex !h-[100dvh] !max-h-none !w-full !max-w-none min-h-0 flex-col overflow-hidden !rounded-none !border-0 !bg-transparent !p-0 !shadow-none !transition-none data-[state=open]:!animate-none data-[state=closed]:!animate-none") + " [&>button.absolute]:hidden"
+            : "fixed !inset-0 !left-0 !right-0 !top-0 !bottom-0 flex !h-[100dvh] !max-h-none !w-full !max-w-none min-h-0 flex-col overflow-hidden !rounded-none !border-0 !bg-transparent !p-0 !shadow-none !transition-none data-[state=open]:!animate-none data-[state=closed]:!animate-none") + " [&>button.absolute]:hidden"
         }
       >
         {!active ? (
