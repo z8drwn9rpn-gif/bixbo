@@ -50,4 +50,25 @@ describe("UI layout architecture regressions", () => {
     expect(shell).not.toMatch(/import "@\/.*\.css"/);
     expect(styles).toContain('@import "./ui-system.css";');
   });
+
+  it("keeps calendar visuals on semantic component hooks instead of DOM-shape patches", () => {
+    const calendar = readFileSync("src/components/MonthCalendar.tsx", "utf8");
+    const home = readFileSync("src/features/home/HomePage.tsx", "utf8");
+    const css = readFileSync("src/calendar-system.css", "utf8");
+    const root = readFileSync("src/routes/__root.tsx", "utf8");
+
+    expect(calendar).toContain("data-bixbo-calendar-day");
+    expect(calendar).toContain("bixbo-calendar-day-disc");
+    expect(calendar).toContain("data-bixbo-period-level");
+    expect(calendar).toContain('data-bixbo-today={isToday?"true":undefined}');
+    expect(home).not.toContain("calendarRef");
+    expect(home).not.toContain('querySelectorAll<HTMLButtonElement>("button.rounded-xl")');
+    expect(css).not.toContain("nth-child");
+    expect(css).not.toContain('[style*=');
+    expect(css).not.toContain("> div > div");
+    expect(root).toContain('import calendarSystemCss from "../calendar-system.css?url";');
+    expect(root).not.toContain("calendar-3d.css");
+    expect(root).not.toContain("calendar-period-fix.css");
+  });
+
 });

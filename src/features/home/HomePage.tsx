@@ -68,7 +68,6 @@ export function HomePage() {
   const [episodeEdit, setEpisodeEdit] = useState<EpisodeEditTarget | null>(null);
   const monthSummaryTimer = useRef<number | null>(null);
   const monthSummaryPointerStart = useRef<{ x: number; y: number } | null>(null);
-  const calendarRef = useRef<HTMLDivElement | null>(null);
 
   const openEdit = (cat: string, entry: unknown) => {
     if (cat === "tetany") {
@@ -91,43 +90,6 @@ export function HomePage() {
     setSelected(todayKey());
   }, []);
 
-  useEffect(() => {
-    const root = calendarRef.current;
-    if (!hydrated || !monthAnchor || !root) return;
-
-    const clearTodayMarker = () => {
-      root.querySelectorAll<HTMLElement>('[data-bixbo-today="true"]').forEach((element) => {
-        element.removeAttribute("data-bixbo-today");
-        element.removeAttribute("aria-current");
-      });
-    };
-
-    clearTodayMarker();
-
-    const today = fromKey(todayKey());
-    if (
-      monthAnchor.getFullYear() !== today.getFullYear() ||
-      monthAnchor.getMonth() !== today.getMonth()
-    ) {
-      return clearTodayMarker;
-    }
-
-    const dayNumber = String(today.getDate());
-    const todayButton = Array.from(
-      root.querySelectorAll<HTMLButtonElement>("button.rounded-xl"),
-    ).find(
-      (button) =>
-        !button.classList.contains("opacity-30") &&
-        button.textContent?.trim() === dayNumber,
-    );
-
-    if (todayButton) {
-      todayButton.dataset.bixboToday = "true";
-      todayButton.setAttribute("aria-current", "date");
-    }
-
-    return clearTodayMarker;
-  }, [hydrated, monthAnchor, selected, view.dayLogs]);
 
   useEffect(() => {
     if (maleMode) {
@@ -188,7 +150,7 @@ export function HomePage() {
       <div className="flex min-w-0 flex-col">
         <div style={{ order: layoutOrder(view, "home", "calendar", 10) }}>
           <div className="px-5 pt-1 lg:px-1"><div className="flex items-center justify-between"><button type="button" onClick={() => moveCalendarMonth(-1)} aria-label={t("Previous month")} className="rounded-full p-1.5 hover:bg-tint"><ChevronLeft className="h-5 w-5" /></button><h2 data-bixbo-display-title className="select-none text-[29px] font-black tracking-[-0.045em] leading-none text-foreground sm:text-[31px] lg:text-[33px]" style={{ fontFamily: roundedDisplayFont, WebkitTextStroke: "0", textShadow: roundedDisplayShadow, WebkitTouchCallout: "none" }} suppressHydrationWarning onPointerDown={(event) => { clearMonthSummaryTimer(); monthSummaryPointerStart.current = { x: event.clientX, y: event.clientY }; monthSummaryTimer.current = window.setTimeout(openMonthSummary, 520); }} onPointerMove={(event) => { const start = monthSummaryPointerStart.current; if (!start) return; if (Math.abs(event.clientX - start.x) > 8 || Math.abs(event.clientY - start.y) > 8) { clearMonthSummaryTimer(); monthSummaryPointerStart.current = null; } }} onPointerUp={() => { clearMonthSummaryTimer(); monthSummaryPointerStart.current = null; }} onPointerLeave={() => { clearMonthSummaryTimer(); monthSummaryPointerStart.current = null; }} onPointerCancel={() => { clearMonthSummaryTimer(); monthSummaryPointerStart.current = null; }} onContextMenu={(event) => event.preventDefault()}>{hydrated ? monthLabel(monthAnchor) : ""}</h2><button type="button" onClick={() => moveCalendarMonth(1)} aria-label={t("Next month")} className="rounded-full p-1.5 hover:bg-tint"><ChevronRight className="h-5 w-5" /></button></div></div>
-          <div ref={calendarRef} className="mt-1 lg:order-1 lg:overflow-hidden lg:rounded-[1.75rem] lg:bg-surface/28 lg:px-1 lg:pb-1 lg:ring-1 lg:ring-border/35" style={{ "--period-medium": "#7467D8" } as CSSProperties}>{hydrated ? <MonthCalendar month={monthAnchor} data={view} selected={selected} onSelect={setSelected} onSwipeMonth={moveCalendarMonth} /> : <div className="h-[360px]" />}</div>
+          <div className="mt-1 lg:order-1 lg:overflow-hidden lg:rounded-[1.75rem] lg:bg-surface/28 lg:px-1 lg:pb-1 lg:ring-1 lg:ring-border/35" style={{ "--period-medium": "#7467D8" } as CSSProperties}>{hydrated ? <MonthCalendar month={monthAnchor} data={view} selected={selected} onSelect={setSelected} onSwipeMonth={moveCalendarMonth} /> : <div className="h-[360px]" />}</div>
         </div>
 
         {!maleMode && isAdminOwnerAccount() && <div style={{ order: layoutOrder(view, "home", "birthControl", 20) }}><BirthControlSummaryCard data={view} dateKey={selected} onOpen={() => { setHakAnchor(fromKey(selected)); setHakOpen(true); }} /></div>}
