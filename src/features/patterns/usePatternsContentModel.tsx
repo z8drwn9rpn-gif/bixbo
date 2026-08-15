@@ -1304,6 +1304,7 @@ const strongestAssociations = (() => {
     const results: Array<{
       trigger: string;
       outcome: string;
+      outcomeId: string;
       difference: number;
       withCount: number;
       withoutCount: number;
@@ -1338,6 +1339,7 @@ const strongestAssociations = (() => {
         results.push({
           trigger: trigger.label,
           outcome: outcome.label,
+          outcomeId: outcome.id,
           difference,
           withCount: withDays.length,
           withoutCount: withoutDays.length,

@@ -1,6 +1,3 @@
-// BIXBO account OAuth adapter backed directly by the owned Supabase project.
-// App sign-in must create the same Supabase session used by cloud sync,
-// Couple sharing and remote push notifications.
 import { supabase } from "../supabase/client";
 
 type SignInOptions = {
@@ -8,56 +5,80 @@ type SignInOptions = {
   extraParams?: Record<string, string>;
 };
 
-type OAuthProvider = "google" | "apple";
+type OAuthProvider = "google";
 
 export const PRODUCTION_APP_ORIGIN = "https://bixbo.z8drwn9rpn.workers.dev";
 
-/** Pure redirect policy so the production/preview contract can be regression-tested. */
 export function oauthReturnUrlForLocation(hostname: string, origin: string): string {
   const normalizedHost = hostname.trim().toLowerCase();
   const isLocal = normalizedHost === "localhost" || normalizedHost === "127.0.0.1" || normalizedHost === "[::1]";
   const isLovablePreview = normalizedHost === "bixbo.lovable.app" || normalizedHost.endsWith(".lovable.app");
-
-  // Production auth must never fall back to localhost or an editor/preview host.
   if (isLocal || isLovablePreview) return PRODUCTION_APP_ORIGIN;
   return origin || PRODUCTION_APP_ORIGIN;
 }
 
-function defaultOAuthReturnUrl(): string {
+function defaultOAuthOrigin(): string {
   if (typeof window === "undefined") return PRODUCTION_APP_ORIGIN;
   return oauthReturnUrlForLocation(window.location.hostname, window.location.origin);
 }
 
-export function safeOAuthRedirectUrl(candidate?: string): string {
-  if (!candidate) return defaultOAuthReturnUrl();
+function safeInternalNext(next?: string): string | undefined {
+  if (!next) return undefined;
+  const value = next.trim();
+  const hasControl = [...value].some((char) => {
+    const code = char.charCodeAt(0);
+    return code <= 31 || code === 127;
+  });
+  if (!value.startsWith("/") || value.startsWith("//") || value.includes("\\") || hasControl) return undefined;
   try {
-    const parsed = new URL(candidate, defaultOAuthReturnUrl());
-    const safeOrigin = oauthReturnUrlForLocation(parsed.hostname, parsed.origin);
-    if (safeOrigin !== parsed.origin) return safeOrigin;
-    return parsed.toString();
+    const base = new URL("https://bixbo.invalid");
+    const parsed = new URL(value, base);
+    if (parsed.origin !== base.origin) return undefined;
+    return parsed.pathname + parsed.search + parsed.hash;
   } catch {
-    return defaultOAuthReturnUrl();
+    return undefined;
+  }
+}
+
+export function oauthCallbackUrl(next?: string): string {
+  const url = new URL("/auth", defaultOAuthOrigin());
+  const safeNext = safeInternalNext(next);
+  if (safeNext) url.searchParams.set("next", safeNext);
+  return url.toString();
+}
+
+export function safeOAuthRedirectUrl(candidate?: string): string {
+  const fallbackOrigin = defaultOAuthOrigin();
+  if (!candidate) return oauthCallbackUrl();
+
+  try {
+    const parsed = new URL(candidate, fallbackOrigin);
+    const allowedOrigins = new Set([fallbackOrigin, PRODUCTION_APP_ORIGIN]);
+    if (!allowedOrigins.has(parsed.origin)) return oauthCallbackUrl();
+
+    const safeOrigin = oauthReturnUrlForLocation(parsed.hostname, parsed.origin);
+    const target = new URL(parsed.pathname || "/auth", safeOrigin);
+    target.search = parsed.search;
+    target.hash = parsed.hash;
+    return target.toString();
+  } catch {
+    return oauthCallbackUrl();
   }
 }
 
 export const accountAuth = {
   signInWithOAuth: async (provider: OAuthProvider, opts?: SignInOptions) => {
     const queryParams: Record<string, string> = { ...(opts?.extraParams ?? {}) };
-    if (provider === "google" && !queryParams.prompt) queryParams.prompt = "select_account";
+    if (!queryParams.prompt) queryParams.prompt = "select_account";
 
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: safeOAuthRedirectUrl(opts?.redirect_uri),
+        redirectTo: safeOAuthRedirectUrl(opts?.redirect_uri ?? oauthCallbackUrl()),
         queryParams,
-        skipBrowserRedirect: true,
       },
     });
 
-    if (error) return { error, redirected: false };
-    if (!data.url) return { error: new Error("OAuth provider did not return a sign-in URL."), redirected: false };
-
-    window.location.assign(data.url);
-    return { error: null, redirected: true };
+    return { error, redirected: !error };
   },
 };

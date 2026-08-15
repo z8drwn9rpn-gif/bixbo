@@ -56,6 +56,7 @@ import {
 } from "@/lib/patterns";
 import { TrText, strictAdminNumericValue, latestWeightForDay, PATTERN_TABS, METRIC_COLORS, PHASE_COLORS, Card, Empty, formatMetricValue, clampPercent, percentageChange, formatSignedPercent, phaseLabelByValue, PhaseBarChart, monthLabelFromPrefix, ComparisonMetric, MetricColumn, SummaryRow, ConfidenceBadge, SummaryPanel, PatternTabs, AnalysisRangeSelector, CollapsibleSection, TriggerResult } from "./shared";
 import type { MetricColor, PhaseBar, ComparisonMetricProps, TreatmentMetric, SelectOption, VitalEntry, DayLogWithVitals, PatternTab, AnalysisRange, TreatmentKind, TreatmentResult, ArchivedTreatment, ConfidenceLevel, SummaryItem } from "./shared";
+import { changeToneFromDelta, changeToneTextClass, outcomeChangeDirection } from "@/lib/patternChangeSemantics";
 import type { PatternsContentModel } from "./usePatternsContentModel";
 
 export function PatternsContentViewPart2({ model }: { model: PatternsContentModel }) {
@@ -180,8 +181,12 @@ export function PatternsContentViewPart2({ model }: { model: PatternsContentMode
                             {association.trigger} → {association.outcome}
                           </p>
                           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                            The outcome was {Math.abs(association.difference).toFixed(0)} percentage points{" "}
-                            {association.difference > 0 ? "more common" : "less common"} on days with this trigger.
+                            The outcome was{" "}
+                            <span className={changeToneTextClass(changeToneFromDelta(association.difference, outcomeChangeDirection(association.outcomeId)))}>
+                              {Math.abs(association.difference).toFixed(0)} percentage points{" "}
+                              {association.difference > 0 ? "more common" : "less common"}
+                            </span>{" "}
+                            on days with this trigger.
                           </p>
                           <p className="mt-1 text-[10px] text-muted-foreground">
                             Based on {association.withCount} days with and {association.withoutCount} days without the
@@ -277,15 +282,7 @@ export function PatternsContentViewPart2({ model }: { model: PatternsContentMode
 
                   {triggerDifference != null && (
                     <div
-                      className="mt-3 flex items-center justify-center gap-1.5 rounded-xl bg-background/60 px-3 py-2 text-xs font-semibold"
-                      style={{
-                        color:
-                          triggerDifference > 0
-                            ? CHART_COLORS.headache
-                            : triggerDifference < 0
-                              ? CHART_COLORS.workout
-                              : "var(--muted-foreground)",
-                      }}
+                      className={`mt-3 flex items-center justify-center gap-1.5 rounded-xl bg-background/60 px-3 py-2 text-xs ${changeToneTextClass(changeToneFromDelta(triggerDifference, outcomeChangeDirection(selectedOutcome)))}`}
                     >
                       {triggerDifference > 0 ? (
                         <TrendingUp className="h-4 w-4" />
@@ -316,12 +313,7 @@ export function PatternsContentViewPart2({ model }: { model: PatternsContentMode
                         : triggerDifference === 0
                           ? "No measured difference"
                           : `${Math.abs(triggerDifference).toFixed(0)} pp ${triggerDifference > 0 ? "higher" : "lower"} with trigger`,
-                    tone:
-                      triggerDifference != null && triggerDifference > 0
-                        ? "bad"
-                        : triggerDifference != null && triggerDifference < 0
-                          ? "good"
-                          : "neutral",
+                    tone: changeToneFromDelta(triggerDifference, outcomeChangeDirection(selectedOutcome)),
                   },
                   { label: "Days with trigger", value: `${daysWithTrigger.length}` },
                   { label: "Days without trigger", value: `${daysWithoutTrigger.length}` },
@@ -353,11 +345,7 @@ export function PatternsContentViewPart2({ model }: { model: PatternsContentMode
                           trigger
                         </p>
                         <p
-                          className={`mt-2 text-sm font-bold ${
-                            association.difference > 0
-                              ? "text-rose-600 dark:text-rose-300"
-                              : "text-emerald-700 dark:text-emerald-300"
-                          }`}
+                          className={`mt-2 text-sm ${changeToneTextClass(changeToneFromDelta(association.difference, outcomeChangeDirection(association.outcomeId)))}`}
                         >
                           {Math.abs(association.difference).toFixed(0)} percentage points{" "}
                           {association.difference > 0 ? "higher" : "lower"}

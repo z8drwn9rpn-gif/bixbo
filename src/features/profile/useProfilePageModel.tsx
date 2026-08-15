@@ -47,7 +47,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
-import { accountAuth } from "@/integrations/auth/account";
+import { accountAuth, oauthCallbackUrl } from "@/integrations/auth/account";
 import { createCloudBackup } from "@/lib/cloudSync";
 import { useI18n } from "@/hooks/useI18n";
 import type { AppLanguage } from "@/lib/i18n";
@@ -70,7 +70,7 @@ const [editing, setEditing] = useState(false);
 
 const [healthView, setHealthView] = useState<HealthView>("hub");
 
-const [accountAuthBusy, setAccountAuthBusy] = useState<"google" | "apple" | null>(null);
+const [accountAuthBusy, setAccountAuthBusy] = useState<"google" | null>(null);
 
 const [accountAuthError, setAccountAuthError] = useState<string | null>(null);
 
@@ -257,12 +257,12 @@ const exportJson = () => {
     URL.revokeObjectURL(url);
   };
 
-const startAccountOAuth = async (provider: "google" | "apple") => {
+const startAccountOAuth = async (provider: "google") => {
     setAccountAuthBusy(provider);
     setAccountAuthError(null);
 
     try {
-      const result = await accountAuth.signInWithOAuth(provider);
+      const result = await accountAuth.signInWithOAuth(provider, { redirect_uri: oauthCallbackUrl("/profile") });
 
       if (result.error) throw result.error;
       if (result.redirected) return;

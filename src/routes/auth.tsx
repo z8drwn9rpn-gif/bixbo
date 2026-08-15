@@ -100,14 +100,14 @@ function AuthPage() {
     finally { setBusy(false); }
   };
 
-  const startOAuth = async (provider: "google" | "apple") => {
+  const startOAuth = async (provider: "google") => {
     setBusy(true); setMsg(null);
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
           redirectTo: authReturnUrl(),
-          ...(provider === "google" ? { queryParams: { prompt: "select_account" } } : {}),
+          queryParams: { prompt: "select_account" },
         },
       });
       if (error) throw error;
@@ -142,7 +142,6 @@ function AuthPage() {
       <div className="flex items-center gap-3 text-xs text-muted-foreground"><span className="h-px flex-1 bg-border" /><span>{t("or")}</span><span className="h-px flex-1 bg-border" /></div>
       <div className="space-y-2">
         <Button variant="outline" className="min-h-11 w-full" onClick={() => void startOAuth("google")} disabled={busy}>{t("Continue with Google")}</Button>
-        <Button variant="outline" className="min-h-11 w-full" onClick={() => void startOAuth("apple")} disabled={busy}>{t("Continue with Apple / iCloud")}</Button>
       </div>
       {msg && <p role="status" aria-live="polite" className="rounded-2xl border border-destructive/25 bg-destructive/8 px-3 py-2.5 text-sm leading-relaxed text-destructive">{msg}</p>}
       <div className="text-center"><Link to="/" className="inline-flex min-h-11 items-center justify-center rounded-xl px-3 text-xs font-medium text-muted-foreground underline underline-offset-4 hover:text-foreground">{t("Back to app")}</Link></div>
