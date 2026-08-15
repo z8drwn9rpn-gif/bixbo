@@ -1,0 +1,27 @@
+name: Theme CSS refactor
+
+on:
+  push:
+    branches:
+      - refactor/theme-css-architecture
+
+permissions:
+  contents: write
+
+jobs:
+  refactor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: refactor/theme-css-architecture
+          fetch-depth: 0
+      - name: Refactor theme styling
+        run: python .github/scripts/theme_css_refactor.py
+      - name: Commit refactor
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Consolidate light and dark theme ownership"
+          git push origin HEAD:refactor/theme-css-architecture
