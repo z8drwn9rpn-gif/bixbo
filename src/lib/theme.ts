@@ -9,14 +9,13 @@ const DARK_THEME_COLOR = "#171A14";
 function syncBrowserChrome(isDark: boolean) {
   const root = document.documentElement;
 
-  // BIXBO paints both light and dark themes itself. Keeping the document on
-  // `only light` opts Chromium-based browsers (including Samsung Internet)
-  // out of algorithmic Auto Dark recolouring, which would otherwise darken
-  // or override BIXBO's explicitly selected palette.
-  root.style.colorScheme = "only light";
+  // BIXBO provides both palettes itself. Advertise both schemes so browsers
+  // such as Samsung Internet can prefer the website theme over Force Dark,
+  // while the CSS color-scheme property reflects the mode BIXBO actually chose.
+  root.style.colorScheme = isDark ? "dark" : "light";
 
   const colorSchemeMeta = document.querySelector<HTMLMetaElement>('meta[name="color-scheme"]');
-  colorSchemeMeta?.setAttribute("content", "only light");
+  colorSchemeMeta?.setAttribute("content", "light dark");
 
   const themeColorMeta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
   themeColorMeta?.setAttribute("content", isDark ? DARK_THEME_COLOR : LIGHT_THEME_COLOR);
