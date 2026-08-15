@@ -13,9 +13,10 @@
     "test": "bun test src/lib/__tests__",
     "architecture": "node scripts/check-source-size.mjs",
     "audit:ui-emoji": "node scripts/audit-ui-emoji.mjs",
+    "bundle:check": "node scripts/check-bundle-size.mjs",
     "smoke:ssr": "node scripts/ssr-smoke.mjs",
     "e2e": "playwright test",
-    "check": "bun run architecture && bun run audit:ui-emoji && bun run typecheck && bun run lint && bun run test && bun run build && bun run smoke:ssr && bun run e2e"
+    "check": "bun run architecture && bun run audit:ui-emoji && bun run typecheck && bun run lint && bun run test && bun run build && bun run bundle:check && bun run smoke:ssr && bun run e2e"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
