@@ -40,7 +40,7 @@ describe("UI layout architecture regressions", () => {
     expect(log).toContain("data-bixbo-log-menu");
     expect(log).toContain('body.dataset.bixboLogMenuOpen = "true"');
     expect(log).not.toContain('modal={Boolean(active)}');
-    expect(log).toContain("radiusX");
+    expect(log).toContain("const radiusX = 112;");
     expect(nav).toContain("data-bixbo-bottom-nav");
     expect(notes).toContain("[&>span]:inline");
     expect(css).toContain('body[data-bixbo-log-menu-open="true"] [data-bixbo-bottom-nav]');
