@@ -72,6 +72,9 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"tex
     const controlled = value !== undefined;
     const canonicalValue = normalizeBixboText(controlled ? asText(value) : uncontrolledValue);
     const nativeValue = encodeBixboNativeText(canonicalValue);
+    const portalHost = pickerOpen
+      ? textareaRef.current?.closest<HTMLElement>("[role=\"dialog\"]") ?? null
+      : null;
 
     const rememberCaret = React.useCallback(() => {
       const node = textareaRef.current;
@@ -85,8 +88,15 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"tex
       const node = textareaRef.current;
       if (!node || disabled) return;
       rememberCaret();
+
+      // Dismiss the native iOS keyboard, then keep the edited field visible
+      // above the BIXBO bottom picker instead of letting the panel cover it.
+      node.blur();
+      node.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
       setPickerOpen(true);
-      requestAnimationFrame(() => node.blur());
+      window.setTimeout(() => {
+        if (node.isConnected) node.scrollIntoView({ block: "center", inline: "nearest", behavior: "auto" });
+      }, 120);
     }, [disabled, rememberCaret]);
 
     const chooseIcon = React.useCallback((emoji: string) => {
@@ -103,8 +113,6 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"tex
       const nextCaret = start + insertion.length;
       caretRef.current = { start: nextCaret, end: nextCaret };
 
-      // Bypass React's controlled-value tracker so the native input event is
-      // observed as a real change and the parent form state is updated.
       setNativeTextareaValue(node, nextCanonical);
       node.dispatchEvent(
         new InputEvent("input", {
@@ -192,6 +200,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"tex
             "disabled:cursor-not-allowed disabled:bg-muted/50 disabled:opacity-50",
             "aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/25",
             "resize-y md:text-sm",
+            pickerOpen && "border-ring ring-2 ring-ring/40",
             className,
           )}
           {...props}
@@ -233,6 +242,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"tex
           open={pickerOpen}
           onClose={() => setPickerOpen(false)}
           onChoose={chooseIcon}
+          portalHost={portalHost}
         />
       </div>
     );
