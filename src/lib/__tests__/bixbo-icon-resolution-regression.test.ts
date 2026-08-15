@@ -7,8 +7,10 @@ describe("BIXBO icon resolution", () => {
   it("resolves exact BIXBO drawings before broad keyboard category fallbacks", () => {
     const source = read("src/components/icons/BixboIcon.tsx");
     expect(source).toContain('import { appEmojiIcon } from "./BixboAppEmojiIcons"');
+    expect(source).toContain('import { pickerEmojiIcon } from "./BixboPickerEmojiIcons"');
     expect(source).toContain('import { specificEmojiIcon } from "./BixboSpecificEmojiIcons"');
     expect(source.indexOf("appEmojiIcon(emoji)")).toBeLessThan(source.indexOf("keyboardEmojiIcon(emoji)"));
+    expect(source.indexOf("pickerEmojiIcon(emoji)")).toBeLessThan(source.indexOf("keyboardEmojiIcon(emoji)"));
     expect(source.indexOf("specificEmojiIcon(emoji)")).toBeLessThan(source.indexOf("keyboardEmojiIcon(emoji)"));
   });
 
@@ -25,6 +27,18 @@ describe("BIXBO icon resolution", () => {
       "😀", "🙂", "😊", "😌", "😐", "😢", "😠", "😴", "😵‍💫", "🤢", "🤕", "🥵", "🥶",
       "💪", "💦", "🌩️", "🏃", "🌙", "💭", "📱", "☀️", "💤", "🐢", "🚽", "🦵", "🌡️",
       "⏰", "🛌", "🧘", "⚡", "🌀", "🧊", "♨️", "⭐", "🥑", "🌶️",
+    ]) {
+      expect(source).toContain(`"${emoji}"`);
+    }
+  });
+
+  it("keeps distinct BIXBO picker drawings instead of broad category stand-ins", () => {
+    const source = read("src/components/icons/BixboPickerEmojiIcons.tsx");
+    for (const emoji of [
+      "🩷", "🧡", "💛", "💚", "💙", "💜", "💔", "👩", "👨", "👶", "👵",
+      "🐨", "🐯", "🦁", "🐸", "🐘", "🌴", "🌵", "🪴", "🌈", "🚕", "✈️", "🚀",
+      "🚁", "🏠", "🏥", "🏨", "🏫", "💻", "📷", "🎥", "🎵", "🎧", "📖", "🔒",
+      "🔑", "💰", "🎁", "🎉", "🏆", "🥇",
     ]) {
       expect(source).toContain(`"${emoji}"`);
     }
