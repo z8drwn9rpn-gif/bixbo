@@ -7,15 +7,18 @@ const textareaSource = fs.readFileSync("src/components/ui/textarea.tsx", "utf8")
 const themeSource = fs.readFileSync("src/lib/theme.ts", "utf8");
 
 describe("mobile touch and text editing regressions", () => {
-  it("locks browser zoom globally while limiting the JS blocker to multi-touch pinch gestures", () => {
+  it("keeps native page zoom enabled and avoids iOS automatic focus zoom", () => {
     expect(rootSource).toContain(
-      'content: "width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover"',
+      'content: "width=device-width, initial-scale=1, viewport-fit=cover"',
     );
-    expect(rootSource).toContain("if (event.touches.length > 1) event.preventDefault();");
-    expect(rootSource).toContain('document.addEventListener("touchmove", preventPinchTouch, { passive: false })');
-    expect(rootSource).toContain('document.addEventListener("gesturestart", preventGesture, { passive: false })');
-    expect(rootSource).toContain('document.addEventListener("gesturechange", preventGesture, { passive: false })');
+    expect(rootSource).not.toContain("maximum-scale=1");
+    expect(rootSource).not.toContain("minimum-scale=1");
+    expect(rootSource).not.toContain("user-scalable=no");
+    expect(rootSource).not.toContain("preventPinchTouch");
+    expect(rootSource).not.toContain("preventGesture");
+    expect(rootSource).not.toContain('document.addEventListener("gesturestart"');
     expect(touchCss).toContain("touch-action: pan-x pan-y");
+    expect(touchCss).toMatch(/textarea,[\s\S]*select \{[\s\S]*font-size:\s*16px\s*!important/);
   });
 
   it("keeps BIXBO browser chrome and Samsung backing canvas explicit before paint", () => {
