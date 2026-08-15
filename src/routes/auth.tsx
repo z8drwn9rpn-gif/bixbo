@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,9 +24,31 @@ export function safeInternalNext(value: unknown): string {
   }
 }
 
+function safeOAuthSearchText(value: unknown): string {
+  if (typeof value !== "string") return "";
+  const clean = [...value]
+    .map((char) => {
+      const code = char.charCodeAt(0);
+      return code <= 31 || code === 127 ? " " : char;
+    })
+    .join("")
+    .trim();
+  return clean.slice(0, 500);
+}
+
+type AuthSearch = {
+  next: string;
+  oauthError?: string;
+  oauthErrorCode?: string;
+  oauthErrorDescription?: string;
+};
+
 export const Route = createFileRoute("/auth")({
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (search: Record<string, unknown>): AuthSearch => ({
     next: safeInternalNext(search.next),
+    oauthError: safeOAuthSearchText(search.error) || undefined,
+    oauthErrorCode: safeOAuthSearchText(search.error_code) || undefined,
+    oauthErrorDescription: safeOAuthSearchText(search.error_description) || undefined,
   }),
   head: () => ({ meta: [
     { title: "BIXBO — Sign in" },
@@ -37,14 +59,28 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const { next } = Route.useSearch();
+  const { next, oauthError, oauthErrorCode, oauthErrorDescription } = Route.useSearch();
   const { t } = useI18n();
   const [mode, setMode] = useState<"in" | "up">("in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
+
+  const callbackErrorMessage = useMemo(() => {
+    const combined = `${oauthError ?? ""} ${oauthErrorCode ?? ""} ${oauthErrorDescription ?? ""}`.toLowerCase();
+    if (!combined.trim()) return null;
+    if (combined.includes("invalid_client") || combined.includes("client secret") || combined.includes("exchange external code")) {
+      return t("Google sign-in is temporarily unavailable because its OAuth client configuration was rejected. Please try again after the Google sign-in configuration is corrected.");
+    }
+    return oauthErrorDescription || oauthError || t("Google sign-in did not complete. Please try again.");
+  }, [oauthError, oauthErrorCode, oauthErrorDescription, t]);
+
+  const [msg, setMsg] = useState<string | null>(callbackErrorMessage);
+
+  useEffect(() => {
+    if (callbackErrorMessage) setMsg(callbackErrorMessage);
+  }, [callbackErrorMessage]);
 
   const finishAuth = useCallback(() => {
     if (next) {
