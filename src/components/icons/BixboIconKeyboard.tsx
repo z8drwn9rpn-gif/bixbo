@@ -126,11 +126,21 @@ export function BixboIconKeyboard() {
 
       const buttonSize = 44;
       const inset = 8;
-      const maxLeft = Math.max(inset, window.innerWidth - buttonSize - inset);
-      const top = rect.top + window.scrollY + inset;
+      const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
+      const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+
+      if (rect.bottom < 0 || rect.top > viewportHeight || rect.right < 0 || rect.left > viewportWidth) {
+        setTriggerPosition(null);
+        return;
+      }
+
+      // The root keyboard layer is fixed to the viewport, so use viewport
+      // coordinates directly. This keeps the sparkle attached to the active
+      // text field even while the iOS keyboard or the log scroll container moves.
+      const top = Math.min(Math.max(rect.top + inset, inset), Math.max(inset, viewportHeight - buttonSize - inset));
       const left = Math.min(
-        Math.max(rect.right + window.scrollX - buttonSize - inset, inset),
-        maxLeft + window.scrollX,
+        Math.max(rect.right - buttonSize - inset, inset),
+        Math.max(inset, viewportWidth - buttonSize - inset),
       );
 
       setTriggerPosition({ top, left });
