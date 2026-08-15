@@ -1,5 +1,5 @@
 /* BIXBO mobile / PWA touch stability
-   Keep the app at a fixed visual scale while preserving native single-touch text editing. */
+   Preserve native iOS viewport/zoom behaviour while preventing accidental focus zoom. */
 
 html,
 body,
@@ -9,7 +9,8 @@ body,
   touch-action: pan-x pan-y;
 }
 
-/* iOS Safari auto-zooms focused controls below 16px. Keep editable controls at 16px on touch devices. */
+/* iOS Safari auto-zooms focused controls below 16px. Keeping editable controls
+   at 16px avoids that focus zoom without disabling the user's page zoom. */
 @media (pointer: coarse) and (max-width: 900px) {
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
   textarea,
@@ -33,8 +34,7 @@ select {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Editable controls keep native iOS caret/selection behavior. The ancestor zoom lock
-   still blocks page pinch zoom, but one-finger cursor placement and selection remain native. */
+/* Editable controls keep native iOS caret, selection and one-finger editing. */
 textarea,
 input:not([type="range"]),
 [contenteditable="true"] {
@@ -60,7 +60,7 @@ select {
   max-width: 100%;
 }
 
-/* Recharts and other interactive visualizations stay single-scale and keep vertical page scrolling. */
+/* Recharts and other interactive visualizations keep vertical page scrolling. */
 .recharts-wrapper,
 .recharts-surface,
 [data-bixbo-chart],
@@ -94,9 +94,8 @@ html[data-theme="dark"] body {
 /* ---------------------------------------------------------------------------
    iOS keyboard viewport (see src/hooks/useKeyboardViewport.ts)
 
-   iOS does not resize the layout viewport for the keyboard, its suggestion row
-   or native accessory bar. The hook mirrors window.visualViewport into these
-   variables; the fallback keeps existing behaviour elsewhere.
+   The hook mirrors window.visualViewport into these variables but never forces
+   document or inner-form scroll while iOS is focusing an editable control.
 --------------------------------------------------------------------------- */
 :root {
   --bixbo-viewport-height: 100svh;
@@ -104,32 +103,32 @@ html[data-theme="dark"] body {
   --bixbo-keyboard-inset: 0px;
 }
 
-/* Keep the focused field comfortably inside the log's own scroll area. */
+/* Keep the active sheet as its own paint/stacking surface and prevent scroll
+   chaining into Home while the native keyboard is animating. */
 [data-bixbo-log-surface] {
+  isolation: isolate;
   scroll-padding-block-end: 128px;
   scroll-padding-block-start: 16px;
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
 }
 
-/* A full-screen log freezes the document in JS at its current scroll position.
-   These rules are the CSS half of that lock: no rubber-band/scroll chaining can
-   leak into Home/Day Overview while an input is focused. */
+/* A full-screen log locks only document overflow; the body is never converted
+   to a fixed layer, which avoids iOS VisualViewport compositor jumps. */
 html[data-bixbo-log-form-open],
 html[data-bixbo-log-form-open] body {
   overscroll-behavior: none;
 }
 
-/* While the keyboard is up, the background page must not show through or push
-   against the active full-screen log sheet. */
+/* While the keyboard is up, the background page must not scroll against the
+   active full-screen log sheet. */
 html[data-bixbo-keyboard-open] body {
   overflow: hidden;
 }
 
 /* BottomNav is outside the Radix sheet portal. Remove it from painting for the
-   whole lifetime of an active log form, not only after the keyboard finishes
-   opening. This prevents iOS from relocating a fixed nav into the visual
-   viewport and leaving it stuck in the middle of Day Overview. */
+   whole lifetime of an active log form so iOS cannot relocate it into the
+   visual viewport during keyboard animation. */
 html[data-bixbo-log-form-open] nav[aria-label="Primary navigation"],
 html[data-bixbo-keyboard-open] nav[aria-label="Primary navigation"] {
   display: none !important;
