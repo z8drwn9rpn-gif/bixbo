@@ -4,24 +4,22 @@ import path from "node:path";
 const root = path.resolve("src");
 const DEFAULT_LIMIT = 45_000;
 
-// Existing high-churn modules are allowed a frozen ceiling while they are
-// incrementally split. New modules must stay below the default. Notes are
-// intentionally excluded from this audit pass and will get their own refactor.
+// Existing high-churn modules are allowed a tightly frozen ceiling while they
+// are incrementally split. New modules — including Notes routes — must stay
+// below the default limit. These ceilings should only move downward over time.
 const LEGACY_LIMITS = new Map([
-  ["src/components/icons/BixboIcons.tsx", 75_000],
-  ["src/components/home/DayOverview.tsx", 62_000],
-  ["src/components/home/BirthControlCard.tsx", 53_000],
-  ["src/features/logging/PainWizard.tsx", 53_000],
-  ["src/features/patterns/usePatternsContentModel.tsx", 50_000],
-  ["src/features/patterns/PatternsContentViewPart1.tsx", 50_000],
-  ["src/components/QuickTags.tsx", 50_000],
+  ["src/components/icons/BixboIcons.tsx", 72_000],
+  ["src/components/home/DayOverview.tsx", 61_500],
+  ["src/components/home/BirthControlCard.tsx", 51_500],
+  ["src/features/logging/PainWizard.tsx", 51_000],
+  ["src/features/patterns/usePatternsContentModel.tsx", 47_500],
+  ["src/features/patterns/PatternsContentViewPart1.tsx", 47_500],
+  ["src/components/QuickTags.tsx", 47_500],
 ]);
 
-const EXCLUDED = new Set([
-  "src/routeTree.gen.ts",
-  "src/routes/notes.tsx",
-  "src/routes/notes-editor.tsx",
-]);
+// Generated route output is intentionally excluded because it is rewritten by
+// TanStack Router. Hand-authored application code must always stay guarded.
+const EXCLUDED = new Set(["src/routeTree.gen.ts"]);
 
 async function walk(directory) {
   const files = [];
