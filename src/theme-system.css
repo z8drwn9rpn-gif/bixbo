@@ -174,14 +174,7 @@
 
 /* Match the large centre of the HAK wheel to the same off-white canvas.
    The 28 3D pill circles keep their original green/pink gradients and shadows. */
-:root:not(.dark) [data-bixbo-hak-content="1"] .absolute.inset-\[16\.5\%\].rounded-full {
-  background: #FBF7F3 !important;
-  background-color: #FBF7F3 !important;
-}
-
-/* ŠukŠuk analytics card inside HAK uses the same off-white surface instead of
-   the old moss-green fill; its chart bars, icon and green accents remain unchanged. */
-:root:not(.dark) [data-bixbo-hak-content="1"] section.mt-4.rounded-3xl.p-4.pb-5 {
+:root:not(.dark) [data-bixbo-hak-wheel-center="1"] {
   background: #FBF7F3 !important;
   background-color: #FBF7F3 !important;
 }

@@ -91,6 +91,11 @@ describe("UI layout architecture regressions", () => {
     expect(root).not.toContain("dark-theme.css");
     expect(runtimeTheme).toContain('const LIGHT_THEME_COLOR = "#FBF7F3";');
     expect(runtimeTheme).toContain('const DARK_THEME_COLOR = "#171A14";');
+    const hak = readFileSync("src/components/home/BirthControlCard.tsx", "utf8");
+    expect(hak).toContain('data-bixbo-hak-wheel-center="1"');
+    expect(theme).toContain('[data-bixbo-hak-wheel-center="1"]');
+    expect(theme).not.toContain(".absolute.inset-");
+    expect(theme).not.toContain("section.mt-4.rounded-3xl");
   });
 
 });
