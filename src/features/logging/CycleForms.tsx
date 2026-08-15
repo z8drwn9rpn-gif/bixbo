@@ -229,43 +229,94 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
       },
     } as typeof current.settings & { suksukCustom?: Record<string, string[]> },
   }));
-  const renderCustomControls = (key: string) => {
+  const [customMenuKey, setCustomMenuKey] = useState<string | null>(null);
+  const renderSectionHead = (key: string, title: ReactNode, size: "lg" | "sm" = "lg") => {
     const values = customValues(key);
     const adding = customAddingKey === key;
     const editing = customEditKey === key;
+    const menuOpen = customMenuKey === key;
     return (
-      <div className="mb-2 flex flex-wrap items-center gap-2">
-        {adding ? (
+      <div className="relative mb-2">
+        <div className="flex items-start justify-between gap-2">
+          <p className={size === "lg" ? "font-serif text-lg font-semibold text-foreground" : "font-serif text-sm font-semibold text-foreground"}>{title}</p>
+          <button
+            type="button"
+            onClick={() => setCustomMenuKey(menuOpen ? null : key)}
+            aria-label={t("More options")}
+            aria-expanded={menuOpen}
+            className="grid h-7 w-9 shrink-0 place-items-center rounded-full text-lg font-bold leading-none text-muted-foreground transition hover:bg-tint hover:text-foreground"
+          >
+            ⋯
+          </button>
+        </div>
+        {menuOpen ? (
           <>
-            <Input value={customText} onChange={(event) => setCustomText(event.target.value)} placeholder={t("Custom…")} className="h-8 min-w-[140px] flex-1 rounded-full" autoFocus />
-            <button type="button" className="rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground" onClick={() => {
+            <button type="button" aria-label={t("Close")} className="fixed inset-0 z-40 cursor-default" onClick={() => setCustomMenuKey(null)} />
+            <div className="absolute right-0 top-8 z-50 min-w-[160px] overflow-hidden rounded-2xl border border-border/70 bg-background p-1.5 shadow-xl">
+              <button
+                type="button"
+                onClick={() => { setCustomMenuKey(null); setCustomText(""); setCustomEditKey(null); setCustomAddingKey(key); }}
+                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-semibold text-foreground transition hover:bg-tint"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                {t("Add custom")}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setCustomMenuKey(null); setCustomAddingKey(null); setCustomEditKey(editing ? null : key); }}
+                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-semibold text-foreground transition hover:bg-tint"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                {editing ? t("Done") : `${t("Edit")} / ${t("Delete")}`}
+              </button>
+            </div>
+          </>
+        ) : null}
+        {adding ? (
+          <div className="mt-2 flex items-center gap-1">
+            <Input value={customText} onChange={(event) => setCustomText(event.target.value)} placeholder={t("Custom…")} className="h-8 flex-1" autoFocus />
+            <Button type="button" size="sm" onClick={() => {
               const next = customText.trim();
               if (!next || values.includes(next)) return;
               setCustomValues(key, [...values, next]);
               setCustomText("");
               setCustomAddingKey(null);
-            }}>{t("Add")}</button>
-            <button type="button" className="rounded-full bg-tint px-3 py-1.5 text-xs font-semibold text-foreground" onClick={() => { setCustomText(""); setCustomAddingKey(null); }}>{t("Cancel")}</button>
-          </>
-        ) : (
-          <>
-            <button type="button" onClick={() => { setCustomText(""); setCustomAddingKey(key); setCustomEditKey(null); }} className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary hover:bg-primary/20"><Plus className="h-3 w-3" /> {t("Add custom")}</button>
-            <button type="button" onClick={() => { setCustomAddingKey(null); setCustomEditKey(editing ? null : key); }} className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${editing ? "bg-primary text-primary-foreground" : "bg-tint text-muted-foreground"}`}><Pencil className="h-3 w-3" /> {editing ? t("Done") : t("Edit")}</button>
-          </>
-        )}
-        {editing && values.map((value) => (
-          <span key={value} className="inline-flex items-center gap-1 rounded-full bg-surface px-2 py-1 text-[11px] ring-1 ring-border">
-            <span>{value}</span>
-            <button type="button" aria-label={`Rename ${value}`} onClick={() => {
-              const next = prompt(`Rename “${value}”`, value)?.trim();
-              if (next && next !== value && !values.includes(next)) setCustomValues(key, values.map((item) => item === value ? next : item));
-            }}><Pencil className="h-3 w-3" /></button>
-            <button type="button" aria-label={`Remove ${value}`} onClick={() => setCustomValues(key, values.filter((item) => item !== value))}><X className="h-3 w-3" /></button>
-          </span>
-        ))}
+            }}>{t("Add")}</Button>
+            <Button type="button" size="sm" variant="ghost" onClick={() => { setCustomText(""); setCustomAddingKey(null); }}>{t("Cancel")}</Button>
+          </div>
+        ) : null}
+        {editing && values.length ? (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {values.map((value) => (
+              <span key={value} className="inline-flex items-center gap-1 rounded-full bg-tint px-3 py-1.5 text-xs font-semibold text-foreground ring-1 ring-border">
+                <span>{value}</span>
+                <button
+                  type="button"
+                  aria-label={`${t("Rename")} ${value}`}
+                  className="grid h-4 w-4 place-items-center rounded-full bg-background text-muted-foreground ring-1 ring-border"
+                  onClick={() => {
+                    const next = prompt(`${t("Rename")} "${value}" ${t("to")}:`, value)?.trim();
+                    if (next && next !== value && !values.includes(next)) setCustomValues(key, values.map((item) => (item === value ? next : item)));
+                  }}
+                >
+                  <Pencil className="h-2.5 w-2.5" />
+                </button>
+                <button
+                  type="button"
+                  aria-label={`${t("Delete")} ${value}`}
+                  className="grid h-4 w-4 place-items-center rounded-full bg-destructive text-destructive-foreground"
+                  onClick={() => setCustomValues(key, values.filter((item) => item !== value))}
+                >
+                  <X className="h-2.5 w-2.5" />
+                </button>
+              </span>
+            ))}
+          </div>
+        ) : null}
       </div>
     );
   };
+
 
   const typeOptions: SemanticOption<SexKind>[] = [
     { value: "sex", icon: "orgasmYes", label: "Sex" },
