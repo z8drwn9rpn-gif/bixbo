@@ -103,6 +103,8 @@ function AuthPage() {
     } catch (err) { setMsg(err instanceof Error ? err.message : String(err)); setBusy(false); }
   };
 
+  const passwordLabel = mode === "up" ? t("Password (min 8 chars)") : t("Password");
+
   return <AppShell title={t("Sign in")} big>
     <div className="mx-auto w-full max-w-md space-y-4 px-5 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-5 sm:pt-7 lg:px-0 lg:pb-12">
       <p className="text-sm leading-relaxed text-muted-foreground">{t("Sign in to keep your BIXBO diary safely in the cloud and share with your partner using a code.")}</p>
@@ -113,7 +115,17 @@ function AuthPage() {
       <form onSubmit={submit} className="space-y-3 rounded-3xl border border-border/70 bg-surface p-4 shadow-sm ring-1 ring-border/70 sm:p-5">
         {mode === "up" && <Input aria-label={t("Your name (optional)")} className="h-11" placeholder={t("Your name (optional)")} value={name} onChange={(e) => setName(e.target.value)} />}
         <Input aria-label={t("Email")} className="h-11" type="email" autoComplete="email" placeholder={t("Email")} required value={email} onChange={(e) => setEmail(e.target.value)} />
-        <Input aria-label={t("Password (min 6 chars)")} className="h-11" type="password" autoComplete={mode === "up" ? "new-password" : "current-password"} placeholder={t("Password (min 6 chars)")} required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
+        <Input
+          aria-label={passwordLabel}
+          className="h-11"
+          type="password"
+          autoComplete={mode === "up" ? "new-password" : "current-password"}
+          placeholder={passwordLabel}
+          required
+          minLength={mode === "up" ? 8 : undefined}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
         <Button type="submit" disabled={busy} className="min-h-11 w-full">{mode === "up" ? t("Create account") : t("Sign in")}</Button>
       </form>
       <div className="flex items-center gap-3 text-xs text-muted-foreground"><span className="h-px flex-1 bg-border" /><span>{t("or")}</span><span className="h-px flex-1 bg-border" /></div>
