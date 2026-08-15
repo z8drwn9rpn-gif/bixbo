@@ -44,7 +44,7 @@ function compareValues(current: number, previous: number) {
   };
 }
 
-function WeekBars({ items, accent, accentDark, muted }: {
+function PeriodBars({ items, accent, accentDark, muted }: {
   items: ChartItem[];
   accent: string;
   accentDark: string;
@@ -53,8 +53,8 @@ function WeekBars({ items, accent, accentDark, muted }: {
   const maxValue = Math.max(3, ...items.map((item) => item.count));
 
   return (
-    <div className="mt-5 grid grid-cols-[24px_minmax(0,1fr)] gap-2">
-      <div className="relative h-[164px] text-[10px] tabular-nums text-muted-foreground">
+    <div className="mt-4 grid grid-cols-[22px_minmax(0,1fr)] gap-2">
+      <div className="relative h-[116px] text-[9px] tabular-nums text-muted-foreground">
         {[maxValue, Math.round((maxValue * 2) / 3), Math.round(maxValue / 3), 0].map((tick, index) => (
           <span
             key={`${tick}-${index}`}
@@ -66,8 +66,8 @@ function WeekBars({ items, accent, accentDark, muted }: {
         ))}
       </div>
 
-      <div className="relative h-[190px] min-w-0">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-[164px]">
+      <div className="relative h-[142px] min-w-0">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[116px]">
           {[0, 1, 2, 3].map((line) => (
             <span
               key={line}
@@ -77,17 +77,20 @@ function WeekBars({ items, accent, accentDark, muted }: {
           ))}
         </div>
 
-        <div className="relative grid h-[190px] grid-cols-7 gap-2">
-          {items.map((item) => {
-            const height = item.count > 0 ? Math.max(12, (item.count / maxValue) * 150) : 2;
+        <div
+          className="relative grid h-[142px] gap-1"
+          style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
+        >
+          {items.map((item, index) => {
+            const height = item.count > 0 ? Math.max(8, (item.count / maxValue) * 96) : 2;
             return (
-              <div key={item.label} className="flex min-w-0 flex-col items-center justify-end">
-                <span className="mb-1 text-[11px] font-semibold tabular-nums text-foreground">
+              <div key={`${item.label}-${index}`} className="flex min-w-0 flex-col items-center justify-end">
+                <span className="mb-0.5 text-[10px] font-semibold tabular-nums text-foreground">
                   {item.count}
                 </span>
-                <div className="flex h-[150px] w-full items-end justify-center">
+                <div className="flex h-[104px] w-full items-end justify-center">
                   <span
-                    className="w-[72%] max-w-9 rounded-t-[9px] transition-[height] duration-200"
+                    className="w-[68%] max-w-8 rounded-t-[8px] transition-[height] duration-200"
                     style={{
                       height: `${height}px`,
                       background:
@@ -99,108 +102,12 @@ function WeekBars({ items, accent, accentDark, muted }: {
                     }}
                   />
                 </div>
-                <span className="mt-2 text-[11px] font-medium text-muted-foreground">{item.label}</span>
+                <span className="mt-1.5 max-w-full truncate text-[9px] font-medium text-muted-foreground sm:text-[10px]">
+                  {item.label}
+                </span>
               </div>
             );
           })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function MonthBars({ items, accent, accentDark, muted }: {
-  items: ChartItem[];
-  accent: string;
-  accentDark: string;
-  muted: string;
-}) {
-  const maxValue = Math.max(1, ...items.map((item) => item.count));
-
-  return (
-    <div className="mt-5 space-y-3.5 px-1">
-      {items.map((item) => (
-        <div key={item.label} className="grid grid-cols-[48px_minmax(0,1fr)_24px] items-center gap-3">
-          <span className="text-right text-[11px] font-semibold tabular-nums text-muted-foreground">
-            {item.label}
-          </span>
-          <div className="h-7 overflow-hidden rounded-lg bg-muted/35 ring-1 ring-border/35">
-            <div
-              className="h-full rounded-lg transition-[width] duration-200"
-              style={{
-                width: item.count > 0 ? `${Math.max(11, (item.count / maxValue) * 100)}%` : "0%",
-                background: item.count > 0
-                  ? `linear-gradient(90deg, ${accent} 0%, ${accentDark} 100%)`
-                  : muted,
-              }}
-            />
-          </div>
-          <span className="text-[12px] font-bold tabular-nums text-foreground">{item.count}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function YearLine({ items, accent, accentDark }: {
-  items: ChartItem[];
-  accent: string;
-  accentDark: string;
-}) {
-  const maxValue = Math.max(1, ...items.map((item) => item.count));
-  const width = 360;
-  const height = 164;
-  const left = 14;
-  const right = 346;
-  const top = 12;
-  const bottom = 140;
-  const plotHeight = bottom - top;
-  const step = (right - left) / Math.max(1, items.length - 1);
-  const points = items.map((item, index) => ({
-    ...item,
-    x: left + index * step,
-    y: bottom - (item.count / maxValue) * plotHeight,
-  }));
-  const polyline = points.map((point) => `${point.x},${point.y}`).join(" ");
-  const area = `${left},${bottom} ${polyline} ${right},${bottom}`;
-
-  return (
-    <div className="mt-5">
-      <div className="relative rounded-2xl bg-background/38 px-1 pt-2 ring-1 ring-border/35">
-        <svg viewBox={`0 0 ${width} ${height}`} className="block h-[170px] w-full overflow-visible" aria-label="Year chart">
-          {[0, 1, 2, 3].map((line) => {
-            const y = top + (plotHeight / 3) * line;
-            return (
-              <line
-                key={line}
-                x1={left}
-                x2={right}
-                y1={y}
-                y2={y}
-                stroke="currentColor"
-                className="text-border/55"
-                strokeDasharray="4 5"
-                strokeWidth="1"
-              />
-            );
-          })}
-          <polygon points={area} fill={accent} opacity="0.10" />
-          <polyline
-            points={polyline}
-            fill="none"
-            stroke={accentDark}
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          {points.map((point) => (
-            <g key={`${point.label}-${point.x}`}>
-              <circle cx={point.x} cy={point.y} r="5" fill={accent} stroke="var(--card)" strokeWidth="2" />
-            </g>
-          ))}
-        </svg>
-        <div className="grid grid-cols-12 px-1 pb-2 text-center text-[9px] font-medium text-muted-foreground">
-          {items.map((item, index) => <span key={`${item.label}-${index}`}>{item.label}</span>)}
         </div>
       </div>
     </div>
@@ -443,16 +350,10 @@ export function SukSukPeriodChart({
         </div>
       </div>
 
-      {mode === "week" ? (
-        <WeekBars items={week.bars} accent={accent} accentDark={accentDark} muted={accentSoft} />
-      ) : mode === "month" ? (
-        <MonthBars items={month.bars} accent={accent} accentDark={accentDark} muted={accentSoft} />
-      ) : (
-        <YearLine items={year.bars} accent={accent} accentDark={accentDark} />
-      )}
+      <PeriodBars items={active.bars} accent={accent} accentDark={accentDark} muted={accentSoft} />
 
       <div
-        className="mt-5 flex min-h-12 items-center justify-center gap-2 rounded-full border border-border/45 px-4 py-2.5 text-center"
+        className="mt-4 flex min-h-12 items-center justify-center gap-2 rounded-full border border-border/45 px-4 py-2.5 text-center"
         style={{ background: `color-mix(in srgb, ${accentSoft} 52%, transparent)` }}
       >
         <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full" style={{ backgroundColor: accentSoft }}>
