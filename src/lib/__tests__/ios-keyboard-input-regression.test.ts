@@ -18,7 +18,7 @@ describe("Textarea iOS input attributes", () => {
   });
 
   it("allows call sites to override the defaults via the props spread", () => {
-    expect(textarea.indexOf('autoComplete="off"')).toBeLessThan(textarea.indexOf("{...props}"));
+    expect(textarea.indexOf(String.raw`autoComplete="off"`)).toBeLessThan(textarea.lastIndexOf("{...props}"));
   });
 });
 
