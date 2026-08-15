@@ -32,6 +32,10 @@ function isEditable(target: EventTarget | null): target is EditableTarget {
   return target.isContentEditable;
 }
 
+function ownsInlineBixboPicker(target: EditableTarget) {
+  return target instanceof HTMLTextAreaElement && target.dataset.bixboRichText === "true";
+}
+
 function snapshotCaret(target: EditableTarget): CaretSnapshot {
   if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
     const start = target.selectionStart ?? target.value.length;
@@ -106,12 +110,14 @@ export function BixboIconKeyboard() {
   }, []);
 
   useEffect(() => {
-    if (!target || open || typeof window === "undefined") {
+    if (!target || open || typeof window === "undefined" || ownsInlineBixboPicker(target)) {
       setTriggerPosition(null);
       return;
     }
 
-    const updatePosition = () => {
+    let frame = 0;
+    const measurePosition = () => {
+      frame = 0;
       if (!target.isConnected) {
         setTarget(null);
         setTriggerPosition(null);
@@ -126,37 +132,45 @@ export function BixboIconKeyboard() {
 
       const buttonSize = 44;
       const inset = 8;
-      const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
-      const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
 
       if (rect.bottom < 0 || rect.top > viewportHeight || rect.right < 0 || rect.left > viewportWidth) {
         setTriggerPosition(null);
         return;
       }
 
-      // The root keyboard layer is fixed to the viewport, so use viewport
-      // coordinates directly. This keeps the sparkle attached to the active
-      // text field even while the iOS keyboard or the log scroll container moves.
-      const top = Math.min(Math.max(rect.top + inset, inset), Math.max(inset, viewportHeight - buttonSize - inset));
-      const left = Math.min(
-        Math.max(rect.right - buttonSize - inset, inset),
-        Math.max(inset, viewportWidth - buttonSize - inset),
-      );
+      const next = {
+        top: Math.min(Math.max(rect.top + inset, inset), Math.max(inset, viewportHeight - buttonSize - inset)),
+        left: Math.min(
+          Math.max(rect.right - buttonSize - inset, inset),
+          Math.max(inset, viewportWidth - buttonSize - inset),
+        ),
+      };
 
-      setTriggerPosition({ top, left });
+      setTriggerPosition((current) =>
+        current && Math.abs(current.top - next.top) < 1 && Math.abs(current.left - next.left) < 1
+          ? current
+          : next,
+      );
     };
 
-    updatePosition();
-    window.addEventListener("resize", updatePosition);
-    window.addEventListener("scroll", updatePosition, true);
-    window.visualViewport?.addEventListener("resize", updatePosition);
-    window.visualViewport?.addEventListener("scroll", updatePosition);
+    const scheduleMeasure = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(measurePosition);
+    };
+
+    scheduleMeasure();
+    window.addEventListener("resize", scheduleMeasure, { passive: true });
+    // Capture inner log scrolling too, but collapse all scroll events into one
+    // animation-frame measurement. Do not subscribe to VisualViewport: iOS fires
+    // those events repeatedly while its keyboard/caret is animating.
+    window.addEventListener("scroll", scheduleMeasure, true);
 
     return () => {
-      window.removeEventListener("resize", updatePosition);
-      window.removeEventListener("scroll", updatePosition, true);
-      window.visualViewport?.removeEventListener("resize", updatePosition);
-      window.visualViewport?.removeEventListener("scroll", updatePosition);
+      if (frame) window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", scheduleMeasure);
+      window.removeEventListener("scroll", scheduleMeasure, true);
     };
   }, [target, open]);
 
