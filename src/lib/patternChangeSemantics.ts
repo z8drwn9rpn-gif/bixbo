@@ -11,8 +11,10 @@ export function changeToneFromDelta(
 }
 
 export function changeToneTextClass(tone: PatternChangeTone): string {
-  if (tone === "good") return "font-bold text-emerald-700 dark:text-emerald-300";
-  if (tone === "bad") return "font-bold text-rose-600 dark:text-rose-300";
+  // These colors carry analytical meaning. Keep them stronger than generic
+  // foreground/bold rules so an improvement cannot regress to black text.
+  if (tone === "good") return "font-bold !text-emerald-700 dark:!text-emerald-300";
+  if (tone === "bad") return "font-bold !text-rose-600 dark:!text-rose-300";
   return "font-semibold text-muted-foreground";
 }
 
