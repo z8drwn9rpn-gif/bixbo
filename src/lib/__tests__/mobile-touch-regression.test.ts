@@ -18,14 +18,21 @@ describe("mobile touch and text editing regressions", () => {
     expect(touchCss).toContain("touch-action: pan-x pan-y");
   });
 
-  it("keeps BIXBO browser chrome explicit before paint with the global zoom lock", () => {
+  it("keeps BIXBO browser chrome and Samsung backing canvas explicit before paint", () => {
     expect(rootSource).toContain('<meta name="color-scheme" content="light dark" />');
     expect(rootSource).toContain('<meta name="theme-color" content="#FBF7F3" />');
     expect(rootSource).toContain('root.style.colorScheme = isDark ? "dark" : "only light"');
-    expect(rootSource).toContain('choice === "light" ? "only light" : "light dark"');
+    expect(rootSource).toContain('colorSchemeMeta.setAttribute("content", isDark ? "dark" : "only light")');
+    expect(rootSource).toContain('const canvas = isDark ? "#171A14" : "#FBF7F3"');
+    expect(rootSource).toContain('root.style.setProperty("background-color", canvas, "important")');
+    expect(rootSource).toContain('/SamsungBrowser\\//i.test(navigator.userAgent || "")');
+
     expect(themeSource).toContain('root.style.colorScheme = isDark ? "dark" : "only light"');
-    expect(themeSource).toContain('theme === "light" ? "only light" : "light dark"');
+    expect(themeSource).toContain('colorSchemeMeta?.setAttribute("content", isDark ? "dark" : "only light")');
+    expect(themeSource).toContain('const LIGHT_THEME_COLOR = "#FBF7F3"');
     expect(themeSource).toContain('const DARK_THEME_COLOR = "#171A14"');
+    expect(themeSource).toContain('root.style.setProperty("background-color", canvas, "important")');
+    expect(themeSource).toContain('document.body.style.setProperty("background-color", canvas, "important")');
   });
 
   it("preserves native single-touch text selection and scoped chart handling", () => {
