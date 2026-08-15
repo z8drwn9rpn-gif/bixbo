@@ -36,6 +36,10 @@ function ownsInlineBixboPicker(target: EditableTarget) {
   return target instanceof HTMLTextAreaElement && target.dataset.bixboRichText === "true";
 }
 
+function isInsideLogSurface(target: EditableTarget) {
+  return Boolean(target.closest("[data-bixbo-log-surface]"));
+}
+
 function snapshotCaret(target: EditableTarget): CaretSnapshot {
   if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
     const start = target.selectionStart ?? target.value.length;
@@ -110,7 +114,16 @@ export function BixboIconKeyboard() {
   }, []);
 
   useEffect(() => {
-    if (!target || open || typeof window === "undefined" || ownsInlineBixboPicker(target)) {
+    // Log forms deliberately own their input/keyboard lifecycle. Textareas have
+    // an inline BIXBO icon button and single-line fields should stay completely
+    // free of global floating-position work while iOS is focusing/typing.
+    if (
+      !target ||
+      open ||
+      typeof window === "undefined" ||
+      ownsInlineBixboPicker(target) ||
+      isInsideLogSurface(target)
+    ) {
       setTriggerPosition(null);
       return;
     }
@@ -162,9 +175,9 @@ export function BixboIconKeyboard() {
 
     scheduleMeasure();
     window.addEventListener("resize", scheduleMeasure, { passive: true });
-    // Capture inner log scrolling too, but collapse all scroll events into one
-    // animation-frame measurement. Do not subscribe to VisualViewport: iOS fires
-    // those events repeatedly while its keyboard/caret is animating.
+    // Capture ordinary page/inner scrolling, but collapse all events into one
+    // animation-frame measurement. Never subscribe to VisualViewport keyboard
+    // animation events.
     window.addEventListener("scroll", scheduleMeasure, true);
 
     return () => {

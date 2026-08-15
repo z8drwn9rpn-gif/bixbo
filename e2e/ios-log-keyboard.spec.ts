@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("mobile Pain note keeps the background locked and BottomNav stable", async ({ page }, testInfo) => {
+test("mobile Pain note keeps the log geometry and background stable", async ({ page }, testInfo) => {
   test.skip(!testInfo.project.name.includes("mobile"), "mobile-only iOS keyboard regression");
 
   await page.goto("/");
@@ -13,15 +13,31 @@ test("mobile Pain note keeps the background locked and BottomNav stable", async 
   await page.locator('button[data-log-category="pain"]').click();
 
   const painSurface = page.locator('[data-bixbo-log-surface="pain"]');
+  const logShell = page.locator('[data-bixbo-fullscreen-log="true"]');
   await expect(painSurface).toBeVisible();
+  await expect(logShell).toBeVisible();
   await expect(bottomNav).toHaveCSS("display", "none");
 
-  // The background is locked with overflow, never by turning body into a fixed
-  // compositor layer. Fixed-body locking fights iOS VisualViewport and was one
-  // of the causes of the jump/freeze while focusing text fields.
+  // Background lock must never turn body into a fixed compositor layer.
   await expect.poll(() => page.evaluate(() => document.body.style.overflow)).toBe("hidden");
   await expect.poll(() => page.evaluate(() => document.documentElement.style.overflow)).toBe("hidden");
   expect(await page.evaluate(() => document.body.style.position)).not.toBe("fixed");
+
+  // Regression for the real iOS failure: old code fed VisualViewport height and
+  // offset into the complete sheet. Simulate a dramatic keyboard viewport change
+  // by mutating the legacy variables. The rendered shell must remain identical.
+  const shellBefore = await logShell.boundingBox();
+  expect(shellBefore).not.toBeNull();
+  await page.evaluate(() => {
+    document.documentElement.style.setProperty("--bixbo-viewport-height", "390px");
+    document.documentElement.style.setProperty("--bixbo-viewport-offset", "210px");
+    document.documentElement.style.setProperty("--bixbo-keyboard-inset", "390px");
+  });
+  await page.waitForTimeout(50);
+  const shellAfterSyntheticKeyboard = await logShell.boundingBox();
+  expect(shellAfterSyntheticKeyboard).not.toBeNull();
+  expect(Math.abs((shellAfterSyntheticKeyboard?.y ?? 0) - (shellBefore?.y ?? 0))).toBeLessThanOrEqual(1);
+  expect(Math.abs((shellAfterSyntheticKeyboard?.height ?? 0) - (shellBefore?.height ?? 0))).toBeLessThanOrEqual(1);
 
   const note = page.getByPlaceholder("Anything else…");
   for (let step = 0; step < 7 && !(await note.isVisible()); step += 1) {
@@ -50,8 +66,8 @@ test("mobile Pain note keeps the background locked and BottomNav stable", async 
   const painScrollAfterFocus = await painSurface.evaluate((element) => element.scrollTop);
   expect(painScrollAfterFocus).toBeGreaterThan(0);
 
-  // Put the caret back into the first line and type there. The old regression
-  // jumped/re-rendered the page and often forced the caret back to the end.
+  // Put the caret back into the first line and type there. The log and caret must
+  // stay where the user put them instead of rerendering back to the end/top.
   await note.evaluate((element) => {
     const textarea = element as HTMLTextAreaElement;
     textarea.focus();
@@ -62,6 +78,11 @@ test("mobile Pain note keeps the background locked and BottomNav stable", async 
 
   const painScrollAfterCaretEdit = await painSurface.evaluate((element) => element.scrollTop);
   expect(painScrollAfterCaretEdit).toBeGreaterThan(0);
+
+  const shellAfterTyping = await logShell.boundingBox();
+  expect(shellAfterTyping).not.toBeNull();
+  expect(Math.abs((shellAfterTyping?.y ?? 0) - (shellBefore?.y ?? 0))).toBeLessThanOrEqual(1);
+  expect(Math.abs((shellAfterTyping?.height ?? 0) - (shellBefore?.height ?? 0))).toBeLessThanOrEqual(1);
 
   const afterFocus = await page.evaluate(() => ({
     bodyOverflow: document.body.style.overflow,
