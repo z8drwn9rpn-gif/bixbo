@@ -1,0 +1,35 @@
+name: Inspect Google client once
+
+on:
+  push:
+    paths:
+      - ".github/workflows/inspect-google-client-once.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Read public Google OAuth client id
+        shell: bash
+        run: |
+          set -euo pipefail
+          location="$(curl -sS -o /dev/null -w '%{redirect_url}' \
+            -H 'apikey: sb_publishable__K7x0Rsn4e7lT4Ut3_g04A_8w_WTaH3' \
+            'https://wgdydwttzsveevkljkmr.supabase.co/auth/v1/authorize?provider=google&redirect_to=https%3A%2F%2Fbixbo.z8drwn9rpn.workers.dev%2Fauth')"
+          client_id="$(python - "$location" <<'PY'
+import sys
+from urllib.parse import urlparse, parse_qs
+url = sys.argv[1]
+client_id = parse_qs(urlparse(url).query).get('client_id', [''])[0]
+print(client_id)
+PY
+)"
+          if [[ -z "$client_id" ]]; then
+            echo "::error title=Google client id not found::Authorize redirect did not expose a Google client_id"
+            printf 'Redirect target: %s\n' "$location"
+            exit 1
+          fi
+          echo "::notice title=Google OAuth Client ID::$client_id"
