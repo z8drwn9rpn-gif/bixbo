@@ -15,48 +15,58 @@
 /* ---------------------------------------------------------------------
    TODAY vs SELECTED DAY
 
-   Today keeps the thin, soft olive ring from calendar-3d.css.
-   The selected/tapped day uses a darker, thicker ring farther outside.
-   If today itself is selected, both concentric rings remain visible, so the
-   two states can never be confused.
+   TODAY = thin olive outline from calendar-3d.css.
+   SELECTED = soft pale olive/beige halo behind the whole date circle.
+
+   This matches the approved second mockup: no heavy dark rings. If today is
+   also selected, the soft halo stays behind while the thin today outline is
+   still visible on top, so both states remain distinct.
    --------------------------------------------------------------------- */
 
-/* Hide the old inline selected-day ring emitted by MonthCalendar; it looked
-   almost identical to the today marker. This selector only matches that
-   -inset-[5px] selection span, not pain or prediction rings. */
+/* Hide the old inline hard selected-day ring emitted by MonthCalendar. */
 #main-content button[data-bixbo-selected="true"] > div > div:first-child > span[class*="-inset-[5px]"] {
   display: none !important;
 }
 
-/* Selected day: strong dark-olive focus ring, clearly farther outside than
-   the thin today marker. It works for plain, pain, period and predicted days. */
+/* Selected day — soft BIXBO halo/cushion behind the existing date styling.
+   It does not change pain, period or prediction colours. */
 #main-content button[data-bixbo-selected="true"] > div > div:first-child::before {
   content: "" !important;
   display: block !important;
   position: absolute;
   pointer-events: none;
   inset: -8px;
-  z-index: 7;
+  z-index: 0;
   border-radius: 999px;
-  border: 2px solid #263116;
+  border: 1px solid rgba(126, 139, 89, .14);
+  background:
+    radial-gradient(circle at 48% 44%,
+      rgba(238, 241, 226, .82) 0%,
+      rgba(226, 232, 207, .72) 58%,
+      rgba(211, 220, 184, .48) 78%,
+      rgba(211, 220, 184, .16) 100%);
   box-shadow:
-    0 0 0 2px rgba(255,255,255,.94),
-    0 0 0 3px rgba(38,49,22,.16),
-    0 4px 9px rgba(42,52,25,.24);
+    inset 0 1px 0 rgba(255,255,255,.72),
+    0 2px 5px rgba(90,101,60,.11),
+    0 5px 10px rgba(78,89,52,.08);
 }
 
-/* On desktop keep the same visual spacing relative to the larger circles. */
+/* Desktop keeps the same airy halo proportion around larger date circles. */
 @media (min-width: 1024px) {
   #main-content button[data-bixbo-selected="true"] > div > div:first-child::before {
     inset: -9px;
   }
 }
 
-/* Dark mode: selected remains visibly different from the lighter today ring. */
+/* Dark mode — same halo concept, just restrained so it does not glow. */
 .dark #main-content button[data-bixbo-selected="true"] > div > div:first-child::before {
-  border-color: #eef1dc;
+  border-color: rgba(202, 213, 168, .18);
+  background:
+    radial-gradient(circle at 48% 44%,
+      rgba(126, 139, 89, .24) 0%,
+      rgba(109, 123, 74, .20) 62%,
+      rgba(86, 99, 57, .13) 100%);
   box-shadow:
-    0 0 0 2px rgba(30,35,20,.88),
-    0 0 0 3px rgba(238,241,220,.18),
-    0 4px 9px rgba(0,0,0,.34);
+    inset 0 1px 0 rgba(255,255,255,.06),
+    0 3px 8px rgba(0,0,0,.20);
 }
