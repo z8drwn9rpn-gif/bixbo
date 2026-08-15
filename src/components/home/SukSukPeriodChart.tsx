@@ -119,9 +119,7 @@ export function SukSukPeriodChart({
   const accent = darkMode ? "#B7C58C" : "#76953D";
   const accentDark = darkMode ? "#DDE7BE" : "#4F6928";
   const accentSoft = darkMode ? "#667048" : "#D9E5BB";
-  const cardBg = darkMode
-    ? "color-mix(in srgb, var(--surface) 92%, #77805A 8%)"
-    : "color-mix(in srgb, var(--background) 96%, #536A27 4%)";
+  const cardBg = darkMode ? "var(--surface)" : "var(--background)";
 
   const [mode, setMode] = useState<ViewMode>("week");
   const [weekOffset, setWeekOffset] = useState(0);
