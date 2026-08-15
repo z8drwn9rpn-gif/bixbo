@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { subscribeBixboChanges, useBixbo } from "@/lib/storage";
+import { getBixbo, subscribeBixboChanges, useBixbo } from "@/lib/storage";
 
 export type ThemeChoice = "light" | "dark" | "system";
 
@@ -8,26 +8,39 @@ export const BIXBO_THEME_CHOICE_KEY = "bixbo:theme-choice";
 const LIGHT_THEME_COLOR = "#FBF7F3";
 const DARK_THEME_COLOR = "#171A14";
 
+function isThemeChoice(value: unknown): value is ThemeChoice {
+  return value === "light" || value === "dark" || value === "system";
+}
+
+function readFastThemeChoice(): ThemeChoice | undefined {
+  if (typeof window === "undefined") return undefined;
+  try {
+    const value = window.localStorage.getItem(BIXBO_THEME_CHOICE_KEY);
+    return isThemeChoice(value) ? value : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function persistFastThemeChoice(theme: ThemeChoice) {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(BIXBO_THEME_CHOICE_KEY, theme);
   } catch {
-    // The canonical preference still lives in BIXBO storage.
+    // The current DOM state still keeps the selected theme for this session.
   }
 }
 
-function syncBrowserChrome(isDark: boolean) {
+function syncBrowserChrome(isDark: boolean, theme: ThemeChoice) {
   const root = document.documentElement;
 
-  // The meta tag advertises that BIXBO supplies both palettes. The root CSS
-  // property then locks the palette BIXBO actually selected. `only light`
-  // prevents Chromium/Samsung auto-dark recolouring when the user explicitly
-  // selected BIXBO Light while the phone itself is dark.
+  // Manual Light is an explicit opt-out from browser/Samsung Auto Dark.
+  // Dark and System still advertise both author-provided schemes so Samsung
+  // can use BIXBO's curated dark palette instead of inventing one.
   root.style.colorScheme = isDark ? "dark" : "only light";
 
   const colorSchemeMeta = document.querySelector<HTMLMetaElement>('meta[name="color-scheme"]');
-  colorSchemeMeta?.setAttribute("content", "light dark");
+  colorSchemeMeta?.setAttribute("content", theme === "light" ? "only light" : "light dark");
 
   const themeColorMeta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
   themeColorMeta?.setAttribute("content", isDark ? DARK_THEME_COLOR : LIGHT_THEME_COLOR);
@@ -47,50 +60,61 @@ export function applyThemeChoice(theme: ThemeChoice) {
 
   persistFastThemeChoice(theme);
 
-  // Keep both an explicit class and data markers on the root. Samsung Internet
-  // can then see an author-controlled light/dark state even inside a dark OS
-  // context, while Tailwind continues to use the existing `.dark` variant.
   root.dataset.themeChoice = theme;
   root.dataset.theme = isDark ? "dark" : "light";
   root.classList.toggle("dark", isDark);
   root.classList.toggle("light", !isDark);
-  syncBrowserChrome(isDark);
+  syncBrowserChrome(isDark, theme);
 }
 
 /**
- * Applies the persisted theme preference to <html>
- * and keeps it synchronized with the operating system.
+ * Applies the device-local theme preference to <html> and keeps System mode
+ * synchronized with the operating system. The synced BIXBO settings value is
+ * only a one-time migration fallback for devices that do not yet have the
+ * dedicated local theme key.
  */
 export function useThemeSync() {
   const { data, hydrated } = useBixbo();
-  const theme: ThemeChoice = data.settings.theme ?? "system";
+  const storedTheme: ThemeChoice = data.settings.theme ?? "system";
 
   useEffect(() => {
     if (!hydrated) return;
-    applyThemeChoice(theme);
-  }, [theme, hydrated]);
+    applyThemeChoice(readFastThemeChoice() ?? storedTheme);
+  }, [storedTheme, hydrated]);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
 
-    let lastTheme = document.documentElement.dataset.themeChoice as ThemeChoice | undefined;
-    return subscribeBixboChanges((next) => {
-      const nextTheme: ThemeChoice = next.settings.theme ?? "system";
-      if (nextTheme === lastTheme) return;
-      lastTheme = nextTheme;
-      applyThemeChoice(nextTheme);
+    // Track the canonical settings value only to recognize an actual local
+    // Appearance-button change. Remote/cloud reconciles must never replace the
+    // theme selected on this device.
+    let lastCanonicalTheme: ThemeChoice = getBixbo().settings.theme ?? "system";
+
+    return subscribeBixboChanges((next, reason) => {
+      const nextCanonicalTheme: ThemeChoice = next.settings.theme ?? "system";
+      const deviceTheme = readFastThemeChoice();
+
+      if (reason === "remote") {
+        lastCanonicalTheme = nextCanonicalTheme;
+        if (deviceTheme) applyThemeChoice(deviceTheme);
+        return;
+      }
+
+      if (nextCanonicalTheme === lastCanonicalTheme) return;
+      lastCanonicalTheme = nextCanonicalTheme;
+      applyThemeChoice(nextCanonicalTheme);
     });
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined" || theme !== "system") return;
+    if (typeof window === "undefined" || !hydrated) return;
+
+    const activeTheme = readFastThemeChoice() ?? storedTheme;
+    if (activeTheme !== "system") return;
 
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     const handleChange = () => {
-      // React may not have removed this listener yet on the exact frame where
-      // the user switches from System to Light/Dark. The root marker makes the
-      // explicit user choice authoritative even during that race window.
-      if (document.documentElement.dataset.themeChoice !== "system") return;
+      if ((readFastThemeChoice() ?? document.documentElement.dataset.themeChoice) !== "system") return;
       applyThemeChoice("system");
     };
 
@@ -102,5 +126,5 @@ export function useThemeSync() {
     // Older Safari fallback.
     media.addListener(handleChange);
     return () => media.removeListener(handleChange);
-  }, [theme]);
+  }, [storedTheme, hydrated]);
 }
