@@ -93,6 +93,7 @@ export function BixboIcon({
   size = 20,
   className,
   fallback = "note",
+  effects = "vivid",
 }: {
   emoji?: string;
   label?: string;
@@ -100,15 +101,18 @@ export function BixboIcon({
   size?: number;
   className?: string;
   fallback?: "note" | "none";
+  effects?: "vivid" | "stable";
 }) {
-  if (name) return <Ico name={name} size={size} className={withVivid(className)} />;
+  const decorate = (resolvedClassName?: string) => effects === "stable" ? resolvedClassName : withVivid(resolvedClassName);
+
+  if (name) return <Ico name={name} size={size} className={decorate(className)} />;
 
   const Resolved = resolveBixboIcon({ emoji, label });
   if (Resolved) {
-    const resolvedClassName = ORIGINAL_3D_ICONS.has(Resolved) ? className : withVivid(className);
+    const resolvedClassName = ORIGINAL_3D_ICONS.has(Resolved) ? className : decorate(className);
     return <Resolved size={size} className={resolvedClassName} />;
   }
 
   if (fallback === "none") return null;
-  return <NoteIcon size={size} className={withVivid(className)} />;
+  return <NoteIcon size={size} className={decorate(className)} />;
 }
