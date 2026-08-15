@@ -105,6 +105,14 @@ html[data-theme="dark"] body {
   will-change: auto !important;
 }
 
+/* Global html smooth scrolling is useful for ordinary navigation, but it must
+   not animate browser focus corrections while a native iOS keyboard is active. */
+html[data-bixbo-log-form-open],
+[data-bixbo-fullscreen-log="true"],
+[data-bixbo-log-surface] {
+  scroll-behavior: auto !important;
+}
+
 /* Keep the active form as one scroll owner. Modern iOS already provides native
    momentum for overflow scrolling; forcing -webkit-overflow-scrolling creates
    an extra compositing layer around sticky controls and is intentionally avoided. */
@@ -114,6 +122,15 @@ html[data-theme="dark"] body {
   scroll-padding-block-start: 16px;
   overscroll-behavior-y: contain;
   overflow-anchor: none;
+}
+
+/* Backdrop filtering a sticky action bar forces Safari to continuously composite
+   the scrolling form underneath it. During keyboard/caret animation that adds
+   visible stutter. Full-screen logs use their own opaque BIXBO background, so
+   the blur is unnecessary and intentionally disabled here. */
+[data-bixbo-fullscreen-log="true"] .sticky {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 /* A full-screen log locks only document overflow; the body is never converted
