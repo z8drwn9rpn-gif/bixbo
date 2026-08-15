@@ -6,6 +6,7 @@ describe("Workout shoe icon regression", () => {
     const categories = readFileSync("src/features/logging/logCategories.ts", "utf8");
     const registry = readFileSync("src/lib/appRegistry.ts", "utf8");
     const icons = readFileSync("src/components/icons/BixboExtraIcons.tsx", "utf8");
+    const log = readFileSync("src/features/logging/LogSheetRoot.tsx", "utf8");
 
     expect(categories).toContain('{ id: "workout", label: "Workout", emoji: "👟"');
     expect(registry).toContain('{ id: "workout", label: "Workout", icon: "👟"');
@@ -13,5 +14,6 @@ describe("Workout shoe icon regression", () => {
     expect(icons).toContain("function BixboShoeIcon");
     expect(icons).toContain('["👟"]: BixboShoeIcon');
     expect(icons).not.toContain('["👟"]: BixboWorkoutIcon');
+    expect(log).toContain('<Ico e={c.id === "workout" ? "👟" : c.emoji} size={30} />');
   });
 });
