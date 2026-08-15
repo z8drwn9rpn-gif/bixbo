@@ -133,6 +133,14 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"tex
             assignRef(forwardedRef, node);
           }}
           data-bixbo-rich-text="true"
+          // iOS/browser suggestion + prediction row is driven by these attributes.
+          // Defaults are off for BIXBO free-text fields; any call site can override
+          // them because {...props} is spread after these.
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="sentences"
+          spellCheck={false}
+
           value={controlled ? nativeValue : undefined}
           defaultValue={controlled ? undefined : encodeBixboNativeText(initialValue)}
           disabled={disabled}
@@ -159,10 +167,9 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"tex
             const canonical = normalizeBixboText(decodeBixboNativeText(rawNative));
             const encoded = encodeBixboNativeText(canonical);
 
-            // Plain text needs no BIXBO glyph translation. Most importantly, do
-            // not rewrite textarea.value or selectionRange on every keystroke:
-            // iOS WebKit can move a wrapped-line caret when script mutates the
-            // native control during the same input event.
+            // iOS caret stability: plain text (no BIXBO glyph / emoji) must never
+            // have its DOM value or selection rewritten during typing, otherwise
+            // iOS loses the caret on the 2nd+ line and tap-to-place stops working.
             if (canonical === rawNative && encoded === rawNative) {
               caretRef.current = { start: rawStart, end: rawEnd };
               if (!controlled) setUncontrolledValue(canonical);
@@ -179,6 +186,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"tex
 
             caretRef.current = { start: encodedStart, end: encodedEnd };
             if (!controlled) setUncontrolledValue(canonical);
+
 
             setNativeTextareaValue(node, encoded);
             try {
