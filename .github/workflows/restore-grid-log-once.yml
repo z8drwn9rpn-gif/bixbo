@@ -1,0 +1,62 @@
+name: Restore 5 plus 4 Log once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/restore-grid-log-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Restore only previous 5 plus 4 Log menu
+        shell: python
+        run: |
+          from pathlib import Path
+          import subprocess
+
+          path = Path("src/features/logging/LogSheetRoot.tsx")
+          current = path.read_text()
+          previous = subprocess.check_output(
+              ["git", "show", "e2f9272d5fa37c27a4f045a2aa1b685fda2cd07b:src/features/logging/LogSheetRoot.tsx"],
+              text=True,
+          )
+
+          branch_start = '        {!active ? (\n'
+          active_branch = '        ) : (\n          <div className="flex h-full min-h-0 flex-col">'
+
+          current_start = current.index(branch_start)
+          current_end = current.index(active_branch, current_start)
+          previous_start = previous.index(branch_start)
+          previous_end = previous.index(active_branch, previous_start)
+
+          grid_branch = previous[previous_start:previous_end]
+          patched = current[:current_start] + grid_branch + current[current_end:]
+
+          if 'grid grid-cols-5 gap-x-1 gap-y-3' not in patched:
+              raise RuntimeError("Expected 5-column Log grid not found")
+          if 'radiusX' in grid_branch:
+              raise RuntimeError("Radial Log code is still present in restored branch")
+          if 'data-bixbo-log-menu' not in grid_branch:
+              raise RuntimeError("Log menu hook missing")
+
+          path.write_text(patched)
+
+      - name: Remove one-shot workflow and commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/restore-grid-log-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/features/logging/LogSheetRoot.tsx .github/workflows/restore-grid-log-once.yml
+          git commit -m "Restore 5 plus 4 Log menu layout"
+          git push origin HEAD:main
