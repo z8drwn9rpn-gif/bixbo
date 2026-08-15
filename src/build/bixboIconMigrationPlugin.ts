@@ -87,11 +87,24 @@ export function bixboIconMigrationPlugin(): Plugin {
           );
       }
 
-      if (isPainWizard && next.includes(">💡</span>")) {
-        next = ensureBixboIconImport(next).replaceAll(
-          ">💡</span>",
-          '><BixboIcon emoji="💡" size={18} /></span>',
+      if (isPainWizard) {
+        // Pain steps 2 + 3 belong together: location first, pain quality directly below it.
+        // Keep quality as its own step only if the location field has been removed in Admin.
+        next = next.replace(
+          '      ...withoutEpisodes.slice(insertAt),\n    ];',
+          '      ...withoutEpisodes.slice(insertAt),\n    ].filter(\n      (field) => field.id !== "quality" || !withoutEpisodes.some((candidate) => candidate.id === "parts"),\n    );',
         );
+        next = next.replace(
+          '{activePainStepId === "quality" && (',
+          '{(activePainStepId === "quality" || (activePainStepId === "parts" && painSteps.every((field) => field.id !== "quality"))) && (',
+        );
+
+        if (next.includes(">💡</span>")) {
+          next = ensureBixboIconImport(next).replaceAll(
+            ">💡</span>",
+            '><BixboIcon emoji="💡" size={18} /></span>',
+          );
+        }
       }
 
       return next === code ? null : { code: next, map: null };
