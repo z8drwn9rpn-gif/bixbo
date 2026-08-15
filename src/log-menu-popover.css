@@ -5,13 +5,17 @@ div.pointer-events-none.absolute.inset-0.overflow-hidden
   > div:has(> button[data-log-category]) {
   pointer-events: auto !important;
   position: absolute !important;
-  left: 50% !important;
+  left: 12px !important;
+  right: 12px !important;
   bottom: calc(92px + env(safe-area-inset-bottom)) !important;
-  width: min(365px, calc(100vw - 24px)) !important;
-  max-width: calc(100vw - 24px) !important;
+  width: auto !important;
+  max-width: 365px !important;
   height: auto !important;
   min-height: 0 !important;
-  transform: translateX(-50%) !important;
+  margin-inline: auto !important;
+  transform: none !important;
+  translate: none !important;
+  box-sizing: border-box !important;
   display: flex !important;
   flex-wrap: wrap !important;
   justify-content: center !important;
@@ -67,6 +71,7 @@ button[data-log-category] {
   height: 70px !important;
   flex: 0 0 calc(20% - 3.2px) !important;
   transform: none !important;
+  translate: none !important;
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
@@ -92,6 +97,7 @@ button[data-log-category] > span:first-child {
   width: 40px !important;
   height: 40px !important;
   transform: none !important;
+  translate: none !important;
   flex: 0 0 40px !important;
   border: 0 !important;
   background: transparent !important;
@@ -118,6 +124,7 @@ button[data-log-category] > span:last-child {
   width: 100% !important;
   min-height: 22px !important;
   transform: none !important;
+  translate: none !important;
   display: -webkit-box !important;
   overflow: hidden !important;
   -webkit-box-orient: vertical !important;
@@ -165,7 +172,10 @@ div[aria-hidden="true"].pointer-events-none.absolute.inset-0:has(+ div button[da
 @media (max-width: 360px) {
   div.pointer-events-none.absolute.inset-0.overflow-hidden
     > div:has(> button[data-log-category]) {
-    width: calc(100vw - 16px) !important;
+    left: 8px !important;
+    right: 8px !important;
+    width: auto !important;
+    max-width: none !important;
     gap: 8px 2px !important;
     padding-inline: 8px !important;
   }
