@@ -62,7 +62,7 @@ export function BixboIconKeyboard() {
         type="button"
         onPointerDown={(event) => event.preventDefault()}
         onClick={() => setOpen((value) => !value)}
-        className="fixed bottom-[calc(5.4rem+env(safe-area-inset-bottom))] right-4 z-[880] grid h-11 w-11 place-items-center rounded-full border border-border/70 bg-background shadow-lg lg:bottom-5 lg:right-5"
+        className="fixed bottom-[calc(5.4rem+env(safe-area-inset-bottom))] right-4 z-[2147483000] grid h-11 w-11 place-items-center rounded-full border border-border/70 bg-background shadow-lg lg:bottom-5 lg:right-5"
         aria-label="BIXBO icons"
         title="BIXBO icons"
       >
@@ -70,7 +70,7 @@ export function BixboIconKeyboard() {
       </button>
 
       {open ? (
-        <div className="fixed inset-0 z-[890] flex items-end justify-center bg-black/25 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:items-center" onPointerDown={() => setOpen(false)}>
+        <div className="fixed inset-0 z-[2147483001] flex items-end justify-center bg-black/25 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:items-center" onPointerDown={() => setOpen(false)}>
           <section className="w-full max-w-[430px] overflow-hidden rounded-[28px] border border-border/70 bg-background shadow-2xl" onPointerDown={(event) => event.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
               <div>
