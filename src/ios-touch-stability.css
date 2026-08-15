@@ -1,16 +1,16 @@
 /* BIXBO mobile / PWA touch stability
-   Preserve native iOS viewport, caret and zoom behaviour without moving log geometry. */
+   Preserve native iOS viewport and caret behaviour without moving log geometry. */
 
 html,
 body,
 [data-bixbo-app-root] {
   overscroll-behavior-x: none;
   -webkit-text-size-adjust: 100%;
-  touch-action: pan-x pan-y pinch-zoom;
+  touch-action: pan-x pan-y;
 }
 
 /* iOS Safari auto-zooms focused controls below 16px. Keeping editable controls
-   at 16px avoids that focus zoom without disabling the user's page zoom. */
+   at 16px avoids that focus zoom independently from the page zoom lock. */
 @media (pointer: coarse) and (max-width: 900px) {
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
   textarea,
