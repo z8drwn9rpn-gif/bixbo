@@ -2,13 +2,7 @@ import * as React from "react";
 
 import { BixboIcon, resolveBixboIcon } from "@/components/icons/BixboIcon";
 import { BixboInlinePicker } from "@/components/icons/BixboInlinePicker";
-import {
-  bixboNativeGlyphForEmoji,
-  decodeBixboNativeText,
-  encodeBixboNativeText,
-  normalizeBixboText,
-  splitBixboGraphemes,
-} from "@/components/icons/BixboTextGlyphs";
+import { splitBixboGraphemes } from "@/components/icons/BixboTextGlyphs";
 import { cn } from "@/lib/utils";
 
 const EMOJI_RE = /\p{Extended_Pictographic}/u;
@@ -45,6 +39,11 @@ function assignRef<T>(ref: React.ForwardedRef<T>, value: T | null) {
   else if (ref) ref.current = value;
 }
 
+/**
+ * Set a textarea value without touching React's per-node value tracker.
+ * This is used only when the BIXBO icon picker inserts one symbol. Normal
+ * keyboard editing never rewrites the DOM value or selection.
+ */
 function setNativeTextareaValue(node: HTMLTextAreaElement, value: string) {
   const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set;
   if (setter) setter.call(node, value);
@@ -52,27 +51,36 @@ function setNativeTextareaValue(node: HTMLTextAreaElement, value: string) {
 }
 
 const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"textarea">>(
-  ({
-    className,
-    value,
-    defaultValue,
-    onChange,
-    onScroll,
-    onFocus,
-    onSelect,
-    disabled,
-    ...props
-  }, forwardedRef) => {
-    const initialValue = normalizeBixboText(asText(defaultValue));
+  (
+    {
+      className,
+      value,
+      defaultValue,
+      onChange,
+      onScroll,
+      onFocus,
+      onBlur,
+      onSelect,
+      disabled,
+      ...props
+    },
+    forwardedRef,
+  ) => {
+    const initialValue = asText(defaultValue);
     const [uncontrolledValue, setUncontrolledValue] = React.useState(initialValue);
     const [pickerOpen, setPickerOpen] = React.useState(false);
+    const [focused, setFocused] = React.useState(false);
     const mirrorRef = React.useRef<HTMLDivElement>(null);
     const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
     const caretRef = React.useRef<{ start: number; end: number } | null>(null);
     const controlled = value !== undefined;
-    const canonicalValue = normalizeBixboText(controlled ? asText(value) : uncontrolledValue);
-    const nativeValue = encodeBixboNativeText(canonicalValue);
-    const mirrorActive = Boolean(canonicalValue && EMOJI_RE.test(canonicalValue));
+    const canonicalValue = controlled ? asText(value) : uncontrolledValue;
+
+    // The visual BIXBO-icon mirror is deliberately disabled while the field is
+    // focused. iOS must edit a normal textarea whose visible text and DOM value
+    // are identical; otherwise tap-to-place, deletion and multi-line caret
+    // movement become unreliable as soon as an emoji is present.
+    const mirrorActive = !focused && Boolean(canonicalValue && EMOJI_RE.test(canonicalValue));
     const portalHost = pickerOpen
       ? textareaRef.current?.closest<HTMLElement>("[role=\"dialog\"]") ?? null
       : null;
@@ -89,41 +97,54 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"tex
       const node = textareaRef.current;
       if (!node || disabled) return;
       rememberCaret();
-
-      // Open the BIXBO layer first, then dismiss the native keyboard on the next
-      // frame. Do not scroll the sheet here: iOS viewport resizing + scrollIntoView
-      // caused full-screen flashing and visible jumps.
       setPickerOpen(true);
+
+      // Dismiss the native keyboard after the picker has mounted. Do not
+      // scroll/resize the sheet; native iOS owns focus scrolling.
       requestAnimationFrame(() => {
         if (node.isConnected) node.blur();
       });
     }, [disabled, rememberCaret]);
 
-    const chooseIcon = React.useCallback((emoji: string) => {
-      const node = textareaRef.current;
-      if (!node || disabled) return;
+    const chooseIcon = React.useCallback(
+      (emoji: string) => {
+        const node = textareaRef.current;
+        if (!node || disabled) return;
 
-      const currentNative = node.value;
-      const saved = caretRef.current;
-      const start = Math.max(0, Math.min(saved?.start ?? currentNative.length, currentNative.length));
-      const end = Math.max(start, Math.min(saved?.end ?? start, currentNative.length));
-      const insertion = bixboNativeGlyphForEmoji(emoji) ?? bixboNativeGlyphForEmoji("⭐") ?? "";
-      const nextNative = `${currentNative.slice(0, start)}${insertion}${currentNative.slice(end)}`;
-      const nextCanonical = normalizeBixboText(decodeBixboNativeText(nextNative));
-      const nextCaret = start + insertion.length;
-      caretRef.current = { start: nextCaret, end: nextCaret };
+        const current = node.value;
+        const saved = caretRef.current;
+        const start = Math.max(0, Math.min(saved?.start ?? current.length, current.length));
+        const end = Math.max(start, Math.min(saved?.end ?? start, current.length));
+        const next = `${current.slice(0, start)}${emoji}${current.slice(end)}`;
+        const nextCaret = start + emoji.length;
+        caretRef.current = { start: nextCaret, end: nextCaret };
 
-      setNativeTextareaValue(node, nextCanonical);
-      node.dispatchEvent(
-        new InputEvent("input", {
-          bubbles: true,
-          inputType: "insertText",
-          data: emoji,
-        }),
-      );
+        // One programmatic insertion is necessary for the custom icon picker.
+        // Dispatch a real input event so React-controlled call sites receive the
+        // same change path as keyboard input. No encoding/decoding layer is used.
+        setNativeTextareaValue(node, next);
+        if (!controlled) setUncontrolledValue(next);
+        node.dispatchEvent(
+          new InputEvent("input", {
+            bubbles: true,
+            inputType: "insertText",
+            data: emoji,
+          }),
+        );
 
-      setPickerOpen(false);
-    }, [disabled]);
+        setPickerOpen(false);
+        requestAnimationFrame(() => {
+          if (!node.isConnected) return;
+          node.focus({ preventScroll: true });
+          try {
+            node.setSelectionRange(nextCaret, nextCaret);
+          } catch {
+            // Selection is unavailable only in transient browser input states.
+          }
+        });
+      },
+      [controlled, disabled],
+    );
 
     return (
       <div className="relative w-full">
@@ -133,23 +154,26 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"tex
             assignRef(forwardedRef, node);
           }}
           data-bixbo-rich-text="true"
-          // iOS/browser suggestion + prediction row is driven by these attributes.
-          // Defaults are off for BIXBO free-text fields; any call site can override
-          // them because {...props} is spread after these.
+          // Keep text editing native. These attributes only limit suggestions;
+          // they do not block zoom, selection, autocursor placement or gestures.
           autoComplete="off"
           autoCorrect="off"
           autoCapitalize="sentences"
           spellCheck={false}
-
-          value={controlled ? nativeValue : undefined}
-          defaultValue={controlled ? undefined : encodeBixboNativeText(initialValue)}
+          value={controlled ? canonicalValue : undefined}
+          defaultValue={controlled ? undefined : initialValue}
           disabled={disabled}
           onFocus={(event) => {
+            setFocused(true);
             caretRef.current = {
               start: event.currentTarget.selectionStart ?? event.currentTarget.value.length,
               end: event.currentTarget.selectionEnd ?? event.currentTarget.selectionStart ?? event.currentTarget.value.length,
             };
             onFocus?.(event);
+          }}
+          onBlur={(event) => {
+            setFocused(false);
+            onBlur?.(event);
           }}
           onSelect={(event) => {
             caretRef.current = {
@@ -160,51 +184,15 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"tex
           }}
           onChange={(event) => {
             const node = event.currentTarget;
-            const rawNative = node.value;
-            const rawStart = node.selectionStart ?? rawNative.length;
-            const rawEnd = node.selectionEnd ?? rawStart;
+            const next = node.value;
+            const start = node.selectionStart ?? next.length;
+            const end = node.selectionEnd ?? start;
+            caretRef.current = { start, end };
 
-            const canonical = normalizeBixboText(decodeBixboNativeText(rawNative));
-            const encoded = encodeBixboNativeText(canonical);
-
-            // iOS caret stability: plain text (no BIXBO glyph / emoji) must never
-            // have its DOM value or selection rewritten during typing, otherwise
-            // iOS loses the caret on the 2nd+ line and tap-to-place stops working.
-            if (canonical === rawNative && encoded === rawNative) {
-              caretRef.current = { start: rawStart, end: rawEnd };
-              if (!controlled) setUncontrolledValue(canonical);
-              onChange?.(event);
-              return;
-            }
-
-            const encodedStart = encodeBixboNativeText(
-              normalizeBixboText(decodeBixboNativeText(rawNative.slice(0, rawStart))),
-            ).length;
-            const encodedEnd = encodeBixboNativeText(
-              normalizeBixboText(decodeBixboNativeText(rawNative.slice(0, rawEnd))),
-            ).length;
-
-            caretRef.current = { start: encodedStart, end: encodedEnd };
-            if (!controlled) setUncontrolledValue(canonical);
-
-
-            setNativeTextareaValue(node, encoded);
-            try {
-              node.setSelectionRange(encodedStart, encodedEnd);
-            } catch {
-              // Some browser/input states do not expose a mutable text selection.
-            }
-
-            if (onChange) {
-              setNativeTextareaValue(node, canonical);
-              onChange(event);
-              setNativeTextareaValue(node, encoded);
-              try {
-                node.setSelectionRange(encodedStart, encodedEnd);
-              } catch {
-                // See note above.
-              }
-            }
+            // Critical iOS invariant: do not normalize, encode, rewrite or reset
+            // the textarea value/selection while the keyboard is editing it.
+            if (!controlled) setUncontrolledValue(next);
+            onChange?.(event);
           }}
           onScroll={(event) => {
             if (mirrorRef.current) {
