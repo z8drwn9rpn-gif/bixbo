@@ -10,7 +10,7 @@ export function PregnancyHomeCard({ data }: { data: BixboData }) {
   if (!isPregnancyActive(data)) return null;
   const prog = pregnancyProgress(data.pregnancy);
   const today = data.dayLogs[todayKey()]?.pregnancy;
-  const latestBP = today?.bloodPressure?.[Math.max(0, (today.bloodPressure?.length ?? 1) - 1)];
+  const latestBP = today?.bloodPressure?.[Math.max(0, (today?.bloodPressure?.length ?? 1) - 1)];
   const totalKicks = (today?.kicks ?? []).reduce((sum, session) => sum + (session.count ?? 0), 0);
   const summary = [
     today?.weightKg != null ? { icon: "⚖️", label: `${today.weightKg} kg` } : null,
@@ -22,7 +22,7 @@ export function PregnancyHomeCard({ data }: { data: BixboData }) {
 
   return <Link to={"/pregnancy" as never} className="focus-ring mx-5 mt-3 block rounded-3xl bg-tint px-4 py-4 text-left ring-1 ring-border transition hover:bg-surface lg:mx-0" style={{ order: layoutOrder(data, "home", "pregnancy", 30) }}>
     <div className="flex items-start justify-between gap-3"><div className="flex min-w-0 items-center gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-surface ring-1 ring-border/60"><Ico name="pregnancy" size={24} /></span><div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Pregnancy</p><p className="mt-0.5 font-serif text-lg font-semibold text-foreground">{prog ? `Week ${prog.week} + ${prog.dayOfWeek}` : "Pregnancy mode"}</p>{prog ? <p className="text-xs text-muted-foreground">{`Trimester ${prog.trimester}${prog.daysLeft != null ? ` · ${Math.max(0, prog.daysLeft)} days to go` : ""}`}</p> : null}</div></div><span className="shrink-0 text-xs font-semibold text-primary">{t("Open")}</span></div>
-    {summary.length > 0 ? <div className="mt-3 flex min-w-0 items-center gap-2 overflow-hidden rounded-2xl bg-surface/75 px-3 py-2 ring-1 ring-border/40">{summary.slice(0, 4).map((item, index) => <span key={`${item.icon}-${item.label}`} className="flex min-w-0 items-center gap-1.5">{index > 0 && <span className="text-border">•</span>}<Ico e={item.icon} size={15} /><span className="truncate text-[11px] font-medium tabular-nums text-foreground">{item.label}</span></span>)}</div> : <div className="mt-3 flex items-center gap-2 rounded-2xl bg-surface/70 px-3 py-2 text-xs text-muted-foreground ring-1 ring-border/40"><Ico name="pregnancy" size={15} /><span>{t("Nothing logged today")}</span></div>}
+    {summary.length > 0 ? <div className="mt-3 flex min-w-0 items-center gap-2 overflow-hidden rounded-2xl bg-surface/75 px-3 py-2 ring-1 ring-border/40">{summary.slice(0, 4).map((item, index) => <span key={`${item.icon}-${item.label}`} className="flex min-w-0 items-center gap-1.5">{index > 0 && <span className="text-border">•</span>}<Ico e={item.icon} size={15} /><span className="truncate text-[11px] font-medium tabular-nums text-foreground">{item.label}</span></span>)}</div> : null}
   </Link>;
 }
 
@@ -42,7 +42,7 @@ export function PostpartumHomeCard({ data }: { data: BixboData }) {
 
   return <Link to={"/postpartum" as never} className="focus-ring mx-5 mt-3 block rounded-3xl bg-primary/10 px-4 py-4 text-left ring-1 ring-primary/20 lg:mx-0" style={{ order: layoutOrder(data, "home", "postpartum", 40) }}>
     <div className="flex items-center justify-between gap-3"><div className="flex min-w-0 items-center gap-3"><span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-surface ring-1 ring-border/50"><Ico name="baby" size={30} /></span><div className="min-w-0"><p className="truncate text-base font-semibold text-foreground">{progress ? `Week ${progress.week} + ${progress.dayOfWeek} postpartum` : "Postpartum mode"}</p>{progress ? <p className="mt-0.5 text-xs text-muted-foreground">{`${progress.days} days since birth`}</p> : null}</div></div><span className="shrink-0 text-xs font-semibold text-primary">{t("Open")}</span></div>
-    {summary.length > 0 ? <div className="mt-3 flex min-w-0 items-center gap-2 overflow-hidden rounded-2xl bg-surface/75 px-3 py-2 ring-1 ring-border/40">{summary.slice(0, 4).map((item, index) => <span key={`${item.icon}-${item.label}`} className="flex min-w-0 items-center gap-1.5">{index > 0 && <span className="text-border">•</span>}<Ico name={item.icon as never} size={15} /><span className="truncate text-[11px] font-medium capitalize tabular-nums text-foreground">{item.label}</span></span>)}</div> : <div className="mt-3 flex items-center gap-2 rounded-2xl bg-surface/70 px-3 py-2 text-xs text-muted-foreground ring-1 ring-border/40"><Ico name="baby" size={15} /><span>{t("Nothing logged today")}</span></div>}
+    {summary.length > 0 ? <div className="mt-3 flex min-w-0 items-center gap-2 overflow-hidden rounded-2xl bg-surface/75 px-3 py-2 ring-1 ring-border/40">{summary.slice(0, 4).map((item, index) => <span key={`${item.icon}-${item.label}`} className="flex min-w-0 items-center gap-1.5">{index > 0 && <span className="text-border">•</span>}<Ico name={item.icon as never} size={15} /><span className="truncate text-[11px] font-medium capitalize tabular-nums text-foreground">{item.label}</span></span>)}</div> : null}
   </Link>;
 }
 
