@@ -56,6 +56,7 @@ import {
 } from "@/lib/patterns";
 import { TrText, strictAdminNumericValue, latestWeightForDay, PATTERN_TABS, METRIC_COLORS, PHASE_COLORS, Card, Empty, formatMetricValue, clampPercent, percentageChange, formatSignedPercent, phaseLabelByValue, PhaseBarChart, monthLabelFromPrefix, ComparisonMetric, MetricColumn, SummaryRow, ConfidenceBadge, SummaryPanel, PatternTabs, AnalysisRangeSelector, CollapsibleSection, TriggerResult } from "./shared";
 import type { MetricColor, PhaseBar, ComparisonMetricProps, TreatmentMetric, SelectOption, VitalEntry, DayLogWithVitals, PatternTab, AnalysisRange, TreatmentKind, TreatmentResult, ArchivedTreatment, ConfidenceLevel, SummaryItem } from "./shared";
+import { changeToneTextClass } from "@/lib/patternChangeSemantics";
 import type { PatternsContentModel } from "./usePatternsContentModel";
 
 export function PatternsContentViewPart1({ model }: { model: PatternsContentModel }) {
@@ -207,7 +208,7 @@ export function PatternsContentViewPart1({ model }: { model: PatternsContentMode
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     Most improved
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                  <p className={`mt-1 text-sm ${changeToneTextClass(mostImproved && mostImproved.score > 0 ? "good" : "neutral")}`}>
                     {formatChange(mostImproved)}
                   </p>
                 </div>
@@ -215,7 +216,7 @@ export function PatternsContentViewPart1({ model }: { model: PatternsContentMode
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     Needs attention
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-rose-600 dark:text-rose-300">
+                  <p className={`mt-1 text-sm ${changeToneTextClass(mostWorsened && mostWorsened.score < 0 ? "bad" : "neutral")}`}>
                     {formatChange(mostWorsened)}
                   </p>
                 </div>

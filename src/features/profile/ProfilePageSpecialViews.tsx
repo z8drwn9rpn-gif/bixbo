@@ -301,16 +301,6 @@ if (healthView === "privacy") {
             {accountAuthBusy === "google" ? t("Opening Google…") : t("Continue with Google")}
           </button>
 
-          <button
-            type="button"
-            onClick={() => void startAccountOAuth("apple")}
-            disabled={accountAuthBusy != null}
-            className="flex min-h-12 w-full items-center justify-center gap-3 rounded-xl border border-input bg-background px-4 text-sm font-semibold text-foreground disabled:opacity-60"
-          >
-            <span className="text-lg leading-none"></span>
-            {accountAuthBusy === "apple" ? t("Opening Apple…") : t("Continue with Apple / iCloud")}
-          </button>
-
           {accountAuthError && (
             <p className="rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive ring-1 ring-destructive/20">
               {accountAuthError}

@@ -23,6 +23,7 @@ import {
 import { AppShell } from "@/components/AppShell";
 import { CHART_COLORS, CHART_TINTS } from "@/components/ui/chart";
 import { useI18n } from "@/hooks/useI18n";
+import { changeToneFromDelta, changeToneTextClass, type PatternChangeDirection } from "@/lib/patternChangeSemantics";
 import { BIXBO_REGISTRY, getRegistryFeature, registryAdminCorrelationFieldsForFeature, registryAdminCorrelationThreshold, registryAdminCycleFieldsForFeature, registryAdminMonthlyFieldsForFeature, registryAdminTreatmentFieldsForFeature, type RegistryFeatureId } from "@/lib/appRegistry";
 import { layoutOrder } from "@/lib/layoutRegistry";
 import {
@@ -465,8 +466,9 @@ export function ComparisonMetric({
   const delta = previous != null && current != null ? current - previous : null;
 
   const isUnchanged = delta === 0;
-
-  const improved = delta == null || isUnchanged || neutralTrend ? null : higherIsWorse ? delta < 0 : delta > 0;
+  const direction: PatternChangeDirection = neutralTrend ? "neutral" : higherIsWorse ? "higher-worse" : "higher-better";
+  const changeTone = changeToneFromDelta(delta, direction);
+  const trendClass = changeToneTextClass(changeTone);
 
   const trendText =
     delta == null
@@ -475,16 +477,9 @@ export function ComparisonMetric({
         ? "No change"
         : neutralTrend
           ? "Changed"
-          : improved
+          : changeTone === "good"
             ? "Improved"
             : "Worsened";
-
-  const trendColor =
-    delta == null || isUnchanged || neutralTrend
-      ? "var(--muted-foreground)"
-      : improved
-        ? CHART_COLORS.workout
-        : CHART_COLORS.headache;
 
   const absoluteDelta = delta == null ? null : Math.abs(delta);
   const relativeChange = percentageChange(previous, current);
@@ -514,8 +509,8 @@ export function ComparisonMetric({
         </div>
 
         {delta != null && (
-          <div className="flex shrink-0 items-center gap-1 text-xs font-semibold" style={{ color: trendColor }}>
-            {isUnchanged || neutralTrend ? null : improved ? (
+          <div className={`flex shrink-0 items-center gap-1 text-xs ${trendClass}`}>
+            {isUnchanged || neutralTrend ? null : delta < 0 ? (
               <TrendingDown className="h-4 w-4" />
             ) : (
               <TrendingUp className="h-4 w-4" />
@@ -554,10 +549,7 @@ export function ComparisonMetric({
             />
           </div>
 
-          <div
-            className="mt-3 rounded-xl bg-surface/75 px-3 py-2 text-center text-xs font-semibold ring-1 ring-border/40"
-            style={{ color: trendColor }}
-          >
+          <div className={`mt-3 rounded-xl bg-surface/75 px-3 py-2 text-center text-xs ring-1 ring-border/40 ${trendClass}`}>
             {t(trendText)}
             {delta != null && !isUnchanged ? ` ${t("by")} ${formatMetricValue(Math.abs(delta), decimals, unit)}` : ""}
             {relativeChange != null && !isUnchanged ? ` (${formatSignedPercent(relativeChange)})` : ""}
@@ -662,19 +654,14 @@ export function SummaryPanel({
       <h3 className="text-sm font-semibold text-foreground">{t(title)}</h3>
       <div className="mt-3 space-y-2.5">
         {items.map((item) => {
-          const valueClass =
-            item.tone === "good"
-              ? "text-emerald-700 dark:text-emerald-300"
-              : item.tone === "bad"
-                ? "text-rose-600 dark:text-rose-300"
-                : "text-foreground";
+          const valueClass = item.tone ? changeToneTextClass(item.tone) : "font-semibold text-foreground";
           return (
             <div
               key={`${title}-${t(item.label)}`}
               className="flex items-center justify-between gap-4 rounded-2xl bg-tint px-4 py-3 ring-1 ring-border/40"
             >
               <span className="text-sm text-muted-foreground">{t(item.label)}</span>
-              <span className={`text-right font-semibold ${valueClass}`}>{t(String(item.value))}</span>
+              <span className={`text-right ${valueClass}`}>{t(String(item.value))}</span>
             </div>
           );
         })}

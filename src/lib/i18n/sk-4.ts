@@ -181,7 +181,6 @@ export const SK_PART_4: Record<string, string> = {
 "Large": "Veľké",
 "Extra": "Veľmi veľké",
 "Opening Google…": "Otváram Google…",
-"Opening Apple…": "Otváram Apple…",
 "Whole numbers": "Celé čísla",
 "Half steps": "Polovičné kroky",
 "days logged": "dní zaznamenaných",

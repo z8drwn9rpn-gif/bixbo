@@ -489,9 +489,12 @@ export async function pushMyData(payload: BixboData): Promise<void> {
   emitSyncStatus({ ...getCloudSyncStatus(), state: "syncing", error: undefined });
 
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+    error: sessionError,
+  } = await supabase.auth.getSession();
 
+  if (sessionError) throw sessionError;
+  const user = session?.user;
   if (!user) return;
 
   const safePayload = normalizeRemotePayload(payload);
@@ -611,8 +614,9 @@ export function useSession() {
         setSession(data.session);
       })
       .catch((error) => {
+        // A transient initial storage/auth read failure is not an explicit logout.
+        // onAuthStateChange remains the source of truth for real SIGNED_OUT events.
         console.error("useSession getSession", error);
-        setSession(null);
       })
       .finally(() => {
         setReady(true);
@@ -669,10 +673,17 @@ export function useCloudSync() {
             // Do not let a delayed write from an old session reach a different
             // account after sign-out/sign-in.
             const {
-              data: { user },
-            } = await supabase.auth.getUser();
+              data: { session: activeSession },
+              error: sessionError,
+            } = await supabase.auth.getSession();
 
-            if (!user || user.id !== userId || cancelled) {
+            if (sessionError) {
+              queuedPushData = payload;
+              setPendingCloudSync(true);
+              throw sessionError;
+            }
+
+            if (!activeSession?.user || activeSession.user.id !== userId || cancelled) {
               queuedPushData = null;
               return;
             }
