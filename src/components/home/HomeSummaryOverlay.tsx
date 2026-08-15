@@ -63,7 +63,7 @@ export function HomeSummaryOverlay({ data, onClose, onOpenCalendar, initialMonth
 
     const sexEntries = logs.flatMap(({ log }) => log?.sex?.filter((entry) => isIntercourseKind(entry.kind)) ?? []);
     const foodEntries = logs.flatMap(({ log }) => log?.food ?? []);
-    const noteEntries = keys.flatMap((key) => data.dayNotes[key] ?? []);
+    const noteEntryCount = keys.reduce((sum, key) => sum + (data.dayNotes[key]?.length ?? 0), 0);
     const meds = summarizeMedicationProgress(data.meds, keys, data.medLog, data.medLogItems ?? {}, new Date());
 
     const periodDays = logs
@@ -75,7 +75,7 @@ export function HomeSummaryOverlay({ data, onClose, onOpenCalendar, initialMonth
       ? `${fromKey(periodStart).toLocaleDateString(language === "sk" ? "sk-SK" : "en-GB", { day: "numeric", month: "short" })}${periodEnd !== periodStart ? ` – ${fromKey(periodEnd).toLocaleDateString(language === "sk" ? "sk-SK" : "en-GB", { day: "numeric", month: "short" })}` : ""} · ${periodDays.length} ${periodDays.length === 1 ? t("day") : t("days")}`
       : "";
 
-    const entryCount = painEntries.length + bowelEntries.length + workoutEntries.length + sexEntries.length + foodEntries.length + sleepValues.length + noteEntries.length + periodDays.length + (meds.taken || 0);
+    const entryCount = painEntries.length + bowelEntries.length + workoutEntries.length + sexEntries.length + foodEntries.length + sleepValues.length + noteEntryCount + periodDays.length + (meds.taken || 0);
 
     return {
       keys,
@@ -94,7 +94,7 @@ export function HomeSummaryOverlay({ data, onClose, onOpenCalendar, initialMonth
       sleepAvg,
       sexEntries,
       foodEntries,
-      noteEntries,
+      noteEntryCount,
       meds,
       periodDays,
       periodText,
@@ -183,11 +183,11 @@ export function HomeSummaryOverlay({ data, onClose, onOpenCalendar, initialMonth
       value: month.periodText,
       accent: "#7467D8",
     } : null,
-    month.noteEntries.length ? {
+    month.noteEntryCount ? {
       key: "notes",
       icon: <NoteIcon size={21} />,
       label: t("Notes"),
-      meta: `${month.noteEntries.length} ${month.noteEntries.length === 1 ? t("entry") : t("entries")}`,
+      meta: `${month.noteEntryCount} ${month.noteEntryCount === 1 ? t("entry") : t("entries")}`,
       value: t("Logged"),
       accent: "#B89A36",
     } : null,
@@ -213,7 +213,7 @@ export function HomeSummaryOverlay({ data, onClose, onOpenCalendar, initialMonth
           <div className="mt-3 flex items-center gap-2">
             <button type="button" onClick={() => setMonthAnchor((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1))} className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-tint ring-1 ring-border/60" aria-label={t("Previous month")}><ChevronLeft className="h-4 w-4" /></button>
             <button type="button" onClick={() => { onOpenCalendar(toKey(new Date(monthAnchor.getFullYear(), monthAnchor.getMonth(), 1))); onClose(); }} className="flex min-w-0 flex-1 items-center gap-3 rounded-[19px] border border-border/55 bg-tint/45 px-3 py-2.5 text-left">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-border/60 bg-background/80 text-base">📅</span>
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-border/60 bg-background/80"><Ico e="📅" size={18} /></span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[12.5px] font-bold text-foreground">{month.logs.length} {t("days logged")} · {month.entryCount} {t("entries")} · {rows.length} {t("logs")}</span>
                 <span className="mt-0.5 block text-[10.5px] text-muted-foreground">{t("Averages from recorded days only")}</span>
