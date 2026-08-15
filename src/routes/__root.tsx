@@ -126,7 +126,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { title: "BIXBO — Health diary" },
       { name: "description", content: "BIXBO — a calm diary for your cycle, pain, meds and notes." },
       { name: "author", content: "BIXBO" },
@@ -182,23 +182,6 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-
-  useEffect(() => {
-    const preventPinchTouch = (event: TouchEvent) => {
-      if (event.touches.length > 1) event.preventDefault();
-    };
-    const preventGesture = (event: Event) => event.preventDefault();
-
-    document.addEventListener("touchmove", preventPinchTouch, { passive: false });
-    document.addEventListener("gesturestart", preventGesture, { passive: false });
-    document.addEventListener("gesturechange", preventGesture, { passive: false });
-
-    return () => {
-      document.removeEventListener("touchmove", preventPinchTouch);
-      document.removeEventListener("gesturestart", preventGesture);
-      document.removeEventListener("gesturechange", preventGesture);
-    };
-  }, []);
 
   useCloudSync();
   useThemeSync();

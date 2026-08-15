@@ -8,6 +8,7 @@ const input = fs.readFileSync("src/components/ui/input.tsx", "utf8");
 const logSheet = fs.readFileSync("src/features/logging/LogSheetRoot.tsx", "utf8");
 const iosCss = fs.readFileSync("src/ios-touch-stability.css", "utf8");
 const hook = fs.readFileSync("src/hooks/useKeyboardViewport.ts", "utf8");
+const rootRoute = fs.readFileSync("src/routes/__root.tsx", "utf8");
 
 describe("Textarea iOS input attributes", () => {
   it("disables browser/iOS suggestions by default and keeps sentence capitalisation", () => {
@@ -56,15 +57,21 @@ describe("Log sheet keyboard viewport", () => {
     expect(logSheet).toContain("!top-[var(--bixbo-viewport-offset,0px)]");
   });
 
-  it("never fakes or hides the native iOS accessory bar", () => {
+  it("never fakes, hides or fights the native iOS accessory/focus behavior", () => {
     expect(iosCss).toContain("--bixbo-keyboard-inset");
     expect(hook).not.toContain("scrollIntoView(");
+    expect(hook).not.toContain("findScrollContainer");
+    expect(hook).not.toContain("scrollTop +=");
     expect(logSheet).not.toContain("scrollIntoView(");
   });
 
-  it("scrolls only the nearest inner container to reveal the focused field", () => {
-    expect(hook).toContain("findScrollContainer");
-    expect(hook).toContain("container.scrollTop +=");
+  it("keeps user zoom enabled while preventing automatic input focus zoom with 16px fields", () => {
+    expect(rootRoute).not.toContain("maximum-scale=1");
+    expect(rootRoute).not.toContain("minimum-scale=1");
+    expect(rootRoute).not.toContain("user-scalable=no");
+    expect(rootRoute).not.toContain('document.addEventListener("touchmove"');
+    expect(rootRoute).not.toContain('document.addEventListener("gesturestart"');
+    expect(iosCss).toMatch(/input:not\([^}]+textarea,[\s\S]*font-size:\s*16px\s*!important/);
   });
 });
 

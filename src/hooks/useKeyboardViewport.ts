@@ -3,15 +3,12 @@ import { useEffect } from "react";
 /**
  * BIXBO iOS keyboard viewport handling.
  *
- * iOS Safari / standalone PWA does not resize the layout viewport when the
- * software keyboard (plus its suggestion row and previous/next/done accessory
- * bar) opens. `window.visualViewport` is the only reliable source of the truly
- * visible area, so we mirror it into CSS variables and let the active
- * full-screen log sheet size itself against those values.
- *
- * Nothing here tries to hide the native accessory bar — that is not possible on
- * the web. We only guarantee that no BIXBO content stays hidden behind it and
- * that the background page never scrolls while a full-screen log is active.
+ * iOS Safari / standalone PWA keeps a separate visual viewport while the
+ * software keyboard and its native accessory bar are open. We only mirror that
+ * geometry into CSS. We deliberately do not move the document or an inner log
+ * scroll container in response to focus/VisualViewport events: native iOS owns
+ * focus scrolling and competing with it causes jumps, compositor stalls and
+ * background-page flashes.
  */
 
 export const VIEWPORT_HEIGHT_VAR = "--bixbo-viewport-height";
@@ -31,9 +28,8 @@ export function readKeyboardViewportMetrics(): KeyboardViewportMetrics | null {
   if (!viewport) return null;
 
   const height = Math.round(viewport.height);
-  const offsetTop = Math.round(viewport.offsetTop);
+  const offsetTop = Math.max(0, Math.round(viewport.offsetTop));
   const layoutHeight = Math.round(window.innerHeight || height);
-  // Anything the visual viewport lost at the bottom is keyboard + accessory bar.
   const keyboardInset = Math.max(0, layoutHeight - height - offsetTop);
 
   return { height, offsetTop, keyboardInset };
@@ -61,140 +57,61 @@ export function applyKeyboardViewportVars(
 
 type LockedDocumentStyles = {
   rootOverflow: string;
-  bodyPosition: string;
-  bodyTop: string;
-  bodyLeft: string;
-  bodyRight: string;
-  bodyWidth: string;
+  rootOverscrollBehavior: string;
   bodyOverflow: string;
+  bodyOverscrollBehavior: string;
 };
 
+let documentLockCount = 0;
+let documentLockSnapshot: LockedDocumentStyles | null = null;
+
 /**
- * Freeze the document at its current scroll position while a full-screen log is
- * open. This is the standard iOS-safe body lock: the page stays visually at the
- * exact same Y position, while the log's own overflow container remains
- * scrollable. It also prevents Safari from moving the Home/Day Overview behind
- * a focused textarea.
+ * Prevent background scroll while a full-screen log is open without converting
+ * the document body into a fixed-position layer. Fixed-body locking is unstable
+ * when iOS also pans/resizes VisualViewport for the software keyboard.
  */
 export function lockDocumentForLog(): () => void {
-  if (typeof window === "undefined" || typeof document === "undefined") return () => {};
+  if (typeof document === "undefined") return () => {};
 
   const root = document.documentElement;
   const body = document.body;
-  const scrollX = window.scrollX;
-  const scrollY = window.scrollY;
-  const lockToken = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-  const previous: LockedDocumentStyles = {
-    rootOverflow: root.style.overflow,
-    bodyPosition: body.style.position,
-    bodyTop: body.style.top,
-    bodyLeft: body.style.left,
-    bodyRight: body.style.right,
-    bodyWidth: body.style.width,
-    bodyOverflow: body.style.overflow,
-  };
+  documentLockCount += 1;
 
-  root.setAttribute(LOG_FORM_OPEN_ATTR, lockToken);
-  root.style.overflow = "hidden";
-  body.style.position = "fixed";
-  body.style.top = `-${scrollY}px`;
-  body.style.left = "0";
-  body.style.right = "0";
-  body.style.width = "100%";
-  body.style.overflow = "hidden";
-
-  let restored = false;
-  return () => {
-    if (restored) return;
-    restored = true;
-
-    root.style.overflow = previous.rootOverflow;
-    body.style.position = previous.bodyPosition;
-    body.style.top = previous.bodyTop;
-    body.style.left = previous.bodyLeft;
-    body.style.right = previous.bodyRight;
-    body.style.width = previous.bodyWidth;
-    body.style.overflow = previous.bodyOverflow;
-
-    const restoreScroll = () => window.scrollTo(scrollX, scrollY);
-    const finishRestore = () => {
-      restoreScroll();
-      // A new log may already have opened during the two restoration frames.
-      // Only the lock that owns this token may re-enable BottomNav.
-      if (root.getAttribute(LOG_FORM_OPEN_ATTR) === lockToken) {
-        root.removeAttribute(LOG_FORM_OPEN_ATTR);
-      }
+  if (documentLockCount === 1) {
+    documentLockSnapshot = {
+      rootOverflow: root.style.overflow,
+      rootOverscrollBehavior: root.style.overscrollBehavior,
+      bodyOverflow: body.style.overflow,
+      bodyOverscrollBehavior: body.style.overscrollBehavior,
     };
 
-    // Restore immediately, then once more after Radix/React has released its own
-    // scroll lock. Keep BottomNav hidden until the restoration is fully settled.
-    restoreScroll();
-    window.requestAnimationFrame(() => window.requestAnimationFrame(finishRestore));
+    root.setAttribute(LOG_FORM_OPEN_ATTR, "true");
+    root.style.overflow = "hidden";
+    root.style.overscrollBehavior = "none";
+    body.style.overflow = "hidden";
+    body.style.overscrollBehavior = "none";
+  }
+
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+
+    documentLockCount = Math.max(0, documentLockCount - 1);
+    if (documentLockCount !== 0 || !documentLockSnapshot) return;
+
+    root.style.overflow = documentLockSnapshot.rootOverflow;
+    root.style.overscrollBehavior = documentLockSnapshot.rootOverscrollBehavior;
+    body.style.overflow = documentLockSnapshot.bodyOverflow;
+    body.style.overscrollBehavior = documentLockSnapshot.bodyOverscrollBehavior;
+    root.removeAttribute(LOG_FORM_OPEN_ATTR);
+    documentLockSnapshot = null;
   };
 }
 
-/** Nearest scrollable ancestor of an element, if any. Never returns the document. */
-export function findScrollContainer(node: HTMLElement | null): HTMLElement | null {
-  let current: HTMLElement | null = node?.parentElement ?? null;
-  while (current) {
-    if (current === document.body || current === document.documentElement) return null;
-    const style = window.getComputedStyle(current);
-    const scrollable = /(auto|scroll|overlay)/.test(`${style.overflowY}`);
-    if (scrollable && current.scrollHeight > current.clientHeight + 1) return current;
-    current = current.parentElement;
-  }
-  return null;
-}
-
 /**
- * Keeps a focused field above the keyboard by scrolling ONLY the nearest inner
- * scroll container and ONLY forward/down by the minimum required delta.
- *
- * Important iOS invariant: focusing a textarea must never reduce the log's
- * scrollTop. Safari may already pan/scroll the focused control into view before
- * VisualViewport settles; trying to "correct" a field that appears above our
- * computed visual top creates a second, backwards scroll and is what makes the
- * Pain Details page jump toward the top. Native iOS handles fields above the
- * visible top on its own, so we deliberately never scroll backwards here.
- */
-export function keepFocusedFieldVisible(
-  target: HTMLElement,
-  visibleTop: number,
-  visibleBottom: number,
-  margin = 16,
-) {
-  const container = findScrollContainer(target);
-  if (!container) return;
-  const rect = target.getBoundingClientRect();
-  const containerRect = container.getBoundingClientRect();
-  const bottomLimit = Math.min(visibleBottom, containerRect.bottom) - margin;
-
-  // Never decrease scrollTop on focus. The only intervention allowed is moving
-  // the inner log farther down when the focused field would be hidden by the
-  // keyboard/accessory bar.
-  if (rect.bottom > bottomLimit) {
-    container.scrollTop += rect.bottom - bottomLimit;
-  }
-}
-
-function isTextField(node: EventTarget | null): node is HTMLElement {
-  if (!(node instanceof HTMLElement)) return false;
-  const tag = node.tagName;
-  if (tag === "TEXTAREA") return true;
-  if (tag === "INPUT") return true;
-  return node.isContentEditable;
-}
-
-/**
- * Mirrors the visual viewport into CSS variables while `enabled` is true.
- * Falls back to document locking only when the browser does not expose
- * VisualViewport.
- *
- * VisualViewport `scroll` is geometry-only: Safari may pan the visual viewport
- * while focusing a low textarea, and the fixed sheet must follow that offset.
- * Crucially, those scroll events NEVER trigger inner scrolling. The focused
- * field is revealed once, after keyboard resize/focus has settled, which avoids
- * the old feedback loop where Safari and BIXBO repeatedly scrolled each other.
+ * Mirrors VisualViewport geometry into CSS variables while `enabled` is true.
+ * This hook is intentionally read-only with respect to scroll position.
  */
 export function useKeyboardViewport(enabled: boolean) {
   useEffect(() => {
@@ -202,126 +119,39 @@ export function useKeyboardViewport(enabled: boolean) {
 
     const unlockDocument = lockDocumentForLog();
     const viewport = window.visualViewport;
+    const root = document.documentElement;
+
     if (!viewport) {
       return () => {
-        applyKeyboardViewportVars(null);
+        applyKeyboardViewportVars(null, root);
         unlockDocument();
       };
     }
 
-    let geometryFrame = 0;
-    let revealTimer = 0;
-    let focusTimer = 0;
-    let focusedScrollContainer: HTMLElement | null = null;
-    let focusedScrollFloor = 0;
-
-    const clearRevealTimer = () => {
-      if (!revealTimer) return;
-      window.clearTimeout(revealTimer);
-      revealTimer = 0;
-    };
-
-    const clearFocusTimer = () => {
-      if (!focusTimer) return;
-      window.clearTimeout(focusTimer);
-      focusTimer = 0;
-    };
-
-    const syncViewportGeometry = () => {
-      if (geometryFrame) cancelAnimationFrame(geometryFrame);
-      geometryFrame = requestAnimationFrame(() => {
-        geometryFrame = 0;
-        applyKeyboardViewportVars(readKeyboardViewportMetrics());
+    let frame = 0;
+    const sync = () => {
+      if (frame) cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        applyKeyboardViewportVars(readKeyboardViewportMetrics(), root);
       });
     };
 
-    // Pointer down happens before Safari focuses the textarea and before its
-    // native focus scroll. Remember the user's current log position so later
-    // keyboard/VisualViewport changes can never move the form backwards past it.
-    const rememberFocusedScrollFloor = (event: PointerEvent) => {
-      if (!isTextField(event.target)) return;
-      focusedScrollContainer = findScrollContainer(event.target);
-      focusedScrollFloor = focusedScrollContainer?.scrollTop ?? 0;
-    };
-
-    const enforceFocusedScrollFloor = (active: EventTarget | null) => {
-      if (!isTextField(active)) return;
-      const container = findScrollContainer(active);
-      if (!container || container !== focusedScrollContainer) return;
-      if (container.scrollTop < focusedScrollFloor) container.scrollTop = focusedScrollFloor;
-    };
-
-    const scheduleFocusedReveal = () => {
-      clearRevealTimer();
-      revealTimer = window.setTimeout(() => {
-        revealTimer = 0;
-        const latest = readKeyboardViewportMetrics();
-        const active = document.activeElement;
-        applyKeyboardViewportVars(latest);
-        if (!latest || latest.keyboardInset <= 80 || !isTextField(active)) return;
-        enforceFocusedScrollFloor(active);
-        keepFocusedFieldVisible(
-          active,
-          latest.offsetTop,
-          latest.offsetTop + latest.height,
-        );
-        enforceFocusedScrollFloor(active);
-      }, 96);
-    };
-
-    const syncResizeAndMaybeReveal = () => {
-      syncViewportGeometry();
-      const metrics = readKeyboardViewportMetrics();
-      const active = document.activeElement;
-      enforceFocusedScrollFloor(active);
-      if (metrics && metrics.keyboardInset > 80 && isTextField(active)) scheduleFocusedReveal();
-      else clearRevealTimer();
-    };
-
-    const syncAfterFocusIn = () => {
-      syncViewportGeometry();
-      enforceFocusedScrollFloor(document.activeElement);
-      clearFocusTimer();
-      focusTimer = window.setTimeout(() => {
-        focusTimer = 0;
-        enforceFocusedScrollFloor(document.activeElement);
-        syncResizeAndMaybeReveal();
-      }, 0);
-    };
-
-    const syncAfterFocusOut = () => {
-      clearRevealTimer();
-      clearFocusTimer();
-      focusTimer = window.setTimeout(() => {
-        focusTimer = 0;
-        const active = document.activeElement;
-        if (!isTextField(active)) {
-          focusedScrollContainer = null;
-          focusedScrollFloor = 0;
-        }
-        syncViewportGeometry();
-      }, 0);
-    };
-
-    syncResizeAndMaybeReveal();
-    viewport.addEventListener("resize", syncResizeAndMaybeReveal);
-    viewport.addEventListener("scroll", syncViewportGeometry);
-    window.addEventListener("orientationchange", syncResizeAndMaybeReveal);
-    document.addEventListener("pointerdown", rememberFocusedScrollFloor, true);
-    document.addEventListener("focusin", syncAfterFocusIn);
-    document.addEventListener("focusout", syncAfterFocusOut);
+    viewport.addEventListener("resize", sync);
+    viewport.addEventListener("scroll", sync);
+    document.addEventListener("focusin", sync);
+    document.addEventListener("focusout", sync);
+    window.addEventListener("orientationchange", sync);
+    sync();
 
     return () => {
-      if (geometryFrame) cancelAnimationFrame(geometryFrame);
-      clearRevealTimer();
-      clearFocusTimer();
-      viewport.removeEventListener("resize", syncResizeAndMaybeReveal);
-      viewport.removeEventListener("scroll", syncViewportGeometry);
-      window.removeEventListener("orientationchange", syncResizeAndMaybeReveal);
-      document.removeEventListener("pointerdown", rememberFocusedScrollFloor, true);
-      document.removeEventListener("focusin", syncAfterFocusIn);
-      document.removeEventListener("focusout", syncAfterFocusOut);
-      applyKeyboardViewportVars(null);
+      if (frame) cancelAnimationFrame(frame);
+      viewport.removeEventListener("resize", sync);
+      viewport.removeEventListener("scroll", sync);
+      document.removeEventListener("focusin", sync);
+      document.removeEventListener("focusout", sync);
+      window.removeEventListener("orientationchange", sync);
+      applyKeyboardViewportVars(null, root);
       unlockDocument();
     };
   }, [enabled]);
