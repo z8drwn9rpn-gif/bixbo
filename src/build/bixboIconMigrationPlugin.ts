@@ -98,6 +98,10 @@ export function bixboIconMigrationPlugin(): Plugin {
           '{activePainStepId === "quality" && (',
           '{(activePainStepId === "quality" || (activePainStepId === "parts" && painSteps.every((field) => field.id !== "quality"))) && (',
         );
+        next = next.replace(
+          '        <div className="space-y-4">\n          <Field label="How does it hurt?">',
+          '        <div className={activePainStepId === "parts" ? "mt-6 space-y-4" : "space-y-4"}>\n          <Field label="How does it hurt?">',
+        );
 
         if (next.includes(">💡</span>")) {
           next = ensureBixboIconImport(next).replaceAll(
