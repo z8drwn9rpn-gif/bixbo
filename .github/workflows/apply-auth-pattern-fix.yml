@@ -21,7 +21,17 @@ jobs:
           fetch-depth: 0
       - uses: oven-sh/setup-bun@v2
       - name: Apply patch
-        run: node scripts/apply-auth-pattern-fix.mjs
+        run: |
+          if ! node scripts/apply-auth-pattern-fix.mjs > /tmp/apply-fix.log 2>&1; then
+            cat /tmp/apply-fix.log
+            cp /tmp/apply-fix.log apply-auth-pattern-fix-error.txt
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add apply-auth-pattern-fix-error.txt
+            git commit -m "Capture auth patterns autofix failure"
+            git push origin HEAD:fix/auth-session-pattern-semantics
+            exit 1
+          fi
       - name: Install dependencies
         run: bun install --frozen-lockfile
       - name: Typecheck and tests
@@ -30,7 +40,7 @@ jobs:
           bun run test
       - name: Commit generated fix and remove temporary autofix files
         run: |
-          rm -f scripts/apply-auth-pattern-fix.mjs .github/workflows/apply-auth-pattern-fix.yml
+          rm -f scripts/apply-auth-pattern-fix.mjs .github/workflows/apply-auth-pattern-fix.yml apply-auth-pattern-fix-error.txt
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
