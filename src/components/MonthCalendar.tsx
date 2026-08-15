@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useI18n } from "@/hooks/useI18n";
 import { customLogDefinitions, getRegistryFeature, isRegistrySurfaceEnabled, type RegistryFeatureId } from "@/lib/appRegistry";
-import { toKey, todayKey, periodLabel, isDateInRange, predictPeriods, avgDayPain, isIntercourseKind, isCycleTrackingHidden, type BixboData, type DayLog, type EventEntry, type PeriodLevel } from "@/lib/storage";
+import { toKey, periodLabel, isDateInRange, predictPeriods, avgDayPain, isIntercourseKind, isCycleTrackingHidden, type BixboData, type DayLog, type EventEntry, type PeriodLevel } from "@/lib/storage";
 
 const WEEKDAYS = [{short:"Mo",desktop:"Mon"},{short:"Tu",desktop:"Tue"},{short:"We",desktop:"Wed"},{short:"Th",desktop:"Thu"},{short:"Fr",desktop:"Fri"},{short:"Sa",desktop:"Sat"},{short:"Su",desktop:"Sun"}];
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
