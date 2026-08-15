@@ -51,6 +51,50 @@ const NOTE_COLORS: Record<NoteColor, string> = {
   blue: "rgba(77, 135, 214, 0.11)",
 };
 
+const NOTE_COLOR_KEYS = new Set<NoteColor>(["default", "olive", "sand", "rose", "blue"]);
+
+function normalizeFolderForUi(folder: NoteFolder): NoteFolder {
+  const raw = folder as unknown as Record<string, unknown>;
+  return {
+    ...folder,
+    id: typeof raw.id === "string" && raw.id ? raw.id : "general",
+    name: typeof raw.name === "string" && raw.name.trim() ? raw.name : "Folder",
+    icon: typeof raw.icon === "string" ? raw.icon : "note",
+  };
+}
+
+function normalizeNoteForUi(note: Note): Note {
+  const raw = note as unknown as Record<string, unknown>;
+  const checklistRaw = Array.isArray(raw.checklist) ? raw.checklist : [];
+  const checklist = checklistRaw.flatMap((item, index) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return [];
+    const entry = item as Record<string, unknown>;
+    return [{
+      id: typeof entry.id === "string" && entry.id ? entry.id : `${String(raw.id ?? "note")}-item-${index}`,
+      text: typeof entry.text === "string" ? entry.text : "",
+      done: Boolean(entry.done),
+    }];
+  });
+  const createdAt = Number(raw.createdAt);
+  const updatedAt = Number(raw.updatedAt);
+  const rawColor = typeof raw.color === "string" ? raw.color : "default";
+  const color = NOTE_COLOR_KEYS.has(rawColor as NoteColor) ? rawColor as NoteColor : "default";
+
+  return {
+    ...note,
+    id: typeof raw.id === "string" ? raw.id : "",
+    folderId: typeof raw.folderId === "string" && raw.folderId ? raw.folderId : "general",
+    title: typeof raw.title === "string" ? raw.title : "",
+    content: typeof raw.content === "string" ? raw.content : "",
+    checklist: checklist.length ? checklist : undefined,
+    createdAt: Number.isFinite(createdAt) ? createdAt : 0,
+    updatedAt: Number.isFinite(updatedAt) ? updatedAt : undefined,
+    pinned: Boolean(raw.pinned),
+    archived: Boolean(raw.archived),
+    color,
+  };
+}
+
 function normalizeFolderIconKey(folder: Pick<NoteFolder, "name" | "icon">): FolderIconKey {
   const name = typeof folder.name === "string" ? folder.name.trim().toLowerCase() : "";
   const icon = typeof folder.icon === "string" ? folder.icon.trim().toLowerCase() : "";
@@ -121,11 +165,12 @@ function FolderBixboIcon({
 const SAFE_NOTE_TAGS = new Set(["B", "STRONG", "MARK", "BR", "P", "DIV", "UL", "OL", "LI"]);
 const DROP_NOTE_TAGS = new Set(["SCRIPT", "STYLE", "IFRAME", "OBJECT", "EMBED", "IMG", "SVG", "MATH", "LINK", "META"]);
 
-function sanitizeNoteHtml(html: string): string {
-  if (!html) return "";
+function sanitizeNoteHtml(html: unknown): string {
+  const source = typeof html === "string" ? html : "";
+  if (!source) return "";
 
   if (typeof document === "undefined") {
-    return html
+    return source
       .replace(/<(script|style|iframe|object|embed|img|svg|math|link|meta)\b[^>]*>[\s\S]*?<\/\1>/gi, "")
       .replace(/<(script|style|iframe|object|embed|img|svg|math|link|meta)\b[^>]*\/?\s*>/gi, "")
       .replace(/\son[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
@@ -133,7 +178,7 @@ function sanitizeNoteHtml(html: string): string {
   }
 
   const template = document.createElement("template");
-  template.innerHTML = html;
+  template.innerHTML = source;
 
   const cleanNode = (node: Node) => {
     for (const child of [...node.childNodes]) cleanNode(child);
@@ -163,7 +208,7 @@ function sanitizeNoteHtml(html: string): string {
   return template.innerHTML;
 }
 
-function stripHtml(html: string) {
+function stripHtml(html: unknown) {
   const safe = sanitizeNoteHtml(html);
   if (typeof document === "undefined") return safe.replace(/<[^>]+>/g, "");
 
@@ -173,7 +218,8 @@ function stripHtml(html: string) {
 }
 
 function formatNoteDate(note: Note, t: (key: string) => string, locale: string): string {
-  const stamp = note.updatedAt ?? note.createdAt;
+  const rawStamp = Number(note.updatedAt ?? note.createdAt);
+  const stamp = Number.isFinite(rawStamp) && rawStamp > 0 ? rawStamp : Date.now();
   const date = new Date(stamp);
   const now = new Date();
 
@@ -196,9 +242,10 @@ function notePreview(note: Note, t: (key: string) => string): string {
   const text = stripHtml(note.content).trim();
   if (text) return text;
 
-  if (note.checklist?.length) {
-    const complete = note.checklist.filter((item) => item.done).length;
-    return `${complete}/${note.checklist.length} ${t("checklist items complete")}`;
+  const checklist = Array.isArray(note.checklist) ? note.checklist : [];
+  if (checklist.length) {
+    const complete = checklist.filter((item) => Boolean(item?.done)).length;
+    return `${complete}/${checklist.length} ${t("checklist items complete")}`;
   }
 
   return t("No additional text");
@@ -264,9 +311,10 @@ function NoteFoodGlyph({
   );
 }
 
-function NoteRichText({ text, size = 16 }: { text: string; size?: number }) {
+function NoteRichText({ text, size = 16 }: { text: unknown; size?: number }) {
+  const value = typeof text === "string" ? text : "";
   const special = /([🥑🍌🧁🍞])/gu;
-  const parts = text.split(special);
+  const parts = value.split(special);
 
   return (
     <span>
@@ -286,6 +334,8 @@ function NotesPage() {
   const { data, update, hydrated } = useBixbo();
   const locale = language === "sk" ? "sk-SK" : "en-GB";
   const view = hydrated ? data : EMPTY;
+  const safeFolders = useMemo(() => view.folders.map(normalizeFolderForUi), [view.folders]);
+  const safeNotebook = useMemo(() => view.notebook.map(normalizeNoteForUi), [view.notebook]);
 
   const [screen, setScreen] = useState<NotesView>("all");
   const [openFolder, setOpenFolder] = useState<string | null>(null);
@@ -296,22 +346,19 @@ function NotesPage() {
   useEffect(() => {
     if (!hydrated) return;
 
-    const sanitizedNotebook = data.notebook.map((note) => ({
-      ...note,
-      content: sanitizeNoteHtml(note.content ?? ""),
-    }));
-
-    const normalizedFolders = data.folders.map((folder) => {
-      const semanticIcon = normalizeFolderIconKey(folder);
-      return folder.icon === semanticIcon ? folder : { ...folder, icon: semanticIcon };
+    const sanitizedNotebook = data.notebook.map((note) => {
+      const normalized = normalizeNoteForUi(note);
+      return { ...normalized, content: sanitizeNoteHtml(normalized.content) };
     });
 
-    const notebookChanged = sanitizedNotebook.some(
-      (note, index) => note.content !== data.notebook[index]?.content,
-    );
-    const foldersChanged = normalizedFolders.some(
-      (folder, index) => folder.icon !== data.folders[index]?.icon,
-    );
+    const normalizedFolders = data.folders.map((folder) => {
+      const normalized = normalizeFolderForUi(folder);
+      const semanticIcon = normalizeFolderIconKey(normalized);
+      return normalized.icon === semanticIcon ? normalized : { ...normalized, icon: semanticIcon };
+    });
+
+    const notebookChanged = JSON.stringify(sanitizedNotebook) !== JSON.stringify(data.notebook);
+    const foldersChanged = JSON.stringify(normalizedFolders) !== JSON.stringify(data.folders);
 
     if (!notebookChanged && !foldersChanged) return;
 
@@ -367,12 +414,12 @@ function NotesPage() {
     setMenuNoteId(null);
   };
 
-  const activeFolder = openFolder ? view.folders.find((folder) => folder.id === openFolder) : undefined;
+  const activeFolder = openFolder ? safeFolders.find((folder) => folder.id === openFolder) : undefined;
 
   const searchedNotes = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
-    return view.notebook
+    return safeNotebook
       .filter((note) => {
         if (screen === "archived") {
           if (!note.archived) return false;
@@ -383,7 +430,10 @@ function NotesPage() {
         if (openFolder && note.folderId !== openFolder) return false;
         if (!normalizedQuery) return true;
 
-        return `${note.title} ${stripHtml(note.content)} ${note.checklist?.map((item) => item.text).join(" ") ?? ""}`
+        const checklistText = Array.isArray(note.checklist)
+          ? note.checklist.map((item) => typeof item?.text === "string" ? item.text : "").join(" ")
+          : "";
+        return `${note.title} ${stripHtml(note.content)} ${checklistText}`
           .toLowerCase()
           .includes(normalizedQuery);
       })
@@ -391,13 +441,13 @@ function NotesPage() {
         if (Boolean(a.pinned) !== Boolean(b.pinned)) return a.pinned ? -1 : 1;
         return (b.updatedAt ?? b.createdAt) - (a.updatedAt ?? a.createdAt);
       });
-  }, [openFolder, query, screen, view.notebook]);
+  }, [openFolder, query, safeNotebook, screen]);
 
   const pinnedNotes = searchedNotes.filter((note) => note.pinned);
   const regularNotes = searchedNotes.filter((note) => !note.pinned);
 
   if (openNote) {
-    const note = view.notebook.find((item) => item.id === openNote);
+    const note = safeNotebook.find((item) => item.id === openNote);
 
     if (!note) {
       return (
@@ -416,7 +466,7 @@ function NotesPage() {
       );
     }
 
-    return <NoteEditor note={note} folders={view.folders} onBack={() => setOpenNote(null)} update={update} />;
+    return <NoteEditor note={note} folders={safeFolders} onBack={() => setOpenNote(null)} update={update} />;
   }
 
   const addFolder = () => {
@@ -523,8 +573,8 @@ function NotesPage() {
             </div>
 
             <div className="overflow-hidden rounded-3xl border border-border/70 bg-surface shadow-sm ring-1 ring-border/80">
-              {view.folders.map((folder, index) => {
-                const count = view.notebook.filter((note) => note.folderId === folder.id && !note.archived).length;
+              {safeFolders.map((folder, index) => {
+                const count = safeNotebook.filter((note) => note.folderId === folder.id && !note.archived).length;
 
                 return (
                   <div
@@ -634,7 +684,7 @@ function NoteSection({
     <section>
       <h2 className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
         {title === "Pinned" && <Pin className="h-3.5 w-3.5" />}
-        {t(title)}
+        {t(typeof title === "string" ? title : "All Notes")}
       </h2>
 
       {notes.length === 0 ? (
@@ -647,12 +697,12 @@ function NoteSection({
             <article
               key={note.id}
               className="relative overflow-visible rounded-3xl border border-border/65 p-4 shadow-sm ring-1 ring-border/70 transition-shadow hover:shadow-md"
-              style={{ background: NOTE_COLORS[note.color ?? "default"] }}
+              style={{ background: NOTE_COLORS[note.color ?? "default"] ?? NOTE_COLORS.default }}
             >
               <button type="button" onClick={() => onOpen(note.id)} className="block min-h-[58px] w-full pr-9 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                 <div className="flex items-start justify-between gap-3">
                   <h3 className="line-clamp-1 text-sm font-semibold">
-                    <NoteRichText text={(typeof note.title === "string" ? note.title : "").trim() || t("Untitled")} size={16} />
+                    <NoteRichText text={note.title.trim() || t("Untitled")} size={16} />
                   </h3>
                   <span className="shrink-0 text-[10px] text-muted-foreground">{formatNoteDate(note, t, locale)}</span>
                 </div>
