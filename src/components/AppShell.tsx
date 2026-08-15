@@ -11,6 +11,7 @@ import "@/typography-hierarchy.css";
 import "@/dark-theme.css";
 import "@/notes-preview.css";
 import "@/log-menu-popover.css";
+import "@/ios-touch-stability.css";
 
 const BIXBO_MASCOT_SRC = bixboMascot;
 const BIXBO_ROUNDED_DISPLAY_FONT = 'ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, -apple-system, BlinkMacSystemFont, sans-serif';
