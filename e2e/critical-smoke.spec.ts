@@ -64,3 +64,49 @@ test("mobile layout does not introduce page-level horizontal overflow", async ({
   }));
   expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth + 1);
 });
+
+test("mobile Quick Log Add stays in the viewport and creates a button", async ({ page }, testInfo) => {
+  test.skip(!testInfo.project.name.includes("mobile"), "mobile-only Quick Log regression");
+
+  await page.goto("/");
+
+  const moreOptions = page.getByRole("button", { name: "More options" }).first();
+  await moreOptions.scrollIntoViewIfNeeded();
+  await moreOptions.click();
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+
+  const heading = page.getByText("New quick log button", { exact: true });
+  await expect(heading).toBeVisible();
+
+  const surface = heading.locator("..");
+  const overlay = surface.locator("..");
+  const viewport = page.viewportSize();
+  expect(viewport).not.toBeNull();
+
+  const overlayBox = await overlay.boundingBox();
+  const surfaceBox = await surface.boundingBox();
+  expect(overlayBox).not.toBeNull();
+  expect(surfaceBox).not.toBeNull();
+
+  expect(Math.abs((overlayBox?.y ?? 0))).toBeLessThanOrEqual(2);
+  expect(Math.abs((overlayBox?.height ?? 0) - (viewport?.height ?? 0))).toBeLessThanOrEqual(3);
+  expect(surfaceBox?.y ?? -1).toBeGreaterThanOrEqual(0);
+  expect((surfaceBox?.y ?? 0) + (surfaceBox?.height ?? 0)).toBeLessThanOrEqual((viewport?.height ?? 0) + 2);
+
+  const bottomNavIsTopmost = await page.evaluate(() => {
+    const element = document.elementFromPoint(window.innerWidth / 2, Math.max(0, window.innerHeight - 8));
+    return Boolean(element?.closest('nav[aria-label="Primary navigation"]'));
+  });
+  expect(bottomNavIsTopmost).toBe(false);
+
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await expect(page.getByText("2. Preset values", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await expect(page.getByText("3. Icon and name", { exact: true })).toBeVisible();
+
+  await page.getByPlaceholder("Button name").fill("E2E quick tag");
+  await page.getByRole("button", { name: "Create", exact: true }).click();
+
+  await expect(heading).toBeHidden();
+  await expect(page.getByRole("button", { name: "E2E quick tag", exact: true })).toBeVisible();
+});
