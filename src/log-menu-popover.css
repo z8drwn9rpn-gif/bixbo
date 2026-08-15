@@ -24,15 +24,16 @@ div.pointer-events-none.absolute.inset-0.overflow-hidden
   align-content: center !important;
   gap: 10px 4px !important;
   padding: 16px 12px 14px !important;
-  border: 1px solid color-mix(in srgb, var(--border) 76%, transparent) !important;
+  border: 1px solid rgba(122, 137, 92, 0.24) !important;
   border-radius: 26px !important;
-  background: color-mix(in srgb, var(--background) 94%, transparent) !important;
+  background: #fbf7f3 !important;
   box-shadow:
-    0 18px 46px rgba(34, 38, 24, 0.18),
-    0 2px 8px rgba(34, 38, 24, 0.08),
-    inset 0 1px 0 color-mix(in srgb, white 72%, transparent) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(1.08) !important;
-  backdrop-filter: blur(20px) saturate(1.08) !important;
+    0 22px 52px rgba(26, 31, 18, 0.17),
+    0 6px 18px rgba(26, 31, 18, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  isolation: isolate !important;
   overflow: visible !important;
 }
 
@@ -45,9 +46,9 @@ div.pointer-events-none.absolute.inset-0.overflow-hidden
   width: 20px;
   height: 20px;
   transform: translateX(-50%) rotate(45deg);
-  border-right: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
-  background: color-mix(in srgb, var(--background) 96%, transparent);
+  border-right: 1px solid rgba(122, 137, 92, 0.24);
+  border-bottom: 1px solid rgba(122, 137, 92, 0.24);
+  background: #fbf7f3;
   border-radius: 0 0 5px 0;
 }
 
@@ -83,12 +84,14 @@ button[data-log-category] {
   gap: 5px !important;
   padding: 4px 1px 2px !important;
   border-radius: 16px !important;
-  color: var(--foreground) !important;
+  color: #171717 !important;
   touch-action: manipulation !important;
+  -webkit-font-smoothing: antialiased !important;
+  text-rendering: geometricPrecision !important;
 }
 
 button[data-log-category]:active {
-  background: color-mix(in srgb, var(--primary) 9%, transparent) !important;
+  background: rgba(112, 132, 70, 0.09) !important;
   transform: scale(0.96) !important;
 }
 
@@ -119,6 +122,7 @@ button[data-log-category] > span:first-child img {
   height: 30px !important;
   max-width: 30px !important;
   max-height: 30px !important;
+  filter: none !important;
 }
 
 button[data-log-category] > span:last-child {
@@ -144,8 +148,11 @@ button[data-log-category] > span:last-child {
   font-weight: 700 !important;
   line-height: 1.05 !important;
   letter-spacing: -0.01em !important;
-  color: var(--foreground) !important;
+  color: #171717 !important;
   text-shadow: none !important;
+  opacity: 1 !important;
+  -webkit-font-smoothing: antialiased !important;
+  text-rendering: geometricPrecision !important;
 }
 
 button[aria-label="Reorder log categories"],
@@ -154,9 +161,11 @@ button[aria-label="Finish reordering log categories"] {
   bottom: calc(286px + env(safe-area-inset-bottom)) !important;
   width: 30px !important;
   height: 30px !important;
-  border: 0 !important;
-  background: color-mix(in srgb, var(--background) 88%, transparent) !important;
-  box-shadow: 0 2px 8px rgba(34, 38, 24, 0.12) !important;
+  border: 1px solid rgba(122, 137, 92, 0.18) !important;
+  background: #fbf7f3 !important;
+  box-shadow: 0 3px 10px rgba(34, 38, 24, 0.12) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
 }
 
 button[aria-label="Reorder log categories"] > span:last-child,
@@ -168,10 +177,10 @@ button[aria-label="Reorder log categories"] span[aria-hidden="true"] span,
 button[aria-label="Finish reordering log categories"] span[aria-hidden="true"] span {
   width: 3px !important;
   height: 3px !important;
-  background: var(--muted-foreground) !important;
+  background: #687455 !important;
 }
 
-/* Log chooser background stays sharp: no grey/olive wash and no blur. */
+/* Keep the page behind the chooser sharp and unchanged. */
 body:has(button[data-log-category]) [data-state="open"][class*="bg-black/45"] {
   background: transparent !important;
   -webkit-backdrop-filter: none !important;
@@ -217,11 +226,34 @@ body:has(button[data-log-category]) nav[aria-label="Primary navigation"] {
 
 .dark div.pointer-events-none.absolute.inset-0.overflow-hidden
   > div:has(> button[data-log-category]) {
-  background: color-mix(in srgb, var(--surface) 94%, transparent) !important;
-  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255,255,255,0.05) !important;
+  background: #23281d !important;
+  border: 1px solid rgba(194, 205, 170, 0.12) !important;
+  box-shadow:
+    0 24px 56px rgba(0, 0, 0, 0.46),
+    0 6px 18px rgba(0, 0, 0, 0.28) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
 }
 
 .dark div.pointer-events-none.absolute.inset-0.overflow-hidden
   > div:has(> button[data-log-category])::after {
-  background: color-mix(in srgb, var(--surface) 96%, transparent) !important;
+  background: #23281d !important;
+  border-right-color: rgba(194, 205, 170, 0.12) !important;
+  border-bottom-color: rgba(194, 205, 170, 0.12) !important;
+}
+
+.dark button[data-log-category],
+.dark button[data-log-category] > span:last-child {
+  color: #f6f4ee !important;
+}
+
+.dark button[aria-label="Reorder log categories"],
+.dark button[aria-label="Finish reordering log categories"] {
+  background: #23281d !important;
+  border-color: rgba(194, 205, 170, 0.12) !important;
+}
+
+.dark button[aria-label="Reorder log categories"] span[aria-hidden="true"] span,
+.dark button[aria-label="Finish reordering log categories"] span[aria-hidden="true"] span {
+  background: #c8d0b4 !important;
 }
