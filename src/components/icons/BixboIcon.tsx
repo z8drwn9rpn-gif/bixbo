@@ -2,6 +2,7 @@ import type { ComponentType, SVGProps } from "react";
 import { Ico, NoteIcon } from "./BixboExtraIcons";
 import { semanticIconForLabel } from "./BixboFoodIcons";
 import { appEmojiIcon } from "./BixboAppEmojiIcons";
+import { pickerEmojiIcon } from "./BixboPickerEmojiIcons";
 import { specificEmojiIcon } from "./BixboSpecificEmojiIcons";
 import { keyboardEmojiIcon } from "./BixboKeyboardEmojiIcons";
 
@@ -32,9 +33,12 @@ export function resolveBixboIcon(input: { emoji?: string; label?: string; fallba
       if (food) return food;
     }
 
-    // Exact app-used BIXBO drawings win over broad category fallbacks.
+    // Exact app and picker drawings win over broad category fallbacks.
     const appSpecific = appEmojiIcon(emoji);
     if (appSpecific) return appSpecific;
+
+    const pickerSpecific = pickerEmojiIcon(emoji);
+    if (pickerSpecific) return pickerSpecific;
 
     const specific = specificEmojiIcon(emoji);
     if (specific) return specific;
@@ -71,7 +75,6 @@ export function BixboIcon({
   const Resolved = resolveBixboIcon({ emoji, label });
   if (Resolved) return <Resolved size={size} className={className} />;
 
-  // Never hand an unsupported emoji string to the platform renderer.
   if (fallback === "none") return null;
   return <NoteIcon size={size} className={className} />;
 }
