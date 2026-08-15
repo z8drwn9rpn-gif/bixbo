@@ -12,12 +12,12 @@ export default defineConfig({
   reporter: process.env.CI ? "line" : "list",
   use: {
     baseURL,
-    browserName: "chromium",
     trace: "retain-on-failure",
   },
   projects: [
-    { name: "desktop", use: { viewport: { width: 1280, height: 900 } } },
-    { name: "mobile", use: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } },
+    { name: "desktop", use: { browserName: "chromium", viewport: { width: 1280, height: 900 } } },
+    { name: "mobile", use: { browserName: "chromium", viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } },
+    { name: "webkit-mobile", use: { browserName: "webkit", viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } },
   ],
   webServer: {
     command: `wrangler dev --ip 127.0.0.1 --port ${port}`,
