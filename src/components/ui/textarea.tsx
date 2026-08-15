@@ -46,7 +46,7 @@ function assignRef<T>(ref: React.ForwardedRef<T>, value: T | null) {
 }
 
 const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"textarea">>(
-  ({ className, value, defaultValue, onChange, onScroll, onFocus, onSelect, ...props }, forwardedRef) => {
+  ({ className, value, defaultValue, onChange, onScroll, ...props }, forwardedRef) => {
     const initialValue = normalizeBixboText(asText(defaultValue));
     const [uncontrolledValue, setUncontrolledValue] = React.useState(initialValue);
     const [pickerOpen, setPickerOpen] = React.useState(false);
@@ -112,14 +112,14 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"tex
               start: event.currentTarget.selectionStart ?? event.currentTarget.value.length,
               end: event.currentTarget.selectionEnd ?? event.currentTarget.selectionStart ?? event.currentTarget.value.length,
             };
-            onFocus?.(event);
+            props.onFocus?.(event);
           }}
           onSelect={(event) => {
             caretRef.current = {
               start: event.currentTarget.selectionStart ?? event.currentTarget.value.length,
               end: event.currentTarget.selectionEnd ?? event.currentTarget.selectionStart ?? event.currentTarget.value.length,
             };
-            onSelect?.(event);
+            props.onSelect?.(event);
           }}
           onChange={(event) => {
             const node = event.currentTarget;

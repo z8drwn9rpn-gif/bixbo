@@ -3,17 +3,8 @@ import type { Plugin } from "vite";
 const BIXBO_ICON_IMPORT = 'import { BixboIcon } from "@/components/icons/BixboIcon";';
 const BIXBO_SAFE_TEXT_IMPORT = 'import { BixboSafeText } from "@/components/icons/BixboSafeText";';
 
-function escapeRegExp(value: string) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 function ensureImport(code: string, modulePath: string, statement: string) {
-  // Match the exact module specifier. A substring check is unsafe here because
-  // "@/components/icons/BixboIcons" also contains
-  // "@/components/icons/BixboIcon" and previously caused transformed JSX to
-  // reference BixboIcon without actually importing it.
-  const modulePattern = new RegExp(`from\\s+["']${escapeRegExp(modulePath)}["']`);
-  if (modulePattern.test(code)) return code;
+  if (code.includes(modulePath)) return code;
   return `${statement}\n${code}`;
 }
 
