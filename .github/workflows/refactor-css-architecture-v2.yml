@@ -1,0 +1,202 @@
+name: Refactor CSS architecture v2
+
+on:
+  push:
+    branches:
+      - refactor/css-component-architecture
+
+permissions:
+  contents: write
+
+jobs:
+  refactor:
+    if: ${{ !contains(github.event.head_commit.message, '[css-architecture-v2-applied]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/css-component-architecture
+          fetch-depth: 0
+
+      - name: Move patch styling into stable component architecture
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          def replace_once(text: str, old: str, new: str, label: str) -> str:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"{label}: expected exactly one match, found {count}")
+              return text.replace(old, new, 1)
+
+          # Sheet exposes overlay styling as an explicit component API.
+          p = Path("src/components/ui/sheet.tsx")
+          text = p.read_text()
+          text = replace_once(
+              text,
+              'interface SheetContentProps\n  extends React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>, VariantProps<typeof sheetVariants> {}',
+              'interface SheetContentProps\n  extends React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>, VariantProps<typeof sheetVariants> {\n  overlayClassName?: string;\n}',
+              "sheet props",
+          )
+          text = replace_once(
+              text,
+              '      onInteractOutside,\n      ...props',
+              '      onInteractOutside,\n      overlayClassName,\n      ...props',
+              "sheet overlay destructure",
+          )
+          text = replace_once(text, '<SheetOverlay />', '<SheetOverlay className={overlayClassName} />', "sheet overlay render")
+          p.write_text(text)
+
+          # Log menu: render the compact menu directly. No CSS :has()/radial rewrite.
+          p = Path("src/features/logging/LogSheetRoot.tsx")
+          text = p.read_text()
+          text = replace_once(
+              text,
+              '<Sheet open={open} onOpenChange={(b) => { if (!b) close(); }}>',
+              '<Sheet open={open} modal={Boolean(active)} onOpenChange={(b) => { if (!b) close(); }}>',
+              "log sheet modal mode",
+          )
+          text = replace_once(
+              text,
+              '      <SheetContent\n        side="bottom"\n        className={',
+              '      <SheetContent\n        side="bottom"\n        overlayClassName={active ? undefined : "!bg-transparent !backdrop-blur-none !transition-none data-[state=open]:!animate-none data-[state=closed]:!animate-none"}\n        className={',
+              "log sheet overlay class",
+          )
+          text = replace_once(
+              text,
+              ': "fixed !inset-0 !left-0 !right-0 !top-0 !bottom-0 flex !h-[100dvh] !max-h-none !w-full !max-w-none min-h-0 flex-col overflow-hidden !rounded-none !border-0 !bg-transparent !p-0 !shadow-none") + " [&>button.absolute]:hidden"',
+              ': "fixed !inset-0 !left-0 !right-0 !top-0 !bottom-0 !pointer-events-none flex !h-[100dvh] !max-h-none !w-full !max-w-none min-h-0 flex-col overflow-hidden !rounded-none !border-0 !bg-transparent !p-0 !shadow-none !transition-none data-[state=open]:!animate-none data-[state=closed]:!animate-none") + " [&>button.absolute]:hidden"',
+              "log sheet inactive shell",
+          )
+
+          start = text.find('        {!active ? (\n          <>\n            <SheetTitle className="sr-only">{t("Log")}</SheetTitle>')
+          end_marker = '        ) : (\n          <div className="flex h-full min-h-0 flex-col">'
+          end = text.find(end_marker, start)
+          if start < 0 or end < 0:
+              raise SystemExit("log menu block markers not found")
+          replacement = '''        {!active ? (\n          <>\n            <SheetTitle className="sr-only">{t("Log")}</SheetTitle>\n            <div\n              data-bixbo-log-menu\n              className="pointer-events-auto fixed left-3 right-3 z-20 mx-auto max-w-[365px] rounded-[26px] border border-border/70 bg-background px-3 pb-5 pt-4 shadow-xl dark:bg-surface-elevated"\n              style={{ bottom: "calc(92px + env(safe-area-inset-bottom))" }}\n            >\n              <div className="grid grid-cols-5 gap-x-1 gap-y-3">\n                {orderedCats.map((c) => (\n                  <button\n                    key={c.id}\n                    type="button"\n                    data-log-category={c.id}\n                    onPointerDown={(event) => startDirectReorder(event, c.id)}\n                    onPointerMove={moveDirectReorder}\n                    onPointerUp={endDirectReorder}\n                    onPointerCancel={endDirectReorder}\n                    onClick={(event) => {\n                      if (editingOrder) { event.preventDefault(); event.stopPropagation(); return; }\n                      setCat(c.id);\n                    }}\n                    aria-label={editingOrder ? `${t("Drag")} ${t(c.label)} ${t("to reorder")}` : `${t("Log")} ${t(c.label)}`}\n                    className={`flex min-h-[82px] min-w-0 touch-none select-none flex-col items-center justify-start gap-1.5 rounded-2xl px-0.5 py-1 text-foreground outline-none transition-[background-color,transform,opacity] focus-visible:ring-2 focus-visible:ring-ring ${editingOrder ? "cursor-grab active:cursor-grabbing" : "active:scale-[0.97]"} ${draggingCat === c.id ? "z-30 scale-[1.03] bg-tint shadow-md" : "hover:bg-tint/60"}`}\n                  >\n                    <span className="grid h-10 w-10 shrink-0 place-items-center">\n                      <Ico e={c.emoji} size={30} />\n                    </span>\n                    <span className="min-h-[30px] w-full text-center text-[11px] font-semibold leading-[1.18] text-foreground">\n                      {t(c.label)}\n                    </span>\n                  </button>\n                ))}\n              </div>\n\n              <span aria-hidden="true" className="pointer-events-none absolute bottom-[-10px] left-1/2 h-5 w-5 -translate-x-1/2 rotate-45 border-b border-r border-border/70 bg-background dark:bg-surface-elevated" />\n\n              <button\n                type="button"\n                onClick={() => { endDirectReorder(); setEditingOrder((value) => !value); }}\n                aria-label={editingOrder ? t("Finish reordering log categories") : t("Reorder log categories")}\n                className="pointer-events-auto absolute -top-10 right-2 grid h-[30px] w-[30px] place-items-center rounded-full border border-border/70 bg-background text-muted-foreground shadow-sm transition active:scale-95 dark:bg-surface-elevated"\n              >\n                {editingOrder ? <Check className="h-4 w-4 text-foreground" strokeWidth={2.6} /> : <span className="grid grid-cols-2 gap-[2px]" aria-hidden="true">{Array.from({ length: 6 }).map((_, index) => <span key={index} className="h-[3px] w-[3px] rounded-full bg-muted-foreground" />)}</span>}\n              </button>\n\n              {editingOrder ? (\n                <div className="pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-border/70 bg-background px-3 py-1 text-[10px] font-semibold text-muted-foreground shadow-sm dark:bg-surface-elevated">\n                  {t("Drag items to reorder")}\n                </div>\n              ) : null}\n            </div>\n          </>\n'''
+          text = text[:start] + replacement + text[end:]
+          # TrText was used only by the old radial aria-label expression.
+          if text.count("TrText") == 1:
+              text = re.sub(r'^import \{ TrText \} from "[^\n]+";\n', '', text, flags=re.MULTILINE)
+          p.write_text(text)
+
+          # ŠukŠuk: move exact compact styling into the component itself.
+          p = Path("src/features/logging/CycleForms.tsx")
+          text = p.read_text()
+          a = text.index("export function SexForm")
+          b = text.index("export function AddCustomInline", a)
+          sex = text[a:b]
+          sex = replace_once(
+              sex,
+              'className={size === "lg" ? "font-serif text-lg font-semibold text-foreground" : "font-serif text-sm font-semibold text-foreground"}',
+              'className={size === "lg" ? "bixbo-sex-section-heading font-serif text-[13px] font-semibold leading-tight text-foreground" : "bixbo-sex-section-heading font-serif text-xs font-semibold leading-tight text-foreground"}',
+              "sex section heading",
+          )
+          old_chip = '''  const chipClass = (active: boolean) => `inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition ${\n    active\n      ? "bg-primary text-primary-foreground shadow-sm ring-2 ring-foreground/75 ring-offset-2 ring-offset-background"\n      : "bg-tint text-foreground ring-1 ring-border"\n  }`;\n  const symptomChipClass = (active: boolean) => `inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition ${\n    active\n      ? "bg-primary text-primary-foreground shadow-sm ring-2 ring-foreground/75 ring-offset-1 ring-offset-background"\n      : "bg-tint text-foreground ring-1 ring-border"\n  }`;'''
+          new_chip = '''  const chipClass = (active: boolean) => `bixbo-sex-chip inline-flex min-h-[31px] items-center justify-center gap-[5px] rounded-full px-3 max-[430px]:px-2.5 py-[5px] text-xs font-semibold leading-none transition ${\n    active\n      ? "bg-primary/15 text-foreground ring-2 ring-foreground/75 ring-offset-1 ring-offset-background"\n      : "bg-tint text-foreground ring-1 ring-border"\n  }`;\n  const symptomChipClass = (active: boolean) => `bixbo-sex-symptom-chip inline-flex min-h-[30px] items-center justify-center gap-[5px] rounded-full px-2.5 py-[5px] text-[11.5px] font-semibold leading-none transition ${\n    active\n      ? "bg-primary text-primary-foreground ring-2 ring-foreground/75 ring-offset-1 ring-offset-background"\n      : "bg-tint text-foreground ring-1 ring-border"\n  }`;'''
+          sex = replace_once(sex, old_chip, new_chip, "sex chip classes")
+          sex = replace_once(sex, 'return <div className="mx-auto flex w-full max-w-xl flex-col gap-4 pb-5">', 'return <div data-bixbo-log-form="sex" className="mx-auto flex w-full max-w-xl flex-col gap-3 max-[430px]:gap-[11px] pb-[18px]">', "sex root")
+          for key in ("type", "protection", "feeling"):
+              sex = replace_once(sex, f'    <section>\n      {{renderSectionHead("{key}"', f'    <section data-bixbo-sex-section="{key}">\n      {{renderSectionHead("{key}"', f"sex {key} section")
+          sex = replace_once(sex, '    <section>\n      <p className="mb-2 font-serif text-lg font-semibold text-foreground">4. {t("Pain")}</p>', '    <section data-bixbo-sex-section="pain">\n      <p className="bixbo-sex-section-heading mb-2 font-serif text-[13px] font-semibold leading-tight text-foreground">4. {t("Pain")}</p>', "sex pain section")
+          sex = replace_once(sex, '        <div className="mt-3 rounded-3xl border border-border/80 bg-surface/40 p-3.5 shadow-sm">', '        <div data-bixbo-sex-pain-card className="mt-3 rounded-[18px] border border-border/80 bg-surface/40 p-3 shadow-none [&_p]:text-[11px]">', "sex pain card")
+          sex = replace_once(sex, '          <div className="grid gap-4 sm:grid-cols-[1fr_1.15fr]">', '          <div className="grid gap-3 sm:grid-cols-[1fr_1.15fr]">', "sex pain grid")
+          sex = sex.replace('className={`h-8 w-8 shrink-0 rounded-full text-xs font-semibold transition ${painScaleValue === value ?', 'className={`h-[29px] w-[29px] shrink-0 rounded-full text-[11px] font-semibold transition ${painScaleValue === value ?', 1)
+          sex = replace_once(sex, '    <section className="rounded-3xl border border-border/80 bg-surface/25 p-3.5">', '    <section data-bixbo-sex-section="symptoms" className="rounded-[18px] border border-border/80 p-3">', "sex symptoms section")
+          sex = replace_once(sex, '    <section>\n      <p className="mb-2 font-serif text-lg font-semibold text-foreground">6. {t("Orgasm")}</p>', '    <section data-bixbo-sex-section="orgasm">\n      <p className="bixbo-sex-section-heading mb-2 font-serif text-[13px] font-semibold leading-tight text-foreground">6. {t("Orgasm")}</p>', "sex orgasm section")
+          sex = replace_once(sex, '    <section>\n      <p className="mb-2 font-serif text-lg font-semibold text-foreground">7. {t("Note (optional)")}</p>\n      <Textarea rows={4} value={note} onChange={(event) => setNote(event.target.value)} placeholder={t("Add a note…")} className="rounded-3xl" />', '    <section data-bixbo-sex-section="note">\n      <p className="bixbo-sex-section-heading mb-2 font-serif text-[13px] font-semibold leading-tight text-foreground">7. {t("Note (optional)")}</p>\n      <Textarea rows={4} value={note} onChange={(event) => setNote(event.target.value)} placeholder={t("Add a note…")} className="min-h-[92px] rounded-[18px]" />', "sex note section")
+          sex = replace_once(sex, '    <div className="flex items-center gap-2 rounded-2xl border border-border/70 bg-surface/35 px-3 py-2.5 text-[11px] text-muted-foreground">', '    <div data-bixbo-sex-privacy className="flex items-center gap-2 rounded-[14px] border border-border/70 bg-surface/35 px-3 py-[9px] text-[10.5px] text-muted-foreground">', "sex privacy")
+          text = text[:a] + sex + text[b:]
+          p.write_text(text)
+
+          # Notes preview clamp becomes component-owned.
+          p = Path("src/routes/notes.tsx")
+          text = p.read_text()
+          text = replace_once(text, 'className="line-clamp-1 text-sm font-semibold"', 'className="line-clamp-1 max-h-[1.45em] overflow-hidden text-sm font-semibold [&>span]:inline [&_svg]:inline-block [&_svg]:align-[-0.15em]"', "note title clamp")
+          text = replace_once(text, 'className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground"', 'className="mt-1 line-clamp-2 max-h-[2.9em] overflow-hidden whitespace-normal text-xs leading-relaxed text-muted-foreground [&>span]:inline [&_svg]:inline-block [&_svg]:align-[-0.15em]"', "note body clamp")
+          p.write_text(text)
+
+          # Consolidate generic polish. Typography owns typeface/weight only;
+          # semantic components own their colours.
+          polish = Path("src/ui-polish.css").read_text()
+          components = Path("src/ui-components-polish.css").read_text()
+          polish = polish.replace('  --bixbo-bold-text: #11130e;\n', '')
+          polish = polish.replace('\n.dark {\n  --bixbo-bold-text: var(--foreground);\n}\n', '\n')
+          polish = polish.replace('var(--bixbo-bold-text)', 'var(--foreground)')
+
+          typography_start = polish.index('/* One typography family across BIXBO.')
+          layout_start = polish.index('#main-content,\n#main-content * { min-width: 0; }')
+          typography = '''/* Typography hierarchy. Components own colour; font weight never rewrites\n   success/destructive/primary/muted semantic tokens. */\nhtml,\nbody,\nbutton,\na,\ninput,\nselect,\ntextarea,\nlabel,\nsummary,\n[role="button"],\n[role="dialog"] {\n  font-family: var(--bixbo-rounded-font);\n}\n\n.font-sans,\n.font-serif {\n  font-family: var(--bixbo-rounded-font) !important;\n}\n\n:where(h1, h2, h3),\n[role="dialog"] :where(h1, h2, h3),\n.bixbo-section-title,\n[data-bixbo-app-title],\n[data-bixbo-display-title] {\n  font-family: var(--bixbo-rounded-font-bold) !important;\n  font-weight: 800 !important;\n  letter-spacing: -0.025em;\n}\n\n#main-content :where(h4, h5, h6, .font-medium, .font-semibold, .font-bold, .font-extrabold, .font-black),\n[role="dialog"] :where(h4, h5, h6, .font-medium, .font-semibold, .font-bold, .font-extrabold, .font-black),\nnav :where(.font-medium, .font-semibold, .font-bold, .font-extrabold, .font-black),\n#main-content [role="tab"],\n[role="dialog"] [role="tab"] {\n  font-family: var(--bixbo-rounded-font-bold) !important;\n  letter-spacing: -0.015em;\n}\n\n#main-content :where(.font-medium, .font-semibold, .font-bold, .font-extrabold, .font-black),\n[role="dialog"] :where(.font-medium, .font-semibold, .font-bold, .font-extrabold, .font-black),\nnav :where(.font-medium, .font-semibold, .font-bold, .font-extrabold, .font-black),\n#main-content [role="tab"],\n[role="dialog"] [role="tab"] {\n  font-weight: 700;\n}\n\n#main-content :where(p, span, small, li, td, th, label):not(.font-medium):not(.font-semibold):not(.font-bold):not(.font-extrabold):not(.font-black),\n[role="dialog"] :where(p, span, small, li, td, th, label):not(.font-medium):not(.font-semibold):not(.font-bold):not(.font-extrabold):not(.font-black) {\n  font-family: var(--bixbo-rounded-font);\n}\n\n#main-content :where(svg text, .recharts-text, .recharts-cartesian-axis-tick-value, .recharts-legend-item-text),\n.bixbo-chart-fade :where(text, span, p) {\n  font-family: var(--bixbo-rounded-font) !important;\n  font-weight: 400 !important;\n  letter-spacing: -0.01em;\n}\n\n'''
+          polish = polish[:typography_start] + typography + polish[layout_start:]
+
+          suksuk_start = polish.index('/* SUKSUK compact layout */')
+          suksuk_end = polish.index('@media (pointer: coarse)', suksuk_start)
+          polish = polish[:suksuk_start] + '''/* ŠukŠuk compact layout is component-owned in CycleForms.tsx. */\n\n''' + polish[suksuk_end:]
+          polish = polish.replace('  .bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 { gap: 11px; }\n', '')
+          polish = polish.replace('  .bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section button.rounded-full { padding-inline: 10px; }\n', '')
+
+          components_body = components.replace('/* Shared component polish for BIXBO feature pages. */\n\n', '', 1).strip()
+          ui_system = polish.rstrip() + '\n\n/* SHARED COMPONENT BEHAVIOUR */\n' + components_body + '\n'
+          if 'nth-of-type' in ui_system:
+              raise SystemExit('ui-system.css still contains nth-of-type')
+          if '.mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5' in ui_system:
+              raise SystemExit('ui-system.css still contains exact SexForm DOM chain')
+          if '--bixbo-bold-text' in ui_system:
+              raise SystemExit('ui-system.css still contains global bold colour override')
+          Path("src/ui-system.css").write_text(ui_system)
+
+          # One primary CSS import graph. Theme/calendar specializations remain
+          # explicit root links with deterministic ordering.
+          p = Path("src/styles.css")
+          text = p.read_text()
+          text = replace_once(
+              text,
+              '@import "./ui-polish.css";\n@import "./ui-components-polish.css";',
+              '@import "./ui-system.css";\n@import "./ios-touch-stability.css";\n@import "./mobile-overlay-stability.css";',
+              "styles imports",
+          )
+          p.write_text(text)
+
+          p = Path("src/components/AppShell.tsx")
+          text = p.read_text()
+          text = re.sub(r'^import "@/[^\n]+\.css";\n', '', text, flags=re.MULTILINE)
+          p.write_text(text)
+
+          p = Path("src/routes/__root.tsx")
+          text = p.read_text()
+          text = text.replace('import iosTouchStabilityCss from "../ios-touch-stability.css?url";\n', '')
+          if 'import calendar3dCss from "../calendar-3d.css?url";' not in text:
+              text = text.replace('import calendarPeriodFixCss from "../calendar-period-fix.css?url";\n', 'import calendar3dCss from "../calendar-3d.css?url";\nimport calendarPeriodFixCss from "../calendar-period-fix.css?url";\n')
+          text = text.replace('      { rel: "stylesheet", href: calendarPeriodFixCss },\n      { rel: "stylesheet", href: iosTouchStabilityCss },\n', '      { rel: "stylesheet", href: calendar3dCss },\n      { rel: "stylesheet", href: calendarPeriodFixCss },\n')
+          p.write_text(text)
+
+          # Regression guards enforce stable component hooks / single cascade.
+          p = Path("src/lib/__tests__/ui-layout-architecture-regression.test.ts")
+          text = p.read_text()
+          text = text.replace('const css = readFileSync("src/ui-components-polish.css", "utf8");', 'const css = readFileSync("src/ui-system.css", "utf8");')
+          insert = '''\n  it("keeps visual polish on stable component hooks instead of DOM-order patches", () => {\n    const cycle = readFileSync("src/features/logging/CycleForms.tsx", "utf8");\n    const log = readFileSync("src/features/logging/LogSheetRoot.tsx", "utf8");\n    const notes = readFileSync("src/routes/notes.tsx", "utf8");\n    const css = readFileSync("src/ui-system.css", "utf8");\n    const shell = readFileSync("src/components/AppShell.tsx", "utf8");\n    const styles = readFileSync("src/styles.css", "utf8");\n\n    expect(cycle).toContain('data-bixbo-log-form="sex"');\n    expect(cycle).toContain('data-bixbo-sex-section="symptoms"');\n    expect(log).toContain("data-bixbo-log-menu");\n    expect(log).not.toContain("radiusX");\n    expect(notes).toContain("[&>span]:inline");\n    expect(css).not.toContain("nth-of-type");\n    expect(css).not.toContain(".mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5");\n    expect(css).not.toContain("--bixbo-bold-text");\n    expect(shell).not.toMatch(/import \"@\\/.*\\.css\"/);\n    expect(styles).toContain('@import "./ui-system.css";');\n  });\n'''
+          pos = text.rfind('\n});')
+          if pos < 0:
+              raise SystemExit('architecture test closing marker not found')
+          text = text[:pos] + insert + text[pos:]
+          p.write_text(text)
+
+          for obsolete in [
+              "src/ui-polish.css",
+              "src/ui-components-polish.css",
+              "src/typography-hierarchy.css",
+              "src/notes-preview.css",
+              "src/log-menu-popover.css",
+          ]:
+              Path(obsolete).unlink()
+          PY
+
+          git config user.name "bixbo-refactor-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src
+          git commit -m "Refactor CSS into component-owned UI architecture [css-architecture-v2-applied]"
+          git push origin HEAD:refactor/css-component-architecture
