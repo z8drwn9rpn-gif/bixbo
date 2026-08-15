@@ -212,6 +212,8 @@ export function useKeyboardViewport(enabled: boolean) {
     let geometryFrame = 0;
     let revealTimer = 0;
     let focusTimer = 0;
+    let focusedScrollContainer: HTMLElement | null = null;
+    let focusedScrollFloor = 0;
 
     const clearRevealTimer = () => {
       if (!revealTimer) return;
@@ -233,6 +235,22 @@ export function useKeyboardViewport(enabled: boolean) {
       });
     };
 
+    // Pointer down happens before Safari focuses the textarea and before its
+    // native focus scroll. Remember the user's current log position so later
+    // keyboard/VisualViewport changes can never move the form backwards past it.
+    const rememberFocusedScrollFloor = (event: PointerEvent) => {
+      if (!isTextField(event.target)) return;
+      focusedScrollContainer = findScrollContainer(event.target);
+      focusedScrollFloor = focusedScrollContainer?.scrollTop ?? 0;
+    };
+
+    const enforceFocusedScrollFloor = (active: EventTarget | null) => {
+      if (!isTextField(active)) return;
+      const container = findScrollContainer(active);
+      if (!container || container !== focusedScrollContainer) return;
+      if (container.scrollTop < focusedScrollFloor) container.scrollTop = focusedScrollFloor;
+    };
+
     const scheduleFocusedReveal = () => {
       clearRevealTimer();
       revealTimer = window.setTimeout(() => {
@@ -241,11 +259,13 @@ export function useKeyboardViewport(enabled: boolean) {
         const active = document.activeElement;
         applyKeyboardViewportVars(latest);
         if (!latest || latest.keyboardInset <= 80 || !isTextField(active)) return;
+        enforceFocusedScrollFloor(active);
         keepFocusedFieldVisible(
           active,
           latest.offsetTop,
           latest.offsetTop + latest.height,
         );
+        enforceFocusedScrollFloor(active);
       }, 96);
     };
 
@@ -253,15 +273,18 @@ export function useKeyboardViewport(enabled: boolean) {
       syncViewportGeometry();
       const metrics = readKeyboardViewportMetrics();
       const active = document.activeElement;
+      enforceFocusedScrollFloor(active);
       if (metrics && metrics.keyboardInset > 80 && isTextField(active)) scheduleFocusedReveal();
       else clearRevealTimer();
     };
 
     const syncAfterFocusIn = () => {
       syncViewportGeometry();
+      enforceFocusedScrollFloor(document.activeElement);
       clearFocusTimer();
       focusTimer = window.setTimeout(() => {
         focusTimer = 0;
+        enforceFocusedScrollFloor(document.activeElement);
         syncResizeAndMaybeReveal();
       }, 0);
     };
@@ -271,6 +294,11 @@ export function useKeyboardViewport(enabled: boolean) {
       clearFocusTimer();
       focusTimer = window.setTimeout(() => {
         focusTimer = 0;
+        const active = document.activeElement;
+        if (!isTextField(active)) {
+          focusedScrollContainer = null;
+          focusedScrollFloor = 0;
+        }
         syncViewportGeometry();
       }, 0);
     };
@@ -279,6 +307,7 @@ export function useKeyboardViewport(enabled: boolean) {
     viewport.addEventListener("resize", syncResizeAndMaybeReveal);
     viewport.addEventListener("scroll", syncViewportGeometry);
     window.addEventListener("orientationchange", syncResizeAndMaybeReveal);
+    document.addEventListener("pointerdown", rememberFocusedScrollFloor, true);
     document.addEventListener("focusin", syncAfterFocusIn);
     document.addEventListener("focusout", syncAfterFocusOut);
 
@@ -289,6 +318,7 @@ export function useKeyboardViewport(enabled: boolean) {
       viewport.removeEventListener("resize", syncResizeAndMaybeReveal);
       viewport.removeEventListener("scroll", syncViewportGeometry);
       window.removeEventListener("orientationchange", syncResizeAndMaybeReveal);
+      document.removeEventListener("pointerdown", rememberFocusedScrollFloor, true);
       document.removeEventListener("focusin", syncAfterFocusIn);
       document.removeEventListener("focusout", syncAfterFocusOut);
       applyKeyboardViewportVars(null);
