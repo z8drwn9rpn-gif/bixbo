@@ -7,15 +7,18 @@ const textareaSource = fs.readFileSync("src/components/ui/textarea.tsx", "utf8")
 const themeSource = fs.readFileSync("src/lib/theme.ts", "utf8");
 
 describe("mobile touch and text editing regressions", () => {
-  it("does not disable browser zoom or install document-wide gesture blockers", () => {
-    expect(rootSource).toContain('content: "width=device-width, initial-scale=1, viewport-fit=cover"');
-    expect(rootSource).not.toContain("user-scalable=no");
-    expect(rootSource).not.toContain("maximum-scale=1");
-    expect(rootSource).not.toContain('document.addEventListener("touchmove"');
-    expect(rootSource).not.toContain('document.addEventListener("gesturestart"');
+  it("locks browser zoom globally while limiting the JS blocker to multi-touch pinch gestures", () => {
+    expect(rootSource).toContain(
+      'content: "width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover"',
+    );
+    expect(rootSource).toContain("if (event.touches.length > 1) event.preventDefault();");
+    expect(rootSource).toContain('document.addEventListener("touchmove", preventPinchTouch, { passive: false })');
+    expect(rootSource).toContain('document.addEventListener("gesturestart", preventGesture, { passive: false })');
+    expect(rootSource).toContain('document.addEventListener("gesturechange", preventGesture, { passive: false })');
+    expect(touchCss).toContain("touch-action: pan-x pan-y");
   });
 
-  it("keeps BIXBO browser chrome explicit before paint without disabling page zoom", () => {
+  it("keeps BIXBO browser chrome explicit before paint with the global zoom lock", () => {
     expect(rootSource).toContain('<meta name="color-scheme" content="light dark" />');
     expect(rootSource).toContain('<meta name="theme-color" content="#FBF7F3" />');
     expect(rootSource).toContain('root.style.colorScheme = isDark ? "dark" : "only light"');
@@ -25,12 +28,12 @@ describe("mobile touch and text editing regressions", () => {
     expect(themeSource).toContain('const DARK_THEME_COLOR = "#171A14"');
   });
 
-  it("keeps chart touch handling scoped while preserving native text selection", () => {
+  it("preserves native single-touch text selection and scoped chart handling", () => {
     expect(touchCss).toContain(".recharts-wrapper");
     expect(touchCss).toContain("touch-action: pan-y");
     expect(touchCss).toContain("-webkit-user-select: text");
     expect(touchCss).toContain("-webkit-touch-callout: default");
-    expect(touchCss).not.toContain("#app,");
+    expect(touchCss).toContain("touch-action: auto");
   });
 
   it("does not rewrite plain textarea DOM value or selection on every keystroke", () => {
