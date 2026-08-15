@@ -11,6 +11,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import whiteGreenThemeCss from "../white-green-theme.css?url";
+import darkThemeCss from "../dark-theme.css?url";
 import calendarPeriodFixCss from "../calendar-period-fix.css?url";
 import iosTouchStabilityCss from "../ios-touch-stability.css?url";
 import { useCloudSync } from "../lib/cloudSync";
@@ -90,9 +91,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" },
       { name: "theme-color", content: "#FBF7F3" },
-      { name: "color-scheme", content: "only light" },
+      { name: "color-scheme", content: "light dark" },
       { title: "BIXBO — Health diary" },
       { name: "description", content: "BIXBO — a calm diary for your cycle, pain, meds and notes." },
       { name: "author", content: "BIXBO" },
@@ -112,6 +113,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap" },
       { rel: "stylesheet", href: appCss },
       { rel: "stylesheet", href: whiteGreenThemeCss },
+      { rel: "stylesheet", href: darkThemeCss },
       { rel: "stylesheet", href: calendarPeriodFixCss },
       { rel: "stylesheet", href: iosTouchStabilityCss },
       { rel: "manifest", href: "/manifest.json" },
@@ -148,6 +150,31 @@ function RootComponent() {
   useThemeSync();
   useNotificationRuntime();
   useDeploymentFreshness();
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof document === "undefined") return;
+    if (!window.matchMedia("(pointer: coarse)").matches) return;
+
+    const preventMultiTouch = (event: TouchEvent) => {
+      if (event.touches.length > 1) event.preventDefault();
+    };
+    const preventGesture = (event: Event) => event.preventDefault();
+    const preventDoubleTapZoom = (event: MouseEvent) => event.preventDefault();
+
+    document.addEventListener("touchmove", preventMultiTouch, { passive: false });
+    document.addEventListener("gesturestart", preventGesture, { passive: false });
+    document.addEventListener("gesturechange", preventGesture, { passive: false });
+    document.addEventListener("gestureend", preventGesture, { passive: false });
+    document.addEventListener("dblclick", preventDoubleTapZoom, { passive: false });
+
+    return () => {
+      document.removeEventListener("touchmove", preventMultiTouch);
+      document.removeEventListener("gesturestart", preventGesture);
+      document.removeEventListener("gesturechange", preventGesture);
+      document.removeEventListener("gestureend", preventGesture);
+      document.removeEventListener("dblclick", preventDoubleTapZoom);
+    };
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
