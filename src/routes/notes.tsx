@@ -52,8 +52,8 @@ const NOTE_COLORS: Record<NoteColor, string> = {
 };
 
 function normalizeFolderIconKey(folder: Pick<NoteFolder, "name" | "icon">): FolderIconKey {
-  const name = folder.name.trim().toLowerCase();
-  const icon = folder.icon?.trim().toLowerCase() ?? "";
+  const name = typeof folder.name === "string" ? folder.name.trim().toLowerCase() : "";
+  const icon = typeof folder.icon === "string" ? folder.icon.trim().toLowerCase() : "";
 
   if (
     name.includes("health") ||
@@ -652,7 +652,7 @@ function NoteSection({
               <button type="button" onClick={() => onOpen(note.id)} className="block min-h-[58px] w-full pr-9 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                 <div className="flex items-start justify-between gap-3">
                   <h3 className="line-clamp-1 text-sm font-semibold">
-                    <NoteRichText text={note.title.trim() || t("Untitled")} size={16} />
+                    <NoteRichText text={(typeof note.title === "string" ? note.title : "").trim() || t("Untitled")} size={16} />
                   </h3>
                   <span className="shrink-0 text-[10px] text-muted-foreground">{formatNoteDate(note, t, locale)}</span>
                 </div>
