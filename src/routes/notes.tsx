@@ -25,6 +25,7 @@ import {
 } from "@/components/icons/BixboIcons";
 import { NoteEditor } from "./notes-editor";
 import { useI18n } from "@/hooks/useI18n";
+import { sanitizeNoteHtml } from "@/features/notes/noteText";
 
 export const Route = createFileRoute("/notes")({
   head: () => ({
@@ -162,54 +163,8 @@ function FolderBixboIcon({
   return <Icon size={size} className={className} />;
 }
 
-const SAFE_NOTE_TAGS = new Set(["B", "STRONG", "MARK", "BR", "P", "DIV", "UL", "OL", "LI"]);
-const DROP_NOTE_TAGS = new Set(["SCRIPT", "STYLE", "IFRAME", "OBJECT", "EMBED", "IMG", "SVG", "MATH", "LINK", "META"]);
-
-function sanitizeNoteHtml(html: unknown): string {
-  const source = typeof html === "string" ? html : "";
-  if (!source) return "";
-
-  if (typeof document === "undefined") {
-    return source
-      .replace(/<(script|style|iframe|object|embed|img|svg|math|link|meta)\b[^>]*>[\s\S]*?<\/\1>/gi, "")
-      .replace(/<(script|style|iframe|object|embed|img|svg|math|link|meta)\b[^>]*\/?\s*>/gi, "")
-      .replace(/\son[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
-      .replace(/javascript\s*:/gi, "");
-  }
-
-  const template = document.createElement("template");
-  template.innerHTML = source;
-
-  const cleanNode = (node: Node) => {
-    for (const child of [...node.childNodes]) cleanNode(child);
-    if (!(node instanceof HTMLElement)) return;
-
-    if (DROP_NOTE_TAGS.has(node.tagName)) {
-      node.remove();
-      return;
-    }
-
-    if (!SAFE_NOTE_TAGS.has(node.tagName)) {
-      node.replaceWith(...node.childNodes);
-      return;
-    }
-
-    for (const attribute of [...node.attributes]) node.removeAttribute(attribute.name);
-
-    if (node.tagName === "MARK") {
-      node.style.background = "#b4be80";
-      node.style.color = "#2f3518";
-      node.style.padding = "0 2px";
-      node.style.borderRadius = "2px";
-    }
-  };
-
-  for (const child of [...template.content.childNodes]) cleanNode(child);
-  return template.innerHTML;
-}
-
 function stripHtml(html: unknown) {
-  const safe = sanitizeNoteHtml(html);
+  const safe = sanitizeNoteHtml(typeof html === "string" ? html : "");
   if (typeof document === "undefined") return safe.replace(/<[^>]+>/g, "");
 
   const el = document.createElement("div");
@@ -332,7 +287,6 @@ function NoteRichText({ text, size = 16 }: { text: unknown; size?: number }) {
 function NotesPage() {
   const { t, language } = useI18n();
   const { data, update, hydrated } = useBixbo();
-  const locale = language === "sk" ? "sk-SK" : "en-GB";
   const view = hydrated ? data : EMPTY;
   const safeFolders = useMemo(() => view.folders.map(normalizeFolderForUi), [view.folders]);
   const safeNotebook = useMemo(() => view.notebook.map(normalizeNoteForUi), [view.notebook]);
