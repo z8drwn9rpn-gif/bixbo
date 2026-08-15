@@ -1,5 +1,6 @@
 import type { ComponentType, SVGProps } from "react";
 import { Ico, NoteIcon } from "./BixboExtraIcons";
+import { ChiliIcon } from "./BixboIcons";
 import { semanticIconForLabel } from "./BixboFoodIcons";
 import { appEmojiIcon } from "./BixboAppEmojiIcons";
 import { pickerEmojiIcon } from "./BixboPickerEmojiIcons";
@@ -27,6 +28,10 @@ export function resolveBixboIcon(input: { emoji?: string; label?: string; fallba
 
   if (emoji) {
     const normalized = normalizeBixboEmoji(emoji);
+
+    // Brand rule: the chili is always the original glossy BIXBO chili.
+    if (normalized === "🌶") return ChiliIcon;
+
     const foodLabel = FOOD_EMOJI_LABELS[normalized];
     if (foodLabel) {
       const food = semanticIconForLabel(foodLabel);
