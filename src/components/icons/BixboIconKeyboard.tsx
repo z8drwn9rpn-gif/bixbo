@@ -21,6 +21,7 @@ type CaretSnapshot =
   | { kind: "text"; start: number; end: number }
   | { kind: "range"; range: Range }
   | null;
+type TriggerPosition = { top: number; left: number };
 
 function isEditable(target: EventTarget | null): target is EditableTarget {
   if (!(target instanceof HTMLElement)) return false;
@@ -72,26 +73,28 @@ export function BixboIconKeyboard() {
   const [open, setOpen] = useState(false);
   const [group, setGroup] = useState<(typeof GROUPS)[number]["id"]>("faces");
   const [mounted, setMounted] = useState(false);
+  const [triggerPosition, setTriggerPosition] = useState<TriggerPosition | null>(null);
   const caretRef = useRef<CaretSnapshot>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const panelRef = useRef<HTMLElement>(null);
+  const openRef = useRef(false);
+
+  useEffect(() => {
+    openRef.current = open;
+  }, [open]);
 
   useEffect(() => {
     setMounted(true);
 
     const onFocus = (event: FocusEvent) => {
-      if (isEditable(event.target)) {
-        setTarget(event.target);
-        return;
-      }
-      const node = event.target instanceof HTMLElement ? event.target : null;
-      if (!open && !node?.closest("[data-bixbo-icon-keyboard]")) setTarget(null);
+      if (isEditable(event.target)) setTarget(event.target);
     };
 
     const onPointerDown = (event: PointerEvent) => {
       const node = event.target instanceof HTMLElement ? event.target : null;
       if (node?.closest("[data-bixbo-icon-keyboard]")) return;
-      if (!isEditable(event.target) && !open) setTarget(null);
+
+      // Time/date/range controls must never inherit the previous BIXBO target.
+      // Keep the last text target only while the picker itself is open.
+      if (!isEditable(event.target) && !openRef.current) setTarget(null);
     };
 
     document.addEventListener("focusin", onFocus);
@@ -100,102 +103,139 @@ export function BixboIconKeyboard() {
       document.removeEventListener("focusin", onFocus);
       document.removeEventListener("pointerdown", onPointerDown, true);
     };
-  }, [open]);
+  }, []);
+
+  useEffect(() => {
+    if (!target || open || typeof window === "undefined") {
+      setTriggerPosition(null);
+      return;
+    }
+
+    const updatePosition = () => {
+      if (!target.isConnected) {
+        setTarget(null);
+        setTriggerPosition(null);
+        return;
+      }
+
+      const rect = target.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) {
+        setTriggerPosition(null);
+        return;
+      }
+
+      const buttonSize = 44;
+      const inset = 8;
+      const maxLeft = Math.max(inset, window.innerWidth - buttonSize - inset);
+      const top = rect.top + window.scrollY + inset;
+      const left = Math.min(
+        Math.max(rect.right + window.scrollX - buttonSize - inset, inset),
+        maxLeft + window.scrollX,
+      );
+
+      setTriggerPosition({ top, left });
+    };
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    window.visualViewport?.addEventListener("resize", updatePosition);
+    window.visualViewport?.addEventListener("scroll", updatePosition);
+
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+      window.visualViewport?.removeEventListener("resize", updatePosition);
+      window.visualViewport?.removeEventListener("scroll", updatePosition);
+    };
+  }, [target, open]);
 
   const active = useMemo(() => GROUPS.find((item) => item.id === group) ?? GROUPS[0], [group]);
 
   if (!mounted || !target || typeof document === "undefined") return null;
 
-  const portalHost = target.closest<HTMLElement>("[role=\"dialog\"]") ?? document.body;
+  const dialog = target.closest<HTMLElement>("[role=\"dialog\"]");
 
-  const focusAwayFromEditor = () => {
+  const focusDialogInsteadOfEditor = () => {
     if (target.isConnected) target.blur();
-    const sink = panelRef.current ?? triggerRef.current;
-    sink?.focus({ preventScroll: true });
-  };
-
-  const keepPickerFocus = () => {
-    triggerRef.current?.focus({ preventScroll: true });
+    if (dialog?.isConnected) dialog.focus({ preventScroll: true });
   };
 
   const closePicker = () => {
     caretRef.current = null;
-    keepPickerFocus();
+    openRef.current = false;
     setOpen(false);
+    requestAnimationFrame(focusDialogInsteadOfEditor);
   };
 
   const togglePicker = () => {
-    if (open) {
+    if (openRef.current) {
       closePicker();
       return;
     }
 
-    // Save the exact native insertion point before iOS clears selection.
     caretRef.current = snapshotCaret(target);
+    openRef.current = true;
     setOpen(true);
 
-    // A plain blur is not sufficient inside a Radix focus scope: the dialog can
-    // immediately restore focus to the textarea and reopen the iOS keyboard.
-    // Move focus to a real non-editable element inside the same dialog instead.
+    // Keep focus inside the Radix dialog, but off every input. This dismisses the
+    // iOS keyboard without allowing the dialog focus scope to restore the textarea.
     requestAnimationFrame(() => {
-      focusAwayFromEditor();
-      window.setTimeout(focusAwayFromEditor, 80);
-      window.setTimeout(focusAwayFromEditor, 180);
+      focusDialogInsteadOfEditor();
+      window.setTimeout(focusDialogInsteadOfEditor, 80);
     });
   };
 
   const chooseIcon = (emoji: string) => {
     insertInto(target, emoji, caretRef.current);
     caretRef.current = null;
-    keepPickerFocus();
+    openRef.current = false;
     setOpen(false);
+    requestAnimationFrame(focusDialogInsteadOfEditor);
   };
 
   const picker = (
     <div data-bixbo-icon-keyboard className="pointer-events-none fixed inset-0 z-[2147483000]">
-      <button
-        ref={triggerRef}
-        type="button"
-        data-bixbo-icon-trigger
-        onTouchStart={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          togglePicker();
-        }}
-        onPointerDown={(event) => {
-          if (event.pointerType === "touch") return;
-          event.preventDefault();
-          event.stopPropagation();
-          togglePicker();
-        }}
-        className="pointer-events-auto fixed bottom-[calc(5.4rem+env(safe-area-inset-bottom))] right-4 z-[2147483001] grid h-11 w-11 touch-none select-none place-items-center rounded-full border border-border/70 bg-background shadow-lg active:scale-95 lg:bottom-5 lg:right-5"
-        aria-label="BIXBO icons"
-        title="BIXBO icons"
-      >
-        <BixboIcon emoji="✨" size={23} />
-      </button>
+      {!open && triggerPosition ? (
+        <button
+          type="button"
+          data-bixbo-icon-trigger
+          onPointerDown={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+          }}
+          onPointerUp={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            togglePicker();
+          }}
+          className="pointer-events-auto absolute z-[2147483001] grid h-11 w-11 touch-manipulation select-none place-items-center rounded-full border border-border/70 bg-background shadow-lg active:scale-95"
+          style={{ top: triggerPosition.top, left: triggerPosition.left }}
+          aria-label="BIXBO icons"
+          title="BIXBO icons"
+        >
+          <BixboIcon emoji="✨" size={23} />
+        </button>
+      ) : null}
 
       {open ? (
         <div
-          className="pointer-events-auto fixed inset-0 z-[2147483002] flex touch-none items-end justify-center bg-black/25 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:items-center"
-          onTouchStart={(event) => {
+          className="pointer-events-auto fixed inset-0 z-[2147483002] flex items-end justify-center bg-black/25 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:items-center"
+          onPointerDown={(event) => {
             event.preventDefault();
             event.stopPropagation();
-            if (event.target === event.currentTarget) closePicker();
           }}
-          onPointerDown={(event) => {
-            if (event.pointerType === "touch") return;
+          onPointerUp={(event) => {
             event.preventDefault();
             event.stopPropagation();
             if (event.target === event.currentTarget) closePicker();
           }}
         >
           <section
-            ref={panelRef}
             tabIndex={-1}
             className="w-full max-w-[430px] touch-pan-y overflow-hidden rounded-[28px] border border-border/70 bg-background shadow-2xl outline-none"
-            onTouchStart={(event) => event.stopPropagation()}
             onPointerDown={(event) => event.stopPropagation()}
+            onPointerUp={(event) => event.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
               <div>
@@ -204,18 +244,16 @@ export function BixboIconKeyboard() {
               </div>
               <button
                 type="button"
-                onTouchStart={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  closePicker();
-                }}
                 onPointerDown={(event) => {
-                  if (event.pointerType === "touch") return;
+                  event.preventDefault();
+                  event.stopPropagation();
+                }}
+                onPointerUp={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
                   closePicker();
                 }}
-                className="grid h-9 w-9 touch-none select-none place-items-center rounded-full bg-tint text-lg font-bold"
+                className="grid h-9 w-9 touch-manipulation select-none place-items-center rounded-full bg-tint text-lg font-bold"
               >
                 ×
               </button>
@@ -226,18 +264,16 @@ export function BixboIconKeyboard() {
                 <button
                   key={item.id}
                   type="button"
-                  onTouchStart={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    setGroup(item.id);
-                  }}
                   onPointerDown={(event) => {
-                    if (event.pointerType === "touch") return;
+                    event.preventDefault();
+                    event.stopPropagation();
+                  }}
+                  onPointerUp={(event) => {
                     event.preventDefault();
                     event.stopPropagation();
                     setGroup(item.id);
                   }}
-                  className={`shrink-0 touch-none select-none rounded-full px-3 py-1.5 text-[11px] font-bold ${group === item.id ? "bg-primary text-primary-foreground" : "bg-tint text-foreground"}`}
+                  className={`shrink-0 touch-manipulation select-none rounded-full px-3 py-1.5 text-[11px] font-bold ${group === item.id ? "bg-primary text-primary-foreground" : "bg-tint text-foreground"}`}
                 >
                   {item.label}
                 </button>
@@ -249,18 +285,16 @@ export function BixboIconKeyboard() {
                 <button
                   key={emoji}
                   type="button"
-                  onTouchStart={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    chooseIcon(emoji);
-                  }}
                   onPointerDown={(event) => {
-                    if (event.pointerType === "touch") return;
+                    event.preventDefault();
+                    event.stopPropagation();
+                  }}
+                  onPointerUp={(event) => {
                     event.preventDefault();
                     event.stopPropagation();
                     chooseIcon(emoji);
                   }}
-                  className="grid aspect-square touch-none select-none place-items-center rounded-2xl bg-tint/55 ring-1 ring-border/45 transition active:scale-95"
+                  className="grid aspect-square touch-manipulation select-none place-items-center rounded-2xl bg-tint/55 ring-1 ring-border/45 transition active:scale-95"
                   aria-label={`Insert ${emoji}`}
                 >
                   <BixboIcon emoji={emoji} size={28} />
@@ -273,5 +307,8 @@ export function BixboIconKeyboard() {
     </div>
   );
 
-  return createPortal(picker, portalHost);
+  // The shared Sheet component explicitly ignores outside events originating
+  // from this keyboard, so rendering at body level avoids transformed-dialog
+  // positioning bugs on iOS while keeping the log open.
+  return createPortal(picker, document.body);
 }
