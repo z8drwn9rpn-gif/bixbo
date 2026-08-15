@@ -162,85 +162,13 @@ export function HomePage() {
 
   return <AppShell
     big
-    title={
-      <div className="flex min-w-0 flex-col leading-tight">
-        <span
-          data-bixbo-display-title
-          className="text-[37px] font-black tracking-[-0.045em] leading-[0.92] sm:text-[41px]"
-          style={{ fontFamily: roundedDisplayFont, WebkitTextStroke: "0", textShadow: roundedDisplayShadow }}
-        >
-          BIXBO
-        </span>
-        <Link
-          to="/profile"
-          className="mt-1 inline-flex w-fit items-center gap-1 text-xs font-normal tracking-normal text-muted-foreground transition hover:text-foreground active:opacity-70"
-          aria-label={t("Profile")}
-          title={t("Profile")}
-        >
-          <span className="text-[#6E7C45]"><ProfileCardIcon size={13} /></span>
-          <span>{t("Hi")}, {view.settings.userName?.trim() || t("there")}</span>
-          <Ico e="❤️" size={12} />
-          <ChevronRight className="h-3 w-3 text-[#7E8B59]" />
-        </Link>
-        <div className="mt-1.5 flex w-full max-w-[286px] items-center justify-between gap-1">
-          <button
-            type="button"
-            onClick={() => moveCalendarMonth(-1)}
-            aria-label={t("Previous month")}
-            className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-tint/75 text-foreground ring-1 ring-border/55 transition hover:bg-tint active:scale-95"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <h2
-            data-bixbo-display-title
-            className="min-w-0 flex-1 select-none text-center text-[23px] font-black tracking-[-0.045em] leading-none text-foreground sm:text-[25px]"
-            style={{ fontFamily: roundedDisplayFont, WebkitTextStroke: "0", textShadow: roundedDisplayShadow, WebkitTouchCallout: "none" }}
-            suppressHydrationWarning
-            onPointerDown={(event) => {
-              clearMonthSummaryTimer();
-              monthSummaryPointerStart.current = { x: event.clientX, y: event.clientY };
-              monthSummaryTimer.current = window.setTimeout(openMonthSummary, 520);
-            }}
-            onPointerMove={(event) => {
-              const start = monthSummaryPointerStart.current;
-              if (!start) return;
-              if (Math.abs(event.clientX - start.x) > 8 || Math.abs(event.clientY - start.y) > 8) {
-                clearMonthSummaryTimer();
-                monthSummaryPointerStart.current = null;
-              }
-            }}
-            onPointerUp={() => {
-              clearMonthSummaryTimer();
-              monthSummaryPointerStart.current = null;
-            }}
-            onPointerLeave={() => {
-              clearMonthSummaryTimer();
-              monthSummaryPointerStart.current = null;
-            }}
-            onPointerCancel={() => {
-              clearMonthSummaryTimer();
-              monthSummaryPointerStart.current = null;
-            }}
-            onContextMenu={(event) => event.preventDefault()}
-          >
-            {hydrated ? monthLabel(monthAnchor) : ""}
-          </h2>
-          <button
-            type="button"
-            onClick={() => moveCalendarMonth(1)}
-            aria-label={t("Next month")}
-            className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-tint/75 text-foreground ring-1 ring-border/55 transition hover:bg-tint active:scale-95"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-    }
+    title={<div className="flex flex-col leading-tight"><span data-bixbo-display-title className="text-[37px] font-black tracking-[-0.045em] leading-[0.92] sm:text-[41px]" style={{ fontFamily: roundedDisplayFont, WebkitTextStroke: "0", textShadow: roundedDisplayShadow }}>BIXBO</span><Link to="/profile" className="mt-1 inline-flex w-fit items-center gap-1 text-xs font-normal tracking-normal text-muted-foreground transition hover:text-foreground active:opacity-70" aria-label={t("Profile")} title={t("Profile")}><span className="text-[#6E7C45]"><ProfileCardIcon size={13} /></span><span>{t("Hi")}, {view.settings.userName?.trim() || t("there")}</span><Ico e="❤️" size={12} /><ChevronRight className="h-3 w-3 text-[#7E8B59]" /></Link></div>}
   >
     <div className="lg:mx-auto lg:grid lg:w-full lg:max-w-[1480px] lg:grid-cols-[minmax(0,1.62fr)_minmax(340px,0.95fr)] lg:items-start lg:gap-4 lg:px-0 xl:grid-cols-[minmax(0,1.72fr)_minmax(380px,1fr)] xl:gap-5">
       <div className="flex min-w-0 flex-col">
         <div style={{ order: layoutOrder(view, "home", "calendar", 10) }}>
-          <div ref={calendarRef} className="lg:order-1 lg:overflow-hidden lg:rounded-[1.75rem] lg:bg-surface/28 lg:px-1 lg:pb-1 lg:ring-1 lg:ring-border/35" style={{ "--period-medium": "#7467D8" } as CSSProperties}>{hydrated ? <MonthCalendar month={monthAnchor} data={view} selected={selected} onSelect={setSelected} onSwipeMonth={moveCalendarMonth} /> : <div className="h-[360px]" />}</div>
+          <div className="px-5 pt-1 lg:px-1"><div className="flex items-center justify-between"><button type="button" onClick={() => moveCalendarMonth(-1)} aria-label={t("Previous month")} className="rounded-full p-1.5 hover:bg-tint"><ChevronLeft className="h-5 w-5" /></button><h2 data-bixbo-display-title className="select-none text-[29px] font-black tracking-[-0.045em] leading-none text-foreground sm:text-[31px] lg:text-[33px]" style={{ fontFamily: roundedDisplayFont, WebkitTextStroke: "0", textShadow: roundedDisplayShadow, WebkitTouchCallout: "none" }} suppressHydrationWarning onPointerDown={(event) => { clearMonthSummaryTimer(); monthSummaryPointerStart.current = { x: event.clientX, y: event.clientY }; monthSummaryTimer.current = window.setTimeout(openMonthSummary, 520); }} onPointerMove={(event) => { const start = monthSummaryPointerStart.current; if (!start) return; if (Math.abs(event.clientX - start.x) > 8 || Math.abs(event.clientY - start.y) > 8) { clearMonthSummaryTimer(); monthSummaryPointerStart.current = null; } }} onPointerUp={() => { clearMonthSummaryTimer(); monthSummaryPointerStart.current = null; }} onPointerLeave={() => { clearMonthSummaryTimer(); monthSummaryPointerStart.current = null; }} onPointerCancel={() => { clearMonthSummaryTimer(); monthSummaryPointerStart.current = null; }} onContextMenu={(event) => event.preventDefault()}>{hydrated ? monthLabel(monthAnchor) : ""}</h2><button type="button" onClick={() => moveCalendarMonth(1)} aria-label={t("Next month")} className="rounded-full p-1.5 hover:bg-tint"><ChevronRight className="h-5 w-5" /></button></div></div>
+          <div ref={calendarRef} className="mt-1 lg:order-1 lg:overflow-hidden lg:rounded-[1.75rem] lg:bg-surface/28 lg:px-1 lg:pb-1 lg:ring-1 lg:ring-border/35" style={{ "--period-medium": "#7467D8" } as CSSProperties}>{hydrated ? <MonthCalendar month={monthAnchor} data={view} selected={selected} onSelect={setSelected} onSwipeMonth={moveCalendarMonth} /> : <div className="h-[360px]" />}</div>
         </div>
 
         {!maleMode && isAdminOwnerAccount() && <div style={{ order: layoutOrder(view, "home", "birthControl", 20) }}><BirthControlSummaryCard data={view} dateKey={selected} onOpen={() => { setHakAnchor(fromKey(selected)); setHakOpen(true); }} /></div>}
