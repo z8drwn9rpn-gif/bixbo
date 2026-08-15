@@ -17,30 +17,21 @@ import { DayPreview, ShareDayButton } from "@/components/home/DayOverview";
 import { NextPeriodHomeCard, PostpartumHomeCard, PregnancyHomeCard } from "@/components/home/HomeModeCards";
 import { HomeSummaryOverlay } from "@/components/home/HomeSummaryOverlay";
 
-function ProfileCardIcon({ size = 30 }: { size?: number }) {
+function ProfileCardIcon({ size = 24 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 64 64" fill="none" aria-hidden="true">
-      <defs>
-        <linearGradient id="profileCardBg" x1="13" y1="10" x2="52" y2="53" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#FBF8E9" />
-          <stop offset="1" stopColor="#E8E5C8" />
-        </linearGradient>
-        <linearGradient id="profileOlive" x1="20" y1="15" x2="42" y2="45" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#9BAA62" />
-          <stop offset="1" stopColor="#66743D" />
-        </linearGradient>
-        <filter id="profileShadow" x="4" y="6" width="56" height="53" filterUnits="userSpaceOnUse">
-          <feDropShadow dx="0" dy="3" stdDeviation="2.5" floodColor="#36421F" floodOpacity="0.18" />
-        </filter>
-      </defs>
-      <ellipse cx="32" cy="56" rx="18" ry="3" fill="#435126" opacity="0.12" />
-      <g filter="url(#profileShadow)">
-        <rect x="7" y="9" width="50" height="43" rx="11" fill="url(#profileCardBg)" stroke="#D7D8BD" strokeWidth="1.5" />
-        <circle cx="22" cy="24" r="7" fill="url(#profileOlive)" />
-        <path d="M12.5 43c1.3-8.4 5.3-12.3 9.5-12.3S30.2 34.6 31.5 43" fill="url(#profileOlive)" />
-        <rect x="36" y="22" width="13" height="4.5" rx="2.25" fill="#758348" />
-        <rect x="36" y="31" width="13" height="4.5" rx="2.25" fill="#8A9858" />
-      </g>
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" aria-hidden="true">
+      <path
+        d="M11.7 11.2c0-2.7 1.9-4.8 4.3-4.8s4.3 2.1 4.3 4.8"
+        stroke="#66743D"
+        strokeWidth="2.15"
+        strokeLinecap="round"
+      />
+      <path
+        d="M8.1 24.3c.8-5.2 3.6-8 7.9-8s7.1 2.8 7.9 8"
+        stroke="#66743D"
+        strokeWidth="2.15"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
@@ -131,7 +122,7 @@ export function HomePage() {
   return <AppShell
     big
     title={<div className="flex flex-col leading-tight"><span data-bixbo-display-title className="text-[37px] font-black tracking-[-0.045em] leading-[0.92] sm:text-[41px]" style={{ fontFamily: roundedDisplayFont, WebkitTextStroke: "0", textShadow: roundedDisplayShadow }}>BIXBO</span><span className="mt-1 inline-flex items-center gap-1 text-xs font-normal tracking-normal text-muted-foreground">{t("Hi")}, {view.settings.userName?.trim() || t("there")} <Ico e="❤️" size={12} /></span></div>}
-    right={<Link to="/profile" className="flex min-w-[54px] flex-col items-center justify-center rounded-2xl px-2 py-1 text-foreground transition hover:bg-tint" aria-label={t("Profile")} title={t("Profile")}><ProfileCardIcon size={31} /><span className="mt-0.5 text-[10px] font-bold leading-none text-foreground">{t("Profile")}</span></Link>}
+    right={<Link to="/profile" className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[#D8DBC3] bg-[#FBF9F1] shadow-[0_2px_5px_rgba(57,72,34,0.14),inset_0_1px_0_rgba(255,255,255,0.95)] transition active:scale-95" aria-label={t("Profile")} title={t("Profile")}><ProfileCardIcon size={22} /></Link>}
   >
     <div className="lg:mx-auto lg:grid lg:w-full lg:max-w-[1480px] lg:grid-cols-[minmax(0,1.62fr)_minmax(340px,0.95fr)] lg:items-start lg:gap-4 lg:px-0 xl:grid-cols-[minmax(0,1.72fr)_minmax(380px,1fr)] xl:gap-5">
       <div className="flex min-w-0 flex-col">
