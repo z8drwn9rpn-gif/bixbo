@@ -100,7 +100,7 @@ export function bixboIconMigrationPlugin(): Plugin {
         );
         next = next.replace(
           '        <div className="space-y-4">\n          <Field label="How does it hurt?">',
-          '        <div className={activePainStepId === "parts" ? "mt-6 space-y-4" : "space-y-4"}>\n          <Field label="How does it hurt?">',
+          '        <div className={activePainStepId === "parts" ? "mt-4 space-y-4" : "space-y-4"}>\n          <Field label="How does it hurt?">',
         );
 
         if (next.includes(">💡</span>")) {
