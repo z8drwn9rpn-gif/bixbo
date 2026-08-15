@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useI18n } from "@/hooks/useI18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -412,8 +412,7 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
     <SaveBar onCancel={onDone} onSave={save} />
 
     <section>
-      <p className="mb-2 font-serif text-lg font-semibold text-foreground">1. {t("Type")}</p>
-      {renderCustomControls("type")}
+      {renderSectionHead("type", <>1. {t("Type")}</>)}
       <div className="flex flex-wrap gap-2.5">
         {typeOptions.map((option) => (
           <button key={option.value} type="button" onClick={() => setKind(option.value)} className={chipClass(kind === option.value)}>
@@ -426,8 +425,7 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
     </section>
 
     <section>
-      <p className="mb-2 font-serif text-lg font-semibold text-foreground">2. {t("Protection")}</p>
-      {renderCustomControls("protection")}
+      {renderSectionHead("protection", <>2. {t("Protection")}</>)}
       <div className="flex flex-wrap gap-2.5">
         {protectionOptions.map((option) => (
           <button key={option.value} type="button" onClick={() => setProtection(option.value)} className={chipClass(protection === option.value)}>
@@ -440,8 +438,7 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
     </section>
 
     <section>
-      <p className="mb-2 font-serif text-lg font-semibold text-foreground">3. {t("How I feel after")}</p>
-      {renderCustomControls("feeling")}
+      {renderSectionHead("feeling", <>3. {t("How I feel after")}</>)}
       <div className="flex flex-wrap gap-2.5">
         {feelingOptions.map((option) => (
           <button key={option.value} type="button" onClick={() => setFeelingAfter(feelingAfter === option.value ? "" : option.value)} className={chipClass(feelingAfter === option.value)}>
@@ -493,8 +490,7 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
           </div>
 
           <div className="mt-4">
-            <p className="mb-2 font-serif text-sm font-semibold text-foreground">{t("Where")}</p>
-            {renderCustomControls("where")}
+            {renderSectionHead("where", <>{t("Where")}</>, "sm")}
             <div className="flex flex-wrap gap-2">
               {painLocationOptions.map((option) => {
                 const active = painLocations.includes(option.value);
@@ -512,8 +508,7 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
     </section>
 
     <section className="rounded-3xl border border-border/80 bg-surface/25 p-3.5">
-      <p className="mb-2 font-serif text-lg font-semibold text-foreground">5. {t("Symptoms after")}</p>
-      {renderCustomControls("symptoms")}
+      {renderSectionHead("symptoms", <>5. {t("Symptoms after")}</>)}
       <div className="flex flex-wrap gap-2">
         {symptomOptions.map((option) => {
           const active = symptomsAfter.includes(option.value);
