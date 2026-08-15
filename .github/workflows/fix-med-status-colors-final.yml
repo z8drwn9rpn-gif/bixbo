@@ -1,0 +1,49 @@
+name: Fix medication status colors final
+
+on:
+  push:
+    branches:
+      - fix/med-status-colors-final
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[med-status-final-applied]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/med-status-colors-final
+          fetch-depth: 0
+
+      - name: Patch status text spans
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/components/home/DayOverview.tsx')
+          text = p.read_text()
+          old_taken = '''                      return <>\n                        {t("Taken")} · {actual ?? x.time} — {selected.join(", ")}\n                        {x.med.dose ? ` (${x.med.dose})` : ""}\n                        {shifted && <span className="text-[10px] text-muted-foreground"> · {t("scheduled")} {x.time}</span>}'''
+          new_taken = '''                      return <>\n                        <span style={{ color: "#15803D" }}>\n                          {t("Taken")} · {actual ?? x.time} — {selected.join(", ")}\n                          {x.med.dose ? ` (${x.med.dose})` : ""}\n                        </span>\n                        {shifted && <span className="text-[10px] text-muted-foreground"> · {t("scheduled")} {x.time}</span>}'''
+          if old_taken not in text:
+              raise SystemExit('Taken block not found')
+          text = text.replace(old_taken, new_taken, 1)
+
+          old_missed = '''                  {t("Missed")} · {x.time} — {x.med.name}\n                  {x.med.dose ? ` (${x.med.dose})` : ""}{" "}\n                  <span className="text-[10px] text-primary">· {t("Tap to edit")}</span>'''
+          new_missed = '''                  <span style={{ color: "#C62828" }}>\n                    {t("Missed")} · {x.time} — {x.med.name}\n                    {x.med.dose ? ` (${x.med.dose})` : ""}\n                  </span>{" "}\n                  <span className="text-[10px] text-primary">· {t("Tap to edit")}</span>'''
+          if old_missed not in text:
+              raise SystemExit('Missed block not found')
+          text = text.replace(old_missed, new_missed, 1)
+
+          Path('.github/workflows/fix-med-status-colors-final.yml').unlink()
+          p.write_text(text)
+          PY
+
+          git config user.name "bixbo-fix-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/home/DayOverview.tsx .github/workflows/fix-med-status-colors-final.yml
+          git commit -m "Force medication status text colors [med-status-final-applied]"
+          git push origin HEAD:fix/med-status-colors-final
