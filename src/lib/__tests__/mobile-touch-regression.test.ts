@@ -48,9 +48,12 @@ describe("mobile touch and text editing regressions", () => {
     expect(touchCss).toContain("touch-action: auto");
   });
 
-  it("does not rewrite plain textarea DOM value or selection on every keystroke", () => {
-    expect(textareaSource).toContain("if (canonical === rawNative && encoded === rawNative)");
+  it("never rewrites the active textarea DOM value or selection during keyboard edits", () => {
+    expect(textareaSource).toContain("const next = node.value;");
     expect(textareaSource).toContain("onChange?.(event);");
-    expect(textareaSource).toContain("return;");
+    expect(textareaSource).not.toContain("encodeBixboNativeText");
+    expect(textareaSource).not.toContain("decodeBixboNativeText");
+    expect(textareaSource).not.toContain("normalizeBixboText");
+    expect(textareaSource).toContain("const mirrorActive = !focused");
   });
 });
