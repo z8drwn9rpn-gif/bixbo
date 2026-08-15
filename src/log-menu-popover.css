@@ -5,24 +5,18 @@ div.pointer-events-none.absolute.inset-0.overflow-hidden
   > div:has(> button[data-log-category]) {
   pointer-events: auto !important;
   position: fixed !important;
-  inset-inline: 12px !important;
   left: 12px !important;
   right: 12px !important;
-  top: auto !important;
   bottom: calc(92px + env(safe-area-inset-bottom)) !important;
   width: auto !important;
   max-width: 365px !important;
   height: auto !important;
   min-height: 0 !important;
-  margin-left: auto !important;
-  margin-right: auto !important;
-  /* Tailwind's -translate-x-1/2 can be emitted as either transform or the
-     individual translate property depending on the build. Reset both and the
-     backing variables so iOS cannot apply a second hidden -50% translation. */
+  margin-inline: auto !important;
+  transform: none !important;
+  translate: none !important;
   --tw-translate-x: 0px !important;
   --tw-translate-y: 0px !important;
-  transform: none !important;
-  translate: 0 0 !important;
   box-sizing: border-box !important;
   display: flex !important;
   flex-wrap: wrap !important;
@@ -51,7 +45,6 @@ div.pointer-events-none.absolute.inset-0.overflow-hidden
   width: 20px;
   height: 20px;
   transform: translateX(-50%) rotate(45deg);
-  translate: 0 0;
   border-right: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
   border-bottom: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
   background: color-mix(in srgb, var(--background) 96%, transparent);
@@ -79,10 +72,10 @@ button[data-log-category] {
   width: calc(20% - 3.2px) !important;
   height: 70px !important;
   flex: 0 0 calc(20% - 3.2px) !important;
+  transform: none !important;
+  translate: none !important;
   --tw-translate-x: 0px !important;
   --tw-translate-y: 0px !important;
-  transform: none !important;
-  translate: 0 0 !important;
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
@@ -97,7 +90,6 @@ button[data-log-category] {
 button[data-log-category]:active {
   background: color-mix(in srgb, var(--primary) 9%, transparent) !important;
   transform: scale(0.96) !important;
-  translate: 0 0 !important;
 }
 
 button[data-log-category] > span:first-child {
@@ -108,10 +100,10 @@ button[data-log-category] > span:first-child {
   bottom: auto !important;
   width: 40px !important;
   height: 40px !important;
+  transform: none !important;
+  translate: none !important;
   --tw-translate-x: 0px !important;
   --tw-translate-y: 0px !important;
-  transform: none !important;
-  translate: 0 0 !important;
   flex: 0 0 40px !important;
   border: 0 !important;
   background: transparent !important;
@@ -137,10 +129,10 @@ button[data-log-category] > span:last-child {
   bottom: auto !important;
   width: 100% !important;
   min-height: 22px !important;
+  transform: none !important;
+  translate: none !important;
   --tw-translate-x: 0px !important;
   --tw-translate-y: 0px !important;
-  transform: none !important;
-  translate: 0 0 !important;
   display: -webkit-box !important;
   overflow: hidden !important;
   -webkit-box-orient: vertical !important;
@@ -179,16 +171,32 @@ button[aria-label="Finish reordering log categories"] span[aria-hidden="true"] s
   background: var(--muted-foreground) !important;
 }
 
+/* Log chooser background stays sharp: no grey/olive wash and no blur. */
+body:has(button[data-log-category]) [data-state="open"][class*="bg-black/45"] {
+  background: transparent !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
 div[aria-hidden="true"].pointer-events-none.absolute.inset-0:has(+ div button[data-log-category]) {
-  background: rgba(29, 32, 23, 0.18) !important;
-  -webkit-backdrop-filter: blur(6px) !important;
-  backdrop-filter: blur(6px) !important;
+  background: transparent !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Tapping the page itself must not dismiss the chooser. The persistent Log button is the toggle. */
+body:has(button[data-log-category]) button[aria-label="Close log menu"] {
+  pointer-events: none !important;
+}
+
+/* Bring the actual bottom navigation above the chooser so Log can close it. */
+body:has(button[data-log-category]) nav[aria-label="Primary navigation"] {
+  z-index: 70 !important;
 }
 
 @media (max-width: 360px) {
   div.pointer-events-none.absolute.inset-0.overflow-hidden
     > div:has(> button[data-log-category]) {
-    inset-inline: 8px !important;
     left: 8px !important;
     right: 8px !important;
     width: auto !important;
