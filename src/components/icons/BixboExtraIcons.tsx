@@ -87,7 +87,6 @@ const EXTRA_SYMBOL_ICONS: Record<string, ExtraIconComponent> = {
   ["🏋️"]: BixboWorkoutIcon,
   ["🏋"]: BixboWorkoutIcon,
   ["🏃"]: BixboWorkoutIcon,
-  ["👟"]: BixboWorkoutIcon,
   ["💊"]: BixboMedicineIcon,
   ["💉"]: BixboMedicineIcon,
   ["📝"]: BixboNoteIcon,
