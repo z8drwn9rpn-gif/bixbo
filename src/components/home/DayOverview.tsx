@@ -697,14 +697,12 @@ export function DayPreview({
                     </p>
                   ) : null}
                   {f.histamineFlare ? (
-                    <p className="mt-px text-xs leading-relaxed text-destructive">
-                      <span className="inline-flex items-center gap-1 align-middle font-semibold text-destructive">
+                    <p className="mt-px text-xs font-semibold leading-relaxed text-destructive">
+                      <span className="inline-flex items-center gap-1 align-middle">
                         <Ico e="🔥" size={13} />
                         <span>{t("Histamine flare")}:</span>
                       </span>{" "}
-                      <span className="text-destructive">
-                        {f.histamineSymptoms?.length ? f.histamineSymptoms.join(", ") : t("Yes")}
-                      </span>
+                      <span>{f.histamineSymptoms?.length ? f.histamineSymptoms.join(", ") : t("Yes")}</span>
                     </p>
                   ) : null}
                   {f.after ? (
