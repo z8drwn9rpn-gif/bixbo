@@ -28,6 +28,18 @@ function defaultOAuthReturnUrl(): string {
   return oauthReturnUrlForLocation(window.location.hostname, window.location.origin);
 }
 
+export function safeOAuthRedirectUrl(candidate?: string): string {
+  if (!candidate) return defaultOAuthReturnUrl();
+  try {
+    const parsed = new URL(candidate, defaultOAuthReturnUrl());
+    const safeOrigin = oauthReturnUrlForLocation(parsed.hostname, parsed.origin);
+    if (safeOrigin !== parsed.origin) return safeOrigin;
+    return parsed.toString();
+  } catch {
+    return defaultOAuthReturnUrl();
+  }
+}
+
 export const accountAuth = {
   signInWithOAuth: async (provider: OAuthProvider, opts?: SignInOptions) => {
     const queryParams: Record<string, string> = { ...(opts?.extraParams ?? {}) };
@@ -36,7 +48,7 @@ export const accountAuth = {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: opts?.redirect_uri ?? defaultOAuthReturnUrl(),
+        redirectTo: safeOAuthRedirectUrl(opts?.redirect_uri),
         queryParams,
         skipBrowserRedirect: true,
       },

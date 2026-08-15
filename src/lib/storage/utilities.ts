@@ -38,7 +38,9 @@ export function hasAnyLog(l?: DayLog): boolean {
     l.energy?.length ||
     l.histamine?.length ||
     l.pregnancy != null ||
-    l.postpartum != null
+    l.postpartum != null ||
+    Object.values(l.customLogs ?? {}).some((entries) => Array.isArray(entries) && entries.length > 0) ||
+    Object.values(l.adminFields ?? {}).some((entries) => Array.isArray(entries) && entries.length > 0)
   );
 }
 

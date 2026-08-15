@@ -214,6 +214,7 @@ function BodyRecoveryForm({
         <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="h-10 rounded-2xl" />
       </section>
 
+      {mode === "body" && (
       <section className="border-t border-border pt-4" onFocusCapture={() => setMode("body")}>
         <h3 className="mb-3 text-sm font-bold">{t("If Temp / Sleep / Weight")}</h3>
         <div className="space-y-3">
@@ -260,6 +261,9 @@ function BodyRecoveryForm({
         </div>
       </section>
 
+      )}
+
+      {mode === "recovery" && (
       <section className="border-t border-border pt-4" onFocusCapture={() => setMode("recovery")}>
         <h3 className="mb-3 text-sm font-bold">{t("If Heat / Cold / TENS")}</h3>
         <div className="space-y-3">
@@ -296,6 +300,7 @@ function BodyRecoveryForm({
           </div>
         </div>
       </section>
+      )}
     </div>
   );
 }
@@ -694,7 +699,7 @@ export function LogSheet({
               saveAdminCustomFields,
               sourceEntryId: activeSourceEntryId,
             } : null}>
-            <div key={`${active}-${openToken}-${(edit as { id?: string } | undefined)?.id ?? initialPain?.id ?? "new"}`} data-bixbo-log-surface={active === "pain" ? "pain" : "standard"} className={`min-h-0 flex-1 overflow-y-auto ${active === "pain" ? "pt-[60px]" : active === "meds" ? "px-5 pb-4" : "bixbo-unified-log px-4 pb-5 sm:px-5"}`}>
+            <div key={`${active}-${openToken}-${(edit as { id?: string } | undefined)?.id ?? initialPain?.id ?? "new"}`} data-bixbo-log-surface={active === "pain" ? "pain" : "standard"} className={`min-h-0 flex-1 overflow-y-auto ${active === "pain" ? "" : active === "meds" ? "px-5 pb-4" : "bixbo-unified-log px-4 pb-5 sm:px-5"}`}>
               {active?.startsWith("custom:") && (() => {
                 const id = active.slice("custom:".length);
                 const definition = customLogDefinitions(data).find((item) => item.id === id);

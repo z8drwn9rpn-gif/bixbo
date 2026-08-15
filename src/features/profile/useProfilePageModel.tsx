@@ -26,6 +26,8 @@ import {
   getBixbo,
   EMPTY,
   todayKey,
+  daysBetween,
+  hasAnyLog,
   latestRecordedWeight,
   userAllergens,
   userGender,
@@ -260,9 +262,7 @@ const startAccountOAuth = async (provider: "google" | "apple") => {
     setAccountAuthError(null);
 
     try {
-      const result = await accountAuth.signInWithOAuth(provider, {
-        redirect_uri: window.location.origin,
-      });
+      const result = await accountAuth.signInWithOAuth(provider);
 
       if (result.error) throw result.error;
       if (result.redirected) return;
@@ -431,32 +431,19 @@ const pregnancyLabel = pregnancyActive
 
 const allDayLogs = Object.values(view.dayLogs);
 
-const totalPainLogs = allDayLogs.reduce((sum, day) => sum + (day?.pain?.length ?? 0), 0);
+const totalPainLogs = allDayLogs.reduce((sum, day) => sum + (day?.pain?.filter((entry) => entry.entryKind !== "symptom-update").length ?? 0), 0);
 
-const totalBowelLogs = allDayLogs.reduce((sum, day) => sum + (day?.bowel?.length ?? 0), 0);
+const totalBowelLogs = allDayLogs.reduce((sum, day) => sum + (day?.bowel?.filter((entry) => !entry.urinaryOnly && entry.bristol !== -2).length ?? 0), 0);
 
 const totalSleepLogs = allDayLogs.filter((day) => day?.sleepHours != null).length;
 
 const totalTetanyLogs = allDayLogs.reduce((sum, day) => sum + (day?.tetany?.length ?? 0), 0);
 
-const trackedDates = Object.keys(view.dayLogs).filter((date) => {
-    const day = view.dayLogs[date];
-    return Boolean(
-      (day?.pain?.length ?? 0) ||
-      (day?.bowel?.length ?? 0) ||
-      (day?.tetany?.length ?? 0) ||
-      (day?.panic?.length ?? 0) ||
-      day?.sleepHours != null ||
-      day?.temperature != null ||
-      day?.weight != null,
-    );
-  });
+const trackedDates = Object.keys(view.dayLogs).filter((date) => hasAnyLog(view.dayLogs[date]));
 
 const firstTrackedDate = trackedDates.slice().sort()[0];
 
-const trackingDays = firstTrackedDate
-    ? Math.max(1, Math.floor((Date.now() - new Date(`${firstTrackedDate}T00:00:00`).getTime()) / 86400000) + 1)
-    : 0;
+const trackingDays = firstTrackedDate ? Math.max(1, daysBetween(firstTrackedDate, todayKey()) + 1) : 0;
 
 return { navigate, data, update, hydrated, language, setLanguage, t, view, profile, editing, setEditing, healthView, setHealthView, accountAuthBusy, setAccountAuthBusy, accountAuthError, setAccountAuthError, deviceAdminEnabled, trackingPrefs, setTrackingPrefs, painScale, setPainScale, units, setUnits, privacyPrefs, setPrivacyPrefs, backupPrefs, setBackupPrefs, reminderPrefs, setReminderPrefs, prefsLoaded, setPrefsLoaded, syncingPrefsFromStoreRef, prefsSignature, patch, setTheme, setTextSize, exportJson, startAccountOAuth, protectRestoreFromDeletedData, age, currentWeight, gender, pregnancyActive, postpartumActive, allergens, bmi, setEmergency, setCurrentWeight, setGender, reproductiveStatus, setReproductiveStatus, doctors, activeMedications, medicalTags, allergyTags, postpartumStatus, postpartumToday, pregnancyLabel, allDayLogs, totalPainLogs, totalBowelLogs, totalSleepLogs, totalTetanyLogs, trackedDates, firstTrackedDate, trackingDays };
 }

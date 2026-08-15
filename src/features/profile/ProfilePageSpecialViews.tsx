@@ -167,7 +167,7 @@ if (healthView === "achievements") {
   }
 
 if (healthView === "statistics") {
-    const painScores = allDayLogs.flatMap((day) => (day?.pain ?? []).map((entry) => entry.score));
+    const painScores = allDayLogs.flatMap((day) => (day?.pain ?? []).filter((entry) => entry.entryKind !== "symptom-update").map((entry) => entry.score));
     const averagePain = painScores.length
       ? painScores.reduce((sum, value) => sum + value, 0) / painScores.length
       : null;

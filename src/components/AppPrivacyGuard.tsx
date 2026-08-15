@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { LockKeyhole, ShieldCheck } from "@/components/icons/BixboExtraIcons";
 import { useI18n } from "@/hooks/useI18n";
 
@@ -16,9 +16,19 @@ export function AppPrivacyGuard({ children }: { children: ReactNode }) {
   const [locked, setLocked] = useState(false);
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const bypass = typeof window !== "undefined" && window.location.pathname.startsWith("/auth");
   const lockEnabled = !bypass && (prefs.biometricLock || prefs.pinLock);
+  const interactionBlocked = covered || locked;
+
+  useEffect(() => {
+    const node = contentRef.current;
+    if (!node) return;
+    if (interactionBlocked) node.setAttribute("inert", "");
+    else node.removeAttribute("inert");
+    return () => node.removeAttribute("inert");
+  }, [interactionBlocked]);
 
   useEffect(() => {
     if (!lockEnabled) {
@@ -67,7 +77,9 @@ export function AppPrivacyGuard({ children }: { children: ReactNode }) {
 
   return (
     <>
-      {children}
+      <div ref={contentRef} className="contents" aria-hidden={interactionBlocked ? true : undefined}>
+        {children}
+      </div>
 
       {covered && (
         <div className="fixed inset-0 z-[9998] grid place-items-center bg-background text-foreground">

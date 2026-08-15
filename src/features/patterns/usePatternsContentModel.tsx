@@ -23,6 +23,7 @@ import {
 import { AppShell } from "@/components/AppShell";
 import { CHART_COLORS, CHART_TINTS } from "@/components/ui/chart";
 import { useI18n } from "@/hooks/useI18n";
+import { summarizeMedicationProgress } from "@/lib/domain/meds";
 import { BIXBO_REGISTRY, getRegistryFeature, registryAdminCorrelationFieldsForFeature, registryAdminCorrelationThreshold, registryAdminCycleFieldsForFeature, registryAdminMonthlyFieldsForFeature, registryAdminTreatmentFieldsForFeature, type RegistryFeatureId } from "@/lib/appRegistry";
 import { layoutOrder } from "@/lib/layoutRegistry";
 import {
@@ -310,37 +311,16 @@ const adminMonthlyMetrics = BIXBO_REGISTRY.flatMap((featureBase) => {
       };
     });
   });
-
-const medicationAdherence = (days: string[]) => {
-    const scheduledMeds = view.meds.filter((med) => !med.asNeeded);
-    const comparisonNow = new Date();
-    const cutoffMinutes = comparisonNow.getHours() * 60 + comparisonNow.getMinutes();
-    const lastComparableDay = days[days.length - 1];
-
-    let expected = 0;
-    let taken = 0;
-
-    days.forEach((day) => {
-      scheduledMeds.forEach((med) => {
-        med.times.forEach((time) => {
-          const key = `${med.id}@${time}`;
-          const isTaken = !!view.medLog[day]?.[key];
-
-          if (day === lastComparableDay && !isTaken) {
-            const match = /^(\d{1,2}):(\d{2})/.exec(time.trim());
-            if (!match) return;
-
-            const scheduledMinutes = Number(match[1]) * 60 + Number(match[2]);
-            if (scheduledMinutes > cutoffMinutes) return;
-          }
-
-          expected += 1;
-          if (isTaken) taken += 1;
-        });
-      });
-    });
-
-    return expected > 0 ? (taken / expected) * 100 : null;
+  const medicationAdherence = (days: string[]) => {
+    const summary = summarizeMedicationProgress(
+      data.meds,
+      days,
+      data.medLog,
+      data.medLogItems ?? {},
+      new Date(),
+      false,
+    );
+    return summary.expected ? summary.pct ?? null : null;
   };
 
 const workoutStats = (days: string[]) => {

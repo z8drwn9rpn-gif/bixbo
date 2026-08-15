@@ -172,11 +172,11 @@ export function Chip({
 export function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; onSave: () => void; disabled?: boolean }) {
   const { t } = useI18n();
   return (
-    <SheetFooter className="sticky top-0 z-30 -mx-5 mt-0 flex-row items-center justify-between gap-2 border-b border-border/50 bg-background px-5 py-1.5">
+    <SheetFooter className="sticky top-0 z-30 -mx-5 mt-0 flex-row items-center justify-between gap-3 border-b border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur">
       <button
         type="button"
         onClick={onCancel}
-        className="flex min-w-[58px] items-center gap-1 text-xs font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="flex min-h-10 min-w-[68px] items-center gap-1 text-sm font-semibold text-foreground/80 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <span aria-hidden="true" className="text-sm leading-none">←</span>
         <span>{t("Back")}</span>
@@ -186,7 +186,7 @@ export function SaveBar({ onCancel, onSave, disabled }: { onCancel: () => void; 
         type="button"
         onClick={onSave}
         disabled={disabled}
-        className="inline-flex h-8 min-w-[68px] items-center justify-center gap-1 rounded-full bg-primary px-3 text-xs font-semibold text-primary-foreground shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        className="inline-flex h-10 min-w-[104px] items-center justify-center gap-1.5 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
         <span>{t("Save")}</span>
         <span aria-hidden="true" className="text-sm leading-none">✓</span>
@@ -204,6 +204,7 @@ export function CustomChipList({
   selected,
   onToggle,
   descriptions,
+  schemaFieldId,
 }: {
   base: string[];
   custom: string[];
@@ -223,7 +224,7 @@ export function CustomChipList({
   const [infoFor, setInfoFor] = useState<string | null>(null);
 
   return (
-    <div className="relative mt-0">
+    <div className="relative mt-0" data-bixbo-log-field-id={schemaFieldId || undefined}>
       {adding ? (
         <div className="mb-2 flex items-center gap-1">
           <Input

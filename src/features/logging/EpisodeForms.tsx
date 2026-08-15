@@ -126,9 +126,9 @@ export function EpisodeWizardNav({
         <span className="min-w-0 truncate text-xs font-semibold text-foreground/75">{t(steps[step] ?? "")}</span>
         <span className="shrink-0 text-xs font-semibold text-foreground/75">{step + 1}/{steps.length}</span>
       </div>
-      <button type="button" onClick={last ? onSave : onNext} className="flex h-[52px] min-w-[64px] flex-col items-center justify-center rounded-[1.15rem] bg-primary px-3 text-primary-foreground shadow-sm transition active:scale-[0.98]">
+      <button type="button" onClick={last ? onSave : onNext} className="inline-flex h-10 min-w-[104px] items-center justify-center gap-1.5 rounded-full bg-primary px-4 text-primary-foreground shadow-sm transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background">
         <span className="text-sm font-semibold leading-none">{t(last ? "Save" : "Next")}</span>
-        <span aria-hidden="true" className="mt-0.5 text-base leading-none">{last ? "✓" : "→"}</span>
+        <span aria-hidden="true" className="text-base leading-none">{last ? "✓" : "→"}</span>
       </button>
     </div>
   );

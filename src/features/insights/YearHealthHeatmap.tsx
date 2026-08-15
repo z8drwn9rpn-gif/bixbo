@@ -115,7 +115,7 @@ export function YearHealthHeatmap({ data, anchor, onShiftPeriod }: {
       return { color: vividPainChartColor(normalized), tooltipColor: vividPainChartColor(normalized), value: Number.isInteger(value) ? String(value) : value.toFixed(1), popupValue: `${field.label} · ${Number.isInteger(value) ? value : value.toFixed(1)}`, description: definition.label, entryCount: values.length };
     }
     if (selectedMetric === "pain") {
-      const entries = (log.pain ?? []).filter((entry) => Number.isFinite(entry.score)); if (!entries.length) return null;
+      const entries = (log.pain ?? []).filter((entry) => entry.entryKind !== "symptom-update" && Number.isFinite(entry.score)); if (!entries.length) return null;
       const value = entries.reduce((sum, entry) => sum + Number(entry.score), 0) / entries.length; const rounded = Math.max(0, Math.min(10, Math.round(value)));
       return { color: vividPainChartColor(value), tooltipColor: vividPainChartColor(value), value: `${value.toFixed(1)}/10`, popupValue: entries.length > 1 ? `Pain avg ${value.toFixed(1)}/10` : `Pain ${value.toFixed(1)}/10`, description: PAIN_DESCRIPTIONS[rounded] ?? "Pain", entryCount: entries.length };
     }

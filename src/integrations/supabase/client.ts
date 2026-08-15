@@ -3,7 +3,13 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
 function isNewSupabaseApiKey(value: string): boolean {
-  return value.startsWith('sb_publishable_') || value.startsWith('sb_secret_');
+  return value.startsWith('sb_publishable_');
+}
+
+export function assertBrowserSafeSupabaseKey(value: string): void {
+  if (value.startsWith('sb_secret_')) {
+    throw new Error('Refusing to initialize the BIXBO browser client with a Supabase secret key.');
+  }
 }
 
 function createSupabaseFetch(supabaseKey: string): typeof fetch {
@@ -33,6 +39,8 @@ function createSupabaseClient() {
   const PUBLIC_SUPABASE_PUBLISHABLE_KEY = "sb_publishable__K7x0Rsn4e7lT4Ut3_g04A_8w_WTaH3";
   const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || PUBLIC_SUPABASE_URL;
   const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+
+  assertBrowserSafeSupabaseKey(SUPABASE_PUBLISHABLE_KEY);
 
   if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
     const missing = [

@@ -7,10 +7,21 @@ import { useI18n } from "@/hooks/useI18n";
 import { oauthReturnUrlForLocation } from "@/integrations/auth/account";
 import { supabase } from "@/integrations/supabase/client";
 
-function safeInternalNext(value: unknown): string {
+export function safeInternalNext(value: unknown): string {
   if (typeof value !== "string") return "";
-  if (!value.startsWith("/") || value.startsWith("//")) return "";
-  return value;
+  const hasControl = [...value].some((char) => {
+    const code = char.charCodeAt(0);
+    return code <= 31 || code === 127;
+  });
+  if (!value.startsWith("/") || value.startsWith("//") || value.includes("\\") || hasControl) return "";
+  try {
+    const base = new URL("https://bixbo.invalid");
+    const parsed = new URL(value, base);
+    if (parsed.origin !== base.origin) return "";
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return "";
+  }
 }
 
 export const Route = createFileRoute("/auth")({

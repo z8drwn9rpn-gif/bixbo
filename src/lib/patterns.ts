@@ -208,9 +208,10 @@ export function dayHotFlash(log: DayLog): number | null {
  * when it has no separate symptom tag.
  */
 export function dayBowelSymptoms(log: DayLog): number | null {
-  if (!log.bowel?.length) return null;
+  const bowelEntries = (log.bowel ?? []).filter((entry) => !entry.urinaryOnly && entry.bristol !== -2);
+  if (!bowelEntries.length) return null;
 
-  return log.bowel.reduce((total, entry) => {
+  return bowelEntries.reduce((total, entry) => {
     const symptomCount = entry.symptoms?.length ?? 0;
 
     return total + Math.max(1, symptomCount);

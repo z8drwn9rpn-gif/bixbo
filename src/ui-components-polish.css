@@ -85,18 +85,6 @@
   vertical-align: top;
 }
 
-/* Body & Recovery is a two-mode log. Keep the shared Type/Time controls visible,
-   but render only the form that belongs to the currently selected mode. */
-[data-bixbo-log-surface="standard"] > div:has(> section:first-of-type > div.grid.grid-cols-2 > button:first-child.bg-primary)
-  > section:nth-of-type(4) {
-  display: none;
-}
-
-[data-bixbo-log-surface="standard"] > div:has(> section:first-of-type > div.grid.grid-cols-2 > button:nth-child(2).bg-primary)
-  > section:nth-of-type(3) {
-  display: none;
-}
-
 @media (min-width: 1024px) {
   #main-content .max-w-sm,
   #main-content .max-w-md,

@@ -378,7 +378,7 @@ export function PainWizard({
       onTouchEnd={onTouchEnd}
     >
       {quickSymptomUpdate ? (
-        <div className="flex items-center justify-between px-1 pb-3 pt-[68px]">
+        <div className="flex items-center justify-between px-1 pb-3 pt-3">
           <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
             {t("Add symptoms")}
           </span>
@@ -386,8 +386,7 @@ export function PainWizard({
         </div>
       ) : (
         <div
-          className="fixed inset-x-0 z-30 h-[60px] flex items-center justify-between gap-2 border-b border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur"
-          style={{ top: "calc(env(safe-area-inset-top) + 56px)" }}
+          className="sticky top-0 z-30 -mx-5 h-[60px] flex items-center justify-between gap-2 border-b border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur"
         >
           {safeStep > 0 ? (
             <button
@@ -418,10 +417,10 @@ export function PainWizard({
           <button
             type="button"
             onClick={safeStep < painSteps.length - 1 ? () => setStep(safeStep + 1) : save}
-            className="flex h-[52px] min-w-[64px] flex-col items-center justify-center rounded-[1.15rem] bg-primary px-3 text-primary-foreground shadow-sm transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="inline-flex h-10 min-w-[104px] items-center justify-center gap-1.5 rounded-full bg-primary px-4 text-primary-foreground shadow-sm transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             <span className="text-sm font-semibold leading-none">{t(safeStep < painSteps.length - 1 ? "Next" : "Save")}</span>
-            <span aria-hidden="true" className="mt-0.5 text-base leading-none">{safeStep < painSteps.length - 1 ? "→" : "✓"}</span>
+            <span aria-hidden="true" className="text-base leading-none">{safeStep < painSteps.length - 1 ? "→" : "✓"}</span>
           </button>
         </div>
       )}
@@ -1054,7 +1053,7 @@ export function PainWizard({
       )}
 
       {quickSymptomUpdate && (activePainStepId === "symptoms" || activePainStepId === "episodes") && (
-        <SheetFooter className="fixed inset-x-0 z-30 h-[60px] flex-row items-center justify-between gap-3 border-b border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur" style={{ top: "calc(env(safe-area-inset-top) + 56px)" }}>
+        <SheetFooter className="sticky top-0 order-first z-30 -mx-5 mt-0 h-[60px] flex-row items-center justify-between gap-3 border-b border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur">
           <button
             type="button"
             onClick={() => {
