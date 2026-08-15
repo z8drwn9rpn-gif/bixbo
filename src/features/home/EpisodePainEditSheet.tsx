@@ -85,26 +85,23 @@ export function EpisodePainEditSheet({
 
         {target ? (
           <div className="flex min-h-0 flex-1 flex-col">
-            <div className="sticky top-0 z-30 flex h-[60px] shrink-0 items-center justify-between gap-2 border-b border-border/50 bg-background/95 px-5 py-2 shadow-sm backdrop-blur">
-              <span className="min-w-[68px]" aria-hidden="true" />
-              <div className="flex min-w-0 flex-1 flex-col items-center justify-center leading-tight">
-                <span className="text-xs font-semibold text-foreground/75">{t("Episodes")}</span>
-                <span className="mt-0.5 inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
-                  <Ico e={target.kind === "tetany" ? "⭐" : "✨"} size={14} />
-                  {t(target.kind === "tetany" ? "Tetany" : "Panic attack")}
-                </span>
+            <div className="sticky top-0 z-30 flex h-[44px] shrink-0 items-center justify-between gap-2 border-b border-border/45 bg-background/96 px-5 py-1 backdrop-blur">
+              <span className="min-w-[58px]" aria-hidden="true" />
+              <div className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 text-xs font-semibold text-foreground/80">
+                <Ico e={target.kind === "tetany" ? "⭐" : "✨"} size={14} />
+                <span>{t(target.kind === "tetany" ? "Tetany" : "Panic attack")}</span>
               </div>
               <button
                 type="button"
                 onClick={save}
-                className="flex h-[52px] min-w-[68px] flex-col items-center justify-center rounded-[1.15rem] bg-primary px-3 text-primary-foreground shadow-sm transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="inline-flex h-9 min-w-[58px] items-center justify-center gap-1.5 rounded-xl bg-primary px-3 text-primary-foreground shadow-sm transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                <span className="text-sm font-semibold leading-none">{t("Save")}</span>
-                <Check className="mt-0.5 h-4 w-4" />
+                <span className="text-xs font-semibold leading-none">{t("Save")}</span>
+                <Check className="h-3.5 w-3.5" />
               </button>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-[calc(24px+env(safe-area-inset-bottom))] pt-4">
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-[calc(24px+env(safe-area-inset-bottom))] pt-2">
               <div className="mx-auto w-full max-w-xl rounded-2xl border border-border p-3">
                 <LogSchemaContext.Provider value={null}>
                   {target.kind === "tetany" ? (
