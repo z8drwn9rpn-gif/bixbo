@@ -1,0 +1,79 @@
+name: Fix Log menu modal regression
+
+on:
+  push:
+    branches:
+      - refactor/css-component-architecture
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[log-menu-modal-fixed]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/css-component-architecture
+          fetch-depth: 0
+
+      - name: Restore modal interaction semantics with stable state hooks
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path: str, old: str, new: str) -> None:
+              p = Path(path)
+              text = p.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"{path}: expected exactly one match, found {count}")
+              p.write_text(text.replace(old, new, 1))
+
+          # Keep Radix Sheet modal semantics. WebKit and swipe dismissal rely on
+          # the full Sheet surface continuing to receive pointer/touch events.
+          replace_once(
+              "src/features/logging/LogSheetRoot.tsx",
+              '<Sheet open={open} modal={Boolean(active)} onOpenChange={(b) => { if (!b) close(); }}>',
+              '<Sheet open={open} onOpenChange={(b) => { if (!b) close(); }}>',
+          )
+          replace_once(
+              "src/features/logging/LogSheetRoot.tsx",
+              ': "fixed !inset-0 !left-0 !right-0 !top-0 !bottom-0 !pointer-events-none flex !h-[100dvh] !max-h-none !w-full !max-w-none min-h-0 flex-col overflow-hidden !rounded-none !border-0 !bg-transparent !p-0 !shadow-none !transition-none data-[state=open]:!animate-none data-[state=closed]:!animate-none")',
+              ': "fixed !inset-0 !left-0 !right-0 !top-0 !bottom-0 flex !h-[100dvh] !max-h-none !w-full !max-w-none min-h-0 flex-col overflow-hidden !rounded-none !border-0 !bg-transparent !p-0 !shadow-none !transition-none data-[state=open]:!animate-none data-[state=closed]:!animate-none")',
+          )
+
+          # Explicit semantic state replaces the old body:has(radial DOM) CSS.
+          replace_once(
+              "src/features/logging/LogSheetRoot.tsx",
+              '''  const active = cat ?? initial;\n  // Mirror the iOS visible viewport (keyboard + suggestion + accessory bar) into''',
+              '''  const active = cat ?? initial;\n  useEffect(() => {\n    if (typeof document === "undefined") return;\n    const body = document.body;\n    if (open && !active) body.dataset.bixboLogMenuOpen = "true";\n    else delete body.dataset.bixboLogMenuOpen;\n    return () => { delete body.dataset.bixboLogMenuOpen; };\n  }, [active, open]);\n  // Mirror the iOS visible viewport (keyboard + suggestion + accessory bar) into''',
+          )
+
+          replace_once(
+              "src/components/BottomNav.tsx",
+              '<nav aria-label="Primary navigation" className=',
+              '<nav data-bixbo-bottom-nav aria-label="Primary navigation" className=',
+          )
+
+          p = Path("src/ui-system.css")
+          css = p.read_text()
+          marker = "/* SHARED COMPONENT BEHAVIOUR */"
+          if marker not in css:
+              raise SystemExit("ui-system.css shared component marker not found")
+          semantic = '''/* Log menu interaction state. This is an explicit component contract, not a\n   DOM-order/Tailwind selector: the modal Sheet owns the body state and BottomNav\n   opts in with data-bixbo-bottom-nav so its Log toggle remains reachable. */\nbody[data-bixbo-log-menu-open="true"] [data-bixbo-bottom-nav] {\n  pointer-events: auto;\n  z-index: 60;\n}\n\nbody[data-bixbo-log-menu-open="true"] [data-bixbo-bottom-nav] * {\n  pointer-events: auto;\n}\n\n'''
+          if "data-bixbo-log-menu-open" not in css:
+              css = css.replace(marker, semantic + marker, 1)
+          p.write_text(css)
+
+          Path(".github/workflows/fix-log-menu-modal-regression.yml").unlink()
+          PY
+
+          git config user.name "bixbo-refactor-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Restore Log menu modal interaction semantics [log-menu-modal-fixed]"
+          git push origin HEAD:refactor/css-component-architecture
