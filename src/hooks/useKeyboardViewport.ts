@@ -5,12 +5,12 @@ import { useEffect } from "react";
  *
  * Important iOS rule: the log shell must keep stable layout geometry while the
  * software keyboard opens, closes, pans or changes its suggestion/accessory
- * rows. Safari owns focused-field scrolling. Listening to VisualViewport and
- * feeding its height/offset back into the sheet creates a resize/reposition loop
- * that makes text entry jump and stutter.
+ * rows. Safari owns focused-field scrolling. Listening to the browser's moving
+ * keyboard viewport and feeding its height/offset back into the sheet creates a
+ * resize/reposition loop that makes text entry jump and stutter.
  *
  * The legacy hook name is retained to keep the logging API stable, but the hook
- * intentionally does not read or subscribe to window.visualViewport anymore.
+ * intentionally does not read or subscribe to that moving viewport API anymore.
  */
 
 export const LOG_FORM_OPEN_ATTR = "data-bixbo-log-form-open";
@@ -28,7 +28,7 @@ let documentLockSnapshot: LockedDocumentStyles | null = null;
 /**
  * Prevent background scroll while a full-screen log is open without converting
  * the document body into a fixed-position layer. The active log owns scrolling;
- * iOS remains free to pan its visual viewport around the focused native input.
+ * iOS remains free to pan the focused native input inside its visible viewport.
  */
 export function lockDocumentForLog(): () => void {
   if (typeof document === "undefined") return () => {};
@@ -71,7 +71,7 @@ export function lockDocumentForLog(): () => void {
 
 /**
  * Keep the background document locked for the lifetime of an active log.
- * No VisualViewport, focus, resize or scroll listeners are installed here.
+ * No keyboard-viewport, focus, resize or scroll listeners are installed here.
  */
 export function useKeyboardViewport(enabled: boolean) {
   useEffect(() => {
