@@ -1,0 +1,44 @@
+/*
+ * Patterns semantic presentation.
+ *
+ * Keep meaning independent from theme utility ordering: improvements must remain
+ * visibly green, worsening/needs-attention states red, and neutral values muted.
+ */
+.bixbo-pattern-tone-good {
+  color: #15803d !important;
+}
+
+.bixbo-pattern-tone-bad {
+  color: #e11d48 !important;
+}
+
+.bixbo-pattern-tone-neutral {
+  color: var(--muted-foreground) !important;
+}
+
+.dark .bixbo-pattern-tone-good,
+[data-theme="dark"] .bixbo-pattern-tone-good {
+  color: #86efac !important;
+}
+
+.dark .bixbo-pattern-tone-bad,
+[data-theme="dark"] .bixbo-pattern-tone-bad {
+  color: #fda4af !important;
+}
+
+/* Accordion labels and their explanations are part of the analysis, not
+ * decorative placeholders. Never allow theme/container rules to hide them. */
+[data-bixbo-pattern-section-title],
+[data-bixbo-pattern-section-subtitle] {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+[data-bixbo-pattern-section-title] {
+  color: var(--foreground) !important;
+}
+
+[data-bixbo-pattern-section-subtitle] {
+  color: var(--muted-foreground) !important;
+}
