@@ -31,19 +31,38 @@ function persistFastThemeChoice(theme: ThemeChoice) {
   }
 }
 
-function syncBrowserChrome(isDark: boolean, theme: ThemeChoice) {
+function syncBackingCanvas(isDark: boolean) {
+  const canvas = isDark ? DARK_THEME_COLOR : LIGHT_THEME_COLOR;
   const root = document.documentElement;
 
-  // Manual Light is an explicit opt-out from browser/Samsung Auto Dark.
-  // Dark and System still advertise both author-provided schemes so Samsung
-  // can use BIXBO's curated dark palette instead of inventing one.
+  // Samsung Internet paints the document backing layer during pull-down /
+  // rubber-band overscroll. Keep both html and body explicitly synchronized
+  // with the active BIXBO canvas so it cannot expose an obsolete theme colour.
+  root.style.background = canvas;
+  root.style.setProperty("background-color", canvas, "important");
+
+  if (document.body) {
+    document.body.style.background = canvas;
+    document.body.style.setProperty("background-color", canvas, "important");
+  }
+}
+
+function syncBrowserChrome(isDark: boolean) {
+  const root = document.documentElement;
+  const canvas = isDark ? DARK_THEME_COLOR : LIGHT_THEME_COLOR;
+
+  // Advertise exactly the author-selected scheme. In particular, `only light`
+  // prevents Samsung Internet's forced dark transformation when BIXBO Light is
+  // selected, while `dark` tells it that BIXBO already supplies a dark palette.
   root.style.colorScheme = isDark ? "dark" : "only light";
 
   const colorSchemeMeta = document.querySelector<HTMLMetaElement>('meta[name="color-scheme"]');
-  colorSchemeMeta?.setAttribute("content", theme === "light" ? "only light" : "light dark");
+  colorSchemeMeta?.setAttribute("content", isDark ? "dark" : "only light");
 
   const themeColorMeta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-  themeColorMeta?.setAttribute("content", isDark ? DARK_THEME_COLOR : LIGHT_THEME_COLOR);
+  themeColorMeta?.setAttribute("content", canvas);
+
+  syncBackingCanvas(isDark);
 }
 
 /**
@@ -62,9 +81,14 @@ export function applyThemeChoice(theme: ThemeChoice) {
 
   root.dataset.themeChoice = theme;
   root.dataset.theme = isDark ? "dark" : "light";
+  if (typeof navigator !== "undefined") {
+    root.dataset.browser = /SamsungBrowser\//i.test(navigator.userAgent || "")
+      ? "samsung-internet"
+      : "other";
+  }
   root.classList.toggle("dark", isDark);
   root.classList.toggle("light", !isDark);
-  syncBrowserChrome(isDark, theme);
+  syncBrowserChrome(isDark);
 }
 
 /**
