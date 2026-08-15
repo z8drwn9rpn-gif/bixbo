@@ -147,10 +147,15 @@ export function findScrollContainer(node: HTMLElement | null): HTMLElement | nul
 }
 
 /**
- * Keeps the focused field above the keyboard by scrolling ONLY the nearest
- * inner scroll container by the minimum required delta. We never call
- * scrollIntoView or move window/document scroll because that causes the
- * well-known iOS jump/flicker and can detach a fixed BottomNav from the bottom.
+ * Keeps a focused field above the keyboard by scrolling ONLY the nearest inner
+ * scroll container and ONLY forward/down by the minimum required delta.
+ *
+ * Important iOS invariant: focusing a textarea must never reduce the log's
+ * scrollTop. Safari may already pan/scroll the focused control into view before
+ * VisualViewport settles; trying to "correct" a field that appears above our
+ * computed visual top creates a second, backwards scroll and is what makes the
+ * Pain Details page jump toward the top. Native iOS handles fields above the
+ * visible top on its own, so we deliberately never scroll backwards here.
  */
 export function keepFocusedFieldVisible(
   target: HTMLElement,
@@ -163,10 +168,13 @@ export function keepFocusedFieldVisible(
   const rect = target.getBoundingClientRect();
   const containerRect = container.getBoundingClientRect();
   const bottomLimit = Math.min(visibleBottom, containerRect.bottom) - margin;
-  const topLimit = Math.max(visibleTop, containerRect.top) + margin;
 
-  if (rect.bottom > bottomLimit) container.scrollTop += rect.bottom - bottomLimit;
-  else if (rect.top < topLimit) container.scrollTop -= topLimit - rect.top;
+  // Never decrease scrollTop on focus. The only intervention allowed is moving
+  // the inner log farther down when the focused field would be hidden by the
+  // keyboard/accessory bar.
+  if (rect.bottom > bottomLimit) {
+    container.scrollTop += rect.bottom - bottomLimit;
+  }
 }
 
 function isTextField(node: EventTarget | null): node is HTMLElement {
