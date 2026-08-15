@@ -30,14 +30,18 @@ function insertInto(target: EditableTarget, value: string) {
   if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
     const start = target.selectionStart ?? target.value.length;
     const end = target.selectionEnd ?? start;
-    target.focus();
+
+    // Important for iOS/PWA log sheets: do not call focus() here. Re-focusing an
+    // already active small-font input can make Safari zoom/reposition the visual
+    // viewport and can destabilize the parent modal. The pointer interaction that
+    // opens this picker preserves the original input focus and selection.
     target.setRangeText(value, start, end, "end");
     target.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText", data: value }));
-    target.dispatchEvent(new Event("change", { bubbles: true }));
     return;
   }
 
-  target.focus();
+  // contentEditable targets stay focused because all picker pointer events prevent
+  // their default focus transfer. Avoid an explicit focus() for the same iOS reason.
   document.execCommand("insertText", false, value);
   target.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText", data: value }));
 }
@@ -96,18 +100,33 @@ export function BixboIconKeyboard() {
 
       {open ? (
         <div
-          className="pointer-events-auto fixed inset-0 flex items-end justify-center bg-black/25 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:items-center"
+          className="pointer-events-auto fixed inset-0 flex touch-none items-end justify-center bg-black/25 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:items-center"
           onPointerDown={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
             if (event.target === event.currentTarget) setOpen(false);
           }}
         >
-          <section className="w-full max-w-[430px] overflow-hidden rounded-[28px] border border-border/70 bg-background shadow-2xl">
+          <section
+            className="w-full max-w-[430px] touch-pan-y overflow-hidden rounded-[28px] border border-border/70 bg-background shadow-2xl"
+            onPointerDown={(event) => event.stopPropagation()}
+          >
             <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">BIXBO ICONS</p>
                 <p className="text-sm font-bold text-foreground">Choose an icon</p>
               </div>
-              <button type="button" onPointerDown={(event) => { event.preventDefault(); setOpen(false); }} className="grid h-9 w-9 touch-manipulation place-items-center rounded-full bg-tint text-lg font-bold">×</button>
+              <button
+                type="button"
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setOpen(false);
+                }}
+                className="grid h-9 w-9 touch-manipulation place-items-center rounded-full bg-tint text-lg font-bold"
+              >
+                ×
+              </button>
             </div>
 
             <div className="flex gap-1 overflow-x-auto px-3 py-2">
@@ -117,6 +136,7 @@ export function BixboIconKeyboard() {
                   type="button"
                   onPointerDown={(event) => {
                     event.preventDefault();
+                    event.stopPropagation();
                     setGroup(item.id);
                   }}
                   className={`shrink-0 touch-manipulation rounded-full px-3 py-1.5 text-[11px] font-bold ${group === item.id ? "bg-primary text-primary-foreground" : "bg-tint text-foreground"}`}
