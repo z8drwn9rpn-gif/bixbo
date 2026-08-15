@@ -1,0 +1,200 @@
+/* BIXBO Log menu — compact minimal popover
+   Keeps the existing log/reorder behaviour and only changes the chooser presentation. */
+
+/* The radial chooser canvas becomes a compact floating popover. */
+div.pointer-events-none.absolute.inset-0.overflow-hidden
+  > div:has(> button[data-log-category]) {
+  pointer-events: auto !important;
+  position: absolute !important;
+  left: 50% !important;
+  bottom: calc(92px + env(safe-area-inset-bottom)) !important;
+  width: min(365px, calc(100vw - 24px)) !important;
+  max-width: calc(100vw - 24px) !important;
+  height: auto !important;
+  min-height: 0 !important;
+  transform: translateX(-50%) !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: center !important;
+  align-content: center !important;
+  gap: 10px 4px !important;
+  padding: 16px 12px 14px !important;
+  border: 1px solid color-mix(in srgb, var(--border) 76%, transparent) !important;
+  border-radius: 26px !important;
+  background: color-mix(in srgb, var(--background) 94%, transparent) !important;
+  box-shadow:
+    0 18px 46px rgba(34, 38, 24, 0.18),
+    0 2px 8px rgba(34, 38, 24, 0.08),
+    inset 0 1px 0 color-mix(in srgb, white 72%, transparent) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.08) !important;
+  backdrop-filter: blur(20px) saturate(1.08) !important;
+  overflow: visible !important;
+}
+
+/* Small pointer towards the persistent + button in the bottom navigation. */
+div.pointer-events-none.absolute.inset-0.overflow-hidden
+  > div:has(> button[data-log-category])::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -10px;
+  width: 20px;
+  height: 20px;
+  transform: translateX(-50%) rotate(45deg);
+  border-right: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
+  background: color-mix(in srgb, var(--background) 96%, transparent);
+  border-radius: 0 0 5px 0;
+}
+
+/* Remove the diagram decoration and the old large centre +. */
+div.pointer-events-none.absolute.inset-0.overflow-hidden
+  > div:has(> button[data-log-category])
+  > svg,
+div.pointer-events-none.absolute.inset-0.overflow-hidden
+  > div:has(> button[data-log-category])
+  > span[aria-hidden="true"],
+div.pointer-events-none.absolute.inset-0.overflow-hidden
+  > div:has(> button[data-log-category])
+  > button[aria-label="Close Log"] {
+  display: none !important;
+}
+
+/* Category buttons: icon + compact rounded label, five per row. */
+button[data-log-category] {
+  position: relative !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+  width: calc((100% - 16px) / 5) !important;
+  height: 70px !important;
+  flex: 0 0 calc((100% - 16px) / 5) !important;
+  transform: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 5px !important;
+  padding: 4px 1px 2px !important;
+  border-radius: 16px !important;
+  color: var(--foreground) !important;
+  touch-action: manipulation !important;
+}
+
+button[data-log-category]:active {
+  background: color-mix(in srgb, var(--primary) 9%, transparent) !important;
+  transform: scale(0.96) !important;
+}
+
+/* Remove the old translucent circular shell; keep the BIXBO artwork itself. */
+button[data-log-category] > span:first-child {
+  position: relative !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+  width: 40px !important;
+  height: 40px !important;
+  transform: none !important;
+  flex: 0 0 40px !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: 0 !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+button[data-log-category] > span:first-child svg,
+button[data-log-category] > span:first-child img {
+  width: 30px !important;
+  height: 30px !important;
+  max-width: 30px !important;
+  max-height: 30px !important;
+}
+
+button[data-log-category] > span:last-child {
+  position: relative !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+  width: 100% !important;
+  min-height: 22px !important;
+  transform: none !important;
+  display: -webkit-box !important;
+  overflow: hidden !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
+  white-space: normal !important;
+  text-align: center !important;
+  font-family: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", system-ui, -apple-system, sans-serif !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  line-height: 1.05 !important;
+  letter-spacing: -0.01em !important;
+  color: var(--foreground) !important;
+  text-shadow: none !important;
+}
+
+/* Keep reorder available, but turn it into a discreet control instead of another large floating circle. */
+button[aria-label="Reorder log categories"],
+button[aria-label="Finish reordering log categories"] {
+  right: 22px !important;
+  bottom: calc(286px + env(safe-area-inset-bottom)) !important;
+  width: 30px !important;
+  height: 30px !important;
+  border: 0 !important;
+  background: color-mix(in srgb, var(--background) 88%, transparent) !important;
+  box-shadow: 0 2px 8px rgba(34, 38, 24, 0.12) !important;
+  ring: 0 !important;
+}
+
+button[aria-label="Reorder log categories"] > span:last-child,
+button[aria-label="Finish reordering log categories"] > span:last-child {
+  display: none !important;
+}
+
+button[aria-label="Reorder log categories"] span[aria-hidden="true"] span,
+button[aria-label="Finish reordering log categories"] span[aria-hidden="true"] span {
+  width: 3px !important;
+  height: 3px !important;
+  background: var(--muted-foreground) !important;
+}
+
+/* Softer neutral scrim than the old olive wash. */
+div[aria-hidden="true"].pointer-events-none.absolute.inset-0:has(+ div button[data-log-category]) {
+  background: rgba(29, 32, 23, 0.18) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+  backdrop-filter: blur(6px) !important;
+}
+
+@media (max-width: 360px) {
+  div.pointer-events-none.absolute.inset-0.overflow-hidden
+    > div:has(> button[data-log-category]) {
+    width: calc(100vw - 16px) !important;
+    gap: 8px 2px !important;
+    padding-inline: 8px !important;
+  }
+
+  button[data-log-category] {
+    width: calc((100% - 8px) / 5) !important;
+    flex-basis: calc((100% - 8px) / 5) !important;
+  }
+
+  button[data-log-category] > span:last-child {
+    font-size: 9.5px !important;
+  }
+}
+
+.dark div.pointer-events-none.absolute.inset-0.overflow-hidden
+  > div:has(> button[data-log-category]) {
+  background: color-mix(in srgb, var(--surface) 94%, transparent) !important;
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255,255,255,0.05) !important;
+}
+
+.dark div.pointer-events-none.absolute.inset-0.overflow-hidden
+  > div:has(> button[data-log-category])::after {
+  background: color-mix(in srgb, var(--surface) 96%, transparent) !important;
+}
