@@ -24,11 +24,12 @@ describe("Pain mobile/iOS layout stability", () => {
     expect(painWizard).not.toContain('style={{ top: "calc(env(safe-area-inset-top) + 56px)" }}');
   });
 
-  it("never scrolls a focused log field backwards toward the top", () => {
-    expect(keyboardViewport).toContain("focusedScrollFloor");
-    expect(keyboardViewport).toContain(
-      "if (container.scrollTop < focusedScrollFloor) container.scrollTop = focusedScrollFloor",
-    );
-    expect(keyboardViewport).not.toContain("container.scrollTop -= topLimit - rect.top");
+  it("lets native iOS own focused-field scrolling instead of correcting the form position", () => {
+    expect(keyboardViewport).not.toContain("focusedScrollFloor");
+    expect(keyboardViewport).not.toContain("keepFocusedFieldVisible");
+    expect(keyboardViewport).not.toContain("findScrollContainer");
+    expect(keyboardViewport).not.toContain("scrollTop +=");
+    expect(keyboardViewport).not.toContain("window.scrollTo(");
+    expect(keyboardViewport).toContain('viewport.addEventListener("scroll", sync)');
   });
 });
