@@ -5,10 +5,13 @@ test("auth screen renders and account modes work", async ({ page }) => {
   await page.goto("/auth");
   await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
   await expect(page.getByLabel("Email")).toBeVisible();
-  await expect(page.getByLabel("Password (min 6 chars)")).toBeVisible();
+  await expect(page.getByLabel("Password")).toBeVisible();
 
   await page.getByRole("button", { name: "Create account", exact: true }).first().click();
   await expect(page.getByLabel("Your name (optional)")).toBeVisible();
+  const signupPassword = page.getByLabel("Password (min 8 chars)");
+  await expect(signupPassword).toBeVisible();
+  await expect(signupPassword).toHaveAttribute("minlength", "8");
 });
 
 test("local Google OAuth returns to production BIXBO, never localhost", async ({ page }) => {
@@ -42,8 +45,18 @@ test("production shell and PWA assets are reachable", async ({ page, request }) 
   expect(serviceWorker.status()).toBe(200);
 });
 
+test("Worker responses carry baseline security headers", async ({ request }) => {
+  const response = await request.get("/auth");
+  expect(response.status()).toBeLessThan(500);
+  expect(response.headers()["x-content-type-options"]).toBe("nosniff");
+  expect(response.headers()["x-frame-options"]).toBe("DENY");
+  expect(response.headers()["referrer-policy"]).toBe("no-referrer");
+  expect(response.headers()["permissions-policy"]).toContain("camera=()");
+  expect(response.headers()["content-security-policy"]).toContain("frame-ancestors 'none'");
+});
+
 test("mobile layout does not introduce page-level horizontal overflow", async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== "mobile", "mobile-only layout regression");
+  test.skip(!testInfo.project.name.includes("mobile"), "mobile-only layout regression");
   await page.goto("/auth");
   const dimensions = await page.evaluate(() => ({
     scrollWidth: document.documentElement.scrollWidth,

@@ -158,6 +158,18 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"tex
 
             const canonical = normalizeBixboText(decodeBixboNativeText(rawNative));
             const encoded = encodeBixboNativeText(canonical);
+
+            // Plain text needs no BIXBO glyph translation. Most importantly, do
+            // not rewrite textarea.value or selectionRange on every keystroke:
+            // iOS WebKit can move a wrapped-line caret when script mutates the
+            // native control during the same input event.
+            if (canonical === rawNative && encoded === rawNative) {
+              caretRef.current = { start: rawStart, end: rawEnd };
+              if (!controlled) setUncontrolledValue(canonical);
+              onChange?.(event);
+              return;
+            }
+
             const encodedStart = encodeBixboNativeText(
               normalizeBixboText(decodeBixboNativeText(rawNative.slice(0, rawStart))),
             ).length;
