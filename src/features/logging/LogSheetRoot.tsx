@@ -1,6 +1,7 @@
 import { SemanticIco } from "@/components/icons/BixboFoodIcons";
 import { Children, isValidElement, useState, useMemo, useRef, useEffect, type ReactNode } from "react";
 import { useI18n } from "@/hooks/useI18n";
+import { useKeyboardViewport } from "@/hooks/useKeyboardViewport";
 import { TrText } from "@/features/logging/TrText";
 import { CATEGORIES, type Category } from "@/features/logging/logCategories";
 import { LogSchemaContext, useLogSchema, type LogSchemaContextValue } from "@/features/logging/LogSchemaContext";
@@ -343,6 +344,9 @@ export function LogSheet({
     setCat(null);
   };
   const active = cat ?? initial;
+  // Mirror the iOS visible viewport (keyboard + suggestion + accessory bar) into
+  // CSS vars while a full-screen log form is open.
+  useKeyboardViewport(open && Boolean(active));
   const edit = editEntry;
   const editSource = edit && typeof edit === "object" ? edit as { id?: unknown; time?: unknown } : null;
   const editSourceId = typeof editSource?.id === "string" ? editSource.id : undefined;
@@ -564,7 +568,7 @@ export function LogSheet({
         side="bottom"
         className={
           (active
-            ? `fixed !inset-0 !left-0 !right-0 !top-0 !bottom-0 flex !h-[100svh] !max-h-[100svh] !w-full !max-w-none min-h-0 flex-col overflow-hidden !rounded-none !border-0 bg-background p-0 pt-[env(safe-area-inset-top)] !shadow-none !transition-none !animate-none`
+            ? `fixed !left-0 !right-0 !bottom-auto !top-[var(--bixbo-viewport-offset,0px)] flex !h-[var(--bixbo-viewport-height,100svh)] !max-h-[var(--bixbo-viewport-height,100svh)] !w-full !max-w-none min-h-0 flex-col overflow-hidden !rounded-none !border-0 bg-background p-0 pt-[env(safe-area-inset-top)] !shadow-none !transition-none !animate-none`
             : "fixed !inset-0 !left-0 !right-0 !top-0 !bottom-0 flex !h-[100dvh] !max-h-none !w-full !max-w-none min-h-0 flex-col overflow-hidden !rounded-none !border-0 !bg-transparent !p-0 !shadow-none") + " [&>button.absolute]:hidden"
         }
       >
