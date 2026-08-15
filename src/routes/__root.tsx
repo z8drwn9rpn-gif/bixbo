@@ -92,7 +92,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" },
       { name: "theme-color", content: "#FBF7F3" },
-      { name: "color-scheme", content: "light dark" },
+      { name: "color-scheme", content: "only light" },
       { title: "BIXBO — Health diary" },
       { name: "description", content: "BIXBO — a calm diary for your cycle, pain, meds and notes." },
       { name: "author", content: "BIXBO" },
