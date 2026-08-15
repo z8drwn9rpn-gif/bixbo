@@ -20,6 +20,9 @@ const FOOD_EMOJI_LABELS: Record<string, string> = {
   "🍔": "burger", "🍰": "cake", "🧁": "cake", "🍩": "dessert", "🍪": "dessert",
 };
 
+const VIVID_ICON_CLASS = "[filter:saturate(1.22)_contrast(1.04)_drop-shadow(0_1px_1px_rgb(0_0_0_/_0.12))]";
+const withVivid = (className?: string) => `${VIVID_ICON_CLASS}${className ? ` ${className}` : ""}`;
+
 export function normalizeBixboEmoji(value: string) {
   return value.replace(/\uFE0F/g, "").replace(/\p{Emoji_Modifier}/gu, "");
 }
@@ -82,11 +85,13 @@ export function BixboIcon({
   className?: string;
   fallback?: "note" | "none";
 }) {
-  if (name) return <Ico name={name} size={size} className={className} />;
+  const vividClassName = withVivid(className);
+
+  if (name) return <Ico name={name} size={size} className={vividClassName} />;
 
   const Resolved = resolveBixboIcon({ emoji, label });
-  if (Resolved) return <Resolved size={size} className={className} />;
+  if (Resolved) return <Resolved size={size} className={vividClassName} />;
 
   if (fallback === "none") return null;
-  return <NoteIcon size={size} className={className} />;
+  return <NoteIcon size={size} className={vividClassName} />;
 }
