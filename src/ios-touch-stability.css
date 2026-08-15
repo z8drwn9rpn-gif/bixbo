@@ -79,6 +79,16 @@ input[type="range"] {
   touch-action: pan-y;
 }
 
+/* iOS/PWA overscroll backing canvas. Safari can rubber-band the document and
+   reveal the root/body backing layer; keep it on the current near-black canvas. */
+html.dark,
+html.dark body,
+html[data-theme="dark"],
+html[data-theme="dark"] body {
+  background: #171A14 !important;
+  background-color: #171A14 !important;
+}
+
 /* ---------------------------------------------------------------------------
    iOS keyboard viewport (see src/hooks/useKeyboardViewport.ts)
 
