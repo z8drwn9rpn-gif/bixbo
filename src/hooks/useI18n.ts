@@ -99,11 +99,25 @@ const HIDDEN_HELPER_COPY = new Set([
 /** UI brand naming only. Internal storage/domain keys stay `period` for compatibility. */
 const BLUEBERRY_UI_NAMES: Record<string, string> = {
   Period: "Blueberry",
+  period: "blueberry",
   "Period log": "Blueberry",
+  "period log": "blueberry",
   "Period flow": "Blueberry flow",
+  "period flow": "blueberry flow",
   "Period & cycle": "Blueberry & cycle",
+  "period & cycle": "blueberry & cycle",
   "Period / cycle": "Blueberry / cycle",
+  "period / cycle": "blueberry / cycle",
 };
+
+function blueberryUiName(key: string): string | null {
+  if (BLUEBERRY_UI_NAMES[key]) return BLUEBERRY_UI_NAMES[key];
+  // Catch visible compound labels such as "Log period", "Next period" or
+  // Quick Tag builder copy without touching internal data keys.
+  if (/\bPeriod\b/.test(key)) return key.replace(/\bPeriod\b/g, "Blueberry");
+  if (/\bperiod\b/.test(key)) return key.replace(/\bperiod\b/g, "blueberry");
+  return null;
+}
 
 export function useI18n() {
   const { data, hydrated, update } = useBixbo();
@@ -117,7 +131,8 @@ export function useI18n() {
   const t = useMemo(
     () => (key: string) => {
       if (HIDDEN_HELPER_COPY.has(key)) return "";
-      if (BLUEBERRY_UI_NAMES[key]) return BLUEBERRY_UI_NAMES[key];
+      const blueberryName = blueberryUiName(key);
+      if (blueberryName) return blueberryName;
       if (key === "missed (tap if taken)") return language === "sk" ? "vynechané" : "missed";
       if (key === "Hidden — tap to restore:") return language === "sk" ? "Skryté:" : "Hidden:";
       if (key === "No medications yet. Tap Add." || key === 'No medications yet. Tap "Add".') {
