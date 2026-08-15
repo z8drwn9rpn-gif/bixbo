@@ -24,21 +24,20 @@ describe("Textarea iOS input attributes", () => {
 });
 
 describe("Textarea iOS caret stability", () => {
-  it("does not rewrite DOM value/selection for plain text keystrokes", () => {
-    expect(textarea).toContain("if (canonical === rawNative && encoded === rawNative) {");
-    const fastPath = textarea.slice(
-      textarea.indexOf("if (canonical === rawNative && encoded === rawNative) {"),
-      textarea.indexOf("const encodedStart"),
-    );
-    expect(fastPath).not.toContain("setNativeTextareaValue");
-    expect(fastPath).not.toContain("setSelectionRange");
-    expect(fastPath).toContain("onChange?.(event)");
+  it("keeps keyboard edits as one native DOM value even when emoji are present", () => {
+    expect(textarea).toContain("const canonicalValue = controlled ? asText(value) : uncontrolledValue;");
+    expect(textarea).toContain("const mirrorActive = !focused");
+    expect(textarea).toContain("const next = node.value;");
+    expect(textarea).toContain("onChange?.(event)");
+    expect(textarea).not.toContain("encodeBixboNativeText");
+    expect(textarea).not.toContain("decodeBixboNativeText");
+    expect(textarea).not.toContain("normalizeBixboText");
   });
 
-  it("keeps BIXBO glyph encoding + caret restoration for emoji content", () => {
-    expect(textarea).toContain("encodeBixboNativeText");
-    expect(textarea).toContain("node.setSelectionRange(encodedStart, encodedEnd)");
+  it("only changes selection programmatically for an explicit BIXBO icon insertion", () => {
     expect(textarea).toContain("BixboInlinePicker");
+    expect(textarea).toContain('inputType: "insertText"');
+    expect(textarea).toContain("node.setSelectionRange(nextCaret, nextCaret)");
   });
 });
 
