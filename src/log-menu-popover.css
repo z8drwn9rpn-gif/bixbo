@@ -1,7 +1,6 @@
 /* BIXBO Log menu — compact minimal popover
    Keeps the existing log/reorder behaviour and only changes the chooser presentation. */
 
-/* The radial chooser canvas becomes a compact floating popover. */
 div.pointer-events-none.absolute.inset-0.overflow-hidden
   > div:has(> button[data-log-category]) {
   pointer-events: auto !important;
@@ -31,7 +30,6 @@ div.pointer-events-none.absolute.inset-0.overflow-hidden
   overflow: visible !important;
 }
 
-/* Small pointer towards the persistent + button in the bottom navigation. */
 div.pointer-events-none.absolute.inset-0.overflow-hidden
   > div:has(> button[data-log-category])::after {
   content: "";
@@ -47,7 +45,6 @@ div.pointer-events-none.absolute.inset-0.overflow-hidden
   border-radius: 0 0 5px 0;
 }
 
-/* Remove the diagram decoration and the old large centre +. */
 div.pointer-events-none.absolute.inset-0.overflow-hidden
   > div:has(> button[data-log-category])
   > svg,
@@ -60,16 +57,15 @@ div.pointer-events-none.absolute.inset-0.overflow-hidden
   display: none !important;
 }
 
-/* Category buttons: icon + compact rounded label, five per row. */
 button[data-log-category] {
   position: relative !important;
   left: auto !important;
   right: auto !important;
   top: auto !important;
   bottom: auto !important;
-  width: calc((100% - 16px) / 5) !important;
+  width: calc(20% - 3.2px) !important;
   height: 70px !important;
-  flex: 0 0 calc((100% - 16px) / 5) !important;
+  flex: 0 0 calc(20% - 3.2px) !important;
   transform: none !important;
   display: flex !important;
   flex-direction: column !important;
@@ -87,7 +83,6 @@ button[data-log-category]:active {
   transform: scale(0.96) !important;
 }
 
-/* Remove the old translucent circular shell; keep the BIXBO artwork itself. */
 button[data-log-category] > span:first-child {
   position: relative !important;
   left: auto !important;
@@ -138,7 +133,6 @@ button[data-log-category] > span:last-child {
   text-shadow: none !important;
 }
 
-/* Keep reorder available, but turn it into a discreet control instead of another large floating circle. */
 button[aria-label="Reorder log categories"],
 button[aria-label="Finish reordering log categories"] {
   right: 22px !important;
@@ -148,7 +142,6 @@ button[aria-label="Finish reordering log categories"] {
   border: 0 !important;
   background: color-mix(in srgb, var(--background) 88%, transparent) !important;
   box-shadow: 0 2px 8px rgba(34, 38, 24, 0.12) !important;
-  ring: 0 !important;
 }
 
 button[aria-label="Reorder log categories"] > span:last-child,
@@ -163,7 +156,6 @@ button[aria-label="Finish reordering log categories"] span[aria-hidden="true"] s
   background: var(--muted-foreground) !important;
 }
 
-/* Softer neutral scrim than the old olive wash. */
 div[aria-hidden="true"].pointer-events-none.absolute.inset-0:has(+ div button[data-log-category]) {
   background: rgba(29, 32, 23, 0.18) !important;
   -webkit-backdrop-filter: blur(6px) !important;
@@ -179,8 +171,8 @@ div[aria-hidden="true"].pointer-events-none.absolute.inset-0:has(+ div button[da
   }
 
   button[data-log-category] {
-    width: calc((100% - 8px) / 5) !important;
-    flex-basis: calc((100% - 8px) / 5) !important;
+    width: calc(20% - 1.6px) !important;
+    flex-basis: calc(20% - 1.6px) !important;
   }
 
   button[data-log-category] > span:last-child {
