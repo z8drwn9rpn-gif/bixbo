@@ -30,18 +30,11 @@ function insertInto(target: EditableTarget, value: string) {
   if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
     const start = target.selectionStart ?? target.value.length;
     const end = target.selectionEnd ?? start;
-
-    // Important for iOS/PWA log sheets: do not call focus() here. Re-focusing an
-    // already active small-font input can make Safari zoom/reposition the visual
-    // viewport and can destabilize the parent modal. The pointer interaction that
-    // opens this picker preserves the original input focus and selection.
     target.setRangeText(value, start, end, "end");
     target.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText", data: value }));
     return;
   }
 
-  // contentEditable targets stay focused because all picker pointer events prevent
-  // their default focus transfer. Avoid an explicit focus() for the same iOS reason.
   document.execCommand("insertText", false, value);
   target.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText", data: value }));
 }
@@ -82,22 +75,33 @@ export function BixboIconKeyboard() {
 
   if (!mounted || !target || typeof document === "undefined") return null;
 
-  // Keep the icon keyboard inside the active Radix dialog/sheet whenever the
-  // focused editable belongs to one. Portaling directly to document.body makes
-  // Radix treat taps on the floating BIXBO button/picker as outside interactions,
-  // which can dismiss the whole log before the picker handles the tap.
   const portalHost = target.closest<HTMLElement>("[role=\"dialog\"]") ?? document.body;
+
+  const togglePicker = () => {
+    // Closing the native iOS keyboard first makes the floating BIXBO control a
+    // reliable touch target in PWA/Safari. We retain `target` in React state, so
+    // the selected icon can still be inserted at the saved caret position.
+    target.blur();
+    setOpen((value) => !value);
+  };
 
   const picker = (
     <div data-bixbo-icon-keyboard className="pointer-events-none fixed inset-0 z-[2147483000]">
       <button
         type="button"
-        onPointerDown={(event) => {
+        data-bixbo-icon-trigger
+        onTouchStart={(event) => {
           event.preventDefault();
           event.stopPropagation();
-          setOpen((value) => !value);
+          togglePicker();
         }}
-        className="pointer-events-auto fixed bottom-[calc(5.4rem+env(safe-area-inset-bottom))] right-4 grid h-11 w-11 touch-manipulation place-items-center rounded-full border border-border/70 bg-background shadow-lg active:scale-95 lg:bottom-5 lg:right-5"
+        onPointerDown={(event) => {
+          if (event.pointerType === "touch") return;
+          event.preventDefault();
+          event.stopPropagation();
+          togglePicker();
+        }}
+        className="pointer-events-auto fixed bottom-[calc(5.4rem+env(safe-area-inset-bottom))] right-4 z-[2147483001] grid h-11 w-11 touch-none select-none place-items-center rounded-full border border-border/70 bg-background shadow-lg active:scale-95 lg:bottom-5 lg:right-5"
         aria-label="BIXBO icons"
         title="BIXBO icons"
       >
@@ -106,8 +110,14 @@ export function BixboIconKeyboard() {
 
       {open ? (
         <div
-          className="pointer-events-auto fixed inset-0 flex touch-none items-end justify-center bg-black/25 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:items-center"
+          className="pointer-events-auto fixed inset-0 z-[2147483002] flex touch-none items-end justify-center bg-black/25 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:items-center"
+          onTouchStart={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            if (event.target === event.currentTarget) setOpen(false);
+          }}
           onPointerDown={(event) => {
+            if (event.pointerType === "touch") return;
             event.preventDefault();
             event.stopPropagation();
             if (event.target === event.currentTarget) setOpen(false);
@@ -115,6 +125,7 @@ export function BixboIconKeyboard() {
         >
           <section
             className="w-full max-w-[430px] touch-pan-y overflow-hidden rounded-[28px] border border-border/70 bg-background shadow-2xl"
+            onTouchStart={(event) => event.stopPropagation()}
             onPointerDown={(event) => event.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
@@ -124,12 +135,18 @@ export function BixboIconKeyboard() {
               </div>
               <button
                 type="button"
-                onPointerDown={(event) => {
+                onTouchStart={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
                   setOpen(false);
                 }}
-                className="grid h-9 w-9 touch-manipulation place-items-center rounded-full bg-tint text-lg font-bold"
+                onPointerDown={(event) => {
+                  if (event.pointerType === "touch") return;
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setOpen(false);
+                }}
+                className="grid h-9 w-9 touch-none select-none place-items-center rounded-full bg-tint text-lg font-bold"
               >
                 ×
               </button>
@@ -140,12 +157,18 @@ export function BixboIconKeyboard() {
                 <button
                   key={item.id}
                   type="button"
-                  onPointerDown={(event) => {
+                  onTouchStart={(event) => {
                     event.preventDefault();
                     event.stopPropagation();
                     setGroup(item.id);
                   }}
-                  className={`shrink-0 touch-manipulation rounded-full px-3 py-1.5 text-[11px] font-bold ${group === item.id ? "bg-primary text-primary-foreground" : "bg-tint text-foreground"}`}
+                  onPointerDown={(event) => {
+                    if (event.pointerType === "touch") return;
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setGroup(item.id);
+                  }}
+                  className={`shrink-0 touch-none select-none rounded-full px-3 py-1.5 text-[11px] font-bold ${group === item.id ? "bg-primary text-primary-foreground" : "bg-tint text-foreground"}`}
                 >
                   {item.label}
                 </button>
@@ -157,13 +180,20 @@ export function BixboIconKeyboard() {
                 <button
                   key={emoji}
                   type="button"
-                  onPointerDown={(event) => {
+                  onTouchStart={(event) => {
                     event.preventDefault();
                     event.stopPropagation();
                     insertInto(target, emoji);
                     setOpen(false);
                   }}
-                  className="grid aspect-square touch-manipulation place-items-center rounded-2xl bg-tint/55 ring-1 ring-border/45 transition active:scale-95"
+                  onPointerDown={(event) => {
+                    if (event.pointerType === "touch") return;
+                    event.preventDefault();
+                    event.stopPropagation();
+                    insertInto(target, emoji);
+                    setOpen(false);
+                  }}
+                  className="grid aspect-square touch-none select-none place-items-center rounded-2xl bg-tint/55 ring-1 ring-border/45 transition active:scale-95"
                   aria-label={`Insert ${emoji}`}
                 >
                   <BixboIcon emoji={emoji} size={28} />
