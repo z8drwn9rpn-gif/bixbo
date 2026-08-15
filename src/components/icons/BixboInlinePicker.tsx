@@ -39,13 +39,19 @@ export function BixboInlinePicker({
 
   const chooseGroup = (id: GroupId) => {
     setGroup(id);
-    iconScrollRef.current?.scrollTo({ top: 0, behavior: "auto" });
+    if (iconScrollRef.current) iconScrollRef.current.scrollTop = 0;
   };
 
   return createPortal(
     <div
       data-bixbo-icon-keyboard
-      className={`${insideDialog ? "absolute" : "fixed"} inset-0 z-[2147483002] flex pointer-events-auto items-end justify-center bg-black/25 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:items-center`}
+      className={`${insideDialog ? "absolute" : "fixed"} inset-0 z-[2147483002] isolate flex pointer-events-auto items-end justify-center bg-black/25 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:items-center`}
+      style={{
+        contain: "layout paint style",
+        WebkitBackfaceVisibility: "hidden",
+        backfaceVisibility: "hidden",
+        transform: "translateZ(0)",
+      }}
       onPointerDown={(event) => event.stopPropagation()}
       onClick={(event) => {
         event.stopPropagation();
@@ -56,6 +62,12 @@ export function BixboInlinePicker({
         role="region"
         aria-label="BIXBO icons"
         className="pointer-events-auto flex h-[460px] max-h-[62dvh] w-full max-w-[430px] flex-col overflow-hidden rounded-[28px] border border-border/70 bg-background shadow-2xl"
+        style={{
+          contain: "layout paint style",
+          WebkitBackfaceVisibility: "hidden",
+          backfaceVisibility: "hidden",
+          transform: "translateZ(0)",
+        }}
         onPointerDown={(event) => event.stopPropagation()}
         onClick={(event) => event.stopPropagation()}
       >
@@ -102,7 +114,7 @@ export function BixboInlinePicker({
                 className="grid min-h-12 aspect-square touch-manipulation select-none place-items-center rounded-2xl bg-tint/55 ring-1 ring-border/45 transition active:scale-95"
                 aria-label={`Insert ${emoji}`}
               >
-                <BixboIcon emoji={emoji} size={28} />
+                <BixboIcon emoji={emoji} size={28} effects="stable" />
               </button>
             ))}
           </div>
