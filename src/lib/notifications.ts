@@ -92,7 +92,7 @@ export const NOTIF_CATEGORY_LABELS: Record<NotifCategory, string> = {
   ovulation: "Ovulation reminders",
   dailyLog: "Daily log reminders",
   symptom: "Symptom reminders",
-  appointments: "Appointment reminders",
+  appointments: "Appointments & calendar events",
   mood: "Mood reminders",
   hydration: "Hydration reminders",
   sleep: "Sleep reminders",
@@ -394,20 +394,38 @@ function buildPushSnapshot(data = getBixbo()): PushSnapshot {
     }));
 
   const appointments: ServerAppointment[] = [
-    ...(data.pregnancy?.appointments ?? []),
-    ...(data.postpartum?.visits ?? []),
-  ].flatMap((appointment) => {
-    if (!appointment?.id || !appointment.date) return [];
-    const startsAt = appointmentIso(appointment.date, appointment.time);
-    if (!startsAt) return [];
-    return [
-      {
-        id: String(appointment.id),
-        title: appointment.title || "Appointment",
-        startsAt,
-      },
-    ];
-  });
+    ...[
+      ...(data.pregnancy?.appointments ?? []),
+      ...(data.postpartum?.visits ?? []),
+    ].flatMap((appointment) => {
+      if (!appointment?.id || !appointment.date) return [];
+      const startsAt = appointmentIso(appointment.date, appointment.time);
+      if (!startsAt) return [];
+      return [
+        {
+          id: String(appointment.id),
+          title: appointment.title || "Appointment",
+          startsAt,
+        },
+      ];
+    }),
+    ...(data.events ?? []).flatMap((event) => {
+      if (!event?.id || !event.startDate) return [];
+      // Calendar events intentionally use 09:00 on the event date. The existing
+      // server-side 24h appointment window therefore sends the main reminder at
+      // 09:00 on the previous calendar day (18 Aug -> 17 Aug), even for all-day
+      // events or events that have their own start time.
+      const startsAt = appointmentIso(event.startDate, "09:00");
+      if (!startsAt) return [];
+      return [
+        {
+          id: `event:${String(event.id)}`,
+          title: `Event: ${event.title || "Event"}`,
+          startsAt,
+        },
+      ];
+    }),
+  ];
 
   return {
     timezone: browserTimezone(),
@@ -767,7 +785,31 @@ export async function runNotificationChecks(now = new Date()) {
   }
 
   if (prefs.appointments) {
-    const appointments = [...(data.pregnancy?.appointments ?? []), ...(data.postpartum?.visits ?? [])];
+    const appointments = [
+      ...(data.pregnancy?.appointments ?? []).map((appointment) => ({
+        id: String(appointment.id),
+        title: appointment.title || "Appointment",
+        date: appointment.date,
+        time: appointment.time,
+        kind: "appointment" as const,
+      })),
+      ...(data.postpartum?.visits ?? []).map((appointment) => ({
+        id: String(appointment.id),
+        title: appointment.title || "Appointment",
+        date: appointment.date,
+        time: appointment.time,
+        kind: "appointment" as const,
+      })),
+      ...(data.events ?? []).map((event) => ({
+        id: `event:${String(event.id)}`,
+        title: event.title || "Event",
+        date: event.startDate,
+        // Calendar-event reminders are intentionally anchored to 09:00 so an
+        // event on the 18th produces its main reminder on the 17th at 09:00.
+        time: "09:00",
+        kind: "event" as const,
+      })),
+    ];
 
     for (const appointment of appointments) {
       if (!appointment?.date) continue;
@@ -775,23 +817,26 @@ export async function runNotificationChecks(now = new Date()) {
       if (!startsAt) continue;
       const difference = (new Date(startsAt).getTime() - now.getTime()) / 60_000;
 
-      const windows = [
-        { label: "tomorrow", minutes: 24 * 60, key: "24h" },
-        { label: "in 2 hours", minutes: 120, key: "2h" },
-      ];
+      const windows = appointment.kind === "event"
+        ? [{ label: "tomorrow", minutes: 24 * 60, key: "24h" }]
+        : [
+            { label: "tomorrow", minutes: 24 * 60, key: "24h" },
+            { label: "in 2 hours", minutes: 120, key: "2h" },
+          ];
 
       for (const window of windows) {
         if (difference <= window.minutes && difference > window.minutes - 30) {
+          const prefix = appointment.kind === "event" ? "event" : "appt";
           await fire(
             prefs,
             {
-              title: `Appointment ${window.label}`,
-              body: `${appointment.title || "Appointment"}${appointment.time ? ` at ${appointment.time}` : ""}.`,
+              title: appointment.kind === "event" ? "Event tomorrow" : `Appointment ${window.label}`,
+              body: `${appointment.title}.`,
               url: "/",
-              tag: `appt-${appointment.id}-${window.key}`,
+              tag: `${prefix}-${appointment.id}-${window.key}`,
               category: "appointments",
             },
-            `appt:${appointment.id}:${window.key}`,
+            `${prefix}:${appointment.id}:${window.key}`,
           );
         }
       }
