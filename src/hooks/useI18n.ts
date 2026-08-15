@@ -96,6 +96,15 @@ const HIDDEN_HELPER_COPY = new Set([
   "Solid bars are yours. Striped bars belong to your partner.",
 ]);
 
+/** UI brand naming only. Internal storage/domain keys stay `period` for compatibility. */
+const BLUEBERRY_UI_NAMES: Record<string, string> = {
+  Period: "Blueberry",
+  "Period log": "Blueberry",
+  "Period flow": "Blueberry flow",
+  "Period & cycle": "Blueberry & cycle",
+  "Period / cycle": "Blueberry / cycle",
+};
+
 export function useI18n() {
   const { data, hydrated, update } = useBixbo();
   const language: AppLanguage = normalizeLanguage(data.settings.language);
@@ -108,6 +117,7 @@ export function useI18n() {
   const t = useMemo(
     () => (key: string) => {
       if (HIDDEN_HELPER_COPY.has(key)) return "";
+      if (BLUEBERRY_UI_NAMES[key]) return BLUEBERRY_UI_NAMES[key];
       if (key === "missed (tap if taken)") return language === "sk" ? "vynechané" : "missed";
       if (key === "Hidden — tap to restore:") return language === "sk" ? "Skryté:" : "Hidden:";
       if (key === "No medications yet. Tap Add." || key === 'No medications yet. Tap "Add".') {
