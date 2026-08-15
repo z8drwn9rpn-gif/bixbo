@@ -3,6 +3,7 @@ import fs from "node:fs";
 
 const hook = fs.readFileSync("src/hooks/useKeyboardViewport.ts", "utf8");
 const css = fs.readFileSync("src/ios-touch-stability.css", "utf8");
+const sheet = fs.readFileSync("src/components/ui/sheet.tsx", "utf8");
 
 describe("iOS full-screen log document lock", () => {
   it("locks background overflow without turning the body into a fixed layer", () => {
@@ -16,21 +17,23 @@ describe("iOS full-screen log document lock", () => {
     expect(hook).not.toContain("window.scrollTo(");
   });
 
-  it("does not fight native iOS focus scrolling", () => {
+  it("does not fight native iOS focus scrolling or viewport panning", () => {
     expect(hook).not.toContain("scrollIntoView(");
     expect(hook).not.toContain("window.scrollBy(");
     expect(hook).not.toContain("scrollTop +=");
-    expect(hook).not.toContain("scrollTop = focusedScrollFloor");
     expect(hook).not.toContain("keepFocusedFieldVisible");
     expect(hook).not.toContain("findScrollContainer");
+    expect(hook).not.toContain("visualViewport");
+    expect(hook).not.toContain("requestAnimationFrame");
   });
 
-  it("uses VisualViewport only as a read-only geometry source", () => {
-    expect(hook).toContain('viewport.addEventListener("resize", sync)');
-    expect(hook).toContain('viewport.addEventListener("scroll", sync)');
-    expect(hook).toContain("applyKeyboardViewportVars(readKeyboardViewportMetrics(), root)");
-    expect(hook).toContain('document.addEventListener("focusin", sync)');
-    expect(hook).toContain('document.addEventListener("focusout", sync)');
+  it("normalizes legacy viewport-sized log classes to a stable inset shell", () => {
+    expect(sheet).toContain('const viewportDrivenLog =');
+    expect(sheet).toContain('.replace("!bottom-auto", "!bottom-0")');
+    expect(sheet).toContain('.replace("!top-[var(--bixbo-viewport-offset,0px)]", "!top-0")');
+    expect(sheet).toContain('.replace("!h-[var(--bixbo-viewport-height,100svh)]", "!h-auto")');
+    expect(sheet).toContain('.replace("!max-h-[var(--bixbo-viewport-height,100svh)]", "!max-h-none")');
+    expect(sheet).toContain("!backdrop-blur-none");
   });
 
   it("keeps the lock ref-counted and restores original overflow styles", () => {
@@ -43,11 +46,11 @@ describe("iOS full-screen log document lock", () => {
 
   it("keeps BottomNav hidden and scroll chaining inside the active log surface", () => {
     expect(css).toContain('html[data-bixbo-log-form-open] nav[aria-label="Primary navigation"]');
-    expect(css).toContain('html[data-bixbo-keyboard-open] nav[aria-label="Primary navigation"]');
     expect(css).toContain("display: none !important");
     expect(css).toContain("[data-bixbo-log-surface]");
     expect(css).toContain("isolation: isolate");
     expect(css).toContain("overscroll-behavior-y: contain");
-    expect(css).toContain("-webkit-overflow-scrolling: touch");
+    expect(css).toContain("overflow-anchor: none");
+    expect(css).not.toContain("-webkit-overflow-scrolling: touch");
   });
 });
