@@ -611,7 +611,7 @@ export function LogSheet({
                     className={`flex min-h-[82px] min-w-0 touch-none select-none flex-col items-center justify-start gap-1.5 rounded-2xl px-0.5 py-1 text-foreground outline-none transition-[background-color,transform,opacity] focus-visible:ring-2 focus-visible:ring-ring ${orderedCats.length === 9 ? "col-span-2" : ""} ${orderedCats.length === 9 && index === 5 ? "col-start-2" : ""} ${editingOrder ? "cursor-grab active:cursor-grabbing" : "active:scale-[0.97]"} ${draggingCat === c.id ? "z-30 scale-[1.03] bg-tint shadow-md" : "hover:bg-tint/60"}`}
                   >
                     <span className="grid h-10 w-10 shrink-0 place-items-center">
-                      <Ico e={c.emoji} size={30} />
+                      <Ico e={c.id === "workout" ? "👟" : c.emoji} size={30} />
                     </span>
                     <span className="min-h-[30px] w-full text-center text-[11px] font-semibold leading-[1.18] text-foreground">
                       {t(c.label)}
