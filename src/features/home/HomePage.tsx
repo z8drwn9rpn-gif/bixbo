@@ -85,14 +85,16 @@ export function HomePage() {
   }, [maleMode]);
 
   useEffect(() => {
-    const openLog = () => {
-      setQuickCat(undefined);
-      setEditPain(undefined);
-      setEditEntry(undefined);
-      setLogOpen(true);
+    const toggleLog = () => {
+      setLogOpen((current) => {
+        setQuickCat(undefined);
+        setEditPain(undefined);
+        setEditEntry(undefined);
+        return !current;
+      });
     };
-    window.addEventListener("bixbo:open-log", openLog);
-    return () => window.removeEventListener("bixbo:open-log", openLog);
+    window.addEventListener("bixbo:toggle-log", toggleLog);
+    return () => window.removeEventListener("bixbo:toggle-log", toggleLog);
   }, []);
 
   if (!monthAnchor || !selected) return <div className="h-[360px]" />;
