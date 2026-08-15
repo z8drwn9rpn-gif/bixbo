@@ -34,7 +34,18 @@ test("Notes keeps multiline native editing and autosaves the body", async ({ pag
 
   const editor = page.locator("textarea[data-bixbo-note-editor]");
   await expect(editor).toBeVisible();
-  await expect(editor).toHaveCSS("user-select", "text");
+
+  const editing = await editor.evaluate((node) => {
+    const style = getComputedStyle(node);
+    return {
+      fontSize: Number.parseFloat(style.fontSize),
+      userSelect: style.userSelect,
+      touchAction: style.touchAction,
+    };
+  });
+  expect(editing.fontSize).toBeGreaterThanOrEqual(16);
+  expect(editing.userSelect).not.toBe("none");
+  expect(editing.touchAction).not.toBe("none");
 
   const nextBody = "First line\nSecond wrapped line\nThird line";
   await editor.fill(nextBody);
