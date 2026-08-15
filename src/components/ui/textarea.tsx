@@ -158,6 +158,17 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"tex
 
             const canonical = normalizeBixboText(decodeBixboNativeText(rawNative));
             const encoded = encodeBixboNativeText(canonical);
+
+            // iOS caret stability: plain text (no BIXBO glyph / emoji) must never
+            // have its DOM value or selection rewritten during typing, otherwise
+            // iOS loses the caret on the 2nd+ line and tap-to-place stops working.
+            if (canonical === rawNative && encoded === rawNative) {
+              caretRef.current = { start: rawStart, end: rawEnd };
+              if (!controlled) setUncontrolledValue(canonical);
+              onChange?.(event);
+              return;
+            }
+
             const encodedStart = encodeBixboNativeText(
               normalizeBixboText(decodeBixboNativeText(rawNative.slice(0, rawStart))),
             ).length;
@@ -167,6 +178,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"tex
 
             caretRef.current = { start: encodedStart, end: encodedEnd };
             if (!controlled) setUncontrolledValue(canonical);
+
 
             setNativeTextareaValue(node, encoded);
             try {
