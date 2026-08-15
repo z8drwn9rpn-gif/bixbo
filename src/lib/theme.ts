@@ -4,7 +4,7 @@ import { useBixbo } from "@/lib/storage";
 export type ThemeChoice = "light" | "dark" | "system";
 
 const LIGHT_THEME_COLOR = "#FBF7F3";
-const DARK_THEME_COLOR = "#4B5133";
+const DARK_THEME_COLOR = "#171A14";
 
 function syncBrowserChrome(isDark: boolean) {
   const root = document.documentElement;
