@@ -5,14 +5,6 @@ import { SideNav } from "./SideNav";
 import { BixboIconKeyboard } from "./icons/BixboIconKeyboard";
 import { PainEpisodeChoiceDefaults } from "./PainEpisodeChoiceDefaults";
 import bixboMascot from "@/assets/bixbo-mascot-user.png";
-import "@/ui-polish.css";
-import "@/ui-components-polish.css";
-import "@/typography-hierarchy.css";
-import "@/notes-preview.css";
-import "@/log-menu-popover.css";
-import "@/ios-touch-stability.css";
-import "@/mobile-overlay-stability.css";
-import "@/calendar-3d.css";
 
 const BIXBO_MASCOT_SRC = bixboMascot;
 const BIXBO_ROUNDED_DISPLAY_FONT = 'ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, -apple-system, BlinkMacSystemFont, sans-serif';

@@ -238,7 +238,7 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
     return (
       <div className="relative mb-2">
         <div className="flex items-start justify-between gap-2">
-          <p className={size === "lg" ? "font-serif text-lg font-semibold text-foreground" : "font-serif text-sm font-semibold text-foreground"}>{title}</p>
+          <p className={size === "lg" ? "bixbo-sex-section-heading font-serif text-[13px] font-semibold leading-tight text-foreground" : "bixbo-sex-section-heading font-serif text-xs font-semibold leading-tight text-foreground"}>{title}</p>
           <button
             type="button"
             onClick={() => setCustomMenuKey(menuOpen ? null : key)}
@@ -372,14 +372,14 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
     { value: "Urinary discomfort", icon: "urinary" },
   ];
 
-  const chipClass = (active: boolean) => `inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+  const chipClass = (active: boolean) => `bixbo-sex-chip inline-flex min-h-[31px] items-center justify-center gap-[5px] rounded-full px-3 max-[430px]:px-2.5 py-[5px] text-xs font-semibold leading-none transition ${
     active
-      ? "bg-primary text-primary-foreground shadow-sm ring-2 ring-foreground/75 ring-offset-2 ring-offset-background"
+      ? "bg-primary/15 text-foreground ring-2 ring-foreground/75 ring-offset-1 ring-offset-background"
       : "bg-tint text-foreground ring-1 ring-border"
   }`;
-  const symptomChipClass = (active: boolean) => `inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+  const symptomChipClass = (active: boolean) => `bixbo-sex-symptom-chip inline-flex min-h-[30px] items-center justify-center gap-[5px] rounded-full px-2.5 py-[5px] text-[11.5px] font-semibold leading-none transition ${
     active
-      ? "bg-primary text-primary-foreground shadow-sm ring-2 ring-foreground/75 ring-offset-1 ring-offset-background"
+      ? "bg-primary text-primary-foreground ring-2 ring-foreground/75 ring-offset-1 ring-offset-background"
       : "bg-tint text-foreground ring-1 ring-border"
   }`;
 
@@ -408,10 +408,10 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
     onDone();
   };
 
-  return <div className="mx-auto flex w-full max-w-xl flex-col gap-4 pb-5">
+  return <div data-bixbo-log-form="sex" className="mx-auto flex w-full max-w-xl flex-col gap-3 max-[430px]:gap-[11px] pb-[18px]">
     <SaveBar onCancel={onDone} onSave={save} />
 
-    <section>
+    <section data-bixbo-sex-section="type">
       {renderSectionHead("type", <>1. {t("Type")}</>)}
       <div className="flex flex-wrap gap-2.5">
         {typeOptions.map((option) => (
@@ -424,7 +424,7 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
       </div>
     </section>
 
-    <section>
+    <section data-bixbo-sex-section="protection">
       {renderSectionHead("protection", <>2. {t("Protection")}</>)}
       <div className="flex flex-wrap gap-2.5">
         {protectionOptions.map((option) => (
@@ -437,7 +437,7 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
       </div>
     </section>
 
-    <section>
+    <section data-bixbo-sex-section="feeling">
       {renderSectionHead("feeling", <>3. {t("How I feel after")}</>)}
       <div className="flex flex-wrap gap-2.5">
         {feelingOptions.map((option) => (
@@ -450,16 +450,16 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
       </div>
     </section>
 
-    <section>
-      <p className="mb-2 font-serif text-lg font-semibold text-foreground">4. {t("Pain")}</p>
+    <section data-bixbo-sex-section="pain">
+      <p className="bixbo-sex-section-heading mb-2 font-serif text-[13px] font-semibold leading-tight text-foreground">4. {t("Pain")}</p>
       <div className="flex flex-wrap gap-2.5">
         <button type="button" onClick={() => setPainOn(false)} className={chipClass(painOn === false)}><BixboSemanticIcon name="good" size={17} /> {t("No")}</button>
         <button type="button" onClick={() => setPainOn(true)} className={chipClass(painOn === true)}><BixboSemanticIcon name="painYes" size={17} /> {t("Yes")}</button>
       </div>
 
       {painOn === true && (
-        <div className="mt-3 rounded-3xl border border-border/80 bg-surface/40 p-3.5 shadow-sm">
-          <div className="grid gap-4 sm:grid-cols-[1fr_1.15fr]">
+        <div data-bixbo-sex-pain-card className="mt-3 rounded-[18px] border border-border/80 bg-surface/40 p-3 shadow-none [&_p]:text-[11px]">
+          <div className="grid gap-3 sm:grid-cols-[1fr_1.15fr]">
             <div>
               <p className="mb-2 text-xs font-medium text-muted-foreground">{t("When")}</p>
               <div className="flex flex-wrap gap-2">
@@ -479,7 +479,7 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
                     key={value}
                     type="button"
                     onClick={() => setPainScaleValue(painScaleValue === value ? undefined : value)}
-                    className={`h-8 w-8 shrink-0 rounded-full text-xs font-semibold transition ${painScaleValue === value ? "text-white ring-2 ring-foreground" : "bg-tint text-foreground ring-1 ring-border"}`}
+                    className={`h-[29px] w-[29px] shrink-0 rounded-full text-[11px] font-semibold transition ${painScaleValue === value ? "text-white ring-2 ring-foreground" : "bg-tint text-foreground ring-1 ring-border"}`}
                     style={painScaleValue === value ? { background: painColor(value) } : undefined}
                   >
                     {value}
@@ -507,7 +507,7 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
       )}
     </section>
 
-    <section className="rounded-3xl border border-border/80 bg-surface/25 p-3.5">
+    <section data-bixbo-sex-section="symptoms" className="rounded-[18px] border border-border/80 p-3">
       {renderSectionHead("symptoms", <>5. {t("Symptoms after")}</>)}
       <div className="flex flex-wrap gap-2">
         {symptomOptions.map((option) => {
@@ -527,20 +527,20 @@ export function SexForm({ date, data, update, onDone, initialEntry }: { date: st
       </div>
     </section>
 
-    <section>
-      <p className="mb-2 font-serif text-lg font-semibold text-foreground">6. {t("Orgasm")}</p>
+    <section data-bixbo-sex-section="orgasm">
+      <p className="bixbo-sex-section-heading mb-2 font-serif text-[13px] font-semibold leading-tight text-foreground">6. {t("Orgasm")}</p>
       <div className="flex flex-wrap gap-2.5">
         <button type="button" onClick={() => setOrgasm(orgasm === "yes" ? undefined : "yes")} className={chipClass(orgasm === "yes")}><BixboSemanticIcon name="orgasmYes" size={17} /> {t("Yes")}</button>
         <button type="button" onClick={() => setOrgasm(orgasm === "no" ? undefined : "no")} className={chipClass(orgasm === "no")}><BixboSemanticIcon name="orgasmNo" size={17} /> {t("No")}</button>
       </div>
     </section>
 
-    <section>
-      <p className="mb-2 font-serif text-lg font-semibold text-foreground">7. {t("Note (optional)")}</p>
-      <Textarea rows={4} value={note} onChange={(event) => setNote(event.target.value)} placeholder={t("Add a note…")} className="rounded-3xl" />
+    <section data-bixbo-sex-section="note">
+      <p className="bixbo-sex-section-heading mb-2 font-serif text-[13px] font-semibold leading-tight text-foreground">7. {t("Note (optional)")}</p>
+      <Textarea rows={4} value={note} onChange={(event) => setNote(event.target.value)} placeholder={t("Add a note…")} className="min-h-[92px] rounded-[18px]" />
     </section>
 
-    <div className="flex items-center gap-2 rounded-2xl border border-border/70 bg-surface/35 px-3 py-2.5 text-[11px] text-muted-foreground">
+    <div data-bixbo-sex-privacy className="flex items-center gap-2 rounded-[14px] border border-border/70 bg-surface/35 px-3 py-[9px] text-[10.5px] text-muted-foreground">
       <BixboSemanticIcon name="privacy" size={16} />
       <span>{t("Only you can see this. Your data is private and secure.")}</span>
     </div>

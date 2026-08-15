@@ -655,13 +655,13 @@ function NoteSection({
             >
               <button type="button" onClick={() => onOpen(note.id)} className="block min-h-[58px] w-full pr-9 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                 <div className="flex items-start justify-between gap-3">
-                  <h3 className="line-clamp-1 text-sm font-semibold">
+                  <h3 className="line-clamp-1 max-h-[1.45em] overflow-hidden text-sm font-semibold [&>span]:inline [&_svg]:inline-block [&_svg]:align-[-0.15em]">
                     <NoteRichText text={note.title.trim() || t("Untitled")} size={16} />
                   </h3>
                   <span className="shrink-0 text-[10px] text-muted-foreground">{formatNoteDate(note, t, locale)}</span>
                 </div>
 
-                <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                <p className="mt-1 line-clamp-2 max-h-[2.9em] overflow-hidden whitespace-normal text-xs leading-relaxed text-muted-foreground [&>span]:inline [&_svg]:inline-block [&_svg]:align-[-0.15em]">
                   <NoteRichText text={notePreview(note, t)} size={14} />
                 </p>
               </button>
