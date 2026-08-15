@@ -177,7 +177,8 @@ export function DayPreview({
                 <li key={x.key}>
                   <button
                     onClick={() => setScheduledDoseTarget({ key: x.key, med: x.med, time: x.time })}
-                    className="text-left text-green-700 hover:underline"
+                    className="text-left hover:underline"
+                    style={{ color: "var(--success)" }}
                     title={t("Tap to edit meds")}
                   >
                     {(() => {
@@ -201,7 +202,8 @@ export function DayPreview({
               <li key={x.key} className="flex items-start gap-2">
                 <button
                   onClick={() => setScheduledDoseTarget({ key: x.key, med: x.med, time: x.time })}
-                  className="flex-1 text-left text-destructive/90"
+                  className="flex-1 text-left"
+                  style={{ color: "var(--destructive)" }}
                   title={t("Tap to edit meds")}
                 >
                   {t("Missed")} · {x.time} — {x.med.name}
