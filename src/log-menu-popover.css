@@ -1,5 +1,29 @@
-/* BIXBO Log menu — compact minimal popover
-   Keeps the existing log/reorder behaviour and only changes the chooser presentation. */
+/* BIXBO Log menu — compact minimal popover.
+   The chooser keeps the existing LogSheet behaviour but is visually presented
+   as a stable, non-blurred popover above BottomNav. */
+
+/* Do not let the underlying Radix bottom sheet animate a full-screen surface
+   behind the compact chooser. That animation was the source of the visible
+   jump/stutter on iOS. */
+[role="dialog"]:has(button[data-log-category]) {
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+}
+
+body:has(button[data-log-category]) [data-state="open"][class*="bg-black/45"] {
+  animation: none !important;
+  transition: none !important;
+  background: transparent !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+div[aria-hidden="true"].pointer-events-none.absolute.inset-0:has(+ div button[data-log-category]) {
+  background: transparent !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
 
 div.pointer-events-none.absolute.inset-0.overflow-hidden
   > div:has(> button[data-log-category]) {
@@ -22,8 +46,8 @@ div.pointer-events-none.absolute.inset-0.overflow-hidden
   flex-wrap: wrap !important;
   justify-content: center !important;
   align-content: center !important;
-  gap: 10px 4px !important;
-  padding: 16px 12px 14px !important;
+  gap: 12px 4px !important;
+  padding: 16px 12px 20px !important;
   border: 1px solid rgba(122, 137, 92, 0.24) !important;
   border-radius: 26px !important;
   background: #fbf7f3 !important;
@@ -35,6 +59,8 @@ div.pointer-events-none.absolute.inset-0.overflow-hidden
   backdrop-filter: none !important;
   isolation: isolate !important;
   overflow: visible !important;
+  animation: none !important;
+  transition: none !important;
 }
 
 div.pointer-events-none.absolute.inset-0.overflow-hidden
@@ -52,53 +78,18 @@ div.pointer-events-none.absolute.inset-0.overflow-hidden
   border-radius: 0 0 5px 0;
 }
 
+/* Hide the old radial diagram/centre control. Closing is handled by the real
+   BottomNav Log toggle, not by an invisible hit target layered over it. */
 div.pointer-events-none.absolute.inset-0.overflow-hidden
   > div:has(> button[data-log-category])
   > svg,
 div.pointer-events-none.absolute.inset-0.overflow-hidden
   > div:has(> button[data-log-category])
-  > span[aria-hidden="true"] {
-  display: none !important;
-}
-
-/*
-  The original chooser already contains a real React close button. Keep it
-  inside the dialog, but move its hit area exactly over the visible BottomNav
-  Log button. This avoids Radix modal outside-pointer blocking on iOS: the tap
-  is handled by LogSheet itself and closes its controlled state directly.
-*/
+  > span[aria-hidden="true"],
 div.pointer-events-none.absolute.inset-0.overflow-hidden
   > div:has(> button[data-log-category])
   > button:not([data-log-category]) {
-  display: block !important;
-  pointer-events: auto !important;
-  position: fixed !important;
-  left: 50% !important;
-  right: auto !important;
-  top: auto !important;
-  bottom: max(0px, env(safe-area-inset-bottom)) !important;
-  width: 92px !important;
-  height: 96px !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  transform: translateX(-50%) !important;
-  translate: none !important;
-  --tw-translate-x: 0px !important;
-  --tw-translate-y: 0px !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  outline: 0 !important;
-  opacity: 0.001 !important;
-  z-index: 9999 !important;
-  touch-action: manipulation !important;
-}
-
-div.pointer-events-none.absolute.inset-0.overflow-hidden
-  > div:has(> button[data-log-category])
-  > button:not([data-log-category]) * {
-  visibility: hidden !important;
+  display: none !important;
 }
 
 button[data-log-category] {
@@ -108,7 +99,8 @@ button[data-log-category] {
   top: auto !important;
   bottom: auto !important;
   width: calc(20% - 3.2px) !important;
-  height: 70px !important;
+  min-height: 82px !important;
+  height: 82px !important;
   flex: 0 0 calc(20% - 3.2px) !important;
   transform: none !important;
   translate: none !important;
@@ -118,21 +110,22 @@ button[data-log-category] {
   flex-direction: column !important;
   align-items: center !important;
   justify-content: flex-start !important;
-  gap: 5px !important;
-  padding: 4px 1px 2px !important;
+  gap: 6px !important;
+  padding: 4px 1px 4px !important;
   border-radius: 16px !important;
   color: #11130e !important;
   touch-action: manipulation !important;
   filter: none !important;
   -webkit-filter: none !important;
   text-shadow: none !important;
-  -webkit-font-smoothing: auto !important;
-  text-rendering: optimizeLegibility !important;
+  -webkit-font-smoothing: antialiased !important;
+  text-rendering: auto !important;
+  transition: background-color 100ms ease, transform 100ms ease !important;
 }
 
 button[data-log-category]:active {
   background: rgba(112, 132, 70, 0.09) !important;
-  transform: scale(0.96) !important;
+  transform: scale(0.97) !important;
 }
 
 button[data-log-category] > span:first-child {
@@ -168,6 +161,8 @@ button[data-log-category] > span:first-child img {
   -webkit-filter: none !important;
 }
 
+/* Do not line-clamp these labels. Note & plan / Body & Recovery need two full
+   lines and must never be cut by the button or panel. */
 button[data-log-category] > span:last-child {
   position: relative !important;
   left: auto !important;
@@ -175,35 +170,34 @@ button[data-log-category] > span:last-child {
   top: auto !important;
   bottom: auto !important;
   width: 100% !important;
-  min-height: 22px !important;
+  min-height: 30px !important;
+  height: auto !important;
   transform: none !important;
   translate: none !important;
   --tw-translate-x: 0px !important;
   --tw-translate-y: 0px !important;
-  display: -webkit-box !important;
-  overflow: hidden !important;
-  -webkit-box-orient: vertical !important;
-  -webkit-line-clamp: 2 !important;
+  display: block !important;
+  overflow: visible !important;
   white-space: normal !important;
   text-align: center !important;
   font-family: ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
-  font-size: 11.5px !important;
+  font-size: 11px !important;
   font-weight: 700 !important;
-  line-height: 1.12 !important;
+  line-height: 1.18 !important;
   letter-spacing: 0 !important;
   color: #11130e !important;
   text-shadow: none !important;
   filter: none !important;
   -webkit-filter: none !important;
   opacity: 1 !important;
-  -webkit-font-smoothing: auto !important;
-  text-rendering: optimizeLegibility !important;
+  -webkit-font-smoothing: antialiased !important;
+  text-rendering: auto !important;
 }
 
 button[aria-label="Reorder log categories"],
 button[aria-label="Finish reordering log categories"] {
   right: 22px !important;
-  bottom: calc(286px + env(safe-area-inset-bottom)) !important;
+  bottom: calc(310px + env(safe-area-inset-bottom)) !important;
   width: 30px !important;
   height: 30px !important;
   border: 1px solid rgba(122, 137, 92, 0.18) !important;
@@ -225,30 +219,13 @@ button[aria-label="Finish reordering log categories"] span[aria-hidden="true"] s
   background: #687455 !important;
 }
 
-/* Keep the page behind the chooser sharp and unchanged. */
-body:has(button[data-log-category]) [data-state="open"][class*="bg-black/45"] {
-  background: transparent !important;
-  -webkit-backdrop-filter: none !important;
-  backdrop-filter: none !important;
-}
-
-div[aria-hidden="true"].pointer-events-none.absolute.inset-0:has(+ div button[data-log-category]) {
-  background: transparent !important;
-  -webkit-backdrop-filter: none !important;
-  backdrop-filter: none !important;
-}
-
-/* Radix modal sets pointer-events:none on body outside the sheet on iOS. */
-body:has(button[data-log-category]) {
-  pointer-events: auto !important;
-}
-
+/* Radix sets pointer-events:none outside a modal dialog. Restore only the
+   persistent navigation so the visible Log button remains the single toggle. */
 body:has(button[data-log-category]) nav[aria-label="Primary navigation"],
 body:has(button[data-log-category]) nav[aria-label="Primary navigation"] * {
   pointer-events: auto !important;
 }
 
-/* Bring the actual bottom navigation above the chooser visually. */
 body:has(button[data-log-category]) nav[aria-label="Primary navigation"] {
   z-index: 70 !important;
 }
@@ -260,17 +237,20 @@ body:has(button[data-log-category]) nav[aria-label="Primary navigation"] {
     right: 8px !important;
     width: auto !important;
     max-width: none !important;
-    gap: 8px 2px !important;
-    padding-inline: 8px !important;
+    gap: 10px 2px !important;
+    padding: 14px 8px 18px !important;
   }
 
   button[data-log-category] {
     width: calc(20% - 1.6px) !important;
     flex-basis: calc(20% - 1.6px) !important;
+    min-height: 80px !important;
+    height: 80px !important;
   }
 
   button[data-log-category] > span:last-child {
-    font-size: 10.5px !important;
+    font-size: 10px !important;
+    line-height: 1.16 !important;
   }
 }
 
