@@ -32,9 +32,6 @@ export function bixboIconMigrationPlugin(): Plugin {
       const isTest = normalized.includes("/__tests__/");
       if (!isSourceTsx || isIconImplementation || isTest) return null;
 
-      const isNotesRoute =
-        normalized.endsWith("/src/routes/notes.tsx") ||
-        normalized.endsWith("/src/routes/notes-editor.tsx");
       const isDayOverview = normalized.endsWith("/src/components/home/DayOverview.tsx");
       const isPainWizard = normalized.endsWith("/src/features/logging/PainWizard.tsx");
 
@@ -60,13 +57,6 @@ export function bixboIconMigrationPlugin(): Plugin {
           .replace(/<SemanticIco\b/g, "<BixboIcon")
           .replace(/<\/SemanticIco>/g, "</BixboIcon>")
           .replace(/fallbackEmoji=/g, "emoji=");
-      }
-
-      if (isNotesRoute) {
-        const legacyImport = "@/components/icons/BixboIcons";
-        if (next.includes(legacyImport)) {
-          next = next.replaceAll(legacyImport, "@/components/icons/BixboExtraIcons");
-        }
       }
 
       if (isDayOverview) {
