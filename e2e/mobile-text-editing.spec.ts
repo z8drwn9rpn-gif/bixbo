@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("auth text fields keep native mobile editing behavior", async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== "mobile", "mobile-only text editing regression");
+  test.skip(!testInfo.project.name.includes("mobile"), "mobile-only text editing regression");
 
   await page.goto("/auth");
   const email = page.getByLabel("Email");
