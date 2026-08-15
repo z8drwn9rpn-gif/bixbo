@@ -3,16 +3,28 @@ import { useBixbo } from "@/lib/storage";
 
 export type ThemeChoice = "light" | "dark" | "system";
 
+export const BIXBO_THEME_CHOICE_KEY = "bixbo:theme-choice";
+
 const LIGHT_THEME_COLOR = "#FBF7F3";
 const DARK_THEME_COLOR = "#171A14";
+
+function persistFastThemeChoice(theme: ThemeChoice) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(BIXBO_THEME_CHOICE_KEY, theme);
+  } catch {
+    // The canonical preference still lives in BIXBO storage.
+  }
+}
 
 function syncBrowserChrome(isDark: boolean) {
   const root = document.documentElement;
 
-  // BIXBO provides both palettes itself. Advertise both schemes so browsers
-  // such as Samsung Internet can prefer the website theme over Force Dark,
-  // while the CSS color-scheme property reflects the mode BIXBO actually chose.
-  root.style.colorScheme = isDark ? "dark" : "light";
+  // The meta tag advertises that BIXBO supplies both palettes. The root CSS
+  // property then locks the palette BIXBO actually selected. `only light`
+  // prevents Chromium/Samsung auto-dark recolouring when the user explicitly
+  // selected BIXBO Light while the phone itself is dark.
+  root.style.colorScheme = isDark ? "dark" : "only light";
 
   const colorSchemeMeta = document.querySelector<HTMLMetaElement>('meta[name="color-scheme"]');
   colorSchemeMeta?.setAttribute("content", "light dark");
@@ -33,11 +45,15 @@ export function applyThemeChoice(theme: ThemeChoice) {
     typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches;
   const isDark = theme === "dark" || (theme === "system" && systemIsDark);
 
-  // Keep the selected mode on the root so a stale system media-query callback
-  // cannot switch an explicitly selected Light/Dark mode back to System.
+  persistFastThemeChoice(theme);
+
+  // Keep both an explicit class and data markers on the root. Samsung Internet
+  // can then see an author-controlled light/dark state even inside a dark OS
+  // context, while Tailwind continues to use the existing `.dark` variant.
   root.dataset.themeChoice = theme;
   root.dataset.theme = isDark ? "dark" : "light";
   root.classList.toggle("dark", isDark);
+  root.classList.toggle("light", !isDark);
   syncBrowserChrome(isDark);
 }
 

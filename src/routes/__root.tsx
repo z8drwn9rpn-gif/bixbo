@@ -23,6 +23,37 @@ import { Toaster } from "../components/ui/sonner";
 import { useI18n } from "@/hooks/useI18n";
 import { useDeploymentFreshness } from "@/lib/deploymentFreshness";
 
+const THEME_BOOTSTRAP_SCRIPT = `(() => {
+  try {
+    const root = document.documentElement;
+    const valid = (value) => value === "light" || value === "dark" || value === "system";
+    let choice = localStorage.getItem("bixbo:theme-choice");
+
+    if (!valid(choice)) {
+      const raw = localStorage.getItem("bixbo:v2") || localStorage.getItem("bixbo:v1");
+      if (raw) {
+        try {
+          const stored = JSON.parse(raw);
+          const storedTheme = stored && stored.settings && stored.settings.theme;
+          if (valid(storedTheme)) choice = storedTheme;
+        } catch {}
+      }
+    }
+
+    if (!valid(choice)) choice = "system";
+    localStorage.setItem("bixbo:theme-choice", choice);
+
+    const systemDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const isDark = choice === "dark" || (choice === "system" && systemDark);
+
+    root.dataset.themeChoice = choice;
+    root.dataset.theme = isDark ? "dark" : "light";
+    root.classList.toggle("dark", isDark);
+    root.classList.toggle("light", !isDark);
+    root.style.colorScheme = isDark ? "dark" : "only light";
+  } catch {}
+})();`;
+
 function NotFoundComponent() {
   const { t } = useI18n();
   const router = useRouter();
@@ -91,7 +122,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" },
       { name: "theme-color", content: "#FBF7F3" },
       { name: "color-scheme", content: "light dark" },
       { title: "BIXBO — Health diary" },
@@ -132,8 +163,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }} />
         <HeadContent />
       </head>
       <body data-bixbo-app-root>
@@ -150,6 +182,31 @@ function RootComponent() {
   useThemeSync();
   useNotificationRuntime();
   useDeploymentFreshness();
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof document === "undefined") return;
+    if (!window.matchMedia("(pointer: coarse)").matches) return;
+
+    const preventMultiTouch = (event: TouchEvent) => {
+      if (event.touches.length > 1) event.preventDefault();
+    };
+    const preventGesture = (event: Event) => event.preventDefault();
+    const preventDoubleTapZoom = (event: MouseEvent) => event.preventDefault();
+
+    document.addEventListener("touchmove", preventMultiTouch, { passive: false });
+    document.addEventListener("gesturestart", preventGesture, { passive: false });
+    document.addEventListener("gesturechange", preventGesture, { passive: false });
+    document.addEventListener("gestureend", preventGesture, { passive: false });
+    document.addEventListener("dblclick", preventDoubleTapZoom, { passive: false });
+
+    return () => {
+      document.removeEventListener("touchmove", preventMultiTouch);
+      document.removeEventListener("gesturestart", preventGesture);
+      document.removeEventListener("gesturechange", preventGesture);
+      document.removeEventListener("gestureend", preventGesture);
+      document.removeEventListener("dblclick", preventDoubleTapZoom);
+    };
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
