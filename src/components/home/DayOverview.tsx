@@ -697,7 +697,10 @@ export function DayPreview({
                     </p>
                   ) : null}
                   {f.histamineFlare ? (
-                    <p className="mt-px text-xs font-semibold leading-relaxed text-destructive">
+                    <p
+                      className="mt-px text-xs leading-relaxed text-destructive"
+                      style={{ color: "var(--destructive)", fontWeight: 700 }}
+                    >
                       <span className="inline-flex items-center gap-1 align-middle">
                         <Ico e="🔥" size={13} />
                         <span>{t("Histamine flare")}:</span>
