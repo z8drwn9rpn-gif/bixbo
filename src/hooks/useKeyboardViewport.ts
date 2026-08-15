@@ -72,7 +72,7 @@ export function findScrollContainer(node: HTMLElement | null): HTMLElement | nul
 /**
  * Keeps the focused field above the keyboard by scrolling ONLY the nearest
  * inner scroll container by the minimum required delta. We never call
- * `scrollIntoView()` on the sheet or the document, because that causes the
+ * the global scroll-into-view API on the sheet or the document, because that causes the
  * well-known iOS jump/flicker.
  */
 export function keepFocusedFieldVisible(target: HTMLElement, visibleBottom: number, margin = 16) {
