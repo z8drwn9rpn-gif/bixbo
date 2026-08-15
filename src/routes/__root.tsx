@@ -14,6 +14,7 @@ import whiteGreenThemeCss from "../white-green-theme.css?url";
 import darkThemeCss from "../dark-theme.css?url";
 import calendarPeriodFixCss from "../calendar-period-fix.css?url";
 import iosTouchStabilityCss from "../ios-touch-stability.css?url";
+import patternsRestoreCss from "../patterns-restore.css?url";
 import { useCloudSync } from "../lib/cloudSync";
 import { useThemeSync } from "../lib/theme";
 import { useNotificationRuntime } from "../lib/notifications";
@@ -149,6 +150,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: darkThemeCss },
       { rel: "stylesheet", href: calendarPeriodFixCss },
       { rel: "stylesheet", href: iosTouchStabilityCss },
+      { rel: "stylesheet", href: patternsRestoreCss },
       { rel: "manifest", href: "/manifest.json" },
       { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
       { rel: "icon", type: "image/png", sizes: "180x180", href: "/apple-touch-icon.png" },
