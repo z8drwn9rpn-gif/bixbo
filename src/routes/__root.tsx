@@ -51,6 +51,12 @@ const THEME_BOOTSTRAP_SCRIPT = `(() => {
     root.classList.toggle("dark", isDark);
     root.classList.toggle("light", !isDark);
     root.style.colorScheme = isDark ? "dark" : "only light";
+
+    const colorSchemeMeta = document.querySelector('meta[name="color-scheme"]');
+    if (colorSchemeMeta) colorSchemeMeta.setAttribute("content", choice === "light" ? "only light" : "light dark");
+
+    const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+    if (themeColorMeta) themeColorMeta.setAttribute("content", isDark ? "#171A14" : "#FBF7F3");
   } catch {}
 })();`;
 
@@ -123,8 +129,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" },
-      { name: "theme-color", content: "#FBF7F3" },
-      { name: "color-scheme", content: "light dark" },
       { title: "BIXBO — Health diary" },
       { name: "description", content: "BIXBO — a calm diary for your cycle, pain, meds and notes." },
       { name: "author", content: "BIXBO" },
@@ -165,6 +169,8 @@ function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <meta name="theme-color" content="#FBF7F3" />
+        <meta name="color-scheme" content="light dark" />
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }} />
         <HeadContent />
       </head>
