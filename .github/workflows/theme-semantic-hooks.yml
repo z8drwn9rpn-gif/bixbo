@@ -1,0 +1,27 @@
+name: Theme semantic hooks
+
+on:
+  push:
+    branches:
+      - refactor/theme-css-architecture
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: refactor/theme-css-architecture
+          fetch-depth: 0
+      - name: Replace fragile HAK theme selectors
+        run: python .github/scripts/theme_semantic_hooks.py
+      - name: Commit cleanup
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Replace HAK theme DOM selectors with semantic hooks"
+          git push origin HEAD:refactor/theme-css-architecture
