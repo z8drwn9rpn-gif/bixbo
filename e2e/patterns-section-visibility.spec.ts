@@ -3,12 +3,12 @@ import { expect, test } from "@playwright/test";
 test("monthly Patterns keeps every accordion label and explanation visible", async ({ page }) => {
   await page.goto("/patterns");
 
-  // CI can boot with either the English or Slovak BIXBO locale. This regression
-  // checks the same Monthly UI in both languages instead of coupling visibility
-  // coverage to whichever locale happened to be persisted first.
-  const monthly = page.getByRole("button", { name: /^(Monthly|Mesačne)$/ });
+  // PatternTabs exposes the controls as ARIA tabs, not buttons. Target the stable
+  // semantic data id so this test is independent of the active BIXBO locale.
+  const monthly = page.locator('[data-bixbo-pattern-tab="monthly"]');
   await expect(monthly).toBeVisible();
   await monthly.click();
+  await expect(monthly).toHaveAttribute("aria-selected", "true");
 
   const expected = [
     [/^(Panic & tetany|Panika a tetánia)$/, /^(Monthly frequency and intensity comparison|Mesačné porovnanie frekvencie a intenzity)$/],
