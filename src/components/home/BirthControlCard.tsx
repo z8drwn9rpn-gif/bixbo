@@ -176,8 +176,8 @@ export function BirthControlOverlay({
   const fitRef = useRef<HTMLDivElement | null>(null);
   const [fitScale, setFitScale] = useState(1);
 
-  // HAK follows the same BIXBO SOFT OLIVE DARK palette defined at the end of styles.css.
-  // Light mode keeps the existing Moss Green palette exactly as before.
+  // HAK deliberately owns a local olive palette for its 3D pill/wheel design.
+  // Global light/dark surfaces must not recolour those health-specific controls.
   const hakDarkMode =
     typeof document !== "undefined" && document.documentElement.classList.contains("dark");
 
@@ -704,6 +704,7 @@ export function BirthControlCalendar({
             }}
           />
           <div
+            data-bixbo-hak-wheel-center="1"
             className="absolute inset-[16.5%] rounded-full"
             style={{
               backgroundColor: HAK_CARD_BG,

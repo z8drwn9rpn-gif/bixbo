@@ -71,4 +71,31 @@ describe("UI layout architecture regressions", () => {
     expect(root).not.toContain("calendar-period-fix.css");
   });
 
+
+  it("keeps light and dark colour ownership in one canonical theme system", () => {
+    const styles = readFileSync("src/styles.css", "utf8");
+    const theme = readFileSync("src/theme-system.css", "utf8");
+    const root = readFileSync("src/routes/__root.tsx", "utf8");
+    const runtimeTheme = readFileSync("src/lib/theme.ts", "utf8");
+
+    expect(styles).not.toContain("Final BIXBO Moss Green light palette");
+    expect(styles).not.toContain("Final BIXBO Soft Olive dark palette");
+    expect(theme).toContain(":root:not(.dark)");
+    expect(theme).toContain("--background: #FBF7F3;");
+    expect(theme).toContain("--background: #171A14;");
+    expect(theme).toContain("--destructive:");
+    expect(theme).toContain("--period-veryheavy:");
+    expect(theme).toContain("--pain-10: #c81746;");
+    expect(root).toContain('import themeSystemCss from "../theme-system.css?url";');
+    expect(root).not.toContain("white-green-theme.css");
+    expect(root).not.toContain("dark-theme.css");
+    expect(runtimeTheme).toContain('const LIGHT_THEME_COLOR = "#FBF7F3";');
+    expect(runtimeTheme).toContain('const DARK_THEME_COLOR = "#171A14";');
+    const hak = readFileSync("src/components/home/BirthControlCard.tsx", "utf8");
+    expect(hak).toContain('data-bixbo-hak-wheel-center="1"');
+    expect(theme).toContain('[data-bixbo-hak-wheel-center="1"]');
+    expect(theme).not.toContain(".absolute.inset-");
+    expect(theme).not.toContain("section.mt-4.rounded-3xl");
+  });
+
 });
