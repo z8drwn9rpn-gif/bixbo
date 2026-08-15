@@ -1,6 +1,6 @@
 import type { ComponentType, SVGProps } from "react";
 import { Ico, NoteIcon } from "./BixboExtraIcons";
-import { ChiliIcon, PoopIcon, SleepIcon, HeartIcon, SparkleIcon } from "./BixboIcons";
+import { ChiliIcon, PoopIcon, SleepIcon, HeartIcon, SparkleIcon, BlueberryIcon, FlameIcon } from "./BixboIcons";
 import { DevilIcon } from "./BixboSpecialEmojiIcons";
 import { semanticIconForLabel } from "./BixboFoodIcons";
 import { appEmojiIcon } from "./BixboAppEmojiIcons";
@@ -12,7 +12,7 @@ type IconProps = SVGProps<SVGSVGElement> & { size?: number };
 type IconComponent = ComponentType<IconProps>;
 
 const FOOD_EMOJI_LABELS: Record<string, string> = {
-  "🍎": "apple", "🍏": "apple", "🍌": "banana", "🫐": "blueberry", "🍓": "berry", "🍇": "berries",
+  "🍎": "apple", "🍏": "apple", "🍌": "banana", "🍓": "berry", "🍇": "berries",
   "🍞": "bread", "🥖": "bread", "🥯": "bagel", "🍝": "pasta", "🍚": "rice", "🍙": "rice",
   "🍕": "pizza", "🥚": "egg", "🍳": "egg", "🧀": "cheese", "🐟": "fish", "🐠": "fish", "🍣": "fish",
   "🥩": "meat", "🍗": "chicken", "🍖": "meat", "🥗": "salad", "🥬": "salad", "🍲": "soup", "🥣": "soup",
@@ -33,6 +33,8 @@ export function resolveBixboIcon(input: { emoji?: string; label?: string; fallba
     // Exact original BIXBO identity icons always win over generic/picker fallbacks.
     if (normalized === "🌶") return ChiliIcon;
     if (normalized === "💩") return PoopIcon;
+    if (normalized === "🫐") return BlueberryIcon;
+    if (normalized === "🔥") return FlameIcon;
     if (normalized === "🌙") return SleepIcon;
     if (normalized === "😈") return DevilIcon;
     if (normalized === "❤" || normalized === "💗") return HeartIcon;
