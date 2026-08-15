@@ -190,92 +190,90 @@ export function CustomChipList({
   const [infoFor, setInfoFor] = useState<string | null>(null);
 
   return (
-    <div className="mt-2">
-      <div className="relative mb-2 flex min-h-7 items-center justify-end">
-        {adding ? (
-          <div className="flex flex-1 items-center gap-1">
-            <Input
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              className="h-8 flex-1"
-              placeholder={t("Custom…")}
-              autoFocus
-            />
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => {
-                if (text.trim()) {
-                  onAddCustom(text.trim());
-                  setText("");
-                  setAdding(false);
-                }
-              }}
-            >
-              Add
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              onClick={() => {
+    <div className="relative mt-0">
+      {adding ? (
+        <div className="mb-2 flex items-center gap-1">
+          <Input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            className="h-8 flex-1"
+            placeholder={t("Custom…")}
+            autoFocus
+          />
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => {
+              if (text.trim()) {
+                onAddCustom(text.trim());
                 setText("");
                 setAdding(false);
-              }}
-            >
-              <TrText value="Cancel" />
-            </Button>
-          </div>
-        ) : (
-          <>
-            <button
-              type="button"
-              onClick={() => setMenuOpen((open) => !open)}
-              aria-label={t("More options")}
-              aria-expanded={menuOpen}
-              className="grid h-7 w-9 place-items-center rounded-full text-lg font-bold leading-none text-muted-foreground transition hover:bg-tint hover:text-foreground"
-            >
-              ⋯
-            </button>
-            {menuOpen ? (
-              <>
+              }
+            }}
+          >
+            Add
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              setText("");
+              setAdding(false);
+            }}
+          >
+            <TrText value="Cancel" />
+          </Button>
+        </div>
+      ) : (
+        <div className="absolute -top-6 right-0 z-20">
+          <button
+            type="button"
+            onClick={() => setMenuOpen((open) => !open)}
+            aria-label={t("More options")}
+            aria-expanded={menuOpen}
+            className="grid h-7 w-9 place-items-center rounded-full text-lg font-bold leading-none text-muted-foreground transition hover:bg-tint hover:text-foreground"
+          >
+            ⋯
+          </button>
+          {menuOpen ? (
+            <>
+              <button
+                type="button"
+                aria-label={t("Close")}
+                className="fixed inset-0 z-40 cursor-default"
+                onClick={() => setMenuOpen(false)}
+              />
+              <div className="absolute right-0 top-8 z-50 min-w-[160px] overflow-hidden rounded-2xl border border-border/70 bg-background p-1.5 shadow-xl">
                 <button
                   type="button"
-                  aria-label={t("Close")}
-                  className="fixed inset-0 z-40 cursor-default"
-                  onClick={() => setMenuOpen(false)}
-                />
-                <div className="absolute right-0 top-8 z-50 min-w-[160px] overflow-hidden rounded-2xl border border-border/70 bg-background p-1.5 shadow-xl">
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setAdding(true);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-semibold text-foreground transition hover:bg-tint"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  {t("Add custom")}
+                </button>
+                {(onRenameCustom || onRemoveCustom) ? (
                   <button
                     type="button"
                     onClick={() => {
                       setMenuOpen(false);
-                      setAdding(true);
+                      setEditMode((value) => !value);
                     }}
                     className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-semibold text-foreground transition hover:bg-tint"
                   >
-                    <Plus className="h-3.5 w-3.5" />
-                    {t("Add custom")}
+                    <Pencil className="h-3.5 w-3.5" />
+                    {editMode ? t("Done") : `${t("Edit")} / ${t("Delete")}`}
                   </button>
-                  {(onRenameCustom || onRemoveCustom) ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMenuOpen(false);
-                        setEditMode((value) => !value);
-                      }}
-                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-semibold text-foreground transition hover:bg-tint"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                      {editMode ? t("Done") : `${t("Edit")} / ${t("Delete")}`}
-                    </button>
-                  ) : null}
-                </div>
-              </>
-            ) : null}
-          </>
-        )}
-      </div>
+                ) : null}
+              </div>
+            </>
+          ) : null}
+        </div>
+      )}
       <div className="flex flex-wrap gap-2">
         {base.map((v) => (
           <span key={v} className="inline-flex items-center gap-0.5">
