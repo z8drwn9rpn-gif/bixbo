@@ -71,3 +71,43 @@ svg button,
   -webkit-touch-callout: none;
   touch-action: manipulation;
 }
+
+/* ---------------------------------------------------------------------------
+   iOS keyboard viewport (see src/hooks/useKeyboardViewport.ts)
+
+   iOS never resizes the layout viewport for the keyboard, its suggestion row or
+   the native previous/next/done accessory bar. The hook mirrors
+   window.visualViewport into these variables; the fallback keeps pre-existing
+   behaviour on browsers without VisualViewport.
+
+   We deliberately do NOT try to hide the native accessory bar — that is not
+   removable from the web. We only make sure nothing stays behind it.
+--------------------------------------------------------------------------- */
+:root {
+  --bixbo-viewport-height: 100svh;
+  --bixbo-viewport-offset: 0px;
+  --bixbo-keyboard-inset: 0px;
+}
+
+/* Keep the focused field comfortably inside the scroll area. */
+[data-bixbo-log-surface] {
+  scroll-padding-block-end: 96px;
+  scroll-padding-block-start: 16px;
+}
+
+/* While the keyboard is up, the background page must not show through or push
+   against the active full-screen log sheet. */
+html[data-bixbo-keyboard-open] body {
+  overflow: hidden;
+}
+
+html[data-bixbo-keyboard-open] nav[aria-label="Primary navigation"] {
+  visibility: hidden;
+}
+
+/* Never let iOS auto-zoom a focused textarea. */
+@media (pointer: coarse) {
+  textarea[data-bixbo-rich-text] {
+    font-size: 16px !important;
+  }
+}
