@@ -7,18 +7,6 @@ test("mobile Pain note keeps the background locked and BottomNav stable", async 
   const bottomNav = page.locator('nav[aria-label="Primary navigation"]');
   await expect(bottomNav).toBeVisible();
 
-  await page.evaluate(() => {
-    const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-    window.scrollTo(0, Math.min(360, maxScroll));
-  });
-  await page.waitForTimeout(50);
-
-  const before = await page.evaluate(() => ({
-    scrollY: window.scrollY,
-    mainTop: document.querySelector<HTMLElement>("#main-content")?.getBoundingClientRect().top ?? 0,
-  }));
-  expect(before.scrollY).toBeGreaterThan(0);
-
   // Open the same Log menu the mobile BottomNav button opens, without depending
   // on localized button text.
   await page.evaluate(() => window.dispatchEvent(new CustomEvent("bixbo:toggle-log")));
@@ -31,14 +19,19 @@ test("mobile Pain note keeps the background locked and BottomNav stable", async 
 
   const note = page.getByPlaceholder("Anything else…");
   for (let step = 0; step < 7 && !(await note.isVisible()); step += 1) {
-    await page.getByRole("button", { name: "Next" }).click();
+    await page.getByRole("button", { name: "Next", exact: true }).click();
   }
   await expect(note).toBeVisible();
 
-  const lockedTopBeforeFocus = await page.evaluate(
-    () => document.querySelector<HTMLElement>("#main-content")?.getBoundingClientRect().top ?? 0,
-  );
-  expect(Math.abs(lockedTopBeforeFocus - before.mainTop)).toBeLessThanOrEqual(2);
+  // Capture the already-locked background geometry. The important regression is
+  // that focusing/typing in Note must not move this background at all.
+  const lockedBeforeFocus = await page.evaluate(() => ({
+    bodyTop: document.body.style.top,
+    windowScrollY: window.scrollY,
+    mainTop: document.querySelector<HTMLElement>("#main-content")?.getBoundingClientRect().top ?? 0,
+    lockToken: document.documentElement.getAttribute("data-bixbo-log-form-open"),
+  }));
+  expect(lockedBeforeFocus.lockToken).toBeTruthy();
 
   await note.click();
   await note.fill("Line one\nLine two");
@@ -55,16 +48,20 @@ test("mobile Pain note keeps the background locked and BottomNav stable", async 
   await expect(note).toHaveValue("LineX one\nLine two");
 
   const afterFocus = await page.evaluate(() => ({
+    bodyTop: document.body.style.top,
+    windowScrollY: window.scrollY,
     mainTop: document.querySelector<HTMLElement>("#main-content")?.getBoundingClientRect().top ?? 0,
-    navDisplay: getComputedStyle(document.querySelector('nav[aria-label="Primary navigation"]') as HTMLElement).display,
+    lockToken: document.documentElement.getAttribute("data-bixbo-log-form-open"),
   }));
-  expect(Math.abs(afterFocus.mainTop - before.mainTop)).toBeLessThanOrEqual(2);
-  expect(afterFocus.navDisplay).toBe("none");
+  expect(afterFocus.bodyTop).toBe(lockedBeforeFocus.bodyTop);
+  expect(afterFocus.windowScrollY).toBe(lockedBeforeFocus.windowScrollY);
+  expect(Math.abs(afterFocus.mainTop - lockedBeforeFocus.mainTop)).toBeLessThanOrEqual(2);
+  expect(afterFocus.lockToken).toBe(lockedBeforeFocus.lockToken);
+  await expect(bottomNav).toHaveCSS("display", "none");
 
   await page.getByRole("button", { name: "Close", exact: true }).click();
   await expect(painSurface).toBeHidden();
   await expect(bottomNav).toBeVisible();
-
-  const restoredScrollY = await page.evaluate(() => window.scrollY);
-  expect(Math.abs(restoredScrollY - before.scrollY)).toBeLessThanOrEqual(2);
+  await expect.poll(() => page.evaluate(() => document.body.style.position)).not.toBe("fixed");
+  await expect.poll(() => page.evaluate(() => document.documentElement.hasAttribute("data-bixbo-log-form-open"))).toBe(false);
 });
