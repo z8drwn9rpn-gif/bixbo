@@ -557,18 +557,6 @@ export function HealthHub({
             />
             <div className="ml-[4.5rem] border-t border-border/60" />
 
-            {onAdmin ? (
-              <>
-                <HubRow
-                  icon={<TaskIcon size={22} />}
-                  title="Admin mode"
-                  subtitle="Configure logs, calendar, Quick Log and Insights without editing code"
-                  onClick={onAdmin}
-                />
-                <div className="ml-[4.5rem] border-t border-border/60" />
-              </>
-            ) : null}
-
             <HubRow
               icon={<ProfileIcon size={22} />}
               title="About BIXBO"
