@@ -87,7 +87,7 @@ button[data-log-category] {
   color: #171717 !important;
   touch-action: manipulation !important;
   -webkit-font-smoothing: antialiased !important;
-  text-rendering: geometricPrecision !important;
+  text-rendering: auto !important;
 }
 
 button[data-log-category]:active {
@@ -146,13 +146,15 @@ button[data-log-category] > span:last-child {
   font-family: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", system-ui, -apple-system, sans-serif !important;
   font-size: 10.5px !important;
   font-weight: 700 !important;
-  line-height: 1.05 !important;
+  line-height: 1.08 !important;
   letter-spacing: -0.01em !important;
   color: #171717 !important;
   text-shadow: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
   opacity: 1 !important;
   -webkit-font-smoothing: antialiased !important;
-  text-rendering: geometricPrecision !important;
+  text-rendering: auto !important;
 }
 
 button[aria-label="Reorder log categories"],
