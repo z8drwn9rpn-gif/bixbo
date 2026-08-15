@@ -13,6 +13,17 @@ function NavArtworkSafe({ id, size, className }: { id: NavigationItemId; size: n
 
 export function BottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname }); const navigate = useNavigate(); const { t } = useI18n(); const items = resolvedNavigation("mobile");
-  const openLog = () => { if (pathname === "/") window.dispatchEvent(new CustomEvent("bixbo:open-log")); else navigate({ to: "/", search: { log: 1 } as never }); };
+  const openLog = () => {
+    if (pathname === "/") {
+      const openChooserCloseButton = document.querySelector<HTMLButtonElement>('button[aria-label="Close log menu"]');
+      if (openChooserCloseButton) {
+        openChooserCloseButton.click();
+        return;
+      }
+      window.dispatchEvent(new CustomEvent("bixbo:open-log"));
+      return;
+    }
+    navigate({ to: "/", search: { log: 1 } as never });
+  };
   return <nav aria-label="Primary navigation" className="fixed inset-x-0 bottom-0 z-40 w-full border-t border-border/55 bg-[#FBF7F3]/96 pb-[max(8px,env(safe-area-inset-bottom))] backdrop-blur-xl supports-[backdrop-filter]:bg-[#FBF7F3]/92 lg:hidden dark:border-border/65 dark:bg-background/96 dark:supports-[backdrop-filter]:bg-background/92" style={{ boxShadow: "0 -8px 22px -17px rgba(45,58,26,.28), inset 0 1px 0 color-mix(in srgb, var(--border) 35%, transparent)" }}><ul className="mx-auto flex min-h-[88px] w-full max-w-[430px] items-end justify-around gap-0 px-2 pb-1.5 pt-1 sm:px-4 landscape:min-h-[76px] landscape:py-1">{items.map((item) => { const label = item.label ?? BIXBO_NAVIGATION.find((candidate) => candidate.id === item.id)?.label ?? item.id; if (item.action === "log") return <li key={item.id} className="flex min-w-0 flex-1 justify-center"><button type="button" onClick={openLog} className="flex min-h-[72px] w-full flex-col items-center justify-end gap-0 px-1 pb-0.5 text-[11px] font-semibold text-[#3f4e27] transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] dark:text-foreground landscape:min-h-[62px]" aria-label={t(label)}><NavArtworkSafe id={item.id} size={64} className="-mb-1 h-[64px] w-[64px] shrink-0 object-contain drop-shadow-[0_7px_8px_rgba(52,67,30,0.20)] landscape:h-[54px] landscape:w-[54px]" /><span className="max-w-full truncate text-center leading-none">{t(label)}</span></button></li>; const to = item.to ?? "/"; const active = item.id === "overview" ? pathname.startsWith("/insights") || pathname.startsWith("/patterns") : to === "/" ? pathname === "/" : pathname.startsWith(to); return <li key={item.id} className="flex min-w-0 flex-1 justify-center"><Link to={to as never} aria-current={active ? "page" : undefined} className={`relative flex min-h-[72px] w-full flex-col items-center justify-end gap-0 px-1 pb-0.5 text-[11px] font-semibold transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] landscape:min-h-[62px] ${active ? "text-[#34431f] dark:text-foreground" : "text-[#45542b]/95 hover:text-[#34411f] dark:text-muted-foreground dark:hover:text-foreground"}`}><NavArtworkSafe id={item.id} size={54} className={`mb-0 h-[54px] w-[54px] shrink-0 object-contain drop-shadow-[0_6px_7px_rgba(52,67,30,0.18)] transition-transform landscape:h-[46px] landscape:w-[46px] ${active ? "scale-[1.04]" : ""}`} /><span className="max-w-full truncate text-center leading-none">{t(label)}</span>{active ? <span aria-hidden="true" className="absolute bottom-[-3px] h-1 w-5 rounded-full bg-current opacity-70" /> : null}</Link></li>; })}</ul></nav>;
 }
