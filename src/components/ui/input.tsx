@@ -4,11 +4,12 @@ import { cn } from "@/lib/utils";
 
 // Only free-text inputs get autocomplete/autocorrect/spellcheck disabled.
 // Date/time/number/email/password/file/etc. keep native browser behaviour.
-const FREE_TEXT_TYPES = new Set(["text", "search", undefined as unknown as string]);
+const FREE_TEXT_TYPES = new Set<string>(["text", "search"]);
 
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
   ({ className, type, ...props }, ref) => {
-    const freeText = FREE_TEXT_TYPES.has(type);
+    const freeText = type === undefined || FREE_TEXT_TYPES.has(type);
+
 
     return (
       <input
