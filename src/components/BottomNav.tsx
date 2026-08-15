@@ -14,36 +14,9 @@ function NavArtworkSafe({ id, size, className }: { id: NavigationItemId; size: n
 export function BottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname }); const navigate = useNavigate(); const { t } = useI18n(); const items = resolvedNavigation("mobile");
 
-  const closeOpenLogChooser = () => {
-    const chooserItem = document.querySelector<HTMLElement>('button[data-log-category]');
-    if (!chooserItem) return false;
-
-    const dialog = chooserItem.closest<HTMLElement>('[role="dialog"]');
-
-    // Radix Sheet always renders its own Close primitive as a direct child of
-    // the dialog. LogSheet hides it visually, but clicking it programmatically
-    // is the most reliable way to update the controlled open state.
-    const radixClose = dialog?.querySelector<HTMLButtonElement>('button.absolute.right-4.top-4');
-    if (radixClose) {
-      radixClose.click();
-      return true;
-    }
-
-    // Fallback to LogSheet's full-screen close control. Do not depend on its
-    // translated aria-label because that changes with the selected language.
-    const chooserClose = document.querySelector<HTMLButtonElement>('button.absolute.inset-0.z-0.cursor-default.bg-transparent');
-    if (chooserClose) {
-      chooserClose.click();
-      return true;
-    }
-
-    return false;
-  };
-
   const openLog = () => {
     if (pathname === "/") {
-      if (closeOpenLogChooser()) return;
-      window.dispatchEvent(new CustomEvent("bixbo:open-log"));
+      window.dispatchEvent(new CustomEvent("bixbo:toggle-log"));
       return;
     }
     navigate({ to: "/", search: { log: 1 } as never });
