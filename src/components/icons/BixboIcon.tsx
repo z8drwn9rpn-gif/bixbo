@@ -1,0 +1,69 @@
+import type { ComponentType, SVGProps } from "react";
+import { Ico, NoteIcon } from "./BixboExtraIcons";
+import { semanticIconForLabel } from "./BixboFoodIcons";
+import { keyboardEmojiIcon } from "./BixboKeyboardEmojiIcons";
+
+type IconProps = SVGProps<SVGSVGElement> & { size?: number };
+type IconComponent = ComponentType<IconProps>;
+
+const FOOD_EMOJI_LABELS: Record<string, string> = {
+  "🍎": "apple", "🍏": "apple", "🍌": "banana", "🫐": "blueberry", "🍓": "berry", "🍇": "berries",
+  "🍞": "bread", "🥖": "bread", "🥯": "bagel", "🍝": "pasta", "🍚": "rice", "🍙": "rice",
+  "🍕": "pizza", "🥚": "egg", "🍳": "egg", "🧀": "cheese", "🐟": "fish", "🐠": "fish", "🍣": "fish",
+  "🥩": "meat", "🍗": "chicken", "🍖": "meat", "🥗": "salad", "🥬": "salad", "🍲": "soup", "🥣": "soup",
+  "🥛": "milk", "☕": "coffee", "🍵": "tea", "💧": "water", "🚰": "water", "🥪": "sandwich", "🌯": "wrap",
+  "🍔": "burger", "🍰": "cake", "🧁": "cake", "🍩": "dessert", "🍪": "dessert",
+};
+
+export function normalizeBixboEmoji(value: string) {
+  return value.replace(/\uFE0F/g, "").replace(/\p{Emoji_Modifier}/gu, "");
+}
+
+export function resolveBixboIcon(input: { emoji?: string; label?: string; fallback?: IconComponent }): IconComponent | undefined {
+  const { emoji, label, fallback } = input;
+
+  if (emoji) {
+    const normalized = normalizeBixboEmoji(emoji);
+    const foodLabel = FOOD_EMOJI_LABELS[normalized];
+    if (foodLabel) {
+      const food = semanticIconForLabel(foodLabel);
+      if (food) return food;
+    }
+
+    const keyboard = keyboardEmojiIcon(emoji);
+    if (keyboard) return keyboard;
+  }
+
+  if (label) {
+    const semantic = semanticIconForLabel(label);
+    if (semantic) return semantic;
+  }
+
+  return fallback;
+}
+
+export function BixboIcon({
+  emoji,
+  label,
+  name,
+  size = 20,
+  className,
+  fallback = "note",
+}: {
+  emoji?: string;
+  label?: string;
+  name?: Parameters<typeof Ico>[0]["name"];
+  size?: number;
+  className?: string;
+  fallback?: "note" | "none";
+}) {
+  if (name) return <Ico name={name} size={size} className={className} />;
+
+  const Resolved = resolveBixboIcon({ emoji, label });
+  if (Resolved) return <Resolved size={size} className={className} />;
+
+  // Important: never hand an unsupported emoji string to the platform renderer.
+  // The app either resolves it to a BIXBO SVG or uses a neutral BIXBO fallback.
+  if (fallback === "none") return null;
+  return <NoteIcon size={size} className={className} />;
+}
