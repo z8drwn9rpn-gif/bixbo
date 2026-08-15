@@ -1,10 +1,12 @@
 /* BIXBO mobile / PWA touch stability
-   Preserve native text editing and browser accessibility while preventing accidental chart zoom/selection. */
+   Keep the app at a fixed visual scale while preserving native single-touch text editing. */
 
 html,
-body {
+body,
+[data-bixbo-app-root] {
   overscroll-behavior-x: none;
   -webkit-text-size-adjust: 100%;
+  touch-action: pan-x pan-y;
 }
 
 /* iOS Safari auto-zooms focused controls below 16px. Keep editable controls at 16px on touch devices. */
@@ -31,7 +33,8 @@ select {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Editable controls must keep native iOS selection/caret behavior, including wrapped lines. */
+/* Editable controls keep native iOS caret/selection behavior. The ancestor zoom lock
+   still blocks page pinch zoom, but one-finger cursor placement and selection remain native. */
 textarea,
 input:not([type="range"]),
 [contenteditable="true"] {
@@ -57,8 +60,7 @@ select {
   max-width: 100%;
 }
 
-/* Recharts and other interactive visualizations should not trigger browser double-tap/pinch zoom.
-   pan-y keeps normal vertical page scrolling available when the gesture starts on a chart. */
+/* Recharts and other interactive visualizations stay single-scale and keep vertical page scrolling. */
 .recharts-wrapper,
 .recharts-surface,
 [data-bixbo-chart],
