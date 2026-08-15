@@ -45,18 +45,36 @@ const THEME_BOOTSTRAP_SCRIPT = `(() => {
 
     const systemDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
     const isDark = choice === "dark" || (choice === "system" && systemDark);
+    const canvas = isDark ? "#171A14" : "#FBF7F3";
+    const isSamsungInternet = /SamsungBrowser\\//i.test(navigator.userAgent || "");
 
     root.dataset.themeChoice = choice;
     root.dataset.theme = isDark ? "dark" : "light";
+    root.dataset.browser = isSamsungInternet ? "samsung-internet" : "other";
     root.classList.toggle("dark", isDark);
     root.classList.toggle("light", !isDark);
     root.style.colorScheme = isDark ? "dark" : "only light";
 
+    // Samsung Internet can cache the document backing canvas before the later
+    // theme stylesheets have painted. Lock the very first root frame to the
+    // actual BIXBO canvas so rubber-band overscroll never exposes the obsolete
+    // olive fallback colour.
+    root.style.background = canvas;
+    root.style.setProperty("background-color", canvas, "important");
+
+    const syncBodyCanvas = () => {
+      if (!document.body) return;
+      document.body.style.background = canvas;
+      document.body.style.setProperty("background-color", canvas, "important");
+    };
+    if (document.body) syncBodyCanvas();
+    else document.addEventListener("DOMContentLoaded", syncBodyCanvas, { once: true });
+
     const colorSchemeMeta = document.querySelector('meta[name="color-scheme"]');
-    if (colorSchemeMeta) colorSchemeMeta.setAttribute("content", choice === "light" ? "only light" : "light dark");
+    if (colorSchemeMeta) colorSchemeMeta.setAttribute("content", isDark ? "dark" : "only light");
 
     const themeColorMeta = document.querySelector('meta[name="theme-color"]');
-    if (themeColorMeta) themeColorMeta.setAttribute("content", isDark ? "#171A14" : "#FBF7F3");
+    if (themeColorMeta) themeColorMeta.setAttribute("content", canvas);
   } catch {}
 })();`;
 
