@@ -14,11 +14,14 @@ describe("Notes iOS editing", () => {
     expect(source).not.toContain("editorReady");
   });
 
-  it("leaves tap-to-focus to the native iOS textarea", () => {
+  it("leaves tap-to-focus and wrapped-line caret placement to native iOS", () => {
     expect(source).not.toContain("onTouchEnd={() => editorRef.current?.focus");
     expect(source).not.toContain("onClick={() => editorRef.current?.focus");
     expect(source).not.toContain('touchAction: "pan-y"');
     expect(source).toContain('inputMode="text"');
+    expect(source).toContain('WebkitUserSelect: "text"');
+    expect(source).toContain('userSelect: "text"');
+    expect(source).toContain('WebkitTouchCallout: "default"');
   });
 
   it("does not collapse and recreate the textarea height on each keystroke", () => {
