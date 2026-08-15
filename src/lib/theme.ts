@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useBixbo } from "@/lib/storage";
+import { subscribeBixboChanges, useBixbo } from "@/lib/storage";
 
 export type ThemeChoice = "light" | "dark" | "system";
 
@@ -69,6 +69,18 @@ export function useThemeSync() {
     if (!hydrated) return;
     applyThemeChoice(theme);
   }, [theme, hydrated]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    let lastTheme = document.documentElement.dataset.themeChoice as ThemeChoice | undefined;
+    return subscribeBixboChanges((next) => {
+      const nextTheme: ThemeChoice = next.settings.theme ?? "system";
+      if (nextTheme === lastTheme) return;
+      lastTheme = nextTheme;
+      applyThemeChoice(nextTheme);
+    });
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined" || theme !== "system") return;
