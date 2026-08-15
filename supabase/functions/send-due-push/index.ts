@@ -207,12 +207,22 @@ function planReminders(userId: string, snapshot: Snapshot, now: Date): Reminder[
       const startsAt = Date.parse(appointment.startsAt);
       if (!Number.isFinite(startsAt)) continue;
       const minutesUntil = Math.round((startsAt - now.getTime()) / 60000);
-      for (const lead of [24 * 60, 120]) {
+      const isCalendarEvent = appointment.id.startsWith("event:");
+      const leads = isCalendarEvent ? [24 * 60] : [24 * 60, 120];
+
+      for (const lead of leads) {
         if (minutesUntil > lead || minutesUntil <= lead - 2) continue;
+        const kind = isCalendarEvent ? "event" : "appointment";
         reminders.push({
-          dedupeKey: key(["appointment", appointment.id, String(lead)]),
+          dedupeKey: key([kind, appointment.id, String(lead)]),
           category: "appointments",
-          payload: { title: lead === 120 ? "Appointment in 2 hours" : "Appointment tomorrow", body: appointment.title || "Appointment", url: "/", tag: `appointment-${appointment.id}`, category: "appointments" },
+          payload: {
+            title: isCalendarEvent ? "Event tomorrow" : lead === 120 ? "Appointment in 2 hours" : "Appointment tomorrow",
+            body: appointment.title || (isCalendarEvent ? "Event" : "Appointment"),
+            url: "/",
+            tag: `${kind}-${appointment.id}`,
+            category: "appointments",
+          },
         });
       }
     }
