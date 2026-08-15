@@ -25,9 +25,11 @@ describe("UI layout architecture regressions", () => {
     const source = readFileSync("src/features/logging/LogFormPrimitives.tsx", "utf8");
     expect(source).toContain('h-10 min-w-[104px]');
   });
+
   it("keeps visual polish on stable component hooks instead of DOM-order patches", () => {
     const cycle = readFileSync("src/features/logging/CycleForms.tsx", "utf8");
     const log = readFileSync("src/features/logging/LogSheetRoot.tsx", "utf8");
+    const nav = readFileSync("src/components/BottomNav.tsx", "utf8");
     const notes = readFileSync("src/routes/notes.tsx", "utf8");
     const css = readFileSync("src/ui-system.css", "utf8");
     const shell = readFileSync("src/components/AppShell.tsx", "utf8");
@@ -36,13 +38,16 @@ describe("UI layout architecture regressions", () => {
     expect(cycle).toContain('data-bixbo-log-form="sex"');
     expect(cycle).toContain('data-bixbo-sex-section="symptoms"');
     expect(log).toContain("data-bixbo-log-menu");
+    expect(log).toContain('body.dataset.bixboLogMenuOpen = "true"');
+    expect(log).not.toContain('modal={Boolean(active)}');
     expect(log).not.toContain("radiusX");
+    expect(nav).toContain("data-bixbo-bottom-nav");
     expect(notes).toContain("[&>span]:inline");
+    expect(css).toContain('body[data-bixbo-log-menu-open="true"] [data-bixbo-bottom-nav]');
     expect(css).not.toContain("nth-of-type");
     expect(css).not.toContain(".mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5");
     expect(css).not.toContain("--bixbo-bold-text");
     expect(shell).not.toMatch(/import "@\/.*\.css"/);
     expect(styles).toContain('@import "./ui-system.css";');
   });
-
 });
