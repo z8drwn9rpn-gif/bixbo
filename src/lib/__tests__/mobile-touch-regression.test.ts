@@ -17,7 +17,8 @@ describe("mobile touch and text editing regressions", () => {
 
   it("keeps BIXBO dark-mode browser chrome explicit without disabling page zoom", () => {
     expect(rootSource).toContain('{ name: "color-scheme", content: "light dark" }');
-    expect(themeSource).toContain('root.style.colorScheme = isDark ? "dark" : "light"');
+    expect(rootSource).toContain('root.style.colorScheme = isDark ? "dark" : "only light"');
+    expect(themeSource).toContain('root.style.colorScheme = isDark ? "dark" : "only light"');
     expect(themeSource).toContain('colorSchemeMeta?.setAttribute("content", "light dark")');
     expect(themeSource).toContain('const DARK_THEME_COLOR = "#171A14"');
   });
