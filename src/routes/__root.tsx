@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import whiteGreenThemeCss from "../white-green-theme.css?url";
 import calendarPeriodFixCss from "../calendar-period-fix.css?url";
+import iosTouchStabilityCss from "../ios-touch-stability.css?url";
 import { useCloudSync } from "../lib/cloudSync";
 import { useThemeSync } from "../lib/theme";
 import { useNotificationRuntime } from "../lib/notifications";
@@ -112,6 +113,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: appCss },
       { rel: "stylesheet", href: whiteGreenThemeCss },
       { rel: "stylesheet", href: calendarPeriodFixCss },
+      { rel: "stylesheet", href: iosTouchStabilityCss },
       { rel: "manifest", href: "/manifest.json" },
       { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
       { rel: "icon", type: "image/png", sizes: "180x180", href: "/apple-touch-icon.png" },
@@ -132,7 +134,7 @@ function RootShell({ children }: { children: ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body>
+      <body data-bixbo-app-root>
         {children}
         <Scripts />
       </body>
@@ -146,6 +148,31 @@ function RootComponent() {
   useThemeSync();
   useNotificationRuntime();
   useDeploymentFreshness();
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof document === "undefined") return;
+    if (!window.matchMedia("(pointer: coarse)").matches) return;
+
+    const preventMultiTouch = (event: TouchEvent) => {
+      if (event.touches.length > 1) event.preventDefault();
+    };
+    const preventGesture = (event: Event) => event.preventDefault();
+    const preventDoubleTapZoom = (event: MouseEvent) => event.preventDefault();
+
+    document.addEventListener("touchmove", preventMultiTouch, { passive: false });
+    document.addEventListener("gesturestart", preventGesture, { passive: false });
+    document.addEventListener("gesturechange", preventGesture, { passive: false });
+    document.addEventListener("gestureend", preventGesture, { passive: false });
+    document.addEventListener("dblclick", preventDoubleTapZoom, { passive: false });
+
+    return () => {
+      document.removeEventListener("touchmove", preventMultiTouch);
+      document.removeEventListener("gesturestart", preventGesture);
+      document.removeEventListener("gesturechange", preventGesture);
+      document.removeEventListener("gestureend", preventGesture);
+      document.removeEventListener("dblclick", preventDoubleTapZoom);
+    };
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
