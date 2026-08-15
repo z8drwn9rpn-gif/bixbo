@@ -9,6 +9,36 @@ type ServerEntry = {
 
 let serverEntryPromise: Promise<ServerEntry> | undefined;
 
+const CONTENT_SECURITY_POLICY = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "frame-ancestors 'none'",
+  "form-action 'self' https://accounts.google.com https://appleid.apple.com",
+  "script-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' https://fonts.gstatic.com data:",
+  "img-src 'self' data: blob: https:",
+  "connect-src 'self' https://wgdydwttzsveevkljkmr.supabase.co wss://wgdydwttzsveevkljkmr.supabase.co https://*.supabase.co wss://*.supabase.co",
+  "frame-src https://accounts.google.com https://appleid.apple.com",
+  "manifest-src 'self'",
+  "worker-src 'self' blob:",
+].join("; ");
+
+function withSecurityHeaders(response: Response): Response {
+  const hardened = new Response(response.body, response);
+  hardened.headers.set("X-Content-Type-Options", "nosniff");
+  hardened.headers.set("X-Frame-Options", "DENY");
+  hardened.headers.set("Referrer-Policy", "no-referrer");
+  hardened.headers.set(
+    "Permissions-Policy",
+    "camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()",
+  );
+  hardened.headers.set("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+  hardened.headers.set("Content-Security-Policy", CONTENT_SECURITY_POLICY);
+  return hardened;
+}
+
 async function getServerEntry(): Promise<ServerEntry> {
   if (!serverEntryPromise) {
     serverEntryPromise = import("@tanstack/react-start/server-entry").then(
@@ -49,13 +79,15 @@ export default {
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      return withSecurityHeaders(await normalizeCatastrophicSsrResponse(response));
     } catch (error) {
       console.error(error);
-      return new Response(renderErrorPage(), {
-        status: 500,
-        headers: { "content-type": "text/html; charset=utf-8" },
-      });
+      return withSecurityHeaders(
+        new Response(renderErrorPage(), {
+          status: 500,
+          headers: { "content-type": "text/html; charset=utf-8" },
+        }),
+      );
     }
   },
 };

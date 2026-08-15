@@ -11,8 +11,11 @@ export const EN: Record<string, string> = {
   "profile.language.title": "Language",
   "profile.language.subtitle": "Choose the language used by the BIXBO interface.",
   "profile.language.appLanguage": "App language",
-  "profile.language.english": "Angličtina",
-  "profile.language.slovak": "Slovenčina",
+  "profile.language.english": "English",
+  "profile.language.slovak": "Slovak",
   "profile.hub.languageTitle": "Language",
   "profile.hub.languageSubtitle": "App language",
+  "Password": "Password",
+  "Password (min 8 chars)": "Password (min 8 chars)",
+  "Feel": "How I feel after food",
 };

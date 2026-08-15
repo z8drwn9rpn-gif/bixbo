@@ -77,10 +77,7 @@ function NotFoundComponent() {
           The page you're looking for doesn't exist or has been moved.
         </p>
         <div className="mt-6">
-          <Link
-            to="/"
-            className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
+          <Link to="/" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             Go home
           </Link>
         </div>
@@ -96,28 +93,11 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-md rounded-3xl border border-border/70 bg-surface p-6 text-center shadow-sm ring-1 ring-border/70 sm:p-8">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
-        </p>
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">This page didn't load</h1>
+        <p className="mt-2 text-sm text-muted-foreground">Something went wrong on our end. You can try refreshing or head back home.</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
-          <button
-            onClick={() => {
-              router.invalidate();
-              reset();
-            }}
-            className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            Try again
-          </button>
-          <a
-            href="/"
-            className="inline-flex items-center justify-center rounded-xl border border-input bg-background px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-accent"
-          >
-            Go home
-          </a>
+          <button onClick={() => { router.invalidate(); reset(); }} className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90">Try again</button>
+          <a href="/" className="inline-flex items-center justify-center rounded-xl border border-input bg-background px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-accent">Go home</a>
         </div>
       </div>
     </div>
@@ -128,7 +108,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { title: "BIXBO — Health diary" },
       { name: "description", content: "BIXBO — a calm diary for your cycle, pain, meds and notes." },
       { name: "author", content: "BIXBO" },
@@ -189,36 +169,9 @@ function RootComponent() {
   useNotificationRuntime();
   useDeploymentFreshness();
 
-  useEffect(() => {
-    if (typeof window === "undefined" || typeof document === "undefined") return;
-    if (!window.matchMedia("(pointer: coarse)").matches) return;
-
-    const preventMultiTouch = (event: TouchEvent) => {
-      if (event.touches.length > 1) event.preventDefault();
-    };
-    const preventGesture = (event: Event) => event.preventDefault();
-    const preventDoubleTapZoom = (event: MouseEvent) => event.preventDefault();
-
-    document.addEventListener("touchmove", preventMultiTouch, { passive: false });
-    document.addEventListener("gesturestart", preventGesture, { passive: false });
-    document.addEventListener("gesturechange", preventGesture, { passive: false });
-    document.addEventListener("gestureend", preventGesture, { passive: false });
-    document.addEventListener("dblclick", preventDoubleTapZoom, { passive: false });
-
-    return () => {
-      document.removeEventListener("touchmove", preventMultiTouch);
-      document.removeEventListener("gesturestart", preventGesture);
-      document.removeEventListener("gesturechange", preventGesture);
-      document.removeEventListener("gestureend", preventGesture);
-      document.removeEventListener("dblclick", preventDoubleTapZoom);
-    };
-  }, []);
-
   return (
     <QueryClientProvider client={queryClient}>
-      <AppPrivacyGuard>
-        <Outlet />
-      </AppPrivacyGuard>
+      <AppPrivacyGuard><Outlet /></AppPrivacyGuard>
       <NotificationPrompt />
       <Toaster />
     </QueryClientProvider>
