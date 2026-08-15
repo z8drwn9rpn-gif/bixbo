@@ -45,8 +45,24 @@ function assignRef<T>(ref: React.ForwardedRef<T>, value: T | null) {
   else if (ref) ref.current = value;
 }
 
+function setNativeTextareaValue(node: HTMLTextAreaElement, value: string) {
+  const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set;
+  if (setter) setter.call(node, value);
+  else node.value = value;
+}
+
 const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"textarea">>(
-  ({ className, value, defaultValue, onChange, onScroll, ...props }, forwardedRef) => {
+  ({
+    className,
+    value,
+    defaultValue,
+    onChange,
+    onScroll,
+    onFocus,
+    onSelect,
+    disabled,
+    ...props
+  }, forwardedRef) => {
     const initialValue = normalizeBixboText(asText(defaultValue));
     const [uncontrolledValue, setUncontrolledValue] = React.useState(initialValue);
     const [pickerOpen, setPickerOpen] = React.useState(false);
@@ -67,25 +83,29 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"tex
 
     const openPicker = React.useCallback(() => {
       const node = textareaRef.current;
-      if (!node) return;
-      if (!caretRef.current) rememberCaret();
-      node.blur();
+      if (!node || disabled) return;
+      rememberCaret();
       setPickerOpen(true);
-    }, [rememberCaret]);
+      requestAnimationFrame(() => node.blur());
+    }, [disabled, rememberCaret]);
 
     const chooseIcon = React.useCallback((emoji: string) => {
       const node = textareaRef.current;
-      if (!node) return;
+      if (!node || disabled) return;
 
+      const currentNative = node.value;
       const saved = caretRef.current;
-      const start = saved?.start ?? node.selectionStart ?? node.value.length;
-      const end = saved?.end ?? node.selectionEnd ?? start;
+      const start = Math.max(0, Math.min(saved?.start ?? currentNative.length, currentNative.length));
+      const end = Math.max(start, Math.min(saved?.end ?? start, currentNative.length));
       const insertion = bixboNativeGlyphForEmoji(emoji) ?? bixboNativeGlyphForEmoji("⭐") ?? "";
-
-      node.setRangeText(insertion, start, end, "end");
+      const nextNative = `${currentNative.slice(0, start)}${insertion}${currentNative.slice(end)}`;
+      const nextCanonical = normalizeBixboText(decodeBixboNativeText(nextNative));
       const nextCaret = start + insertion.length;
       caretRef.current = { start: nextCaret, end: nextCaret };
 
+      // Bypass React's controlled-value tracker so the native input event is
+      // observed as a real change and the parent form state is updated.
+      setNativeTextareaValue(node, nextCanonical);
       node.dispatchEvent(
         new InputEvent("input", {
           bubbles: true,
@@ -95,10 +115,10 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"tex
       );
 
       setPickerOpen(false);
-    }, []);
+    }, [disabled]);
 
     return (
-      <div className="group relative w-full">
+      <div className="relative w-full">
         <textarea
           ref={(node) => {
             textareaRef.current = node;
@@ -107,19 +127,20 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"tex
           data-bixbo-rich-text="true"
           value={controlled ? nativeValue : undefined}
           defaultValue={controlled ? undefined : encodeBixboNativeText(initialValue)}
+          disabled={disabled}
           onFocus={(event) => {
             caretRef.current = {
               start: event.currentTarget.selectionStart ?? event.currentTarget.value.length,
               end: event.currentTarget.selectionEnd ?? event.currentTarget.selectionStart ?? event.currentTarget.value.length,
             };
-            props.onFocus?.(event);
+            onFocus?.(event);
           }}
           onSelect={(event) => {
             caretRef.current = {
               start: event.currentTarget.selectionStart ?? event.currentTarget.value.length,
               end: event.currentTarget.selectionEnd ?? event.currentTarget.selectionStart ?? event.currentTarget.value.length,
             };
-            props.onSelect?.(event);
+            onSelect?.(event);
           }}
           onChange={(event) => {
             const node = event.currentTarget;
@@ -139,7 +160,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"tex
             caretRef.current = { start: encodedStart, end: encodedEnd };
             if (!controlled) setUncontrolledValue(canonical);
 
-            node.value = encoded;
+            setNativeTextareaValue(node, encoded);
             try {
               node.setSelectionRange(encodedStart, encodedEnd);
             } catch {
@@ -147,9 +168,9 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"tex
             }
 
             if (onChange) {
-              node.value = canonical;
+              setNativeTextareaValue(node, canonical);
               onChange(event);
-              node.value = encoded;
+              setNativeTextareaValue(node, encoded);
               try {
                 node.setSelectionRange(encodedStart, encodedEnd);
               } catch {
@@ -186,18 +207,27 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"tex
           </div>
         ) : null}
 
-        <button
-          type="button"
-          data-bixbo-icon-trigger
-          onPointerDown={rememberCaret}
-          onTouchStart={rememberCaret}
-          onClick={openPicker}
-          className="pointer-events-none absolute right-2 top-2 z-30 grid h-11 w-11 touch-manipulation select-none place-items-center rounded-full border border-border/70 bg-background opacity-0 shadow-lg transition-[opacity,transform] active:scale-95 group-focus-within:pointer-events-auto group-focus-within:opacity-100"
-          aria-label="BIXBO icons"
-          title="BIXBO icons"
-        >
-          <BixboIcon emoji="✨" size={23} />
-        </button>
+        {!disabled ? (
+          <button
+            type="button"
+            data-bixbo-icon-trigger
+            onPointerDown={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              rememberCaret();
+            }}
+            onPointerUp={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              openPicker();
+            }}
+            className="pointer-events-auto absolute right-2 top-2 z-30 grid h-11 w-11 touch-manipulation select-none place-items-center rounded-full border border-border/70 bg-background opacity-100 shadow-lg transition-transform active:scale-95"
+            aria-label="BIXBO icons"
+            title="BIXBO icons"
+          >
+            <BixboIcon emoji="✨" size={23} />
+          </button>
+        ) : null}
 
         <BixboInlinePicker
           open={pickerOpen}
