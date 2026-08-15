@@ -1,5 +1,6 @@
 import fs from "node:fs";
 
+// Temporary one-shot patch: removed by the workflow after successful verification.
 const path = "src/components/MonthCalendar.tsx";
 let source = fs.readFileSync(path, "utf8");
 
