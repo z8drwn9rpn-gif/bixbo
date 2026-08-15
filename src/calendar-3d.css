@@ -1,176 +1,156 @@
-/* BIXBO calendar — pronounced glossy 3D treatment.
-   Status colours still come from MonthCalendar inline values; this file adds depth only. */
+/* BIXBO calendar — glossy 3D treatment matched to the approved reference.
+   Keep the existing pain / period colours. Add depth without creating white double-rings. */
 
-/* Whole day orbit: lift the ring/disc clearly off the page. */
+/* Whole day orbit: lifted, but clean. */
 [style*="--period-medium"] > div > div:nth-child(2) > div > button > div > div:first-child {
   isolation: isolate;
   overflow: visible;
   filter:
-    drop-shadow(0 1px 0 rgba(255,255,255,0.94))
-    drop-shadow(0 3px 2px rgba(55,67,35,0.22))
-    drop-shadow(0 7px 7px rgba(55,67,35,0.15));
+    drop-shadow(0 1px 0 rgba(255,255,255,0.90))
+    drop-shadow(0 3px 2px rgba(55,67,35,0.18))
+    drop-shadow(0 6px 6px rgba(55,67,35,0.11));
   transform: translateZ(0);
 }
 
-/* Dynamic pain / prediction ring.
-   The real colour stays in the inline box-shadow; these layers create the rounded bevel. */
+/* Pain / prediction rings: preserve the real ring colour and make that colour itself look raised.
+   Do not add an extra white ring around it. */
 [style*="--period-medium"] > div > div:nth-child(2) > div > button > div > div:first-child > span {
   overflow: visible;
   filter:
-    drop-shadow(0 -1px 0 rgba(255,255,255,0.92))
-    drop-shadow(0 2px 1px rgba(91,77,36,0.26))
-    drop-shadow(0 5px 4px rgba(54,64,34,0.18));
+    drop-shadow(0 -1px 0 rgba(255,255,255,0.62))
+    drop-shadow(0 2px 1px rgba(76,65,36,0.22))
+    drop-shadow(0 4px 3px rgba(54,64,34,0.13));
 }
 
+/* Remove the extra bright halo that produced the wrong concentric-ring look. */
 [style*="--period-medium"] > div > div:nth-child(2) > div > button > div > div:first-child > span::after {
-  content: "";
-  position: absolute;
-  inset: -4px;
-  border-radius: 999px;
-  padding: 1.6px;
-  pointer-events: none;
-  background: linear-gradient(
-    155deg,
-    rgba(255,255,255,0.98) 0%,
-    rgba(255,255,255,0.62) 20%,
-    rgba(255,255,255,0.06) 47%,
-    rgba(63,55,31,0.20) 78%,
-    rgba(42,50,27,0.34) 100%
-  );
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  opacity: 0.88;
+  content: none;
 }
 
-/* Date face: a visibly convex porcelain / soft-gel disc. */
+/* Date face: softly convex ivory / gel centre, as in the approved mockup. */
 [style*="--period-medium"] > div > div:nth-child(2) > div > button > div > div:first-child > div:last-child {
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--border) 62%, rgba(255,255,255,0.72));
+  border: 1px solid color-mix(in srgb, var(--border) 42%, rgba(255,255,255,0.72));
   box-shadow:
-    inset 0 3px 2px rgba(255,255,255,0.98),
-    inset 2px 1px 3px rgba(255,255,255,0.58),
-    inset 0 -3px 4px rgba(62,68,41,0.18),
-    inset -2px -1px 3px rgba(76,72,43,0.10),
-    0 2px 1px rgba(255,255,255,0.82),
-    0 4px 5px rgba(49,61,31,0.22),
-    0 8px 11px rgba(49,61,31,0.12);
+    inset 0 2px 1.5px rgba(255,255,255,0.94),
+    inset 1px 0 2px rgba(255,255,255,0.40),
+    inset 0 -2px 3px rgba(67,72,45,0.12),
+    0 2px 2px rgba(49,61,31,0.14),
+    0 5px 7px rgba(49,61,31,0.09);
   transition: transform 120ms ease, box-shadow 120ms ease;
 }
 
 [style*="--period-medium"] > div > div:nth-child(2) > div > button > div > div:first-child > div:last-child > span {
   position: relative;
   z-index: 3;
-  text-shadow: 0 1px 0 rgba(255,255,255,0.60);
+  text-shadow: 0 1px 0 rgba(255,255,255,0.42);
 }
 
-/* Empty dates: brighter raised ivory button instead of a flat transparent centre. */
+/* Empty dates: warm ivory face, no white outer halo / no double border. */
 [style*="--period-medium"] > div > div:nth-child(2) > div > button > div > div:first-child > div:last-child[style*="transparent"] {
   background:
-    radial-gradient(circle at 31% 22%, rgba(255,255,255,1) 0 17%, rgba(255,255,255,0.72) 25%, rgba(255,255,255,0) 43%),
-    linear-gradient(145deg, #fffef9 0%, color-mix(in srgb, var(--background) 94%, #f4efdf 6%) 50%, color-mix(in srgb, var(--background) 82%, #cfc9b4 18%) 100%) !important;
+    radial-gradient(circle at 34% 23%, rgba(255,255,255,0.96) 0 14%, rgba(255,255,255,0.46) 27%, rgba(255,255,255,0) 46%),
+    linear-gradient(145deg, #fffef9 0%, color-mix(in srgb, var(--background) 96%, #f1ebdc 4%) 56%, color-mix(in srgb, var(--background) 91%, #cfc8b5 9%) 100%) !important;
 }
 
-/* Strong curved specular highlight makes the centre visibly domed. */
+/* Curved highlight kept subtle so the centre looks rounded, not metallic. */
 [style*="--period-medium"] > div > div:nth-child(2) > div > button > div > div:first-child > div:last-child::before {
   content: "";
   position: absolute;
   z-index: 1;
   pointer-events: none;
-  left: 12%;
-  right: 12%;
+  left: 16%;
+  right: 16%;
   top: 5%;
-  height: 38%;
-  border-radius: 999px 999px 55% 55%;
-  background: linear-gradient(180deg, rgba(255,255,255,0.94), rgba(255,255,255,0.34) 58%, rgba(255,255,255,0));
-  opacity: 0.88;
+  height: 31%;
+  border-radius: 999px 999px 58% 58%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.82), rgba(255,255,255,0.18) 64%, rgba(255,255,255,0));
+  opacity: 0.74;
 }
 
-/* Period-filled purple centre gets a glossy gel finish, not a flat colour. */
+/* Period-filled centre: glossy gel highlight, without adding another ring. */
 [style*="--period-medium"] > div > div:nth-child(2) > div > button > div > div:first-child > div:last-child:not([style*="transparent"])::after {
   content: "";
   position: absolute;
   z-index: 2;
   pointer-events: none;
-  inset: 1px 2px auto 2px;
-  height: 46%;
-  border-radius: 999px 999px 58% 58%;
-  background: linear-gradient(180deg, rgba(255,255,255,0.62), rgba(255,255,255,0.18) 58%, rgba(255,255,255,0));
+  inset: 1px 3px auto 3px;
+  height: 38%;
+  border-radius: 999px 999px 60% 60%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.48), rgba(255,255,255,0.10) 64%, rgba(255,255,255,0));
   mix-blend-mode: screen;
 }
 
-/* Outer ring highlight from the top-left and contact shade at the bottom. */
+/* One subtle outer bevel only — no concentric white outline. */
 [style*="--period-medium"] > div > div:nth-child(2) > div > button > div > div:first-child::before {
   content: "";
   position: absolute;
   z-index: 5;
   pointer-events: none;
-  inset: -4px;
+  inset: -1px;
   border-radius: 999px;
-  border-top: 1.5px solid rgba(255,255,255,0.92);
-  border-left: 1px solid rgba(255,255,255,0.48);
-  border-bottom: 1.5px solid rgba(48,56,31,0.18);
-  opacity: 0.84;
+  border-top: 1px solid rgba(255,255,255,0.58);
+  border-left: 1px solid rgba(255,255,255,0.22);
+  border-bottom: 1px solid rgba(48,56,31,0.12);
+  opacity: 0.68;
 }
 
-/* Selected cell stays soft but the actual button remains dimensional. */
 [style*="--period-medium"] > div > div:nth-child(2) > div > button:active > div > div:first-child > div:last-child {
-  transform: translateY(1.5px) scale(0.965);
+  transform: translateY(1px) scale(0.975);
   box-shadow:
-    inset 0 3px 5px rgba(45,55,30,0.18),
-    inset 0 -1px 1px rgba(255,255,255,0.58),
-    0 1px 2px rgba(49,61,31,0.12);
+    inset 0 2px 3px rgba(45,55,30,0.14),
+    inset 0 -1px 1px rgba(255,255,255,0.48),
+    0 1px 2px rgba(49,61,31,0.10);
 }
 
-/* BIXBO heart gets a grounded toy-like shadow. */
+/* Heart: small toy-like depth. */
 [style*="--period-medium"] > div > div:nth-child(2) > div > button > div > div:last-child svg {
   filter:
-    drop-shadow(0 1px 0 rgba(255,255,255,0.70))
-    drop-shadow(0 3px 2px rgba(99,48,59,0.28));
+    drop-shadow(0 1px 0 rgba(255,255,255,0.58))
+    drop-shadow(0 2px 1.5px rgba(99,48,59,0.23));
 }
 
-/* Calendar event bars / PN: rounded tubular 3D rather than flat strips. */
+/* Event bars / PN: rounded tubular style from the approved reference. */
 [style*="--period-medium"] > div > div:nth-child(2) > div > div.col-span-7 > div[style*="grid-column"] {
-  border-top: 1px solid rgba(255,255,255,0.64);
-  border-bottom: 1px solid rgba(44,52,27,0.18);
+  border-top: 1px solid rgba(255,255,255,0.55);
+  border-bottom: 1px solid rgba(44,52,27,0.15);
   box-shadow:
-    inset 0 2px 1px rgba(255,255,255,0.38),
-    inset 0 -2px 2px rgba(37,48,22,0.23),
-    0 2px 2px rgba(48,59,31,0.18),
-    0 5px 7px rgba(48,59,31,0.14);
-  text-shadow: 0 1px 1px rgba(32,39,22,0.30);
+    inset 0 1.5px 1px rgba(255,255,255,0.30),
+    inset 0 -1.5px 2px rgba(37,48,22,0.17),
+    0 2px 2px rgba(48,59,31,0.14),
+    0 4px 5px rgba(48,59,31,0.09);
+  text-shadow: 0 1px 1px rgba(32,39,22,0.24);
 }
 
-/* Small event pills get the same raised finish. */
 [style*="--period-medium"] > div > div:nth-child(2) > div > div.col-span-7 > div[style*="grid-column"]:not(:empty) {
-  filter: saturate(1.08) contrast(1.04);
+  filter: saturate(1.05) contrast(1.02);
 }
 
-/* Dark mode: retain pronounced depth without pale halos. */
+/* Dark mode: same dimensional hierarchy, no pale halo. */
 .dark [style*="--period-medium"] > div > div:nth-child(2) > div > button > div > div:first-child {
   filter:
-    drop-shadow(0 1px 0 rgba(255,255,255,0.10))
-    drop-shadow(0 4px 3px rgba(0,0,0,0.50))
-    drop-shadow(0 8px 8px rgba(0,0,0,0.28));
+    drop-shadow(0 1px 0 rgba(255,255,255,0.08))
+    drop-shadow(0 3px 3px rgba(0,0,0,0.42))
+    drop-shadow(0 6px 6px rgba(0,0,0,0.22));
 }
 
 .dark [style*="--period-medium"] > div > div:nth-child(2) > div > button > div > div:first-child > div:last-child {
-  border-color: rgba(255,255,255,0.10);
+  border-color: rgba(255,255,255,0.08);
   box-shadow:
-    inset 0 2px 1px rgba(255,255,255,0.19),
-    inset 0 -3px 4px rgba(0,0,0,0.42),
-    0 3px 4px rgba(0,0,0,0.44),
-    0 7px 10px rgba(0,0,0,0.24);
+    inset 0 1.5px 1px rgba(255,255,255,0.15),
+    inset 0 -2px 3px rgba(0,0,0,0.34),
+    0 2px 3px rgba(0,0,0,0.36),
+    0 5px 7px rgba(0,0,0,0.20);
 }
 
 .dark [style*="--period-medium"] > div > div:nth-child(2) > div > button > div > div:first-child > div:last-child[style*="transparent"] {
   background:
-    radial-gradient(circle at 31% 22%, rgba(255,255,255,0.16) 0 14%, rgba(255,255,255,0) 38%),
-    linear-gradient(145deg, color-mix(in srgb, var(--background) 90%, #fff 10%), color-mix(in srgb, var(--background) 76%, #000 24%)) !important;
+    radial-gradient(circle at 34% 23%, rgba(255,255,255,0.12) 0 12%, rgba(255,255,255,0) 38%),
+    linear-gradient(145deg, color-mix(in srgb, var(--background) 94%, #fff 6%), color-mix(in srgb, var(--background) 82%, #000 18%)) !important;
 }
 
 .dark [style*="--period-medium"] > div > div:nth-child(2) > div > button > div > div:first-child::before {
-  border-top-color: rgba(255,255,255,0.22);
-  border-left-color: rgba(255,255,255,0.10);
-  border-bottom-color: rgba(0,0,0,0.52);
+  border-top-color: rgba(255,255,255,0.16);
+  border-left-color: rgba(255,255,255,0.06);
+  border-bottom-color: rgba(0,0,0,0.38);
 }
