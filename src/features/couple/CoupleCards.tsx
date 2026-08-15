@@ -5,12 +5,11 @@ import { useI18n } from "@/hooks/useI18n";
 import { PAIN_DESCRIPTIONS, painColor, type ExtraMed, type Med, type PainEntry, type PanicAttack, type TetanyEpisode } from "@/lib/storage";
 import { clampPercent, formatValue, TONES, type ComparisonTone } from "./coupleUtils";
 
-export function SectionCard({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
+export function SectionCard({ title, description: _description, children }: { title: string; description?: string; children: ReactNode }) {
   const { t } = useI18n();
   return (
     <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
       <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t(title)}</h2>
-      {description ? <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t(description)}</p> : null}
       {children}
     </section>
   );
@@ -44,7 +43,7 @@ function ComparisonRow({ label, value, percentage, color, decimals, unit, stripe
   );
 }
 
-export function ComparisonBarCard({ title, subtitle, mine, theirs, max, mineLabel, partnerLabel, tone, decimals = 0, unit = "", icon }: { title: string; subtitle: string; mine: number | null; theirs: number | null; max?: number; mineLabel: string; partnerLabel: string; tone: ComparisonTone; decimals?: number; unit?: string; icon: ReactNode }) {
+export function ComparisonBarCard({ title, subtitle: _subtitle, mine, theirs, max, mineLabel, partnerLabel, tone, decimals = 0, unit = "", icon }: { title: string; subtitle: string; mine: number | null; theirs: number | null; max?: number; mineLabel: string; partnerLabel: string; tone: ComparisonTone; decimals?: number; unit?: string; icon: ReactNode }) {
   const { t } = useI18n();
   const palette = TONES[tone];
   const calculatedMax = max ?? Math.max(1, ...[mine, theirs].filter((value): value is number => value != null).map((value) => Math.abs(value)));
@@ -54,7 +53,7 @@ export function ComparisonBarCard({ title, subtitle, mine, theirs, max, mineLabe
     <article className="rounded-2xl bg-tint p-4 ring-1 ring-border/50">
       <div className="flex items-start gap-3">
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl" style={{ color: palette.text, backgroundColor: "var(--surface)" }}>{icon}</span>
-        <div className="min-w-0 flex-1"><h3 className="text-sm font-semibold text-foreground">{t(title)}</h3><p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">{t(subtitle)}</p></div>
+        <div className="min-w-0 flex-1"><h3 className="text-sm font-semibold text-foreground">{t(title)}</h3></div>
       </div>
       <div className="mt-3 space-y-2.5">
         <ComparisonRow label={mineLabel} value={mine} percentage={minePercent} color={palette.solid} decimals={decimals} unit={unit} />
@@ -73,7 +72,7 @@ export function SimilarityCard({ score, partnerName }: { score: number | null; p
         <div className="grid h-24 w-24 shrink-0 place-items-center rounded-full p-2" style={{ background: `conic-gradient(${CHART_COLORS.panic} ${safeScore}%, ${CHART_TINTS.panic} ${safeScore}% 100%)` }}>
           <div className="grid h-full w-full place-items-center rounded-full bg-surface"><div className="text-center"><p className="text-2xl font-bold tabular-nums">{score == null ? "—" : `${safeScore.toFixed(0)}%`}</p><p className="text-[10px] uppercase tracking-wider text-muted-foreground">{t("similarity")}</p></div></div>
         </div>
-        <div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t("Health similarity")}</p><h2 className="mt-1 font-serif text-xl font-semibold">{t("You")} + {t(partnerName)}</h2><p className="mt-1 text-xs leading-relaxed text-muted-foreground">{score == null ? t("No partner comparison data in this month.") : t("Based only on shared pain, panic and tetany data during the selected month.")}</p></div>
+        <div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t("Health similarity")}</p><h2 className="mt-1 font-serif text-xl font-semibold">{t("You")} + {t(partnerName)}</h2>{score == null ? <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t("No partner comparison data in this month.")}</p> : null}</div>
       </div>
     </section>
   );
