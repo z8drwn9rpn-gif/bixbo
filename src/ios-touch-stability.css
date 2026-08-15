@@ -104,10 +104,20 @@ html[data-theme="dark"] body {
   --bixbo-keyboard-inset: 0px;
 }
 
-/* Keep the focused field comfortably inside the scroll area. */
+/* Keep the focused field comfortably inside the log's own scroll area. */
 [data-bixbo-log-surface] {
-  scroll-padding-block-end: 96px;
+  scroll-padding-block-end: 128px;
   scroll-padding-block-start: 16px;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* A full-screen log freezes the document in JS at its current scroll position.
+   These rules are the CSS half of that lock: no rubber-band/scroll chaining can
+   leak into Home/Day Overview while an input is focused. */
+html[data-bixbo-log-form-open],
+html[data-bixbo-log-form-open] body {
+  overscroll-behavior: none;
 }
 
 /* While the keyboard is up, the background page must not show through or push
@@ -116,8 +126,14 @@ html[data-bixbo-keyboard-open] body {
   overflow: hidden;
 }
 
+/* BottomNav is outside the Radix sheet portal. Remove it from painting for the
+   whole lifetime of an active log form, not only after the keyboard finishes
+   opening. This prevents iOS from relocating a fixed nav into the visual
+   viewport and leaving it stuck in the middle of Day Overview. */
+html[data-bixbo-log-form-open] nav[aria-label="Primary navigation"],
 html[data-bixbo-keyboard-open] nav[aria-label="Primary navigation"] {
-  visibility: hidden;
+  display: none !important;
+  pointer-events: none !important;
 }
 
 /* Never let iOS auto-zoom a focused rich textarea. */
