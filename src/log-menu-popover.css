@@ -161,6 +161,23 @@ button[data-log-category] > span:first-child img {
   -webkit-filter: none !important;
 }
 
+/* Workout gets its own dedicated BIXBO sneaker in the compact Log chooser.
+   This intentionally replaces any legacy/fallback icon resolved for Workout. */
+button[data-log-category="workout"] > span:first-child > * {
+  display: none !important;
+}
+
+button[data-log-category="workout"] > span:first-child::before {
+  content: "";
+  display: block;
+  width: 36px;
+  height: 36px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cellipse cx='32' cy='56' rx='18' ry='3' fill='%23263318' opacity='.13'/%3E%3Cpath d='M12 38c6-2 11-7 14-15l9 4c4 7 9 11 17 13 3 1 5 4 4 8-1 4-4 6-9 6H18c-8 0-12-4-12-9 0-3 2-6 6-7Z' fill='%2389A4D6' stroke='%235E76A8' stroke-width='2.2' stroke-linejoin='round'/%3E%3Cpath d='M8 45c8 3 17 4 28 4h17c2 0 4 1 4 3 0 3-3 5-7 5H18c-7 0-11-4-10-12Z' fill='%23F4F1E7' stroke='%23879272' stroke-width='2'/%3E%3Cpath d='M23 27l12 5M20 32l13 5M17 37l13 4' stroke='%23EEF2D7' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M41 39c4 2 8 3 12 3' stroke='%23687842' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E") !important;
+}
+
 /* Do not line-clamp these labels. Note & plan / Body & Recovery need two full
    lines and must never be cut by the button or panel. */
 button[data-log-category] > span:last-child {
