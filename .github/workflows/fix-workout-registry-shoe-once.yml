@@ -1,0 +1,33 @@
+name: Fix Workout registry shoe once
+on:
+  push:
+    branches: [main]
+jobs:
+  fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Set Workout registry icon to shoe
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('src/lib/appRegistry.ts')
+          s = p.read_text()
+          old = '{ id: "workout", label: "Workout", icon: "🧘🏼‍♀️", color: "#5A9D78", order: 90'
+          new = '{ id: "workout", label: "Workout", icon: "👟", color: "#5A9D78", order: 90'
+          if old not in s:
+              raise SystemExit('Workout registry icon pattern not found')
+          p.write_text(s.replace(old, new, 1))
+      - name: Remove one-shot workflow and commit
+        run: |
+          rm .github/workflows/fix-workout-registry-shoe-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/lib/appRegistry.ts .github/workflows/fix-workout-registry-shoe-once.yml
+          git commit -m "Use shoe icon for Workout registry"
+          git push
