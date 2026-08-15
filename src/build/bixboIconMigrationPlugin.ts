@@ -1,20 +1,25 @@
 import type { Plugin } from "vite";
 
 const BIXBO_ICON_IMPORT = 'import { BixboIcon } from "@/components/icons/BixboIcon";';
+const BIXBO_SAFE_TEXT_IMPORT = 'import { BixboSafeText } from "@/components/icons/BixboSafeText";';
+
+function ensureImport(code: string, modulePath: string, statement: string) {
+  if (code.includes(modulePath)) return code;
+  return `${statement}\n${code}`;
+}
 
 function ensureBixboIconImport(code: string) {
-  if (code.includes("@/components/icons/BixboIcon")) return code;
-  return `${BIXBO_ICON_IMPORT}\n${code}`;
+  return ensureImport(code, "@/components/icons/BixboIcon", BIXBO_ICON_IMPORT);
+}
+
+function ensureBixboSafeTextImport(code: string) {
+  return ensureImport(code, "@/components/icons/BixboSafeText", BIXBO_SAFE_TEXT_IMPORT);
 }
 
 /**
- * Compatibility transform while stored emoji values remain part of the data model.
- *
- * Important architecture rule:
- * - emoji strings may remain in storage/i18n as stable identifiers;
- * - every JSX icon slot must render through BixboIcon;
- * - BixboIcon resolves exact BIXBO drawings before broad category fallbacks;
- * - native Apple/Android emoji glyphs must never be the visual fallback.
+ * Runtime compatibility transform while emoji strings remain stable data IDs.
+ * Every visual emoji surface is routed through the central BIXBO resolver,
+ * including legacy Ico, IcoText and SemanticIco helpers.
  */
 export function bixboIconMigrationPlugin(): Plugin {
   return {
@@ -35,28 +40,45 @@ export function bixboIconMigrationPlugin(): Plugin {
 
       let next = code;
 
-      // Centralize all legacy <Ico e=...> render slots without changing the
-      // persisted emoji/data identifiers that existing records depend on.
+      // Legacy icon slots: preserve the stored emoji value, change only rendering.
       if (next.includes("<Ico e=")) {
         next = ensureBixboIconImport(next).replaceAll("<Ico e=", "<BixboIcon emoji=");
       }
 
+      // Any text that may contain stored/pasted emoji must use the same resolver.
+      if (next.includes("<IcoText")) {
+        next = ensureBixboSafeTextImport(next)
+          .replaceAll("<IcoText", "<BixboSafeText")
+          .replaceAll("</IcoText>", "</BixboSafeText>");
+      }
+      if (next.includes("<SemanticIcoText")) {
+        next = ensureBixboSafeTextImport(next)
+          .replaceAll("<SemanticIcoText", "<BixboSafeText")
+          .replaceAll("</SemanticIcoText>", "</BixboSafeText>");
+      }
+
+      // Semantic icon slots also route through BixboIcon so fallbackEmoji can
+      // never hit the older star/category resolver.
+      if (next.includes("<SemanticIco")) {
+        next = ensureBixboIconImport(next)
+          .replace(/<SemanticIco\b/g, "<BixboIcon")
+          .replace(/<\/SemanticIco>/g, "</BixboIcon>")
+          .replace(/fallbackEmoji=/g, "emoji=");
+      }
+
+      // Notes also carried a historical direct import of the old icon family.
       if (isNotesRoute) {
         const legacyImport = "@/components/icons/BixboIcons";
         if (next.includes(legacyImport)) {
           next = next.replaceAll(legacyImport, "@/components/icons/BixboExtraIcons");
         }
-
-        if (next.includes("<IcoText")) {
-          next = `import { BixboSafeText } from "@/components/icons/BixboSafeText";\n${next}`
-            .replaceAll("<IcoText", "<BixboSafeText")
-            .replaceAll("</IcoText>", "</BixboSafeText>");
-        }
       }
 
       if (isDayOverview && next.includes("{n.text}")) {
-        next = `import { BixboSafeText } from "@/components/icons/BixboSafeText";\n${next}`
-          .replaceAll("{n.text}", "<BixboSafeText text={n.text} size={14} />");
+        next = ensureBixboSafeTextImport(next).replaceAll(
+          "{n.text}",
+          "<BixboSafeText text={n.text} size={14} />",
+        );
       }
 
       if (isPainWizard && next.includes(">💡</span>")) {
