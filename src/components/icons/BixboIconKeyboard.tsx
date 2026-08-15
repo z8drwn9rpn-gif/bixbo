@@ -82,9 +82,12 @@ export function BixboIconKeyboard() {
     <div data-bixbo-icon-keyboard className="pointer-events-none fixed inset-0 z-[2147483000]">
       <button
         type="button"
-        onPointerDown={(event) => event.preventDefault()}
-        onClick={() => setOpen((value) => !value)}
-        className="pointer-events-auto fixed bottom-[calc(5.4rem+env(safe-area-inset-bottom))] right-4 grid h-11 w-11 place-items-center rounded-full border border-border/70 bg-background shadow-lg active:scale-95 lg:bottom-5 lg:right-5"
+        onPointerDown={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          setOpen((value) => !value);
+        }}
+        className="pointer-events-auto fixed bottom-[calc(5.4rem+env(safe-area-inset-bottom))] right-4 grid h-11 w-11 touch-manipulation place-items-center rounded-full border border-border/70 bg-background shadow-lg active:scale-95 lg:bottom-5 lg:right-5"
         aria-label="BIXBO icons"
         title="BIXBO icons"
       >
@@ -104,7 +107,7 @@ export function BixboIconKeyboard() {
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">BIXBO ICONS</p>
                 <p className="text-sm font-bold text-foreground">Choose an icon</p>
               </div>
-              <button type="button" onClick={() => setOpen(false)} className="grid h-9 w-9 place-items-center rounded-full bg-tint text-lg font-bold">×</button>
+              <button type="button" onPointerDown={(event) => { event.preventDefault(); setOpen(false); }} className="grid h-9 w-9 touch-manipulation place-items-center rounded-full bg-tint text-lg font-bold">×</button>
             </div>
 
             <div className="flex gap-1 overflow-x-auto px-3 py-2">
@@ -112,8 +115,11 @@ export function BixboIconKeyboard() {
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => setGroup(item.id)}
-                  className={`shrink-0 rounded-full px-3 py-1.5 text-[11px] font-bold ${group === item.id ? "bg-primary text-primary-foreground" : "bg-tint text-foreground"}`}
+                  onPointerDown={(event) => {
+                    event.preventDefault();
+                    setGroup(item.id);
+                  }}
+                  className={`shrink-0 touch-manipulation rounded-full px-3 py-1.5 text-[11px] font-bold ${group === item.id ? "bg-primary text-primary-foreground" : "bg-tint text-foreground"}`}
                 >
                   {item.label}
                 </button>
@@ -125,12 +131,13 @@ export function BixboIconKeyboard() {
                 <button
                   key={emoji}
                   type="button"
-                  onPointerDown={(event) => event.preventDefault()}
-                  onClick={() => {
+                  onPointerDown={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
                     insertInto(target, emoji);
                     setOpen(false);
                   }}
-                  className="grid aspect-square place-items-center rounded-2xl bg-tint/55 ring-1 ring-border/45 transition active:scale-95"
+                  className="grid aspect-square touch-manipulation place-items-center rounded-2xl bg-tint/55 ring-1 ring-border/45 transition active:scale-95"
                   aria-label={`Insert ${emoji}`}
                 >
                   <BixboIcon emoji={emoji} size={28} />
