@@ -57,11 +57,48 @@ div.pointer-events-none.absolute.inset-0.overflow-hidden
   > svg,
 div.pointer-events-none.absolute.inset-0.overflow-hidden
   > div:has(> button[data-log-category])
-  > span[aria-hidden="true"],
+  > span[aria-hidden="true"] {
+  display: none !important;
+}
+
+/*
+  The original chooser already contains a real React close button. Keep it
+  inside the dialog, but move its hit area exactly over the visible BottomNav
+  Log button. This avoids Radix modal outside-pointer blocking on iOS: the tap
+  is handled by LogSheet itself and closes its controlled state directly.
+*/
 div.pointer-events-none.absolute.inset-0.overflow-hidden
   > div:has(> button[data-log-category])
-  > button[aria-label="Close Log"] {
-  display: none !important;
+  > button:not([data-log-category]) {
+  display: block !important;
+  pointer-events: auto !important;
+  position: fixed !important;
+  left: 50% !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: max(0px, env(safe-area-inset-bottom)) !important;
+  width: 92px !important;
+  height: 96px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  transform: translateX(-50%) !important;
+  translate: none !important;
+  --tw-translate-x: 0px !important;
+  --tw-translate-y: 0px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: 0 !important;
+  opacity: 0.001 !important;
+  z-index: 9999 !important;
+  touch-action: manipulation !important;
+}
+
+div.pointer-events-none.absolute.inset-0.overflow-hidden
+  > div:has(> button[data-log-category])
+  > button:not([data-log-category]) * {
+  visibility: hidden !important;
 }
 
 button[data-log-category] {
@@ -84,10 +121,13 @@ button[data-log-category] {
   gap: 5px !important;
   padding: 4px 1px 2px !important;
   border-radius: 16px !important;
-  color: #171717 !important;
+  color: #11130e !important;
   touch-action: manipulation !important;
-  -webkit-font-smoothing: antialiased !important;
-  text-rendering: auto !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  text-shadow: none !important;
+  -webkit-font-smoothing: auto !important;
+  text-rendering: optimizeLegibility !important;
 }
 
 button[data-log-category]:active {
@@ -112,6 +152,8 @@ button[data-log-category] > span:first-child {
   background: transparent !important;
   box-shadow: none !important;
   outline: 0 !important;
+  filter: none !important;
+  -webkit-filter: none !important;
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
 }
@@ -123,6 +165,7 @@ button[data-log-category] > span:first-child img {
   max-width: 30px !important;
   max-height: 30px !important;
   filter: none !important;
+  -webkit-filter: none !important;
 }
 
 button[data-log-category] > span:last-child {
@@ -143,18 +186,18 @@ button[data-log-category] > span:last-child {
   -webkit-line-clamp: 2 !important;
   white-space: normal !important;
   text-align: center !important;
-  font-family: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", system-ui, -apple-system, sans-serif !important;
-  font-size: 10.5px !important;
+  font-family: ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
+  font-size: 11.5px !important;
   font-weight: 700 !important;
-  line-height: 1.08 !important;
-  letter-spacing: -0.01em !important;
-  color: #171717 !important;
+  line-height: 1.12 !important;
+  letter-spacing: 0 !important;
+  color: #11130e !important;
   text-shadow: none !important;
   filter: none !important;
   -webkit-filter: none !important;
   opacity: 1 !important;
-  -webkit-font-smoothing: antialiased !important;
-  text-rendering: auto !important;
+  -webkit-font-smoothing: auto !important;
+  text-rendering: optimizeLegibility !important;
 }
 
 button[aria-label="Reorder log categories"],
@@ -195,12 +238,17 @@ div[aria-hidden="true"].pointer-events-none.absolute.inset-0:has(+ div button[da
   backdrop-filter: none !important;
 }
 
-/* Tapping the page itself must not dismiss the chooser. The persistent Log button is the toggle. */
-body:has(button[data-log-category]) button[aria-label="Close log menu"] {
-  pointer-events: none !important;
+/* Radix modal sets pointer-events:none on body outside the sheet on iOS. */
+body:has(button[data-log-category]) {
+  pointer-events: auto !important;
 }
 
-/* Bring the actual bottom navigation above the chooser so Log can close it. */
+body:has(button[data-log-category]) nav[aria-label="Primary navigation"],
+body:has(button[data-log-category]) nav[aria-label="Primary navigation"] * {
+  pointer-events: auto !important;
+}
+
+/* Bring the actual bottom navigation above the chooser visually. */
 body:has(button[data-log-category]) nav[aria-label="Primary navigation"] {
   z-index: 70 !important;
 }
@@ -222,7 +270,7 @@ body:has(button[data-log-category]) nav[aria-label="Primary navigation"] {
   }
 
   button[data-log-category] > span:last-child {
-    font-size: 9.5px !important;
+    font-size: 10.5px !important;
   }
 }
 
