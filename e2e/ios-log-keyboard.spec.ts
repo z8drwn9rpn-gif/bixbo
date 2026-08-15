@@ -23,6 +23,13 @@ test("mobile Pain note keeps the background locked and BottomNav stable", async 
   }
   await expect(note).toBeVisible();
 
+  // Reproduce the real iPhone path: Details is long, so the user scrolls down to
+  // Note before tapping it. Focusing Note must never move the Pain surface back
+  // toward the top, even while iOS opens the keyboard / moves VisualViewport.
+  await note.scrollIntoViewIfNeeded();
+  const painScrollBeforeFocus = await painSurface.evaluate((element) => element.scrollTop);
+  expect(painScrollBeforeFocus).toBeGreaterThan(0);
+
   // Capture the already-locked background geometry. The important regression is
   // that focusing/typing in Note must not move this background at all.
   const lockedBeforeFocus = await page.evaluate(() => ({
@@ -37,6 +44,9 @@ test("mobile Pain note keeps the background locked and BottomNav stable", async 
   await note.fill("Line one\nLine two");
   await expect(note).toHaveValue("Line one\nLine two");
 
+  const painScrollAfterFocus = await painSurface.evaluate((element) => element.scrollTop);
+  expect(painScrollAfterFocus).toBeGreaterThanOrEqual(painScrollBeforeFocus);
+
   // Put the caret back into the first line and type there. The old regression
   // jumped/re-rendered the page and often forced the caret back to the end.
   await note.evaluate((element) => {
@@ -46,6 +56,9 @@ test("mobile Pain note keeps the background locked and BottomNav stable", async 
   });
   await page.keyboard.type("X");
   await expect(note).toHaveValue("LineX one\nLine two");
+
+  const painScrollAfterCaretEdit = await painSurface.evaluate((element) => element.scrollTop);
+  expect(painScrollAfterCaretEdit).toBeGreaterThanOrEqual(painScrollBeforeFocus);
 
   const afterFocus = await page.evaluate(() => ({
     bodyTop: document.body.style.top,
