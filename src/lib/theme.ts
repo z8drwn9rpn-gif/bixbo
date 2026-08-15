@@ -12,7 +12,7 @@ function syncBrowserChrome(isDark: boolean) {
   // BIXBO paints both light and dark themes itself. Keeping the document on
   // `only light` opts Chromium-based browsers (including Samsung Internet)
   // out of algorithmic Auto Dark recolouring, which would otherwise darken
-  // the already-dark BIXBO palette a second time.
+  // or override BIXBO's explicitly selected palette.
   root.style.colorScheme = "only light";
 
   const colorSchemeMeta = document.querySelector<HTMLMetaElement>('meta[name="color-scheme"]');
@@ -22,14 +22,22 @@ function syncBrowserChrome(isDark: boolean) {
   themeColorMeta?.setAttribute("content", isDark ? DARK_THEME_COLOR : LIGHT_THEME_COLOR);
 }
 
-function applyTheme(theme: ThemeChoice) {
+/**
+ * Applies an explicit BIXBO theme choice immediately.
+ * Light and dark always override the OS preference; only `system` follows it.
+ */
+export function applyThemeChoice(theme: ThemeChoice) {
   if (typeof document === "undefined") return;
 
   const root = document.documentElement;
-  const isDark =
-    theme === "dark" ||
-    (theme === "system" && typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const systemIsDark =
+    typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const isDark = theme === "dark" || (theme === "system" && systemIsDark);
 
+  // Keep the selected mode on the root so a stale system media-query callback
+  // cannot switch an explicitly selected Light/Dark mode back to System.
+  root.dataset.themeChoice = theme;
+  root.dataset.theme = isDark ? "dark" : "light";
   root.classList.toggle("dark", isDark);
   syncBrowserChrome(isDark);
 }
@@ -44,14 +52,20 @@ export function useThemeSync() {
 
   useEffect(() => {
     if (!hydrated) return;
-    applyTheme(theme);
+    applyThemeChoice(theme);
   }, [theme, hydrated]);
 
   useEffect(() => {
     if (typeof window === "undefined" || theme !== "system") return;
 
     const media = window.matchMedia("(prefers-color-scheme: dark)");
-    const handleChange = () => applyTheme("system");
+    const handleChange = () => {
+      // React may not have removed this listener yet on the exact frame where
+      // the user switches from System to Light/Dark. The root marker makes the
+      // explicit user choice authoritative even during that race window.
+      if (document.documentElement.dataset.themeChoice !== "system") return;
+      applyThemeChoice("system");
+    };
 
     if (typeof media.addEventListener === "function") {
       media.addEventListener("change", handleChange);
