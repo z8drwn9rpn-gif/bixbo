@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test("Notes keeps multiline native editing and autosaves the body", async ({ page }, testInfo) => {
   const now = Date.now();
   await page.addInitScript(({ now }) => {
-    localStorage.clear();
+    if (localStorage.getItem("bixbo:v2")) return;
     localStorage.setItem(
       "bixbo:v2",
       JSON.stringify({

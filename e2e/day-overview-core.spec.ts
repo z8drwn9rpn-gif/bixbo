@@ -37,7 +37,7 @@ test("Day overview keeps bowel Type 0 and episode treatment cards distinct", asy
                 trigger: "",
                 physical: [],
                 cognitive: [],
-                hyperventilation: "No",
+                hyperventilation: "no",
                 tetanyPresent: false,
                 helped: [],
                 rescueMed: "",
@@ -71,7 +71,7 @@ test("Day overview keeps bowel Type 0 and episode treatment cards distinct", asy
   await expect(page.getByText("No bowel movement", { exact: true })).toHaveCount(0);
 
   await expect(page.getByText("Heat / Cold / TENS", { exact: true }).first()).toBeVisible();
-  await expect(page.getByText("TENS", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText(/Type:\s*TENS/).first()).toBeVisible();
   await expect(page.getByText("Panic episode", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("Tetany episode", { exact: true }).first()).toBeVisible();
 });
