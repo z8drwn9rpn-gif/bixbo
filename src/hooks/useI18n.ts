@@ -67,28 +67,6 @@ const HIDDEN_HELPER_COPY = new Set([
   "Local and server-originated tests are separate.",
   "When BIXBO is open, local reminder checks can also appear as a soft in-app message.",
 
-  // Insights / Patterns subtitles that merely restate the chart title.
-  "Average pain and menstrual flow by cycle phase",
-  "See how your symptoms usually change before, during and after your period.",
-  "Average daily pain intensity in each cycle phase.",
-  "Monthly frequency and intensity comparison",
-  "Hot flashes, headaches and pressure",
-  "Sleep, weight, medication and workouts",
-  "PCOS and histamine changes",
-  "Pain, tetany, panic, hot flashes and headache before versus after",
-  "Counts and treatment marker details",
-  "Ranked associations calculated only from your logged data",
-  "Open a saved trigger and outcome pair",
-  "Compare how often an outcome occurred on days with and without a possible trigger.",
-  "Automatically ranked associations calculated only from your own logs.",
-  "Body changes",
-  "Mood, energy, hot flashes, pressure and bowel symptoms",
-  "Lifestyle & routines",
-  "Hormones",
-  "Detailed treatment summary",
-  "Smart correlations",
-  "Trigger comparison",
-
   // Couple subtitles / legends that duplicate the visual encoding.
   "Only the explicitly shared categories for the selected month.",
   "Based only on shared pain, panic and tetany data during the selected month.",
