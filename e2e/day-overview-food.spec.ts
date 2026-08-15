@@ -27,6 +27,7 @@ test("Food day overview keeps post-meal feeling and histamine flare visible", as
 
   await page.goto("/");
   await expect(page.getByText("Lunch", { exact: true })).toBeVisible();
+  await expect(page.getByText(/How I feel after food/).first()).toBeVisible();
   await expect(page.getByText("Good", { exact: true })).toBeVisible();
   const flare = page.getByText(/Histamine flare/).first();
   await expect(flare).toBeVisible();
