@@ -66,9 +66,9 @@ export function EpisodePainEditSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="fixed !inset-0 !left-0 !right-0 !top-0 !bottom-0 flex !h-[100svh] !max-h-[100svh] !w-full !max-w-none min-h-0 flex-col overflow-hidden !rounded-none !border-0 bg-background p-0 pt-[env(safe-area-inset-top)] !shadow-none !transition-none !animate-none [&>button.absolute]:hidden"
+        className="fixed !inset-0 !left-0 !right-0 !top-0 !bottom-0 flex !h-[100svh] !max-h-[100svh] !w-full !max-w-none min-h-0 flex-col !gap-0 overflow-hidden !rounded-none !border-0 bg-background p-0 pt-[env(safe-area-inset-top)] !shadow-none !transition-none !animate-none [&>button.absolute]:hidden"
       >
-        <SheetHeader className="min-h-14 shrink-0 flex-row items-end justify-between gap-0 border-b border-border px-3 pb-1 pt-0 sm:px-5">
+        <SheetHeader className="mb-0 min-h-14 shrink-0 flex-row items-end justify-between gap-0 border-b border-border px-3 pb-1 pt-0 sm:px-5">
           <button
             type="button"
             onClick={close}
