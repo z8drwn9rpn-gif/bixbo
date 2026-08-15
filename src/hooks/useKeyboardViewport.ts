@@ -83,6 +83,7 @@ export function lockDocumentForLog(): () => void {
   const body = document.body;
   const scrollX = window.scrollX;
   const scrollY = window.scrollY;
+  const lockToken = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
   const previous: LockedDocumentStyles = {
     rootOverflow: root.style.overflow,
     bodyPosition: body.style.position,
@@ -93,7 +94,7 @@ export function lockDocumentForLog(): () => void {
     bodyOverflow: body.style.overflow,
   };
 
-  root.setAttribute(LOG_FORM_OPEN_ATTR, "true");
+  root.setAttribute(LOG_FORM_OPEN_ATTR, lockToken);
   root.style.overflow = "hidden";
   body.style.position = "fixed";
   body.style.top = `-${scrollY}px`;
@@ -114,13 +115,21 @@ export function lockDocumentForLog(): () => void {
     body.style.right = previous.bodyRight;
     body.style.width = previous.bodyWidth;
     body.style.overflow = previous.bodyOverflow;
-    root.removeAttribute(LOG_FORM_OPEN_ATTR);
 
     const restoreScroll = () => window.scrollTo(scrollX, scrollY);
+    const finishRestore = () => {
+      restoreScroll();
+      // A new log may already have opened during the two restoration frames.
+      // Only the lock that owns this token may re-enable BottomNav.
+      if (root.getAttribute(LOG_FORM_OPEN_ATTR) === lockToken) {
+        root.removeAttribute(LOG_FORM_OPEN_ATTR);
+      }
+    };
+
     // Restore immediately, then once more after Radix/React has released its own
-    // scroll lock. The double rAF avoids the iOS one-frame jump to page top.
+    // scroll lock. Keep BottomNav hidden until the restoration is fully settled.
     restoreScroll();
-    window.requestAnimationFrame(() => window.requestAnimationFrame(restoreScroll));
+    window.requestAnimationFrame(() => window.requestAnimationFrame(finishRestore));
   };
 }
 
@@ -171,9 +180,13 @@ function isTextField(node: EventTarget | null): node is HTMLElement {
 /**
  * Mirrors the visual viewport into CSS variables while `enabled` is true.
  * Falls back to document locking only when the browser does not expose
- * VisualViewport. We intentionally do NOT listen to visualViewport `scroll`:
- * on iOS those events are the browser panning the visual viewport during focus,
- * and chasing them is what makes the sheet jump/bounce.
+ * VisualViewport.
+ *
+ * VisualViewport `scroll` is geometry-only: Safari may pan the visual viewport
+ * while focusing a low textarea, and the fixed sheet must follow that offset.
+ * Crucially, those scroll events NEVER trigger inner scrolling. The focused
+ * field is revealed once, after keyboard resize/focus has settled, which avoids
+ * the old feedback loop where Safari and BIXBO repeatedly scrolled each other.
  */
 export function useKeyboardViewport(enabled: boolean) {
   useEffect(() => {
@@ -188,8 +201,9 @@ export function useKeyboardViewport(enabled: boolean) {
       };
     }
 
-    let frame = 0;
+    let geometryFrame = 0;
     let revealTimer = 0;
+    let focusTimer = 0;
 
     const clearRevealTimer = () => {
       if (!revealTimer) return;
@@ -197,12 +211,27 @@ export function useKeyboardViewport(enabled: boolean) {
       revealTimer = 0;
     };
 
-    const revealFocusedFieldAfterKeyboardSettles = () => {
+    const clearFocusTimer = () => {
+      if (!focusTimer) return;
+      window.clearTimeout(focusTimer);
+      focusTimer = 0;
+    };
+
+    const syncViewportGeometry = () => {
+      if (geometryFrame) cancelAnimationFrame(geometryFrame);
+      geometryFrame = requestAnimationFrame(() => {
+        geometryFrame = 0;
+        applyKeyboardViewportVars(readKeyboardViewportMetrics());
+      });
+    };
+
+    const scheduleFocusedReveal = () => {
       clearRevealTimer();
       revealTimer = window.setTimeout(() => {
         revealTimer = 0;
         const latest = readKeyboardViewportMetrics();
         const active = document.activeElement;
+        applyKeyboardViewportVars(latest);
         if (!latest || latest.keyboardInset <= 80 || !isTextField(active)) return;
         keepFocusedFieldVisible(
           active,
@@ -212,40 +241,48 @@ export function useKeyboardViewport(enabled: boolean) {
       }, 96);
     };
 
-    const sync = () => {
-      if (frame) cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => {
-        frame = 0;
-        const metrics = readKeyboardViewportMetrics();
-        applyKeyboardViewportVars(metrics);
-        const active = document.activeElement;
-        if (metrics && metrics.keyboardInset > 80 && isTextField(active)) {
-          // Resize can fire repeatedly while the keyboard animates. Wait until
-          // those frames settle, then perform one minimal inner-scroll correction.
-          revealFocusedFieldAfterKeyboardSettles();
-        } else {
-          clearRevealTimer();
-        }
-      });
+    const syncResizeAndMaybeReveal = () => {
+      syncViewportGeometry();
+      const metrics = readKeyboardViewportMetrics();
+      const active = document.activeElement;
+      if (metrics && metrics.keyboardInset > 80 && isTextField(active)) scheduleFocusedReveal();
+      else clearRevealTimer();
     };
 
-    const syncAfterFocusChange = () => {
-      window.setTimeout(sync, 0);
+    const syncAfterFocusIn = () => {
+      syncViewportGeometry();
+      clearFocusTimer();
+      focusTimer = window.setTimeout(() => {
+        focusTimer = 0;
+        syncResizeAndMaybeReveal();
+      }, 0);
     };
 
-    sync();
-    viewport.addEventListener("resize", sync);
-    window.addEventListener("orientationchange", sync);
-    document.addEventListener("focusin", sync);
-    document.addEventListener("focusout", syncAfterFocusChange);
+    const syncAfterFocusOut = () => {
+      clearRevealTimer();
+      clearFocusTimer();
+      focusTimer = window.setTimeout(() => {
+        focusTimer = 0;
+        syncViewportGeometry();
+      }, 0);
+    };
+
+    syncResizeAndMaybeReveal();
+    viewport.addEventListener("resize", syncResizeAndMaybeReveal);
+    viewport.addEventListener("scroll", syncViewportGeometry);
+    window.addEventListener("orientationchange", syncResizeAndMaybeReveal);
+    document.addEventListener("focusin", syncAfterFocusIn);
+    document.addEventListener("focusout", syncAfterFocusOut);
 
     return () => {
-      if (frame) cancelAnimationFrame(frame);
+      if (geometryFrame) cancelAnimationFrame(geometryFrame);
       clearRevealTimer();
-      viewport.removeEventListener("resize", sync);
-      window.removeEventListener("orientationchange", sync);
-      document.removeEventListener("focusin", sync);
-      document.removeEventListener("focusout", syncAfterFocusChange);
+      clearFocusTimer();
+      viewport.removeEventListener("resize", syncResizeAndMaybeReveal);
+      viewport.removeEventListener("scroll", syncViewportGeometry);
+      window.removeEventListener("orientationchange", syncResizeAndMaybeReveal);
+      document.removeEventListener("focusin", syncAfterFocusIn);
+      document.removeEventListener("focusout", syncAfterFocusOut);
       applyKeyboardViewportVars(null);
       unlockDocument();
     };
