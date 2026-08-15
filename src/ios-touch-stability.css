@@ -1,10 +1,11 @@
-/* iOS / PWA touch stability
-   Prevent accidental double-tap zoom and Safari focus zoom without disabling user pinch zoom globally. */
+/* BIXBO mobile / PWA touch stability
+   Keep the app at a fixed viewport scale on touch devices while preserving normal one-finger scrolling. */
 
 html,
 body {
   overscroll-behavior-x: none;
   -webkit-text-size-adjust: 100%;
+  touch-action: pan-x pan-y;
 }
 
 /* iOS Safari auto-zooms focused controls below 16px. Keep editable controls at 16px on touch devices. */
@@ -16,7 +17,18 @@ body {
   }
 }
 
-/* Remove double-tap zoom from normal app controls while preserving scrolling and deliberate pinch zoom. */
+/* Explicitly exclude pinch zoom and double-tap zoom from the app surface.
+   pan-x pan-y keeps normal one-finger scrolling/swiping available. */
+@media (pointer: coarse) {
+  html,
+  body,
+  #root,
+  #app,
+  [data-bixbo-app-root] {
+    touch-action: pan-x pan-y !important;
+  }
+}
+
 button,
 a,
 [role="button"],
@@ -42,7 +54,7 @@ select {
   overscroll-behavior: contain;
 }
 
-/* Scrollable controls may pan, but should not trigger horizontal viewport gestures. */
+/* Scrollable controls stay inside the viewport. */
 textarea,
 input,
 select {
