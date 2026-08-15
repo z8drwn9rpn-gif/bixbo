@@ -26,7 +26,7 @@ export const CATEGORIES: { id: Category; label: string; emoji: string; hint: str
   { id: "food", label: "Food", emoji: "🍽️", hint: "What & how you feel" },
   { id: "bowel", label: "Bowel", emoji: "💩", hint: "Bristol type" },
   { id: "sex", label: "ŠukŠuk!", emoji: "❤️", hint: "All kinds of activity" },
-  { id: "workout", label: "Workout", emoji: "🧘🏼‍♀️", hint: "Type · duration · weight" },
+  { id: "workout", label: "Workout", emoji: "👟", hint: "Type · duration · weight" },
   { id: "temp", label: "Body & Recovery", emoji: "🌿", hint: "Temperature · sleep · weight · Heat · Cold · TENS" },
   { id: "meds", label: "Meds", emoji: "💊", hint: "Taken · extra dose" },
   { id: "event", label: "Note & plan", emoji: "📝", hint: "Event · To do · Note" },
