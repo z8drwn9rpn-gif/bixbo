@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { useI18n } from "@/hooks/useI18n";
-import { Ico } from "@/components/icons/BixboIcons";
+import { BixboIcon } from "@/components/icons/BixboIcon";
+import { BixboSafeText } from "@/components/icons/BixboSafeText";
 import { type Note, type NoteChecklistItem, type NoteFolder } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -93,9 +94,12 @@ export function NoteEditor({
   const [checklist, setChecklist] = useState<NoteChecklistItem[]>(note.checklist ?? []);
   const [showChecklist, setShowChecklist] = useState(Boolean(note.checklist?.length));
   const [newItem, setNewItem] = useState("");
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [editingBody, setEditingBody] = useState(false);
+  const [bodyText, setBodyText] = useState(() => htmlToPlainText(note.content || ""));
 
   const editorRef = useRef<HTMLTextAreaElement | null>(null);
-  const contentRef = useRef(htmlToPlainText(note.content || ""));
+  const contentRef = useRef(bodyText);
   const bodySaveTimerRef = useRef<number | null>(null);
   const firstMetadataRender = useRef(true);
 
@@ -108,6 +112,7 @@ export function NoteEditor({
 
   const persist = (body = editorRef.current?.value ?? contentRef.current) => {
     contentRef.current = body;
+    setBodyText(body);
     update((current) => ({
       ...current,
       notebook: current.notebook.map((item) =>
@@ -128,12 +133,16 @@ export function NoteEditor({
   };
 
   useEffect(() => {
+    if (!editingBody) return;
     const frame = window.requestAnimationFrame(() => {
       const editor = editorRef.current;
-      if (editor) fitEditorToContent(editor, true);
+      if (editor) {
+        fitEditorToContent(editor, true);
+        editor.focus();
+      }
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [note.id]);
+  }, [editingBody, note.id]);
 
   useEffect(() => {
     if (firstMetadataRender.current) {
@@ -152,13 +161,15 @@ export function NoteEditor({
   }, []);
 
   const scheduleBodySave = (editor: HTMLTextAreaElement) => {
-    contentRef.current = editor.value;
+    const nextBody = editor.value;
+    contentRef.current = nextBody;
+    setBodyText(nextBody);
     fitEditorToContent(editor);
 
     if (bodySaveTimerRef.current !== null) window.clearTimeout(bodySaveTimerRef.current);
     bodySaveTimerRef.current = window.setTimeout(() => {
       bodySaveTimerRef.current = null;
-      persist(editor.value);
+      persist(nextBody);
     }, 650);
   };
 
@@ -182,7 +193,10 @@ export function NoteEditor({
 
   const applyMarker = (marker: "**" | "==") => {
     const editor = editorRef.current;
-    if (!editor) return;
+    if (!editor) {
+      setEditingBody(true);
+      return;
+    }
 
     const start = editor.selectionStart ?? 0;
     const end = editor.selectionEnd ?? start;
@@ -191,6 +205,7 @@ export function NoteEditor({
 
     editor.value = next;
     contentRef.current = next;
+    setBodyText(next);
     fitEditorToContent(editor, true);
     scheduleBodySave(editor);
 
@@ -199,6 +214,14 @@ export function NoteEditor({
       const caret = end + marker.length * 2;
       editor.setSelectionRange(caret, caret);
     });
+  };
+
+  const finishBodyEditing = (editor: HTMLTextAreaElement) => {
+    const nextBody = editor.value;
+    contentRef.current = nextBody;
+    setBodyText(nextBody);
+    persist(nextBody);
+    setEditingBody(false);
   };
 
   return (
@@ -231,12 +254,24 @@ export function NoteEditor({
       }
     >
       <div className="space-y-4 px-5 pt-3 pb-[calc(128px+env(safe-area-inset-bottom))]">
-        <Input
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-          placeholder={t("Title")}
-          className="border-0 bg-transparent px-0 font-serif text-3xl shadow-none focus-visible:ring-0"
-        />
+        {editingTitle ? (
+          <Input
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            onBlur={() => setEditingTitle(false)}
+            autoFocus
+            placeholder={t("Title")}
+            className="border-0 bg-transparent px-0 font-serif text-3xl shadow-none focus-visible:ring-0"
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setEditingTitle(true)}
+            className="block min-h-11 w-full text-left font-serif text-3xl leading-tight text-foreground"
+          >
+            <BixboSafeText text={title || t("Untitled")} size={27} />
+          </button>
+        )}
 
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <div className="flex flex-wrap gap-1.5">
@@ -251,8 +286,12 @@ export function NoteEditor({
                     : "bg-tint text-foreground ring-border/70 hover:bg-primary/10"
                 }`}
               >
-                {folder.icon ? <Ico e={folder.icon} size={14} /> : <Ico name="note" size={14} />}
-                <span>{folder.name}</span>
+                {folder.icon ? (
+                  <BixboIcon emoji={folder.icon} size={14} />
+                ) : (
+                  <BixboIcon name="note" size={14} />
+                )}
+                <BixboSafeText text={folder.name} size={14} />
               </button>
             ))}
           </div>
@@ -314,26 +353,37 @@ export function NoteEditor({
           </div>
         </div>
 
-        <div className="rounded-3xl p-4 ring-1 ring-border/70" style={{ background: NOTE_COLORS[color] }}>
-          <textarea
-            ref={editorRef}
-            defaultValue={contentRef.current}
-            onInput={(event) => scheduleBodySave(event.currentTarget)}
-            onBlur={(event) => {
-              contentRef.current = event.currentTarget.value;
-              persist(event.currentTarget.value);
-            }}
-            rows={10}
-            inputMode="text"
-            spellCheck
-            autoCapitalize="sentences"
-            autoCorrect="on"
-            enterKeyHint="enter"
-            data-bixbo-note-editor
-            placeholder={t("Start writing…")}
-            className="block w-full resize-none overflow-hidden bg-transparent text-base leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
-            style={{ minHeight: "40dvh", WebkitUserSelect: "text", userSelect: "text", WebkitTouchCallout: "default" }}
-          />
+        <div className="rounded-3xl p-4 ring-1 ring-border/70" style={{ background: NOTE_COLORS[color] ?? NOTE_COLORS.default }}>
+          {editingBody ? (
+            <textarea
+              ref={editorRef}
+              defaultValue={bodyText}
+              onInput={(event) => scheduleBodySave(event.currentTarget)}
+              onBlur={(event) => finishBodyEditing(event.currentTarget)}
+              rows={10}
+              inputMode="text"
+              spellCheck
+              autoCapitalize="sentences"
+              autoCorrect="on"
+              enterKeyHint="enter"
+              data-bixbo-note-editor
+              placeholder={t("Start writing…")}
+              className="block w-full resize-none overflow-hidden bg-transparent text-base leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
+              style={{ minHeight: "40dvh", WebkitUserSelect: "text", userSelect: "text", WebkitTouchCallout: "default" }}
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setEditingBody(true)}
+              className="block min-h-[40dvh] w-full whitespace-pre-wrap break-words text-left text-base leading-relaxed text-foreground"
+            >
+              {bodyText ? (
+                <BixboSafeText text={bodyText} size={18} />
+              ) : (
+                <span className="text-muted-foreground">{t("Start writing…")}</span>
+              )}
+            </button>
+          )}
         </div>
 
         {showChecklist && (
@@ -357,7 +407,7 @@ export function NoteEditor({
                     {item.done && <Check className="h-3.5 w-3.5" />}
                   </button>
                   <span className={`min-w-0 flex-1 text-sm ${item.done ? "text-muted-foreground line-through" : ""}`}>
-                    {item.text}
+                    <BixboSafeText text={item.text} size={16} />
                   </span>
                   <button
                     type="button"
