@@ -19,7 +19,7 @@ function ensureBixboSafeTextImport(code: string) {
 /**
  * Runtime compatibility transform while emoji strings remain stable data IDs.
  * Every visual emoji surface is routed through the central BIXBO resolver,
- * including legacy Ico, IcoText and SemanticIco helpers.
+ * including legacy Ico, IcoText, SemanticIco and user-entered overview text.
  */
 export function bixboIconMigrationPlugin(): Plugin {
   return {
@@ -40,12 +40,10 @@ export function bixboIconMigrationPlugin(): Plugin {
 
       let next = code;
 
-      // Legacy icon slots: preserve the stored emoji value, change only rendering.
       if (next.includes("<Ico e=")) {
         next = ensureBixboIconImport(next).replaceAll("<Ico e=", "<BixboIcon emoji=");
       }
 
-      // Any text that may contain stored/pasted emoji must use the same resolver.
       if (next.includes("<IcoText")) {
         next = ensureBixboSafeTextImport(next)
           .replaceAll("<IcoText", "<BixboSafeText")
@@ -57,8 +55,6 @@ export function bixboIconMigrationPlugin(): Plugin {
           .replaceAll("</SemanticIcoText>", "</BixboSafeText>");
       }
 
-      // Semantic icon slots also route through BixboIcon so fallbackEmoji can
-      // never hit the older star/category resolver.
       if (next.includes("<SemanticIco")) {
         next = ensureBixboIconImport(next)
           .replace(/<SemanticIco\b/g, "<BixboIcon")
@@ -66,7 +62,6 @@ export function bixboIconMigrationPlugin(): Plugin {
           .replace(/fallbackEmoji=/g, "emoji=");
       }
 
-      // Notes also carried a historical direct import of the old icon family.
       if (isNotesRoute) {
         const legacyImport = "@/components/icons/BixboIcons";
         if (next.includes(legacyImport)) {
@@ -74,11 +69,27 @@ export function bixboIconMigrationPlugin(): Plugin {
         }
       }
 
-      if (isDayOverview && next.includes("{n.text}")) {
-        next = ensureBixboSafeTextImport(next).replaceAll(
-          "{n.text}",
-          "<BixboSafeText text={n.text} size={14} />",
-        );
+      if (isDayOverview) {
+        next = ensureBixboSafeTextImport(next)
+          .replaceAll("{n.text}", "<BixboSafeText text={n.text} size={14} />")
+          .replaceAll("{t.title}", "<BixboSafeText text={t.title} size={14} />")
+          .replaceAll(
+            '{t.note ? ` — ${t.note}` : ""}',
+            '{t.note ? <> — <BixboSafeText text={t.note} size={14} /></> : null}',
+          )
+          .replaceAll("{e.title}", "<BixboSafeText text={e.title} size={14} />")
+          .replaceAll(
+            '<span className="font-semibold text-foreground">{t("Note")}:</span> {e.note}',
+            '<span className="font-semibold text-foreground">{t("Note")}:</span>{" "}<BixboSafeText text={e.note} size={13} />',
+          )
+          .replaceAll(
+            '<span className="font-semibold">{field.label}:</span> {text}',
+            '<span className="font-semibold"><BixboSafeText text={field.label} size={12} />:</span>{" "}<BixboSafeText text={text} size={12} />',
+          )
+          .replaceAll(
+            '{entry.note ? <p className="mt-1 whitespace-pre-line text-xs text-muted-foreground">{entry.note}</p> : null}',
+            '{entry.note ? <p className="mt-1 whitespace-pre-line text-xs text-muted-foreground"><BixboSafeText text={entry.note} size={12} /></p> : null}',
+          );
       }
 
       if (isPainWizard && next.includes(">💡</span>")) {
