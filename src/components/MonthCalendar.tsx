@@ -49,7 +49,7 @@ const visibleEvents=useMemo(()=>data.events.filter(event=>event.startDate<=selec
 const monthStart=toKey(new Date(y,m,1)),monthEnd=toKey(new Date(y,m+1,0));
 const monthEvents=useMemo(()=>data.events.filter(event=>event.startDate<=monthEnd&&event.endDate>=monthStart).slice().sort((a,b)=>a.startDate.localeCompare(b.startDate)||(a.time??"").localeCompare(b.time??"")||a.title.localeCompare(b.title)),[data.events,monthStart,monthEnd]);
 const touchStart=useRef<{x:number;y:number}|null>(null);const onTouchStart=(e:React.TouchEvent)=>{touchStart.current={x:e.touches[0].clientX,y:e.touches[0].clientY};};const onTouchEnd=(e:React.TouchEvent)=>{if(!touchStart.current||!onSwipeMonth)return;const dx=e.changedTouches[0].clientX-touchStart.current.x,dy=e.changedTouches[0].clientY-touchStart.current.y;if(Math.abs(dx)>80&&Math.abs(dx)>Math.abs(dy)*1.8)onSwipeMonth(dx>0?-1:1);touchStart.current=null;};
-const previewEvents=visibleEvents.slice(0,2),hiddenEventCount=Math.max(0,visibleEvents.length-previewEvents.length),currentDay=todayKey();
+const previewEvents=visibleEvents.slice(0,2),hiddenEventCount=Math.max(0,visibleEvents.length-previewEvents.length);
 
 return <div className="px-1 landscape:px-2 lg:px-2" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
 <div>
