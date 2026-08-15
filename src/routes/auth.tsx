@@ -26,7 +26,13 @@ export function safeInternalNext(value: unknown): string {
 
 function safeOAuthSearchText(value: unknown): string {
   if (typeof value !== "string") return "";
-  const clean = value.replace(/[\u0000-\u001f\u007f]/g, " ").trim();
+  const clean = [...value]
+    .map((char) => {
+      const code = char.charCodeAt(0);
+      return code <= 31 || code === 127 ? " " : char;
+    })
+    .join("")
+    .trim();
   return clean.slice(0, 500);
 }
 
