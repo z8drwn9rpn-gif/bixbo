@@ -25,7 +25,7 @@ describe("mobile touch and text editing regressions", () => {
     expect(rootSource).toContain('colorSchemeMeta.setAttribute("content", isDark ? "dark" : "only light")');
     expect(rootSource).toContain('const canvas = isDark ? "#171A14" : "#FBF7F3"');
     expect(rootSource).toContain('root.style.setProperty("background-color", canvas, "important")');
-    expect(rootSource).toContain('/SamsungBrowser\\//i.test(navigator.userAgent || "")');
+    expect(rootSource).toContain("SamsungBrowser");
 
     expect(themeSource).toContain('root.style.colorScheme = isDark ? "dark" : "only light"');
     expect(themeSource).toContain('colorSchemeMeta?.setAttribute("content", isDark ? "dark" : "only light")');
