@@ -53,4 +53,20 @@ describe("BIXBO icon resolution", () => {
     expect(source).toContain('.replace(/fallbackEmoji=/g, "emoji=")');
     expect(source).toContain("isIconImplementation");
   });
+
+  it("routes user-entered overview text through BixboSafeText", () => {
+    const source = read("src/build/bixboIconMigrationPlugin.ts");
+    for (const marker of [
+      'text={t.title}',
+      'text={t.note}',
+      'text={e.title}',
+      'text={e.note}',
+      'text={field.label}',
+      'text={text}',
+      'text={entry.note}',
+      'text={n.text}',
+    ]) {
+      expect(source).toContain(marker);
+    }
+  });
 });
