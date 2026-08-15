@@ -20,17 +20,35 @@ jobs:
           ref: fix/auth-session-pattern-semantics
           fetch-depth: 0
       - uses: oven-sh/setup-bun@v2
-      - name: Repair temporary script syntax
+      - name: Repair temporary script
         run: |
           python - <<'PY'
           from pathlib import Path
           p = Path("scripts/apply-auth-pattern-fix.mjs")
           s = p.read_text()
-          needle = """.toBe(`${'${PRODUCTION_APP_ORIGIN}'}/auth`);"""
-          replacement = '.toBe(PRODUCTION_APP_ORIGIN + "/auth");'
-          if needle not in s:
-              raise SystemExit("temporary script syntax marker not found")
-          p.write_text(s.replace(needle, replacement))
+          fixes = [
+              (
+                  """.toBe(`${'${PRODUCTION_APP_ORIGIN}'}/auth`);""",
+                  '.toBe(PRODUCTION_APP_ORIGIN + "/auth");',
+              ),
+              (
+                  """'className=\"mt-1 text-sm font-semibold text-emerald-700 dark:text-emerald-300\">{formatChange(mostImproved)}</p>',
+  'className={`mt-1 text-sm ${changeToneTextClass(mostImproved && mostImproved.score > 0 ? \"good\" : \"neutral\")}`}>{formatChange(mostImproved)}</p>',""",
+                  """'className=\"mt-1 text-sm font-semibold text-emerald-700 dark:text-emerald-300\"',
+  'className={`mt-1 text-sm ${changeToneTextClass(mostImproved && mostImproved.score > 0 ? \"good\" : \"neutral\")}`}',""",
+              ),
+              (
+                  """'className=\"mt-1 text-sm font-semibold text-rose-600 dark:text-rose-300\">{formatChange(mostWorsened)}</p>',
+  'className={`mt-1 text-sm ${changeToneTextClass(mostWorsened && mostWorsened.score < 0 ? \"bad\" : \"neutral\")}`}>{formatChange(mostWorsened)}</p>',""",
+                  """'className=\"mt-1 text-sm font-semibold text-rose-600 dark:text-rose-300\"',
+  'className={`mt-1 text-sm ${changeToneTextClass(mostWorsened && mostWorsened.score < 0 ? \"bad\" : \"neutral\")}`}',""",
+              ),
+          ]
+          for needle, replacement in fixes:
+              if needle not in s:
+                  raise SystemExit(f"temporary script marker not found: {needle[:80]}")
+              s = s.replace(needle, replacement)
+          p.write_text(s)
           PY
       - name: Apply patch
         run: |
