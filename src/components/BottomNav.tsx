@@ -15,9 +15,15 @@ export function BottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname }); const navigate = useNavigate(); const { t } = useI18n(); const items = resolvedNavigation("mobile");
   const openLog = () => {
     if (pathname === "/") {
-      const openChooserCloseButton = document.querySelector<HTMLButtonElement>('button[aria-label="Close log menu"]');
-      if (openChooserCloseButton) {
-        openChooserCloseButton.click();
+      const chooserItem = document.querySelector<HTMLElement>('button[data-log-category]');
+      if (chooserItem) {
+        const dialog = chooserItem.closest<HTMLElement>('[role="dialog"]');
+        const closeButton = dialog?.querySelector<HTMLButtonElement>('button.absolute.inset-0.z-0.cursor-default.bg-transparent');
+        if (closeButton) {
+          closeButton.click();
+          return;
+        }
+        document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", code: "Escape", bubbles: true }));
         return;
       }
       window.dispatchEvent(new CustomEvent("bixbo:open-log"));
