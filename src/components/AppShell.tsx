@@ -1,8 +1,6 @@
 import { type ReactNode } from "react";
-import { useRouterState } from "@tanstack/react-router";
 import { BottomNav } from "./BottomNav";
 import { SideNav } from "./SideNav";
-import { BixboIconKeyboard } from "./icons/BixboIconKeyboard";
 import { PainEpisodeChoiceDefaults } from "./PainEpisodeChoiceDefaults";
 import bixboMascot from "@/assets/bixbo-mascot-user.png";
 import "@/ui-polish.css";
@@ -19,9 +17,6 @@ const BIXBO_ROUNDED_DISPLAY_FONT = 'ui-rounded, "SF Pro Rounded", "Arial Rounded
 const BIXBO_ROUNDED_DISPLAY_SHADOW = "0 1px 0 rgba(255,255,255,.92), 0 2px 1px rgba(57,72,34,.22), 0 4px 5px rgba(49,61,31,.16)";
 
 export function AppShell({ children, title, right, big = false }: { children: ReactNode; title?: ReactNode; right?: ReactNode; big?: boolean; }) {
-  const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const showBixboIconKeyboard = !pathname.startsWith("/notes");
-
   return (
     <div className="min-h-dvh overflow-x-hidden bg-background text-foreground" style={{ overscrollBehaviorX: "none" }}>
       <PainEpisodeChoiceDefaults />
@@ -43,7 +38,6 @@ export function AppShell({ children, title, right, big = false }: { children: Re
           <main id="main-content" tabIndex={-1} className="bixbo-page-fade min-w-0 overflow-x-hidden outline-none">{children}</main>
         </div>
       </div>
-      {showBixboIconKeyboard ? <BixboIconKeyboard /> : null}
       <BottomNav />
     </div>
   );
