@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { BixboIcon } from "./BixboIcon";
 
 const GROUPS = [
@@ -29,9 +30,10 @@ function insertInto(target: EditableTarget, value: string) {
   if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
     const start = target.selectionStart ?? target.value.length;
     const end = target.selectionEnd ?? start;
+    target.focus();
     target.setRangeText(value, start, end, "end");
     target.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText", data: value }));
-    target.focus();
+    target.dispatchEvent(new Event("change", { bubbles: true }));
     return;
   }
 
@@ -44,25 +46,45 @@ export function BixboIconKeyboard() {
   const [target, setTarget] = useState<EditableTarget | null>(null);
   const [open, setOpen] = useState(false);
   const [group, setGroup] = useState<(typeof GROUPS)[number]["id"]>("faces");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+
     const onFocus = (event: FocusEvent) => {
-      if (isEditable(event.target)) setTarget(event.target);
+      if (isEditable(event.target)) {
+        setTarget(event.target);
+        return;
+      }
+      const node = event.target instanceof HTMLElement ? event.target : null;
+      if (!node?.closest("[data-bixbo-icon-keyboard]")) setTarget(null);
     };
+
+    const onPointerDown = (event: PointerEvent) => {
+      const node = event.target instanceof HTMLElement ? event.target : null;
+      if (node?.closest("[data-bixbo-icon-keyboard]")) return;
+      if (!isEditable(event.target) && !open) setTarget(null);
+    };
+
     document.addEventListener("focusin", onFocus);
-    return () => document.removeEventListener("focusin", onFocus);
-  }, []);
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => {
+      document.removeEventListener("focusin", onFocus);
+      document.removeEventListener("pointerdown", onPointerDown, true);
+    };
+  }, [open]);
 
   const active = useMemo(() => GROUPS.find((item) => item.id === group) ?? GROUPS[0], [group]);
-  if (!target) return null;
 
-  return (
-    <>
+  if (!mounted || !target || typeof document === "undefined") return null;
+
+  const picker = (
+    <div data-bixbo-icon-keyboard className="pointer-events-none fixed inset-0 z-[2147483000]">
       <button
         type="button"
         onPointerDown={(event) => event.preventDefault()}
         onClick={() => setOpen((value) => !value)}
-        className="fixed bottom-[calc(5.4rem+env(safe-area-inset-bottom))] right-4 z-[2147483000] grid h-11 w-11 place-items-center rounded-full border border-border/70 bg-background shadow-lg lg:bottom-5 lg:right-5"
+        className="pointer-events-auto fixed bottom-[calc(5.4rem+env(safe-area-inset-bottom))] right-4 grid h-11 w-11 place-items-center rounded-full border border-border/70 bg-background shadow-lg active:scale-95 lg:bottom-5 lg:right-5"
         aria-label="BIXBO icons"
         title="BIXBO icons"
       >
@@ -70,8 +92,13 @@ export function BixboIconKeyboard() {
       </button>
 
       {open ? (
-        <div className="fixed inset-0 z-[2147483001] flex items-end justify-center bg-black/25 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:items-center" onPointerDown={() => setOpen(false)}>
-          <section className="w-full max-w-[430px] overflow-hidden rounded-[28px] border border-border/70 bg-background shadow-2xl" onPointerDown={(event) => event.stopPropagation()}>
+        <div
+          className="pointer-events-auto fixed inset-0 flex items-end justify-center bg-black/25 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:items-center"
+          onPointerDown={(event) => {
+            if (event.target === event.currentTarget) setOpen(false);
+          }}
+        >
+          <section className="w-full max-w-[430px] overflow-hidden rounded-[28px] border border-border/70 bg-background shadow-2xl">
             <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">BIXBO ICONS</p>
@@ -82,7 +109,12 @@ export function BixboIconKeyboard() {
 
             <div className="flex gap-1 overflow-x-auto px-3 py-2">
               {GROUPS.map((item) => (
-                <button key={item.id} type="button" onClick={() => setGroup(item.id)} className={`shrink-0 rounded-full px-3 py-1.5 text-[11px] font-bold ${group === item.id ? "bg-primary text-primary-foreground" : "bg-tint text-foreground"}`}>
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setGroup(item.id)}
+                  className={`shrink-0 rounded-full px-3 py-1.5 text-[11px] font-bold ${group === item.id ? "bg-primary text-primary-foreground" : "bg-tint text-foreground"}`}
+                >
                   {item.label}
                 </button>
               ))}
@@ -94,7 +126,10 @@ export function BixboIconKeyboard() {
                   key={emoji}
                   type="button"
                   onPointerDown={(event) => event.preventDefault()}
-                  onClick={() => { insertInto(target, emoji); setOpen(false); }}
+                  onClick={() => {
+                    insertInto(target, emoji);
+                    setOpen(false);
+                  }}
                   className="grid aspect-square place-items-center rounded-2xl bg-tint/55 ring-1 ring-border/45 transition active:scale-95"
                   aria-label={`Insert ${emoji}`}
                 >
@@ -105,6 +140,8 @@ export function BixboIconKeyboard() {
           </section>
         </div>
       ) : null}
-    </>
+    </div>
   );
+
+  return createPortal(picker, document.body);
 }
