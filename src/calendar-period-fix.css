@@ -5,9 +5,58 @@
   color: #fff !important;
 }
 
-/* Do not draw a separate green selection ring around the tapped calendar date.
+/* Do not draw the old Tailwind selection ring around the tapped calendar date.
    Period/pain/prediction rings stay untouched. */
 #main-content .ring-2.ring-primary.ring-offset-1.ring-offset-background {
   --tw-ring-shadow: 0 0 #0000 !important;
   box-shadow: none !important;
+}
+
+/* ---------------------------------------------------------------------
+   TODAY vs SELECTED DAY
+
+   Today keeps the thin, soft olive ring from calendar-3d.css.
+   The selected/tapped day uses a darker, thicker ring farther outside.
+   If today itself is selected, both concentric rings remain visible, so the
+   two states can never be confused.
+   --------------------------------------------------------------------- */
+
+/* Hide the old inline selected-day ring emitted by MonthCalendar; it looked
+   almost identical to the today marker. This selector only matches that
+   -inset-[5px] selection span, not pain or prediction rings. */
+#main-content button[data-bixbo-selected="true"] > div > div:first-child > span[class*="-inset-[5px]"] {
+  display: none !important;
+}
+
+/* Selected day: strong dark-olive focus ring, clearly farther outside than
+   the thin today marker. It works for plain, pain, period and predicted days. */
+#main-content button[data-bixbo-selected="true"] > div > div:first-child::before {
+  content: "" !important;
+  display: block !important;
+  position: absolute;
+  pointer-events: none;
+  inset: -8px;
+  z-index: 7;
+  border-radius: 999px;
+  border: 2px solid #263116;
+  box-shadow:
+    0 0 0 2px rgba(255,255,255,.94),
+    0 0 0 3px rgba(38,49,22,.16),
+    0 4px 9px rgba(42,52,25,.24);
+}
+
+/* On desktop keep the same visual spacing relative to the larger circles. */
+@media (min-width: 1024px) {
+  #main-content button[data-bixbo-selected="true"] > div > div:first-child::before {
+    inset: -9px;
+  }
+}
+
+/* Dark mode: selected remains visibly different from the lighter today ring. */
+.dark #main-content button[data-bixbo-selected="true"] > div > div:first-child::before {
+  border-color: #eef1dc;
+  box-shadow:
+    0 0 0 2px rgba(30,35,20,.88),
+    0 0 0 3px rgba(238,241,220,.18),
+    0 4px 9px rgba(0,0,0,.34);
 }
