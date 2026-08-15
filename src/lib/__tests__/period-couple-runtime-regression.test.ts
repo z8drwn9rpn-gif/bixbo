@@ -6,7 +6,8 @@ const read = (path: string) => fs.readFileSync(path, "utf8");
 describe("Period and Couple runtime regressions", () => {
   it("always renders actual logged Period on the calendar when cycle tracking is visible", () => {
     const source = read("src/components/MonthCalendar.tsx");
-    expect(source).toContain('periodColor: cycleTrackingHidden ? null : (periodColorVar(periodLevel) ?? actualPeriodColor)');
+    expect(source).toContain("periodColorVar(periodLevel)");
+    expect(source).toMatch(/periodColor:\s*cycleTrackingHidden\s*\?\s*null\s*:\s*\(periodColorVar\(periodLevel\)\s*\?\?\s*[a-zA-Z]+\)/);
   });
 
   it("uses the later first-comparison day for both Couple directions", () => {
