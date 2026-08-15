@@ -701,11 +701,16 @@ export function DayPreview({
                       className="mt-px text-xs leading-relaxed text-destructive"
                       style={{ color: "var(--destructive)", fontWeight: 700 }}
                     >
-                      <span className="inline-flex items-center gap-1 align-middle">
+                      <span
+                        className="inline-flex items-center gap-1 align-middle"
+                        style={{ color: "var(--destructive)", fontWeight: 700 }}
+                      >
                         <Ico e="🔥" size={13} />
-                        <span>{t("Histamine flare")}:</span>
+                        {t("Histamine flare")}:
                       </span>{" "}
-                      <span>{f.histamineSymptoms?.length ? f.histamineSymptoms.join(", ") : t("Yes")}</span>
+                      <span style={{ color: "var(--destructive)", fontWeight: 700 }}>
+                        {f.histamineSymptoms?.length ? f.histamineSymptoms.join(", ") : t("Yes")}
+                      </span>
                     </p>
                   ) : null}
                   {f.after ? (
