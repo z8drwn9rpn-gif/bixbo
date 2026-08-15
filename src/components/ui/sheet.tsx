@@ -21,7 +21,7 @@ const SheetOverlay = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SheetPrimitive.Overlay
     className={cn(
-      "fixed inset-0 z-50 bg-black/45 backdrop-blur-sm  data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "fixed inset-0 z-50 bg-black/45 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className,
     )}
     {...props}
@@ -74,22 +74,46 @@ const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Con
     },
     ref,
   ) => {
-    // Full-screen Log sheets deliberately use stable `100svh` for their inner
-    // layout so iOS browser chrome changes do not make the form jump. However,
-    // a fixed element with top + bottom + an explicit 100svh height can leave a
-    // strip of the underlying page visible when the visual viewport grows.
-    // Let top/bottom stretch only that full-screen shell; ordinary sheets keep
-    // their existing sizing and animations.
-    const fullScreenLog = typeof className === "string" && className.includes("!inset-0") && className.includes("!h-[100svh]");
-    const resolvedClassName = fullScreenLog
-      ? className.replace("!h-[100svh]", "!h-auto").replace("!max-h-[100svh]", "!max-h-none")
-      : className;
+    /*
+     * Full-screen log sheets must never derive their box geometry from
+     * VisualViewport. iOS changes visualViewport.height/offsetTop repeatedly
+     * while the keyboard, prediction row and caret are moving. Feeding those
+     * values back into top/height makes the complete dialog jump and repaints
+     * every frame while the user types.
+     *
+     * LogSheetRoot still carries the old viewport-variable classes for backwards
+     * compatibility. Normalize them here into one stable inset shell. The visual
+     * viewport may pan over this shell, but the shell itself never moves/resizes.
+     */
+    const viewportDrivenLog =
+      typeof className === "string" && className.includes("--bixbo-viewport-height");
+    const insetFullScreenLog =
+      typeof className === "string" && className.includes("!inset-0") && className.includes("!h-[100svh]");
+    const fullScreenLog = viewportDrivenLog || insetFullScreenLog;
+
+    let resolvedClassName = className;
+    if (viewportDrivenLog && typeof resolvedClassName === "string") {
+      resolvedClassName = resolvedClassName
+        .replace("!bottom-auto", "!bottom-0")
+        .replace("!top-[var(--bixbo-viewport-offset,0px)]", "!top-0")
+        .replace("!h-[var(--bixbo-viewport-height,100svh)]", "!h-auto")
+        .replace("!max-h-[var(--bixbo-viewport-height,100svh)]", "!max-h-none");
+    } else if (insetFullScreenLog && typeof resolvedClassName === "string") {
+      resolvedClassName = resolvedClassName
+        .replace("!h-[100svh]", "!h-auto")
+        .replace("!max-h-[100svh]", "!max-h-none");
+    }
+
+    const stableFullScreenOverlay = fullScreenLog
+      ? "!bg-transparent !backdrop-blur-none !transition-none data-[state=open]:!animate-none data-[state=closed]:!animate-none"
+      : undefined;
 
     return (
       <SheetPortal>
-        <SheetOverlay className={overlayClassName} />
+        <SheetOverlay className={cn(stableFullScreenOverlay, overlayClassName)} />
         <SheetPrimitive.Content
           ref={ref}
+          data-bixbo-fullscreen-log={fullScreenLog ? "true" : undefined}
           className={cn(sheetVariants({ side }), resolvedClassName)}
           {...props}
           onPointerDownOutside={(event) => {
