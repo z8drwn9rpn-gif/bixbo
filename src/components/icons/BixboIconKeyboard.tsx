@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { BixboIcon } from "./BixboIcon";
 
@@ -16,6 +16,10 @@ const GROUPS = [
 ] as const;
 
 type EditableTarget = HTMLInputElement | HTMLTextAreaElement | HTMLElement;
+type CaretSnapshot =
+  | { kind: "text"; start: number; end: number }
+  | { kind: "range"; range: Range }
+  | null;
 
 function isEditable(target: EventTarget | null): target is EditableTarget {
   if (!(target instanceof HTMLElement)) return false;
@@ -26,15 +30,33 @@ function isEditable(target: EventTarget | null): target is EditableTarget {
   return target.isContentEditable;
 }
 
-function insertInto(target: EditableTarget, value: string) {
+function snapshotCaret(target: EditableTarget): CaretSnapshot {
   if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
     const start = target.selectionStart ?? target.value.length;
     const end = target.selectionEnd ?? start;
+    return { kind: "text", start, end };
+  }
+
+  const selection = document.getSelection();
+  if (!selection?.rangeCount) return null;
+  return { kind: "range", range: selection.getRangeAt(0).cloneRange() };
+}
+
+function insertInto(target: EditableTarget, value: string, caret: CaretSnapshot) {
+  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
+    const saved = caret?.kind === "text" ? caret : null;
+    const start = saved?.start ?? target.selectionStart ?? target.value.length;
+    const end = saved?.end ?? target.selectionEnd ?? start;
     target.setRangeText(value, start, end, "end");
     target.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText", data: value }));
     return;
   }
 
+  if (caret?.kind === "range") {
+    const selection = document.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(caret.range);
+  }
   document.execCommand("insertText", false, value);
   target.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText", data: value }));
 }
@@ -44,6 +66,7 @@ export function BixboIconKeyboard() {
   const [open, setOpen] = useState(false);
   const [group, setGroup] = useState<(typeof GROUPS)[number]["id"]>("faces");
   const [mounted, setMounted] = useState(false);
+  const caretRef = useRef<CaretSnapshot>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -54,7 +77,7 @@ export function BixboIconKeyboard() {
         return;
       }
       const node = event.target instanceof HTMLElement ? event.target : null;
-      if (!node?.closest("[data-bixbo-icon-keyboard]")) setTarget(null);
+      if (!open && !node?.closest("[data-bixbo-icon-keyboard]")) setTarget(null);
     };
 
     const onPointerDown = (event: PointerEvent) => {
@@ -77,12 +100,40 @@ export function BixboIconKeyboard() {
 
   const portalHost = target.closest<HTMLElement>("[role=\"dialog\"]") ?? document.body;
 
+  const dismissNativeKeyboard = () => {
+    const activeElement = document.activeElement;
+    if (activeElement instanceof HTMLElement && isEditable(activeElement)) activeElement.blur();
+    if (target.isConnected && target !== activeElement) target.blur();
+  };
+
+  const closePicker = () => {
+    caretRef.current = null;
+    setOpen(false);
+  };
+
   const togglePicker = () => {
-    // Closing the native iOS keyboard first makes the floating BIXBO control a
-    // reliable touch target in PWA/Safari. We retain `target` in React state, so
-    // the selected icon can still be inserted at the saved caret position.
-    target.blur();
-    setOpen((value) => !value);
+    if (open) {
+      closePicker();
+      return;
+    }
+
+    // Save the exact insertion point before iOS clears the native selection.
+    caretRef.current = snapshotCaret(target);
+    setOpen(true);
+
+    // iOS/PWA can ignore blur while the original touchstart is still being
+    // processed. Blur on the next paint and repeat once after the keyboard has
+    // begun its transition so the picker replaces the native keyboard reliably.
+    requestAnimationFrame(() => {
+      dismissNativeKeyboard();
+      window.setTimeout(dismissNativeKeyboard, 80);
+    });
+  };
+
+  const chooseIcon = (emoji: string) => {
+    insertInto(target, emoji, caretRef.current);
+    caretRef.current = null;
+    setOpen(false);
   };
 
   const picker = (
@@ -114,13 +165,13 @@ export function BixboIconKeyboard() {
           onTouchStart={(event) => {
             event.preventDefault();
             event.stopPropagation();
-            if (event.target === event.currentTarget) setOpen(false);
+            if (event.target === event.currentTarget) closePicker();
           }}
           onPointerDown={(event) => {
             if (event.pointerType === "touch") return;
             event.preventDefault();
             event.stopPropagation();
-            if (event.target === event.currentTarget) setOpen(false);
+            if (event.target === event.currentTarget) closePicker();
           }}
         >
           <section
@@ -138,13 +189,13 @@ export function BixboIconKeyboard() {
                 onTouchStart={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
-                  setOpen(false);
+                  closePicker();
                 }}
                 onPointerDown={(event) => {
                   if (event.pointerType === "touch") return;
                   event.preventDefault();
                   event.stopPropagation();
-                  setOpen(false);
+                  closePicker();
                 }}
                 className="grid h-9 w-9 touch-none select-none place-items-center rounded-full bg-tint text-lg font-bold"
               >
@@ -183,15 +234,13 @@ export function BixboIconKeyboard() {
                   onTouchStart={(event) => {
                     event.preventDefault();
                     event.stopPropagation();
-                    insertInto(target, emoji);
-                    setOpen(false);
+                    chooseIcon(emoji);
                   }}
                   onPointerDown={(event) => {
                     if (event.pointerType === "touch") return;
                     event.preventDefault();
                     event.stopPropagation();
-                    insertInto(target, emoji);
-                    setOpen(false);
+                    chooseIcon(emoji);
                   }}
                   className="grid aspect-square touch-none select-none place-items-center rounded-2xl bg-tint/55 ring-1 ring-border/45 transition active:scale-95"
                   aria-label={`Insert ${emoji}`}
