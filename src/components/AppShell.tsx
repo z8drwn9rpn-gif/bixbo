@@ -8,7 +8,6 @@ import bixboMascot from "@/assets/bixbo-mascot-user.png";
 import "@/ui-polish.css";
 import "@/ui-components-polish.css";
 import "@/typography-hierarchy.css";
-import "@/dark-theme.css";
 import "@/notes-preview.css";
 import "@/log-menu-popover.css";
 import "@/ios-touch-stability.css";
