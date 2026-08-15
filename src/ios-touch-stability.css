@@ -73,6 +73,23 @@ svg button,
 }
 
 /* ---------------------------------------------------------------------------
+   iOS/PWA overscroll backing canvas
+
+   Safari can still rubber-band the document even when overscroll-behavior is
+   present. During that bounce it paints the root/body backing layer. An older
+   BIXBO rule used the former olive dark canvas (#4B5133), which showed as a
+   large green strip above the current near-black dark UI. Keep the backing
+   layer locked to the current dark canvas so a bounce is visually seamless.
+--------------------------------------------------------------------------- */
+html.dark,
+html.dark body,
+html[data-theme="dark"],
+html[data-theme="dark"] body {
+  background: #171A14 !important;
+  background-color: #171A14 !important;
+}
+
+/* ---------------------------------------------------------------------------
    iOS keyboard viewport (see src/hooks/useKeyboardViewport.ts)
 
    iOS never resizes the layout viewport for the keyboard, its suggestion row or
