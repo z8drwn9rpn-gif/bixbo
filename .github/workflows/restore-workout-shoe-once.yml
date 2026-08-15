@@ -1,0 +1,56 @@
+name: Restore Workout shoe once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/restore-workout-shoe-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: Restore BIXBO shoe icon mapping
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path("src/components/icons/BixboExtraIcons.tsx")
+          source = path.read_text()
+
+          workout = 'function BixboWorkoutIcon(p: ExtraIconProps) { return <Base {...p}><Shadow/><path d="M12 38h40" stroke="#607aab" strokeWidth="5" strokeLinecap="round"/><rect x="18" y="25" width="8" height="25" rx="4" fill="#91a9d6"/><rect x="38" y="25" width="8" height="25" rx="4" fill="#91a9d6"/><rect x="9" y="29" width="8" height="17" rx="4" fill="#6c86b8"/><rect x="47" y="29" width="8" height="17" rx="4" fill="#6c86b8"/></Base>; }'
+          shoe = 'function BixboShoeIcon(p: ExtraIconProps) { return <Base {...p}><Shadow/><path d="M13 34c4-1 8-4 11-10l3-6 8 9c4 4 8 6 14 8l6 2c3 1 5 4 4 7-1 4-5 7-10 7H18c-7 0-11-3-11-8 0-4 2-7 6-9Z" fill="#9fb45f" stroke="#66793a" strokeWidth="2" strokeLinejoin="round"/><path d="M9 43h48c0 5-4 8-10 8H19c-6 0-10-3-10-8Z" fill="#f1edd7" stroke="#8b916f" strokeWidth="2"/><path d="M27 27l9 8M23 31l9 8" stroke="#f7f4e8" strokeWidth="3" strokeLinecap="round"/><path d="M16 37c5-1 9-3 12-6" stroke="#dce6ae" strokeWidth="3" strokeLinecap="round"/><ellipse cx="24" cy="23" rx="4" ry="2.2" transform="rotate(-28 24 23)" fill="#fff" opacity="0.35"/></Base>; }'
+
+          if 'function BixboShoeIcon' not in source:
+              if workout not in source:
+                  raise RuntimeError("Workout icon insertion point not found")
+              source = source.replace(workout, workout + "\n" + shoe, 1)
+
+          mapping = '  ["🏃"]: BixboWorkoutIcon,\n'
+          shoe_mapping = '  ["🏃"]: BixboWorkoutIcon,\n  ["👟"]: BixboShoeIcon,\n'
+          if '["👟"]: BixboShoeIcon' not in source:
+              if mapping not in source:
+                  raise RuntimeError("Workout emoji mapping insertion point not found")
+              source = source.replace(mapping, shoe_mapping, 1)
+
+          path.write_text(source)
+
+          categories = Path("src/features/logging/logCategories.ts").read_text()
+          if '{ id: "workout", label: "Workout", emoji: "👟"' not in categories:
+              raise RuntimeError("Workout category is not configured with shoe emoji")
+
+      - name: Remove one-shot workflow and commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/restore-workout-shoe-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/icons/BixboExtraIcons.tsx .github/workflows/restore-workout-shoe-once.yml
+          git commit -m "Restore shoe icon for Workout"
+          git push origin HEAD:main
