@@ -52,8 +52,25 @@ const sheetVariants = cva(
 interface SheetContentProps
   extends React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>, VariantProps<typeof sheetVariants> {}
 
+function cameFromBixboIconKeyboard(originalEvent: Event) {
+  const path = typeof originalEvent.composedPath === "function" ? originalEvent.composedPath() : [];
+  if (path.some((node) => node instanceof Element && node.closest("[data-bixbo-icon-keyboard]"))) return true;
+  return originalEvent.target instanceof Element && Boolean(originalEvent.target.closest("[data-bixbo-icon-keyboard]"));
+}
+
 const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Content>, SheetContentProps>(
-  ({ side = "right", className, children, ...props }, ref) => {
+  (
+    {
+      side = "right",
+      className,
+      children,
+      onPointerDownOutside,
+      onFocusOutside,
+      onInteractOutside,
+      ...props
+    },
+    ref,
+  ) => {
     // Full-screen Log sheets deliberately use stable `100svh` for their inner
     // layout so iOS browser chrome changes do not make the form jump. However,
     // a fixed element with top + bottom + an explicit 100svh height can leave a
@@ -68,7 +85,32 @@ const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Con
     return (
       <SheetPortal>
         <SheetOverlay />
-        <SheetPrimitive.Content ref={ref} className={cn(sheetVariants({ side }), resolvedClassName)} {...props}>
+        <SheetPrimitive.Content
+          ref={ref}
+          className={cn(sheetVariants({ side }), resolvedClassName)}
+          {...props}
+          onPointerDownOutside={(event) => {
+            if (cameFromBixboIconKeyboard(event.detail.originalEvent)) {
+              event.preventDefault();
+              return;
+            }
+            onPointerDownOutside?.(event);
+          }}
+          onFocusOutside={(event) => {
+            if (cameFromBixboIconKeyboard(event.detail.originalEvent)) {
+              event.preventDefault();
+              return;
+            }
+            onFocusOutside?.(event);
+          }}
+          onInteractOutside={(event) => {
+            if (cameFromBixboIconKeyboard(event.detail.originalEvent)) {
+              event.preventDefault();
+              return;
+            }
+            onInteractOutside?.(event);
+          }}
+        >
           <SheetPrimitive.Close className="absolute right-4 top-4 rounded-full p-2 opacity-80 ring-offset-background cursor-pointer transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
             <X size={18} />
             <span className="sr-only">Close</span>
