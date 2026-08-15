@@ -76,6 +76,27 @@ test("mobile Pain note keeps the log geometry and background stable", async ({ p
   await page.keyboard.type("X");
   await expect(note).toHaveValue("LineX one\nLine two");
 
+  // Emoji/BIXBO symbols must use exactly the same native editing path. Previously
+  // the component encoded the value during every keystroke, which moved the iOS
+  // caret and made wrapped/second-line edits jump back to the end.
+  await note.fill("Alpha ⭐ beta\nGamma");
+  await note.evaluate((element) => {
+    const textarea = element as HTMLTextAreaElement;
+    textarea.focus();
+    textarea.setSelectionRange(2, 2);
+  });
+  await page.keyboard.type("X");
+  await expect(note).toHaveValue("AlXpha ⭐ beta\nGamma");
+
+  await note.evaluate((element) => {
+    const textarea = element as HTMLTextAreaElement;
+    const secondLineStart = textarea.value.indexOf("\n") + 1;
+    textarea.focus();
+    textarea.setSelectionRange(secondLineStart + 2, secondLineStart + 2);
+  });
+  await page.keyboard.type("Y");
+  await expect(note).toHaveValue("AlXpha ⭐ beta\nGaYmma");
+
   const painScrollAfterCaretEdit = await painSurface.evaluate((element) => element.scrollTop);
   expect(painScrollAfterCaretEdit).toBeGreaterThan(0);
 

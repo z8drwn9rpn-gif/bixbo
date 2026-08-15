@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { changeToneFromDelta, outcomeChangeDirection } from "../patternChangeSemantics";
+import { changeToneFromDelta, changeToneTextClass, outcomeChangeDirection } from "../patternChangeSemantics";
 
 describe("Patterns semantic change tones", () => {
   it("marks symptom reductions green and symptom increases red", () => {
@@ -23,5 +23,11 @@ describe("Patterns semantic change tones", () => {
     expect(outcomeChangeDirection("histamineFlare")).toBe("higher-worse");
     expect(changeToneFromDelta(15, outcomeChangeDirection("panic"))).toBe("bad");
     expect(changeToneFromDelta(-15, outcomeChangeDirection("panic"))).toBe("good");
+  });
+
+  it("keeps green/red result text authoritative over surrounding foreground rules", () => {
+    expect(changeToneTextClass("good")).toContain("!text-emerald-700");
+    expect(changeToneTextClass("bad")).toContain("!text-rose-600");
+    expect(changeToneTextClass("neutral")).toContain("text-muted-foreground");
   });
 });
