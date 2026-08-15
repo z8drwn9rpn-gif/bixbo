@@ -8,6 +8,7 @@ const ICON_IMPL = /\/components\/icons\//;
 const TEST_FILE = /\/__tests__\//;
 const GENERATED = /routeTree\.gen\.ts$/;
 const SAFE_ICON_ATTRS = new Set(["icon", "emoji", "e", "fallbackEmoji"]);
+const DIRECT_UI_EMOJI_LIMIT = 1;
 
 function files(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -83,6 +84,12 @@ print("SUSPICIOUS EMOJI STRINGS — inspect whether rendered", suspicious);
 print("ALLOWED ICON/DATA IDENTIFIERS", identifiers);
 console.log(`\nSUMMARY direct=${direct.length} suspicious=${suspicious.length} identifiers=${identifiers.length}`);
 
-// Audit mode intentionally reports without failing CI. Once the migration reaches zero
-// direct UI findings this can be promoted to a hard guard.
-process.exit(0);
+// One legacy raw hint remains in PainWizard and is already routed through the
+// central BIXBO icon migration at build time. Freeze that debt: new direct raw
+// UI emoji must fail CI instead of quietly expanding the exception set.
+if (direct.length > DIRECT_UI_EMOJI_LIMIT) {
+  console.error(`Direct UI emoji regression: ${direct.length} findings > frozen limit ${DIRECT_UI_EMOJI_LIMIT}.`);
+  process.exit(1);
+}
+
+console.log(`Direct UI emoji guard passed (frozen limit ${DIRECT_UI_EMOJI_LIMIT}).`);
