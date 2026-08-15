@@ -13,7 +13,7 @@ describe("BIXBO icon resolution", () => {
   it("keeps representative exact animal, vehicle and medical mappings", () => {
     const source = read("src/components/icons/BixboSpecificEmojiIcons.tsx");
     for (const emoji of ["🐶", "🐱", "🐧", "🚑", "🚒", "🚲", "💉", "🩹", "🩺", "🧬", "🦠"]) {
-      expect(source).toContain(`\"${emoji}\"`);
+      expect(source).toContain(`"${emoji}"`);
     }
   });
 
