@@ -588,54 +588,105 @@ export function LogSheet({
         {!active ? (
           <>
             <SheetTitle className="sr-only">{t("Log")}</SheetTitle>
-            <div
-              data-bixbo-log-menu
-              className="pointer-events-auto fixed left-3 right-3 z-20 mx-auto max-w-[365px] rounded-[26px] border border-border/70 bg-background px-3 pb-5 pt-4 shadow-xl dark:bg-surface-elevated"
-              style={{ bottom: "calc(92px + env(safe-area-inset-bottom))" }}
-            >
-              <div className="grid grid-cols-5 gap-x-1 gap-y-3">
-                {orderedCats.map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    data-log-category={c.id}
-                    onPointerDown={(event) => startDirectReorder(event, c.id)}
-                    onPointerMove={moveDirectReorder}
-                    onPointerUp={endDirectReorder}
-                    onPointerCancel={endDirectReorder}
-                    onClick={(event) => {
-                      if (editingOrder) { event.preventDefault(); event.stopPropagation(); return; }
-                      setCat(c.id);
-                    }}
-                    aria-label={editingOrder ? `${t("Drag")} ${t(c.label)} ${t("to reorder")}` : `${t("Log")} ${t(c.label)}`}
-                    className={`flex min-h-[82px] min-w-0 touch-none select-none flex-col items-center justify-start gap-1.5 rounded-2xl px-0.5 py-1 text-foreground outline-none transition-[background-color,transform,opacity] focus-visible:ring-2 focus-visible:ring-ring ${editingOrder ? "cursor-grab active:cursor-grabbing" : "active:scale-[0.97]"} ${draggingCat === c.id ? "z-30 scale-[1.03] bg-tint shadow-md" : "hover:bg-tint/60"}`}
-                  >
-                    <span className="grid h-10 w-10 shrink-0 place-items-center">
-                      <Ico e={c.emoji} size={30} />
-                    </span>
-                    <span className="min-h-[30px] w-full text-center text-[11px] font-semibold leading-[1.18] text-foreground">
-                      {t(c.label)}
-                    </span>
-                  </button>
-                ))}
+            <button type="button" aria-label={t("Close log menu")} onClick={close} className="absolute inset-0 z-0 cursor-default bg-transparent" />
+            <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[5] bg-[#596330]/45 backdrop-blur-[2px]" />
+            <div data-bixbo-log-menu className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
+              <div className="absolute left-1/2 h-[430px] w-[390px] max-w-[100vw] -translate-x-1/2" style={{ bottom: "calc(max(8px, env(safe-area-inset-bottom)) + 22px)" }}>
+                {(() => {
+                  const radialCats = orderedCats;
+                  const count = Math.max(1, radialCats.length);
+                  const centerUp = 205;
+                  const radiusX = 112;
+                  const radiusY = 145;
+                  const categoryButtonSize = 54;
+                  const categoryCircleSize = 48;
+                  const slots = radialCats.map((_, index) => {
+                    const angle = -Math.PI / 2 + (index * Math.PI * 2) / count;
+                    const cos = Math.cos(angle);
+                    const sin = Math.sin(angle);
+                    const x = Math.round(radiusX * cos);
+                    const up = Math.round(centerUp - radiusY * sin);
+                    const labelSide = sin < -0.58 ? ("top" as const) : sin > 0.58 ? ("bottom" as const) : cos >= 0 ? ("right" as const) : ("left" as const);
+                    return { x, up, labelSide };
+                  });
+                  return (
+                    <>
+                      <svg aria-hidden="true" viewBox="-195 -430 390 430" className="pointer-events-none absolute bottom-0 left-1/2 h-[430px] w-[390px] max-w-[100vw] -translate-x-1/2 overflow-visible">
+                        <ellipse cx="0" cy={-centerUp} rx="88" ry="88" fill="none" stroke="rgba(241,244,220,0.20)" strokeWidth="1" strokeDasharray="3 5" />
+                        {slots.map((slot, index) => {
+                          const dx = slot.x;
+                          const dy = -(slot.up - centerUp);
+                          const len = Math.hypot(dx, dy) || 1;
+                          const ux = dx / len;
+                          const uy = dy / len;
+                          const startPad = 44;
+                          const endPad = categoryCircleSize / 2 + 5;
+                          const x1 = ux * startPad;
+                          const y1 = -centerUp + uy * startPad;
+                          const x2 = dx - ux * endPad;
+                          const y2 = -centerUp + dy - uy * endPad;
+                          const arrowT = 0.78;
+                          const ax = x1 + (x2 - x1) * arrowT;
+                          const ay = y1 + (y2 - y1) * arrowT;
+                          const back = 6;
+                          const wing = 3.5;
+                          const px = -uy;
+                          const py = ux;
+                          const a1x = ax - ux * back + px * wing;
+                          const a1y = ay - uy * back + py * wing;
+                          const a2x = ax - ux * back - px * wing;
+                          const a2y = ay - uy * back - py * wing;
+                          return (
+                            <g key={`spoke-${index}`}>
+                              <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(241,244,220,0.52)" strokeWidth="1" strokeDasharray="3 5" />
+                              <path d={`M ${a1x} ${a1y} L ${ax} ${ay} L ${a2x} ${a2y}`} fill="none" stroke="rgba(241,244,220,0.58)" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
+                            </g>
+                          );
+                        })}
+                      </svg>
+                      {radialCats.map((c, index) => {
+                        const slot = slots[index];
+                        if (!slot) return null;
+                        const side = slot.labelSide;
+                        return (
+                          <button
+                            key={c.id}
+                            type="button"
+                            data-log-category={c.id}
+                            onPointerDown={(e) => startDirectReorder(e, c.id)}
+                            onPointerMove={moveDirectReorder}
+                            onPointerUp={endDirectReorder}
+                            onPointerCancel={endDirectReorder}
+                            onClick={(e) => {
+                              if (editingOrder) { e.preventDefault(); e.stopPropagation(); return; }
+                              setCat(c.id);
+                            }}
+                            aria-label={editingOrder ? `Drag $<TrText value={c.label} /> to reorder` : `Log $<TrText value={c.label} />`}
+                            className={`pointer-events-auto absolute z-20 touch-none select-none outline-none transition-[filter,opacity] duration-150 focus-visible:ring-2 focus-visible:ring-[#edf2cf] ${editingOrder ? "cursor-grab active:cursor-grabbing" : ""} ${draggingCat === c.id ? "z-50 brightness-110 drop-shadow-[0_0_10px_rgba(238,243,207,0.8)]" : ""}`}
+                            style={{ width: `${categoryButtonSize}px`, height: `${categoryButtonSize}px`, left: "50%", bottom: 0, transform: `translate(calc(-50% + ${slot.x}px), -${slot.up - categoryButtonSize / 2}px)` }}
+                          >
+                            <span className="absolute left-1/2 top-1/2 grid -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-[#edf2cf]/65 bg-[#dce5b2]/38 shadow-[0_6px_16px_rgba(20,28,9,0.28),inset_0_1px_0_rgba(255,255,255,0.35)] ring-[3px] ring-[#e8edc5]/38 backdrop-blur-[7px]" style={{ width: `${categoryCircleSize}px`, height: `${categoryCircleSize}px` }}>
+                              <Ico e={c.emoji} size={26} />
+                            </span>
+                            <span className="absolute z-30 w-[64px] whitespace-normal text-[10px] font-semibold leading-[1.08] text-white drop-shadow-[0_1px_2px_rgba(31,37,16,0.95)]" style={{ ...(side === "left" ? { right: "calc(100% + 3px)", top: "50%", transform: "translateY(-50%)", textAlign: "right" as const } : side === "right" ? { left: "calc(100% + 3px)", top: "50%", transform: "translateY(-50%)", textAlign: "left" as const } : side === "bottom" ? { left: "50%", top: "calc(100% + 5px)", transform: "translateX(-50%)", textAlign: "center" as const } : { left: "50%", bottom: "calc(100% + 5px)", transform: "translateX(-50%)", textAlign: "center" as const }) }}>
+                              {t(c.label)}
+                            </span>
+                          </button>
+                        );
+                      })}
+                      <span aria-hidden="true" className="pointer-events-none absolute left-1/2 z-30 h-0 w-0 -translate-x-1/2 border-x-[7px] border-b-0 border-t-[9px] border-x-transparent border-t-[#eef2d1]/90" style={{ bottom: `${centerUp + 43}px` }} />
+                      <button type="button" onClick={close} aria-label={t("Close Log")} className="pointer-events-auto absolute left-1/2 z-40 grid h-[76px] w-[76px] -translate-x-1/2 place-items-center rounded-full border border-[#f1f4dc]/80 bg-[#657632] text-white shadow-[0_0_0_7px_rgba(231,238,190,0.44),0_0_24px_rgba(232,238,190,0.48),0_10px_26px_rgba(20,28,9,0.36)] ring-2 ring-[#dfe7b4]/70 transition-transform duration-150 active:scale-95" style={{ bottom: `${centerUp - 38}px` }}>
+                        <Plus className="h-9 w-9" strokeWidth={2.15} />
+                      </button>
+                    </>
+                  );
+                })()}
               </div>
-
-              <span aria-hidden="true" className="pointer-events-none absolute bottom-[-10px] left-1/2 h-5 w-5 -translate-x-1/2 rotate-45 border-b border-r border-border/70 bg-background dark:bg-surface-elevated" />
-
-              <button
-                type="button"
-                onClick={() => { endDirectReorder(); setEditingOrder((value) => !value); }}
-                aria-label={editingOrder ? t("Finish reordering log categories") : t("Reorder log categories")}
-                className="pointer-events-auto absolute -top-10 right-2 grid h-[30px] w-[30px] place-items-center rounded-full border border-border/70 bg-background text-muted-foreground shadow-sm transition active:scale-95 dark:bg-surface-elevated"
-              >
-                {editingOrder ? <Check className="h-4 w-4 text-foreground" strokeWidth={2.6} /> : <span className="grid grid-cols-2 gap-[2px]" aria-hidden="true">{Array.from({ length: 6 }).map((_, index) => <span key={index} className="h-[3px] w-[3px] rounded-full bg-muted-foreground" />)}</span>}
+              <button type="button" onClick={() => { endDirectReorder(); setEditingOrder((v) => !v); }} aria-label={editingOrder ? "Finish reordering log categories" : "Reorder log categories"} className="pointer-events-auto absolute bottom-[calc(max(12px,env(safe-area-inset-bottom))+14px)] right-4 z-40 flex h-[52px] w-[52px] items-center justify-center rounded-full border border-[#edf2cf]/65 bg-[#dce5b2]/38 shadow-[0_6px_16px_rgba(20,28,9,0.28)] ring-[3px] ring-[#e8edc5]/38 backdrop-blur-[7px] transition active:scale-95">
+                {editingOrder ? <Check className="h-6 w-6 text-white" strokeWidth={2.6} /> : <span className="grid grid-cols-2 gap-[3px]" aria-hidden="true">{Array.from({ length: 6 }).map((_, i) => <span key={i} className="h-[5px] w-[5px] rounded-full bg-white/90" />)}</span>}
+                <span className="absolute bottom-[calc(100%+5px)] left-1/2 w-[64px] -translate-x-1/2 text-center text-[10px] font-semibold text-white drop-shadow-[0_1px_2px_rgba(31,37,16,0.95)]">{editingOrder ? t("Done") : t("Reorder")}</span>
               </button>
-
-              {editingOrder ? (
-                <div className="pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-border/70 bg-background px-3 py-1 text-[10px] font-semibold text-muted-foreground shadow-sm dark:bg-surface-elevated">
-                  {t("Drag items to reorder")}
-                </div>
-              ) : null}
+              {editingOrder && <div className="pointer-events-none absolute bottom-[calc(max(12px,env(safe-area-inset-bottom))+18px)] left-1/2 z-40 -translate-x-1/2 rounded-full border border-white/20 bg-black/20 px-3 py-1 text-[10px] font-semibold text-white/90 shadow-sm backdrop-blur-md">{t("Drag circles to reorder")}</div>}
             </div>
           </>
         ) : (
