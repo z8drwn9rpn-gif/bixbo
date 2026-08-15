@@ -92,7 +92,7 @@ export const BIXBO_REGISTRY: RegistryFeatureDefinition[] = [
   { id: "heat", label: "Heat / Cold / TENS", icon: "♨️", color: "#F07B4A", order: 60, surfaces: s(true, false, false, false, false, false) },
   { id: "food", label: "Food", icon: "🍽️", color: "#D9A441", order: 70, surfaces: s(true, false, false, false, false, true) },
   { id: "bowel", label: "Bowel", icon: "💩", color: "#A66A46", order: 80, surfaces: s(true, true, false, true, false, true) },
-  { id: "workout", label: "Workout", icon: "🧘🏼‍♀️", color: "#5A9D78", order: 90, surfaces: s(true, false, false, false, true, true) },
+  { id: "workout", label: "Workout", icon: "👟", color: "#5A9D78", order: 90, surfaces: s(true, false, false, false, true, true) },
   { id: "temp", label: "Body & Recovery", icon: "🌿", color: "#8EA44A", order: 100, surfaces: s(true, false, false, false, true, false) },
   { id: "meds", label: "Meds", icon: "💊", color: "#92A83F", order: 110, surfaces: s(true, false, false, false, true, true) },
   { id: "event", label: "Event", icon: "📅", color: "#8DA05D", order: 120, surfaces: s(true, false, false, false, false, false) },
