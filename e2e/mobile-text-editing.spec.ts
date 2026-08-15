@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("auth text fields keep native mobile editing behavior", async ({ page }, testInfo) => {
+test("auth text fields keep native mobile editing behavior with page zoom locked", async ({ page }, testInfo) => {
   test.skip(!testInfo.project.name.includes("mobile"), "mobile-only text editing regression");
 
   await page.goto("/auth");
@@ -9,8 +9,9 @@ test("auth text fields keep native mobile editing behavior", async ({ page }, te
   await email.focus();
 
   const viewport = await page.locator('meta[name="viewport"]').getAttribute("content");
-  expect(viewport).not.toContain("user-scalable=no");
-  expect(viewport).not.toContain("maximum-scale=1");
+  expect(viewport).toContain("user-scalable=no");
+  expect(viewport).toContain("maximum-scale=1");
+  expect(viewport).toContain("minimum-scale=1");
 
   const editing = await email.evaluate((node) => {
     const style = getComputedStyle(node);
