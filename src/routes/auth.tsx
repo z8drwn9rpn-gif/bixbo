@@ -30,12 +30,19 @@ function safeOAuthSearchText(value: unknown): string {
   return clean.slice(0, 500);
 }
 
+type AuthSearch = {
+  next: string;
+  oauthError?: string;
+  oauthErrorCode?: string;
+  oauthErrorDescription?: string;
+};
+
 export const Route = createFileRoute("/auth")({
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (search: Record<string, unknown>): AuthSearch => ({
     next: safeInternalNext(search.next),
-    oauthError: safeOAuthSearchText(search.error),
-    oauthErrorCode: safeOAuthSearchText(search.error_code),
-    oauthErrorDescription: safeOAuthSearchText(search.error_description),
+    oauthError: safeOAuthSearchText(search.error) || undefined,
+    oauthErrorCode: safeOAuthSearchText(search.error_code) || undefined,
+    oauthErrorDescription: safeOAuthSearchText(search.error_description) || undefined,
   }),
   head: () => ({ meta: [
     { title: "BIXBO — Sign in" },
@@ -55,7 +62,7 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
 
   const callbackErrorMessage = useMemo(() => {
-    const combined = `${oauthError} ${oauthErrorCode} ${oauthErrorDescription}`.toLowerCase();
+    const combined = `${oauthError ?? ""} ${oauthErrorCode ?? ""} ${oauthErrorDescription ?? ""}`.toLowerCase();
     if (!combined.trim()) return null;
     if (combined.includes("invalid_client") || combined.includes("client secret") || combined.includes("exchange external code")) {
       return t("Google sign-in is temporarily unavailable because its OAuth client configuration was rejected. Please try again after the Google sign-in configuration is corrected.");
