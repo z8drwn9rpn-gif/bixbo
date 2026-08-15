@@ -13,7 +13,6 @@ import "@/notes-preview.css";
 import "@/log-menu-popover.css";
 import "@/ios-touch-stability.css";
 import "@/calendar-3d.css";
-import "@/profile-home-icon.css";
 
 const BIXBO_MASCOT_SRC = bixboMascot;
 const BIXBO_ROUNDED_DISPLAY_FONT = 'ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, -apple-system, BlinkMacSystemFont, sans-serif';
