@@ -16,9 +16,6 @@ export const VIEWPORT_OFFSET_VAR = "--bixbo-viewport-offset";
 export const KEYBOARD_INSET_VAR = "--bixbo-keyboard-inset";
 export const LOG_FORM_OPEN_ATTR = "data-bixbo-log-form-open";
 
-const EDITABLE_SELECTOR =
-  'input:not([type="checkbox"]):not([type="radio"]), textarea, select, [contenteditable="true"]';
-
 export type KeyboardViewportMetrics = {
   height: number;
   offsetTop: number;
@@ -54,15 +51,8 @@ export function applyKeyboardViewportVars(
   root.style.setProperty(VIEWPORT_HEIGHT_VAR, `${metrics.height}px`);
   root.style.setProperty(VIEWPORT_OFFSET_VAR, `${metrics.offsetTop}px`);
   root.style.setProperty(KEYBOARD_INSET_VAR, `${metrics.keyboardInset}px`);
-
-  const active = typeof document === "undefined" ? null : document.activeElement;
-  const hasEditableFocus =
-    active instanceof HTMLElement && active.matches(EDITABLE_SELECTOR);
-  if (metrics.keyboardInset > 80 && hasEditableFocus) {
-    root.setAttribute("data-bixbo-keyboard-open", "true");
-  } else {
-    root.removeAttribute("data-bixbo-keyboard-open");
-  }
+  if (metrics.keyboardInset > 80) root.setAttribute("data-bixbo-keyboard-open", "true");
+  else root.removeAttribute("data-bixbo-keyboard-open");
 }
 
 type LockedDocumentStyles = {
