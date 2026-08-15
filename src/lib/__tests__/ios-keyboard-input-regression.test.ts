@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 
-import { applyKeyboardViewportVars, readKeyboardViewportMetrics } from "@/hooks/useKeyboardViewport";
-
 const textarea = fs.readFileSync("src/components/ui/textarea.tsx", "utf8");
 const input = fs.readFileSync("src/components/ui/input.tsx", "utf8");
 const logSheet = fs.readFileSync("src/features/logging/LogSheetRoot.tsx", "utf8");
+const sheet = fs.readFileSync("src/components/ui/sheet.tsx", "utf8");
+const iconKeyboard = fs.readFileSync("src/components/icons/BixboIconKeyboard.tsx", "utf8");
 const iosCss = fs.readFileSync("src/ios-touch-stability.css", "utf8");
 const hook = fs.readFileSync("src/hooks/useKeyboardViewport.ts", "utf8");
 const rootRoute = fs.readFileSync("src/routes/__root.tsx", "utf8");
@@ -50,19 +50,33 @@ describe("Input free-text handling", () => {
   });
 });
 
-describe("Log sheet keyboard viewport", () => {
-  it("uses the visual viewport variables for the active full-screen sheet", () => {
+describe("Log sheet keyboard stability", () => {
+  it("keeps the full-screen log box independent from VisualViewport animation", () => {
+    // LogSheetRoot can keep the legacy class names, but SheetContent must
+    // normalize them to a stable inset shell before they reach the DOM.
     expect(logSheet).toContain("useKeyboardViewport(open && Boolean(active))");
-    expect(logSheet).toContain("!h-[var(--bixbo-viewport-height,100svh)]");
-    expect(logSheet).toContain("!top-[var(--bixbo-viewport-offset,0px)]");
+    expect(sheet).toContain('className.includes("--bixbo-viewport-height")');
+    expect(sheet).toContain('.replace("!top-[var(--bixbo-viewport-offset,0px)]", "!top-0")');
+    expect(sheet).toContain('.replace("!h-[var(--bixbo-viewport-height,100svh)]", "!h-auto")');
+    expect(sheet).toContain('.replace("!bottom-auto", "!bottom-0")');
+    expect(sheet).toContain('data-bixbo-fullscreen-log={fullScreenLog ? "true" : undefined}');
   });
 
-  it("never fakes, hides or fights the native iOS accessory/focus behavior", () => {
-    expect(iosCss).toContain("--bixbo-keyboard-inset");
+  it("does not subscribe the log shell to keyboard/focus viewport events", () => {
+    expect(hook).not.toContain("window.visualViewport");
+    expect(hook).not.toContain('addEventListener("resize"');
+    expect(hook).not.toContain('addEventListener("scroll"');
+    expect(hook).not.toContain('addEventListener("focusin"');
+    expect(hook).not.toContain('addEventListener("focusout"');
     expect(hook).not.toContain("scrollIntoView(");
-    expect(hook).not.toContain("findScrollContainer");
     expect(hook).not.toContain("scrollTop +=");
-    expect(logSheet).not.toContain("scrollIntoView(");
+  });
+
+  it("does not repaint the global icon trigger on every VisualViewport keyboard frame", () => {
+    expect(iconKeyboard).toContain("ownsInlineBixboPicker");
+    expect(iconKeyboard).toContain("window.requestAnimationFrame(measurePosition)");
+    expect(iconKeyboard).not.toContain('visualViewport?.addEventListener("resize"');
+    expect(iconKeyboard).not.toContain('visualViewport?.addEventListener("scroll"');
   });
 
   it("keeps user zoom enabled while preventing automatic input focus zoom with 16px fields", () => {
@@ -71,34 +85,7 @@ describe("Log sheet keyboard viewport", () => {
     expect(rootRoute).not.toContain("user-scalable=no");
     expect(rootRoute).not.toContain('document.addEventListener("touchmove"');
     expect(rootRoute).not.toContain('document.addEventListener("gesturestart"');
+    expect(iosCss).toContain("touch-action: pan-x pan-y pinch-zoom");
     expect(iosCss).toMatch(/input:not\([^}]+textarea,[\s\S]*font-size:\s*16px\s*!important/);
-  });
-});
-
-describe("Keyboard viewport helpers", () => {
-  it("returns null and no-ops without a VisualViewport capable window", () => {
-    expect(readKeyboardViewportMetrics()).toBeNull();
-    expect(() => applyKeyboardViewportVars(null, null)).not.toThrow();
-  });
-
-  it("writes viewport variables onto the provided root element", () => {
-    const styles = new Map<string, string>();
-    const attributes = new Map<string, string>();
-    const root = {
-      style: {
-        setProperty: (name: string, value: string) => styles.set(name, value),
-        removeProperty: (name: string) => styles.delete(name),
-      },
-      setAttribute: (name: string, value: string) => attributes.set(name, value),
-      removeAttribute: (name: string) => attributes.delete(name),
-    } as unknown as HTMLElement;
-
-    applyKeyboardViewportVars({ height: 420, offsetTop: 0, keyboardInset: 336 }, root);
-    expect(styles.get("--bixbo-viewport-height")).toBe("420px");
-    expect(styles.get("--bixbo-keyboard-inset")).toBe("336px");
-    expect(attributes.get("data-bixbo-keyboard-open")).toBe("true");
-
-    applyKeyboardViewportVars({ height: 756, offsetTop: 0, keyboardInset: 0 }, root);
-    expect(attributes.has("data-bixbo-keyboard-open")).toBe(false);
   });
 });
