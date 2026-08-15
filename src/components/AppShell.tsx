@@ -1,6 +1,7 @@
 import { type ReactNode } from "react";
 import { BottomNav } from "./BottomNav";
 import { SideNav } from "./SideNav";
+import { BixboIconKeyboard } from "./icons/BixboIconKeyboard";
 import { PainEpisodeChoiceDefaults } from "./PainEpisodeChoiceDefaults";
 import bixboMascot from "@/assets/bixbo-mascot-user.png";
 import "@/ui-polish.css";
@@ -35,6 +36,7 @@ export function AppShell({ children, title, right, big = false }: { children: Re
           <main id="main-content" tabIndex={-1} className="bixbo-page-fade min-w-0 overflow-x-hidden outline-none">{children}</main>
         </div>
       </div>
+      <BixboIconKeyboard />
       <BottomNav />
     </div>
   );
