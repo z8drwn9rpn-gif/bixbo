@@ -3,8 +3,8 @@ import type { Plugin } from "vite";
 /**
  * Compatibility transform for the last text surfaces that can contain stored
  * unicode emoji. Icon slots elsewhere are already materialized through BIXBO
- * components in source; this keeps Notes and the Home day-note preview from
- * falling back to the platform/Apple emoji renderer.
+ * components in source; this keeps Notes, the Home day-note preview and the
+ * remaining Pain helper badge from falling back to the platform/Apple emoji renderer.
  */
 export function bixboIconMigrationPlugin(): Plugin {
   return {
@@ -16,7 +16,8 @@ export function bixboIconMigrationPlugin(): Plugin {
         normalized.endsWith("/src/routes/notes.tsx") ||
         normalized.endsWith("/src/routes/notes-editor.tsx");
       const isDayOverview = normalized.endsWith("/src/components/home/DayOverview.tsx");
-      if (!isNotesRoute && !isDayOverview) return null;
+      const isPainWizard = normalized.endsWith("/src/features/logging/PainWizard.tsx");
+      if (!isNotesRoute && !isDayOverview && !isPainWizard) return null;
 
       let next = code;
 
@@ -36,6 +37,10 @@ export function bixboIconMigrationPlugin(): Plugin {
       if (isDayOverview && next.includes("{n.text}")) {
         next = `import { BixboSafeText } from "@/components/icons/BixboSafeText";\n${next}`
           .replaceAll("{n.text}", "<BixboSafeText text={n.text} size={14} />");
+      }
+
+      if (isPainWizard && next.includes(">💡</span>")) {
+        next = next.replaceAll(">💡</span>", '><Ico e="💡" size={18} /></span>');
       }
 
       return next === code ? null : { code: next, map: null };
