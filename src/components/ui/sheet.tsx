@@ -50,7 +50,9 @@ const sheetVariants = cva(
 );
 
 interface SheetContentProps
-  extends React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>, VariantProps<typeof sheetVariants> {}
+  extends React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>, VariantProps<typeof sheetVariants> {
+  overlayClassName?: string;
+}
 
 function cameFromBixboIconKeyboard(originalEvent: Event) {
   const path = typeof originalEvent.composedPath === "function" ? originalEvent.composedPath() : [];
@@ -67,6 +69,7 @@ const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Con
       onPointerDownOutside,
       onFocusOutside,
       onInteractOutside,
+      overlayClassName,
       ...props
     },
     ref,
@@ -84,7 +87,7 @@ const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Con
 
     return (
       <SheetPortal>
-        <SheetOverlay />
+        <SheetOverlay className={overlayClassName} />
         <SheetPrimitive.Content
           ref={ref}
           className={cn(sheetVariants({ side }), resolvedClassName)}

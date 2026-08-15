@@ -12,8 +12,8 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import whiteGreenThemeCss from "../white-green-theme.css?url";
 import darkThemeCss from "../dark-theme.css?url";
+import calendar3dCss from "../calendar-3d.css?url";
 import calendarPeriodFixCss from "../calendar-period-fix.css?url";
-import iosTouchStabilityCss from "../ios-touch-stability.css?url";
 import { useCloudSync } from "../lib/cloudSync";
 import { useThemeSync } from "../lib/theme";
 import { useNotificationRuntime } from "../lib/notifications";
@@ -147,8 +147,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: appCss },
       { rel: "stylesheet", href: whiteGreenThemeCss },
       { rel: "stylesheet", href: darkThemeCss },
+      { rel: "stylesheet", href: calendar3dCss },
       { rel: "stylesheet", href: calendarPeriodFixCss },
-      { rel: "stylesheet", href: iosTouchStabilityCss },
       { rel: "manifest", href: "/manifest.json" },
       { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
       { rel: "icon", type: "image/png", sizes: "180x180", href: "/apple-touch-icon.png" },

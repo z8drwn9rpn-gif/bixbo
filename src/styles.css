@@ -1,8 +1,9 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
-@import "./ui-polish.css";
-@import "./ui-components-polish.css";
+@import "./ui-system.css";
+@import "./ios-touch-stability.css";
+@import "./mobile-overlay-stability.css";
 
 @custom-variant dark (&:is(.dark *));
 

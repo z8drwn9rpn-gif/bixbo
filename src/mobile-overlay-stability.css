@@ -6,9 +6,14 @@
    against the scrolled page and appear underneath the fixed bottom nav.
 
    Keep the entrance animation, but release the transform once it is done so
-   full-screen overlays are fixed to the visual viewport again. */
+   full-screen overlays are fixed to the visual viewport again.
+
+   This declaration is intentionally important: styles.css defines the page
+   animation with the `animation` shorthand later in the cascade, and that
+   shorthand also resets animation-fill-mode. The stability guard must win
+   regardless of import/order refactors. */
 .bixbo-page-fade {
-  animation-fill-mode: backwards;
+  animation-fill-mode: backwards !important;
 }
 
 /* Shared centered overlays inside page content must remain usable on short

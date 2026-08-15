@@ -9,17 +9,11 @@
   --bixbo-section-gap: 14px;
   --bixbo-rounded-font: ui-rounded, "SF Pro Rounded", "Arial Rounded MT", "Trebuchet MS", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --bixbo-rounded-font-bold: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  --bixbo-bold-text: #11130e;
 }
 
-.dark {
-  --bixbo-bold-text: var(--foreground);
-}
 
-/* One typography family across BIXBO.
-   1) large headings = large + heavy
-   2) smaller names/section labels = bold rounded
-   3) small/supporting text = rounded regular */
+/* Typography hierarchy. Components own colour; font weight never rewrites
+   success/destructive/primary/muted semantic tokens. */
 html,
 body,
 button,
@@ -39,88 +33,43 @@ summary,
   font-family: var(--bixbo-rounded-font) !important;
 }
 
-/* Primary page/dialog headings: keep their existing size, only unify the face + weight. */
 :where(h1, h2, h3),
 [role="dialog"] :where(h1, h2, h3),
 .bixbo-section-title,
 [data-bixbo-app-title],
 [data-bixbo-display-title] {
   font-family: var(--bixbo-rounded-font-bold) !important;
-  font-weight: 800;
+  font-weight: 800 !important;
   letter-spacing: -0.025em;
-  color: var(--bixbo-bold-text) !important;
 }
 
-/* UI names, tabs, chips and action labels are the secondary title tier.
-   Keep their current size, but make them visibly rounded + bold everywhere,
-   including Home Quick Log, Insights and Patterns. */
-#main-content button,
-#main-content [role="button"],
+#main-content :where(h4, h5, h6, .font-medium, .font-semibold, .font-bold, .font-extrabold, .font-black),
+[role="dialog"] :where(h4, h5, h6, .font-medium, .font-semibold, .font-bold, .font-extrabold, .font-black),
+nav :where(.font-medium, .font-semibold, .font-bold, .font-extrabold, .font-black),
 #main-content [role="tab"],
-#main-content nav a,
-#main-content button :where(span, p),
-#main-content [role="button"] :where(span, p),
-#main-content [role="tab"] :where(span, p),
-[role="dialog"] button,
-[role="dialog"] [role="button"],
-[role="dialog"] [role="tab"],
-[role="dialog"] button :where(span, p),
-nav button,
-nav a {
+[role="dialog"] [role="tab"] {
   font-family: var(--bixbo-rounded-font-bold) !important;
-  font-weight: 700;
   letter-spacing: -0.015em;
 }
 
-/* Bold names are black in the light BIXBO theme. This intentionally covers
-   Home Quick Log, Today cards, Insights, Patterns, Couple, Notes and nav labels. */
-#main-content :where(h1, h2, h3, h4, h5, h6),
 #main-content :where(.font-medium, .font-semibold, .font-bold, .font-extrabold, .font-black),
-[role="dialog"] :where(h1, h2, h3, h4, h5, h6),
 [role="dialog"] :where(.font-medium, .font-semibold, .font-bold, .font-extrabold, .font-black),
 nav :where(.font-medium, .font-semibold, .font-bold, .font-extrabold, .font-black),
-#main-content button:not(.bg-primary):not(.bg-destructive):not(.text-primary-foreground):not(.text-white),
-#main-content [role="tab"]:not(.bg-primary):not(.text-primary-foreground):not(.text-white),
-nav a:not(.text-primary-foreground):not(.text-white),
-nav button:not(.bg-primary):not(.text-primary-foreground):not(.text-white) {
-  color: var(--bixbo-bold-text) !important;
-}
-
-/* Keep high-contrast text on filled action/selected controls. */
-#main-content :where(.bg-primary, .bg-destructive, .text-primary-foreground, .text-white),
-#main-content :where(.bg-primary, .bg-destructive, .text-primary-foreground, .text-white) :where(span, p),
-[role="dialog"] :where(.bg-primary, .bg-destructive, .text-primary-foreground, .text-white),
-[role="dialog"] :where(.bg-primary, .bg-destructive, .text-primary-foreground, .text-white) :where(span, p) {
-  color: inherit !important;
-}
-
-/* Smaller names and explicit emphasized labels are bold/rounded, but are not enlarged. */
-#main-content :where(h4, h5, h6),
-#main-content :where(.font-medium, .font-semibold, .font-bold, .font-extrabold, .font-black),
-[role="dialog"] :where(.font-medium, .font-semibold, .font-bold, .font-extrabold, .font-black),
-nav :where(.font-medium, .font-semibold, .font-bold, .font-extrabold, .font-black) {
-  font-family: var(--bixbo-rounded-font-bold) !important;
-}
-
-#main-content :where(h4, h5, h6),
-#main-content :where(.font-semibold, .font-bold, .font-extrabold, .font-black),
-[role="dialog"] :where(.font-semibold, .font-bold, .font-extrabold, .font-black),
-nav :where(.font-semibold, .font-bold, .font-extrabold, .font-black) {
+#main-content [role="tab"],
+[role="dialog"] [role="tab"] {
   font-weight: 700;
 }
 
-/* font-medium is frequently used by the app for compact item names.
-   Promote those names to the same secondary-title weight without changing size. */
-#main-content .font-medium,
-[role="dialog"] .font-medium,
-nav .font-medium {
-  font-weight: 700 !important;
-}
-
-/* Normal/small copy stays rounded and regular unless it is explicitly a UI name. */
 #main-content :where(p, span, small, li, td, th, label):not(.font-medium):not(.font-semibold):not(.font-bold):not(.font-extrabold):not(.font-black),
 [role="dialog"] :where(p, span, small, li, td, th, label):not(.font-medium):not(.font-semibold):not(.font-bold):not(.font-extrabold):not(.font-black) {
   font-family: var(--bixbo-rounded-font);
+}
+
+#main-content :where(svg text, .recharts-text, .recharts-cartesian-axis-tick-value, .recharts-legend-item-text),
+.bixbo-chart-fade :where(text, span, p) {
+  font-family: var(--bixbo-rounded-font) !important;
+  font-weight: 400 !important;
+  letter-spacing: -0.01em;
 }
 
 #main-content,
@@ -186,7 +135,7 @@ nav .font-medium {
 .bixbo-unified-log [class*="grid-cols-"] select,
 .bixbo-unified-log [class*="grid-cols-"] textarea { width: 100%; min-width: 0; max-width: 100%; }
 .bixbo-unified-log [data-bixbo-log-field-id] > div:first-child > span:first-child,
-.bixbo-unified-log section > p:first-child { font-family: var(--bixbo-rounded-font-bold); font-size: 11px; line-height: 1.25; font-weight: 700; letter-spacing: .025em; text-transform: none; color: var(--bixbo-bold-text); }
+.bixbo-unified-log section > p:first-child { font-family: var(--bixbo-rounded-font-bold); font-size: 11px; line-height: 1.25; font-weight: 700; letter-spacing: .025em; text-transform: none; color: var(--foreground); }
 .bixbo-unified-log button.rounded-full { min-height: 32px; max-width: 100%; white-space: normal; line-height: 1.15; }
 .bixbo-unified-log button.rounded-full:active,
 .bixbo-unified-log button[class*="rounded-xl"]:active,
@@ -199,24 +148,7 @@ nav .font-medium {
 .bixbo-unified-log [aria-label*="Intensity"] { flex-shrink: 1; }
 .bixbo-unified-log [role="dialog"] { overscroll-behavior: contain; }
 
-/* SUKSUK compact layout */
-.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 { gap: 12px; padding-bottom: 18px; }
-.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section { margin: 0; }
-.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section > p:first-child { margin-bottom: 8px; font-family: var(--bixbo-rounded-font-bold); font-size: 13px; line-height: 1.2; font-weight: 700; letter-spacing: -0.01em; text-transform: none; color: var(--bixbo-bold-text); }
-.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section > div.flex.flex-wrap { gap: 8px; }
-.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section button.rounded-full { min-height: 31px; padding: 5px 12px; gap: 5px; font-size: 12px; font-weight: 700; line-height: 1; box-shadow: none; }
-.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:not(:nth-of-type(5)) button.rounded-full.bg-primary { background: color-mix(in srgb, var(--primary) 18%, var(--background)) !important; color: var(--bixbo-bold-text) !important; box-shadow: 0 0 0 1px var(--background), 0 0 0 3px color-mix(in srgb, var(--foreground) 78%, transparent) !important; --tw-ring-shadow: 0 0 #0000 !important; }
-.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:nth-of-type(5) { padding: 12px; border-radius: 18px; background: transparent; }
-.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:nth-of-type(5) > div { gap: 7px; }
-.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:nth-of-type(5) button.rounded-full { min-height: 30px; padding: 5px 10px; font-size: 11.5px; }
-.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:nth-of-type(5) button.rounded-full.bg-primary { background: var(--primary) !important; color: var(--primary-foreground) !important; box-shadow: 0 0 0 1px var(--background), 0 0 0 2.5px color-mix(in_srgb,var(--foreground)_72%,transparent) !important; --tw-ring-shadow: 0 0 #0000 !important; }
-.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:nth-of-type(4) > .rounded-3xl { margin-top: 10px; padding: 12px; border-radius: 18px; box-shadow: none; }
-.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:nth-of-type(4) > .rounded-3xl .grid { gap: 12px; }
-.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:nth-of-type(4) > .rounded-3xl p { font-size: 11px; }
-.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:nth-of-type(4) > .rounded-3xl button.rounded-full { min-height: 29px; padding: 4px 10px; font-size: 11px; }
-.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section:nth-of-type(4) > .rounded-3xl button.h-8.w-8 { width: 29px; height: 29px; min-height: 29px; padding: 0; font-size: 11px; }
-.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 textarea.rounded-3xl { min-height: 92px; border-radius: 18px; }
-.bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > div:last-child { padding-block: 9px; border-radius: 14px; font-size: 10.5px; }
+/* ŠukŠuk compact layout is component-owned in CycleForms.tsx. */
 
 @media (pointer: coarse) { #main-content button:not(.rounded-full), #main-content a[role="button"] { touch-action: manipulation; } }
 @media (min-width: 1024px) { #main-content > :where(div, section, article) { margin-inline: auto; } .bixbo-unified-log { padding-bottom: 28px; } }
@@ -226,11 +158,137 @@ nav .font-medium {
   .bixbo-unified-log .gap-3 { gap: 10px; }
   .bixbo-unified-log .space-y-4 > :not([hidden]) ~ :not([hidden]) { margin-top: 12px; }
   .bixbo-unified-log input[type="time"], .bixbo-unified-log input[type="date"] { -webkit-appearance: none; appearance: none; }
-  .bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 { gap: 11px; }
-  .bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section button.rounded-full { padding-inline: 10px; }
 }
 .dark .bixbo-unified-log .sticky.top-0 { background: color-mix(in srgb, var(--background) 92%, transparent); }
 .dark .bixbo-unified-log input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
 .dark .bixbo-unified-log textarea,
 .dark .bixbo-unified-log select { background: color-mix(in srgb, var(--surface) 86%, var(--surface-sunken)); }
 @media (prefers-reduced-motion: reduce) { .bixbo-unified-log *, .bixbo-unified-log *::before, .bixbo-unified-log *::after { scroll-behavior: auto !important; } }
+
+/* Log menu interaction state. This is an explicit component contract, not a
+   DOM-order/Tailwind selector: the modal Sheet owns the body state and BottomNav
+   opts in with data-bixbo-bottom-nav so its Log toggle remains reachable. */
+body[data-bixbo-log-menu-open="true"] [data-bixbo-bottom-nav] {
+  pointer-events: auto;
+  z-index: 60;
+}
+
+body[data-bixbo-log-menu-open="true"] [data-bixbo-bottom-nav] * {
+  pointer-events: auto;
+}
+
+/* SHARED COMPONENT BEHAVIOUR */
+#main-content button,
+#main-content [role="button"] {
+  transition-property: background-color, border-color, color, box-shadow, transform, opacity;
+  transition-duration: 140ms;
+  transition-timing-function: var(--bixbo-ease, ease-out);
+}
+
+#main-content button:active:not(:disabled),
+#main-content [role="button"]:active {
+  transform: scale(.985);
+}
+
+#main-content :where(.rounded-3xl, .rounded-2xl).ring-1.ring-border {
+  box-shadow: 0 7px 20px -18px rgba(39, 52, 20, .42);
+}
+
+.dark #main-content :where(.rounded-3xl, .rounded-2xl).ring-1.ring-border {
+  box-shadow: 0 8px 22px -18px rgba(18, 22, 12, .62);
+}
+
+#main-content p,
+#main-content li,
+#main-content dd,
+#main-content td {
+  overflow-wrap: anywhere;
+}
+
+#main-content h1,
+#main-content h2,
+#main-content h3 {
+  text-wrap: balance;
+}
+
+[data-slot="dialog-content"],
+[data-slot="sheet-content"] {
+  overscroll-behavior: contain;
+  border-color: color-mix(in srgb, var(--border) 76%, transparent);
+}
+
+[data-slot="dialog-content"] button,
+[data-slot="sheet-content"] button {
+  touch-action: manipulation;
+}
+
+[data-slot="sheet-footer"] {
+  padding-bottom: max(.75rem, env(safe-area-inset-bottom));
+}
+
+[data-radix-popper-content-wrapper] {
+  max-width: min(calc(100vw - 16px), 32rem);
+}
+
+#main-content svg.recharts-surface,
+#main-content .recharts-wrapper,
+#main-content .recharts-responsive-container {
+  max-width: 100%;
+}
+
+#main-content .recharts-wrapper {
+  touch-action: pan-y;
+}
+
+#main-content .recharts-tooltip-wrapper {
+  pointer-events: none;
+  max-width: min(82vw, 320px);
+}
+
+#main-content .recharts-default-tooltip {
+  border-radius: 14px !important;
+  border-color: var(--border) !important;
+  background: var(--chart-tooltip-bg) !important;
+  color: var(--chart-tooltip-fg) !important;
+  box-shadow: 0 10px 30px -20px rgba(26, 34, 15, .6) !important;
+}
+
+#main-content table {
+  max-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+#main-content :where(th, td) {
+  vertical-align: top;
+}
+
+@media (min-width: 1024px) {
+  #main-content .max-w-sm,
+  #main-content .max-w-md,
+  #main-content .max-w-lg,
+  #main-content .max-w-xl,
+  #main-content .max-w-2xl {
+    width: 100%;
+  }
+}
+
+@media (max-width: 430px) {
+  #main-content input,
+  #main-content select,
+  #main-content textarea {
+    font-size: max(14px, 1em);
+  }
+
+  #main-content .overflow-x-auto {
+    overscroll-behavior-inline: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #main-content button,
+  #main-content [role="button"] {
+    transition-duration: .01ms !important;
+  }
+}
