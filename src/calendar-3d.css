@@ -1,6 +1,7 @@
 /* BIXBO calendar — approved satin 3D treatment.
    Visual only: keeps MonthCalendar data, pain colours, period logic and interactions untouched.
-   Goals: larger circles, strong 3D depth, active period fully filled, no white shine/streaks. */
+   Goals: larger circles, uniform pain-ring thickness, separated period fill,
+   current-day marker, strong 3D depth, no white shine/streaks. */
 
 /* ---------------------------------------------------------------------
    CALENDAR DAY WRAPPER / SELECTION
@@ -75,7 +76,8 @@
     0 5px 7px rgba(68,59,40,.08) !important;
 }
 
-/* Ringed days keep a clearly visible, thick coloured annulus. */
+/* Ringed days use a 32px inner footprint. This fixes the coloured pain ring
+   to the same visible thickness on every day. */
 [style*="--period-medium"] > div > div:nth-child(2) > div > button > div > div:first-child:has(> span.absolute.inset-0.rounded-full) > div:last-child {
   width: 32px !important;
   height: 32px !important;
@@ -129,13 +131,16 @@
   background: var(--period-veryheavy) !important;
 }
 
-/* Pain + logged period: keep the pain ring visible outside, but the complete
-   inner period disc remains filled with the selected period colour. */
+/* Pain + logged period:
+   - outer pain ring keeps exactly the same thickness as every other pain day;
+   - period fill is deliberately smaller;
+   - the 2px white outline is the clean separator requested between the two. */
 [style*="--period-medium"] > div > div:nth-child(2) > div > button > div > div:first-child:has(> span.absolute.inset-0.rounded-full) > div:last-child[style*="--period-"] {
-  width: 38px !important;
-  height: 38px !important;
-  border: 1px solid rgba(42,32,58,.16) !important;
+  width: 28px !important;
+  height: 28px !important;
+  border: 0 !important;
   box-shadow:
+    0 0 0 2px rgba(255,255,255,.94),
     inset 0 -3px 4px rgba(20,14,33,.24),
     0 2px 2px rgba(42,33,55,.18) !important;
 }
@@ -162,6 +167,25 @@
 }
 [style*="--period-medium"] > div > div:nth-child(2) > div > button > div > div:first-child > div:last-child[style*="--period-veryheavy"] > span {
   color: var(--period-veryheavy-fg) !important;
+}
+
+/* ---------------------------------------------------------------------
+   CURRENT DATE — independent of pain/period/prediction styling.
+   JS marks the real local current-date button with data-bixbo-today=true.
+   The indicator sits outside the status circle, so it never changes the
+   pain ring or period colour underneath it. */
+[style*="--period-medium"] > div > div:nth-child(2) > div > button[data-bixbo-today="true"] > div > div:first-child::after {
+  content: "" !important;
+  display: block !important;
+  position: absolute;
+  pointer-events: none;
+  inset: -4px;
+  z-index: 6;
+  border-radius: 999px;
+  border: 1.5px solid color-mix(in srgb, var(--primary) 74%, #7c8757 26%);
+  box-shadow:
+    0 0 0 2px rgba(255,255,255,.72),
+    0 3px 7px rgba(72,82,48,.18);
 }
 
 /* Normal date numbers. */
@@ -206,8 +230,12 @@
   }
 
   [style*="--period-medium"] > div > div:nth-child(2) > div > button > div > div:first-child:has(> span.absolute.inset-0.rounded-full) > div:last-child[style*="--period-"] {
-    width: 44px !important;
-    height: 44px !important;
+    width: 34px !important;
+    height: 34px !important;
+  }
+
+  [style*="--period-medium"] > div > div:nth-child(2) > div > button[data-bixbo-today="true"] > div > div:first-child::after {
+    inset: -5px;
   }
 }
 
@@ -222,6 +250,10 @@
     0 6px 7px rgba(0,0,0,.20) !important;
 }
 
+.dark [style*="--period-medium"] > div > div:nth-child(2) > div > button > div > div:first-child:not([style*="--period-"]) {
+  border-color: rgba(255,255,255,.07) !important;
+}
+
 .dark [style*="--period-medium"] > div > div:nth-child(2) > div > button > div > div:first-child > div:last-child:not([style*="--period-"]) {
   background: linear-gradient(150deg,
     color-mix(in srgb, var(--background) 90%, #fff 10%),
@@ -230,4 +262,11 @@
   box-shadow:
     inset 0 -2px 3px rgba(0,0,0,.32),
     0 3px 4px rgba(0,0,0,.28) !important;
+}
+
+.dark [style*="--period-medium"] > div > div:nth-child(2) > div > button[data-bixbo-today="true"] > div > div:first-child::after {
+  border-color: color-mix(in srgb, var(--primary) 72%, #d7dfbb 28%);
+  box-shadow:
+    0 0 0 2px rgba(245,244,232,.18),
+    0 3px 7px rgba(0,0,0,.28);
 }
