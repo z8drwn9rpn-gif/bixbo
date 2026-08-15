@@ -2,6 +2,7 @@ import { type ReactNode } from "react";
 import { BottomNav } from "./BottomNav";
 import { SideNav } from "./SideNav";
 import { BixboIconKeyboard } from "./icons/BixboIconKeyboard";
+import { PainEpisodeChoiceDefaults } from "./PainEpisodeChoiceDefaults";
 import bixboMascot from "@/assets/bixbo-mascot-user.png";
 import "@/ui-polish.css";
 import "@/ui-components-polish.css";
@@ -16,6 +17,7 @@ const BIXBO_ROUNDED_DISPLAY_SHADOW = "0 1px 0 rgba(255,255,255,.92), 0 2px 1px r
 export function AppShell({ children, title, right, big = false }: { children: ReactNode; title?: ReactNode; right?: ReactNode; big?: boolean; }) {
   return (
     <div className="min-h-dvh overflow-x-hidden bg-background text-foreground" style={{ overscrollBehaviorX: "none" }}>
+      <PainEpisodeChoiceDefaults />
       <a href="#main-content" className="sr-only-focusable fixed left-3 top-3 z-[100] rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-lg">Skip to content</a>
       <SideNav mascotSrc={BIXBO_MASCOT_SRC} />
       <div className="min-h-dvh lg:pl-60">
