@@ -6,13 +6,26 @@ const read = (path: string) => fs.readFileSync(path, "utf8");
 describe("BIXBO icon resolution", () => {
   it("resolves exact BIXBO drawings before broad keyboard category fallbacks", () => {
     const source = read("src/components/icons/BixboIcon.tsx");
+    expect(source).toContain('import { appEmojiIcon } from "./BixboAppEmojiIcons"');
     expect(source).toContain('import { specificEmojiIcon } from "./BixboSpecificEmojiIcons"');
+    expect(source.indexOf("appEmojiIcon(emoji)")).toBeLessThan(source.indexOf("keyboardEmojiIcon(emoji)"));
     expect(source.indexOf("specificEmojiIcon(emoji)")).toBeLessThan(source.indexOf("keyboardEmojiIcon(emoji)"));
   });
 
   it("keeps representative exact animal, vehicle and medical mappings", () => {
     const source = read("src/components/icons/BixboSpecificEmojiIcons.tsx");
     for (const emoji of ["🐶", "🐱", "🐧", "🚑", "🚒", "🚲", "💉", "🩹", "🩺", "🧬", "🦠"]) {
+      expect(source).toContain(`"${emoji}"`);
+    }
+  });
+
+  it("keeps exact BIXBO drawings for app-used mood, sleep, therapy and daily-life emoji", () => {
+    const source = read("src/components/icons/BixboAppEmojiIcons.tsx");
+    for (const emoji of [
+      "😀", "🙂", "😊", "😌", "😐", "😢", "😠", "😴", "😵‍💫", "🤢", "🤕", "🥵", "🥶",
+      "💪", "💦", "🌩️", "🏃", "🌙", "💭", "📱", "☀️", "💤", "🐢", "🚽", "🦵", "🌡️",
+      "⏰", "🛌", "🧘", "⚡", "🌀", "🧊", "♨️", "⭐", "🥑", "🌶️",
+    ]) {
       expect(source).toContain(`"${emoji}"`);
     }
   });
