@@ -1,6 +1,7 @@
 import type { ComponentType, SVGProps } from "react";
 import { Ico, NoteIcon } from "./BixboExtraIcons";
 import { semanticIconForLabel } from "./BixboFoodIcons";
+import { appEmojiIcon } from "./BixboAppEmojiIcons";
 import { specificEmojiIcon } from "./BixboSpecificEmojiIcons";
 import { keyboardEmojiIcon } from "./BixboKeyboardEmojiIcons";
 
@@ -31,7 +32,10 @@ export function resolveBixboIcon(input: { emoji?: string; label?: string; fallba
       if (food) return food;
     }
 
-    // Exact BIXBO drawings win over broad category fallbacks such as Paw/Car.
+    // Exact app-used BIXBO drawings win over broad category fallbacks.
+    const appSpecific = appEmojiIcon(emoji);
+    if (appSpecific) return appSpecific;
+
     const specific = specificEmojiIcon(emoji);
     if (specific) return specific;
 
