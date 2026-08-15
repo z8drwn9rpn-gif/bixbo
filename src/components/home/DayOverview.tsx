@@ -186,8 +186,10 @@ export function DayPreview({
                       const selected = getTakenScheduledItems(x.med, date, x.time, data.medLog, data.medLogItems ?? {});
                       const omitted = all.filter((item) => !selected.includes(item));
                       return <>
-                        {t("Taken")} · {actual ?? x.time} — {selected.join(", ")}
-                        {x.med.dose ? ` (${x.med.dose})` : ""}
+                        <span style={{ color: "#15803D" }}>
+                          {t("Taken")} · {actual ?? x.time} — {selected.join(", ")}
+                          {x.med.dose ? ` (${x.med.dose})` : ""}
+                        </span>
                         {shifted && <span className="text-[10px] text-muted-foreground"> · {t("scheduled")} {x.time}</span>}
                         {omitted.length ? <span className="block text-[10px] text-destructive">{t("Not taken")}: {omitted.join(", ")}</span> : null}
                         {data.medLogNotes?.[date]?.[x.key] ? <span className="block text-[10px] text-muted-foreground">{t("Note")}: {data.medLogNotes?.[date]?.[x.key]}</span> : null}
@@ -206,8 +208,10 @@ export function DayPreview({
                   style={{ color: "var(--destructive)" }}
                   title={t("Tap to edit meds")}
                 >
-                  {t("Missed")} · {x.time} — {x.med.name}
-                  {x.med.dose ? ` (${x.med.dose})` : ""}{" "}
+                  <span style={{ color: "#C62828" }}>
+                    {t("Missed")} · {x.time} — {x.med.name}
+                    {x.med.dose ? ` (${x.med.dose})` : ""}
+                  </span>{" "}
                   <span className="text-[10px] text-primary">· {t("Tap to edit")}</span>
                   {data.medLogNotes?.[date]?.[x.key] ? (
                     <span className="mt-0.5 block text-[11px] text-muted-foreground"><span className="font-semibold text-foreground">{t("Note")}:</span> {data.medLogNotes[date][x.key]}</span>
