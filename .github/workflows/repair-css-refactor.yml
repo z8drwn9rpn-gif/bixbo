@@ -1,0 +1,43 @@
+name: Repair CSS refactor migration
+
+on:
+  push:
+    branches:
+      - refactor/css-component-architecture
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: ${{ !contains(github.event.head_commit.message, '[workflow-repair]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/css-component-architecture
+          fetch-depth: 0
+      - name: Repair migration script
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          target = Path('.github/workflows/refactor-css-architecture.yml')
+          text = target.read_text()
+          anchor = "          polish = polish[:suksuk_start] + '''/* ŠukŠuk compact layout is component-owned in CycleForms.tsx.\\n   Keep only generic log behaviour here; no section-order selectors. */\\n\\n''' + polish[suksuk_end:]\n"
+          if anchor not in text:
+              raise SystemExit('refactor workflow insertion anchor not found')
+          addition = anchor + "          polish = polish.replace('  .bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 { gap: 11px; }\\n', '')\n          polish = polish.replace('  .bixbo-unified-log > .mx-auto.flex.w-full.max-w-xl.flex-col.gap-4.pb-5 > section button.rounded-full { padding-inline: 10px; }\\n', '')\n"
+          text = text.replace(anchor, addition, 1)
+          text = text.replace('className=\"mx-auto flex w-full max-w-xl flex-col gap-3 pb-[18px]\"', 'className=\"mx-auto flex w-full max-w-xl flex-col gap-3 max-[430px]:gap-[11px] pb-[18px]\"')
+          text = text.replace('bixbo-sex-chip inline-flex min-h-[31px] items-center justify-center gap-[5px] rounded-full px-3 py-[5px]', 'bixbo-sex-chip inline-flex min-h-[31px] items-center justify-center gap-[5px] rounded-full px-3 max-[430px]:px-2.5 py-[5px]')
+          target.write_text(text)
+          Path('.github/workflows/repair-css-refactor.yml').unlink()
+          PY
+          git config user.name "bixbo-refactor-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Repair CSS refactor workflow [workflow-repair]"
+          git push origin HEAD:refactor/css-component-architecture
