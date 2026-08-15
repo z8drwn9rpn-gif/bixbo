@@ -122,7 +122,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { name: "theme-color", content: "#FBF7F3" },
       { name: "color-scheme", content: "light dark" },
       { title: "BIXBO — Health diary" },
@@ -182,31 +182,6 @@ function RootComponent() {
   useThemeSync();
   useNotificationRuntime();
   useDeploymentFreshness();
-
-  useEffect(() => {
-    if (typeof window === "undefined" || typeof document === "undefined") return;
-    if (!window.matchMedia("(pointer: coarse)").matches) return;
-
-    const preventMultiTouch = (event: TouchEvent) => {
-      if (event.touches.length > 1) event.preventDefault();
-    };
-    const preventGesture = (event: Event) => event.preventDefault();
-    const preventDoubleTapZoom = (event: MouseEvent) => event.preventDefault();
-
-    document.addEventListener("touchmove", preventMultiTouch, { passive: false });
-    document.addEventListener("gesturestart", preventGesture, { passive: false });
-    document.addEventListener("gesturechange", preventGesture, { passive: false });
-    document.addEventListener("gestureend", preventGesture, { passive: false });
-    document.addEventListener("dblclick", preventDoubleTapZoom, { passive: false });
-
-    return () => {
-      document.removeEventListener("touchmove", preventMultiTouch);
-      document.removeEventListener("gesturestart", preventGesture);
-      document.removeEventListener("gesturechange", preventGesture);
-      document.removeEventListener("gestureend", preventGesture);
-      document.removeEventListener("dblclick", preventDoubleTapZoom);
-    };
-  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
