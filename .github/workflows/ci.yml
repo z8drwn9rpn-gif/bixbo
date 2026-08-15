@@ -37,6 +37,8 @@ jobs:
         run: bun install --frozen-lockfile
       - name: Architecture guard
         run: bun run architecture
+      - name: Full-project UI emoji audit
+        run: bun run audit:ui-emoji
       - name: Typecheck
         run: bun run typecheck
       - name: Lint
