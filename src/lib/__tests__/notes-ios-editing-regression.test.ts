@@ -7,18 +7,21 @@ describe("Notes iOS editing", () => {
   it("uses one stable native textarea for the note body", () => {
     expect(source).toContain("data-bixbo-note-editor");
     expect(source).toContain("<textarea");
-    expect(source).toContain("defaultValue={contentRef.current}");
+    expect(source).toContain("defaultValue={bodyText}");
     expect(source).toContain("onInput={(event) => scheduleBodySave(event.currentTarget)}");
     expect(source).not.toContain("contentEditable");
     expect(source).not.toContain("keyboardBridgeRef");
     expect(source).not.toContain("editorReady");
   });
 
-  it("leaves tap-to-focus to the native iOS textarea", () => {
+  it("leaves tap-to-focus and wrapped-line caret placement to native iOS", () => {
     expect(source).not.toContain("onTouchEnd={() => editorRef.current?.focus");
     expect(source).not.toContain("onClick={() => editorRef.current?.focus");
     expect(source).not.toContain('touchAction: "pan-y"');
     expect(source).toContain('inputMode="text"');
+    expect(source).toContain('WebkitUserSelect: "text"');
+    expect(source).toContain('userSelect: "text"');
+    expect(source).toContain('WebkitTouchCallout: "default"');
   });
 
   it("does not collapse and recreate the textarea height on each keystroke", () => {
