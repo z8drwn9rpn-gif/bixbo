@@ -357,7 +357,7 @@ export function NoteEditor({
           {editingBody ? (
             <textarea
               ref={editorRef}
-              defaultValue={bodyText}
+              defaultValue={contentRef.current}
               onInput={(event) => scheduleBodySave(event.currentTarget)}
               onBlur={(event) => finishBodyEditing(event.currentTarget)}
               rows={10}
