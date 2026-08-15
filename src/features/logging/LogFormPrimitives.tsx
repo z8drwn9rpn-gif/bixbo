@@ -1,5 +1,5 @@
 import { SemanticIcoText } from "@/components/icons/BixboFoodIcons";
-import { Children, isValidElement, useState, type ReactNode } from "react";
+import { Children, isValidElement, useRef, useState, type ReactNode } from "react";
 import { useI18n } from "@/hooks/useI18n";
 import { TrText } from "@/features/logging/TrText";
 import { SheetFooter } from "@/components/ui/sheet";
@@ -119,10 +119,43 @@ export function Chip({
   title?: string;
 }) {
   const { t } = useI18n();
+  const pointerStart = useRef<{ x: number; y: number } | null>(null);
+  const pointerMoved = useRef(false);
   return (
     <button
       type="button"
-      onClick={onClick}
+      onPointerDown={(event) => {
+        if (event.pointerType !== "touch") return;
+        pointerStart.current = { x: event.clientX, y: event.clientY };
+        pointerMoved.current = false;
+      }}
+      onPointerMove={(event) => {
+        if (event.pointerType !== "touch" || !pointerStart.current) return;
+        const dx = event.clientX - pointerStart.current.x;
+        const dy = event.clientY - pointerStart.current.y;
+        if (Math.hypot(dx, dy) > 8) pointerMoved.current = true;
+      }}
+      onPointerUp={(event) => {
+        if (event.pointerType === "touch" && pointerStart.current) {
+          const dx = event.clientX - pointerStart.current.x;
+          const dy = event.clientY - pointerStart.current.y;
+          if (Math.hypot(dx, dy) > 8) pointerMoved.current = true;
+        }
+        pointerStart.current = null;
+      }}
+      onPointerCancel={() => {
+        pointerStart.current = null;
+        pointerMoved.current = true;
+      }}
+      onClick={(event) => {
+        if (event.detail !== 0 && pointerMoved.current) {
+          pointerMoved.current = false;
+          event.preventDefault();
+          return;
+        }
+        pointerMoved.current = false;
+        onClick();
+      }}
       title={title}
       className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
         active

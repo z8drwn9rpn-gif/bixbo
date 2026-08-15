@@ -72,6 +72,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"tex
     const controlled = value !== undefined;
     const canonicalValue = normalizeBixboText(controlled ? asText(value) : uncontrolledValue);
     const nativeValue = encodeBixboNativeText(canonicalValue);
+    const mirrorActive = Boolean(canonicalValue && EMOJI_RE.test(canonicalValue));
     const portalHost = pickerOpen
       ? textareaRef.current?.closest<HTMLElement>("[role=\"dialog\"]") ?? null
       : null;
@@ -193,8 +194,11 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"tex
             onScroll?.(event);
           }}
           className={cn(
-            "relative z-10 flex min-h-[120px] w-full rounded-xl border border-input bg-background px-3 py-2.5 pr-14 text-base leading-normal text-transparent caret-foreground shadow-sm transition-[border-color,box-shadow,background-color] duration-150",
-            "[-webkit-text-fill-color:transparent] placeholder:[-webkit-text-fill-color:var(--muted-foreground)] placeholder:text-muted-foreground",
+            "relative z-10 flex min-h-[120px] w-full rounded-xl border border-input bg-background px-3 py-2.5 pr-14 text-base leading-normal caret-foreground shadow-sm transition-[border-color,box-shadow,background-color] duration-150",
+            mirrorActive
+              ? "text-transparent [-webkit-text-fill-color:transparent] placeholder:[-webkit-text-fill-color:var(--muted-foreground)]"
+              : "text-foreground",
+            "placeholder:text-muted-foreground",
             "focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
             "disabled:cursor-not-allowed disabled:bg-muted/50 disabled:opacity-50",
             "aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/25",
@@ -205,7 +209,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"tex
           {...props}
         />
 
-        {canonicalValue ? (
+        {mirrorActive ? (
           <div
             ref={mirrorRef}
             aria-hidden="true"
