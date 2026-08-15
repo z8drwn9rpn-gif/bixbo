@@ -4,6 +4,7 @@ import fs from "node:fs";
 const rootSource = fs.readFileSync("src/routes/__root.tsx", "utf8");
 const touchCss = fs.readFileSync("src/ios-touch-stability.css", "utf8");
 const textareaSource = fs.readFileSync("src/components/ui/textarea.tsx", "utf8");
+const themeSource = fs.readFileSync("src/lib/theme.ts", "utf8");
 
 describe("mobile touch and text editing regressions", () => {
   it("does not disable browser zoom or install document-wide gesture blockers", () => {
@@ -12,6 +13,12 @@ describe("mobile touch and text editing regressions", () => {
     expect(rootSource).not.toContain("maximum-scale=1");
     expect(rootSource).not.toContain('document.addEventListener("touchmove"');
     expect(rootSource).not.toContain('document.addEventListener("gesturestart"');
+  });
+
+  it("keeps BIXBO dark-mode browser chrome explicit without disabling page zoom", () => {
+    expect(rootSource).toContain('{ name: "color-scheme", content: "only light" }');
+    expect(themeSource).toContain('root.style.colorScheme = "only light"');
+    expect(themeSource).toContain('const DARK_THEME_COLOR = "#171A14"');
   });
 
   it("keeps chart touch handling scoped while preserving native text selection", () => {
