@@ -161,3 +161,40 @@
 .dark [data-bixbo-hak-root="1"] {
   isolation: isolate;
 }
+
+/* Samsung Internet dark-mode bridge.
+   Samsung's Force Dark logic looks for author-provided handling inside the
+   prefers-color-scheme context. These rules make BIXBO's own selected theme
+   explicit there as well, including the manual Light override on a dark phone. */
+:root[data-theme="dark"] {
+  color-scheme: dark !important;
+}
+
+:root[data-theme="light"] {
+  color-scheme: only light !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="dark"],
+  :root[data-theme="dark"] body {
+    background: #171A14 !important;
+    background-color: #171A14 !important;
+    color: #F6F4EE;
+  }
+
+  :root[data-theme="light"],
+  :root[data-theme="light"] body {
+    background: #FBF7F3 !important;
+    background-color: #FBF7F3 !important;
+    color: #172014;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  :root[data-theme="dark"],
+  :root[data-theme="dark"] body {
+    background: #171A14 !important;
+    background-color: #171A14 !important;
+    color: #F6F4EE;
+  }
+}
