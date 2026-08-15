@@ -27,18 +27,24 @@
 }
 
 /* Accordion labels and their explanations are part of the analysis, not
- * decorative placeholders. Never allow theme/container rules to hide them. */
+ * decorative placeholders. Never allow theme/container rules to erase them.
+ * The explicit data selectors are future-proof; the structural selector covers
+ * the current shared CollapsibleSection without changing its layout. */
 [data-bixbo-pattern-section-title],
-[data-bixbo-pattern-section-subtitle] {
+[data-bixbo-pattern-section-subtitle],
+section > button[aria-expanded] > div > h2,
+section > button[aria-expanded] > div > p {
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
 }
 
-[data-bixbo-pattern-section-title] {
+[data-bixbo-pattern-section-title],
+section > button[aria-expanded] > div > h2 {
   color: var(--foreground) !important;
 }
 
-[data-bixbo-pattern-section-subtitle] {
+[data-bixbo-pattern-section-subtitle],
+section > button[aria-expanded] > div > p {
   color: var(--muted-foreground) !important;
 }
