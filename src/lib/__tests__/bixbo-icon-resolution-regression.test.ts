@@ -44,9 +44,13 @@ describe("BIXBO icon resolution", () => {
     }
   });
 
-  it("routes legacy Ico emoji render slots through the central BixboIcon at build time", () => {
+  it("routes every legacy emoji visual helper through central BIXBO rendering at build time", () => {
     const source = read("src/build/bixboIconMigrationPlugin.ts");
     expect(source).toContain('replaceAll("<Ico e=", "<BixboIcon emoji=")');
+    expect(source).toContain('replaceAll("<IcoText", "<BixboSafeText")');
+    expect(source).toContain('replaceAll("<SemanticIcoText", "<BixboSafeText")');
+    expect(source).toContain('.replace(/<SemanticIco\\b/g, "<BixboIcon")');
+    expect(source).toContain('.replace(/fallbackEmoji=/g, "emoji=")');
     expect(source).toContain("isIconImplementation");
   });
 });
