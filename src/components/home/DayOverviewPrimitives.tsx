@@ -55,10 +55,11 @@ export function DayOverviewCard({
   compact?: boolean;
 }) {
   const { t } = useI18n();
+  const resolvedIcon = icon === "🫯" ? "✨" : icon;
   return (
     <div className={`rounded-3xl border border-border/70 bg-surface shadow-sm ring-1 ring-border ${compact ? "px-4 py-3" : "p-4"}`}>
       <div className={`${compact ? "mb-1" : "mb-2"} flex items-center gap-2`}>
-        <Ico e={icon} size={22} />
+        <Ico e={resolvedIcon} size={22} />
         <h3 className="font-serif text-lg font-semibold">{t(title)}</h3>
       </div>
       {children}
