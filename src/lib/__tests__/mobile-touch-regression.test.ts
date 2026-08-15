@@ -15,11 +15,13 @@ describe("mobile touch and text editing regressions", () => {
     expect(rootSource).not.toContain('document.addEventListener("gesturestart"');
   });
 
-  it("keeps BIXBO dark-mode browser chrome explicit without disabling page zoom", () => {
-    expect(rootSource).toContain('{ name: "color-scheme", content: "light dark" }');
+  it("keeps BIXBO browser chrome explicit before paint without disabling page zoom", () => {
+    expect(rootSource).toContain('<meta name="color-scheme" content="light dark" />');
+    expect(rootSource).toContain('<meta name="theme-color" content="#FBF7F3" />');
     expect(rootSource).toContain('root.style.colorScheme = isDark ? "dark" : "only light"');
+    expect(rootSource).toContain('choice === "light" ? "only light" : "light dark"');
     expect(themeSource).toContain('root.style.colorScheme = isDark ? "dark" : "only light"');
-    expect(themeSource).toContain('colorSchemeMeta?.setAttribute("content", "light dark")');
+    expect(themeSource).toContain('theme === "light" ? "only light" : "light dark"');
     expect(themeSource).toContain('const DARK_THEME_COLOR = "#171A14"');
   });
 
