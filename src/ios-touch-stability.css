@@ -1,0 +1,61 @@
+/* iOS / PWA touch stability
+   Prevent accidental double-tap zoom and Safari focus zoom without disabling user pinch zoom globally. */
+
+html,
+body {
+  overscroll-behavior-x: none;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* iOS Safari auto-zooms focused controls below 16px. Keep editable controls at 16px on touch devices. */
+@media (pointer: coarse) and (max-width: 900px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+/* Remove double-tap zoom from normal app controls while preserving scrolling and deliberate pinch zoom. */
+button,
+a,
+[role="button"],
+summary,
+label[for],
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+input[type="checkbox"],
+input[type="radio"],
+input[type="range"],
+select {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Modal/sheet content should not scroll-chain into the page behind it. */
+[role="dialog"],
+[aria-modal="true"],
+[data-radix-dialog-content],
+[data-radix-sheet-content],
+[data-bixbo-icon-keyboard] section {
+  overscroll-behavior: contain;
+}
+
+/* Scrollable controls may pan, but should not trigger horizontal viewport gestures. */
+textarea,
+input,
+select {
+  max-width: 100%;
+}
+
+/* Do not let draggable/interactive visualizations invoke browser text selection/callouts on long press. */
+svg button,
+[role="slider"],
+[data-radix-slider-root],
+[data-bixbo-touch-control] {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
