@@ -1,11 +1,10 @@
 /* BIXBO mobile / PWA touch stability
-   Keep the app at a fixed viewport scale on touch devices while preserving normal one-finger scrolling. */
+   Preserve native text editing and browser accessibility while preventing accidental chart zoom/selection. */
 
 html,
 body {
   overscroll-behavior-x: none;
   -webkit-text-size-adjust: 100%;
-  touch-action: pan-x pan-y;
 }
 
 /* iOS Safari auto-zooms focused controls below 16px. Keep editable controls at 16px on touch devices. */
@@ -14,18 +13,6 @@ body {
   textarea,
   select {
     font-size: 16px !important;
-  }
-}
-
-/* Explicitly exclude pinch zoom and double-tap zoom from the app surface.
-   pan-x pan-y keeps normal one-finger scrolling/swiping available. */
-@media (pointer: coarse) {
-  html,
-  body,
-  #root,
-  #app,
-  [data-bixbo-app-root] {
-    touch-action: pan-x pan-y !important;
   }
 }
 
@@ -39,10 +26,19 @@ input[type="submit"],
 input[type="reset"],
 input[type="checkbox"],
 input[type="radio"],
-input[type="range"],
 select {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Editable controls must keep native iOS selection/caret behavior, including wrapped lines. */
+textarea,
+input:not([type="range"]),
+[contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+  touch-action: auto;
 }
 
 /* Modal/sheet content should not scroll-chain into the page behind it. */
@@ -61,27 +57,34 @@ select {
   max-width: 100%;
 }
 
-/* Do not let draggable/interactive visualizations invoke browser text selection/callouts on long press. */
-svg button,
-[role="slider"],
-[data-radix-slider-root],
+/* Recharts and other interactive visualizations should not trigger browser double-tap/pinch zoom.
+   pan-y keeps normal vertical page scrolling available when the gesture starts on a chart. */
+.recharts-wrapper,
+.recharts-surface,
+[data-bixbo-chart],
 [data-bixbo-touch-control] {
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
-  touch-action: manipulation;
+  touch-action: pan-y;
+}
+
+/* Horizontal sliders remain draggable without hijacking vertical page scrolling. */
+[role="slider"],
+[data-radix-slider-root],
+input[type="range"] {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: pan-y;
 }
 
 /* ---------------------------------------------------------------------------
    iOS keyboard viewport (see src/hooks/useKeyboardViewport.ts)
 
-   iOS never resizes the layout viewport for the keyboard, its suggestion row or
-   the native previous/next/done accessory bar. The hook mirrors
-   window.visualViewport into these variables; the fallback keeps pre-existing
-   behaviour on browsers without VisualViewport.
-
-   We deliberately do NOT try to hide the native accessory bar — that is not
-   removable from the web. We only make sure nothing stays behind it.
+   iOS does not resize the layout viewport for the keyboard, its suggestion row
+   or native accessory bar. The hook mirrors window.visualViewport into these
+   variables; the fallback keeps existing behaviour elsewhere.
 --------------------------------------------------------------------------- */
 :root {
   --bixbo-viewport-height: 100svh;
@@ -105,7 +108,7 @@ html[data-bixbo-keyboard-open] nav[aria-label="Primary navigation"] {
   visibility: hidden;
 }
 
-/* Never let iOS auto-zoom a focused textarea. */
+/* Never let iOS auto-zoom a focused rich textarea. */
 @media (pointer: coarse) {
   textarea[data-bixbo-rich-text] {
     font-size: 16px !important;
