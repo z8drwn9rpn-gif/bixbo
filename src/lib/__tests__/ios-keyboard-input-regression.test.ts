@@ -79,13 +79,14 @@ describe("Log sheet keyboard stability", () => {
     expect(iconKeyboard).not.toContain('visualViewport?.addEventListener("scroll"');
   });
 
-  it("keeps user zoom enabled while preventing automatic input focus zoom with 16px fields", () => {
-    expect(rootRoute).not.toContain("maximum-scale=1");
-    expect(rootRoute).not.toContain("minimum-scale=1");
-    expect(rootRoute).not.toContain("user-scalable=no");
+  it("keeps page zoom locked without reintroducing JS gesture blockers", () => {
+    expect(rootRoute).toContain("maximum-scale=1");
+    expect(rootRoute).toContain("minimum-scale=1");
+    expect(rootRoute).toContain("user-scalable=no");
     expect(rootRoute).not.toContain('document.addEventListener("touchmove"');
     expect(rootRoute).not.toContain('document.addEventListener("gesturestart"');
-    expect(iosCss).toContain("touch-action: pan-x pan-y pinch-zoom");
+    expect(iosCss).toContain("touch-action: pan-x pan-y;");
+    expect(iosCss).not.toContain("touch-action: pan-x pan-y pinch-zoom");
     expect(iosCss).toMatch(/input:not\([^}]+textarea,[\s\S]*font-size:\s*16px\s*!important/);
   });
 });
