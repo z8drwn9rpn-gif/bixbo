@@ -4,7 +4,12 @@ const BIXBO_ICON_IMPORT = 'import { BixboIcon } from "@/components/icons/BixboIc
 const BIXBO_SAFE_TEXT_IMPORT = 'import { BixboSafeText } from "@/components/icons/BixboSafeText";';
 
 function ensureImport(code: string, modulePath: string, statement: string) {
-  if (code.includes(modulePath)) return code;
+  const hasExactImport =
+    code.includes(`from "${modulePath}"`) ||
+    code.includes(`from '${modulePath}'`) ||
+    code.includes(`import("${modulePath}")`) ||
+    code.includes(`import('${modulePath}')`);
+  if (hasExactImport) return code;
   return `${statement}\n${code}`;
 }
 
