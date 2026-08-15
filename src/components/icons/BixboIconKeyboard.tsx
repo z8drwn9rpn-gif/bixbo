@@ -82,6 +82,12 @@ export function BixboIconKeyboard() {
 
   if (!mounted || !target || typeof document === "undefined") return null;
 
+  // Keep the icon keyboard inside the active Radix dialog/sheet whenever the
+  // focused editable belongs to one. Portaling directly to document.body makes
+  // Radix treat taps on the floating BIXBO button/picker as outside interactions,
+  // which can dismiss the whole log before the picker handles the tap.
+  const portalHost = target.closest<HTMLElement>("[role=\"dialog\"]") ?? document.body;
+
   const picker = (
     <div data-bixbo-icon-keyboard className="pointer-events-none fixed inset-0 z-[2147483000]">
       <button
@@ -170,5 +176,5 @@ export function BixboIconKeyboard() {
     </div>
   );
 
-  return createPortal(picker, document.body);
+  return createPortal(picker, portalHost);
 }
