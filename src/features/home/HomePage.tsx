@@ -9,13 +9,23 @@ import { MonthCalendar, monthLabel } from "@/components/MonthCalendar";
 import { LogSheet } from "@/components/LogSheet";
 import { QuickTags } from "@/components/QuickTags";
 import { useI18n } from "@/hooks/useI18n";
-import { EMPTY, fromKey, isCycleTrackingHidden, toKey, todayKey, useBixbo } from "@/lib/storage";
+import {
+  EMPTY,
+  fromKey,
+  isCycleTrackingHidden,
+  toKey,
+  todayKey,
+  useBixbo,
+  type PanicAttack,
+  type TetanyEpisode,
+} from "@/lib/storage";
 import { VitalTrendPopup, type VitalTrendMetric } from "@/components/home/vitalTrends";
 import { VitalTile, MedsProgress } from "@/components/home/HomeTiles";
 import { BirthControlSummaryCard, BirthControlOverlay } from "@/components/home/BirthControlCard";
 import { DayPreview, ShareDayButton } from "@/components/home/DayOverview";
 import { NextPeriodHomeCard, PostpartumHomeCard, PregnancyHomeCard } from "@/components/home/HomeModeCards";
 import { HomeSummaryOverlay } from "@/components/home/HomeSummaryOverlay";
+import { EpisodePainEditSheet, type EpisodeEditTarget } from "@/features/home/EpisodePainEditSheet";
 
 function ProfileCardIcon({ size = 14 }: { size?: number }) {
   return (
@@ -55,11 +65,21 @@ export function HomePage() {
   const [quickCat, setQuickCat] = useState<string | undefined>();
   const [editPain, setEditPain] = useState<import("@/lib/storage").PainEntry | undefined>();
   const [editEntry, setEditEntry] = useState<unknown>(undefined);
+  const [episodeEdit, setEpisodeEdit] = useState<EpisodeEditTarget | null>(null);
   const monthSummaryTimer = useRef<number | null>(null);
   const monthSummaryPointerStart = useRef<{ x: number; y: number } | null>(null);
   const calendarRef = useRef<HTMLDivElement | null>(null);
 
   const openEdit = (cat: string, entry: unknown) => {
+    if (cat === "tetany") {
+      setEpisodeEdit({ kind: "tetany", entry: entry as TetanyEpisode });
+      return;
+    }
+    if (cat === "panic") {
+      setEpisodeEdit({ kind: "panic", entry: entry as PanicAttack });
+      return;
+    }
+    setEpisodeEdit(null);
     setQuickCat(cat);
     setEditEntry(entry);
     setEditPain(undefined);
@@ -196,7 +216,7 @@ export function HomePage() {
       <aside className="min-w-0 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto lg:rounded-[1.75rem] lg:bg-surface/45 lg:p-4 lg:ring-1 lg:ring-border/55 xl:p-5">
         <div className="mt-4 flex items-center justify-between px-5 lg:mt-0 lg:px-0"><h2 className="font-serif text-xl font-bold">{selected === todayKey() ? t("Today") : fromKey(selected).toLocaleDateString(language === "sk" ? "sk-SK" : "en-GB", { weekday: "long", day: "numeric", month: "long" })}</h2><ShareDayButton date={selected} view={view} /></div>
         <div className="[&_.p-4]:!py-3 [&_.space-y-2]:!space-y-1 [&_.mt-2]:!mt-1 [&_.my-2]:!my-1 [&_.pt-3]:!pt-2 [&_.gap-3]:!gap-2">
-          <DayPreview date={selected} data={view} update={update} onEditPain={(pain) => { setEditPain(pain); setEditEntry(undefined); setQuickCat("pain"); setLogOpen(true); }} onEdit={openEdit} />
+          <DayPreview date={selected} data={view} update={update} onEditPain={(pain) => { setEpisodeEdit(null); setEditPain(pain); setEditEntry(undefined); setQuickCat("pain"); setLogOpen(true); }} onEdit={openEdit} />
         </div>
       </aside>
     </div>
@@ -204,6 +224,7 @@ export function HomePage() {
     {vitalTrendOpen && typeof document !== "undefined" ? createPortal(<VitalTrendPopup metric={vitalTrendOpen} data={view} anchorKey={selected} onClose={() => setVitalTrendOpen(null)} />, document.body) : null}
     {todayOpen && <HomeSummaryOverlay data={view} initialMode={summaryMode} initialMonth={summaryMonth ?? undefined} onClose={() => setTodayOpen(false)} onOpenCalendar={(dateKey) => { setSelected(dateKey); setMonthAnchor(fromKey(dateKey)); }} />}
     {!maleMode && isAdminOwnerAccount() && hakOpen && hakAnchor && <BirthControlOverlay data={view} anchor={hakAnchor} onAnchorChange={setHakAnchor} onClose={() => setHakOpen(false)} />}
+    <EpisodePainEditSheet open={!!episodeEdit} onOpenChange={(open) => { if (!open) setEpisodeEdit(null); }} date={selected} data={view} update={update} target={episodeEdit} />
     <LogSheet open={logOpen} onOpenChange={(open) => { setLogOpen(open); if (!open) { setQuickCat(undefined); setEditPain(undefined); setEditEntry(undefined); } }} date={selected} data={view} update={update} initial={quickCat as never} initialPain={editPain} editEntry={editEntry} />
   </AppShell>;
 }
