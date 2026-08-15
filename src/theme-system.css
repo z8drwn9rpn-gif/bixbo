@@ -1,0 +1,400 @@
+/* BIXBO theme system — canonical light/dark palette and semantic health colours.
+   styles.css owns structure; this file owns theme values and theme-specific surfaces.
+   Health semantics (pain, period, status) remain explicit so neutral UI changes cannot
+   accidentally recolour logged health information. */
+
+/* Light semantic and health tokens */
+:root {
+  --destructive: oklch(0.5 0.22 25);
+  --destructive-foreground: oklch(1 0 0);
+  --danger: var(--destructive);
+  --danger-foreground: var(--destructive-foreground);
+  --success: oklch(0.4 0.13 145);
+  --success-foreground: oklch(1 0 0);
+  --warning: oklch(0.55 0.16 75);
+  --warning-foreground: oklch(1 0 0);
+  --info: oklch(0.45 0.13 240);
+  --info-foreground: oklch(1 0 0);
+  --period-spotting: oklch(0.86 0.05 275);
+  --period-spotting-fg: oklch(0.25 0.08 275);
+  --period-light: oklch(0.72 0.13 275);
+  --period-light-fg: oklch(0.14 0.05 275);
+  --period-medium: oklch(0.56 0.19 278);
+  --period-medium-fg: oklch(1 0 0);
+  --period-heavy: oklch(0.42 0.2 282);
+  --period-heavy-fg: oklch(1 0 0);
+  --period-veryheavy: oklch(0.3 0.18 288);
+  --period-veryheavy-fg: oklch(1 0 0);
+  --pain-0: #72c64a;
+  --pain-0-fg: #17320e;
+  --pain-1: #91cd3a;
+  --pain-1-fg: #20330d;
+  --pain-2: #b7d12f;
+  --pain-2-fg: #2f3308;
+  --pain-3: #dfd11f;
+  --pain-3-fg: #332f05;
+  --pain-4: #f3c30d;
+  --pain-4-fg: #352a03;
+  --pain-5: #f5a20b;
+  --pain-5-fg: #3a2403;
+  --pain-6: #f47b16;
+  --pain-6-fg: #351803;
+  --pain-7: #f05c5f;
+  --pain-7-fg: #ffffff;
+  --pain-8: #ec3f74;
+  --pain-8-fg: #ffffff;
+  --pain-9: #de2557;
+  --pain-9-fg: #ffffff;
+  --pain-10: #c81746;
+  --pain-10-fg: #ffffff;
+  --today: oklch(0.8 0.16 95);
+  --predicted: oklch(0.6 0.19 55);
+}
+
+/* ========================= Light UI ========================= */
+/* BIXBO white + green light theme.
+   Loaded after styles.css so the app gets the new visual palette without
+   changing component structure or the HAK calendar's local theme. */
+
+:root:not(.dark) {
+  --background: #FBF7F3;
+  --foreground: #172014;
+
+  --surface: #FFFDFC;
+  --surface-elevated: #FFFFFF;
+  --surface-sunken: #F3F5EB;
+  --tint: #EEF2E3;
+
+  --card: #FFFDFC;
+  --card-foreground: #172014;
+
+  --popover: #FFFFFF;
+  --popover-foreground: #172014;
+
+  --primary: #6F7F3D;
+  --primary-foreground: #FFFDF8;
+
+  --secondary: #EEF2E3;
+  --secondary-foreground: #29351C;
+
+  --muted: #F2F3EA;
+  --muted-foreground: #66705C;
+
+  --accent: #E7EDD8;
+  --accent-foreground: #31431E;
+
+  --border: #DDDCCF;
+  --input: #D4D7C8;
+  --ring: #6F7F3D;
+
+  --chart-grid: #E2E2D8;
+  --chart-axis: #59634E;
+  --chart-tooltip-bg: #FFFFFF;
+  --chart-tooltip-fg: #172014;
+
+  --bixbo-glass: rgba(255, 253, 252, 0.78);
+  --bixbo-glass-strong: rgba(255, 255, 255, 0.94);
+}
+
+/* Clean warm off-white canvas instead of the previous all-green background. */
+:root:not(.dark),
+:root:not(.dark) body {
+  background-color: #FBF7F3;
+}
+
+:root:not(.dark) body {
+  background: #FBF7F3;
+}
+
+/* Cards remain white, with only a very soft green-neutral outline/shadow.
+   HAK is explicitly excluded because it owns its own palette and 3D circles. */
+:root:not(.dark) .bg-surface:not([data-bixbo-hak-root="1"] *),
+:root:not(.dark) .bg-card:not([data-bixbo-hak-root="1"] *) {
+  background-color: #FFFDFC;
+  backdrop-filter: none;
+}
+
+:root:not(.dark) .ring-border:not([data-bixbo-hak-root="1"] *) {
+  --tw-ring-color: color-mix(in srgb, #C8CCB9 68%, transparent);
+}
+
+:root:not(.dark) .shadow-sm:not([data-bixbo-hak-root="1"] *) {
+  --tw-shadow-color: color-mix(in srgb, #52603B 9%, transparent);
+}
+
+:root:not(.dark) .shadow-md:not([data-bixbo-hak-root="1"] *),
+:root:not(.dark) .shadow-lg:not([data-bixbo-hak-root="1"] *),
+:root:not(.dark) .shadow-xl:not([data-bixbo-hak-root="1"] *) {
+  --tw-shadow-color: color-mix(in srgb, #52603B 13%, transparent);
+}
+
+/* Green is the single interaction accent in light mode. Variables are used here
+   so locally themed components can still override them safely. */
+:root:not(.dark) .bg-primary {
+  background-color: var(--primary);
+}
+
+:root:not(.dark) .text-primary {
+  color: var(--primary);
+}
+
+:root:not(.dark) .border-primary {
+  border-color: var(--primary);
+}
+
+:root:not(.dark) .ring-primary {
+  --tw-ring-color: var(--primary);
+}
+
+/* Selected/active controls stay soft green instead of purple outside HAK. */
+:root:not(.dark) .bg-tint:not([data-bixbo-hak-root="1"] *) {
+  background-color: var(--tint);
+}
+
+:root:not(.dark) .bg-accent:not([data-bixbo-hak-root="1"] *) {
+  background-color: var(--accent);
+}
+
+/* HAK keeps its original local palette, circle colors, gradients, borders and shadows. */
+[data-bixbo-hak-root="1"] {
+  isolation: isolate;
+}
+
+/* Only the HAK page canvas follows the new BIXBO off-white background. */
+:root:not(.dark) [data-bixbo-hak-root="1"] {
+  background: #FBF7F3 !important;
+  background-color: #FBF7F3 !important;
+}
+
+:root:not(.dark) [data-bixbo-hak-root="1"] > [aria-hidden="true"],
+:root:not(.dark) [data-bixbo-hak-root="1"] > .bg-background {
+  background: #FBF7F3 !important;
+  background-color: #FBF7F3 !important;
+}
+
+/* Match the large centre of the HAK wheel to the same off-white canvas.
+   The 28 3D pill circles keep their original green/pink gradients and shadows. */
+:root:not(.dark) [data-bixbo-hak-content="1"] .absolute.inset-\[16\.5\%\].rounded-full {
+  background: #FBF7F3 !important;
+  background-color: #FBF7F3 !important;
+}
+
+/* ŠukŠuk analytics card inside HAK uses the same off-white surface instead of
+   the old moss-green fill; its chart bars, icon and green accents remain unchanged. */
+:root:not(.dark) [data-bixbo-hak-content="1"] section.mt-4.rounded-3xl.p-4.pb-5 {
+  background: #FBF7F3 !important;
+  background-color: #FBF7F3 !important;
+}
+
+/* Dark semantic and health tokens */
+.dark {
+  --destructive: oklch(0.72 0.2 25);
+  --destructive-foreground: oklch(0.14 0.02 25);
+  --danger: var(--destructive);
+  --danger-foreground: var(--destructive-foreground);
+  --success: oklch(0.78 0.16 145);
+  --success-foreground: oklch(0.14 0.05 145);
+  --warning: oklch(0.8 0.15 80);
+  --warning-foreground: oklch(0.14 0.05 80);
+  --info: oklch(0.78 0.11 235);
+  --info-foreground: oklch(0.14 0.04 235);
+  --period-spotting: oklch(0.8 0.08 275);
+  --period-spotting-fg: oklch(0.14 0.05 275);
+  --period-light: oklch(0.68 0.15 275);
+  --period-light-fg: oklch(0.12 0.05 275);
+  --period-medium: oklch(0.56 0.2 278);
+  --period-medium-fg: oklch(1 0 0);
+  --period-heavy: oklch(0.44 0.21 282);
+  --period-heavy-fg: oklch(1 0 0);
+  --period-veryheavy: oklch(0.34 0.19 288);
+  --period-veryheavy-fg: oklch(1 0 0);
+  --pain-0: #72c64a;
+  --pain-0-fg: #17320e;
+  --pain-1: #91cd3a;
+  --pain-1-fg: #20330d;
+  --pain-2: #b7d12f;
+  --pain-2-fg: #2f3308;
+  --pain-3: #dfd11f;
+  --pain-3-fg: #332f05;
+  --pain-4: #f3c30d;
+  --pain-4-fg: #352a03;
+  --pain-5: #f5a20b;
+  --pain-5-fg: #3a2403;
+  --pain-6: #f47b16;
+  --pain-6-fg: #351803;
+  --pain-7: #f05c5f;
+  --pain-7-fg: #ffffff;
+  --pain-8: #ec3f74;
+  --pain-8-fg: #ffffff;
+  --pain-9: #de2557;
+  --pain-9-fg: #ffffff;
+  --pain-10: #c81746;
+  --pain-10-fg: #ffffff;
+  --today: oklch(0.8 0.16 95);
+  --predicted: oklch(0.68 0.19 55);
+}
+
+/* ========================= Dark UI ========================== */
+/* BIXBO dark theme — a night version of the white/green light UI.
+   Keep colour-carrying health semantics (pain, period, HAK pills) intact;
+   dark mode changes the canvas, cards, chrome, copy and neutral controls. */
+
+.dark {
+  --background: #171A14;
+  --foreground: #F6F4EE;
+
+  --surface: #20251B;
+  --surface-elevated: #292F22;
+  --surface-sunken: #12150F;
+  --tint: #2B3122;
+
+  --card: #20251B;
+  --card-foreground: #F6F4EE;
+
+  --popover: #292F22;
+  --popover-foreground: #F6F4EE;
+
+  /* Olive is an accent now, not the whole canvas. */
+  --primary: #A9B978;
+  --primary-foreground: #15180F;
+
+  --secondary: #2A3021;
+  --secondary-foreground: #F1EFE7;
+
+  --muted: #242A1E;
+  --muted-foreground: #B8BBAE;
+
+  --accent: #333B27;
+  --accent-foreground: #F6F4EE;
+
+  --border: #3A4032;
+  --input: #444A3B;
+  --ring: #B6C982;
+
+  --chart-grid: #343A2E;
+  --chart-axis: #C6C8BC;
+  --chart-tooltip-bg: #292F22;
+  --chart-tooltip-fg: #F7F5EF;
+
+  --bixbo-glass: rgba(32, 37, 27, 0.82);
+  --bixbo-glass-strong: rgba(41, 47, 34, 0.94);
+}
+
+.dark,
+.dark body {
+  background: #171A14;
+  color: #F6F4EE;
+}
+
+/* App chrome uses one continuous dark canvas. */
+.dark header,
+.dark nav,
+.dark aside,
+.dark [data-bixbo-bottom-nav],
+.dark [data-bixbo-side-nav] {
+  border-color: #343A2E;
+}
+
+/* Neutral cards are lifted slightly from the canvas instead of becoming green slabs. */
+.dark .bg-surface:not([data-bixbo-hak-root="1"] *),
+.dark .bg-card:not([data-bixbo-hak-root="1"] *) {
+  background-color: #20251B;
+}
+
+.dark .bg-surface-elevated:not([data-bixbo-hak-root="1"] *),
+.dark .bg-popover:not([data-bixbo-hak-root="1"] *) {
+  background-color: #292F22;
+}
+
+.dark .bg-tint:not([data-bixbo-hak-root="1"] *),
+.dark .bg-muted:not([data-bixbo-hak-root="1"] *) {
+  background-color: #2B3122;
+}
+
+.dark .bg-accent:not([data-bixbo-hak-root="1"] *) {
+  background-color: #333B27;
+}
+
+.dark .border-border:not([data-bixbo-hak-root="1"] *),
+.dark .ring-border:not([data-bixbo-hak-root="1"] *) {
+  border-color: #3A4032;
+  --tw-ring-color: color-mix(in srgb, #4B5340 72%, transparent);
+}
+
+/* Main/secondary copy hierarchy. */
+.dark .text-foreground,
+.dark [data-bixbo-app-title],
+.dark [data-bixbo-display-title],
+.dark .bixbo-section-title {
+  color: #F6F4EE !important;
+}
+
+.dark .text-muted-foreground {
+  color: #B8BBAE !important;
+}
+
+/* Keep green as interaction/status accent. */
+.dark .text-primary {
+  color: #B6C982;
+}
+
+.dark .bg-primary {
+  background-color: #A9B978;
+}
+
+.dark .border-primary {
+  border-color: #A9B978;
+}
+
+.dark .ring-primary {
+  --tw-ring-color: #A9B978;
+}
+
+/* Softer, darker shadows appropriate for a night UI. */
+.dark .shadow-sm:not([data-bixbo-hak-root="1"] *),
+.dark .shadow-md:not([data-bixbo-hak-root="1"] *),
+.dark .shadow-lg:not([data-bixbo-hak-root="1"] *),
+.dark .shadow-xl:not([data-bixbo-hak-root="1"] *) {
+  --tw-shadow-color: rgba(0, 0, 0, 0.34);
+}
+
+/* Inputs should remain visually separate from cards without turning moss-green. */
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.dark select,
+.dark textarea {
+  background-color: #1B1F17;
+  border-color: #444A3B;
+  color: #F6F4EE;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #8F9487;
+}
+
+/* Popups/sheets/dialogs follow the same elevated dark surface. */
+.dark [role="dialog"]:not([data-bixbo-hak-root="1"]),
+.dark [role="menu"],
+.dark [data-radix-popper-content-wrapper] > * {
+  --background: #20251B;
+  --popover: #292F22;
+  --card: #20251B;
+}
+
+/* Charts remain legible while their metric colours stay untouched. */
+.dark .recharts-cartesian-grid line,
+.dark .recharts-cartesian-axis line,
+.dark .recharts-cartesian-axis-tick line {
+  stroke: #343A2E;
+}
+
+.dark .recharts-text,
+.dark .recharts-cartesian-axis-tick-value,
+.dark svg text {
+  fill: #C6C8BC;
+}
+
+/* HAK owns its own 3D pill/circle palette. Do not recolour those circles. */
+.dark [data-bixbo-hak-root="1"] {
+  isolation: isolate;
+}

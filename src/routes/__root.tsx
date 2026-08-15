@@ -10,8 +10,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
-import whiteGreenThemeCss from "../white-green-theme.css?url";
-import darkThemeCss from "../dark-theme.css?url";
+import themeSystemCss from "../theme-system.css?url";
 import calendarSystemCss from "../calendar-system.css?url";
 import { useCloudSync } from "../lib/cloudSync";
 import { useThemeSync } from "../lib/theme";
@@ -144,8 +143,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap" },
       { rel: "stylesheet", href: appCss },
-      { rel: "stylesheet", href: whiteGreenThemeCss },
-      { rel: "stylesheet", href: darkThemeCss },
+      { rel: "stylesheet", href: themeSystemCss },
       { rel: "stylesheet", href: calendarSystemCss },
       { rel: "manifest", href: "/manifest.json" },
       { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
