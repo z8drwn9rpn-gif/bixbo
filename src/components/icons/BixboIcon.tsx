@@ -20,8 +20,24 @@ const FOOD_EMOJI_LABELS: Record<string, string> = {
   "🍔": "burger", "🍰": "cake", "🧁": "cake", "🍩": "dessert", "🍪": "dessert",
 };
 
-const VIVID_ICON_CLASS = "[filter:saturate(1.22)_contrast(1.04)_drop-shadow(0_1px_1px_rgb(0_0_0_/_0.12))]";
+/**
+ * Shared finish for the newer/flatter icon families.
+ * The original hand-built 3D identity icons already contain their own radial
+ * gradients/highlights/shadows, so we intentionally leave those untouched.
+ */
+const VIVID_ICON_CLASS =
+  "[filter:saturate(1.38)_contrast(1.08)_brightness(1.03)_drop-shadow(0_2px_1.5px_rgb(0_0_0_/_0.16))_drop-shadow(0_-1px_0.8px_rgb(255_255_255_/_0.14))]";
 const withVivid = (className?: string) => `${VIVID_ICON_CLASS}${className ? ` ${className}` : ""}`;
+
+const ORIGINAL_3D_ICONS = new Set<IconComponent>([
+  ChiliIcon,
+  PoopIcon,
+  BlueberryIcon,
+  FlameIcon,
+  SleepIcon,
+  HeartIcon,
+  SparkleIcon,
+]);
 
 export function normalizeBixboEmoji(value: string) {
   return value.replace(/\uFE0F/g, "").replace(/\p{Emoji_Modifier}/gu, "");
@@ -85,13 +101,14 @@ export function BixboIcon({
   className?: string;
   fallback?: "note" | "none";
 }) {
-  const vividClassName = withVivid(className);
-
-  if (name) return <Ico name={name} size={size} className={vividClassName} />;
+  if (name) return <Ico name={name} size={size} className={withVivid(className)} />;
 
   const Resolved = resolveBixboIcon({ emoji, label });
-  if (Resolved) return <Resolved size={size} className={vividClassName} />;
+  if (Resolved) {
+    const resolvedClassName = ORIGINAL_3D_ICONS.has(Resolved) ? className : withVivid(className);
+    return <Resolved size={size} className={resolvedClassName} />;
+  }
 
   if (fallback === "none") return null;
-  return <NoteIcon size={size} className={vividClassName} />;
+  return <NoteIcon size={size} className={withVivid(className)} />;
 }
