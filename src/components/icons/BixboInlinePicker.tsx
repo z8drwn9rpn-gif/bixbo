@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
 import { BixboIcon } from "./BixboIcon";
 
@@ -17,7 +17,7 @@ const GROUPS = [
 
 type GroupId = (typeof GROUPS)[number]["id"];
 
-function stopPointer(event: React.PointerEvent) {
+function stopPointer(event: ReactPointerEvent) {
   event.preventDefault();
   event.stopPropagation();
 }
