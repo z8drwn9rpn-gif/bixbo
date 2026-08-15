@@ -1,16 +1,12 @@
-file:///home/runner/work/bixbo/bixbo/scripts/apply-auth-pattern-fix.mjs:292
-  `import { describe, expect, it } from "bun:test";\nimport { oauthReturnUrlForLocation, PRODUCTION_APP_ORIGIN, safeOAuthRedirectUrl } from "../../integrations/auth/account";\n\ndescribe("BIXBO OAuth return origin", () => {\n  it("keeps local and Lovable preview origins out of the production OAuth return boundary", () => {\n    expect(oauthReturnUrlForLocation("localhost", "http://localhost:3000")).toBe(PRODUCTION_APP_ORIGIN);\n    expect(oauthReturnUrlForLocation("127.0.0.1", "http://127.0.0.1:3000")).toBe(PRODUCTION_APP_ORIGIN);\n    expect(oauthReturnUrlForLocation("bixbo.lovable.app", "https://bixbo.lovable.app")).toBe(PRODUCTION_APP_ORIGIN);\n    expect(oauthReturnUrlForLocation("preview-123.lovable.app", "https://preview-123.lovable.app")).toBe(PRODUCTION_APP_ORIGIN);\n  });\n\n  it("keeps the deployed production origin", () => {\n    expect(oauthReturnUrlForLocation("bixbo.z8drwn9rpn.workers.dev", PRODUCTION_APP_ORIGIN)).toBe(PRODUCTION_APP_ORIGIN);\n  });\n\n  it("falls back to production if origin is unavailable", () => {\n    expect(oauthReturnUrlForLocation("health.example.com", "")).toBe(PRODUCTION_APP_ORIGIN);\n  });\n\n  it("rejects a foreign OAuth redirect origin", () => {\n    expect(safeOAuthRedirectUrl("https://evil.example/auth?next=/profile")).toBe(`${'${PRODUCTION_APP_ORIGIN}'}/auth`);\n  });\n});\n`,
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+file:///home/runner/work/bixbo/bixbo/scripts/apply-auth-pattern-fix.mjs:10
+    throw new Error(`${path}: expected ${expected} occurrence(s), found ${count}: ${before.slice(0, 120)}`);
+          ^
 
-SyntaxError: missing ) after argument list
-    at compileSourceTextModule (node:internal/modules/esm/utils:346:16)
-    at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:110:18)
-    at #translate (node:internal/modules/esm/loader:559:20)
-    at afterLoad (node:internal/modules/esm/loader:612:29)
-    at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:617:12)
-    at #createModuleJob (node:internal/modules/esm/loader:640:36)
-    at #getJobFromResolveResult (node:internal/modules/esm/loader:353:34)
-    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:321:41)
-    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:680:25)
+Error: src/features/patterns/PatternsContentViewPart1.tsx: expected 1 occurrence(s), found 0: className="mt-1 text-sm font-semibold text-emerald-700 dark:text-emerald-300">{formatChange(mostImproved)}</p>
+    at replaceExact (file:///home/runner/work/bixbo/bixbo/scripts/apply-auth-pattern-fix.mjs:10:11)
+    at file:///home/runner/work/bixbo/bixbo/scripts/apply-auth-pattern-fix.mjs:243:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
 
 Node.js v22.23.2
