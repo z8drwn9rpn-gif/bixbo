@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { BixboIcon } from "./BixboIcon";
+import { bixboNativeGlyphForEmoji } from "./BixboTextGlyphs";
 
 const GROUPS = [
   { id: "faces", label: "Faces", items: ["😀","😂","🥰","😈","😢","😡","😴","🤒","🥵","🥶"] },
@@ -47,7 +48,12 @@ function insertInto(target: EditableTarget, value: string, caret: CaretSnapshot)
     const saved = caret?.kind === "text" ? caret : null;
     const start = saved?.start ?? target.selectionStart ?? target.value.length;
     const end = saved?.end ?? target.selectionEnd ?? start;
-    target.setRangeText(value, start, end, "end");
+    const insertion =
+      target instanceof HTMLTextAreaElement && target.dataset.bixboRichText === "true"
+        ? (bixboNativeGlyphForEmoji(value) ?? value)
+        : value;
+
+    target.setRangeText(insertion, start, end, "end");
     target.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText", data: value }));
     return;
   }
@@ -67,6 +73,8 @@ export function BixboIconKeyboard() {
   const [group, setGroup] = useState<(typeof GROUPS)[number]["id"]>("faces");
   const [mounted, setMounted] = useState(false);
   const caretRef = useRef<CaretSnapshot>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -100,14 +108,19 @@ export function BixboIconKeyboard() {
 
   const portalHost = target.closest<HTMLElement>("[role=\"dialog\"]") ?? document.body;
 
-  const dismissNativeKeyboard = () => {
-    const activeElement = document.activeElement;
-    if (activeElement instanceof HTMLElement && isEditable(activeElement)) activeElement.blur();
-    if (target.isConnected && target !== activeElement) target.blur();
+  const focusAwayFromEditor = () => {
+    if (target.isConnected) target.blur();
+    const sink = panelRef.current ?? triggerRef.current;
+    sink?.focus({ preventScroll: true });
+  };
+
+  const keepPickerFocus = () => {
+    triggerRef.current?.focus({ preventScroll: true });
   };
 
   const closePicker = () => {
     caretRef.current = null;
+    keepPickerFocus();
     setOpen(false);
   };
 
@@ -117,28 +130,31 @@ export function BixboIconKeyboard() {
       return;
     }
 
-    // Save the exact insertion point before iOS clears the native selection.
+    // Save the exact native insertion point before iOS clears selection.
     caretRef.current = snapshotCaret(target);
     setOpen(true);
 
-    // iOS/PWA can ignore blur while the original touchstart is still being
-    // processed. Blur on the next paint and repeat once after the keyboard has
-    // begun its transition so the picker replaces the native keyboard reliably.
+    // A plain blur is not sufficient inside a Radix focus scope: the dialog can
+    // immediately restore focus to the textarea and reopen the iOS keyboard.
+    // Move focus to a real non-editable element inside the same dialog instead.
     requestAnimationFrame(() => {
-      dismissNativeKeyboard();
-      window.setTimeout(dismissNativeKeyboard, 80);
+      focusAwayFromEditor();
+      window.setTimeout(focusAwayFromEditor, 80);
+      window.setTimeout(focusAwayFromEditor, 180);
     });
   };
 
   const chooseIcon = (emoji: string) => {
     insertInto(target, emoji, caretRef.current);
     caretRef.current = null;
+    keepPickerFocus();
     setOpen(false);
   };
 
   const picker = (
     <div data-bixbo-icon-keyboard className="pointer-events-none fixed inset-0 z-[2147483000]">
       <button
+        ref={triggerRef}
         type="button"
         data-bixbo-icon-trigger
         onTouchStart={(event) => {
@@ -175,7 +191,9 @@ export function BixboIconKeyboard() {
           }}
         >
           <section
-            className="w-full max-w-[430px] touch-pan-y overflow-hidden rounded-[28px] border border-border/70 bg-background shadow-2xl"
+            ref={panelRef}
+            tabIndex={-1}
+            className="w-full max-w-[430px] touch-pan-y overflow-hidden rounded-[28px] border border-border/70 bg-background shadow-2xl outline-none"
             onTouchStart={(event) => event.stopPropagation()}
             onPointerDown={(event) => event.stopPropagation()}
           >
