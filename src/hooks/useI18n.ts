@@ -61,6 +61,12 @@ const HIDDEN_HELPER_COPY = new Set([
   "Pause non-urgent reminders during this period.",
   "Download a portable copy without changing any saved data.",
 
+  // Notification page copy that just repeats the control/card title.
+  "Pick exactly what you want to hear about.",
+  "When the daily nudges are sent.",
+  "Local and server-originated tests are separate.",
+  "When BIXBO is open, local reminder checks can also appear as a soft in-app message.",
+
   // Insights / Patterns subtitles that merely restate the chart title.
   "Average pain and menstrual flow by cycle phase",
   "See how your symptoms usually change before, during and after your period.",
