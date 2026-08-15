@@ -49,7 +49,7 @@ jobs:
         run: bun run build
       - name: Smoke built app
         run: timeout 75s bun run smoke:ssr
-      - name: Install Chromium
-        run: bunx playwright install --with-deps chromium
+      - name: Install Chromium and WebKit
+        run: bunx playwright install --with-deps chromium webkit
       - name: Browser E2E
         run: bun run e2e
