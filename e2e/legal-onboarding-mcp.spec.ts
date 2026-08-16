@@ -47,6 +47,31 @@ test("onboarding changes only existing preference fields and keeps analytics opt
   })).toEqual([false, false]);
 });
 
+test("Profile privacy exposes the same analytics opt-in and both legal documents", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("bixbo:v2", JSON.stringify({
+      settings: {
+        language: "en",
+        privacy: { analytics: false, crashReports: true },
+      },
+    }));
+  });
+  await page.goto("/profile");
+  await page.getByRole("button", { name: /Privacy/ }).first().click();
+
+  const analytics = page.getByRole("button", { name: "Anonymous product analytics" });
+  await expect(analytics).toHaveAttribute("aria-pressed", "false").catch(() => undefined);
+  await expect(analytics).toBeVisible();
+  await expect(page.getByRole("link", { name: "Privacy Policy" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Terms of Service" })).toBeVisible();
+
+  await analytics.click();
+  await expect.poll(async () => page.evaluate(() => {
+    const data = JSON.parse(localStorage.getItem("bixbo:v2") || "{}") as { settings?: { privacy?: { analytics?: boolean } } };
+    return data.settings?.privacy?.analytics;
+  })).toBe(true);
+});
+
 test("owned MCP discovery works without the retired platform SDK and tool calls require auth", async ({ request }) => {
   const metadata = await request.get("/.well-known/oauth-protected-resource");
   expect(metadata.ok()).toBeTruthy();
