@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import appCss from "../styles.css?url";
 import themeSystemCss from "../theme-system.css?url";
 import calendarSystemCss from "../calendar-system.css?url";
+import deviceRenderingFixesCss from "../device-rendering-fixes.css?url";
 import { useCloudSync } from "../lib/cloudSync";
 import { useThemeSync } from "../lib/theme";
 import { useNotificationRuntime } from "../lib/notifications";
@@ -159,6 +160,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: appCss },
       { rel: "stylesheet", href: themeSystemCss },
       { rel: "stylesheet", href: calendarSystemCss },
+      { rel: "stylesheet", href: deviceRenderingFixesCss },
       { rel: "manifest", href: "/manifest.json" },
       { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
       { rel: "icon", type: "image/png", sizes: "180x180", href: "/apple-touch-icon.png" },
