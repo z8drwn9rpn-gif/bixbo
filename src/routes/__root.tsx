@@ -19,6 +19,7 @@ import { useThemeSync } from "../lib/theme";
 import { useNotificationRuntime } from "../lib/notifications";
 import { NotificationPrompt } from "../components/NotificationPrompt";
 import { AppPrivacyGuard } from "../components/AppPrivacyGuard";
+import { DiagnosticProfiler } from "../components/DiagnosticProfiler";
 import { Toaster } from "../components/ui/sonner";
 import { useI18n } from "@/hooks/useI18n";
 import { clearStaleAssetRecoveryGuard, recoverFromStaleAssetError } from "@/lib/staleAssetRecovery";
@@ -214,7 +215,11 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AppPrivacyGuard><Outlet /></AppPrivacyGuard>
+      <AppPrivacyGuard>
+        <DiagnosticProfiler id="RouteTree">
+          <Outlet />
+        </DiagnosticProfiler>
+      </AppPrivacyGuard>
       <NotificationPrompt />
       <Toaster />
     </QueryClientProvider>
