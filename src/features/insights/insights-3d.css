@@ -1,94 +1,126 @@
 /* Unified BIXBO 3D chart language for the Insights dashboard.
    The heatmap bead is the reference: coloured marks keep their semantic colour,
-   while a white edge, inner highlight, lower shade and soft cast shadow add depth. */
+   while a white edge, inner highlight, lower shade and soft cast shadow add depth.
 
+   Keep the rules structural and dashboard-scoped so every current graph — and new
+   graph marks built with the same primitives — inherits the same material. */
+
+/* Vertical chart marks: Pain, Symptoms, Bowel and Time of Day.
+   The generic inline height/background selector also covers zero-count Bowel bars,
+   which are divs rather than interactive buttons. */
 [data-bixbo-insights-dashboard="true"] [data-bixbo-chart-mark="bar"],
-[data-bixbo-insights-dashboard="true"] [data-symptoms-trend-card="true"] button > span[style*="height"],
-[data-bixbo-insights-dashboard="true"] [data-bowel-overview-card="true"] button[aria-label^="Bristol Type"],
-[data-bixbo-insights-dashboard="true"] button[aria-label*=". Tetany "][style*="height"],
-[data-bixbo-insights-dashboard="true"] button[aria-label*=". Panic "][style*="height"] {
+[data-bixbo-insights-dashboard="true"] [style*="height"][style*="background"] {
   -webkit-appearance: none;
   appearance: none;
-  border: 1px solid rgba(255, 255, 255, .42) !important;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  border: 1px solid rgba(255, 255, 255, .44) !important;
+  border-radius: 6px 6px 2px 2px !important;
   box-shadow:
-    inset 1px 1px 2px rgba(255, 255, 255, .56),
-    inset -1px -2px 3px rgba(55, 45, 30, .17),
-    0 2px 3px rgba(45, 52, 35, .18) !important;
-  filter: saturate(1.04) contrast(1.01);
+    inset 1px 1px 2px rgba(255, 255, 255, .58),
+    inset -1px -2px 3px rgba(55, 45, 30, .18),
+    0 2px 3px rgba(45, 52, 35, .19) !important;
+  filter: saturate(1.05) contrast(1.015);
   transform: translateZ(0);
 }
 
-/* Narrow bars need a restrained radius so the dimensional edge remains visible. */
-[data-bixbo-insights-dashboard="true"] [data-bixbo-chart-mark="bar"],
-[data-bixbo-insights-dashboard="true"] [data-symptoms-trend-card="true"] button > span[style*="height"],
-[data-bixbo-insights-dashboard="true"] button[aria-label*=". Tetany "][style*="height"],
-[data-bixbo-insights-dashboard="true"] button[aria-label*=". Panic "][style*="height"] {
-  border-radius: 6px 6px 2px 2px !important;
+/* A translucent face highlight makes rectangular marks read as the same raised
+   material as the small heatmap beads without replacing their semantic colour. */
+[data-bixbo-insights-dashboard="true"] [data-bixbo-chart-mark="bar"]::after,
+[data-bixbo-insights-dashboard="true"] [style*="height"][style*="background"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, .34) 0%,
+    rgba(255, 255, 255, .16) 28%,
+    rgba(255, 255, 255, 0) 52%,
+    rgba(45, 52, 35, .08) 100%
+  );
 }
 
-/* Selected bars keep the same raised material but gain a crisp focus rim. */
+/* Selected bars keep the raised surface and gain a crisp focus rim. */
 [data-bixbo-insights-dashboard="true"] [data-bixbo-chart-mark="bar"][aria-pressed="true"],
-[data-bixbo-insights-dashboard="true"] [data-bowel-overview-card="true"] button[aria-label^="Bristol Type"][aria-pressed="true"],
-[data-bixbo-insights-dashboard="true"] button[aria-label*=". Tetany "][aria-pressed="true"],
-[data-bixbo-insights-dashboard="true"] button[aria-label*=". Panic "][aria-pressed="true"] {
+[data-bixbo-insights-dashboard="true"] button[aria-pressed="true"][style*="height"][style*="background"] {
   box-shadow:
-    inset 1px 1px 2px rgba(255, 255, 255, .60),
-    inset -1px -2px 3px rgba(55, 45, 30, .18),
+    inset 1px 1px 2px rgba(255, 255, 255, .62),
+    inset -1px -2px 3px rgba(55, 45, 30, .19),
     0 0 0 2px var(--background),
     0 0 0 3px color-mix(in srgb, var(--foreground) 72%, transparent),
-    0 3px 5px rgba(45, 52, 35, .23) !important;
+    0 3px 5px rgba(45, 52, 35, .24) !important;
 }
 
-/* Medication adherence dots use the same bead treatment as the heatmap. */
-[data-bixbo-insights-dashboard="true"] button[aria-label*=" doses"] > span:last-child,
-[data-bixbo-insights-dashboard="true"] button[aria-label*=" · n/a"] > span:last-child,
-[data-bixbo-insights-dashboard="true"] button[aria-label$="%"] > span:last-child {
+/* Data dots and legends: Meds adherence, symptom/time-of-day legends and other
+   graph-key dots use the same spherical bead treatment. */
+[data-bixbo-insights-dashboard="true"] span.rounded-full[style*="background"] {
   border: 1px solid rgba(255, 255, 255, .46) !important;
   box-shadow:
-    inset 1px 1px 2px rgba(255, 255, 255, .58),
-    inset -1px -1.5px 2px rgba(55, 45, 30, .16),
+    inset 1px 1px 2px rgba(255, 255, 255, .60),
+    inset -1px -1.5px 2px rgba(55, 45, 30, .17),
     0 1.5px 2.5px rgba(45, 52, 35, .18) !important;
-  filter: saturate(1.04);
+  filter: saturate(1.045) contrast(1.01);
+  transform: translateZ(0);
 }
 
-/* Medication adherence progress rail becomes a shallow raised capsule. */
-[data-bixbo-insights-dashboard="true"] div[class*="mt-2"][class*="h-2"][class*="rounded-full"] > div[style*="width"] {
+/* Progress graphs: both the overall Meds adherence bar and every per-medication
+   rail get a shallow raised capsule instead of only the main percentage bar. */
+[data-bixbo-insights-dashboard="true"] div.rounded-full > div[style*="width"][style*="background"] {
   border: 1px solid rgba(255, 255, 255, .40);
   box-shadow:
-    inset 1px 1px 1.5px rgba(255, 255, 255, .52),
-    inset -1px -1px 2px rgba(55, 45, 30, .15),
-    0 1.5px 2.5px rgba(45, 52, 35, .14);
+    inset 1px 1px 1.5px rgba(255, 255, 255, .54),
+    inset -1px -1px 2px rgba(55, 45, 30, .16),
+    0 1.5px 2.5px rgba(45, 52, 35, .15);
+  filter: saturate(1.04) contrast(1.01);
 }
 
-/* The ŠUKŠUK count rings already carry semantic ring colours; add the same
-   physical depth without changing those colours. */
-[data-bixbo-insights-dashboard="true"] span[style*="box-shadow: inset"][style*="border:"] {
+/* ŠUKŠUK count rings already carry semantic border colours. Preserve them and
+   add the same physical depth, including empty rings. */
+[data-bixbo-insights-dashboard="true"] span.rounded-full[style*="border"][style*="background"] {
   box-shadow:
-    inset 1px 1px 2px rgba(255, 255, 255, .58),
-    inset -1px -1.5px 2px rgba(55, 45, 30, .14),
-    0 2px 3px rgba(45, 52, 35, .16) !important;
-}
-
-/* Legends should preview the same material as the marks they explain. */
-[data-bixbo-insights-dashboard="true"] div[class*="text-muted-foreground"] > span.flex > span.rounded-full[style*="background"] {
-  border: 1px solid rgba(255, 255, 255, .42);
-  box-shadow:
-    inset 1px 1px 1.5px rgba(255, 255, 255, .52),
-    inset -1px -1px 1.5px rgba(55, 45, 30, .14),
-    0 1px 2px rgba(45, 52, 35, .14);
+    inset 1px 1px 2px rgba(255, 255, 255, .60),
+    inset -1px -1.5px 2px rgba(55, 45, 30, .15),
+    0 2px 3px rgba(45, 52, 35, .17) !important;
+  filter: saturate(1.035) contrast(1.01);
 }
 
 /* Dark mode keeps the dimensional hierarchy without a pale halo. */
 .dark [data-bixbo-insights-dashboard="true"] [data-bixbo-chart-mark="bar"],
-.dark [data-bixbo-insights-dashboard="true"] [data-symptoms-trend-card="true"] button > span[style*="height"],
-.dark [data-bixbo-insights-dashboard="true"] [data-bowel-overview-card="true"] button[aria-label^="Bristol Type"],
-.dark [data-bixbo-insights-dashboard="true"] button[aria-label*=". Tetany "][style*="height"],
-.dark [data-bixbo-insights-dashboard="true"] button[aria-label*=". Panic "][style*="height"],
-.dark [data-bixbo-insights-dashboard="true"] button[aria-label*=" doses"] > span:last-child,
-.dark [data-bixbo-insights-dashboard="true"] button[aria-label$="%"] > span:last-child {
+.dark [data-bixbo-insights-dashboard="true"] [style*="height"][style*="background"] {
+  border-color: rgba(255, 255, 255, .17) !important;
+  box-shadow:
+    inset 1px 1px 1.5px rgba(255, 255, 255, .17),
+    inset -1px -2px 3px rgba(0, 0, 0, .31),
+    0 2px 4px rgba(0, 0, 0, .35) !important;
+}
+
+.dark [data-bixbo-insights-dashboard="true"] [data-bixbo-chart-mark="bar"]::after,
+.dark [data-bixbo-insights-dashboard="true"] [style*="height"][style*="background"]::after {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, .16) 0%,
+    rgba(255, 255, 255, .07) 30%,
+    rgba(255, 255, 255, 0) 54%,
+    rgba(0, 0, 0, .15) 100%
+  );
+}
+
+.dark [data-bixbo-insights-dashboard="true"] span.rounded-full[style*="background"],
+.dark [data-bixbo-insights-dashboard="true"] span.rounded-full[style*="border"][style*="background"] {
   border-color: rgba(255, 255, 255, .16) !important;
   box-shadow:
-    inset 1px 1px 1.5px rgba(255, 255, 255, .16),
-    inset -1px -2px 3px rgba(0, 0, 0, .30),
-    0 2px 4px rgba(0, 0, 0, .34) !important;
+    inset 1px 1px 1.5px rgba(255, 255, 255, .17),
+    inset -1px -1.5px 2px rgba(0, 0, 0, .30),
+    0 2px 4px rgba(0, 0, 0, .32) !important;
+}
+
+.dark [data-bixbo-insights-dashboard="true"] div.rounded-full > div[style*="width"][style*="background"] {
+  border-color: rgba(255, 255, 255, .14);
+  box-shadow:
+    inset 1px 1px 1.5px rgba(255, 255, 255, .15),
+    inset -1px -1px 2px rgba(0, 0, 0, .28),
+    0 1.5px 3px rgba(0, 0, 0, .28);
 }
