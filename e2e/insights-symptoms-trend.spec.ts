@@ -6,7 +6,6 @@ test("Insights offers one consolidated switchable symptoms trend card", async ({
 
   const response = await page.goto("/insights");
   expect(response?.status()).toBeLessThan(500);
-  await page.getByRole("group", { name: "Insights sections" }).getByRole("button", { name: "Symptoms", exact: true }).click();
 
   const card = page.locator('[data-symptoms-trend-card="true"]');
   await expect(card).toBeVisible();
