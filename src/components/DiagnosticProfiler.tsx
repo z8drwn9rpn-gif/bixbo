@@ -10,9 +10,10 @@ type DiagnosticProfilerProps = {
 export function DiagnosticProfiler({ id, children }: DiagnosticProfilerProps) {
   const startedAt = typeof performance !== "undefined" ? performance.now() : 0;
   const commitCount = useRef(0);
+  const diagnosticScreen = typeof window !== "undefined" && window.location.pathname.startsWith("/diagnostics");
 
   useLayoutEffect(() => {
-    if (!startedAt || typeof performance === "undefined") return;
+    if (diagnosticScreen || !startedAt || typeof performance === "undefined") return;
     commitCount.current += 1;
     const duration = performance.now() - startedAt;
     recordComponentRender(
@@ -27,6 +28,7 @@ export function DiagnosticProfiler({ id, children }: DiagnosticProfilerProps) {
     <Profiler
       id={id}
       onRender={(profileId, phase, actualDuration, baseDuration) => {
+        if (diagnosticScreen) return;
         recordComponentRender(profileId, `react-${phase}`, actualDuration, baseDuration);
       }}
     >
