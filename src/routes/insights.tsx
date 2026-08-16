@@ -6,8 +6,8 @@ import { useI18n } from "@/hooks/useI18n";
 import { countNoBowelMovements } from "@/lib/domain/bowel";
 import { layoutOrder } from "@/lib/layoutRegistry";
 import { EMPTY, avgDayPain, toKey, useBixbo } from "@/lib/storage";
-import { BristolChart, HfBars, PainChart } from "@/features/insights/charts";
-import { BowelTimelineChart } from "@/features/insights/BowelTimelineChart";
+import { HfBars, PainChart } from "@/features/insights/charts";
+import { BowelOverviewCard } from "@/features/insights/BowelOverviewCard";
 import { MedsAdherence } from "@/features/insights/MedsAdherence";
 import { TimeOfDayPatternChart } from "@/features/insights/TimeOfDayPatternChart";
 import { YearHealthHeatmap } from "@/features/insights/YearHealthHeatmap";
@@ -69,15 +69,6 @@ function InsightsPage() {
     const nums = painSeries.filter((value): value is number => value != null);
     return nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : null;
   }, [painSeries]);
-
-  const bowelCounts = useMemo(() => {
-    const counts = new Array(8).fill(0) as number[];
-    bowelDays.forEach((key) => view.dayLogs[key]?.bowel?.forEach((entry) => {
-      const bristol = Number(entry.bristol);
-      if (Number.isInteger(bristol) && bristol >= 0 && bristol <= 7) counts[bristol] = (counts[bristol] ?? 0) + 1;
-    }));
-    return counts;
-  }, [bowelDays, view.dayLogs]);
 
   const noBowelMovementCount = useMemo(
     () => countNoBowelMovements(bowelDays, view.dayLogs),
@@ -150,10 +141,7 @@ function InsightsPage() {
       </section>
 
       <div className={insightsFilter === "all" || insightsFilter === "bowel" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "bowel", 40) }}>
-        <BowelTimelineChart days={bowelDays} dayLogs={view.dayLogs} period={bowelPeriod} anchor={bowelAnchor} noBowelMovementCount={noBowelMovementCount} onPeriodChange={setBowelPeriod} onPeriodShift={(delta) => setBowelAnchor((current) => shiftInsightPeriodAnchor(current, bowelPeriod, delta))} />
-      </div>
-      <div className={insightsFilter === "all" || insightsFilter === "bowel" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "bowel", 40) }}>
-        <BristolChart bowelCounts={bowelCounts} noBowelMovementCount={noBowelMovementCount} period={bowelPeriod} anchor={bowelAnchor} onPeriodChange={setBowelPeriod} onPeriodShift={(delta) => setBowelAnchor((current) => shiftInsightPeriodAnchor(current, bowelPeriod, delta))} />
+        <BowelOverviewCard days={bowelDays} dayLogs={view.dayLogs} period={bowelPeriod} anchor={bowelAnchor} noBowelMovementCount={noBowelMovementCount} onPeriodChange={setBowelPeriod} onPeriodShift={(delta) => setBowelAnchor((current) => shiftInsightPeriodAnchor(current, bowelPeriod, delta))} />
       </div>
       <div className={insightsFilter === "all" || insightsFilter === "symptoms" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "timeOfDay", 50) }}><TimeOfDayPatternChart data={view} days={timeOfDayDays} period={timeOfDayPeriod} anchor={timeOfDayAnchor} onPeriodChange={setTimeOfDayPeriod} onPeriodShift={(delta) => setTimeOfDayAnchor((current) => shiftInsightPeriodAnchor(current, timeOfDayPeriod, delta))} /></div>
       <div className={insightsFilter === "all" || insightsFilter === "meds" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "meds", 60) }}><MedsAdherence data={view} period={medsPeriod} anchor={medsAnchor} onPeriodChange={setMedsPeriod} onPeriodShift={(delta) => setMedsAnchor((current) => shiftInsightPeriodAnchor(current, medsPeriod, delta))} /></div>
