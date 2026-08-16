@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("Insights offers one switchable symptoms trend bar chart", async ({ page }) => {
+test("Insights offers one consolidated switchable symptoms trend card", async ({ page }) => {
   const pageErrors: string[] = [];
   page.on("pageerror", (error) => pageErrors.push(error.stack || error.message));
 
@@ -11,6 +11,7 @@ test("Insights offers one switchable symptoms trend bar chart", async ({ page })
   const card = page.locator('[data-symptoms-trend-card="true"]');
   await expect(card).toBeVisible();
   await expect(card.getByText("Symptoms trend", { exact: true })).toBeVisible();
+  await expect(card.locator('[data-symptoms-brain-icon="true"]')).toBeVisible();
 
   const period = card.getByRole("group", { name: "Symptoms trend period" });
   await expect(period.getByRole("button", { name: "Week", exact: true })).toBeVisible();
@@ -28,6 +29,12 @@ test("Insights offers one switchable symptoms trend bar chart", async ({ page })
   await expect(card.getByText("Intensity 0–10", { exact: true })).toBeVisible();
   await symptoms.getByRole("button", { name: "Hot flashes", exact: true }).click();
   await expect(card.getByText("Intensity 0–5", { exact: true })).toBeVisible();
+
+  await expect(card.getByText("Quick insights", { exact: true })).toBeVisible();
+  await expect(card.getByText("Peak", { exact: true })).toBeVisible();
+  await expect(card.getByText("Lowest", { exact: true })).toBeVisible();
+  await expect(card.getByText("Trend", { exact: true })).toBeVisible();
+  await expect(page.getByRole("group", { name: "Hot flashes period" })).toHaveCount(0);
 
   expect(pageErrors, `Symptoms trend page errors:\n${pageErrors.join("\n\n")}`).toEqual([]);
 });

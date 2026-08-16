@@ -7,7 +7,6 @@ import { countNoBowelMovements } from "@/lib/domain/bowel";
 import { layoutOrder } from "@/lib/layoutRegistry";
 import { EMPTY, avgDayPain, useBixbo } from "@/lib/storage";
 import { PainInsightsCard } from "@/features/insights/PainInsightsCard";
-import { HotFlashesInsightsCard } from "@/features/insights/HotFlashesInsightsCard";
 import { BowelOverviewCard } from "@/features/insights/BowelOverviewCard";
 import { MedsAdherenceInsightsCard } from "@/features/insights/MedsAdherenceInsightsCard";
 import { TimeOfDayInsightsCard } from "@/features/insights/TimeOfDayInsightsCard";
@@ -43,13 +42,11 @@ function InsightsPage() {
   const [insightsFilter, setInsightsFilter] = useState<"all" | "overview" | "pain" | "symptoms" | "bowel" | "sex" | "meds">("all");
 
   const [painPeriod, setPainPeriod] = useState<Period>("M");
-  const [hotFlashPeriod, setHotFlashPeriod] = useState<Period>("M");
   const [bowelPeriod, setBowelPeriod] = useState<Period>("M");
   const [timeOfDayPeriod, setTimeOfDayPeriod] = useState<Period>("M");
   const [medsPeriod, setMedsPeriod] = useState<Period>("M");
 
   const [painAnchor, setPainAnchor] = useState<Date>(() => new Date());
-  const [hotFlashAnchor, setHotFlashAnchor] = useState<Date>(() => new Date());
   const [bowelAnchor, setBowelAnchor] = useState<Date>(() => new Date());
   const [timeOfDayAnchor, setTimeOfDayAnchor] = useState<Date>(() => new Date());
   const [medsAnchor, setMedsAnchor] = useState<Date>(() => new Date());
@@ -60,7 +57,6 @@ function InsightsPage() {
   }, []);
 
   const painDays = useMemo(() => periodDays(painPeriod, painAnchor), [painAnchor, painPeriod, periodDays]);
-  const hotFlashDays = useMemo(() => periodDays(hotFlashPeriod, hotFlashAnchor), [hotFlashAnchor, hotFlashPeriod, periodDays]);
   const bowelDays = useMemo(() => periodDays(bowelPeriod, bowelAnchor), [bowelAnchor, bowelPeriod, periodDays]);
   const timeOfDayDays = useMemo(() => periodDays(timeOfDayPeriod, timeOfDayAnchor), [periodDays, timeOfDayAnchor, timeOfDayPeriod]);
 
@@ -74,38 +70,6 @@ function InsightsPage() {
     () => countNoBowelMovements(bowelDays, view.dayLogs),
     [bowelDays, view.dayLogs],
   );
-
-  const hfSeries = useMemo(() => hotFlashDays.map((key) => {
-    const vals = (view.dayLogs[key]?.pain ?? []).map((entry) => entry.hotFlashes).filter((value): value is number => value != null);
-    return vals.length ? Math.max(...vals) : undefined;
-  }), [hotFlashDays, view.dayLogs]);
-
-  const hfCounts = useMemo(() => {
-    const counts = [0, 0, 0, 0, 0, 0];
-    hotFlashDays.forEach((key) => (view.dayLogs[key]?.pain ?? []).forEach((entry) => {
-      if (entry.hotFlashes && entry.hotFlashes >= 1 && entry.hotFlashes <= 5) counts[entry.hotFlashes]++;
-    }));
-    return counts;
-  }, [hotFlashDays, view.dayLogs]);
-
-  const aggregateMonthly = useCallback((keys: string[], series: (number | undefined)[]) => {
-    const sums = new Array(12).fill(0) as number[];
-    const counts = new Array(12).fill(0) as number[];
-    keys.forEach((key, index) => {
-      const value = series[index];
-      if (value == null) return;
-      const monthIndex = Number(key.slice(5, 7)) - 1;
-      sums[monthIndex] += value;
-      counts[monthIndex]++;
-    });
-    return sums.map((sum, index) => counts[index] ? sum / counts[index] : undefined);
-  }, []);
-
-  const hfBars = useMemo(() => hotFlashPeriod === "Y" ? aggregateMonthly(hotFlashDays, hfSeries) : hfSeries, [aggregateMonthly, hfSeries, hotFlashDays, hotFlashPeriod]);
-  const hfTotal = hfCounts.reduce((a, b) => a + b, 0);
-  const hfAvg = hfTotal ? hfCounts.reduce((sum, count, index) => sum + count * index, 0) / hfTotal : null;
-  let hfTop = 0;
-  for (let level = 1; level <= 5; level++) if (hfCounts[level] > (hfCounts[hfTop] ?? 0)) hfTop = level;
 
   const shiftHeatmapPeriod = (period: HeatmapPeriod, delta: -1 | 1) => setAnchor((current) => {
     const next = new Date(current);
@@ -135,10 +99,6 @@ function InsightsPage() {
 
       <div className={insightsFilter === "all" || insightsFilter === "symptoms" ? "" : "hidden"} style={{ order: 25 }}>
         <SymptomsTrendInsightsCard data={view} />
-      </div>
-
-      <div className={insightsFilter === "all" || insightsFilter === "symptoms" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "hotFlashes", 30) }}>
-        <HotFlashesInsightsCard data={view} period={hotFlashPeriod} days={hotFlashDays} bars={hfBars} counts={hfCounts} total={hfTotal} average={hfAvg} topLevel={hfTop} anchor={hotFlashAnchor} onPeriodChange={setHotFlashPeriod} onPeriodShift={(delta) => setHotFlashAnchor((current) => shiftInsightPeriodAnchor(current, hotFlashPeriod, delta))} />
       </div>
 
       <div className={insightsFilter === "all" || insightsFilter === "bowel" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "bowel", 40) }}>

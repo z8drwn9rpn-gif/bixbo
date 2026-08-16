@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState, type SVGProps } from "react";
 import { useDismissTapTooltip } from "@/components/charts";
+import { BrainIcon } from "@/components/icons/BixboBrandIcons";
 import { fromKey, todayKey, type BixboData, type DayLog } from "@/lib/storage";
-import { DashboardPeriodControl, MetricCards } from "./InsightDashboardPrimitives";
+import { DashboardPeriodControl, MetricCards, QuickInsights } from "./InsightDashboardPrimitives";
 import { eachDay, InsightFloatingTooltip, rangeFor, shiftInsightPeriodAnchor, type InsightTooltipDetails, type Period } from "./shared";
 
 type SymptomKey = "headache" | "tetany" | "panic" | "nausea" | "pressure" | "hotFlashes";
@@ -73,6 +74,10 @@ function monthKey(year: number, month: number) {
   return `${year}-${String(month + 1).padStart(2, "0")}`;
 }
 
+function priorPeriodLabel(period: Period) {
+  return period === "W" ? "last week" : period === "M" ? "last month" : "last year";
+}
+
 export function SymptomsTrendInsightsCard({ data }: { data: BixboData }) {
   const [symptom, setSymptom] = useState<SymptomKey>("headache");
   const [period, setPeriod] = useState<Period>("M");
@@ -89,7 +94,10 @@ export function SymptomsTrendInsightsCard({ data }: { data: BixboData }) {
   const { startK, endK } = useMemo(() => rangeFor(period, anchor), [anchor, period]);
   const dayKeys = useMemo(() => eachDay(startK, endK), [endK, startK]);
 
-  const allEntries = useMemo(() => dayKeys.flatMap((key) => valuesForDay(data.dayLogs[key], symptom).map((value) => ({ key, value }))), [data.dayLogs, dayKeys, symptom]);
+  const allEntries = useMemo(
+    () => dayKeys.flatMap((key) => valuesForDay(data.dayLogs[key], symptom).map((value) => ({ key, value }))),
+    [data.dayLogs, dayKeys, symptom],
+  );
 
   const buckets = useMemo<Bucket[]>(() => {
     if (period !== "Y") {
@@ -113,7 +121,26 @@ export function SymptomsTrendInsightsCard({ data }: { data: BixboData }) {
 
   const avg = average(allEntries.map((entry) => entry.value));
   const peak = allEntries.reduce<{ key: string; value: number } | null>((best, entry) => !best || entry.value > best.value ? entry : best, null);
+  const lowest = allEntries.reduce<{ key: string; value: number } | null>((best, entry) => !best || entry.value < best.value ? entry : best, null);
   const max = meta.max;
+
+  const previousAverage = useMemo(() => {
+    const previousAnchor = shiftInsightPeriodAnchor(anchor, period, -1);
+    const previousRange = rangeFor(period, previousAnchor);
+    const values = eachDay(previousRange.startK, previousRange.endK)
+      .flatMap((key) => valuesForDay(data.dayLogs[key], symptom));
+    return average(values);
+  }, [anchor, data.dayLogs, period, symptom]);
+
+  const trendPct = avg != null && previousAverage != null && previousAverage > 0
+    ? Math.round(((avg - previousAverage) / previousAverage) * 100)
+    : null;
+
+  const bucketValues = buckets.map((bucket) => bucket.value).filter((value): value is number => value != null);
+  const earlyCut = Math.max(1, Math.ceil(buckets.length / 3));
+  const earlyAverage = average(buckets.slice(0, earlyCut).map((bucket) => bucket.value).filter((value): value is number => value != null));
+  const laterAverage = average(buckets.slice(earlyCut).map((bucket) => bucket.value).filter((value): value is number => value != null));
+  const moderateHigh = allEntries.filter((entry) => entry.value >= max * 0.5).length;
 
   const activeBucket = active == null ? null : buckets[active] ?? null;
   const activeDetails: InsightTooltipDetails | null = activeBucket?.value != null ? {
@@ -131,11 +158,27 @@ export function SymptomsTrendInsightsCard({ data }: { data: BixboData }) {
       ? ["1", "5", "10", "15", "20", "25", String(fromKey(endK).getDate())]
       : ["Jan", "Mar", "May", "Jul", "Sep", "Nov", "Dec"];
 
+  const quickInsights = allEntries.length ? [
+    { kind: "target" as const, color: "#e64c73", text: peak ? `Highest ${meta.label.toLowerCase()}: ${dateLabel(peak.key)} (${peak.value.toFixed(peak.value % 1 ? 1 : 0)}/${max})` : `No ${meta.label.toLowerCase()} peak yet` },
+    { kind: "bars" as const, color: "#f07c23", text: moderateHigh >= Math.max(1, Math.ceil(allEntries.length / 2)) ? "Most entries were moderate to high" : "Most entries stayed low to mild" },
+    { kind: "leaf" as const, color: "#6ea83c", text: earlyAverage != null && laterAverage != null
+      ? Math.abs(earlyAverage - laterAverage) < 0.1
+        ? `${meta.label} intensity stayed fairly stable across the period`
+        : earlyAverage <= laterAverage
+          ? `${meta.label} was lower early in the period`
+          : `${meta.label} was higher early in the period`
+      : `Not enough ${meta.label.toLowerCase()} data for an early/late comparison` },
+  ] : [
+    { kind: "target" as const, color: meta.color, text: `No ${meta.label.toLowerCase()} entries in this period` },
+    { kind: "bars" as const, color: "#f07c23", text: "Try another symptom or period to compare your logs" },
+    { kind: "leaf" as const, color: "#6ea83c", text: "No trend can be calculated yet" },
+  ];
+
   return (
     <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80" data-symptoms-trend-card="true">
       <div className="flex items-start gap-2.5">
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-tint/55 text-primary ring-1 ring-border/50">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 13h4l2-7 4 12 2-7 2 2h4"/></svg>
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-tint/55 ring-1 ring-border/50" data-symptoms-brain-icon="true">
+          <BrainIcon size={30} />
         </span>
         <div className="min-w-0">
           <h3 className="text-base leading-none text-foreground" style={{ fontWeight: 800 }}>Symptoms trend</h3>
@@ -151,6 +194,7 @@ export function SymptomsTrendInsightsCard({ data }: { data: BixboData }) {
           const selected = key === symptom;
           return (
             <button key={key} type="button" onClick={() => setSymptom(key)} aria-pressed={selected}
+              aria-label={item.label}
               className={`flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 py-1.5 text-center transition active:scale-[.98] ${selected ? "bg-primary text-primary-foreground shadow-sm" : "bg-background/55 text-muted-foreground ring-1 ring-border/55"}`}>
               <SymptomIcon kind={key} className="h-4 w-4 shrink-0" />
               <span className="max-w-full text-[8px] leading-[1.05]" style={{ fontWeight: selected ? 700 : 600 }}>{item.shortLabel}</span>
@@ -190,17 +234,19 @@ export function SymptomsTrendInsightsCard({ data }: { data: BixboData }) {
                 );
               })}
             </div>
-            {activeDetails && active != null ? <InsightFloatingTooltip leftPct={((active + 0.5) / Math.max(1, buckets.length)) * 100} details={activeDetails} top={-70} connectorSide="bottom" /> : null}
+            {activeDetails && active != null ? <InsightFloatingTooltip leftPct={((active + 0.5) / Math.max(1, buckets.length)) * 100} details={activeDetails} top={0} /> : null}
           </div>
           <div className="mt-1.5 flex justify-between text-[9px] text-muted-foreground">{xLabels.map((label, index) => <span key={`${label}-${index}`}>{label}</span>)}</div>
           <p className="mt-0.5 text-center text-[9px] text-muted-foreground">{period === "Y" ? "Month" : period === "M" ? "Day of month" : "Day"}</p>
         </div>
       </div>
 
+      <QuickInsights items={quickInsights} />
+
       <MetricCards items={[
-        { label: "Entries", value: String(allEntries.length), sub: period === "W" ? "this week" : period === "M" ? "this month" : "this year", kind: "bars", color: meta.color },
-        { label: "Peak", value: peak ? (period === "Y" ? fromKey(peak.key).toLocaleDateString("en-GB", { month: "short" }) : dateLabel(peak.key)) : "—", sub: peak ? `${peak.value.toFixed(peak.value % 1 ? 1 : 0)}/${max}` : "No data", kind: "trend", color: meta.color },
-        { label: "Average", value: avg == null ? "—" : avg.toFixed(1), sub: `of ${max}`, kind: "bars", color: meta.color },
+        { label: "Peak", value: peak ? peak.value.toFixed(peak.value % 1 ? 1 : 0) : "—", sub: peak ? dateLabel(peak.key) : "No data", color: "#ef4444" },
+        { label: "Lowest", value: lowest ? lowest.value.toFixed(lowest.value % 1 ? 1 : 0) : "—", sub: lowest ? dateLabel(lowest.key) : "No data", color: "#82b53f" },
+        { label: "Trend", value: trendPct == null ? "—" : `${trendPct > 0 ? "↑ " : trendPct < 0 ? "↓ " : ""}${Math.abs(trendPct)}%`, sub: `vs ${priorPeriodLabel(period)}`, kind: "trend", color: trendPct != null && trendPct <= 0 ? "#76aa3e" : "#f07c23" },
       ]} />
     </section>
   );
