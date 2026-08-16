@@ -21,7 +21,6 @@ import { NotificationPrompt } from "../components/NotificationPrompt";
 import { AppPrivacyGuard } from "../components/AppPrivacyGuard";
 import { Toaster } from "../components/ui/sonner";
 import { useI18n } from "@/hooks/useI18n";
-import { useDeploymentFreshness } from "@/lib/deploymentFreshness";
 import { clearStaleAssetRecoveryGuard, recoverFromStaleAssetError } from "@/lib/staleAssetRecovery";
 import { installRuntimeDiagnostics, recordRuntimeDiagnosticIssue } from "@/lib/appDiagnostics";
 
@@ -80,51 +79,6 @@ const THEME_BOOTSTRAP_SCRIPT = `(() => {
   } catch {}
 })();`;
 
-// Safari does not provide a reliable native PWA launch screen on every iPhone.
-// Mark a standalone iPhone document before its body is painted so the static
-// mascot splash below is visible for one second while React starts underneath.
-const APPLE_PWA_LAUNCH_SPLASH_BOOTSTRAP = `(() => {
-  try {
-    const isAppleMobile = /iPad|iPhone|iPod/.test(navigator.userAgent || "");
-    const standalone = (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches)
-      || navigator.standalone === true;
-    if (!isAppleMobile || !standalone) return;
-
-    document.documentElement.dataset.applePwaLaunch = "true";
-  } catch {}
-})();`;
-
-const APPLE_PWA_LAUNCH_SPLASH_CSS = `
-  #bixbo-ios-launch-splash { display: none; }
-
-  html[data-apple-pwa-launch="true"] #bixbo-ios-launch-splash {
-    position: fixed;
-    z-index: 2147483647;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #FBF7F3;
-    opacity: 1;
-    visibility: visible;
-    pointer-events: none;
-    animation: bixbo-ios-launch-splash-hide 1s step-end forwards;
-  }
-
-  @keyframes bixbo-ios-launch-splash-hide {
-    to {
-      opacity: 0;
-      visibility: hidden;
-    }
-  }
-
-  #bixbo-ios-launch-splash img {
-    width: 150px;
-    height: 150px;
-    object-fit: contain;
-  }
-`;
-
 function NotFoundComponent() {
   const { t } = useI18n();
   const router = useRouter();
@@ -172,8 +126,8 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         <p className="mt-2 text-sm text-muted-foreground">Something went wrong on our end. You can try refreshing or head back home.</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button onClick={retry} className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90">Try again</button>
-          <a href="/diagnostics" className="inline-flex items-center justify-center rounded-xl border border-primary/40 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary/15">App scan</a>
-          <a href="/" className="inline-flex items-center justify-center rounded-xl border border-input bg-background px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-accent">Go home</a>
+          <Link to="/diagnostics" className="inline-flex items-center justify-center rounded-xl border border-primary/40 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary/15">App scan</Link>
+          <Link to="/" className="inline-flex items-center justify-center rounded-xl border border-input bg-background px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-accent">Go home</Link>
         </div>
       </div>
     </div>
@@ -227,15 +181,10 @@ function RootShell({ children }: { children: ReactNode }) {
       <head>
         <meta name="theme-color" content="#FBF7F3" />
         <meta name="color-scheme" content="light dark" />
-        <style dangerouslySetInnerHTML={{ __html: APPLE_PWA_LAUNCH_SPLASH_CSS }} />
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }} />
-        <script dangerouslySetInnerHTML={{ __html: APPLE_PWA_LAUNCH_SPLASH_BOOTSTRAP }} />
         <HeadContent />
       </head>
       <body data-bixbo-app-root>
-        <div id="bixbo-ios-launch-splash" aria-hidden="true">
-          <img src="/apple-touch-icon.png" width={180} height={180} alt="" />
-        </div>
         {children}
         <Scripts />
       </body>
@@ -245,11 +194,11 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const router = useRouter();
 
   useCloudSync();
   useThemeSync();
   useNotificationRuntime();
-  useDeploymentFreshness();
 
   useEffect(() => {
     return installRuntimeDiagnostics((issue) => {
@@ -257,11 +206,11 @@ function RootComponent() {
         description: `${issue.area}: ${issue.message}`,
         action: {
           label: "App scan",
-          onClick: () => window.location.assign("/diagnostics"),
+          onClick: () => void router.navigate({ to: "/diagnostics" }),
         },
       });
     });
-  }, []);
+  }, [router]);
 
   return (
     <QueryClientProvider client={queryClient}>
