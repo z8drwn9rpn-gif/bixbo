@@ -42,7 +42,6 @@ function InsightsPage() {
   const view = hydrated ? data : EMPTY;
   const [anchor, setAnchor] = useState<Date>(() => new Date());
   const [overviewView, setOverviewView] = useState<"insights" | "patterns">("insights");
-  const [insightsFilter, setInsightsFilter] = useState<"all" | "overview" | "pain" | "symptoms" | "bowel" | "sex" | "meds">("all");
 
   const [painPeriod, setPainPeriod] = useState<Period>("M");
   const [bowelPeriod, setBowelPeriod] = useState<Period>("M");
@@ -89,35 +88,31 @@ function InsightsPage() {
       </div>
     </div>
 
-    {overviewView === "insights" ? <div className="px-5 pt-2 lg:px-0"><div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="group" aria-label={t("Insights sections")}>
-      {([["all", "All"], ["overview", "Overview"], ["pain", "Pain"], ["symptoms", "Symptoms"], ["bowel", "Bowel"], ["sex", "ŠukŠuk"], ["meds", "Meds"]] as const).map(([id, label]) => <button key={id} type="button" onClick={() => setInsightsFilter(id)} aria-pressed={insightsFilter === id} className={`shrink-0 rounded-full px-3 py-1.5 text-[11px] font-semibold transition ${insightsFilter === id ? "bg-primary text-primary-foreground shadow-sm" : "bg-surface text-muted-foreground ring-1 ring-border/70 hover:text-foreground"}`}>{t(label)}</button>)}
-    </div></div> : null}
-
     {overviewView === "patterns" ? <DiagnosticProfiler id="PatternsContent"><PatternsContent /></DiagnosticProfiler> : <div id="bixbo-insights-content" data-bixbo-insights-dashboard="true" className="flex flex-col gap-3 px-5 pt-2 pb-[calc(96px+env(safe-area-inset-bottom))] lg:grid lg:grid-cols-2 lg:items-start lg:px-0 lg:pb-12">
-      <InsightsJumpControl refreshKey={`insights:${insightsFilter}`} />
+      <InsightsJumpControl refreshKey="insights" />
 
-      <div data-bixbo-jump-label={t("Overview")} className={insightsFilter === "all" || insightsFilter === "overview" ? "lg:col-span-2" : "hidden"} style={{ order: layoutOrder(view, "insights", "heatmap", 10) }}>
+      <div data-bixbo-jump-label={t("Overview")} className="lg:col-span-2" style={{ order: layoutOrder(view, "insights", "heatmap", 10) }}>
         <DiagnosticProfiler id="YearHealthHeatmap"><YearHealthHeatmap data={view} anchor={anchor} onShiftPeriod={shiftHeatmapPeriod} /></DiagnosticProfiler>
       </div>
 
-      <div data-bixbo-jump-label={t("Pain")} className={insightsFilter === "all" || insightsFilter === "pain" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "pain", 20) }}>
+      <div data-bixbo-jump-label={t("Pain")} style={{ order: layoutOrder(view, "insights", "pain", 20) }}>
         <DiagnosticProfiler id="PainInsightsCard"><PainInsightsCard data={view} period={painPeriod} days={painDays} series={painSeries} anchor={painAnchor} averageValue={painAvg} onPeriodChange={setPainPeriod} onPeriodShift={(delta) => setPainAnchor((current) => shiftInsightPeriodAnchor(current, painPeriod, delta))} /></DiagnosticProfiler>
       </div>
 
-      <div data-bixbo-jump-label={t("Symptoms")} className={insightsFilter === "all" || insightsFilter === "symptoms" ? "" : "hidden"} style={{ order: 25 }}>
+      <div data-bixbo-jump-label={t("Symptoms")} style={{ order: 25 }}>
         <DiagnosticProfiler id="SymptomsTrendInsightsCard"><SymptomsTrendInsightsCard data={view} /></DiagnosticProfiler>
       </div>
 
-      <div data-bixbo-jump-label={t("Bowel")} className={insightsFilter === "all" || insightsFilter === "bowel" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "bowel", 40) }}>
+      <div data-bixbo-jump-label={t("Bowel")} style={{ order: layoutOrder(view, "insights", "bowel", 40) }}>
         <DiagnosticProfiler id="BowelOverviewCard"><BowelOverviewCard days={bowelDays} dayLogs={view.dayLogs} period={bowelPeriod} anchor={bowelAnchor} noBowelMovementCount={noBowelMovementCount} onPeriodChange={setBowelPeriod} onPeriodShift={(delta) => setBowelAnchor((current) => shiftInsightPeriodAnchor(current, bowelPeriod, delta))} /></DiagnosticProfiler>
       </div>
-      <div data-bixbo-jump-label={t("ŠukŠuk")} className={insightsFilter === "all" || insightsFilter === "sex" ? "" : "hidden"} style={{ order: 45 }}>
+      <div data-bixbo-jump-label={t("ŠukŠuk")} style={{ order: 45 }}>
         <DiagnosticProfiler id="SukSukInsightsCard"><SukSukInsightsCard data={view} /></DiagnosticProfiler>
       </div>
-      <div data-bixbo-jump-label={t("Time of day")} className={insightsFilter === "all" || insightsFilter === "symptoms" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "timeOfDay", 50) }}>
+      <div data-bixbo-jump-label={t("Time of day")} style={{ order: layoutOrder(view, "insights", "timeOfDay", 50) }}>
         <DiagnosticProfiler id="TimeOfDayInsightsCard"><TimeOfDayInsightsCard data={view} days={timeOfDayDays} period={timeOfDayPeriod} anchor={timeOfDayAnchor} onPeriodChange={setTimeOfDayPeriod} onPeriodShift={(delta) => setTimeOfDayAnchor((current) => shiftInsightPeriodAnchor(current, timeOfDayPeriod, delta))} /></DiagnosticProfiler>
       </div>
-      <div data-bixbo-jump-label={t("Meds")} className={insightsFilter === "all" || insightsFilter === "meds" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "meds", 60) }}>
+      <div data-bixbo-jump-label={t("Meds")} style={{ order: layoutOrder(view, "insights", "meds", 60) }}>
         <DiagnosticProfiler id="MedsAdherenceInsightsCard"><MedsAdherenceInsightsCard data={view} period={medsPeriod} anchor={medsAnchor} onPeriodChange={setMedsPeriod} onPeriodShift={(delta) => setMedsAnchor((current) => shiftInsightPeriodAnchor(current, medsPeriod, delta))} /></DiagnosticProfiler>
       </div>
     </div>}
