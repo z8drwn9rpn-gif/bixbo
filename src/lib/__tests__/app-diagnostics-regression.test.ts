@@ -62,13 +62,15 @@ describe("BIXBO app diagnostics", () => {
 
     expect(root).toContain("installRuntimeDiagnostics");
     expect(root).toContain("BIXBO detected an app error");
-    expect(root).toContain('window.location.assign("/diagnostics")');
-    expect(root).toContain('href="/diagnostics"');
+    expect(root).toContain('router.navigate({ to: "/diagnostics" })');
+    expect(root).toContain('<Link to="/diagnostics"');
 
-    expect(root).toContain("animation: bixbo-ios-launch-splash-hide 1s step-end forwards");
-    expect(root).toContain("pointer-events: none");
-    expect(root).not.toContain("}, 4500);");
-    expect(root).not.toContain("}, 700);");
+    // iOS now relies on the native startup image only. A React/HTML splash on
+    // every reload can itself cause the launch stutter the diagnostics must find.
+    expect(root).toContain('rel: "apple-touch-startup-image"');
+    expect(root).not.toContain("APPLE_PWA_LAUNCH_SPLASH_BOOTSTRAP");
+    expect(root).not.toContain("APPLE_PWA_LAUNCH_SPLASH_CSS");
+    expect(root).not.toContain("bixbo-ios-launch-splash-hide");
 
     expect(server).toContain('pathname.startsWith("/assets/")');
     expect(server).toContain("status: 404");
