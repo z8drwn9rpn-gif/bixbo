@@ -133,7 +133,7 @@ export function CouplePage({ onOpenSettings }: { onOpenSettings: () => void }) {
     const output: (PainEntry & { dateKey: string })[] = [];
     for (const day of periodDays) {
       for (const pain of dayLogs[day]?.pain ?? []) {
-        if (pain.entryKind !== "symptom-update") output.push({ ...pain, dateKey: day });
+        output.push({ ...pain, dateKey: day });
       }
     }
     return output.sort((a, b) => b.dateKey === a.dateKey ? b.time.localeCompare(a.time) : b.dateKey.localeCompare(a.dateKey));
@@ -166,7 +166,7 @@ export function CouplePage({ onOpenSettings }: { onOpenSettings: () => void }) {
     extra: dayLogs[day]?.extraMeds ?? [] as ExtraMed[],
   }));
 
-  const myPain = collectPain(view.dayLogs);
+  const myPain = collectPain(view.dayLogs).filter((entry) => entry.entryKind !== "symptom-update");
   const myTetany = collectTetany(view.dayLogs);
   const myPanic = collectPanic(view.dayLogs);
   const partnerPain = partner ? collectPain(partner.dayLogs) : [];
