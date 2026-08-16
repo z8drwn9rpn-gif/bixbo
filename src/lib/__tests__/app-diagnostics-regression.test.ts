@@ -23,7 +23,9 @@ describe("BIXBO app diagnostics", () => {
     expect(diagnostics).toContain('storageCheck()');
 
     expect(diagnostics).toContain('recordRuntimeDiagnosticIssue(\n      "freeze"');
-    expect(diagnostics).toContain('recordRuntimeDiagnosticIssue(\n        "jank"');
+    expect(diagnostics).toContain('"jank"');
+    expect(diagnostics).toContain("lastJankCandidateAt");
+    expect(diagnostics).toContain("repeated-frame-gap=yes");
     expect(diagnostics).toContain('supportedEntries.includes("longtask")');
     expect(diagnostics).toContain('supportedEntries.includes("event")');
     expect(diagnostics).toContain("requestAnimationFrame(watchFrames)");
@@ -58,6 +60,8 @@ describe("BIXBO app diagnostics", () => {
 
     expect(deepDiagnostics).toContain("staleAssetSentinelCheck()");
     expect(deepDiagnostics).toContain("currentAssetCoherenceCheck()");
+    expect(deepDiagnostics).toContain("staleLoadedAssets");
+    expect(deepDiagnostics).toContain("safe non-HTML 404");
     expect(deepDiagnostics).toContain("requestTraceCheck()");
     expect(deepDiagnostics).toContain("networkAttributionCheck()");
     expect(deepDiagnostics).toContain("indexedDbProbe()");
