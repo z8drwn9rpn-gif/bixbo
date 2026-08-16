@@ -27,6 +27,7 @@ function currentMonthPrefix() {
 
 export function CalendarTargetBridge() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const hash = useRouterState({ select: (state) => state.location.hash });
   const { data, hydrated } = useBixbo();
 
   useEffect(() => {
@@ -104,7 +105,7 @@ export function CalendarTargetBridge() {
 
     timer = window.setTimeout(step, 80);
     return () => window.clearTimeout(timer);
-  }, [data.dayLogs, hydrated, pathname]);
+  }, [data.dayLogs, hash, hydrated, pathname]);
 
   return null;
 }
