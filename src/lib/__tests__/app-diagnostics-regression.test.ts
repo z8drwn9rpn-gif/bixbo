@@ -86,18 +86,18 @@ describe("BIXBO app diagnostics", () => {
     expect(shell).toContain('<DiagnosticProfiler id={`Screen:${pathname}`}>');
     expect(shell).toContain('import "@/lib/appVisualForensics"');
 
-    // The HTML splash is standalone-launch-only, non-interactive and visible
-    // long enough to be noticeable. iOS may classify a genuine PWA launch as a
-    // reload, so PerformanceNavigationTiming must not suppress the startup UI.
+    // The splash is tied to creation of the app document instead of iOS
+    // standalone detection, which is not reliable across iOS PWA launches.
+    // SPA navigation does not recreate the document, so it will not replay.
     expect(root).toContain('rel: "apple-touch-startup-image"');
     expect(root).toContain("APPLE_PWA_LAUNCH_SPLASH_BOOTSTRAP");
     expect(root).toContain("APPLE_PWA_LAUNCH_SPLASH_CSS");
-    expect(root).toContain("display-mode: standalone");
-    expect(root).not.toContain('navigationType === "reload" || navigationType === "back_forward"');
+    expect(root).not.toContain('if (!standalone) return');
+    expect(root).toContain('root.dataset.bixboPwaLaunch = "visible"');
     expect(root).toContain("pointer-events: none");
     expect(root).toContain("}, 1000);");
     expect(root).toContain("animation: bixbo-ios-launch-splash-hide 240ms");
-    expect(root).toContain('/bixbo-mascot.png?v=20260816-launch');
+    expect(root).toContain('/bixbo-mascot-user.png?v=20260816-launch3');
 
     expect(server).toContain('pathname.startsWith("/assets/")');
     expect(server).toContain("status: 404");
