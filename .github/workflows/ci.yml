@@ -57,5 +57,7 @@ jobs:
         run: timeout 75s bun run smoke:ssr
       - name: Install Chromium and WebKit
         run: bunx playwright install --with-deps chromium webkit
-      - name: Browser E2E
-        run: bun run e2e
+      - name: Browser E2E — Chromium
+        run: bunx playwright test --project=desktop --project=mobile
+      - name: Browser E2E — WebKit
+        run: bunx playwright test --project=webkit-mobile
