@@ -46,8 +46,8 @@ export function BlueberrySection({ partner, selectedMonth, selectedMonthLabel, i
   };
 
   return (
-    <section className="space-y-3 rounded-3xl bg-surface p-4 ring-1 ring-border">
-      <h3 className="flex items-center gap-2 font-serif text-lg font-semibold"><BlueberryIcon size={21} /><span>{partner.name || t("Partner")} — {t("Blueberry")}</span></h3>
+    <section aria-label={t("Partner's cycle calendar")} className="space-y-3 rounded-3xl bg-surface p-4 ring-1 ring-border">
+      <h3 className="flex items-center gap-2 font-serif text-lg font-semibold"><BlueberryIcon size={21} /><span>{t("Partner's cycle calendar")}</span></h3>
       {next ? <div className="space-y-1 rounded-2xl bg-surface-sunken/32 p-3 text-sm ring-1 ring-border/25"><p className="flex items-center gap-2"><WaterIcon size={18} /><span>{t("Next period")}: <span className="font-semibold">{next.start}</span></span></p><p className="text-xs text-muted-foreground">{t("Predicted window")}: {next.start} → {next.end}</p></div> : null}
       {cycle ? <p className="text-xs text-muted-foreground">{t("Cycle")} {cycle.cycleLength}d · {t("Period").toLowerCase()} {cycle.periodLength}d</p> : null}
       <div className="rounded-2xl bg-surface-sunken/32 p-3 ring-1 ring-border/25">

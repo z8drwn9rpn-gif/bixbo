@@ -212,6 +212,7 @@ export const SK_PART_4: Record<string, string> = {
 "by": "o",
 "In Settings → Couple sharing, exchange pairing codes with your partner to compare selected health logs.": "V Nastaveniach → Zdieľanie s partnerom si vymeňte párovacie kódy a porovnajte vybrané zdravotné záznamy.",
 "Open Couple sharing": "Otvoriť zdieľanie s partnerom",
+"Partner's cycle calendar": "Kalendár cyklu partnera",
 "solid": "plné",
 "striped": "pruhované",
 "Predicted window": "Predpokladané obdobie",

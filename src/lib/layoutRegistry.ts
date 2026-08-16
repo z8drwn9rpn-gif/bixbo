@@ -57,13 +57,13 @@ export const BIXBO_LAYOUT_SECTIONS: Record<LayoutPageId, LayoutSectionDefinition
   "couple.overview": [
     { id: "similarity", label: "Health similarity", order: 10 },
     { id: "stats", label: "Health summary", order: 20 },
-    { id: "blueberry", label: "Blueberry", order: 30 },
   ],
   "couple.compare": [
     { id: "painChart", label: "Pain comparison", order: 10 },
     { id: "healthComparison", label: "Health comparison", order: 20 },
   ],
   "couple.health": [
+    { id: "blueberry", label: "Partner's cycle calendar", order: 5 },
     { id: "partnerDetails", label: "Partner shared details", order: 10 },
     { id: "myDetails", label: "My shared details", order: 20 },
   ],

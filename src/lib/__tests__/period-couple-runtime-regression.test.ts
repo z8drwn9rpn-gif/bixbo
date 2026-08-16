@@ -24,4 +24,15 @@ describe("Period and Couple runtime regressions", () => {
     expect(page).not.toContain('to="/settings"');
     expect(route).toContain("<CouplePage onOpenSettings={openSettings} />");
   });
+
+  it("keeps Couple Settings in the app header and shows the cycle calendar only for a partner", () => {
+    const page = read("src/features/couple/CouplePage.tsx");
+    const route = read("src/routes/couple.tsx");
+    const calendar = read("src/features/couple/BlueberrySection.tsx");
+    expect(route).not.toContain("fixed right-4");
+    expect(page).toContain('right={<button type="button" onClick={onOpenSettings}');
+    expect(page.indexOf("<BlueberrySection partner={partner}")).toBeGreaterThan(page.indexOf('activeTab === "health"'));
+    expect(calendar).toContain("const cycle = partner.cycle");
+    expect(calendar).not.toContain("useBixbo");
+  });
 });
