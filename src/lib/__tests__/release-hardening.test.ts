@@ -48,13 +48,48 @@ describe("release hardening contracts", () => {
     expect(migration).toContain("bixbo-product-analytics-retention");
   });
 
-  it("provides authenticated cloud export, withdrawal, re-consent and deletion without exporting push auth secrets", () => {
+  it("normalizes partner sharing so no permissive legacy policy can bypass active health consent", () => {
+    const migration = read("supabase/migrations/20260816222600_normalize_partner_shared_consent_policies.sql");
+    expect(migration).toContain('drop policy if exists "Owner or linked partner reads shared data"');
+    expect(migration).toContain("((select auth.uid()) = user_id or public.is_partner_of(user_id))");
+    expect(migration).toContain("and private.bixbo_health_consent_active(user_id)");
+    expect(migration.match(/create policy/g)).toHaveLength(4);
+  });
+
+  it("keeps withdrawn consent authoritative and legal audit writes server-side", () => {
+    const source = read("src/lib/legalConsent.ts");
+    const existingStateCheck = source.indexOf('.select("onboarding_completed_at,health_consent_withdrawn_at")');
+    const metadataReplay = source.indexOf("const metadataPending");
+    const versionCheck = source.indexOf("const versionsCurrent");
+    const withdrawnState = source.indexOf('return data.health_consent_withdrawn_at ? "withdrawn" : "active"');
+    const onboardingServerWrite = source.indexOf('await invokeLegalWrite("complete-onboarding")');
+    const onboardingLocalWrite = source.indexOf('browserStorage()?.setItem(ONBOARDING_KEY, "true")');
+    expect(existingStateCheck).toBeGreaterThan(-1);
+    expect(metadataReplay).toBeGreaterThan(existingStateCheck);
+    expect(versionCheck).toBeGreaterThan(-1);
+    expect(withdrawnState).toBeGreaterThan(versionCheck);
+    expect(onboardingServerWrite).toBeGreaterThan(-1);
+    expect(onboardingLocalWrite).toBeGreaterThan(onboardingServerWrite);
+    expect(source).not.toContain('.from("user_legal_consents").upsert');
+    expect(source).toContain('invokeLegalWrite("accept-current-legal"');
+    expect(source).toContain('invokeLegalWrite("complete-onboarding"');
+
+    const migration = read("supabase/migrations/20260816223500_harden_legal_consent_audit.sql");
+    expect(migration).toContain('revoke insert, update on public.user_legal_consents from authenticated');
+    expect(migration).toContain("consent.terms_version = '2026-08-16'");
+    expect(migration).toContain("consent.privacy_version = '2026-08-16'");
+    expect(migration).toContain("consent.health_consent_version = '2026-08-16'");
+  });
+
+  it("provides authenticated cloud export, server-side legal writes, withdrawal, re-consent and deletion without exporting push auth secrets", () => {
     const edge = read("supabase/functions/account-privacy/index.ts");
     expect(edge).toContain('"export-cloud-data"');
     expect(edge).toContain('"accept-current-legal"');
+    expect(edge).toContain('"complete-onboarding"');
     expect(edge).toContain('"withdraw-health-consent"');
     expect(edge).toContain('"grant-health-consent"');
     expect(edge).toContain('"delete-account"');
+    expect(edge).toContain('const CURRENT_HEALTH_CONSENT_VERSION = "2026-08-16"');
     expect(edge).toContain('select("id,endpoint,expiration_time,user_agent,created_at,updated_at")');
     expect(edge).not.toContain('select("id,endpoint,p256dh');
   });

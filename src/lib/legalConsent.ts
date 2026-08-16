@@ -21,8 +21,20 @@ export type SignupLegalConsent = {
 
 export type CloudHealthConsentState = "active" | "withdrawn" | "missing" | "signed-out";
 
+type LegalWriteAction = "accept-current-legal" | "complete-onboarding";
+type LegalWriteResult = { ok?: boolean; error?: string } & Record<string, unknown>;
+
 function browserStorage(): Storage | null {
   return typeof window === "undefined" ? null : window.localStorage;
+}
+
+async function invokeLegalWrite(action: LegalWriteAction, extra: Record<string, unknown> = {}): Promise<void> {
+  const { data, error } = await supabase.functions.invoke("account-privacy", {
+    body: { action, ...extra },
+  });
+  if (error) throw error;
+  const result = (data ?? {}) as LegalWriteResult;
+  if (!result.ok) throw new Error(typeof result.error === "string" ? result.error : "Legal state could not be recorded.");
 }
 
 export function signupLegalConsentMetadata(stagedAt = new Date().toISOString()): SignupLegalConsent {
@@ -64,17 +76,11 @@ export function clearLocalCloudHealthConsentWithdrawn(): void {
 }
 
 export async function markOnboardingCompleted(): Promise<void> {
-  browserStorage()?.setItem(ONBOARDING_KEY, "true");
   const { data, error } = await supabase.auth.getUser();
-  if (error || !data.user) return;
-
-  const db = supabase as unknown as SupabaseClient;
-  const now = new Date().toISOString();
-  const { error: writeError } = await db
-    .from("user_legal_consents")
-    .update({ onboarding_completed_at: now, updated_at: now })
-    .eq("user_id", data.user.id);
-  if (writeError) throw writeError;
+  if (!error && data.user) {
+    await invokeLegalWrite("complete-onboarding");
+  }
+  browserStorage()?.setItem(ONBOARDING_KEY, "true");
 }
 
 /**
@@ -88,11 +94,16 @@ export async function cloudHealthConsentState(): Promise<CloudHealthConsentState
   const db = supabase as unknown as SupabaseClient;
   const { data, error } = await db
     .from("user_legal_consents")
-    .select("health_consent_withdrawn_at")
+    .select("terms_version,privacy_version,health_consent_version,health_consent_withdrawn_at")
     .eq("user_id", userData.user.id)
     .maybeSingle();
   if (error) throw error;
   if (!data) return "missing";
+
+  const versionsCurrent = data.terms_version === TERMS_VERSION
+    && data.privacy_version === PRIVACY_VERSION
+    && data.health_consent_version === HEALTH_CONSENT_VERSION;
+  if (!versionsCurrent) return "missing";
   return data.health_consent_withdrawn_at ? "withdrawn" : "active";
 }
 
@@ -121,39 +132,52 @@ function readPending(): SignupLegalConsent | null {
   }
 }
 
+function isCurrentConsent(pending: SignupLegalConsent): boolean {
+  return pending.termsVersion === TERMS_VERSION
+    && pending.privacyVersion === PRIVACY_VERSION
+    && pending.healthConsentVersion === HEALTH_CONSENT_VERSION;
+}
+
 /**
- * Persists signup consent once Supabase has established the user session.
- * The same consent snapshot is also sent as signup metadata so email
- * confirmation on another device does not lose the accepted versions.
- * Existing sign-ins without signup consent metadata are left untouched.
+ * Finalizes only a genuinely missing consent record. A previously recorded row
+ * always wins over persistent signup metadata, especially after withdrawal, so
+ * signing in can never silently re-grant health-data consent.
  */
 export async function finalizePendingLegalConsent(): Promise<boolean> {
   const localPending = readPending();
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) return false;
 
+  const db = supabase as unknown as SupabaseClient;
+  const { data: existing, error: existingError } = await db
+    .from("user_legal_consents")
+    .select("onboarding_completed_at,health_consent_withdrawn_at")
+    .eq("user_id", data.user.id)
+    .maybeSingle();
+  if (existingError) throw existingError;
+
+  if (existing) {
+    clearPendingLegalConsent();
+    return !onboardingCompleted() && !existing.onboarding_completed_at;
+  }
+
   const metadataPending = parseConsent(data.user.user_metadata?.bixbo_legal_consent);
   const pending = localPending ?? metadataPending;
   if (!pending) return false;
 
-  const db = supabase as unknown as SupabaseClient;
-  const now = new Date().toISOString();
-  const acceptedAt = Number.isFinite(Date.parse(pending.stagedAt)) ? pending.stagedAt : now;
-  const { error: writeError } = await db.from("user_legal_consents").upsert(
-    {
-      user_id: data.user.id,
-      terms_version: pending.termsVersion,
-      terms_accepted_at: acceptedAt,
-      privacy_version: pending.privacyVersion,
-      privacy_acknowledged_at: acceptedAt,
-      health_consent_version: pending.healthConsentVersion,
-      health_consent_at: acceptedAt,
-      health_consent_withdrawn_at: null,
-      updated_at: now,
-    },
-    { onConflict: "user_id" },
-  );
-  if (writeError) throw writeError;
+  if (!isCurrentConsent(pending)) {
+    clearPendingLegalConsent();
+    return false;
+  }
+
+  await invokeLegalWrite("accept-current-legal", {
+    termsAccepted: true,
+    privacyAcknowledged: true,
+    healthConsent: true,
+    termsVersion: TERMS_VERSION,
+    privacyVersion: PRIVACY_VERSION,
+    healthConsentVersion: HEALTH_CONSENT_VERSION,
+  });
 
   const { data: legalState, error: stateError } = await db
     .from("user_legal_consents")
