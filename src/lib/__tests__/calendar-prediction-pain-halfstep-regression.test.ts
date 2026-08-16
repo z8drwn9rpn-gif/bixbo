@@ -41,6 +41,13 @@ describe("display-safe period predictions", () => {
     const barrel = readFileSync("src/lib/storage.ts", "utf8");
     expect(barrel).toContain('predictPeriodsForDisplay as predictPeriods');
   });
+
+  it("keeps actual and predicted Period purple even when Pain is logged on the same day", () => {
+    const calendar = readFileSync("src/components/MonthCalendar.tsx", "utf8");
+    expect(calendar).toContain("ringColor=pAvg!=null&&!periodColor&&!predictedPeriod?calendarPainColor(pAvg):null");
+    expect(calendar).toContain("showPredictionRing=predictedPeriod&&!periodColor");
+    expect(calendar).toContain("var(--period-medium)");
+  });
 });
 
 describe("Pain 0.5-step device rendering", () => {
