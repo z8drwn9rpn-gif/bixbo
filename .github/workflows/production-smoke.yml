@@ -35,6 +35,18 @@ jobs:
             grep -q 'Privacy Policy' <<<"$privacy" || return 1
             grep -q 'Terms of Service' <<<"$terms" || return 1
             grep -q 'bixbo-my-health-diary' <<<"$mcp" || return 1
+
+            # Public/commercial production must never ship the legal-identity fallback.
+            grep -q 'Data controller' <<<"$privacy" || return 1
+            grep -q 'Service operator' <<<"$terms" || return 1
+            if grep -q 'BIXBO operator' <<<"$privacy" || grep -q 'BIXBO operator' <<<"$terms"; then
+              echo "Production is still using the BIXBO operator legal-identity placeholder."
+              return 1
+            fi
+            if grep -q 'must be configured before public or commercial distribution' <<<"$privacy"; then
+              echo "Production legal controller name/address/privacy email are not fully configured."
+              return 1
+            fi
           }
 
           for attempt in $(seq 1 30); do
