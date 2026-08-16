@@ -24,9 +24,9 @@ describe("Couple readability and long-page navigation", () => {
     expect(control).toContain('aria-label="Scroll to bottom"');
     expect(control).toContain('window.scrollTo({ top: 0, behavior: "smooth" })');
     expect(control).toContain("root.scrollHeight");
-    expect(control).toContain('router.navigate({ to: "/" })');
-    expect(control).toContain('hash: "latest"');
+    expect(control).toContain('window.dispatchEvent(new CustomEvent("bixbo:open-quick-log-menu"))');
     expect(control).not.toContain("window.location.assign");
+    expect(control).not.toContain("window.location.replace");
   });
 
   it("opens every log category from a normal plus tap while keeping hold shortcuts", () => {
