@@ -4,10 +4,12 @@ import { describe, expect, it } from "vitest";
 describe("BIXBO app diagnostics", () => {
   it("keeps full scanner coverage and runtime error capture wired into the app", () => {
     const diagnostics = readFileSync("src/lib/appDiagnostics.ts", "utf8");
+    const deepDiagnostics = readFileSync("src/lib/appDeepDiagnostics.ts", "utf8");
     const route = readFileSync("src/routes/diagnostics.tsx", "utf8");
     const root = readFileSync("src/routes/__root.tsx", "utf8");
     const server = readFileSync("src/server.ts", "utf8");
     const profiler = readFileSync("src/components/DiagnosticProfiler.tsx", "utf8");
+    const shell = readFileSync("src/components/AppShell.tsx", "utf8");
 
     expect(diagnostics).toContain('window.addEventListener("error", onError)');
     expect(diagnostics).toContain('window.addEventListener("unhandledrejection", onUnhandledRejection)');
@@ -54,15 +56,23 @@ describe("BIXBO app diagnostics", () => {
       expect(diagnostics).toContain(`"${path}"`);
     }
 
+    expect(deepDiagnostics).toContain("staleAssetSentinelCheck()");
+    expect(deepDiagnostics).toContain("currentAssetCoherenceCheck()");
+    expect(deepDiagnostics).toContain("requestTraceCheck()");
+    expect(deepDiagnostics).toContain("indexedDbProbe()");
+
     expect(route).toContain('createFileRoute("/diagnostics")');
     expect(route).toContain("BIXBO App Scanner");
     expect(route).toContain("Run scan");
-    expect(route).toContain("Recorded app incidents");
+    expect(route).toContain("Forensic incident clusters");
     expect(route).toContain("Black-box recorder:");
     expect(route).toContain("Measured delay:");
     expect(route).toContain("Incident clusters");
     expect(route).toContain("Top root cause");
     expect(route).toContain("60-second black-box timeline");
+    expect(route).toContain("Copy forensic report");
+    expect(route).toContain("runDeepBrowserDiagnostics");
+    expect(route).toContain("getRuntimeDiagnosticIssues()");
 
     expect(root).toContain("installRuntimeDiagnostics");
     expect(root).toContain("BIXBO detected an app error");
@@ -70,13 +80,17 @@ describe("BIXBO app diagnostics", () => {
     expect(root).toContain('<Link to="/diagnostics"');
     expect(root).toContain('<DiagnosticProfiler id="RouteTree">');
     expect(profiler).toContain("recordComponentRender");
+    expect(shell).toContain('<DiagnosticProfiler id={`Screen:${pathname}`}>');
 
-    // iOS now relies on the native startup image only. A React/HTML splash on
-    // every reload can itself cause the launch stutter the diagnostics must find.
+    // The HTML splash is startup-only, non-interactive and hidden in about one
+    // second after load; subsequent navigation/reloads in the same PWA session
+    // must not replay it and create artificial stutter.
     expect(root).toContain('rel: "apple-touch-startup-image"');
-    expect(root).not.toContain("APPLE_PWA_LAUNCH_SPLASH_BOOTSTRAP");
-    expect(root).not.toContain("APPLE_PWA_LAUNCH_SPLASH_CSS");
-    expect(root).not.toContain("bixbo-ios-launch-splash-hide");
+    expect(root).toContain("APPLE_PWA_LAUNCH_SPLASH_BOOTSTRAP");
+    expect(root).toContain("APPLE_PWA_LAUNCH_SPLASH_CSS");
+    expect(root).toContain('sessionStorage.getItem(sessionKey) === "shown"');
+    expect(root).toContain("pointer-events: none");
+    expect(root).toContain("}, 650);");
 
     expect(server).toContain('pathname.startsWith("/assets/")');
     expect(server).toContain("status: 404");
