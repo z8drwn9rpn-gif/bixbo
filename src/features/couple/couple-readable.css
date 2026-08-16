@@ -1,0 +1,10 @@
+/* Couple uses the same minimum reading size as the Day Overview cards.
+   Keep the approved mobile layout, but never render helper/body copy below 12px. */
+main:has([aria-label="Couple period: Month"]) [class~="text-[7px]"],
+main:has([aria-label="Couple period: Month"]) [class~="text-[8px]"],
+main:has([aria-label="Couple period: Month"]) [class~="text-[9px]"],
+main:has([aria-label="Couple period: Month"]) [class~="text-[10px]"],
+main:has([aria-label="Couple period: Month"]) [class~="text-[11px]"] {
+  font-size: 0.75rem !important;
+  line-height: 1.35 !important;
+}
