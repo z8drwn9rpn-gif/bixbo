@@ -35,6 +35,19 @@ jobs:
             grep -q 'Privacy Policy' <<<"$privacy" || return 1
             grep -q 'Terms of Service' <<<"$terms" || return 1
             grep -q 'bixbo-my-health-diary' <<<"$mcp" || return 1
+
+            # Public/commercial readiness: the app itself renders this warning
+            # whenever the build is missing the real controller name, postal
+            # address, or privacy contact. Never allow such a build to be
+            # treated as production-ready.
+            if grep -Fq 'must be configured before public or commercial distribution' <<<"$privacy"; then
+              echo "Privacy Policy still contains the missing legal-controller warning."
+              return 1
+            fi
+            if grep -Fq 'treba doplniť právny názov' <<<"$privacy"; then
+              echo "Privacy Policy still contains the missing legal-controller warning."
+              return 1
+            fi
           }
 
           for attempt in $(seq 1 30); do
