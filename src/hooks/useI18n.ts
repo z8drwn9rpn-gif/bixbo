@@ -88,7 +88,16 @@ const BLUEBERRY_UI_NAMES: Record<string, string> = {
   "period / cycle": "blueberry / cycle",
 };
 
+/**
+ * These phrases use "period" in its ordinary time-window sense, not as the
+ * menstrual Blueberry brand name. Keep them literal.
+ */
+const NON_BLUEBERRY_PERIOD_COPY = new Set([
+  "Typical range this period",
+]);
+
 function blueberryUiName(key: string): string | null {
+  if (NON_BLUEBERRY_PERIOD_COPY.has(key)) return null;
   if (BLUEBERRY_UI_NAMES[key]) return BLUEBERRY_UI_NAMES[key];
   // Catch visible compound labels such as "Log period", "Next period" or
   // Quick Tag builder copy without touching internal data keys.
