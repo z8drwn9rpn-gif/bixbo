@@ -106,13 +106,20 @@ export function SukSukInsightsCard({ data }: { data: BixboData }) {
         <div className="flex items-start gap-2"><span className="pt-0.5 text-[#d966b1]" aria-hidden="true"><InsightGlyph kind="star" size={15} /></span><div className="min-w-0"><p className="whitespace-nowrap text-xs text-foreground" style={{ fontWeight: 700 }}>{bestDate ? `Best day: ${bestDayName}` : "No best day yet"}</p><p className="mt-1 text-[10px] leading-snug text-muted-foreground">{insightText}</p></div></div>
       </div>
 
-      <div className="mt-3 grid grid-cols-3 divide-x divide-border/60 rounded-xl bg-background/35 py-2 ring-1 ring-border/45">
+      <div className="mt-3 grid grid-cols-3 divide-x divide-border/60 rounded-xl bg-background/35 py-2.5 ring-1 ring-border/45">
         <div className="min-w-0 px-1.5 text-center">
-          <div className="flex items-center justify-center gap-1 whitespace-nowrap"><span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#f7dce4]"><HeartIcon size={15} /></span><span className="text-[11px] text-foreground"><strong className="text-sm">{total}</strong> {t("times")} this {period === "W" ? "week" : period === "M" ? "month" : "year"}</span></div>
-          <p className="mt-1 whitespace-nowrap text-[8px] text-muted-foreground">vs last {period === "W" ? "week" : period === "M" ? "month" : "year"} <span style={{ color: compared.diff < 0 ? "#6f8a3e" : compared.diff > 0 ? "#d85f4b" : "var(--muted-foreground)", fontWeight: 700 }}>{compared.text}</span></p>
+          <div className="flex items-center justify-center gap-1"><span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#f7dce4]"><HeartIcon size={15} /></span><strong className="text-sm leading-none text-foreground">{total}</strong></div>
+          <p className="mt-1 whitespace-nowrap text-[9px] leading-none text-muted-foreground">{t("times")} this {period === "W" ? "week" : period === "M" ? "month" : "year"}</p>
+          <p className="mt-1 whitespace-nowrap text-[8px] leading-none text-muted-foreground">vs last {period === "W" ? "week" : period === "M" ? "month" : "year"} <span style={{ color: compared.diff < 0 ? "#6f8a3e" : compared.diff > 0 ? "#d85f4b" : "var(--muted-foreground)", fontWeight: 700 }}>{compared.text}</span></p>
         </div>
-        <div className="min-w-0 px-1.5 text-center"><div className="flex items-center justify-center gap-1 whitespace-nowrap"><span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-tint/55 text-primary"><ClockIcon size={15} /></span><span className="text-[10px] text-foreground"><strong className="text-sm">{activeDays}</strong> days with intimacy</span></div></div>
-        <div className="min-w-0 px-1.5 text-center"><div className="flex items-center justify-center gap-1 whitespace-nowrap"><span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-tint/55"><StarIcon size={15} /></span><span className="text-[10px] text-foreground"><strong className="text-[11px]">{bestDayName}</strong> best day</span></div></div>
+        <div className="min-w-0 px-1.5 text-center">
+          <div className="flex items-center justify-center gap-1"><span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-tint/55 text-primary"><ClockIcon size={15} /></span><strong className="text-sm leading-none text-foreground">{activeDays}</strong></div>
+          <p className="mt-1 whitespace-nowrap text-[9px] leading-none text-muted-foreground">days with intimacy</p>
+        </div>
+        <div className="min-w-0 px-1.5 text-center">
+          <div className="flex items-center justify-center gap-1"><span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-tint/55"><StarIcon size={15} /></span><strong className="min-w-0 truncate text-[11px] leading-none text-foreground">{bestDayName}</strong></div>
+          <p className="mt-1 whitespace-nowrap text-[9px] leading-none text-muted-foreground">best day</p>
+        </div>
       </div>
     </section>
   );
