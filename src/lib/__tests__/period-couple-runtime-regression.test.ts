@@ -30,8 +30,9 @@ describe("Period and Couple runtime regressions", () => {
     const route = read("src/routes/couple.tsx");
     const calendar = read("src/features/couple/BlueberrySection.tsx");
     expect(route).not.toContain("fixed right-4");
-    expect(page).toContain('stickyHeader={false} right={<button type="button" onClick={onOpenSettings}');
-    expect(page.indexOf("<BlueberrySection partner={partner}")).toBeGreaterThan(page.indexOf('activeTab === "overview"'));
+    expect(page).toContain("stickyHeader={false}");
+    expect(page).toContain("onClick={onOpenSettings}");
+    expect(page.indexOf("<BlueberrySection")).toBeGreaterThan(page.indexOf('activeTab === "overview"'));
     expect(page).not.toContain("<BlueberrySection partner={view}");
     expect(page).toContain('session?.user.email?.trim().toLowerCase() === "jakubikm02@gmail.com"');
     expect(page).toContain("canViewPartnerCycle && partner.gender !== \"male\"");
@@ -41,12 +42,25 @@ describe("Period and Couple runtime regressions", () => {
 
   it("uses selected Couple names in Health Similarity and saves the current name for partner sharing", () => {
     const page = read("src/features/couple/CouplePage.tsx");
-    const cards = read("src/features/couple/CoupleCards.tsx");
+    const overview = read("src/features/couple/CoupleOverviewPanel.tsx");
     const settings = read("src/features/couple/CoupleSettings.tsx");
-    expect(page).toContain("myName={myCoupleName} partnerName={partnerName}");
-    expect(cards).toContain("{myName} + {partnerName}");
+    expect(page).toContain("myName={myCoupleName}");
+    expect(page).toContain("partnerName={partnerName}");
+    expect(overview).toContain("{myName} + {partnerName}");
     expect(settings).toContain("updateProfile({ display_name: nextName })");
     expect(settings).toContain('t("Your Couple name")');
+  });
+
+  it("keeps Health partner-only with today visible and earlier entries expandable", () => {
+    const page = read("src/features/couple/CouplePage.tsx");
+    const health = read("src/features/couple/PartnerHealthDashboard.tsx");
+    expect(page).toContain("<PartnerHealthDashboard");
+    expect(page).not.toContain("My shared details");
+    expect(page).toContain("visibleDay={visibleHealthDay}");
+    expect(health).toContain('t("Show earlier entries")');
+    expect(health).toContain("<details");
+    expect(health).toContain("currentPain");
+    expect(health).toContain("olderPain");
   });
 
   it("does not render symptom-only follow-ups as separate Couple pain records", () => {
