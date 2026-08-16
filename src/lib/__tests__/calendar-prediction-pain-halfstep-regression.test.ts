@@ -20,7 +20,7 @@ describe("display-safe period predictions", () => {
     ]);
   });
 
-  it("removes an AI prediction completely once its predicted start passed without a real period", () => {
+  it("removes a disproved prediction completely once its predicted start passed without a real period", () => {
     const result = sanitizePeriodPredictions(
       { lastPeriodStart: "2026-07-01", lastPeriodEnd: "2026-07-04" },
       [
@@ -42,27 +42,27 @@ describe("display-safe period predictions", () => {
     expect(barrel).toContain('predictPeriodsForDisplay as predictPeriods');
   });
 
-  it("keeps actual and predicted Period purple even when Pain is logged on the same day", () => {
+  it("keeps the original Period + Pain composition from the Month Calendar", () => {
     const calendar = readFileSync("src/components/MonthCalendar.tsx", "utf8");
-    expect(calendar).toContain("ringColor=pAvg!=null&&!periodColor&&!predictedPeriod?calendarPainColor(pAvg):null");
-    expect(calendar).toContain("showPredictionRing=predictedPeriod&&!periodColor");
+    expect(calendar).toContain("ringColor=pAvg!=null?calendarPainColor(pAvg):null");
+    expect(calendar).toContain("showPredictionRing=predictedPeriod&&pAvg==null&&!periodColor");
     expect(calendar).toContain("var(--period-medium)");
   });
 });
 
 describe("Pain 0.5-step device rendering", () => {
-  it("forces every intermediate Pain button to its canonical concrete colour", () => {
+  it("forces every intermediate Pain button to its midpoint colour without changing whole values", () => {
     const css = readFileSync("src/device-rendering-fixes.css", "utf8");
     const expected = [
       ["0.5", "#82CA42"],
-      ["1.5", "#A5CF33"],
-      ["2.5", "#CCD124"],
-      ["3.5", "#EACA11"],
-      ["4.5", "#F5B200"],
-      ["5.5", "#F68F02"],
-      ["6.5", "#F56A41"],
-      ["7.5", "#EF4E69"],
-      ["8.5", "#E53366"],
+      ["1.5", "#A4CF34"],
+      ["2.5", "#CBD127"],
+      ["3.5", "#E9CA16"],
+      ["4.5", "#F4B20C"],
+      ["5.5", "#F48E10"],
+      ["6.5", "#F26C3A"],
+      ["7.5", "#EE4E6A"],
+      ["8.5", "#E53266"],
       ["9.5", "#D31E4E"],
     ] as const;
 
