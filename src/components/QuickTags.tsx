@@ -805,6 +805,7 @@ export function QuickTags({
                 }}
                 onContextMenu={(event) => event.preventDefault()}
                 title={`${t(tag.label)} — long-press for details`}
+                data-bixbo-quick-tag={tag.key}
                 aria-label={t(tag.label)}
                 className={`relative flex aspect-square min-w-0 select-none touch-manipulation flex-col lg:mx-auto lg:w-full lg:max-w-[94px] xl:max-w-[100px] items-center justify-center gap-0.5 rounded-full bg-surface p-1.5 text-center shadow-sm ring-1 ring-border/80 transition-[transform,box-shadow,background-color,ring-color] duration-150 hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-95 ${
                   isFlash ? "scale-105 bg-primary/10 ring-2 ring-primary shadow-md" : ""
