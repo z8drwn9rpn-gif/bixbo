@@ -3,47 +3,55 @@ export type PainEntryLike = { entryKind?: "pain" | "symptom-update"; score: numb
 export type PainDayLike = { pain?: PainEntryLike[] };
 
 /**
- * Canonical 0–10 palette. These must match the --pain-* theme tokens so whole
- * scores keep their established colour everywhere in the app.
+ * Canonical Pain scale colours at every 0.5 step.
+ * Whole-number entries exactly match --pain-0 … --pain-10 in theme-system.css.
+ * Half steps are explicit hex values so iOS/PWA rendering never depends on
+ * CSS color-mix support and 7.5 can never collapse visually into 7 or 8.
  */
+export const PAIN_SCALE_HALF_STEP_COLORS = [
+  "#7FCF52", "#89CE4D", "#93CE48", "#A4D144", "#B4D43F",
+  "#C4D53C", "#D3D638", "#E2D233", "#F0CF2E", "#F2C32E",
+  "#F5B72D", "#F5A831", "#F59A35", "#F28936", "#EF7838",
+  "#EC693C", "#E95A3F", "#E24C41", "#DC3F43", "#D23741",
+  "#C82F3F",
+] as const;
+
+/** Concrete whole-number colours for PDF/export surfaces that cannot use CSS variables. */
 export const PAIN_COLOR_HEX = [
-  "#72c64a", "#91cd3a", "#b7d12f", "#dfd11f", "#f3c30d", "#f5a20b",
-  "#f47b16", "#f05c5f", "#ec3f74", "#de2557", "#c81746",
+  PAIN_SCALE_HALF_STEP_COLORS[0], PAIN_SCALE_HALF_STEP_COLORS[2], PAIN_SCALE_HALF_STEP_COLORS[4],
+  PAIN_SCALE_HALF_STEP_COLORS[6], PAIN_SCALE_HALF_STEP_COLORS[8], PAIN_SCALE_HALF_STEP_COLORS[10],
+  PAIN_SCALE_HALF_STEP_COLORS[12], PAIN_SCALE_HALF_STEP_COLORS[14], PAIN_SCALE_HALF_STEP_COLORS[16],
+  PAIN_SCALE_HALF_STEP_COLORS[18], PAIN_SCALE_HALF_STEP_COLORS[20],
 ] as const;
 
-/**
- * Precomputed 50/50 OKLCH blends for 0.5, 1.5 … 9.5.
- *
- * Keeping the blends as solid sRGB colours makes them render identically in
- * normal UI, SVG charts, print/PDF rendering and installed iOS web apps.
- */
-const PAIN_HALF_STEP_HEX = [
-  "#82ca42", "#a5cf33", "#ccd124", "#eaca11", "#f5b200",
-  "#f68f02", "#f56a41", "#ef4e69", "#e53366", "#d31e4e",
-] as const;
-
-/** Keep pain values on the same 0.5-step scale used by logging and colours. */
+/** Keep calculated Pain values on the same 0.5-step scale used by logging. */
 export function snapPainScore(score: number): number {
   const clamped = Math.max(0, Math.min(10, Number.isFinite(score) ? score : 0));
   return Math.round(clamped * 2) / 2;
 }
 
-/** Average pain values without ever collapsing a half-step to a whole number. */
+/** Average Pain values and keep the result on the canonical half-step scale. */
 export function averagePainScores(values: number[]): number | undefined {
   const finite = values.filter(Number.isFinite).map(snapPainScore);
   if (!finite.length) return undefined;
   return snapPainScore(finite.reduce((sum, value) => sum + value, 0) / finite.length);
 }
 
+/** Returns the canonical concrete Pain scale colour for charts and SVG UI. */
+export function painHexColor(score: number): string {
+  const snapped = snapPainScore(score);
+  return PAIN_SCALE_HALF_STEP_COLORS[Math.round(snapped * 2)];
+}
+
 export function painColor(score: number): string {
   const snapped = snapPainScore(score);
 
-  // Whole-number colours are the canonical palette and must stay unchanged.
-  if (Number.isInteger(snapped)) return PAIN_COLOR_HEX[snapped];
+  // Whole-number colours stay on their canonical theme tokens.
+  if (Number.isInteger(snapped)) return `var(--pain-${snapped})`;
 
-  // Half steps get their own vivid midpoint colour instead of rounding up to
-  // the next integer (for example 7.5 must not look identical to 8).
-  return PAIN_HALF_STEP_HEX[Math.floor(snapped)];
+  // Half steps use explicit colours rather than color-mix so they render
+  // identically in Safari/PWA and remain visibly distinct from both neighbours.
+  return painHexColor(snapped);
 }
 
 export function avgDayPain(log?: PainDayLike): number | undefined {
