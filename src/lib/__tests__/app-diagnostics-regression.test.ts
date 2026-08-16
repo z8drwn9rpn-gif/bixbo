@@ -59,7 +59,10 @@ describe("BIXBO app diagnostics", () => {
     expect(deepDiagnostics).toContain("staleAssetSentinelCheck()");
     expect(deepDiagnostics).toContain("currentAssetCoherenceCheck()");
     expect(deepDiagnostics).toContain("requestTraceCheck()");
+    expect(deepDiagnostics).toContain("networkAttributionCheck()");
     expect(deepDiagnostics).toContain("indexedDbProbe()");
+    expect(deepDiagnostics).toContain("navigationBreakdownCheck()");
+    expect(deepDiagnostics).toContain("resourceWaterfallCheck()");
 
     expect(route).toContain('createFileRoute("/diagnostics")');
     expect(route).toContain("BIXBO App Scanner");
@@ -81,16 +84,19 @@ describe("BIXBO app diagnostics", () => {
     expect(root).toContain('<DiagnosticProfiler id="RouteTree">');
     expect(profiler).toContain("recordComponentRender");
     expect(shell).toContain('<DiagnosticProfiler id={`Screen:${pathname}`}>');
+    expect(shell).toContain('import "@/lib/appVisualForensics"');
 
-    // The HTML splash is startup-only, non-interactive and hidden in about one
-    // second after load; subsequent navigation/reloads in the same PWA session
-    // must not replay it and create artificial stutter.
+    // The HTML splash is launch-only, non-interactive and disappears in about
+    // one second. Reload/back-forward navigation must skip it so recovery never
+    // adds its own launch stutter.
     expect(root).toContain('rel: "apple-touch-startup-image"');
     expect(root).toContain("APPLE_PWA_LAUNCH_SPLASH_BOOTSTRAP");
     expect(root).toContain("APPLE_PWA_LAUNCH_SPLASH_CSS");
-    expect(root).toContain('sessionStorage.getItem(sessionKey) === "shown"');
+    expect(root).toContain('navigationType === "reload" || navigationType === "back_forward"');
     expect(root).toContain("pointer-events: none");
-    expect(root).toContain("}, 650);");
+    expect(root).toContain("}, 750);");
+    expect(root).toContain("animation: bixbo-ios-launch-splash-hide 240ms");
+    expect(root).toContain('/bixbo-mascot-masked.svg?v=20260816-startup');
 
     expect(server).toContain('pathname.startsWith("/assets/")');
     expect(server).toContain("status: 404");
