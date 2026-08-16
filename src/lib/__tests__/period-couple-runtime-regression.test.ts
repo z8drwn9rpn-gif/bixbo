@@ -25,7 +25,7 @@ describe("Period and Couple runtime regressions", () => {
     expect(route).toContain("<CouplePage onOpenSettings={openSettings} />");
   });
 
-  it("keeps Couple Settings in the app header and shows the cycle calendar only for a partner", () => {
+  it("keeps Couple Settings in the app header and shows the cycle calendar only for the chosen partner account", () => {
     const page = read("src/features/couple/CouplePage.tsx");
     const route = read("src/routes/couple.tsx");
     const calendar = read("src/features/couple/BlueberrySection.tsx");
@@ -33,6 +33,8 @@ describe("Period and Couple runtime regressions", () => {
     expect(page).toContain('stickyHeader={false} right={<button type="button" onClick={onOpenSettings}');
     expect(page.indexOf("<BlueberrySection partner={partner}")).toBeGreaterThan(page.indexOf('activeTab === "overview"'));
     expect(page).not.toContain("<BlueberrySection partner={view}");
+    expect(page).toContain('session?.user.email?.trim().toLowerCase() === "jakubikm02@gmail.com"');
+    expect(page).toContain("canViewPartnerCycle && partner.gender !== \"male\"");
     expect(calendar).toContain("const cycle = partner.cycle");
     expect(calendar).not.toContain("useBixbo");
   });
