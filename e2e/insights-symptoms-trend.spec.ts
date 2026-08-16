@@ -18,13 +18,13 @@ test("Insights offers one switchable symptoms trend bar chart", async ({ page })
   await expect(period.getByRole("button", { name: "Year", exact: true })).toBeVisible();
 
   const symptoms = card.getByRole("group", { name: "Symptom shown in chart" });
-  for (const label of ["Headache", "Tetany", "Panic", "Nausea", "Pressure", "Hot flashes"]) {
+  for (const label of ["Headache", "Tetany episode", "Panic episode", "Nausea", "Pressure", "Hot flashes"]) {
     await expect(symptoms.getByRole("button", { name: label, exact: true })).toBeVisible();
   }
 
-  await symptoms.getByRole("button", { name: "Tetany", exact: true }).click();
+  await symptoms.getByRole("button", { name: "Tetany episode", exact: true }).click();
   await expect(card.getByText("Intensity 0–5", { exact: true })).toBeVisible();
-  await symptoms.getByRole("button", { name: "Panic", exact: true }).click();
+  await symptoms.getByRole("button", { name: "Panic episode", exact: true }).click();
   await expect(card.getByText("Intensity 0–10", { exact: true })).toBeVisible();
   await symptoms.getByRole("button", { name: "Hot flashes", exact: true }).click();
   await expect(card.getByText("Intensity 0–5", { exact: true })).toBeVisible();
