@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   countRecordedPrnUses,
   hasMeaningfulReportDay,
+  reportPeriodLevel,
   summarizeReportDay,
 } from "../healthReport";
 import type { DayLog, Med, PainEntry } from "../storage";
@@ -59,6 +60,12 @@ describe("PDF health report calculations", () => {
     expect(day.bowelLogCount).toBe(4);
     expect(day.noBowelMovementCount).toBe(1);
     expect(day.urinaryOnlyCount).toBe(1);
+  });
+
+  it("uses the same saved period range fallback as the calendar", () => {
+    expect(reportPeriodLevel("2026-08-15", {}, { lastPeriodStart: "2026-08-14", lastPeriodEnd: "2026-08-17" })).toBe("medium");
+    expect(reportPeriodLevel("2026-08-18", {}, { lastPeriodStart: "2026-08-14", lastPeriodEnd: "2026-08-17" })).toBeUndefined();
+    expect(reportPeriodLevel("2026-08-15", { period: "heavy" }, { lastPeriodStart: "2026-08-14", lastPeriodEnd: "2026-08-17" })).toBe("heavy");
   });
 
   it("treats zero-valued measurements and newly-added log families as meaningful data", () => {
