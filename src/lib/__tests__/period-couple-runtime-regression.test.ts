@@ -58,7 +58,10 @@ describe("Period and Couple runtime regressions", () => {
     expect(page).not.toContain("My shared details");
     expect(page).toContain("visibleDay={visibleHealthDay}");
     expect(health).toContain('t("Show earlier entries")');
-    expect(health).toContain("<details");
+    expect(health).toContain("aria-expanded={expanded}");
+    expect(health).toContain("setAllExpanded");
+    expect(health).toContain('t("Collapse all")');
+    expect(health).toContain('t("Expand all")');
     expect(health).toContain("currentPain");
     expect(health).toContain("olderPain");
   });
