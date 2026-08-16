@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import { PAIN_COLOR_HEX, painColor } from "../domain/pain";
+import { PAIN_COLOR_HEX, averagePainScores, avgDayPain, painColor, snapPainScore } from "../domain/pain";
 
 describe("painColor", () => {
   it("keeps whole-number pain colours unchanged", () => {
@@ -25,5 +25,23 @@ describe("painColor", () => {
   it("keeps 7.5 visually distinct from both 7 and 8", () => {
     expect(painColor(7.5)).toBe("#ef4e69");
     expect(painColor(7.5)).not.toBe(painColor(8));
+  });
+});
+
+describe("half-step pain calculations", () => {
+  it("snaps calculations to the same 0.5 scale instead of whole numbers", () => {
+    expect(snapPainScore(7.5)).toBe(7.5);
+    expect(snapPainScore(7.25)).toBe(7.5);
+    expect(snapPainScore(7.1)).toBe(7);
+  });
+
+  it("keeps aggregate pain on half steps so Month, Couple and Insights use the matching colour", () => {
+    expect(averagePainScores([7, 7.5])).toBe(7.5);
+    expect(avgDayPain({ pain: [{ score: 7 }, { score: 7.5 }] })).toBe(7.5);
+    expect(painColor(avgDayPain({ pain: [{ score: 7 }, { score: 7.5 }] })!)).toBe(painColor(7.5));
+  });
+
+  it("ignores symptom-update rows when computing the day pain value", () => {
+    expect(avgDayPain({ pain: [{ score: 7.5 }, { score: 10, entryKind: "symptom-update" }] })).toBe(7.5);
   });
 });
