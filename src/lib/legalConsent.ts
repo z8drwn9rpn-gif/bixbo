@@ -7,6 +7,7 @@ export const HEALTH_CONSENT_VERSION = "2026-08-16";
 
 const PENDING_KEY = "bixbo:pending-legal-consent:v1";
 const ONBOARDING_KEY = "bixbo:onboarding-completed:v1";
+const CLOUD_CONSENT_WITHDRAWN_KEY = "bixbo:cloud-health-consent-withdrawn:v1";
 
 export type SignupLegalConsent = {
   termsAccepted: true;
@@ -50,6 +51,18 @@ export function onboardingCompleted(): boolean {
   return browserStorage()?.getItem(ONBOARDING_KEY) === "true";
 }
 
+export function localCloudHealthConsentWithdrawn(): boolean {
+  return browserStorage()?.getItem(CLOUD_CONSENT_WITHDRAWN_KEY) === "true";
+}
+
+export function markLocalCloudHealthConsentWithdrawn(): void {
+  browserStorage()?.setItem(CLOUD_CONSENT_WITHDRAWN_KEY, "true");
+}
+
+export function clearLocalCloudHealthConsentWithdrawn(): void {
+  browserStorage()?.removeItem(CLOUD_CONSENT_WITHDRAWN_KEY);
+}
+
 export async function markOnboardingCompleted(): Promise<void> {
   browserStorage()?.setItem(ONBOARDING_KEY, "true");
   const { data, error } = await supabase.auth.getUser();
@@ -65,7 +78,7 @@ export async function markOnboardingCompleted(): Promise<void> {
 }
 
 /**
- * Fail-closed cloud consent state used by sync and privacy controls.
+ * Fail-closed cloud consent state used by auth/privacy controls.
  * Local BIXBO data remains available regardless of this state.
  */
 export async function cloudHealthConsentState(): Promise<CloudHealthConsentState> {
@@ -150,5 +163,6 @@ export async function finalizePendingLegalConsent(): Promise<boolean> {
   if (stateError) throw stateError;
 
   clearPendingLegalConsent();
+  clearLocalCloudHealthConsentWithdrawn();
   return !onboardingCompleted() && !legalState?.onboarding_completed_at;
 }
