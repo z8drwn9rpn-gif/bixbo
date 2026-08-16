@@ -16,4 +16,12 @@ describe("Period and Couple runtime regressions", () => {
     expect(source).toContain("const comparisonStartDay");
     expect(source).toContain("myFirstComparisonDay > partnerFirstComparisonDay");
   });
+
+  it("opens Couple Settings from the no-partner card instead of redirecting to Profile", () => {
+    const page = read("src/features/couple/CouplePage.tsx");
+    const route = read("src/routes/couple.tsx");
+    expect(page).toContain("onOpenSettings");
+    expect(page).not.toContain('to="/settings"');
+    expect(route).toContain("<CouplePage onOpenSettings={openSettings} />");
+  });
 });
