@@ -99,7 +99,7 @@ export function BottomNav() {
       longPressFired.current = false;
       return;
     }
-    window.dispatchEvent(new CustomEvent("bixbo:open-quick-log-menu"));
+    window.dispatchEvent(new CustomEvent("bixbo:open-log-menu"));
   };
 
   return (
