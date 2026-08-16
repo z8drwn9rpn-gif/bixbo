@@ -13,6 +13,7 @@ import {
   type Period,
 } from "./shared";
 import { DashboardPeriodControl, MetricCards, QuickInsights } from "./InsightDashboardPrimitives";
+import { InsightChilliIcon } from "./InsightCardIcons";
 
 export function TimeOfDayInsightsCard({ data, days, period, anchor, onPeriodChange, onPeriodShift }: {
   data: BixboData;
@@ -60,7 +61,12 @@ export function TimeOfDayInsightsCard({ data, days, period, anchor, onPeriodChan
 
   return (
     <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
-      <p className="text-xs uppercase tracking-wider text-muted-foreground" style={{ fontWeight: 700 }}>{t("Time of Day Pattern")}</p>
+      <div className="flex items-center gap-2.5">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#dc3f43]/10 ring-1 ring-[#dc3f43]/15" data-insight-card-icon="time-of-day-chilli">
+          <InsightChilliIcon size={29} />
+        </span>
+        <p className="text-xs uppercase tracking-wider text-muted-foreground" style={{ fontWeight: 700 }}>{t("Time of Day Pattern")}</p>
+      </div>
       <DashboardPeriodControl value={period} onChange={onPeriodChange} anchor={anchor} onShift={onPeriodShift} ariaLabel="Time of day pattern period" />
 
       {!total ? <p className="mt-3 text-xs text-muted-foreground">{t("Not enough data yet")}</p> : (
