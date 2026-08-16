@@ -1,0 +1,87 @@
+name: Apply Bowel overview wiring
+
+on:
+  push:
+    branches:
+      - feat/bowel-overview-card
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: feat/bowel-overview-card
+          fetch-depth: 0
+      - name: Wire one Bowel card and update tests
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          route_path = Path('src/routes/insights.tsx')
+          route = route_path.read_text()
+          route = route.replace(
+              'import { BristolChart, HfBars, PainChart } from "@/features/insights/charts";\nimport { BowelTimelineChart } from "@/features/insights/BowelTimelineChart";',
+              'import { HfBars, PainChart } from "@/features/insights/charts";\nimport { BowelOverviewCard } from "@/features/insights/BowelOverviewCard";'
+          )
+
+          old = '''      <div className={insightsFilter === "all" || insightsFilter === "bowel" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "bowel", 40) }}>
+        <BowelTimelineChart days={bowelDays} dayLogs={view.dayLogs} period={bowelPeriod} anchor={bowelAnchor} noBowelMovementCount={noBowelMovementCount} onPeriodChange={setBowelPeriod} onPeriodShift={(delta) => setBowelAnchor((current) => shiftInsightPeriodAnchor(current, bowelPeriod, delta))} />
+      </div>
+      <div className={insightsFilter === "all" || insightsFilter === "bowel" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "bowel", 40) }}>
+        <BristolChart bowelCounts={bowelCounts} noBowelMovementCount={noBowelMovementCount} period={bowelPeriod} anchor={bowelAnchor} onPeriodChange={setBowelPeriod} onPeriodShift={(delta) => setBowelAnchor((current) => shiftInsightPeriodAnchor(current, bowelPeriod, delta))} />
+      </div>'''
+          new = '''      <div className={insightsFilter === "all" || insightsFilter === "bowel" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "bowel", 40) }}>
+        <BowelOverviewCard days={bowelDays} dayLogs={view.dayLogs} period={bowelPeriod} anchor={bowelAnchor} noBowelMovementCount={noBowelMovementCount} onPeriodChange={setBowelPeriod} onPeriodShift={(delta) => setBowelAnchor((current) => shiftInsightPeriodAnchor(current, bowelPeriod, delta))} />
+      </div>'''
+          if old not in route:
+              raise SystemExit('Bowel route block not found; refusing unsafe patch')
+          route = route.replace(old, new, 1)
+          route_path.write_text(route)
+
+          e2e = '''import { expect, test } from "@playwright/test";
+
+test("Insights shows one unified Bowel analytics card", async ({ page }) => {
+  const pageErrors: string[] = [];
+  page.on("pageerror", (error) => pageErrors.push(error.stack || error.message));
+
+  const response = await page.goto("/insights");
+  expect(response?.status()).toBeLessThan(500);
+  await expect(page.getByText("This page didn't load", { exact: true })).toHaveCount(0);
+
+  await page.getByRole("group", { name: "Insights sections" }).getByRole("button", { name: "Bowel", exact: true }).click();
+  await expect(page.locator('[data-bowel-overview-card="true"]')).toBeVisible();
+  await expect(page.getByText("Distribution of logged bowel types", { exact: true })).toBeVisible();
+  await expect(page.getByText("Quick insights", { exact: true })).toBeVisible();
+  await expect(page.getByText("Latest entries", { exact: true })).toBeVisible();
+  await expect(page.getByText("Bowel trend", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("No bowel movements", { exact: false }).first()).toBeVisible();
+
+  expect(pageErrors, `Insights bowel page errors:\n${pageErrors.join("\\n\\n")}`).toEqual([]);
+});
+'''
+          Path('e2e/insights-bowel.spec.ts').write_text(e2e)
+
+          for stale in [
+              Path('src/features/insights/BowelTimelineChart.tsx'),
+              Path('src/lib/__tests__/bowel-timeline-readability-regression.test.ts'),
+          ]:
+              if stale.exists():
+                  stale.unlink()
+
+          workflow = Path('.github/workflows/apply-bowel-overview.yml')
+          if workflow.exists():
+              workflow.unlink()
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && exit 0
+          git commit -m "Replace duplicate Bowel charts with unified overview"
+          git push origin HEAD:feat/bowel-overview-card
