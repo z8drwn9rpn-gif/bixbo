@@ -49,9 +49,9 @@ export function GlobalQuickLogActions() {
   }, []);
 
   const openCategory = (category: QuickCategory, initialCategory: string) => {
-    // "Add symptoms" intentionally enters Pain, where the existing Add symptoms
-    // flow remains the single source of truth for linking symptom updates.
-    setInitial(initialCategory);
+    // Add symptoms intentionally enters Pain, where the existing symptom-update
+    // flow remains the single source of truth for linking follow-up symptoms.
+    setInitial(category === "symptoms" ? "pain" : initialCategory);
     setMenuOpen(false);
     setLogOpen(true);
   };
