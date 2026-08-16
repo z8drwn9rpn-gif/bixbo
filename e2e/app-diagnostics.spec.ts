@@ -49,3 +49,15 @@ test("runtime JavaScript errors are surfaced as a BIXBO diagnostic alert", async
   await expect(page.getByText(/Home: .*E2E diagnostic probe/)).toBeVisible();
   await expect(page.getByRole("button", { name: "App scan", exact: true })).toBeVisible();
 });
+
+test("Profile exposes a manual App scan launcher", async ({ page }) => {
+  await page.goto("/profile");
+
+  const launcher = page.getByRole("link", { name: "App diagnostics", exact: true });
+  await expect(launcher).toBeVisible();
+  await launcher.click();
+
+  await expect(page).toHaveURL(/\/diagnostics(?:\?|$)/);
+  await expect(page.getByText("BIXBO App Scanner", { exact: true })).toBeVisible();
+  await expect(page.getByText("This page didn't load", { exact: true })).toHaveCount(0);
+});
