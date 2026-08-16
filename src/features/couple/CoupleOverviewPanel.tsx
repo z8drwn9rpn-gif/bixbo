@@ -2,6 +2,7 @@ import { CalendarIcon, HeartIcon, ProfileIcon, SparkleIcon } from "@/components/
 import { CHART_COLORS, CHART_TINTS } from "@/components/ui/chart";
 import { useI18n } from "@/hooks/useI18n";
 import { clampPercent, hasSymptoms, type ComparableDayLog } from "./coupleUtils";
+import "./couple-readable.css";
 
 type CoupleOverviewPanelProps = {
   days: string[];
