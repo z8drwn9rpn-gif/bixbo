@@ -13,6 +13,7 @@ import { TimeOfDayInsightsCard } from "@/features/insights/TimeOfDayInsightsCard
 import { SukSukInsightsCard } from "@/features/insights/SukSukInsightsCard";
 import { SymptomsTrendInsightsCard } from "@/features/insights/SymptomsTrendInsightsCard";
 import { YearHealthHeatmap } from "@/features/insights/YearHealthHeatmap";
+import "@/features/insights/insights-3d.css";
 import {
   eachDay,
   rangeFor,
