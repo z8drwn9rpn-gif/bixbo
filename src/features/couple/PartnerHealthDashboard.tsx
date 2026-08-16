@@ -1,4 +1,11 @@
-import { CalendarDays, ChevronDown, Clock3, Pill, TriangleAlert, Zap } from "lucide-react";
+import {
+  BoltIcon,
+  CalendarIcon,
+  ChevronDown,
+  ClockIcon,
+  PanicIcon,
+  PillIcon,
+} from "@/components/icons/BixboExtraIcons";
 import { useI18n } from "@/hooks/useI18n";
 import {
   PAIN_DESCRIPTIONS,
@@ -59,8 +66,8 @@ function PainCard({ entry, language }: { entry: PainWithDate; language: string }
 
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-muted-foreground">
-            <span className="inline-flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" />{formatDate(entry.dateKey, language)}</span>
-            <span className="inline-flex items-center gap-1"><Clock3 className="h-3.5 w-3.5" />{entry.time}</span>
+            <span className="inline-flex items-center gap-1"><CalendarIcon size={15} />{formatDate(entry.dateKey, language)}</span>
+            <span className="inline-flex items-center gap-1"><ClockIcon size={15} />{entry.time}</span>
           </div>
 
           {entry.parts?.length ? <p className="mt-2 text-sm font-bold text-foreground">{entry.parts.map(t).join(", ")}</p> : entry.score === 0 ? <p className="mt-2 text-sm font-semibold text-foreground">{t("Pain free")}</p> : null}
@@ -88,7 +95,7 @@ function TetanyCard({ entry, language }: { entry: TetanyWithDate; language: stri
   return (
     <article className="rounded-[1.4rem] bg-surface p-3.5 shadow-sm ring-1 ring-border/70">
       <div className="flex items-start gap-3">
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-amber-500/10 text-amber-600"><Zap className="h-4 w-4" /></span>
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-amber-500/10 text-amber-600"><BoltIcon size={21} /></span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-muted-foreground"><span>{formatDate(entry.dateKey, language)}</span><span>{entry.time}</span></div>
           <p className="mt-1 text-sm font-bold text-foreground">{t("Tetany episode")} · {entry.intensity}/5</p>
@@ -108,7 +115,7 @@ function PanicCard({ entry, language }: { entry: PanicWithDate; language: string
   return (
     <article className="rounded-[1.4rem] bg-surface p-3.5 shadow-sm ring-1 ring-border/70">
       <div className="flex items-start gap-3">
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-violet-500/10 text-violet-600"><TriangleAlert className="h-4 w-4" /></span>
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-violet-500/10 text-violet-600"><PanicIcon size={21} /></span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-muted-foreground"><span>{formatDate(entry.dateKey, language)}</span><span>{entry.time}</span></div>
           <p className="mt-1 text-sm font-bold text-foreground">{t("Panic attack")} · {entry.intensity}/10</p>
@@ -135,7 +142,7 @@ function MedicationDayCard({ day, language }: { day: MedDay; language: string })
   return (
     <article className="rounded-[1.4rem] bg-surface p-3.5 shadow-sm ring-1 ring-border/70">
       <div className="flex items-start gap-3">
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-emerald-500/10 text-emerald-600"><Pill className="h-4 w-4" /></span>
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-emerald-500/10 text-emerald-600"><PillIcon size={21} /></span>
         <div className="min-w-0 flex-1">
           <p className="text-[10px] text-muted-foreground">{formatDate(day.dateKey, language)}</p>
           <div className="mt-1.5 space-y-1.5">{rows.map((row) => <p key={row.id} className="text-[11px] text-foreground"><span className="font-semibold">{row.time}</span> · {row.name}{row.dose ? ` (${row.dose})` : ""}</p>)}</div>
