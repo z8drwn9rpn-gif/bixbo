@@ -18,13 +18,15 @@ describe("Insights dashboard photo-matched cards", () => {
     expect(hak).not.toContain('from "@/components/home/SukSukPeriodChart"');
   });
 
-  test("keeps photo-specific quick insights and compact meds dots", () => {
+  test("keeps photo-specific quick insights, icons, and compact meds dots", () => {
     const pain = readFileSync("src/features/insights/PainInsightsCard.tsx", "utf8");
     const hot = readFileSync("src/features/insights/HotFlashesInsightsCard.tsx", "utf8");
     const time = readFileSync("src/features/insights/TimeOfDayInsightsCard.tsx", "utf8");
     const meds = readFileSync("src/features/insights/MedsAdherenceInsightsCard.tsx", "utf8");
     const suk = readFileSync("src/features/insights/SukSukInsightsCard.tsx", "utf8");
+    const primitives = readFileSync("src/features/insights/InsightDashboardPrimitives.tsx", "utf8");
     for (const source of [pain, hot, time, meds]) expect(source).toContain("QuickInsights");
+    expect(primitives).toContain("InsightGlyph");
     expect(meds).toContain("h-3.5 w-3.5 rounded-full");
     expect(suk).toContain("Intimacy moments");
     expect(suk).toContain("Best day:");
