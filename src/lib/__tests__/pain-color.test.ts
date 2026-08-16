@@ -3,8 +3,8 @@ import { describe, expect, it } from "bun:test";
 import { PAIN_SCALE_HALF_STEP_COLORS, averagePainScores, avgDayPain, painColor, painHexColor, snapPainScore } from "../domain/pain";
 
 describe("painColor", () => {
-  it("keeps every original whole-number Pain color unchanged", () => {
-    const whole = ["#72C64A", "#91CD3A", "#B7D12F", "#DFD11F", "#F3C30D", "#F5A20B", "#F47B16", "#F05C5F", "#EC3F74", "#DE2557", "#C81746"];
+  it("keeps the established whole-number green-to-red Pain colours", () => {
+    const whole = ["#7FCF52", "#93CE48", "#B4D43F", "#D3D638", "#F0CF2E", "#F5B72D", "#F59A35", "#EF7838", "#E95A3F", "#DC3F43", "#C82F3F"];
     for (let score = 0; score <= 10; score += 1) {
       expect(painColor(score)).toBe(whole[score]);
       expect(painColor(score)).toBe(painHexColor(score));
@@ -12,9 +12,9 @@ describe("painColor", () => {
     }
   });
 
-  it("gives each half-step the true midpoint between neighbouring whole colors", () => {
+  it("gives each half-step the true midpoint between neighbouring whole colours", () => {
     expect(PAIN_SCALE_HALF_STEP_COLORS).toHaveLength(21);
-    const expectedHalves = ["#82CA42", "#A4CF34", "#CBD127", "#E9CA16", "#F4B20C", "#F48E10", "#F26C3A", "#EE4E6A", "#E53266", "#D31E4E"];
+    const expectedHalves = ["#89CE4D", "#A4D144", "#C4D53C", "#E2D233", "#F2C32E", "#F5A831", "#F28936", "#EC693C", "#E24C41", "#D23741"];
     for (let lower = 0; lower < 10; lower += 1) {
       const half = lower + 0.5;
       expect(painColor(half)).toBe(expectedHalves[lower]);
@@ -25,10 +25,14 @@ describe("painColor", () => {
     }
   });
 
-  it("keeps 7.5 between the unchanged 7 and 8 colors", () => {
-    expect(painHexColor(7)).toBe("#F05C5F");
-    expect(painColor(7.5)).toBe("#EE4E6A");
-    expect(painHexColor(8)).toBe("#EC3F74");
+  it("keeps the high Pain range orange/red rather than pink", () => {
+    expect(painHexColor(7)).toBe("#EF7838");
+    expect(painColor(7.5)).toBe("#EC693C");
+    expect(painHexColor(8)).toBe("#E95A3F");
+    expect(painColor(8.5)).toBe("#E24C41");
+    expect(painHexColor(9)).toBe("#DC3F43");
+    expect(painColor(9.5)).toBe("#D23741");
+    expect(painHexColor(10)).toBe("#C82F3F");
   });
 
   it("snaps chart colours to the same half-step palette", () => {
