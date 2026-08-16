@@ -63,7 +63,7 @@ export function ComparisonBarCard({ title, subtitle: _subtitle, mine, theirs, ma
   );
 }
 
-export function SimilarityCard({ score, partnerName }: { score: number | null; partnerName: string }) {
+export function SimilarityCard({ score, myName, partnerName }: { score: number | null; myName: string; partnerName: string }) {
   const { t } = useI18n();
   const safeScore = score == null ? 0 : clampPercent(score);
   return (
@@ -72,7 +72,7 @@ export function SimilarityCard({ score, partnerName }: { score: number | null; p
         <div className="grid h-24 w-24 shrink-0 place-items-center rounded-full p-2" style={{ background: `conic-gradient(${CHART_COLORS.panic} ${safeScore}%, ${CHART_TINTS.panic} ${safeScore}% 100%)` }}>
           <div className="grid h-full w-full place-items-center rounded-full bg-surface"><div className="text-center"><p className="text-2xl font-bold tabular-nums">{score == null ? "—" : `${safeScore.toFixed(0)}%`}</p><p className="text-[10px] uppercase tracking-wider text-muted-foreground">{t("similarity")}</p></div></div>
         </div>
-        <div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t("Health similarity")}</p><h2 className="mt-1 font-serif text-xl font-semibold">{t("You")} + {t(partnerName)}</h2>{score == null ? <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t("No partner comparison data in this month.")}</p> : null}</div>
+        <div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t("Health similarity")}</p><h2 className="mt-1 font-serif text-xl font-semibold">{myName} + {partnerName}</h2>{score == null ? <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t("No partner comparison data in this month.")}</p> : null}</div>
       </div>
     </section>
   );

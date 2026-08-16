@@ -36,4 +36,14 @@ describe("Period and Couple runtime regressions", () => {
     expect(calendar).toContain("const cycle = partner.cycle");
     expect(calendar).not.toContain("useBixbo");
   });
+
+  it("uses selected Couple names in Health Similarity and saves the current name for partner sharing", () => {
+    const page = read("src/features/couple/CouplePage.tsx");
+    const cards = read("src/features/couple/CoupleCards.tsx");
+    const settings = read("src/features/couple/CoupleSettings.tsx");
+    expect(page).toContain("myName={myCoupleName} partnerName={partnerName}");
+    expect(cards).toContain("{myName} + {partnerName}");
+    expect(settings).toContain("updateProfile({ display_name: nextName })");
+    expect(settings).toContain('t("Your Couple name")');
+  });
 });

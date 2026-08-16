@@ -4,17 +4,19 @@ import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChevronLeft } from "@/components/icons/BixboExtraIcons";
-import { ensureProfile, fetchPartner, linkPartnerByCode, unlinkPartner, useSession, type CloudProfile } from "@/lib/cloudSync";
+import { ensureProfile, fetchPartner, linkPartnerByCode, unlinkPartner, updateProfile, useSession, type CloudProfile } from "@/lib/cloudSync";
 import { setPartner, useBixbo } from "@/lib/storage";
 import { useI18n } from "@/hooks/useI18n";
 
 export function CoupleSettings({ onBack }: { onBack: () => void }) {
   const { t } = useI18n();
-  const { data } = useBixbo();
+  const { data, update } = useBixbo();
   const { session, ready } = useSession();
   const [profile, setProfile] = useState<CloudProfile | null>(null);
+  const [coupleName, setCoupleName] = useState("");
   const [partnerCode, setPartnerCode] = useState("");
   const [busy, setBusy] = useState(false);
+  const [savingName, setSavingName] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,11 +26,38 @@ export function CoupleSettings({ onBack }: { onBack: () => void }) {
       return;
     }
     let cancelled = false;
-    void ensureProfile()
-      .then((nextProfile) => { if (!cancelled) setProfile(nextProfile); })
+    const preferredName = data.settings.userName?.trim() || data.profile?.nickname?.trim() || data.profile?.name?.trim() || undefined;
+    void ensureProfile(preferredName)
+      .then((nextProfile) => {
+        if (cancelled) return;
+        setProfile(nextProfile);
+        setCoupleName(nextProfile?.display_name?.trim() || preferredName || "");
+      })
       .catch((cause) => { if (!cancelled) setError(cause instanceof Error ? cause.message : String(cause)); });
     return () => { cancelled = true; };
-  }, [ready, session]);
+  }, [data.profile?.name, data.profile?.nickname, data.settings.userName, ready, session]);
+
+  const saveCoupleName = async () => {
+    const nextName = coupleName.trim();
+    if (!nextName) {
+      setError(t("Enter a name for Couple."));
+      return;
+    }
+    setSavingName(true);
+    setMessage(null);
+    setError(null);
+    try {
+      await updateProfile({ display_name: nextName });
+      update((current) => ({ ...current, settings: { ...current.settings, userName: nextName } }));
+      setProfile((current) => current ? { ...current, display_name: nextName } : current);
+      setCoupleName(nextName);
+      setMessage(t("Couple name saved."));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setSavingName(false);
+    }
+  };
 
   const connect = async () => {
     const code = partnerCode.trim().toUpperCase();
@@ -85,6 +114,15 @@ export function CoupleSettings({ onBack }: { onBack: () => void }) {
           </section>
         ) : (
           <>
+            <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
+              <p className="text-sm font-semibold">{t("Your Couple name")}</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t("This name is shown to your partner and in Health Similarity.")}</p>
+              <Input value={coupleName} onChange={(event) => setCoupleName(event.target.value)} placeholder={t("Your name")} aria-label={t("Your Couple name")} autoComplete="name" className="mt-3 h-11" />
+              <Button type="button" disabled={savingName || !coupleName.trim()} onClick={() => void saveCoupleName()} className="mt-3 w-full">
+                {savingName ? t("Saving…") : t("Save name")}
+              </Button>
+            </section>
+
             <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
               <p className="text-sm font-semibold">{t("Your pairing code")}</p>
               <p className="mt-1 text-xs text-muted-foreground">{t("Give this code only to the person you want to connect with.")}</p>
