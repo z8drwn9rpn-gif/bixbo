@@ -50,6 +50,14 @@ function splitEmojiLabel(value: string) {
   return { emoji: match[1], label: match[2].trim() };
 }
 
+function stripRemainingEmoji(value: string) {
+  return value
+    .replace(/\p{Extended_Pictographic}(?:\uFE0F|\uFE0E)?(?:\p{Emoji_Modifier})?/gu, "")
+    .replace(/\u200D/gu, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 function Chip({ children, tone = "violet" }: { children: React.ReactNode; tone?: "violet" | "green" | "neutral" }) {
   const classes = tone === "green"
     ? "bg-primary/10 text-primary"
@@ -62,23 +70,27 @@ function Chip({ children, tone = "violet" }: { children: React.ReactNode; tone?:
 function MoodChips({ items }: { items: string[] }) {
   const { t } = useI18n();
   return (
-    <div className="mt-2 flex flex-wrap items-center gap-1.5">
-      <span className="mr-0.5 text-[11px] text-muted-foreground">{t("Mood")}:</span>
-      {items.map((item) => {
-        const source = splitEmojiLabel(item);
-        const localized = splitEmojiLabel(t(item));
-        const emoji = source.emoji ?? localized.emoji;
-        const label = localized.label || source.label || t(item);
-        return (
-          <span
-            key={item}
-            className="inline-flex items-center gap-1 rounded-full bg-tint px-2 py-1 text-[10px] font-medium leading-none text-muted-foreground"
-          >
-            {emoji ? <BixboIcon emoji={emoji} label={label} size={15} fallback="none" effects="stable" /> : null}
-            <span>{label}</span>
-          </span>
-        );
-      })}
+    <div className="mt-2">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{t("Mood")}</p>
+      <div className="mt-1.5 flex flex-wrap gap-1.5">
+        {items.map((item) => {
+          const source = splitEmojiLabel(item);
+          const localized = splitEmojiLabel(t(item));
+          const emoji = source.emoji ?? localized.emoji;
+          const label = stripRemainingEmoji(localized.label || source.label || t(item)) || t("Mood");
+          return (
+            <span
+              key={item}
+              className="inline-flex items-center gap-1.5 rounded-full bg-tint py-1 pl-1 pr-2.5 text-[10px] font-medium leading-none text-muted-foreground ring-1 ring-border/35"
+            >
+              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-surface">
+                <BixboIcon emoji={emoji} label={label} size={17} fallback="note" effects="stable" />
+              </span>
+              <span>{label}</span>
+            </span>
+          );
+        })}
+      </div>
     </div>
   );
 }
