@@ -1,4 +1,5 @@
 import { Children, isValidElement, type ReactNode } from "react";
+import { Equal, Info, Lightbulb, TrendingDown, TrendingUp } from "lucide-react";
 import { useI18n } from "@/hooks/useI18n";
 import { PAIN_DESCRIPTIONS } from "@/lib/storage";
 import { clampPercent, formatValue, TONES, type ComparisonTone } from "./coupleUtils";
@@ -20,7 +21,6 @@ type ComparisonMetric = {
 type Outcome = "better" | "worse" | "similar";
 
 const PARTNER_COLOR = "#4d7ee8";
-const PARTNER_SOFT = "rgba(77, 126, 232, 0.12)";
 
 function collectComparisonMetrics(node: ReactNode): ComparisonMetric[] {
   const metrics: ComparisonMetric[] = [];
@@ -126,9 +126,9 @@ function OutcomePill({ outcome }: { outcome: Outcome }) {
 }
 
 function SummaryMetric({ label, count, tone }: { label: string; count: number; tone: Outcome }) {
-  const icon = tone === "better" ? "↗" : tone === "worse" ? "↘" : "=";
   const color = tone === "better" ? "text-emerald-700" : tone === "worse" ? "text-rose-600" : "text-violet-600";
   const bg = tone === "better" ? "bg-emerald-500/10" : tone === "worse" ? "bg-rose-500/10" : "bg-violet-500/10";
+  const Icon = tone === "better" ? TrendingUp : tone === "worse" ? TrendingDown : Equal;
   return (
     <div className="flex min-w-0 items-center justify-between gap-1.5 px-2.5 py-2.5">
       <div className="min-w-0">
@@ -136,7 +136,7 @@ function SummaryMetric({ label, count, tone }: { label: string; count: number; t
         <p className="mt-0.5 text-xl font-bold tabular-nums text-foreground">{count}</p>
         <p className="text-[9px] text-muted-foreground">{count === 1 ? "metric" : "metrics"}</p>
       </div>
-      <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-full text-lg font-semibold ${bg} ${color}`}>{icon}</span>
+      <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-full ${bg} ${color}`}><Icon className="h-4 w-4" strokeWidth={2.4} /></span>
     </div>
   );
 }
@@ -211,7 +211,7 @@ function FeaturedComparison({ metric }: { metric: ComparisonMetric }) {
       </div>
 
       <div className="mt-3 flex items-center gap-2 rounded-2xl bg-tint px-3 py-2.5 ring-1 ring-border/40">
-        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary/10 text-base">💡</span>
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary/10 text-primary"><Lightbulb className="h-4 w-4" strokeWidth={2.2} /></span>
         <p className="text-[11px] leading-snug text-muted-foreground">
           {difference == null ? t("Not enough data to compare this metric yet.") : difference === 0 ? t("Your averages are the same this month.") : <><b className="text-foreground">{t("Tip:")}</b> {t(metric.mineLabel)} {t("average")} {absoluteDifference?.toFixed(metric.decimals)} {t("points")} {t(direction)} {t("than")} {t(metric.partnerLabel)} {t("this month")}.</>}
         </p>
@@ -267,7 +267,7 @@ export function CoupleComparisonDashboard({ children }: { children: ReactNode })
           <h2 className="font-serif text-2xl font-bold tracking-tight text-foreground">{t("Couple comparison")}</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">{t("See how")} {t(mineLabel).toLowerCase()} {t("and")} {t(partnerLabel)} {t("are doing")}</p>
         </div>
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface text-sm font-bold text-primary shadow-sm ring-1 ring-border/70" aria-hidden="true">i</span>
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface text-primary shadow-sm ring-1 ring-border/70" aria-hidden="true"><Info className="h-4 w-4" strokeWidth={2.2} /></span>
       </div>
 
       <div className="overflow-hidden rounded-[1.75rem] bg-surface shadow-sm ring-1 ring-border/80">
