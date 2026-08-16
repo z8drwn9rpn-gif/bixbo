@@ -22,8 +22,8 @@ type Bucket = {
 
 const SYMPTOMS: Record<SymptomKey, SymptomMeta> = {
   headache: { label: "Headache", shortLabel: "Headache", max: 10, color: "#F3A327" },
-  tetany: { label: "Tetany episode", shortLabel: "Tetany", max: 5, color: "#E58BA9" },
-  panic: { label: "Panic episode", shortLabel: "Panic", max: 10, color: "#C33C62" },
+  tetany: { label: "Tetany episode", shortLabel: "Tetany episode", max: 5, color: "#E58BA9" },
+  panic: { label: "Panic episode", shortLabel: "Panic episode", max: 10, color: "#C33C62" },
   nausea: { label: "Nausea", shortLabel: "Nausea", max: 10, color: "#7AA65B" },
   pressure: { label: "Pressure", shortLabel: "Pressure", max: 10, color: "#7990B4" },
   hotFlashes: { label: "Hot flashes", shortLabel: "Hot flashes", max: 5, color: "#F07C23" },
