@@ -82,11 +82,12 @@ describe("Insights dashboard photo-matched cards", () => {
     expect(symptoms).toContain("gridTemplateColumns");
   });
 
-  test("uses Pain scale colors for every Symptoms trend bar and tooltip", () => {
+  test("uses the canonical Pain scale colors for every Symptoms trend bar and tooltip", () => {
     const symptoms = readFileSync("src/features/insights/SymptomsTrendInsightsCard.tsx", "utf8");
-    expect(symptoms).toContain("vividPainChartColor((value / max) * 10)");
+    expect(symptoms).toContain("painHexColor((value / max) * 10)");
     expect(symptoms).toContain("background: symptomIntensityColor(bucket.value, max)");
     expect(symptoms).toContain("color: symptomIntensityColor(activeBucket.value, max)");
+    expect(symptoms).not.toContain("vividPainChartColor");
   });
 
   test("uses the BIXBO brain, Quick Insights, and Pain-style Peak Lowest Trend cards", () => {
