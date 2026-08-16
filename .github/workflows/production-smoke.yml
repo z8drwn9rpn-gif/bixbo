@@ -1,0 +1,50 @@
+name: BIXBO production smoke
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - .github/workflows/production-smoke.yml
+  workflow_dispatch:
+
+concurrency:
+  group: bixbo-production-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  production-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Verify live Cloudflare production
+        shell: bash
+        env:
+          BASE_URL: https://bixbo.z8drwn9rpn.workers.dev
+        run: |
+          set -euo pipefail
+
+          check_live() {
+            local root privacy terms mcp
+            root="$(curl -fsS --max-time 20 "$BASE_URL/")" || return 1
+            privacy="$(curl -fsS --max-time 20 "$BASE_URL/privacy")" || return 1
+            terms="$(curl -fsS --max-time 20 "$BASE_URL/terms")" || return 1
+            mcp="$(curl -fsS --max-time 20 "$BASE_URL/mcp")" || return 1
+
+            grep -qi 'BIXBO' <<<"$root" || return 1
+            grep -q 'Privacy Policy' <<<"$privacy" || return 1
+            grep -q 'Terms of Service' <<<"$terms" || return 1
+            grep -q 'bixbo-my-health-diary' <<<"$mcp" || return 1
+          }
+
+          for attempt in $(seq 1 30); do
+            if check_live; then
+              echo "Cloudflare production smoke passed on attempt $attempt."
+              exit 0
+            fi
+            echo "Production is not ready yet (attempt $attempt/30); retrying in 10 seconds."
+            sleep 10
+          done
+
+          echo "Cloudflare production did not satisfy the BIXBO smoke contract within 5 minutes."
+          exit 1
