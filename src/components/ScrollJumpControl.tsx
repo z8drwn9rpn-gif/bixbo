@@ -23,10 +23,8 @@ export function ScrollJumpControl() {
     window.addEventListener("scroll", update, { passive: true });
     window.addEventListener("resize", update);
 
-    const resizeObserver = typeof ResizeObserver !== "undefined"
-      ? new ResizeObserver(update)
-      : null;
-    if (resizeObserver) resizeObserver.observe(document.body);
+    const resizeObserver = typeof ResizeObserver !== "undefined" ? new ResizeObserver(update) : null;
+    resizeObserver?.observe(document.body);
 
     return () => {
       window.removeEventListener("scroll", update);
@@ -45,8 +43,7 @@ export function ScrollJumpControl() {
 
   return (
     <div
-      className="fixed right-3 z-40 flex flex-col overflow-hidden rounded-full border border-border/75 bg-surface/92 shadow-lg backdrop-blur-md lg:bottom-6 lg:right-6"
-      style={{ bottom: "calc(6.8rem + env(safe-area-inset-bottom))" }}
+      className="fixed bottom-[calc(6.8rem+env(safe-area-inset-bottom))] right-3 z-40 flex flex-col overflow-hidden rounded-full border border-border/75 bg-surface/92 shadow-lg backdrop-blur-md lg:bottom-6 lg:right-6"
       aria-label="Page navigation"
     >
       <button
