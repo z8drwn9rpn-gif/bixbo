@@ -1,0 +1,38 @@
+name: Agent flight recorder type fix
+
+on:
+  push:
+    branches: [agent/guard-playwright-server-lifecycle]
+    paths:
+      - .github/workflows/agent-fix-flight-recorder-type.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: agent/guard-playwright-server-lifecycle
+      - name: Fix strict Window diagnostic marker cast
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          p = Path('src/lib/appFlightRecorder.ts')
+          text = p.read_text()
+          old = 'const recordWindow = window as Window & { [key: string]: unknown };'
+          new = 'const recordWindow = window as unknown as Window & { [key: string]: unknown };'
+          if text.count(old) != 1:
+              raise SystemExit(f'expected exactly one cast, found {text.count(old)}')
+          p.write_text(text.replace(old, new, 1))
+          PY
+      - name: Commit fix
+        run: |
+          set -euo pipefail
+          git add src/lib/appFlightRecorder.ts
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Fix flight recorder Window marker cast"
+          git push
