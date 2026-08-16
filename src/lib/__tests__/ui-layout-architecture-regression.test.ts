@@ -1,10 +1,10 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 describe("UI layout architecture regressions", () => {
   it("keeps Pain navigation source-native and removes old fixed spacer coupling", () => {
     const pain = readFileSync("src/features/logging/PainWizard.tsx", "utf8");
-    const css = readFileSync("src/ios-touch-stability.css", "utf8");
+    const css = readFileSync("src/mobile-stability.css", "utf8");
     expect(pain).not.toContain('pt-[68px]');
     expect(pain).not.toContain('style={{ top: "calc(env(safe-area-inset-top) + 56px)" }}');
     expect(pain).toContain('className="sticky top-0');
@@ -98,6 +98,20 @@ describe("UI layout architecture regressions", () => {
     expect(theme).toContain('[data-bixbo-hak-wheel-center="1"]');
     expect(theme).not.toContain(".absolute.inset-");
     expect(theme).not.toContain("section.mt-4.rounded-3xl");
+  });
+
+  it("keeps mobile and iOS stability rules in one canonical stylesheet", () => {
+    const styles = readFileSync("src/styles.css", "utf8");
+    const mobile = readFileSync("src/mobile-stability.css", "utf8");
+
+    expect(styles).toContain('@import "./mobile-stability.css";');
+    expect(styles).not.toContain("ios-touch-stability.css");
+    expect(styles).not.toContain("mobile-overlay-stability.css");
+    expect(existsSync("src/ios-touch-stability.css")).toBe(false);
+    expect(existsSync("src/mobile-overlay-stability.css")).toBe(false);
+    expect(mobile).toContain("[data-bixbo-fullscreen-log=\"true\"]");
+    expect(mobile).toContain(".bixbo-page-fade");
+    expect(mobile).toContain("touch-action: pan-x pan-y;");
   });
 
 });

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 
 const hook = fs.readFileSync("src/hooks/useKeyboardViewport.ts", "utf8");
-const css = fs.readFileSync("src/ios-touch-stability.css", "utf8");
+const css = fs.readFileSync("src/mobile-stability.css", "utf8");
 const sheet = fs.readFileSync("src/components/ui/sheet.tsx", "utf8");
 
 describe("iOS full-screen log document lock", () => {
@@ -51,6 +51,7 @@ describe("iOS full-screen log document lock", () => {
     expect(css).toContain("isolation: isolate");
     expect(css).toContain("overscroll-behavior-y: contain");
     expect(css).toContain("overflow-anchor: none");
-    expect(css).not.toContain("-webkit-overflow-scrolling: touch");
+    const logSurfaceRule = css.match(/\[data-bixbo-log-surface\]\s*\{([^}]*)\}/)?.[1] ?? "";
+    expect(logSurfaceRule).not.toContain("-webkit-overflow-scrolling: touch");
   });
 });

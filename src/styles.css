@@ -2,8 +2,7 @@
 @source "../src";
 @import "tw-animate-css";
 @import "./ui-system.css";
-@import "./ios-touch-stability.css";
-@import "./mobile-overlay-stability.css";
+@import "./mobile-stability.css";
 
 @custom-variant dark (&:is(.dark *));
 

@@ -6,7 +6,7 @@ const input = fs.readFileSync("src/components/ui/input.tsx", "utf8");
 const logSheet = fs.readFileSync("src/features/logging/LogSheetRoot.tsx", "utf8");
 const sheet = fs.readFileSync("src/components/ui/sheet.tsx", "utf8");
 const iconKeyboard = fs.readFileSync("src/components/icons/BixboIconKeyboard.tsx", "utf8");
-const iosCss = fs.readFileSync("src/ios-touch-stability.css", "utf8");
+const iosCss = fs.readFileSync("src/mobile-stability.css", "utf8");
 const hook = fs.readFileSync("src/hooks/useKeyboardViewport.ts", "utf8");
 const rootRoute = fs.readFileSync("src/routes/__root.tsx", "utf8");
 
