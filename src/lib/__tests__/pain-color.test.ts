@@ -3,13 +3,14 @@ import { describe, expect, it } from "bun:test";
 import { PAIN_SCALE_HALF_STEP_COLORS, averagePainScores, avgDayPain, painColor, painHexColor, snapPainScore } from "../domain/pain";
 
 describe("painColor", () => {
-  it("keeps whole-number pain colours on their canonical tokens", () => {
+  it("returns concrete canonical colours for whole values so MonthCalendar can shade its rings", () => {
     for (let score = 0; score <= 10; score += 1) {
-      expect(painColor(score)).toBe(`var(--pain-${score})`);
+      expect(painColor(score)).toBe(painHexColor(score));
+      expect(painColor(score)).toMatch(/^#[0-9A-F]{6}$/);
     }
   });
 
-  it("gives every half-step its own concrete colour without color-mix", () => {
+  it("gives every half-step its own strong concrete colour", () => {
     expect(PAIN_SCALE_HALF_STEP_COLORS).toHaveLength(21);
     for (let lower = 0; lower < 10; lower += 1) {
       const half = lower + 0.5;
@@ -22,7 +23,7 @@ describe("painColor", () => {
   });
 
   it("keeps 7.5 visibly distinct from both 7 and 8", () => {
-    expect(painColor(7.5)).toBe("#EC693C");
+    expect(painColor(7.5)).toBe("#EF4E69");
     expect(painHexColor(7)).toBe("#EF7838");
     expect(painHexColor(8)).toBe("#E95A3F");
   });
