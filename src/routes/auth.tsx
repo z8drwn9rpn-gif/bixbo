@@ -28,7 +28,7 @@ export function safeInternalNext(value: unknown): string {
 
 type AuthSearch = {
   next: string;
-  google: boolean;
+  google?: boolean;
   oauthError?: string;
   oauthErrorCode?: string;
   oauthErrorDescription?: string;
