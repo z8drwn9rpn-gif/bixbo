@@ -1,5 +1,5 @@
 import { Children, isValidElement, type ReactNode } from "react";
-import { Equal, Lightbulb, TrendingDown, TrendingUp } from "lucide-react";
+import { SparkleIcon, TaskIcon, WarningIcon } from "@/components/icons/BixboExtraIcons";
 import { useI18n } from "@/hooks/useI18n";
 import { PAIN_DESCRIPTIONS } from "@/lib/storage";
 import {
@@ -167,7 +167,7 @@ function SummaryMetric({ label, count, tone }: { label: string; count: number; t
       : tone === "worse"
         ? "bg-rose-500/10"
         : "bg-violet-500/10";
-  const Icon = tone === "better" ? TrendingUp : tone === "worse" ? TrendingDown : Equal;
+  const Icon = tone === "better" ? TaskIcon : tone === "worse" ? WarningIcon : SparkleIcon;
 
   return (
     <div className="flex min-w-0 items-center justify-between gap-1.5 px-2.5 py-2.5">
@@ -177,7 +177,7 @@ function SummaryMetric({ label, count, tone }: { label: string; count: number; t
         <p className="text-[9px] text-muted-foreground">{count === 1 ? "metric" : "metrics"}</p>
       </div>
       <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-full ${bg} ${color}`}>
-        <Icon className="h-4 w-4" strokeWidth={2.4} />
+        <Icon size={19} />
       </span>
     </div>
   );
@@ -306,7 +306,7 @@ function FeaturedComparison({ metric }: { metric: ComparisonMetric }) {
 
       <div className="mt-3 flex items-center gap-2 rounded-2xl bg-tint px-3 py-2.5 ring-1 ring-border/40">
         <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
-          <Lightbulb className="h-4 w-4" strokeWidth={2.2} />
+          <SparkleIcon size={18} />
         </span>
         <p className="text-[11px] leading-snug text-muted-foreground">
           {difference == null ? (
