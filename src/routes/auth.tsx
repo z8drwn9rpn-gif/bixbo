@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/hooks/useI18n";
 import { oauthReturnUrlForLocation } from "@/integrations/auth/account";
+import { GoogleSignInButton } from "@/integrations/auth/GoogleSignInButton";
 import { oauthCallbackErrorMessage, safeOAuthSearchText } from "@/integrations/auth/oauthCallback";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -27,6 +28,7 @@ export function safeInternalNext(value: unknown): string {
 
 type AuthSearch = {
   next: string;
+  google?: boolean;
   oauthError?: string;
   oauthErrorCode?: string;
   oauthErrorDescription?: string;
@@ -35,6 +37,7 @@ type AuthSearch = {
 export const Route = createFileRoute("/auth")({
   validateSearch: (search: Record<string, unknown>): AuthSearch => ({
     next: safeInternalNext(search.next),
+    google: search.google === "1" || search.google === true,
     oauthError: safeOAuthSearchText(search.error) || undefined,
     oauthErrorCode: safeOAuthSearchText(search.error_code) || undefined,
     oauthErrorDescription: safeOAuthSearchText(search.error_description) || undefined,
@@ -48,7 +51,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const { next, oauthError, oauthErrorCode, oauthErrorDescription } = Route.useSearch();
+  const { next, google, oauthError, oauthErrorCode, oauthErrorDescription } = Route.useSearch();
   const { t } = useI18n();
   const [mode, setMode] = useState<"in" | "up">("in");
   const [email, setEmail] = useState("");
@@ -120,20 +123,6 @@ function AuthPage() {
     finally { setBusy(false); }
   };
 
-  const startOAuth = async (provider: "google") => {
-    setBusy(true); setMsg(null);
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo: authReturnUrl(),
-          queryParams: { prompt: "select_account" },
-        },
-      });
-      if (error) throw error;
-    } catch (err) { setMsg(err instanceof Error ? err.message : String(err)); setBusy(false); }
-  };
-
   const passwordLabel = mode === "up" ? t("Password (min 8 chars)") : t("Password");
 
   return <AppShell title={t("Sign in")} big>
@@ -161,7 +150,20 @@ function AuthPage() {
       </form>
       <div className="flex items-center gap-3 text-xs text-muted-foreground"><span className="h-px flex-1 bg-border" /><span>{t("or")}</span><span className="h-px flex-1 bg-border" /></div>
       <div className="space-y-2">
-        <Button variant="outline" className="min-h-11 w-full" onClick={() => void startOAuth("google")} disabled={busy}>{t("Continue with Google")}</Button>
+        <GoogleSignInButton
+          disabled={busy}
+          promptOnLoad={google}
+          onCredential={async (credential, rawNonce) => {
+            const { error } = await supabase.auth.signInWithIdToken({
+              provider: "google",
+              token: credential,
+              nonce: rawNonce,
+            });
+            if (error) throw error;
+          }}
+          onBusyChange={setBusy}
+          onError={(message) => setMsg(message)}
+        />
       </div>
       {msg && <p role="status" aria-live="polite" className="rounded-2xl border border-destructive/25 bg-destructive/8 px-3 py-2.5 text-sm leading-relaxed text-destructive">{msg}</p>}
       <div className="text-center"><Link to="/" className="inline-flex min-h-11 items-center justify-center rounded-xl px-3 text-xs font-medium text-muted-foreground underline underline-offset-4 hover:text-foreground">{t("Back to app")}</Link></div>
