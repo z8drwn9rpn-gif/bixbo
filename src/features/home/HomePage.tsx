@@ -23,7 +23,8 @@ import {
 import { VitalTrendPopup, type VitalTrendMetric } from "@/components/home/vitalTrends";
 import { VitalTile, MedsProgress } from "@/components/home/HomeTiles";
 import { BirthControlSummaryCard, BirthControlOverlay } from "@/components/home/BirthControlCard";
-import { DayPreview, ShareDayButton } from "@/components/home/DayOverview";
+import { DayPreview } from "@/components/home/DayOverview";
+import { ShareDayButton } from "@/components/home/DayOverviewShareButton";
 import { BlueberryDayOverviewFallback } from "@/components/home/BlueberryDayOverviewFallback";
 import { NextPeriodHomeCard, PostpartumHomeCard, PregnancyHomeCard } from "@/components/home/HomeModeCards";
 import { HomeSummaryOverlay } from "@/components/home/HomeSummaryOverlay";
