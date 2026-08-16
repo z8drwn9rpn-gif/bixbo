@@ -619,7 +619,7 @@ function installStartupFrameProbe(): void {
 function startFlightRecorder(): void {
   if (typeof window === "undefined" || typeof document === "undefined") return;
   const marker = "__bixboFlightRecorderV2";
-  const recordWindow = window as Window & { [key: string]: unknown };
+  const recordWindow = window as unknown as Window & { [key: string]: unknown };
   if (recordWindow[marker]) return;
   recordWindow[marker] = true;
 
