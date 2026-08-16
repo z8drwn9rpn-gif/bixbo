@@ -9,6 +9,8 @@ describe("BIXBO app diagnostics", () => {
 
     expect(diagnostics).toContain('window.addEventListener("error", onError)');
     expect(diagnostics).toContain('window.addEventListener("unhandledrejection", onUnhandledRejection)');
+    expect(diagnostics).toContain("recoverFromStaleAssetError(error)");
+    expect(diagnostics).toContain("recoverFromStaleAssetError(event.reason)");
     expect(diagnostics).toContain('window.localStorage.setItem(RUNTIME_ERROR_KEY');
     expect(diagnostics).toContain('fetchCheck("/manifest.json"');
     expect(diagnostics).toContain('fetchCheck("/bixbo-push-sw.js"');

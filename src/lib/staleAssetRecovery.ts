@@ -17,6 +17,7 @@ export function isStaleAssetLoadError(error: unknown): boolean {
     "error loading dynamically imported module",
     "importing a module script failed",
     "failed to load module script",
+    "not a valid javascript mime type for module script",
     "chunkloaderror",
     "loading chunk",
     "unable to preload css",

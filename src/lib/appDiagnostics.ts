@@ -1,4 +1,5 @@
 import { getBixbo } from "./storage";
+import { recoverFromStaleAssetError } from "./staleAssetRecovery";
 import { supabase } from "@/integrations/supabase/client";
 
 export type DiagnosticStatus = "ok" | "warning" | "error";
@@ -158,11 +159,14 @@ export function installRuntimeDiagnostics(onIssue?: (issue: RuntimeDiagnosticIss
   if (typeof window === "undefined") return () => undefined;
 
   const onError = (event: ErrorEvent) => {
-    const issue = recordRuntimeDiagnosticIssue("error", event.error ?? event.message);
+    const error = event.error ?? event.message;
+    if (recoverFromStaleAssetError(error)) return;
+    const issue = recordRuntimeDiagnosticIssue("error", error);
     if (issue) onIssue?.(issue);
   };
 
   const onUnhandledRejection = (event: PromiseRejectionEvent) => {
+    if (recoverFromStaleAssetError(event.reason)) return;
     const issue = recordRuntimeDiagnosticIssue("unhandledrejection", event.reason);
     if (issue) onIssue?.(issue);
   };
