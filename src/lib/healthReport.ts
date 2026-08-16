@@ -1,4 +1,4 @@
-import { avgDayPain, type CyclePrefs, type DayLog, type DayNote, type Med, type PeriodLevel } from "./storage";
+import { addDays, avgDayPain, type CyclePrefs, type DayLog, type DayNote, type Med, type PeriodLevel } from "./storage";
 
 export type ReportDaySummary = {
   key: string;
@@ -41,19 +41,21 @@ export function reportNoteTexts(raw: ReportNotesInput): string[] {
 /**
  * Match the calendar's recorded-period semantics.
  * A direct daily flow wins. Older/current data that only carries the saved
- * period range still counts as an actual period day (medium is the calendar's
- * fallback display level for a range day without a per-day flow value).
+ * period range still counts as an actual period day. When an explicit end date
+ * is missing, use the configured period length rather than collapsing the
+ * period to its first day.
  */
 export function reportPeriodLevel(
   key: string,
   log: DayLog,
-  cycle: Pick<CyclePrefs, "lastPeriodStart" | "lastPeriodEnd">,
+  cycle: Pick<CyclePrefs, "lastPeriodStart" | "lastPeriodEnd" | "periodLength">,
 ): PeriodLevel | undefined {
   const direct = log.periodInfo?.level ?? log.period;
   if (direct) return direct;
   const start = cycle.lastPeriodStart;
-  const end = cycle.lastPeriodEnd ?? start;
-  if (start && end && key >= start && key <= end) return "medium";
+  if (!start) return undefined;
+  const end = cycle.lastPeriodEnd ?? addDays(start, Math.max(0, Number(cycle.periodLength || 1) - 1));
+  if (key >= start && key <= end) return "medium";
   return undefined;
 }
 
