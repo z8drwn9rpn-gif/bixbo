@@ -60,7 +60,6 @@ test("Profile privacy exposes the same analytics opt-in and both legal documents
   await page.getByRole("button", { name: /Privacy/ }).first().click();
 
   const analytics = page.getByRole("button", { name: "Anonymous product analytics" });
-  await expect(analytics).toHaveAttribute("aria-pressed", "false").catch(() => undefined);
   await expect(analytics).toBeVisible();
   await expect(page.getByRole("link", { name: "Privacy Policy" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Terms of Service" })).toBeVisible();
