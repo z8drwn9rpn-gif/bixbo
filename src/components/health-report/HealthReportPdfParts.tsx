@@ -3,7 +3,7 @@ import type { CSSProperties } from "react";
 import { resolveScheduledDose } from "@/lib/domain/meds";
 import { average, mode, reportPeriodLevel, type ReportDaySummary } from "@/lib/healthReport";
 import { formatClockTime, formatTemperature, formatWeight, type UnitPreferences } from "@/lib/preferences";
-import type { BixboData } from "@/lib/storage";
+import type { BixboData, PeriodLevel } from "@/lib/storage";
 
 type HeatColumn = { key: string; label: string; days: ReportDaySummary[] };
 
@@ -11,6 +11,16 @@ const PAIN_COLORS = [
   "#72C64A", "#91CD3A", "#B7D12F", "#DFD11F", "#F3C30D", "#F5A20B",
   "#F47B16", "#F05A28", "#EF4444", "#DC2626", "#B91C1C",
 ] as const;
+
+// PDF-safe sRGB equivalents of BIXBO's period semantic tokens. Using fixed
+// sRGB here prevents html2canvas from dropping modern OKLCH period colours.
+const PERIOD_PDF_COLORS: Record<Exclude<PeriodLevel, "">, string> = {
+  spotting: "#C7CFF3",
+  light: "#8D9DF5",
+  medium: "#5F60E0",
+  heavy: "#452CB4",
+  "very-heavy": "#320080",
+};
 
 const fromIso = (value: string) => {
   const [year, month, day] = value.split("-").map(Number);
@@ -33,15 +43,28 @@ function heatColumns(days: ReportDaySummary[], locale: string): HeatColumn[] {
   return [...grouped.entries()].map(([key, values]) => ({ key, label: fromIso(`${key}-01`).toLocaleDateString(locale, { month: "short" }), days: values }));
 }
 
-function heatLevel(value: number | undefined, max: number): number {
-  if (value == null || value <= 0) return 0;
-  return Math.max(1, Math.min(4, Math.ceil((value / max) * 4)));
+function insightSeverityColor(value: number, max: number): string {
+  if (max === 5) {
+    const normalized = ((Math.max(1, Math.min(5, value)) - 1) / 4) * 10;
+    return painColor(normalized);
+  }
+  return painColor(Math.max(0, Math.min(10, value)));
+}
+
+function strongestPeriodLevel(group: ReportDaySummary[], data: BixboData): Exclude<PeriodLevel, ""> | undefined {
+  const order: Exclude<PeriodLevel, "">[] = ["spotting", "light", "medium", "heavy", "very-heavy"];
+  let strongest: Exclude<PeriodLevel, ""> | undefined;
+  group.forEach((day) => {
+    const level = reportPeriodLevel(day.key, day.log, data.cycle);
+    if (!level) return;
+    if (!strongest || order.indexOf(level) > order.indexOf(strongest)) strongest = level;
+  });
+  return strongest;
 }
 
 export function HealthReportHeatmap({ days, locale, data }: { days: ReportDaySummary[]; locale: string; data: BixboData }) {
   const columns = heatColumns(days, locale);
   const rows = [
-    { label: "Period / spotting", max: 1, value: (group: ReportDaySummary[]) => group.some((day) => reportPeriodLevel(day.key, day.log, data.cycle)) ? 1 : undefined, period: true },
     { label: "Pain", max: 10, value: (group: ReportDaySummary[]) => average(group.map((day) => day.pain)) },
     { label: "Headache", max: 10, value: (group: ReportDaySummary[]) => average(group.map((day) => day.headache)) },
     { label: "Hot flashes", max: 5, value: (group: ReportDaySummary[]) => average(group.map((day) => day.hotFlashes)) },
@@ -51,25 +74,30 @@ export function HealthReportHeatmap({ days, locale, data }: { days: ReportDaySum
   ];
   return <div className="heat" style={{ "--cells": columns.length } as CSSProperties}>
     <div className="heatRow heatHead"><span />{columns.map((column) => <b key={column.key}>{column.label}</b>)}</div>
+    <div className="heatRow"><span>Period / spotting</span>{columns.map((column) => {
+      const level = strongestPeriodLevel(column.days, data);
+      return <i key={column.key} style={{ background: level ? PERIOD_PDF_COLORS[level] : "#FFFFFF" }} title={level ? `Period / spotting · ${humanize(level)}` : "No data"} />;
+    })}</div>
     {rows.map((item) => <div className="heatRow" key={item.label}><span>{item.label}</span>{columns.map((column) => {
       const value = item.value(column.days);
-      return <i key={column.key} className={item.period && value ? "periodCell" : ""} data-l={item.period ? undefined : heatLevel(value, item.max)} title={value == null ? "No data" : item.period ? "Period / spotting" : `${compactNumber(value)}/${item.max}`} />;
+      return <i key={column.key} style={{ background: value == null ? "#FFFFFF" : insightSeverityColor(value, item.max) }} title={value == null ? "No data" : `${compactNumber(value)}/${item.max}`} />;
     })}</div>)}
   </div>;
 }
 
 export function HealthReportHeatLegend() {
+  const periodGradient = `linear-gradient(90deg, ${PERIOD_PDF_COLORS.spotting}, ${PERIOD_PDF_COLORS.light}, ${PERIOD_PDF_COLORS.medium}, ${PERIOD_PDF_COLORS.heavy}, ${PERIOD_PDF_COLORS["very-heavy"]})`;
   return <div className="heatLegend">
-    <span><i className="heatNone" />No data</span>
-    <span><i className="heatLevel1" />Mild (1–25%)</span>
-    <span><i className="heatLevel2" />Moderate (26–50%)</span>
-    <span><i className="heatLevel3" />Severe (51–75%)</span>
-    <span><i className="heatLevel4" />Very severe (76–100%)</span>
-    <span><i className="periodKey" />Period / spotting</span>
+    <span><i style={{ background: "#FFFFFF" }} />No data</span>
+    <span><i style={{ background: PAIN_COLORS[2] }} />Mild (1–25%)</span>
+    <span><i style={{ background: PAIN_COLORS[5] }} />Moderate (26–50%)</span>
+    <span><i style={{ background: PAIN_COLORS[8] }} />Severe (51–75%)</span>
+    <span><i style={{ background: PAIN_COLORS[10] }} />Very severe (76–100%)</span>
+    <span><i style={{ background: periodGradient }} />Period / spotting</span>
   </div>;
 }
 
-function PainReportHighlights({ days, locale }: { days: ReportDaySummary[]; locale: string }) {
+function painDayHighlights(days: ReportDaySummary[]) {
   const painDays = days.filter((day) => day.pain != null);
   const mostPainfulDay = painDays.reduce<ReportDaySummary | undefined>((best, day) => {
     if (!best) return day;
@@ -79,23 +107,15 @@ function PainReportHighlights({ days, locale }: { days: ReportDaySummary[]; loca
     return best;
   }, undefined);
   const bestPainFreeDay = [...painDays].reverse().find((day) => day.pain === 0);
+  return { mostPainfulDay, bestPainFreeDay };
+}
 
-  const headacheDays = days.filter((day) => (day.log.pain ?? []).some((entry) => entry.headache || entry.headacheIntensity != null || (entry.headacheTypes?.length ?? 0) > 0));
-  const hotFlashDays = days.filter((day) => (day.log.pain ?? []).some((entry) => entry.hotFlashesOn || (entry.hotFlashes ?? 0) > 0));
-  const panicDays = days.filter((day) => (day.log.panic?.length ?? 0) > 0);
-  const commonBowel = mode(days.flatMap((day) => day.bowelTypes));
-  const patterns: string[] = [];
-
-  if (headacheDays.length >= 2) patterns.push(`Headache was recorded on ${headacheDays.length} days; ${headacheDays.filter((day) => day.pain != null).length} overlapped with a recorded pain value.`);
-  if (hotFlashDays.length >= 2) patterns.push(`Hot flashes were recorded on ${hotFlashDays.length} days (${percentage(hotFlashDays.length, days.length)}% of range).`);
-  if (panicDays.length) patterns.push(`${panicDays.length} panic-attack day${panicDays.length === 1 ? "" : "s"} recorded.`);
-  if (commonBowel != null) patterns.push(`Most common recorded bowel value: Type ${commonBowel}.`);
-
+function PainDayHighlights({ days, locale }: { days: ReportDaySummary[]; locale: string }) {
+  const { mostPainfulDay, bestPainFreeDay } = painDayHighlights(days);
   const cardStyle: CSSProperties = { border: "1px solid #dde1cf", borderRadius: 7, padding: "6px 8px", minWidth: 0 };
   const labelStyle: CSSProperties = { display: "block", fontSize: 6, fontWeight: 700, textTransform: "uppercase" };
   const valueStyle: CSSProperties = { display: "block", fontFamily: '"Instrument Serif", Georgia, serif', fontSize: 12, marginTop: 2 };
   const noteStyle: CSSProperties = { display: "block", fontSize: 5.8, color: "#707668", lineHeight: 1.2, marginTop: 2 };
-
   return <div style={{ marginTop: 7 }}>
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7 }}>
       <div style={cardStyle}>
@@ -109,17 +129,31 @@ function PainReportHighlights({ days, locale }: { days: ReportDaySummary[]; loca
         <small style={noteStyle}>{bestPainFreeDay ? "Explicit 0/10 pain day" : "No explicit 0/10 pain day recorded"}</small>
       </div>
     </div>
-    <div style={{ fontFamily: '"Instrument Serif", Georgia, serif', fontSize: 16, margin: "8px 0 4px" }}>Observed patterns</div>
+    <p style={{ margin: "5px 0 0", fontSize: 5.8, lineHeight: 1.25, color: "#707668" }}>A pain-free day requires an explicit 0/10 pain value. Missing pain data is never treated as zero.</p>
+  </div>;
+}
+
+export function HealthReportObservedPatterns({ days }: { days: ReportDaySummary[] }) {
+  const headacheDays = days.filter((day) => (day.log.pain ?? []).some((entry) => entry.headache || entry.headacheIntensity != null || (entry.headacheTypes?.length ?? 0) > 0));
+  const hotFlashDays = days.filter((day) => (day.log.pain ?? []).some((entry) => entry.hotFlashesOn || (entry.hotFlashes ?? 0) > 0));
+  const panicDays = days.filter((day) => (day.log.panic?.length ?? 0) > 0);
+  const commonBowel = mode(days.flatMap((day) => day.bowelTypes));
+  const patterns: string[] = [];
+  if (headacheDays.length >= 2) patterns.push(`Headache was recorded on ${headacheDays.length} days; ${headacheDays.filter((day) => day.pain != null).length} overlapped with a recorded pain value.`);
+  if (hotFlashDays.length >= 2) patterns.push(`Hot flashes were recorded on ${hotFlashDays.length} days (${percentage(hotFlashDays.length, days.length)}% of range).`);
+  if (panicDays.length) patterns.push(`${panicDays.length} panic-attack day${panicDays.length === 1 ? "" : "s"} recorded.`);
+  if (commonBowel != null) patterns.push(`Most common recorded bowel value: Type ${commonBowel}.`);
+  return <div className="observedPatterns">
+    <h2>Observed patterns</h2>
     <div style={{ display: "grid", gap: 3 }}>
       {patterns.length ? patterns.map((pattern, index) => <div key={pattern} style={{ display: "grid", gridTemplateColumns: "17px 1fr", gap: 4, fontSize: 6.2, lineHeight: 1.25 }}><b style={{ color: "#7f8950" }}>{String(index + 1).padStart(2, "0")}</b><span>{pattern}</span></div>) : <p style={{ margin: 0, fontSize: 6.2, lineHeight: 1.25, color: "#707668" }}>No repeated pattern met the report threshold in this range.</p>}
     </div>
-    <p style={{ margin: "5px 0 0", fontSize: 5.8, lineHeight: 1.25, color: "#707668" }}>A pain-free day requires an explicit 0/10 pain value. Missing pain data is never treated as zero.</p>
   </div>;
 }
 
 export function HealthReportPainTrend({ days, locale }: { days: ReportDaySummary[]; locale: string }) {
   const points = days.map((day, index) => day.pain == null ? null : { index, value: day.pain, key: day.key }).filter((item): item is { index: number; value: number; key: string } => item != null);
-  if (points.length < 2) return <><div className="emptyTrend">Not enough pain data for a trend.</div><PainReportHighlights days={days} locale={locale} /></>;
+  if (points.length < 2) return <><div className="emptyTrend">Not enough pain data for a trend.</div><PainDayHighlights days={days} locale={locale} /></>;
   const width = 650;
   const height = 170;
   const left = 34;
@@ -147,7 +181,7 @@ export function HealthReportPainTrend({ days, locale }: { days: ReportDaySummary
       {points.map((point) => <g key={point.key}><circle cx={x(point.index)} cy={y(point.value)} r="3.2" fill={painColor(point.value)} /><text className="pointLabel" x={x(point.index)} y={y(point.value) - 7} textAnchor="middle">{compactNumber(point.value)}</text></g>)}
     </svg>
     <div className="trendLegend"><span><i />Pain daily average</span><span>Missing day = no recorded pain value, not zero</span></div>
-    <PainReportHighlights days={days} locale={locale} />
+    <PainDayHighlights days={days} locale={locale} />
   </>;
 }
 
