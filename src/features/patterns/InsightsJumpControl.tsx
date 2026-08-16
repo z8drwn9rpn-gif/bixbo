@@ -18,16 +18,19 @@ export function InsightsJumpControl({ refreshKey }: { refreshKey: string }) {
     const timer = window.setTimeout(() => {
       const root = document.getElementById("bixbo-insights-content");
       if (!root) return;
-      const headings = Array.from(root.querySelectorAll<HTMLElement>("h2, h3"));
+      const candidates = Array.from(
+        root.querySelectorAll<HTMLElement>("h2, h3, [data-bixbo-jump-label]"),
+      );
       const seen = new Set<string>();
       const next: InsightSection[] = [];
-      headings.forEach((heading, index) => {
-        const label = heading.textContent?.trim();
+      candidates.forEach((candidate, index) => {
+        if (candidate.classList.contains("hidden")) return;
+        const label = candidate.dataset.bixboJumpLabel?.trim() || candidate.textContent?.trim();
         if (!label || seen.has(label.toLowerCase())) return;
         seen.add(label.toLowerCase());
-        const id = heading.id || sectionId(index);
-        heading.id = id;
-        heading.classList.add("scroll-mt-24");
+        const id = candidate.id || sectionId(index);
+        candidate.id = id;
+        candidate.classList.add("scroll-mt-24");
         next.push({ id, label });
       });
       setSections(next.slice(0, 30));
