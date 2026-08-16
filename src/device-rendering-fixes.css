@@ -138,8 +138,8 @@ html[data-browser="samsung-internet"] .modal .pdf-sheet {
 
 /* ------------------------------------------------------------ Quick Log pain
    Restore the four original colour-coded pain orbs independently of the icon
-   migration pipeline. The button keeps its accessible label; only its migrated
-   SVG is replaced visually by the original colour cue. */
+   migration pipeline. Keep them intentionally small: they are status dots,
+   not the main Quick Log button artwork. */
 button[data-bixbo-quick-tag^="pain-"] > svg:first-of-type {
   display: none !important;
 }
@@ -147,12 +147,12 @@ button[data-bixbo-quick-tag^="pain-"] > svg:first-of-type {
 button[data-bixbo-quick-tag^="pain-"]::before {
   content: "";
   display: inline-block;
-  width: 26px;
-  height: 26px;
-  flex: 0 0 26px;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
   border-radius: 999px;
-  border: 1px solid rgba(255,255,255,.40);
-  box-shadow: inset 2px 2px 3px rgba(255,255,255,.48), inset -2px -3px 4px rgba(35,30,18,.20), 0 3px 5px rgba(22,27,17,.24);
+  border: 1px solid rgba(255,255,255,.38);
+  box-shadow: inset 1px 1px 2px rgba(255,255,255,.46), inset -1px -2px 3px rgba(35,30,18,.18), 0 2px 3px rgba(22,27,17,.20);
 }
 
 button[data-bixbo-quick-tag="pain-0"]::before { background: radial-gradient(circle at 31% 27%, #b9f59a 0%, #72c64a 46%, #3f9a3c 100%); }
