@@ -41,7 +41,9 @@ export default tseslint.config(
       "no-constant-binary-expression": "warn",
       "no-misleading-character-class": "error",
       "no-extra-boolean-cast": "warn",
-      "no-empty": "error",
+      // Empty catches are allowed for deliberately best-effort browser APIs
+      // such as localStorage diagnostics; other empty blocks remain errors.
+      "no-empty": ["error", { allowEmptyCatch: true }],
       "react-hooks/rules-of-hooks": "error",
       "react-hooks/exhaustive-deps": "error",
     },
