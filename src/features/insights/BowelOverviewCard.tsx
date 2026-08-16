@@ -10,6 +10,7 @@ import {
   type InsightTooltipDetails,
   type Period,
 } from "./shared";
+import { InsightPoopIcon } from "./InsightCardIcons";
 
 type BowelTypeMeta = {
   type: number;
@@ -27,23 +28,6 @@ type LatestBowelEntry = {
   color: string;
   description: string;
 };
-
-function BowelOutlineIcon({ className = "" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 48 48" className={className} fill="none" aria-hidden="true">
-      <path
-        d="M15 7c-5 0-8 3-8 8 0 3 1 5 4 7-3 2-4 5-4 8 0 5 4 9 9 9h3v3c0 2 2 4 5 4s5-2 5-4v-3h3c5 0 9-4 9-9 0-3-1-6-4-8 3-2 4-4 4-7 0-5-3-8-8-8-4 0-6 2-9 5-3-3-5-5-9-5Z"
-        stroke="currentColor"
-        strokeWidth="2.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path d="M15 15c3 0 5 2 5 5s-2 5-5 5h-2c-2 0-3 1-3 3s1 3 3 3h5" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
-      <path d="M33 15c-3 0-5 2-5 5s2 5 5 5h2c2 0 3 1 3 3s-1 3-3 3h-5" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
-      <path d="M20 20h8M18 31h12" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
-    </svg>
-  );
-}
 
 function InfoIcon() {
   return (
@@ -179,8 +163,8 @@ export function BowelOverviewCard({
     <section data-bowel-overview-card="true" className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
-          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/15">
-            <BowelOutlineIcon className="h-7 w-7" />
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#8b5a38]/10 ring-1 ring-[#8b5a38]/15" data-insight-card-icon="bowel-poop">
+            <InsightPoopIcon size={30} />
           </div>
           <div className="min-w-0">
             <h3 className="text-base font-bold leading-tight text-foreground">{t("Bowel")}</h3>
