@@ -1,3 +1,5 @@
+import "@/lib/appVisualForensics";
+
 import { type ReactNode } from "react";
 import { useRouterState } from "@tanstack/react-router";
 import { BottomNav } from "./BottomNav";
