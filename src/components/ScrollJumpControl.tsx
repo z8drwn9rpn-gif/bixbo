@@ -43,7 +43,7 @@ export function ScrollJumpControl() {
 
   return (
     <div
-      className="fixed bottom-[calc(6.8rem+env(safe-area-inset-bottom))] right-3 z-40 flex flex-col overflow-hidden rounded-full border border-border/75 bg-surface/92 shadow-lg backdrop-blur-md lg:bottom-6 lg:right-6"
+      className="fixed bottom-[calc(6.8rem+env(safe-area-inset-bottom))] right-3 z-40 flex flex-col overflow-hidden rounded-full border border-border/70 bg-surface/92 shadow-md backdrop-blur-md lg:bottom-6 lg:right-6"
       aria-label="Page navigation"
     >
       <button
@@ -51,19 +51,19 @@ export function ScrollJumpControl() {
         onClick={scrollToTop}
         disabled={atTop}
         aria-label="Scroll to top"
-        className="grid h-10 w-10 place-items-center text-primary transition active:scale-95 disabled:opacity-25"
+        className="relative grid h-7 w-7 place-items-center text-primary transition active:scale-95 disabled:opacity-25 after:absolute after:left-1/2 after:top-1/2 after:h-11 after:w-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
       >
-        <ChevronDown className="h-4 w-4 rotate-180" />
+        <ChevronDown className="h-3 w-3 rotate-180" />
       </button>
-      <div className="mx-2 border-t border-border/60" />
+      <div className="mx-1.5 border-t border-border/60" />
       <button
         type="button"
         onClick={scrollToBottom}
         disabled={atBottom}
         aria-label="Scroll to bottom"
-        className="grid h-10 w-10 place-items-center text-primary transition active:scale-95 disabled:opacity-25"
+        className="relative grid h-7 w-7 place-items-center text-primary transition active:scale-95 disabled:opacity-25 after:absolute after:left-1/2 after:top-1/2 after:h-11 after:w-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
       >
-        <ChevronDown className="h-4 w-4" />
+        <ChevronDown className="h-3 w-3" />
       </button>
     </div>
   );
