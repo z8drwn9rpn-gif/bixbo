@@ -263,10 +263,10 @@ export function MedsAdherenceInsightsCard({ data, period, anchor, onPeriodChange
 
         <div className="mt-3">
           <p className="mb-1.5 text-[10px] uppercase tracking-[0.1em] text-muted-foreground">Per medication</p>
-          <div className="divide-y divide-border/55">{perMed.map((entry) => <div key={entry.id} className="grid grid-cols-[minmax(0,1.2fr)_minmax(72px,.9fr)_50px] items-center gap-2 py-1.5">
-            <p className="min-w-0 whitespace-nowrap text-[11px] text-foreground">{entry.name} <span className="text-muted-foreground">{entry.time}</span></p>
-            <div className="h-1.5 overflow-hidden rounded-full bg-tint/70"><div className="h-full rounded-full" style={{ width: `${entry.pct ?? 0}%`, background: adherenceColor(entry.pct) }} /></div>
-            <div className="text-right"><p className="text-xs tabular-nums text-foreground" style={{ fontWeight: 700 }}>{entry.pct == null ? "n/a" : `${entry.pct}%`}</p><p className="text-[9px] tabular-nums text-muted-foreground">{entry.taken}/{entry.expected}</p></div>
+          <div className="divide-y divide-border/55">{perMed.map((entry) => <div key={entry.id} className="grid grid-cols-[minmax(0,1.2fr)_minmax(72px,.9fr)_50px] items-center gap-1.5 py-1">
+            <p className="min-w-0 whitespace-nowrap text-[10px] text-foreground">{entry.name} <span className="text-muted-foreground">{entry.time}</span></p>
+            <div className="h-1 overflow-hidden rounded-full bg-tint/70"><div className="h-full rounded-full" style={{ width: `${entry.pct ?? 0}%`, background: adherenceColor(entry.pct) }} /></div>
+            <div className="text-right"><p className="text-[11px] leading-none tabular-nums text-foreground" style={{ fontWeight: 700 }}>{entry.pct == null ? "n/a" : `${entry.pct}%`}</p><p className="mt-0.5 text-[8px] leading-none tabular-nums text-muted-foreground">{entry.taken}/{entry.expected}</p></div>
           </div>)}</div>
         </div>
 
