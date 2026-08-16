@@ -4,7 +4,6 @@ import { CHART_GRID, useDismissTapTooltip } from "@/components/charts";
 import { useI18n } from "@/hooks/useI18n";
 import { BRISTOL, fromKey, type DayLog } from "@/lib/storage";
 import {
-  BRISTOL_MYSTERY_COLOR,
   InsightFloatingTooltip,
   InsightPeriodControl,
   fmtCoupleTooltipDay,
@@ -162,7 +161,6 @@ export function BowelTimelineChart({
         <span>{t("No bowel movements")}: <b className="tabular-nums text-foreground">{noBowelMovementCount}</b></span>
       </div>
       <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">{t("Type 0 is a logged bowel value. No bowel movement is counted separately and is not plotted as a Bristol type.")}</p>
-      <span className="sr-only">{BRISTOL_MYSTERY_COLOR}</span>
     </section>
   );
 }
