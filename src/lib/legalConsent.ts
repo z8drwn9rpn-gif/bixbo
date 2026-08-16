@@ -93,13 +93,17 @@ export async function cloudHealthConsentState(): Promise<CloudHealthConsentState
   const db = supabase as unknown as SupabaseClient;
   const { data, error } = await db
     .from("user_legal_consents")
-    .select("health_consent_version,health_consent_withdrawn_at")
+    .select("terms_version,privacy_version,health_consent_version,health_consent_withdrawn_at")
     .eq("user_id", userData.user.id)
     .maybeSingle();
   if (error) throw error;
   if (!data) return "missing";
   if (data.health_consent_withdrawn_at) return "withdrawn";
-  return data.health_consent_version === HEALTH_CONSENT_VERSION ? "active" : "missing";
+  return data.terms_version === TERMS_VERSION
+    && data.privacy_version === PRIVACY_VERSION
+    && data.health_consent_version === HEALTH_CONSENT_VERSION
+    ? "active"
+    : "missing";
 }
 
 function parseConsent(value: unknown): SignupLegalConsent | null {
