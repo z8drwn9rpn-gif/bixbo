@@ -47,6 +47,18 @@ function withSecurityHeaders(response: Response): Response {
   return hardened;
 }
 
+function withRequestTrace(response: Response, request: Request, startedAt: number): Response {
+  const traced = withSecurityHeaders(response);
+  const durationMs = Math.max(0, Date.now() - startedAt);
+  traced.headers.append("Server-Timing", `bixbo;dur=${durationMs}`);
+
+  const traceId = request.headers.get("x-bixbo-trace") ?? "";
+  if (/^[A-Za-z0-9._-]{1,80}$/.test(traceId)) {
+    traced.headers.set("X-Bixbo-Trace", traceId);
+  }
+  return traced;
+}
+
 function missingBuildAssetResponse(request: Request): Response | null {
   let pathname: string;
   try {
@@ -113,20 +125,23 @@ function isH3SwallowedErrorBody(body: string): boolean {
 
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
+    const startedAt = Date.now();
     try {
       const missingAsset = missingBuildAssetResponse(request);
-      if (missingAsset) return withSecurityHeaders(missingAsset);
+      if (missingAsset) return withRequestTrace(missingAsset, request, startedAt);
 
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return withSecurityHeaders(await normalizeCatastrophicSsrResponse(response));
+      return withRequestTrace(await normalizeCatastrophicSsrResponse(response), request, startedAt);
     } catch (error) {
       console.error(error);
-      return withSecurityHeaders(
+      return withRequestTrace(
         new Response(renderErrorPage(), {
           status: 500,
           headers: { "content-type": "text/html; charset=utf-8" },
         }),
+        request,
+        startedAt,
       );
     }
   },
