@@ -33,7 +33,7 @@ export function AppShell({ children, title, right, big = false, stickyHeader = t
                     alt=""
                     aria-hidden="true"
                     draggable={false}
-                    className="block h-full w-full object-contain object-center opacity-100 visible drop-shadow-[0_2px_4px_rgba(0,0,0,0.08)] dark:drop-shadow-[0_0_10px_rgba(251,247,243,0.35)] dark:brightness-110"
+                    className="block h-full w-full object-contain object-center opacity-100 visible drop-shadow-[0_2px_4px_rgba(0,0,0,0.08)]"
                   />
                 </span>
                 <h1 data-bixbo-app-title className={`min-w-0 truncate font-black tracking-[-0.045em] leading-[1.05] text-foreground ${big ? "text-[28px] sm:text-3xl" : "text-[23px] sm:text-2xl"}`} style={{ fontFamily: BIXBO_ROUNDED_DISPLAY_FONT, WebkitTextStroke: "0", textShadow: BIXBO_ROUNDED_DISPLAY_SHADOW }}>{title}</h1>
