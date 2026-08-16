@@ -6,8 +6,7 @@ const page = readFileSync("src/components/HealthReportPageAudited.tsx", "utf8");
 
 describe("PDF report rendering regression", () => {
   it("keeps the PDF heatmap on the Insights vivid severity palette", () => {
-    expect(parts).toContain('"#72C64A", "#91CD3A", "#B7D12F", "#DFD11F", "#F3C30D", "#F5A20B"');
-    expect(parts).toContain('"#F47B16", "#F05A28", "#EF4444", "#DC2626", "#B91C1C"');
+    expect(parts).toContain('import { PAIN_COLOR_HEX, painColor } from "@/lib/domain/pain";');
     expect(parts).toContain("function insightSeverityColor");
     expect(parts).toContain('background: value == null ? "#FFFFFF" : insightSeverityColor(value, item.max)');
   });

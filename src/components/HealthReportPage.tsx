@@ -5,6 +5,7 @@ import { ArrowLeft } from "@/components/icons/BixboExtraIcons";
 import { BRISTOL, EMPTY, useBixbo, type DayLog, type Med } from "@/lib/storage";
 import { useI18n } from "@/hooks/useI18n";
 import { resolveScheduledDose, summarizeMedicationAdherence } from "@/lib/domain/meds";
+import { painColor } from "@/lib/domain/pain";
 
 type Preset = "7" | "30" | "90" | "365" | "custom";
 type PickerTarget = "from" | "to";
@@ -26,10 +27,6 @@ type RDay = {
 
 type PainBar = { key: string; label: string; value?: number };
 
-const PAIN_COLORS = [
-  "#72C64A", "#91CD3A", "#B7D12F", "#DFD11F", "#F3C30D", "#F5A20B",
-  "#F47B16", "#F05A28", "#EF4444", "#DC2626", "#B91C1C",
-] as const;
 const BRISTOL_MYSTERY = "linear-gradient(135deg,#ef4444,#f59e0b,#eab308,#22c55e,#3b82f6,#8b5cf6)";
 const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const fromIso = (s: string) => { const [y,m,d] = s.split("-").map(Number); return new Date(y,m-1,d); };
@@ -39,7 +36,6 @@ const avg = (a:number[]) => a.length ? a.reduce((x,y)=>x+y,0)/a.length : undefin
 const mx = (a:number[]) => a.length ? Math.max(...a) : undefined;
 const fmt = (x:number|undefined) => x==null || !Number.isFinite(x) ? "—" : x.toFixed(1);
 const pct = (a:number,b:number) => b ? Math.round(a/b*100) : 0;
-const painColor = (value:number) => PAIN_COLORS[Math.max(0,Math.min(10,Math.round(value)))];
 const longDate = (k:string,l:string) => new Intl.DateTimeFormat(l,{day:"2-digit",month:"short",year:"numeric"}).format(fromIso(k));
 const shortDate = (k:string,l:string) => new Intl.DateTimeFormat(l,{day:"2-digit",month:"short"}).format(fromIso(k));
 const monthLabel = (k:string,l:string) => new Intl.DateTimeFormat(l,{month:"short"}).format(fromIso(k));

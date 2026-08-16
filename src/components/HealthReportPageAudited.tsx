@@ -17,6 +17,7 @@ import {
 } from "@/components/health-report/HealthReportPdfParts";
 import { useI18n } from "@/hooks/useI18n";
 import { summarizeMedicationAdherence } from "@/lib/domain/meds";
+import { painColor } from "@/lib/domain/pain";
 import {
   average,
   countRecordedPrnUses,
@@ -32,11 +33,6 @@ import { formatClockTime, formatWeight, unitPrefs, type UnitPreferences } from "
 import { BRISTOL, EMPTY, useBixbo, type BixboData } from "@/lib/storage";
 
 type Preset = "7" | "30" | "90" | "365" | "custom";
-
-const PAIN_COLORS = [
-  "#72C64A", "#91CD3A", "#B7D12F", "#DFD11F", "#F3C30D", "#F5A20B",
-  "#F47B16", "#F05A28", "#EF4444", "#DC2626", "#B91C1C",
-] as const;
 
 const iso = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 const fromIso = (value: string) => {
@@ -58,8 +54,6 @@ const compactNumber = (value: number | undefined) => value == null || !Number.is
 const longDate = (key: string, locale: string) => fromIso(key).toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" });
 const shortDate = (key: string, locale: string) => fromIso(key).toLocaleDateString(locale, { day: "numeric", month: "short" });
 const percentage = (count: number, total: number) => total ? Math.round((count / total) * 100) : 0;
-const painColor = (value: number) => PAIN_COLORS[Math.max(0, Math.min(10, Math.round(value)))];
-
 function hasMedicationActivity(date: string, data: BixboData): boolean {
   if (Object.values(data.medLog[date] ?? {}).some(Boolean)) return true;
   if (Object.values(data.medLogItems?.[date] ?? {}).some((items) => items.length > 0)) return true;

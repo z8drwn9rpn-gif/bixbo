@@ -1,4 +1,5 @@
 import { CHART_COLORS, CHART_TINTS } from "@/components/ui/chart";
+import { painColor } from "@/lib/domain/pain";
 import { addDays, toKey, type ExtraMed, type Med, type PainEntry, type PanicAttack, type TetanyEpisode } from "@/lib/storage";
 
 export type ComparableDayLog = {
@@ -18,17 +19,8 @@ export const TONES: Record<ComparisonTone, { solid: string; soft: string; text: 
   emerald: { solid: CHART_COLORS.medication, soft: CHART_TINTS.medication, text: CHART_COLORS.medication },
 };
 
-const COUPLE_PAIN_COLORS = [
-  "#8DBF3A", "#A8C93A", "#C4D63A", "#E0D93A", "#F0C43A", "#F3A83A",
-  "#F28A3A", "#EF6E42", "#E9534F", "#D93F55", "#C92F5A",
-] as const;
-
 export function couplePainColor(value: number): string {
-  const clamped = Math.max(0, Math.min(10, value));
-  const lower = Math.floor(clamped);
-  const upper = Math.ceil(clamped);
-  if (lower === upper) return COUPLE_PAIN_COLORS[lower];
-  return COUPLE_PAIN_COLORS[Math.round(clamped)];
+  return painColor(value);
 }
 
 export function clampPercent(value: number) {

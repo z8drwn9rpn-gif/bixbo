@@ -3,12 +3,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useI18n } from "@/hooks/useI18n";
 import { customLogDefinitions, getRegistryFeature, isRegistrySurfaceEnabled, type RegistryFeatureId } from "@/lib/appRegistry";
-import { toKey, todayKey, periodLabel, isDateInRange, predictPeriods, avgDayPain, isIntercourseKind, isCycleTrackingHidden, type BixboData, type DayLog, type EventEntry, type PeriodLevel } from "@/lib/storage";
+import { toKey, todayKey, periodLabel, isDateInRange, predictPeriods, avgDayPain, isIntercourseKind, isCycleTrackingHidden, painColor, type BixboData, type DayLog, type EventEntry, type PeriodLevel } from "@/lib/storage";
 
 const WEEKDAYS = [{short:"Mo",desktop:"Mon"},{short:"Tu",desktop:"Tue"},{short:"We",desktop:"Wed"},{short:"Th",desktop:"Thu"},{short:"Fr",desktop:"Fri"},{short:"Sa",desktop:"Sat"},{short:"Su",desktop:"Sun"}];
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-const CALENDAR_PAIN_COLORS=["#72C64A","#91CD3A","#B7D12F","#DFD11F","#F3C30D","#F5A20B","#F47B16","#F05A28","#EF4444","#DC2626","#B91C1C"] as const;
-function calendarPainColor(value:number){return CALENDAR_PAIN_COLORS[Math.max(0,Math.min(10,Math.round(value)))];}
+function calendarPainColor(value:number){return painColor(value);}
 function hexToRgba(hex:string,alpha:number){const clean=hex.replace("#","");const value=Number.parseInt(clean,16);const r=(value>>16)&255,g=(value>>8)&255,b=value&255;return`rgba(${r}, ${g}, ${b}, ${alpha})`;}
 function shadeHex(hex:string,amount:number){const clean=hex.replace("#","");const value=Number.parseInt(clean,16);const r=(value>>16)&255,g=(value>>8)&255,b=value&255,target=amount>=0?255:0,p=Math.min(1,Math.abs(amount));const mix=(channel:number)=>Math.round(channel+(target-channel)*p).toString(16).padStart(2,"0");return`#${mix(r)}${mix(g)}${mix(b)}`;}
 function periodColorVar(level?:PeriodLevel){switch(level){case"spotting":return"var(--period-spotting)";case"light":return"var(--period-light)";case"medium":return"var(--period-medium)";case"heavy":return"var(--period-heavy)";case"very-heavy":return"var(--period-veryheavy)";default:return null;}}
