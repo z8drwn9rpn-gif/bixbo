@@ -90,7 +90,7 @@ function InsightsPage() {
       {([["all", "All"], ["overview", "Overview"], ["pain", "Pain"], ["symptoms", "Symptoms"], ["bowel", "Bowel"], ["sex", "ŠukŠuk"], ["meds", "Meds"]] as const).map(([id, label]) => <button key={id} type="button" onClick={() => setInsightsFilter(id)} aria-pressed={insightsFilter === id} className={`shrink-0 rounded-full px-3 py-1.5 text-[11px] font-semibold transition ${insightsFilter === id ? "bg-primary text-primary-foreground shadow-sm" : "bg-surface text-muted-foreground ring-1 ring-border/70 hover:text-foreground"}`}>{t(label)}</button>)}
     </div></div> : null}
 
-    {overviewView === "patterns" ? <PatternsContent /> : <div className="flex flex-col gap-3 px-5 pt-2 pb-[calc(96px+env(safe-area-inset-bottom))] lg:grid lg:grid-cols-2 lg:items-start lg:px-0 lg:pb-12">
+    {overviewView === "patterns" ? <PatternsContent /> : <div data-bixbo-insights-dashboard="true" className="flex flex-col gap-3 px-5 pt-2 pb-[calc(96px+env(safe-area-inset-bottom))] lg:grid lg:grid-cols-2 lg:items-start lg:px-0 lg:pb-12">
       <div className={insightsFilter === "all" || insightsFilter === "overview" ? "lg:col-span-2" : "hidden"} style={{ order: layoutOrder(view, "insights", "heatmap", 10) }}><YearHealthHeatmap data={view} anchor={anchor} onShiftPeriod={shiftHeatmapPeriod} /></div>
 
       <div className={insightsFilter === "all" || insightsFilter === "pain" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "pain", 20) }}>
