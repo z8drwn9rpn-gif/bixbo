@@ -63,9 +63,17 @@ describe("PDF health report calculations", () => {
   });
 
   it("uses the same saved period range fallback as the calendar", () => {
-    expect(reportPeriodLevel("2026-08-15", {}, { lastPeriodStart: "2026-08-14", lastPeriodEnd: "2026-08-17" })).toBe("medium");
-    expect(reportPeriodLevel("2026-08-18", {}, { lastPeriodStart: "2026-08-14", lastPeriodEnd: "2026-08-17" })).toBeUndefined();
-    expect(reportPeriodLevel("2026-08-15", { period: "heavy" }, { lastPeriodStart: "2026-08-14", lastPeriodEnd: "2026-08-17" })).toBe("heavy");
+    const cycle = { lastPeriodStart: "2026-08-14", lastPeriodEnd: "2026-08-17", periodLength: 4 };
+    expect(reportPeriodLevel("2026-08-15", {}, cycle)).toBe("medium");
+    expect(reportPeriodLevel("2026-08-18", {}, cycle)).toBeUndefined();
+    expect(reportPeriodLevel("2026-08-15", { period: "heavy" }, cycle)).toBe("heavy");
+  });
+
+  it("uses configured period length when the saved range has no explicit end", () => {
+    const cycle = { lastPeriodStart: "2026-08-14", lastPeriodEnd: undefined, periodLength: 5 };
+    expect(reportPeriodLevel("2026-08-14", {}, cycle)).toBe("medium");
+    expect(reportPeriodLevel("2026-08-18", {}, cycle)).toBe("medium");
+    expect(reportPeriodLevel("2026-08-19", {}, cycle)).toBeUndefined();
   });
 
   it("treats zero-valued measurements and newly-added log families as meaningful data", () => {
