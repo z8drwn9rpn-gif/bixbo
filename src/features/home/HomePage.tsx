@@ -24,6 +24,7 @@ import { VitalTrendPopup, type VitalTrendMetric } from "@/components/home/vitalT
 import { VitalTile, MedsProgress } from "@/components/home/HomeTiles";
 import { BirthControlSummaryCard, BirthControlOverlay } from "@/components/home/BirthControlCard";
 import { DayPreview, ShareDayButton } from "@/components/home/DayOverview";
+import { BlueberryDayOverviewFallback } from "@/components/home/BlueberryDayOverviewFallback";
 import { NextPeriodHomeCard, PostpartumHomeCard, PregnancyHomeCard } from "@/components/home/HomeModeCards";
 import { HomeSummaryOverlay } from "@/components/home/HomeSummaryOverlay";
 import { EpisodePainEditSheet, type EpisodeEditTarget } from "@/features/home/EpisodePainEditSheet";
@@ -180,6 +181,7 @@ export function HomePage() {
       <aside className="min-w-0 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto lg:rounded-[1.75rem] lg:bg-surface/45 lg:p-4 lg:ring-1 lg:ring-border/55 xl:p-5">
         <div className="mt-4 flex items-center justify-between px-5 lg:mt-0 lg:px-0"><h2 className="font-serif text-xl font-bold">{selected === todayKey() ? t("Today") : fromKey(selected).toLocaleDateString(language === "sk" ? "sk-SK" : "en-GB", { weekday: "long", day: "numeric", month: "long" })}</h2><ShareDayButton date={selected} view={view} /></div>
         <div className="[&_.p-4]:!py-3 [&_.space-y-2]:!space-y-1 [&_.mt-2]:!mt-1 [&_.my-2]:!my-1 [&_.pt-3]:!pt-2 [&_.gap-3]:!gap-2">
+          <BlueberryDayOverviewFallback date={selected} data={view} onEdit={() => openEdit("period", undefined)} />
           <DayPreview date={selected} data={view} update={update} onEditPain={(pain) => { setEpisodeEdit(null); setEditPain(pain); setEditEntry(undefined); setQuickCat("pain"); setLogOpen(true); }} onEdit={openEdit} />
         </div>
       </aside>
