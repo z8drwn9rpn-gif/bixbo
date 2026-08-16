@@ -1,0 +1,39 @@
+name: Restore Quick Log pain dots once
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-quick-pain-dots-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Patch Quick Log pain buttons
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/components/QuickTags.tsx')
+          text = path.read_text()
+          anchor = 'title={`${t(tag.label)} — long-press for details`}\n                aria-label={t(tag.label)}'
+          replacement = 'title={`${t(tag.label)} — long-press for details`}\n                data-bixbo-quick-tag={tag.key}\n                aria-label={t(tag.label)}'
+          if anchor not in text:
+              raise SystemExit('Quick Log normal button anchor not found')
+          text = text.replace(anchor, replacement, 1)
+          path.write_text(text)
+          PY
+      - name: Remove one-shot workflow
+        run: git rm .github/workflows/fix-quick-pain-dots-once.yml
+      - name: Commit fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/QuickTags.tsx .github/workflows/fix-quick-pain-dots-once.yml
+          git commit -m "Restore Quick Log pain color dots"
+          git push
