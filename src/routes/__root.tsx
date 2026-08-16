@@ -117,10 +117,10 @@ const APPLE_PWA_LAUNCH_SPLASH_BOOTSTRAP = `(() => {
     const standalone = Boolean(window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || nav.standalone === true;
     if (!standalone) return;
 
-    const navigationEntry = performance.getEntriesByType("navigation")[0];
-    const navigationType = navigationEntry && "type" in navigationEntry ? navigationEntry.type : "navigate";
-    if (navigationType === "reload" || navigationType === "back_forward") return;
-
+    // iOS can report a fresh standalone launch as a reload. Do not gate the
+    // startup splash on PerformanceNavigationTiming; SPA route changes do not
+    // recreate this document, so the splash still only appears on a real PWA
+    // document launch and never while navigating inside BIXBO.
     root.dataset.bixboPwaLaunch = "visible";
 
     let hidden = false;
@@ -130,12 +130,12 @@ const APPLE_PWA_LAUNCH_SPLASH_BOOTSTRAP = `(() => {
       window.setTimeout(() => {
         root.dataset.bixboPwaLaunch = "hiding";
         window.setTimeout(() => { delete root.dataset.bixboPwaLaunch; }, 260);
-      }, 750);
+      }, 1000);
     };
 
     if (document.readyState === "complete") hide();
     else window.addEventListener("load", hide, { once: true });
-    window.setTimeout(hide, 3000);
+    window.setTimeout(hide, 3500);
   } catch {}
 })();`;
 
@@ -225,7 +225,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "icon", type: "image/png", sizes: "180x180", href: "/apple-touch-icon.png" },
       { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
       { rel: "apple-touch-startup-image", href: "/apple-launch-bixbo.png?v=1" },
-      { rel: "preload", as: "image", href: "/bixbo-mascot-masked.svg?v=20260816-startup" },
+      { rel: "preload", as: "image", href: "/bixbo-mascot.png?v=20260816-launch" },
       { rel: "icon", type: "image/png", sizes: "192x192", href: "/icon-192.png" },
       { rel: "icon", type: "image/png", sizes: "512x512", href: "/icon-512.png" },
     ],
@@ -249,7 +249,7 @@ function RootShell({ children }: { children: ReactNode }) {
       </head>
       <body data-bixbo-app-root>
         <div id="bixbo-ios-launch-splash" aria-hidden="true">
-          <img src="/bixbo-mascot-masked.svg?v=20260816-startup" alt="" fetchPriority="high" />
+          <img src="/bixbo-mascot.png?v=20260816-launch" alt="" fetchPriority="high" />
         </div>
         {children}
         <Scripts />
