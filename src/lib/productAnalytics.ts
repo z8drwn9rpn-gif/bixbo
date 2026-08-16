@@ -4,12 +4,16 @@ import { supabase } from "@/integrations/supabase/client";
 export type ProductAnalyticsEvent =
   | "onboarding_started"
   | "onboarding_completed"
-  | "account_created";
+  | "account_created"
+  | "first_log_created"
+  | "feature_area_opened";
 
 const ALLOWED_EVENTS = new Set<ProductAnalyticsEvent>([
   "onboarding_started",
   "onboarding_completed",
   "account_created",
+  "first_log_created",
+  "feature_area_opened",
 ]);
 
 /**
@@ -17,7 +21,11 @@ const ALLOWED_EVENTS = new Set<ProductAnalyticsEvent>([
  *
  * The event table intentionally has no user id, route/path, free-form payload,
  * health fields, note contents, medication names, device fingerprint or session id.
- * Events are also opt-in: callers must pass the user's existing analytics preference.
+ * Events are opt-in: callers must pass the user's current analytics preference.
+ *
+ * Signup-start/signup-complete events are deliberately not emitted before the
+ * user has had a chance to opt in. Billing/subscription events must not be added
+ * until a real billing flow exists and has its own release/privacy review.
  */
 export async function trackProductEvent(event: ProductAnalyticsEvent, analyticsEnabled: boolean): Promise<void> {
   if (!analyticsEnabled || !ALLOWED_EVENTS.has(event)) return;
