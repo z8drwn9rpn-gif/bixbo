@@ -20,6 +20,21 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+      - name: Normalize new route declarations for generator
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          for name, route in [
+              ("privacy.tsx", "/privacy"),
+              ("terms.tsx", "/terms"),
+              ("onboarding.tsx", "/onboarding"),
+              ("mcp.ts", "/mcp"),
+          ]:
+              path = Path("src/routes") / name
+              text = path.read_text()
+              text = text.replace(f'createFileRoute("{route}" as never)', f'createFileRoute("{route}")')
+              path.write_text(text)
+          PY
       - name: Regenerate dependency lock
         run: bun install
       - name: Regenerate routes and verify native build
@@ -28,7 +43,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git add bun.lock src/routeTree.gen.ts
+          git add bun.lock src/routeTree.gen.ts src/routes/privacy.tsx src/routes/terms.tsx src/routes/onboarding.tsx src/routes/mcp.ts
           if git diff --cached --quiet; then
             echo "Generated files already current."
             exit 0
