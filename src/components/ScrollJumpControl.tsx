@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useRouter } from "@tanstack/react-router";
 import { CalendarIcon, ChevronDown, HeartIcon } from "@/components/icons/BixboExtraIcons";
 import { BottomNavLogIcon } from "@/components/icons/BottomNavReferenceIcons";
 
@@ -6,11 +7,13 @@ const EDGE_TOLERANCE = 28;
 const MIN_SCROLL_DISTANCE = 280;
 
 export function ScrollJumpControl() {
+  const router = useRouter();
   const [scrollable, setScrollable] = useState(false);
   const [atTop, setAtTop] = useState(true);
   const [atBottom, setAtBottom] = useState(false);
 
   useEffect(() => {
+    let animationFrame = 0;
     const update = () => {
       const root = document.scrollingElement ?? document.documentElement;
       const top = window.scrollY || root.scrollTop || 0;
@@ -19,17 +22,25 @@ export function ScrollJumpControl() {
       setAtTop(top <= EDGE_TOLERANCE);
       setAtBottom(top >= max - EDGE_TOLERANCE);
     };
+    const scheduleUpdate = () => {
+      if (animationFrame) return;
+      animationFrame = window.requestAnimationFrame(() => {
+        animationFrame = 0;
+        update();
+      });
+    };
 
     update();
-    window.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update);
-    const resizeObserver = typeof ResizeObserver !== "undefined" ? new ResizeObserver(update) : null;
+    window.addEventListener("scroll", scheduleUpdate, { passive: true });
+    window.addEventListener("resize", scheduleUpdate);
+    const resizeObserver = typeof ResizeObserver !== "undefined" ? new ResizeObserver(scheduleUpdate) : null;
     resizeObserver?.observe(document.body);
 
     return () => {
-      window.removeEventListener("scroll", update);
-      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", scheduleUpdate);
+      window.removeEventListener("resize", scheduleUpdate);
       resizeObserver?.disconnect();
+      if (animationFrame) window.cancelAnimationFrame(animationFrame);
     };
   }, []);
 
@@ -45,7 +56,7 @@ export function ScrollJumpControl() {
       target.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
     }
-    window.location.assign("/");
+    void router.navigate({ to: "/" });
   };
 
   const jumpLatest = () => {
@@ -54,7 +65,7 @@ export function ScrollJumpControl() {
       target.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
-    window.location.assign("/#latest");
+    void router.navigate({ to: "/", hash: "latest" });
   };
 
   const openQuickLog = () => window.dispatchEvent(new CustomEvent("bixbo:open-quick-log-menu"));
