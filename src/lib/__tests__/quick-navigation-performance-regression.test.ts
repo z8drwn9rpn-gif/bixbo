@@ -4,15 +4,20 @@ import { readFileSync } from "node:fs";
 const read = (path: string) => readFileSync(path, "utf8");
 
 describe("quick navigation performance regressions", () => {
-  it("keeps the shared shortcuts inside the client router and removes periodic deployment reloads", () => {
+  it("keeps global shortcuts lightweight and avoids navigation reload shortcuts", () => {
     const control = read("src/components/ScrollJumpControl.tsx");
     const root = read("src/routes/__root.tsx");
 
-    expect(control).toContain("useRouter");
-    expect(control).toContain('router.navigate({ to: "/" })');
+    expect(control).toContain('aria-label="Scroll to top"');
+    expect(control).toContain('aria-label="Scroll to bottom"');
+    expect(control).toContain('aria-label="Quick log"');
+    expect(control).toContain('new CustomEvent("bixbo:open-quick-log-menu")');
+    expect(control).not.toContain("CalendarIcon");
+    expect(control).not.toContain("HeartIcon");
+    expect(control).not.toContain("useRouter");
     expect(control).not.toContain("window.location.assign");
     expect(root).not.toContain("useDeploymentFreshness");
-    expect(root).not.toContain("bixbo-ios-launch-splash");
+    expect(root).toContain('navigationType === "reload"');
   });
 
   it("makes Jump to section visible on the actual Insights dashboard", () => {
