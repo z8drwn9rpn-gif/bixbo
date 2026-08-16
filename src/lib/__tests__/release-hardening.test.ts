@@ -60,8 +60,16 @@ describe("release hardening contracts", () => {
     const source = read("src/lib/legalConsent.ts");
     const existingStateCheck = source.indexOf('.select("onboarding_completed_at,health_consent_withdrawn_at")');
     const metadataReplay = source.indexOf("const metadataPending");
+    const versionCheck = source.indexOf("const versionsCurrent");
+    const withdrawnState = source.indexOf('return data.health_consent_withdrawn_at ? "withdrawn" : "active"');
+    const onboardingServerWrite = source.indexOf('await invokeLegalWrite("complete-onboarding")');
+    const onboardingLocalWrite = source.indexOf('browserStorage()?.setItem(ONBOARDING_KEY, "true")');
     expect(existingStateCheck).toBeGreaterThan(-1);
     expect(metadataReplay).toBeGreaterThan(existingStateCheck);
+    expect(versionCheck).toBeGreaterThan(-1);
+    expect(withdrawnState).toBeGreaterThan(versionCheck);
+    expect(onboardingServerWrite).toBeGreaterThan(-1);
+    expect(onboardingLocalWrite).toBeGreaterThan(onboardingServerWrite);
     expect(source).not.toContain('.from("user_legal_consents").upsert');
     expect(source).toContain('invokeLegalWrite("accept-current-legal"');
     expect(source).toContain('invokeLegalWrite("complete-onboarding"');
