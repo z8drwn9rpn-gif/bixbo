@@ -1,4 +1,4 @@
-import { Heart, Sparkles, UsersRound } from "lucide-react";
+import { CalendarIcon, HeartIcon, ProfileIcon, SparkleIcon } from "@/components/icons/BixboExtraIcons";
 import { CHART_COLORS, CHART_TINTS } from "@/components/ui/chart";
 import { useI18n } from "@/hooks/useI18n";
 import { clampPercent, hasSymptoms, type ComparableDayLog } from "./coupleUtils";
@@ -108,10 +108,10 @@ export function CoupleOverviewPanel({ days, mine, theirs, score, myName, partner
       <section className="overflow-hidden rounded-[1.75rem] bg-surface shadow-sm ring-1 ring-border/80">
         <h3 className="px-4 pt-4 text-sm font-bold text-foreground">{t("This month together")}</h3>
         <div className="mt-2 grid grid-cols-4 divide-x divide-border/60">
-          <SummaryItem icon={<UsersRound className="h-4 w-4" />} value={sharedLoggedDays} label={t("Shared log days")} />
-          <SummaryItem icon={<Heart className="h-4 w-4" />} value={similarPainDays} label={t("Similar pain days")} />
-          <SummaryItem icon={<Sparkles className="h-4 w-4" />} value={goodPainDaysTogether} label={t("Good days together")} />
-          <SummaryItem icon={<Sparkles className="h-4 w-4" />} value={veryGoodPainDaysTogether} label={t("Very good days together")} />
+          <SummaryItem icon={<CalendarIcon size={18} />} value={sharedLoggedDays} label={t("Shared log days")} />
+          <SummaryItem icon={<HeartIcon size={18} />} value={similarPainDays} label={t("Similar pain days")} />
+          <SummaryItem icon={<ProfileIcon size={18} />} value={goodPainDaysTogether} label={t("Good days together")} />
+          <SummaryItem icon={<SparkleIcon size={18} />} value={veryGoodPainDaysTogether} label={t("Very good days together")} />
         </div>
       </section>
 
@@ -120,7 +120,7 @@ export function CoupleOverviewPanel({ days, mine, theirs, score, myName, partner
           <p className="text-[10px] font-bold leading-tight text-foreground">{t("Most common shared symptom")}</p>
           <div className="mt-3 flex items-center gap-2.5">
             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-violet-500/10 text-violet-600">
-              <Heart className="h-4 w-4" />
+              <HeartIcon size={19} />
             </span>
             <div className="min-w-0">
               <p className="truncate text-xs font-bold text-foreground">{commonSharedSymptom ? t(commonSharedSymptom[0]) : t("No shared symptom yet")}</p>
@@ -135,7 +135,7 @@ export function CoupleOverviewPanel({ days, mine, theirs, score, myName, partner
           <p className="text-[10px] font-bold leading-tight text-foreground">{t("Best overlap")}</p>
           <div className="mt-3 flex items-center gap-2.5">
             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
-              <Sparkles className="h-4 w-4" />
+              <SparkleIcon size={19} />
             </span>
             <div className="min-w-0">
               <p className="text-xs font-bold text-foreground">{t("Pain levels")}</p>
@@ -147,7 +147,7 @@ export function CoupleOverviewPanel({ days, mine, theirs, score, myName, partner
 
       <section className="flex items-start gap-3 rounded-[1.45rem] bg-tint px-4 py-3.5 ring-1 ring-border/50">
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
-          <Sparkles className="h-4 w-4" />
+          <SparkleIcon size={19} />
         </span>
         <div className="min-w-0">
           <p className="text-xs font-bold text-primary">{t("Insight")}</p>
