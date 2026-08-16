@@ -57,7 +57,13 @@ jobs:
         run: timeout 75s bun run smoke:ssr
       - name: Install Chromium and WebKit
         run: bunx playwright install --with-deps chromium webkit
-      - name: Browser E2E — Chromium
-        run: bunx playwright test --project=desktop --project=mobile
+      # Run each Playwright project in its own process. Each invocation therefore gets
+      # a fresh Wrangler webServer instead of keeping one dev server alive across the
+      # full desktop + mobile suite. This prevents a dead server from cascading into
+      # dozens of misleading ERR_CONNECTION_REFUSED failures in the next project.
+      - name: Browser E2E — Chromium desktop
+        run: bunx playwright test --project=desktop
+      - name: Browser E2E — Chromium mobile
+        run: bunx playwright test --project=mobile
       - name: Browser E2E — WebKit
         run: bunx playwright test --project=webkit-mobile
