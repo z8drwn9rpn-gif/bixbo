@@ -10,6 +10,7 @@ import { ScrollJumpControl } from "./ScrollJumpControl";
 import { GlobalQuickLogActions } from "./GlobalQuickLogActions";
 import { CalendarTargetBridge } from "./CalendarTargetBridge";
 import { DiagnosticProfiler } from "./DiagnosticProfiler";
+import { ProductAnalyticsRuntime } from "./ProductAnalyticsRuntime";
 import { useDeploymentFreshness } from "@/lib/deploymentFreshness";
 import {
   BIXBO_MASCOT_FILTER,
@@ -29,6 +30,7 @@ export function AppShell({ children, title, right, big = false, stickyHeader = t
     <div className="min-h-dvh overflow-x-hidden bg-background text-foreground" style={{ overscrollBehaviorX: "none" }}>
       <PainEpisodeChoiceDefaults />
       <CalendarTargetBridge />
+      <ProductAnalyticsRuntime />
       <a href="#main-content" className="sr-only-focusable fixed left-3 top-3 z-50 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-lg">Skip to content</a>
       <SideNav mascotSrc={BIXBO_MASCOT_SRC} />
       <div className="min-h-dvh lg:pl-60">
