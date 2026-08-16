@@ -61,7 +61,7 @@ function NavArtwork({ id, size, className, style }: { id: NavigationItemId; size
 function NavArtworkSafe({ id, size, className, style }: { id: NavigationItemId; size: number; className?: string; style?: CSSProperties }) {
   const Icon = ICONS[id];
   return (
-    <span className="relative inline-flex shrink-0 items-center justify-center" style={{ width: size, height: size }}>
+    <span className="pointer-events-none relative inline-flex shrink-0 items-center justify-center" style={{ width: size, height: size }}>
       <NavArtwork id={id} size={size} className={className} style={style} />
       <Icon data-nav-fallback size={size} className={className} style={{ display: "none", ...style }} />
     </span>
@@ -144,6 +144,7 @@ export function BottomNav() {
             <li key={item.id} className="flex min-w-0 flex-1 justify-center">
               <Link
                 to={to as never}
+                preload="intent"
                 aria-current={active ? "page" : undefined}
                 className={`relative flex min-h-[72px] w-full flex-col items-center justify-end gap-0 px-1 pb-0.5 text-[11px] font-semibold transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] landscape:min-h-[62px] ${active ? "text-primary dark:text-foreground" : "text-muted-foreground hover:text-foreground"}`}
               >
