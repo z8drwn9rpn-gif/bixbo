@@ -23,7 +23,8 @@ import { DiagnosticProfiler } from "../components/DiagnosticProfiler";
 import { Toaster } from "../components/ui/sonner";
 import { useI18n } from "@/hooks/useI18n";
 import { clearStaleAssetRecoveryGuard, recoverFromStaleAssetError } from "@/lib/staleAssetRecovery";
-import { installRuntimeDiagnostics, recordRuntimeDiagnosticIssue } from "@/lib/appDiagnostics";
+import { recordRuntimeDiagnosticIssue } from "@/lib/appDiagnostics";
+import { installRuntimeDiagnostics } from "@/lib/runtimeDiagnosticsInstaller";
 
 const THEME_BOOTSTRAP_SCRIPT = `(() => {
   try {
@@ -190,38 +191,6 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
   useCloudSync(); useThemeSync(); useNotificationRuntime();
-  useEffect(() => {
-    let disposeDiagnostics: (() => void) | undefined;
-    let fallbackTimer = 0;
-    const root = document.documentElement;
-
-    const startDiagnostics = () => {
-      if (disposeDiagnostics || root.dataset.bixboPwaLaunch === "visible") return false;
-      disposeDiagnostics = installRuntimeDiagnostics((issue) => {
-        toast.error("BIXBO detected an app error", {
-          description: `${issue.area}: ${issue.message}`,
-          action: { label: "App scan", onClick: () => void router.navigate({ to: "/diagnostics" }) },
-        });
-      });
-      return true;
-    };
-
-    if (startDiagnostics()) return () => disposeDiagnostics?.();
-
-    const observer = new MutationObserver(() => {
-      if (startDiagnostics()) observer.disconnect();
-    });
-    observer.observe(root, { attributes: true, attributeFilter: ["data-bixbo-pwa-launch"] });
-    fallbackTimer = window.setTimeout(() => {
-      observer.disconnect();
-      startDiagnostics();
-    }, 1800);
-
-    return () => {
-      observer.disconnect();
-      window.clearTimeout(fallbackTimer);
-      disposeDiagnostics?.();
-    };
-  }, [router]);
+  useEffect(() => installRuntimeDiagnostics((issue) => { toast.error("BIXBO detected an app error", { description: `${issue.area}: ${issue.message}`, action: { label: "App scan", onClick: () => void router.navigate({ to: "/diagnostics" }) } }); }), [router]);
   return <QueryClientProvider client={queryClient}><AppPrivacyGuard><DiagnosticProfiler id="RouteTree"><Outlet /></DiagnosticProfiler></AppPrivacyGuard><NotificationPrompt /><Toaster /></QueryClientProvider>;
 }
