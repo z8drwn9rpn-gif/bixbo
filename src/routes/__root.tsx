@@ -71,7 +71,7 @@ const THEME_BOOTSTRAP_SCRIPT = `(() => {
 
 const APPLE_PWA_LAUNCH_SPLASH_CSS = `
   #bixbo-ios-launch-splash {
-    display: flex;
+    display: none;
     position: fixed;
     inset: 0;
     z-index: 2147483647;
@@ -84,6 +84,7 @@ const APPLE_PWA_LAUNCH_SPLASH_CSS = `
     visibility: visible;
   }
   html[data-theme="dark"] #bixbo-ios-launch-splash { background: #171A14; }
+  html[data-bixbo-pwa-launch="visible"] #bixbo-ios-launch-splash { display: flex; }
   html[data-bixbo-pwa-launch="hidden"] #bixbo-ios-launch-splash { display: none; }
   #bixbo-ios-launch-splash img {
     width: 160px;
@@ -104,24 +105,36 @@ const APPLE_PWA_LAUNCH_SPLASH_BOOTSTRAP = `(() => {
 
     root.dataset.bixboPwaLaunch = "visible";
     let started = false;
-    const showForOneSecond = () => {
+
+    const holdAfterFirstVisiblePaint = () => {
       if (started || document.visibilityState === "hidden") return;
       started = true;
+
       const splashImage = document.querySelector("#bixbo-ios-launch-splash img");
-      const handOff = () => {
-        window.setTimeout(() => {
-          root.dataset.bixboPwaLaunch = "hidden";
-        }, 1000);
+      const beginVisibleSecond = () => {
+        window.requestAnimationFrame(() => {
+          window.requestAnimationFrame(() => {
+            window.setTimeout(() => {
+              root.dataset.bixboPwaLaunch = "hidden";
+            }, 1000);
+          });
+        });
       };
-      if (splashImage && !splashImage.complete) splashImage.addEventListener("load", handOff, { once: true });
-      else handOff();
+
+      if (splashImage && !splashImage.complete) splashImage.addEventListener("load", beginVisibleSecond, { once: true });
+      else beginVisibleSecond();
     };
 
-    window.addEventListener("pageshow", showForOneSecond, { once: true });
-    document.addEventListener("visibilitychange", showForOneSecond);
-    if (document.readyState === "complete") showForOneSecond();
-    else window.addEventListener("load", showForOneSecond, { once: true });
-    window.setTimeout(showForOneSecond, 2500);
+    // `load` can happen underneath iOS' native launch presentation. Starting the
+    // one-second hold from `pageshow` means the timer begins when WebKit actually
+    // presents this document, then two animation frames guarantee a painted mascot.
+    window.addEventListener("pageshow", holdAfterFirstVisiblePaint, { once: true });
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") holdAfterFirstVisiblePaint();
+    });
+
+    // Safety fallback for unusual standalone WebKit launches where pageshow is lost.
+    window.setTimeout(holdAfterFirstVisiblePaint, 4000);
   } catch {
     document.documentElement.dataset.bixboPwaLaunch = "hidden";
   }
@@ -171,8 +184,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
       { rel: "icon", type: "image/png", sizes: "180x180", href: "/apple-touch-icon.png" },
       { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
-      { rel: "apple-touch-startup-image", href: "/apple-launch-bixbo.png?v=2" },
-      { rel: "preload", as: "image", href: "/bixbo-mascot-user.png?v=20260816-launch5" },
+      { rel: "apple-touch-startup-image", href: "/apple-launch-bixbo.png?v=3" },
+      { rel: "preload", as: "image", href: "/bixbo-mascot-user.png?v=20260816-launch6" },
       { rel: "icon", type: "image/png", sizes: "192x192", href: "/icon-192.png" },
       { rel: "icon", type: "image/png", sizes: "512x512", href: "/icon-512.png" },
     ],
@@ -184,7 +197,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
-  return <html lang="en" suppressHydrationWarning><head><meta name="theme-color" content="#FBF7F3" /><meta name="color-scheme" content="light dark" /><script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }} /><style dangerouslySetInnerHTML={{ __html: APPLE_PWA_LAUNCH_SPLASH_CSS }} /><HeadContent /></head><body data-bixbo-app-root><div id="bixbo-ios-launch-splash" aria-hidden="true"><img src="/bixbo-mascot-user.png?v=20260816-launch5" alt="" fetchPriority="high" /></div><script dangerouslySetInnerHTML={{ __html: APPLE_PWA_LAUNCH_SPLASH_BOOTSTRAP }} />{children}<Scripts /></body></html>;
+  return <html lang="en" suppressHydrationWarning><head><meta name="theme-color" content="#FBF7F3" /><meta name="color-scheme" content="light dark" /><script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }} /><style dangerouslySetInnerHTML={{ __html: APPLE_PWA_LAUNCH_SPLASH_CSS }} /><HeadContent /></head><body data-bixbo-app-root><div id="bixbo-ios-launch-splash" aria-hidden="true"><img src="/bixbo-mascot-user.png?v=20260816-launch6" alt="" fetchPriority="high" /></div><script dangerouslySetInnerHTML={{ __html: APPLE_PWA_LAUNCH_SPLASH_BOOTSTRAP }} />{children}<Scripts /></body></html>;
 }
 
 function RootComponent() {
