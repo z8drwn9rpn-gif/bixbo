@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
-import { useRouter } from "@tanstack/react-router";
-import { CalendarIcon, ChevronDown, HeartIcon } from "@/components/icons/BixboExtraIcons";
+import { ChevronDown } from "@/components/icons/BixboExtraIcons";
 import { BottomNavLogIcon } from "@/components/icons/BottomNavReferenceIcons";
 
 const EDGE_TOLERANCE = 28;
 const MIN_SCROLL_DISTANCE = 280;
 
 export function ScrollJumpControl() {
-  const router = useRouter();
   const [scrollable, setScrollable] = useState(false);
   const [atTop, setAtTop] = useState(true);
   const [atBottom, setAtBottom] = useState(false);
@@ -50,24 +48,6 @@ export function ScrollJumpControl() {
     window.scrollTo({ top: root.scrollHeight, behavior: "smooth" });
   };
 
-  const goToday = () => {
-    const target = document.querySelector<HTMLElement>("[data-bixbo-today-target]");
-    if (target) {
-      target.scrollIntoView({ behavior: "smooth", block: "start" });
-      return;
-    }
-    void router.navigate({ to: "/" });
-  };
-
-  const jumpLatest = () => {
-    const target = document.querySelector<HTMLElement>("[data-bixbo-latest-entry]");
-    if (target) {
-      target.scrollIntoView({ behavior: "smooth", block: "center" });
-      return;
-    }
-    void router.navigate({ to: "/", hash: "latest" });
-  };
-
   const openQuickLog = () => window.dispatchEvent(new CustomEvent("bixbo:open-quick-log-menu"));
   const buttonClass = "relative grid h-7 w-7 place-items-center text-primary transition active:scale-95 after:absolute after:left-1/2 after:top-1/2 after:h-11 after:w-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']";
 
@@ -79,10 +59,6 @@ export function ScrollJumpControl() {
           <div className="mx-1.5 border-t border-border/60" />
         </>
       ) : null}
-      <button type="button" onClick={goToday} aria-label="Today" title="Today" className={buttonClass}><CalendarIcon size={13} /></button>
-      <div className="mx-1.5 border-t border-border/60" />
-      <button type="button" onClick={jumpLatest} aria-label="Latest entry" title="Latest entry" className={buttonClass}><HeartIcon size={13} /></button>
-      <div className="mx-1.5 border-t border-border/60" />
       <button type="button" onClick={openQuickLog} aria-label="Quick log" title="Quick log" className={buttonClass}><BottomNavLogIcon size={15} /></button>
       {scrollable ? (
         <>
