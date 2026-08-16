@@ -4,6 +4,7 @@ import { BottomNav } from "./BottomNav";
 import { SideNav } from "./SideNav";
 import { BixboIconKeyboard } from "./icons/BixboIconKeyboard";
 import { PainEpisodeChoiceDefaults } from "./PainEpisodeChoiceDefaults";
+import { ScrollJumpControl } from "./ScrollJumpControl";
 import bixboMascot from "@/assets/bixbo-mascot-user.png";
 
 const BIXBO_MASCOT_SRC = bixboMascot;
@@ -44,6 +45,7 @@ export function AppShell({ children, title, right, big = false, stickyHeader = t
           <main id="main-content" tabIndex={-1} className="bixbo-page-fade min-w-0 overflow-x-hidden outline-none">{children}</main>
         </div>
       </div>
+      <ScrollJumpControl />
       {showBixboIconKeyboard ? <BixboIconKeyboard /> : null}
       <BottomNav />
     </div>
