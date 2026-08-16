@@ -4,18 +4,17 @@ export type PainDayLike = { pain?: PainEntryLike[] };
 
 /**
  * Canonical Pain scale colours at every 0.5 step.
- * Whole-number entries exactly match --pain-0 … --pain-10 in theme-system.css.
- * Half steps are the direct sRGB midpoint between their two neighbouring whole
- * values: existing 0…10 colours never move, only the new .5 values sit between
- * them. Concrete hex values keep Calendar gradients, charts, PDF and iOS/PWA
- * rendering on the same palette.
+ * Whole-number entries keep the established green → yellow → orange → red
+ * BIXBO scale used by the Month Calendar. Half steps are direct sRGB midpoints
+ * between their neighbouring whole values. No pink/magenta is introduced into
+ * the Pain scale; purple remains reserved for Period/prediction UI.
  */
 export const PAIN_SCALE_HALF_STEP_COLORS = [
-  "#72C64A", "#82CA42", "#91CD3A", "#A4CF34", "#B7D12F",
-  "#CBD127", "#DFD11F", "#E9CA16", "#F3C30D", "#F4B20C",
-  "#F5A20B", "#F48E10", "#F47B16", "#F26C3A", "#F05C5F",
-  "#EE4E6A", "#EC3F74", "#E53266", "#DE2557", "#D31E4E",
-  "#C81746",
+  "#7FCF52", "#89CE4D", "#93CE48", "#A4D144", "#B4D43F",
+  "#C4D53C", "#D3D638", "#E2D233", "#F0CF2E", "#F2C32E",
+  "#F5B72D", "#F5A831", "#F59A35", "#F28936", "#EF7838",
+  "#EC693C", "#E95A3F", "#E24C41", "#DC3F43", "#D23741",
+  "#C82F3F",
 ] as const;
 
 /** Concrete whole-number colours for PDF/export surfaces that cannot use CSS variables. */
