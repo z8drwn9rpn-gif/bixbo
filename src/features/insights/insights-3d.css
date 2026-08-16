@@ -1,0 +1,94 @@
+/* Unified BIXBO 3D chart language for the Insights dashboard.
+   The heatmap bead is the reference: coloured marks keep their semantic colour,
+   while a white edge, inner highlight, lower shade and soft cast shadow add depth. */
+
+[data-bixbo-insights-dashboard="true"] [data-bixbo-chart-mark="bar"],
+[data-bixbo-insights-dashboard="true"] [data-symptoms-trend-card="true"] button > span[style*="height"],
+[data-bixbo-insights-dashboard="true"] [data-bowel-overview-card="true"] button[aria-label^="Bristol Type"],
+[data-bixbo-insights-dashboard="true"] button[aria-label*=". Tetany "][style*="height"],
+[data-bixbo-insights-dashboard="true"] button[aria-label*=". Panic "][style*="height"] {
+  -webkit-appearance: none;
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, .42) !important;
+  box-shadow:
+    inset 1px 1px 2px rgba(255, 255, 255, .56),
+    inset -1px -2px 3px rgba(55, 45, 30, .17),
+    0 2px 3px rgba(45, 52, 35, .18) !important;
+  filter: saturate(1.04) contrast(1.01);
+  transform: translateZ(0);
+}
+
+/* Narrow bars need a restrained radius so the dimensional edge remains visible. */
+[data-bixbo-insights-dashboard="true"] [data-bixbo-chart-mark="bar"],
+[data-bixbo-insights-dashboard="true"] [data-symptoms-trend-card="true"] button > span[style*="height"],
+[data-bixbo-insights-dashboard="true"] button[aria-label*=". Tetany "][style*="height"],
+[data-bixbo-insights-dashboard="true"] button[aria-label*=". Panic "][style*="height"] {
+  border-radius: 6px 6px 2px 2px !important;
+}
+
+/* Selected bars keep the same raised material but gain a crisp focus rim. */
+[data-bixbo-insights-dashboard="true"] [data-bixbo-chart-mark="bar"][aria-pressed="true"],
+[data-bixbo-insights-dashboard="true"] [data-bowel-overview-card="true"] button[aria-label^="Bristol Type"][aria-pressed="true"],
+[data-bixbo-insights-dashboard="true"] button[aria-label*=". Tetany "][aria-pressed="true"],
+[data-bixbo-insights-dashboard="true"] button[aria-label*=". Panic "][aria-pressed="true"] {
+  box-shadow:
+    inset 1px 1px 2px rgba(255, 255, 255, .60),
+    inset -1px -2px 3px rgba(55, 45, 30, .18),
+    0 0 0 2px var(--background),
+    0 0 0 3px color-mix(in srgb, var(--foreground) 72%, transparent),
+    0 3px 5px rgba(45, 52, 35, .23) !important;
+}
+
+/* Medication adherence dots use the same bead treatment as the heatmap. */
+[data-bixbo-insights-dashboard="true"] button[aria-label*=" doses"] > span:last-child,
+[data-bixbo-insights-dashboard="true"] button[aria-label*=" · n/a"] > span:last-child,
+[data-bixbo-insights-dashboard="true"] button[aria-label$="%"] > span:last-child {
+  border: 1px solid rgba(255, 255, 255, .46) !important;
+  box-shadow:
+    inset 1px 1px 2px rgba(255, 255, 255, .58),
+    inset -1px -1.5px 2px rgba(55, 45, 30, .16),
+    0 1.5px 2.5px rgba(45, 52, 35, .18) !important;
+  filter: saturate(1.04);
+}
+
+/* Medication adherence progress rail becomes a shallow raised capsule. */
+[data-bixbo-insights-dashboard="true"] div[class*="mt-2"][class*="h-2"][class*="rounded-full"] > div[style*="width"] {
+  border: 1px solid rgba(255, 255, 255, .40);
+  box-shadow:
+    inset 1px 1px 1.5px rgba(255, 255, 255, .52),
+    inset -1px -1px 2px rgba(55, 45, 30, .15),
+    0 1.5px 2.5px rgba(45, 52, 35, .14);
+}
+
+/* The ŠUKŠUK count rings already carry semantic ring colours; add the same
+   physical depth without changing those colours. */
+[data-bixbo-insights-dashboard="true"] span[style*="box-shadow: inset"][style*="border:"] {
+  box-shadow:
+    inset 1px 1px 2px rgba(255, 255, 255, .58),
+    inset -1px -1.5px 2px rgba(55, 45, 30, .14),
+    0 2px 3px rgba(45, 52, 35, .16) !important;
+}
+
+/* Legends should preview the same material as the marks they explain. */
+[data-bixbo-insights-dashboard="true"] div[class*="text-muted-foreground"] > span.flex > span.rounded-full[style*="background"] {
+  border: 1px solid rgba(255, 255, 255, .42);
+  box-shadow:
+    inset 1px 1px 1.5px rgba(255, 255, 255, .52),
+    inset -1px -1px 1.5px rgba(55, 45, 30, .14),
+    0 1px 2px rgba(45, 52, 35, .14);
+}
+
+/* Dark mode keeps the dimensional hierarchy without a pale halo. */
+.dark [data-bixbo-insights-dashboard="true"] [data-bixbo-chart-mark="bar"],
+.dark [data-bixbo-insights-dashboard="true"] [data-symptoms-trend-card="true"] button > span[style*="height"],
+.dark [data-bixbo-insights-dashboard="true"] [data-bowel-overview-card="true"] button[aria-label^="Bristol Type"],
+.dark [data-bixbo-insights-dashboard="true"] button[aria-label*=". Tetany "][style*="height"],
+.dark [data-bixbo-insights-dashboard="true"] button[aria-label*=". Panic "][style*="height"],
+.dark [data-bixbo-insights-dashboard="true"] button[aria-label*=" doses"] > span:last-child,
+.dark [data-bixbo-insights-dashboard="true"] button[aria-label$="%"] > span:last-child {
+  border-color: rgba(255, 255, 255, .16) !important;
+  box-shadow:
+    inset 1px 1px 1.5px rgba(255, 255, 255, .16),
+    inset -1px -2px 3px rgba(0, 0, 0, .30),
+    0 2px 4px rgba(0, 0, 0, .34) !important;
+}
