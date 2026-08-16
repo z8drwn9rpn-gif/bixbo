@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useRouterState } from "@tanstack/react-router";
+import { useBixbo } from "@/lib/storage";
 
 const EN_MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
 const SK_MONTHS = ["január", "február", "marec", "apríl", "máj", "jún", "júl", "august", "september", "október", "november", "december"];
@@ -11,14 +12,31 @@ function visibleMonthIndex(label: string) {
   return SK_MONTHS.findIndex((month) => normalized.includes(month));
 }
 
+function currentMonthPrefix() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
 export function CalendarTargetBridge() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const { data, hydrated } = useBixbo();
 
   useEffect(() => {
-    if (pathname !== "/") return;
-    const match = /^#date=(\d{4})-(\d{2})-(\d{2})$/.exec(window.location.hash);
-    if (!match) return;
+    if (pathname !== "/" || !hydrated) return;
 
+    let dateKey: string | null = null;
+    const explicit = /^#date=(\d{4})-(\d{2})-(\d{2})$/.exec(window.location.hash);
+    if (explicit) {
+      dateKey = `${explicit[1]}-${explicit[2]}-${explicit[3]}`;
+    } else if (window.location.hash === "#latest") {
+      const allDays = Object.keys(data.dayLogs).sort();
+      const monthDays = allDays.filter((day) => day.startsWith(currentMonthPrefix()));
+      dateKey = monthDays.at(-1) ?? allDays.at(-1) ?? null;
+    }
+    if (!dateKey) return;
+
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey);
+    if (!match) return;
     const targetYear = Number(match[1]);
     const targetMonth = Number(match[2]) - 1;
     const targetDay = Number(match[3]);
@@ -76,7 +94,7 @@ export function CalendarTargetBridge() {
 
     timer = window.setTimeout(step, 80);
     return () => window.clearTimeout(timer);
-  }, [pathname]);
+  }, [data.dayLogs, hydrated, pathname]);
 
   return null;
 }
