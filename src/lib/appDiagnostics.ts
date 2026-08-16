@@ -246,6 +246,7 @@ export function installRuntimeDiagnostics(onIssue?: (issue: RuntimeDiagnosticIss
 
   let heartbeatExpected = performance.now() + 500;
   let lastFrame = performance.now();
+  let lastJankCandidateAt = 0;
   let rafId = 0;
   let longTaskObserver: PerformanceObserver | null = null;
   let eventObserver: PerformanceObserver | null = null;
@@ -253,6 +254,7 @@ export function installRuntimeDiagnostics(onIssue?: (issue: RuntimeDiagnosticIss
   const resetPerformanceClocks = () => {
     heartbeatExpected = performance.now() + 500;
     lastFrame = performance.now();
+    lastJankCandidateAt = 0;
   };
 
   const heartbeatId = window.setInterval(() => {
@@ -271,11 +273,15 @@ export function installRuntimeDiagnostics(onIssue?: (issue: RuntimeDiagnosticIss
     const gap = now - lastFrame;
     lastFrame = now;
     if (document.visibilityState === "visible" && gap >= 250 && gap < 1_200) {
-      recordRuntimeDiagnosticIssue(
-        "jank",
-        `Visible frame gap of about ${Math.round(gap)} ms detected. The app may have visibly skipped or stuttered.`,
-        { durationMs: gap },
-      );
+      const repeated = lastJankCandidateAt > 0 && now - lastJankCandidateAt <= 5_000;
+      lastJankCandidateAt = now;
+      if (repeated) {
+        recordRuntimeDiagnosticIssue(
+          "jank",
+          `Repeated visible frame gaps detected; latest gap was about ${Math.round(gap)} ms. The app may have visibly skipped or stuttered.`,
+          { durationMs: gap, context: `${runtimeContext()}, repeated-frame-gap=yes` },
+        );
+      }
     }
     rafId = window.requestAnimationFrame(watchFrames);
   };
