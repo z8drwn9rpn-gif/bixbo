@@ -14,4 +14,4 @@ BIXBO production is owned and deployed independently:
 - Preserve health data compatibility and migration history; use corrective migrations instead of editing already-applied migrations.
 - Never commit service-role keys, VAPID private keys, cron secrets, or other server secrets.
 - Only public browser configuration may use `VITE_*` variables.
-- Do not reintroduce the retired Lovable Cloud Supabase project or its credentials.
+- Do not reintroduce any retired external backend project, builder dependency or credentials into active application code.
