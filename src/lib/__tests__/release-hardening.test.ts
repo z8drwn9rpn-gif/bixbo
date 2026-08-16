@@ -48,6 +48,14 @@ describe("release hardening contracts", () => {
     expect(migration).toContain("bixbo-product-analytics-retention");
   });
 
+  it("normalizes partner sharing so no permissive legacy policy can bypass active health consent", () => {
+    const migration = read("supabase/migrations/20260816222600_normalize_partner_shared_consent_policies.sql");
+    expect(migration).toContain('drop policy if exists "Owner or linked partner reads shared data"');
+    expect(migration).toContain("((select auth.uid()) = user_id or public.is_partner_of(user_id))");
+    expect(migration).toContain("and private.bixbo_health_consent_active(user_id)");
+    expect(migration.match(/create policy/g)).toHaveLength(4);
+  });
+
   it("provides authenticated cloud export, withdrawal, re-consent and deletion without exporting push auth secrets", () => {
     const edge = read("supabase/functions/account-privacy/index.ts");
     expect(edge).toContain('"export-cloud-data"');
