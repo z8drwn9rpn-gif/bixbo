@@ -12,6 +12,70 @@ export function assertBrowserSafeSupabaseKey(value: string): void {
   }
 }
 
+type RecentWrite = {
+  at: number;
+  status: number;
+  statusText: string;
+  headers: [string, string][];
+};
+
+const WRITE_DEDUPE_WINDOW_MS = 15_000;
+const inFlightWrites = new Map<string, Promise<Response>>();
+const recentSuccessfulWrites = new Map<string, RecentWrite>();
+
+function requestUrl(input: RequestInfo | URL): URL | null {
+  try {
+    const raw = typeof input === 'string'
+      ? input
+      : input instanceof URL
+        ? input.href
+        : input.url;
+    return new URL(raw);
+  } catch {
+    return null;
+  }
+}
+
+function requestMethod(input: RequestInfo | URL, init?: RequestInit): string {
+  if (init?.method) return init.method.toUpperCase();
+  if (typeof Request !== 'undefined' && input instanceof Request) return input.method.toUpperCase();
+  return 'GET';
+}
+
+function bodyFingerprint(body: BodyInit | null | undefined): string | null {
+  if (typeof body !== 'string') return null;
+  let hash = 2166136261;
+  for (let index = 0; index < body.length; index += 1) {
+    hash ^= body.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `${body.length}:${(hash >>> 0).toString(36)}`;
+}
+
+function dedupeKey(input: RequestInfo | URL, init?: RequestInit): string | null {
+  const method = requestMethod(input, init);
+  if (method !== 'POST' && method !== 'PUT' && method !== 'PATCH') return null;
+
+  const url = requestUrl(input);
+  if (!url || url.pathname !== '/rest/v1/user_data' && url.pathname !== '/rest/v1/partner_shared_data') return null;
+
+  const headers = new Headers(init?.headers);
+  const prefer = headers.get('prefer') ?? '';
+  // Never synthesize a response for calls that explicitly need a returned row.
+  if (/return\s*=\s*representation/i.test(prefer)) return null;
+
+  const fingerprint = bodyFingerprint(init?.body);
+  return fingerprint ? `${method}:${url.origin}${url.pathname}?${url.searchParams.toString()}:${fingerprint}` : null;
+}
+
+function cloneStoredResponse(stored: RecentWrite): Response {
+  return new Response(null, {
+    status: stored.status,
+    statusText: stored.statusText,
+    headers: stored.headers,
+  });
+}
+
 function createSupabaseFetch(supabaseKey: string): typeof fetch {
   return (input, init) => {
     const headers = new Headers(
@@ -28,7 +92,39 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
     }
 
     headers.set('apikey', supabaseKey);
-    return fetch(input, { ...init, headers });
+    const nextInit = { ...init, headers };
+    const key = dedupeKey(input, nextInit);
+
+    if (!key) return fetch(input, nextInit);
+
+    const now = Date.now();
+    const recent = recentSuccessfulWrites.get(key);
+    if (recent && now - recent.at <= WRITE_DEDUPE_WINDOW_MS) {
+      return Promise.resolve(cloneStoredResponse(recent));
+    }
+    if (recent) recentSuccessfulWrites.delete(key);
+
+    const active = inFlightWrites.get(key);
+    if (active) return active.then((response) => response.clone());
+
+    const request = fetch(input, nextInit)
+      .then((response) => {
+        if (response.ok) {
+          recentSuccessfulWrites.set(key, {
+            at: Date.now(),
+            status: response.status,
+            statusText: response.statusText,
+            headers: [...response.headers.entries()],
+          });
+        }
+        return response;
+      })
+      .finally(() => {
+        inFlightWrites.delete(key);
+      });
+
+    inFlightWrites.set(key, request);
+    return request.then((response) => response.clone());
   };
 }
 
