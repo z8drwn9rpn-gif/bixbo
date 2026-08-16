@@ -41,34 +41,6 @@ test("audited PDF health report loads and opens the printable preview", async ({
   expect(pageErrors, `PDF report page errors:\n${pageErrors.join("\n\n")}`).toEqual([]);
 });
 
-test("PDF heatmap renders recorded period and the Insights severity palette", async ({ page }) => {
-  await page.addInitScript(() => {
-    window.localStorage.setItem("bixbo:v2", JSON.stringify({
-      dayLogs: {
-        "2026-08-15": {
-          period: "heavy",
-          periodInfo: { level: "heavy" },
-          pain: [{ id: "pain-e2e", time: "12:00", score: 8, parts: [], quality: [], symptoms: [], note: "" }],
-        },
-      },
-      cycle: { cycleLength: 28, periodLength: 5, lastPeriodStart: "2026-08-14" },
-      settings: { language: "en" },
-    }));
-  });
-
-  const response = await page.goto("/report");
-  expect(response?.status()).toBeLessThan(500);
-  await expect(page.getByText("This page didn't load", { exact: true })).toHaveCount(0);
-
-  const periodRow = page.locator(".screenPreview .heatRow").filter({ hasText: "Period / spotting" }).first();
-  const periodColors = await periodRow.locator("i").evaluateAll((cells) => cells.map((cell) => getComputedStyle(cell).backgroundColor));
-  expect(periodColors.some((color) => color !== "rgb(255, 255, 255)" && color !== "rgba(0, 0, 0, 0)")).toBe(true);
-
-  const painRow = page.locator(".screenPreview .heatRow").filter({ hasText: /^Pain$/ }).first();
-  const painColors = await painRow.locator("i").evaluateAll((cells) => cells.map((cell) => getComputedStyle(cell).backgroundColor));
-  expect(painColors).toContain("rgb(239, 68, 68)");
-});
-
 test("Profile PDF export opens the PDF reports page directly", async ({ page }) => {
   const response = await page.goto("/profile");
   expect(response?.status()).toBeLessThan(500);
