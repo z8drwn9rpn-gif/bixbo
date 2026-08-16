@@ -8,7 +8,6 @@ test("Insights shows one unified Bowel analytics card", async ({ page }) => {
   expect(response?.status()).toBeLessThan(500);
   await expect(page.getByText("This page didn't load", { exact: true })).toHaveCount(0);
 
-  await page.getByRole("group", { name: "Insights sections" }).getByRole("button", { name: "Bowel", exact: true }).click();
   const bowelCard = page.locator('[data-bowel-overview-card="true"]');
   await expect(bowelCard).toBeVisible();
   await expect(bowelCard.getByText("Distribution of logged bowel types", { exact: true })).toBeVisible();
