@@ -69,6 +69,7 @@ async function installSupabaseIdTokenStub(page: Page, capture: (body: Record<str
 }
 
 test("legacy Google OAuth callback still surfaces invalid client configuration failures", async ({ page }) => {
+  await installGoogleIdentityStub(page);
   const description = encodeURIComponent("Unable to exchange external code: invalid_client — The provided client secret is invalid.");
   await page.goto(`/auth?error=server_error&error_code=unexpected_failure&error_description=${description}`);
 
@@ -79,6 +80,7 @@ test("legacy Google OAuth callback still surfaces invalid client configuration f
 });
 
 test("legacy Google OAuth callback keeps a safe provider message for ordinary failures", async ({ page }) => {
+  await installGoogleIdentityStub(page);
   await page.goto("/auth?error=access_denied&error_description=The%20request%20was%20cancelled.");
   await expect(page.getByRole("status")).toHaveText("The request was cancelled.");
 });
