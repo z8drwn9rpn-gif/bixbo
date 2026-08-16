@@ -89,7 +89,7 @@ export function HotFlashesInsightsCard({
 
           <div className="mt-3 rounded-2xl bg-background/45 px-3 py-3 ring-1 ring-border/45">
             <p className="text-[10px] text-muted-foreground">Episodes by day</p>
-            <div className="relative mt-2 grid h-[50px] items-end gap-[3px]" style={{ gridTemplateColumns: `repeat(${Math.max(1, bars.length)}, minmax(0, 1fr))` }}>
+            <div className="relative mt-2 grid h-[92px] items-end gap-[3px]" style={{ gridTemplateColumns: `repeat(${Math.max(1, bars.length)}, minmax(0, 1fr))` }}>
               {bars.map((value, index) => value != null ? (
                 <button key={index} type="button" onClick={(event) => { event.stopPropagation(); setActive((current) => current === index ? null : index); }} aria-pressed={active === index}
                   className={`min-w-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${active === index ? "ring-2 ring-foreground/70" : ""}`}
@@ -104,17 +104,17 @@ export function HotFlashesInsightsCard({
             </div>
             <p className="mt-1 text-center text-[10px] text-muted-foreground">{period === "Y" ? "Month" : period === "M" ? "Day of month" : "Day"}</p>
 
-            <div className="mt-3 space-y-2">
+            <div className="mt-2.5 space-y-1.5">
               {[1, 2, 3, 4, 5].map((level) => {
                 const count = counts[level] ?? 0;
                 const pct = total ? (count / total) * 100 : 0;
                 const color = HOT_FLASH_COLORS[level];
                 return (
-                  <div key={level} className="grid grid-cols-[24px_92px_minmax(0,1fr)_22px] items-center gap-2">
-                    <span className="grid h-6 w-6 place-items-center rounded-full text-[10px] text-white" style={{ background: color, fontWeight: 700 }}>{level}</span>
-                    <span className="whitespace-nowrap text-[10px] text-muted-foreground">{HOT_FLASH_DESCRIPTIONS[level]}</span>
-                    <div className="h-2.5 overflow-hidden rounded-full bg-tint/70"><div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} /></div>
-                    <span className="text-right text-[10px] tabular-nums text-muted-foreground">{count}</span>
+                  <div key={level} className="grid grid-cols-[20px_82px_minmax(0,1fr)_20px] items-center gap-1.5">
+                    <span className="grid h-5 w-5 place-items-center rounded-full text-[9px] text-white" style={{ background: color, fontWeight: 700 }}>{level}</span>
+                    <span className="whitespace-nowrap text-[9px] text-muted-foreground">{HOT_FLASH_DESCRIPTIONS[level]}</span>
+                    <div className="h-2 overflow-hidden rounded-full bg-tint/70"><div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} /></div>
+                    <span className="text-right text-[9px] tabular-nums text-muted-foreground">{count}</span>
                   </div>
                 );
               })}
