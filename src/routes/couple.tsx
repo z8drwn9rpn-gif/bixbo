@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { DiagnosticProfiler } from "@/components/DiagnosticProfiler";
 import { CouplePage } from "@/features/couple/CouplePage";
 import { CoupleSettings } from "@/features/couple/CoupleSettings";
 
@@ -25,7 +26,17 @@ function CoupleRoutePage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const openSettings = () => setSettingsOpen(true);
 
-  if (settingsOpen) return <CoupleSettings onBack={() => setSettingsOpen(false)} />;
+  if (settingsOpen) {
+    return (
+      <DiagnosticProfiler id="CoupleSettings">
+        <CoupleSettings onBack={() => setSettingsOpen(false)} />
+      </DiagnosticProfiler>
+    );
+  }
 
-  return <CouplePage onOpenSettings={openSettings} />;
+  return (
+    <DiagnosticProfiler id="CouplePage">
+      <CouplePage onOpenSettings={openSettings} />
+    </DiagnosticProfiler>
+  );
 }
