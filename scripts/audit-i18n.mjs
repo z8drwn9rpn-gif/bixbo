@@ -19,6 +19,7 @@ const allowed = new Set([
   "src/features/insights/shared.tsx",
   "src/features/patterns/shared.tsx",
   "src/features/insights/TimeOfDayPatternChart.tsx",
+  "src/hooks/useI18n.ts",
   // These modules deliberately colocate explicit EN/SK copy.
   "src/routes/auth.tsx",
   "src/routes/onboarding.tsx",
