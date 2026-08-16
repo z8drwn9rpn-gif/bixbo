@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "bun:test";
-import { PRIVACY_VERSION, TERMS_VERSION, HEALTH_CONSENT_VERSION } from "../legalConsent";
+import { PRIVACY_VERSION, TERMS_VERSION, HEALTH_CONSENT_VERSION, signupLegalConsentMetadata } from "../legalConsent";
 import { BIXBO_BOTTOM_NAV_SHADOW, BIXBO_NAV_ARTWORK_FILTER, BIXBO_NAV_LOG_ARTWORK_FILTER } from "../designTokens";
 import mcp from "../mcp";
 import { toolDescriptors } from "../mcp/core";
@@ -12,6 +12,20 @@ describe("release hardening contracts", () => {
     expect(TERMS_VERSION).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(PRIVACY_VERSION).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(HEALTH_CONSENT_VERSION).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  it("carries the exact accepted versions in email-signup metadata", () => {
+    const consent = signupLegalConsentMetadata("2026-08-16T08:00:00.000Z");
+    expect(consent).toEqual({
+      termsAccepted: true,
+      privacyAcknowledged: true,
+      healthConsent: true,
+      termsVersion: TERMS_VERSION,
+      privacyVersion: PRIVACY_VERSION,
+      healthConsentVersion: HEALTH_CONSENT_VERSION,
+      stagedAt: "2026-08-16T08:00:00.000Z",
+    });
+    expect(read("src/routes/auth.tsx")).toContain("bixbo_legal_consent: legalConsent");
   });
 
   it("keeps product analytics free of health payload fields and navigation paths", () => {
