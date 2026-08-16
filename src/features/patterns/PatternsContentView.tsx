@@ -1,7 +1,17 @@
 import type { PatternsContentModel } from "./usePatternsContentModel";
 import { PatternsContentViewPart1 } from "./PatternsContentViewPart1";
 import { PatternsContentViewPart2 } from "./PatternsContentViewPart2";
+import { InsightsJumpControl } from "./InsightsJumpControl";
+
 export function PatternsContentView({ model }: { model: PatternsContentModel }) {
-  const { t, language, data, update, hydrated, view, dayLogs, cycleTrackingHidden, activeTab, setActiveTab, analysisRange, setAnalysisRange, cycles, phaseBuckets, painPhaseBars, moodPhaseBars, energyPhaseBars, hotFlashPhaseBars, pressurePhaseBars, bowelPhaseBars, adminCycleMetrics, commonFlow, highestPainPhase, bestEnergyPhase, worstMoodPhase, mostHotFlashPhase, currentMonthPrefix, previousMonthPrefix, currentMonthLabel, previousMonthLabel, monthlyComparisonLabel, currentMonthDays, elapsedDayCount, previousMonthDays, countAndAverage, panicCurrent, panicPrevious, tetanyCurrent, tetanyPrevious, hotFlashCurrent, hotFlashPrevious, headacheCurrent, headachePrevious, pressureCurrent, pressurePrevious, sleepAverage, weightAverage, adminMonthlyMetrics, medicationAdherence, workoutStats, workoutCurrent, workoutPrevious, pcosFrequency, histamineFrequency, sleepCurrent, sleepPrevious, weightCurrent, weightPrevious, medicationCurrent, medicationPrevious, pcosCurrent, pcosPrevious, histamineCurrent, histaminePrevious, monthlyLoggedDays, monthlyConfidence, monthlyChanges, mostImproved, mostWorsened, mostStable, formatChange, legacyTreatmentMigrationChecked, activeTreatment, archivedTreatments, treatmentDate, treatmentName, treatmentKind, treatmentResult, treatmentNotes, customTreatment, patchActiveTreatment, setTreatmentDate, setTreatmentName, setTreatmentKind, setTreatmentResult, setTreatmentNotes, setCustomTreatment, clearActiveTreatment, archiveTreatmentComparison, deleteTreatmentComparison, restoreArchivedTreatment, deleteArchivedTreatment, treatmentWindow, treatmentBeforeDays, treatmentAfterDays, treatmentBeforeLoggedDays, treatmentAfterLoggedDays, treatmentMetric, treatmentEventRate, treatmentPain, treatmentTetany, treatmentPanic, treatmentTetanyEpisodes, treatmentPanicEpisodes, treatmentHeadache, treatmentHeadacheIntensity, adminTreatmentMetrics, treatmentHotFlash, treatmentHotFlashEpisodes, treatmentResultOptions, selectedTreatmentResult, treatmentChanges, treatmentImprovedCount, treatmentWorsenedCount, treatmentUnchangedCount, strongestTreatmentChange, treatmentOverall, treatmentLoggedDays, treatmentConfidence, treatmentChangeLabel, formattedTreatmentDate, treatmentKindLabel, customCorrelationOptions, customCorrelationOptionKey, triggerOptions, outcomeOptions, selectedTrigger, setSelectedTrigger, selectedOutcome, setSelectedOutcome, hasScheduledMedicationMissed, hasAdminToggle, hasAdminChoice, hasAdminThreshold, hasTrigger, hasOutcome, allLoggedDays, analysisDays, daysWithTrigger, daysWithoutTrigger, percentWithTrigger, percentWithoutTrigger, selectedTriggerLabel, selectedOutcomeLabel, triggerDifference, triggerConfidence, strongestAssociations, saveTriggerCombination, removeTriggerCombination } = model;
-  return (<div className="space-y-3 px-5 pb-[calc(96px+env(safe-area-inset-bottom))] pt-2 lg:grid lg:grid-cols-2 lg:items-start lg:gap-3 lg:space-y-0 lg:px-0 lg:pb-12 [&>*:first-child]:lg:col-span-2"><PatternsContentViewPart1 model={model} /><PatternsContentViewPart2 model={model} /></div>);
+  return (
+    <div
+      id="bixbo-insights-content"
+      className="space-y-3 px-5 pb-[calc(96px+env(safe-area-inset-bottom))] pt-2 lg:grid lg:grid-cols-2 lg:items-start lg:gap-3 lg:space-y-0 lg:px-0 lg:pb-12 [&>*:first-child]:lg:col-span-2"
+    >
+      <InsightsJumpControl refreshKey={String(model.activeTab)} />
+      <PatternsContentViewPart1 model={model} />
+      <PatternsContentViewPart2 model={model} />
+    </div>
+  );
 }
