@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import { LogSheet } from "@/components/LogSheet";
+import { lazy, Suspense, useEffect, useState } from "react";
 import {
   BoltIcon,
   FlameIcon,
@@ -7,8 +6,13 @@ import {
   PillIcon,
   SparkleIcon,
 } from "@/components/icons/BixboExtraIcons";
+import { BottomNavLogIcon } from "@/components/icons/BottomNavReferenceIcons";
 import { todayKey, useBixbo } from "@/lib/storage";
 import { useI18n } from "@/hooks/useI18n";
+
+const LazyLogSheet = lazy(() =>
+  import("@/components/LogSheet").then((module) => ({ default: module.LogSheet })),
+);
 
 type QuickCategory = "pain" | "symptoms" | "meds" | "panic" | "tetany";
 
@@ -34,6 +38,11 @@ export function GlobalQuickLogActions() {
 
   useEffect(() => {
     const openMenu = () => setMenuOpen(true);
+    const openAllLogs = () => {
+      setInitial(undefined);
+      setMenuOpen(false);
+      setLogOpen(true);
+    };
     const openDirect = (event: Event) => {
       const detail = (event as CustomEvent<{ category?: string }>).detail;
       setInitial(detail?.category || undefined);
@@ -41,9 +50,11 @@ export function GlobalQuickLogActions() {
       setLogOpen(true);
     };
     window.addEventListener("bixbo:open-quick-log-menu", openMenu);
+    window.addEventListener("bixbo:open-log-menu", openAllLogs);
     window.addEventListener("bixbo:open-quick-log", openDirect);
     return () => {
       window.removeEventListener("bixbo:open-quick-log-menu", openMenu);
+      window.removeEventListener("bixbo:open-log-menu", openAllLogs);
       window.removeEventListener("bixbo:open-quick-log", openDirect);
     };
   }, []);
@@ -52,6 +63,12 @@ export function GlobalQuickLogActions() {
     // Add symptoms intentionally enters Pain, where the existing symptom-update
     // flow remains the single source of truth for linking follow-up symptoms.
     setInitial(category === "symptoms" ? "pain" : initialCategory);
+    setMenuOpen(false);
+    setLogOpen(true);
+  };
+
+  const openAllLogs = () => {
+    setInitial(undefined);
     setMenuOpen(false);
     setLogOpen(true);
   };
@@ -89,6 +106,14 @@ export function GlobalQuickLogActions() {
                 );
               })}
             </div>
+            <button
+              type="button"
+              onClick={openAllLogs}
+              className="mt-2 flex min-h-9 w-full items-center justify-center gap-2 rounded-xl bg-primary/10 px-3 text-[11px] font-semibold text-primary ring-1 ring-primary/15 active:scale-[0.99]"
+            >
+              <BottomNavLogIcon size={18} />
+              <span>{t("All logs")}</span>
+            </button>
             <p className="mt-2 text-center text-[9px] text-muted-foreground">
               {t("Hold + Log anytime to open these shortcuts.")}
             </p>
@@ -96,18 +121,20 @@ export function GlobalQuickLogActions() {
         </>
       ) : null}
 
-      {hydrated ? (
-        <LogSheet
-          open={logOpen}
-          onOpenChange={(open) => {
-            setLogOpen(open);
-            if (!open) setInitial(undefined);
-          }}
-          date={todayKey()}
-          data={data}
-          update={update}
-          initial={initial as never}
-        />
+      {hydrated && logOpen ? (
+        <Suspense fallback={null}>
+          <LazyLogSheet
+            open={logOpen}
+            onOpenChange={(open) => {
+              setLogOpen(open);
+              if (!open) setInitial(undefined);
+            }}
+            date={todayKey()}
+            data={data}
+            update={update}
+            initial={initial as never}
+          />
+        </Suspense>
       ) : null}
     </>
   );
