@@ -5,16 +5,15 @@ import { PatternsContent } from "./patterns";
 import { useI18n } from "@/hooks/useI18n";
 import { countNoBowelMovements } from "@/lib/domain/bowel";
 import { layoutOrder } from "@/lib/layoutRegistry";
-import { EMPTY, avgDayPain, toKey, useBixbo } from "@/lib/storage";
-import { HfBars, PainChart } from "@/features/insights/charts";
+import { EMPTY, avgDayPain, useBixbo } from "@/lib/storage";
+import { PainInsightsCard } from "@/features/insights/PainInsightsCard";
+import { HotFlashesInsightsCard } from "@/features/insights/HotFlashesInsightsCard";
 import { BowelOverviewCard } from "@/features/insights/BowelOverviewCard";
-import { MedsAdherence } from "@/features/insights/MedsAdherence";
-import { TimeOfDayPatternChart } from "@/features/insights/TimeOfDayPatternChart";
+import { MedsAdherenceInsightsCard } from "@/features/insights/MedsAdherenceInsightsCard";
+import { TimeOfDayInsightsCard } from "@/features/insights/TimeOfDayInsightsCard";
+import { SukSukInsightsCard } from "@/features/insights/SukSukInsightsCard";
 import { YearHealthHeatmap } from "@/features/insights/YearHealthHeatmap";
 import {
-  HOT_FLASH_COLORS,
-  HOT_FLASH_DESCRIPTIONS,
-  InsightPeriodControl,
   eachDay,
   rangeFor,
   shiftInsightPeriodAnchor,
@@ -40,7 +39,7 @@ function InsightsPage() {
   const view = hydrated ? data : EMPTY;
   const [anchor, setAnchor] = useState<Date>(() => new Date());
   const [overviewView, setOverviewView] = useState<"insights" | "patterns">("insights");
-  const [insightsFilter, setInsightsFilter] = useState<"all" | "overview" | "pain" | "symptoms" | "bowel" | "meds">("all");
+  const [insightsFilter, setInsightsFilter] = useState<"all" | "overview" | "pain" | "symptoms" | "bowel" | "sex" | "meds">("all");
 
   const [painPeriod, setPainPeriod] = useState<Period>("M");
   const [hotFlashPeriod, setHotFlashPeriod] = useState<Period>("M");
@@ -123,28 +122,28 @@ function InsightsPage() {
     </div>
 
     {overviewView === "insights" ? <div className="px-5 pt-2 lg:px-0"><div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="group" aria-label={t("Insights sections")}>
-      {([["all", "All"], ["overview", "Overview"], ["pain", "Pain"], ["symptoms", "Symptoms"], ["bowel", "Bowel"], ["meds", "Meds"]] as const).map(([id, label]) => <button key={id} type="button" onClick={() => setInsightsFilter(id)} aria-pressed={insightsFilter === id} className={`shrink-0 rounded-full px-3 py-1.5 text-[11px] font-semibold transition ${insightsFilter === id ? "bg-primary text-primary-foreground shadow-sm" : "bg-surface text-muted-foreground ring-1 ring-border/70 hover:text-foreground"}`}>{t(label)}</button>)}
+      {([["all", "All"], ["overview", "Overview"], ["pain", "Pain"], ["symptoms", "Symptoms"], ["bowel", "Bowel"], ["sex", "ŠukŠuk"], ["meds", "Meds"]] as const).map(([id, label]) => <button key={id} type="button" onClick={() => setInsightsFilter(id)} aria-pressed={insightsFilter === id} className={`shrink-0 rounded-full px-3 py-1.5 text-[11px] font-semibold transition ${insightsFilter === id ? "bg-primary text-primary-foreground shadow-sm" : "bg-surface text-muted-foreground ring-1 ring-border/70 hover:text-foreground"}`}>{t(label)}</button>)}
     </div></div> : null}
 
     {overviewView === "patterns" ? <PatternsContent /> : <div className="flex flex-col gap-3 px-5 pt-2 pb-[calc(96px+env(safe-area-inset-bottom))] lg:grid lg:grid-cols-2 lg:items-start lg:px-0 lg:pb-12">
       <div className={insightsFilter === "all" || insightsFilter === "overview" ? "lg:col-span-2" : "hidden"} style={{ order: layoutOrder(view, "insights", "heatmap", 10) }}><YearHealthHeatmap data={view} anchor={anchor} onShiftPeriod={shiftHeatmapPeriod} /></div>
 
-      <section style={{ order: layoutOrder(view, "insights", "pain", 20) }} className={`${insightsFilter === "all" || insightsFilter === "pain" ? "" : "hidden "}rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80`}>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t("Pain scale")}</p><InsightPeriodControl value={painPeriod} onChange={setPainPeriod} anchor={painAnchor} onShift={(delta) => setPainAnchor((current) => shiftInsightPeriodAnchor(current, painPeriod, delta))} ariaLabel="Pain scale period" /></div>
-        <div className="mt-2 flex items-baseline gap-2"><span className="font-serif text-4xl leading-none">{painAvg != null ? painAvg.toFixed(1) : "–"}</span><span className="text-sm text-muted-foreground">avg · {painSeries.filter((value) => value != null).length} {painSeries.filter((value) => value != null).length === 1 ? "entry" : "entries"}</span></div>
-        <PainChart key={`pain-${painPeriod}-${toKey(painAnchor)}`} period={painPeriod} days={painDays} series={painSeries} anchor={painAnchor} />
-      </section>
+      <div className={insightsFilter === "all" || insightsFilter === "pain" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "pain", 20) }}>
+        <PainInsightsCard data={view} period={painPeriod} days={painDays} series={painSeries} anchor={painAnchor} averageValue={painAvg} onPeriodChange={setPainPeriod} onPeriodShift={(delta) => setPainAnchor((current) => shiftInsightPeriodAnchor(current, painPeriod, delta))} />
+      </div>
 
-      <section style={{ order: layoutOrder(view, "insights", "hotFlashes", 30) }} className={`${insightsFilter === "all" || insightsFilter === "symptoms" ? "" : "hidden "}rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80`}>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t("Hot flashes")}</p><InsightPeriodControl value={hotFlashPeriod} onChange={setHotFlashPeriod} anchor={hotFlashAnchor} onShift={(delta) => setHotFlashAnchor((current) => shiftInsightPeriodAnchor(current, hotFlashPeriod, delta))} ariaLabel="Hot flashes period" /></div>
-        {hfTotal ? <><div className="mt-2 flex items-baseline gap-2"><span className="font-serif text-4xl leading-none">{hfTotal}</span><span className="text-sm text-muted-foreground">{hfTotal === 1 ? "episode" : "episodes"} · avg {hfAvg!.toFixed(1)}/5 · most often L{hfTop}</span></div><HfBars key={`hot-flashes-${hotFlashPeriod}-${toKey(hotFlashAnchor)}`} bars={hfBars} period={hotFlashPeriod} days={hotFlashDays} anchor={hotFlashAnchor} /><div className="mt-3 space-y-1">{[1, 2, 3, 4, 5].map((level) => { const count = hfCounts[level]; const pct = hfTotal ? (count / hfTotal) * 100 : 0; const color = HOT_FLASH_COLORS[level]; return <div key={level} className="flex items-center gap-2 text-[10px]"><span className="grid h-4 w-4 shrink-0 place-items-center rounded-full text-[10px] font-bold text-white" style={{ background: color }}>{level}</span><span className="w-16 shrink-0 text-muted-foreground">{HOT_FLASH_DESCRIPTIONS[level]}</span><div className="h-2 flex-1 overflow-hidden rounded-full bg-tint"><div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} /></div><span className="w-6 text-right tabular-nums text-muted-foreground">{count}</span></div>; })}</div></> : <p className="mt-2 text-sm text-muted-foreground">{t("No hot flashes logged")}</p>}
-      </section>
+      <div className={insightsFilter === "all" || insightsFilter === "symptoms" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "hotFlashes", 30) }}>
+        <HotFlashesInsightsCard data={view} period={hotFlashPeriod} days={hotFlashDays} bars={hfBars} counts={hfCounts} total={hfTotal} average={hfAvg} topLevel={hfTop} anchor={hotFlashAnchor} onPeriodChange={setHotFlashPeriod} onPeriodShift={(delta) => setHotFlashAnchor((current) => shiftInsightPeriodAnchor(current, hotFlashPeriod, delta))} />
+      </div>
 
       <div className={insightsFilter === "all" || insightsFilter === "bowel" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "bowel", 40) }}>
         <BowelOverviewCard days={bowelDays} dayLogs={view.dayLogs} period={bowelPeriod} anchor={bowelAnchor} noBowelMovementCount={noBowelMovementCount} onPeriodChange={setBowelPeriod} onPeriodShift={(delta) => setBowelAnchor((current) => shiftInsightPeriodAnchor(current, bowelPeriod, delta))} />
       </div>
-      <div className={insightsFilter === "all" || insightsFilter === "symptoms" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "timeOfDay", 50) }}><TimeOfDayPatternChart data={view} days={timeOfDayDays} period={timeOfDayPeriod} anchor={timeOfDayAnchor} onPeriodChange={setTimeOfDayPeriod} onPeriodShift={(delta) => setTimeOfDayAnchor((current) => shiftInsightPeriodAnchor(current, timeOfDayPeriod, delta))} /></div>
-      <div className={insightsFilter === "all" || insightsFilter === "meds" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "meds", 60) }}><MedsAdherence data={view} period={medsPeriod} anchor={medsAnchor} onPeriodChange={setMedsPeriod} onPeriodShift={(delta) => setMedsAnchor((current) => shiftInsightPeriodAnchor(current, medsPeriod, delta))} /></div>
+      <div className={insightsFilter === "all" || insightsFilter === "sex" ? "" : "hidden"} style={{ order: 45 }}>
+        <SukSukInsightsCard data={view} />
+      </div>
+      <div className={insightsFilter === "all" || insightsFilter === "symptoms" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "timeOfDay", 50) }}><TimeOfDayInsightsCard data={view} days={timeOfDayDays} period={timeOfDayPeriod} anchor={timeOfDayAnchor} onPeriodChange={setTimeOfDayPeriod} onPeriodShift={(delta) => setTimeOfDayAnchor((current) => shiftInsightPeriodAnchor(current, timeOfDayPeriod, delta))} /></div>
+      <div className={insightsFilter === "all" || insightsFilter === "meds" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "meds", 60) }}><MedsAdherenceInsightsCard data={view} period={medsPeriod} anchor={medsAnchor} onPeriodChange={setMedsPeriod} onPeriodShift={(delta) => setMedsAnchor((current) => shiftInsightPeriodAnchor(current, medsPeriod, delta))} /></div>
     </div>}
   </AppShell>;
 }
