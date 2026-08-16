@@ -64,6 +64,10 @@ type SessionMarker = {
   path: string;
 };
 
+type WindowWithFlightRecorder = Window & {
+  __bixboFlightRecorderV2?: boolean;
+};
+
 const ISSUE_KEY = "bixbo:runtime-diagnostics:v1";
 const BREADCRUMB_KEY = "bixbo:flight-breadcrumbs:v1";
 const SESSION_KEY = "bixbo:flight-session:v1";
@@ -618,10 +622,9 @@ function installStartupFrameProbe(): void {
 
 function startFlightRecorder(): void {
   if (typeof window === "undefined" || typeof document === "undefined") return;
-  const marker = "__bixboFlightRecorderV2";
-  const recordWindow = window as Window & { [key: string]: unknown };
-  if (recordWindow[marker]) return;
-  recordWindow[marker] = true;
+  const recordWindow = window as WindowWithFlightRecorder;
+  if (recordWindow.__bixboFlightRecorderV2) return;
+  recordWindow.__bixboFlightRecorderV2 = true;
 
   restoreBreadcrumbs();
   installSessionForensics();
