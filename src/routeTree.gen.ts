@@ -16,19 +16,22 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CoupleRouteImport } from './routes/couple'
 import { Route as DiagnosticsRouteImport } from './routes/diagnostics'
 import { Route as InsightsRouteImport } from './routes/insights'
+import { Route as McpRouteImport } from './routes/mcp'
 import { Route as MedsRouteImport } from './routes/meds'
 import { Route as NotesRouteImport } from './routes/notes'
 import { Route as NotificationsRouteImport } from './routes/notifications'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as PatternsRouteImport } from './routes/patterns'
 import { Route as PostpartumRouteImport } from './routes/postpartum'
 import { Route as PregnancyRouteImport } from './routes/pregnancy'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ReportRouteImport } from './routes/report'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as OauthConsentRouteImport } from './routes/oauth.consent'
-import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as ApiPublicHooksKeepaliveRouteImport } from './routes/api/public/hooks/keepalive'
 
@@ -67,6 +70,11 @@ const InsightsRoute = InsightsRouteImport.update({
   path: '/insights',
   getParentRoute: () => rootRouteImport,
 } as any)
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MedsRoute = MedsRouteImport.update({
   id: '/meds',
   path: '/meds',
@@ -80,6 +88,11 @@ const NotesRoute = NotesRouteImport.update({
 const NotificationsRoute = NotificationsRouteImport.update({
   id: '/notifications',
   path: '/notifications',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PatternsRoute = PatternsRouteImport.update({
@@ -97,6 +110,11 @@ const PregnancyRoute = PregnancyRouteImport.update({
   path: '/pregnancy',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -110,6 +128,11 @@ const ReportRoute = ReportRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const Char91DotmcpChar93ListToolsRoute =
@@ -127,11 +150,6 @@ const Char91DotwellKnownChar93OauthProtectedResourceRoute =
 const OauthConsentRoute = OauthConsentRouteImport.update({
   id: '/oauth/consent',
   path: '/oauth/consent',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
-  id: '/.lovable/oauth/consent',
-  path: '/.lovable/oauth/consent',
   getParentRoute: () => rootRouteImport,
 } as any)
 const Char91DotmcpChar93InvokeToolToolRoute =
@@ -154,19 +172,22 @@ export interface FileRoutesByFullPath {
   '/couple': typeof CoupleRoute
   '/diagnostics': typeof DiagnosticsRoute
   '/insights': typeof InsightsRoute
+  '/mcp': typeof McpRoute
   '/meds': typeof MedsRoute
   '/notes': typeof NotesRoute
   '/notifications': typeof NotificationsRoute
+  '/onboarding': typeof OnboardingRoute
   '/patterns': typeof PatternsRoute
   '/postpartum': typeof PostpartumRoute
   '/pregnancy': typeof PregnancyRoute
+  '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/report': typeof ReportRoute
   '/settings': typeof SettingsRoute
+  '/terms': typeof TermsRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/oauth/consent': typeof OauthConsentRoute
-  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/public/hooks/keepalive': typeof ApiPublicHooksKeepaliveRoute
 }
@@ -178,19 +199,22 @@ export interface FileRoutesByTo {
   '/couple': typeof CoupleRoute
   '/diagnostics': typeof DiagnosticsRoute
   '/insights': typeof InsightsRoute
+  '/mcp': typeof McpRoute
   '/meds': typeof MedsRoute
   '/notes': typeof NotesRoute
   '/notifications': typeof NotificationsRoute
+  '/onboarding': typeof OnboardingRoute
   '/patterns': typeof PatternsRoute
   '/postpartum': typeof PostpartumRoute
   '/pregnancy': typeof PregnancyRoute
+  '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/report': typeof ReportRoute
   '/settings': typeof SettingsRoute
+  '/terms': typeof TermsRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/oauth/consent': typeof OauthConsentRoute
-  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/public/hooks/keepalive': typeof ApiPublicHooksKeepaliveRoute
 }
@@ -203,19 +227,22 @@ export interface FileRoutesById {
   '/couple': typeof CoupleRoute
   '/diagnostics': typeof DiagnosticsRoute
   '/insights': typeof InsightsRoute
+  '/mcp': typeof McpRoute
   '/meds': typeof MedsRoute
   '/notes': typeof NotesRoute
   '/notifications': typeof NotificationsRoute
+  '/onboarding': typeof OnboardingRoute
   '/patterns': typeof PatternsRoute
   '/postpartum': typeof PostpartumRoute
   '/pregnancy': typeof PregnancyRoute
+  '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/report': typeof ReportRoute
   '/settings': typeof SettingsRoute
+  '/terms': typeof TermsRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/oauth/consent': typeof OauthConsentRoute
-  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/public/hooks/keepalive': typeof ApiPublicHooksKeepaliveRoute
 }
@@ -229,19 +256,22 @@ export interface FileRouteTypes {
     | '/couple'
     | '/diagnostics'
     | '/insights'
+    | '/mcp'
     | '/meds'
     | '/notes'
     | '/notifications'
+    | '/onboarding'
     | '/patterns'
     | '/postpartum'
     | '/pregnancy'
+    | '/privacy'
     | '/profile'
     | '/report'
     | '/settings'
+    | '/terms'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/oauth/consent'
-    | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/public/hooks/keepalive'
   fileRoutesByTo: FileRoutesByTo
@@ -253,19 +283,22 @@ export interface FileRouteTypes {
     | '/couple'
     | '/diagnostics'
     | '/insights'
+    | '/mcp'
     | '/meds'
     | '/notes'
     | '/notifications'
+    | '/onboarding'
     | '/patterns'
     | '/postpartum'
     | '/pregnancy'
+    | '/privacy'
     | '/profile'
     | '/report'
     | '/settings'
+    | '/terms'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/oauth/consent'
-    | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/public/hooks/keepalive'
   id:
@@ -277,19 +310,22 @@ export interface FileRouteTypes {
     | '/couple'
     | '/diagnostics'
     | '/insights'
+    | '/mcp'
     | '/meds'
     | '/notes'
     | '/notifications'
+    | '/onboarding'
     | '/patterns'
     | '/postpartum'
     | '/pregnancy'
+    | '/privacy'
     | '/profile'
     | '/report'
     | '/settings'
+    | '/terms'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/oauth/consent'
-    | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/public/hooks/keepalive'
   fileRoutesById: FileRoutesById
@@ -302,19 +338,22 @@ export interface RootRouteChildren {
   CoupleRoute: typeof CoupleRoute
   DiagnosticsRoute: typeof DiagnosticsRoute
   InsightsRoute: typeof InsightsRoute
+  McpRoute: typeof McpRoute
   MedsRoute: typeof MedsRoute
   NotesRoute: typeof NotesRoute
   NotificationsRoute: typeof NotificationsRoute
+  OnboardingRoute: typeof OnboardingRoute
   PatternsRoute: typeof PatternsRoute
   PostpartumRoute: typeof PostpartumRoute
   PregnancyRoute: typeof PregnancyRoute
+  PrivacyRoute: typeof PrivacyRoute
   ProfileRoute: typeof ProfileRoute
   ReportRoute: typeof ReportRoute
   SettingsRoute: typeof SettingsRoute
+  TermsRoute: typeof TermsRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   OauthConsentRoute: typeof OauthConsentRoute
-  DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiPublicHooksKeepaliveRoute: typeof ApiPublicHooksKeepaliveRoute
 }
@@ -370,6 +409,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InsightsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/meds': {
       id: '/meds'
       path: '/meds'
@@ -389,6 +435,13 @@ declare module '@tanstack/react-router' {
       path: '/notifications'
       fullPath: '/notifications'
       preLoaderRoute: typeof NotificationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/patterns': {
@@ -412,6 +465,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PregnancyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/profile': {
       id: '/profile'
       path: '/profile'
@@ -433,6 +493,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/.mcp/list-tools': {
       id: '/.mcp/list-tools'
       path: '/.mcp/list-tools'
@@ -452,13 +519,6 @@ declare module '@tanstack/react-router' {
       path: '/oauth/consent'
       fullPath: '/oauth/consent'
       preLoaderRoute: typeof OauthConsentRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/.lovable/oauth/consent': {
-      id: '/.lovable/oauth/consent'
-      path: '/.lovable/oauth/consent'
-      fullPath: '/.lovable/oauth/consent'
-      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/.mcp/invoke-tool/$tool': {
@@ -486,20 +546,23 @@ const rootRouteChildren: RootRouteChildren = {
   CoupleRoute: CoupleRoute,
   DiagnosticsRoute: DiagnosticsRoute,
   InsightsRoute: InsightsRoute,
+  McpRoute: McpRoute,
   MedsRoute: MedsRoute,
   NotesRoute: NotesRoute,
   NotificationsRoute: NotificationsRoute,
+  OnboardingRoute: OnboardingRoute,
   PatternsRoute: PatternsRoute,
   PostpartumRoute: PostpartumRoute,
   PregnancyRoute: PregnancyRoute,
+  PrivacyRoute: PrivacyRoute,
   ProfileRoute: ProfileRoute,
   ReportRoute: ReportRoute,
   SettingsRoute: SettingsRoute,
+  TermsRoute: TermsRoute,
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   OauthConsentRoute: OauthConsentRoute,
-  DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiPublicHooksKeepaliveRoute: ApiPublicHooksKeepaliveRoute,
 }

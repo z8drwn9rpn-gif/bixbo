@@ -4,7 +4,7 @@ import { useI18n } from "@/hooks/useI18n";
 import { TERMS_VERSION } from "@/lib/legalConsent";
 import { legalControllerDetails } from "@/lib/legalIdentity";
 
-export const Route = createFileRoute("/terms" as never)({
+export const Route = createFileRoute("/terms")({
   head: () => ({ meta: [
     { title: "BIXBO — Terms of Service" },
     { name: "description", content: "Terms for using the BIXBO personal health diary." },

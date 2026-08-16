@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PRIVACY_VERSION, HEALTH_CONSENT_VERSION } from "@/lib/legalConsent";
 import { legalControllerDetails } from "@/lib/legalIdentity";
 
-export const Route = createFileRoute("/privacy" as never)({
+export const Route = createFileRoute("/privacy")({
   head: () => ({
     meta: [
       { title: "BIXBO — Privacy Policy" },

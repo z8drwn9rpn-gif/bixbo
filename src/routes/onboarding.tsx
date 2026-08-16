@@ -8,7 +8,7 @@ import { accountPrivacyPrefs, trackingPrefs, type TrackingPreferences } from "@/
 import { markOnboardingCompleted } from "@/lib/legalConsent";
 import { trackProductEvent } from "@/lib/productAnalytics";
 
-export const Route = createFileRoute("/onboarding" as never)({
+export const Route = createFileRoute("/onboarding")({
   head: () => ({ meta: [{ title: "BIXBO — Welcome" }] }),
   component: OnboardingPage,
 });
