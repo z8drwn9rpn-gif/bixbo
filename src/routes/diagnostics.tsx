@@ -8,6 +8,7 @@ import {
   type AppDiagnosticReport,
   type DiagnosticResult,
   type DiagnosticStatus,
+  type RuntimeDiagnosticIssue,
 } from "@/lib/appDiagnostics";
 
 export const Route = createFileRoute("/diagnostics")({
@@ -16,7 +17,7 @@ export const Route = createFileRoute("/diagnostics")({
       { title: "App diagnostics — BIXBO" },
       {
         name: "description",
-        content: "Run local BIXBO checks for screens, storage, PWA assets, notifications, cloud access and runtime errors.",
+        content: "Run deep local BIXBO checks for screens, storage, PWA assets, notifications, cloud access, runtime errors, freezes and UI stutter.",
       },
     ],
   }),
@@ -29,6 +30,18 @@ const STATUS_LABEL: Record<DiagnosticStatus, string> = {
   error: "ERROR",
 };
 
+const INCIDENT_LABEL: Record<RuntimeDiagnosticIssue["kind"], string> = {
+  error: "JavaScript error",
+  unhandledrejection: "Promise error",
+  route: "Screen error",
+  resource: "Resource failure",
+  freeze: "Freeze",
+  jank: "Frame skip",
+  longtask: "Long task",
+  interaction: "Slow interaction",
+  network: "Offline",
+};
+
 function statusClass(status: DiagnosticStatus): string {
   if (status === "error") return "bg-destructive/12 text-destructive ring-destructive/20";
   if (status === "warning") return "bg-amber-500/12 text-amber-700 ring-amber-500/20 dark:text-amber-300";
@@ -39,6 +52,11 @@ function resultBorder(status: DiagnosticStatus): string {
   if (status === "error") return "ring-destructive/30";
   if (status === "warning") return "ring-amber-500/25";
   return "ring-border/70";
+}
+
+function incidentIsError(issue: RuntimeDiagnosticIssue): boolean {
+  if (issue.severity) return issue.severity === "error";
+  return issue.kind === "error" || issue.kind === "unhandledrejection" || issue.kind === "route" || issue.kind === "resource";
 }
 
 function ResultRow({ item }: { item: DiagnosticResult }) {
@@ -124,7 +142,7 @@ function DiagnosticsPage() {
             <div className="min-w-0">
               <h2 className="text-lg font-black tracking-tight text-foreground">BIXBO App Scanner</h2>
               <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                Checks app screens, local data, browser storage, PWA files, push support, cloud session and recent uncaught errors.
+                Deep scan of screens, data, storage, PWA files, cloud and device performance. While BIXBO is open, a lightweight local flight recorder also catches freezes, frame skips, long JavaScript tasks, slow interactions, failed app resources and connectivity drops.
               </p>
             </div>
             <button
@@ -160,6 +178,10 @@ function DiagnosticsPage() {
           {scanError && <p className="mt-3 rounded-2xl bg-destructive/10 p-3 text-sm text-destructive">Scanner error: {scanError}</p>}
         </section>
 
+        <section className="rounded-3xl bg-tint p-4 text-xs leading-relaxed text-muted-foreground ring-1 ring-border/60">
+          <span className="font-bold text-foreground">Performance recorder:</span> a visible main-thread stall of about 1.2 s+, a frame gap of 250 ms+, a supported-browser long task of 200 ms+, or a slow interaction of 300 ms+ is saved locally with its time, screen and device/runtime context. Health-log contents are never copied into diagnostics.
+        </section>
+
         {running && !report ? (
           <section className="rounded-3xl bg-surface p-5 text-sm text-muted-foreground shadow-sm ring-1 ring-border/80">
             Running full app scan…
@@ -182,8 +204,8 @@ function DiagnosticsPage() {
           <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h2 className="text-sm font-bold text-foreground">Recorded app errors</h2>
-                <p className="mt-0.5 text-xs text-muted-foreground">Stored only on this device; health-log contents are not stored here.</p>
+                <h2 className="text-sm font-bold text-foreground">Recorded app incidents</h2>
+                <p className="mt-0.5 text-xs text-muted-foreground">Errors and performance incidents stored only on this device; health-log contents are not stored here.</p>
               </div>
               <button
                 type="button"
@@ -194,22 +216,35 @@ function DiagnosticsPage() {
               </button>
             </div>
             <div className="mt-3 space-y-2">
-              {report.runtimeIssues.map((issue) => (
-                <div key={issue.id} className="rounded-2xl bg-destructive/5 p-3 ring-1 ring-destructive/15">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-black text-destructive">{issue.area}</span>
-                    <span className="text-[10px] text-muted-foreground">{new Date(issue.at).toLocaleString()}</span>
+              {report.runtimeIssues.map((issue) => {
+                const isError = incidentIsError(issue);
+                return (
+                  <div
+                    key={issue.id}
+                    className={`rounded-2xl p-3 ring-1 ${isError ? "bg-destructive/5 ring-destructive/15" : "bg-amber-500/5 ring-amber-500/20"}`}
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className={`text-xs font-black ${isError ? "text-destructive" : "text-amber-700 dark:text-amber-300"}`}>{issue.area}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wide ring-1 ${isError ? "bg-destructive/10 text-destructive ring-destructive/15" : "bg-amber-500/10 text-amber-700 ring-amber-500/20 dark:text-amber-300"}`}>
+                        {INCIDENT_LABEL[issue.kind] ?? issue.kind}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">{new Date(issue.at).toLocaleString()}</span>
+                    </div>
+                    <p className="mt-1 break-words text-xs text-foreground">{issue.message}</p>
+                    {typeof issue.durationMs === "number" ? (
+                      <p className="mt-1 text-[10px] font-semibold tabular-nums text-muted-foreground">Measured delay: {issue.durationMs} ms</p>
+                    ) : null}
+                    <p className="mt-1 break-all text-[10px] text-muted-foreground">{issue.path}</p>
+                    {issue.context ? <p className="mt-1 break-words text-[10px] text-muted-foreground">{issue.context}</p> : null}
                   </div>
-                  <p className="mt-1 break-words text-xs text-foreground">{issue.message}</p>
-                  <p className="mt-1 break-all text-[10px] text-muted-foreground">{issue.path}</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
         ) : null}
 
         <section className="rounded-3xl bg-tint p-4 text-xs leading-relaxed text-muted-foreground ring-1 ring-border/60">
-          The scanner catches many technical failures, but it cannot mathematically prove that every interaction is correct. BIXBO's CI browser tests remain the second layer for full user-flow testing after code changes.
+          The scanner can now diagnose many crashes, freezes and stutters from local runtime evidence, but it still cannot prove every interaction is correct. BIXBO's CI browser tests remain the second layer for full user-flow testing after code changes.
         </section>
       </div>
     </AppShell>
