@@ -152,7 +152,7 @@ export function PainInsightsCard({
     : null;
 
   return (
-    <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
+    <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80" data-bixbo-insight-chart-card="pain">
       <div className="flex items-center gap-2.5">
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#f07c23]/10 ring-1 ring-[#f07c23]/15" data-insight-card-icon="pain-fire">
           <InsightFireIcon size={29} />
@@ -178,7 +178,7 @@ export function PainInsightsCard({
             </div>
             <div className="relative grid h-[150px] items-end gap-[3px]" style={{ gridTemplateColumns: `repeat(${Math.max(1, bars.length)}, minmax(0, 1fr))` }}>
               {bars.map((bar, index) => bar.value != null ? (
-                <button key={index} type="button" aria-label={`Pain ${bar.value.toFixed(1)}`} aria-pressed={active === index}
+                <button key={index} type="button" aria-label={`Pain ${bar.value.toFixed(1)}`} aria-pressed={active === index} data-bixbo-chart-mark="bar"
                   onClick={(event) => { event.stopPropagation(); setActive((current) => current === index ? null : index); }}
                   className={`min-w-0 rounded-t-[5px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${active === index ? "ring-2 ring-foreground/70" : ""}`}
                   style={{ height: `${Math.max(4, (bar.value / 10) * 100)}%`, background: vividPainChartColor(bar.value) }} />
