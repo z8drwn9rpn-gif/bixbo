@@ -14,6 +14,7 @@ import { Route as SplatRouteImport } from './routes/$'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CoupleRouteImport } from './routes/couple'
+import { Route as DiagnosticsRouteImport } from './routes/diagnostics'
 import { Route as InsightsRouteImport } from './routes/insights'
 import { Route as MedsRouteImport } from './routes/meds'
 import { Route as NotesRouteImport } from './routes/notes'
@@ -54,6 +55,11 @@ const AuthRoute = AuthRouteImport.update({
 const CoupleRoute = CoupleRouteImport.update({
   id: '/couple',
   path: '/couple',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DiagnosticsRoute = DiagnosticsRouteImport.update({
+  id: '/diagnostics',
+  path: '/diagnostics',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InsightsRoute = InsightsRouteImport.update({
@@ -146,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/couple': typeof CoupleRoute
+  '/diagnostics': typeof DiagnosticsRoute
   '/insights': typeof InsightsRoute
   '/meds': typeof MedsRoute
   '/notes': typeof NotesRoute
@@ -169,6 +176,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/couple': typeof CoupleRoute
+  '/diagnostics': typeof DiagnosticsRoute
   '/insights': typeof InsightsRoute
   '/meds': typeof MedsRoute
   '/notes': typeof NotesRoute
@@ -193,6 +201,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/couple': typeof CoupleRoute
+  '/diagnostics': typeof DiagnosticsRoute
   '/insights': typeof InsightsRoute
   '/meds': typeof MedsRoute
   '/notes': typeof NotesRoute
@@ -218,6 +227,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/couple'
+    | '/diagnostics'
     | '/insights'
     | '/meds'
     | '/notes'
@@ -241,6 +251,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/couple'
+    | '/diagnostics'
     | '/insights'
     | '/meds'
     | '/notes'
@@ -264,6 +275,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/couple'
+    | '/diagnostics'
     | '/insights'
     | '/meds'
     | '/notes'
@@ -288,6 +300,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   AuthRoute: typeof AuthRoute
   CoupleRoute: typeof CoupleRoute
+  DiagnosticsRoute: typeof DiagnosticsRoute
   InsightsRoute: typeof InsightsRoute
   MedsRoute: typeof MedsRoute
   NotesRoute: typeof NotesRoute
@@ -341,6 +354,13 @@ declare module '@tanstack/react-router' {
       path: '/couple'
       fullPath: '/couple'
       preLoaderRoute: typeof CoupleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/diagnostics': {
+      id: '/diagnostics'
+      path: '/diagnostics'
+      fullPath: '/diagnostics'
+      preLoaderRoute: typeof DiagnosticsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/insights': {
@@ -464,6 +484,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   AuthRoute: AuthRoute,
   CoupleRoute: CoupleRoute,
+  DiagnosticsRoute: DiagnosticsRoute,
   InsightsRoute: InsightsRoute,
   MedsRoute: MedsRoute,
   NotesRoute: NotesRoute,
