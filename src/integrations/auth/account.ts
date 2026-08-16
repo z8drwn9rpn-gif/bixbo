@@ -1,5 +1,3 @@
-import { supabase } from "../supabase/client";
-
 type SignInOptions = {
   redirect_uri?: string;
   extraParams?: Record<string, string>;
@@ -47,6 +45,14 @@ export function oauthCallbackUrl(next?: string): string {
   return url.toString();
 }
 
+export function googleIdentityEntryUrl(next?: string, prompt = false): string {
+  const url = new URL("/auth", defaultOAuthOrigin());
+  const safeNext = safeInternalNext(next);
+  if (safeNext) url.searchParams.set("next", safeNext);
+  if (prompt) url.searchParams.set("google", "1");
+  return url.toString();
+}
+
 export function safeOAuthRedirectUrl(candidate?: string): string {
   const fallbackOrigin = defaultOAuthOrigin();
   if (!candidate) return oauthCallbackUrl();
@@ -66,19 +72,32 @@ export function safeOAuthRedirectUrl(candidate?: string): string {
   }
 }
 
+function nextFromRedirectUri(candidate?: string): string | undefined {
+  if (!candidate) return undefined;
+  try {
+    const safeRedirect = new URL(safeOAuthRedirectUrl(candidate));
+    return safeInternalNext(safeRedirect.searchParams.get("next") ?? undefined);
+  } catch {
+    return undefined;
+  }
+}
+
 export const accountAuth = {
   signInWithOAuth: async (provider: OAuthProvider, opts?: SignInOptions) => {
-    const queryParams: Record<string, string> = { ...(opts?.extraParams ?? {}) };
-    if (!queryParams.prompt) queryParams.prompt = "select_account";
+    if (provider !== "google") {
+      return { error: new Error(`Unsupported OAuth provider: ${provider}`), redirected: false };
+    }
 
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo: safeOAuthRedirectUrl(opts?.redirect_uri ?? oauthCallbackUrl()),
-        queryParams,
-      },
-    });
+    if (typeof window === "undefined") {
+      return { error: new Error("Google sign-in is only available in a browser."), redirected: false };
+    }
 
-    return { error, redirected: !error };
+    // The old Supabase OAuth code-exchange path depends on a Google client secret
+    // and is intentionally no longer used. Route every legacy Google entry point
+    // through the browser Google Identity / ID-token sign-in page instead.
+    const next = nextFromRedirectUri(opts?.redirect_uri);
+    const destination = googleIdentityEntryUrl(next, true);
+    window.location.assign(destination);
+    return { error: null, redirected: true };
   },
 };
