@@ -2,8 +2,16 @@ import { useEffect } from "react";
 import { useRouterState } from "@tanstack/react-router";
 import { useBixbo } from "@/lib/storage";
 
-const EN_MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
-const SK_MONTHS = ["január", "február", "marec", "apríl", "máj", "jún", "júl", "august", "september", "október", "november", "december"];
+function monthNames(locale: string) {
+  return Array.from({ length: 12 }, (_, index) =>
+    new Intl.DateTimeFormat(locale, { month: "long" })
+      .format(new Date(2020, index, 1))
+      .toLowerCase(),
+  );
+}
+
+const EN_MONTHS = monthNames("en-US");
+const SK_MONTHS = monthNames("sk-SK");
 
 function visibleMonthIndex(label: string) {
   const normalized = label.trim().toLowerCase();
@@ -83,7 +91,9 @@ export function CalendarTargetBridge() {
         dayButton.click();
         window.setTimeout(() => {
           const main = document.getElementById("main-content");
-          const overviewHeading = Array.from(main?.querySelectorAll<HTMLElement>("h2") ?? []).find((item) => item !== heading && item.textContent?.trim());
+          const overviewHeading = Array.from(main?.querySelectorAll<HTMLElement>("h2") ?? []).find(
+            (item) => item !== heading && item.textContent?.trim(),
+          );
           overviewHeading?.scrollIntoView({ behavior: "smooth", block: "start" });
         }, 120);
         finish();
