@@ -161,11 +161,10 @@ button[data-bixbo-quick-tag="pain-2"]::before { background: radial-gradient(circ
 button[data-bixbo-quick-tag="pain-3"]::before { background: radial-gradient(circle at 31% 27%, #ff9e92 0%, #ef4444 48%, #b91c1c 100%); }
 
 /* --------------------------------------------------------- Pain half-steps
-   Safari/iOS PWA and aggressive browser colour adjustment have both been seen
-   to flatten inline backgrounds on the 0.5 Pain buttons. Reinforce only those
-   ten intermediate values with fixed sRGB colours from the canonical palette.
-   !important is intentional: it is the last-resort device rendering layer and
-   must win over UA/button appearance rules as well as the inline background. */
+   Safari/iOS PWA and aggressive browser colour adjustment can flatten inline
+   backgrounds on the 0.5 Pain buttons. Reinforce the ten intermediate values
+   with the exact midpoint colours used by the canonical Pain domain palette.
+   Whole-number colours are intentionally untouched. */
 button[title^="0.5 —"][aria-label^="0.5 —"],
 button[title^="1.5 —"][aria-label^="1.5 —"],
 button[title^="2.5 —"][aria-label^="2.5 —"],
@@ -183,12 +182,12 @@ button[title^="9.5 —"][aria-label^="9.5 —"] {
 }
 
 button[title^="0.5 —"][aria-label^="0.5 —"] { background: #82CA42 !important; background-color: #82CA42 !important; }
-button[title^="1.5 —"][aria-label^="1.5 —"] { background: #A5CF33 !important; background-color: #A5CF33 !important; }
-button[title^="2.5 —"][aria-label^="2.5 —"] { background: #CCD124 !important; background-color: #CCD124 !important; }
-button[title^="3.5 —"][aria-label^="3.5 —"] { background: #EACA11 !important; background-color: #EACA11 !important; }
-button[title^="4.5 —"][aria-label^="4.5 —"] { background: #F5B200 !important; background-color: #F5B200 !important; }
-button[title^="5.5 —"][aria-label^="5.5 —"] { background: #F68F02 !important; background-color: #F68F02 !important; }
-button[title^="6.5 —"][aria-label^="6.5 —"] { background: #F56A41 !important; background-color: #F56A41 !important; }
-button[title^="7.5 —"][aria-label^="7.5 —"] { background: #EF4E69 !important; background-color: #EF4E69 !important; }
-button[title^="8.5 —"][aria-label^="8.5 —"] { background: #E53366 !important; background-color: #E53366 !important; }
+button[title^="1.5 —"][aria-label^="1.5 —"] { background: #A4CF34 !important; background-color: #A4CF34 !important; }
+button[title^="2.5 —"][aria-label^="2.5 —"] { background: #CBD127 !important; background-color: #CBD127 !important; }
+button[title^="3.5 —"][aria-label^="3.5 —"] { background: #E9CA16 !important; background-color: #E9CA16 !important; }
+button[title^="4.5 —"][aria-label^="4.5 —"] { background: #F4B20C !important; background-color: #F4B20C !important; }
+button[title^="5.5 —"][aria-label^="5.5 —"] { background: #F48E10 !important; background-color: #F48E10 !important; }
+button[title^="6.5 —"][aria-label^="6.5 —"] { background: #F26C3A !important; background-color: #F26C3A !important; }
+button[title^="7.5 —"][aria-label^="7.5 —"] { background: #EE4E6A !important; background-color: #EE4E6A !important; }
+button[title^="8.5 —"][aria-label^="8.5 —"] { background: #E53266 !important; background-color: #E53266 !important; }
 button[title^="9.5 —"][aria-label^="9.5 —"] { background: #D31E4E !important; background-color: #D31E4E !important; }
