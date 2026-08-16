@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 
 const rootSource = fs.readFileSync("src/routes/__root.tsx", "utf8");
-const touchCss = fs.readFileSync("src/ios-touch-stability.css", "utf8");
+const touchCss = fs.readFileSync("src/mobile-stability.css", "utf8");
 const textareaSource = fs.readFileSync("src/components/ui/textarea.tsx", "utf8");
 const themeSource = fs.readFileSync("src/lib/theme.ts", "utf8");
 

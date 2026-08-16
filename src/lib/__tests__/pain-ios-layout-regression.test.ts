@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const iosCss = fs.readFileSync("src/ios-touch-stability.css", "utf8");
+const iosCss = fs.readFileSync("src/mobile-stability.css", "utf8");
 const keyboardViewport = fs.readFileSync("src/hooks/useKeyboardViewport.ts", "utf8");
 const sheet = fs.readFileSync("src/components/ui/sheet.tsx", "utf8");
 const painWizard = fs.readFileSync("src/features/logging/PainWizard.tsx", "utf8");
