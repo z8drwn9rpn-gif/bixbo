@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/hooks/useI18n";
@@ -43,6 +43,7 @@ function OnboardingPage() {
   const [tracking, setTracking] = useState<TrackingPreferences | null>(null);
   const [analytics, setAnalytics] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const analyticsStartTrackedRef = useRef(false);
   const c = COPY[language];
 
   useEffect(() => {
@@ -54,6 +55,15 @@ function OnboardingPage() {
 
   const toggle = (category: Category) => {
     setTracking((current) => current ? { ...current, [category]: !current[category] } : current);
+  };
+
+  const toggleAnalytics = () => {
+    const next = !analytics;
+    setAnalytics(next);
+    if (next && !analyticsStartTrackedRef.current) {
+      analyticsStartTrackedRef.current = true;
+      void trackProductEvent("onboarding_started", true);
+    }
   };
 
   const finish = async () => {
@@ -91,7 +101,7 @@ function OnboardingPage() {
       </section> : null}
       {step === 2 ? <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
         <h2 className="text-base font-semibold text-foreground">{c.privacy}</h2>
-        <button type="button" role="switch" aria-checked={analytics} onClick={() => setAnalytics((value) => !value)} className="mt-4 flex min-h-12 w-full items-center justify-between rounded-xl border border-border bg-tint px-3 text-left text-sm font-semibold text-foreground"><span>{c.analytics}</span><span aria-hidden="true" className={`inline-flex h-6 w-10 items-center rounded-full p-0.5 transition ${analytics ? "justify-end bg-primary" : "justify-start bg-muted"}`}><span className="h-5 w-5 rounded-full bg-background shadow" /></span></button>
+        <button type="button" role="switch" aria-checked={analytics} onClick={toggleAnalytics} className="mt-4 flex min-h-12 w-full items-center justify-between rounded-xl border border-border bg-tint px-3 text-left text-sm font-semibold text-foreground"><span>{c.analytics}</span><span aria-hidden="true" className={`inline-flex h-6 w-10 items-center rounded-full p-0.5 transition ${analytics ? "justify-end bg-primary" : "justify-start bg-muted"}`}><span className="h-5 w-5 rounded-full bg-background shadow" /></span></button>
         <p className="mt-3 text-xs leading-5 text-muted-foreground">{c.analyticsHelp}</p>
       </section> : null}
       <div className="flex gap-2">
