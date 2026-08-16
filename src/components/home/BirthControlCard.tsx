@@ -50,7 +50,6 @@ import {
   type BowelEntry,
   type SexEntry,
 } from "@/lib/storage";
-import { SukSukPeriodChart } from "@/components/home/SukSukPeriodChart";
 
 export function BirthControlSummaryCard({
   data,
@@ -1097,8 +1096,7 @@ export function BirthControlCalendar({
         </div>
       </div>
 
-      {/* ŠukŠuk Insights summary — added inside the HAK calendar only. */}
-      <SukSukPeriodChart data={data} anchorKey={todayKey()} darkMode={darkMode} />
+
         </div>
       </div>
 
