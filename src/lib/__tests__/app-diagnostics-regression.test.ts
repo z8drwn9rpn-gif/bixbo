@@ -101,7 +101,7 @@ describe("BIXBO app diagnostics", () => {
     expect(root).toContain("pointer-events: none");
     expect(root).toContain("}, 1000);");
     expect(root).not.toContain("bixbo-ios-launch-splash-hide");
-    expect(root).toContain('/bixbo-mascot-user.png?v=20260816-launch5');
+    expect(root).toContain('/bixbo-mascot-user.png?v=20260816-launch6');
 
     expect(server).toContain('pathname.startsWith("/assets/")');
     expect(server).toContain("status: 404");
