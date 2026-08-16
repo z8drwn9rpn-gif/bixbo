@@ -1,5 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
 
+// The BIXBO PWA service worker can own Supabase fetches before Playwright's
+// page.route() sees them. Block it only in this auth spec so the ID-token network
+// exchange is deterministic while leaving the rest of the PWA E2E unchanged.
+test.use({ serviceWorkers: "block" });
+
 const GOOGLE_CLIENT_ID = "545023380659-ovg56o3vo09oari9g02qodvdbtt42hep.apps.googleusercontent.com";
 
 async function installGoogleIdentityStub(page: Page) {
