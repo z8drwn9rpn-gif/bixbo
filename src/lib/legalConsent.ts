@@ -48,8 +48,17 @@ export function onboardingCompleted(): boolean {
   return browserStorage()?.getItem(ONBOARDING_KEY) === "true";
 }
 
-export function markOnboardingCompleted(): void {
+export async function markOnboardingCompleted(): Promise<void> {
   browserStorage()?.setItem(ONBOARDING_KEY, "true");
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data.user) return;
+
+  const db = supabase as unknown as SupabaseClient;
+  const { error: writeError } = await db
+    .from("user_legal_consents")
+    .update({ onboarding_completed_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+    .eq("user_id", data.user.id);
+  if (writeError) throw writeError;
 }
 
 function parseConsent(value: unknown): SignupLegalConsent | null {
@@ -111,6 +120,13 @@ export async function finalizePendingLegalConsent(): Promise<boolean> {
   );
   if (writeError) throw writeError;
 
+  const { data: legalState, error: stateError } = await db
+    .from("user_legal_consents")
+    .select("onboarding_completed_at")
+    .eq("user_id", data.user.id)
+    .maybeSingle();
+  if (stateError) throw stateError;
+
   clearPendingLegalConsent();
-  return !onboardingCompleted();
+  return !onboardingCompleted() && !legalState?.onboarding_completed_at;
 }
