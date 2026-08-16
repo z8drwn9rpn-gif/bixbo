@@ -1,5 +1,5 @@
 import { Children, isValidElement, type ReactNode } from "react";
-import { Equal, Info, Lightbulb, TrendingDown, TrendingUp } from "lucide-react";
+import { Equal, Lightbulb, TrendingDown, TrendingUp } from "lucide-react";
 import { useI18n } from "@/hooks/useI18n";
 import { PAIN_DESCRIPTIONS } from "@/lib/storage";
 import {
@@ -397,7 +397,7 @@ export function CoupleComparisonDashboard({ children }: { children: ReactNode })
 
   return (
     <section className="space-y-3">
-      <div className="flex items-start justify-between gap-3 px-1">
+      <div className="px-1">
         <div className="min-w-0">
           <h2 className="font-serif text-2xl font-bold tracking-tight text-foreground">
             {t("Couple comparison")}
@@ -406,12 +406,6 @@ export function CoupleComparisonDashboard({ children }: { children: ReactNode })
             {t("See how")} {t(mineLabel).toLowerCase()} {t("and")} {t(partnerLabel)} {t("are doing")}
           </p>
         </div>
-        <span
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface text-primary shadow-sm ring-1 ring-border/70"
-          aria-hidden="true"
-        >
-          <Info className="h-4 w-4" strokeWidth={2.2} />
-        </span>
       </div>
 
       <div className="overflow-hidden rounded-[1.75rem] bg-surface shadow-sm ring-1 ring-border/80">
@@ -434,15 +428,6 @@ export function CoupleComparisonDashboard({ children }: { children: ReactNode })
           {miniMetrics.map((metric) => (
             <MiniMetricCard key={metric.title} metric={metric} />
           ))}
-        </div>
-      ) : null}
-
-      {miniMetrics.length > 1 ? (
-        <div className="flex justify-center gap-1.5" aria-hidden="true">
-          <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-          <span className="h-1.5 w-1.5 rounded-full bg-border" />
-          <span className="h-1.5 w-1.5 rounded-full bg-border" />
-          <span className="h-1.5 w-1.5 rounded-full bg-border" />
         </div>
       ) : null}
     </section>
