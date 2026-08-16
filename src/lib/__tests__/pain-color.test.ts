@@ -3,29 +3,32 @@ import { describe, expect, it } from "bun:test";
 import { PAIN_SCALE_HALF_STEP_COLORS, averagePainScores, avgDayPain, painColor, painHexColor, snapPainScore } from "../domain/pain";
 
 describe("painColor", () => {
-  it("returns concrete canonical colours for whole values so MonthCalendar can shade its rings", () => {
+  it("keeps every original whole-number Pain color unchanged", () => {
+    const whole = ["#72C64A", "#91CD3A", "#B7D12F", "#DFD11F", "#F3C30D", "#F5A20B", "#F47B16", "#F05C5F", "#EC3F74", "#DE2557", "#C81746"];
     for (let score = 0; score <= 10; score += 1) {
+      expect(painColor(score)).toBe(whole[score]);
       expect(painColor(score)).toBe(painHexColor(score));
       expect(painColor(score)).toMatch(/^#[0-9A-F]{6}$/);
     }
   });
 
-  it("gives every half-step its own strong concrete colour", () => {
+  it("gives each half-step the true midpoint between neighbouring whole colors", () => {
     expect(PAIN_SCALE_HALF_STEP_COLORS).toHaveLength(21);
+    const expectedHalves = ["#82CA42", "#A4CF34", "#CBD127", "#E9CA16", "#F4B20C", "#F48E10", "#F26C3A", "#EE4E6A", "#E53266", "#D31E4E"];
     for (let lower = 0; lower < 10; lower += 1) {
       const half = lower + 0.5;
+      expect(painColor(half)).toBe(expectedHalves[lower]);
       expect(painColor(half)).toBe(painHexColor(half));
-      expect(painColor(half)).toMatch(/^#[0-9A-F]{6}$/);
       expect(painColor(half)).not.toContain("color-mix");
       expect(painHexColor(half)).not.toBe(painHexColor(lower));
       expect(painHexColor(half)).not.toBe(painHexColor(lower + 1));
     }
   });
 
-  it("keeps 7.5 visibly distinct from both 7 and 8", () => {
-    expect(painColor(7.5)).toBe("#EF4E69");
-    expect(painHexColor(7)).toBe("#EF7838");
-    expect(painHexColor(8)).toBe("#E95A3F");
+  it("keeps 7.5 between the unchanged 7 and 8 colors", () => {
+    expect(painHexColor(7)).toBe("#F05C5F");
+    expect(painColor(7.5)).toBe("#EE4E6A");
+    expect(painHexColor(8)).toBe("#EC3F74");
   });
 
   it("snaps chart colours to the same half-step palette", () => {
