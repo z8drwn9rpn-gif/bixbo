@@ -1,0 +1,165 @@
+name: Apply insights dashboard photo match
+
+on:
+  push:
+    branches:
+      - feat/insights-dashboard-photo-match
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: feat/insights-dashboard-photo-match
+          fetch-depth: 0
+      - name: Wire photo-matched insights cards and move SukSuk out of HAK
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          route_path = Path("src/routes/insights.tsx")
+          route = route_path.read_text()
+
+          route = route.replace(
+              'import { EMPTY, avgDayPain, toKey, useBixbo } from "@/lib/storage";',
+              'import { EMPTY, avgDayPain, useBixbo } from "@/lib/storage";',
+          )
+          route = route.replace(
+              'import { HfBars, PainChart } from "@/features/insights/charts";',
+              'import { PainInsightsCard } from "@/features/insights/PainInsightsCard";\n'
+              'import { HotFlashesInsightsCard } from "@/features/insights/HotFlashesInsightsCard";',
+          )
+          route = route.replace(
+              'import { MedsAdherence } from "@/features/insights/MedsAdherence";',
+              'import { MedsAdherenceInsightsCard } from "@/features/insights/MedsAdherenceInsightsCard";',
+          )
+          route = route.replace(
+              'import { TimeOfDayPatternChart } from "@/features/insights/TimeOfDayPatternChart";',
+              'import { TimeOfDayInsightsCard } from "@/features/insights/TimeOfDayInsightsCard";\n'
+              'import { SukSukInsightsCard } from "@/features/insights/SukSukInsightsCard";',
+          )
+          route = route.replace(
+              '  HOT_FLASH_COLORS,\n  HOT_FLASH_DESCRIPTIONS,\n  InsightPeriodControl,\n',
+              '',
+          )
+          route = route.replace(
+              'useState<"all" | "overview" | "pain" | "symptoms" | "bowel" | "meds">("all")',
+              'useState<"all" | "overview" | "pain" | "symptoms" | "bowel" | "sex" | "meds">("all")',
+          )
+          route = route.replace(
+              '[["all", "All"], ["overview", "Overview"], ["pain", "Pain"], ["symptoms", "Symptoms"], ["bowel", "Bowel"], ["meds", "Meds"]]',
+              '[["all", "All"], ["overview", "Overview"], ["pain", "Pain"], ["symptoms", "Symptoms"], ["bowel", "Bowel"], ["sex", "ŠukŠuk"], ["meds", "Meds"]]',
+          )
+
+          old_pain = '''      <section style={{ order: layoutOrder(view, "insights", "pain", 20) }} className={`${insightsFilter === "all" || insightsFilter === "pain" ? "" : "hidden "}rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80`}>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t("Pain scale")}</p><InsightPeriodControl value={painPeriod} onChange={setPainPeriod} anchor={painAnchor} onShift={(delta) => setPainAnchor((current) => shiftInsightPeriodAnchor(current, painPeriod, delta))} ariaLabel="Pain scale period" /></div>
+        <div className="mt-2 flex items-baseline gap-2"><span className="font-serif text-4xl leading-none">{painAvg != null ? painAvg.toFixed(1) : "–"}</span><span className="text-sm text-muted-foreground">avg · {painSeries.filter((value) => value != null).length} {painSeries.filter((value) => value != null).length === 1 ? "entry" : "entries"}</span></div>
+        <PainChart key={`pain-${painPeriod}-${toKey(painAnchor)}`} period={painPeriod} days={painDays} series={painSeries} anchor={painAnchor} />
+      </section>'''
+          new_pain = '''      <div className={insightsFilter === "all" || insightsFilter === "pain" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "pain", 20) }}>
+        <PainInsightsCard data={view} period={painPeriod} days={painDays} series={painSeries} anchor={painAnchor} averageValue={painAvg} onPeriodChange={setPainPeriod} onPeriodShift={(delta) => setPainAnchor((current) => shiftInsightPeriodAnchor(current, painPeriod, delta))} />
+      </div>'''
+          if old_pain not in route:
+              raise SystemExit("Pain section not found")
+          route = route.replace(old_pain, new_pain, 1)
+
+          old_hot = '''      <section style={{ order: layoutOrder(view, "insights", "hotFlashes", 30) }} className={`${insightsFilter === "all" || insightsFilter === "symptoms" ? "" : "hidden "}rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80`}>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t("Hot flashes")}</p><InsightPeriodControl value={hotFlashPeriod} onChange={setHotFlashPeriod} anchor={hotFlashAnchor} onShift={(delta) => setHotFlashAnchor((current) => shiftInsightPeriodAnchor(current, hotFlashPeriod, delta))} ariaLabel="Hot flashes period" /></div>
+        {hfTotal ? <><div className="mt-2 flex items-baseline gap-2"><span className="font-serif text-4xl leading-none">{hfTotal}</span><span className="text-sm text-muted-foreground">{hfTotal === 1 ? "episode" : "episodes"} · avg {hfAvg!.toFixed(1)}/5 · most often L{hfTop}</span></div><HfBars key={`hot-flashes-${hotFlashPeriod}-${toKey(hotFlashAnchor)}`} bars={hfBars} period={hotFlashPeriod} days={hotFlashDays} anchor={hotFlashAnchor} /><div className="mt-3 space-y-1">{[1, 2, 3, 4, 5].map((level) => { const count = hfCounts[level]; const pct = hfTotal ? (count / hfTotal) * 100 : 0; const color = HOT_FLASH_COLORS[level]; return <div key={level} className="flex items-center gap-2 text-[10px]"><span className="grid h-4 w-4 shrink-0 place-items-center rounded-full text-[10px] font-bold text-white" style={{ background: color }}>{level}</span><span className="w-16 shrink-0 text-muted-foreground">{HOT_FLASH_DESCRIPTIONS[level]}</span><div className="h-2 flex-1 overflow-hidden rounded-full bg-tint"><div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} /></div><span className="w-6 text-right tabular-nums text-muted-foreground">{count}</span></div>; })}</div></> : <p className="mt-2 text-sm text-muted-foreground">{t("No hot flashes logged")}</p>}
+      </section>'''
+          new_hot = '''      <div className={insightsFilter === "all" || insightsFilter === "symptoms" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "hotFlashes", 30) }}>
+        <HotFlashesInsightsCard data={view} period={hotFlashPeriod} days={hotFlashDays} bars={hfBars} counts={hfCounts} total={hfTotal} average={hfAvg} topLevel={hfTop} anchor={hotFlashAnchor} onPeriodChange={setHotFlashPeriod} onPeriodShift={(delta) => setHotFlashAnchor((current) => shiftInsightPeriodAnchor(current, hotFlashPeriod, delta))} />
+      </div>'''
+          if old_hot not in route:
+              raise SystemExit("Hot flashes section not found")
+          route = route.replace(old_hot, new_hot, 1)
+
+          bowel_block = '''      <div className={insightsFilter === "all" || insightsFilter === "bowel" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "bowel", 40) }}>
+        <BowelOverviewCard days={bowelDays} dayLogs={view.dayLogs} period={bowelPeriod} anchor={bowelAnchor} noBowelMovementCount={noBowelMovementCount} onPeriodChange={setBowelPeriod} onPeriodShift={(delta) => setBowelAnchor((current) => shiftInsightPeriodAnchor(current, bowelPeriod, delta))} />
+      </div>'''
+          if bowel_block not in route:
+              raise SystemExit("Bowel block not found")
+          route = route.replace(
+              bowel_block,
+              bowel_block + '''
+      <div className={insightsFilter === "all" || insightsFilter === "sex" ? "" : "hidden"} style={{ order: 45 }}>
+        <SukSukInsightsCard data={view} />
+      </div>''',
+              1,
+          )
+
+          old_time = '<div className={insightsFilter === "all" || insightsFilter === "symptoms" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "timeOfDay", 50) }}><TimeOfDayPatternChart data={view} days={timeOfDayDays} period={timeOfDayPeriod} anchor={timeOfDayAnchor} onPeriodChange={setTimeOfDayPeriod} onPeriodShift={(delta) => setTimeOfDayAnchor((current) => shiftInsightPeriodAnchor(current, timeOfDayPeriod, delta))} /></div>'
+          new_time = '<div className={insightsFilter === "all" || insightsFilter === "symptoms" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "timeOfDay", 50) }}><TimeOfDayInsightsCard data={view} days={timeOfDayDays} period={timeOfDayPeriod} anchor={timeOfDayAnchor} onPeriodChange={setTimeOfDayPeriod} onPeriodShift={(delta) => setTimeOfDayAnchor((current) => shiftInsightPeriodAnchor(current, timeOfDayPeriod, delta))} /></div>'
+          if old_time not in route:
+              raise SystemExit("Time of day block not found")
+          route = route.replace(old_time, new_time, 1)
+
+          old_meds = '<div className={insightsFilter === "all" || insightsFilter === "meds" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "meds", 60) }}><MedsAdherence data={view} period={medsPeriod} anchor={medsAnchor} onPeriodChange={setMedsPeriod} onPeriodShift={(delta) => setMedsAnchor((current) => shiftInsightPeriodAnchor(current, medsPeriod, delta))} /></div>'
+          new_meds = '<div className={insightsFilter === "all" || insightsFilter === "meds" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "meds", 60) }}><MedsAdherenceInsightsCard data={view} period={medsPeriod} anchor={medsAnchor} onPeriodChange={setMedsPeriod} onPeriodShift={(delta) => setMedsAnchor((current) => shiftInsightPeriodAnchor(current, medsPeriod, delta))} /></div>'
+          if old_meds not in route:
+              raise SystemExit("Meds block not found")
+          route = route.replace(old_meds, new_meds, 1)
+          route_path.write_text(route)
+
+          hak_path = Path("src/components/home/BirthControlCard.tsx")
+          hak = hak_path.read_text()
+          hak = hak.replace('import { SukSukPeriodChart } from "@/components/home/SukSukPeriodChart";\n', '')
+          old_hak = '''      {/* ŠukŠuk Insights summary — added inside the HAK calendar only. */}
+      <SukSukPeriodChart data={data} anchorKey={todayKey()} darkMode={darkMode} />'''
+          if old_hak not in hak:
+              raise SystemExit("HAK SukSuk block not found")
+          hak = hak.replace(old_hak, '', 1)
+          hak_path.write_text(hak)
+
+          test_path = Path("src/lib/__tests__/insights-dashboard-photo-regression.test.ts")
+          test_path.write_text('''import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+
+describe("Insights dashboard photo-matched cards", () => {
+  test("wires the approved card set into Insights", () => {
+    const route = readFileSync("src/routes/insights.tsx", "utf8");
+    expect(route).toContain("PainInsightsCard");
+    expect(route).toContain("HotFlashesInsightsCard");
+    expect(route).toContain("TimeOfDayInsightsCard");
+    expect(route).toContain("MedsAdherenceInsightsCard");
+    expect(route).toContain("SukSukInsightsCard");
+    expect(route).toContain('["sex", "ŠukŠuk"]');
+  });
+
+  test("moves SukSuk out of the HAK calendar", () => {
+    const hak = readFileSync("src/components/home/BirthControlCard.tsx", "utf8");
+    expect(hak).not.toContain("<SukSukPeriodChart");
+    expect(hak).not.toContain('from "@/components/home/SukSukPeriodChart"');
+  });
+
+  test("keeps photo-specific quick insights and compact meds dots", () => {
+    const pain = readFileSync("src/features/insights/PainInsightsCard.tsx", "utf8");
+    const hot = readFileSync("src/features/insights/HotFlashesInsightsCard.tsx", "utf8");
+    const time = readFileSync("src/features/insights/TimeOfDayInsightsCard.tsx", "utf8");
+    const meds = readFileSync("src/features/insights/MedsAdherenceInsightsCard.tsx", "utf8");
+    const suk = readFileSync("src/features/insights/SukSukInsightsCard.tsx", "utf8");
+    for (const source of [pain, hot, time, meds]) expect(source).toContain("QuickInsights");
+    expect(meds).toContain("h-3.5 w-3.5 rounded-full");
+    expect(suk).toContain("Intimacy moments");
+    expect(suk).toContain("Best day:");
+  });
+});
+''')
+
+          workflow_path = Path(".github/workflows/apply-insights-dashboard-photo.yml")
+          if workflow_path.exists():
+              workflow_path.unlink()
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && exit 0
+          git commit -m "Match Insights analytics cards to approved mockups"
+          git push origin HEAD:feat/insights-dashboard-photo-match
