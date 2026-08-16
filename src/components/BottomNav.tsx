@@ -1,4 +1,4 @@
-import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { useRef, type ComponentType, type CSSProperties } from "react";
 import { useI18n } from "@/hooks/useI18n";
 import type { IconProps } from "@/components/icons/BixboExtraIcons";
@@ -70,7 +70,6 @@ function NavArtworkSafe({ id, size, className, style }: { id: NavigationItemId; 
 
 export function BottomNav() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const navigate = useNavigate();
   const { t } = useI18n();
   const items = resolvedNavigation("mobile");
   const longPressTimer = useRef<number | null>(null);
@@ -127,12 +126,7 @@ export function BottomNav() {
                   className="flex min-h-[72px] w-full flex-col items-center justify-end gap-0 px-1 pb-0.5 text-[11px] font-semibold text-primary transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] dark:text-foreground landscape:min-h-[62px]"
                   aria-label={`${t(label)} · ${t("hold for shortcuts")}`}
                 >
-                  <NavArtworkSafe
-                    id={item.id}
-                    size={64}
-                    className="-mb-1 h-[64px] w-[64px] shrink-0 object-contain landscape:h-[54px] landscape:w-[54px]"
-                    style={{ filter: BIXBO_NAV_LOG_ARTWORK_FILTER }}
-                  />
+                  <NavArtworkSafe id={item.id} size={64} className="-mb-1 h-[64px] w-[64px] shrink-0 object-contain landscape:h-[54px] landscape:w-[54px]" style={{ filter: BIXBO_NAV_LOG_ARTWORK_FILTER }} />
                   <span className="max-w-full truncate text-center leading-none">{t(label)}</span>
                 </button>
               </li>
@@ -153,12 +147,7 @@ export function BottomNav() {
                 aria-current={active ? "page" : undefined}
                 className={`relative flex min-h-[72px] w-full flex-col items-center justify-end gap-0 px-1 pb-0.5 text-[11px] font-semibold transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] landscape:min-h-[62px] ${active ? "text-primary dark:text-foreground" : "text-muted-foreground hover:text-foreground"}`}
               >
-                <NavArtworkSafe
-                  id={item.id}
-                  size={54}
-                  className={`mb-0 h-[54px] w-[54px] shrink-0 object-contain transition-transform landscape:h-[46px] landscape:w-[46px] ${active ? "scale-[1.04]" : ""}`}
-                  style={{ filter: BIXBO_NAV_ARTWORK_FILTER }}
-                />
+                <NavArtworkSafe id={item.id} size={54} className={`mb-0 h-[54px] w-[54px] shrink-0 object-contain transition-transform landscape:h-[46px] landscape:w-[46px] ${active ? "scale-[1.04]" : ""}`} style={{ filter: BIXBO_NAV_ARTWORK_FILTER }} />
                 <span className="max-w-full truncate text-center leading-none">{t(label)}</span>
                 {active ? <span aria-hidden="true" className="absolute bottom-[-3px] h-1 w-5 rounded-full bg-current opacity-70" /> : null}
               </Link>
