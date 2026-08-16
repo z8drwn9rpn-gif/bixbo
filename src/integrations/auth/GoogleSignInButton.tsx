@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { supabase } from "../supabase/client";
 
 export const GOOGLE_IDENTITY_SCRIPT_URL = "https://accounts.google.com/gsi/client";
 export const GOOGLE_WEB_CLIENT_ID =
@@ -138,27 +137,31 @@ function googleErrorMessage(error: unknown): string {
 export function GoogleSignInButton({
   disabled = false,
   promptOnLoad = false,
+  onCredential,
   onBusyChange,
   onSuccess,
   onError,
 }: {
   disabled?: boolean;
   promptOnLoad?: boolean;
+  onCredential: (credential: string, rawNonce: string) => Promise<void>;
   onBusyChange?: (busy: boolean) => void;
   onSuccess?: () => void;
   onError?: (message: string) => void;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
+  const onCredentialRef = useRef(onCredential);
   const onBusyChangeRef = useRef(onBusyChange);
   const onSuccessRef = useRef(onSuccess);
   const onErrorRef = useRef(onError);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    onCredentialRef.current = onCredential;
     onBusyChangeRef.current = onBusyChange;
     onSuccessRef.current = onSuccess;
     onErrorRef.current = onError;
-  }, [onBusyChange, onError, onSuccess]);
+  }, [onBusyChange, onCredential, onError, onSuccess]);
 
   const reportError = useCallback((error: unknown) => {
     onBusyChangeRef.current?.(false);
@@ -189,12 +192,7 @@ export function GoogleSignInButton({
 
             onBusyChangeRef.current?.(true);
             try {
-              const { error } = await supabase.auth.signInWithIdToken({
-                provider: "google",
-                token: response.credential,
-                nonce: nonce.raw,
-              });
-              if (error) throw error;
+              await onCredentialRef.current(response.credential, nonce.raw);
               onBusyChangeRef.current?.(false);
               onSuccessRef.current?.();
             } catch (error) {
