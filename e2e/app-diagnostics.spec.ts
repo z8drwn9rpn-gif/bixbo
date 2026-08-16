@@ -12,14 +12,15 @@ test("App diagnostics runs a full local scan without falling into the error boun
   await expect(page.getByRole("button", { name: "Run scan", exact: true })).toBeVisible();
 
   const scanner = page.locator("#main-content");
-  await expect(scanner.getByText("Local storage", { exact: true })).toBeVisible({ timeout: 20_000 });
-  await expect(scanner.getByText("BIXBO data", { exact: true })).toBeVisible();
-  await expect(scanner.getByText("PWA manifest", { exact: true })).toBeVisible();
-  await expect(scanner.getByText("Push service worker", { exact: true })).toBeVisible();
-  await expect(scanner.getByText("Home", { exact: true })).toBeVisible();
-  await expect(scanner.getByText("Notifications", { exact: true })).toBeVisible();
-  await expect(scanner.getByText("Patterns", { exact: true })).toBeVisible();
-  await expect(scanner.getByText("Notes", { exact: true })).toBeVisible();
+  const results = scanner.locator("article");
+  await expect(results.getByText("Local storage", { exact: true })).toBeVisible({ timeout: 20_000 });
+  await expect(results.getByText("BIXBO data", { exact: true })).toBeVisible();
+  await expect(results.getByText("PWA manifest", { exact: true })).toBeVisible();
+  await expect(results.getByText("Push service worker", { exact: true })).toBeVisible();
+  await expect(results.getByText("Home", { exact: true })).toBeVisible();
+  await expect(results.getByText("Notifications", { exact: true })).toBeVisible();
+  await expect(results.getByText("Patterns", { exact: true })).toBeVisible();
+  await expect(results.getByText("Notes", { exact: true })).toBeVisible();
 
   expect(pageErrors, `Diagnostics page errors:\n${pageErrors.join("\n\n")}`).toEqual([]);
 });
