@@ -125,8 +125,8 @@ const APPLE_PWA_LAUNCH_SPLASH_BOOTSTRAP = `(() => {
       else beginVisibleSecond();
     };
 
-    // `load` can happen underneath iOS' native launch presentation. Starting the
-    // one-second hold from `pageshow` means the timer begins when WebKit actually
+    // Load can happen underneath iOS native launch presentation. Starting the
+    // one-second hold from pageshow means the timer begins when WebKit actually
     // presents this document, then two animation frames guarantee a painted mascot.
     window.addEventListener("pageshow", holdAfterFirstVisiblePaint, { once: true });
     document.addEventListener("visibilitychange", () => {
