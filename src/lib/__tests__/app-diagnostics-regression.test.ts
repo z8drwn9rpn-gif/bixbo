@@ -7,6 +7,7 @@ describe("BIXBO app diagnostics", () => {
     const route = readFileSync("src/routes/diagnostics.tsx", "utf8");
     const root = readFileSync("src/routes/__root.tsx", "utf8");
     const server = readFileSync("src/server.ts", "utf8");
+    const profiler = readFileSync("src/components/DiagnosticProfiler.tsx", "utf8");
 
     expect(diagnostics).toContain('window.addEventListener("error", onError)');
     expect(diagnostics).toContain('window.addEventListener("unhandledrejection", onUnhandledRejection)');
@@ -57,13 +58,18 @@ describe("BIXBO app diagnostics", () => {
     expect(route).toContain("BIXBO App Scanner");
     expect(route).toContain("Run scan");
     expect(route).toContain("Recorded app incidents");
-    expect(route).toContain("Performance recorder:");
+    expect(route).toContain("Black-box recorder:");
     expect(route).toContain("Measured delay:");
+    expect(route).toContain("Incident clusters");
+    expect(route).toContain("Top root cause");
+    expect(route).toContain("60-second black-box timeline");
 
     expect(root).toContain("installRuntimeDiagnostics");
     expect(root).toContain("BIXBO detected an app error");
     expect(root).toContain('router.navigate({ to: "/diagnostics" })');
     expect(root).toContain('<Link to="/diagnostics"');
+    expect(root).toContain('<DiagnosticProfiler id="RouteTree">');
+    expect(profiler).toContain("recordComponentRender");
 
     // iOS now relies on the native startup image only. A React/HTML splash on
     // every reload can itself cause the launch stutter the diagnostics must find.
@@ -76,5 +82,7 @@ describe("BIXBO app diagnostics", () => {
     expect(server).toContain("status: 404");
     expect(server).toContain('"application/javascript; charset=utf-8"');
     expect(server).toContain('hardened.headers.set("Cache-Control", "no-store, max-age=0")');
+    expect(server).toContain("X-Bixbo-Trace");
+    expect(server).toContain("Server-Timing");
   });
 });
