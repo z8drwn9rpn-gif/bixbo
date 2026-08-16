@@ -1,7 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
-import { HEALTH_CONSENT_VERSION } from "./legalConsent";
+import { HEALTH_CONSENT_VERSION, PRIVACY_VERSION, TERMS_VERSION } from "./legalConsent";
 
-type PrivacyAction = "export-cloud-data" | "withdraw-health-consent" | "grant-health-consent" | "delete-account";
+type PrivacyAction =
+  | "export-cloud-data"
+  | "accept-current-legal"
+  | "withdraw-health-consent"
+  | "grant-health-consent"
+  | "delete-account";
 
 type PrivacyResult = Record<string, unknown> & { ok?: boolean; error?: string };
 
@@ -27,6 +32,17 @@ export async function downloadCloudDataExport(): Promise<void> {
   } finally {
     URL.revokeObjectURL(url);
   }
+}
+
+export async function acceptCurrentLegalTerms(): Promise<PrivacyResult> {
+  return invokePrivacy("accept-current-legal", {
+    termsAccepted: true,
+    privacyAcknowledged: true,
+    healthConsent: true,
+    termsVersion: TERMS_VERSION,
+    privacyVersion: PRIVACY_VERSION,
+    healthConsentVersion: HEALTH_CONSENT_VERSION,
+  });
 }
 
 export async function withdrawCloudHealthConsent(): Promise<PrivacyResult> {
