@@ -5,16 +5,16 @@ import { Section, ToggleRow } from "./shared";
 const COPY = {
   en: {
     title: "Privacy & legal",
-    analytics: "Anonymous product analytics",
-    analyticsHelp: "Optional and off by default. BIXBO records only allow-listed content-free product events — never health values, notes, page paths or user IDs.",
-    privacy: "Privacy Policy",
+    analytics: "Privacy-preserving product analytics",
+    analyticsHelp: "Optional and off by default. BIXBO records only allow-listed content-free product events — never health values, notes, page paths, user IDs or free-form payloads. Analytics rows expire after 90 days.",
+    privacy: "Privacy Policy & data controls",
     terms: "Terms of Service",
   },
   sk: {
     title: "Súkromie a právne informácie",
-    analytics: "Anonymná produktová analytika",
-    analyticsHelp: "Dobrovoľná a predvolene vypnutá. BIXBO zaznamenáva iba povolené obsahovo prázdne produktové udalosti — nikdy zdravotné hodnoty, poznámky, URL obrazovky ani user ID.",
-    privacy: "Ochrana súkromia",
+    analytics: "Analytika šetrná k súkromiu",
+    analyticsHelp: "Dobrovoľná a predvolene vypnutá. BIXBO zaznamenáva iba povolené obsahovo prázdne produktové udalosti — nikdy zdravotné hodnoty, poznámky, URL obrazovky, user ID ani voľný payload. Analytické riadky sa mažú po 90 dňoch.",
+    privacy: "Ochrana súkromia a ovládanie údajov",
     terms: "Podmienky používania",
   },
 } as const;

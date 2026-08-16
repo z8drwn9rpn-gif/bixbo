@@ -7,6 +7,7 @@ export const HEALTH_CONSENT_VERSION = "2026-08-16";
 
 const PENDING_KEY = "bixbo:pending-legal-consent:v1";
 const ONBOARDING_KEY = "bixbo:onboarding-completed:v1";
+const CLOUD_CONSENT_WITHDRAWN_KEY = "bixbo:cloud-health-consent-withdrawn:v1";
 
 export type SignupLegalConsent = {
   termsAccepted: true;
@@ -17,6 +18,8 @@ export type SignupLegalConsent = {
   healthConsentVersion: string;
   stagedAt: string;
 };
+
+export type CloudHealthConsentState = "active" | "withdrawn" | "missing" | "signed-out";
 
 function browserStorage(): Storage | null {
   return typeof window === "undefined" ? null : window.localStorage;
@@ -48,17 +51,49 @@ export function onboardingCompleted(): boolean {
   return browserStorage()?.getItem(ONBOARDING_KEY) === "true";
 }
 
+export function localCloudHealthConsentWithdrawn(): boolean {
+  return browserStorage()?.getItem(CLOUD_CONSENT_WITHDRAWN_KEY) === "true";
+}
+
+export function markLocalCloudHealthConsentWithdrawn(): void {
+  browserStorage()?.setItem(CLOUD_CONSENT_WITHDRAWN_KEY, "true");
+}
+
+export function clearLocalCloudHealthConsentWithdrawn(): void {
+  browserStorage()?.removeItem(CLOUD_CONSENT_WITHDRAWN_KEY);
+}
+
 export async function markOnboardingCompleted(): Promise<void> {
   browserStorage()?.setItem(ONBOARDING_KEY, "true");
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) return;
 
   const db = supabase as unknown as SupabaseClient;
+  const now = new Date().toISOString();
   const { error: writeError } = await db
     .from("user_legal_consents")
-    .update({ onboarding_completed_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+    .update({ onboarding_completed_at: now, updated_at: now })
     .eq("user_id", data.user.id);
   if (writeError) throw writeError;
+}
+
+/**
+ * Fail-closed cloud consent state used by auth/privacy controls.
+ * Local BIXBO data remains available regardless of this state.
+ */
+export async function cloudHealthConsentState(): Promise<CloudHealthConsentState> {
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) return "signed-out";
+
+  const db = supabase as unknown as SupabaseClient;
+  const { data, error } = await db
+    .from("user_legal_consents")
+    .select("health_consent_withdrawn_at")
+    .eq("user_id", userData.user.id)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return "missing";
+  return data.health_consent_withdrawn_at ? "withdrawn" : "active";
 }
 
 function parseConsent(value: unknown): SignupLegalConsent | null {
@@ -128,5 +163,6 @@ export async function finalizePendingLegalConsent(): Promise<boolean> {
   if (stateError) throw stateError;
 
   clearPendingLegalConsent();
+  clearLocalCloudHealthConsentWithdrawn();
   return !onboardingCompleted() && !legalState?.onboarding_completed_at;
 }

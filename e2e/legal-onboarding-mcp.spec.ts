@@ -21,30 +21,63 @@ test("legal pages are public and linked from account creation", async ({ page })
   await expect(submit).toBeEnabled();
 });
 
-test("onboarding changes only existing preference fields and keeps analytics opt-in", async ({ page }) => {
+test("fresh onboarding starts unselected and persists tracking, units, reproductive and reminder choices", async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem("bixbo:v2", JSON.stringify({
       settings: {
         language: "en",
         tracking: { pain: true, tetany: true, panic: true, bowel: true, cycle: true, painScale: "half" },
+        units: { weight: "kg", temperature: "c", volume: "ml", time: "24h" },
         privacy: { analytics: false, crashReports: true },
       },
     }));
   });
+
   await page.goto("/onboarding");
   await page.getByRole("button", { name: "Next" }).click();
+
+  const pain = page.getByRole("switch", { name: "Pain" });
   const tetany = page.getByRole("switch", { name: "Tetany" });
-  await expect(tetany).toHaveAttribute("aria-checked", "true");
-  await tetany.click();
+  await expect(pain).toHaveAttribute("aria-checked", "false");
+  await expect(tetany).toHaveAttribute("aria-checked", "false");
+  await pain.click();
   await page.getByRole("button", { name: "Next" }).click();
-  const analytics = page.getByRole("switch", { name: "Anonymous product analytics" });
+
+  await page.getByRole("button", { name: "lb" }).click();
+  await page.getByRole("button", { name: "Next" }).click();
+
+  await page.getByRole("button", { name: "Trying to conceive" }).click();
+  await page.getByRole("button", { name: "Next" }).click();
+
+  const meds = page.getByRole("switch", { name: "Medication reminders" });
+  await expect(meds).toHaveAttribute("aria-checked", "true");
+  await meds.click();
+  await page.getByRole("button", { name: "Next" }).click();
+
+  const analytics = page.getByRole("switch", { name: "Privacy-preserving product analytics" });
   await expect(analytics).toHaveAttribute("aria-checked", "false");
   await page.getByRole("button", { name: "Finish setup" }).click();
   await expect(page).toHaveURL(/\/$/);
+
   await expect.poll(async () => page.evaluate(() => {
-    const data = JSON.parse(localStorage.getItem("bixbo:v2") || "{}") as { settings?: { tracking?: { tetany?: boolean }, privacy?: { analytics?: boolean } } };
-    return [data.settings?.tracking?.tetany, data.settings?.privacy?.analytics];
-  })).toEqual([false, false]);
+    const data = JSON.parse(localStorage.getItem("bixbo:v2") || "{}") as {
+      settings?: {
+        tracking?: { pain?: boolean; tetany?: boolean };
+        units?: { weight?: string };
+        privacy?: { analytics?: boolean };
+        notif?: { meds?: boolean };
+      };
+      profile?: { tryingToConceive?: boolean };
+    };
+    return [
+      data.settings?.tracking?.pain,
+      data.settings?.tracking?.tetany,
+      data.settings?.units?.weight,
+      data.settings?.notif?.meds,
+      data.settings?.privacy?.analytics,
+      data.profile?.tryingToConceive,
+    ];
+  })).toEqual([true, false, "lb", false, false, true]);
 });
 
 test("Profile privacy exposes the same analytics opt-in and both legal documents", async ({ page }) => {
@@ -59,9 +92,9 @@ test("Profile privacy exposes the same analytics opt-in and both legal documents
   await page.goto("/profile");
   await page.getByRole("button", { name: /Privacy/ }).first().click();
 
-  const analytics = page.getByRole("button", { name: "Anonymous product analytics" });
+  const analytics = page.getByRole("button", { name: "Privacy-preserving product analytics" });
   await expect(analytics).toBeVisible();
-  await expect(page.getByRole("link", { name: "Privacy Policy" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Privacy Policy & data controls" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Terms of Service" })).toBeVisible();
 
   await analytics.click();
