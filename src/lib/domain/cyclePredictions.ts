@@ -7,7 +7,7 @@ export type PeriodPredictionWindow = { start: string; end: string };
  * Keep period prediction paint honest once reality has disproved a forecast.
  *
  * The raw cycle calculator deliberately emits repeating theoretical windows.
- * UI surfaces must not keep a predicted (pink) window after its expected start
+ * UI surfaces must not keep a predicted purple window after its expected start
  * has passed without an actual period log. The one exception is the most recent
  * real period: when its exact end is known, use that exact end instead of the
  * configured typical period length.
@@ -26,8 +26,8 @@ export function sanitizePeriodPredictions(
     }
 
     // A forecast whose start is already in the past and still has no real log
-    // is a missed forecast. Remove the whole pink window instead of leaving the
-    // remaining days coloured as though the prediction were still correct.
+    // is a missed forecast. Remove the whole purple window instead of leaving
+    // the remaining days coloured as though the prediction were still correct.
     if (window.start < today) return [];
 
     return [window];
