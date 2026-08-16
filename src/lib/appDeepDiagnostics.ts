@@ -37,24 +37,47 @@ async function currentAssetCoherenceCheck(): Promise<DiagnosticResult> {
     return result("deep-assets", "Forensics", "warning", "Loaded build assets", "No hashed JavaScript/CSS assets were discoverable in the current document.");
   }
 
-  const failures: string[] = [];
+  const staleLoadedAssets: string[] = [];
+  const hardFailures: string[] = [];
   for (const url of urls) {
     try {
       const response = await fetch(scanUrl(url.href), { method: "HEAD", cache: "no-store" });
       const type = (response.headers.get("content-type") ?? "").toLowerCase();
       const expectsCss = url.pathname.endsWith(".css");
       const mimeOk = expectsCss ? type.includes("text/css") : type.includes("javascript");
-      if (!response.ok || !mimeOk || type.includes("text/html")) {
-        failures.push(`${url.pathname} → HTTP ${response.status}, ${type || "missing content-type"}`);
-      }
+      const html = type.includes("text/html");
+      if (response.ok && mimeOk && !html) continue;
+
+      const detail = `${url.pathname} → HTTP ${response.status}, ${type || "missing content-type"}`;
+      const safeMissingHashedAsset = response.status === 404 && mimeOk && !html;
+      if (safeMissingHashedAsset) staleLoadedAssets.push(detail);
+      else hardFailures.push(detail);
     } catch (error) {
-      failures.push(`${url.pathname} → ${error instanceof Error ? error.message : String(error)}`);
+      hardFailures.push(`${url.pathname} → ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  return failures.length
-    ? result("deep-assets", "Forensics", "error", "Loaded build assets", `${failures.length}/${urls.length} active build assets failed coherence: ${failures.slice(0, 3).join(" · ")}`)
-    : result("deep-assets", "Forensics", "ok", "Loaded build assets", `${urls.length} active hashed JavaScript/CSS assets returned the expected status and MIME type.`);
+  if (hardFailures.length) {
+    return result(
+      "deep-assets",
+      "Forensics",
+      "error",
+      "Loaded build assets",
+      `${hardFailures.length}/${urls.length} active build assets are genuinely incoherent: ${hardFailures.slice(0, 3).join(" · ")}`,
+    );
+  }
+
+  if (staleLoadedAssets.length) {
+    return result(
+      "deep-assets",
+      "Forensics",
+      "warning",
+      "Loaded build assets",
+      `${staleLoadedAssets.length}/${urls.length} asset${staleLoadedAssets.length === 1 ? "" : "s"} belong to an older already-loaded build and now return the app's safe non-HTML 404: ${staleLoadedAssets.slice(0, 3).join(" · ")}. The current session can keep running; fully close and reopen BIXBO to move onto the newest build.`,
+    );
+  }
+
+  return result("deep-assets", "Forensics", "ok", "Loaded build assets", `${urls.length} active hashed JavaScript/CSS assets returned the expected status and MIME type.`);
 }
 
 async function staleAssetSentinelCheck(): Promise<DiagnosticResult> {
