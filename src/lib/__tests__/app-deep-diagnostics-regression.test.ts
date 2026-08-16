@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 describe("deep App Scanner forensics", () => {
-  it("keeps live deployment, storage and incident-correlation probes wired in", () => {
+  it("keeps live deployment, storage, network-attribution and rendering probes wired in", () => {
     const deep = readFileSync("src/lib/appDeepDiagnostics.ts", "utf8");
     const diagnostics = readFileSync("src/routes/diagnostics.tsx", "utf8");
     const shell = readFileSync("src/components/AppShell.tsx", "utf8");
@@ -11,10 +11,19 @@ describe("deep App Scanner forensics", () => {
     expect(deep).toContain("staleAssetSentinelCheck()");
     expect(deep).toContain('headers: { "x-bixbo-trace": traceId');
     expect(deep).toContain('method: "HEAD"');
+    expect(deep).toContain("networkAttributionCheck()");
+    expect(deep).toContain("parseBixboServerTiming");
+    expect(deep).toContain("outside Worker");
     expect(deep).toContain('"x".repeat(4096)');
     expect(deep).toContain("indexedDB.open");
     expect(deep).toContain("caches.keys()");
+    expect(deep).toContain("storagePersistenceCheck()");
     expect(deep).toContain('querySelectorAll<HTMLElement>("[id]")');
+    expect(deep).toContain("domComplexityCheck()");
+    expect(deep).toContain("navigationBreakdownCheck()");
+    expect(deep).toContain("resourceWaterfallCheck()");
+    expect(deep).toContain("fontPipelineCheck()");
+    expect(deep).toContain("serviceWorkerLifecycleCheck()");
     expect(deep).toContain("PerformanceObserver");
 
     expect(diagnostics).toContain("runDeepBrowserDiagnostics");
