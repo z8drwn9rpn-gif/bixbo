@@ -53,6 +53,20 @@ describe("Insights dashboard photo-matched cards", () => {
     expect(time).toContain('h-[150px]');
   });
 
+  test("keeps dense medication rows, non-overlapping SukSuk tiles, and a larger hot-flash chart", () => {
+    const meds = readFileSync("src/features/insights/MedsAdherenceInsightsCard.tsx", "utf8");
+    const suk = readFileSync("src/features/insights/SukSukInsightsCard.tsx", "utf8");
+    const hot = readFileSync("src/features/insights/HotFlashesInsightsCard.tsx", "utf8");
+
+    expect(meds).toContain("items-center gap-1.5 py-1");
+    expect(meds).toContain("h-1 overflow-hidden rounded-full");
+    expect(suk).toContain('className="mt-1 whitespace-nowrap text-[9px] leading-none text-muted-foreground">days with intimacy');
+    expect(suk).toContain('className="mt-1 whitespace-nowrap text-[9px] leading-none text-muted-foreground">best day');
+    expect(hot).toContain('h-[92px]');
+    expect(hot).toContain("grid-cols-[20px_82px_minmax(0,1fr)_20px]");
+    expect(hot).toContain("h-5 w-5 place-items-center rounded-full text-[9px]");
+  });
+
   test("reserves Blueberry wording for cycle UI, not general Quick Insights", () => {
     const pain = readFileSync("src/features/insights/PainInsightsCard.tsx", "utf8");
     const hot = readFileSync("src/features/insights/HotFlashesInsightsCard.tsx", "utf8");
