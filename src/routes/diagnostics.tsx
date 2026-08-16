@@ -4,12 +4,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import {
   clearRuntimeDiagnosticIssues,
+  getRuntimeDiagnosticIssues,
   runAppDiagnostics,
   type AppDiagnosticReport,
   type DiagnosticResult,
   type DiagnosticStatus,
   type RuntimeDiagnosticIssue,
 } from "@/lib/appDiagnostics";
+import { runDeepBrowserDiagnostics } from "@/lib/appDeepDiagnostics";
 
 type ForensicIssue = RuntimeDiagnosticIssue & {
   incidentId?: string;
@@ -20,6 +22,13 @@ type ForensicIssue = RuntimeDiagnosticIssue & {
   traceId?: string;
   buildFingerprint?: string;
   timeline?: string[];
+};
+
+type ForensicCluster = {
+  id: string;
+  issues: ForensicIssue[];
+  primary: ForensicIssue;
+  occurrences: number;
 };
 
 export const Route = createFileRoute("/diagnostics")({
@@ -76,6 +85,13 @@ function prettyCause(value?: string): string {
   return value.replace(/-/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
+function primaryScore(issue: ForensicIssue): number {
+  const severity = incidentIsError(issue) ? 1_000_000 : 0;
+  const confidence = Math.max(0, issue.confidence ?? 0) * 1_000;
+  const duration = Math.max(0, issue.durationMs ?? 0);
+  return severity + confidence + duration;
+}
+
 function ResultRow({ item }: { item: DiagnosticResult }) {
   return (
     <article className={`rounded-2xl bg-surface px-4 py-3 shadow-sm ring-1 ${resultBorder(item.status)}`}>
@@ -99,18 +115,26 @@ function DiagnosticsPage() {
   const [report, setReport] = useState<AppDiagnosticReport | null>(null);
   const [running, setRunning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
+  const [copyStatus, setCopyStatus] = useState<string | null>(null);
 
   const run = useCallback(async () => {
     if (running) return;
     setRunning(true);
     setScanError(null);
     try {
-      const next = await runAppDiagnostics({
+      const base = await runAppDiagnostics({
         preloadRoute: async (path) => {
           await router.preloadRoute({ to: path as never });
         },
       });
-      setReport(next);
+      const deepResults = await runDeepBrowserDiagnostics();
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+      setReport({
+        ...base,
+        finishedAt: Date.now(),
+        results: [...base.results, ...deepResults],
+        runtimeIssues: getRuntimeDiagnosticIssues(),
+      });
     } catch (error) {
       setScanError(error instanceof Error ? error.message : "The scanner could not finish.");
     } finally {
@@ -142,13 +166,32 @@ function DiagnosticsPage() {
     return [...map.entries()];
   }, [report]);
 
+  const forensicIssues = useMemo(() => (report?.runtimeIssues ?? []) as ForensicIssue[], [report]);
+
+  const incidentClusters = useMemo<ForensicCluster[]>(() => {
+    const map = new Map<string, ForensicIssue[]>();
+    for (const issue of forensicIssues) {
+      const key = issue.incidentId ?? issue.id;
+      const list = map.get(key) ?? [];
+      list.push(issue);
+      map.set(key, list);
+    }
+
+    return [...map.entries()]
+      .map(([id, issues]) => {
+        const sorted = [...issues].sort((a, b) => b.at - a.at);
+        const primary = [...sorted].sort((a, b) => primaryScore(b) - primaryScore(a))[0];
+        const occurrences = sorted.reduce((sum, issue) => sum + Math.max(1, issue.occurrenceCount ?? 1), 0);
+        return { id, issues: sorted, primary, occurrences };
+      })
+      .sort((a, b) => b.primary.at - a.primary.at);
+  }, [forensicIssues]);
+
   const forensicSummary = useMemo(() => {
-    const issues = (report?.runtimeIssues ?? []) as ForensicIssue[];
-    const clusters = new Set(issues.map((issue) => issue.incidentId ?? issue.id)).size;
     const causeCounts = new Map<string, number>();
     const fingerprintCounts = new Map<string, number>();
 
-    for (const issue of issues) {
+    for (const issue of forensicIssues) {
       const weight = Math.max(1, issue.occurrenceCount ?? 1);
       if (issue.rootCause) causeCounts.set(issue.rootCause, (causeCounts.get(issue.rootCause) ?? 0) + weight);
       if (issue.fingerprint) fingerprintCounts.set(issue.fingerprint, (fingerprintCounts.get(issue.fingerprint) ?? 0) + weight);
@@ -156,8 +199,51 @@ function DiagnosticsPage() {
 
     const topCause = [...causeCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
     const mostRepeated = [...fingerprintCounts.values()].sort((a, b) => b - a)[0] ?? 0;
-    return { clusters, topCause, mostRepeated };
-  }, [report]);
+    return { clusters: incidentClusters.length, topCause, mostRepeated };
+  }, [forensicIssues, incidentClusters.length]);
+
+  const copyForensicReport = async () => {
+    if (!report) return;
+    const technicalBundle = {
+      schema: "bixbo-forensic-report-v1",
+      generatedAt: new Date().toISOString(),
+      scan: {
+        startedAt: new Date(report.startedAt).toISOString(),
+        finishedAt: new Date(report.finishedAt).toISOString(),
+        results: report.results,
+      },
+      environment: typeof window === "undefined" ? undefined : {
+        userAgent: navigator.userAgent,
+        language: navigator.language,
+        online: navigator.onLine,
+        viewport: `${window.innerWidth}x${window.innerHeight}`,
+        devicePixelRatio: window.devicePixelRatio,
+        displayMode: window.matchMedia?.("(display-mode: standalone)").matches ? "standalone" : "browser",
+      },
+      incidents: forensicIssues,
+    };
+    const text = JSON.stringify(technicalBundle, null, 2);
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        textarea.remove();
+      }
+      setCopyStatus("Forensic report copied");
+    } catch {
+      setCopyStatus("Copy failed");
+    }
+    window.setTimeout(() => setCopyStatus(null), 2_500);
+  };
 
   const clearHistory = () => {
     clearRuntimeDiagnosticIssues();
@@ -204,19 +290,19 @@ function DiagnosticsPage() {
             </div>
           </div>
 
-          {report && (
+          {report ? (
             <p className="mt-3 text-xs text-muted-foreground">
-              Last scan: {new Date(report.finishedAt).toLocaleString()} · {(report.finishedAt - report.startedAt) / 1000}s
+              Last scan: {new Date(report.finishedAt).toLocaleString()} · {((report.finishedAt - report.startedAt) / 1000).toFixed(1)}s
             </p>
-          )}
-          {scanError && <p className="mt-3 rounded-2xl bg-destructive/10 p-3 text-sm text-destructive">Scanner error: {scanError}</p>}
+          ) : null}
+          {scanError ? <p className="mt-3 rounded-2xl bg-destructive/10 p-3 text-sm text-destructive">Scanner error: {scanError}</p> : null}
         </section>
 
         <section className="rounded-3xl bg-tint p-4 text-xs leading-relaxed text-muted-foreground ring-1 ring-border/60">
-          <span className="font-bold text-foreground">Black-box recorder:</span> keeps a rolling technical timeline, correlates request trace IDs, server timing, route transitions, component render cost, frame/layout jumps, startup stalls, deployment/cache identity, service-worker state, storage pressure, memory pressure where supported, API failures and abrupt session endings. Repeated signatures are fingerprinted and counted. Health-log contents, form values and request bodies are never copied into diagnostics.
+          <span className="font-bold text-foreground">Black-box recorder:</span> keeps a rolling technical timeline, correlates request trace IDs, server timing, route transitions, per-screen and selected component render cost, frame/layout jumps, startup stalls, deployment/cache identity, service-worker state, storage pressure, memory pressure where supported, API failures and abrupt session endings. Repeated signatures are fingerprinted and counted. Health-log contents, form values and request bodies are never copied into diagnostics.
         </section>
 
-        {report?.runtimeIssues.length ? (
+        {forensicIssues.length ? (
           <section className="grid grid-cols-3 gap-2 rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
             <div className="rounded-2xl bg-tint p-3">
               <p className="text-xl font-black tabular-nums text-foreground">{forensicSummary.clusters}</p>
@@ -251,28 +337,38 @@ function DiagnosticsPage() {
           </section>
         ))}
 
-        {report?.runtimeIssues.length ? (
+        {incidentClusters.length ? (
           <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="text-sm font-bold text-foreground">Recorded app incidents</h2>
-                <p className="mt-0.5 text-xs text-muted-foreground">Local forensic evidence only; health-log contents are not stored here.</p>
+                <h2 className="text-sm font-bold text-foreground">Forensic incident clusters</h2>
+                <p className="mt-0.5 text-xs text-muted-foreground">Related signals are grouped into one event so the likely root cause is easier to identify.</p>
               </div>
-              <button
-                type="button"
-                onClick={clearHistory}
-                className="min-h-11 rounded-full border border-border px-3 text-xs font-bold text-foreground"
-              >
-                Clear resolved
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => void copyForensicReport()}
+                  className="min-h-11 rounded-full border border-border px-3 text-xs font-bold text-foreground"
+                >
+                  {copyStatus ?? "Copy forensic report"}
+                </button>
+                <button
+                  type="button"
+                  onClick={clearHistory}
+                  className="min-h-11 rounded-full border border-border px-3 text-xs font-bold text-foreground"
+                >
+                  Clear resolved
+                </button>
+              </div>
             </div>
-            <div className="mt-3 space-y-2">
-              {report.runtimeIssues.map((rawIssue) => {
-                const issue = rawIssue as ForensicIssue;
+
+            <div className="mt-3 space-y-3">
+              {incidentClusters.map((cluster) => {
+                const issue = cluster.primary;
                 const isError = incidentIsError(issue);
                 return (
-                  <div
-                    key={issue.id}
+                  <article
+                    key={cluster.id}
                     className={`rounded-2xl p-3 ring-1 ${isError ? "bg-destructive/5 ring-destructive/15" : "bg-amber-500/5 ring-amber-500/20"}`}
                   >
                     <div className="flex flex-wrap items-center gap-2">
@@ -281,7 +377,9 @@ function DiagnosticsPage() {
                         {INCIDENT_LABEL[issue.kind] ?? issue.kind}
                       </span>
                       <span className="text-[10px] text-muted-foreground">{new Date(issue.at).toLocaleString()}</span>
-                      {(issue.occurrenceCount ?? 1) > 1 ? <span className="rounded-full bg-background px-2 py-0.5 text-[9px] font-black text-foreground ring-1 ring-border">Seen {issue.occurrenceCount}×</span> : null}
+                      <span className="rounded-full bg-background px-2 py-0.5 text-[9px] font-black text-foreground ring-1 ring-border">
+                        {cluster.issues.length} signal{cluster.issues.length === 1 ? "" : "s"} · {cluster.occurrences} occurrence{cluster.occurrences === 1 ? "" : "s"}
+                      </span>
                     </div>
 
                     <div className="mt-2 space-y-1.5">
@@ -300,18 +398,17 @@ function DiagnosticsPage() {
                       <p className="break-all text-[10px] text-muted-foreground">
                         <span className="font-black text-foreground">Where: </span>{issue.path}
                       </p>
-                      {(issue.incidentId || issue.fingerprint) ? (
-                        <p className="break-all text-[10px] text-muted-foreground">
-                          <span className="font-black text-foreground">Correlation: </span>
-                          {issue.incidentId ? `cluster ${issue.incidentId}` : ""}{issue.incidentId && issue.fingerprint ? " · " : ""}{issue.fingerprint ? `fingerprint ${issue.fingerprint}` : ""}
-                        </p>
-                      ) : null}
+                      <p className="break-all text-[10px] text-muted-foreground">
+                        <span className="font-black text-foreground">Correlation: </span>
+                        cluster {cluster.id}{issue.fingerprint ? ` · fingerprint ${issue.fingerprint}` : ""}
+                      </p>
                       {(issue.traceId || issue.buildFingerprint) ? (
                         <p className="break-all text-[10px] text-muted-foreground">
                           <span className="font-black text-foreground">Trace / build: </span>
-                          {issue.traceId ? issue.traceId : "no request trace"}{issue.buildFingerprint ? ` · ${issue.buildFingerprint}` : ""}
+                          {issue.traceId ?? "no request trace"}{issue.buildFingerprint ? ` · ${issue.buildFingerprint}` : ""}
                         </p>
                       ) : null}
+
                       {issue.timeline?.length ? (
                         <div className="rounded-xl bg-background/55 p-2 text-[10px] leading-relaxed text-muted-foreground ring-1 ring-border/60">
                           <p className="font-black text-foreground">60-second black-box timeline</p>
@@ -320,13 +417,29 @@ function DiagnosticsPage() {
                           </ol>
                         </div>
                       ) : null}
+
+                      {cluster.issues.length > 1 ? (
+                        <details className="rounded-xl bg-background/55 p-2 text-[10px] text-muted-foreground ring-1 ring-border/60">
+                          <summary className="cursor-pointer font-black text-foreground">Related signals in this incident</summary>
+                          <div className="mt-2 space-y-2">
+                            {cluster.issues.map((related) => (
+                              <div key={related.id} className="border-t border-border/60 pt-2 first:border-0 first:pt-0">
+                                <p className="font-semibold text-foreground">{INCIDENT_LABEL[related.kind] ?? related.kind} · {new Date(related.at).toLocaleTimeString()}</p>
+                                <p className="mt-0.5 break-words">{related.message}</p>
+                                {typeof related.durationMs === "number" ? <p className="mt-0.5 tabular-nums">{related.durationMs} ms</p> : null}
+                              </div>
+                            ))}
+                          </div>
+                        </details>
+                      ) : null}
+
                       {issue.context ? (
                         <p className="break-words rounded-xl bg-background/55 p-2 text-[10px] leading-relaxed text-muted-foreground ring-1 ring-border/60">
                           <span className="font-black text-foreground">Why / forensic evidence: </span>{issue.context}
                         </p>
                       ) : null}
                     </div>
-                  </div>
+                  </article>
                 );
               })}
             </div>
@@ -334,7 +447,7 @@ function DiagnosticsPage() {
         ) : null}
 
         <section className="rounded-3xl bg-tint p-4 text-xs leading-relaxed text-muted-foreground ring-1 ring-border/60">
-          The scanner now correlates multiple signals into incident clusters, fingerprints recurring failures and assigns a confidence score to the leading technical cause. Browser/PWA telemetry still cannot prove every OS-level termination, especially when iOS kills a process without exposing a reason, so CI browser tests remain the second independent layer.
+          The scanner now runs deployment sentinels, active asset MIME checks, Worker trace verification, storage-latency and IndexedDB probes, CacheStorage/DOM integrity checks, per-screen React profiling, incident correlation, recurring fingerprints and confidence-ranked root-cause analysis. Browser/PWA telemetry still cannot prove every OS-level termination, especially when iOS kills a process without exposing a reason, so CI browser tests remain the second independent layer.
         </section>
       </div>
     </AppShell>
