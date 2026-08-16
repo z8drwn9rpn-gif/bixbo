@@ -18,6 +18,8 @@ export type SignupLegalConsent = {
   stagedAt: string;
 };
 
+export type CloudHealthConsentState = "active" | "withdrawn" | "missing" | "signed-out";
+
 function browserStorage(): Storage | null {
   return typeof window === "undefined" ? null : window.localStorage;
 }
@@ -54,11 +56,31 @@ export async function markOnboardingCompleted(): Promise<void> {
   if (error || !data.user) return;
 
   const db = supabase as unknown as SupabaseClient;
+  const now = new Date().toISOString();
   const { error: writeError } = await db
     .from("user_legal_consents")
-    .update({ onboarding_completed_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+    .update({ onboarding_completed_at: now, updated_at: now })
     .eq("user_id", data.user.id);
   if (writeError) throw writeError;
+}
+
+/**
+ * Fail-closed cloud consent state used by sync and privacy controls.
+ * Local BIXBO data remains available regardless of this state.
+ */
+export async function cloudHealthConsentState(): Promise<CloudHealthConsentState> {
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) return "signed-out";
+
+  const db = supabase as unknown as SupabaseClient;
+  const { data, error } = await db
+    .from("user_legal_consents")
+    .select("health_consent_withdrawn_at")
+    .eq("user_id", userData.user.id)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return "missing";
+  return data.health_consent_withdrawn_at ? "withdrawn" : "active";
 }
 
 function parseConsent(value: unknown): SignupLegalConsent | null {
