@@ -100,10 +100,10 @@ const APPLE_PWA_LAUNCH_SPLASH_CSS = `
     animation: bixbo-ios-launch-splash-hide 240ms ease-out forwards;
   }
   #bixbo-ios-launch-splash img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center;
+    width: 144px;
+    height: 144px;
+    object-fit: contain;
+    filter: drop-shadow(0 10px 18px rgba(57, 70, 43, 0.16));
   }
   @keyframes bixbo-ios-launch-splash-hide {
     to { opacity: 0; visibility: hidden; }
@@ -117,9 +117,10 @@ const APPLE_PWA_LAUNCH_SPLASH_BOOTSTRAP = `(() => {
     const standalone = Boolean(window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || nav.standalone === true;
     if (!standalone) return;
 
-    const sessionKey = "bixbo:pwa-startup-splash:v3";
-    if (sessionStorage.getItem(sessionKey) === "shown") return;
-    sessionStorage.setItem(sessionKey, "shown");
+    const navigationEntry = performance.getEntriesByType("navigation")[0];
+    const navigationType = navigationEntry && "type" in navigationEntry ? navigationEntry.type : "navigate";
+    if (navigationType === "reload" || navigationType === "back_forward") return;
+
     root.dataset.bixboPwaLaunch = "visible";
 
     let hidden = false;
@@ -129,12 +130,12 @@ const APPLE_PWA_LAUNCH_SPLASH_BOOTSTRAP = `(() => {
       window.setTimeout(() => {
         root.dataset.bixboPwaLaunch = "hiding";
         window.setTimeout(() => { delete root.dataset.bixboPwaLaunch; }, 260);
-      }, 650);
+      }, 750);
     };
 
     if (document.readyState === "complete") hide();
     else window.addEventListener("load", hide, { once: true });
-    window.setTimeout(hide, 3500);
+    window.setTimeout(hide, 3000);
   } catch {}
 })();`;
 
@@ -224,6 +225,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "icon", type: "image/png", sizes: "180x180", href: "/apple-touch-icon.png" },
       { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
       { rel: "apple-touch-startup-image", href: "/apple-launch-bixbo.png?v=1" },
+      { rel: "preload", as: "image", href: "/bixbo-mascot-masked.svg?v=20260816-startup" },
       { rel: "icon", type: "image/png", sizes: "192x192", href: "/icon-192.png" },
       { rel: "icon", type: "image/png", sizes: "512x512", href: "/icon-512.png" },
     ],
@@ -247,7 +249,7 @@ function RootShell({ children }: { children: ReactNode }) {
       </head>
       <body data-bixbo-app-root>
         <div id="bixbo-ios-launch-splash" aria-hidden="true">
-          <img src="/apple-launch-bixbo.png?v=1" alt="" />
+          <img src="/bixbo-mascot-masked.svg?v=20260816-startup" alt="" fetchPriority="high" />
         </div>
         {children}
         <Scripts />
