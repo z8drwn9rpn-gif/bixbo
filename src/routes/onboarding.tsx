@@ -102,6 +102,20 @@ type ReproductiveMode = "none" | "trying" | "pregnant" | "postpartum";
 const CATEGORIES: Category[] = ["pain", "tetany", "panic", "bowel", "cycle"];
 const STEPS = 6;
 
+function hasMeaningfulProfile(data: BixboData): boolean {
+  return Object.entries(data.profile ?? {}).some(([key, value]) => {
+    // Storage migration materializes these neutral compatibility fields even
+    // for a brand-new diary. They must not turn a fresh install into an
+    // "existing diary" and silently preserve legacy opt-in tracking defaults.
+    if (key === "pregnancyStatus" && value === "none") return false;
+    if (key === "postpartum" && value === undefined) return false;
+    if (value == null || value === "" || value === false) return false;
+    if (Array.isArray(value)) return value.length > 0;
+    if (typeof value === "object") return Object.keys(value).length > 0;
+    return true;
+  });
+}
+
 function hasMeaningfulData(data: BixboData): boolean {
   return (
     Object.values(data.dayLogs ?? {}).some((log) => hasAnyLog(log)) ||
@@ -109,7 +123,7 @@ function hasMeaningfulData(data: BixboData): boolean {
     data.notebook.length > 0 ||
     data.tasks.length > 0 ||
     data.events.length > 0 ||
-    Boolean(data.profile && Object.keys(data.profile).length) ||
+    hasMeaningfulProfile(data) ||
     Boolean(data.pregnancy?.active) ||
     Boolean(data.postpartum?.active)
   );
