@@ -2,18 +2,40 @@
 export type PainEntryLike = { entryKind?: "pain" | "symptom-update"; score: number };
 export type PainDayLike = { pain?: PainEntryLike[] };
 
-export function painColor(score: number): string {
-  const clamped = Math.max(0, Math.min(10, Number.isFinite(score) ? score : 0));
-  const snapped = Math.round(clamped * 2) / 2;
+/**
+ * Canonical Pain scale colours at every 0.5 step.
+ * Whole-number entries exactly match --pain-0 … --pain-10 in theme-system.css.
+ * Half steps are explicit hex values so iOS/PWA rendering never depends on
+ * CSS color-mix support and 7.5 can never collapse visually into 7 or 8.
+ */
+export const PAIN_SCALE_HALF_STEP_COLORS = [
+  "#7FCF52", "#89CE4D", "#93CE48", "#A4D144", "#B4D43F",
+  "#C4D53C", "#D3D638", "#E2D233", "#F0CF2E", "#F2C32E",
+  "#F5B72D", "#F5A831", "#F59A35", "#F28936", "#EF7838",
+  "#EC693C", "#E95A3F", "#E24C41", "#DC3F43", "#D23741",
+  "#C82F3F",
+] as const;
 
-  // Whole-number colours are the canonical palette and must stay unchanged.
+function snapPainHalfStep(score: number): number {
+  const clamped = Math.max(0, Math.min(10, Number.isFinite(score) ? score : 0));
+  return Math.round(clamped * 2) / 2;
+}
+
+/** Returns the canonical concrete Pain scale colour for charts and SVG UI. */
+export function painHexColor(score: number): string {
+  const snapped = snapPainHalfStep(score);
+  return PAIN_SCALE_HALF_STEP_COLORS[Math.round(snapped * 2)];
+}
+
+export function painColor(score: number): string {
+  const snapped = snapPainHalfStep(score);
+
+  // Whole-number colours stay on their canonical theme tokens.
   if (Number.isInteger(snapped)) return `var(--pain-${snapped})`;
 
-  // Half steps get their own vivid midpoint colour instead of rounding up to
-  // the next integer (for example 7.5 must not look identical to 8).
-  const lower = Math.floor(snapped);
-  const upper = Math.ceil(snapped);
-  return `color-mix(in oklch, var(--pain-${lower}) 50%, var(--pain-${upper}) 50%)`;
+  // Half steps use explicit colours rather than color-mix so they render
+  // identically in Safari/PWA and remain visibly distinct from both neighbours.
+  return painHexColor(snapped);
 }
 
 export function avgDayPain(log?: PainDayLike): number | undefined {
