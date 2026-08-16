@@ -10,6 +10,7 @@ import { ScrollJumpControl } from "./ScrollJumpControl";
 import { GlobalQuickLogActions } from "./GlobalQuickLogActions";
 import { CalendarTargetBridge } from "./CalendarTargetBridge";
 import { DiagnosticProfiler } from "./DiagnosticProfiler";
+import { useDeploymentFreshness } from "@/lib/deploymentFreshness";
 import bixboMascot from "@/assets/bixbo-mascot-user.png";
 
 const BIXBO_MASCOT_SRC = bixboMascot;
@@ -18,6 +19,7 @@ const BIXBO_ROUNDED_DISPLAY_SHADOW = "0 1px 0 rgba(255,255,255,.92), 0 2px 1px r
 
 export function AppShell({ children, title, right, big = false, stickyHeader = true }: { children: ReactNode; title?: ReactNode; right?: ReactNode; big?: boolean; stickyHeader?: boolean; }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+  useDeploymentFreshness();
   const showBixboIconKeyboard = !pathname.startsWith("/notes");
 
   return (
