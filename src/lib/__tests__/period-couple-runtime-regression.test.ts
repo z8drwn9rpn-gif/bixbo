@@ -63,11 +63,22 @@ describe("Period and Couple runtime regressions", () => {
     expect(health).toContain("olderPain");
   });
 
-  it("does not render symptom-only follow-ups as separate Couple pain records", () => {
+  it("shows symptom-only follow-ups inside the complete Couple pain record without counting them as new pain", () => {
     const page = read("src/features/couple/CouplePage.tsx");
+    const health = read("src/features/couple/PartnerHealthDashboard.tsx");
     const utils = read("src/features/couple/coupleUtils.ts");
-    expect(page).toContain('pain.entryKind !== "symptom-update") output.push');
+    expect(page).toContain("output.push({ ...pain, dateKey: day })");
+    expect(page).toContain('const myPain = collectPain(view.dayLogs).filter((entry) => entry.entryKind !== "symptom-update")');
     expect(page).toContain('filter((pain) => pain.entryKind !== "symptom-update")');
+    expect(health).toContain('candidate.entryKind === "symptom-update" && candidate.sourcePainId === entry.id');
+    expect(health).toContain("<SymptomUpdateCard");
+    expect(health).toContain("entry.nauseaTriggers");
+    expect(health).toContain("entry.nauseaSymptoms");
+    expect(health).toContain("entry.nauseaHelped");
+    expect(health).toContain("entry.hotFlashesNote");
+    expect(health).toContain("entry.headacheMed");
+    expect(health).toContain("entry.stress");
+    expect(health).toContain("entry.bodyBattery");
     expect(utils).toContain('entry.entryKind !== "symptom-update"');
   });
 });
