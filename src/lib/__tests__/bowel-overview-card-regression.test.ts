@@ -31,4 +31,13 @@ describe("unified Bowel overview card", () => {
     expect(source).toContain("setFilterType");
     expect(source).toContain("setShowAll");
   });
+
+  it("uses period as a time-window word in Bowel quick insights, not the Blueberry brand", () => {
+    const source = readFileSync("src/features/insights/BowelOverviewCard.tsx", "utf8");
+    const i18n = readFileSync("src/hooks/useI18n.ts", "utf8");
+
+    expect(source).toContain('t("Typical range this period")');
+    expect(i18n).toContain('"Typical range this period"');
+    expect(i18n).toContain("NON_BLUEBERRY_PERIOD_COPY.has(key)");
+  });
 });
