@@ -97,9 +97,9 @@ const APPLE_PWA_LAUNCH_SPLASH_CSS = `
 const APPLE_PWA_LAUNCH_SPLASH_BOOTSTRAP = `(() => {
   try {
     const root = document.documentElement;
-    const nav = window.navigator;
-    const standalone = Boolean(window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || nav.standalone === true;
-    if (!standalone) return;
+    // This script only runs when a new document is created. TanStack Router
+    // navigation inside BIXBO does not recreate the document, so showing the
+    // splash here is reliable on iOS without depending on standalone detection.
     root.dataset.bixboPwaLaunch = "visible";
     let hidden = false;
     const hide = () => {
@@ -161,7 +161,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "icon", type: "image/png", sizes: "180x180", href: "/apple-touch-icon.png" },
       { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
       { rel: "apple-touch-startup-image", href: "/apple-launch-bixbo.png?v=1" },
-      { rel: "preload", as: "image", href: "/bixbo-mascot-user.png?v=20260816-launch2" },
+      { rel: "preload", as: "image", href: "/bixbo-mascot-user.png?v=20260816-launch3" },
       { rel: "icon", type: "image/png", sizes: "192x192", href: "/icon-192.png" },
       { rel: "icon", type: "image/png", sizes: "512x512", href: "/icon-512.png" },
     ],
@@ -173,7 +173,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
-  return <html lang="en" suppressHydrationWarning><head><meta name="theme-color" content="#FBF7F3" /><meta name="color-scheme" content="light dark" /><script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }} /><style dangerouslySetInnerHTML={{ __html: APPLE_PWA_LAUNCH_SPLASH_CSS }} /><script dangerouslySetInnerHTML={{ __html: APPLE_PWA_LAUNCH_SPLASH_BOOTSTRAP }} /><HeadContent /></head><body data-bixbo-app-root><div id="bixbo-ios-launch-splash" aria-hidden="true"><img src="/bixbo-mascot-user.png?v=20260816-launch2" alt="" fetchPriority="high" /></div>{children}<Scripts /></body></html>;
+  return <html lang="en" suppressHydrationWarning><head><meta name="theme-color" content="#FBF7F3" /><meta name="color-scheme" content="light dark" /><script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }} /><style dangerouslySetInnerHTML={{ __html: APPLE_PWA_LAUNCH_SPLASH_CSS }} /><script dangerouslySetInnerHTML={{ __html: APPLE_PWA_LAUNCH_SPLASH_BOOTSTRAP }} /><HeadContent /></head><body data-bixbo-app-root><div id="bixbo-ios-launch-splash" aria-hidden="true"><img src="/bixbo-mascot-user.png?v=20260816-launch3" alt="" fetchPriority="high" /></div>{children}<Scripts /></body></html>;
 }
 
 function RootComponent() {
