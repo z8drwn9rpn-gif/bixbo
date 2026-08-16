@@ -68,6 +68,18 @@ describe("release hardening contracts", () => {
     expect(onboarding).toContain("Reminder preferences");
   });
 
+  it("keeps shell and desktop navigation raw colours out of component source", () => {
+    const shell = read("src/components/AppShell.tsx");
+    const sideNav = read("src/components/SideNav.tsx");
+    for (const source of [shell, sideNav]) {
+      expect(source).not.toMatch(/#[0-9a-f]{3,8}/i);
+      expect(source).not.toContain("rgba(");
+    }
+    expect(shell).toContain("BIXBO_ROUNDED_DISPLAY_SHADOW");
+    expect(sideNav).toContain("BIXBO_SIDE_NAV_SHADOW");
+    expect(sideNav).toContain("bg-tint");
+  });
+
   it("keeps every existing BIXBO MCP tool after replacing the external SDK", () => {
     expect(toolDescriptors(mcp).map((tool) => tool.name)).toEqual([
       "get_day_log", "list_recent_days", "add_day_note", "add_todo", "list_notes", "create_note", "list_medications",
