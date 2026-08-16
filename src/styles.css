@@ -188,13 +188,6 @@
   }
 }
 
-/* Reference-style soft olive UI polish. Palette, rings and shadows are
-   defined once in the final theme blocks below. */
-:root:not(.dark) .bg-surface,
-:root:not(.dark) .bg-card {
-  backdrop-filter: saturate(0.92);
-}
-
 /* Note editor placeholder */
 [contenteditable][data-placeholder]:empty::before {
   content: attr(data-placeholder);
@@ -220,19 +213,10 @@ html.dark {
 body {
   min-height: 100dvh;
   overflow-x: hidden;
-  background: linear-gradient(
-    180deg,
-    #F3F2D3 0%,
-    var(--background) 46%,
-    #E9EBBE 100%
-  );
+  background: var(--background);
   color: var(--foreground);
   overscroll-behavior-y: none;
   -webkit-font-smoothing: antialiased;
-}
-
-.dark body {
-  background: var(--background);
 }
 
 ::selection {
@@ -341,93 +325,6 @@ select:-webkit-autofill {
   -webkit-text-fill-color: var(--foreground);
   box-shadow: 0 0 0 1000px var(--surface) inset;
   caret-color: var(--foreground);
-}
-/* BIXBO soft creamy olive theme revision: 2026-08-08 */
-
-/* Obsolete light-theme revision stack removed after consolidating the final BIXBO palette.
-   The active final light/dark palette begins below. */
-
-/* ==========================================================
-   BIXBO Moss Green light theme — #98A86A
-   Final consolidated palette.
-   HAK keeps its own local lavender theme and is not changed here.
-   ========================================================== */
-
-/* Final light tokens are defined once in :root above. */
-
-/* One Moss Green base behind html/body/safe-area. */
-:root:not(.dark),
-:root:not(.dark) body {
-  background-color: #98A86A;
-}
-
-/* Truer moss gradient — more green, less gray than the previous revision. */
-:root:not(.dark) body {
-  background:
-    radial-gradient(circle at 50% -12%, rgba(226, 232, 216, 0.18) 0%, transparent 34%),
-    linear-gradient(
-      180deg,
-      #9DAE71 0%,
-      #98A86A 34%,
-      #A3B274 68%,
-      #AFBB85 100%
-    );
-}
-
-/* Keep rings/shadows in the same moss family. */
-:root:not(.dark) .ring-border {
-  --tw-ring-color: color-mix(in srgb, #7D8D54 70%, transparent);
-}
-
-:root:not(.dark) .shadow-sm {
-  --tw-shadow-color: color-mix(in srgb, #4E5C31 11%, transparent);
-}
-
-:root:not(.dark) .shadow-md,
-:root:not(.dark) .shadow-lg,
-:root:not(.dark) .shadow-xl {
-  --tw-shadow-color: color-mix(in srgb, #4E5C31 16%, transparent);
-}
-
-/* ==========================================================
-   BIXBO — SOFT OLIVE DARK
-   ========================================================== */
-
-/* Final dark tokens are defined once in .dark above. */
-
-html.dark,
-html.dark body {
-  background-color: #4B5133;
-}
-
-.dark body {
-  background:
-    radial-gradient(
-      circle at 50% -12%,
-      rgba(202, 211, 164, 0.14) 0%,
-      transparent 35%
-    ),
-    linear-gradient(
-      180deg,
-      #565C3A 0%,
-      #505637 30%,
-      #4B5133 62%,
-      #454B2F 100%
-    );
-}
-
-.dark .ring-border {
-  --tw-ring-color: rgba(130, 138, 96, 0.72);
-}
-
-.dark .shadow-sm {
-  --tw-shadow-color: rgba(38, 42, 24, 0.18);
-}
-
-.dark .shadow-md,
-.dark .shadow-lg,
-.dark .shadow-xl {
-  --tw-shadow-color: rgba(38, 42, 24, 0.26);
 }
 /* Mobile accessibility: keep compact arrow visuals, but give them a 44×44 px
    interaction hit area without changing the approved layout dimensions. */

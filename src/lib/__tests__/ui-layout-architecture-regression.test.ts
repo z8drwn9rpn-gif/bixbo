@@ -82,6 +82,12 @@ describe("UI layout architecture regressions", () => {
 
     expect(styles).not.toContain("Final BIXBO Moss Green light palette");
     expect(styles).not.toContain("Final BIXBO Soft Olive dark palette");
+    expect(styles).not.toContain("BIXBO Moss Green light theme");
+    expect(styles).not.toContain("BIXBO — SOFT OLIVE DARK");
+    expect(styles).not.toContain("#98A86A");
+    expect(styles).not.toContain("#4B5133");
+    expect(styles).not.toContain("saturate(0.92)");
+    expect(styles).toContain("background: var(--background);");
     expect(theme).toContain(":root:not(.dark)");
     expect(theme).toContain("--background: #FBF7F3;");
     expect(theme).toContain("--background: #171A14;");
