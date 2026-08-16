@@ -136,13 +136,13 @@ function AuthPage() {
     let staged = false;
     try {
       if (mode === "up") {
-        stagePendingLegalConsent(); staged = true;
+        const legalConsent = stagePendingLegalConsent(); staged = true;
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             emailRedirectTo: authReturnUrl(),
-            data: { display_name: name || undefined },
+            data: { display_name: name || undefined, bixbo_legal_consent: legalConsent },
           },
         });
         if (error) throw error;
