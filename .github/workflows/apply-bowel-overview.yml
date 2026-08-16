@@ -10,7 +10,6 @@ permissions:
 
 jobs:
   patch:
-    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.1
@@ -18,6 +17,7 @@ jobs:
           ref: feat/bowel-overview-card
           fetch-depth: 0
       - name: Wire one Bowel card and update tests
+        shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -40,10 +40,9 @@ jobs:
       </div>'''
           if old not in route:
               raise SystemExit('Bowel route block not found; refusing unsafe patch')
-          route = route.replace(old, new, 1)
-          route_path.write_text(route)
+          route_path.write_text(route.replace(old, new, 1))
 
-          e2e = '''import { expect, test } from "@playwright/test";
+          Path('e2e/insights-bowel.spec.ts').write_text('''import { expect, test } from "@playwright/test";
 
 test("Insights shows one unified Bowel analytics card", async ({ page }) => {
   const pageErrors: string[] = [];
@@ -63,8 +62,7 @@ test("Insights shows one unified Bowel analytics card", async ({ page }) => {
 
   expect(pageErrors, `Insights bowel page errors:\n${pageErrors.join("\\n\\n")}`).toEqual([]);
 });
-'''
-          Path('e2e/insights-bowel.spec.ts').write_text(e2e)
+''')
 
           for stale in [
               Path('src/features/insights/BowelTimelineChart.tsx'),
@@ -73,11 +71,10 @@ test("Insights shows one unified Bowel analytics card", async ({ page }) => {
               if stale.exists():
                   stale.unlink()
 
-          workflow = Path('.github/workflows/apply-bowel-overview.yml')
-          if workflow.exists():
-              workflow.unlink()
+          Path('.github/workflows/apply-bowel-overview.yml').unlink(missing_ok=True)
           PY
       - name: Commit patch
+        shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
