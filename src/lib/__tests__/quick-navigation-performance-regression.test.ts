@@ -17,7 +17,7 @@ describe("quick navigation performance regressions", () => {
     expect(control).not.toContain("useRouter");
     expect(control).not.toContain("window.location.assign");
     expect(root).not.toContain("useDeploymentFreshness");
-    expect(root).toContain('navigationType === "reload"');
+    expect(root).not.toContain("window.location.assign");
   });
 
   it("makes Jump to section visible on the actual Insights dashboard", () => {
