@@ -10,7 +10,9 @@ describe("Insights dashboard photo-matched cards", () => {
     expect(route).toContain("TimeOfDayInsightsCard");
     expect(route).toContain("MedsAdherenceInsightsCard");
     expect(route).toContain("SukSukInsightsCard");
-    expect(route).toContain('["sex", "ŠukŠuk"]');
+    expect(route).toContain('data-bixbo-jump-label={t("ŠukŠuk")}');
+    expect(route).toContain('<InsightsJumpControl refreshKey="insights" />');
+    expect(route).not.toContain("insightsFilter");
   });
 
   test("moves SukSuk out of the HAK calendar", () => {
