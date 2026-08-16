@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 
 import { resolveScheduledDose } from "@/lib/domain/meds";
-import { average, reportPeriodLevel, type ReportDaySummary } from "@/lib/healthReport";
+import { average, mode, reportPeriodLevel, type ReportDaySummary } from "@/lib/healthReport";
 import { formatClockTime, formatTemperature, formatWeight, type UnitPreferences } from "@/lib/preferences";
 import type { BixboData } from "@/lib/storage";
 
@@ -20,6 +20,7 @@ const compactNumber = (value: number | undefined) => value == null || !Number.is
 const longDate = (key: string, locale: string) => fromIso(key).toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" });
 const shortDate = (key: string, locale: string) => fromIso(key).toLocaleDateString(locale, { day: "numeric", month: "short" });
 const painColor = (value: number) => PAIN_COLORS[Math.max(0, Math.min(10, Math.round(value)))];
+const percentage = (count: number, total: number) => total ? Math.round((count / total) * 100) : 0;
 const humanize = (value: string) => value.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/[_-]+/g, " ").replace(/^./, (letter) => letter.toUpperCase());
 
 function heatColumns(days: ReportDaySummary[], locale: string): HeatColumn[] {
@@ -68,9 +69,57 @@ export function HealthReportHeatLegend() {
   </div>;
 }
 
+function PainReportHighlights({ days, locale }: { days: ReportDaySummary[]; locale: string }) {
+  const painDays = days.filter((day) => day.pain != null);
+  const mostPainfulDay = painDays.reduce<ReportDaySummary | undefined>((best, day) => {
+    if (!best) return day;
+    const value = day.pain ?? Number.NEGATIVE_INFINITY;
+    const bestValue = best.pain ?? Number.NEGATIVE_INFINITY;
+    if (value > bestValue || (value === bestValue && day.key > best.key)) return day;
+    return best;
+  }, undefined);
+  const bestPainFreeDay = [...painDays].reverse().find((day) => day.pain === 0);
+
+  const headacheDays = days.filter((day) => (day.log.pain ?? []).some((entry) => entry.headache || entry.headacheIntensity != null || (entry.headacheTypes?.length ?? 0) > 0));
+  const hotFlashDays = days.filter((day) => (day.log.pain ?? []).some((entry) => entry.hotFlashesOn || (entry.hotFlashes ?? 0) > 0));
+  const panicDays = days.filter((day) => (day.log.panic?.length ?? 0) > 0);
+  const commonBowel = mode(days.flatMap((day) => day.bowelTypes));
+  const patterns: string[] = [];
+
+  if (headacheDays.length >= 2) patterns.push(`Headache was recorded on ${headacheDays.length} days; ${headacheDays.filter((day) => day.pain != null).length} overlapped with a recorded pain value.`);
+  if (hotFlashDays.length >= 2) patterns.push(`Hot flashes were recorded on ${hotFlashDays.length} days (${percentage(hotFlashDays.length, days.length)}% of range).`);
+  if (panicDays.length) patterns.push(`${panicDays.length} panic-attack day${panicDays.length === 1 ? "" : "s"} recorded.`);
+  if (commonBowel != null) patterns.push(`Most common recorded bowel value: Type ${commonBowel}.`);
+
+  const cardStyle: CSSProperties = { border: "1px solid #dde1cf", borderRadius: 7, padding: "6px 8px", minWidth: 0 };
+  const labelStyle: CSSProperties = { display: "block", fontSize: 6, fontWeight: 700, textTransform: "uppercase" };
+  const valueStyle: CSSProperties = { display: "block", fontFamily: '"Instrument Serif", Georgia, serif', fontSize: 12, marginTop: 2 };
+  const noteStyle: CSSProperties = { display: "block", fontSize: 5.8, color: "#707668", lineHeight: 1.2, marginTop: 2 };
+
+  return <div style={{ marginTop: 7 }}>
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7 }}>
+      <div style={cardStyle}>
+        <span style={labelStyle}>Most painful day</span>
+        <strong style={valueStyle}>{mostPainfulDay ? shortDate(mostPainfulDay.key, locale) : "—"}</strong>
+        <small style={noteStyle}>{mostPainfulDay?.pain != null ? `${compactNumber(mostPainfulDay.pain)}/10 daily average` : "No pain value recorded"}</small>
+      </div>
+      <div style={cardStyle}>
+        <span style={labelStyle}>Best day without pain</span>
+        <strong style={valueStyle}>{bestPainFreeDay ? shortDate(bestPainFreeDay.key, locale) : "—"}</strong>
+        <small style={noteStyle}>{bestPainFreeDay ? "Explicit 0/10 pain day" : "No explicit 0/10 pain day recorded"}</small>
+      </div>
+    </div>
+    <div style={{ fontFamily: '"Instrument Serif", Georgia, serif', fontSize: 16, margin: "8px 0 4px" }}>Observed patterns</div>
+    <div style={{ display: "grid", gap: 3 }}>
+      {patterns.length ? patterns.map((pattern, index) => <div key={pattern} style={{ display: "grid", gridTemplateColumns: "17px 1fr", gap: 4, fontSize: 6.2, lineHeight: 1.25 }}><b style={{ color: "#7f8950" }}>{String(index + 1).padStart(2, "0")}</b><span>{pattern}</span></div>) : <p style={{ margin: 0, fontSize: 6.2, lineHeight: 1.25, color: "#707668" }}>No repeated pattern met the report threshold in this range.</p>}
+    </div>
+    <p style={{ margin: "5px 0 0", fontSize: 5.8, lineHeight: 1.25, color: "#707668" }}>A pain-free day requires an explicit 0/10 pain value. Missing pain data is never treated as zero.</p>
+  </div>;
+}
+
 export function HealthReportPainTrend({ days, locale }: { days: ReportDaySummary[]; locale: string }) {
   const points = days.map((day, index) => day.pain == null ? null : { index, value: day.pain, key: day.key }).filter((item): item is { index: number; value: number; key: string } => item != null);
-  if (points.length < 2) return <div className="emptyTrend">Not enough pain data for a trend.</div>;
+  if (points.length < 2) return <><div className="emptyTrend">Not enough pain data for a trend.</div><PainReportHighlights days={days} locale={locale} /></>;
   const width = 650;
   const height = 170;
   const left = 34;
@@ -98,6 +147,7 @@ export function HealthReportPainTrend({ days, locale }: { days: ReportDaySummary
       {points.map((point) => <g key={point.key}><circle cx={x(point.index)} cy={y(point.value)} r="3.2" fill={painColor(point.value)} /><text className="pointLabel" x={x(point.index)} y={y(point.value) - 7} textAnchor="middle">{compactNumber(point.value)}</text></g>)}
     </svg>
     <div className="trendLegend"><span><i />Pain daily average</span><span>Missing day = no recorded pain value, not zero</span></div>
+    <PainReportHighlights days={days} locale={locale} />
   </>;
 }
 
