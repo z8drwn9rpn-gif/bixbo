@@ -76,7 +76,7 @@ function OnboardingPage() {
         privacy: { ...accountPrivacyPrefs(current), analytics },
       },
     }));
-    markOnboardingCompleted();
+    await markOnboardingCompleted();
     await trackProductEvent("onboarding_completed", analytics);
     void navigate({ to: "/" });
   };
