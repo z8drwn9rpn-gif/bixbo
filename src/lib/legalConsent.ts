@@ -76,10 +76,11 @@ export function clearLocalCloudHealthConsentWithdrawn(): void {
 }
 
 export async function markOnboardingCompleted(): Promise<void> {
-  browserStorage()?.setItem(ONBOARDING_KEY, "true");
   const { data, error } = await supabase.auth.getUser();
-  if (error || !data.user) return;
-  await invokeLegalWrite("complete-onboarding");
+  if (!error && data.user) {
+    await invokeLegalWrite("complete-onboarding");
+  }
+  browserStorage()?.setItem(ONBOARDING_KEY, "true");
 }
 
 /**
@@ -98,12 +99,12 @@ export async function cloudHealthConsentState(): Promise<CloudHealthConsentState
     .maybeSingle();
   if (error) throw error;
   if (!data) return "missing";
-  if (data.health_consent_withdrawn_at) return "withdrawn";
-  return data.terms_version === TERMS_VERSION
+
+  const versionsCurrent = data.terms_version === TERMS_VERSION
     && data.privacy_version === PRIVACY_VERSION
-    && data.health_consent_version === HEALTH_CONSENT_VERSION
-    ? "active"
-    : "missing";
+    && data.health_consent_version === HEALTH_CONSENT_VERSION;
+  if (!versionsCurrent) return "missing";
+  return data.health_consent_withdrawn_at ? "withdrawn" : "active";
 }
 
 function parseConsent(value: unknown): SignupLegalConsent | null {
