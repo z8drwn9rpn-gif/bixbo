@@ -91,8 +91,8 @@ export function PainChart({ period, days, series, anchor }: { period: Period; da
     emptyMessage={period === "Y" ? `No pain entries in ${anchor.getFullYear()}` : undefined} />;
 }
 
-export function BristolChart({ bowelCounts, period, anchor, onPeriodChange, onPeriodShift }: {
-  bowelCounts: number[]; period: Period; anchor: Date; onPeriodChange: (period: Period) => void; onPeriodShift: (delta: -1 | 1) => void;
+export function BristolChart({ bowelCounts, noBowelMovementCount, period, anchor, onPeriodChange, onPeriodShift }: {
+  bowelCounts: number[]; noBowelMovementCount: number; period: Period; anchor: Date; onPeriodChange: (period: Period) => void; onPeriodShift: (delta: -1 | 1) => void;
 }) {
   const { t } = useI18n();
   const [active, setActive] = useState<number | null>(null);
@@ -106,6 +106,7 @@ export function BristolChart({ bowelCounts, period, anchor, onPeriodChange, onPe
       {chartTypes.map((b) => { const count = bowelCounts[b.n] ?? 0; const selected = active === b.n; return <div key={b.n} className="relative flex flex-1 flex-col items-center gap-1"><div className="flex h-20 w-full items-end"><button type="button" aria-label={`${b.label}. ${count} ${count === 1 ? "entry" : "entries"}. ${b.sub}`} aria-pressed={selected} onClick={(e) => { e.stopPropagation(); setActive((c) => c === b.n ? null : b.n); }} className={`w-full rounded-t focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${selected ? "ring-2 ring-foreground/70" : ""}`} style={{ height: `${Math.max(5, (count / max) * 100)}%`, background: b.color }} /></div><span className="text-[10px] text-muted-foreground">T{b.n}</span><span className="text-[10px]">{count}</span></div>; })}
       {active != null ? (() => { const item = chartTypes.find((type) => type.n === active); const count = bowelCounts[active] ?? 0; if (!item) return null; const details: InsightTooltipDetails = { owner: "You", heading: item.label, value: `${count} ${count === 1 ? "entry" : "entries"}`, description: item.sub, color: item.n === 0 ? "#8b5cf6" : item.color, summary: `${t(item.label)} · ${count} ${count === 1 ? "entry" : "entries"} · ${item.sub}` }; return <InsightFloatingTooltip leftPct={((active + 0.5) / chartTypes.length) * 100} details={details} />; })() : null}
     </div>
+    <p className="mt-3 border-t border-border/60 pt-3 text-[11px] font-medium text-muted-foreground">{t("No bowel movements")}: <span className="tabular-nums font-semibold text-foreground">{noBowelMovementCount}</span></p>
   </section>;
 }
 
