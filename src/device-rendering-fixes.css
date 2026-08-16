@@ -1,0 +1,155 @@
+/* Cross-device rendering corrections.
+   Loaded after the canonical theme + calendar styles so these rules only
+   resolve browser-specific rendering faults without changing BIXBO semantics. */
+
+/* ---------------------------------------------------------------- PDF report
+   The PDF document is a light paper artifact even when the surrounding app is
+   dark. Samsung Internet can otherwise auto-darken inherited text while
+   leaving the white paper background untouched. Keep the whole report island
+   explicitly light and opt it out of browser colour adjustment. */
+.reportRoot .screenPreview,
+.reportRoot .pdf-sheet,
+.modal,
+.modal .toolbar,
+.modal .pdf-sheet {
+  color-scheme: only light !important;
+  forced-color-adjust: none !important;
+  filter: none !important;
+  mix-blend-mode: normal !important;
+  opacity: 1 !important;
+}
+
+.reportRoot .pdf-sheet,
+.modal .pdf-sheet {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  color: #20261d !important;
+  -webkit-text-fill-color: currentColor;
+  isolation: isolate;
+}
+
+.reportRoot .pdf-sheet *,
+.modal .pdf-sheet * {
+  forced-color-adjust: none !important;
+  mix-blend-mode: normal !important;
+}
+
+.reportRoot .pdf-sheet h1,
+.reportRoot .pdf-sheet h2,
+.reportRoot .pdf-sheet h3,
+.reportRoot .pdf-sheet .metric strong,
+.reportRoot .pdf-sheet .metric span,
+.reportRoot .pdf-sheet .bars > div > span,
+.reportRoot .pdf-sheet .bars > div > strong,
+.reportRoot .pdf-sheet .painBars > div > span,
+.reportRoot .pdf-sheet .painBars > div > strong,
+.reportRoot .pdf-sheet .bowelBars > div > span,
+.reportRoot .pdf-sheet .bowelBars > div > strong,
+.modal .pdf-sheet h1,
+.modal .pdf-sheet h2,
+.modal .pdf-sheet h3,
+.modal .pdf-sheet .metric strong,
+.modal .pdf-sheet .metric span,
+.modal .pdf-sheet .bars > div > span,
+.modal .pdf-sheet .bars > div > strong,
+.modal .pdf-sheet .painBars > div > span,
+.modal .pdf-sheet .painBars > div > strong,
+.modal .pdf-sheet .bowelBars > div > span,
+.modal .pdf-sheet .bowelBars > div > strong {
+  color: #20261d !important;
+  -webkit-text-fill-color: #20261d !important;
+}
+
+.reportRoot .pdf-sheet small,
+.reportRoot .pdf-sheet .subnote,
+.reportRoot .pdf-sheet .adherenceNote,
+.reportRoot .pdf-sheet .trendLegend,
+.modal .pdf-sheet small,
+.modal .pdf-sheet .subnote,
+.modal .pdf-sheet .adherenceNote,
+.modal .pdf-sheet .trendLegend {
+  color: #707668 !important;
+  -webkit-text-fill-color: #707668 !important;
+}
+
+.modal .toolbar {
+  background: rgba(255,255,255,.98) !important;
+  color: #20261d !important;
+  -webkit-text-fill-color: #20261d !important;
+}
+
+/* Samsung Internet-specific reinforcement. The browser exposes this data hook
+   during the pre-paint theme bootstrap. */
+html[data-browser="samsung-internet"] .reportRoot .pdf-sheet,
+html[data-browser="samsung-internet"] .modal .pdf-sheet {
+  background: #ffffff !important;
+  color: #20261d !important;
+  -webkit-text-fill-color: #20261d !important;
+  filter: none !important;
+  opacity: 1 !important;
+}
+
+/* --------------------------------------------------------------- Calendar
+   iOS/WebKit can keep the light inline gradient on malformed legacy empty
+   period values. Treat an empty period attribute as a normal non-period day,
+   and use fixed sRGB dark colours instead of color-mix for the date face. */
+.bixbo-calendar .bixbo-calendar-day {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.dark .bixbo-calendar .bixbo-calendar-date-face:not([data-bixbo-period-level]),
+.dark .bixbo-calendar .bixbo-calendar-date-face[data-bixbo-period-level=""] {
+  background: linear-gradient(150deg, #20251b 0%, #171a14 54%, #12150f 100%) !important;
+  background-color: #171a14 !important;
+  border-color: rgba(255,255,255,.08) !important;
+  box-shadow: inset 0 -2px 3px rgba(0,0,0,.38), 0 3px 4px rgba(0,0,0,.30) !important;
+}
+
+.dark .bixbo-calendar .bixbo-calendar-date-face[data-bixbo-period-level=""] {
+  width: 38px !important;
+  height: 38px !important;
+  filter: none !important;
+}
+
+.dark .bixbo-calendar .bixbo-calendar-date-face[data-bixbo-period-level=""][data-bixbo-ringed="true"] {
+  width: 32px !important;
+  height: 32px !important;
+  border: 0 !important;
+}
+
+.dark .bixbo-calendar .bixbo-calendar-date-face[data-bixbo-period-level=""] .bixbo-calendar-date-number,
+.dark .bixbo-calendar .bixbo-calendar-date-face:not([data-bixbo-period-level]) .bixbo-calendar-date-number {
+  color: #f6f4ee !important;
+  -webkit-text-fill-color: #f6f4ee !important;
+  text-shadow: 0 1px 1px rgba(0,0,0,.55) !important;
+}
+
+@media (min-width: 1024px) {
+  .dark .bixbo-calendar .bixbo-calendar-date-face[data-bixbo-period-level=""] {
+    width: 44px !important;
+    height: 44px !important;
+  }
+  .dark .bixbo-calendar .bixbo-calendar-date-face[data-bixbo-period-level=""][data-bixbo-ringed="true"] {
+    width: 38px !important;
+    height: 38px !important;
+  }
+}
+
+/* ------------------------------------------------------------ Quick Log pain
+   Restore the four original colour-coded pain orbs independently of the icon
+   migration pipeline. */
+.bixbo-quick-pain-dot {
+  display: inline-block;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.40);
+  box-shadow: inset 2px 2px 3px rgba(255,255,255,.48), inset -2px -3px 4px rgba(35,30,18,.20), 0 3px 5px rgba(22,27,17,.24);
+}
+
+.bixbo-quick-pain-dot[data-pain-dot="pain-0"] { background: radial-gradient(circle at 31% 27%, #b9f59a 0%, #72c64a 46%, #3f9a3c 100%); }
+.bixbo-quick-pain-dot[data-pain-dot="pain-1"] { background: radial-gradient(circle at 31% 27%, #fff29d 0%, #dfd11f 48%, #b2a411 100%); }
+.bixbo-quick-pain-dot[data-pain-dot="pain-2"] { background: radial-gradient(circle at 31% 27%, #ffd18a 0%, #f5a20b 48%, #d87508 100%); }
+.bixbo-quick-pain-dot[data-pain-dot="pain-3"] { background: radial-gradient(circle at 31% 27%, #ff9e92 0%, #ef4444 48%, #b91c1c 100%); }
