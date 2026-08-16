@@ -58,6 +58,10 @@ function stripRemainingEmoji(value: string) {
     .trim();
 }
 
+function joinDetailParts(values: Array<string | null | undefined | false>) {
+  return values.filter((value): value is string => Boolean(value)).join(" · ");
+}
+
 function Chip({ children, tone = "violet" }: { children: React.ReactNode; tone?: "violet" | "green" | "neutral" }) {
   const classes = tone === "green"
     ? "bg-primary/10 text-primary"
@@ -65,6 +69,14 @@ function Chip({ children, tone = "violet" }: { children: React.ReactNode; tone?:
       ? "bg-tint text-muted-foreground"
       : "bg-violet-500/10 text-violet-700";
   return <span className={`rounded-full px-2.5 py-1 text-[10px] font-medium leading-none ${classes}`}>{children}</span>;
+}
+
+function DetailLine({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <p className="text-[11px] leading-relaxed text-muted-foreground">
+      <span className="font-semibold text-foreground">{label}:</span> {children}
+    </p>
+  );
 }
 
 function MoodChips({ items }: { items: string[] }) {
@@ -95,7 +107,71 @@ function MoodChips({ items }: { items: string[] }) {
   );
 }
 
-function PainCard({ entry, language }: { entry: PainWithDate; language: string }) {
+function PainDetails({ entry }: { entry: PainWithDate }) {
+  const { t } = useI18n();
+  const nauseaSummary = joinDetailParts([
+    entry.nauseaTypes?.length ? entry.nauseaTypes.map(t).join(", ") : null,
+    entry.nauseaSeverity != null ? `${entry.nauseaSeverity}/10` : null,
+    entry.nauseaOngoing ? t("ongoing") : entry.nauseaMinutes != null ? `${entry.nauseaMinutes} min` : null,
+  ]);
+  const headacheSummary = joinDetailParts([
+    entry.headacheTypes?.length ? entry.headacheTypes.map(t).join(", ") : null,
+    entry.headacheIntensity != null ? `${entry.headacheIntensity}/10` : null,
+  ]);
+  const pressureSummary = joinDetailParts([
+    entry.pressureTypes?.length ? entry.pressureTypes.map(t).join(", ") : null,
+    entry.pressureIntensity != null ? `${entry.pressureIntensity}/10` : null,
+  ]);
+
+  return (
+    <>
+      {entry.quality?.length ? <div className="mt-2 flex flex-wrap gap-1.5">{entry.quality.map((item) => <Chip key={item}>{t(item)}</Chip>)}</div> : null}
+      {entry.symptoms?.length ? <div className="mt-2 flex flex-wrap gap-1.5">{entry.symptoms.map((item) => <Chip key={item} tone="green">{t(item)}</Chip>)}</div> : null}
+      {entry.pcosSymptoms?.length ? <div className="mt-2 flex flex-wrap gap-1.5">{entry.pcosSymptoms.map((item) => <Chip key={item} tone="green">{t(item)}</Chip>)}</div> : null}
+
+      <div className="mt-2 space-y-1.5">
+        {entry.fluNote ? <DetailLine label="Flu">{entry.fluNote}</DetailLine> : null}
+        {pressureSummary ? <DetailLine label={t("Pressure")}>{pressureSummary}</DetailLine> : null}
+        {entry.nausea || nauseaSummary ? <DetailLine label={t("Nausea")}>{nauseaSummary || t("Yes")}</DetailLine> : null}
+        {entry.nauseaTriggers?.length ? <DetailLine label={t("Triggers")}>{entry.nauseaTriggers.map(t).join(", ")}</DetailLine> : null}
+        {entry.nauseaSymptoms?.length ? <DetailLine label={`${t("Nausea")} ${t("symptoms")}`}>{entry.nauseaSymptoms.map(t).join(", ")}</DetailLine> : null}
+        {entry.nauseaHelped?.length ? <DetailLine label={t("Relieved by")}>{entry.nauseaHelped.map(t).join(", ")}</DetailLine> : null}
+        {entry.nauseaNote ? <DetailLine label={t("Nausea note")}>{entry.nauseaNote}</DetailLine> : null}
+        {entry.hotFlashesOn || entry.hotFlashes != null ? <DetailLine label={t("Hot flashes")}>{entry.hotFlashes != null ? `${entry.hotFlashes}/5` : t("Yes")}</DetailLine> : null}
+        {entry.hotFlashesNote ? <DetailLine label={t("Hot flashes note")}>{entry.hotFlashesNote}</DetailLine> : null}
+        {entry.headache || headacheSummary ? <DetailLine label={t("Headache")}>{headacheSummary || t("Yes")}</DetailLine> : null}
+        {entry.headacheNote ? <DetailLine label={t("Headache note")}>{entry.headacheNote}</DetailLine> : null}
+        {entry.headacheMed ? (
+          <DetailLine label={t("Headache med")}>
+            <span className="inline-flex items-center gap-1"><PillIcon size={14} />{entry.headacheMed}{entry.headacheMedTime ? ` ${t("at")} ${entry.headacheMedTime}` : ""}</span>
+          </DetailLine>
+        ) : null}
+        {entry.stress != null ? <DetailLine label={t("Stress")}>{entry.stress}/10</DetailLine> : null}
+        {entry.bodyBattery != null ? <DetailLine label={t("Battery")}>{entry.bodyBattery}/5</DetailLine> : null}
+      </div>
+
+      {entry.mood?.length ? <MoodChips items={entry.mood} /> : null}
+      {entry.note ? <p className="mt-2 whitespace-pre-line rounded-xl bg-tint px-2.5 py-2 text-[11px] leading-relaxed text-foreground/75"><span className="font-semibold text-foreground">{t("Note")}:</span> {entry.note}</p> : null}
+    </>
+  );
+}
+
+function SymptomUpdateCard({ entry, language, nested = false }: { entry: PainWithDate; language: string; nested?: boolean }) {
+  const { t } = useI18n();
+  return (
+    <div className={nested ? "border-l border-border/70 pl-3" : "rounded-[1.4rem] bg-surface p-3.5 shadow-sm ring-1 ring-border/70"}>
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-muted-foreground">
+        {!nested ? <span className="inline-flex items-center gap-1"><CalendarIcon size={15} />{formatDate(entry.dateKey, language)}</span> : null}
+        <span className="inline-flex items-center gap-1"><ClockIcon size={15} />{entry.time}</span>
+      </div>
+      <p className="mt-1 text-xs font-bold text-foreground">{t("Add symptoms")}</p>
+      {entry.parts?.length ? <DetailLine label={t("Body")}>{entry.parts.map(t).join(", ")}</DetailLine> : null}
+      <PainDetails entry={entry} />
+    </div>
+  );
+}
+
+function PainCard({ entry, language, updates }: { entry: PainWithDate; language: string; updates: PainWithDate[] }) {
   const { t } = useI18n();
   const description = PAIN_DESCRIPTIONS[Math.max(0, Math.min(10, Math.round(entry.score)))] ?? "Pain";
   const score = Number.isInteger(entry.score) ? String(entry.score) : entry.score.toFixed(1);
@@ -117,23 +193,44 @@ function PainCard({ entry, language }: { entry: PainWithDate; language: string }
           </div>
 
           {entry.parts?.length ? <p className="mt-2 text-sm font-bold text-foreground">{entry.parts.map(t).join(", ")}</p> : entry.score === 0 ? <p className="mt-2 text-sm font-semibold text-foreground">{t("Pain free")}</p> : null}
-
-          {entry.quality?.length ? <div className="mt-2 flex flex-wrap gap-1.5">{entry.quality.map((item) => <Chip key={item}>{t(item)}</Chip>)}</div> : null}
-          {entry.symptoms?.length ? <div className="mt-2 flex flex-wrap gap-1.5">{entry.symptoms.map((item) => <Chip key={item} tone="green">{t(item)}</Chip>)}</div> : null}
-          {entry.pcosSymptoms?.length ? <div className="mt-2 flex flex-wrap gap-1.5">{entry.pcosSymptoms.map((item) => <Chip key={item} tone="green">{t(item)}</Chip>)}</div> : null}
-          {entry.mood?.length ? <MoodChips items={entry.mood} /> : null}
-
-          <div className="mt-2 space-y-1 text-[11px] leading-relaxed text-muted-foreground">
-            {entry.headache ? <p>{t("Headache")}{entry.headacheIntensity != null ? ` ${entry.headacheIntensity}/10` : ""}{entry.headacheTypes?.length ? ` · ${entry.headacheTypes.map(t).join(", ")}` : ""}</p> : null}
-            {entry.nausea ? <p>{t("Nausea")}{entry.nauseaSeverity != null ? ` ${entry.nauseaSeverity}/10` : ""}{entry.nauseaTypes?.length ? ` · ${entry.nauseaTypes.map(t).join(", ")}` : ""}</p> : null}
-            {entry.hotFlashesOn || entry.hotFlashes != null ? <p>{t("Hot flashes")}{entry.hotFlashes != null ? ` ${entry.hotFlashes}/5` : ""}</p> : null}
-            {entry.pressureTypes?.length ? <p>{t("Pressure")}: {entry.pressureTypes.map(t).join(", ")}{entry.pressureIntensity != null ? ` · ${entry.pressureIntensity}/10` : ""}</p> : null}
-            {entry.note ? <p className="rounded-xl bg-tint px-2.5 py-2 text-foreground/75">{entry.note}</p> : null}
-          </div>
+          <PainDetails entry={entry} />
         </div>
       </div>
+
+      {updates.length ? (
+        <div className="mt-3 space-y-2 border-t border-border/60 pt-3">
+          {updates.map((update) => <SymptomUpdateCard key={`${update.dateKey}-${update.id}`} entry={update} language={language} nested />)}
+        </div>
+      ) : null}
     </article>
   );
+}
+
+function PainEntryList({ entries, language }: { entries: PainWithDate[]; language: string }) {
+  const baseEntries = entries.filter((entry) => entry.entryKind !== "symptom-update");
+  const baseIds = new Set(baseEntries.map((entry) => entry.id));
+  const standaloneUpdates = entries.filter((entry) => entry.entryKind === "symptom-update" && (!entry.sourcePainId || !baseIds.has(entry.sourcePainId)));
+
+  return (
+    <div className="space-y-2.5">
+      {baseEntries.map((entry) => (
+        <PainCard
+          key={`${entry.dateKey}-${entry.id}`}
+          entry={entry}
+          language={language}
+          updates={entries.filter((candidate) => candidate.entryKind === "symptom-update" && candidate.sourcePainId === entry.id)}
+        />
+      ))}
+      {standaloneUpdates.map((entry) => <SymptomUpdateCard key={`${entry.dateKey}-${entry.id}`} entry={entry} language={language} />)}
+    </div>
+  );
+}
+
+function visiblePainCardCount(entries: PainWithDate[]) {
+  const baseEntries = entries.filter((entry) => entry.entryKind !== "symptom-update");
+  const baseIds = new Set(baseEntries.map((entry) => entry.id));
+  const standaloneUpdates = entries.filter((entry) => entry.entryKind === "symptom-update" && (!entry.sourcePainId || !baseIds.has(entry.sourcePainId)));
+  return baseEntries.length + standaloneUpdates.length;
 }
 
 function TetanyCard({ entry, language }: { entry: TetanyWithDate; language: string }) {
@@ -144,12 +241,15 @@ function TetanyCard({ entry, language }: { entry: TetanyWithDate; language: stri
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-amber-500/10 text-amber-600"><BoltIcon size={21} /></span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-muted-foreground"><span>{formatDate(entry.dateKey, language)}</span><span>{entry.time}</span></div>
-          <p className="mt-1 text-sm font-bold text-foreground">{t("Tetany episode")} · {entry.intensity}/5</p>
+          <p className="mt-1 text-sm font-bold text-foreground">{t("Tetany episode")} · {entry.intensity}/5 · {entry.minutes == null ? t("ongoing") : `${entry.minutes} min`}</p>
           {entry.types?.length ? <div className="mt-2 flex flex-wrap gap-1.5">{entry.types.map((item) => <Chip key={item}>{t(item)}</Chip>)}</div> : null}
-          {entry.location?.length ? <p className="mt-2 text-[11px] text-muted-foreground">{t("Location")}: {entry.location.map(t).join(", ")}</p> : null}
-          {entry.triggers?.length ? <p className="mt-1 text-[11px] text-muted-foreground">{t("Triggers")}: {entry.triggers.map(t).join(", ")}</p> : null}
-          {entry.helped?.length ? <p className="mt-1 text-[11px] text-muted-foreground">{t("Helped by")}: {entry.helped.map(t).join(", ")}</p> : null}
-          {entry.note ? <p className="mt-2 rounded-xl bg-tint px-2.5 py-2 text-[11px] text-foreground/75">{entry.note}</p> : null}
+          <div className="mt-2 space-y-1.5">
+            {entry.triggers?.length ? <DetailLine label={t("Triggers")}>{entry.triggers.map(t).join(", ")}</DetailLine> : null}
+            {entry.location?.length ? <DetailLine label={t("Location")}>{entry.location.map(t).join(", ")}</DetailLine> : null}
+            {entry.helped?.length ? <DetailLine label={t("Helped")}>{entry.helped.map(t).join(", ")}</DetailLine> : null}
+            {entry.rescueMed ? <DetailLine label={t("Rescue")}>{entry.rescueMed}</DetailLine> : null}
+          </div>
+          {entry.note ? <p className="mt-2 whitespace-pre-line rounded-xl bg-tint px-2.5 py-2 text-[11px] text-foreground/75"><span className="font-semibold text-foreground">{t("Note")}:</span> {entry.note}</p> : null}
         </div>
       </div>
     </article>
@@ -164,12 +264,17 @@ function PanicCard({ entry, language }: { entry: PanicWithDate; language: string
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-violet-500/10 text-violet-600"><PanicIcon size={21} /></span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-muted-foreground"><span>{formatDate(entry.dateKey, language)}</span><span>{entry.time}</span></div>
-          <p className="mt-1 text-sm font-bold text-foreground">{t("Panic attack")} · {entry.intensity}/10</p>
+          <p className="mt-1 text-sm font-bold text-foreground">{t("Panic attack")} · {entry.intensity}/10 · {entry.minutes == null ? t("ongoing") : `${entry.minutes} min`}</p>
           {entry.physical?.length ? <div className="mt-2 flex flex-wrap gap-1.5">{entry.physical.map((item) => <Chip key={item}>{t(item)}</Chip>)}</div> : null}
           {entry.cognitive?.length ? <div className="mt-2 flex flex-wrap gap-1.5">{entry.cognitive.map((item) => <Chip key={item} tone="green">{t(item)}</Chip>)}</div> : null}
-          {entry.trigger ? <p className="mt-2 text-[11px] text-muted-foreground">{t("Trigger")}: {entry.trigger}</p> : null}
-          {entry.helped?.length ? <p className="mt-1 text-[11px] text-muted-foreground">{t("Helped by")}: {entry.helped.map(t).join(", ")}</p> : null}
-          {entry.note ? <p className="mt-2 rounded-xl bg-tint px-2.5 py-2 text-[11px] text-foreground/75">{entry.note}</p> : null}
+          <div className="mt-2 space-y-1.5">
+            {entry.trigger ? <DetailLine label={t("Trigger")}>{entry.trigger}</DetailLine> : null}
+            {entry.place ? <DetailLine label={t("Place")}>{entry.place}</DetailLine> : null}
+            <DetailLine label={t("Hyperventilation")}>{t(entry.hyperventilation)}{entry.tetanyPresent ? ` · ${t("tetany present")}` : ""}</DetailLine>
+            {entry.helped?.length ? <DetailLine label={t("Helped")}>{entry.helped.map(t).join(", ")}</DetailLine> : null}
+            {entry.rescueMed ? <DetailLine label={t("Rescue")}>{entry.rescueMed}</DetailLine> : null}
+          </div>
+          {entry.note ? <p className="mt-2 whitespace-pre-line rounded-xl bg-tint px-2.5 py-2 text-[11px] text-foreground/75"><span className="font-semibold text-foreground">{t("Note")}:</span> {entry.note}</p> : null}
         </div>
       </div>
     </article>
@@ -177,12 +282,13 @@ function PanicCard({ entry, language }: { entry: PanicWithDate; language: string
 }
 
 function medicationRows(day: MedDay) {
-  const scheduled = day.meds.flatMap((med) => med.asNeeded ? [] : med.times.filter((time) => day.medLog[`${med.id}@${time}`]).map((time) => ({ id: `${med.id}@${time}`, time, name: med.name, dose: med.dose })));
-  const extra = day.extra.map((item) => ({ id: item.id, time: item.time, name: item.name, dose: item.dose }));
+  const scheduled = day.meds.flatMap((med) => med.asNeeded ? [] : med.times.filter((time) => day.medLog[`${med.id}@${time}`]).map((time) => ({ id: `${med.id}@${time}`, time, name: med.name, dose: med.dose, note: undefined as string | undefined })));
+  const extra = day.extra.map((item) => ({ id: item.id, time: item.time, name: item.name, dose: item.dose, note: item.note }));
   return [...scheduled, ...extra].sort((a, b) => b.time.localeCompare(a.time));
 }
 
 function MedicationDayCard({ day, language }: { day: MedDay; language: string }) {
+  const { t } = useI18n();
   const rows = medicationRows(day);
   if (!rows.length) return null;
   return (
@@ -191,7 +297,12 @@ function MedicationDayCard({ day, language }: { day: MedDay; language: string })
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-emerald-500/10 text-emerald-600"><PillIcon size={21} /></span>
         <div className="min-w-0 flex-1">
           <p className="text-[10px] text-muted-foreground">{formatDate(day.dateKey, language)}</p>
-          <div className="mt-1.5 space-y-1.5">{rows.map((row) => <p key={row.id} className="text-[11px] text-foreground"><span className="font-semibold">{row.time}</span> · {row.name}{row.dose ? ` (${row.dose})` : ""}</p>)}</div>
+          <div className="mt-1.5 space-y-2">{rows.map((row) => (
+            <div key={row.id}>
+              <p className="text-[11px] text-foreground"><span className="font-semibold">{row.time}</span> · {row.name}{row.dose ? ` (${row.dose})` : ""}</p>
+              {row.note ? <p className="mt-1 whitespace-pre-line text-[10px] text-muted-foreground"><span className="font-semibold text-foreground">{t("Note")}:</span> {row.note}</p> : null}
+            </div>
+          ))}</div>
         </div>
       </div>
     </article>
@@ -231,6 +342,7 @@ export function PartnerHealthDashboard({ partnerName, visibleDay, pain, tetany, 
   const olderPanic = panic.filter((entry) => entry.dateKey !== visibleDay);
   const currentMeds = medDays.filter((day) => day.dateKey === visibleDay && medicationRows(day).length > 0);
   const olderMeds = medDays.filter((day) => day.dateKey !== visibleDay && medicationRows(day).length > 0);
+  const painEntryCount = pain.filter((entry) => entry.entryKind !== "symptom-update").length;
 
   return (
     <section className="space-y-3">
@@ -240,11 +352,11 @@ export function PartnerHealthDashboard({ partnerName, visibleDay, pain, tetany, 
       </div>
 
       <CategorySection
-        title={`${t("Pain")} (${pain.length})`}
+        title={`${t("Pain")} (${painEntryCount})`}
         currentLabel={currentLabel}
-        current={currentPain.length ? <div className="space-y-2.5">{currentPain.map((entry) => <PainCard key={`${entry.dateKey}-${entry.id}`} entry={entry} language={language} />)}</div> : <p className="rounded-2xl bg-tint px-3 py-3 text-xs text-muted-foreground">{t("No pain entries today.")}</p>}
-        historyCount={olderPain.length}
-        history={olderPain.map((entry) => <PainCard key={`${entry.dateKey}-${entry.id}`} entry={entry} language={language} />)}
+        current={currentPain.length ? <PainEntryList entries={currentPain} language={language} /> : <p className="rounded-2xl bg-tint px-3 py-3 text-xs text-muted-foreground">{t("No pain entries today.")}</p>}
+        historyCount={visiblePainCardCount(olderPain)}
+        history={<PainEntryList entries={olderPain} language={language} />}
       />
 
       <CategorySection
