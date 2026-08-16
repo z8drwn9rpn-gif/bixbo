@@ -5,17 +5,17 @@ export type PainDayLike = { pain?: PainEntryLike[] };
 /**
  * Canonical Pain scale colours at every 0.5 step.
  * Whole-number entries exactly match --pain-0 … --pain-10 in theme-system.css.
- * Half steps deliberately use stronger saturated intermediate colours so
- * 7 / 7.5 / 8 (and every other neighbouring trio) stay easy to distinguish.
- * Concrete hex values also keep Calendar gradients, SVG charts, PDF and iOS/PWA
+ * Half steps are the direct sRGB midpoint between their two neighbouring whole
+ * values: existing 0…10 colours never move, only the new .5 values sit between
+ * them. Concrete hex values keep Calendar gradients, charts, PDF and iOS/PWA
  * rendering on the same palette.
  */
 export const PAIN_SCALE_HALF_STEP_COLORS = [
-  "#7FCF52", "#82CA42", "#93CE48", "#A5CF33", "#B4D43F",
-  "#CCD124", "#D3D638", "#EACA11", "#F0CF2E", "#F5B200",
-  "#F5B72D", "#F68F02", "#F59A35", "#F56A41", "#EF7838",
-  "#EF4E69", "#E95A3F", "#E53366", "#DC3F43", "#D31E4E",
-  "#C82F3F",
+  "#72C64A", "#82CA42", "#91CD3A", "#A4CF34", "#B7D12F",
+  "#CBD127", "#DFD11F", "#E9CA16", "#F3C30D", "#F4B20C",
+  "#F5A20B", "#F48E10", "#F47B16", "#F26C3A", "#F05C5F",
+  "#EE4E6A", "#EC3F74", "#E53266", "#DE2557", "#D31E4E",
+  "#C81746",
 ] as const;
 
 /** Concrete whole-number colours for PDF/export surfaces that cannot use CSS variables. */
