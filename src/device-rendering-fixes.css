@@ -191,3 +191,64 @@ button[title^="6.5 —"][aria-label^="6.5 —"] { background: #F28936 !important
 button[title^="7.5 —"][aria-label^="7.5 —"] { background: #EC693C !important; background-color: #EC693C !important; }
 button[title^="8.5 —"][aria-label^="8.5 —"] { background: #E24C41 !important; background-color: #E24C41 !important; }
 button[title^="9.5 —"][aria-label^="9.5 —"] { background: #D23741 !important; background-color: #D23741 !important; }
+
+/* ---------------------------------------------------- Insights year heatmap
+   Bring the legacy year heatmap into the newer BIXBO chart language without
+   changing its compact Jan–Jun / Jul–Dec information architecture. The day
+   cells become softly raised beads, month dividers recede, and no-data cells
+   remain deliberately quiet. */
+[data-bixbo-heatmap-half] button[aria-label] {
+  width: 12px !important;
+  height: 12px !important;
+  border: 1px solid rgba(255,255,255,.42) !important;
+  box-shadow:
+    inset 1px 1px 2px rgba(255,255,255,.58),
+    inset -1px -1.5px 2px rgba(70,63,43,.16),
+    0 1.5px 2.5px rgba(53,58,42,.17) !important;
+  filter: saturate(1.03);
+}
+
+[data-bixbo-heatmap-half] button[aria-label]:disabled {
+  background: linear-gradient(145deg, rgba(247,247,240,.96), rgba(231,233,220,.88)) !important;
+  border-color: rgba(255,255,255,.60) !important;
+  box-shadow:
+    inset 1px 1px 1.5px rgba(255,255,255,.72),
+    inset -1px -1px 1.5px rgba(85,90,69,.08),
+    0 1px 2px rgba(53,58,42,.07) !important;
+  opacity: .78;
+}
+
+[data-bixbo-heatmap-half] span[aria-hidden="true"] {
+  opacity: .10 !important;
+}
+
+[data-bixbo-heatmap-half] button[aria-pressed="true"] {
+  transform: translateX(-.5px) scale(1.14) !important;
+  box-shadow:
+    inset 1px 1px 2px rgba(255,255,255,.58),
+    inset -1px -1.5px 2px rgba(70,63,43,.16),
+    0 0 0 2px var(--background),
+    0 0 0 3px var(--foreground),
+    0 2px 4px rgba(53,58,42,.22) !important;
+}
+
+/* The two half-year blocks read as one polished card rather than a ruled table. */
+[data-bixbo-heatmap-half] + [data-bixbo-heatmap-half] {
+  padding-top: 14px;
+  border-top: 1px solid rgba(83,102,0,.08);
+}
+
+/* Give the legacy legend the same soft tray treatment used in the new mock. */
+div:has(> [data-bixbo-heatmap-half]) + div.mt-3,
+div:has(> div > [data-bixbo-heatmap-half]) > div.mt-3 {
+  border-radius: 18px;
+  padding: 8px 10px;
+  background: rgba(246,246,238,.70);
+  box-shadow: inset 0 0 0 1px rgba(83,102,0,.08), 0 2px 5px rgba(64,70,49,.06);
+}
+
+.dark [data-bixbo-heatmap-half] button[aria-label]:disabled {
+  background: linear-gradient(145deg, rgba(44,48,36,.96), rgba(28,31,24,.92)) !important;
+  border-color: rgba(255,255,255,.08) !important;
+  box-shadow: inset 1px 1px 1px rgba(255,255,255,.06), 0 1px 2px rgba(0,0,0,.28) !important;
+}
