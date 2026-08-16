@@ -1,10 +1,21 @@
 import { Link } from "@tanstack/react-router";
-import { useMemo, useRef, useState, type CSSProperties } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import { AppShell } from "@/components/AppShell";
 import { ArrowLeft } from "@/components/icons/BixboExtraIcons";
+import {
+  buildHealthDetailPages,
+  HealthReportDetailTable,
+} from "@/components/health-report/HealthReportDetailParts";
+import {
+  DetailedTimelineTable,
+  HealthReportHeatLegend,
+  HealthReportHeatmap,
+  HealthReportPainTrend,
+  packTimelineDays,
+} from "@/components/health-report/HealthReportPdfParts";
 import { useI18n } from "@/hooks/useI18n";
-import { resolveScheduledDose, summarizeMedicationAdherence } from "@/lib/domain/meds";
+import { summarizeMedicationAdherence } from "@/lib/domain/meds";
 import {
   average,
   countRecordedPrnUses,
@@ -16,19 +27,10 @@ import {
   summarizeReportDay,
   type ReportDaySummary,
 } from "@/lib/healthReport";
-import {
-  formatClockTime,
-  formatTemperature,
-  formatVolume,
-  formatWeight,
-  unitPrefs,
-  type UnitPreferences,
-} from "@/lib/preferences";
-import { BRISTOL, EMPTY, useBixbo, type BixboData, type DayLog } from "@/lib/storage";
+import { formatClockTime, formatWeight, unitPrefs, type UnitPreferences } from "@/lib/preferences";
+import { BRISTOL, EMPTY, useBixbo, type BixboData } from "@/lib/storage";
 
 type Preset = "7" | "30" | "90" | "365" | "custom";
-type DetailRow = { date: string; category: string; detail: string };
-type HeatColumn = { key: string; label: string; days: ReportDaySummary[] };
 
 const PAIN_COLORS = [
   "#72C64A", "#91CD3A", "#B7D12F", "#DFD11F", "#F3C30D", "#F5A20B",
@@ -57,408 +59,11 @@ const shortDate = (key: string, locale: string) => fromIso(key).toLocaleDateStri
 const percentage = (count: number, total: number) => total ? Math.round((count / total) * 100) : 0;
 const painColor = (value: number) => PAIN_COLORS[Math.max(0, Math.min(10, Math.round(value)))];
 
-function list(values: string[] | undefined): string | undefined {
-  const clean = (values ?? []).map((value) => value.trim()).filter(Boolean);
-  return clean.length ? clean.join(", ") : undefined;
-}
-
-function valueText(value: unknown): string | undefined {
-  if (value == null || value === "") return undefined;
-  if (typeof value === "boolean") return value ? "Yes" : "No";
-  if (typeof value === "number") return Number.isFinite(value) ? String(value) : undefined;
-  if (typeof value === "string") return value.trim() || undefined;
-  if (Array.isArray(value)) {
-    const parts = value.map(valueText).filter((part): part is string => Boolean(part));
-    return parts.length ? parts.join(", ") : undefined;
-  }
-  if (typeof value === "object") {
-    const parts = Object.entries(value as Record<string, unknown>)
-      .filter(([key]) => !["id", "dataUrl", "photo", "photos"].includes(key))
-      .map(([key, nested]) => {
-        const text = valueText(nested);
-        return text ? `${humanize(key)}: ${text}` : undefined;
-      })
-      .filter((part): part is string => Boolean(part));
-    return parts.length ? parts.join("; ") : undefined;
-  }
-  return String(value);
-}
-
-function humanize(value: string): string {
-  return value
-    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
-    .replace(/[_-]+/g, " ")
-    .replace(/^./, (letter) => letter.toUpperCase());
-}
-
-function parts(items: Array<[string, unknown]>): string {
-  return items
-    .map(([label, value]) => {
-      const text = valueText(value);
-      return text ? `${label}: ${text}` : undefined;
-    })
-    .filter((item): item is string => Boolean(item))
-    .join("; ");
-}
-
-function splitLongDetail(row: DetailRow): DetailRow[] {
-  if (row.detail.length <= 620) return [row];
-  const words = row.detail.split(/\s+/);
-  const chunks: string[] = [];
-  let current = "";
-  words.forEach((word) => {
-    if (current && `${current} ${word}`.length > 620) {
-      chunks.push(current);
-      current = word;
-    } else current = current ? `${current} ${word}` : word;
-  });
-  if (current) chunks.push(current);
-  return chunks.map((detail, index) => ({ ...row, category: index ? `${row.category} (cont.)` : row.category, detail }));
-}
-
-function row(date: string, category: string, detail: string | undefined): DetailRow[] {
-  if (!detail) return [];
-  return splitLongDetail({ date, category, detail });
-}
-
-function dayDetailRows(day: ReportDaySummary, data: BixboData, units: UnitPreferences, locale: string): DetailRow[] {
-  const rows: DetailRow[] = [];
-  const date = shortDate(day.key, locale);
-  const log = day.log;
-
-  (log.pain ?? []).forEach((entry) => {
-    const followUp = entry.entryKind === "symptom-update";
-    rows.push(...row(date, followUp ? "Pain symptom update" : "Pain", parts([
-      ["Time", formatClockTime(entry.time, units)],
-      ["Pain", followUp ? undefined : `${entry.score}/10`],
-      ["Body areas", list(entry.parts)],
-      ["Quality", list(entry.quality)],
-      ["Other symptoms", list(entry.symptoms)],
-      ["Pressure type", list(entry.pressureTypes)],
-      ["Pressure", entry.pressureIntensity != null ? `${entry.pressureIntensity}/10` : undefined],
-      ["Nausea", entry.nausea ? "Yes" : undefined],
-      ["Nausea type", list(entry.nauseaTypes)],
-      ["Nausea severity", entry.nauseaSeverity != null ? `${entry.nauseaSeverity}/10` : undefined],
-      ["Nausea duration", entry.nauseaOngoing ? "Ongoing" : entry.nauseaMinutes != null ? `${entry.nauseaMinutes} min` : undefined],
-      ["Nausea triggers", list(entry.nauseaTriggers)],
-      ["Nausea symptoms", list(entry.nauseaSymptoms)],
-      ["Nausea relieved by", list(entry.nauseaHelped)],
-      ["Nausea note", entry.nauseaNote],
-      ["Headache", entry.headache ? "Yes" : undefined],
-      ["Headache type", list(entry.headacheTypes)],
-      ["Headache intensity", entry.headacheIntensity != null ? `${entry.headacheIntensity}/10` : undefined],
-      ["Headache medication", entry.headacheMed],
-      ["Headache medication time", entry.headacheMed ? formatClockTime(entry.headacheMedTime, units) : undefined],
-      ["Headache note", entry.headacheNote],
-      ["Hot flashes", entry.hotFlashes != null ? `${entry.hotFlashes}/5` : undefined],
-      ["Hot flashes note", entry.hotFlashesNote],
-      ["PCOS symptoms", list(entry.pcosSymptoms)],
-      ["Flu note", entry.fluNote],
-      ["Body battery", entry.bodyBattery],
-      ["Stress", entry.stress != null ? `${entry.stress}/10` : undefined],
-      ["Mood", list(entry.mood)],
-      ["Note", entry.note],
-    ])));
-  });
-
-  (log.tetany ?? []).forEach((entry) => rows.push(...row(date, "Tetany", parts([
-    ["Time", formatClockTime(entry.time, units)], ["Intensity", `${entry.intensity}/5`],
-    ["Duration", entry.minutes == null ? "Ongoing" : `${entry.minutes} min`], ["Type", list(entry.types)],
-    ["Location", list(entry.location)], ["Triggers", list(entry.triggers)],
-    ["Time since Magnerot", entry.timeSinceMagnerotMin != null ? `${entry.timeSinceMagnerotMin} min` : undefined],
-    ["Helped", list(entry.helped)], ["Rescue medication", entry.rescueMed], ["Note", entry.note],
-  ]))));
-
-  (log.panic ?? []).forEach((entry) => rows.push(...row(date, "Panic", parts([
-    ["Time", formatClockTime(entry.time, units)], ["Intensity", `${entry.intensity}/10`],
-    ["Duration", entry.minutes == null ? "Ongoing" : `${entry.minutes} min`], ["Physical", list(entry.physical)],
-    ["Cognitive", list(entry.cognitive)], ["Trigger", entry.trigger], ["Place", entry.place],
-    ["Hyperventilation", entry.hyperventilation], ["Tetany present", entry.tetanyPresent],
-    ["Helped", list(entry.helped)], ["Rescue medication", entry.rescueMed], ["Note", entry.note],
-  ]))));
-
-  (log.heat ?? []).forEach((entry) => rows.push(...row(date, entry.kind === "tens" ? "TENS" : entry.kind === "heat" ? "Heat" : "Cold", parts([
-    ["Start", formatClockTime(entry.start, units)], ["Duration", entry.ongoing ? "Ongoing" : `${entry.minutes} min`], ["Note", entry.note],
-  ]))));
-
-  const periodInfo = log.periodInfo;
-  const periodLevel = reportPeriodLevel(day.key, log, data.cycle);
-  if (periodLevel || periodInfo) rows.push(...row(date, "Period / cycle", parts([
-    ["Flow", periodLevel], ["Cramps", periodInfo?.cramps != null ? `${periodInfo.cramps}/10` : undefined],
-    ["Discharge", periodInfo?.discharge], ["Discharge note", periodInfo?.dischargeNote],
-    ["Symptoms", list(periodInfo?.symptoms)], ["Clots", periodInfo?.clots], ["Note", periodInfo?.note],
-  ])));
-
-  (log.food ?? []).forEach((entry) => rows.push(...row(date, "Food", parts([
-    ["Time", formatClockTime(entry.time, units)], ["Food / drink", entry.what], ["Feeling after", list(entry.feelings)],
-    ["Additional note", entry.after], ["Water", entry.hydrationMl != null ? formatVolume(entry.hydrationMl, units) : undefined],
-    ["Caffeine", entry.caffeineMg != null ? `${entry.caffeineMg} mg` : undefined], ["Alcohol drinks", entry.alcoholDrinks],
-    ["Symptoms after", list(entry.symptomsAfter)], ["High histamine", entry.highHistamine],
-    ["Histamine flare", entry.histamineFlare], ["Histamine symptoms", list(entry.histamineSymptoms)],
-    ["Allergens", list(entry.allergensInMeal)], ["Allergic reaction", entry.allergicReaction], ["Reaction severity", entry.reactionSeverity],
-  ]))));
-
-  (log.bowel ?? [])
-    .filter((entry) => !entry.urinaryOnly && Number(entry.bristol) !== -2)
-    .forEach((entry) => {
-      const bowelType = entry.bristol === -1 ? "No bowel movement" : entry.bristol === 0 ? "Type 0 — Mystery" : entry.bristol >= 1 && entry.bristol <= 7 ? `Bristol Type ${entry.bristol}` : `Recorded value ${entry.bristol}`;
-      rows.push(...row(date, "Bowel", parts([
-        ["Time", formatClockTime(entry.time, units)], ["Bowel", bowelType],
-        ["Feeling", list(entry.feelings)], ["Symptoms", list(entry.symptoms)], ["Note", entry.note],
-      ])));
-    });
-
-  (log.sex ?? []).forEach((entry) => rows.push(...row(date, "Sex", parts([
-    ["Time", formatClockTime(entry.time, units)], ["Type", entry.kind], ["Orgasm", entry.orgasm],
-    ["Protection", entry.protection], ["Contraception", entry.contraception], ["Painful", entry.painful],
-    ["Symptoms after", list(entry.symptomsAfter)], ["Feeling after", Array.isArray(entry.feelingAfter) ? entry.feelingAfter.join(", ") : entry.feelingAfter],
-    ["Note", entry.note],
-  ]))));
-
-  (log.temperatureEntries ?? []).forEach((entry) => rows.push(...row(date, "Temperature", parts([
-    ["Time", formatClockTime(entry.time, units)], ["Value", formatTemperature(entry.value, units)], ["Method", entry.method], ["Note", entry.note],
-  ]))));
-  if (!(log.temperatureEntries?.length) && log.temperature != null) rows.push(...row(date, "Temperature", formatTemperature(log.temperature, units)));
-
-  (log.weightEntries ?? []).forEach((entry) => rows.push(...row(date, "Weight", parts([
-    ["Time", formatClockTime(entry.time, units)], ["Value", formatWeight(entry.value, units)],
-    ["Body fat", entry.bodyFatPercent != null ? `${entry.bodyFatPercent}%` : undefined], ["Note", entry.note],
-  ]))));
-  if (!(log.weightEntries?.length) && log.weight != null) rows.push(...row(date, "Weight", formatWeight(log.weight, units)));
-
-  if ([log.sleepHours, log.sleepQuality, log.sleepBedtime, log.sleepWakeTime, log.sleepAwakenings, log.sleepEnergy, log.sleepNote].some((value) => value != null && value !== "")) {
-    rows.push(...row(date, "Sleep", parts([
-      ["Hours", log.sleepHours], ["Quality", Array.isArray(log.sleepQuality) ? log.sleepQuality.join(", ") : log.sleepQuality],
-      ["Bedtime", formatClockTime(log.sleepBedtime, units)], ["Wake time", formatClockTime(log.sleepWakeTime, units)],
-      ["Awakenings", log.sleepAwakenings], ["Energy", log.sleepEnergy], ["Note", log.sleepNote],
-    ])));
-  }
-
-  (log.extraMeds ?? []).forEach((entry) => rows.push(...row(date, "Extra medication / PRN", parts([
-    ["Time", formatClockTime(entry.time, units)], ["Name", entry.name], ["Dose", entry.dose], ["Note", entry.note],
-  ]))));
-
-  (log.workout ?? []).forEach((entry) => rows.push(...row(date, "Workout", parts([
-    ["Time", formatClockTime(entry.time, units)], ["Type", entry.kind], ["Duration", `${entry.minutes} min`],
-    ["Distance", entry.distanceKm != null ? `${entry.distanceKm} km` : undefined], ["Elevation", entry.elevationM != null ? `${entry.elevationM} m` : undefined],
-    ["RPE", entry.rpe != null ? `${entry.rpe}/10` : undefined], ["Magnesium before", entry.magnesiumBefore],
-    ["Weight after", entry.weightKg != null ? formatWeight(entry.weightKg, units) : undefined],
-    ["Exercises", entry.exercises?.map((exercise) => parts([["Exercise", exercise.name], ["Sets", exercise.sets], ["Reps", exercise.reps], ["Weight", exercise.weightKg != null ? formatWeight(exercise.weightKg, units) : undefined]])).join(" | ")],
-    ["Triggered symptom", entry.triggeredSymptom ? `${entry.triggeredSymptom.type}${entry.triggeredSymptom.label ? ` — ${entry.triggeredSymptom.label}` : ""}` : undefined],
-    ["Feeling", Array.isArray(entry.feeling) ? entry.feeling.join(", ") : entry.feeling], ["Note", entry.note],
-  ]))));
-
-  (log.mood ?? []).forEach((entry) => rows.push(...row(date, "Mood", parts([["Time", formatClockTime(entry.time, units)], ["Mood", entry.value]]))));
-  (log.energy ?? []).forEach((entry) => rows.push(...row(date, "Energy", parts([["Time", formatClockTime(entry.time, units)], ["Energy", entry.value]]))));
-  (log.histamine ?? []).forEach((entry) => rows.push(...row(date, "Histamine", parts([["Time", formatClockTime(entry.time, units)], ["Flare", entry.flare], ["Note", entry.note]]))));
-
-  Object.entries(log.customLogs ?? {}).forEach(([featureId, entries]) => entries.forEach((entry) => rows.push(...row(date, `Custom log — ${humanize(featureId)}`, parts([
-    ["Time", formatClockTime(entry.time, units)], ["Values", Object.entries(entry.values).map(([key, value]) => `${humanize(key)}: ${valueText(value) ?? "—"}`).join("; ")], ["Note", entry.note],
-  ])))));
-
-  Object.entries(log.adminFields ?? {}).forEach(([featureId, entries]) => entries.forEach((entry) => rows.push(...row(date, `Added fields — ${humanize(featureId)}`, parts([
-    ["Time", formatClockTime(entry.time, units)], ["Values", Object.entries(entry.values).map(([key, value]) => `${humanize(key)}: ${valueText(value) ?? "—"}`).join("; ")], ["Note", entry.note],
-  ])))));
-
-  if (log.pregnancy) rows.push(...row(date, "Pregnancy daily log", valueText(log.pregnancy)));
-  if (log.postpartum) rows.push(...row(date, "Postpartum daily log", valueText(log.postpartum)));
-  day.notes.forEach((note) => rows.push(...row(date, "Day note", note)));
-
-  data.meds.forEach((med) => {
-    if (med.asNeeded) {
-      const key = `${med.id}@asneeded`;
-      if (data.medLog[day.key]?.[key]) rows.push(...row(date, "PRN medication", parts([
-        ["Medication", med.name], ["Dose", med.dose], ["Taken", formatClockTime(data.medLogTimes?.[day.key]?.[key], units)],
-        ["Note", data.medLogNotes?.[day.key]?.[key]],
-      ])));
-      return;
-    }
-    (med.times ?? []).forEach((scheduledTime) => {
-      const state = resolveScheduledDose(med, day.key, scheduledTime, data.medLog, data.medLogItems ?? {}, new Date());
-      if (!state.selectedItems.length) return;
-      rows.push(...row(date, "Scheduled medication", parts([
-        ["Medication", med.name], ["Dose", med.dose], ["Scheduled", formatClockTime(scheduledTime, units)],
-        ["Taken", formatClockTime(data.medLogTimes?.[day.key]?.[state.key], units)], ["Items taken", state.selectedItems.join(", ")],
-        ["Note", data.medLogNotes?.[day.key]?.[state.key]],
-      ])));
-    });
-  });
-
-  return rows;
-}
-
 function hasMedicationActivity(date: string, data: BixboData): boolean {
   if (Object.values(data.medLog[date] ?? {}).some(Boolean)) return true;
   if (Object.values(data.medLogItems?.[date] ?? {}).some((items) => items.length > 0)) return true;
   if (Object.values(data.medLogNotes?.[date] ?? {}).some((note) => note.trim().length > 0)) return true;
   return false;
-}
-
-function timelineFacts(day: ReportDaySummary): string {
-  const values: string[] = [];
-  if (day.pain != null) values.push(`Pain ${compactNumber(day.pain)}/10`);
-  if (day.headache != null) values.push(`Headache ${compactNumber(day.headache)}/10`);
-  if (day.hotFlashes != null) values.push(`Hot flashes ${compactNumber(day.hotFlashes)}/5`);
-  if (day.tetany != null) values.push(`Tetany ${compactNumber(day.tetany)}/5`);
-  if (day.panic != null) values.push(`Panic ${compactNumber(day.panic)}/10`);
-  if (day.nausea != null) values.push(`Nausea ${compactNumber(day.nausea)}/10`);
-  if (day.bowelTypes.length) values.push(`Bowel ${day.bowelTypes.map((type) => `T${type}`).join(", ")}`);
-  if (day.noBowelMovementCount) values.push(`No bowel movement ×${day.noBowelMovementCount}`);
-  return values.join(" · ") || "—";
-}
-
-function timelineTakenMeds(day: ReportDaySummary, data: BixboData, units: UnitPreferences): string {
-  const taken: string[] = [];
-  data.meds.filter((med) => !med.asNeeded).forEach((med) => {
-    (med.times ?? []).forEach((scheduledTime) => {
-      const state = resolveScheduledDose(med, day.key, scheduledTime, data.medLog, data.medLogItems ?? {}, new Date());
-      if (!state.selectedItems.length) return;
-      taken.push(`${med.name}${med.dose ? ` ${med.dose}` : ""} · ${formatClockTime(data.medLogTimes?.[day.key]?.[state.key] ?? scheduledTime, units)}`);
-    });
-  });
-  return taken.join(" · ") || "—";
-}
-
-function timelineExtraMeds(day: ReportDaySummary, data: BixboData, units: UnitPreferences): string {
-  const values = (day.log.extraMeds ?? []).map((entry) => `${entry.name}${entry.dose ? ` ${entry.dose}` : ""}${entry.time ? ` · ${formatClockTime(entry.time, units)}` : ""}`);
-  data.meds.filter((med) => med.asNeeded).forEach((med) => {
-    const key = `${med.id}@asneeded`;
-    if (data.medLog[day.key]?.[key]) values.push(`${med.name}${med.dose ? ` ${med.dose}` : ""}${data.medLogTimes?.[day.key]?.[key] ? ` · ${formatClockTime(data.medLogTimes[day.key][key], units)}` : ""}`);
-  });
-  return values.join(" · ") || "—";
-}
-
-function timelineTens(day: ReportDaySummary, units: UnitPreferences): string {
-  const values = (day.log.heat ?? []).filter((entry) => entry.kind === "tens").map((entry) => {
-    const duration = entry.ongoing ? "ongoing" : `${entry.minutes} min`;
-    return `${formatClockTime(entry.start, units)} · ${duration}`;
-  });
-  return values.join(" · ") || "—";
-}
-
-function timelineContext(day: ReportDaySummary, data: BixboData, units: UnitPreferences): string {
-  const values: string[] = [];
-  const period = reportPeriodLevel(day.key, day.log, data.cycle);
-  if (period) values.push(`Period: ${humanize(period)}`);
-  if (day.log.food?.length) values.push(`Food: ${day.log.food.map((entry) => entry.what).filter(Boolean).slice(0, 3).join(", ")}`);
-  if (day.log.workout?.length) values.push(`Workout: ${day.log.workout.map((entry) => entry.kind).filter(Boolean).slice(0, 3).join(", ")}`);
-  if (day.log.sleepHours != null) values.push(`Sleep: ${day.log.sleepHours} h`);
-  const latestWeight = day.log.weightEntries?.at(-1)?.value ?? day.log.weight;
-  if (latestWeight != null) values.push(`Weight: ${formatWeight(latestWeight, units)}`);
-  const latestTemp = day.log.temperatureEntries?.at(-1)?.value ?? day.log.temperature;
-  if (latestTemp != null) values.push(`Temp: ${formatTemperature(latestTemp, units)}`);
-  if (day.log.mood?.length) values.push(`Mood: ${day.log.mood.map((entry) => entry.value).join(", ")}`);
-  if (day.log.energy?.length) values.push(`Energy: ${day.log.energy.map((entry) => entry.value).join(", ")}`);
-  if (day.log.histamine?.some((entry) => entry.flare)) values.push("Histamine flare");
-  if (day.notes.length) values.push(`Notes: ${day.notes.join(" | ")}`);
-  return values.join(" · ") || "—";
-}
-
-function packTimelineDays(days: ReportDaySummary[]): ReportDaySummary[][] {
-  const pages: ReportDaySummary[][] = [];
-  for (let index = 0; index < days.length; index += 10) pages.push(days.slice(index, index + 10));
-  return pages;
-}
-
-function DetailedTimelineTable({ days, data, units, locale }: { days: ReportDaySummary[]; data: BixboData; units: UnitPreferences; locale: string }) {
-  return <table className="timeline"><thead><tr><th>Date</th><th>Pain & symptoms</th><th>Taken meds</th><th>Extra meds / PRN</th><th>TENS</th><th>Context / notes</th></tr></thead><tbody>{days.length ? days.map((day) => <tr key={day.key}><td><b>{longDate(day.key, locale)}</b></td><td>{timelineFacts(day)}</td><td>{timelineTakenMeds(day, data, units)}</td><td>{timelineExtraMeds(day, data, units)}</td><td>{timelineTens(day, units)}</td><td>{timelineContext(day, data, units)}</td></tr>) : <tr><td colSpan={6}>No meaningful daily records in this range.</td></tr>}</tbody></table>;
-}
-
-function packRows(rows: DetailRow[]): DetailRow[][] {
-  const pages: DetailRow[][] = [];
-  let current: DetailRow[] = [];
-  let budget = 0;
-  rows.forEach((item) => {
-    const cost = Math.max(1, Math.ceil(item.detail.length / 115));
-    if (current.length && (budget + cost > 24 || current.length >= 14)) {
-      pages.push(current);
-      current = [];
-      budget = 0;
-    }
-    current.push(item);
-    budget += cost;
-  });
-  if (current.length) pages.push(current);
-  return pages;
-}
-
-function heatColumns(days: ReportDaySummary[], locale: string): HeatColumn[] {
-  if (days.length <= 31) return days.map((day) => ({ key: day.key, label: fromIso(day.key).toLocaleDateString(locale, { day: "numeric" }), days: [day] }));
-  const grouped = new Map<string, ReportDaySummary[]>();
-  days.forEach((day) => {
-    const month = day.key.slice(0, 7);
-    grouped.set(month, [...(grouped.get(month) ?? []), day]);
-  });
-  return [...grouped.entries()].map(([key, values]) => ({ key, label: fromIso(`${key}-01`).toLocaleDateString(locale, { month: "short" }), days: values }));
-}
-
-function heatLevel(value: number | undefined, max: number): number {
-  if (value == null || value <= 0) return 0;
-  return Math.max(1, Math.min(4, Math.ceil((value / max) * 4)));
-}
-
-function Heatmap({ days, locale, data }: { days: ReportDaySummary[]; locale: string; data: BixboData }) {
-  const columns = heatColumns(days, locale);
-  const rows = [
-    { label: "Period / spotting", max: 1, value: (group: ReportDaySummary[]) => group.some((day) => reportPeriodLevel(day.key, day.log, data.cycle)) ? 1 : undefined, period: true },
-    { label: "Pain", max: 10, value: (group: ReportDaySummary[]) => average(group.map((day) => day.pain)) },
-    { label: "Headache", max: 10, value: (group: ReportDaySummary[]) => average(group.map((day) => day.headache)) },
-    { label: "Hot flashes", max: 5, value: (group: ReportDaySummary[]) => average(group.map((day) => day.hotFlashes)) },
-    { label: "Tetany", max: 5, value: (group: ReportDaySummary[]) => average(group.map((day) => day.tetany)) },
-    { label: "Panic", max: 10, value: (group: ReportDaySummary[]) => average(group.map((day) => day.panic)) },
-    { label: "Nausea", max: 10, value: (group: ReportDaySummary[]) => average(group.map((day) => day.nausea)) },
-  ];
-  return <div className="heat" style={{ "--cells": columns.length } as CSSProperties}>
-    <div className="heatRow heatHead"><span />{columns.map((column) => <b key={column.key}>{column.label}</b>)}</div>
-    {rows.map((item) => <div className="heatRow" key={item.label}><span>{item.label}</span>{columns.map((column) => {
-      const value = item.value(column.days);
-      return <i key={column.key} className={item.period && value ? "periodCell" : ""} data-l={item.period ? undefined : heatLevel(value, item.max)} title={value == null ? "No data" : item.period ? "Period / spotting" : `${compactNumber(value)}/${item.max}`} />;
-    })}</div>)}
-  </div>;
-}
-
-function HeatLegend() {
-  return <div className="heatLegend">
-    <span><i className="heatNone" />No data</span>
-    <span><i className="heatLevel1" />Mild (1–25%)</span>
-    <span><i className="heatLevel2" />Moderate (26–50%)</span>
-    <span><i className="heatLevel3" />Severe (51–75%)</span>
-    <span><i className="heatLevel4" />Very severe (76–100%)</span>
-    <span><i className="periodKey" />Period / spotting</span>
-  </div>;
-}
-
-function DailyPainTrend({ days, locale }: { days: ReportDaySummary[]; locale: string }) {
-  const points = days.map((day, index) => day.pain == null ? null : { index, value: day.pain, key: day.key }).filter((item): item is { index: number; value: number; key: string } => item != null);
-  if (points.length < 2) return <div className="emptyTrend">Not enough pain data for a trend.</div>;
-  const width = 650;
-  const height = 170;
-  const left = 34;
-  const right = 10;
-  const top = 18;
-  const bottom = 34;
-  const x = (index: number) => left + (index / Math.max(1, days.length - 1)) * (width - left - right);
-  const y = (value: number) => height - bottom - (value / 10) * (height - top - bottom);
-  const tickEvery = Math.max(1, Math.ceil(days.length / 10));
-  const segments: typeof points[] = [];
-  let segment: typeof points = [];
-  points.forEach((point, index) => {
-    if (index && point.index !== points[index - 1].index + 1) {
-      if (segment.length) segments.push(segment);
-      segment = [];
-    }
-    segment.push(point);
-  });
-  if (segment.length) segments.push(segment);
-  return <>
-    <svg viewBox={`0 0 ${width} ${height}`} className="chart">
-      {[0, 2, 4, 6, 8, 10].map((value) => <g key={value}><line x1={left} x2={width - right} y1={y(value)} y2={y(value)} /><text x={left - 7} y={y(value) + 3} textAnchor="end">{value}</text></g>)}
-      {days.map((day, index) => (index % tickEvery === 0 || index === days.length - 1) ? <text key={day.key} className="xLabel" x={x(index)} y={height - 9} textAnchor="middle">{shortDate(day.key, locale)}</text> : null)}
-      {segments.map((items, index) => items.length > 1 ? <polyline key={index} points={items.map((point) => `${x(point.index)},${y(point.value)}`).join(" ")} /> : null)}
-      {points.map((point) => <g key={point.key}><circle cx={x(point.index)} cy={y(point.value)} r="3.2" fill={painColor(point.value)} /><text className="pointLabel" x={x(point.index)} y={y(point.value) - 7} textAnchor="middle">{compactNumber(point.value)}</text></g>)}
-    </svg>
-    <div className="trendLegend"><span><i />Pain daily average</span><span>Missing day = no recorded pain value, not zero</span></div>
-  </>;
 }
 
 function Metric({ label, value, note }: { label: string; value: string; note: string }) {
@@ -471,10 +76,6 @@ function Sheet({ number, title, subtitle, children }: { number: number; title: s
     {children}
     <footer><span>BIXBO · User-recorded health data</span><span>Page {number}</span></footer>
   </section>;
-}
-
-function DetailTable({ rows }: { rows: DetailRow[] }) {
-  return <table className="detail"><thead><tr><th>Date</th><th>Category</th><th>Recorded values</th></tr></thead><tbody>{rows.map((item, index) => <tr key={`${item.date}-${item.category}-${index}`}><td>{item.date}</td><td>{item.category}</td><td>{item.detail}</td></tr>)}</tbody></table>;
 }
 
 function ReportDocument({ days, data, range, locale, units }: { days: ReportDaySummary[]; data: BixboData; range: string; locale: string; units: UnitPreferences }) {
@@ -508,8 +109,7 @@ function ReportDocument({ days, data, range, locale, units }: { days: ReportDayS
     { label: "Nausea", count: days.filter((day) => (day.log.pain ?? []).some((entry) => entry.nausea || entry.nauseaSeverity != null || (entry.nauseaTypes?.length ?? 0) > 0)).length },
   ];
 
-  const detailRows = days.flatMap((day) => dayDetailRows(day, data, units, locale));
-  const detailPages = packRows(detailRows);
+  const detailPages = buildHealthDetailPages(days, data, units, locale);
   const timelinePages = packTimelineDays([...loggedDays].reverse());
   const timelinePageCount = Math.max(1, timelinePages.length);
   const detailStartPage = 4 + timelinePageCount;
@@ -545,10 +145,10 @@ function ReportDocument({ days, data, range, locale, units }: { days: ReportDayS
       <div className="overviewGrid">
         <div>
           <h2>Symptom timeline <small>(intensity heatmap)</small></h2>
-          <Heatmap days={days} locale={locale} data={data} />
-          <HeatLegend />
+          <HealthReportHeatmap days={days} locale={locale} data={data} />
+          <HealthReportHeatLegend />
           <h2>Pain trend <small>(0–10) · daily average</small></h2>
-          <DailyPainTrend days={days} locale={locale} />
+          <HealthReportPainTrend days={days} locale={locale} />
         </div>
         <div>
           <h2>Symptom frequency <small>(days)</small></h2>
@@ -597,7 +197,7 @@ function ReportDocument({ days, data, range, locale, units }: { days: ReportDayS
 
     {timelinePages.length ? timelinePages.map((pageDays, pageIndex) => <Sheet key={`timeline-${pageIndex}`} number={4 + pageIndex} title="Detailed timeline" subtitle={`${range} · Part ${pageIndex + 1} of ${timelinePages.length}`}><p className="subnote">Only days with meaningful recorded data are shown. Newest first.</p><DetailedTimelineTable days={pageDays} data={data} units={units} locale={locale} /></Sheet>) : <Sheet number={4} title="Detailed timeline" subtitle={range}><p className="subnote">Only days with meaningful recorded data are shown. Newest first.</p><DetailedTimelineTable days={[]} data={data} units={units} locale={locale} /></Sheet>}
 
-    {detailPages.length ? detailPages.map((pageRows, pageIndex) => <Sheet key={`details-${pageIndex}`} number={detailStartPage + pageIndex} title="Recorded health details" subtitle={`${range} · Part ${pageIndex + 1} of ${detailPages.length}`}><DetailTable rows={pageRows} /></Sheet>) : <Sheet number={detailStartPage} title="Recorded health details" subtitle={range}><div className="empty">No health values were recorded in this period.</div></Sheet>}
+    {detailPages.length ? detailPages.map((pageRows, pageIndex) => <Sheet key={`details-${pageIndex}`} number={detailStartPage + pageIndex} title="Recorded health details" subtitle={`${range} · Part ${pageIndex + 1} of ${detailPages.length}`}><HealthReportDetailTable rows={pageRows} /></Sheet>) : <Sheet number={detailStartPage} title="Recorded health details" subtitle={range}><div className="empty">No health values were recorded in this period.</div></Sheet>}
 
     <div className="sr-only">{timelinePageCount + Math.max(1, detailPages.length)} timeline and detail pages</div>
   </div>;
