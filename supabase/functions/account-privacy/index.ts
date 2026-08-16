@@ -5,6 +5,10 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+const CURRENT_TERMS_VERSION = "2026-08-16";
+const CURRENT_PRIVACY_VERSION = "2026-08-16";
+const CURRENT_HEALTH_CONSENT_VERSION = "2026-08-16";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -21,6 +25,7 @@ function json(body: unknown, status = 200) {
 type PrivacyAction =
   | "export-cloud-data"
   | "accept-current-legal"
+  | "complete-onboarding"
   | "withdraw-health-consent"
   | "grant-health-consent"
   | "delete-account";
@@ -38,14 +43,10 @@ type PrivacyBody = {
 function isPrivacyAction(value: unknown): value is PrivacyAction {
   return value === "export-cloud-data"
     || value === "accept-current-legal"
+    || value === "complete-onboarding"
     || value === "withdraw-health-consent"
     || value === "grant-health-consent"
     || value === "delete-account";
-}
-
-function legalVersion(value: unknown): string {
-  const version = typeof value === "string" ? value.trim() : "";
-  return /^\d{4}-\d{2}-\d{2}$/.test(version) ? version : "";
 }
 
 Deno.serve(async (req) => {
@@ -133,28 +134,25 @@ Deno.serve(async (req) => {
   }
 
   if (body.action === "accept-current-legal") {
-    const termsVersion = legalVersion(body.termsVersion);
-    const privacyVersion = legalVersion(body.privacyVersion);
-    const healthConsentVersion = legalVersion(body.healthConsentVersion);
     if (
       body.termsAccepted !== true
       || body.privacyAcknowledged !== true
       || body.healthConsent !== true
-      || !termsVersion
-      || !privacyVersion
-      || !healthConsentVersion
+      || body.termsVersion !== CURRENT_TERMS_VERSION
+      || body.privacyVersion !== CURRENT_PRIVACY_VERSION
+      || body.healthConsentVersion !== CURRENT_HEALTH_CONSENT_VERSION
     ) {
-      return json({ ok: false, error: "Terms, privacy acknowledgement and explicit health-data consent are all required." }, 400);
+      return json({ ok: false, error: "Current Terms, Privacy Policy and explicit health-data consent are all required." }, 400);
     }
 
     const now = new Date().toISOString();
     const { error: consentError } = await admin.from("user_legal_consents").upsert({
       user_id: userId,
-      terms_version: termsVersion,
+      terms_version: CURRENT_TERMS_VERSION,
       terms_accepted_at: now,
-      privacy_version: privacyVersion,
+      privacy_version: CURRENT_PRIVACY_VERSION,
       privacy_acknowledged_at: now,
-      health_consent_version: healthConsentVersion,
+      health_consent_version: CURRENT_HEALTH_CONSENT_VERSION,
       health_consent_at: now,
       health_consent_withdrawn_at: null,
       updated_at: now,
@@ -164,7 +162,24 @@ Deno.serve(async (req) => {
       console.error("account-privacy current legal acceptance failed", consentError.message);
       return json({ ok: false, error: "The legal acceptance could not be recorded." }, 500);
     }
-    return json({ ok: true, legalAccepted: true, healthConsentVersion });
+    return json({ ok: true, legalAccepted: true, healthConsentVersion: CURRENT_HEALTH_CONSENT_VERSION });
+  }
+
+  if (body.action === "complete-onboarding") {
+    const now = new Date().toISOString();
+    const { data: consent, error: onboardingError } = await admin
+      .from("user_legal_consents")
+      .update({ onboarding_completed_at: now, updated_at: now })
+      .eq("user_id", userId)
+      .select("user_id")
+      .maybeSingle();
+
+    if (onboardingError) {
+      console.error("account-privacy onboarding completion failed", onboardingError.message);
+      return json({ ok: false, error: "Onboarding completion could not be recorded." }, 500);
+    }
+    if (!consent) return json({ ok: false, error: "No legal-consent record exists for this account." }, 409);
+    return json({ ok: true, onboardingCompleted: true });
   }
 
   if (body.action === "withdraw-health-consent") {
@@ -214,14 +229,15 @@ Deno.serve(async (req) => {
   }
 
   if (body.action === "grant-health-consent") {
-    const version = legalVersion(body.healthConsentVersion);
-    if (!version) return json({ ok: false, error: "A valid health-consent version is required." }, 400);
+    if (body.healthConsentVersion !== CURRENT_HEALTH_CONSENT_VERSION) {
+      return json({ ok: false, error: "The current health-consent version is required." }, 400);
+    }
 
     const now = new Date().toISOString();
     const { data: consent, error: consentError } = await admin
       .from("user_legal_consents")
       .update({
-        health_consent_version: version,
+        health_consent_version: CURRENT_HEALTH_CONSENT_VERSION,
         health_consent_at: now,
         health_consent_withdrawn_at: null,
         updated_at: now,
@@ -236,7 +252,7 @@ Deno.serve(async (req) => {
     }
     if (!consent) return json({ ok: false, error: "No legal-consent record exists for this account." }, 409);
 
-    return json({ ok: true, healthConsentGranted: true, healthConsentVersion: version });
+    return json({ ok: true, healthConsentGranted: true, healthConsentVersion: CURRENT_HEALTH_CONSENT_VERSION });
   }
 
   const { error: deleteError } = await admin.auth.admin.deleteUser(userId);
