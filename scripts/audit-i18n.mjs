@@ -8,6 +8,12 @@ const allowed = new Set([
   "src/features/profile/shared.tsx",
   "src/features/insights/shared.tsx",
   "src/features/patterns/shared.tsx",
+  // These routes deliberately colocate explicit EN/SK legal/onboarding copy.
+  // The guard still scans every other route for accidental Slovak-only literals.
+  "src/routes/auth.tsx",
+  "src/routes/onboarding.tsx",
+  "src/routes/privacy.tsx",
+  "src/routes/terms.tsx",
 ]);
 const slovakChars = /[áäčďéíĺľňóôŕšťúýž]/i;
 const failures = [];
