@@ -39,7 +39,7 @@ const INCIDENT_LABEL: Record<RuntimeDiagnosticIssue["kind"], string> = {
   jank: "Frame skip",
   longtask: "Long task",
   interaction: "Slow interaction",
-  network: "Offline",
+  network: "Network / API",
 };
 
 function statusClass(status: DiagnosticStatus): string {
@@ -142,7 +142,7 @@ function DiagnosticsPage() {
             <div className="min-w-0">
               <h2 className="text-lg font-black tracking-tight text-foreground">BIXBO App Scanner</h2>
               <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                Deep scan of screens, data, storage, PWA files, cloud and device performance. While BIXBO is open, a lightweight local flight recorder also catches freezes, frame skips, long JavaScript tasks, slow interactions, failed app resources and connectivity drops.
+                Forensic scan of screens, data, storage, PWA files, cloud and device performance. A local flight recorder continuously correlates freezes, screen jumps, slow rendering, failed assets, network/API delays, reload storms and runtime crashes with the route and technical events immediately before the incident.
               </p>
             </div>
             <button
@@ -179,7 +179,7 @@ function DiagnosticsPage() {
         </section>
 
         <section className="rounded-3xl bg-tint p-4 text-xs leading-relaxed text-muted-foreground ring-1 ring-border/60">
-          <span className="font-bold text-foreground">Performance recorder:</span> a visible main-thread stall of about 1.2 s+, a frame gap of 250 ms+, a supported-browser long task of 200 ms+, or a slow interaction of 300 ms+ is saved locally with its time, screen and device/runtime context. Health-log contents are never copied into diagnostics.
+          <span className="font-bold text-foreground">Performance recorder:</span> watches main-thread stalls, frame gaps, long animation work, slow interactions, unexpected layout/scroll jumps, slow startup paint, slow JS/CSS, failed or slow API calls, 5xx/429 responses, connectivity changes, CSP blocks, abrupt prior-session endings and repeated reloads. Incidents include where it happened, measured delay when available, likely cause and recent technical breadcrumbs. Health-log contents, form values and request bodies are never copied into diagnostics.
         </section>
 
         {running && !report ? (
@@ -205,7 +205,7 @@ function DiagnosticsPage() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h2 className="text-sm font-bold text-foreground">Recorded app incidents</h2>
-                <p className="mt-0.5 text-xs text-muted-foreground">Errors and performance incidents stored only on this device; health-log contents are not stored here.</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">Local forensic evidence only; health-log contents are not stored here.</p>
               </div>
               <button
                 type="button"
@@ -230,12 +230,23 @@ function DiagnosticsPage() {
                       </span>
                       <span className="text-[10px] text-muted-foreground">{new Date(issue.at).toLocaleString()}</span>
                     </div>
-                    <p className="mt-1 break-words text-xs text-foreground">{issue.message}</p>
-                    {typeof issue.durationMs === "number" ? (
-                      <p className="mt-1 text-[10px] font-semibold tabular-nums text-muted-foreground">Measured delay: {issue.durationMs} ms</p>
-                    ) : null}
-                    <p className="mt-1 break-all text-[10px] text-muted-foreground">{issue.path}</p>
-                    {issue.context ? <p className="mt-1 break-words text-[10px] text-muted-foreground">{issue.context}</p> : null}
+
+                    <div className="mt-2 space-y-1.5">
+                      <p className="break-words text-xs text-foreground">
+                        <span className="font-black">What happened: </span>{issue.message}
+                      </p>
+                      {typeof issue.durationMs === "number" ? (
+                        <p className="text-[10px] font-semibold tabular-nums text-muted-foreground">Measured delay: {issue.durationMs} ms</p>
+                      ) : null}
+                      <p className="break-all text-[10px] text-muted-foreground">
+                        <span className="font-black text-foreground">Where: </span>{issue.path}
+                      </p>
+                      {issue.context ? (
+                        <p className="break-words rounded-xl bg-background/55 p-2 text-[10px] leading-relaxed text-muted-foreground ring-1 ring-border/60">
+                          <span className="font-black text-foreground">Why / forensic evidence: </span>{issue.context}
+                        </p>
+                      ) : null}
+                    </div>
                   </div>
                 );
               })}
@@ -244,7 +255,7 @@ function DiagnosticsPage() {
         ) : null}
 
         <section className="rounded-3xl bg-tint p-4 text-xs leading-relaxed text-muted-foreground ring-1 ring-border/60">
-          The scanner can now diagnose many crashes, freezes and stutters from local runtime evidence, but it still cannot prove every interaction is correct. BIXBO's CI browser tests remain the second layer for full user-flow testing after code changes.
+          The scanner can correlate substantially more runtime evidence and propose the most likely technical cause, but a browser cannot mathematically prove every root cause after the fact. BIXBO's CI browser tests remain the second layer for full user-flow testing after code changes.
         </section>
       </div>
     </AppShell>
