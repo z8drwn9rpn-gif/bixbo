@@ -94,7 +94,7 @@ export function coupleRangeFor(period: CouplePeriod, anchor: Date) {
 }
 
 export function hasSymptoms(log?: ComparableDayLog) {
-  return Boolean(log?.pain?.length || log?.panic?.length || log?.tetany?.length);
+  return Boolean(log?.pain?.some((entry) => entry.entryKind !== "symptom-update") || log?.panic?.length || log?.tetany?.length);
 }
 
 export function countTakenScheduledDoses(days: string[], meds: Med[], medLog: Record<string, Record<string, boolean>>) {

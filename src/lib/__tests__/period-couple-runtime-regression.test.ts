@@ -48,4 +48,12 @@ describe("Period and Couple runtime regressions", () => {
     expect(settings).toContain("updateProfile({ display_name: nextName })");
     expect(settings).toContain('t("Your Couple name")');
   });
+
+  it("does not render symptom-only follow-ups as separate Couple pain records", () => {
+    const page = read("src/features/couple/CouplePage.tsx");
+    const utils = read("src/features/couple/coupleUtils.ts");
+    expect(page).toContain('pain.entryKind !== "symptom-update") output.push');
+    expect(page).toContain('filter((pain) => pain.entryKind !== "symptom-update")');
+    expect(utils).toContain('entry.entryKind !== "symptom-update"');
+  });
 });

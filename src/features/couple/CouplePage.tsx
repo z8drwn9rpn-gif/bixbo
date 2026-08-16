@@ -76,7 +76,7 @@ export function CouplePage({ onOpenSettings }: { onOpenSettings: () => void }) {
 
   const collectPain = (dayLogs: Record<string, ComparableDayLog>) => {
     const output: (PainEntry & { dateKey: string })[] = [];
-    for (const day of periodDays) for (const pain of dayLogs[day]?.pain ?? []) output.push({ ...pain, dateKey: day });
+    for (const day of periodDays) for (const pain of dayLogs[day]?.pain ?? []) if (pain.entryKind !== "symptom-update") output.push({ ...pain, dateKey: day });
     return output.sort((a, b) => b.dateKey === a.dateKey ? b.time.localeCompare(a.time) : b.dateKey.localeCompare(a.dateKey)).slice(0, 30);
   };
   const collectTetany = (dayLogs: Record<string, ComparableDayLog>) => {
@@ -112,10 +112,10 @@ export function CouplePage({ onOpenSettings }: { onOpenSettings: () => void }) {
   const comparisonStartDay = myFirstComparisonDay && partnerFirstComparisonDay ? (myFirstComparisonDay > partnerFirstComparisonDay ? myFirstComparisonDay : partnerFirstComparisonDay) : null;
   const comparisonPeriodDays = comparisonStartDay ? periodDays.filter((day) => day >= comparisonStartDay) : [];
   const hasPartnerComparisonData = partner ? comparisonPeriodDays.some((day) => hasSymptoms(partner.dayLogs[day])) : false;
-  const myPainAverage = average(comparisonPeriodDays.flatMap((day) => view.dayLogs[day]?.pain ?? []).map((pain) => pain.score));
-  const partnerPainAverage = partner ? average(comparisonPeriodDays.flatMap((day) => partner.dayLogs[day]?.pain ?? []).map((pain) => pain.score)) : null;
-  const myPainDays = comparisonPeriodDays.filter((day) => (view.dayLogs[day]?.pain?.length ?? 0) > 0).length;
-  const partnerPainDays = partner ? comparisonPeriodDays.filter((day) => (partner.dayLogs[day]?.pain?.length ?? 0) > 0).length : 0;
+  const myPainAverage = average(comparisonPeriodDays.flatMap((day) => (view.dayLogs[day]?.pain ?? []).filter((pain) => pain.entryKind !== "symptom-update")).map((pain) => pain.score));
+  const partnerPainAverage = partner ? average(comparisonPeriodDays.flatMap((day) => (partner.dayLogs[day]?.pain ?? []).filter((pain) => pain.entryKind !== "symptom-update")).map((pain) => pain.score)) : null;
+  const myPainDays = comparisonPeriodDays.filter((day) => (view.dayLogs[day]?.pain ?? []).some((pain) => pain.entryKind !== "symptom-update")).length;
+  const partnerPainDays = partner ? comparisonPeriodDays.filter((day) => (partner.dayLogs[day]?.pain ?? []).some((pain) => pain.entryKind !== "symptom-update")).length : 0;
   const sharedSymptomDays = partner ? comparisonPeriodDays.filter((day) => hasSymptoms(view.dayLogs[day]) && hasSymptoms(partner.dayLogs[day])).length : 0;
   const mySymptomDays = comparisonPeriodDays.filter((day) => hasSymptoms(view.dayLogs[day])).length;
   const partnerSymptomDays = partner ? comparisonPeriodDays.filter((day) => hasSymptoms(partner.dayLogs[day])).length : 0;
