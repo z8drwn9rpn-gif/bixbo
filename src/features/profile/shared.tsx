@@ -459,6 +459,7 @@ export function HealthHub({
   onAdmin?: () => void;
 }) {
   const { t } = useI18n();
+  const navigate = useNavigate();
 
   return (
     <AppShell
@@ -506,9 +507,9 @@ export function HealthHub({
           <div className="ml-[4.5rem] border-t border-border/60" />
           <HubRow
             icon={<NoteIcon size={22} />}
-            title="Export"
-            subtitle="Export health data as JSON or CSV"
-            onClick={() => onOpen("export")}
+            title="PDF export"
+            subtitle="Create a doctor-friendly PDF health report"
+            onClick={() => navigate({ to: "/report" })}
           />
           </section>
         </div>
