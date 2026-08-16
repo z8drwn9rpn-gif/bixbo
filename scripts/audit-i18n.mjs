@@ -6,6 +6,7 @@ const scanRoots = ["src/components", "src/features", "src/routes"];
 const allowed = new Set([
   "src/features/logging/TrText.tsx",
   "src/features/profile/shared.tsx",
+  "src/features/profile/PrivacyLegalControls.tsx",
   "src/features/insights/shared.tsx",
   "src/features/patterns/shared.tsx",
   "src/features/insights/TimeOfDayPatternChart.tsx",
