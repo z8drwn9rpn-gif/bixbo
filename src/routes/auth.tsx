@@ -7,7 +7,13 @@ import { useI18n } from "@/hooks/useI18n";
 import { oauthReturnUrlForLocation } from "@/integrations/auth/account";
 import { oauthCallbackErrorMessage, safeOAuthSearchText } from "@/integrations/auth/oauthCallback";
 import { supabase } from "@/integrations/supabase/client";
-import { clearPendingLegalConsent, finalizePendingLegalConsent, stagePendingLegalConsent } from "@/lib/legalConsent";
+import {
+  clearLocalCloudHealthConsentWithdrawn,
+  clearPendingLegalConsent,
+  cloudHealthConsentState,
+  finalizePendingLegalConsent,
+  stagePendingLegalConsent,
+} from "@/lib/legalConsent";
 
 export function safeInternalNext(value: unknown): string {
   if (typeof value !== "string") return "";
@@ -93,6 +99,14 @@ function AuthPage() {
     finishingRef.current = true;
     try {
       const shouldOnboard = await finalizePendingLegalConsent();
+      const consentState = await cloudHealthConsentState();
+
+      if (consentState !== "active") {
+        void navigate({ to: "/privacy" as never });
+        return;
+      }
+      clearLocalCloudHealthConsentWithdrawn();
+
       if (next) {
         window.location.replace(next);
         return;
