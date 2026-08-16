@@ -17,11 +17,13 @@ describe("Google browser ID-token auth", () => {
   });
 
   it("signs the Google credential into Supabase as an ID token with a nonce", () => {
-    expect(googleButton).toContain("supabase.auth.signInWithIdToken({");
-    expect(googleButton).toContain('provider: "google"');
-    expect(googleButton).toContain("token: response.credential");
-    expect(googleButton).toContain("nonce: nonce.raw");
     expect(googleButton).toContain('digest("SHA-256"');
+    expect(googleButton).toContain("onCredentialRef.current(response.credential, nonce.raw)");
+    expect(googleButton).not.toContain("supabase");
+    expect(authRoute).toContain("supabase.auth.signInWithIdToken({");
+    expect(authRoute).toContain('provider: "google"');
+    expect(authRoute).toContain("token: credential");
+    expect(authRoute).toContain("nonce: rawNonce");
   });
 
   it("does not send primary or legacy Google entry points through Supabase OAuth code exchange", () => {
