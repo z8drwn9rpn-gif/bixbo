@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { PatternsContent } from "./patterns";
 import { useI18n } from "@/hooks/useI18n";
+import { countNoBowelMovements } from "@/lib/domain/bowel";
 import { layoutOrder } from "@/lib/layoutRegistry";
 import { EMPTY, avgDayPain, toKey, useBixbo } from "@/lib/storage";
 import { BristolChart, HfBars, PainChart } from "@/features/insights/charts";
@@ -77,6 +78,11 @@ function InsightsPage() {
     return counts;
   }, [bowelDays, view.dayLogs]);
 
+  const noBowelMovementCount = useMemo(
+    () => countNoBowelMovements(bowelDays, view.dayLogs),
+    [bowelDays, view.dayLogs],
+  );
+
   const hfSeries = useMemo(() => hotFlashDays.map((key) => {
     const vals = (view.dayLogs[key]?.pain ?? []).map((entry) => entry.hotFlashes).filter((value): value is number => value != null);
     return vals.length ? Math.max(...vals) : undefined;
@@ -142,7 +148,10 @@ function InsightsPage() {
         {hfTotal ? <><div className="mt-2 flex items-baseline gap-2"><span className="font-serif text-4xl leading-none">{hfTotal}</span><span className="text-sm text-muted-foreground">{hfTotal === 1 ? "episode" : "episodes"} · avg {hfAvg!.toFixed(1)}/5 · most often L{hfTop}</span></div><HfBars key={`hot-flashes-${hotFlashPeriod}-${toKey(hotFlashAnchor)}`} bars={hfBars} period={hotFlashPeriod} days={hotFlashDays} anchor={hotFlashAnchor} /><div className="mt-3 space-y-1">{[1, 2, 3, 4, 5].map((level) => { const count = hfCounts[level]; const pct = hfTotal ? (count / hfTotal) * 100 : 0; const color = HOT_FLASH_COLORS[level]; return <div key={level} className="flex items-center gap-2 text-[10px]"><span className="grid h-4 w-4 shrink-0 place-items-center rounded-full text-[10px] font-bold text-white" style={{ background: color }}>{level}</span><span className="w-16 shrink-0 text-muted-foreground">{HOT_FLASH_DESCRIPTIONS[level]}</span><div className="h-2 flex-1 overflow-hidden rounded-full bg-tint"><div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} /></div><span className="w-6 text-right tabular-nums text-muted-foreground">{count}</span></div>; })}</div></> : <p className="mt-2 text-sm text-muted-foreground">{t("No hot flashes logged")}</p>}
       </section>
 
-      <div className={insightsFilter === "all" || insightsFilter === "bowel" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "bowel", 40) }}><BristolChart bowelCounts={bowelCounts} period={bowelPeriod} anchor={bowelAnchor} onPeriodChange={setBowelPeriod} onPeriodShift={(delta) => setBowelAnchor((current) => shiftInsightPeriodAnchor(current, bowelPeriod, delta))} /></div>
+      <div className={`${insightsFilter === "all" || insightsFilter === "bowel" ? "" : "hidden "}relative [&>section]:pb-10`} style={{ order: layoutOrder(view, "insights", "bowel", 40) }}>
+        <BristolChart bowelCounts={bowelCounts} period={bowelPeriod} anchor={bowelAnchor} onPeriodChange={setBowelPeriod} onPeriodShift={(delta) => setBowelAnchor((current) => shiftInsightPeriodAnchor(current, bowelPeriod, delta))} />
+        <p className="pointer-events-none absolute bottom-4 left-5 text-[11px] font-medium text-muted-foreground">{t("No bowel movements")}: <span className="tabular-nums text-foreground">{noBowelMovementCount}</span></p>
+      </div>
       <div className={insightsFilter === "all" || insightsFilter === "symptoms" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "timeOfDay", 50) }}><TimeOfDayPatternChart data={view} days={timeOfDayDays} period={timeOfDayPeriod} anchor={timeOfDayAnchor} onPeriodChange={setTimeOfDayPeriod} onPeriodShift={(delta) => setTimeOfDayAnchor((current) => shiftInsightPeriodAnchor(current, timeOfDayPeriod, delta))} /></div>
       <div className={insightsFilter === "all" || insightsFilter === "meds" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "meds", 60) }}><MedsAdherence data={view} period={medsPeriod} anchor={medsAnchor} onPeriodChange={setMedsPeriod} onPeriodShift={(delta) => setMedsAnchor((current) => shiftInsightPeriodAnchor(current, medsPeriod, delta))} /></div>
     </div>}
