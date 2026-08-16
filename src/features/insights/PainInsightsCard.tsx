@@ -14,6 +14,7 @@ import {
   type Period,
 } from "./shared";
 import { DashboardPeriodControl, MetricCards, QuickInsights } from "./InsightDashboardPrimitives";
+import { InsightFireIcon } from "./InsightCardIcons";
 
 type Bar = { value?: number; label: string; key?: string };
 
@@ -152,7 +153,12 @@ export function PainInsightsCard({
 
   return (
     <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
-      <p className="text-xs uppercase tracking-wider text-muted-foreground" style={{ fontWeight: 700 }}>{t("Pain scale")}</p>
+      <div className="flex items-center gap-2.5">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#f07c23]/10 ring-1 ring-[#f07c23]/15" data-insight-card-icon="pain-fire">
+          <InsightFireIcon size={29} />
+        </span>
+        <p className="text-xs uppercase tracking-wider text-muted-foreground" style={{ fontWeight: 700 }}>{t("Pain scale")}</p>
+      </div>
       <DashboardPeriodControl value={period} onChange={onPeriodChange} anchor={anchor} onShift={onPeriodShift} ariaLabel="Pain scale period" />
 
       <div className="mt-3 flex items-baseline gap-2">
