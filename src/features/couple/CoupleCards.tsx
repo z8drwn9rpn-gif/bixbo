@@ -4,9 +4,11 @@ import { CHART_COLORS, CHART_TINTS } from "@/components/ui/chart";
 import { useI18n } from "@/hooks/useI18n";
 import { PAIN_DESCRIPTIONS, painColor, type ExtraMed, type Med, type PainEntry, type PanicAttack, type TetanyEpisode } from "@/lib/storage";
 import { clampPercent, formatValue, TONES, type ComparisonTone } from "./coupleUtils";
+import { CoupleComparisonDashboard } from "./CoupleComparisonDashboard";
 
 export function SectionCard({ title, description: _description, children }: { title: string; description?: string; children: ReactNode }) {
   const { t } = useI18n();
+  if (title === "Health comparison") return <CoupleComparisonDashboard>{children}</CoupleComparisonDashboard>;
   return (
     <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
       <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t(title)}</h2>
