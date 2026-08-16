@@ -36,7 +36,15 @@ async function installGoogleIdentityStub(page: Page) {
 }
 
 async function installSupabaseIdTokenStub(page: Page, capture: (body: Record<string, unknown>) => void) {
-  await page.route("**/auth/v1/token?grant_type=id_token", async (route) => {
+  // Playwright glob `?` is a wildcard rather than a literal query separator, so
+  // match the endpoint broadly and inspect the query string explicitly.
+  await page.route("**/auth/v1/token**", async (route) => {
+    const url = new URL(route.request().url());
+    if (url.searchParams.get("grant_type") !== "id_token") {
+      await route.continue();
+      return;
+    }
+
     capture((route.request().postDataJSON() ?? {}) as Record<string, unknown>);
     const now = new Date().toISOString();
     await route.fulfill({
