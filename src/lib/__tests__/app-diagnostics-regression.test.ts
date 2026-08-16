@@ -19,6 +19,21 @@ describe("BIXBO app diagnostics", () => {
     expect(diagnostics).toContain('dataIntegrityCheck()');
     expect(diagnostics).toContain('storageCheck()');
 
+    expect(diagnostics).toContain('recordRuntimeDiagnosticIssue(\n      "freeze"');
+    expect(diagnostics).toContain('recordRuntimeDiagnosticIssue(\n        "jank"');
+    expect(diagnostics).toContain('supportedEntries.includes("longtask")');
+    expect(diagnostics).toContain('supportedEntries.includes("event")');
+    expect(diagnostics).toContain("requestAnimationFrame(watchFrames)");
+    expect(diagnostics).toContain("mainThreadResponsivenessCheck()");
+    expect(diagnostics).toContain("navigationPerformanceCheck()");
+    expect(diagnostics).toContain("deviceCapabilityCheck()");
+    expect(diagnostics).toContain("storageCapacityCheck()");
+    expect(diagnostics).toContain("serviceWorkerCheck()");
+    expect(diagnostics).toContain("runtimePerformanceCheck(runtimeIssues)");
+    expect(diagnostics).toContain("recentNetworkCheck(runtimeIssues)");
+    expect(diagnostics).toContain('window.addEventListener("error", onResourceError, true)');
+    expect(diagnostics).toContain('window.addEventListener("offline", onOffline)');
+
     for (const path of [
       "/",
       "/profile",
@@ -41,23 +56,20 @@ describe("BIXBO app diagnostics", () => {
     expect(route).toContain('createFileRoute("/diagnostics")');
     expect(route).toContain("BIXBO App Scanner");
     expect(route).toContain("Run scan");
-    expect(route).toContain("Recorded app errors");
+    expect(route).toContain("Recorded app incidents");
+    expect(route).toContain("Performance recorder:");
+    expect(route).toContain("Measured delay:");
 
     expect(root).toContain("installRuntimeDiagnostics");
     expect(root).toContain("BIXBO detected an app error");
     expect(root).toContain('window.location.assign("/diagnostics")');
     expect(root).toContain('href="/diagnostics"');
 
-    // The iPhone PWA splash is cosmetic only: show it for exactly one second,
-    // let React start underneath, and never let the overlay block interaction.
     expect(root).toContain("animation: bixbo-ios-launch-splash-hide 1s step-end forwards");
     expect(root).toContain("pointer-events: none");
     expect(root).not.toContain("}, 4500);");
     expect(root).not.toContain("}, 700);");
 
-    // Existing hashed files are served by Cloudflare before the Worker. A stale
-    // hashed URL must never fall through to SSR HTML, which Safari rejects as a
-    // JavaScript module and reports as a text/html MIME error.
     expect(server).toContain('pathname.startsWith("/assets/")');
     expect(server).toContain("status: 404");
     expect(server).toContain('"application/javascript; charset=utf-8"');
