@@ -56,13 +56,32 @@ describe("release hardening contracts", () => {
     expect(migration.match(/create policy/g)).toHaveLength(4);
   });
 
-  it("provides authenticated cloud export, withdrawal, re-consent and deletion without exporting push auth secrets", () => {
+  it("keeps withdrawn consent authoritative and legal audit writes server-side", () => {
+    const source = read("src/lib/legalConsent.ts");
+    const existingStateCheck = source.indexOf('.select("onboarding_completed_at,health_consent_withdrawn_at")');
+    const metadataReplay = source.indexOf("const metadataPending");
+    expect(existingStateCheck).toBeGreaterThan(-1);
+    expect(metadataReplay).toBeGreaterThan(existingStateCheck);
+    expect(source).not.toContain('.from("user_legal_consents").upsert');
+    expect(source).toContain('invokeLegalWrite("accept-current-legal"');
+    expect(source).toContain('invokeLegalWrite("complete-onboarding"');
+
+    const migration = read("supabase/migrations/20260816223500_harden_legal_consent_audit.sql");
+    expect(migration).toContain('revoke insert, update on public.user_legal_consents from authenticated');
+    expect(migration).toContain("consent.terms_version = '2026-08-16'");
+    expect(migration).toContain("consent.privacy_version = '2026-08-16'");
+    expect(migration).toContain("consent.health_consent_version = '2026-08-16'");
+  });
+
+  it("provides authenticated cloud export, server-side legal writes, withdrawal, re-consent and deletion without exporting push auth secrets", () => {
     const edge = read("supabase/functions/account-privacy/index.ts");
     expect(edge).toContain('"export-cloud-data"');
     expect(edge).toContain('"accept-current-legal"');
+    expect(edge).toContain('"complete-onboarding"');
     expect(edge).toContain('"withdraw-health-consent"');
     expect(edge).toContain('"grant-health-consent"');
     expect(edge).toContain('"delete-account"');
+    expect(edge).toContain('const CURRENT_HEALTH_CONSENT_VERSION = "2026-08-16"');
     expect(edge).toContain('select("id,endpoint,expiration_time,user_agent,created_at,updated_at")');
     expect(edge).not.toContain('select("id,endpoint,p256dh');
   });
