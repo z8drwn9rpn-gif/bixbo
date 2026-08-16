@@ -9,7 +9,7 @@
   "theme_color": "#FBF7F3",
   "icons": [
     {
-      "src": "/apple-touch-icon-bixbo-v2.png?v=1",
+      "src": "/apple-touch-icon.png?v=8",
       "sizes": "180x180",
       "type": "image/png",
       "purpose": "any"

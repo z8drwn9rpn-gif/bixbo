@@ -80,6 +80,52 @@ const THEME_BOOTSTRAP_SCRIPT = `(() => {
   } catch {}
 })();`;
 
+// Safari does not provide a reliable native PWA launch screen on every iPhone.
+// Mark a standalone iPhone document before its body is painted so the static
+// mascot splash below is visible while the React app starts.
+const APPLE_PWA_LAUNCH_SPLASH_BOOTSTRAP = `(() => {
+  try {
+    const isAppleMobile = /iPad|iPhone|iPod/.test(navigator.userAgent || "");
+    const standalone = (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches)
+      || navigator.standalone === true;
+    if (!isAppleMobile || !standalone) return;
+
+    document.documentElement.dataset.applePwaLaunch = "true";
+    window.setTimeout(() => {
+      const splash = document.getElementById("bixbo-ios-launch-splash");
+      if (splash) splash.setAttribute("data-ready", "true");
+    }, 4500);
+  } catch {}
+})();`;
+
+const APPLE_PWA_LAUNCH_SPLASH_CSS = `
+  #bixbo-ios-launch-splash { display: none; }
+
+  html[data-apple-pwa-launch="true"] #bixbo-ios-launch-splash {
+    position: fixed;
+    z-index: 2147483647;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #FBF7F3;
+    opacity: 1;
+    pointer-events: auto;
+    transition: opacity 220ms ease;
+  }
+
+  html[data-apple-pwa-launch="true"] #bixbo-ios-launch-splash[data-ready="true"] {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  #bixbo-ios-launch-splash img {
+    width: 150px;
+    height: 150px;
+    object-fit: contain;
+  }
+`;
+
 function NotFoundComponent() {
   const { t } = useI18n();
   const router = useRouter();
@@ -163,9 +209,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: deviceRenderingFixesCss },
       { rel: "manifest", href: "/manifest.json" },
       { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
-      { rel: "icon", type: "image/png", sizes: "180x180", href: "/apple-touch-icon-bixbo-v2.png?v=1" },
-      { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon-bixbo-v2.png?v=1" },
-      { rel: "apple-touch-icon-precomposed", sizes: "180x180", href: "/apple-touch-icon-bixbo-v2.png?v=1" },
+      { rel: "icon", type: "image/png", sizes: "180x180", href: "/apple-touch-icon.png" },
+      { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
+      { rel: "apple-touch-startup-image", href: "/apple-launch-bixbo.png?v=1" },
       { rel: "icon", type: "image/png", sizes: "192x192", href: "/icon-192.png" },
       { rel: "icon", type: "image/png", sizes: "512x512", href: "/icon-512.png" },
     ],
@@ -182,10 +228,15 @@ function RootShell({ children }: { children: ReactNode }) {
       <head>
         <meta name="theme-color" content="#FBF7F3" />
         <meta name="color-scheme" content="light dark" />
+        <style dangerouslySetInnerHTML={{ __html: APPLE_PWA_LAUNCH_SPLASH_CSS }} />
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: APPLE_PWA_LAUNCH_SPLASH_BOOTSTRAP }} />
         <HeadContent />
       </head>
       <body data-bixbo-app-root>
+        <div id="bixbo-ios-launch-splash" aria-hidden="true">
+          <img src="/apple-touch-icon.png" width={180} height={180} alt="" />
+        </div>
         {children}
         <Scripts />
       </body>
@@ -200,6 +251,19 @@ function RootComponent() {
   useThemeSync();
   useNotificationRuntime();
   useDeploymentFreshness();
+
+  useEffect(() => {
+    if (document.documentElement.dataset.applePwaLaunch !== "true") return;
+
+    const splash = document.getElementById("bixbo-ios-launch-splash");
+    if (!splash) return;
+
+    const timer = window.setTimeout(() => {
+      splash.setAttribute("data-ready", "true");
+    }, 700);
+
+    return () => window.clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     return installRuntimeDiagnostics((issue) => {
