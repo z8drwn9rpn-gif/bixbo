@@ -15,7 +15,7 @@ describe("Couple readability and long-page navigation", () => {
     expect(css).toContain("font-size: 0.75rem !important");
   });
 
-  it("exposes top and bottom jump controls from the shared app shell", () => {
+  it("exposes top and bottom jump controls from the shared app shell without document reloads", () => {
     const shell = read("src/components/AppShell.tsx");
     const control = read("src/components/ScrollJumpControl.tsx");
 
@@ -24,5 +24,20 @@ describe("Couple readability and long-page navigation", () => {
     expect(control).toContain('aria-label="Scroll to bottom"');
     expect(control).toContain('window.scrollTo({ top: 0, behavior: "smooth" })');
     expect(control).toContain("root.scrollHeight");
+    expect(control).toContain('router.navigate({ to: "/" })');
+    expect(control).toContain('hash: "latest"');
+    expect(control).not.toContain("window.location.assign");
+  });
+
+  it("opens every log category from a normal plus tap while keeping hold shortcuts", () => {
+    const nav = read("src/components/BottomNav.tsx");
+    const actions = read("src/components/GlobalQuickLogActions.tsx");
+
+    expect(nav).toContain('new CustomEvent("bixbo:open-log-menu")');
+    expect(nav).toContain('new CustomEvent("bixbo:open-quick-log-menu")');
+    expect(actions).toContain('window.addEventListener("bixbo:open-log-menu", openAllLogs)');
+    expect(actions).toContain('t("All logs")');
+    expect(actions).toContain('lazy(() =>');
+    expect(actions).toContain('import("@/components/LogSheet")');
   });
 });
