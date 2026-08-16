@@ -7,6 +7,7 @@ import { PainEpisodeChoiceDefaults } from "./PainEpisodeChoiceDefaults";
 import { ScrollJumpControl } from "./ScrollJumpControl";
 import { GlobalQuickLogActions } from "./GlobalQuickLogActions";
 import { CalendarTargetBridge } from "./CalendarTargetBridge";
+import { DiagnosticProfiler } from "./DiagnosticProfiler";
 import bixboMascot from "@/assets/bixbo-mascot-user.png";
 
 const BIXBO_MASCOT_SRC = bixboMascot;
@@ -36,7 +37,11 @@ export function AppShell({ children, title, right, big = false, stickyHeader = t
               {right ? <div className="ml-2 flex min-w-0 shrink-0 items-center">{right}</div> : null}
             </header>
           )}
-          <main id="main-content" tabIndex={-1} className="bixbo-page-fade min-w-0 overflow-x-hidden outline-none">{children}</main>
+          <main id="main-content" tabIndex={-1} className="bixbo-page-fade min-w-0 overflow-x-hidden outline-none">
+            <DiagnosticProfiler id={`Screen:${pathname}`}>
+              {children}
+            </DiagnosticProfiler>
+          </main>
         </div>
       </div>
       <ScrollJumpControl />
