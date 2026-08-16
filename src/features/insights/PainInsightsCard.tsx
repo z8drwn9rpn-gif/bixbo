@@ -151,26 +151,26 @@ export function PainInsightsCard({
     : null;
 
   return (
-    <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
-      <p className="text-sm uppercase tracking-[0.08em] text-muted-foreground" style={{ fontWeight: 700 }}>{t("Pain scale")}</p>
+    <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
+      <p className="text-xs uppercase tracking-wider text-muted-foreground" style={{ fontWeight: 700 }}>{t("Pain scale")}</p>
       <DashboardPeriodControl value={period} onChange={onPeriodChange} anchor={anchor} onShift={onPeriodShift} ariaLabel="Pain scale period" />
 
-      <div className="mt-4 flex items-baseline gap-2">
-        <span className="font-serif text-5xl leading-none text-foreground">{averageValue != null ? averageValue.toFixed(1) : "–"}</span>
-        <span className="text-base text-muted-foreground">avg · {defined.length} {defined.length === 1 ? "entry" : "entries"}</span>
+      <div className="mt-3 flex items-baseline gap-2">
+        <span className="font-serif text-4xl leading-none text-foreground">{averageValue != null ? averageValue.toFixed(1) : "–"}</span>
+        <span className="whitespace-nowrap text-xs text-muted-foreground">avg · {defined.length} {defined.length === 1 ? "entry" : "entries"}</span>
       </div>
 
-      <div className="mt-4 rounded-[26px] bg-background/45 px-3 pb-3 pt-4 ring-1 ring-border/45">
-        <p className="text-[11px] text-muted-foreground">Pain (0–10)</p>
+      <div className="mt-3 rounded-2xl bg-background/45 px-3 pb-2.5 pt-3 ring-1 ring-border/45">
+        <p className="text-[10px] text-muted-foreground">Pain (0–10)</p>
         <div className="mt-2 flex gap-2">
-          <div className="flex h-[190px] w-6 flex-col justify-between text-right text-[11px] text-muted-foreground">
+          <div className="flex h-[150px] w-5 flex-col justify-between text-right text-[10px] text-muted-foreground">
             {[10, 8, 6, 4, 2, 0].map((value) => <span key={value} className="leading-none tabular-nums">{value}</span>)}
           </div>
           <div className="relative min-w-0 flex-1">
             <div className="pointer-events-none absolute inset-0 flex flex-col justify-between">
               {[10, 8, 6, 4, 2, 0].map((value) => <div key={value} className="border-t border-dashed" style={{ borderColor: CHART_GRID }} />)}
             </div>
-            <div className="relative grid h-[190px] items-end gap-[3px]" style={{ gridTemplateColumns: `repeat(${Math.max(1, bars.length)}, minmax(0, 1fr))` }}>
+            <div className="relative grid h-[150px] items-end gap-[3px]" style={{ gridTemplateColumns: `repeat(${Math.max(1, bars.length)}, minmax(0, 1fr))` }}>
               {bars.map((bar, index) => bar.value != null ? (
                 <button key={index} type="button" aria-label={`Pain ${bar.value.toFixed(1)}`} aria-pressed={active === index}
                   onClick={(event) => { event.stopPropagation(); setActive((current) => current === index ? null : index); }}
@@ -181,10 +181,10 @@ export function PainInsightsCard({
             </div>
           </div>
         </div>
-        <div className="mt-2 grid gap-[3px] pl-8 text-center text-[10px] text-muted-foreground" style={{ gridTemplateColumns: `repeat(${Math.max(1, bars.length)}, minmax(0, 1fr))` }}>
+        <div className="mt-1.5 grid gap-[3px] pl-7 text-center text-[10px] text-muted-foreground" style={{ gridTemplateColumns: `repeat(${Math.max(1, bars.length)}, minmax(0, 1fr))` }}>
           {bars.map((bar, index) => <span key={index} className="truncate">{bar.label}</span>)}
         </div>
-        <p className="mt-1 text-right text-[11px] text-muted-foreground">{period === "Y" ? "Month" : period === "M" ? "Day of month" : "Day"}</p>
+        <p className="mt-1 text-right text-[10px] text-muted-foreground">{period === "Y" ? "Month" : period === "M" ? "Day of month" : "Day"}</p>
       </div>
 
       <QuickInsights items={[
