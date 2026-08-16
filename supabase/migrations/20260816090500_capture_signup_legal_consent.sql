@@ -2,6 +2,9 @@
 -- opened on another device. This trigger reads only the explicit consent
 -- snapshot written by the BIXBO signup form. It does not touch health data.
 
+alter table public.user_legal_consents
+add column if not exists onboarding_completed_at timestamptz;
+
 create or replace function public.capture_bixbo_signup_legal_consent()
 returns trigger
 language plpgsql
