@@ -12,13 +12,27 @@ export type DiagnosticResult = {
   detail: string;
 };
 
+export type RuntimeDiagnosticKind =
+  | "error"
+  | "unhandledrejection"
+  | "route"
+  | "resource"
+  | "freeze"
+  | "jank"
+  | "longtask"
+  | "interaction"
+  | "network";
+
 export type RuntimeDiagnosticIssue = {
   id: string;
   at: number;
-  kind: "error" | "unhandledrejection" | "route";
+  kind: RuntimeDiagnosticKind;
+  severity?: "warning" | "error";
   area: string;
   message: string;
   path: string;
+  durationMs?: number;
+  context?: string;
 };
 
 export type AppDiagnosticReport = {
@@ -31,9 +45,11 @@ export type AppDiagnosticReport = {
 export type RoutePreloader = (path: string) => Promise<void>;
 
 const RUNTIME_ERROR_KEY = "bixbo:runtime-diagnostics:v1";
-const MAX_RUNTIME_ERRORS = 25;
+const MAX_RUNTIME_ERRORS = 50;
 const RECENT_RUNTIME_WINDOW_MS = 6 * 60 * 60 * 1000;
 const DEDUPE_WINDOW_MS = 30_000;
+const ERROR_KINDS = new Set<RuntimeDiagnosticKind>(["error", "unhandledrejection", "route", "resource"]);
+const PERFORMANCE_KINDS = new Set<RuntimeDiagnosticKind>(["freeze", "jank", "longtask", "interaction"]);
 
 export const DIAGNOSTIC_ROUTES = [
   ["Home", "/"],
@@ -59,7 +75,6 @@ function compactMessage(value: unknown): string {
   else if (value && typeof value === "object" && "message" in value) raw = String((value as { message?: unknown }).message ?? raw);
   else if (value != null) raw = String(value);
 
-  // Keep diagnostics useful without retaining arbitrary user-entered content.
   return raw
     .replace(/https?:\/\/[^\s)]+/gi, (url) => {
       try {
@@ -92,6 +107,33 @@ function areaForPath(pathname: string): string {
   return path === "/" ? "Home" : "Application";
 }
 
+type NavigatorDiagnostics = Navigator & {
+  deviceMemory?: number;
+  connection?: {
+    effectiveType?: string;
+    rtt?: number;
+    downlink?: number;
+    saveData?: boolean;
+  };
+};
+
+function runtimeContext(): string {
+  if (typeof navigator === "undefined" || typeof document === "undefined") return "";
+  const nav = navigator as NavigatorDiagnostics;
+  const connection = nav.connection;
+  const parts = [
+    `visibility=${document.visibilityState}`,
+    `online=${navigator.onLine !== false ? "yes" : "no"}`,
+  ];
+  if (typeof nav.hardwareConcurrency === "number") parts.push(`cpu=${nav.hardwareConcurrency}`);
+  if (typeof nav.deviceMemory === "number") parts.push(`memory=${nav.deviceMemory}GB`);
+  if (connection?.effectiveType) parts.push(`network=${connection.effectiveType}`);
+  if (typeof connection?.rtt === "number") parts.push(`rtt=${connection.rtt}ms`);
+  if (typeof connection?.downlink === "number") parts.push(`downlink=${connection.downlink}Mbps`);
+  if (connection?.saveData) parts.push("save-data=yes");
+  return parts.join(", ");
+}
+
 function readRuntimeIssuesRaw(): RuntimeDiagnosticIssue[] {
   if (typeof window === "undefined") return [];
   try {
@@ -116,14 +158,23 @@ export function clearRuntimeDiagnosticIssues(): void {
   try {
     window.localStorage.removeItem(RUNTIME_ERROR_KEY);
   } catch {
-    // Restricted storage must not break the app.
   }
 }
 
+function defaultSeverity(kind: RuntimeDiagnosticKind): "warning" | "error" {
+  return ERROR_KINDS.has(kind) ? "error" : "warning";
+}
+
 export function recordRuntimeDiagnosticIssue(
-  kind: RuntimeDiagnosticIssue["kind"],
+  kind: RuntimeDiagnosticKind,
   error: unknown,
-  options?: { area?: string; path?: string },
+  options?: {
+    area?: string;
+    path?: string;
+    severity?: "warning" | "error";
+    durationMs?: number;
+    context?: string;
+  },
 ): RuntimeDiagnosticIssue | null {
   if (typeof window === "undefined") return null;
 
@@ -132,27 +183,39 @@ export function recordRuntimeDiagnosticIssue(
   const message = compactMessage(error);
   const now = Date.now();
   const previous = readRuntimeIssuesRaw();
-  const duplicate = previous.find(
-    (issue) => issue.message === message && issue.path === path && now - issue.at < DEDUPE_WINDOW_MS,
-  );
+  const duplicate = previous.find((issue) => {
+    if (issue.kind !== kind || issue.path !== path || now - issue.at >= DEDUPE_WINDOW_MS) return false;
+    return PERFORMANCE_KINDS.has(kind) || issue.message === message;
+  });
   if (duplicate) return duplicate;
 
   const issue: RuntimeDiagnosticIssue = {
     id: `${now}-${Math.random().toString(36).slice(2, 8)}`,
     at: now,
     kind,
+    severity: options?.severity ?? defaultSeverity(kind),
     area,
     message,
     path,
+    ...(typeof options?.durationMs === "number" ? { durationMs: Math.round(options.durationMs) } : {}),
+    context: options?.context ?? runtimeContext(),
   };
 
   try {
     window.localStorage.setItem(RUNTIME_ERROR_KEY, JSON.stringify([issue, ...previous].slice(0, MAX_RUNTIME_ERRORS)));
   } catch {
-    // Diagnostics are best-effort and never interfere with health data storage.
   }
 
   return issue;
+}
+
+function resourceUrlForTarget(target: EventTarget | null): string | null {
+  if (target instanceof HTMLScriptElement) return target.src || null;
+  if (target instanceof HTMLLinkElement) {
+    const rel = target.rel.toLowerCase();
+    if (rel === "stylesheet" || rel === "modulepreload" || rel === "preload") return target.href || null;
+  }
+  return null;
 }
 
 export function installRuntimeDiagnostics(onIssue?: (issue: RuntimeDiagnosticIssue) => void): () => void {
@@ -171,11 +234,102 @@ export function installRuntimeDiagnostics(onIssue?: (issue: RuntimeDiagnosticIss
     if (issue) onIssue?.(issue);
   };
 
+  const onResourceError = (event: Event) => {
+    const url = resourceUrlForTarget(event.target);
+    if (!url) return;
+    recordRuntimeDiagnosticIssue("resource", `Failed to load app resource: ${url}`);
+  };
+
+  const onOffline = () => {
+    recordRuntimeDiagnosticIssue("network", "Device went offline while BIXBO was open.", { severity: "warning" });
+  };
+
+  let heartbeatExpected = performance.now() + 500;
+  let lastFrame = performance.now();
+  let rafId = 0;
+  let longTaskObserver: PerformanceObserver | null = null;
+  let eventObserver: PerformanceObserver | null = null;
+
+  const resetPerformanceClocks = () => {
+    heartbeatExpected = performance.now() + 500;
+    lastFrame = performance.now();
+  };
+
+  const heartbeatId = window.setInterval(() => {
+    const now = performance.now();
+    const lag = now - heartbeatExpected;
+    heartbeatExpected = now + 500;
+    if (document.visibilityState !== "visible" || lag < 1_200) return;
+    recordRuntimeDiagnosticIssue(
+      "freeze",
+      `Main thread stalled for about ${Math.round(lag)} ms. Scrolling, taps or screen changes may have appeared frozen.`,
+      { durationMs: lag, severity: lag >= 3_000 ? "error" : "warning" },
+    );
+  }, 500);
+
+  const watchFrames = (now: number) => {
+    const gap = now - lastFrame;
+    lastFrame = now;
+    if (document.visibilityState === "visible" && gap >= 250 && gap < 1_200) {
+      recordRuntimeDiagnosticIssue(
+        "jank",
+        `Visible frame gap of about ${Math.round(gap)} ms detected. The app may have visibly skipped or stuttered.`,
+        { durationMs: gap },
+      );
+    }
+    rafId = window.requestAnimationFrame(watchFrames);
+  };
+  rafId = window.requestAnimationFrame(watchFrames);
+
+  const supportedEntries = typeof PerformanceObserver === "undefined"
+    ? []
+    : (PerformanceObserver as typeof PerformanceObserver & { supportedEntryTypes?: readonly string[] }).supportedEntryTypes ?? [];
+  if (supportedEntries.includes("longtask")) {
+    longTaskObserver = new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) {
+        if (entry.duration < 200 || document.visibilityState !== "visible") continue;
+        recordRuntimeDiagnosticIssue(
+          "longtask",
+          `A JavaScript main-thread task blocked the app for about ${Math.round(entry.duration)} ms.`,
+          { durationMs: entry.duration, severity: entry.duration >= 1_000 ? "error" : "warning" },
+        );
+      }
+    });
+    longTaskObserver.observe({ entryTypes: ["longtask"] });
+  }
+
+  if (supportedEntries.includes("event")) {
+    eventObserver = new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) {
+        if (entry.duration < 300 || document.visibilityState !== "visible") continue;
+        recordRuntimeDiagnosticIssue(
+          "interaction",
+          `${entry.name || "User interaction"} took about ${Math.round(entry.duration)} ms to process.`,
+          { durationMs: entry.duration, severity: entry.duration >= 1_000 ? "error" : "warning" },
+        );
+      }
+    });
+    eventObserver.observe({ type: "event", buffered: true, durationThreshold: 200 } as PerformanceObserverInit);
+  }
+
   window.addEventListener("error", onError);
+  window.addEventListener("error", onResourceError, true);
   window.addEventListener("unhandledrejection", onUnhandledRejection);
+  window.addEventListener("offline", onOffline);
+  window.addEventListener("pageshow", resetPerformanceClocks);
+  document.addEventListener("visibilitychange", resetPerformanceClocks);
+
   return () => {
     window.removeEventListener("error", onError);
+    window.removeEventListener("error", onResourceError, true);
     window.removeEventListener("unhandledrejection", onUnhandledRejection);
+    window.removeEventListener("offline", onOffline);
+    window.removeEventListener("pageshow", resetPerformanceClocks);
+    document.removeEventListener("visibilitychange", resetPerformanceClocks);
+    window.clearInterval(heartbeatId);
+    window.cancelAnimationFrame(rafId);
+    longTaskObserver?.disconnect();
+    eventObserver?.disconnect();
   };
 }
 
@@ -260,11 +414,140 @@ function browserCheck(): DiagnosticResult {
     : result("browser", "Browser", "warning", "Browser runtime", "Device is offline. Network-dependent checks may fail until connection returns.");
 }
 
+function deviceCapabilityCheck(): DiagnosticResult {
+  if (typeof navigator === "undefined") return result("device", "Performance", "warning", "Device capacity", "Device information is unavailable.");
+  const nav = navigator as NavigatorDiagnostics;
+  const cores = nav.hardwareConcurrency;
+  const memory = nav.deviceMemory;
+  const connection = nav.connection;
+  const details = [
+    typeof cores === "number" ? `${cores} logical CPU cores` : "CPU count unavailable",
+    typeof memory === "number" ? `${memory} GB device-memory hint` : "memory hint unavailable",
+    connection?.effectiveType ? `${connection.effectiveType} network` : "network class unavailable",
+  ];
+  const constrained = (typeof cores === "number" && cores <= 2) || (typeof memory === "number" && memory <= 2);
+  return result(
+    "device",
+    "Performance",
+    constrained ? "warning" : "ok",
+    "Device capacity",
+    `${details.join(" · ")}.${constrained ? " Limited device resources can increase stutter under heavy screens." : ""}`,
+  );
+}
+
+function navigationPerformanceCheck(): DiagnosticResult {
+  if (typeof performance === "undefined") return result("navigation", "Performance", "warning", "Page startup timing", "Performance timing APIs are unavailable.");
+  const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
+  if (!nav) return result("navigation", "Performance", "warning", "Page startup timing", "Navigation timing is unavailable for this app session.");
+
+  const ttfb = Math.max(0, nav.responseStart - nav.requestStart);
+  const domReady = Math.max(0, nav.domContentLoadedEventEnd - nav.startTime);
+  const load = nav.loadEventEnd > 0 ? Math.max(0, nav.loadEventEnd - nav.startTime) : Math.max(0, nav.duration);
+  const worst = Math.max(ttfb, domReady, load);
+  const status: DiagnosticStatus = worst >= 4_000 ? "error" : worst >= 2_000 ? "warning" : "ok";
+  return result(
+    "navigation",
+    "Performance",
+    status,
+    "Page startup timing",
+    `TTFB ${Math.round(ttfb)} ms · DOM ready ${Math.round(domReady)} ms · load ${Math.round(load)} ms.`,
+  );
+}
+
+async function mainThreadResponsivenessCheck(): Promise<DiagnosticResult> {
+  if (typeof window === "undefined" || typeof performance === "undefined") {
+    return result("main-thread", "Performance", "warning", "Main-thread responsiveness", "Performance probing is unavailable.");
+  }
+  if (document.visibilityState !== "visible") {
+    return result("main-thread", "Performance", "warning", "Main-thread responsiveness", "Skipped because the app is currently in the background.");
+  }
+
+  const sampleMs = 900;
+  const intervalMs = 50;
+  const started = performance.now();
+  let expected = started + intervalMs;
+  let worstTimerLag = 0;
+  let worstFrameGap = 0;
+  let lastFrame = started;
+  let rafId = 0;
+
+  const frame = (now: number) => {
+    worstFrameGap = Math.max(worstFrameGap, now - lastFrame);
+    lastFrame = now;
+    if (now - started < sampleMs) rafId = window.requestAnimationFrame(frame);
+  };
+  rafId = window.requestAnimationFrame(frame);
+
+  await new Promise<void>((resolve) => {
+    const timer = window.setInterval(() => {
+      const now = performance.now();
+      worstTimerLag = Math.max(worstTimerLag, Math.max(0, now - expected));
+      expected = now + intervalMs;
+      if (now - started >= sampleMs) {
+        window.clearInterval(timer);
+        resolve();
+      }
+    }, intervalMs);
+  });
+  window.cancelAnimationFrame(rafId);
+
+  const worst = Math.max(worstTimerLag, worstFrameGap);
+  const status: DiagnosticStatus = worst >= 1_000 ? "error" : worst >= 200 ? "warning" : "ok";
+  return result(
+    "main-thread",
+    "Performance",
+    status,
+    "Main-thread responsiveness",
+    `Live 0.9 s probe: worst timer delay ${Math.round(worstTimerLag)} ms · worst frame gap ${Math.round(worstFrameGap)} ms.`,
+  );
+}
+
 function notificationCapabilityCheck(): DiagnosticResult {
   if (typeof window === "undefined") return result("push", "Notifications", "warning", "Notification support", "Notification APIs are unavailable during server rendering.");
   const supported = "Notification" in window && "serviceWorker" in navigator && "PushManager" in window;
   if (!supported) return result("push", "Notifications", "warning", "Notification support", "This browser does not expose all Web Push APIs.");
   return result("push", "Notifications", "ok", "Notification support", `Web Push APIs are available; permission is ${Notification.permission}.`);
+}
+
+async function serviceWorkerCheck(): Promise<DiagnosticResult> {
+  if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) {
+    return result("service-worker", "PWA", "warning", "Service worker state", "Service workers are unavailable in this browser.");
+  }
+  try {
+    const registration = await navigator.serviceWorker.getRegistration();
+    if (!registration) return result("service-worker", "PWA", "ok", "Service worker state", "No service-worker registration is active; push may simply not be enabled on this device.");
+    const worker = registration.active ?? registration.waiting ?? registration.installing;
+    return result(
+      "service-worker",
+      "PWA",
+      worker?.state === "redundant" ? "error" : "ok",
+      "Service worker state",
+      `Registration found${worker ? `; worker state is ${worker.state}` : ""}${navigator.serviceWorker.controller ? "; page is controlled" : "; page is not currently controlled"}.`,
+    );
+  } catch (error) {
+    return result("service-worker", "PWA", "warning", "Service worker state", compactMessage(error));
+  }
+}
+
+async function storageCapacityCheck(): Promise<DiagnosticResult> {
+  if (typeof navigator === "undefined" || !navigator.storage?.estimate) {
+    return result("storage-capacity", "Storage", "warning", "Storage capacity", "Browser storage-capacity estimates are unavailable.");
+  }
+  try {
+    const { usage = 0, quota = 0 } = await navigator.storage.estimate();
+    if (!quota) return result("storage-capacity", "Storage", "warning", "Storage capacity", "Browser did not provide a storage quota.");
+    const pct = (usage / quota) * 100;
+    const status: DiagnosticStatus = pct >= 95 ? "error" : pct >= 80 ? "warning" : "ok";
+    return result(
+      "storage-capacity",
+      "Storage",
+      status,
+      "Storage capacity",
+      `${pct.toFixed(1)}% of the browser storage quota is currently used.`,
+    );
+  } catch (error) {
+    return result("storage-capacity", "Storage", "warning", "Storage capacity", compactMessage(error));
+  }
 }
 
 async function cloudCheck(): Promise<DiagnosticResult> {
@@ -303,10 +586,41 @@ async function routeChecks(preloadRoute?: RoutePreloader): Promise<DiagnosticRes
 
 function recentRuntimeCheck(issues: RuntimeDiagnosticIssue[]): DiagnosticResult {
   const cutoff = Date.now() - RECENT_RUNTIME_WINDOW_MS;
-  const recent = issues.filter((issue) => issue.at >= cutoff);
-  if (!recent.length) return result("runtime", "Runtime", "ok", "Recent runtime errors", "No uncaught app errors recorded in the last 6 hours.");
+  const recent = issues.filter((issue) => issue.at >= cutoff && ERROR_KINDS.has(issue.kind));
+  if (!recent.length) return result("runtime", "Runtime", "ok", "Recent runtime errors", "No uncaught app or resource errors recorded in the last 6 hours.");
   const areas = [...new Set(recent.map((issue) => issue.area))].join(", ");
-  return result("runtime", "Runtime", "error", "Recent runtime errors", `${recent.length} uncaught error${recent.length === 1 ? "" : "s"} recorded in: ${areas}.`);
+  return result("runtime", "Runtime", "error", "Recent runtime errors", `${recent.length} app/resource error${recent.length === 1 ? "" : "s"} recorded in: ${areas}.`);
+}
+
+function recentNetworkCheck(issues: RuntimeDiagnosticIssue[]): DiagnosticResult {
+  const cutoff = Date.now() - RECENT_RUNTIME_WINDOW_MS;
+  const recent = issues.filter((issue) => issue.at >= cutoff && issue.kind === "network");
+  if (!recent.length) return result("runtime-network", "Browser", "ok", "Recent connectivity drops", "No offline transition was recorded in the last 6 hours.");
+  return result(
+    "runtime-network",
+    "Browser",
+    "warning",
+    "Recent connectivity drops",
+    `${recent.length} offline transition${recent.length === 1 ? " was" : "s were"} recorded while BIXBO was open. Network loss can interrupt cloud actions but should not freeze local screens.`,
+  );
+}
+
+function runtimePerformanceCheck(issues: RuntimeDiagnosticIssue[]): DiagnosticResult {
+  const cutoff = Date.now() - RECENT_RUNTIME_WINDOW_MS;
+  const recent = issues.filter((issue) => issue.at >= cutoff && PERFORMANCE_KINDS.has(issue.kind));
+  if (!recent.length) {
+    return result("runtime-performance", "Performance", "ok", "Recorded freezes & stutter", "No freeze, frame-skip, long-task or slow-interaction incident was recorded in the last 6 hours.");
+  }
+  const worst = recent.reduce((max, issue) => Math.max(max, issue.durationMs ?? 0), 0);
+  const routes = [...new Set(recent.map((issue) => issue.area))].join(", ");
+  const hasError = recent.some((issue) => issue.severity === "error");
+  return result(
+    "runtime-performance",
+    "Performance",
+    hasError ? "error" : "warning",
+    "Recorded freezes & stutter",
+    `${recent.length} performance incident${recent.length === 1 ? "" : "s"} recorded in: ${routes}. Worst measured delay: ${Math.round(worst)} ms. See Recorded app incidents below for exact route and time.`,
+  );
 }
 
 export async function runAppDiagnostics(options?: { preloadRoute?: RoutePreloader }): Promise<AppDiagnosticReport> {
@@ -317,10 +631,16 @@ export async function runAppDiagnostics(options?: { preloadRoute?: RoutePreloade
     dataIntegrityCheck(),
     savedSnapshotCheck(),
     browserCheck(),
+    deviceCapabilityCheck(),
+    navigationPerformanceCheck(),
     notificationCapabilityCheck(),
     recentRuntimeCheck(runtimeIssues),
+    recentNetworkCheck(runtimeIssues),
+    runtimePerformanceCheck(runtimeIssues),
   ];
 
+  results.push(await mainThreadResponsivenessCheck());
+  results.push(await storageCapacityCheck());
   results.push(
     await fetchCheck("/manifest.json", "PWA manifest", async (response) => {
       const manifest = (await response.json()) as { name?: unknown; icons?: unknown };
@@ -329,6 +649,7 @@ export async function runAppDiagnostics(options?: { preloadRoute?: RoutePreloade
     }),
   );
   results.push(await fetchCheck("/bixbo-push-sw.js", "Push service worker"));
+  results.push(await serviceWorkerCheck());
   results.push(await cloudCheck());
   results.push(...(await routeChecks(options?.preloadRoute)));
 
