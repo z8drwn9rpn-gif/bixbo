@@ -32,7 +32,7 @@ describe("BIXBO app diagnostics", () => {
       "/auth",
       "/admin",
     ]) {
-      expect(diagnostics).toContain(`\"${path}\"`);
+      expect(diagnostics).toContain(`"${path}"`);
     }
 
     expect(route).toContain('createFileRoute("/diagnostics")');
