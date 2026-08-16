@@ -95,24 +95,24 @@ function InsightsPage() {
     {overviewView === "patterns" ? <PatternsContent /> : <div id="bixbo-insights-content" data-bixbo-insights-dashboard="true" className="flex flex-col gap-3 px-5 pt-2 pb-[calc(96px+env(safe-area-inset-bottom))] lg:grid lg:grid-cols-2 lg:items-start lg:px-0 lg:pb-12">
       <InsightsJumpControl refreshKey={`insights:${insightsFilter}`} />
 
-      <div className={insightsFilter === "all" || insightsFilter === "overview" ? "lg:col-span-2" : "hidden"} style={{ order: layoutOrder(view, "insights", "heatmap", 10) }}><YearHealthHeatmap data={view} anchor={anchor} onShiftPeriod={shiftHeatmapPeriod} /></div>
+      <div data-bixbo-jump-label={t("Overview")} className={insightsFilter === "all" || insightsFilter === "overview" ? "lg:col-span-2" : "hidden"} style={{ order: layoutOrder(view, "insights", "heatmap", 10) }}><YearHealthHeatmap data={view} anchor={anchor} onShiftPeriod={shiftHeatmapPeriod} /></div>
 
-      <div className={insightsFilter === "all" || insightsFilter === "pain" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "pain", 20) }}>
+      <div data-bixbo-jump-label={t("Pain")} className={insightsFilter === "all" || insightsFilter === "pain" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "pain", 20) }}>
         <PainInsightsCard data={view} period={painPeriod} days={painDays} series={painSeries} anchor={painAnchor} averageValue={painAvg} onPeriodChange={setPainPeriod} onPeriodShift={(delta) => setPainAnchor((current) => shiftInsightPeriodAnchor(current, painPeriod, delta))} />
       </div>
 
-      <div className={insightsFilter === "all" || insightsFilter === "symptoms" ? "" : "hidden"} style={{ order: 25 }}>
+      <div data-bixbo-jump-label={t("Symptoms")} className={insightsFilter === "all" || insightsFilter === "symptoms" ? "" : "hidden"} style={{ order: 25 }}>
         <SymptomsTrendInsightsCard data={view} />
       </div>
 
-      <div className={insightsFilter === "all" || insightsFilter === "bowel" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "bowel", 40) }}>
+      <div data-bixbo-jump-label={t("Bowel")} className={insightsFilter === "all" || insightsFilter === "bowel" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "bowel", 40) }}>
         <BowelOverviewCard days={bowelDays} dayLogs={view.dayLogs} period={bowelPeriod} anchor={bowelAnchor} noBowelMovementCount={noBowelMovementCount} onPeriodChange={setBowelPeriod} onPeriodShift={(delta) => setBowelAnchor((current) => shiftInsightPeriodAnchor(current, bowelPeriod, delta))} />
       </div>
-      <div className={insightsFilter === "all" || insightsFilter === "sex" ? "" : "hidden"} style={{ order: 45 }}>
+      <div data-bixbo-jump-label={t("ŠukŠuk")} className={insightsFilter === "all" || insightsFilter === "sex" ? "" : "hidden"} style={{ order: 45 }}>
         <SukSukInsightsCard data={view} />
       </div>
-      <div className={insightsFilter === "all" || insightsFilter === "symptoms" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "timeOfDay", 50) }}><TimeOfDayInsightsCard data={view} days={timeOfDayDays} period={timeOfDayPeriod} anchor={timeOfDayAnchor} onPeriodChange={setTimeOfDayPeriod} onPeriodShift={(delta) => setTimeOfDayAnchor((current) => shiftInsightPeriodAnchor(current, timeOfDayPeriod, delta))} /></div>
-      <div className={insightsFilter === "all" || insightsFilter === "meds" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "meds", 60) }}><MedsAdherenceInsightsCard data={view} period={medsPeriod} anchor={medsAnchor} onPeriodChange={setMedsPeriod} onPeriodShift={(delta) => setMedsAnchor((current) => shiftInsightPeriodAnchor(current, medsPeriod, delta))} /></div>
+      <div data-bixbo-jump-label={t("Time of day")} className={insightsFilter === "all" || insightsFilter === "symptoms" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "timeOfDay", 50) }}><TimeOfDayInsightsCard data={view} days={timeOfDayDays} period={timeOfDayPeriod} anchor={timeOfDayAnchor} onPeriodChange={setTimeOfDayPeriod} onPeriodShift={(delta) => setTimeOfDayAnchor((current) => shiftInsightPeriodAnchor(current, timeOfDayPeriod, delta))} /></div>
+      <div data-bixbo-jump-label={t("Meds")} className={insightsFilter === "all" || insightsFilter === "meds" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "meds", 60) }}><MedsAdherenceInsightsCard data={view} period={medsPeriod} anchor={medsAnchor} onPeriodChange={setMedsPeriod} onPeriodShift={(delta) => setMedsAnchor((current) => shiftInsightPeriodAnchor(current, medsPeriod, delta))} /></div>
     </div>}
   </AppShell>;
 }
