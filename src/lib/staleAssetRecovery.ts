@@ -38,10 +38,6 @@ export function isStaleBuildAssetUrl(value: string): boolean {
 
 function triggerRecovery(): boolean {
   if (typeof window === "undefined") return false;
-
-  // Multiple CSS/JS tags from the same stale route can fail in the same event
-  // turn. Once a reload is already underway, treat the sibling failures as part
-  // of the same recovery instead of recording several scary duplicate errors.
   if (recoveryTriggeredInDocument) return true;
 
   const locationKey = `${window.location.pathname}${window.location.search}${window.location.hash}`;
@@ -69,17 +65,11 @@ function triggerRecovery(): boolean {
   return true;
 }
 
-/**
- * Reload at most once per location in a short window. A fresh document receives
- * the current hashed route chunks; the guard prevents an actual code bug from
- * turning into a reload loop.
- */
 export function recoverFromStaleAssetError(error: unknown): boolean {
   if (typeof window === "undefined" || !isStaleAssetLoadError(error)) return false;
   return triggerRecovery();
 }
 
-/** Recover direct <script>/<link> failures where Safari does not provide a useful Error object. */
 export function recoverFromStaleAssetUrl(value: string): boolean {
   if (typeof window === "undefined" || !isStaleBuildAssetUrl(value)) return false;
 
@@ -104,10 +94,6 @@ function resourceUrlForTarget(target: EventTarget | null): string | null {
   return null;
 }
 
-// Resource-load errors do not bubble and Safari often gives no Error object for
-// them. Install this capture listener as early as the module is evaluated so a
-// stale route's CSS/JS can recover before the diagnostics recorder logs it as a
-// permanent application failure.
 if (typeof window !== "undefined") {
   window.addEventListener(
     "error",
@@ -119,6 +105,9 @@ if (typeof window !== "undefined") {
     },
     true,
   );
+
+  // Start deeper diagnostics after stale-asset recovery is already listening.
+  void import("./appFlightRecorder");
 }
 
 export function clearStaleAssetRecoveryGuard(): void {
