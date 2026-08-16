@@ -8,6 +8,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import { toast } from "sonner";
 
 import appCss from "../styles.css?url";
 import themeSystemCss from "../theme-system.css?url";
@@ -21,6 +22,7 @@ import { Toaster } from "../components/ui/sonner";
 import { useI18n } from "@/hooks/useI18n";
 import { useDeploymentFreshness } from "@/lib/deploymentFreshness";
 import { clearStaleAssetRecoveryGuard, recoverFromStaleAssetError } from "@/lib/staleAssetRecovery";
+import { installRuntimeDiagnostics, recordRuntimeDiagnosticIssue } from "@/lib/appDiagnostics";
 
 const THEME_BOOTSTRAP_SCRIPT = `(() => {
   try {
@@ -107,7 +109,8 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
 
   useEffect(() => {
-    recoverFromStaleAssetError(error);
+    const recovered = recoverFromStaleAssetError(error);
+    if (!recovered) recordRuntimeDiagnosticIssue("route", error);
   }, [error]);
 
   const retry = () => {
@@ -123,6 +126,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         <p className="mt-2 text-sm text-muted-foreground">Something went wrong on our end. You can try refreshing or head back home.</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button onClick={retry} className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90">Try again</button>
+          <a href="/diagnostics" className="inline-flex items-center justify-center rounded-xl border border-primary/40 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary/15">App scan</a>
           <a href="/" className="inline-flex items-center justify-center rounded-xl border border-input bg-background px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-accent">Go home</a>
         </div>
       </div>
@@ -193,6 +197,18 @@ function RootComponent() {
   useThemeSync();
   useNotificationRuntime();
   useDeploymentFreshness();
+
+  useEffect(() => {
+    return installRuntimeDiagnostics((issue) => {
+      toast.error("BIXBO detected an app error", {
+        description: `${issue.area}: ${issue.message}`,
+        action: {
+          label: "App scan",
+          onClick: () => window.location.assign("/diagnostics"),
+        },
+      });
+    });
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
