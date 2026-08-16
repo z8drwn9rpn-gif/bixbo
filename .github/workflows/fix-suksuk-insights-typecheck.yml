@@ -1,0 +1,65 @@
+name: Fix SukSuk insights typecheck
+
+on:
+  push:
+    branches:
+      - feat/insights-dashboard-photo-match
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: feat/insights-dashboard-photo-match
+          fetch-depth: 0
+      - name: Fix friendly block typing
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/features/insights/SukSukInsightsCard.tsx')
+          s = p.read_text()
+          old = '''function friendlyBlock(times: string[]) {
+            const blocks = Array.from(new Set(times.map((time) => {
+              const hour = Number(time.split(":")[0]);
+              if (!Number.isFinite(hour)) return null;
+              if (hour < 6) return "night";
+              if (hour < 12) return "morning";
+              if (hour < 18) return "afternoon";
+              return "evening";
+            }).filter((value): value is string => !!value)));
+            if (!blocks.length) return "throughout the day";
+            if (blocks.length === 1) return `in the ${blocks[0]}`;
+            return `in the ${blocks.slice(0, -1).join(", ")} and ${blocks[blocks.length - 1]}`;
+          }'''
+          new = '''function friendlyBlock(times: string[]) {
+            const blocks: string[] = [];
+            times.forEach((time) => {
+              const hour = Number(time.split(":")[0]);
+              if (!Number.isFinite(hour)) return;
+              if (hour < 6) blocks.push("night");
+              else if (hour < 12) blocks.push("morning");
+              else if (hour < 18) blocks.push("afternoon");
+              else blocks.push("evening");
+            });
+            const unique = Array.from(new Set(blocks));
+            if (!unique.length) return "throughout the day";
+            if (unique.length === 1) return `in the ${unique[0]}`;
+            return `in the ${unique.slice(0, -1).join(", ")} and ${unique[unique.length - 1]}`;
+          }'''
+          if old not in s:
+              raise SystemExit('friendlyBlock fragment not found')
+          p.write_text(s.replace(old, new, 1))
+          Path('.github/workflows/fix-suksuk-insights-typecheck.yml').unlink()
+          PY
+      - name: Commit fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Fix SukSuk insight block typing"
+          git push origin HEAD:feat/insights-dashboard-photo-match
