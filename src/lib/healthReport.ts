@@ -1,4 +1,4 @@
-import { avgDayPain, type DayLog, type DayNote, type Med } from "./storage";
+import { avgDayPain, type CyclePrefs, type DayLog, type DayNote, type Med, type PeriodLevel } from "./storage";
 
 export type ReportDaySummary = {
   key: string;
@@ -36,6 +36,25 @@ export function reportNoteTexts(raw: ReportNotesInput): string[] {
   return raw
     .map((note) => (typeof note === "string" ? note : note.text)?.trim())
     .filter((text): text is string => Boolean(text));
+}
+
+/**
+ * Match the calendar's recorded-period semantics.
+ * A direct daily flow wins. Older/current data that only carries the saved
+ * period range still counts as an actual period day (medium is the calendar's
+ * fallback display level for a range day without a per-day flow value).
+ */
+export function reportPeriodLevel(
+  key: string,
+  log: DayLog,
+  cycle: Pick<CyclePrefs, "lastPeriodStart" | "lastPeriodEnd">,
+): PeriodLevel | undefined {
+  const direct = log.periodInfo?.level ?? log.period;
+  if (direct) return direct;
+  const start = cycle.lastPeriodStart;
+  const end = cycle.lastPeriodEnd ?? start;
+  if (start && end && key >= start && key <= end) return "medium";
+  return undefined;
 }
 
 /**
