@@ -51,24 +51,25 @@ describe("display-safe period predictions", () => {
 });
 
 describe("Pain 0.5-step device rendering", () => {
-  it("forces every intermediate Pain button to its midpoint colour without changing whole values", () => {
+  it("forces every intermediate Pain button to its true green/yellow/orange/red midpoint", () => {
     const css = readFileSync("src/device-rendering-fixes.css", "utf8");
     const expected = [
-      ["0.5", "#82CA42"],
-      ["1.5", "#A4CF34"],
-      ["2.5", "#CBD127"],
-      ["3.5", "#E9CA16"],
-      ["4.5", "#F4B20C"],
-      ["5.5", "#F48E10"],
-      ["6.5", "#F26C3A"],
-      ["7.5", "#EE4E6A"],
-      ["8.5", "#E53266"],
-      ["9.5", "#D31E4E"],
+      ["0.5", "#89CE4D"],
+      ["1.5", "#A4D144"],
+      ["2.5", "#C4D53C"],
+      ["3.5", "#E2D233"],
+      ["4.5", "#F2C32E"],
+      ["5.5", "#F5A831"],
+      ["6.5", "#F28936"],
+      ["7.5", "#EC693C"],
+      ["8.5", "#E24C41"],
+      ["9.5", "#D23741"],
     ] as const;
 
     for (const [score, color] of expected) {
       expect(css).toContain(`button[title^="${score} —"][aria-label^="${score} —"] { background: ${color} !important;`);
     }
     expect(css).toContain("forced-color-adjust: none !important");
+    expect(css).toContain("no pink or magenta is introduced");
   });
 });
