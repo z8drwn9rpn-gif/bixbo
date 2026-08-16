@@ -18,6 +18,8 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - name: Install dependencies
         run: bun install --frozen-lockfile
+      - name: Build app
+        run: bun run build
       - name: Install WebKit
         run: bunx playwright install --with-deps webkit
       - name: Create diagnostic spec
