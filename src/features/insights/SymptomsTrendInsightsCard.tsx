@@ -3,7 +3,7 @@ import { useDismissTapTooltip } from "@/components/charts";
 import { BrainIcon } from "@/components/icons/BixboBrandIcons";
 import { fromKey, todayKey, type BixboData, type DayLog } from "@/lib/storage";
 import { DashboardPeriodControl, MetricCards, QuickInsights } from "./InsightDashboardPrimitives";
-import { eachDay, InsightFloatingTooltip, rangeFor, shiftInsightPeriodAnchor, type InsightTooltipDetails, type Period } from "./shared";
+import { eachDay, InsightFloatingTooltip, rangeFor, shiftInsightPeriodAnchor, vividPainChartColor, type InsightTooltipDetails, type Period } from "./shared";
 
 type SymptomKey = "headache" | "tetany" | "panic" | "nausea" | "pressure" | "hotFlashes";
 
@@ -78,6 +78,10 @@ function priorPeriodLabel(period: Period) {
   return period === "W" ? "last week" : period === "M" ? "last month" : "last year";
 }
 
+function symptomIntensityColor(value: number, max: number) {
+  return vividPainChartColor((value / max) * 10);
+}
+
 export function SymptomsTrendInsightsCard({ data }: { data: BixboData }) {
   const [symptom, setSymptom] = useState<SymptomKey>("headache");
   const [period, setPeriod] = useState<Period>("M");
@@ -148,7 +152,7 @@ export function SymptomsTrendInsightsCard({ data }: { data: BixboData }) {
     heading: period === "Y" ? `${activeBucket.label} ${anchor.getFullYear()}` : activeBucket.label,
     value: `${meta.label} ${activeBucket.value.toFixed(activeBucket.value % 1 ? 1 : 0)}/${max}`,
     description: `${activeBucket.count} ${activeBucket.count === 1 ? "entry" : "entries"}`,
-    color: meta.color,
+    color: symptomIntensityColor(activeBucket.value, max),
     summary: `${activeBucket.label} · ${meta.label} ${activeBucket.value.toFixed(1)}/${max}`,
   } : null;
 
@@ -159,7 +163,7 @@ export function SymptomsTrendInsightsCard({ data }: { data: BixboData }) {
       : ["Jan", "Mar", "May", "Jul", "Sep", "Nov", "Dec"];
 
   const quickInsights = allEntries.length ? [
-    { kind: "target" as const, color: "#e64c73", text: peak ? `Highest ${meta.label.toLowerCase()}: ${dateLabel(peak.key)} (${peak.value.toFixed(peak.value % 1 ? 1 : 0)}/${max})` : `No ${meta.label.toLowerCase()} peak yet` },
+    { kind: "target" as const, color: peak ? symptomIntensityColor(peak.value, max) : vividPainChartColor(0), text: peak ? `Highest ${meta.label.toLowerCase()}: ${dateLabel(peak.key)} (${peak.value.toFixed(peak.value % 1 ? 1 : 0)}/${max})` : `No ${meta.label.toLowerCase()} peak yet` },
     { kind: "bars" as const, color: "#f07c23", text: moderateHigh >= Math.max(1, Math.ceil(allEntries.length / 2)) ? "Most entries were moderate to high" : "Most entries stayed low to mild" },
     { kind: "leaf" as const, color: "#6ea83c", text: earlyAverage != null && laterAverage != null
       ? Math.abs(earlyAverage - laterAverage) < 0.1
@@ -205,7 +209,7 @@ export function SymptomsTrendInsightsCard({ data }: { data: BixboData }) {
 
       <div className="mt-3 flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-1.5">
-          <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: meta.color }} />
+          <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: avg != null ? symptomIntensityColor(avg, max) : vividPainChartColor(0) }} />
           <span className="truncate text-xs text-foreground" style={{ fontWeight: 700 }}>{meta.label}</span>
         </div>
         <span className="whitespace-nowrap text-[9px] text-muted-foreground">Intensity 0–{max}</span>
@@ -229,7 +233,7 @@ export function SymptomsTrendInsightsCard({ data }: { data: BixboData }) {
                     className={`relative flex h-full min-w-0 items-end justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${active === index ? "z-10" : ""}`}>
                     {bucket.value == null
                       ? <span className="mb-0.5 h-1 w-full max-w-[7px] rounded-full bg-tint/80" />
-                      : <span className={`w-full max-w-[12px] rounded-t-[5px] ${active === index ? "ring-2 ring-foreground/55" : ""}`} style={{ height: `${heightPct}%`, background: meta.color }} />}
+                      : <span className={`w-full max-w-[12px] rounded-t-[5px] ${active === index ? "ring-2 ring-foreground/55" : ""}`} style={{ height: `${heightPct}%`, background: symptomIntensityColor(bucket.value, max) }} />}
                   </button>
                 );
               })}
