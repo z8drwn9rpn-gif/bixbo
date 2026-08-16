@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import { painColor } from "../domain/pain";
+import { PAIN_SCALE_HALF_STEP_COLORS, painColor, painHexColor } from "../domain/pain";
 
 describe("painColor", () => {
   it("keeps whole-number pain colours on their canonical tokens", () => {
@@ -9,19 +9,28 @@ describe("painColor", () => {
     }
   });
 
-  it("gives every half-step a distinct vivid midpoint colour", () => {
+  it("gives every half-step its own concrete colour without color-mix", () => {
+    expect(PAIN_SCALE_HALF_STEP_COLORS).toHaveLength(21);
     for (let lower = 0; lower < 10; lower += 1) {
       const half = lower + 0.5;
-      expect(painColor(half)).toBe(
-        `color-mix(in oklch, var(--pain-${lower}) 50%, var(--pain-${lower + 1}) 50%)`,
-      );
-      expect(painColor(half)).not.toBe(painColor(lower));
-      expect(painColor(half)).not.toBe(painColor(lower + 1));
+      expect(painColor(half)).toBe(painHexColor(half));
+      expect(painColor(half)).toMatch(/^#[0-9A-F]{6}$/);
+      expect(painColor(half)).not.toContain("color-mix");
+      expect(painHexColor(half)).not.toBe(painHexColor(lower));
+      expect(painHexColor(half)).not.toBe(painHexColor(lower + 1));
     }
   });
 
-  it("keeps 7.5 visually distinct from both 7 and 8", () => {
-    expect(painColor(7.5)).toBe("color-mix(in oklch, var(--pain-7) 50%, var(--pain-8) 50%)");
-    expect(painColor(7.5)).not.toBe(painColor(8));
+  it("keeps 7.5 visibly distinct from both 7 and 8", () => {
+    expect(painColor(7.5)).toBe("#EC693C");
+    expect(painHexColor(7)).toBe("#EF7838");
+    expect(painHexColor(8)).toBe("#E95A3F");
+  });
+
+  it("snaps chart colours to the same half-step palette", () => {
+    expect(painHexColor(4.24)).toBe(painHexColor(4));
+    expect(painHexColor(4.26)).toBe(painHexColor(4.5));
+    expect(painHexColor(99)).toBe(painHexColor(10));
+    expect(painHexColor(-5)).toBe(painHexColor(0));
   });
 });
