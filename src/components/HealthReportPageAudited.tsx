@@ -12,6 +12,7 @@ import {
   maxValue,
   minValue,
   mode,
+  reportPeriodLevel,
   summarizeReportDay,
   type ReportDaySummary,
 } from "@/lib/healthReport";
@@ -23,14 +24,11 @@ import {
   unitPrefs,
   type UnitPreferences,
 } from "@/lib/preferences";
-import { BRISTOL, EMPTY, useBixbo, type BixboData, type DayLog, type Med } from "@/lib/storage";
+import { BRISTOL, EMPTY, useBixbo, type BixboData, type DayLog } from "@/lib/storage";
 
 type Preset = "7" | "30" | "90" | "365" | "custom";
 type DetailRow = { date: string; category: string; detail: string };
 type HeatColumn = { key: string; label: string; days: ReportDaySummary[] };
-
-type MedLog = Record<string, Record<string, boolean>>;
-type MedLogItems = Record<string, Record<string, string[]>>;
 
 const PAIN_COLORS = [
   "#72C64A", "#91CD3A", "#B7D12F", "#DFD11F", "#F3C30D", "#F5A20B",
@@ -56,6 +54,8 @@ const eachDate = (start: string, end: string) => Array.from({ length: dayCount(s
 const compactNumber = (value: number | undefined) => value == null || !Number.isFinite(value) ? "—" : value.toFixed(1).replace(/\.0$/, "");
 const longDate = (key: string, locale: string) => fromIso(key).toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" });
 const shortDate = (key: string, locale: string) => fromIso(key).toLocaleDateString(locale, { day: "numeric", month: "short" });
+const percentage = (count: number, total: number) => total ? Math.round((count / total) * 100) : 0;
+const painColor = (value: number) => PAIN_COLORS[Math.max(0, Math.min(10, Math.round(value)))];
 
 function list(values: string[] | undefined): string | undefined {
   const clean = (values ?? []).map((value) => value.trim()).filter(Boolean);
@@ -182,7 +182,7 @@ function dayDetailRows(day: ReportDaySummary, data: BixboData, units: UnitPrefer
   ]))));
 
   const periodInfo = log.periodInfo;
-  const periodLevel = periodInfo?.level ?? log.period;
+  const periodLevel = reportPeriodLevel(day.key, log, data.cycle);
   if (periodLevel || periodInfo) rows.push(...row(date, "Period / cycle", parts([
     ["Flow", periodLevel], ["Cramps", periodInfo?.cramps != null ? `${periodInfo.cramps}/10` : undefined],
     ["Discharge", periodInfo?.discharge], ["Discharge note", periodInfo?.dischargeNote],
@@ -198,13 +198,15 @@ function dayDetailRows(day: ReportDaySummary, data: BixboData, units: UnitPrefer
     ["Allergens", list(entry.allergensInMeal)], ["Allergic reaction", entry.allergicReaction], ["Reaction severity", entry.reactionSeverity],
   ]))));
 
-  (log.bowel ?? []).forEach((entry) => {
-    const bowelType = entry.urinaryOnly ? "Urinary only" : entry.bristol === -1 ? "No bowel movement" : entry.bristol === 0 ? "Type 0 — Mystery" : entry.bristol >= 1 && entry.bristol <= 7 ? `Bristol Type ${entry.bristol}` : `Recorded value ${entry.bristol}`;
-    rows.push(...row(date, "Bowel / urinary", parts([
-      ["Time", formatClockTime(entry.time, units)], ["Bowel", bowelType], ["Urinary", list(entry.urinary)],
-      ["Feeling", list(entry.feelings)], ["Symptoms", list(entry.symptoms)], ["Note", entry.note],
-    ])));
-  });
+  (log.bowel ?? [])
+    .filter((entry) => !entry.urinaryOnly && Number(entry.bristol) !== -2)
+    .forEach((entry) => {
+      const bowelType = entry.bristol === -1 ? "No bowel movement" : entry.bristol === 0 ? "Type 0 — Mystery" : entry.bristol >= 1 && entry.bristol <= 7 ? `Bristol Type ${entry.bristol}` : `Recorded value ${entry.bristol}`;
+      rows.push(...row(date, "Bowel", parts([
+        ["Time", formatClockTime(entry.time, units)], ["Bowel", bowelType],
+        ["Feeling", list(entry.feelings)], ["Symptoms", list(entry.symptoms)], ["Note", entry.note],
+      ])));
+    });
 
   (log.sex ?? []).forEach((entry) => rows.push(...row(date, "Sex", parts([
     ["Time", formatClockTime(entry.time, units)], ["Type", entry.kind], ["Orgasm", entry.orgasm],
@@ -292,45 +294,74 @@ function hasMedicationActivity(date: string, data: BixboData): boolean {
   return false;
 }
 
-function clinicalRows(data: BixboData, units: UnitPreferences): DetailRow[] {
-  const rows: DetailRow[] = [];
-  const profile = data.profile;
-  if (profile) {
-    rows.push(...row("Profile", "Personal", parts([
-      ["Name", profile.name], ["Nickname", profile.nickname], ["Birth date", profile.birthDate], ["Height", profile.heightCm != null ? `${profile.heightCm} cm` : undefined],
-      ["Profile weight", profile.weightKg != null ? formatWeight(profile.weightKg, units) : undefined], ["Target weight", profile.targetWeightKg != null ? formatWeight(profile.targetWeightKg, units) : undefined],
-      ["Gender", data.settings.gender ?? profile.gender], ["Pronouns", profile.pronouns], ["Blood type", profile.bloodType],
-    ])));
-    rows.push(...row("Profile", "Medical history", parts([
-      ["Diagnoses", list(profile.diagnoses)], ["Chronic illnesses", list(profile.chronicIllnesses)], ["Allergies", list(profile.allergies)],
-      ["Intolerances", list(profile.intolerances)], ["Surgeries", list(profile.surgeries)], ["Pregnancies", list(profile.pregnancies)], ["Disabilities", list(profile.disabilities)],
-    ])));
-    rows.push(...row("Profile", "Reproductive health", parts([
-      ["Status", profile.pregnancyStatus], ["Trying to conceive", profile.tryingToConceive], ["Breastfeeding", profile.breastfeeding],
-      ["Menopause", profile.menopause], ["Birth control", profile.birthControl], ["Fertility goals", profile.fertilityGoals],
-    ])));
-    rows.push(...row("Profile", "Lifestyle", parts([
-      ["Smoking", profile.smoker], ["Alcohol", profile.alcohol], ["Caffeine", profile.caffeine], ["Exercise", profile.exercise],
-      ["Sleep goal", profile.sleepGoalHours != null ? `${profile.sleepGoalHours} h` : undefined], ["Hydration goal", profile.hydrationGoalMl != null ? formatVolume(profile.hydrationGoalMl, units) : undefined],
-    ])));
-    const doctors = [["GP", profile.gp], ["Gynecologist", profile.gynecologist], ["Neurologist", profile.neurologist], ["Endocrinologist", profile.endocrinologist], ["Therapist", profile.therapist]] as const;
-    doctors.forEach(([label, doctor]) => rows.push(...row("Profile", label, doctor ? parts([["Name", doctor.name], ["Clinic", doctor.clinic], ["Phone", doctor.phone], ["Email", doctor.email], ["Note", doctor.note]]) : undefined)));
-    rows.push(...row("Profile", "Emergency contact", profile.emergencyContact ? parts([["Name", profile.emergencyContact.name], ["Relation", profile.emergencyContact.relation], ["Phone", profile.emergencyContact.phone]]) : undefined));
-    rows.push(...row("Profile", "Medication profile", parts([["Pharmacy", profile.pharmacy], ["Medication notes", profile.medicationNotes]])));
-  }
+function timelineFacts(day: ReportDaySummary): string {
+  const values: string[] = [];
+  if (day.pain != null) values.push(`Pain ${compactNumber(day.pain)}/10`);
+  if (day.headache != null) values.push(`Headache ${compactNumber(day.headache)}/10`);
+  if (day.hotFlashes != null) values.push(`Hot flashes ${compactNumber(day.hotFlashes)}/5`);
+  if (day.tetany != null) values.push(`Tetany ${compactNumber(day.tetany)}/5`);
+  if (day.panic != null) values.push(`Panic ${compactNumber(day.panic)}/10`);
+  if (day.nausea != null) values.push(`Nausea ${compactNumber(day.nausea)}/10`);
+  if (day.bowelTypes.length) values.push(`Bowel ${day.bowelTypes.map((type) => `T${type}`).join(", ")}`);
+  if (day.noBowelMovementCount) values.push(`No bowel movement ×${day.noBowelMovementCount}`);
+  return values.join(" · ") || "—";
+}
 
-  (data.diagnoses ?? []).forEach((diagnosis) => rows.push(...row(diagnosis.date ?? "—", "Diagnosis", parts([
-    ["Name", diagnosis.name], ["Doctor / workplace", diagnosis.doctor], ["Note", diagnosis.note], ["Linked document", diagnosis.docId ? "Yes" : undefined],
-  ]))));
-  (data.labs ?? []).forEach((lab) => rows.push(...row(lab.date, "Lab result", parts([
-    ["Test", lab.test], ["Value", `${lab.value}${lab.unit ? ` ${lab.unit}` : ""}`], ["Reference low", lab.refLow], ["Reference high", lab.refHigh], ["Note", lab.note],
-  ]))));
-  (data.docs ?? []).forEach((doc) => rows.push(...row(doc.date, "Document", parts([
-    ["Name", doc.name], ["Type", doc.mime], ["Linked lab", doc.labId ? "Yes" : undefined], ["Attachment", doc.dataUrl ? "Included in BIXBO (binary content omitted from report text)" : undefined],
-  ]))));
-  if (data.pregnancy) rows.push(...row("Profile", "Pregnancy state", valueText(data.pregnancy)));
-  if (data.postpartum) rows.push(...row("Profile", "Postpartum state", valueText(data.postpartum)));
-  return rows;
+function timelineTakenMeds(day: ReportDaySummary, data: BixboData, units: UnitPreferences): string {
+  const taken: string[] = [];
+  data.meds.filter((med) => !med.asNeeded).forEach((med) => {
+    (med.times ?? []).forEach((scheduledTime) => {
+      const state = resolveScheduledDose(med, day.key, scheduledTime, data.medLog, data.medLogItems ?? {}, new Date());
+      if (!state.selectedItems.length) return;
+      taken.push(`${med.name}${med.dose ? ` ${med.dose}` : ""} · ${formatClockTime(data.medLogTimes?.[day.key]?.[state.key] ?? scheduledTime, units)}`);
+    });
+  });
+  return taken.join(" · ") || "—";
+}
+
+function timelineExtraMeds(day: ReportDaySummary, data: BixboData, units: UnitPreferences): string {
+  const values = (day.log.extraMeds ?? []).map((entry) => `${entry.name}${entry.dose ? ` ${entry.dose}` : ""}${entry.time ? ` · ${formatClockTime(entry.time, units)}` : ""}`);
+  data.meds.filter((med) => med.asNeeded).forEach((med) => {
+    const key = `${med.id}@asneeded`;
+    if (data.medLog[day.key]?.[key]) values.push(`${med.name}${med.dose ? ` ${med.dose}` : ""}${data.medLogTimes?.[day.key]?.[key] ? ` · ${formatClockTime(data.medLogTimes[day.key][key], units)}` : ""}`);
+  });
+  return values.join(" · ") || "—";
+}
+
+function timelineTens(day: ReportDaySummary, units: UnitPreferences): string {
+  const values = (day.log.heat ?? []).filter((entry) => entry.kind === "tens").map((entry) => {
+    const duration = entry.ongoing ? "ongoing" : `${entry.minutes} min`;
+    return `${formatClockTime(entry.start, units)} · ${duration}`;
+  });
+  return values.join(" · ") || "—";
+}
+
+function timelineContext(day: ReportDaySummary, data: BixboData, units: UnitPreferences): string {
+  const values: string[] = [];
+  const period = reportPeriodLevel(day.key, day.log, data.cycle);
+  if (period) values.push(`Period: ${humanize(period)}`);
+  if (day.log.food?.length) values.push(`Food: ${day.log.food.map((entry) => entry.what).filter(Boolean).slice(0, 3).join(", ")}`);
+  if (day.log.workout?.length) values.push(`Workout: ${day.log.workout.map((entry) => entry.kind).filter(Boolean).slice(0, 3).join(", ")}`);
+  if (day.log.sleepHours != null) values.push(`Sleep: ${day.log.sleepHours} h`);
+  const latestWeight = day.log.weightEntries?.at(-1)?.value ?? day.log.weight;
+  if (latestWeight != null) values.push(`Weight: ${formatWeight(latestWeight, units)}`);
+  const latestTemp = day.log.temperatureEntries?.at(-1)?.value ?? day.log.temperature;
+  if (latestTemp != null) values.push(`Temp: ${formatTemperature(latestTemp, units)}`);
+  if (day.log.mood?.length) values.push(`Mood: ${day.log.mood.map((entry) => entry.value).join(", ")}`);
+  if (day.log.energy?.length) values.push(`Energy: ${day.log.energy.map((entry) => entry.value).join(", ")}`);
+  if (day.log.histamine?.some((entry) => entry.flare)) values.push("Histamine flare");
+  if (day.notes.length) values.push(`Notes: ${day.notes.join(" | ")}`);
+  return values.join(" · ") || "—";
+}
+
+function packTimelineDays(days: ReportDaySummary[]): ReportDaySummary[][] {
+  const pages: ReportDaySummary[][] = [];
+  for (let index = 0; index < days.length; index += 10) pages.push(days.slice(index, index + 10));
+  return pages;
+}
+
+function DetailedTimelineTable({ days, data, units, locale }: { days: ReportDaySummary[]; data: BixboData; units: UnitPreferences; locale: string }) {
+  return <table className="timeline"><thead><tr><th>Date</th><th>Pain & symptoms</th><th>Taken meds</th><th>Extra meds / PRN</th><th>TENS</th><th>Context / notes</th></tr></thead><tbody>{days.length ? days.map((day) => <tr key={day.key}><td><b>{longDate(day.key, locale)}</b></td><td>{timelineFacts(day)}</td><td>{timelineTakenMeds(day, data, units)}</td><td>{timelineExtraMeds(day, data, units)}</td><td>{timelineTens(day, units)}</td><td>{timelineContext(day, data, units)}</td></tr>) : <tr><td colSpan={6}>No meaningful daily records in this range.</td></tr>}</tbody></table>;
 }
 
 function packRows(rows: DetailRow[]): DetailRow[][] {
@@ -366,10 +397,10 @@ function heatLevel(value: number | undefined, max: number): number {
   return Math.max(1, Math.min(4, Math.ceil((value / max) * 4)));
 }
 
-function Heatmap({ days, locale }: { days: ReportDaySummary[]; locale: string }) {
+function Heatmap({ days, locale, data }: { days: ReportDaySummary[]; locale: string; data: BixboData }) {
   const columns = heatColumns(days, locale);
   const rows = [
-    { label: "Period", max: 1, value: (group: ReportDaySummary[]) => group.some((day) => day.log.period || day.log.periodInfo?.level) ? 1 : undefined, period: true },
+    { label: "Period / spotting", max: 1, value: (group: ReportDaySummary[]) => group.some((day) => reportPeriodLevel(day.key, day.log, data.cycle)) ? 1 : undefined, period: true },
     { label: "Pain", max: 10, value: (group: ReportDaySummary[]) => average(group.map((day) => day.pain)) },
     { label: "Headache", max: 10, value: (group: ReportDaySummary[]) => average(group.map((day) => day.headache)) },
     { label: "Hot flashes", max: 5, value: (group: ReportDaySummary[]) => average(group.map((day) => day.hotFlashes)) },
@@ -381,9 +412,53 @@ function Heatmap({ days, locale }: { days: ReportDaySummary[]; locale: string })
     <div className="heatRow heatHead"><span />{columns.map((column) => <b key={column.key}>{column.label}</b>)}</div>
     {rows.map((item) => <div className="heatRow" key={item.label}><span>{item.label}</span>{columns.map((column) => {
       const value = item.value(column.days);
-      return <i key={column.key} className={item.period && value ? "periodCell" : ""} data-l={item.period ? undefined : heatLevel(value, item.max)} title={value == null ? "No data" : `${compactNumber(value)}/${item.max}`} />;
+      return <i key={column.key} className={item.period && value ? "periodCell" : ""} data-l={item.period ? undefined : heatLevel(value, item.max)} title={value == null ? "No data" : item.period ? "Period / spotting" : `${compactNumber(value)}/${item.max}`} />;
     })}</div>)}
   </div>;
+}
+
+function HeatLegend() {
+  return <div className="heatLegend">
+    <span><i className="heatNone" />No data</span>
+    <span><i className="heatLevel1" />Mild (1–25%)</span>
+    <span><i className="heatLevel2" />Moderate (26–50%)</span>
+    <span><i className="heatLevel3" />Severe (51–75%)</span>
+    <span><i className="heatLevel4" />Very severe (76–100%)</span>
+    <span><i className="periodKey" />Period / spotting</span>
+  </div>;
+}
+
+function DailyPainTrend({ days, locale }: { days: ReportDaySummary[]; locale: string }) {
+  const points = days.map((day, index) => day.pain == null ? null : { index, value: day.pain, key: day.key }).filter((item): item is { index: number; value: number; key: string } => item != null);
+  if (points.length < 2) return <div className="emptyTrend">Not enough pain data for a trend.</div>;
+  const width = 650;
+  const height = 170;
+  const left = 34;
+  const right = 10;
+  const top = 18;
+  const bottom = 34;
+  const x = (index: number) => left + (index / Math.max(1, days.length - 1)) * (width - left - right);
+  const y = (value: number) => height - bottom - (value / 10) * (height - top - bottom);
+  const tickEvery = Math.max(1, Math.ceil(days.length / 10));
+  const segments: typeof points[] = [];
+  let segment: typeof points = [];
+  points.forEach((point, index) => {
+    if (index && point.index !== points[index - 1].index + 1) {
+      if (segment.length) segments.push(segment);
+      segment = [];
+    }
+    segment.push(point);
+  });
+  if (segment.length) segments.push(segment);
+  return <>
+    <svg viewBox={`0 0 ${width} ${height}`} className="chart">
+      {[0, 2, 4, 6, 8, 10].map((value) => <g key={value}><line x1={left} x2={width - right} y1={y(value)} y2={y(value)} /><text x={left - 7} y={y(value) + 3} textAnchor="end">{value}</text></g>)}
+      {days.map((day, index) => (index % tickEvery === 0 || index === days.length - 1) ? <text key={day.key} className="xLabel" x={x(index)} y={height - 9} textAnchor="middle">{shortDate(day.key, locale)}</text> : null)}
+      {segments.map((items, index) => items.length > 1 ? <polyline key={index} points={items.map((point) => `${x(point.index)},${y(point.value)}`).join(" ")} /> : null)}
+      {points.map((point) => <g key={point.key}><circle cx={x(point.index)} cy={y(point.value)} r="3.2" fill={painColor(point.value)} /><text className="pointLabel" x={x(point.index)} y={y(point.value) - 7} textAnchor="middle">{compactNumber(point.value)}</text></g>)}
+    </svg>
+    <div className="trendLegend"><span><i />Pain daily average</span><span>Missing day = no recorded pain value, not zero</span></div>
+  </>;
 }
 
 function Metric({ label, value, note }: { label: string; value: string; note: string }) {
@@ -403,7 +478,7 @@ function DetailTable({ rows }: { rows: DetailRow[] }) {
 }
 
 function ReportDocument({ days, data, range, locale, units }: { days: ReportDaySummary[]; data: BixboData; range: string; locale: string; units: UnitPreferences }) {
-  const loggedDays = days.filter((day) => hasMeaningfulReportDay(day) || hasMedicationActivity(day.key, data));
+  const loggedDays = days.filter((day) => hasMeaningfulReportDay(day) || hasMedicationActivity(day.key, data) || Boolean(reportPeriodLevel(day.key, day.log, data.cycle)));
   const painValues = days.map((day) => day.pain);
   const headacheEpisodes = days.flatMap((day) => (day.log.pain ?? []).map((entry) => entry.headacheIntensity).filter((value): value is number => value != null && Number.isFinite(value)));
   const hotFlashEpisodes = days.flatMap((day) => (day.log.pain ?? []).map((entry) => entry.hotFlashes).filter((value): value is number => value != null && Number.isFinite(value)));
@@ -412,9 +487,8 @@ function ReportDocument({ days, data, range, locale, units }: { days: ReportDayS
   const panicEpisodes = days.flatMap((day) => (day.log.panic ?? []).map((entry) => entry.intensity).filter(Number.isFinite));
   const sleepValues = days.map((day) => day.sleep).filter((value): value is number => value != null);
   const bowelTypes = days.flatMap((day) => day.bowelTypes);
-  const bowelLogs = days.reduce((total, day) => total + day.bowelLogCount, 0);
+  const bowelLogs = days.reduce((total, day) => total + day.bowelTypes.length + day.noBowelMovementCount, 0);
   const noMovement = days.reduce((total, day) => total + day.noBowelMovementCount, 0);
-  const urinaryOnly = days.reduce((total, day) => total + day.urinaryOnlyCount, 0);
   const commonBowel = mode(bowelTypes);
   const commonBowelLabel = commonBowel == null ? "—" : commonBowel === 0 ? "Type 0" : `Type ${commonBowel}`;
 
@@ -425,10 +499,20 @@ function ReportDocument({ days, data, range, locale, units }: { days: ReportDayS
   }).filter((point) => Number.isFinite(point.value));
   const latestWeight = weightPoints.at(-1)?.value;
 
+  const symptomFrequency = [
+    { label: "Pain", count: days.filter((day) => day.pain != null).length },
+    { label: "Headache", count: days.filter((day) => (day.log.pain ?? []).some((entry) => entry.headache || entry.headacheIntensity != null || (entry.headacheTypes?.length ?? 0) > 0)).length },
+    { label: "Hot flashes", count: days.filter((day) => (day.log.pain ?? []).some((entry) => entry.hotFlashesOn || (entry.hotFlashes ?? 0) > 0)).length },
+    { label: "Tetany", count: days.filter((day) => (day.log.tetany?.length ?? 0) > 0).length },
+    { label: "Panic attack", count: days.filter((day) => (day.log.panic?.length ?? 0) > 0).length },
+    { label: "Nausea", count: days.filter((day) => (day.log.pain ?? []).some((entry) => entry.nausea || entry.nauseaSeverity != null || (entry.nauseaTypes?.length ?? 0) > 0)).length },
+  ];
+
   const detailRows = days.flatMap((day) => dayDetailRows(day, data, units, locale));
   const detailPages = packRows(detailRows);
-  const profilePages = packRows(clinicalRows(data, units));
-  const totalDetailPages = detailPages.length + profilePages.length;
+  const timelinePages = packTimelineDays([...loggedDays].reverse());
+  const timelinePageCount = Math.max(1, timelinePages.length);
+  const detailStartPage = 4 + timelinePageCount;
 
   const scheduled = data.meds.filter((med) => !med.asNeeded);
   const asNeeded = data.meds.filter((med) => med.asNeeded);
@@ -454,12 +538,27 @@ function ReportDocument({ days, data, range, locale, units }: { days: ReportDayS
         <Metric label="Tetany" value={`${compactNumber(average(tetanyEpisodes))}/5`} note={`${tetanyEpisodes.length} episodes · max ${compactNumber(maxValue(tetanyEpisodes))}`} />
         <Metric label="Panic" value={`${compactNumber(average(panicEpisodes))}/10`} note={`${panicEpisodes.length} episodes · max ${compactNumber(maxValue(panicEpisodes))}`} />
         <Metric label="Sleep" value={sleepValues.length ? `${compactNumber(average(sleepValues))} h` : "—"} note={`${sleepValues.length} days with hours recorded`} />
-        <Metric label="Bowel" value={commonBowelLabel} note={`${bowelLogs} logs · ${noMovement} no movement · ${urinaryOnly} urinary-only`} />
+        <Metric label="Bowel" value={commonBowelLabel} note={`${bowelLogs} bowel logs · ${noMovement} no movement`} />
         <Metric label="Latest weight" value={latestWeight != null ? formatWeight(latestWeight, units) : "—"} note={`${weightPoints.length} measurements in range`} />
         <Metric label="Coverage" value={`${Math.round((loggedDays.length / Math.max(1, days.length)) * 100)}%`} note={`${loggedDays.length} of ${days.length} days`} />
       </div>
-      <h2>Symptom intensity overview</h2>
-      <Heatmap days={days} locale={locale} />
+      <div className="overviewGrid">
+        <div>
+          <h2>Symptom timeline <small>(intensity heatmap)</small></h2>
+          <Heatmap days={days} locale={locale} data={data} />
+          <HeatLegend />
+          <h2>Pain trend <small>(0–10) · daily average</small></h2>
+          <DailyPainTrend days={days} locale={locale} />
+        </div>
+        <div>
+          <h2>Symptom frequency <small>(days)</small></h2>
+          <div className="bars">{symptomFrequency.map((item) => {
+            const pct = percentage(item.count, days.length);
+            return <div key={item.label}><span>{item.label}</span><i><b style={{ width: `${Math.max(item.count ? 2 : 0, pct)}%` }} /></i><strong>{item.count} ({pct}%)</strong></div>;
+          })}</div>
+          <div className="coverage"><b>Data coverage</b><p>{days.length - loggedDays.length} of {days.length} days have no meaningful health log. No record is not treated as symptom-free.</p></div>
+        </div>
+      </div>
       <p className="subnote">Pain averages exclude symptom-only follow-ups. Panic and nausea use their current 1–10 scales; tetany and hot flashes use 1–5. Empty cells mean no recorded intensity, not zero.</p>
     </Sheet>
 
@@ -468,17 +567,17 @@ function ReportDocument({ days, data, range, locale, units }: { days: ReportDayS
       <div className="painBars">{days.map((day) => {
         const value = day.pain;
         const width = value == null ? 0 : Math.max(0, Math.min(100, value * 10));
-        const color = value == null ? "#eef0e7" : PAIN_COLORS[Math.max(0, Math.min(10, Math.round(value)))];
+        const color = value == null ? "#eef0e7" : painColor(value);
         return <div key={day.key}><span>{shortDate(day.key, locale)}</span><i><b style={{ width: `${width}%`, background: color }} /></i><strong>{value == null ? "—" : compactNumber(value)}</strong></div>;
       })}</div>
-      <h2>Bowel distribution <small>Type 0 is valid; no-movement and urinary-only are separate</small></h2>
+      <h2>Bowel distribution <small>Type 0 is valid; no-movement is shown separately</small></h2>
       <div className="bowelBars">{Array.from({ length: 8 }, (_, type) => {
         const count = bowelTypes.filter((value) => value === type).length;
         const label = type === 0 ? "Type 0 — Mystery" : BRISTOL.find((item) => item.n === type)?.label ?? `Type ${type}`;
         const maxCount = Math.max(1, ...Array.from({ length: 8 }, (__, current) => bowelTypes.filter((value) => value === current).length));
         return <div key={type}><span>{label}</span><i><b style={{ width: `${(count / maxCount) * 100}%` }} /></i><strong>{count}</strong></div>;
       })}</div>
-      <div className="miniMetrics"><Metric label="No bowel movement" value={String(noMovement)} note="Recorded explicitly as no movement" /><Metric label="Urinary-only" value={String(urinaryOnly)} note="Excluded from Bristol distribution" /></div>
+      <div className="miniMetrics one"><Metric label="No bowel movement" value={String(noMovement)} note="Recorded explicitly as no movement" /></div>
     </Sheet>
 
     <Sheet number={3} title="Medication" subtitle={range}>
@@ -496,11 +595,11 @@ function ReportDocument({ days, data, range, locale, units }: { days: ReportDayS
       </tbody></table>
     </Sheet>
 
-    {profilePages.map((pageRows, pageIndex) => <Sheet key={`profile-${pageIndex}`} number={4 + pageIndex} title="Clinical profile" subtitle={profilePages.length > 1 ? `Part ${pageIndex + 1} of ${profilePages.length}` : undefined}><DetailTable rows={pageRows} /></Sheet>)}
+    {timelinePages.length ? timelinePages.map((pageDays, pageIndex) => <Sheet key={`timeline-${pageIndex}`} number={4 + pageIndex} title="Detailed timeline" subtitle={`${range} · Part ${pageIndex + 1} of ${timelinePages.length}`}><p className="subnote">Only days with meaningful recorded data are shown. Newest first.</p><DetailedTimelineTable days={pageDays} data={data} units={units} locale={locale} /></Sheet>) : <Sheet number={4} title="Detailed timeline" subtitle={range}><p className="subnote">Only days with meaningful recorded data are shown. Newest first.</p><DetailedTimelineTable days={[]} data={data} units={units} locale={locale} /></Sheet>}
 
-    {detailPages.length ? detailPages.map((pageRows, pageIndex) => <Sheet key={`details-${pageIndex}`} number={4 + profilePages.length + pageIndex} title="Recorded health details" subtitle={`${range} · Part ${pageIndex + 1} of ${detailPages.length}`}><DetailTable rows={pageRows} /></Sheet>) : <Sheet number={4 + profilePages.length} title="Recorded health details" subtitle={range}><div className="empty">No health values were recorded in this period.</div></Sheet>}
+    {detailPages.length ? detailPages.map((pageRows, pageIndex) => <Sheet key={`details-${pageIndex}`} number={detailStartPage + pageIndex} title="Recorded health details" subtitle={`${range} · Part ${pageIndex + 1} of ${detailPages.length}`}><DetailTable rows={pageRows} /></Sheet>) : <Sheet number={detailStartPage} title="Recorded health details" subtitle={range}><div className="empty">No health values were recorded in this period.</div></Sheet>}
 
-    <div className="sr-only">{totalDetailPages} detail pages</div>
+    <div className="sr-only">{timelinePageCount + Math.max(1, detailPages.length)} timeline and detail pages</div>
   </div>;
 }
 
@@ -563,5 +662,5 @@ export function HealthReportPageAudited() {
 }
 
 const CSS = String.raw`
-.reportRoot{--olive:#7f8950;--ink:#20261d;--muted:#707668;--line:#dde1cf;--pale:#f7f8f2;--pink:#f29aa5}.controls{max-width:1120px;margin:0 auto 16px}.presets{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-top:14px}.presets button{height:42px;border:1px solid hsl(var(--border));border-radius:14px;background:hsl(var(--surface));font-size:12px;font-weight:700}.presets button[data-active=true]{background:#f0f3e6;border-color:#90995f;color:#596238}.custom{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.custom label{display:flex;align-items:center;gap:10px;min-height:54px;padding:8px 12px;border:1px solid hsl(var(--border));border-radius:14px;background:hsl(var(--surface));font-size:12px}.custom input{margin-left:auto;min-height:38px;max-width:170px;background:transparent}.previewBtn{margin-top:14px;width:100%;height:44px;border-radius:16px;background:hsl(var(--primary));color:hsl(var(--primary-foreground));font-weight:700}.screenPreview{max-width:1120px;margin:auto;overflow:auto}.hrDoc{display:grid;gap:18px}.pdf-sheet{position:relative;box-sizing:border-box;width:1120px;height:792px;margin:auto;background:#fff;color:var(--ink);padding:28px 40px 42px;font-family:Inter,Arial,sans-serif;box-shadow:0 10px 34px #0001;overflow:hidden}.hrHeader{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:8px}.hrHeader b{font-size:11px;letter-spacing:.36em}.hrHeader h1{font-family:"Instrument Serif",Georgia,serif;font-size:38px;line-height:1;margin:7px 0 0}.hrHeader h3{font-family:"Instrument Serif",Georgia,serif;font-size:14px;margin:3px 0}.hrHeader>span{font-size:8px}.pdf-sheet h2{font-family:"Instrument Serif",Georgia,serif;font-size:19px;margin:10px 0 6px}.pdf-sheet h2 small{font:500 8px Inter;color:var(--olive)}.meta{display:flex;justify-content:flex-end;gap:22px;font-size:8px}.metrics{display:grid;gap:7px}.metrics.ten{grid-template-columns:repeat(5,1fr)}.metric{border:1px solid var(--line);border-radius:9px;padding:8px 10px;min-height:62px}.metric span{font-size:6.5px;font-weight:700;text-transform:uppercase}.metric strong{display:block;font-family:"Instrument Serif",Georgia,serif;font-size:20px;margin-top:5px}.metric small{display:block;font-size:6.2px;color:var(--muted);margin-top:3px}.miniMetrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.heat{border:1px solid var(--line)}.heatRow{display:grid;grid-template-columns:90px repeat(var(--cells),1fr)}.heatRow span{font-size:6.5px;padding:3px;border-top:1px solid #eef0e7}.heatHead b{font-size:5.8px;text-align:center;padding:2px;color:var(--muted)}.heatRow i{min-height:16px;border-left:1px solid #eef0e7;border-top:1px solid #eef0e7;background:#fff}.heatRow i[data-l="1"]{background:#e5e8d5}.heatRow i[data-l="2"]{background:#c8cda5}.heatRow i[data-l="3"]{background:#a5ad73}.heatRow i[data-l="4"]{background:#5f6b32}.periodCell{background:var(--pink)!important}.subnote,.adherenceNote{font-size:7.2px;color:var(--muted);margin:7px 0}.painBars,.bowelBars{display:grid;gap:4px}.painBars{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:22px;max-height:360px;overflow:hidden}.painBars>div,.bowelBars>div{display:grid;grid-template-columns:74px 1fr 28px;gap:6px;align-items:center;font-size:7px}.painBars i,.bowelBars i{display:block;height:7px;background:#f0f2e9;border-radius:99px;overflow:hidden}.painBars i b,.bowelBars i b{display:block;height:100%}.bowelBars i b{background:#8f9859}.painBars strong,.bowelBars strong{text-align:right}.adherenceTable,.prnTable,.detail{width:100%;border-collapse:collapse;table-layout:fixed}.adherenceTable,.prnTable{font-size:8.5px}.adherenceTable th,.prnTable th,.detail th{background:#f1f3e9;border:1px solid var(--line);text-align:left}.adherenceTable th,.prnTable th{padding:8px}.adherenceTable td,.prnTable td{padding:9px 8px;border:1px solid var(--line);vertical-align:middle}.adherenceTable td small{display:block;color:var(--muted)}.adhBar i{display:block;height:7px;background:#f0f2e9;margin-top:4px}.adhBar span{display:block;height:100%;background:#6f783d}.prnTable{margin-top:2px}.detail{font-size:7.5px}.detail th{padding:6px}.detail td{padding:6px;border:1px solid var(--line);vertical-align:top;line-height:1.28;overflow-wrap:anywhere}.detail tbody tr:nth-child(even){background:#fafbf6}.detail th:nth-child(1){width:12%}.detail th:nth-child(2){width:20%}.detail th:nth-child(3){width:68%}.empty{height:500px;display:grid;place-items:center;color:var(--muted)}.emptyLine{font-size:9px;color:var(--muted);padding:12px 0}footer{position:absolute;left:40px;right:40px;bottom:18px;border-top:1px solid var(--line);padding-top:6px;display:flex;justify-content:space-between;font-size:6px;color:#8b9084}.modal{position:fixed;inset:0;z-index:10050;overflow:auto;background:#eceee8;padding:72px 14px 28px}.toolbar{position:fixed;z-index:10060;top:max(env(safe-area-inset-top),10px);left:50%;transform:translateX(-50%);width:min(760px,calc(100% - 24px));display:flex;align-items:center;gap:8px;padding:8px;border-radius:16px;background:#fffffff5;box-shadow:0 8px 30px #0002}.toolbar span{flex:1;text-align:center;font-size:9px}.toolbar button{height:38px;border-radius:11px;padding:0 13px;background:#eef1e5;font-size:10px;font-weight:700}.toolbar button:last-child{background:#7f8950;color:#fff}@media(max-width:700px){.presets{grid-template-columns:repeat(3,1fr)}.custom{grid-template-columns:1fr}}@media print{.controls,.toolbar{display:none!important}.screenPreview{display:none!important}.modal{position:static!important;padding:0;background:#fff}.pdf-sheet{box-shadow:none;break-after:page;width:297mm;height:210mm}@page{size:A4 landscape;margin:0}}
+.reportRoot{--olive:#7f8950;--ink:#20261d;--muted:#707668;--line:#dde1cf;--pale:#f7f8f2;--pink:#f29aa5}.controls{max-width:1120px;margin:0 auto 16px}.presets{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-top:14px}.presets button{height:42px;border:1px solid hsl(var(--border));border-radius:14px;background:hsl(var(--surface));font-size:12px;font-weight:700}.presets button[data-active=true]{background:#f0f3e6;border-color:#90995f;color:#596238}.custom{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.custom label{display:flex;align-items:center;gap:10px;min-height:54px;padding:8px 12px;border:1px solid hsl(var(--border));border-radius:14px;background:hsl(var(--surface));font-size:12px}.custom input{margin-left:auto;min-height:38px;max-width:170px;background:transparent}.previewBtn{margin-top:14px;width:100%;height:44px;border-radius:16px;background:hsl(var(--primary));color:hsl(var(--primary-foreground));font-weight:700}.screenPreview{max-width:1120px;margin:auto;overflow:auto}.hrDoc{display:grid;gap:18px}.pdf-sheet{position:relative;box-sizing:border-box;width:1120px;height:792px;margin:auto;background:#fff;color:var(--ink);padding:28px 40px 42px;font-family:Inter,Arial,sans-serif;box-shadow:0 10px 34px #0001;overflow:hidden}.hrHeader{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:8px}.hrHeader b{font-size:11px;letter-spacing:.36em}.hrHeader h1{font-family:"Instrument Serif",Georgia,serif;font-size:38px;line-height:1;margin:7px 0 0}.hrHeader h3{font-family:"Instrument Serif",Georgia,serif;font-size:14px;margin:3px 0}.hrHeader>span{font-size:8px}.pdf-sheet h2{font-family:"Instrument Serif",Georgia,serif;font-size:19px;margin:10px 0 6px}.pdf-sheet h2 small{font:500 8px Inter;color:var(--olive)}.meta{display:flex;justify-content:flex-end;gap:22px;font-size:8px}.metrics{display:grid;gap:5px}.metrics.ten{grid-template-columns:repeat(10,minmax(0,1fr))}.metric{border:1px solid var(--line);border-radius:9px;padding:7px 8px;min-height:62px;min-width:0}.metric span{font-size:6px;font-weight:700;text-transform:uppercase}.metric strong{display:block;font-family:"Instrument Serif",Georgia,serif;font-size:17px;margin-top:4px;white-space:nowrap}.metric small{display:block;font-size:5.7px;color:var(--muted);margin-top:3px;line-height:1.2}.overviewGrid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(220px,.45fr);gap:22px}.heat{border:1px solid var(--line)}.heatRow{display:grid;grid-template-columns:90px repeat(var(--cells),1fr)}.heatRow span{font-size:6.5px;padding:3px;border-top:1px solid #eef0e7}.heatHead b{font-size:5.8px;text-align:center;padding:2px;color:var(--muted)}.heatRow i{min-height:16px;border-left:1px solid #eef0e7;border-top:1px solid #eef0e7;background:#fff}.heatRow i[data-l="1"]{background:#e5e8d5}.heatRow i[data-l="2"]{background:#c8cda5}.heatRow i[data-l="3"]{background:#a5ad73}.heatRow i[data-l="4"]{background:#5f6b32}.periodCell,.periodKey{background:var(--pink)!important}.heatLegend{display:flex;gap:9px;flex-wrap:wrap;margin:6px 0 2px;font-size:6.2px;color:var(--muted)}.heatLegend span{display:flex;align-items:center;gap:4px}.heatLegend i{width:10px;height:10px;border:1px solid var(--line);display:inline-block}.heatNone{background:#fff}.heatLevel1{background:#e5e8d5}.heatLevel2{background:#c8cda5}.heatLevel3{background:#a5ad73}.heatLevel4{background:#5f6b32}.chart{width:100%;height:146px;overflow:visible}.chart line{stroke:#e9ecdf}.chart polyline{fill:none;stroke:#7f8950;stroke-width:1.8}.chart text{font-size:7px;fill:#4c5445}.chart .pointLabel{font-weight:700}.trendLegend{display:flex;justify-content:space-between;font-size:6.2px;color:var(--muted)}.trendLegend span:first-child{display:flex;align-items:center;gap:4px}.trendLegend i{width:22px;height:2px;background:var(--olive);display:inline-block}.emptyTrend{height:120px;display:grid;place-items:center;color:var(--muted);font-size:8px}.bars{display:grid;gap:7px}.bars>div{display:grid;grid-template-columns:68px 1fr 48px;gap:6px;align-items:center;font-size:7px}.bars i{height:7px;background:#f0f2e9;border-radius:99px;overflow:hidden}.bars i b{display:block;height:100%;background:#8f9859}.bars strong{text-align:right;white-space:nowrap}.coverage{margin-top:12px;font-size:7px}.coverage p{color:var(--muted);line-height:1.35}.subnote,.adherenceNote{font-size:7.2px;color:var(--muted);margin:7px 0}.miniMetrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.miniMetrics.one{grid-template-columns:1fr}.painBars,.bowelBars{display:grid;gap:4px}.painBars{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:22px;max-height:360px;overflow:hidden}.painBars>div,.bowelBars>div{display:grid;grid-template-columns:74px 1fr 28px;gap:6px;align-items:center;font-size:7px}.painBars i,.bowelBars i{display:block;height:7px;background:#f0f2e9;border-radius:99px;overflow:hidden}.painBars i b,.bowelBars i b{display:block;height:100%}.bowelBars i b{background:#8f9859}.painBars strong,.bowelBars strong{text-align:right}.adherenceTable,.prnTable,.detail,.timeline{width:100%;border-collapse:collapse;table-layout:fixed}.adherenceTable,.prnTable{font-size:8.5px}.adherenceTable th,.prnTable th,.detail th,.timeline th{background:#f1f3e9;border:1px solid var(--line);text-align:left}.adherenceTable th,.prnTable th{padding:8px}.adherenceTable td,.prnTable td{padding:9px 8px;border:1px solid var(--line);vertical-align:middle}.adherenceTable td small{display:block;color:var(--muted)}.adhBar i{display:block;height:7px;background:#f0f2e9;margin-top:4px}.adhBar span{display:block;height:100%;background:#6f783d}.prnTable{margin-top:2px}.detail{font-size:7.5px}.detail th{padding:6px}.detail td{padding:6px;border:1px solid var(--line);vertical-align:top;line-height:1.28;overflow-wrap:anywhere}.detail tbody tr:nth-child(even),.timeline tbody tr:nth-child(even){background:#fafbf6}.detail th:nth-child(1){width:12%}.detail th:nth-child(2){width:20%}.detail th:nth-child(3){width:68%}.timeline{font-size:7.2px}.timeline th,.timeline td{padding:6px;border:1px solid var(--line);vertical-align:top;line-height:1.28;overflow-wrap:anywhere}.timeline th:nth-child(1){width:11%}.timeline th:nth-child(2){width:22%}.timeline th:nth-child(3){width:17%}.timeline th:nth-child(4){width:17%}.timeline th:nth-child(5){width:9%}.timeline th:nth-child(6){width:24%}.empty{height:500px;display:grid;place-items:center;color:var(--muted)}.emptyLine{font-size:9px;color:var(--muted);padding:12px 0}footer{position:absolute;left:40px;right:40px;bottom:18px;border-top:1px solid var(--line);padding-top:6px;display:flex;justify-content:space-between;font-size:6px;color:#8b9084}.modal{position:fixed;inset:0;z-index:10050;overflow:auto;background:#eceee8;padding:72px 14px 28px}.toolbar{position:fixed;z-index:10060;top:max(env(safe-area-inset-top),10px);left:50%;transform:translateX(-50%);width:min(760px,calc(100% - 24px));display:flex;align-items:center;gap:8px;padding:8px;border-radius:16px;background:#fffffff5;box-shadow:0 8px 30px #0002}.toolbar span{flex:1;text-align:center;font-size:9px}.toolbar button{height:38px;border-radius:11px;padding:0 13px;background:#eef1e5;font-size:10px;font-weight:700}.toolbar button:last-child{background:#7f8950;color:#fff}@media(max-width:700px){.presets{grid-template-columns:repeat(3,1fr)}.custom{grid-template-columns:1fr}}@media print{.controls,.toolbar{display:none!important}.screenPreview{display:none!important}.modal{position:static!important;padding:0;background:#fff}.pdf-sheet{box-shadow:none;break-after:page;width:297mm;height:210mm}@page{size:A4 landscape;margin:0}}
 `;
