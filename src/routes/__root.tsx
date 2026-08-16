@@ -80,6 +80,64 @@ const THEME_BOOTSTRAP_SCRIPT = `(() => {
   } catch {}
 })();`;
 
+const APPLE_PWA_LAUNCH_SPLASH_CSS = `
+  #bixbo-ios-launch-splash {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 2147483647;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    pointer-events: none;
+    background: #FBF7F3;
+    opacity: 1;
+  }
+  html[data-theme="dark"] #bixbo-ios-launch-splash { background: #171A14; }
+  html[data-bixbo-pwa-launch="visible"] #bixbo-ios-launch-splash,
+  html[data-bixbo-pwa-launch="hiding"] #bixbo-ios-launch-splash { display: flex; }
+  html[data-bixbo-pwa-launch="hiding"] #bixbo-ios-launch-splash {
+    animation: bixbo-ios-launch-splash-hide 240ms ease-out forwards;
+  }
+  #bixbo-ios-launch-splash img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+  }
+  @keyframes bixbo-ios-launch-splash-hide {
+    to { opacity: 0; visibility: hidden; }
+  }
+`;
+
+const APPLE_PWA_LAUNCH_SPLASH_BOOTSTRAP = `(() => {
+  try {
+    const root = document.documentElement;
+    const nav = window.navigator;
+    const standalone = Boolean(window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || nav.standalone === true;
+    if (!standalone) return;
+
+    const sessionKey = "bixbo:pwa-startup-splash:v3";
+    if (sessionStorage.getItem(sessionKey) === "shown") return;
+    sessionStorage.setItem(sessionKey, "shown");
+    root.dataset.bixboPwaLaunch = "visible";
+
+    let hidden = false;
+    const hide = () => {
+      if (hidden) return;
+      hidden = true;
+      window.setTimeout(() => {
+        root.dataset.bixboPwaLaunch = "hiding";
+        window.setTimeout(() => { delete root.dataset.bixboPwaLaunch; }, 260);
+      }, 650);
+    };
+
+    if (document.readyState === "complete") hide();
+    else window.addEventListener("load", hide, { once: true });
+    window.setTimeout(hide, 3500);
+  } catch {}
+})();`;
+
 function NotFoundComponent() {
   const { t } = useI18n();
   const router = useRouter();
@@ -183,9 +241,14 @@ function RootShell({ children }: { children: ReactNode }) {
         <meta name="theme-color" content="#FBF7F3" />
         <meta name="color-scheme" content="light dark" />
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }} />
+        <style dangerouslySetInnerHTML={{ __html: APPLE_PWA_LAUNCH_SPLASH_CSS }} />
+        <script dangerouslySetInnerHTML={{ __html: APPLE_PWA_LAUNCH_SPLASH_BOOTSTRAP }} />
         <HeadContent />
       </head>
       <body data-bixbo-app-root>
+        <div id="bixbo-ios-launch-splash" aria-hidden="true">
+          <img src="/apple-launch-bixbo.png?v=1" alt="" />
+        </div>
         {children}
         <Scripts />
       </body>
