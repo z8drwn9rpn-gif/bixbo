@@ -11,13 +11,24 @@ import {
   type RuntimeDiagnosticIssue,
 } from "@/lib/appDiagnostics";
 
+type ForensicIssue = RuntimeDiagnosticIssue & {
+  incidentId?: string;
+  fingerprint?: string;
+  occurrenceCount?: number;
+  rootCause?: string;
+  confidence?: number;
+  traceId?: string;
+  buildFingerprint?: string;
+  timeline?: string[];
+};
+
 export const Route = createFileRoute("/diagnostics")({
   head: () => ({
     meta: [
       { title: "App diagnostics — BIXBO" },
       {
         name: "description",
-        content: "Run deep local BIXBO checks for screens, storage, PWA assets, notifications, cloud access, runtime errors, freezes and UI stutter.",
+        content: "Run forensic BIXBO checks for screens, storage, PWA assets, cloud, request traces, runtime failures, freezes, rendering and UI stutter.",
       },
     ],
   }),
@@ -30,16 +41,17 @@ const STATUS_LABEL: Record<DiagnosticStatus, string> = {
   error: "ERROR",
 };
 
-const INCIDENT_LABEL: Record<RuntimeDiagnosticIssue["kind"], string> = {
+const INCIDENT_LABEL: Record<string, string> = {
   error: "JavaScript error",
   unhandledrejection: "Promise error",
   route: "Screen error",
   resource: "Resource failure",
   freeze: "Freeze",
-  jank: "Frame skip",
-  longtask: "Long task",
+  jank: "Frame / layout issue",
+  longtask: "Long task / render",
   interaction: "Slow interaction",
   network: "Network / API",
+  storage: "Storage pressure",
 };
 
 function statusClass(status: DiagnosticStatus): string {
@@ -57,6 +69,11 @@ function resultBorder(status: DiagnosticStatus): string {
 function incidentIsError(issue: RuntimeDiagnosticIssue): boolean {
   if (issue.severity) return issue.severity === "error";
   return issue.kind === "error" || issue.kind === "unhandledrejection" || issue.kind === "route" || issue.kind === "resource";
+}
+
+function prettyCause(value?: string): string {
+  if (!value) return "No dominant cause yet";
+  return value.replace(/-/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 function ResultRow({ item }: { item: DiagnosticResult }) {
@@ -125,6 +142,23 @@ function DiagnosticsPage() {
     return [...map.entries()];
   }, [report]);
 
+  const forensicSummary = useMemo(() => {
+    const issues = (report?.runtimeIssues ?? []) as ForensicIssue[];
+    const clusters = new Set(issues.map((issue) => issue.incidentId ?? issue.id)).size;
+    const causeCounts = new Map<string, number>();
+    const fingerprintCounts = new Map<string, number>();
+
+    for (const issue of issues) {
+      const weight = Math.max(1, issue.occurrenceCount ?? 1);
+      if (issue.rootCause) causeCounts.set(issue.rootCause, (causeCounts.get(issue.rootCause) ?? 0) + weight);
+      if (issue.fingerprint) fingerprintCounts.set(issue.fingerprint, (fingerprintCounts.get(issue.fingerprint) ?? 0) + weight);
+    }
+
+    const topCause = [...causeCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+    const mostRepeated = [...fingerprintCounts.values()].sort((a, b) => b - a)[0] ?? 0;
+    return { clusters, topCause, mostRepeated };
+  }, [report]);
+
   const clearHistory = () => {
     clearRuntimeDiagnosticIssues();
     void run();
@@ -142,7 +176,7 @@ function DiagnosticsPage() {
             <div className="min-w-0">
               <h2 className="text-lg font-black tracking-tight text-foreground">BIXBO App Scanner</h2>
               <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                Forensic scan of screens, data, storage, PWA files, cloud and device performance. A local flight recorder continuously correlates freezes, screen jumps, slow rendering, failed assets, network/API delays, reload storms and runtime crashes with the route and technical events immediately before the incident.
+                Forensic correlation engine for screens, data, storage, PWA deployment, cloud, request traces and device performance. It connects freezes, screen jumps, expensive React renders, slow assets/API calls, reload storms and crashes into incident clusters instead of treating every warning as an isolated event.
               </p>
             </div>
             <button
@@ -179,8 +213,25 @@ function DiagnosticsPage() {
         </section>
 
         <section className="rounded-3xl bg-tint p-4 text-xs leading-relaxed text-muted-foreground ring-1 ring-border/60">
-          <span className="font-bold text-foreground">Performance recorder:</span> watches main-thread stalls, frame gaps, long animation work, slow interactions, unexpected layout/scroll jumps, slow startup paint, slow JS/CSS, failed or slow API calls, 5xx/429 responses, connectivity changes, CSP blocks, abrupt prior-session endings and repeated reloads. Incidents include where it happened, measured delay when available, likely cause and recent technical breadcrumbs. Health-log contents, form values and request bodies are never copied into diagnostics.
+          <span className="font-bold text-foreground">Black-box recorder:</span> keeps a rolling technical timeline, correlates request trace IDs, server timing, route transitions, component render cost, frame/layout jumps, startup stalls, deployment/cache identity, service-worker state, storage pressure, memory pressure where supported, API failures and abrupt session endings. Repeated signatures are fingerprinted and counted. Health-log contents, form values and request bodies are never copied into diagnostics.
         </section>
+
+        {report?.runtimeIssues.length ? (
+          <section className="grid grid-cols-3 gap-2 rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
+            <div className="rounded-2xl bg-tint p-3">
+              <p className="text-xl font-black tabular-nums text-foreground">{forensicSummary.clusters}</p>
+              <p className="mt-0.5 text-[9px] font-bold uppercase tracking-wide text-muted-foreground">Incident clusters</p>
+            </div>
+            <div className="rounded-2xl bg-tint p-3">
+              <p className="line-clamp-2 text-xs font-black text-foreground">{prettyCause(forensicSummary.topCause)}</p>
+              <p className="mt-0.5 text-[9px] font-bold uppercase tracking-wide text-muted-foreground">Top root cause</p>
+            </div>
+            <div className="rounded-2xl bg-tint p-3">
+              <p className="text-xl font-black tabular-nums text-foreground">{forensicSummary.mostRepeated || 1}×</p>
+              <p className="mt-0.5 text-[9px] font-bold uppercase tracking-wide text-muted-foreground">Top fingerprint</p>
+            </div>
+          </section>
+        ) : null}
 
         {running && !report ? (
           <section className="rounded-3xl bg-surface p-5 text-sm text-muted-foreground shadow-sm ring-1 ring-border/80">
@@ -216,7 +267,8 @@ function DiagnosticsPage() {
               </button>
             </div>
             <div className="mt-3 space-y-2">
-              {report.runtimeIssues.map((issue) => {
+              {report.runtimeIssues.map((rawIssue) => {
+                const issue = rawIssue as ForensicIssue;
                 const isError = incidentIsError(issue);
                 return (
                   <div
@@ -229,18 +281,45 @@ function DiagnosticsPage() {
                         {INCIDENT_LABEL[issue.kind] ?? issue.kind}
                       </span>
                       <span className="text-[10px] text-muted-foreground">{new Date(issue.at).toLocaleString()}</span>
+                      {(issue.occurrenceCount ?? 1) > 1 ? <span className="rounded-full bg-background px-2 py-0.5 text-[9px] font-black text-foreground ring-1 ring-border">Seen {issue.occurrenceCount}×</span> : null}
                     </div>
 
                     <div className="mt-2 space-y-1.5">
                       <p className="break-words text-xs text-foreground">
                         <span className="font-black">What happened: </span>{issue.message}
                       </p>
+                      {issue.rootCause ? (
+                        <p className="rounded-xl bg-background/70 p-2 text-[11px] font-semibold text-foreground ring-1 ring-border/70">
+                          <span className="font-black">Primary root cause: </span>{prettyCause(issue.rootCause)}
+                          {typeof issue.confidence === "number" ? ` · ${Math.round(issue.confidence)}% confidence` : ""}
+                        </p>
+                      ) : null}
                       {typeof issue.durationMs === "number" ? (
                         <p className="text-[10px] font-semibold tabular-nums text-muted-foreground">Measured delay: {issue.durationMs} ms</p>
                       ) : null}
                       <p className="break-all text-[10px] text-muted-foreground">
                         <span className="font-black text-foreground">Where: </span>{issue.path}
                       </p>
+                      {(issue.incidentId || issue.fingerprint) ? (
+                        <p className="break-all text-[10px] text-muted-foreground">
+                          <span className="font-black text-foreground">Correlation: </span>
+                          {issue.incidentId ? `cluster ${issue.incidentId}` : ""}{issue.incidentId && issue.fingerprint ? " · " : ""}{issue.fingerprint ? `fingerprint ${issue.fingerprint}` : ""}
+                        </p>
+                      ) : null}
+                      {(issue.traceId || issue.buildFingerprint) ? (
+                        <p className="break-all text-[10px] text-muted-foreground">
+                          <span className="font-black text-foreground">Trace / build: </span>
+                          {issue.traceId ? issue.traceId : "no request trace"}{issue.buildFingerprint ? ` · ${issue.buildFingerprint}` : ""}
+                        </p>
+                      ) : null}
+                      {issue.timeline?.length ? (
+                        <div className="rounded-xl bg-background/55 p-2 text-[10px] leading-relaxed text-muted-foreground ring-1 ring-border/60">
+                          <p className="font-black text-foreground">60-second black-box timeline</p>
+                          <ol className="mt-1 space-y-0.5">
+                            {issue.timeline.map((event, index) => <li key={`${issue.id}-timeline-${index}`} className="break-words">{event}</li>)}
+                          </ol>
+                        </div>
+                      ) : null}
                       {issue.context ? (
                         <p className="break-words rounded-xl bg-background/55 p-2 text-[10px] leading-relaxed text-muted-foreground ring-1 ring-border/60">
                           <span className="font-black text-foreground">Why / forensic evidence: </span>{issue.context}
@@ -255,7 +334,7 @@ function DiagnosticsPage() {
         ) : null}
 
         <section className="rounded-3xl bg-tint p-4 text-xs leading-relaxed text-muted-foreground ring-1 ring-border/60">
-          The scanner can correlate substantially more runtime evidence and propose the most likely technical cause, but a browser cannot mathematically prove every root cause after the fact. BIXBO's CI browser tests remain the second layer for full user-flow testing after code changes.
+          The scanner now correlates multiple signals into incident clusters, fingerprints recurring failures and assigns a confidence score to the leading technical cause. Browser/PWA telemetry still cannot prove every OS-level termination, especially when iOS kills a process without exposing a reason, so CI browser tests remain the second independent layer.
         </section>
       </div>
     </AppShell>
