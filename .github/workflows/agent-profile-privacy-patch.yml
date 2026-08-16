@@ -1,0 +1,45 @@
+name: Agent profile privacy patch
+
+on:
+  push:
+    branches: [agent/independent-release-hardening]
+    paths:
+      - .github/workflows/agent-profile-privacy-patch.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: agent/independent-release-hardening
+      - name: Add privacy controls to the existing Privacy subpage
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          p = Path("src/features/profile/ProfilePageSpecialViews.tsx")
+          text = p.read_text()
+
+          old_import = 'import { ProfilePageMainView } from "./ProfilePageMainView";'
+          new_import = old_import + '\nimport { PrivacyLegalControls } from "./PrivacyLegalControls";'
+          if text.count(old_import) != 1:
+              raise SystemExit(f"expected one ProfilePageMainView import, found {text.count(old_import)}")
+          text = text.replace(old_import, new_import, 1)
+
+          anchor = '''          <p className="text-xs leading-relaxed text-muted-foreground">\n            {t("Sign-in opens the configured OAuth provider directly. If a provider is not enabled in Supabase, BIXBO will show the provider error here.")}\n          </p>\n        </Section>\n\n      </HealthSubpage>'''
+          replacement = '''          <p className="text-xs leading-relaxed text-muted-foreground">\n            {t("Sign-in opens the configured OAuth provider directly. If a provider is not enabled in Supabase, BIXBO will show the provider error here.")}\n          </p>\n        </Section>\n\n        <PrivacyLegalControls\n          analytics={privacyPrefs.analytics}\n          onAnalyticsChange={(analytics) => setPrivacyPrefs((current) => ({ ...current, analytics }))}\n        />\n\n      </HealthSubpage>'''
+          if text.count(anchor) != 1:
+              raise SystemExit(f"expected one Privacy subpage anchor, found {text.count(anchor)}")
+          p.write_text(text.replace(anchor, replacement, 1))
+          PY
+      - name: Commit patch
+        run: |
+          set -euo pipefail
+          git add src/features/profile/ProfilePageSpecialViews.tsx
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Add legal and analytics controls to Profile privacy"
+          git push
