@@ -1,6 +1,7 @@
 import { type CSSProperties } from "react";
 import { ChevronLeft, ChevronRight } from "@/components/icons/BixboExtraIcons";
 import { useI18n } from "@/hooks/useI18n";
+import { PAIN_COLOR_HEX, painColor } from "@/lib/domain/pain";
 import { addDays, fromKey, toKey } from "@/lib/storage";
 
 export const WD_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -28,10 +29,7 @@ export const INSIGHT_COLORS = {
   track: "#D8D9AE",
 } as const;
 
-export const VIVID_PAIN_CHART_COLORS = [
-  "#72C64A", "#91CD3A", "#B7D12F", "#DFD11F", "#F3C30D", "#F5A20B",
-  "#F47B16", "#F05A28", "#EF4444", "#DC2626", "#B91C1C",
-] as const;
+export const VIVID_PAIN_CHART_COLORS = PAIN_COLOR_HEX;
 
 export const TETANY_COLOR = INSIGHT_COLORS.pinkLight;
 export const PANIC_COLOR = INSIGHT_COLORS.pinkDeep;
@@ -50,7 +48,7 @@ export const TIME_BLOCK_LABELS = ["Night (0–6)", "Morning (6–12)", "Afternoo
 export const TIME_BLOCK_SHORT = ["Night", "Morning", "Afternoon", "Evening"];
 
 export function vividPainChartColor(value: number): string {
-  return VIVID_PAIN_CHART_COLORS[Math.max(0, Math.min(10, Math.round(value)))];
+  return painColor(value);
 }
 
 export function fmtTapDay(k: string): string {

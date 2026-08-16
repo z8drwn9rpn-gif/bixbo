@@ -1,16 +1,12 @@
 import type { CSSProperties } from "react";
 
 import { resolveScheduledDose } from "@/lib/domain/meds";
+import { PAIN_COLOR_HEX, painColor } from "@/lib/domain/pain";
 import { average, mode, reportPeriodLevel, type ReportDaySummary } from "@/lib/healthReport";
 import { formatClockTime, formatTemperature, formatWeight, type UnitPreferences } from "@/lib/preferences";
 import type { BixboData, PeriodLevel } from "@/lib/storage";
 
 type HeatColumn = { key: string; label: string; days: ReportDaySummary[] };
-
-const PAIN_COLORS = [
-  "#72C64A", "#91CD3A", "#B7D12F", "#DFD11F", "#F3C30D", "#F5A20B",
-  "#F47B16", "#F05A28", "#EF4444", "#DC2626", "#B91C1C",
-] as const;
 
 // PDF-safe sRGB equivalents of BIXBO's period semantic tokens. Using fixed
 // sRGB here prevents html2canvas from dropping modern OKLCH period colours.
@@ -29,7 +25,6 @@ const fromIso = (value: string) => {
 const compactNumber = (value: number | undefined) => value == null || !Number.isFinite(value) ? "—" : value.toFixed(1).replace(/\.0$/, "");
 const longDate = (key: string, locale: string) => fromIso(key).toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" });
 const shortDate = (key: string, locale: string) => fromIso(key).toLocaleDateString(locale, { day: "numeric", month: "short" });
-const painColor = (value: number) => PAIN_COLORS[Math.max(0, Math.min(10, Math.round(value)))];
 const percentage = (count: number, total: number) => total ? Math.round((count / total) * 100) : 0;
 const humanize = (value: string) => value.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/[_-]+/g, " ").replace(/^./, (letter) => letter.toUpperCase());
 
@@ -89,10 +84,10 @@ export function HealthReportHeatLegend() {
   const periodGradient = `linear-gradient(90deg, ${PERIOD_PDF_COLORS.spotting}, ${PERIOD_PDF_COLORS.light}, ${PERIOD_PDF_COLORS.medium}, ${PERIOD_PDF_COLORS.heavy}, ${PERIOD_PDF_COLORS["very-heavy"]})`;
   return <div className="heatLegend">
     <span><i style={{ background: "#FFFFFF" }} />No data</span>
-    <span><i style={{ background: PAIN_COLORS[2] }} />Mild (1–25%)</span>
-    <span><i style={{ background: PAIN_COLORS[5] }} />Moderate (26–50%)</span>
-    <span><i style={{ background: PAIN_COLORS[8] }} />Severe (51–75%)</span>
-    <span><i style={{ background: PAIN_COLORS[10] }} />Very severe (76–100%)</span>
+    <span><i style={{ background: PAIN_COLOR_HEX[2] }} />Mild (1–25%)</span>
+    <span><i style={{ background: PAIN_COLOR_HEX[5] }} />Moderate (26–50%)</span>
+    <span><i style={{ background: PAIN_COLOR_HEX[8] }} />Severe (51–75%)</span>
+    <span><i style={{ background: PAIN_COLOR_HEX[10] }} />Very severe (76–100%)</span>
     <span><i style={{ background: periodGradient }} />Period / spotting</span>
   </div>;
 }
