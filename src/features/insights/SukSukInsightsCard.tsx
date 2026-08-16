@@ -21,17 +21,19 @@ function periodEntries(data: BixboData, period: Period, anchor: Date) {
 }
 
 function friendlyBlock(times: string[]) {
-  const blocks = Array.from(new Set(times.map((time) => {
+  const blocks: string[] = [];
+  times.forEach((time) => {
     const hour = Number(time.split(":")[0]);
-    if (!Number.isFinite(hour)) return null;
-    if (hour < 6) return "night";
-    if (hour < 12) return "morning";
-    if (hour < 18) return "afternoon";
-    return "evening";
-  }).filter((value): value is string => !!value)));
-  if (!blocks.length) return "throughout the day";
-  if (blocks.length === 1) return `in the ${blocks[0]}`;
-  return `in the ${blocks.slice(0, -1).join(", ")} and ${blocks[blocks.length - 1]}`;
+    if (!Number.isFinite(hour)) return;
+    if (hour < 6) blocks.push("night");
+    else if (hour < 12) blocks.push("morning");
+    else if (hour < 18) blocks.push("afternoon");
+    else blocks.push("evening");
+  });
+  const unique = Array.from(new Set(blocks));
+  if (!unique.length) return "throughout the day";
+  if (unique.length === 1) return `in the ${unique[0]}`;
+  return `in the ${unique.slice(0, -1).join(", ")} and ${unique[unique.length - 1]}`;
 }
 
 function RingCount({ count, selected = false }: { count: number; selected?: boolean }) {
