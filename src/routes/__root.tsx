@@ -82,7 +82,7 @@ const THEME_BOOTSTRAP_SCRIPT = `(() => {
 
 // Safari does not provide a reliable native PWA launch screen on every iPhone.
 // Mark a standalone iPhone document before its body is painted so the static
-// mascot splash below is visible while the React app starts.
+// mascot splash below is visible for one second while React starts underneath.
 const APPLE_PWA_LAUNCH_SPLASH_BOOTSTRAP = `(() => {
   try {
     const isAppleMobile = /iPad|iPhone|iPod/.test(navigator.userAgent || "");
@@ -91,10 +91,6 @@ const APPLE_PWA_LAUNCH_SPLASH_BOOTSTRAP = `(() => {
     if (!isAppleMobile || !standalone) return;
 
     document.documentElement.dataset.applePwaLaunch = "true";
-    window.setTimeout(() => {
-      const splash = document.getElementById("bixbo-ios-launch-splash");
-      if (splash) splash.setAttribute("data-ready", "true");
-    }, 4500);
   } catch {}
 })();`;
 
@@ -110,13 +106,16 @@ const APPLE_PWA_LAUNCH_SPLASH_CSS = `
     justify-content: center;
     background: #FBF7F3;
     opacity: 1;
-    pointer-events: auto;
-    transition: opacity 220ms ease;
+    visibility: visible;
+    pointer-events: none;
+    animation: bixbo-ios-launch-splash-hide 1s step-end forwards;
   }
 
-  html[data-apple-pwa-launch="true"] #bixbo-ios-launch-splash[data-ready="true"] {
-    opacity: 0;
-    pointer-events: none;
+  @keyframes bixbo-ios-launch-splash-hide {
+    to {
+      opacity: 0;
+      visibility: hidden;
+    }
   }
 
   #bixbo-ios-launch-splash img {
@@ -251,19 +250,6 @@ function RootComponent() {
   useThemeSync();
   useNotificationRuntime();
   useDeploymentFreshness();
-
-  useEffect(() => {
-    if (document.documentElement.dataset.applePwaLaunch !== "true") return;
-
-    const splash = document.getElementById("bixbo-ios-launch-splash");
-    if (!splash) return;
-
-    const timer = window.setTimeout(() => {
-      splash.setAttribute("data-ready", "true");
-    }, 700);
-
-    return () => window.clearTimeout(timer);
-  }, []);
 
   useEffect(() => {
     return installRuntimeDiagnostics((issue) => {
