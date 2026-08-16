@@ -48,6 +48,13 @@ describe("BIXBO app diagnostics", () => {
     expect(root).toContain('window.location.assign("/diagnostics")');
     expect(root).toContain('href="/diagnostics"');
 
+    // The iPhone PWA splash is cosmetic only: show it for exactly one second,
+    // let React start underneath, and never let the overlay block interaction.
+    expect(root).toContain("animation: bixbo-ios-launch-splash-hide 1s step-end forwards");
+    expect(root).toContain("pointer-events: none");
+    expect(root).not.toContain("}, 4500);");
+    expect(root).not.toContain("}, 700);");
+
     // Existing hashed files are served by Cloudflare before the Worker. A stale
     // hashed URL must never fall through to SSR HTML, which Safari rejects as a
     // JavaScript module and reports as a text/html MIME error.
