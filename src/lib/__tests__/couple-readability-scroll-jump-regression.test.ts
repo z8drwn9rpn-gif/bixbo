@@ -24,8 +24,10 @@ describe("Couple readability and long-page navigation", () => {
     expect(control).toContain('aria-label="Scroll to bottom"');
     expect(control).toContain('window.scrollTo({ top: 0, behavior: "smooth" })');
     expect(control).toContain("root.scrollHeight");
-    expect(control).toContain('router.navigate({ to: "/" })');
-    expect(control).toContain('hash: "latest"');
+    expect(control).toContain('aria-label="Quick log"');
+    expect(control).not.toContain("CalendarIcon");
+    expect(control).not.toContain("HeartIcon");
+    expect(control).not.toContain("useRouter");
     expect(control).not.toContain("window.location.assign");
   });
 
