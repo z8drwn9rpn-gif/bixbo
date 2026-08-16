@@ -1,4 +1,4 @@
-import { ToolError, type ToolContext } from "@lovable.dev/mcp-js";
+import { ToolError, type ToolContext } from "./core";
 import { supabaseForUser } from "./supabase";
 
 /** Loose view of the app's stored diary blob — MCP only touches a few fields. */
@@ -29,9 +29,6 @@ function attachRowVersion(blob: BixboBlob, updatedAt: string | null): BixboBlob 
   Object.defineProperty(blob, ROW_VERSION, {
     value: updatedAt,
     configurable: true,
-    // MCP write tools update blobs with object spread. Enumerable symbol keys are
-    // copied by spread, so the compare-and-swap token survives that immutable
-    // update while still being ignored by JSON serialization.
     enumerable: true,
     writable: true,
   });
@@ -65,14 +62,7 @@ export async function loadBlob(ctx: ToolContext): Promise<BixboBlob> {
   return attachRowVersion(blob, data?.updated_at ?? null);
 }
 
-/**
- * Persist a blob only if the row is still the version that `loadBlob` read.
- *
- * BIXBO's normal app sync already performs a conflict-safe merge. MCP tools,
- * however, read and write the whole JSON document. Without optimistic locking,
- * a simultaneous iPhone/cloud write could be overwritten by an older MCP copy.
- * The database `updated_at` trigger gives us a cheap compare-and-swap token.
- */
+/** Whole-blob writes use updated_at as an optimistic compare-and-swap token. */
 export async function saveBlob(ctx: ToolContext, blob: BixboBlob): Promise<void> {
   const userId = requireUser(ctx);
   const supabase = supabaseForUser(ctx);
@@ -106,7 +96,6 @@ export async function saveBlob(ctx: ToolContext, blob: BixboBlob): Promise<void>
     .maybeSingle();
 
   if (error) {
-    // 23505 means another writer created the row after this tool loaded it.
     if (error.code === "23505") {
       throw new ToolError(
         "BIXBO data changed on another device while this tool was running. Nothing was overwritten; please retry the action.",

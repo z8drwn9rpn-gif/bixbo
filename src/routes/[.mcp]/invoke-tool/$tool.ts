@@ -1,17 +1,9 @@
-// BIXBO-owned MCP route. Keep behavior aligned with the authenticated BIXBO MCP server.
-// route: /.mcp/invoke-tool/$tool
-
 import { createFileRoute } from "@tanstack/react-router";
-
-import { createTanStackInvokeToolHandler } from "@lovable.dev/mcp-js/stacks/tanstack";
-
-import mcp from "../../../lib/mcp/index";
+import { handleInvokeTool } from "@/lib/mcp/http";
 
 export const Route = createFileRoute("/.mcp/invoke-tool/$tool")({
-  server: {
-    handlers: {
-      // ANY: TanStack returns SPA HTML for methods not in `handlers`; the SDK 405s instead.
-      ANY: createTanStackInvokeToolHandler(mcp, { resourcePath: "/mcp", metadataPath: "/.well-known/oauth-protected-resource", trustForwardedHost: true }),
-    },
-  },
+  server: { handlers: {
+    POST: ({ request, params }) => handleInvokeTool(request, params.tool),
+    OPTIONS: ({ request, params }) => handleInvokeTool(request, params.tool),
+  } },
 });

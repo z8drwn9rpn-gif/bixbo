@@ -1,16 +1,18 @@
-// Lovable's TanStack wrapper configures TanStack Start, React/Vite, Tailwind,
-// route/plugin wiring, the @ alias, and Lovable preview/publish build settings.
-// Keep this wrapper even though production deploys to Cloudflare: the same build
-// has already been verified to produce the .output layout consumed by Wrangler.
-
-import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import { defineConfig } from "vite";
+import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+import { nitro } from "nitro/vite";
+import viteReact from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
+import viteTsConfigPaths from "vite-tsconfig-paths";
 import { bixboIconMigrationPlugin } from "./src/build/bixboIconMigrationPlugin";
 
 export default defineConfig({
-  plugins: [bixboIconMigrationPlugin()],
-  tanstackStart: {
-    server: {
-      entry: "server",
-    },
-  },
+  plugins: [
+    viteTsConfigPaths({ projects: ["./tsconfig.json"] }),
+    bixboIconMigrationPlugin(),
+    tanstackStart(),
+    nitro({ preset: "cloudflare-module" }),
+    viteReact(),
+    tailwindcss(),
+  ],
 });
