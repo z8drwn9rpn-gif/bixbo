@@ -408,9 +408,9 @@ function performanceApiCoverageCheck(): DiagnosticResult {
   return result(
     "performance-api",
     "Forensics",
-    active.length >= 4 ? "ok" : "warning",
+    active.length > 0 ? "ok" : "warning",
     "Performance telemetry coverage",
-    `${active.length}/${desired.length} advanced browser telemetry channels are exposed here: ${active.join(", ") || "none"}. Timer/frame probes remain active for missing channels.`,
+    `${active.length}/${desired.length} native browser telemetry channels are exposed here: ${active.join(", ") || "none"}. Timer/frame probes cover missing channels; partial native coverage is a browser capability difference, not an app-health warning.`,
   );
 }
 
