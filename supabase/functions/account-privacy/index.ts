@@ -20,20 +20,32 @@ function json(body: unknown, status = 200) {
 
 type PrivacyAction =
   | "export-cloud-data"
+  | "accept-current-legal"
   | "withdraw-health-consent"
   | "grant-health-consent"
   | "delete-account";
 
 type PrivacyBody = {
   action?: unknown;
+  termsAccepted?: unknown;
+  privacyAcknowledged?: unknown;
+  healthConsent?: unknown;
+  termsVersion?: unknown;
+  privacyVersion?: unknown;
   healthConsentVersion?: unknown;
 };
 
 function isPrivacyAction(value: unknown): value is PrivacyAction {
   return value === "export-cloud-data"
+    || value === "accept-current-legal"
     || value === "withdraw-health-consent"
     || value === "grant-health-consent"
     || value === "delete-account";
+}
+
+function legalVersion(value: unknown): string {
+  const version = typeof value === "string" ? value.trim() : "";
+  return /^\d{4}-\d{2}-\d{2}$/.test(version) ? version : "";
 }
 
 Deno.serve(async (req) => {
@@ -84,7 +96,7 @@ Deno.serve(async (req) => {
       admin.from("user_legal_consents").select("terms_version,terms_accepted_at,privacy_version,privacy_acknowledged_at,health_consent_version,health_consent_at,health_consent_withdrawn_at,onboarding_completed_at,updated_at").eq("user_id", userId).maybeSingle(),
       admin.from("partner_links").select("a,b,created_at").or(`a.eq.${userId},b.eq.${userId}`),
       admin.from("push_reminder_profiles").select("timezone,profile,created_at,updated_at").eq("user_id", userId).maybeSingle(),
-      // Do not export Web Push authentication material (p256dh/auth). It is a transport credential, not diary content.
+      // Web Push auth material (p256dh/auth) is deliberately excluded from portability output.
       admin.from("push_subscriptions").select("id,endpoint,expiration_time,user_agent,created_at,updated_at").eq("user_id", userId),
       admin.from("push_delivery_log").select("id,category,status,attempts,created_at,updated_at").eq("user_id", userId).order("created_at", { ascending: true }),
     ]);
@@ -118,6 +130,41 @@ Deno.serve(async (req) => {
       },
       analyticsAttribution: "Product analytics are deliberately stored without a BIXBO user ID and therefore are not joined to this account export.",
     });
+  }
+
+  if (body.action === "accept-current-legal") {
+    const termsVersion = legalVersion(body.termsVersion);
+    const privacyVersion = legalVersion(body.privacyVersion);
+    const healthConsentVersion = legalVersion(body.healthConsentVersion);
+    if (
+      body.termsAccepted !== true
+      || body.privacyAcknowledged !== true
+      || body.healthConsent !== true
+      || !termsVersion
+      || !privacyVersion
+      || !healthConsentVersion
+    ) {
+      return json({ ok: false, error: "Terms, privacy acknowledgement and explicit health-data consent are all required." }, 400);
+    }
+
+    const now = new Date().toISOString();
+    const { error: consentError } = await admin.from("user_legal_consents").upsert({
+      user_id: userId,
+      terms_version: termsVersion,
+      terms_accepted_at: now,
+      privacy_version: privacyVersion,
+      privacy_acknowledged_at: now,
+      health_consent_version: healthConsentVersion,
+      health_consent_at: now,
+      health_consent_withdrawn_at: null,
+      updated_at: now,
+    }, { onConflict: "user_id" });
+
+    if (consentError) {
+      console.error("account-privacy current legal acceptance failed", consentError.message);
+      return json({ ok: false, error: "The legal acceptance could not be recorded." }, 500);
+    }
+    return json({ ok: true, legalAccepted: true, healthConsentVersion });
   }
 
   if (body.action === "withdraw-health-consent") {
@@ -167,10 +214,9 @@ Deno.serve(async (req) => {
   }
 
   if (body.action === "grant-health-consent") {
-    const version = typeof body.healthConsentVersion === "string" ? body.healthConsentVersion.trim() : "";
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(version)) {
-      return json({ ok: false, error: "A valid health-consent version is required." }, 400);
-    }
+    const version = legalVersion(body.healthConsentVersion);
+    if (!version) return json({ ok: false, error: "A valid health-consent version is required." }, 400);
+
     const now = new Date().toISOString();
     const { data: consent, error: consentError } = await admin
       .from("user_legal_consents")
@@ -199,9 +245,5 @@ Deno.serve(async (req) => {
     return json({ ok: false, error: "The cloud account could not be deleted." }, 500);
   }
 
-  return json({
-    ok: true,
-    deleted: true,
-    localDataPreserved: true,
-  });
+  return json({ ok: true, deleted: true, localDataPreserved: true });
 });
