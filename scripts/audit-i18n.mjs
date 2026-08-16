@@ -8,8 +8,9 @@ const allowed = new Set([
   "src/features/profile/shared.tsx",
   "src/features/insights/shared.tsx",
   "src/features/patterns/shared.tsx",
-  // These routes deliberately colocate explicit EN/SK legal/onboarding copy.
-  // The guard still scans every other route for accidental Slovak-only literals.
+  "src/features/insights/TimeOfDayPatternChart.tsx",
+  // These modules deliberately colocate explicit EN/SK copy.
+  // The guard still scans every other UI source for accidental Slovak-only literals.
   "src/routes/auth.tsx",
   "src/routes/onboarding.tsx",
   "src/routes/privacy.tsx",
@@ -17,6 +18,13 @@ const allowed = new Set([
 ]);
 const slovakChars = /[áäčďéíĺľňóôŕšťúýž]/i;
 const failures = [];
+
+function userFacingPart(line) {
+  // Ignore line comments and the intentional product feature/brand name ŠukŠuk.
+  // Neither represents a missing English translation.
+  const withoutComment = line.replace(/\/\/.*$/, "");
+  return withoutComment.replace(/ŠukŠuk/gi, "SukSuk");
+}
 
 function visit(path) {
   const rel = relative(root, path).replaceAll("\\", "/");
@@ -29,7 +37,7 @@ function visit(path) {
   if (!/\.tsx?$/.test(path) || allowed.has(rel)) return;
   const lines = readFileSync(path, "utf8").split("\n");
   lines.forEach((line, index) => {
-    if (slovakChars.test(line)) failures.push(`${rel}:${index + 1}`);
+    if (slovakChars.test(userFacingPart(line))) failures.push(`${rel}:${index + 1}`);
   });
 }
 
