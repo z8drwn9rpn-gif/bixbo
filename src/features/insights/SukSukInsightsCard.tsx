@@ -91,12 +91,11 @@ export function SukSukInsightsCard({ data }: { data: BixboData }) {
 
   return (
     <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#f6d5df] ring-1 ring-[#efb6c6]"><HeartIcon size={23} /></span>
           <div className="min-w-0"><h3 className="whitespace-nowrap font-serif text-xl leading-none text-foreground" style={{ fontWeight: 800 }}>ŠUKŠUK!</h3><p className="mt-1 text-xs text-muted-foreground">Intimacy moments</p></div>
         </div>
-        <button type="button" aria-label="ŠukŠuk options" className="grid h-8 w-8 place-items-center rounded-full text-lg leading-none text-muted-foreground">•••</button>
       </div>
 
       <DashboardPeriodControl value={period} onChange={setPeriod} anchor={anchor} onShift={(delta) => setAnchor((current) => shiftInsightPeriodAnchor(current, period, delta))} ariaLabel="ŠukŠuk period" />
