@@ -6,6 +6,7 @@ describe("BIXBO app diagnostics", () => {
     const diagnostics = readFileSync("src/lib/appDiagnostics.ts", "utf8");
     const route = readFileSync("src/routes/diagnostics.tsx", "utf8");
     const root = readFileSync("src/routes/__root.tsx", "utf8");
+    const server = readFileSync("src/server.ts", "utf8");
 
     expect(diagnostics).toContain('window.addEventListener("error", onError)');
     expect(diagnostics).toContain('window.addEventListener("unhandledrejection", onUnhandledRejection)');
@@ -46,5 +47,13 @@ describe("BIXBO app diagnostics", () => {
     expect(root).toContain("BIXBO detected an app error");
     expect(root).toContain('window.location.assign("/diagnostics")');
     expect(root).toContain('href="/diagnostics"');
+
+    // Existing hashed files are served by Cloudflare before the Worker. A stale
+    // hashed URL must never fall through to SSR HTML, which Safari rejects as a
+    // JavaScript module and reports as a text/html MIME error.
+    expect(server).toContain('pathname.startsWith("/assets/")');
+    expect(server).toContain("status: 404");
+    expect(server).toContain('"application/javascript; charset=utf-8"');
+    expect(server).toContain('hardened.headers.set("Cache-Control", "no-store, max-age=0")');
   });
 });

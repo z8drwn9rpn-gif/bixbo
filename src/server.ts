@@ -36,7 +36,44 @@ function withSecurityHeaders(response: Response): Response {
   );
   hardened.headers.set("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
   hardened.headers.set("Content-Security-Policy", CONTENT_SECURITY_POLICY);
+
+  // Never let a browser/PWA keep an old SSR document across deployments. The
+  // immutable hashed /assets files are still cached by the static asset layer.
+  if ((hardened.headers.get("content-type") ?? "").includes("text/html")) {
+    hardened.headers.set("Cache-Control", "no-store, max-age=0");
+    hardened.headers.set("Pragma", "no-cache");
+  }
+
   return hardened;
+}
+
+function missingBuildAssetResponse(request: Request): Response | null {
+  let pathname: string;
+  try {
+    pathname = new URL(request.url).pathname;
+  } catch {
+    return null;
+  }
+
+  // Cloudflare serves existing static assets before invoking this Worker. If a
+  // hashed asset from an older deployment is gone, however, it falls through to
+  // the Worker. Do not SSR that URL as text/html: module scripts reject HTML and
+  // Safari reports the misleading MIME-type error seen in the app scanner.
+  if (!pathname.startsWith("/assets/")) return null;
+
+  const contentType = pathname.endsWith(".css")
+    ? "text/css; charset=utf-8"
+    : /\.(?:m?js)$/.test(pathname)
+      ? "application/javascript; charset=utf-8"
+      : "application/octet-stream";
+
+  return new Response(null, {
+    status: 404,
+    headers: {
+      "content-type": contentType,
+      "cache-control": "no-store",
+    },
+  });
 }
 
 async function getServerEntry(): Promise<ServerEntry> {
@@ -77,6 +114,9 @@ function isH3SwallowedErrorBody(body: string): boolean {
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      const missingAsset = missingBuildAssetResponse(request);
+      if (missingAsset) return withSecurityHeaders(missingAsset);
+
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return withSecurityHeaders(await normalizeCatastrophicSsrResponse(response));
