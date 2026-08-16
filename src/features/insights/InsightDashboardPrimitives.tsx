@@ -61,9 +61,9 @@ export function DashboardPeriodControl({
   const { t } = useI18n();
   const unit = value === "W" ? "week" : value === "M" ? "month" : "year";
   return (
-    <div className="mt-4">
+    <div className="mt-3">
       <div
-        className="grid h-12 grid-cols-3 rounded-full bg-tint/55 p-1 ring-1 ring-border/65"
+        className="grid h-8 w-full grid-cols-3 rounded-xl bg-tint p-0.5 ring-1 ring-border/60"
         role="group"
         aria-label={ariaLabel}
       >
@@ -75,38 +75,32 @@ export function DashboardPeriodControl({
               type="button"
               onClick={() => onChange(period)}
               aria-pressed={selected}
-              className="rounded-full px-3 text-sm transition active:scale-[.98]"
-              style={{
-                background: selected ? "var(--primary)" : "transparent",
-                color: selected ? "var(--primary-foreground)" : "var(--muted-foreground)",
-                fontWeight: 700,
-                boxShadow: selected ? "0 2px 8px rgb(52 68 28 / 0.16)" : "none",
-              }}
+              className={`min-w-0 rounded-[10px] px-2 py-1 text-[10px] font-semibold transition active:scale-[.98] ${selected ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
             >
               {t(label)}
             </button>
           );
         })}
       </div>
-      <div className="mt-2 grid h-11 grid-cols-[42px_minmax(0,1fr)_42px] items-center rounded-full bg-background/60 px-1 ring-1 ring-border/55">
+      <div className="mt-1 grid h-8 w-full grid-cols-[32px_minmax(0,1fr)_32px] items-center rounded-xl bg-background/70 p-0.5 ring-1 ring-border/60">
         <button
           type="button"
           onClick={() => onShift(-1)}
           aria-label={`Previous ${unit}`}
-          className="grid h-8 w-8 place-self-center place-items-center rounded-full bg-tint/55 text-muted-foreground transition active:scale-95"
+          className="grid h-7 w-7 place-self-center place-items-center rounded-lg text-muted-foreground transition hover:bg-tint hover:text-foreground active:scale-95"
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft className="h-3.5 w-3.5" />
         </button>
-        <span className="min-w-0 truncate px-2 text-center text-sm text-foreground" style={{ fontWeight: 700 }}>
+        <span className="min-w-0 whitespace-nowrap px-1 text-center text-[10px] font-semibold tabular-nums text-foreground">
           {insightPeriodNavigationLabel(value, anchor)}
         </span>
         <button
           type="button"
           onClick={() => onShift(1)}
           aria-label={`Next ${unit}`}
-          className="grid h-8 w-8 place-self-center place-items-center rounded-full bg-tint/55 text-muted-foreground transition active:scale-95"
+          className="grid h-7 w-7 place-self-center place-items-center rounded-lg text-muted-foreground transition hover:bg-tint hover:text-foreground active:scale-95"
         >
-          <ChevronRight className="h-4 w-4" />
+          <ChevronRight className="h-3.5 w-3.5" />
         </button>
       </div>
     </div>
@@ -121,20 +115,20 @@ export type QuickInsightItem = {
 
 export function QuickInsights({ items }: { items: QuickInsightItem[] }) {
   return (
-    <div className="mt-4 rounded-2xl bg-tint/30 px-4 py-3.5 ring-1 ring-border/55">
+    <div className="mt-3 rounded-2xl bg-tint/30 px-3 py-3 ring-1 ring-border/55">
       <div className="flex items-center gap-2 text-muted-foreground">
-        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
-          <InsightGlyph kind="bulb" size={17} />
+        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
+          <InsightGlyph kind="bulb" size={15} />
         </span>
-        <span className="text-xs uppercase tracking-[0.12em]" style={{ fontWeight: 700 }}>Quick insights</span>
+        <span className="text-[10px] uppercase tracking-[0.1em]" style={{ fontWeight: 700 }}>Quick insights</span>
       </div>
-      <div className="mt-2.5 space-y-2">
+      <div className="mt-2 space-y-1.5">
         {items.map((item, index) => (
-          <div key={index} className="flex items-start gap-2.5">
-            <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center" style={{ color: item.color ?? "var(--primary)" }}>
-              <InsightGlyph kind={item.kind} size={18} />
+          <div key={index} className="flex items-start gap-2">
+            <span className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center" style={{ color: item.color ?? "var(--primary)" }}>
+              <InsightGlyph kind={item.kind} size={15} />
             </span>
-            <p className="text-sm leading-snug text-muted-foreground">{item.text}</p>
+            <p className="text-xs leading-snug text-muted-foreground">{item.text}</p>
           </div>
         ))}
       </div>
@@ -152,19 +146,19 @@ export type MetricCardItem = {
 
 export function MetricCards({ items }: { items: MetricCardItem[] }) {
   return (
-    <div className="mt-3 grid grid-cols-3 gap-2">
+    <div className="mt-2.5 grid grid-cols-3 gap-1.5">
       {items.map((item, index) => (
-        <div key={index} className="min-w-0 rounded-2xl bg-background/55 px-3 py-3 ring-1 ring-border/55">
-          <div className="flex min-w-0 items-center gap-1.5 text-[10px] uppercase tracking-[0.08em] text-muted-foreground">
+        <div key={index} className="min-w-0 rounded-xl bg-background/55 px-2 py-2.5 ring-1 ring-border/55">
+          <div className="flex min-w-0 items-center gap-1 text-[8px] uppercase tracking-[0.04em] text-muted-foreground">
             {item.kind ? (
               <span className="shrink-0" style={{ color: item.color ?? "var(--primary)" }}>
-                <InsightGlyph kind={item.kind} size={15} />
+                <InsightGlyph kind={item.kind} size={12} />
               </span>
             ) : null}
-            <span className="truncate">{item.label}</span>
+            <span className="whitespace-nowrap">{item.label}</span>
           </div>
-          <div className="mt-1 truncate text-xl leading-tight text-foreground" style={{ fontWeight: 700 }}>{item.value}</div>
-          {item.sub ? <div className="mt-0.5 truncate text-[11px] text-muted-foreground">{item.sub}</div> : null}
+          <div className="mt-1 whitespace-nowrap text-[15px] leading-none text-foreground" style={{ fontWeight: 700 }}>{item.value}</div>
+          {item.sub ? <div className="mt-1 whitespace-nowrap text-[9px] leading-none text-muted-foreground">{item.sub}</div> : null}
         </div>
       ))}
     </div>

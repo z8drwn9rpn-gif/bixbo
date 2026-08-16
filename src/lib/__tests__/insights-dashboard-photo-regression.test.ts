@@ -18,18 +18,39 @@ describe("Insights dashboard photo-matched cards", () => {
     expect(hak).not.toContain('from "@/components/home/SukSukPeriodChart"');
   });
 
-  test("keeps photo-specific quick insights, icons, and compact meds dots", () => {
+  test("keeps quick insights, BIXBO icons, compact meds dots, and one-line tiles", () => {
     const pain = readFileSync("src/features/insights/PainInsightsCard.tsx", "utf8");
     const hot = readFileSync("src/features/insights/HotFlashesInsightsCard.tsx", "utf8");
     const time = readFileSync("src/features/insights/TimeOfDayInsightsCard.tsx", "utf8");
     const meds = readFileSync("src/features/insights/MedsAdherenceInsightsCard.tsx", "utf8");
     const suk = readFileSync("src/features/insights/SukSukInsightsCard.tsx", "utf8");
+    const bowel = readFileSync("src/features/insights/BowelOverviewCard.tsx", "utf8");
     const primitives = readFileSync("src/features/insights/InsightDashboardPrimitives.tsx", "utf8");
+
     for (const source of [pain, hot, time, meds]) expect(source).toContain("QuickInsights");
     expect(primitives).toContain("InsightGlyph");
-    expect(meds).toContain("h-3.5 w-3.5 rounded-full");
-    expect(suk).toContain("Intimacy moments");
+    expect(meds).toContain("String.fromCodePoint(0x1f48a)");
+    expect(meds).toContain("h-3 w-3 rounded-full");
+    expect(suk).toContain("days with intimacy");
     expect(suk).toContain("Best day:");
+    expect(bowel).toContain("h-[150px]");
+    expect(primitives).toContain("whitespace-nowrap text-[15px]");
+  });
+
+  test("uses the Heatmap control and chart text scale across new Insights cards", () => {
+    const heatmap = readFileSync("src/features/insights/YearHealthHeatmap.tsx", "utf8");
+    const primitives = readFileSync("src/features/insights/InsightDashboardPrimitives.tsx", "utf8");
+    const pain = readFileSync("src/features/insights/PainInsightsCard.tsx", "utf8");
+    const hot = readFileSync("src/features/insights/HotFlashesInsightsCard.tsx", "utf8");
+    const time = readFileSync("src/features/insights/TimeOfDayInsightsCard.tsx", "utf8");
+
+    expect(heatmap).toContain("grid h-8 w-full grid-cols-3 rounded-xl");
+    expect(primitives).toContain("grid h-8 w-full grid-cols-3 rounded-xl");
+    expect(heatmap).toContain("text-[10px] font-semibold");
+    expect(primitives).toContain("text-[10px] font-semibold");
+    expect(pain).toContain('h-[150px]');
+    expect(hot).toContain('text-[10px]');
+    expect(time).toContain('h-[150px]');
   });
 
   test("reserves Blueberry wording for cycle UI, not general Quick Insights", () => {

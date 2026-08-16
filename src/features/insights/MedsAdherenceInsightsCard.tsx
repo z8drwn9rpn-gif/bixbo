@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Ico } from "@/components/icons/BixboExtraIcons";
 import { useI18n } from "@/hooks/useI18n";
 import { fromKey, medScheduleItems, toKey, useBixbo, type BixboData } from "@/lib/storage";
 import { resolveScheduledDose } from "@/lib/domain/meds";
@@ -201,18 +202,18 @@ export function MedsAdherenceInsightsCard({ data, period, anchor, onPeriodChange
 
   const renderDaily = () => {
     if (period === "Y") {
-      return <div className="grid grid-cols-6 gap-x-3 gap-y-3">{monthly.map((month) => (
-        <button key={month.key} type="button" onClick={() => setExpandedKey((current) => current === month.key ? null : month.key)} className="flex min-w-0 flex-col items-center gap-1.5" aria-label={`${month.label} ${range.start.getFullYear()} · ${month.pct == null ? "n/a" : `${month.pct}%`}`}>
+      return <div className="grid grid-cols-6 gap-x-3 gap-y-2">{monthly.map((month) => (
+        <button key={month.key} type="button" onClick={() => setExpandedKey((current) => current === month.key ? null : month.key)} className="flex min-w-0 flex-col items-center gap-1" aria-label={`${month.label} ${range.start.getFullYear()} · ${month.pct == null ? "n/a" : `${month.pct}%`}`}>
           <span className="text-[10px] text-muted-foreground">{month.label}</span>
-          <span className={`h-4 w-4 rounded-full ring-1 ${expandedKey === month.key ? "ring-2 ring-primary" : "ring-border/30"}`} style={{ background: adherenceColor(month.pct) }} />
+          <span className={`h-3.5 w-3.5 rounded-full ring-1 ${expandedKey === month.key ? "ring-2 ring-primary" : "ring-border/30"}`} style={{ background: adherenceColor(month.pct) }} />
         </button>
       ))}</div>;
     }
     const columns = period === "W" ? 7 : 16;
-    return <div className="grid gap-x-2 gap-y-3" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0,1fr))` }}>{perDay.map((day) => (
-      <button key={day.date} type="button" onClick={() => setExpandedKey((current) => current === day.date ? null : day.date)} className="flex min-w-0 flex-col items-center gap-1.5" aria-label={`${compactDate(day.date)} · ${day.taken}/${day.expected} doses`}>
+    return <div className="grid gap-x-2 gap-y-2" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0,1fr))` }}>{perDay.map((day) => (
+      <button key={day.date} type="button" onClick={() => setExpandedKey((current) => current === day.date ? null : day.date)} className="flex min-w-0 flex-col items-center gap-1" aria-label={`${compactDate(day.date)} · ${day.taken}/${day.expected} doses`}>
         <span className="text-[9px] tabular-nums text-muted-foreground">{fromKey(day.date).getDate()}</span>
-        <span className={`h-3.5 w-3.5 rounded-full ring-1 ${expandedKey === day.date ? "ring-2 ring-primary" : "ring-border/30"}`} style={{ background: adherenceColor(day.pct) }} />
+        <span className={`h-3 w-3 rounded-full ring-1 ${expandedKey === day.date ? "ring-2 ring-primary" : "ring-border/30"}`} style={{ background: adherenceColor(day.pct) }} />
       </button>
     ))}</div>;
   };
@@ -221,34 +222,37 @@ export function MedsAdherenceInsightsCard({ data, period, anchor, onPeriodChange
   const expandedMonth = period === "Y" ? monthly.find((month) => month.key === expandedKey) : null;
 
   return (
-    <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-border/80">
+    <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
       <button type="button" onClick={() => setOpen((value) => !value)} className="flex w-full items-start justify-between text-left">
-        <div>
-          <p className="text-sm uppercase tracking-[0.08em] text-muted-foreground" style={{ fontWeight: 700 }}>{t("Meds adherence")}</p>
-          <p className="mt-1 text-sm text-foreground" style={{ fontWeight: 700 }}>{range.title} · {period === "Y" ? range.start.getFullYear() : range.start.toLocaleDateString("en-GB", { month: "long", year: "numeric" })}</p>
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-tint/55 ring-1 ring-border/50"><Ico e={String.fromCodePoint(0x1f48a)} size={28} /></span>
+          <div className="min-w-0">
+            <p className="whitespace-nowrap text-xs uppercase tracking-wider text-muted-foreground" style={{ fontWeight: 700 }}>{t("Meds adherence")}</p>
+            <p className="mt-0.5 whitespace-nowrap text-[10px] text-foreground" style={{ fontWeight: 700 }}>{range.title} · {period === "Y" ? range.start.getFullYear() : range.start.toLocaleDateString("en-GB", { month: "long", year: "numeric" })}</p>
+          </div>
         </div>
-        <span className="pt-1 text-xs text-muted-foreground">{open ? "▾" : "▸"}</span>
+        <span className="pt-1 text-[10px] text-muted-foreground">{open ? "▾" : "▸"}</span>
       </button>
 
       {open ? <>
         <DashboardPeriodControl value={period} onChange={onPeriodChange} anchor={anchor} onShift={onPeriodShift} ariaLabel="Meds adherence period" />
 
-        {totalExpected > 0 ? <div className="mt-4">
-          <div className="flex items-end gap-3"><span className="font-serif text-6xl leading-none" style={{ color: adherenceColor(overallPct) }}>{overallPct}%</span><span className="pb-1 text-base text-muted-foreground">{totalTaken}/{totalExpected} doses</span></div>
-          <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-tint"><div className="h-full rounded-full" style={{ width: `${overallPct ?? 0}%`, background: adherenceColor(overallPct) }} /></div>
-        </div> : <p className="mt-4 text-sm text-muted-foreground">{t("No scheduled meds in this period.")}</p>}
+        {totalExpected > 0 ? <div className="mt-3">
+          <div className="flex items-end gap-2"><span className="font-serif text-4xl leading-none" style={{ color: adherenceColor(overallPct) }}>{overallPct}%</span><span className="pb-0.5 whitespace-nowrap text-xs text-muted-foreground">{totalTaken}/{totalExpected} doses</span></div>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-tint"><div className="h-full rounded-full" style={{ width: `${overallPct ?? 0}%`, background: adherenceColor(overallPct) }} /></div>
+        </div> : <p className="mt-3 text-xs text-muted-foreground">{t("No scheduled meds in this period.")}</p>}
 
-        <div className="mt-5">
-          <p className="mb-3 text-[11px] uppercase tracking-[0.1em] text-muted-foreground">{period === "Y" ? "Monthly adherence" : "Daily adherence"}</p>
+        <div className="mt-3">
+          <p className="mb-2 text-[10px] uppercase tracking-[0.1em] text-muted-foreground">{period === "Y" ? "Monthly adherence" : "Daily adherence"}</p>
           {renderDaily()}
-          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-[10px] text-muted-foreground">{[["90–100%", "#28A85B"], ["75–89%", "#F0D33A"], ["40–74%", "#F7A21C"], ["0–39%", "#D84343"], ["n/a", INSIGHT_COLORS.oliveLight]].map(([label, color]) => <span key={label} className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: color }} />{label}</span>)}</div>
+          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[9px] text-muted-foreground">{[["90–100%", "#28A85B"], ["75–89%", "#F0D33A"], ["40–74%", "#F7A21C"], ["0–39%", "#D84343"], ["n/a", INSIGHT_COLORS.oliveLight]].map(([label, color]) => <span key={label} className="flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ background: color }} />{label}</span>)}</div>
 
-          {expandedDay ? <div className="mt-3 rounded-2xl bg-tint/35 px-3 py-2.5 text-xs ring-1 ring-border/45">
+          {expandedDay ? <div className="mt-2 rounded-xl bg-tint/35 px-3 py-2 text-[10px] ring-1 ring-border/45">
             <p className="text-foreground" style={{ fontWeight: 700 }}>{compactDate(expandedDay.date)} · {expandedDay.taken}/{expandedDay.expected} taken</p>
-            {expandedDay.takenList.map((med) => <button key={`${med.key}-${med.item}`} type="button" onClick={() => toggleDose(expandedDay.date, med.key, med.item)} className="mt-1 block text-left text-[11px]" style={{ color: "#28A85B" }}>Taken · {med.time} — {med.medName}</button>)}
-            {expandedDay.missed.map((med) => <button key={`${med.key}-${med.item}`} type="button" onClick={() => toggleDose(expandedDay.date, med.key, med.item)} className="mt-1 block text-left text-[11px]" style={{ color: "#D84343" }}>Missed · {med.time} — {med.medName}</button>)}
+            {expandedDay.takenList.map((med) => <button key={`${med.key}-${med.item}`} type="button" onClick={() => toggleDose(expandedDay.date, med.key, med.item)} className="mt-1 block text-left text-[10px]" style={{ color: "#28A85B" }}>Taken · {med.time} — {med.medName}</button>)}
+            {expandedDay.missed.map((med) => <button key={`${med.key}-${med.item}`} type="button" onClick={() => toggleDose(expandedDay.date, med.key, med.item)} className="mt-1 block text-left text-[10px]" style={{ color: "#D84343" }}>Missed · {med.time} — {med.medName}</button>)}
           </div> : null}
-          {expandedMonth ? <div className="mt-3 rounded-2xl bg-tint/35 px-3 py-2.5 text-xs ring-1 ring-border/45"><p className="text-foreground" style={{ fontWeight: 700 }}>{expandedMonth.label} {range.start.getFullYear()} · {expandedMonth.pct == null ? "n/a" : `${expandedMonth.pct}%`}</p><p className="mt-1 text-muted-foreground">{expandedMonth.taken}/{expandedMonth.expected} doses taken</p></div> : null}
+          {expandedMonth ? <div className="mt-2 rounded-xl bg-tint/35 px-3 py-2 text-[10px] ring-1 ring-border/45"><p className="text-foreground" style={{ fontWeight: 700 }}>{expandedMonth.label} {range.start.getFullYear()} · {expandedMonth.pct == null ? "n/a" : `${expandedMonth.pct}%`}</p><p className="mt-1 text-muted-foreground">{expandedMonth.taken}/{expandedMonth.expected} doses taken</p></div> : null}
         </div>
 
         <QuickInsights items={[
@@ -257,16 +261,16 @@ export function MedsAdherenceInsightsCard({ data, period, anchor, onPeriodChange
           { kind: "target", color: "#d84a43", text: needsAttention ? `${needsAttention.name} needs the most attention` : "No medication needs attention" },
         ]} />
 
-        <div className="mt-5">
-          <p className="mb-2 text-[11px] uppercase tracking-[0.1em] text-muted-foreground">Per medication</p>
-          <div className="divide-y divide-border/55">{perMed.map((entry) => <div key={entry.id} className="grid grid-cols-[minmax(0,1.15fr)_minmax(90px,.9fr)_64px] items-center gap-3 py-2.5">
-            <p className="min-w-0 truncate text-sm text-foreground">{entry.name} <span className="text-muted-foreground">{entry.time}</span></p>
-            <div className="h-2 overflow-hidden rounded-full bg-tint/70"><div className="h-full rounded-full" style={{ width: `${entry.pct ?? 0}%`, background: adherenceColor(entry.pct) }} /></div>
-            <div className="text-right"><p className="text-sm tabular-nums text-foreground" style={{ fontWeight: 700 }}>{entry.pct == null ? "n/a" : `${entry.pct}%`}</p><p className="text-[10px] tabular-nums text-muted-foreground">{entry.taken}/{entry.expected}</p></div>
+        <div className="mt-3">
+          <p className="mb-1.5 text-[10px] uppercase tracking-[0.1em] text-muted-foreground">Per medication</p>
+          <div className="divide-y divide-border/55">{perMed.map((entry) => <div key={entry.id} className="grid grid-cols-[minmax(0,1.2fr)_minmax(72px,.9fr)_50px] items-center gap-2 py-1.5">
+            <p className="min-w-0 whitespace-nowrap text-[11px] text-foreground">{entry.name} <span className="text-muted-foreground">{entry.time}</span></p>
+            <div className="h-1.5 overflow-hidden rounded-full bg-tint/70"><div className="h-full rounded-full" style={{ width: `${entry.pct ?? 0}%`, background: adherenceColor(entry.pct) }} /></div>
+            <div className="text-right"><p className="text-xs tabular-nums text-foreground" style={{ fontWeight: 700 }}>{entry.pct == null ? "n/a" : `${entry.pct}%`}</p><p className="text-[9px] tabular-nums text-muted-foreground">{entry.taken}/{entry.expected}</p></div>
           </div>)}</div>
         </div>
 
-        {asNeededCounts.length ? <div className="mt-3 rounded-2xl bg-tint/25 px-3 py-2.5 ring-1 ring-border/40"><p className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground">As needed</p><div className="mt-1 space-y-1">{asNeededCounts.map((entry) => <p key={entry.id} className="flex justify-between text-xs text-muted-foreground"><span>{entry.name}</span><span className="tabular-nums">{entry.count}×</span></p>)}</div></div> : null}
+        {asNeededCounts.length ? <div className="mt-2 rounded-xl bg-tint/25 px-3 py-2 ring-1 ring-border/40"><p className="text-[9px] uppercase tracking-[0.1em] text-muted-foreground">As needed</p><div className="mt-1 space-y-1">{asNeededCounts.map((entry) => <p key={entry.id} className="flex justify-between text-[10px] text-muted-foreground"><span>{entry.name}</span><span className="tabular-nums">{entry.count}×</span></p>)}</div></div> : null}
 
         <MetricCards items={[
           { label: "Best streak", value: bestStreak.length ? `${bestStreak.length} days` : "—", sub: bestStreak.length ? `${compactDate(bestStreak.start)}–${compactDate(bestStreak.end)}` : "No streak yet", kind: "flame", color: "#f07c23" },
