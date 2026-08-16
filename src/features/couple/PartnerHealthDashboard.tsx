@@ -6,6 +6,7 @@ import {
   PanicIcon,
   PillIcon,
 } from "@/components/icons/BixboExtraIcons";
+import { BixboIcon } from "@/components/icons/BixboIcon";
 import { useI18n } from "@/hooks/useI18n";
 import {
   PAIN_DESCRIPTIONS,
@@ -40,6 +41,15 @@ function formatDate(dateKey: string, language: string) {
   });
 }
 
+function splitEmojiLabel(value: string) {
+  const trimmed = value.trim();
+  const match = trimmed.match(
+    /^(\p{Extended_Pictographic}(?:\uFE0F|\uFE0E)?(?:\p{Emoji_Modifier})?(?:\u200D\p{Extended_Pictographic}(?:\uFE0F|\uFE0E)?(?:\p{Emoji_Modifier})?)*)\s*(.*)$/u,
+  );
+  if (!match) return { emoji: undefined, label: trimmed };
+  return { emoji: match[1], label: match[2].trim() };
+}
+
 function Chip({ children, tone = "violet" }: { children: React.ReactNode; tone?: "violet" | "green" | "neutral" }) {
   const classes = tone === "green"
     ? "bg-primary/10 text-primary"
@@ -47,6 +57,30 @@ function Chip({ children, tone = "violet" }: { children: React.ReactNode; tone?:
       ? "bg-tint text-muted-foreground"
       : "bg-violet-500/10 text-violet-700";
   return <span className={`rounded-full px-2.5 py-1 text-[10px] font-medium leading-none ${classes}`}>{children}</span>;
+}
+
+function MoodChips({ items }: { items: string[] }) {
+  const { t } = useI18n();
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+      <span className="mr-0.5 text-[11px] text-muted-foreground">{t("Mood")}:</span>
+      {items.map((item) => {
+        const source = splitEmojiLabel(item);
+        const localized = splitEmojiLabel(t(item));
+        const emoji = source.emoji ?? localized.emoji;
+        const label = localized.label || source.label || t(item);
+        return (
+          <span
+            key={item}
+            className="inline-flex items-center gap-1 rounded-full bg-tint px-2 py-1 text-[10px] font-medium leading-none text-muted-foreground"
+          >
+            {emoji ? <BixboIcon emoji={emoji} label={label} size={15} fallback="none" effects="stable" /> : null}
+            <span>{label}</span>
+          </span>
+        );
+      })}
+    </div>
+  );
 }
 
 function PainCard({ entry, language }: { entry: PainWithDate; language: string }) {
@@ -75,13 +109,13 @@ function PainCard({ entry, language }: { entry: PainWithDate; language: string }
           {entry.quality?.length ? <div className="mt-2 flex flex-wrap gap-1.5">{entry.quality.map((item) => <Chip key={item}>{t(item)}</Chip>)}</div> : null}
           {entry.symptoms?.length ? <div className="mt-2 flex flex-wrap gap-1.5">{entry.symptoms.map((item) => <Chip key={item} tone="green">{t(item)}</Chip>)}</div> : null}
           {entry.pcosSymptoms?.length ? <div className="mt-2 flex flex-wrap gap-1.5">{entry.pcosSymptoms.map((item) => <Chip key={item} tone="green">{t(item)}</Chip>)}</div> : null}
+          {entry.mood?.length ? <MoodChips items={entry.mood} /> : null}
 
           <div className="mt-2 space-y-1 text-[11px] leading-relaxed text-muted-foreground">
             {entry.headache ? <p>{t("Headache")}{entry.headacheIntensity != null ? ` ${entry.headacheIntensity}/10` : ""}{entry.headacheTypes?.length ? ` · ${entry.headacheTypes.map(t).join(", ")}` : ""}</p> : null}
             {entry.nausea ? <p>{t("Nausea")}{entry.nauseaSeverity != null ? ` ${entry.nauseaSeverity}/10` : ""}{entry.nauseaTypes?.length ? ` · ${entry.nauseaTypes.map(t).join(", ")}` : ""}</p> : null}
             {entry.hotFlashesOn || entry.hotFlashes != null ? <p>{t("Hot flashes")}{entry.hotFlashes != null ? ` ${entry.hotFlashes}/5` : ""}</p> : null}
             {entry.pressureTypes?.length ? <p>{t("Pressure")}: {entry.pressureTypes.map(t).join(", ")}{entry.pressureIntensity != null ? ` · ${entry.pressureIntensity}/10` : ""}</p> : null}
-            {entry.mood?.length ? <p>{t("Mood")}: {entry.mood.map(t).join(", ")}</p> : null}
             {entry.note ? <p className="rounded-xl bg-tint px-2.5 py-2 text-foreground/75">{entry.note}</p> : null}
           </div>
         </div>
