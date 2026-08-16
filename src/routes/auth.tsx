@@ -153,6 +153,14 @@ function AuthPage() {
         <GoogleSignInButton
           disabled={busy}
           promptOnLoad={google}
+          onCredential={async (credential, rawNonce) => {
+            const { error } = await supabase.auth.signInWithIdToken({
+              provider: "google",
+              token: credential,
+              nonce: rawNonce,
+            });
+            if (error) throw error;
+          }}
           onBusyChange={setBusy}
           onError={(message) => setMsg(message)}
         />
