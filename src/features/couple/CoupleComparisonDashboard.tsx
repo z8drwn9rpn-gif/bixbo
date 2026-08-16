@@ -184,6 +184,7 @@ function SummaryMetric({ label, count, tone }: { label: string; count: number; t
 }
 
 function HighlightMetric({ label, metric }: { label: string; metric: ComparisonMetric | null }) {
+  const { t } = useI18n();
   const palette = metric ? TONES[metric.tone] : TONES.green;
 
   if (!metric) {
@@ -208,14 +209,15 @@ function HighlightMetric({ label, metric }: { label: string; metric: ComparisonM
           {label}
         </p>
         <p className="truncate text-xs font-bold text-foreground">{metric.title}</p>
-        <p
-          className="mt-0.5 truncate text-[11px] font-semibold"
-          style={{ color: palette.text }}
-        >
-          {formatValue(metric.mine, metric.decimals, metric.unit)}{" "}
-          <span className="font-normal text-muted-foreground">vs</span>{" "}
-          {formatValue(metric.theirs, metric.decimals, metric.unit)}
-        </p>
+        <div className="mt-1 flex min-w-0 items-center gap-1.5 text-[10px] font-semibold">
+          <span className="truncate" style={{ color: palette.text }}>
+            {t(metric.mineLabel)} {formatValue(metric.mine, metric.decimals, metric.unit)}
+          </span>
+          <span className="text-muted-foreground">·</span>
+          <span className="truncate" style={{ color: PARTNER_COLOR }}>
+            {t(metric.partnerLabel)} {formatValue(metric.theirs, metric.decimals, metric.unit)}
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -345,27 +347,38 @@ function MiniMetricCard({ metric }: { metric: ComparisonMetric }) {
       <p className="min-h-5 text-[7px] leading-tight text-muted-foreground">
         {t(isMedication ? "Consistency matters" : "Lower is better")}
       </p>
-      <div className="mt-1.5 flex items-baseline gap-0.5 text-[8px] text-muted-foreground">
-        <span className="text-base font-bold tabular-nums" style={{ color: palette.text }}>
-          {metric.mine == null ? "—" : metric.mine.toFixed(metric.decimals)}
-        </span>
-        <span>vs</span>
-        <span className="text-base font-bold tabular-nums" style={{ color: PARTNER_COLOR }}>
-          {metric.theirs == null ? "—" : metric.theirs.toFixed(metric.decimals)}
-        </span>
-      </div>
-      <div className="mt-1.5 space-y-1">
-        <div className="h-1 overflow-hidden rounded-full bg-background">
-          <div
-            className="h-full rounded-full"
-            style={{ width: `${minePercent}%`, backgroundColor: palette.solid }}
-          />
+      <div className="mt-1.5 space-y-1.5">
+        <div>
+          <div className="flex items-baseline justify-between gap-1">
+            <span className="truncate text-[7px] font-semibold" style={{ color: palette.text }}>
+              {t(metric.mineLabel)}
+            </span>
+            <span className="text-sm font-bold tabular-nums" style={{ color: palette.text }}>
+              {metric.mine == null ? "—" : metric.mine.toFixed(metric.decimals)}
+            </span>
+          </div>
+          <div className="mt-0.5 h-1 overflow-hidden rounded-full bg-background">
+            <div
+              className="h-full rounded-full"
+              style={{ width: `${minePercent}%`, backgroundColor: palette.solid }}
+            />
+          </div>
         </div>
-        <div className="h-1 overflow-hidden rounded-full bg-background">
-          <div
-            className="h-full rounded-full"
-            style={{ width: `${theirsPercent}%`, backgroundColor: PARTNER_COLOR }}
-          />
+        <div>
+          <div className="flex items-baseline justify-between gap-1">
+            <span className="truncate text-[7px] font-semibold" style={{ color: PARTNER_COLOR }}>
+              {t(metric.partnerLabel)}
+            </span>
+            <span className="text-sm font-bold tabular-nums" style={{ color: PARTNER_COLOR }}>
+              {metric.theirs == null ? "—" : metric.theirs.toFixed(metric.decimals)}
+            </span>
+          </div>
+          <div className="mt-0.5 h-1 overflow-hidden rounded-full bg-background">
+            <div
+              className="h-full rounded-full"
+              style={{ width: `${theirsPercent}%`, backgroundColor: PARTNER_COLOR }}
+            />
+          </div>
         </div>
       </div>
     </article>
