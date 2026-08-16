@@ -12,6 +12,7 @@ import { BowelOverviewCard } from "@/features/insights/BowelOverviewCard";
 import { MedsAdherenceInsightsCard } from "@/features/insights/MedsAdherenceInsightsCard";
 import { TimeOfDayInsightsCard } from "@/features/insights/TimeOfDayInsightsCard";
 import { SukSukInsightsCard } from "@/features/insights/SukSukInsightsCard";
+import { SymptomsTrendInsightsCard } from "@/features/insights/SymptomsTrendInsightsCard";
 import { YearHealthHeatmap } from "@/features/insights/YearHealthHeatmap";
 import {
   eachDay,
@@ -130,6 +131,10 @@ function InsightsPage() {
 
       <div className={insightsFilter === "all" || insightsFilter === "pain" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "pain", 20) }}>
         <PainInsightsCard data={view} period={painPeriod} days={painDays} series={painSeries} anchor={painAnchor} averageValue={painAvg} onPeriodChange={setPainPeriod} onPeriodShift={(delta) => setPainAnchor((current) => shiftInsightPeriodAnchor(current, painPeriod, delta))} />
+      </div>
+
+      <div className={insightsFilter === "all" || insightsFilter === "symptoms" ? "" : "hidden"} style={{ order: 25 }}>
+        <SymptomsTrendInsightsCard data={view} />
       </div>
 
       <div className={insightsFilter === "all" || insightsFilter === "symptoms" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "hotFlashes", 30) }}>

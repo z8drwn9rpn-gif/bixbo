@@ -5,6 +5,7 @@ describe("Insights dashboard photo-matched cards", () => {
   test("wires the approved card set into Insights", () => {
     const route = readFileSync("src/routes/insights.tsx", "utf8");
     expect(route).toContain("PainInsightsCard");
+    expect(route).toContain("SymptomsTrendInsightsCard");
     expect(route).toContain("HotFlashesInsightsCard");
     expect(route).toContain("TimeOfDayInsightsCard");
     expect(route).toContain("MedsAdherenceInsightsCard");
@@ -43,6 +44,7 @@ describe("Insights dashboard photo-matched cards", () => {
     const pain = readFileSync("src/features/insights/PainInsightsCard.tsx", "utf8");
     const hot = readFileSync("src/features/insights/HotFlashesInsightsCard.tsx", "utf8");
     const time = readFileSync("src/features/insights/TimeOfDayInsightsCard.tsx", "utf8");
+    const symptoms = readFileSync("src/features/insights/SymptomsTrendInsightsCard.tsx", "utf8");
 
     expect(heatmap).toContain("grid h-8 w-full grid-cols-3 rounded-xl");
     expect(primitives).toContain("grid h-8 w-full grid-cols-3 rounded-xl");
@@ -51,6 +53,8 @@ describe("Insights dashboard photo-matched cards", () => {
     expect(pain).toContain('h-[150px]');
     expect(hot).toContain('text-[10px]');
     expect(time).toContain('h-[150px]');
+    expect(symptoms).toContain('h-[150px]');
+    expect(symptoms).toContain("DashboardPeriodControl");
   });
 
   test("keeps dense medication rows, non-overlapping SukSuk tiles, and a larger hot-flash chart", () => {
@@ -65,6 +69,23 @@ describe("Insights dashboard photo-matched cards", () => {
     expect(hot).toContain('h-[92px]');
     expect(hot).toContain("grid-cols-[20px_82px_minmax(0,1fr)_20px]");
     expect(hot).toContain("h-5 w-5 place-items-center rounded-full text-[9px]");
+  });
+
+  test("provides one switchable bar chart for the six requested symptoms", () => {
+    const symptoms = readFileSync("src/features/insights/SymptomsTrendInsightsCard.tsx", "utf8");
+    for (const label of ["Headache", "Tetany episode", "Panic episode", "Nausea", "Pressure", "Hot flashes"]) {
+      expect(symptoms).toContain(label);
+    }
+    expect(symptoms).toContain('type SymptomKey = "headache" | "tetany" | "panic" | "nausea" | "pressure" | "hotFlashes"');
+    expect(symptoms).toContain('role="group" aria-label="Symptom shown in chart"');
+    expect(symptoms).toContain("headacheIntensity");
+    expect(symptoms).toContain("nauseaSeverity");
+    expect(symptoms).toContain("pressureIntensity");
+    expect(symptoms).toContain("day.tetany");
+    expect(symptoms).toContain("day.panic");
+    expect(symptoms).toContain("hotFlashes");
+    expect(symptoms).toContain("InsightFloatingTooltip");
+    expect(symptoms).toContain("gridTemplateColumns");
   });
 
   test("reserves Blueberry wording for cycle UI, not general Quick Insights", () => {
