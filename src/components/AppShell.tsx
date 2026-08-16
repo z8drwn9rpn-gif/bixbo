@@ -5,6 +5,7 @@ import { SideNav } from "./SideNav";
 import { BixboIconKeyboard } from "./icons/BixboIconKeyboard";
 import { PainEpisodeChoiceDefaults } from "./PainEpisodeChoiceDefaults";
 import { ScrollJumpControl } from "./ScrollJumpControl";
+import { GlobalQuickLogActions } from "./GlobalQuickLogActions";
 import bixboMascot from "@/assets/bixbo-mascot-user.png";
 
 const BIXBO_MASCOT_SRC = bixboMascot;
@@ -46,6 +47,7 @@ export function AppShell({ children, title, right, big = false, stickyHeader = t
         </div>
       </div>
       <ScrollJumpControl />
+      <GlobalQuickLogActions />
       {showBixboIconKeyboard ? <BixboIconKeyboard /> : null}
       <BottomNav />
     </div>
