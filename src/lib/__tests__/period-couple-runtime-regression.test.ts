@@ -30,7 +30,7 @@ describe("Period and Couple runtime regressions", () => {
     const route = read("src/routes/couple.tsx");
     const calendar = read("src/features/couple/BlueberrySection.tsx");
     expect(route).not.toContain("fixed right-4");
-    expect(page).toContain('right={<button type="button" onClick={onOpenSettings}');
+    expect(page).toContain('stickyHeader={false} right={<button type="button" onClick={onOpenSettings}');
     expect(page.indexOf("<BlueberrySection partner={partner}")).toBeGreaterThan(page.indexOf('activeTab === "health"'));
     expect(calendar).toContain("const cycle = partner.cycle");
     expect(calendar).not.toContain("useBixbo");

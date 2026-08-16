@@ -10,7 +10,7 @@ const BIXBO_MASCOT_SRC = bixboMascot;
 const BIXBO_ROUNDED_DISPLAY_FONT = 'ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, -apple-system, BlinkMacSystemFont, sans-serif';
 const BIXBO_ROUNDED_DISPLAY_SHADOW = "0 1px 0 rgba(255,255,255,.92), 0 2px 1px rgba(57,72,34,.22), 0 4px 5px rgba(49,61,31,.16)";
 
-export function AppShell({ children, title, right, big = false }: { children: ReactNode; title?: ReactNode; right?: ReactNode; big?: boolean; }) {
+export function AppShell({ children, title, right, big = false, stickyHeader = true }: { children: ReactNode; title?: ReactNode; right?: ReactNode; big?: boolean; stickyHeader?: boolean; }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const showBixboIconKeyboard = !pathname.startsWith("/notes");
 
@@ -22,7 +22,7 @@ export function AppShell({ children, title, right, big = false }: { children: Re
       <div className="min-h-dvh lg:pl-60">
         <div className="relative mx-auto min-h-dvh w-full overflow-x-hidden bg-background/92 pb-[calc(6rem+env(safe-area-inset-bottom))] portrait:max-w-[430px] portrait:shadow-[0_0_40px_-24px_color-mix(in_oklch,var(--primary)_45%,transparent)] landscape:max-lg:max-w-none lg:max-w-[1200px] lg:px-6 lg:pb-8 xl:max-w-[1320px]">
           {title !== undefined && (
-            <header className="sticky top-0 z-30 flex min-h-14 items-center justify-between border-b border-border/65 bg-background/88 px-4 py-2 pt-[max(0.5rem,env(safe-area-inset-top))] shadow-[0_1px_0_0_color-mix(in_srgb,var(--border)_72%,transparent)] backdrop-blur-xl supports-[backdrop-filter]:bg-background/82 sm:px-5 lg:rounded-b-2xl lg:border-x lg:border-border/45">
+            <header className={`${stickyHeader ? "sticky top-0" : ""} z-30 flex min-h-14 items-center justify-between border-b border-border/65 bg-background/88 px-4 py-2 pt-[max(0.5rem,env(safe-area-inset-top))] shadow-[0_1px_0_0_color-mix(in_srgb,var(--border)_72%,transparent)] backdrop-blur-xl supports-[backdrop-filter]:bg-background/82 sm:px-5 lg:rounded-b-2xl lg:border-x lg:border-border/45`}>
               <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
                 <span className={big ? "relative block h-[50px] w-[50px] shrink-0 overflow-visible" : "relative block h-10 w-10 shrink-0 overflow-visible"} aria-hidden="true">
                   <img src={BIXBO_MASCOT_SRC} alt="" aria-hidden="true" draggable={false} className="block h-full w-full object-contain object-center opacity-100 visible" />
