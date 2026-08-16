@@ -22,28 +22,21 @@ export function AppShell({ children, title, right, big = false, stickyHeader = t
       <div className="min-h-dvh lg:pl-60">
         <div className="relative mx-auto min-h-dvh w-full overflow-x-hidden bg-background/92 pb-[calc(6rem+env(safe-area-inset-bottom))] portrait:max-w-[430px] portrait:shadow-[0_0_40px_-24px_color-mix(in_oklch,var(--primary)_45%,transparent)] landscape:max-lg:max-w-none lg:max-w-[1200px] lg:px-6 lg:pb-8 xl:max-w-[1320px]">
           {title !== undefined && (
-            <header className={`${stickyHeader ? "sticky top-0" : ""} z-30 flex min-h-[4.5rem] items-center justify-between border-b border-border/65 bg-background/88 px-4 py-2 pt-[max(0.5rem,env(safe-area-inset-top))] shadow-[0_1px_0_0_color-mix(in_srgb,var(--border)_72%,transparent)] backdrop-blur-xl supports-[backdrop-filter]:bg-background/82 sm:px-5 lg:rounded-b-2xl lg:border-x lg:border-border/45`}>
-              <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+            <header className={`${stickyHeader ? "sticky top-0" : ""} z-30 flex min-h-14 items-center justify-between border-b border-border/65 bg-background/88 px-4 py-2 pt-[max(0.5rem,env(safe-area-inset-top))] shadow-[0_1px_0_0_color-mix(in_srgb,var(--border)_72%,transparent)] backdrop-blur-xl supports-[backdrop-filter]:bg-background/82 sm:px-5 lg:rounded-b-2xl lg:border-x lg:border-border/45`}>
+              <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
                 <span
-                  className={`relative block shrink-0 overflow-visible rounded-full ${big ? "h-24 w-24" : "h-20 w-20"}`}
+                  className={`relative block shrink-0 overflow-visible ${big ? "h-20 w-20" : "h-16 w-16"}`}
                   aria-hidden="true"
-                  style={{
-                    background: "color-mix(in srgb, var(--background) 0%, transparent)",
-                  }}
                 >
-                  <span
-                    className="absolute inset-0 rounded-full bg-[#FBF7F3]/0 dark:bg-[#FBF7F3]/90"
-                    aria-hidden="true"
-                  />
                   <img
                     src={BIXBO_MASCOT_SRC}
                     alt=""
                     aria-hidden="true"
                     draggable={false}
-                    className="relative block h-full w-full object-contain object-center p-1 opacity-100 visible drop-shadow-[0_2px_4px_rgba(0,0,0,0.08)] dark:drop-shadow-[0_2px_6px_rgba(0,0,0,0.45)]"
+                    className="block h-full w-full object-contain object-center opacity-100 visible drop-shadow-[0_2px_4px_rgba(0,0,0,0.08)] dark:drop-shadow-[0_0_10px_rgba(251,247,243,0.35)] dark:brightness-110"
                   />
                 </span>
-                <h1 data-bixbo-app-title className={`min-w-0 truncate font-black tracking-[-0.045em] leading-[1.05] text-foreground ${big ? "text-[32px] sm:text-4xl" : "text-[26px] sm:text-[28px]"}`} style={{ fontFamily: BIXBO_ROUNDED_DISPLAY_FONT, WebkitTextStroke: "0", textShadow: BIXBO_ROUNDED_DISPLAY_SHADOW }}>{title}</h1>
+                <h1 data-bixbo-app-title className={`min-w-0 truncate font-black tracking-[-0.045em] leading-[1.05] text-foreground ${big ? "text-[28px] sm:text-3xl" : "text-[23px] sm:text-2xl"}`} style={{ fontFamily: BIXBO_ROUNDED_DISPLAY_FONT, WebkitTextStroke: "0", textShadow: BIXBO_ROUNDED_DISPLAY_SHADOW }}>{title}</h1>
               </div>
               {right ? <div className="ml-2 flex min-w-0 shrink-0 items-center">{right}</div> : null}
             </header>
