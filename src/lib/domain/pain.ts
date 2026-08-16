@@ -5,14 +5,16 @@ export type PainDayLike = { pain?: PainEntryLike[] };
 /**
  * Canonical Pain scale colours at every 0.5 step.
  * Whole-number entries exactly match --pain-0 … --pain-10 in theme-system.css.
- * Half steps are explicit hex values so iOS/PWA rendering never depends on
- * CSS color-mix support and 7.5 can never collapse visually into 7 or 8.
+ * Half steps deliberately use stronger saturated intermediate colours so
+ * 7 / 7.5 / 8 (and every other neighbouring trio) stay easy to distinguish.
+ * Concrete hex values also keep Calendar gradients, SVG charts, PDF and iOS/PWA
+ * rendering on the same palette.
  */
 export const PAIN_SCALE_HALF_STEP_COLORS = [
-  "#7FCF52", "#89CE4D", "#93CE48", "#A4D144", "#B4D43F",
-  "#C4D53C", "#D3D638", "#E2D233", "#F0CF2E", "#F2C32E",
-  "#F5B72D", "#F5A831", "#F59A35", "#F28936", "#EF7838",
-  "#EC693C", "#E95A3F", "#E24C41", "#DC3F43", "#D23741",
+  "#7FCF52", "#82CA42", "#93CE48", "#A5CF33", "#B4D43F",
+  "#CCD124", "#D3D638", "#EACA11", "#F0CF2E", "#F5B200",
+  "#F5B72D", "#F68F02", "#F59A35", "#F56A41", "#EF7838",
+  "#EF4E69", "#E95A3F", "#E53366", "#DC3F43", "#D31E4E",
   "#C82F3F",
 ] as const;
 
@@ -43,15 +45,13 @@ export function painHexColor(score: number): string {
   return PAIN_SCALE_HALF_STEP_COLORS[Math.round(snapped * 2)];
 }
 
+/**
+ * Use a concrete colour on every surface. MonthCalendar builds its satin ring
+ * by parsing and shading this value, so returning a CSS var for whole numbers
+ * would collapse those rings into invalid/black gradients.
+ */
 export function painColor(score: number): string {
-  const snapped = snapPainScore(score);
-
-  // Whole-number colours stay on their canonical theme tokens.
-  if (Number.isInteger(snapped)) return `var(--pain-${snapped})`;
-
-  // Half steps use explicit colours rather than color-mix so they render
-  // identically in Safari/PWA and remain visibly distinct from both neighbours.
-  return painHexColor(snapped);
+  return painHexColor(score);
 }
 
 export function avgDayPain(log?: PainDayLike): number | undefined {
