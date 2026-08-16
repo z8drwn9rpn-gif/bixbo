@@ -22,9 +22,21 @@ const PAIN_HALF_STEP_HEX = [
   "#f68f02", "#f56a41", "#ef4e69", "#e53366", "#d31e4e",
 ] as const;
 
-export function painColor(score: number): string {
+/** Keep pain values on the same 0.5-step scale used by logging and colours. */
+export function snapPainScore(score: number): number {
   const clamped = Math.max(0, Math.min(10, Number.isFinite(score) ? score : 0));
-  const snapped = Math.round(clamped * 2) / 2;
+  return Math.round(clamped * 2) / 2;
+}
+
+/** Average pain values without ever collapsing a half-step to a whole number. */
+export function averagePainScores(values: number[]): number | undefined {
+  const finite = values.filter(Number.isFinite).map(snapPainScore);
+  if (!finite.length) return undefined;
+  return snapPainScore(finite.reduce((sum, value) => sum + value, 0) / finite.length);
+}
+
+export function painColor(score: number): string {
+  const snapped = snapPainScore(score);
 
   // Whole-number colours are the canonical palette and must stay unchanged.
   if (Number.isInteger(snapped)) return PAIN_COLOR_HEX[snapped];
@@ -36,7 +48,5 @@ export function painColor(score: number): string {
 
 export function avgDayPain(log?: PainDayLike): number | undefined {
   const measurements = (log?.pain ?? []).filter((entry) => entry.entryKind !== "symptom-update");
-  if (!measurements.length) return undefined;
-  const sum = measurements.reduce((total, entry) => total + entry.score, 0);
-  return sum / measurements.length;
+  return averagePainScores(measurements.map((entry) => entry.score));
 }
