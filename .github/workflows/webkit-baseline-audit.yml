@@ -1,0 +1,91 @@
+name: WebKit mobile baseline audit
+
+on:
+  push:
+    branches:
+      - audit/webkit-mobile-baseline
+    paths:
+      - .github/workflows/webkit-baseline-audit.yml
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: audit/webkit-mobile-baseline
+      - uses: oven-sh/setup-bun@v2
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Install WebKit
+        run: bunx playwright install --with-deps webkit
+      - name: Create diagnostic spec
+        shell: bash
+        run: |
+          cat > e2e/webkit-baseline-audit.spec.ts <<'EOF'
+          import { test } from "@playwright/test";
+
+          test("audit fresh mobile home geometry and privacy state", async ({ page }) => {
+            await page.goto("/");
+            await page.waitForLoadState("domcontentloaded");
+            await page.waitForTimeout(1000);
+
+            const state = await page.evaluate(() => {
+              const overflow = Array.from(document.querySelectorAll<HTMLElement>("body *"))
+                .map((el) => {
+                  const r = el.getBoundingClientRect();
+                  const cs = getComputedStyle(el);
+                  return {
+                    tag: el.tagName,
+                    id: el.id,
+                    cls: typeof el.className === "string" ? el.className.slice(0, 180) : "",
+                    left: Math.round(r.left * 10) / 10,
+                    right: Math.round(r.right * 10) / 10,
+                    width: Math.round(r.width * 10) / 10,
+                    scrollWidth: el.scrollWidth,
+                    clientWidth: el.clientWidth,
+                    position: cs.position,
+                    display: cs.display,
+                    overflowX: cs.overflowX,
+                    transform: cs.transform,
+                  };
+                })
+                .filter((x) => x.display !== "none" && (x.left < -1 || x.right > window.innerWidth + 1 || x.scrollWidth > window.innerWidth + 1))
+                .sort((a, b) => Math.max(b.right, b.scrollWidth) - Math.max(a.right, a.scrollWidth))
+                .slice(0, 80);
+
+              return {
+                href: location.href,
+                innerWidth: window.innerWidth,
+                outerWidth: window.outerWidth,
+                htmlClientWidth: document.documentElement.clientWidth,
+                htmlScrollWidth: document.documentElement.scrollWidth,
+                bodyClientWidth: document.body.clientWidth,
+                bodyScrollWidth: document.body.scrollWidth,
+                localStorage: Object.fromEntries(Object.entries(localStorage)),
+                lockedText: document.body.innerText.includes("Unlock BIXBO"),
+                main: document.querySelector("#main-content")?.getBoundingClientRect().toJSON?.() ?? null,
+                bottomNav: document.querySelector('[data-bixbo-bottom-nav]')?.getBoundingClientRect().toJSON?.() ?? null,
+                overflow,
+              };
+            });
+
+            console.log("BIXBO_WEBKIT_FRESH_STATE=" + JSON.stringify(state, null, 2));
+
+            await page.evaluate(() => localStorage.clear());
+            await page.reload();
+            await page.waitForLoadState("domcontentloaded");
+            await page.waitForTimeout(500);
+            const cleared = await page.evaluate(() => ({
+              innerWidth: window.innerWidth,
+              htmlScrollWidth: document.documentElement.scrollWidth,
+              bodyScrollWidth: document.body.scrollWidth,
+              lockedText: document.body.innerText.includes("Unlock BIXBO"),
+              localStorage: Object.fromEntries(Object.entries(localStorage)),
+            }));
+            console.log("BIXBO_WEBKIT_CLEARED_STATE=" + JSON.stringify(cleared, null, 2));
+          });
+          EOF
+      - name: Run audit
+        run: bunx playwright test e2e/webkit-baseline-audit.spec.ts --project=webkit-mobile --reporter=line
