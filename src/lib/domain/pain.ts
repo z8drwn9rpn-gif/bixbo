@@ -16,19 +16,35 @@ export const PAIN_SCALE_HALF_STEP_COLORS = [
   "#C82F3F",
 ] as const;
 
-function snapPainHalfStep(score: number): number {
+/** Concrete whole-number colours for PDF/export surfaces that cannot use CSS variables. */
+export const PAIN_COLOR_HEX = [
+  PAIN_SCALE_HALF_STEP_COLORS[0], PAIN_SCALE_HALF_STEP_COLORS[2], PAIN_SCALE_HALF_STEP_COLORS[4],
+  PAIN_SCALE_HALF_STEP_COLORS[6], PAIN_SCALE_HALF_STEP_COLORS[8], PAIN_SCALE_HALF_STEP_COLORS[10],
+  PAIN_SCALE_HALF_STEP_COLORS[12], PAIN_SCALE_HALF_STEP_COLORS[14], PAIN_SCALE_HALF_STEP_COLORS[16],
+  PAIN_SCALE_HALF_STEP_COLORS[18], PAIN_SCALE_HALF_STEP_COLORS[20],
+] as const;
+
+/** Keep calculated Pain values on the same 0.5-step scale used by logging. */
+export function snapPainScore(score: number): number {
   const clamped = Math.max(0, Math.min(10, Number.isFinite(score) ? score : 0));
   return Math.round(clamped * 2) / 2;
 }
 
+/** Average Pain values and keep the result on the canonical half-step scale. */
+export function averagePainScores(values: number[]): number | undefined {
+  const finite = values.filter(Number.isFinite).map(snapPainScore);
+  if (!finite.length) return undefined;
+  return snapPainScore(finite.reduce((sum, value) => sum + value, 0) / finite.length);
+}
+
 /** Returns the canonical concrete Pain scale colour for charts and SVG UI. */
 export function painHexColor(score: number): string {
-  const snapped = snapPainHalfStep(score);
+  const snapped = snapPainScore(score);
   return PAIN_SCALE_HALF_STEP_COLORS[Math.round(snapped * 2)];
 }
 
 export function painColor(score: number): string {
-  const snapped = snapPainHalfStep(score);
+  const snapped = snapPainScore(score);
 
   // Whole-number colours stay on their canonical theme tokens.
   if (Number.isInteger(snapped)) return `var(--pain-${snapped})`;
@@ -40,7 +56,5 @@ export function painColor(score: number): string {
 
 export function avgDayPain(log?: PainDayLike): number | undefined {
   const measurements = (log?.pain ?? []).filter((entry) => entry.entryKind !== "symptom-update");
-  if (!measurements.length) return undefined;
-  const sum = measurements.reduce((total, entry) => total + entry.score, 0);
-  return sum / measurements.length;
+  return averagePainScores(measurements.map((entry) => entry.score));
 }
