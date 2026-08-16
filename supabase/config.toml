@@ -14,3 +14,6 @@ verify_jwt = true
 
 [functions.send-due-push]
 verify_jwt = false
+
+[functions.account-privacy]
+verify_jwt = true

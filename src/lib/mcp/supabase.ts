@@ -1,8 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
-import type { ToolContext } from "@lovable.dev/mcp-js";
+import type { ToolContext } from "./core";
 
-const PUBLIC_SUPABASE_URL = "https://wgdydwttzsveevkljkmr.supabase.co";
-const PUBLIC_SUPABASE_PUBLISHABLE_KEY = "sb_publishable__K7x0Rsn4e7lT4Ut3_g04A_8w_WTaH3";
+export const PUBLIC_SUPABASE_URL = "https://wgdydwttzsveevkljkmr.supabase.co";
+export const PUBLIC_SUPABASE_PUBLISHABLE_KEY = "sb_publishable__K7x0Rsn4e7lT4Ut3_g04A_8w_WTaH3";
 
 type RuntimeGlobals = typeof globalThis & {
   Deno?: { env?: { get?: (name: string) => string | undefined } };
@@ -22,11 +22,11 @@ function configuredEnv(names: readonly string[]): string | undefined {
   return undefined;
 }
 
-function supabaseProjectUrl(): string {
+export function supabaseProjectUrl(): string {
   return configuredEnv(["SUPABASE_URL", "VITE_SUPABASE_URL"]) ?? PUBLIC_SUPABASE_URL;
 }
 
-function supabasePublishableKey(): string {
+export function supabasePublishableKey(): string {
   const direct = configuredEnv(["SUPABASE_PUBLISHABLE_KEY", "VITE_SUPABASE_PUBLISHABLE_KEY"]);
   if (direct) return direct;
 

@@ -53,6 +53,7 @@ import { TrText, Section, Field, SelectField, ToggleRow, TagListField, DoctorFor
 import type { HealthView } from "./shared";
 import type { ProfilePageModel } from "./useProfilePageModel";
 import { ProfilePageMainView } from "./ProfilePageMainView";
+import { PrivacyLegalControls } from "./PrivacyLegalControls";
 export function ProfilePageSpecialViews({ model }: { model: ProfilePageModel }) { const { navigate, data, update, hydrated, language, setLanguage, t, view, profile, editing, setEditing, healthView, setHealthView, accountAuthBusy, setAccountAuthBusy, accountAuthError, setAccountAuthError, deviceAdminEnabled, trackingPrefs, setTrackingPrefs, painScale, setPainScale, units, setUnits, privacyPrefs, setPrivacyPrefs, backupPrefs, setBackupPrefs, reminderPrefs, setReminderPrefs, prefsLoaded, setPrefsLoaded, syncingPrefsFromStoreRef, prefsSignature, patch, setTheme, setTextSize, exportJson, startAccountOAuth, protectRestoreFromDeletedData, age, currentWeight, gender, pregnancyActive, postpartumActive, allergens, bmi, setEmergency, setCurrentWeight, setGender, reproductiveStatus, setReproductiveStatus, doctors, activeMedications, medicalTags, allergyTags, postpartumStatus, postpartumToday, pregnancyLabel, allDayLogs, totalPainLogs, totalBowelLogs, totalSleepLogs, totalTetanyLogs, trackedDates, firstTrackedDate, trackingDays } = model;
 if (healthView === "hub") {
     return (
@@ -311,6 +312,11 @@ if (healthView === "privacy") {
             {t("Sign-in opens the configured OAuth provider directly. If a provider is not enabled in Supabase, BIXBO will show the provider error here.")}
           </p>
         </Section>
+
+        <PrivacyLegalControls
+          analytics={privacyPrefs.analytics}
+          onAnalyticsChange={(analytics) => setPrivacyPrefs((current) => ({ ...current, analytics }))}
+        />
 
       </HealthSubpage>
     );

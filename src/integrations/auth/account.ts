@@ -12,8 +12,7 @@ export const PRODUCTION_APP_ORIGIN = "https://bixbo.z8drwn9rpn.workers.dev";
 export function oauthReturnUrlForLocation(hostname: string, origin: string): string {
   const normalizedHost = hostname.trim().toLowerCase();
   const isLocal = normalizedHost === "localhost" || normalizedHost === "127.0.0.1" || normalizedHost === "[::1]";
-  const isLovablePreview = normalizedHost === "bixbo.lovable.app" || normalizedHost.endsWith(".lovable.app");
-  if (isLocal || isLovablePreview) return PRODUCTION_APP_ORIGIN;
+  if (isLocal) return PRODUCTION_APP_ORIGIN;
   return origin || PRODUCTION_APP_ORIGIN;
 }
 
