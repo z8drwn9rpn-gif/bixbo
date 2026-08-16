@@ -17,6 +17,8 @@ export type ReportDaySummary = {
   sleep?: number;
 };
 
+export type ReportNotesInput = DayNote[] | string[] | string | undefined;
+
 function finiteNumbers(values: unknown[]): number[] {
   return values
     .map((value) => Number(value))
@@ -28,10 +30,12 @@ function maxOrUndefined(values: unknown[]): number | undefined {
   return numbers.length ? Math.max(...numbers) : undefined;
 }
 
-export function reportNoteTexts(raw: DayNote[] | string | undefined): string[] {
+export function reportNoteTexts(raw: ReportNotesInput): string[] {
   if (!raw) return [];
   if (typeof raw === "string") return raw.trim() ? [raw.trim()] : [];
-  return raw.map((note) => note.text?.trim()).filter((text): text is string => Boolean(text));
+  return raw
+    .map((note) => (typeof note === "string" ? note : note.text)?.trim())
+    .filter((text): text is string => Boolean(text));
 }
 
 /**
@@ -48,7 +52,7 @@ export function reportNoteTexts(raw: DayNote[] | string | undefined): string[] {
 export function summarizeReportDay(
   key: string,
   log: DayLog,
-  rawNotes?: DayNote[] | string,
+  rawNotes?: ReportNotesInput,
 ): ReportDaySummary {
   const painEntries = log.pain ?? [];
   const bowel = log.bowel ?? [];
