@@ -7,6 +7,7 @@ import { countNoBowelMovements } from "@/lib/domain/bowel";
 import { layoutOrder } from "@/lib/layoutRegistry";
 import { EMPTY, avgDayPain, toKey, useBixbo } from "@/lib/storage";
 import { BristolChart, HfBars, PainChart } from "@/features/insights/charts";
+import { BowelTimelineChart } from "@/features/insights/BowelTimelineChart";
 import { MedsAdherence } from "@/features/insights/MedsAdherence";
 import { TimeOfDayPatternChart } from "@/features/insights/TimeOfDayPatternChart";
 import { YearHealthHeatmap } from "@/features/insights/YearHealthHeatmap";
@@ -148,6 +149,9 @@ function InsightsPage() {
         {hfTotal ? <><div className="mt-2 flex items-baseline gap-2"><span className="font-serif text-4xl leading-none">{hfTotal}</span><span className="text-sm text-muted-foreground">{hfTotal === 1 ? "episode" : "episodes"} · avg {hfAvg!.toFixed(1)}/5 · most often L{hfTop}</span></div><HfBars key={`hot-flashes-${hotFlashPeriod}-${toKey(hotFlashAnchor)}`} bars={hfBars} period={hotFlashPeriod} days={hotFlashDays} anchor={hotFlashAnchor} /><div className="mt-3 space-y-1">{[1, 2, 3, 4, 5].map((level) => { const count = hfCounts[level]; const pct = hfTotal ? (count / hfTotal) * 100 : 0; const color = HOT_FLASH_COLORS[level]; return <div key={level} className="flex items-center gap-2 text-[10px]"><span className="grid h-4 w-4 shrink-0 place-items-center rounded-full text-[10px] font-bold text-white" style={{ background: color }}>{level}</span><span className="w-16 shrink-0 text-muted-foreground">{HOT_FLASH_DESCRIPTIONS[level]}</span><div className="h-2 flex-1 overflow-hidden rounded-full bg-tint"><div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} /></div><span className="w-6 text-right tabular-nums text-muted-foreground">{count}</span></div>; })}</div></> : <p className="mt-2 text-sm text-muted-foreground">{t("No hot flashes logged")}</p>}
       </section>
 
+      <div className={insightsFilter === "all" || insightsFilter === "bowel" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "bowel", 40) }}>
+        <BowelTimelineChart days={bowelDays} dayLogs={view.dayLogs} period={bowelPeriod} anchor={bowelAnchor} noBowelMovementCount={noBowelMovementCount} onPeriodChange={setBowelPeriod} onPeriodShift={(delta) => setBowelAnchor((current) => shiftInsightPeriodAnchor(current, bowelPeriod, delta))} />
+      </div>
       <div className={insightsFilter === "all" || insightsFilter === "bowel" ? "" : "hidden"} style={{ order: layoutOrder(view, "insights", "bowel", 40) }}>
         <BristolChart bowelCounts={bowelCounts} noBowelMovementCount={noBowelMovementCount} period={bowelPeriod} anchor={bowelAnchor} onPeriodChange={setBowelPeriod} onPeriodShift={(delta) => setBowelAnchor((current) => shiftInsightPeriodAnchor(current, bowelPeriod, delta))} />
       </div>
