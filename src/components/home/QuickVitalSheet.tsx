@@ -38,6 +38,7 @@ export function QuickVitalSheet({ open, onOpenChange, metric, date, data, update
   const meta = META[metric];
   const [targetDate, setTargetDate] = useState(date);
   const [value, setValue] = useState(() => valueFor(metric, data.dayLogs, date));
+  const [keyboardInset, setKeyboardInset] = useState(0);
   const sourceDateValue = valueFor(metric, data.dayLogs, date);
   const targetDateValue = valueFor(metric, data.dayLogs, targetDate);
 
@@ -51,6 +52,28 @@ export function QuickVitalSheet({ open, onOpenChange, metric, date, data, update
     if (!open) return;
     setValue(targetDateValue);
   }, [metric, open, targetDate, targetDateValue]);
+
+  useEffect(() => {
+    if (!open || typeof window === "undefined" || !window.visualViewport) {
+      setKeyboardInset(0);
+      return;
+    }
+
+    const viewport = window.visualViewport;
+    const syncKeyboardInset = () => {
+      const inset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
+      setKeyboardInset(inset > 80 ? Math.round(inset) : 0);
+    };
+
+    syncKeyboardInset();
+    viewport.addEventListener("resize", syncKeyboardInset);
+    viewport.addEventListener("scroll", syncKeyboardInset);
+    return () => {
+      viewport.removeEventListener("resize", syncKeyboardInset);
+      viewport.removeEventListener("scroll", syncKeyboardInset);
+      setKeyboardInset(0);
+    };
+  }, [open]);
 
   const dateLabel = useMemo(
     () => new Date(`${targetDate}T12:00:00`).toLocaleDateString(language === "sk" ? "sk-SK" : "en-GB", { day: "numeric", month: "short", year: "numeric" }),
@@ -86,7 +109,8 @@ export function QuickVitalSheet({ open, onOpenChange, metric, date, data, update
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="left-1/2 right-auto w-[calc(100%-24px)] max-w-md -translate-x-1/2 rounded-t-[28px] border border-border/70 bg-background px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-2 shadow-2xl"
+        style={{ bottom: keyboardInset ? `${keyboardInset}px` : undefined }}
+        className="left-1/2 right-auto w-[calc(100%-24px)] max-w-md -translate-x-1/2 overflow-x-hidden rounded-t-[28px] border border-border/70 bg-background px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-2 shadow-2xl transition-[bottom] duration-150 [&>button.absolute]:hidden"
       >
         <div className="mx-auto mb-2 h-1 w-9 rounded-full bg-border" />
         <SheetHeader className="flex-row items-center justify-between space-y-0 px-1 py-1">
@@ -102,22 +126,27 @@ export function QuickVitalSheet({ open, onOpenChange, metric, date, data, update
           </button>
         </SheetHeader>
 
-        <div className="mt-3 space-y-3">
-          <label className="block">
+        <div className="mt-3 min-w-0 space-y-3">
+          <label className="block min-w-0">
             <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">{t("Date")}</span>
-            <Input type="date" value={targetDate} onChange={(event) => event.target.value && setTargetDate(event.target.value)} className="h-10 rounded-2xl bg-surface text-sm font-semibold" />
+            <Input
+              type="date"
+              value={targetDate}
+              onChange={(event) => event.target.value && setTargetDate(event.target.value)}
+              className="box-border h-10 w-full min-w-0 max-w-full rounded-2xl bg-surface px-3 text-sm font-semibold"
+            />
           </label>
 
-          <label className="block">
+          <label className="block min-w-0">
             <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">{t(meta.label)}</span>
-            <div className="relative">
+            <div className="relative min-w-0">
               <Input
                 inputMode="decimal"
+                enterKeyHint="done"
                 value={value}
                 onChange={(event) => setValue(event.target.value.replace(/[^0-9.,]/g, ""))}
                 placeholder={meta.placeholder}
-                className="h-11 rounded-2xl bg-surface pr-12 text-base font-semibold"
-                autoFocus
+                className="box-border h-11 w-full min-w-0 max-w-full rounded-2xl bg-surface pr-12 text-base font-semibold"
               />
               <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">{meta.unit}</span>
             </div>
