@@ -84,6 +84,7 @@ function iconForAssociation(label: string) {
   if (value.includes("period")) return "🫐";
   if (value.includes("headache")) return "🧠";
   if (value.includes("pressure")) return "💢";
+  if (value.includes("hot flash")) return "🌡️";
   if (value.includes("med") || value.includes("dose")) return "💊";
   return "✨";
 }
@@ -91,6 +92,12 @@ function iconForAssociation(label: string) {
 function iconForTrigger(label: string) {
   const value = label.toLowerCase();
   if (value.includes("caffeine") || value.includes("coffee")) return "☕";
+  if (value.includes("panic")) return "✨";
+  if (value.includes("tetany")) return "⚡";
+  if (value.includes("headache")) return "🧠";
+  if (value.includes("pressure")) return "💢";
+  if (value.includes("hot flash")) return "🌡️";
+  if (value.includes("pain")) return "🔥";
   if (value.includes("period") || value.includes("bleed") || value.includes("flow")) return "🫐";
   if (value.includes("workout") || value.includes("exercise")) return "👟";
   if (value.includes("histamine")) return "🌶️";
@@ -132,8 +139,9 @@ function TriggerGauge({ label, detail, percentage, color }: { label: string; det
   const pct = percentage == null ? 0 : clampPercent(percentage);
   const headline = percentage == null ? "—" : `${percentage.toFixed(0)}%`;
   const bottomDisplay = `${pct.toFixed(0)}%`;
-  const fillHeight = pct === 0 ? 4 : Math.max(8, pct * 0.78);
-  return <div className="rounded-2xl bg-tint/48 px-2.5 py-2.5 text-center ring-1 ring-border/45"><p className="text-[11px] font-semibold" style={{ color }}>{label}</p><p className="mt-0.5 text-[22px] font-bold tabular-nums text-foreground">{headline}</p><div className="relative mx-auto mt-1.5 h-24 w-[64px]"><div className="absolute inset-x-1.5 bottom-1 top-1 rounded-[28px] border border-border/55 bg-gradient-to-r from-background/65 via-white/88 to-background/55 shadow-[inset_3px_0_7px_rgba(80,75,55,.08),inset_-3px_0_7px_rgba(80,75,55,.08),0_4px_9px_rgba(45,52,35,.10)]"><span className="absolute inset-x-1 top-1 h-3 rounded-[50%] border border-border/45 bg-white/75" /><span className="absolute inset-x-1 bottom-1 h-3 rounded-[50%] border border-border/40 bg-background/70" /><span data-bixbo-chart-mark="bar" title={`${label}: ${bottomDisplay}`} className="absolute inset-x-1.5 bottom-2 rounded-b-[22px]" style={{ height: `${fillHeight}%`, background: color, filter: "saturate(1.7) contrast(1.1)", boxShadow: "inset 3px 0 5px rgba(255,255,255,.25), inset -3px 0 5px rgba(40,35,20,.18), 0 2px 5px rgba(45,52,35,.16)" }}><span className="absolute -top-1 left-0 right-0 h-2.5 rounded-[50%]" style={{ background: color, boxShadow: "inset 0 2px 2px rgba(255,255,255,.42), 0 1px 2px rgba(40,35,20,.22)" }} /></span></div></div><p className="mt-0.5 text-[10px] font-semibold tabular-nums" style={{ color }}>{bottomDisplay}</p><p className="mt-0.5 text-[9px] text-muted-foreground">{detail}</p></div>;
+  const fillHeight = pct === 0 ? 4 : Math.max(8, Math.min(68, (pct / 100) * 68));
+  const fillY = 80 - fillHeight;
+  return <div className="rounded-2xl bg-tint/48 px-2.5 py-2.5 text-center ring-1 ring-border/45"><p className="text-[11px] font-semibold" style={{ color }}>{label}</p><p className="mt-0.5 text-[22px] font-bold tabular-nums text-foreground">{headline}</p><svg className="mx-auto mt-1.5 h-24 w-[64px]" viewBox="0 0 64 96" role="img" aria-label={`${label}: ${bottomDisplay}`}><ellipse cx="32" cy="89" rx="20" ry="4" fill="#263318" opacity="0.1"/><rect x="10" y="8" width="44" height="76" rx="20" fill="#fff" fillOpacity="0.58" stroke="#d9dccd" strokeWidth="1.4"/><rect data-bixbo-chart-mark="bar" x="12" y={fillY} width="40" height={fillHeight} rx="4" fill={color} style={{ filter: "saturate(1.7) contrast(1.08)" }}><title>{`${label}: ${bottomDisplay}`}</title></rect><ellipse cx="32" cy={fillY} rx="20" ry="5" fill={color} style={{ filter: "saturate(1.75) contrast(1.08)" }}/><ellipse cx="32" cy="13" rx="19" ry="5" fill="#fff" fillOpacity="0.72" stroke="#e2e4d9" strokeWidth="1.1"/><path d="M17 19v50" stroke="#fff" strokeWidth="3" strokeLinecap="round" opacity="0.52"/><path d="M49 21v48" stroke="#89917a" strokeWidth="1.5" strokeLinecap="round" opacity="0.12"/></svg><p className="mt-0.5 text-[10px] font-semibold tabular-nums" style={{ color }}>{bottomDisplay}</p><p className="mt-0.5 text-[9px] text-muted-foreground">{detail}</p></div>;
 }
 
 function SummaryItem({ icon, star, label, value, tone = "neutral" }: { icon?: string; star?: boolean; label: string; value: string; tone?: Tone }) {
