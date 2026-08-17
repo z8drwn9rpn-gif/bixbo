@@ -18,6 +18,12 @@ describe("Insights Recover & body", () => {
     expect(card).toContain('{ key: "weight", label: t("Weight") }');
     expect(card).toContain('{ key: "temperature", label: t("Body temperature") }');
     expect(card).toContain('data-bixbo-chart-mark="bar"');
+    expect(card).toContain('data-bixbo-chart-mark="point"');
+    expect(card).toContain('useDismissTapTooltip');
+    expect(card).toContain('InsightFloatingTooltip');
+    expect((card.match(/<InsightFloatingTooltip/g) ?? []).length).toBeGreaterThanOrEqual(2);
+    expect(card).toContain('value: `${activePoint.value.toFixed(1)} h sleep`');
+    expect(card).toContain('const metricLabel = metric === "weight" ? "Weight" : "Body temperature";');
     expect(card).toContain('filter: "saturate(1.5) contrast(1.08)"');
     expect(card).toContain('<LineChart metric="weight" points={weightPoints} color={WEIGHT_COLOR} />');
     expect(card).toContain('<LineChart metric="temperature" points={temperaturePoints} color={TEMPERATURE_COLOR} />');
