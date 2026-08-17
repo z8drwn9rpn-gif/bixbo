@@ -4,6 +4,11 @@ import { Bell } from "@/components/icons/BixboExtraIcons";
 
 import { useBixbo } from "@/lib/storage";
 import { useSession } from "@/lib/cloudSync";
+import {
+  CLOUD_HEALTH_CONSENT_CHANGED_EVENT,
+  cloudHealthConsentState,
+  localCloudHealthConsentWithdrawn,
+} from "@/lib/legalConsent";
 import { enableRemotePush, shouldAskForPermission, snoozePermissionPrompt } from "@/lib/notifications";
 
 /**
@@ -14,16 +19,42 @@ export function NotificationPrompt() {
   const { data, hydrated } = useBixbo();
   const { session, ready } = useSession();
   const [visible, setVisible] = useState(false);
+  const [consentActive, setConsentActive] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!hydrated || !ready || !session) {
+    let cancelled = false;
+
+    const refreshConsent = async () => {
+      if (!ready || !session || localCloudHealthConsentWithdrawn()) {
+        if (!cancelled) setConsentActive(false);
+        return;
+      }
+      try {
+        const state = await cloudHealthConsentState();
+        if (!cancelled) setConsentActive(state === "active");
+      } catch {
+        if (!cancelled) setConsentActive(false);
+      }
+    };
+
+    void refreshConsent();
+    const onConsentChanged = () => void refreshConsent();
+    window.addEventListener(CLOUD_HEALTH_CONSENT_CHANGED_EVENT, onConsentChanged);
+    return () => {
+      cancelled = true;
+      window.removeEventListener(CLOUD_HEALTH_CONSENT_CHANGED_EVENT, onConsentChanged);
+    };
+  }, [ready, session]);
+
+  useEffect(() => {
+    if (!hydrated || !ready || !session || !consentActive) {
       setVisible(false);
       return;
     }
     setVisible(shouldAskForPermission(data));
-  }, [hydrated, ready, session, data]);
+  }, [hydrated, ready, session, consentActive, data]);
 
   if (!visible) return null;
 
@@ -31,6 +62,11 @@ export function NotificationPrompt() {
     setBusy(true);
     setError(null);
     try {
+      if ((await cloudHealthConsentState()) !== "active") {
+        setConsentActive(false);
+        setVisible(false);
+        return;
+      }
       await enableRemotePush();
       setVisible(false);
     } catch (cause) {
