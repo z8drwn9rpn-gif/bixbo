@@ -1,8 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { DiagnosticProfiler } from "@/components/DiagnosticProfiler";
-import { PatternsContent } from "./patterns";
 import { useI18n } from "@/hooks/useI18n";
 import { countNoBowelMovements } from "@/lib/domain/bowel";
 import { layoutOrder } from "@/lib/layoutRegistry";
@@ -24,6 +23,10 @@ import {
   type HeatmapPeriod,
   type Period,
 } from "@/features/insights/shared";
+
+const LazyPatternsContent = lazy(() =>
+  import("@/features/patterns/PatternsContent").then((module) => ({ default: module.PatternsContent })),
+);
 
 export const Route = createFileRoute("/insights")({
   head: () => ({
@@ -89,7 +92,7 @@ function InsightsPage() {
       </div>
     </div>
 
-    {overviewView === "patterns" ? <DiagnosticProfiler id="PatternsContent"><PatternsContent /></DiagnosticProfiler> : <div id="bixbo-insights-content" data-bixbo-insights-dashboard="true" className="flex flex-col gap-3 px-5 pt-2 pb-[calc(96px+env(safe-area-inset-bottom))] lg:grid lg:grid-cols-2 lg:items-start lg:px-0 lg:pb-12">
+    {overviewView === "patterns" ? <Suspense fallback={<div className="px-5 py-6 text-sm text-muted-foreground lg:px-0">Loading patterns…</div>}><DiagnosticProfiler id="PatternsContent"><LazyPatternsContent /></DiagnosticProfiler></Suspense> : <div id="bixbo-insights-content" data-bixbo-insights-dashboard="true" className="flex flex-col gap-3 px-5 pt-2 pb-[calc(96px+env(safe-area-inset-bottom))] lg:grid lg:grid-cols-2 lg:items-start lg:px-0 lg:pb-12">
       <InsightsJumpControl refreshKey="insights" />
 
       <div data-bixbo-jump-label={t("Overview")} className="lg:col-span-2" style={{ order: layoutOrder(view, "insights", "heatmap", 10) }}>
