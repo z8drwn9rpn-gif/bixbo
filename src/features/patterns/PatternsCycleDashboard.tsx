@@ -1,5 +1,4 @@
 import { Ico } from "@/components/icons/BixboExtraIcons";
-import { CHART_COLORS } from "@/components/ui/chart";
 import { layoutOrder } from "@/lib/layoutRegistry";
 import { phaseFlowMode } from "@/lib/patterns";
 import type { PatternsContentModel } from "./usePatternsContentModel";
@@ -53,15 +52,19 @@ function highestIndex(values: PhaseValue[]) {
   return winner;
 }
 
+function FlowIcon({ size = 18 }: { size?: number }) {
+  return <Ico name="drop" size={size} />;
+}
+
 function PhasePainCard({ phase, value, flow, index }: { phase: string; value: number | null; flow: string; index: number }) {
   const palette = PHASE_COLORS[index] ?? PHASE_COLORS[0];
   const percentage = value == null ? 0 : clampPercent((Math.max(0, value) / 10) * 100);
 
   return (
     <div
-      className={`min-w-0 rounded-2xl bg-background/65 px-2.5 py-3 text-center ring-1 ${index === 1 ? "ring-rose-400/65 shadow-sm" : "ring-border/55"}`}
+      className={`min-w-0 rounded-2xl bg-background/65 px-2 py-3 text-center ring-1 ${index === 1 ? "ring-rose-400/65 shadow-sm" : "ring-border/55"}`}
     >
-      <p className="truncate text-[10px] font-bold uppercase tracking-[0.08em]" style={{ color: palette.solid }}>
+      <p className="text-[10px] font-bold uppercase tracking-[0.06em]" style={{ color: palette.solid }}>
         {phase}
       </p>
       <p className="mt-1 whitespace-nowrap text-[22px] font-bold leading-none tabular-nums text-foreground">
@@ -78,16 +81,18 @@ function PhasePainCard({ phase, value, flow, index }: { phase: string; value: nu
             style={{
               height: value == null ? "3px" : `${Math.max(8, percentage * factor * 0.58)}px`,
               background: palette.solid,
+              boxShadow: "inset 1px 1px 2px rgba(255,255,255,.5), inset -1px -2px 2px rgba(40,35,20,.16), 0 2px 4px rgba(45,52,35,.12)",
+              filter: "saturate(1.38) contrast(1.05)",
             }}
           />
         ))}
       </div>
 
-      <div className="mt-2 flex min-h-9 items-center justify-center gap-1.5">
-        <Ico e="💧" size={17} />
+      <div className="mt-2 flex min-h-10 items-center justify-center gap-1.5">
+        <FlowIcon size={18} />
         <div className="min-w-0 text-left">
           <p className="text-[9px] leading-none text-muted-foreground">Flow</p>
-          <p className="mt-1 truncate text-[10px] font-semibold leading-none text-foreground">
+          <p className="mt-1 break-words text-[10px] font-semibold leading-[1.05] text-foreground">
             <TrText value={flow} />
           </p>
         </div>
@@ -96,13 +101,13 @@ function PhasePainCard({ phase, value, flow, index }: { phase: string; value: nu
   );
 }
 
-function QuickItem({ icon, label, value }: { icon: string; label: string; value: string }) {
+function QuickItem({ icon, redDrop, label, value }: { icon?: string; redDrop?: boolean; label: string; value: string }) {
   return (
     <div className="flex min-w-0 items-center gap-2 px-1">
-      <Ico e={icon} size={25} />
-      <div className="min-w-0">
+      {redDrop ? <FlowIcon size={25} /> : <Ico e={icon} size={25} />}
+      <div className="min-w-0 flex-1">
         <p className="text-[10px] leading-tight text-muted-foreground">{label}</p>
-        <p className="mt-0.5 truncate text-[11px] font-semibold leading-tight text-foreground">
+        <p className="mt-0.5 break-words text-[11px] font-semibold leading-tight text-foreground">
           <TrText value={value} />
         </p>
       </div>
@@ -126,7 +131,8 @@ function MetricPhaseCell({ value, max, decimals, unit, index, highlight }: { val
           style={{
             width: value == null ? "0%" : `${Math.max(percentage, value === 0 ? 0 : 7)}%`,
             background: palette.solid,
-            filter: "saturate(1.28) contrast(1.04)",
+            filter: "saturate(1.4) contrast(1.06)",
+            boxShadow: "inset 0 1px 1px rgba(255,255,255,.55), 0 1px 3px rgba(45,52,35,.14)",
           }}
         />
       </div>
@@ -161,21 +167,34 @@ function BodyMetricRow({ metric }: { metric: BodyMetric }) {
   );
 }
 
-function SummaryTile({ icon, label, value, tone }: { icon: string; label: string; value: string; tone: "rose" | "purple" | "green" }) {
+function SummaryTile({
+  icon,
+  redDrop,
+  label,
+  value,
+  meta,
+  tone,
+}: {
+  icon?: string;
+  redDrop?: boolean;
+  label: string;
+  value: string;
+  meta?: string;
+  tone: "rose" | "purple" | "green";
+}) {
   const backgrounds = {
     rose: "bg-rose-500/10 ring-rose-500/15",
     purple: "bg-violet-500/10 ring-violet-500/15",
     green: "bg-emerald-500/10 ring-emerald-500/15",
   } as const;
   return (
-    <div className={`min-w-0 rounded-2xl px-2.5 py-3 ring-1 ${backgrounds[tone]}`}>
-      <div className="flex items-start gap-2">
-        <Ico e={icon} size={27} />
-        <div className="min-w-0">
+    <div className={`min-w-0 rounded-2xl px-2 py-3 ring-1 ${backgrounds[tone]}`}>
+      <div className="flex items-start gap-1.5">
+        {redDrop ? <FlowIcon size={27} /> : <Ico e={icon} size={27} />}
+        <div className="min-w-0 flex-1">
           <p className="text-[9px] leading-tight text-muted-foreground">{label}</p>
-          <p className="mt-1 text-[11px] font-semibold leading-tight text-foreground">
-            <TrText value={value} />
-          </p>
+          <p className="mt-1 text-[11px] font-semibold leading-tight text-foreground"><TrText value={value} /></p>
+          {meta ? <p className="mt-0.5 whitespace-nowrap text-[10px] font-semibold leading-tight text-foreground">{meta}</p> : null}
         </div>
       </div>
     </div>
@@ -213,8 +232,8 @@ export function PatternsCycleDashboard({ model }: { model: PatternsContentModel 
     { label: t("Negative mood"), detail: t("tags/day"), icon: "🙁", values: moodPhaseBars, max: 3, decimals: 1, unit: "", unitLabel: t("count") },
     { label: t("Energy"), detail: "0–5", icon: "⚡", values: energyPhaseBars, max: 5, decimals: 1, unit: "/5", unitLabel: t("score") },
     { label: t("Hot flashes"), detail: "0–5", icon: "🌡️", values: hotFlashPhaseBars, max: 5, decimals: 1, unit: "/5", unitLabel: t("score") },
-    { label: t("Pressure intensity"), detail: "0–10", icon: "❤️", values: pressurePhaseBars, max: 10, decimals: 1, unit: "/10", unitLabel: "0–10" },
-    { label: t("Bowel symptoms"), detail: t("per day"), icon: "🌀", values: bowelPhaseBars, max: 3, decimals: 1, unit: "", unitLabel: t("count") },
+    { label: t("Pressure intensity"), detail: "0–10", icon: "◌", values: pressurePhaseBars, max: 10, decimals: 1, unit: "/10", unitLabel: "0–10" },
+    { label: t("Bowel symptoms"), detail: t("per day"), icon: "💩", values: bowelPhaseBars, max: 3, decimals: 1, unit: "", unitLabel: t("count") },
   ];
 
   const bestEnergyValue = energyPhaseBars.find((item) => item.label === bestEnergyPhase)?.value ?? null;
@@ -228,17 +247,17 @@ export function PatternsCycleDashboard({ model }: { model: PatternsContentModel 
         style={{ order: layoutOrder(view, "patterns.cycle", "painFlow", 10) }}
         className="overflow-hidden rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80 lg:col-span-2"
       >
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-semibold text-foreground">{t("Pain & flow")}</h2>
-            <p className="mt-0.5 text-xs text-muted-foreground">{t("Average pain intensity (0–10)")}</p>
-          </div>
-          <Ico e="ℹ️" size={25} />
+        <div>
+          <h2 className="text-sm font-semibold text-foreground">{t("Pain & flow")}</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">{t("Average pain intensity (0–10)")}</p>
         </div>
 
         <div className="mt-4 grid grid-cols-[98px_minmax(0,1fr)] gap-2.5 sm:grid-cols-[120px_minmax(0,1fr)]">
           <div className="flex min-w-0 flex-col justify-center rounded-2xl bg-tint/35 px-3 py-4 ring-1 ring-border/45">
-            <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-primary">{t("Average pain")}</p>
+            <div className="flex items-center gap-1.5">
+              <Ico e="🔥" size={22} />
+              <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-primary">{t("Average pain")}</p>
+            </div>
             <div className="mt-2 flex items-baseline gap-0.5">
               <span className="font-serif text-4xl leading-none text-foreground">{averagePain == null ? "—" : averagePain.toFixed(1)}</span>
               <span className="text-sm font-semibold text-foreground">/10</span>
@@ -268,9 +287,9 @@ export function PatternsCycleDashboard({ model }: { model: PatternsContentModel 
             <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">{t("Quick insights")}</p>
           </div>
           <div className="mt-2 grid grid-cols-3 divide-x divide-border/50">
-            <QuickItem icon="❤️" label={t("Highest pain")} value={highestPainPhase} />
+            <QuickItem icon="🔥" label={t("Highest pain")} value={highestPainPhase} />
             <QuickItem icon="⚡" label={t("Best energy")} value={bestEnergyPhase} />
-            <QuickItem icon="💧" label={t("Most common flow")} value={commonFlowLabel} />
+            <QuickItem redDrop label={t("Most common flow")} value={commonFlowLabel} />
           </div>
         </div>
       </section>
@@ -303,18 +322,20 @@ export function PatternsCycleDashboard({ model }: { model: PatternsContentModel 
             <h2 className="text-sm font-semibold text-foreground">{t("Cycle summary")}</h2>
             <div className="mt-2.5 grid grid-cols-3 gap-2">
               <SummaryTile
-                icon="❤️"
+                icon="🔥"
                 label={t("Highest pain")}
-                value={`${highestPainPhase}${highestPainValue == null ? "" : ` (${highestPainValue.toFixed(1)}/10)`}`}
+                value={highestPainPhase}
+                meta={highestPainValue == null ? undefined : `(${highestPainValue.toFixed(1)}/10)`}
                 tone="rose"
               />
               <SummaryTile
                 icon="⚡"
                 label={t("Best energy")}
-                value={`${bestEnergyPhase}${bestEnergyValue == null ? "" : ` (${bestEnergyValue.toFixed(1)}/5)`}`}
+                value={bestEnergyPhase}
+                meta={bestEnergyValue == null ? undefined : `(${bestEnergyValue.toFixed(1)}/5)`}
                 tone="purple"
               />
-              <SummaryTile icon="💧" label={t("Most common flow")} value={commonFlowLabel} tone="green" />
+              <SummaryTile redDrop label={t("Most common flow")} value={commonFlowLabel} tone="green" />
             </div>
           </div>
         </div>
