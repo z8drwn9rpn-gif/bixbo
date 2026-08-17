@@ -24,4 +24,25 @@ describe("partner pairing consent hardening", () => {
     expect(migration).toContain("revoke all on function public.link_partner_by_code(text) from public, anon");
     expect(migration).toContain("grant execute on function public.link_partner_by_code(text) to authenticated, service_role");
   });
+
+  it("uses pgcrypto entropy without modulo bias for future pairing codes", () => {
+    const migration = read("supabase/migrations/20260817051436_use_crypto_pairing_code_generation.sql");
+
+    expect(migration).toContain("extensions.gen_random_bytes(1)");
+    expect(migration).toContain("if b < 248 then");
+    expect(migration).toContain("b % 31");
+    expect(migration).not.toContain("random()");
+    expect(migration).toContain("revoke all on function public.gen_pairing_code() from public, anon");
+  });
+
+  it("keeps a linked partner from reading another account's pairing secret", () => {
+    const migration = read("supabase/migrations/20260817051839_protect_pairing_code_from_linked_profiles.sql");
+
+    expect(migration).toContain("partner.pairing_code := ''");
+    expect(migration).toContain("revoke select, insert, update, delete on public.profiles from authenticated");
+    expect(migration).toContain("grant select (id, display_name, gender, created_at) on public.profiles to authenticated");
+    expect(migration).toContain("grant update (display_name, gender) on public.profiles to authenticated");
+    expect(migration).toContain("private.ensure_profile_impl");
+    expect(migration).toContain("security invoker");
+  });
 });

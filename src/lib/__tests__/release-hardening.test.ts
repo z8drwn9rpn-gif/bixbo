@@ -56,6 +56,22 @@ describe("release hardening contracts", () => {
     expect(migration.match(/create policy/g)).toHaveLength(4);
   });
 
+  it("hides partner links unless both linked users have current health consent", () => {
+    const migration = read("supabase/migrations/20260817051038_hide_partner_links_without_current_consent.sql");
+    expect(migration).toContain('create policy "Users see own partner link"');
+    expect(migration).toContain("private.bixbo_health_consent_active(a)");
+    expect(migration).toContain("private.bixbo_health_consent_active(b)");
+  });
+
+  it("keeps client-only infrastructure tables explicitly deny-all", () => {
+    const migration = read("supabase/migrations/20260817051146_explicit_deny_client_only_tables.sql");
+    expect(migration).toContain('"Deny client access to service config"');
+    expect(migration).toContain('"Deny client access to push delivery log"');
+    expect(migration.match(/as restrictive/g)).toHaveLength(2);
+    expect(migration.match(/using \(false\)/g)).toHaveLength(2);
+    expect(migration.match(/with check \(false\)/g)).toHaveLength(2);
+  });
+
   it("keeps withdrawn consent authoritative and legal audit writes server-side", () => {
     const source = read("src/lib/legalConsent.ts");
     const existingStateCheck = source.indexOf('.select("onboarding_completed_at,health_consent_withdrawn_at")');
