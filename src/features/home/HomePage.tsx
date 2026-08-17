@@ -9,6 +9,7 @@ import { monthLabel } from "@/components/MonthCalendar";
 import { EditableMonthCalendar } from "@/components/EditableMonthCalendar";
 import { LogSheet } from "@/components/LogSheet";
 import { QuickTags } from "@/components/QuickTags";
+import { QuickVitalSheet, type QuickVitalMetric } from "@/components/home/QuickVitalSheet";
 import { useI18n } from "@/hooks/useI18n";
 import {
   EMPTY,
@@ -33,20 +34,8 @@ import { EpisodePainEditSheet, type EpisodeEditTarget } from "@/features/home/Ep
 function ProfileCardIcon({ size = 14 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" fill="none" aria-hidden="true">
-      <path
-        d="M11 12c0-3 2.2-5 5-5s5 2 5 5"
-        stroke="currentColor"
-        strokeWidth="1.65"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M8.5 24c.8-4.8 3.4-7 7.5-7s6.7 2.2 7.5 7"
-        stroke="currentColor"
-        strokeWidth="1.65"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <path d="M11 12c0-3 2.2-5 5-5s5 2 5 5" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8.5 24c.8-4.8 3.4-7 7.5-7s6.7 2.2 7.5 7" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -65,6 +54,7 @@ export function HomePage() {
   const [summaryMode, setSummaryMode] = useState<"today" | "month">("today");
   const [summaryMonth, setSummaryMonth] = useState<Date | null>(null);
   const [quickCat, setQuickCat] = useState<string | undefined>();
+  const [quickVital, setQuickVital] = useState<QuickVitalMetric | null>(null);
   const [editPain, setEditPain] = useState<import("@/lib/storage").PainEntry | undefined>();
   const [editEntry, setEditEntry] = useState<unknown>(undefined);
   const [episodeEdit, setEpisodeEdit] = useState<EpisodeEditTarget | null>(null);
@@ -105,6 +95,10 @@ export function HomePage() {
     setLogOpen(true);
   };
 
+  const openQuickVital = (metric: QuickVitalMetric) => {
+    setQuickVital(metric);
+  };
+
   const pastQuickTagCategory = (key: string): string | undefined => {
     if (key.startsWith("pain-")) return "pain";
     if (key === "tet-episode") return "tetany";
@@ -122,10 +116,6 @@ export function HomePage() {
     const button = target.closest<HTMLButtonElement>("button[data-bixbo-quick-tag]");
     if (!button) return;
 
-    // QuickTags' one-tap implementation intentionally targets today. On a past
-    // selected calendar day, stop that write and open the date-bound detailed
-    // logger instead. Unknown/custom shortcuts fall back to the selected-day
-    // logger menu so they can never silently write into today.
     event.preventDefault();
     event.stopPropagation();
     openDateBoundCategory(pastQuickTagCategory(button.dataset.bixboQuickTag ?? ""));
@@ -206,9 +196,9 @@ export function HomePage() {
 
         <div className="mt-3 grid grid-cols-5 gap-2 px-5 lg:grid-cols-4 lg:px-1" style={{ order: layoutOrder(view, "home", "vitals", 60) }}>
           <div className="col-span-2 lg:col-span-1"><MedsProgress data={view} onClick={() => openDateBoundCategory("meds")} /></div>
-          <VitalTile emoji="😴" label="Sleep" value={view.dayLogs[selected]?.sleepHours != null ? String(view.dayLogs[selected]!.sleepHours) : "—"} onClick={() => openDateBoundCategory("temp")} />
-          <VitalTile emoji="🌡️" label="Temp" value={view.dayLogs[selected]?.temperature != null ? String(view.dayLogs[selected]!.temperature) : "—"} onClick={() => openDateBoundCategory("temp")} />
-          <VitalTile emoji="⚖️" label="Weight" value={view.dayLogs[selected]?.weight != null ? String(view.dayLogs[selected]!.weight) : "—"} onClick={() => openDateBoundCategory("temp")} />
+          <VitalTile emoji="😴" label="Sleep" value={view.dayLogs[selected]?.sleepHours != null ? String(view.dayLogs[selected]!.sleepHours) : "—"} onClick={() => openQuickVital("sleep")} />
+          <VitalTile emoji="🌡️" label="Temp" value={view.dayLogs[selected]?.temperature != null ? String(view.dayLogs[selected]!.temperature) : "—"} onClick={() => openQuickVital("temperature")} />
+          <VitalTile emoji="⚖️" label="Weight" value={view.dayLogs[selected]?.weight != null ? String(view.dayLogs[selected]!.weight) : "—"} onClick={() => openQuickVital("weight")} />
         </div>
 
         <div onPointerUpCapture={interceptPastQuickLog} style={{ order: layoutOrder(view, "home", "quickLog", 70) }} className="px-5 lg:mt-2 lg:px-1 [&_p.text-\[11px\].uppercase]:min-w-0 [&_p.text-\[11px\].uppercase]:flex-1 [&_p.text-\[11px\].uppercase]:truncate [&_p.text-\[11px\].uppercase]:text-[10px] [&_.mt-1.flex.flex-wrap.gap-1]:hidden">
@@ -233,6 +223,7 @@ export function HomePage() {
     {todayOpen && <HomeSummaryOverlay data={view} initialMode={summaryMode} initialMonth={summaryMonth ?? undefined} onClose={() => setTodayOpen(false)} onOpenCalendar={(dateKey) => { setSelected(dateKey); setMonthAnchor(fromKey(dateKey)); }} />}
     {!maleMode && isAdminOwnerAccount() && hakOpen && hakAnchor && <BirthControlOverlay data={view} anchor={hakAnchor} onAnchorChange={setHakAnchor} onClose={() => setHakOpen(false)} />}
     <EpisodePainEditSheet open={!!episodeEdit} onOpenChange={(open) => { if (!open) setEpisodeEdit(null); }} date={selected} data={view} update={update} target={episodeEdit} />
+    {quickVital && <QuickVitalSheet open={true} onOpenChange={(open) => { if (!open) setQuickVital(null); }} metric={quickVital} date={selected} data={view} update={update} />}
     <LogSheet open={logOpen} onOpenChange={(open) => { setLogOpen(open); if (!open) { setQuickCat(undefined); setEditPain(undefined); setEditEntry(undefined); } }} date={selected} data={view} update={update} initial={quickCat as never} initialPain={editPain} editEntry={editEntry} />
   </AppShell>;
 }
