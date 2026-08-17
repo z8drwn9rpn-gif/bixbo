@@ -12,7 +12,8 @@ describe("approved Patterns polish", () => {
     expect(monthly).toContain('icon="🧠"');
     expect(monthly).toContain('icon="💢"');
     expect(monthly).toContain('icon="🔅"');
-    expect(monthly).toContain("⭐️");
+    expect(monthly).toContain("function ConfidenceStar");
+    expect(monthly).toContain('fill="#f6c945"');
   });
 
   it("lets Cycle move through period pairs and keeps flow labels intact", () => {
