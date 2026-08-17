@@ -1,4 +1,5 @@
 import { recordRuntimeDiagnosticIssue, type RuntimeDiagnosticIssue } from "./appDiagnostics";
+import { installLifecyclePerformanceGuard } from "./lifecyclePerformanceGuard";
 import { recoverFromStaleAssetError } from "./staleAssetRecovery";
 
 const HEARTBEAT_INTERVAL_MS = 500;
@@ -28,6 +29,8 @@ function resourceUrlForTarget(target: EventTarget | null): string | null {
  */
 export function installRuntimeDiagnostics(onIssue?: (issue: RuntimeDiagnosticIssue) => void): () => void {
   if (typeof window === "undefined") return () => undefined;
+
+  const cleanupLifecycleGuard = installLifecyclePerformanceGuard();
 
   const onError = (event: ErrorEvent) => {
     const error = event.error ?? event.message;
@@ -148,6 +151,7 @@ export function installRuntimeDiagnostics(onIssue?: (issue: RuntimeDiagnosticIss
   document.addEventListener("visibilitychange", resetPerformanceClocks);
 
   return () => {
+    cleanupLifecycleGuard();
     window.removeEventListener("error", onError);
     window.removeEventListener("error", onResourceError, true);
     window.removeEventListener("unhandledrejection", onUnhandledRejection);
