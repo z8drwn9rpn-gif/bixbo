@@ -20,12 +20,18 @@ function iconForAssociation(label: string) {
   if (value.includes("panic")) return "✨";
   if (value.includes("energy")) return "⚡";
   if (value.includes("period")) return "🫐";
+  if (value.includes("headache")) return "🧠";
+  if (value.includes("pressure")) return "💢";
   if (value.includes("med") || value.includes("dose")) return "💊";
   return "✨";
 }
 
 function IconChip({ icon, size = 30 }: { icon: string; size?: number }) {
   return <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-background/85 ring-1 ring-border/50" style={{ boxShadow: "0 4px 10px rgba(45,52,35,.14)" }}><Ico e={icon} size={size} /></span>;
+}
+
+function ConfidenceStar({ size = 25 }: { size?: number }) {
+  return <span aria-hidden="true" className="inline-grid place-items-center leading-none" style={{ fontSize: size, filter: "drop-shadow(0 2px 2px rgba(88,72,18,.2))" }}>⭐️</span>;
 }
 
 function DashboardCard({ title, subtitle, icon, children, jumpLabel }: { title: string; subtitle: string; icon?: string; children: ReactNode; jumpLabel?: string }) {
@@ -74,30 +80,36 @@ function AssociationCard({ association, index }: { association: { trigger: strin
 function TriggerGauge({ label, detail, percentage, color }: { label: string; detail: string; percentage: number | null; color: string }) {
   const pct = percentage == null ? 0 : clampPercent(percentage);
   const display = percentage == null ? "—" : `${percentage.toFixed(0)}%`;
-  const fillHeight = percentage == null ? 0 : percentage === 0 ? 4 : Math.max(8, pct * 0.82);
+  const fillHeight = percentage == null ? 0 : percentage === 0 ? 4 : Math.max(8, pct * 0.78);
   return (
-    <div className="rounded-2xl bg-tint/48 px-3 py-3 text-center ring-1 ring-border/45">
+    <div className="rounded-2xl bg-tint/48 px-2.5 py-2.5 text-center ring-1 ring-border/45">
       <p className="text-[11px] font-semibold" style={{ color }}>{label}</p>
-      <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">{display}</p>
-      <div className="relative mx-auto mt-2 h-32 w-[82px]">
-        <div className="absolute inset-x-2 bottom-1 top-1 rounded-[34px] border border-border/55 bg-gradient-to-r from-background/65 via-white/80 to-background/55 shadow-[inset_3px_0_7px_rgba(80,75,55,.08),inset_-3px_0_7px_rgba(80,75,55,.08),0_5px_12px_rgba(45,52,35,.10)]">
-          <span className="absolute inset-x-1 top-1 h-4 rounded-[50%] border border-border/45 bg-white/70" />
-          <span className="absolute inset-x-1 bottom-1 h-4 rounded-[50%] border border-border/40 bg-background/70" />
+      <p className="mt-0.5 text-[22px] font-bold tabular-nums text-foreground">{display}</p>
+      <div className="relative mx-auto mt-1.5 h-24 w-[64px]">
+        <div className="absolute inset-x-1.5 bottom-1 top-1 rounded-[28px] border border-border/55 bg-gradient-to-r from-background/65 via-white/88 to-background/55 shadow-[inset_3px_0_7px_rgba(80,75,55,.08),inset_-3px_0_7px_rgba(80,75,55,.08),0_4px_9px_rgba(45,52,35,.10)]">
+          <span className="absolute inset-x-1 top-1 h-3 rounded-[50%] border border-border/45 bg-white/75" />
+          <span className="absolute inset-x-1 bottom-1 h-3 rounded-[50%] border border-border/40 bg-background/70" />
           {percentage == null ? <span className="absolute inset-0 grid place-items-center text-lg font-semibold text-muted-foreground">—</span> : (
-            <span data-bixbo-chart-mark="bar" className="absolute inset-x-1.5 bottom-2 rounded-b-[25px]" style={{ height: `${fillHeight}%`, background: color, filter: "saturate(1.7) contrast(1.1)", boxShadow: "inset 3px 0 5px rgba(255,255,255,.25), inset -3px 0 5px rgba(40,35,20,.18), 0 2px 5px rgba(45,52,35,.16)" }}>
-              <span className="absolute -top-1.5 left-0 right-0 h-3 rounded-[50%]" style={{ background: color, boxShadow: "inset 0 2px 2px rgba(255,255,255,.42), 0 1px 2px rgba(40,35,20,.22)" }} />
+            <span data-bixbo-chart-mark="bar" title={`${label}: ${percentage.toFixed(0)}%`} className="absolute inset-x-1.5 bottom-2 rounded-b-[22px]" style={{ height: `${fillHeight}%`, background: color, filter: "saturate(1.7) contrast(1.1)", boxShadow: "inset 3px 0 5px rgba(255,255,255,.25), inset -3px 0 5px rgba(40,35,20,.18), 0 2px 5px rgba(45,52,35,.16)" }}>
+              <span className="absolute -top-1 left-0 right-0 h-2.5 rounded-[50%]" style={{ background: color, boxShadow: "inset 0 2px 2px rgba(255,255,255,.42), 0 1px 2px rgba(40,35,20,.22)" }} />
             </span>
           )}
         </div>
       </div>
-      <p className="mt-1 text-[10px] font-semibold tabular-nums" style={{ color }}>{percentage == null ? "—" : `${percentage.toFixed(0)}%`}</p>
-      <p className="mt-1 text-[10px] text-muted-foreground">{detail}</p>
+      <p className="mt-0.5 text-[10px] font-semibold tabular-nums" style={{ color }}>{display}</p>
+      <p className="mt-0.5 text-[9px] text-muted-foreground">{detail}</p>
     </div>
   );
 }
 
-function SummaryItem({ icon, label, value, tone = "neutral" }: { icon: string; label: string; value: string; tone?: Tone }) {
-  return <div className="flex items-center gap-3 rounded-2xl bg-tint/45 px-3 py-2.5 ring-1 ring-border/40"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-background/80 shadow-sm ring-1 ring-border/45"><Ico e={icon} size={25} /></span><span className="min-w-0 flex-1 text-[11px] text-muted-foreground">{label}</span><span className={`max-w-[58%] text-right text-[12px] font-semibold leading-snug ${toneClass(tone)}`}>{value}</span></div>;
+function SummaryItem({ icon, star, label, value, tone = "neutral" }: { icon?: string; star?: boolean; label: string; value: string; tone?: Tone }) {
+  return (
+    <div className="flex items-center gap-3 rounded-2xl bg-tint/45 px-3 py-2.5 ring-1 ring-border/40">
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-background/80 shadow-sm ring-1 ring-border/45">{star ? <ConfidenceStar /> : <Ico e={icon} size={25} />}</span>
+      <span className="min-w-0 flex-1 text-[11px] text-muted-foreground">{label}</span>
+      <span className={`max-w-[58%] text-right text-[12px] font-semibold leading-snug ${toneClass(tone)}`}>{value}</span>
+    </div>
+  );
 }
 
 export function PatternsTriggersDashboard({ model }: { model: PatternsContentModel }) {
@@ -123,7 +135,7 @@ export function PatternsTriggersDashboard({ model }: { model: PatternsContentMod
 
         <div className="mt-3 rounded-2xl bg-purple-500/6 p-3.5 ring-1 ring-purple-500/12"><div className="flex items-start gap-3"><IconChip icon={iconForAssociation(selectedOutcomeLabel)} size={27} /><p className="text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">{selectedOutcomeLabel}</span> {t("occurred on")} <span className="font-bold text-violet-600 dark:text-violet-300">{percentWithTrigger == null ? "—" : `${percentWithTrigger.toFixed(0)}%`}</span> {t("of days with")} <span className="font-semibold text-foreground">{selectedTriggerLabel.toLowerCase()}</span>, {t("compared with")} <span className="font-bold text-emerald-600 dark:text-emerald-300">{percentWithoutTrigger == null ? "—" : `${percentWithoutTrigger.toFixed(0)}%`}</span> {t("of days without it.")}</p></div><p className="mt-3 text-[10px] leading-relaxed text-muted-foreground">{t("This shows an association in your logs, not proof that the selected trigger caused the outcome.")}</p></div>
 
-        <div className="mt-3 rounded-2xl bg-background/55 p-3 ring-1 ring-border/45"><div className="flex items-center gap-2.5"><span className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 ring-1 ring-primary/15"><Ico e="✨" size={25} /></span><h3 className="text-sm font-semibold text-foreground">{t("Trigger Summary")}</h3></div><div className="mt-3 space-y-2"><SummaryItem icon="📊" label={t("Selected association")} value={selectedAssociation} tone={selectedTone} /><SummaryItem icon="👥" label={t("Days with trigger")} value={`${daysWithTrigger.length}`} /><SummaryItem icon="👥" label={t("Days without trigger")} value={`${daysWithoutTrigger.length}`} /><SummaryItem icon="✨" label={t("Confidence")} value={triggerConfidence} tone={triggerConfidence === "High" ? "good" : "neutral"} /></div><p className="mt-2 px-1 text-[10px] leading-relaxed text-muted-foreground">{t("Confidence depends on the number of days in both groups")}</p></div>
+        <div className="mt-3 rounded-2xl bg-background/55 p-3 ring-1 ring-border/45"><div className="flex items-center gap-2.5"><span className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 ring-1 ring-primary/15"><ConfidenceStar /></span><h3 className="text-sm font-semibold text-foreground">{t("Trigger Summary")}</h3></div><div className="mt-3 space-y-2"><SummaryItem icon="📊" label={t("Selected association")} value={selectedAssociation} tone={selectedTone} /><SummaryItem icon="👥" label={t("Days with trigger")} value={`${daysWithTrigger.length}`} /><SummaryItem icon="👥" label={t("Days without trigger")} value={`${daysWithoutTrigger.length}`} /><SummaryItem star label={t("Confidence")} value={triggerConfidence} tone={triggerConfidence === "High" ? "good" : "neutral"} /></div><p className="mt-2 px-1 text-[10px] leading-relaxed text-muted-foreground">{t("Confidence depends on the number of days in both groups")}</p></div>
       </DashboardCard>
 
       <CollapsibleDashboardCard title={t("Strongest correlations")} subtitle={t("Ranked associations calculated only from your logged data")} defaultOpen={false}>{strongestAssociations.length === 0 ? <Empty text="Log at least 3 days with and 3 days without a trigger to calculate correlations." /> : <div className="space-y-2.5">{strongestAssociations.map((association, index) => <AssociationCard key={`${association.trigger}-${association.outcome}`} association={association} index={index} />)}</div>}</CollapsibleDashboardCard>
