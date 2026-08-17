@@ -5,14 +5,20 @@ const cycle = readFileSync("src/features/patterns/PatternsCycleDashboard.tsx", "
 const monthly = readFileSync("src/features/patterns/PatternsMonthlyDashboard.tsx", "utf8");
 const treatment = readFileSync("src/features/patterns/PatternsTreatmentDashboard.tsx", "utf8");
 const triggers = readFileSync("src/features/patterns/PatternsTriggersDashboard.tsx", "utf8");
+const icons = readFileSync("src/components/icons/BixboExtraIcons.tsx", "utf8");
 
 describe("final Patterns icon and trigger polish", () => {
   it("keeps the requested semantic icons across Patterns", () => {
-    expect(cycle).toContain("BowelEyesIcon");
-    expect(cycle).toContain('<Ico e="🔥"');
-    expect(cycle).toContain('<Ico e="🫐"');
+    expect(cycle).toContain('icon: "💩"');
     expect(cycle).toContain('icon: "💢"');
     expect(cycle).toContain('icon: "🌡️"');
+    expect(cycle).toContain('icon="🔥"');
+    expect(cycle).toContain('icon="🩸"');
+    expect(cycle).toContain('e="🫐"');
+    expect(icons).toContain('["💩"]: BixboPoopEyesIcon');
+    expect(icons).toContain('["🔥"]: BixboFireIcon');
+    expect(icons).toContain('["🫐"]: BixboBlueberryIcon');
+    expect(icons).toContain('["🩸"]: BixboBloodDropIcon');
     expect(monthly).toContain('icon="🔅"');
     expect(monthly).toContain('icon="🧠"');
     expect(monthly).toContain('icon="💢"');
@@ -25,10 +31,12 @@ describe("final Patterns icon and trigger polish", () => {
     expect(treatment).toContain('icon="🧠"');
   });
 
-  it("keeps period flow inside the Cycle phase cards", () => {
-    expect(cycle).toContain("text-[8px]");
-    expect(cycle).toContain("max-w-[52px]");
-    expect(cycle).toContain("function FlowIcon");
+  it("keeps period flow inside the Cycle comparison cards", () => {
+    expect(cycle).toContain("function MonthSummaryCard");
+    expect(cycle).toContain("max-w-[88px]");
+    expect(cycle).toContain("truncate text-[10px]");
+    expect(cycle).toContain('e="🩸"');
+    expect(cycle).toContain("normalizedFlow");
   });
 
   it("matches the approved Trigger comparison iconography and reservoirs", () => {

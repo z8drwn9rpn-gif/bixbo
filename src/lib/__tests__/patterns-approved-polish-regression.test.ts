@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 const monthly = readFileSync("src/features/patterns/PatternsMonthlyDashboard.tsx", "utf8");
 const cycle = readFileSync("src/features/patterns/PatternsCycleDashboard.tsx", "utf8");
 const triggers = readFileSync("src/features/patterns/PatternsTriggersDashboard.tsx", "utf8");
+const icons = readFileSync("src/components/icons/BixboExtraIcons.tsx", "utf8");
 
 describe("approved Patterns polish", () => {
   it("keeps one monthly summary and separates frequency from intensity", () => {
@@ -16,13 +17,16 @@ describe("approved Patterns polish", () => {
     expect(monthly).toContain('fill="#f6c945"');
   });
 
-  it("lets Cycle move through period pairs and keeps flow labels intact", () => {
+  it("lets Cycle move through period pairs and compares both periods visibly", () => {
     expect(cycle).toContain("Compare periods");
     expect(cycle).toContain("phaseDays(selectedCycles)");
-    expect(cycle).toContain("function FlowIcon");
-    expect(cycle).toContain('fill="#df4b55"');
+    expect(cycle).toContain("function MonthSummaryCard");
+    expect(cycle).toContain("function PhaseComparisonCard");
+    expect(cycle).toContain("cycleViews.map");
+    expect(cycle).toContain('e="🩸"');
     expect(cycle).toContain('icon: "💢"');
     expect(cycle).toContain("whitespace-nowrap");
+    expect(icons).toContain('["🩸"]: BixboBloodDropIcon');
   });
 
   it("uses compact trigger reservoirs and a dedicated confidence star", () => {
