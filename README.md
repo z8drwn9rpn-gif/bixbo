@@ -35,19 +35,43 @@ Server-only VAPID private material belongs in Supabase Edge Function secrets and
 
 ## Deployment
 
-Cloudflare is connected to the GitHub repository. A production build uses:
+Production branch: `main`.
+
+### Supabase
+
+Supabase production changes are owned by GitHub. `.github/workflows/deploy-supabase.yml` runs automatically when files under `supabase/` reach `main`, and it can also be started manually. The workflow previews and applies pending migrations, deploys the three tracked Edge Functions, and verifies migration/function visibility afterwards.
+
+Required GitHub Actions repository secrets:
+
+```text
+SUPABASE_ACCESS_TOKEN
+SUPABASE_DB_PASSWORD
+```
+
+The production project reference is intentionally committed in the workflow because it is an identifier, not a secret.
+
+### Cloudflare
+
+The application build is reproducible from this repository with:
 
 ```sh
 bun run build
 ```
 
-and deploys with:
+and the Worker is deployable with the repository-pinned Wrangler using:
 
 ```sh
-npx wrangler deploy
+bunx wrangler deploy
 ```
 
-Production branch: `main`.
+GitHub Actions already holds the scoped Cloudflare deployment credentials under:
+
+```text
+CLOUDFLARE_API_TOKEN
+CLOUDFLARE_ACCOUNT_ID
+```
+
+Cloudflare deployment automation should only be enabled after all public frontend build variables listed above are represented in the GitHub release configuration. This prevents a GitHub-built release from silently replacing a working production build with missing VAPID or legal identity configuration.
 
 ## Development
 
