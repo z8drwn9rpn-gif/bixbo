@@ -27,17 +27,22 @@ const SLEEP_OPTIONS = [
 
 export function PastDaySleepSheet({ open, onOpenChange, date, data, update }: Props) {
   const { t, language } = useI18n();
-  const current = data.dayLogs[date] ?? {};
+  const [targetDate, setTargetDate] = useState(date);
+  const current = data.dayLogs[targetDate] ?? {};
   const [hours, setHours] = useState(current.sleepHours != null ? String(current.sleepHours).replace(".", ",") : "");
   const [quality, setQuality] = useState<string[]>(asArr(current.sleepQuality));
 
   useEffect(() => {
-    const day = data.dayLogs[date] ?? {};
+    setTargetDate(date);
+  }, [date, open]);
+
+  useEffect(() => {
+    const day = data.dayLogs[targetDate] ?? {};
     setHours(day.sleepHours != null ? String(day.sleepHours).replace(".", ",") : "");
     setQuality(asArr(day.sleepQuality));
-  }, [date, data.dayLogs]);
+  }, [targetDate, data.dayLogs]);
 
-  const dateLabel = new Date(`${date}T12:00:00`).toLocaleDateString(language === "sk" ? "sk-SK" : "en-GB", {
+  const dateLabel = new Date(`${targetDate}T12:00:00`).toLocaleDateString(language === "sk" ? "sk-SK" : "en-GB", {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -47,7 +52,7 @@ export function PastDaySleepSheet({ open, onOpenChange, date, data, update }: Pr
   const save = () => {
     const parsed = Number(hours.replace(",", "."));
     if (!hours.trim() || !Number.isFinite(parsed) || parsed < 0 || parsed > 24) return;
-    updateDayLog(update, date, (log) => ({
+    updateDayLog(update, targetDate, (log) => ({
       ...log,
       sleepHours: parsed,
       sleepQuality: quality.length ? quality : undefined,
@@ -73,6 +78,14 @@ export function PastDaySleepSheet({ open, onOpenChange, date, data, update }: Pr
             <section className="rounded-3xl bg-tint/55 p-4 ring-1 ring-border/60">
               <p className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">{t("Logging for")}</p>
               <p className="mt-1 text-base font-extrabold text-foreground">{dateLabel}</p>
+              <label className="mt-3 block text-xs font-bold text-muted-foreground" htmlFor="bixbo-sleep-date">{t("Date")}</label>
+              <Input
+                id="bixbo-sleep-date"
+                type="date"
+                value={targetDate}
+                onChange={(event) => setTargetDate(event.target.value)}
+                className="mt-1 h-11 rounded-2xl bg-background"
+              />
             </section>
 
             <div>
