@@ -43,12 +43,19 @@ type Prefs = {
   quietEnd?: string;
 };
 
+type MedicationSnooze = {
+  date: string;
+  slot: string;
+  remindAt: string;
+};
+
 type Snapshot = {
   timezone?: string;
   localDate?: string;
   prefs?: Prefs;
   medications?: { id: string; name: string; dose?: string; times: string[] }[];
   takenMedicationSlots?: string[];
+  medicationSnoozes?: MedicationSnooze[];
   hasLogToday?: boolean;
   nextPeriodStart?: string | null;
   showCyclePredictions?: boolean;
@@ -60,9 +67,16 @@ type Reminder = {
   category: string;
   payload: PushPayload;
   urgent?: boolean;
+  medicationAction?: { date: string; slot: string };
 };
 
 type LocalNow = { date: string; minutes: number; hhmm: string };
+
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const MED_ACTION_CONTEXT = "bixbo-med-action-v1";
+
+type Db = ReturnType<typeof createClient>;
 
 function localNow(timezone: string, now: Date): LocalNow {
   try {
@@ -85,7 +99,11 @@ function localNow(timezone: string, now: Date): LocalNow {
     };
   } catch {
     if (timezone !== "UTC") return localNow("UTC", now);
-    return { date: now.toISOString().slice(0, 10), minutes: now.getUTCHours() * 60 + now.getUTCMinutes(), hhmm: now.toISOString().slice(11, 16) };
+    return {
+      date: now.toISOString().slice(0, 10),
+      minutes: now.getUTCHours() * 60 + now.getUTCMinutes(),
+      hhmm: now.toISOString().slice(11, 16),
+    };
   }
 }
 
@@ -94,7 +112,9 @@ function toMinutes(hhmm: string | undefined, fallback: number): number {
   if (!match) return fallback;
   const hour = Number(match[1]);
   const minute = Number(match[2]);
-  if (!Number.isInteger(hour) || !Number.isInteger(minute) || hour < 0 || hour > 23 || minute < 0 || minute > 59) return fallback;
+  if (!Number.isInteger(hour) || !Number.isInteger(minute) || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+    return fallback;
+  }
   return hour * 60 + minute;
 }
 
@@ -118,6 +138,13 @@ function addDays(isoDate: string, days: number): string {
   return new Date(base + days * 86400000).toISOString().slice(0, 10);
 }
 
+function medicationBySlot(snapshot: Snapshot, slot: string) {
+  const separator = slot.lastIndexOf("@");
+  if (separator <= 0) return undefined;
+  const medId = slot.slice(0, separator);
+  return (snapshot.medications ?? []).find((med) => med.id === medId);
+}
+
 function planReminders(userId: string, snapshot: Snapshot, now: Date): Reminder[] {
   const prefs = snapshot.prefs ?? {};
   if (!prefs.enabled) return [];
@@ -129,6 +156,7 @@ function planReminders(userId: string, snapshot: Snapshot, now: Date): Reminder[
   if (prefs.meds !== false) {
     const taken = new Set(snapshot.takenMedicationSlots ?? []);
     const staleSnapshot = snapshot.localDate !== local.date;
+
     for (const med of snapshot.medications ?? []) {
       for (const time of med.times ?? []) {
         if (!isDue(local.minutes, toMinutes(time, -1))) continue;
@@ -138,6 +166,7 @@ function planReminders(userId: string, snapshot: Snapshot, now: Date): Reminder[
           dedupeKey: key(["meds", local.date, slot]),
           category: "meds",
           urgent: true,
+          medicationAction: { date: local.date, slot },
           payload: {
             title: "Time for your medication",
             body: med.dose ? `${med.name} — ${med.dose}` : med.name,
@@ -149,6 +178,30 @@ function planReminders(userId: string, snapshot: Snapshot, now: Date): Reminder[
         });
       }
     }
+
+    for (const snooze of snapshot.medicationSnoozes ?? []) {
+      if (snooze.date !== local.date || taken.has(snooze.slot)) continue;
+      const remindAt = Date.parse(snooze.remindAt);
+      if (!Number.isFinite(remindAt)) continue;
+      const delay = now.getTime() - remindAt;
+      if (delay < 0 || delay >= 2 * 60_000) continue;
+      const med = medicationBySlot(snapshot, snooze.slot);
+      if (!med) continue;
+      reminders.push({
+        dedupeKey: key(["meds-snooze", snooze.date, snooze.slot, snooze.remindAt]),
+        category: "meds",
+        urgent: true,
+        medicationAction: { date: snooze.date, slot: snooze.slot },
+        payload: {
+          title: "Medication reminder",
+          body: med.dose ? `${med.name} — ${med.dose}` : med.name,
+          url: "/",
+          tag: `meds-${snooze.slot}`,
+          category: "meds",
+          requireInteraction: true,
+        },
+      });
+    }
   }
 
   const nextPeriod = snapshot.showCyclePredictions === false ? null : snapshot.nextPeriodStart;
@@ -156,7 +209,13 @@ function planReminders(userId: string, snapshot: Snapshot, now: Date): Reminder[
     reminders.push({
       dedupeKey: key(["period", nextPeriod]),
       category: "period",
-      payload: { title: "Period expected tomorrow", body: "A good moment to get what you need ready.", url: "/", tag: "period", category: "period" },
+      payload: {
+        title: "Period expected tomorrow",
+        body: "A good moment to get what you need ready.",
+        url: "/",
+        tag: "period",
+        category: "period",
+      },
     });
   }
 
@@ -166,29 +225,71 @@ function planReminders(userId: string, snapshot: Snapshot, now: Date): Reminder[
       reminders.push({
         dedupeKey: key(["ovulation", ovulation]),
         category: "ovulation",
-        payload: { title: "Ovulation window starts tomorrow", body: "Your fertile days are predicted to begin.", url: "/insights", tag: "ovulation", category: "ovulation" },
+        payload: {
+          title: "Ovulation window starts tomorrow",
+          body: "Your fertile days are predicted to begin.",
+          url: "/insights",
+          tag: "ovulation",
+          category: "ovulation",
+        },
       });
     }
   }
 
   const nothingLoggedToday = snapshot.localDate === local.date && snapshot.hasLogToday === false;
   if (prefs.dailyLog !== false && nothingLoggedToday && isDue(local.minutes, toMinutes(prefs.dailyLogTime, 20 * 60))) {
-    reminders.push({ dedupeKey: key(["dailyLog", local.date]), category: "dailyLog", payload: { title: "Nothing logged today", body: "Take a few seconds to note how the day went.", url: "/", tag: "daily-log", category: "dailyLog" } });
+    reminders.push({
+      dedupeKey: key(["dailyLog", local.date]),
+      category: "dailyLog",
+      payload: {
+        title: "Nothing logged today",
+        body: "Take a few seconds to note how the day went.",
+        url: "/",
+        tag: "daily-log",
+        category: "dailyLog",
+      },
+    });
   }
 
   if (prefs.symptom !== false && nothingLoggedToday && isDue(local.minutes, toMinutes(prefs.symptomTime, 18 * 60))) {
-    reminders.push({ dedupeKey: key(["symptom", local.date]), category: "symptom", payload: { title: "How are you feeling?", body: "Log pain, energy or anything that stood out.", url: "/", tag: "symptom", category: "symptom" } });
+    reminders.push({
+      dedupeKey: key(["symptom", local.date]),
+      category: "symptom",
+      payload: {
+        title: "How are you feeling?",
+        body: "Log pain, energy or anything that stood out.",
+        url: "/",
+        tag: "symptom",
+        category: "symptom",
+      },
+    });
   }
 
   if (prefs.mood === true && isDue(local.minutes, toMinutes(prefs.moodTime, 20 * 60 + 30))) {
-    reminders.push({ dedupeKey: key(["mood", local.date]), category: "mood", payload: { title: "Evening mood check-in", body: "How has your mood been today?", url: "/", tag: "mood", category: "mood" } });
+    reminders.push({
+      dedupeKey: key(["mood", local.date]),
+      category: "mood",
+      payload: {
+        title: "Evening mood check-in",
+        body: "How has your mood been today?",
+        url: "/",
+        tag: "mood",
+        category: "mood",
+      },
+    });
   }
 
   if (prefs.sleep === true && isDue(local.minutes, toMinutes(prefs.sleepTime, 22 * 60 + 30), 5)) {
     reminders.push({
       dedupeKey: key(["sleep", local.date]),
       category: "sleep",
-      payload: { title: "Sleep reminder", body: "Time to wind down and get ready for sleep.", url: "/", tag: `bixbo-sleep-${local.date}`, category: "sleep" },
+      payload: {
+        title: "Sleep reminder",
+        body: "Time to wind down and get ready for sleep.",
+        url: "/",
+        tag: `bixbo-sleep-${local.date}`,
+        category: "sleep",
+      },
     });
   }
 
@@ -198,7 +299,17 @@ function planReminders(userId: string, snapshot: Snapshot, now: Date): Reminder[
     const every = Math.min(12, Math.max(1, Number(prefs.hydrationEveryHours) || 3)) * 60;
     for (let at = start; at <= end; at += every) {
       if (!isDue(local.minutes, at)) continue;
-      reminders.push({ dedupeKey: key(["hydration", local.date, String(at)]), category: "hydration", payload: { title: "Water break", body: "A glass of water now would be good.", url: "/", tag: "hydration", category: "hydration" } });
+      reminders.push({
+        dedupeKey: key(["hydration", local.date, String(at)]),
+        category: "hydration",
+        payload: {
+          title: "Water break",
+          body: "A glass of water now would be good.",
+          url: "/",
+          tag: "hydration",
+          category: "hydration",
+        },
+      });
     }
   }
 
@@ -231,19 +342,81 @@ function planReminders(userId: string, snapshot: Snapshot, now: Date): Reminder[
   return inQuietHours(prefs, local.minutes) ? reminders.filter((reminder) => reminder.urgent) : reminders;
 }
 
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-type Db = ReturnType<typeof createClient>;
+function bytesToB64url(bytes: Uint8Array): string {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
 
-async function deliver(db: Db, config: VapidConfig, userId: string, devices: PushTarget[], reminder: Reminder): Promise<{ delivered: number; removed: number }> {
-  const { error: claimError } = await db.from("push_delivery_log").insert({ user_id: userId, dedupe_key: reminder.dedupeKey, category: reminder.category, status: "pending", attempts: 1 });
+async function signMedicationAction(userId: string, date: string, slot: string): Promise<string> {
+  const secret = String(
+    Deno.env.get("BIXBO_VAPID_PRIVATE_KEY") ?? Deno.env.get("VAPID_PRIVATE_KEY") ?? "",
+  ).trim();
+  if (!secret) throw new Error("Medication actions require the configured VAPID private key.");
+
+  const encoder = new TextEncoder();
+  const claims = {
+    v: 1,
+    u: userId,
+    d: date,
+    s: slot,
+    exp: Math.floor(Date.now() / 1000) + 36 * 60 * 60,
+  };
+  const payload = bytesToB64url(encoder.encode(JSON.stringify(claims)));
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(`${MED_ACTION_CONTEXT}:${secret}`),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(payload));
+  return `${payload}.${bytesToB64url(new Uint8Array(signature))}`;
+}
+
+async function deliver(
+  db: Db,
+  config: VapidConfig,
+  userId: string,
+  devices: PushTarget[],
+  reminder: Reminder,
+): Promise<{ delivered: number; removed: number }> {
+  const { error: claimError } = await db.from("push_delivery_log").insert({
+    user_id: userId,
+    dedupe_key: reminder.dedupeKey,
+    category: reminder.category,
+    status: "pending",
+    attempts: 1,
+  });
   if (claimError) return { delivered: 0, removed: 0 };
+
+  let payload = reminder.payload;
+  if (reminder.medicationAction) {
+    try {
+      const token = await signMedicationAction(
+        userId,
+        reminder.medicationAction.date,
+        reminder.medicationAction.slot,
+      );
+      payload = {
+        ...reminder.payload,
+        medicationAction: {
+          ...reminder.medicationAction,
+          token,
+          actionUrl: `${SUPABASE_URL}/functions/v1/medication-reminder-action`,
+        },
+      } as PushPayload;
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : "Could not sign medication action.";
+      console.error("push medication action signing failed:", message);
+    }
+  }
 
   let delivered = 0;
   let removed = 0;
   let lastError: string | undefined;
   for (const device of devices) {
-    const result = await sendWebPush(config, device, reminder.payload);
+    const result = await sendWebPush(config, device, payload);
     if (result.ok) delivered += 1;
     else {
       lastError = result.error;
@@ -254,7 +427,11 @@ async function deliver(db: Db, config: VapidConfig, userId: string, devices: Pus
     }
   }
 
-  await db.from("push_delivery_log").update({ status: delivered > 0 ? "sent" : "failed", updated_at: new Date().toISOString() }).eq("user_id", userId).eq("dedupe_key", reminder.dedupeKey);
+  await db
+    .from("push_delivery_log")
+    .update({ status: delivered > 0 ? "sent" : "failed", updated_at: new Date().toISOString() })
+    .eq("user_id", userId)
+    .eq("dedupe_key", reminder.dedupeKey);
   if (delivered === 0 && lastError) console.warn("push delivery failed", reminder.category, lastError);
   return { delivered, removed };
 }
@@ -263,13 +440,19 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
   if (req.method !== "POST") return json({ ok: false, error: "Method not allowed." }, 405);
 
-  const db = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+  const db = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
   const { data: storedCronSecret, error: cronSecretError } = await db.rpc("get_push_cron_secret_for_service");
-  const expectedSecret = String(storedCronSecret ?? Deno.env.get("PUSH_CRON_SECRET") ?? Deno.env.get("CRON_SECRET") ?? "").trim();
+  const expectedSecret = String(
+    storedCronSecret ?? Deno.env.get("PUSH_CRON_SECRET") ?? Deno.env.get("CRON_SECRET") ?? "",
+  ).trim();
   const providedSecret = (req.headers.get("x-cron-secret") ?? "").trim();
 
   if (cronSecretError) console.error("send-due-push cron secret read failed:", cronSecretError.message);
-  if (!expectedSecret || !timingSafeEqual(expectedSecret, providedSecret)) return json({ ok: false, error: "Forbidden." }, 403);
+  if (!expectedSecret || !timingSafeEqual(expectedSecret, providedSecret)) {
+    return json({ ok: false, error: "Forbidden." }, 403);
+  }
 
   const startedAt = Date.now();
   const now = new Date();
@@ -283,7 +466,9 @@ Deno.serve(async (req) => {
     return json({ ok: false, error: message }, 500);
   }
 
-  const { data: profiles, error: profileError } = await db.from("push_reminder_profiles").select("user_id, timezone, profile");
+  const { data: profiles, error: profileError } = await db
+    .from("push_reminder_profiles")
+    .select("user_id, timezone, profile");
   if (profileError) return json({ ok: false, error: profileError.message }, 500);
 
   let considered = 0;
@@ -300,7 +485,10 @@ Deno.serve(async (req) => {
     considered += reminders.length;
     if (!reminders.length) continue;
 
-    const { data: deviceRows, error: deviceError } = await db.from("push_subscriptions").select("endpoint, p256dh, auth").eq("user_id", userId);
+    const { data: deviceRows, error: deviceError } = await db
+      .from("push_subscriptions")
+      .select("endpoint, p256dh, auth")
+      .eq("user_id", userId);
     if (deviceError || !deviceRows?.length) continue;
     const devices = deviceRows as unknown as PushTarget[];
 
@@ -312,5 +500,13 @@ Deno.serve(async (req) => {
     }
   }
 
-  return json({ ok: true, profiles: profiles?.length ?? 0, considered, reminders: sent, delivered, removedDevices: removed, ms: Date.now() - startedAt });
+  return json({
+    ok: true,
+    profiles: profiles?.length ?? 0,
+    considered,
+    reminders: sent,
+    delivered,
+    removedDevices: removed,
+    ms: Date.now() - startedAt,
+  });
 });
