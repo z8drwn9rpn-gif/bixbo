@@ -6,7 +6,8 @@ import { BixboConnectIcon } from "@/components/icons/BixboIcons";
 import { layoutOrder } from "@/lib/layoutRegistry";
 import { isAdminOwnerAccount } from "@/lib/deviceAdmin";
 import { AppShell } from "@/components/AppShell";
-import { MonthCalendar, monthLabel } from "@/components/MonthCalendar";
+import { monthLabel } from "@/components/MonthCalendar";
+import { EditableMonthCalendar } from "@/components/EditableMonthCalendar";
 import { LogSheet } from "@/components/LogSheet";
 import { QuickTags } from "@/components/QuickTags";
 import { useI18n } from "@/hooks/useI18n";
@@ -17,6 +18,7 @@ import {
   toKey,
   todayKey,
   useBixbo,
+  type EventEntry,
   type PanicAttack,
   type TetanyEpisode,
 } from "@/lib/storage";
@@ -88,6 +90,16 @@ export function HomePage() {
     setLogOpen(true);
   };
 
+  const openCalendarEvent = (event: EventEntry) => {
+    setSelected(event.startDate);
+    setMonthAnchor(fromKey(event.startDate));
+    setEpisodeEdit(null);
+    setQuickCat("event");
+    setEditEntry(event);
+    setEditPain(undefined);
+    setLogOpen(true);
+  };
+
   useEffect(() => {
     setMonthAnchor(new Date());
     setSelected(todayKey());
@@ -154,7 +166,7 @@ export function HomePage() {
       <div className="flex min-w-0 flex-col">
         <div style={{ order: layoutOrder(view, "home", "calendar", 10) }}>
           <div className="px-5 pt-1 lg:px-1"><div className="flex items-center justify-between"><button type="button" onClick={() => moveCalendarMonth(-1)} aria-label={t("Previous month")} className="rounded-full p-1.5 hover:bg-tint"><ChevronLeft className="h-5 w-5" /></button><h2 data-bixbo-display-title className="select-none text-[29px] font-black tracking-[-0.045em] leading-none text-foreground sm:text-[31px] lg:text-[33px]" style={{ fontFamily: roundedDisplayFont, WebkitTextStroke: "0", textShadow: roundedDisplayShadow, WebkitTouchCallout: "none" }} suppressHydrationWarning onPointerDown={(event) => { clearMonthSummaryTimer(); monthSummaryPointerStart.current = { x: event.clientX, y: event.clientY }; monthSummaryTimer.current = window.setTimeout(openMonthSummary, 520); }} onPointerMove={(event) => { const start = monthSummaryPointerStart.current; if (!start) return; if (Math.abs(event.clientX - start.x) > 8 || Math.abs(event.clientY - start.y) > 8) { clearMonthSummaryTimer(); monthSummaryPointerStart.current = null; } }} onPointerUp={() => { clearMonthSummaryTimer(); monthSummaryPointerStart.current = null; }} onPointerLeave={() => { clearMonthSummaryTimer(); monthSummaryPointerStart.current = null; }} onPointerCancel={() => { clearMonthSummaryTimer(); monthSummaryPointerStart.current = null; }} onContextMenu={(event) => event.preventDefault()}>{hydrated ? monthLabel(monthAnchor) : ""}</h2><button type="button" onClick={() => moveCalendarMonth(1)} aria-label={t("Next month")} className="rounded-full p-1.5 hover:bg-tint"><ChevronRight className="h-5 w-5" /></button></div></div>
-          <div className="mt-1 lg:order-1 lg:overflow-hidden lg:rounded-[1.75rem] lg:bg-surface/28 lg:px-1 lg:pb-1 lg:ring-1 lg:ring-border/35" style={{ "--period-medium": "#7467D8" } as CSSProperties}>{hydrated ? <MonthCalendar month={monthAnchor} data={view} selected={selected} onSelect={setSelected} onSwipeMonth={moveCalendarMonth} /> : <div className="h-[360px]" />}</div>
+          <div className="mt-1 lg:order-1 lg:overflow-hidden lg:rounded-[1.75rem] lg:bg-surface/28 lg:px-1 lg:pb-1 lg:ring-1 lg:ring-border/35" style={{ "--period-medium": "#7467D8" } as CSSProperties}>{hydrated ? <EditableMonthCalendar month={monthAnchor} data={view} selected={selected} onSelect={setSelected} onSwipeMonth={moveCalendarMonth} onEditEvent={openCalendarEvent} /> : <div className="h-[360px]" />}</div>
         </div>
 
         {!maleMode && isAdminOwnerAccount() && <div style={{ order: layoutOrder(view, "home", "birthControl", 20) }}><BirthControlSummaryCard data={view} dateKey={selected} onOpen={() => { setHakAnchor(fromKey(selected)); setHakOpen(true); }} /></div>}
