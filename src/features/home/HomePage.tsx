@@ -105,7 +105,6 @@ export function HomePage() {
     setSelected(todayKey());
   }, []);
 
-
   useEffect(() => {
     if (maleMode) {
       setHakOpen(false);
@@ -176,7 +175,16 @@ export function HomePage() {
 
         <div className="mt-3 grid grid-cols-5 gap-2 px-5 lg:grid-cols-4 lg:px-1" style={{ order: layoutOrder(view, "home", "vitals", 60) }}>
           <div className="col-span-2 lg:col-span-1"><MedsProgress data={view} onClick={() => { setQuickCat("meds"); setEditPain(undefined); setEditEntry(undefined); setLogOpen(true); }} /></div>
-          <VitalTile emoji="😴" label="Sleep" value={view.dayLogs[selected]?.sleepHours != null ? String(view.dayLogs[selected]!.sleepHours) : "—"} onClick={() => setVitalTrendOpen("sleep")} />
+          <VitalTile emoji="😴" label="Sleep" value={view.dayLogs[selected]?.sleepHours != null ? String(view.dayLogs[selected]!.sleepHours) : "—"} onClick={() => {
+            if (selected !== todayKey()) {
+              setQuickCat("temp");
+              setEditPain(undefined);
+              setEditEntry(undefined);
+              setLogOpen(true);
+              return;
+            }
+            setVitalTrendOpen("sleep");
+          }} />
           <VitalTile emoji="🌡️" label="Temp" value={view.dayLogs[selected]?.temperature != null ? String(view.dayLogs[selected]!.temperature) : "—"} onClick={() => setVitalTrendOpen("temperature")} />
           <VitalTile emoji="⚖️" label="Weight" value={view.dayLogs[selected]?.weight != null ? String(view.dayLogs[selected]!.weight) : "—"} onClick={() => setVitalTrendOpen("weight")} />
         </div>
