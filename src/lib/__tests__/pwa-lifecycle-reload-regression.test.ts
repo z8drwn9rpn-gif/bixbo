@@ -10,6 +10,9 @@ describe("iOS PWA reload and lifecycle hardening", () => {
     expect(freshness).toContain('DEPLOYMENT_RELOAD_GUARD_MS = 5 * 60_000');
     expect(freshness).toContain('window.location.replace(currentUrlWithDeploymentBust())');
     expect(freshness).toContain('url.searchParams.set(DEPLOYMENT_REFRESH_PARAM');
+    expect(freshness).toContain('url.searchParams.set(DEPLOYMENT_CHECK_PARAM');
+    expect(freshness).toContain('fetch(currentRouteCheckUrl()');
+    expect(freshness).not.toContain('fetch(`${window.location.origin}/?__bixbo_deploy_check=');
     expect(freshness).toContain('node.getAttribute("src") || node.src');
 
     expect(autoUpdate).toContain('UPDATE_RELOAD_GUARD_MS = 5 * 60_000');
