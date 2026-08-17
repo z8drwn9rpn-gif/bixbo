@@ -43,4 +43,22 @@ describe("app startup and interaction latency", () => {
     expect(css).not.toContain("content-visibility: auto");
     expect(css).not.toContain("contain-intrinsic-size: auto 420px");
   });
+
+  test("keeps slow app opens, resumes and navigation taps visible to App Scan", () => {
+    const visualForensics = read("src/lib/appVisualForensics.ts");
+    const diagnostics = read("src/lib/appDiagnostics.ts");
+
+    expect(visualForensics).toContain("SLOW_APP_OPEN_MS = 1_500");
+    expect(visualForensics).toContain("CRITICAL_APP_OPEN_MS = 3_000");
+    expect(visualForensics).toContain("App open-to-paint latency was about");
+    expect(visualForensics).toContain("App resume-to-paint latency was about");
+    expect(visualForensics).toContain("Navigation tap-to-paint latency was about");
+    expect(visualForensics).toContain("NAVIGATION_WATCHDOG_MS = 5_000");
+    expect(visualForensics).toContain('recordRuntimeDiagnosticIssue(\n          "interaction"');
+    expect(visualForensics).toContain("This persists into App Scan");
+
+    expect(diagnostics).toContain('const PERFORMANCE_KINDS = new Set<RuntimeDiagnosticKind>(["freeze", "jank", "longtask", "interaction"]);');
+    expect(diagnostics).toContain("runtimePerformanceCheck(runtimeIssues)");
+    expect(diagnostics).toContain("See Recorded app incidents below for exact route and time.");
+  });
 });

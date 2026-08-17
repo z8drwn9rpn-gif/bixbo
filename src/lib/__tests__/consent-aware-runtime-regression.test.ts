@@ -32,9 +32,10 @@ describe("consent-aware cloud runtime", () => {
 describe("forensic false-positive filtering", () => {
   it("does not treat navigation links as slow local controls", () => {
     const visual = readFileSync("src/lib/appVisualForensics.ts", "utf8");
-    expect(visual).toContain('node.closest("a[href]")');
-    expect(visual).toContain('if (isNavigationActivation(targetNode))');
-    expect(visual).toContain('route-settled probes');
+    expect(visual).toContain('node.closest<HTMLAnchorElement>("a[href]")');
+    expect(visual).toContain('if (navigationDestination) {');
+    expect(visual).toContain('measureNavigationTap(pointerAt, label, navigationDestination)');
+    expect(visual).toContain('Navigation tap-to-paint latency was about');
   });
 
   it("removes short reload-aborted fetches while preserving ordinary network failures", () => {
