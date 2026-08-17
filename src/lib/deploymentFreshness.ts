@@ -2,10 +2,12 @@ import { useEffect } from "react";
 
 const DEPLOYMENT_RELOAD_GUARD_KEY = "bixbo:deployment-reload-guard:v2";
 const DEPLOYMENT_RELOAD_GUARD_MS = 5 * 60_000;
+const DEPLOYMENT_CHECK_COOLDOWN_MS = 15_000;
 const DEPLOYMENT_REFRESH_PARAM = "__bixbo_deploy_refresh";
 const DEPLOYMENT_CHECK_PARAM = "__bixbo_deploy_check";
 
 let inDocumentReloadTarget = "";
+let lastDeploymentCheckAt = 0;
 
 function normalizeAssetUrl(value: string): string {
   try {
@@ -105,7 +107,11 @@ async function deploymentTarget(): Promise<string | null> {
   return remote;
 }
 
-/** Keep long-running iOS/PWA sessions on the newest frontend build without creating a reload loop. */
+/**
+ * Keep a long-running iOS/PWA session on the newest frontend build without a
+ * background polling loop. Freshness is checked only when the user returns to
+ * or focuses BIXBO, and repeated lifecycle events are collapsed by cooldown.
+ */
 export function useDeploymentFreshness() {
   useEffect(() => {
     if (import.meta.env.DEV) return;
@@ -115,8 +121,17 @@ export function useDeploymentFreshness() {
     cleanupDeploymentRefreshParam();
 
     const check = async () => {
-      if (cancelled || checking || document.visibilityState !== "visible" || !navigator.onLine) return;
+      const now = Date.now();
+      if (
+        cancelled ||
+        checking ||
+        document.visibilityState !== "visible" ||
+        !navigator.onLine ||
+        now - lastDeploymentCheckAt < DEPLOYMENT_CHECK_COOLDOWN_MS
+      ) return;
+
       checking = true;
+      lastDeploymentCheckAt = now;
       try {
         const target = await deploymentTarget();
         if (!target || !mayReloadForTarget(target)) return;
@@ -132,17 +147,15 @@ export function useDeploymentFreshness() {
       }
     };
 
-    void check();
-    const timer = window.setInterval(() => void check(), 45_000);
     const onVisible = () => {
       if (document.visibilityState === "visible") void check();
     };
     const onFocus = () => void check();
+
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisible);
     return () => {
       cancelled = true;
-      window.clearInterval(timer);
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisible);
     };
