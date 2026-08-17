@@ -112,7 +112,7 @@ jobs:
         run: bun run bundle:check
 
       - name: Deploy Worker from GitHub
-        run: bunx wrangler deploy
+        run: bunx wrangler deploy --keep-vars
 
       - name: Verify live production
         shell: bash
