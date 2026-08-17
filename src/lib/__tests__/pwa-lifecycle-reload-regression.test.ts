@@ -2,9 +2,13 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 describe("iOS PWA reload and lifecycle hardening", () => {
-  it("guards deployment and build refreshes against repeated reloads", () => {
+  it("keeps proactive deployment polling disconnected and guards any future refresh hook reuse", () => {
+    const shell = readFileSync("src/components/AppShell.tsx", "utf8");
     const freshness = readFileSync("src/lib/deploymentFreshness.ts", "utf8");
     const autoUpdate = readFileSync("src/hooks/useAppAutoUpdate.ts", "utf8");
+
+    expect(shell).not.toContain('useDeploymentFreshness');
+    expect(shell).not.toContain('deploymentFreshness');
 
     expect(freshness).toContain('DEPLOYMENT_RELOAD_GUARD_KEY');
     expect(freshness).toContain('DEPLOYMENT_RELOAD_GUARD_MS = 5 * 60_000');
