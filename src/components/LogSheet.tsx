@@ -42,19 +42,6 @@ export function LogSheet(props: LogSheetProps) {
     return () => observer.disconnect();
   }, [props.initial, props.open]);
 
-  if (props.initial === "temp") {
-    return (
-      <PastDaySleepSheet
-        key={`sleep:${props.date}:${props.open ? "open" : "closed"}`}
-        open={props.open}
-        onOpenChange={props.onOpenChange}
-        date={props.date}
-        data={props.data}
-        update={props.update}
-      />
-    );
-  }
-
   const formKey = `${props.initial ?? "menu"}:${props.open ? "open" : "closed"}`;
   const normalizedTitle = formTitle.toLowerCase();
   const hasOwnCalendarDate =
@@ -110,6 +97,19 @@ export function LogSheet(props: LogSheetProps) {
     </div>,
     dialogHost,
   ) : null;
+
+  if (props.initial === "temp") {
+    return (
+      <PastDaySleepSheet
+        key={`sleep:${props.date}:${props.open ? "open" : "closed"}`}
+        open={props.open}
+        onOpenChange={props.onOpenChange}
+        date={props.date}
+        data={props.data}
+        update={props.update}
+      />
+    );
+  }
 
   return (
     <>
