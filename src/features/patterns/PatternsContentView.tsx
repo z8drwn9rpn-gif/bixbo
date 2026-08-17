@@ -39,7 +39,7 @@ export function PatternsContentView({ model }: { model: PatternsContentModel }) 
       ) : (
         <PatternsContentViewPart1 model={model} />
       )}
-      <PatternsContentViewPart2 model={model} />
+      {model.activeTab !== "triggers" ? <PatternsContentViewPart2 model={model} /> : null}
     </div>
   );
 }
