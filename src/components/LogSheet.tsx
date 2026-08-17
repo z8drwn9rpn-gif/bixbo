@@ -73,19 +73,6 @@ export function LogSheet(props: LogSheetProps) {
     }
   }, [targetDate]);
 
-  if (props.initial === "temp") {
-    return (
-      <PastDaySleepSheet
-        key={`sleep:${props.date}:${props.open ? "open" : "closed"}`}
-        open={props.open}
-        onOpenChange={props.onOpenChange}
-        date={props.date}
-        data={props.data}
-        update={props.update}
-      />
-    );
-  }
-
   const dateControl = showDateControl && dialogHost ? createPortal(
     <div
       data-bixbo-log-date-control
@@ -110,6 +97,19 @@ export function LogSheet(props: LogSheetProps) {
     </div>,
     dialogHost,
   ) : null;
+
+  if (props.initial === "temp") {
+    return (
+      <PastDaySleepSheet
+        key={`sleep:${props.date}:${props.open ? "open" : "closed"}`}
+        open={props.open}
+        onOpenChange={props.onOpenChange}
+        date={props.date}
+        data={props.data}
+        update={props.update}
+      />
+    );
+  }
 
   return (
     <>
