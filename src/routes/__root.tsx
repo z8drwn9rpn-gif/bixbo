@@ -10,10 +10,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 import { toast } from "sonner";
 
-import appCss from "../styles.css?url";
-import themeSystemCss from "../theme-system.css?url";
-import calendarSystemCss from "../calendar-system.css?url";
-import deviceRenderingFixesCss from "../device-rendering-fixes.css?url";
+import appCss from "../app-shell.css?url";
 import { useThemeSync } from "../lib/theme";
 import { NotificationPrompt } from "../components/NotificationPrompt";
 import { AppPrivacyGuard } from "../components/AppPrivacyGuard";
@@ -105,35 +102,35 @@ const APPLE_PWA_LAUNCH_SPLASH_BOOTSTRAP = `(() => {
     root.dataset.bixboPwaLaunch = "visible";
     let started = false;
 
-    const holdAfterFirstVisiblePaint = () => {
+    const handOffAfterFirstVisiblePaint = () => {
       if (started || document.visibilityState === "hidden") return;
       started = true;
-
-      const splashImage = document.querySelector("#bixbo-ios-launch-splash img");
-      const beginVisibleSecond = () => {
+      window.requestAnimationFrame(() => {
         window.requestAnimationFrame(() => {
-          window.requestAnimationFrame(() => {
-            window.setTimeout(() => {
-              root.dataset.bixboPwaLaunch = "hidden";
-            }, 1000);
-          });
+          window.setTimeout(() => {
+            root.dataset.bixboPwaLaunch = "hidden";
+          }, 80);
         });
-      };
-
-      if (splashImage && !splashImage.complete) splashImage.addEventListener("load", beginVisibleSecond, { once: true });
-      else beginVisibleSecond();
+      });
     };
 
-    // Load can happen underneath iOS native launch presentation. Starting the
-    // one-second hold from pageshow means the timer begins when WebKit actually
-    // presents this document, then two animation frames guarantee a painted mascot.
-    window.addEventListener("pageshow", holdAfterFirstVisiblePaint, { once: true });
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible") holdAfterFirstVisiblePaint();
-    });
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") handOffAfterFirstVisiblePaint();
+    };
 
-    // Safety fallback for unusual standalone WebKit launches where pageshow is lost.
-    window.setTimeout(holdAfterFirstVisiblePaint, 4000);
+    // The native iOS launch presentation already covers process startup. Keep
+    // this in-document handoff only long enough to avoid a blank frame, never
+    // for a decorative one-second hold after the app is ready to paint.
+    window.addEventListener("pageshow", handOffAfterFirstVisiblePaint, { once: true });
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    if (document.visibilityState === "visible") window.setTimeout(handOffAfterFirstVisiblePaint, 0);
+
+    // Hard safety cap: a standalone WebKit lifecycle quirk must never leave the
+    // launch overlay blocking the perceived startup for multiple seconds.
+    window.setTimeout(() => {
+      root.dataset.bixboPwaLaunch = "hidden";
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    }, 700);
   } catch {
     document.documentElement.dataset.bixboPwaLaunch = "hidden";
   }
@@ -176,9 +173,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap" },
       { rel: "stylesheet", href: appCss },
-      { rel: "stylesheet", href: themeSystemCss },
-      { rel: "stylesheet", href: calendarSystemCss },
-      { rel: "stylesheet", href: deviceRenderingFixesCss },
       { rel: "manifest", href: "/manifest.json" },
       { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
       { rel: "icon", type: "image/png", sizes: "180x180", href: "/apple-touch-icon.png" },
