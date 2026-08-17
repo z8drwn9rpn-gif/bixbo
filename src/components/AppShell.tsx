@@ -11,7 +11,6 @@ import { GlobalQuickLogActions } from "./GlobalQuickLogActions";
 import { CalendarTargetBridge } from "./CalendarTargetBridge";
 import { DiagnosticProfiler } from "./DiagnosticProfiler";
 import { ProductAnalyticsRuntime } from "./ProductAnalyticsRuntime";
-import { useDeploymentFreshness } from "@/lib/deploymentFreshness";
 import {
   BIXBO_MASCOT_FILTER,
   BIXBO_ROUNDED_DISPLAY_FONT,
@@ -23,7 +22,6 @@ const BIXBO_MASCOT_SRC = bixboMascot;
 
 export function AppShell({ children, title, right, big = false, stickyHeader = true }: { children: ReactNode; title?: ReactNode; right?: ReactNode; big?: boolean; stickyHeader?: boolean; }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  useDeploymentFreshness();
   const showBixboIconKeyboard = !pathname.startsWith("/notes");
 
   return (
