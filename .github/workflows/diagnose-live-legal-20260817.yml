@@ -29,9 +29,9 @@ jobs:
           import urllib.request
 
           base = os.environ['BASE_URL']
-          name = os.environ.get('VITE_LEGAL_CONTROLLER_NAME', '')
-          address = os.environ.get('VITE_LEGAL_CONTROLLER_ADDRESS', '')
-          email = os.environ.get('VITE_LEGAL_PRIVACY_EMAIL', '')
+          name = os.environ.get('VITE_LEGAL_CONTROLLER_NAME', '').strip()
+          address = os.environ.get('VITE_LEGAL_CONTROLLER_ADDRESS', '').strip()
+          email = os.environ.get('VITE_LEGAL_PRIVACY_EMAIL', '').strip()
 
           def fetch(path):
               req = urllib.request.Request(base + path, headers={'User-Agent': 'BIXBO-live-diagnostic/1.0'})
