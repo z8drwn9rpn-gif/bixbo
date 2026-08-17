@@ -1,0 +1,71 @@
+name: Diagnose live legal cutover
+
+on:
+  push:
+    branches: [agent/diagnose-live-legal-20260817]
+    paths:
+      - .github/workflows/diagnose-live-legal-20260817.yml
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: production
+    env:
+      VITE_LEGAL_CONTROLLER_NAME: ${{ vars.VITE_LEGAL_CONTROLLER_NAME }}
+      VITE_LEGAL_CONTROLLER_ADDRESS: ${{ vars.VITE_LEGAL_CONTROLLER_ADDRESS }}
+      VITE_LEGAL_PRIVACY_EMAIL: ${{ vars.VITE_LEGAL_PRIVACY_EMAIL }}
+      BASE_URL: https://bixbo.z8drwn9rpn.workers.dev
+    steps:
+      - name: Check live release predicates without printing configured values
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          import urllib.request
+
+          base = os.environ['BASE_URL']
+          name = os.environ.get('VITE_LEGAL_CONTROLLER_NAME', '')
+          address = os.environ.get('VITE_LEGAL_CONTROLLER_ADDRESS', '')
+          email = os.environ.get('VITE_LEGAL_PRIVACY_EMAIL', '')
+
+          def fetch(path):
+              req = urllib.request.Request(base + path, headers={'User-Agent': 'BIXBO-live-diagnostic/1.0'})
+              with urllib.request.urlopen(req, timeout=20) as response:
+                  return response.read().decode('utf-8', errors='ignore')
+
+          pages = {
+              'root': fetch('/'),
+              'privacy': fetch('/privacy'),
+              'terms': fetch('/terms'),
+              'mcp': fetch('/mcp'),
+          }
+
+          checks = [
+              ('root_has_bixbo', 'BIXBO' in pages['root'].upper()),
+              ('privacy_heading', 'Privacy Policy' in pages['privacy']),
+              ('terms_heading', 'Terms of Service' in pages['terms']),
+              ('mcp_identifier', 'bixbo-my-health-diary' in pages['mcp']),
+              ('privacy_no_fallback', 'BIXBO operator' not in pages['privacy']),
+              ('terms_no_fallback', 'BIXBO operator' not in pages['terms']),
+              ('privacy_has_configured_name', bool(name) and name in pages['privacy']),
+              ('terms_has_configured_name', bool(name) and name in pages['terms']),
+              ('privacy_has_configured_email', bool(email) and email in pages['privacy']),
+              ('terms_has_configured_email', bool(email) and email in pages['terms']),
+              ('privacy_has_configured_address', bool(address) and address in pages['privacy']),
+              ('terms_has_configured_address', bool(address) and address in pages['terms']),
+          ]
+
+          failed = []
+          for label, ok in checks:
+              print(f'{label}={"PASS" if ok else "FAIL"}')
+              if not ok:
+                  failed.append(label)
+
+          if failed:
+              raise SystemExit('Live diagnostic failed: ' + ', '.join(failed))
+          PY
