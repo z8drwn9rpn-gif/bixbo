@@ -36,16 +36,16 @@ export function LogSheet(props: LogSheetProps) {
     <>
       <LogSheetRoot key={formKey} {...props} date={targetDate} />
       {props.open ? (
-        <div className="fixed left-1/2 top-[calc(env(safe-area-inset-top)+68px)] z-[260] -translate-x-1/2 rounded-2xl border border-border/70 bg-background/95 px-3 py-2 shadow-lg backdrop-blur">
-          <label className="flex items-center gap-2 text-[11px] font-bold text-muted-foreground">
-            <span className="whitespace-nowrap">Log date</span>
+        <div className="fixed left-1/2 top-[calc(env(safe-area-inset-top)+71px)] z-[260] -translate-x-1/2 rounded-xl border border-border/70 bg-background/95 px-2 py-1 shadow-sm backdrop-blur">
+          <label className="flex items-center gap-1.5 text-[9px] font-bold leading-none text-muted-foreground">
+            <span className="whitespace-nowrap">Date</span>
             <input
               type="date"
               value={targetDate}
               onChange={(event) => {
                 if (event.target.value) setTargetDate(event.target.value);
               }}
-              className="h-9 rounded-xl border border-border bg-surface px-2 text-xs font-semibold text-foreground"
+              className="h-7 w-[112px] rounded-lg border border-border bg-surface px-1.5 text-[10px] font-semibold text-foreground"
               aria-label="Log date"
             />
           </label>
