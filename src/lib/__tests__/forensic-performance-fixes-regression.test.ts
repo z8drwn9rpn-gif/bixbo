@@ -60,17 +60,14 @@ describe("forensic performance fixes", () => {
     expect(legal).toContain("if (cloudHealthConsentStateInFlight) return cloudHealthConsentStateInFlight");
   });
 
-  it("keeps every LogSheet hook before the sleep-specific early return", () => {
+  it("keeps the LogSheet hooks unconditional while routing temp through the canonical logger", () => {
     const logSheet = read("src/components/LogSheet.tsx");
-    const sleepEarlyReturn = logSheet.indexOf('if (props.initial === "temp")');
-    const paddingEffect = logSheet.indexOf("formSurface.style.paddingTop");
-    const dateMemo = logSheet.indexOf("const dateLabel = useMemo");
 
     expect(logSheet).toContain("createPortal(");
-    expect(sleepEarlyReturn).toBeGreaterThan(0);
-    expect(paddingEffect).toBeGreaterThan(0);
-    expect(dateMemo).toBeGreaterThan(0);
-    expect(paddingEffect).toBeLessThan(sleepEarlyReturn);
-    expect(dateMemo).toBeLessThan(sleepEarlyReturn);
+    expect(logSheet).toContain("formSurface.style.paddingTop");
+    expect(logSheet).toContain("const dateLabel = useMemo");
+    expect(logSheet).toContain("<LogSheetRoot key={formKey} {...props} date={targetDate} />");
+    expect(logSheet).not.toContain('if (props.initial === "temp")');
+    expect(logSheet).not.toContain("PastDaySleepSheet");
   });
 });

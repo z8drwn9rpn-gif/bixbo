@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState, type ComponentProps } from "react";
 import { createPortal } from "react-dom";
 
 import { LogSheet as LogSheetRoot } from "@/features/logging/LogSheetRoot";
-import { PastDaySleepSheet } from "@/components/PastDaySleepSheet";
 
 type LogSheetProps = ComponentProps<typeof LogSheetRoot>;
 
@@ -97,19 +96,6 @@ export function LogSheet(props: LogSheetProps) {
     </div>,
     dialogHost,
   ) : null;
-
-  if (props.initial === "temp") {
-    return (
-      <PastDaySleepSheet
-        key={`sleep:${props.date}:${props.open ? "open" : "closed"}`}
-        open={props.open}
-        onOpenChange={props.onOpenChange}
-        date={props.date}
-        data={props.data}
-        update={props.update}
-      />
-    );
-  }
 
   return (
     <>
