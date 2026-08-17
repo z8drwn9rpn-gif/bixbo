@@ -2,14 +2,18 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 
 describe("forensic report fixes", () => {
-  test("proactively recovers long-running sessions onto the current deployment", () => {
+  test("keeps proactive deployment polling disconnected and stale recovery guarded", () => {
     const shell = readFileSync("src/components/AppShell.tsx", "utf8");
     const freshness = readFileSync("src/lib/deploymentFreshness.ts", "utf8");
+    const staleRecovery = readFileSync("src/lib/staleAssetRecovery.ts", "utf8");
 
-    expect(shell).toContain('import { useDeploymentFreshness } from "@/lib/deploymentFreshness"');
-    expect(shell).toContain("useDeploymentFreshness();");
-    expect(freshness).toContain("hasNewDeployment()");
-    expect(freshness).toContain("window.location.reload()");
+    expect(shell).not.toContain("useDeploymentFreshness");
+    expect(shell).not.toContain("deploymentFreshness");
+    expect(freshness).toContain("DEPLOYMENT_RELOAD_GUARD_KEY");
+    expect(freshness).toContain("DEPLOYMENT_RELOAD_GUARD_MS = 5 * 60_000");
+    expect(freshness).toContain("window.location.replace(currentUrlWithDeploymentBust())");
+    expect(staleRecovery).toContain("recoverFromStaleAssetError");
+    expect(staleRecovery).toContain("RECOVERY_WINDOW_MS = 30_000");
   });
 
   test("preloads mobile route chunks before navigation commits", () => {
