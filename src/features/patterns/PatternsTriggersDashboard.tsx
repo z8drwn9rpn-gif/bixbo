@@ -7,10 +7,72 @@ import { AnalysisRangeSelector, Empty, clampPercent } from "./shared";
 
 type Tone = "good" | "bad" | "neutral";
 
+type TriggerIconProps = { size?: number };
+
 function toneClass(tone: Tone) {
   if (tone === "good") return "text-emerald-700 dark:text-emerald-300";
   if (tone === "bad") return "text-rose-600 dark:text-rose-300";
   return "text-muted-foreground";
+}
+
+function PurpleTargetIcon({ size = 30 }: TriggerIconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 64 64" fill="none" aria-hidden="true">
+      <ellipse cx="32" cy="56" rx="15" ry="3" fill="#263318" opacity="0.12" />
+      <circle cx="32" cy="31" r="18" fill="#c8afff" stroke="#7247d6" strokeWidth="3" />
+      <circle cx="32" cy="31" r="10" fill="#f6f1ff" stroke="#8a5bea" strokeWidth="3" />
+      <circle cx="32" cy="31" r="4.5" fill="#6d32d8" />
+      <path d="M32 6v11M32 45v11M7 31h11M46 31h11" stroke="#6d32d8" strokeWidth="4" strokeLinecap="round" />
+      <path d="M18 18 23 23M41 41l5 5M46 16l-6 6M24 40l-6 6" stroke="#9b79ef" strokeWidth="2.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function CaffeineCupIcon({ size = 28 }: TriggerIconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 64 64" fill="none" aria-hidden="true">
+      <ellipse cx="31" cy="56" rx="16" ry="3" fill="#263318" opacity="0.12" />
+      <path d="M14 19h34v22c0 8-6 13-14 13h-6c-8 0-14-5-14-13V19Z" fill="#7d4de0" stroke="#5730aa" strokeWidth="2.5" />
+      <ellipse cx="31" cy="19" rx="17" ry="5" fill="#b69bfa" stroke="#5730aa" strokeWidth="2.5" />
+      <ellipse cx="31" cy="19" rx="12.5" ry="3" fill="#5a3425" />
+      <path d="M48 26h4c6 0 8 4 8 8s-3 8-9 8h-3" stroke="#7247d6" strokeWidth="4" strokeLinecap="round" />
+      <path d="M20 28v11c0 6 4 9 9 10" stroke="#d9caff" strokeWidth="3" strokeLinecap="round" opacity="0.62" />
+    </svg>
+  );
+}
+
+function PeopleIcon({ size = 25, single = false, green = false }: TriggerIconProps & { single?: boolean; green?: boolean }) {
+  const main = green ? "#62ad59" : "#8b5cf6";
+  const dark = green ? "#3d7b38" : "#6038b5";
+  const light = green ? "#bde3a9" : "#d8c8ff";
+  return (
+    <svg width={size} height={size} viewBox="0 0 64 64" fill="none" aria-hidden="true">
+      <ellipse cx="32" cy="56" rx="16" ry="3" fill="#263318" opacity="0.12" />
+      {single ? (
+        <>
+          <circle cx="32" cy="22" r="10" fill={light} stroke={dark} strokeWidth="2" />
+          <path d="M14 51c1-12 8-19 18-19s17 7 18 19H14Z" fill={main} stroke={dark} strokeWidth="2" />
+        </>
+      ) : (
+        <>
+          <circle cx="23" cy="23" r="9" fill={light} stroke={dark} strokeWidth="2" />
+          <circle cx="42" cy="23" r="9" fill="#eef0cb" stroke={dark} strokeWidth="2" />
+          <path d="M7 51c1-11 7-18 16-18s15 7 16 18H7Z" fill={main} stroke={dark} strokeWidth="2" />
+          <path d="M27 51c1-11 7-18 15-18 9 0 14 7 15 18H27Z" fill={green ? "#91c36f" : "#ad95ea"} stroke={dark} strokeWidth="2" />
+        </>
+      )}
+    </svg>
+  );
+}
+
+function ConfidenceStar({ size = 25 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 64 64" fill="none" aria-hidden="true">
+      <ellipse cx="32" cy="56" rx="15" ry="3" fill="#263318" opacity="0.12" />
+      <path d="m32 7 7 14 16 2.3-11.5 11.2 2.7 15.8L32 42.8 17.8 50.3l2.7-15.8L9 23.3 25 21 32 7Z" fill="#f6c945" stroke="#c99421" strokeWidth="2.4" strokeLinejoin="round" />
+      <path d="m25 17 4-7 2 11-7 2 1-6Z" fill="#fff4ad" opacity="0.7" />
+    </svg>
+  );
 }
 
 function iconForAssociation(label: string) {
@@ -26,18 +88,29 @@ function iconForAssociation(label: string) {
   return "✨";
 }
 
-function IconChip({ icon, size = 30 }: { icon: string; size?: number }) {
-  return <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-background/85 ring-1 ring-border/50" style={{ boxShadow: "0 4px 10px rgba(45,52,35,.14)" }}><Ico e={icon} size={size} /></span>;
+function iconForTrigger(label: string) {
+  const value = label.toLowerCase();
+  if (value.includes("caffeine") || value.includes("coffee")) return "☕";
+  if (value.includes("period") || value.includes("bleed") || value.includes("flow")) return "🫐";
+  if (value.includes("workout") || value.includes("exercise")) return "👟";
+  if (value.includes("histamine")) return "🌶️";
+  if (value.includes("pcos")) return "🌻";
+  if (value.includes("sleep")) return "🌙";
+  if (value.includes("med") || value.includes("dose")) return "💊";
+  return "🎯";
 }
 
-function ConfidenceStar({ size = 25 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 64 64" fill="none" aria-hidden="true">
-      <ellipse cx="32" cy="56" rx="15" ry="3" fill="#263318" opacity="0.12" />
-      <path d="m32 7 7 14 16 2.3-11.5 11.2 2.7 15.8L32 42.8 17.8 50.3l2.7-15.8L9 23.3 25 21 32 7Z" fill="#f6c945" stroke="#c99421" strokeWidth="2.4" strokeLinejoin="round" />
-      <path d="m25 17 4-7 2 11-7 2 1-6Z" fill="#fff4ad" opacity="0.7" />
-    </svg>
-  );
+function TriggerIcon({ icon, size = 25 }: { icon: string; size?: number }) {
+  if (icon === "🎯") return <PurpleTargetIcon size={size} />;
+  if (icon === "☕") return <CaffeineCupIcon size={size} />;
+  if (icon === "👤") return <PeopleIcon size={size} single />;
+  if (icon === "👥") return <PeopleIcon size={size} green />;
+  if (icon === "⭐️") return <ConfidenceStar size={size} />;
+  return <Ico e={icon} size={size} />;
+}
+
+function IconChip({ icon, size = 30 }: { icon: string; size?: number }) {
+  return <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-background/85 ring-1 ring-border/50" style={{ boxShadow: "0 4px 10px rgba(45,52,35,.14)" }}><TriggerIcon icon={icon} size={size} /></span>;
 }
 
 function DashboardCard({ title, subtitle, icon, children, jumpLabel }: { title: string; subtitle: string; icon?: string; children: ReactNode; jumpLabel?: string }) {
@@ -57,13 +130,14 @@ function AssociationCard({ association, index }: { association: { trigger: strin
 
 function TriggerGauge({ label, detail, percentage, color }: { label: string; detail: string; percentage: number | null; color: string }) {
   const pct = percentage == null ? 0 : clampPercent(percentage);
-  const display = percentage == null ? "—" : `${percentage.toFixed(0)}%`;
-  const fillHeight = percentage == null ? 0 : percentage === 0 ? 4 : Math.max(8, pct * 0.78);
-  return <div className="rounded-2xl bg-tint/48 px-2.5 py-2.5 text-center ring-1 ring-border/45"><p className="text-[11px] font-semibold" style={{ color }}>{label}</p><p className="mt-0.5 text-[22px] font-bold tabular-nums text-foreground">{display}</p><div className="relative mx-auto mt-1.5 h-24 w-[64px]"><div className="absolute inset-x-1.5 bottom-1 top-1 rounded-[28px] border border-border/55 bg-gradient-to-r from-background/65 via-white/88 to-background/55 shadow-[inset_3px_0_7px_rgba(80,75,55,.08),inset_-3px_0_7px_rgba(80,75,55,.08),0_4px_9px_rgba(45,52,35,.10)]"><span className="absolute inset-x-1 top-1 h-3 rounded-[50%] border border-border/45 bg-white/75" /><span className="absolute inset-x-1 bottom-1 h-3 rounded-[50%] border border-border/40 bg-background/70" />{percentage == null ? <span className="absolute inset-0 grid place-items-center text-lg font-semibold text-muted-foreground">—</span> : <span data-bixbo-chart-mark="bar" title={`${label}: ${percentage.toFixed(0)}%`} className="absolute inset-x-1.5 bottom-2 rounded-b-[22px]" style={{ height: `${fillHeight}%`, background: color, filter: "saturate(1.7) contrast(1.1)", boxShadow: "inset 3px 0 5px rgba(255,255,255,.25), inset -3px 0 5px rgba(40,35,20,.18), 0 2px 5px rgba(45,52,35,.16)" }}><span className="absolute -top-1 left-0 right-0 h-2.5 rounded-[50%]" style={{ background: color, boxShadow: "inset 0 2px 2px rgba(255,255,255,.42), 0 1px 2px rgba(40,35,20,.22)" }} /></span>}</div></div><p className="mt-0.5 text-[10px] font-semibold tabular-nums" style={{ color }}>{display}</p><p className="mt-0.5 text-[9px] text-muted-foreground">{detail}</p></div>;
+  const headline = percentage == null ? "—" : `${percentage.toFixed(0)}%`;
+  const bottomDisplay = `${pct.toFixed(0)}%`;
+  const fillHeight = pct === 0 ? 4 : Math.max(8, pct * 0.78);
+  return <div className="rounded-2xl bg-tint/48 px-2.5 py-2.5 text-center ring-1 ring-border/45"><p className="text-[11px] font-semibold" style={{ color }}>{label}</p><p className="mt-0.5 text-[22px] font-bold tabular-nums text-foreground">{headline}</p><div className="relative mx-auto mt-1.5 h-24 w-[64px]"><div className="absolute inset-x-1.5 bottom-1 top-1 rounded-[28px] border border-border/55 bg-gradient-to-r from-background/65 via-white/88 to-background/55 shadow-[inset_3px_0_7px_rgba(80,75,55,.08),inset_-3px_0_7px_rgba(80,75,55,.08),0_4px_9px_rgba(45,52,35,.10)]"><span className="absolute inset-x-1 top-1 h-3 rounded-[50%] border border-border/45 bg-white/75" /><span className="absolute inset-x-1 bottom-1 h-3 rounded-[50%] border border-border/40 bg-background/70" /><span data-bixbo-chart-mark="bar" title={`${label}: ${bottomDisplay}`} className="absolute inset-x-1.5 bottom-2 rounded-b-[22px]" style={{ height: `${fillHeight}%`, background: color, filter: "saturate(1.7) contrast(1.1)", boxShadow: "inset 3px 0 5px rgba(255,255,255,.25), inset -3px 0 5px rgba(40,35,20,.18), 0 2px 5px rgba(45,52,35,.16)" }}><span className="absolute -top-1 left-0 right-0 h-2.5 rounded-[50%]" style={{ background: color, boxShadow: "inset 0 2px 2px rgba(255,255,255,.42), 0 1px 2px rgba(40,35,20,.22)" }} /></span></div></div><p className="mt-0.5 text-[10px] font-semibold tabular-nums" style={{ color }}>{bottomDisplay}</p><p className="mt-0.5 text-[9px] text-muted-foreground">{detail}</p></div>;
 }
 
 function SummaryItem({ icon, star, label, value, tone = "neutral" }: { icon?: string; star?: boolean; label: string; value: string; tone?: Tone }) {
-  return <div className="flex items-center gap-3 rounded-2xl bg-tint/45 px-3 py-2.5 ring-1 ring-border/40"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-background/80 shadow-sm ring-1 ring-border/45">{star ? <ConfidenceStar /> : <Ico e={icon} size={25} />}</span><span className="min-w-0 flex-1 text-[11px] text-muted-foreground">{label}</span><span className={`max-w-[58%] text-right text-[12px] font-semibold leading-snug ${toneClass(tone)}`}>{value}</span></div>;
+  return <div className="flex items-center gap-3 rounded-2xl bg-tint/45 px-3 py-2.5 ring-1 ring-border/40"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-background/80 shadow-sm ring-1 ring-border/45">{star ? <ConfidenceStar /> : <TriggerIcon icon={icon ?? "🎯"} size={25} />}</span><span className="min-w-0 flex-1 text-[11px] text-muted-foreground">{label}</span><span className={`max-w-[58%] text-right text-[12px] font-semibold leading-snug ${toneClass(tone)}`}>{value}</span></div>;
 }
 
 export function PatternsTriggersDashboard({ model }: { model: PatternsContentModel }) {
@@ -76,14 +150,14 @@ export function PatternsTriggersDashboard({ model }: { model: PatternsContentMod
     <DashboardCard title={t("Smart correlations")} subtitle={t("Automatically ranked associations calculated only from your own logs.")}>{strongestAssociations.length === 0 ? <Empty text="Log at least 3 days with and 3 days without a trigger to unlock smart correlations." /> : <div className="space-y-2.5">{strongestAssociations.slice(0, 3).map((association, index) => <AssociationCard key={`smart-${association.trigger}-${association.outcome}`} association={association} index={index} />)}<div className="rounded-2xl bg-purple-500/7 px-3 py-2.5 ring-1 ring-purple-500/12"><p className="text-[10px] leading-relaxed text-muted-foreground">{t("Correlations show associations in your logs. They do not prove that one factor caused another.")}</p></div></div>}</DashboardCard>
 
     <DashboardCard title={t("Trigger comparison")} subtitle={t("Compare how often an outcome occurred on days with and without a possible trigger.")} icon="🎯">
-      <div className="space-y-3"><label className="block"><span className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">{t("Possible trigger")}</span><div className="relative mt-1.5"><span className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2"><Ico e="💊" size={25} /></span><select value={selectedTrigger} onChange={(event) => setSelectedTrigger(event.target.value)} className="min-h-12 w-full appearance-none rounded-2xl bg-tint/55 py-3 pl-12 pr-11 text-sm font-medium text-foreground outline-none ring-1 ring-border/55 focus:ring-2 focus:ring-primary">{triggerOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}</select><ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-primary" /></div></label><label className="block"><span className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">{t("Compare with outcome")}</span><div className="relative mt-1.5"><span className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2"><Ico e={iconForAssociation(selectedOutcomeLabel)} size={25} /></span><select value={selectedOutcome} onChange={(event) => setSelectedOutcome(event.target.value)} className="min-h-12 w-full appearance-none rounded-2xl bg-tint/55 py-3 pl-12 pr-11 text-sm font-medium text-foreground outline-none ring-1 ring-border/55 focus:ring-2 focus:ring-primary">{outcomeOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}</select><ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-primary" /></div></label></div>
+      <div className="space-y-3"><label className="block"><span className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">{t("Possible trigger")}</span><div className="relative mt-1.5"><span className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2"><TriggerIcon icon={iconForTrigger(selectedTriggerLabel)} size={25} /></span><select value={selectedTrigger} onChange={(event) => setSelectedTrigger(event.target.value)} className="min-h-12 w-full appearance-none rounded-2xl bg-tint/55 py-3 pl-12 pr-11 text-sm font-medium text-foreground outline-none ring-1 ring-border/55 focus:ring-2 focus:ring-primary">{triggerOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}</select><ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-primary" /></div></label><label className="block"><span className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">{t("Compare with outcome")}</span><div className="relative mt-1.5"><span className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2"><TriggerIcon icon={iconForAssociation(selectedOutcomeLabel)} size={25} /></span><select value={selectedOutcome} onChange={(event) => setSelectedOutcome(event.target.value)} className="min-h-12 w-full appearance-none rounded-2xl bg-tint/55 py-3 pl-12 pr-11 text-sm font-medium text-foreground outline-none ring-1 ring-border/55 focus:ring-2 focus:ring-primary">{outcomeOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}</select><ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-primary" /></div></label></div>
       <div className="mt-3 grid grid-cols-2 gap-2.5"><TriggerGauge label={t("With trigger")} detail={`${daysWithTrigger.length} ${t(daysWithTrigger.length === 1 ? "logged day" : "logged days")}`} percentage={percentWithTrigger} color={CHART_COLORS.panic} /><TriggerGauge label={t("Without trigger")} detail={`${daysWithoutTrigger.length} ${t(daysWithoutTrigger.length === 1 ? "logged day" : "logged days")}`} percentage={percentWithoutTrigger} color={CHART_COLORS.workout} /></div>
       <div className="mt-3 rounded-2xl bg-purple-500/6 p-3.5 ring-1 ring-purple-500/12"><div className="flex items-start gap-3"><IconChip icon={iconForAssociation(selectedOutcomeLabel)} size={27} /><p className="text-xs leading-relaxed text-muted-foreground"><span className="font-semibold text-foreground">{selectedOutcomeLabel}</span> {t("occurred on")} <span className="font-bold text-violet-600 dark:text-violet-300">{percentWithTrigger == null ? "—" : `${percentWithTrigger.toFixed(0)}%`}</span> {t("of days with")} <span className="font-semibold text-foreground">{selectedTriggerLabel.toLowerCase()}</span>, {t("compared with")} <span className="font-bold text-emerald-600 dark:text-emerald-300">{percentWithoutTrigger == null ? "—" : `${percentWithoutTrigger.toFixed(0)}%`}</span> {t("of days without it.")}</p></div><p className="mt-3 text-[10px] leading-relaxed text-muted-foreground">{t("This shows an association in your logs, not proof that the selected trigger caused the outcome.")}</p></div>
-      <div className="mt-3 rounded-2xl bg-background/55 p-3 ring-1 ring-border/45"><div className="flex items-center gap-2.5"><span className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 ring-1 ring-primary/15"><ConfidenceStar /></span><h3 className="text-sm font-semibold text-foreground">{t("Trigger Summary")}</h3></div><div className="mt-3 space-y-2"><SummaryItem icon="📊" label={t("Selected association")} value={selectedAssociation} tone={selectedTone} /><SummaryItem icon="👥" label={t("Days with trigger")} value={`${daysWithTrigger.length}`} /><SummaryItem icon="👥" label={t("Days without trigger")} value={`${daysWithoutTrigger.length}`} /><SummaryItem star label={t("Confidence")} value={triggerConfidence} tone={triggerConfidence === "High" ? "good" : "neutral"} /></div><p className="mt-2 px-1 text-[10px] leading-relaxed text-muted-foreground">{t("Confidence depends on the number of days in both groups")}</p></div>
+      <div className="mt-3 rounded-2xl bg-background/55 p-3 ring-1 ring-border/45"><div className="flex items-center gap-2.5"><span className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 ring-1 ring-primary/15"><ConfidenceStar /></span><h3 className="text-sm font-semibold text-foreground">{t("Trigger Summary")}</h3></div><div className="mt-3 space-y-2"><SummaryItem icon="🎯" label={t("Selected association")} value={selectedAssociation} tone={selectedTone} /><SummaryItem icon="👤" label={t("Days with trigger")} value={`${daysWithTrigger.length}`} /><SummaryItem icon="👥" label={t("Days without trigger")} value={`${daysWithoutTrigger.length}`} /><SummaryItem star label={t("Confidence")} value={triggerConfidence} tone={triggerConfidence === "High" ? "good" : "neutral"} /></div><p className="mt-2 px-1 text-[10px] leading-relaxed text-muted-foreground">{t("Confidence depends on the number of days in both groups")}</p></div>
     </DashboardCard>
 
     <CollapsibleDashboardCard title={t("Strongest correlations")} subtitle={t("Ranked associations calculated only from your logged data")} defaultOpen={false}>{strongestAssociations.length === 0 ? <Empty text="Log at least 3 days with and 3 days without a trigger to calculate correlations." /> : <div className="space-y-2.5">{strongestAssociations.map((association, index) => <AssociationCard key={`${association.trigger}-${association.outcome}`} association={association} index={index} />)}</div>}</CollapsibleDashboardCard>
     <button type="button" onClick={saveTriggerCombination} disabled={!selectedTrigger || !selectedOutcome} className="min-h-12 w-full rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-sm ring-1 ring-primary/35 transition hover:brightness-[1.04] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40 lg:col-span-2" style={{ boxShadow: "inset 1px 1px 2px rgba(255,255,255,.30), inset -1px -2px 3px rgba(35,45,20,.20), 0 3px 8px rgba(45,52,35,.16)" }}>{t("Save this comparison")}</button>
-    <CollapsibleDashboardCard title={t("Saved comparisons")} subtitle={t("Open a saved trigger and outcome pair")} icon="📁" defaultOpen={false}>{(view.settings.savedTriggers ?? []).length === 0 ? <Empty text="No saved comparisons yet." /> : <div className="space-y-2">{(view.settings.savedTriggers ?? []).map((saved) => { const savedTriggerLabel = triggerOptions.find((option) => option.id === saved.a)?.label ?? saved.a; const savedOutcomeLabel = outcomeOptions.find((option) => option.id === saved.b)?.label ?? saved.b; return <div key={saved.id} className="flex items-center gap-3 rounded-2xl bg-tint/48 px-3 py-3 ring-1 ring-border/45"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-background/80 ring-1 ring-border/40"><Ico e={iconForAssociation(savedOutcomeLabel)} size={24} /></span><button type="button" className="min-w-0 flex-1 text-left" onClick={() => { setSelectedTrigger(saved.a); setSelectedOutcome(saved.b); }}><p className="truncate text-xs font-semibold text-foreground">{savedTriggerLabel}</p><p className="mt-0.5 truncate text-[11px] text-muted-foreground">→ {savedOutcomeLabel}</p></button><button type="button" aria-label={t("Remove saved comparison")} onClick={() => removeTriggerCombination(saved.id)} className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-destructive/8 text-destructive ring-1 ring-destructive/15"><Trash2 className="h-4 w-4" /></button></div>; })}</div>}</CollapsibleDashboardCard>
+    <CollapsibleDashboardCard title={t("Saved comparisons")} subtitle={t("Open a saved trigger and outcome pair")} icon="🎯" defaultOpen={false}>{(view.settings.savedTriggers ?? []).length === 0 ? <Empty text="No saved comparisons yet." /> : <div className="space-y-2">{(view.settings.savedTriggers ?? []).map((saved) => { const savedTriggerLabel = triggerOptions.find((option) => option.id === saved.a)?.label ?? saved.a; const savedOutcomeLabel = outcomeOptions.find((option) => option.id === saved.b)?.label ?? saved.b; return <div key={saved.id} className="flex items-center gap-3 rounded-2xl bg-tint/48 px-3 py-3 ring-1 ring-border/45"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-background/80 ring-1 ring-border/40"><TriggerIcon icon={iconForAssociation(savedOutcomeLabel)} size={24} /></span><button type="button" className="min-w-0 flex-1 text-left" onClick={() => { setSelectedTrigger(saved.a); setSelectedOutcome(saved.b); }}><p className="truncate text-xs font-semibold text-foreground">{savedTriggerLabel}</p><p className="mt-0.5 truncate text-[11px] text-muted-foreground">→ {savedOutcomeLabel}</p></button><button type="button" aria-label={t("Remove saved comparison")} onClick={() => removeTriggerCombination(saved.id)} className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-destructive/8 text-destructive ring-1 ring-destructive/15"><Trash2 className="h-4 w-4" /></button></div>; })}</div>}</CollapsibleDashboardCard>
   </>;
 }

@@ -19,7 +19,8 @@ describe("approved Patterns polish", () => {
   it("lets Cycle move through period pairs and keeps flow labels intact", () => {
     expect(cycle).toContain("Compare periods");
     expect(cycle).toContain("phaseDays(selectedCycles)");
-    expect(cycle).toContain('e="🩸"');
+    expect(cycle).toContain("function FlowIcon");
+    expect(cycle).toContain('fill="#df4b55"');
     expect(cycle).toContain('icon: "💢"');
     expect(cycle).toContain("whitespace-nowrap");
   });
