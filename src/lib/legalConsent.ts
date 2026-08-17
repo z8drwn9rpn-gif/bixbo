@@ -125,12 +125,12 @@ async function readCloudHealthConsentState(): Promise<CloudHealthConsentState> {
 export function cloudHealthConsentState(): Promise<CloudHealthConsentState> {
   if (cloudHealthConsentStateInFlight) return cloudHealthConsentStateInFlight;
 
-  let shared: Promise<CloudHealthConsentState>;
-  shared = readCloudHealthConsentState().finally(() => {
-    if (cloudHealthConsentStateInFlight === shared) cloudHealthConsentStateInFlight = null;
-  });
-  cloudHealthConsentStateInFlight = shared;
-  return shared;
+  const request = readCloudHealthConsentState();
+  cloudHealthConsentStateInFlight = request;
+  void request.finally(() => {
+    if (cloudHealthConsentStateInFlight === request) cloudHealthConsentStateInFlight = null;
+  }).catch(() => undefined);
+  return request;
 }
 
 function parseConsent(value: unknown): SignupLegalConsent | null {
