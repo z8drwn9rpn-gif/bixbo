@@ -8,6 +8,7 @@ import { useI18n } from "@/hooks/useI18n";
 import { nowHHMM, updateDayLog, type BixboData } from "@/lib/storage";
 
 type UpdateFn = (updater: (data: BixboData) => BixboData) => void;
+type DayLogs = BixboData["dayLogs"];
 
 export type QuickVitalMetric = "sleep" | "temperature" | "weight";
 
@@ -26,8 +27,8 @@ const META: Record<QuickVitalMetric, { title: string; icon: string; label: strin
   weight: { title: "Weight", icon: "⚖️", label: "Weight", unit: "kg", placeholder: "68" },
 };
 
-function valueFor(metric: QuickVitalMetric, data: BixboData, date: string): string {
-  const day = data.dayLogs[date];
+function valueFor(metric: QuickVitalMetric, dayLogs: DayLogs, date: string): string {
+  const day = dayLogs[date];
   const raw = metric === "sleep" ? day?.sleepHours : metric === "temperature" ? day?.temperature : day?.weight;
   return raw == null ? "" : String(raw).replace(".", ",");
 }
@@ -36,18 +37,20 @@ export function QuickVitalSheet({ open, onOpenChange, metric, date, data, update
   const { t, language } = useI18n();
   const meta = META[metric];
   const [targetDate, setTargetDate] = useState(date);
-  const [value, setValue] = useState(() => valueFor(metric, data, date));
+  const [value, setValue] = useState(() => valueFor(metric, data.dayLogs, date));
+  const sourceDateValue = valueFor(metric, data.dayLogs, date);
+  const targetDateValue = valueFor(metric, data.dayLogs, targetDate);
 
   useEffect(() => {
     if (!open) return;
     setTargetDate(date);
-    setValue(valueFor(metric, data, date));
-  }, [data, date, metric, open]);
+    setValue(sourceDateValue);
+  }, [date, metric, open, sourceDateValue]);
 
   useEffect(() => {
     if (!open) return;
-    setValue(valueFor(metric, data, targetDate));
-  }, [data, metric, open, targetDate]);
+    setValue(targetDateValue);
+  }, [metric, open, targetDate, targetDateValue]);
 
   const dateLabel = useMemo(
     () => new Date(`${targetDate}T12:00:00`).toLocaleDateString(language === "sk" ? "sk-SK" : "en-GB", { day: "numeric", month: "short", year: "numeric" }),

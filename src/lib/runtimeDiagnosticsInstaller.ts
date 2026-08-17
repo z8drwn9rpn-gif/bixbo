@@ -8,6 +8,91 @@ const FRAME_GAP_MIN_MS = 250;
 const FRAME_GAP_MAX_MS = 1_200;
 const FRAME_GAP_CLUSTER_WINDOW_MS = 2_000;
 const FRAME_GAP_EVIDENCE_COUNT = 2;
+const RUNTIME_ISSUE_KEY = "bixbo:runtime-diagnostics:v1";
+const INTERACTION_DEDUPE_INTERVAL_MS = 1_000;
+
+export type StoredForensicIssue = RuntimeDiagnosticIssue & {
+  incidentId?: string;
+  fingerprint?: string;
+  occurrenceCount?: number;
+  rootCause?: string;
+  confidence?: number;
+  traceId?: string;
+  buildFingerprint?: string;
+  timeline?: string[];
+};
+
+function interactionSignalPriority(message: string): number {
+  const name = message.trim().split(/\s+/, 1)[0]?.toLowerCase() ?? "";
+  if (name === "click") return 8;
+  if (name === "touchend") return 7;
+  if (name === "pointerup") return 6;
+  if (name === "mouseup") return 5;
+  if (name === "mousedown") return 4;
+  if (name === "pointerdown") return 3;
+  if (name === "gotpointercapture" || name === "lostpointercapture") return 2;
+  if (name === "mouseover" || name === "mouseout" || name === "pointerout") return 1;
+  return 0;
+}
+
+/**
+ * Event Timing exposes several low-level entries for one physical tap. The
+ * forensic recorder correlates those entries under one incidentId; keep one
+ * representative slow-interaction signal so a single tap cannot look like
+ * eight or nine separate performance incidents in the report.
+ */
+export function collapseDuplicateInteractionSignals(issues: StoredForensicIssue[]): StoredForensicIssue[] {
+  const compacted: StoredForensicIssue[] = [];
+  const indexByIncident = new Map<string, number>();
+
+  for (const issue of issues) {
+    if (issue.kind !== "interaction" || !issue.incidentId) {
+      compacted.push(issue);
+      continue;
+    }
+
+    const existingIndex = indexByIncident.get(issue.incidentId);
+    if (existingIndex === undefined) {
+      indexByIncident.set(issue.incidentId, compacted.length);
+      compacted.push({
+        ...issue,
+        occurrenceCount: Math.max(1, issue.occurrenceCount ?? 1),
+      });
+      continue;
+    }
+
+    const existing = compacted[existingIndex];
+    const existingDuration = existing.durationMs ?? 0;
+    const nextDuration = issue.durationMs ?? 0;
+    const preferNext = nextDuration > existingDuration
+      || (nextDuration === existingDuration && interactionSignalPriority(issue.message) > interactionSignalPriority(existing.message));
+    const representative = preferNext ? issue : existing;
+
+    compacted[existingIndex] = {
+      ...representative,
+      at: Math.max(existing.at, issue.at),
+      durationMs: Math.max(existingDuration, nextDuration),
+      incidentId: issue.incidentId,
+      occurrenceCount: Math.max(1, existing.occurrenceCount ?? 1, issue.occurrenceCount ?? 1),
+    };
+  }
+
+  return compacted;
+}
+
+function sanitizeDuplicateInteractionSignals(): void {
+  if (typeof window === "undefined") return;
+  try {
+    const parsed: unknown = JSON.parse(window.localStorage.getItem(RUNTIME_ISSUE_KEY) ?? "[]");
+    if (!Array.isArray(parsed)) return;
+    const compacted = collapseDuplicateInteractionSignals(parsed as StoredForensicIssue[]);
+    if (compacted.length !== parsed.length) {
+      window.localStorage.setItem(RUNTIME_ISSUE_KEY, JSON.stringify(compacted));
+    }
+  } catch {
+    // Diagnostics are best effort; the app scan checks storage separately.
+  }
+}
 
 function resourceUrlForTarget(target: EventTarget | null): string | null {
   if (target instanceof HTMLScriptElement) return target.src || null;
@@ -31,6 +116,8 @@ export function installRuntimeDiagnostics(onIssue?: (issue: RuntimeDiagnosticIss
   if (typeof window === "undefined") return () => undefined;
 
   const cleanupLifecycleGuard = installLifecyclePerformanceGuard();
+  sanitizeDuplicateInteractionSignals();
+  const interactionDedupeIntervalId = window.setInterval(sanitizeDuplicateInteractionSignals, INTERACTION_DEDUPE_INTERVAL_MS);
 
   const onError = (event: ErrorEvent) => {
     const error = event.error ?? event.message;
@@ -139,6 +226,7 @@ export function installRuntimeDiagnostics(onIssue?: (issue: RuntimeDiagnosticIss
           { durationMs: entry.duration, severity: entry.duration >= 1_000 ? "error" : "warning" },
         );
       }
+      sanitizeDuplicateInteractionSignals();
     });
     eventObserver.observe({ type: "event", buffered: true, durationThreshold: 200 } as PerformanceObserverInit);
   }
@@ -159,6 +247,7 @@ export function installRuntimeDiagnostics(onIssue?: (issue: RuntimeDiagnosticIss
     window.removeEventListener("pageshow", resetPerformanceClocks);
     document.removeEventListener("visibilitychange", resetPerformanceClocks);
     window.clearInterval(heartbeatId);
+    window.clearInterval(interactionDedupeIntervalId);
     window.cancelAnimationFrame(rafId);
     longTaskObserver?.disconnect();
     eventObserver?.disconnect();
