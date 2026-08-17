@@ -45,4 +45,16 @@ describe("partner pairing consent hardening", () => {
     expect(migration).toContain("private.ensure_profile_impl");
     expect(migration).toContain("security invoker");
   });
+
+  it("never renders raw Supabase error objects in Couple settings", () => {
+    const settings = read("src/features/couple/CoupleSettings.tsx");
+
+    expect(settings).toContain("function readableError(cause: unknown");
+    expect(settings).toContain('cause && typeof cause === "object"');
+    expect(settings).toContain('parsed.code === "P0002"');
+    expect(settings).toContain("both accounts have accepted the current health-data consent");
+    expect(settings).toContain("your connection is still saved");
+    expect(settings).toContain('role="alert"');
+    expect(settings).not.toContain("String(cause)");
+  });
 });
