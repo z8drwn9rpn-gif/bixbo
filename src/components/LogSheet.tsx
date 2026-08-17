@@ -52,8 +52,8 @@ export function LogSheet(props: LogSheetProps) {
   const formKey = `${props.initial ?? "menu"}:${props.open ? "open" : "closed"}`;
   const normalizedTitle = formTitle.toLowerCase();
 
-  // Event / To do / Note already expose their own date controls. Never render a
-  // second global backfill date picker on those screens.
+  // Calendar forms already have their own From/To or date field. A second
+  // global picker would be redundant and can cover their tabs, so omit it.
   const hasOwnCalendarDate =
     props.initial === "event" ||
     props.initial === "task" ||
@@ -62,20 +62,13 @@ export function LogSheet(props: LogSheetProps) {
 
   const showDateControl = props.open && formActive && !hasOwnCalendarDate;
 
-  // Keep the picker inside the narrow action strip and away from each form's
-  // own Back/Save/Next/progress controls. Pain needs a slight left bias because
-  // its progress bar occupies the left side; Meds stays exactly centered.
-  const placement = normalizedTitle === "pain"
-    ? "left-[44%]"
-    : "left-1/2";
-
   return (
     <>
       <LogSheetRoot key={formKey} {...props} date={targetDate} />
       {showDateControl ? (
         <div
           data-bixbo-log-date-control
-          className={`fixed ${placement} top-[calc(env(safe-area-inset-top)+76px)] z-[260] -translate-x-1/2`}
+          className="pointer-events-auto fixed left-1/2 top-[calc(env(safe-area-inset-top)+78px)] z-[260] -translate-x-1/2"
         >
           <label className="block leading-none">
             <span className="sr-only">Log date</span>
@@ -85,7 +78,7 @@ export function LogSheet(props: LogSheetProps) {
               onChange={(event) => {
                 if (event.target.value) setTargetDate(event.target.value);
               }}
-              className="h-[26px] w-[94px] rounded-lg border border-border/80 bg-background px-1 text-center text-[9px] font-bold leading-none text-foreground shadow-sm"
+              className="h-6 w-[82px] rounded-md border border-border/75 bg-background px-0.5 text-center text-[8px] font-bold leading-none text-foreground shadow-none"
               aria-label="Log date"
             />
           </label>
