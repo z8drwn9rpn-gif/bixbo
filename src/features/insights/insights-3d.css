@@ -5,6 +5,17 @@
    Keep the rules structural and dashboard-scoped so every current graph — and new
    graph marks built with the same primitives — inherits the same material. */
 
+/* Mobile Insights contains several graph cards below the first viewport. Let WebKit
+   skip layout/paint for those offscreen card subtrees until scrolling makes them
+   relevant. The intrinsic block size prevents the skipped content from collapsing
+   the scroll range before Safari has measured the real card height. */
+@media (max-width: 1023px) {
+  [data-bixbo-insights-dashboard="true"] > [data-bixbo-jump-label] {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 420px;
+  }
+}
+
 /* Vertical chart marks: Pain, Symptoms, Bowel and Time of Day.
    The generic inline height/background selector also covers zero-count Bowel bars,
    which are divs rather than interactive buttons. */
