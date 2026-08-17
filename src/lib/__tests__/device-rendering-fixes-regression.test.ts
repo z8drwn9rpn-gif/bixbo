@@ -3,12 +3,13 @@ import { describe, expect, it } from "vitest";
 
 const css = readFileSync("src/device-rendering-fixes.css", "utf8");
 const root = readFileSync("src/routes/__root.tsx", "utf8");
+const appShell = readFileSync("src/app-shell.css", "utf8");
 const quickTags = readFileSync("src/components/QuickTags.tsx", "utf8");
 
 describe("cross-device rendering fixes", () => {
   it("keeps PDF preview as a light-only rendering island for Samsung dark mode", () => {
-    expect(root).toContain('import deviceRenderingFixesCss from "../device-rendering-fixes.css?url"');
-    expect(root).toContain('{ rel: "stylesheet", href: deviceRenderingFixesCss }');
+    expect(root).toContain('import appCss from "../app-shell.css?url"');
+    expect(appShell).toContain('@import "./device-rendering-fixes.css";');
     expect(css).toContain("color-scheme: only light !important");
     expect(css).toContain('html[data-browser="samsung-internet"] .modal .pdf-sheet');
     expect(css).toContain("-webkit-text-fill-color: #20261d !important");

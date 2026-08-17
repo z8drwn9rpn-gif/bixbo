@@ -100,7 +100,9 @@ describe("BIXBO app diagnostics", () => {
     expect(root).toContain('if (!standalone) {');
     expect(root).toContain('root.dataset.bixboPwaLaunch = "visible"');
     expect(root).toContain("pointer-events: none");
-    expect(root).toContain("}, 1000);");
+    expect(root).toContain("}, 80);");
+    expect(root).toContain("}, 700);");
+    expect(root).not.toContain("}, 1000);");
     expect(root).not.toContain("bixbo-ios-launch-splash-hide");
     expect(root).toContain('/bixbo-mascot-user.png?v=20260816-launch6');
 
