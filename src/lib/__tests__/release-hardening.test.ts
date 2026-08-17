@@ -40,7 +40,7 @@ describe("release hardening contracts", () => {
   });
 
   it("enforces withdrawn health consent and bounded analytics retention in SQL", () => {
-    const migration = read("supabase/migrations/20260816201500_release_privacy_enforcement.sql");
+    const migration = read("supabase/migrations/20260816222047_release_privacy_enforcement.sql");
     expect(migration).toContain("private.bixbo_health_consent_active");
     expect(migration).toContain("health_consent_withdrawn_at is null");
     expect(migration).toContain("Linked partner reads shared data");
@@ -49,7 +49,7 @@ describe("release hardening contracts", () => {
   });
 
   it("normalizes partner sharing so no permissive legacy policy can bypass active health consent", () => {
-    const migration = read("supabase/migrations/20260816222600_normalize_partner_shared_consent_policies.sql");
+    const migration = read("supabase/migrations/20260816222542_normalize_partner_shared_consent_policies.sql");
     expect(migration).toContain('drop policy if exists "Owner or linked partner reads shared data"');
     expect(migration).toContain("((select auth.uid()) = user_id or public.is_partner_of(user_id))");
     expect(migration).toContain("and private.bixbo_health_consent_active(user_id)");
@@ -74,7 +74,7 @@ describe("release hardening contracts", () => {
     expect(source).toContain('invokeLegalWrite("accept-current-legal"');
     expect(source).toContain('invokeLegalWrite("complete-onboarding"');
 
-    const migration = read("supabase/migrations/20260816223500_harden_legal_consent_audit.sql");
+    const migration = read("supabase/migrations/20260816224048_harden_legal_consent_audit.sql");
     expect(migration).toContain('revoke insert, update on public.user_legal_consents from authenticated');
     expect(migration).toContain("consent.terms_version = '2026-08-16'");
     expect(migration).toContain("consent.privacy_version = '2026-08-16'");
