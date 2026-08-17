@@ -65,7 +65,28 @@ function highestIndex(values: PhaseValue[]) {
 }
 
 function FlowIcon({ size = 18 }: { size?: number }) {
-  return <Ico e="🩸" size={size} />;
+  return (
+    <svg width={size} height={size} viewBox="0 0 64 64" fill="none" aria-hidden="true">
+      <ellipse cx="32" cy="56" rx="15" ry="3" fill="#263318" opacity="0.12" />
+      <path d="M32 8c10 13 16 22 16 31a16 16 0 0 1-32 0c0-9 6-18 16-31Z" fill="#df4b55" stroke="#a82833" strokeWidth="2.2" />
+      <path d="M23 37c2 5 6 8 11 8" stroke="#ffd9dd" strokeWidth="3" strokeLinecap="round" opacity="0.85" />
+    </svg>
+  );
+}
+
+function BowelEyesIcon({ size = 25 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 64 64" fill="none" aria-hidden="true">
+      <ellipse cx="32" cy="57" rx="16" ry="3" fill="#263318" opacity="0.12" />
+      <path d="M21 48c-7 0-12-4-12-9 0-4 3-7 8-8-2-7 3-12 10-12 1-6 7-10 13-7 5 2 7 7 5 12 6 1 10 5 10 11 0 7-6 13-15 13H21Z" fill="#8b6338" stroke="#624524" strokeWidth="2.2" />
+      <ellipse cx="26" cy="31" rx="7" ry="7.5" fill="#fffdf6" />
+      <ellipse cx="40" cy="31" rx="7" ry="7.5" fill="#fffdf6" />
+      <circle cx="28" cy="32" r="2.8" fill="#25311d" />
+      <circle cx="38" cy="32" r="2.8" fill="#25311d" />
+      <path d="M26 42c4 3 8 3 12 0" stroke="#4d341d" strokeWidth="2.5" strokeLinecap="round" />
+      <path d="M18 38c5 2 10 2 14 0" stroke="#a87945" strokeWidth="2" strokeLinecap="round" opacity="0.65" />
+    </svg>
+  );
 }
 
 function PhasePainCard({ phase, value, flow, index }: { phase: string; value: number | null; flow: string; index: number }) {
@@ -96,11 +117,11 @@ function PhasePainCard({ phase, value, flow, index }: { phase: string; value: nu
         ))}
       </div>
 
-      <div className="mt-2 flex min-h-10 items-center justify-center gap-1">
+      <div className="mt-2 flex min-h-10 items-center justify-center gap-0.5">
         <FlowIcon size={18} />
-        <div className="min-w-0 text-left">
+        <div className="min-w-0 max-w-[52px] text-left">
           <p className="text-[9px] leading-none text-muted-foreground">Flow</p>
-          <p className="mt-1 whitespace-nowrap text-[9px] font-semibold leading-none tracking-[-0.035em] text-foreground">
+          <p className="mt-1 whitespace-nowrap text-[8px] font-bold leading-none tracking-[-0.055em] text-foreground">
             <TrText value={flow} />
           </p>
         </div>
@@ -129,7 +150,7 @@ function MetricPhaseCell({ value, max, decimals, unit, index, highlight }: { val
     <div className="min-w-0">
       <div className="flex items-center gap-1">
         <span className="truncate text-[11px] font-bold tabular-nums text-foreground">{formatMetricValue(value, decimals, unit)}</span>
-        {highlight ? <Ico e="⭐️" size={14} /> : null}
+        {highlight ? <Ico e="✨" size={14} /> : null}
       </div>
       <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-tint/80 ring-1 ring-border/30">
         <div className="h-full rounded-full transition-[width] duration-500" style={{ width: value == null ? "0%" : `${Math.max(percentage, value === 0 ? 0 : 7)}%`, background: palette.solid, filter: "saturate(1.4) contrast(1.06)", boxShadow: "inset 0 1px 1px rgba(255,255,255,.55), 0 1px 3px rgba(45,52,35,.14)" }} />
@@ -143,7 +164,7 @@ function BodyMetricRow({ metric }: { metric: BodyMetric }) {
   return (
     <div className="grid grid-cols-[minmax(104px,1.5fr)_repeat(3,minmax(48px,.72fr))_42px] items-center gap-2 border-t border-border/45 px-3 py-2.5 first:border-t-0">
       <div className="flex min-w-0 items-center gap-2">
-        <Ico e={metric.icon} size={25} />
+        {metric.icon === "💩" ? <BowelEyesIcon size={25} /> : <Ico e={metric.icon} size={25} />}
         <div className="min-w-0">
           <p className="truncate text-[10px] font-semibold leading-tight text-foreground">{metric.label}</p>
           <p className="mt-0.5 truncate text-[9px] leading-tight text-muted-foreground">{metric.detail}</p>
@@ -176,7 +197,7 @@ function MonthNavigator({ label, canPrevious, canNext, onPrevious, onNext }: { l
     <div className="mt-3 grid grid-cols-[38px_minmax(0,1fr)_38px] items-center gap-2 rounded-2xl bg-tint/45 p-1.5 ring-1 ring-border/45">
       <button type="button" onClick={onPrevious} disabled={!canPrevious} aria-label="Previous period comparison" className="grid h-9 w-9 place-items-center rounded-full bg-background/75 text-lg font-semibold text-primary ring-1 ring-border/45 disabled:cursor-not-allowed disabled:opacity-30">‹</button>
       <div className="min-w-0 text-center">
-        <p className="text-[9px] font-bold uppercase tracking-[0.07em] text-muted-foreground">Compare periods</p>
+        <div className="flex items-center justify-center gap-1"><Ico e="🫐" size={16} /><p className="text-[9px] font-bold uppercase tracking-[0.07em] text-muted-foreground">Compare periods</p></div>
         <p className="truncate text-[11px] font-semibold text-foreground">{label}</p>
       </div>
       <button type="button" onClick={onNext} disabled={!canNext} aria-label="Next period comparison" className="grid h-9 w-9 place-items-center rounded-full bg-background/75 text-lg font-semibold text-primary ring-1 ring-border/45 disabled:cursor-not-allowed disabled:opacity-30">›</button>
@@ -257,7 +278,6 @@ export function PatternsCycleDashboard({ model }: { model: PatternsContentModel 
             <div className="mt-2 flex items-baseline gap-0.5"><span className="font-serif text-4xl leading-none text-foreground">{averagePain == null ? "—" : averagePain.toFixed(1)}</span><span className="text-sm font-semibold text-foreground">/10</span></div>
             <p className="mt-3 text-[9px] leading-relaxed text-muted-foreground">{t("Across all phases")}<br />({selectedCycles.length} {selectedCycles.length === 1 ? t("cycle") : t("cycles")})</p>
           </div>
-
           <div className="grid min-w-0 grid-cols-3 gap-1.5">
             {painPhaseBars.map((bar, index) => <PhasePainCard key={bar.label} phase={t(bar.label)} value={bar.value} flow={phaseFlows[index]} index={index} />)}
           </div>
