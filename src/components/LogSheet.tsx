@@ -8,6 +8,7 @@ type LogSheetProps = ComponentProps<typeof LogSheetRoot>;
 export function LogSheet(props: LogSheetProps) {
   const [targetDate, setTargetDate] = useState(props.date);
   const [formActive, setFormActive] = useState(Boolean(props.initial));
+  const [formTitle, setFormTitle] = useState("");
 
   // Every fresh open starts on the date selected in the calendar. The user can
   // then override it explicitly inside a concrete logger, which makes
@@ -22,16 +23,22 @@ export function LogSheet(props: LogSheetProps) {
   useEffect(() => {
     if (!props.open) {
       setFormActive(false);
+      setFormTitle("");
       return;
     }
 
     const sync = () => {
-      setFormActive(Boolean(props.initial) || Boolean(document.querySelector("[data-bixbo-log-surface]")));
+      const surface = document.querySelector<HTMLElement>("[data-bixbo-log-surface]");
+      setFormActive(Boolean(props.initial) || Boolean(surface));
+
+      const dialog = surface?.closest<HTMLElement>("[role='dialog']");
+      const title = dialog?.querySelector("h2")?.textContent?.trim() ?? "";
+      setFormTitle(title);
     };
 
     sync();
     const observer = new MutationObserver(sync);
-    observer.observe(document.body, { childList: true, subtree: true });
+    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
     return () => observer.disconnect();
   }, [props.initial, props.open]);
 
@@ -54,22 +61,28 @@ export function LogSheet(props: LogSheetProps) {
   // remount would throw the user back to the category menu. All active forms
   // receive the new date prop immediately and save against that date.
   const formKey = `${props.initial ?? "menu"}:${props.open ? "open" : "closed"}`;
-  const showDateControl = props.open && formActive;
+  const normalizedTitle = formTitle.toLowerCase();
+  const hasOwnCalendarDate =
+    props.initial === "event" ||
+    props.initial === "task" ||
+    props.initial === "note" ||
+    normalizedTitle === "note & plan";
+  const showDateControl = props.open && formActive && !hasOwnCalendarDate;
 
   return (
     <>
       <LogSheetRoot key={formKey} {...props} date={targetDate} />
       {showDateControl ? (
-        <div className="fixed left-1/2 top-[calc(env(safe-area-inset-top)+71px)] z-[260] -translate-x-1/2 rounded-xl border border-border/70 bg-background/95 px-2 py-1 shadow-sm backdrop-blur">
-          <label className="flex items-center gap-1.5 text-[9px] font-bold leading-none text-muted-foreground">
-            <span className="whitespace-nowrap">Date</span>
+        <div className="fixed left-1/2 top-[calc(env(safe-area-inset-top)+72px)] z-[260] -translate-x-1/2 rounded-lg border border-border/70 bg-background/95 p-0.5 shadow-sm backdrop-blur">
+          <label className="block leading-none">
+            <span className="sr-only">Log date</span>
             <input
               type="date"
               value={targetDate}
               onChange={(event) => {
                 if (event.target.value) setTargetDate(event.target.value);
               }}
-              className="h-7 w-[112px] rounded-lg border border-border bg-surface px-1.5 text-[10px] font-semibold text-foreground"
+              className="h-6 w-[96px] rounded-md border border-border bg-surface px-1 text-center text-[9px] font-semibold leading-none text-foreground"
               aria-label="Log date"
             />
           </label>
