@@ -137,6 +137,36 @@ export function mode(values: number[]): number | undefined {
   return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0]?.[0];
 }
 
+/** Keep long-range report sections inside their existing fixed PDF layout. */
+export function paginateReportDays<T>(items: T[], pageSize = 30): T[][] {
+  const size = Math.max(1, Math.floor(pageSize));
+  const pages: T[][] = [];
+  for (let index = 0; index < items.length; index += size) pages.push(items.slice(index, index + size));
+  return pages;
+}
+
+/**
+ * First historical date where a scheduled medication slot exists in the saved
+ * medication logs. The PDF uses this as a lower bound so a long report does not
+ * invent missed doses from before that medication was being tracked.
+ */
+export function firstRecordedScheduledMedicationDate(
+  med: Pick<Med, "id" | "times">,
+  medLog: Record<string, Record<string, boolean>>,
+  medLogItems: Record<string, Record<string, string[]>>,
+): string | undefined {
+  const scheduledKeys = new Set((med.times ?? []).map((time) => `${med.id}@${time}`));
+  if (!scheduledKeys.size) return undefined;
+  const dates = Array.from(new Set([...Object.keys(medLog), ...Object.keys(medLogItems)])).sort();
+  return dates.find((date) => {
+    const legacy = medLog[date] ?? {};
+    const selected = medLogItems[date] ?? {};
+    return [...scheduledKeys].some(
+      (key) => Object.prototype.hasOwnProperty.call(legacy, key) || Object.prototype.hasOwnProperty.call(selected, key),
+    );
+  });
+}
+
 function normalizedMedName(value: string): string {
   return value.trim().toLocaleLowerCase();
 }

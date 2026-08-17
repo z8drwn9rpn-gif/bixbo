@@ -22,9 +22,37 @@ describe("PDF report rendering regression", () => {
   });
 
   it("keeps Observed patterns after Symptoms frequency", () => {
-    const frequency = page.indexOf('<h2>Symptom frequency <small>(days)</small></h2>');
-    const patterns = page.indexOf('<HealthReportObservedPatterns days={days} />');
+    const frequency = page.indexOf('<h2>Symptom frequency <small>(recorded days)</small></h2>');
+    const patterns = page.indexOf('<HealthReportObservedPatterns days={days} recordedDayCount={symptomFrequencyDenominator} />');
     expect(frequency).toBeGreaterThanOrEqual(0);
     expect(patterns).toBeGreaterThan(frequency);
+  });
+
+  it("uses recorded-data days for symptom frequency but calendar days for Coverage", () => {
+    expect(page).toContain("const symptomFrequencyDenominator = loggedDays.length;");
+    expect(page).toContain("percentage(item.count, symptomFrequencyDenominator)");
+    expect(page).toContain("loggedDays.length / Math.max(1, days.length)");
+    expect(parts).toContain("percentage(hotFlashDays.length, recordedDayCount)");
+    expect(parts).toContain("% of recorded days");
+  });
+
+  it("paginates long-range Trends without changing the Pain bars design", () => {
+    expect(page).toContain("const trendPages = paginateReportDays(days, 30);");
+    expect(page).toContain('number={2 + trendIndex} title="Trends"');
+    expect(page).toContain('number={medicationPage} title="Medication"');
+    expect(page).toContain("number={timelineStartPage + pageIndex}");
+    expect(page).toContain("const detailStartPage = timelineStartPage + timelinePageCount;");
+    expect(page).toContain(".painBars{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:22px;max-height:360px;overflow:hidden}");
+  });
+
+  it("keeps medication adherence inside tracked history and partial timeline doses accurate", () => {
+    expect(page).toContain("firstRecordedScheduledMedicationDate(med, data.medLog, medLogItems)");
+    expect(page).toContain("dateKeys.filter((date) => date >= trackingStart)");
+    expect(parts).toContain("timelineScheduledMedicationLabel(med.name, state.allItems, state.selectedItems)");
+  });
+
+  it("samples only numeric point labels on long pain trends", () => {
+    expect(parts).toContain("shouldShowPainPointLabel(days.length, point.index, tickEvery, pointIndex === points.length - 1)");
+    expect(parts).toContain("dayCount <= 31");
   });
 });
