@@ -54,8 +54,23 @@ describe("forensic performance fixes", () => {
     const legal = read("src/lib/legalConsent.ts");
 
     expect(legal).toContain("cloudHealthConsentStateInFlight");
-    expect(legal).toContain("readCloudHealthConsentState().finally");
+    expect(legal).toContain("const request = readCloudHealthConsentState()");
+    expect(legal).toContain("cloudHealthConsentStateInFlight = request");
     expect(legal).toContain("cloudHealthConsentStateInFlight = null");
     expect(legal).toContain("if (cloudHealthConsentStateInFlight) return cloudHealthConsentStateInFlight");
+  });
+
+  it("keeps every LogSheet hook before the sleep-specific early return", () => {
+    const logSheet = read("src/components/LogSheet.tsx");
+    const sleepEarlyReturn = logSheet.indexOf('if (props.initial === "temp")');
+    const paddingEffect = logSheet.indexOf("formSurface.style.paddingTop");
+    const dateMemo = logSheet.indexOf("const dateLabel = useMemo");
+
+    expect(logSheet).toContain("createPortal(");
+    expect(sleepEarlyReturn).toBeGreaterThan(0);
+    expect(paddingEffect).toBeGreaterThan(0);
+    expect(dateMemo).toBeGreaterThan(0);
+    expect(paddingEffect).toBeLessThan(sleepEarlyReturn);
+    expect(dateMemo).toBeLessThan(sleepEarlyReturn);
   });
 });
