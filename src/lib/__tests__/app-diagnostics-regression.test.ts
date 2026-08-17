@@ -36,6 +36,7 @@ describe("BIXBO app diagnostics", () => {
     expect(diagnostics).toContain("serviceWorkerCheck()");
     expect(diagnostics).toContain("runtimePerformanceCheck(runtimeIssues)");
     expect(diagnostics).toContain("recentNetworkCheck(runtimeIssues)");
+    expect(diagnostics).toContain('issue.message === "Device went offline while BIXBO was open."');
     expect(diagnostics).toContain('window.addEventListener("error", onResourceError, true)');
     expect(diagnostics).toContain('window.addEventListener("offline", onOffline)');
 
