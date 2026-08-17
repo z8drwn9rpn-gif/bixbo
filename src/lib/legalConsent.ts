@@ -25,6 +25,8 @@ export type CloudHealthConsentState = "active" | "withdrawn" | "missing" | "sign
 type LegalWriteAction = "accept-current-legal" | "complete-onboarding";
 type LegalWriteResult = { ok?: boolean; error?: string } & Record<string, unknown>;
 
+let cloudHealthConsentStateInFlight: Promise<CloudHealthConsentState> | null = null;
+
 function browserStorage(): Storage | null {
   return typeof window === "undefined" ? null : window.localStorage;
 }
@@ -91,11 +93,7 @@ export async function markOnboardingCompleted(): Promise<void> {
   browserStorage()?.setItem(ONBOARDING_KEY, "true");
 }
 
-/**
- * Fail-closed cloud consent state used by auth/privacy controls.
- * Local BIXBO data remains available regardless of this state.
- */
-export async function cloudHealthConsentState(): Promise<CloudHealthConsentState> {
+async function readCloudHealthConsentState(): Promise<CloudHealthConsentState> {
   const { data: userData, error: userError } = await supabase.auth.getUser();
   if (userError || !userData.user) return "signed-out";
 
@@ -113,6 +111,26 @@ export async function cloudHealthConsentState(): Promise<CloudHealthConsentState
     && data.health_consent_version === HEALTH_CONSENT_VERSION;
   if (!versionsCurrent) return "missing";
   return data.health_consent_withdrawn_at ? "withdrawn" : "active";
+}
+
+/**
+ * Fail-closed cloud consent state used by auth/privacy controls.
+ * Local BIXBO data remains available regardless of this state.
+ *
+ * Multiple auth/runtime listeners can request the same state during one startup
+ * burst. Share only the currently executing lookup so those listeners cannot
+ * fan out identical Supabase reads; once it settles, the next caller performs
+ * a fresh legal-state check.
+ */
+export function cloudHealthConsentState(): Promise<CloudHealthConsentState> {
+  if (cloudHealthConsentStateInFlight) return cloudHealthConsentStateInFlight;
+
+  let shared: Promise<CloudHealthConsentState>;
+  shared = readCloudHealthConsentState().finally(() => {
+    if (cloudHealthConsentStateInFlight === shared) cloudHealthConsentStateInFlight = null;
+  });
+  cloudHealthConsentStateInFlight = shared;
+  return shared;
 }
 
 function parseConsent(value: unknown): SignupLegalConsent | null {
