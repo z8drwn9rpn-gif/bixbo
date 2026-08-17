@@ -218,7 +218,7 @@ export function PatternsCycleDashboard({ model }: { model: PatternsContentModel 
 
   return <>
     <section data-bixbo-insight-chart-card="pain" data-bixbo-jump-label={t("Pain & flow")} style={{ order: layoutOrder(view, "patterns.cycle", "painFlow", 10) }} className="overflow-hidden rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80 lg:col-span-2">
-      <div className="flex items-start gap-2.5"><Ico e="🩸" size={28} /><div><h2 className="text-sm font-semibold text-foreground">{t("Pain & flow")}</h2><p className="mt-0.5 text-xs text-muted-foreground">{t("Average pain intensity (0–10)")}</p></div></div>
+      <div className="flex items-start gap-2.5"><Ico e="🫐" size={28} /><div><h2 className="text-sm font-semibold text-foreground">{t("Pain & flow")}</h2><p className="mt-0.5 text-xs text-muted-foreground">{t("Average pain intensity (0–10)")}</p></div></div>
       <MonthNavigator label={comparisonLabel} canPrevious={cycles.length > 1 && selectedEndIndex > minimumEndIndex} canNext={selectedEndIndex < cycles.length - 1} onPrevious={() => setSelectedEndIndex((value) => Math.max(minimumEndIndex, value - 1))} onNext={() => setSelectedEndIndex((value) => Math.min(cycles.length - 1, value + 1))} />
       <div className="mt-3 grid grid-cols-2 gap-2">{cycleViews.map((cycle, index) => <MonthSummaryCard key={cycle.label} cycle={cycle} index={index} />)}</div>
       <div className="mt-3 grid grid-cols-3 gap-2">{["Before", "During", "After"].map((phase, index) => <PhaseComparisonCard key={phase} phase={t(phase)} index={index} cycles={cycleViews} />)}</div>
