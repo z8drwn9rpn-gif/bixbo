@@ -9,6 +9,8 @@ describe("past-day logging", () => {
     expect(wrapper).toContain("props.date");
     expect(wrapper).toContain("<LogSheetRoot key={formKey}");
     expect(home).toContain("date={selected}");
-    expect(home).toContain('setQuickCat("temp")');
+    expect(home).toContain("const openDateBoundCategory = (cat?: string) => {");
+    expect(home).toContain("setQuickCat(cat)");
+    expect(home).toContain('onClick={() => openDateBoundCategory("temp")}');
   });
 });
