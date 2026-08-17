@@ -18,7 +18,7 @@ The application build, runtime, authentication, MCP, production data, backups an
 
 ## Environment variables
 
-Cloudflare build variables used by the frontend:
+Public frontend build values are stored as GitHub Actions repository variables:
 
 ```text
 VITE_SUPABASE_URL
@@ -64,14 +64,16 @@ and the Worker is deployable with the repository-pinned Wrangler using:
 bunx wrangler deploy
 ```
 
-GitHub Actions already holds the scoped Cloudflare deployment credentials under:
+GitHub Actions holds the scoped Cloudflare deployment credentials under:
 
 ```text
 CLOUDFLARE_API_TOKEN
 CLOUDFLARE_ACCOUNT_ID
 ```
 
-Cloudflare deployment automation should only be enabled after all public frontend build variables listed above are represented in the GitHub release configuration. This prevents a GitHub-built release from silently replacing a working production build with missing VAPID or legal identity configuration.
+`.github/workflows/deploy-cloudflare.yml` is the staged GitHub-owned production release workflow. During the handoff it is intentionally `workflow_dispatch` only, accepts production runs from `main` only, requires an explicit `DEPLOY` confirmation, validates every required public build variable and Cloudflare credential, builds with the repository lockfile, runs release safety checks, deploys with the repository-pinned Wrangler, and verifies the live app, legal pages and MCP endpoint afterwards.
+
+Do not enable an automatic `main` trigger for this workflow while Cloudflare Workers Builds/Git integration is still automatically deploying the same branch. The handoff sequence is: configure all GitHub release variables, validate a manual GitHub deployment, disable the old Cloudflare Git-triggered deployment, validate GitHub deployment again, and only then make GitHub Actions the automatic production deploy path.
 
 ## Development
 
