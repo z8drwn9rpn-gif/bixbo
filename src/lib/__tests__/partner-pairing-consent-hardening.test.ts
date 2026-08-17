@@ -33,4 +33,14 @@ describe("partner pairing consent hardening", () => {
     expect(migration).toContain("private.bixbo_health_consent_active(b)");
     expect(migration).not.toContain('drop policy if exists "Users delete own partner link"');
   });
+
+  it("uses pgcrypto entropy without modulo bias for future pairing codes", () => {
+    const migration = read("supabase/migrations/20260817051436_use_crypto_pairing_code_generation.sql");
+
+    expect(migration).toContain("extensions.gen_random_bytes(1)");
+    expect(migration).toContain("if b < 248 then");
+    expect(migration).toContain("b % 31");
+    expect(migration).not.toContain("random()");
+    expect(migration).toContain("revoke all on function public.gen_pairing_code() from public, anon");
+  });
 });
