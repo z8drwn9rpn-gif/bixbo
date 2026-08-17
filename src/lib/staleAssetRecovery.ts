@@ -1,3 +1,5 @@
+import { installForensicLifecycleGuard } from "./forensicLifecycleGuard";
+
 const RECOVERY_KEY = "bixbo:stale-asset-recovery-v1";
 const RECOVERY_WINDOW_MS = 30_000;
 
@@ -95,6 +97,10 @@ function resourceUrlForTarget(target: EventTarget | null): string | null {
 }
 
 if (typeof window !== "undefined") {
+  // Run lifecycle hardening synchronously before the deep recorder reads the
+  // previous iOS session and boot history.
+  installForensicLifecycleGuard();
+
   window.addEventListener(
     "error",
     (event) => {
