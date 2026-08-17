@@ -132,12 +132,40 @@ const EXTRA_SYMBOL_ICONS: Record<string, ExtraIconComponent> = {
   ["💤"]: BixboBedIcon,
 };
 
+function normalizeExtraSymbol(value: string) {
+  return value.normalize("NFC").replace(/\uFE0F/g, "").replace(/\p{Emoji_Modifier}/gu, "");
+}
+
+const NORMALIZED_EXTRA_SYMBOL_ICONS = new Map<string, ExtraIconComponent>(
+  Object.entries(EXTRA_SYMBOL_ICONS).map(([key, icon]) => [normalizeExtraSymbol(key), icon]),
+);
+
+function requestedPatternIcon(value: string): ExtraIconComponent | undefined {
+  const normalized = normalizeExtraSymbol(value);
+  if (normalized.includes("🔅")) return BixboSunIcon;
+  if (normalized.includes("🧠")) return BixboBrainIcon;
+  if (normalized.includes("💢")) return BixboIrritationIcon;
+  if (normalized.includes("🌡")) return BixboThermometerIcon;
+  if (normalized.includes("🫐")) return BixboBlueberryIcon;
+  if (normalized.includes("🩸")) return BixboBloodDropIcon;
+  if (normalized.includes("🔥")) return BixboFireIcon;
+  if (normalized.includes("💩")) return BixboPoopEyesIcon;
+  if (normalized.includes("👟")) return BixboShoeIcon;
+  if (normalized.includes("🌻")) return BixboSunflowerIcon;
+  if (normalized.includes("🌶")) return BixboChiliIcon;
+  if (normalized.includes("☕")) return BixboCoffeeIcon;
+  if (normalized.includes("✨")) return BixboSparklesIcon;
+  if (normalized.includes("⚡")) return BixboLightningIcon;
+  if (normalized.includes("⭐")) return BixboStarIcon;
+  return undefined;
+}
+
 export function Ico({ name, e, size = 20, className }: { name?: BixboIconName; e?: string; size?: number; className?: string }) {
   if (!name && (e === "❤️" || e === "❤" || e === "💗" || e === "💖")) {
     return <BaseIco e={e} size={size} className={className} />;
   }
   if (!name && e) {
-    const Extra = EXTRA_SYMBOL_ICONS[e];
+    const Extra = requestedPatternIcon(e) ?? EXTRA_SYMBOL_ICONS[e] ?? NORMALIZED_EXTRA_SYMBOL_ICONS.get(normalizeExtraSymbol(e));
     if (Extra) return <Extra size={size} className={["inline-block shrink-0 align-[-0.15em]", className].filter(Boolean).join(" ")} />;
   }
   return <BaseIco name={name} e={e} size={size} className={className} />;
