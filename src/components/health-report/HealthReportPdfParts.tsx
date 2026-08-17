@@ -128,14 +128,14 @@ function PainDayHighlights({ days, locale }: { days: ReportDaySummary[]; locale:
   </div>;
 }
 
-export function HealthReportObservedPatterns({ days }: { days: ReportDaySummary[] }) {
+export function HealthReportObservedPatterns({ days, recordedDayCount = days.length }: { days: ReportDaySummary[]; recordedDayCount?: number }) {
   const headacheDays = days.filter((day) => (day.log.pain ?? []).some((entry) => entry.headache || entry.headacheIntensity != null || (entry.headacheTypes?.length ?? 0) > 0));
   const hotFlashDays = days.filter((day) => (day.log.pain ?? []).some((entry) => entry.hotFlashesOn || (entry.hotFlashes ?? 0) > 0));
   const panicDays = days.filter((day) => (day.log.panic?.length ?? 0) > 0);
   const commonBowel = mode(days.flatMap((day) => day.bowelTypes));
   const patterns: string[] = [];
   if (headacheDays.length >= 2) patterns.push(`Headache was recorded on ${headacheDays.length} days; ${headacheDays.filter((day) => day.pain != null).length} overlapped with a recorded pain value.`);
-  if (hotFlashDays.length >= 2) patterns.push(`Hot flashes were recorded on ${hotFlashDays.length} days (${percentage(hotFlashDays.length, days.length)}% of range).`);
+  if (hotFlashDays.length >= 2) patterns.push(`Hot flashes were recorded on ${hotFlashDays.length} days (${percentage(hotFlashDays.length, recordedDayCount)}% of recorded days).`);
   if (panicDays.length) patterns.push(`${panicDays.length} panic-attack day${panicDays.length === 1 ? "" : "s"} recorded.`);
   if (commonBowel != null) patterns.push(`Most common recorded bowel value: Type ${commonBowel}.`);
   return <div className="observedPatterns">
@@ -144,6 +144,10 @@ export function HealthReportObservedPatterns({ days }: { days: ReportDaySummary[
       {patterns.length ? patterns.map((pattern, index) => <div key={pattern} style={{ display: "grid", gridTemplateColumns: "17px 1fr", gap: 4, fontSize: 6.2, lineHeight: 1.25 }}><b style={{ color: "#7f8950" }}>{String(index + 1).padStart(2, "0")}</b><span>{pattern}</span></div>) : <p style={{ margin: 0, fontSize: 6.2, lineHeight: 1.25, color: "#707668" }}>No repeated pattern met the report threshold in this range.</p>}
     </div>
   </div>;
+}
+
+export function shouldShowPainPointLabel(dayCount: number, dayIndex: number, tickEvery: number, isLastPoint: boolean): boolean {
+  return dayCount <= 31 || dayIndex % Math.max(1, tickEvery) === 0 || isLastPoint;
 }
 
 export function HealthReportPainTrend({ days, locale }: { days: ReportDaySummary[]; locale: string }) {
@@ -173,7 +177,7 @@ export function HealthReportPainTrend({ days, locale }: { days: ReportDaySummary
       {[0, 2, 4, 6, 8, 10].map((value) => <g key={value}><line x1={left} x2={width - right} y1={y(value)} y2={y(value)} /><text x={left - 7} y={y(value) + 3} textAnchor="end">{value}</text></g>)}
       {days.map((day, index) => (index % tickEvery === 0 || index === days.length - 1) ? <text key={day.key} className="xLabel" x={x(index)} y={height - 9} textAnchor="middle">{shortDate(day.key, locale)}</text> : null)}
       {segments.map((items, index) => items.length > 1 ? <polyline key={index} points={items.map((point) => `${x(point.index)},${y(point.value)}`).join(" ")} /> : null)}
-      {points.map((point) => <g key={point.key}><circle cx={x(point.index)} cy={y(point.value)} r="3.2" fill={painColor(point.value)} /><text className="pointLabel" x={x(point.index)} y={y(point.value) - 7} textAnchor="middle">{compactNumber(point.value)}</text></g>)}
+      {points.map((point, pointIndex) => <g key={point.key}><circle cx={x(point.index)} cy={y(point.value)} r="3.2" fill={painColor(point.value)} />{shouldShowPainPointLabel(days.length, point.index, tickEvery, pointIndex === points.length - 1) ? <text className="pointLabel" x={x(point.index)} y={y(point.value) - 7} textAnchor="middle">{compactNumber(point.value)}</text> : null}</g>)}
     </svg>
     <div className="trendLegend"><span><i />Pain daily average</span><span>Missing day = no recorded pain value, not zero</span></div>
     <PainDayHighlights days={days} locale={locale} />
@@ -193,13 +197,18 @@ function timelineFacts(day: ReportDaySummary): string {
   return values.join(" · ") || "—";
 }
 
+export function timelineScheduledMedicationLabel(name: string, allItems: string[], selectedItems: string[]): string {
+  return selectedItems.length === allItems.length ? name : selectedItems.join(", ");
+}
+
 function timelineTakenMeds(day: ReportDaySummary, data: BixboData, units: UnitPreferences): string {
   const taken: string[] = [];
   data.meds.filter((med) => !med.asNeeded).forEach((med) => {
     (med.times ?? []).forEach((scheduledTime) => {
       const state = resolveScheduledDose(med, day.key, scheduledTime, data.medLog, data.medLogItems ?? {}, new Date());
       if (!state.selectedItems.length) return;
-      taken.push(`${med.name}${med.dose ? ` ${med.dose}` : ""} · ${formatClockTime(data.medLogTimes?.[day.key]?.[state.key] ?? scheduledTime, units)}`);
+      const label = timelineScheduledMedicationLabel(med.name, state.allItems, state.selectedItems);
+      taken.push(`${label}${med.dose ? ` ${med.dose}` : ""} · ${formatClockTime(data.medLogTimes?.[day.key]?.[state.key] ?? scheduledTime, units)}`);
     });
   });
   return taken.join(" · ") || "—";
@@ -240,9 +249,32 @@ function timelineContext(day: ReportDaySummary, data: BixboData, units: UnitPref
   return values.join(" · ") || "—";
 }
 
+export function timelineDayContentCost(day: ReportDaySummary): number {
+  const contentLength = JSON.stringify(day.log).length + day.notes.join(" ").length;
+  if (contentLength <= 900) return 1;
+  if (contentLength <= 1800) return 2;
+  if (contentLength <= 3000) return 3;
+  return 4;
+}
+
 export function packTimelineDays(days: ReportDaySummary[]): ReportDaySummary[][] {
   const pages: ReportDaySummary[][] = [];
-  for (let index = 0; index < days.length; index += 10) pages.push(days.slice(index, index + 10));
+  let current: ReportDaySummary[] = [];
+  let budget = 0;
+  const maxRows = 10;
+  const maxBudget = 10;
+
+  days.forEach((day) => {
+    const cost = timelineDayContentCost(day);
+    if (current.length && (current.length >= maxRows || budget + cost > maxBudget)) {
+      pages.push(current);
+      current = [];
+      budget = 0;
+    }
+    current.push(day);
+    budget += cost;
+  });
+  if (current.length) pages.push(current);
   return pages;
 }
 
