@@ -67,8 +67,18 @@ function isFastLifecycleFetchAbort(issue: StoredIssue): boolean {
   if (!/failed:.*(?:TypeError: Load failed|Failed to fetch|NetworkError|network connection was lost)/i.test(message)) return false;
   const duration = typeof issue.durationMs === "number" ? issue.durationMs : Number.POSITIVE_INFINITY;
   if (duration > FAST_LIFECYCLE_ABORT_MS) return false;
+
   const evidence = issueEvidence(issue);
-  return /visibility(?:=| · )hidden|pagehide · (?:leaving|bfcache)/i.test(evidence);
+  const hiddenOrLeaving = /visibility(?:=| · )hidden|pagehide · (?:leaving|bfcache)/i.test(evidence);
+  const reloadOrLegacyPoll = /navigation=reload|request · GET \/(?: ·| →)/i.test(evidence);
+  return hiddenOrLeaving || reloadOrLegacyPoll;
+}
+
+function isLegacyNavigationTapIssue(issue: StoredIssue): boolean {
+  const message = String(issue.message ?? "");
+  const kind = String(issue.kind ?? "");
+  if (kind !== "interaction") return false;
+  return /^Tap-to-paint latency was about \d+ ms after a(?:[.#\s]|\.)/i.test(message);
 }
 
 function isUnreliableIosAbruptSessionSignal(issue: StoredIssue): boolean {
@@ -93,6 +103,7 @@ function sanitizeStoredForensicIssues(installedAt: number): void {
     const issue = raw as StoredIssue;
     const remove =
       isFastLifecycleFetchAbort(issue) ||
+      isLegacyNavigationTapIssue(issue) ||
       isUnreliableIosAbruptSessionSignal(issue) ||
       isLegacyReloadLoopIssue(issue, installedAt);
     if (remove) changed = true;
