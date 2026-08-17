@@ -3,6 +3,7 @@ import { useEffect } from "react";
 const DEPLOYMENT_RELOAD_GUARD_KEY = "bixbo:deployment-reload-guard:v2";
 const DEPLOYMENT_RELOAD_GUARD_MS = 5 * 60_000;
 const DEPLOYMENT_REFRESH_PARAM = "__bixbo_deploy_refresh";
+const DEPLOYMENT_CHECK_PARAM = "__bixbo_deploy_check";
 
 let inDocumentReloadTarget = "";
 
@@ -59,8 +60,17 @@ function mayReloadForTarget(target: string): boolean {
   return true;
 }
 
+function currentRouteCheckUrl(): string {
+  const url = new URL(window.location.href);
+  url.searchParams.delete(DEPLOYMENT_REFRESH_PARAM);
+  url.searchParams.delete("__bixbo_update");
+  url.searchParams.set(DEPLOYMENT_CHECK_PARAM, Date.now().toString());
+  return url.toString();
+}
+
 function currentUrlWithDeploymentBust(): string {
   const url = new URL(window.location.href);
+  url.searchParams.delete(DEPLOYMENT_CHECK_PARAM);
   url.searchParams.set(DEPLOYMENT_REFRESH_PARAM, Date.now().toString());
   return url.toString();
 }
@@ -77,7 +87,10 @@ async function deploymentTarget(): Promise<string | null> {
   const current = assetFingerprint(document);
   if (!current) return null;
 
-  const response = await fetch(`${window.location.origin}/?__bixbo_deploy_check=${Date.now()}`, {
+  // Compare the current route with the same route from the server. Comparing
+  // /couple with / (Home) produces different route chunks even on the same
+  // deployment and can manufacture an infinite "new deployment" signal.
+  const response = await fetch(currentRouteCheckUrl(), {
     cache: "no-store",
     headers: { "cache-control": "no-cache" },
   });
@@ -92,7 +105,7 @@ async function deploymentTarget(): Promise<string | null> {
   return remote;
 }
 
-/** Keep long-running iOS/PWA sessions on the same frontend build across devices without creating a reload loop. */
+/** Keep long-running iOS/PWA sessions on the newest frontend build without creating a reload loop. */
 export function useDeploymentFreshness() {
   useEffect(() => {
     if (import.meta.env.DEV) return;
