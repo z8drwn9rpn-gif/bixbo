@@ -7,6 +7,7 @@ type LogSheetProps = ComponentProps<typeof LogSheetRoot>;
 
 export function LogSheet(props: LogSheetProps) {
   const [targetDate, setTargetDate] = useState(props.date);
+  const [formActive, setFormActive] = useState(Boolean(props.initial));
 
   // Every fresh open starts on the date selected in the calendar. The user can
   // then override it explicitly inside a concrete logger, which makes
@@ -14,6 +15,25 @@ export function LogSheet(props: LogSheetProps) {
   useEffect(() => {
     if (props.open) setTargetDate(props.date);
   }, [props.date, props.open]);
+
+  // The main Log button opens the category menu first, so props.initial is null.
+  // Watch the actual log surface instead: the date control appears only after a
+  // concrete category is opened, and disappears again when returning to menu.
+  useEffect(() => {
+    if (!props.open) {
+      setFormActive(false);
+      return;
+    }
+
+    const sync = () => {
+      setFormActive(Boolean(props.initial) || Boolean(document.querySelector("[data-bixbo-log-surface]")));
+    };
+
+    sync();
+    const observer = new MutationObserver(sync);
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [props.initial, props.open]);
 
   // Sleep keeps its dedicated date-bound editor because it also handles stale
   // iOS/PWA draft state. It already exposes its own explicit date field.
@@ -30,8 +50,11 @@ export function LogSheet(props: LogSheetProps) {
     );
   }
 
-  const formKey = `${targetDate}:${props.initial ?? "menu"}:${props.open ? "open" : "closed"}`;
-  const showDateControl = props.open && Boolean(props.initial);
+  // Do not remount the entire LogSheet when only the log date changes. A full
+  // remount would throw the user back to the category menu. All active forms
+  // receive the new date prop immediately and save against that date.
+  const formKey = `${props.initial ?? "menu"}:${props.open ? "open" : "closed"}`;
+  const showDateControl = props.open && formActive;
 
   return (
     <>
