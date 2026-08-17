@@ -16,9 +16,9 @@ describe("Insights Day patterns", () => {
     expect(card).toContain('title={t("Body temperature")}');
     expect(card).toContain('data-bixbo-chart-mark="bar"');
     expect(card).toContain('filter: "saturate(1.5) contrast(1.08)"');
-    expect(card).toContain('<Ico e="🌙"');
-    expect(card).toContain('<Ico e="⚖️"');
-    expect(card).toContain('<Ico e="🌡️"');
+    expect(card).toContain('icon="🌙"');
+    expect(card).toContain('icon="⚖️"');
+    expect(card).toContain('icon="🌡️"');
   });
 
   it("keeps Home vital tiles focused on logging instead of opening trend charts", () => {
