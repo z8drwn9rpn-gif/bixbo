@@ -43,4 +43,15 @@ describe("partner pairing consent hardening", () => {
     expect(migration).not.toContain("random()");
     expect(migration).toContain("revoke all on function public.gen_pairing_code() from public, anon");
   });
+
+  it("keeps a linked partner from reading another account's pairing secret", () => {
+    const migration = read("supabase/migrations/20260817051839_protect_pairing_code_from_linked_profiles.sql");
+
+    expect(migration).toContain("partner.pairing_code := ''");
+    expect(migration).toContain("revoke select, insert, update, delete on public.profiles from authenticated");
+    expect(migration).toContain("grant select (id, display_name, gender, created_at) on public.profiles to authenticated");
+    expect(migration).toContain("grant update (display_name, gender) on public.profiles to authenticated");
+    expect(migration).toContain("private.ensure_profile_impl");
+    expect(migration).toContain("security invoker");
+  });
 });
