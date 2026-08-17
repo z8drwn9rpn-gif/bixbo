@@ -6,7 +6,7 @@ BIXBO is a personal health diary for tracking pain, cycle data, bowel symptoms, 
 
 BIXBO production uses this owned stack:
 
-- **Source control:** GitHub — `z8drwn9rpn-gif/bixbo`
+- **Source control and CI/CD:** GitHub — `z8drwn9rpn-gif/bixbo`
 - **Frontend / app hosting:** Cloudflare Workers
 - **Production URL:** `https://bixbo.z8drwn9rpn.workers.dev`
 - **Database, Auth, Realtime, backups and Edge Functions:** the BIXBO-owned Supabase project
@@ -61,7 +61,7 @@ bun run build
 and the Worker is deployable with the repository-pinned Wrangler using:
 
 ```sh
-bunx wrangler deploy
+bunx wrangler deploy --keep-vars
 ```
 
 GitHub Actions holds the scoped Cloudflare deployment credentials under:
@@ -71,9 +71,11 @@ CLOUDFLARE_API_TOKEN
 CLOUDFLARE_ACCOUNT_ID
 ```
 
-`.github/workflows/deploy-cloudflare.yml` is the staged GitHub-owned production release workflow. During the handoff it is intentionally `workflow_dispatch` only, accepts production runs from `main` only, requires an explicit `DEPLOY` confirmation, validates every required public build variable and Cloudflare credential, builds with the repository lockfile, runs release safety checks, deploys with the repository-pinned Wrangler, and verifies the live app, legal pages and MCP endpoint afterwards.
+`.github/workflows/deploy-cloudflare.yml` is the authoritative production release workflow. A successful `BIXBO checks` run for the current `main` commit triggers it automatically. The workflow refuses to deploy a stale commit, validates and normalizes all required public build variables and Cloudflare credentials, rebuilds from the repository lockfile, runs release safety checks, deploys with the repository-pinned Wrangler while preserving Cloudflare dashboard variables, and verifies the live app, legal pages and MCP endpoint afterwards.
 
-Do not enable an automatic `main` trigger for this workflow while Cloudflare Workers Builds/Git integration is still automatically deploying the same branch. The handoff sequence is: configure all GitHub release variables, validate a manual GitHub deployment, disable the old Cloudflare Git-triggered deployment, validate GitHub deployment again, and only then make GitHub Actions the automatic production deploy path.
+Manual production releases remain available through `workflow_dispatch` from `main` and require the explicit confirmation value `DEPLOY`.
+
+Cloudflare Workers Builds/Git integration is intentionally disconnected. GitHub Actions is the single automatic production deployment path for the Cloudflare Worker. `.github/workflows/production-smoke.yml` runs after successful GitHub-owned production deployments and can also be started manually.
 
 ## Development
 
