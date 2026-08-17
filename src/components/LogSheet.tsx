@@ -10,16 +10,10 @@ export function LogSheet(props: LogSheetProps) {
   const [formActive, setFormActive] = useState(Boolean(props.initial));
   const [formTitle, setFormTitle] = useState("");
 
-  // Every fresh open starts on the date selected in the calendar. The user can
-  // then override it explicitly inside a concrete logger, which makes
-  // backfilling independent from iOS calendar-selection quirks.
   useEffect(() => {
     if (props.open) setTargetDate(props.date);
   }, [props.date, props.open]);
 
-  // The main Log button opens the category menu first, so props.initial is null.
-  // Watch the actual log surface instead: the date control appears only after a
-  // concrete category is opened, and disappears again when returning to menu.
   useEffect(() => {
     if (!props.open) {
       setFormActive(false);
@@ -42,8 +36,6 @@ export function LogSheet(props: LogSheetProps) {
     return () => observer.disconnect();
   }, [props.initial, props.open]);
 
-  // Sleep keeps its dedicated date-bound editor because it also handles stale
-  // iOS/PWA draft state. It already exposes its own explicit date field.
   if (props.initial === "temp") {
     return (
       <PastDaySleepSheet
@@ -57,23 +49,34 @@ export function LogSheet(props: LogSheetProps) {
     );
   }
 
-  // Do not remount the entire LogSheet when only the log date changes. A full
-  // remount would throw the user back to the category menu. All active forms
-  // receive the new date prop immediately and save against that date.
   const formKey = `${props.initial ?? "menu"}:${props.open ? "open" : "closed"}`;
   const normalizedTitle = formTitle.toLowerCase();
+
+  // Event / To do / Note already expose their own date controls. Never render a
+  // second global backfill date picker on those screens.
   const hasOwnCalendarDate =
     props.initial === "event" ||
     props.initial === "task" ||
     props.initial === "note" ||
     normalizedTitle === "note & plan";
+
   const showDateControl = props.open && formActive && !hasOwnCalendarDate;
+
+  // Keep the picker inside the narrow action strip and away from each form's
+  // own Back/Save/Next/progress controls. Pain needs a slight left bias because
+  // its progress bar occupies the left side; Meds stays exactly centered.
+  const placement = normalizedTitle === "pain"
+    ? "left-[44%]"
+    : "left-1/2";
 
   return (
     <>
       <LogSheetRoot key={formKey} {...props} date={targetDate} />
       {showDateControl ? (
-        <div className="fixed left-1/2 top-[calc(env(safe-area-inset-top)+72px)] z-[260] -translate-x-1/2 rounded-lg border border-border/70 bg-background/95 p-0.5 shadow-sm backdrop-blur">
+        <div
+          data-bixbo-log-date-control
+          className={`fixed ${placement} top-[calc(env(safe-area-inset-top)+76px)] z-[260] -translate-x-1/2`}
+        >
           <label className="block leading-none">
             <span className="sr-only">Log date</span>
             <input
@@ -82,7 +85,7 @@ export function LogSheet(props: LogSheetProps) {
               onChange={(event) => {
                 if (event.target.value) setTargetDate(event.target.value);
               }}
-              className="h-6 w-[96px] rounded-md border border-border bg-surface px-1 text-center text-[9px] font-semibold leading-none text-foreground"
+              className="h-[26px] w-[94px] rounded-lg border border-border/80 bg-background px-1 text-center text-[9px] font-bold leading-none text-foreground shadow-sm"
               aria-label="Log date"
             />
           </label>
