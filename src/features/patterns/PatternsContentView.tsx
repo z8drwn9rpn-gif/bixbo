@@ -5,11 +5,16 @@ import { PatternsContentViewPart2 } from "./PatternsContentViewPart2";
 import { PatternsCycleDashboard } from "./PatternsCycleDashboard";
 import { PatternsMonthlyDashboard } from "./PatternsMonthlyDashboard";
 import { PatternsTreatmentDashboard } from "./PatternsTreatmentDashboard";
+import { PatternsTriggersDashboard } from "./PatternsTriggersDashboard";
 import { InsightsJumpControl } from "./InsightsJumpControl";
 import { PatternTabs } from "./shared";
 
 export function PatternsContentView({ model }: { model: PatternsContentModel }) {
-  const customDashboard = model.activeTab === "cycle" || model.activeTab === "monthly" || model.activeTab === "treatment";
+  const customDashboard =
+    model.activeTab === "cycle" ||
+    model.activeTab === "monthly" ||
+    model.activeTab === "treatment" ||
+    model.activeTab === "triggers";
 
   return (
     <div
@@ -25,14 +30,16 @@ export function PatternsContentView({ model }: { model: PatternsContentModel }) 
             <PatternsCycleDashboard model={model} />
           ) : model.activeTab === "monthly" ? (
             <PatternsMonthlyDashboard model={model} />
-          ) : (
+          ) : model.activeTab === "treatment" ? (
             <PatternsTreatmentDashboard model={model} />
+          ) : (
+            <PatternsTriggersDashboard model={model} />
           )}
         </>
       ) : (
         <PatternsContentViewPart1 model={model} />
       )}
-      <PatternsContentViewPart2 model={model} />
+      {model.activeTab !== "triggers" ? <PatternsContentViewPart2 model={model} /> : null}
     </div>
   );
 }
