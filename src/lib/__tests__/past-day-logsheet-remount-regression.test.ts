@@ -11,6 +11,6 @@ describe("past-day logging", () => {
     expect(home).toContain("date={selected}");
     expect(home).toContain("const openDateBoundCategory = (cat?: string) => {");
     expect(home).toContain("setQuickCat(cat)");
-    expect(home).toContain('onClick={() => openDateBoundCategory("temp")}');
+    expect(home).toContain("metric={quickVital} date={selected}");
   });
 });

@@ -42,12 +42,12 @@ export function QuickVitalSheet({ open, onOpenChange, metric, date, data, update
     if (!open) return;
     setTargetDate(date);
     setValue(valueFor(metric, data, date));
-  }, [date, metric, open]);
+  }, [data, date, metric, open]);
 
   useEffect(() => {
     if (!open) return;
     setValue(valueFor(metric, data, targetDate));
-  }, [data.dayLogs, metric, open, targetDate]);
+  }, [data, metric, open, targetDate]);
 
   const dateLabel = useMemo(
     () => new Date(`${targetDate}T12:00:00`).toLocaleDateString(language === "sk" ? "sk-SK" : "en-GB", { day: "numeric", month: "short", year: "numeric" }),
