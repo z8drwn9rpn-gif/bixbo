@@ -8,8 +8,9 @@ describe("past-day Sleep logging", () => {
 
     expect(wrapper).toContain('if (props.initial === "temp")');
     expect(wrapper).toContain("date={props.date}");
-    expect(editor).toContain("data.dayLogs[date]");
-    expect(editor).toContain("updateDayLog(update, date");
+    expect(editor).toContain("data.dayLogs[targetDate]");
+    expect(editor).toContain("updateDayLog(update, targetDate");
+    expect(editor).toContain("setTargetDate(date)");
     expect(editor).toContain("Logging for");
   });
 });
