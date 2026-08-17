@@ -10,6 +10,29 @@ const FRAME_GAP_CLUSTER_WINDOW_MS = 2_000;
 const FRAME_GAP_EVIDENCE_COUNT = 2;
 const RUNTIME_ISSUE_KEY = "bixbo:runtime-diagnostics:v1";
 const INTERACTION_DEDUPE_INTERVAL_MS = 1_000;
+const UNRELIABLE_LOW_LEVEL_INTERACTION_NAMES = new Set([
+  "touchstart",
+  "touchmove",
+  "touchend",
+  "touchcancel",
+  "pointerdown",
+  "pointermove",
+  "pointerup",
+  "pointercancel",
+  "pointerover",
+  "pointerout",
+  "mousedown",
+  "mousemove",
+  "mouseup",
+  "mouseover",
+  "mouseout",
+  "gotpointercapture",
+  "lostpointercapture",
+]);
+
+type BrowserEventTimingEntry = PerformanceEntry & {
+  interactionId?: number;
+};
 
 export type StoredForensicIssue = RuntimeDiagnosticIssue & {
   incidentId?: string;
@@ -22,8 +45,35 @@ export type StoredForensicIssue = RuntimeDiagnosticIssue & {
   timeline?: string[];
 };
 
+function interactionEventName(message: string): string {
+  return message.trim().split(/\s+/, 1)[0]?.toLowerCase() ?? "";
+}
+
+/**
+ * Safari/WebKit may expose low-level touch/pointer Event Timing entries that
+ * span gesture cancellation or capture bookkeeping rather than a completed
+ * user activation. BIXBO already measures actual taps through semantic
+ * click/navigation tap-to-paint probes, so these low-level entries are noisy
+ * duplicates and can make a normal iOS gesture look like a multi-second app
+ * freeze. Keep only browser Event Timing entries that belong to a real
+ * interaction and are not low-level gesture plumbing.
+ */
+export function isReliableEventTimingEntry(entry: PerformanceEntry): boolean {
+  const timed = entry as BrowserEventTimingEntry;
+  const interactionId = typeof timed.interactionId === "number" ? timed.interactionId : 0;
+  if (interactionId <= 0) return false;
+  return !UNRELIABLE_LOW_LEVEL_INTERACTION_NAMES.has(interactionEventName(entry.name));
+}
+
+export function isUnreliableLowLevelInteractionIssue(issue: StoredForensicIssue): boolean {
+  if (issue.kind !== "interaction") return false;
+  const name = interactionEventName(issue.message);
+  if (!UNRELIABLE_LOW_LEVEL_INTERACTION_NAMES.has(name)) return false;
+  return /(?:occupied the interaction pipeline for about|took about)\s+\d+\s*ms/i.test(issue.message);
+}
+
 function interactionSignalPriority(message: string): number {
-  const name = message.trim().split(/\s+/, 1)[0]?.toLowerCase() ?? "";
+  const name = interactionEventName(message);
   if (name === "click") return 8;
   if (name === "touchend") return 7;
   if (name === "pointerup") return 6;
@@ -80,12 +130,16 @@ export function collapseDuplicateInteractionSignals(issues: StoredForensicIssue[
   return compacted;
 }
 
+export function sanitizeInteractionSignals(issues: StoredForensicIssue[]): StoredForensicIssue[] {
+  return collapseDuplicateInteractionSignals(issues.filter((issue) => !isUnreliableLowLevelInteractionIssue(issue)));
+}
+
 function sanitizeDuplicateInteractionSignals(): void {
   if (typeof window === "undefined") return;
   try {
     const parsed: unknown = JSON.parse(window.localStorage.getItem(RUNTIME_ISSUE_KEY) ?? "[]");
     if (!Array.isArray(parsed)) return;
-    const compacted = collapseDuplicateInteractionSignals(parsed as StoredForensicIssue[]);
+    const compacted = sanitizeInteractionSignals(parsed as StoredForensicIssue[]);
     if (compacted.length !== parsed.length) {
       window.localStorage.setItem(RUNTIME_ISSUE_KEY, JSON.stringify(compacted));
     }
@@ -219,7 +273,7 @@ export function installRuntimeDiagnostics(onIssue?: (issue: RuntimeDiagnosticIss
   if (supportedEntries.includes("event")) {
     eventObserver = new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
-        if (entry.duration < 300 || document.visibilityState !== "visible") continue;
+        if (entry.duration < 300 || document.visibilityState !== "visible" || !isReliableEventTimingEntry(entry)) continue;
         recordRuntimeDiagnosticIssue(
           "interaction",
           `${entry.name || "User interaction"} took about ${Math.round(entry.duration)} ms to process.`,
