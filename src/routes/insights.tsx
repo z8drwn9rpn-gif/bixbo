@@ -9,6 +9,7 @@ import { layoutOrder } from "@/lib/layoutRegistry";
 import { EMPTY, avgDayPain, useBixbo } from "@/lib/storage";
 import { PainInsightsCard } from "@/features/insights/PainInsightsCard";
 import { BowelOverviewCard } from "@/features/insights/BowelOverviewCard";
+import { DayPatternsInsightsCard } from "@/features/insights/DayPatternsInsightsCard";
 import { MedsAdherenceInsightsCard } from "@/features/insights/MedsAdherenceInsightsCard";
 import { TimeOfDayInsightsCard } from "@/features/insights/TimeOfDayInsightsCard";
 import { SukSukInsightsCard } from "@/features/insights/SukSukInsightsCard";
@@ -111,6 +112,9 @@ function InsightsPage() {
       </div>
       <div data-bixbo-jump-label={t("Time of day")} style={{ order: layoutOrder(view, "insights", "timeOfDay", 50) }}>
         <DiagnosticProfiler id="TimeOfDayInsightsCard"><TimeOfDayInsightsCard data={view} days={timeOfDayDays} period={timeOfDayPeriod} anchor={timeOfDayAnchor} onPeriodChange={setTimeOfDayPeriod} onPeriodShift={(delta) => setTimeOfDayAnchor((current) => shiftInsightPeriodAnchor(current, timeOfDayPeriod, delta))} /></DiagnosticProfiler>
+      </div>
+      <div data-bixbo-jump-label={t("Day patterns")} style={{ order: 55 }}>
+        <DiagnosticProfiler id="DayPatternsInsightsCard"><DayPatternsInsightsCard data={view} /></DiagnosticProfiler>
       </div>
       <div data-bixbo-jump-label={t("Meds")} style={{ order: layoutOrder(view, "insights", "meds", 60) }}>
         <DiagnosticProfiler id="MedsAdherenceInsightsCard"><MedsAdherenceInsightsCard data={view} period={medsPeriod} anchor={medsAnchor} onPeriodChange={setMedsPeriod} onPeriodShift={(delta) => setMedsAnchor((current) => shiftInsightPeriodAnchor(current, medsPeriod, delta))} /></DiagnosticProfiler>
