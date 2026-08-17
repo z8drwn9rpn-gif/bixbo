@@ -24,4 +24,13 @@ describe("partner pairing consent hardening", () => {
     expect(migration).toContain("revoke all on function public.link_partner_by_code(text) from public, anon");
     expect(migration).toContain("grant execute on function public.link_partner_by_code(text) to authenticated, service_role");
   });
+
+  it("hides stored partner-link metadata until both sides have current consent", () => {
+    const migration = read("supabase/migrations/20260817051038_hide_partner_links_without_current_consent.sql");
+
+    expect(migration).toContain('drop policy if exists "Users see own partner link"');
+    expect(migration).toContain("private.bixbo_health_consent_active(a)");
+    expect(migration).toContain("private.bixbo_health_consent_active(b)");
+    expect(migration).not.toContain('drop policy if exists "Users delete own partner link"');
+  });
 });
