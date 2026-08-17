@@ -74,7 +74,11 @@ const HIDDEN_HELPER_COPY = new Set([
   "Solid bars are yours. Striped bars belong to your partner.",
 ]);
 
-/** UI brand naming only. Internal storage/domain keys stay `period` for compatibility. */
+/**
+ * UI brand naming for menstrual/cycle copy only. Internal storage/domain keys
+ * stay `period` for compatibility. Generic time-window copy must stay "period"
+ * (for example "previous period" inside Insights).
+ */
 const BLUEBERRY_UI_NAMES: Record<string, string> = {
   Period: "Blueberry",
   period: "blueberry",
@@ -88,22 +92,8 @@ const BLUEBERRY_UI_NAMES: Record<string, string> = {
   "period / cycle": "blueberry / cycle",
 };
 
-/**
- * These phrases use "period" in its ordinary time-window sense, not as the
- * menstrual Blueberry brand name. Keep them literal.
- */
-const NON_BLUEBERRY_PERIOD_COPY = new Set([
-  "Typical range this period",
-]);
-
 function blueberryUiName(key: string): string | null {
-  if (NON_BLUEBERRY_PERIOD_COPY.has(key)) return null;
-  if (BLUEBERRY_UI_NAMES[key]) return BLUEBERRY_UI_NAMES[key];
-  // Catch visible compound labels such as "Log period", "Next period" or
-  // Quick Tag builder copy without touching internal data keys.
-  if (/\bPeriod\b/.test(key)) return key.replace(/\bPeriod\b/g, "Blueberry");
-  if (/\bperiod\b/.test(key)) return key.replace(/\bperiod\b/g, "blueberry");
-  return null;
+  return BLUEBERRY_UI_NAMES[key] ?? null;
 }
 
 export function useI18n() {
