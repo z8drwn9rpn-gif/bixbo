@@ -14,11 +14,10 @@ import appCss from "../styles.css?url";
 import themeSystemCss from "../theme-system.css?url";
 import calendarSystemCss from "../calendar-system.css?url";
 import deviceRenderingFixesCss from "../device-rendering-fixes.css?url";
-import { useCloudSync } from "../lib/cloudSync";
 import { useThemeSync } from "../lib/theme";
-import { useNotificationRuntime } from "../lib/notifications";
 import { NotificationPrompt } from "../components/NotificationPrompt";
 import { AppPrivacyGuard } from "../components/AppPrivacyGuard";
+import { ConsentAwareCloudRuntime } from "../components/ConsentAwareCloudRuntime";
 import { DiagnosticProfiler } from "../components/DiagnosticProfiler";
 import { Toaster } from "../components/ui/sonner";
 import { useI18n } from "@/hooks/useI18n";
@@ -203,7 +202,7 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
-  useCloudSync(); useThemeSync(); useNotificationRuntime();
+  useThemeSync();
   useEffect(() => installRuntimeDiagnostics((issue) => { toast.error("BIXBO detected an app error", { description: `${issue.area}: ${issue.message}`, action: { label: "App scan", onClick: () => void router.navigate({ to: "/diagnostics" }) } }); }), [router]);
-  return <QueryClientProvider client={queryClient}><AppPrivacyGuard><DiagnosticProfiler id="RouteTree"><Outlet /></DiagnosticProfiler></AppPrivacyGuard><NotificationPrompt /><Toaster /></QueryClientProvider>;
+  return <QueryClientProvider client={queryClient}><ConsentAwareCloudRuntime /><AppPrivacyGuard><DiagnosticProfiler id="RouteTree"><Outlet /></DiagnosticProfiler></AppPrivacyGuard><NotificationPrompt /><Toaster /></QueryClientProvider>;
 }
