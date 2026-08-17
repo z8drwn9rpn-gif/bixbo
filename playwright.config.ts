@@ -8,7 +8,9 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
-  workers: process.env.CI ? 2 : undefined,
+  // CI runs against a single local Wrangler/workerd process. Keep one browser worker
+  // so concurrent E2E requests cannot exhaust or destabilize that server mid-suite.
+  workers: process.env.CI ? 1 : undefined,
   reporter: process.env.CI ? [["line"], ["github"]] : "list",
   use: {
     baseURL,
