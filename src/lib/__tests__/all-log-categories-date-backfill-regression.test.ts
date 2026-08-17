@@ -12,15 +12,13 @@ describe("date-selectable logging", () => {
     expect(source).toContain('setTargetDate(event.target.value)');
   });
 
-  it("keeps Sleep, Temp and Weight in the canonical date-bound Body & Recovery editor", () => {
+  it("keeps the detailed temp route on the canonical date-bound Body & Recovery editor", () => {
     const wrapper = readFileSync("src/components/LogSheet.tsx", "utf8");
-    const quickVital = readFileSync("src/components/home/QuickVitalSheet.tsx", "utf8");
     const root = readFileSync("src/features/logging/LogSheetRoot.tsx", "utf8");
 
     expect(wrapper).not.toContain("PastDaySleepSheet");
     expect(wrapper).not.toContain('if (props.initial === "temp")');
-    expect(quickVital).toContain('initial="temp"');
-    expect(quickVital).toContain('date={date}');
+    expect(wrapper).toContain('<LogSheetRoot key={formKey} {...props} date={targetDate} />');
     expect(root).toContain('active === "temp" && <BodyRecoveryForm');
   });
 });
