@@ -12,13 +12,16 @@ describe("final Patterns icon and trigger polish", () => {
     expect(cycle).toContain('icon: "💩"');
     expect(cycle).toContain('icon: "💢"');
     expect(cycle).toContain('icon: "🌡️"');
+    expect(cycle).toContain('<Ico e="🫐" size={28}');
     expect(cycle).toContain('icon="🔥"');
     expect(cycle).toContain('icon="🩸"');
-    expect(cycle).toContain('e="🫐"');
     expect(icons).toContain('["💩"]: BixboPoopEyesIcon');
     expect(icons).toContain('["🔥"]: BixboFireIcon');
     expect(icons).toContain('["🫐"]: BixboBlueberryIcon');
     expect(icons).toContain('["🩸"]: BixboBloodDropIcon');
+    expect(icons).toContain('headache: "🧠"');
+    expect(icons).toContain('pressure: "💢"');
+    expect(icons).toContain('panic: "✨"');
     expect(monthly).toContain('icon="🔅"');
     expect(monthly).toContain('icon="🧠"');
     expect(monthly).toContain('icon="💢"');
@@ -39,14 +42,19 @@ describe("final Patterns icon and trigger polish", () => {
     expect(cycle).toContain("normalizedFlow");
   });
 
-  it("matches the approved Trigger comparison iconography and reservoirs", () => {
+  it("matches the approved Trigger comparison iconography and filled reservoirs", () => {
     expect(triggers).toContain("function PurpleTargetIcon");
     expect(triggers).toContain("function CaffeineCupIcon");
+    expect(triggers).toContain('if (value.includes("panic")) return "✨"');
+    expect(triggers).toContain('if (value.includes("headache")) return "🧠"');
+    expect(triggers).toContain('if (value.includes("pressure")) return "💢"');
     expect(triggers).toContain("iconForTrigger(selectedTriggerLabel)");
     expect(triggers).toContain('SummaryItem icon="🎯"');
     expect(triggers).toContain('SummaryItem icon="👤"');
     expect(triggers).toContain('SummaryItem icon="👥"');
     expect(triggers).toContain("const bottomDisplay = `${pct.toFixed(0)}%`");
-    expect(triggers).toContain("const fillHeight = pct === 0 ? 4");
+    expect(triggers).toContain("const fillHeight = pct === 0 ? 4 : Math.max(8, pct)");
+    expect(triggers).toContain('height: pct === 0 ? "4px" : `${fillHeight}%`');
+    expect(triggers).toContain("saturate(1.85)");
   });
 });

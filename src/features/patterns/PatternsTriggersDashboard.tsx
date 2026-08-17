@@ -81,9 +81,14 @@ function iconForAssociation(label: string) {
   if (value.includes("tetany")) return "⚡";
   if (value.includes("panic")) return "✨";
   if (value.includes("energy")) return "⚡";
-  if (value.includes("period")) return "🫐";
+  if (value.includes("period") || value.includes("bleed") || value.includes("flow")) return "🫐";
+  if (value.includes("hot flash")) return "🌡️";
   if (value.includes("headache")) return "🧠";
   if (value.includes("pressure")) return "💢";
+  if (value.includes("bowel")) return "💩";
+  if (value.includes("workout") || value.includes("exercise")) return "👟";
+  if (value.includes("histamine")) return "🌶️";
+  if (value.includes("pcos")) return "🌻";
   if (value.includes("med") || value.includes("dose")) return "💊";
   return "✨";
 }
@@ -91,7 +96,14 @@ function iconForAssociation(label: string) {
 function iconForTrigger(label: string) {
   const value = label.toLowerCase();
   if (value.includes("caffeine") || value.includes("coffee")) return "☕";
+  if (value.includes("pain")) return "🔥";
+  if (value.includes("tetany")) return "⚡";
+  if (value.includes("panic")) return "✨";
   if (value.includes("period") || value.includes("bleed") || value.includes("flow")) return "🫐";
+  if (value.includes("hot flash")) return "🌡️";
+  if (value.includes("headache")) return "🧠";
+  if (value.includes("pressure")) return "💢";
+  if (value.includes("bowel")) return "💩";
   if (value.includes("workout") || value.includes("exercise")) return "👟";
   if (value.includes("histamine")) return "🌶️";
   if (value.includes("pcos")) return "🌻";
@@ -132,8 +144,8 @@ function TriggerGauge({ label, detail, percentage, color }: { label: string; det
   const pct = percentage == null ? 0 : clampPercent(percentage);
   const headline = percentage == null ? "—" : `${percentage.toFixed(0)}%`;
   const bottomDisplay = `${pct.toFixed(0)}%`;
-  const fillHeight = pct === 0 ? 4 : Math.max(8, pct * 0.78);
-  return <div className="rounded-2xl bg-tint/48 px-2.5 py-2.5 text-center ring-1 ring-border/45"><p className="text-[11px] font-semibold" style={{ color }}>{label}</p><p className="mt-0.5 text-[22px] font-bold tabular-nums text-foreground">{headline}</p><div className="relative mx-auto mt-1.5 h-24 w-[64px]"><div className="absolute inset-x-1.5 bottom-1 top-1 rounded-[28px] border border-border/55 bg-gradient-to-r from-background/65 via-white/88 to-background/55 shadow-[inset_3px_0_7px_rgba(80,75,55,.08),inset_-3px_0_7px_rgba(80,75,55,.08),0_4px_9px_rgba(45,52,35,.10)]"><span className="absolute inset-x-1 top-1 h-3 rounded-[50%] border border-border/45 bg-white/75" /><span className="absolute inset-x-1 bottom-1 h-3 rounded-[50%] border border-border/40 bg-background/70" /><span data-bixbo-chart-mark="bar" title={`${label}: ${bottomDisplay}`} className="absolute inset-x-1.5 bottom-2 rounded-b-[22px]" style={{ height: `${fillHeight}%`, background: color, filter: "saturate(1.7) contrast(1.1)", boxShadow: "inset 3px 0 5px rgba(255,255,255,.25), inset -3px 0 5px rgba(40,35,20,.18), 0 2px 5px rgba(45,52,35,.16)" }}><span className="absolute -top-1 left-0 right-0 h-2.5 rounded-[50%]" style={{ background: color, boxShadow: "inset 0 2px 2px rgba(255,255,255,.42), 0 1px 2px rgba(40,35,20,.22)" }} /></span></div></div><p className="mt-0.5 text-[10px] font-semibold tabular-nums" style={{ color }}>{bottomDisplay}</p><p className="mt-0.5 text-[9px] text-muted-foreground">{detail}</p></div>;
+  const fillHeight = pct === 0 ? 4 : Math.max(8, pct);
+  return <div className="rounded-2xl bg-tint/48 px-2.5 py-2.5 text-center ring-1 ring-border/45"><p className="text-[11px] font-semibold" style={{ color }}>{label}</p><p className="mt-0.5 text-[22px] font-bold tabular-nums text-foreground">{headline}</p><div className="relative mx-auto mt-1.5 h-24 w-[64px]"><div className="absolute inset-x-1.5 bottom-1 top-1 overflow-hidden rounded-[28px] border border-border/55 bg-gradient-to-r from-background/65 via-white/90 to-background/55 shadow-[inset_3px_0_7px_rgba(80,75,55,.08),inset_-3px_0_7px_rgba(80,75,55,.08),0_4px_9px_rgba(45,52,35,.10)]"><span data-bixbo-chart-mark="bar" title={`${label}: ${bottomDisplay}`} className="absolute inset-x-[5px] bottom-[5px] z-10 rounded-b-[22px]" style={{ height: pct === 0 ? "4px" : `${fillHeight}%`, background: `linear-gradient(90deg, ${color}, ${color})`, filter: "saturate(1.85) contrast(1.12)", boxShadow: "inset 4px 0 6px rgba(255,255,255,.26), inset -4px 0 6px rgba(40,35,20,.20), 0 2px 6px rgba(45,52,35,.18)" }}><span className="absolute -top-1 left-0 right-0 h-3 rounded-[50%]" style={{ background: color, boxShadow: "inset 0 2px 2px rgba(255,255,255,.50), 0 1px 2px rgba(40,35,20,.24)" }} /></span><span className="absolute inset-x-1 top-1 z-20 h-3 rounded-[50%] border border-border/45 bg-white/72" /><span className="absolute inset-x-1 bottom-1 z-20 h-3 rounded-[50%] border border-border/40 bg-background/18" /></div></div><p className="mt-0.5 text-[10px] font-semibold tabular-nums" style={{ color }}>{bottomDisplay}</p><p className="mt-0.5 text-[9px] text-muted-foreground">{detail}</p></div>;
 }
 
 function SummaryItem({ icon, star, label, value, tone = "neutral" }: { icon?: string; star?: boolean; label: string; value: string; tone?: Tone }) {

@@ -132,12 +132,52 @@ const EXTRA_SYMBOL_ICONS: Record<string, ExtraIconComponent> = {
   ["💤"]: BixboBedIcon,
 };
 
+const SEMANTIC_SYMBOL_ALIASES: Record<string, string> = {
+  pain: "🔥",
+  "pain intensity": "🔥",
+  period: "🫐",
+  "period flow": "🩸",
+  flow: "🩸",
+  symptoms: "🔅",
+  "hot flash": "🌡️",
+  "hot flashes": "🌡️",
+  headache: "🧠",
+  headaches: "🧠",
+  pressure: "💢",
+  "pressure intensity": "💢",
+  bowel: "💩",
+  "bowel symptoms": "💩",
+  panic: "✨",
+  "panic attack": "✨",
+  "panic attacks": "✨",
+  "panic intensity": "✨",
+  tetany: "⚡",
+  "tetany episode": "⚡",
+  "tetany episodes": "⚡",
+  workout: "👟",
+  workouts: "👟",
+  pcos: "🌻",
+  histamine: "🌶️",
+  "histamine flare": "🌶️",
+  caffeine: "☕",
+};
+
+function resolveExtraIcon(value: string) {
+  const trimmed = value.trim();
+  const normalized = trimmed.normalize("NFC");
+  const noVariation = normalized.replace(/\uFE0F/g, "");
+  const direct = EXTRA_SYMBOL_ICONS[trimmed] ?? EXTRA_SYMBOL_ICONS[normalized] ?? EXTRA_SYMBOL_ICONS[noVariation];
+  if (direct) return direct;
+  const alias = SEMANTIC_SYMBOL_ALIASES[noVariation.toLowerCase()];
+  return alias ? EXTRA_SYMBOL_ICONS[alias] : undefined;
+}
+
 export function Ico({ name, e, size = 20, className }: { name?: BixboIconName; e?: string; size?: number; className?: string }) {
   if (!name && (e === "❤️" || e === "❤" || e === "💗" || e === "💖")) {
     return <BaseIco e={e} size={size} className={className} />;
   }
   if (!name && e) {
-    const Extra = EXTRA_SYMBOL_ICONS[e];
+    const Extra = resolveExtraIcon(e);
     if (Extra) return <Extra size={size} className={["inline-block shrink-0 align-[-0.15em]", className].filter(Boolean).join(" ")} />;
   }
   return <BaseIco name={name} e={e} size={size} className={className} />;
