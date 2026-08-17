@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { createPortal } from "react-dom";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import { ChevronLeft, ChevronRight, Ico } from "@/components/icons/BixboExtraIcons";
 import { BixboConnectIcon } from "@/components/icons/BixboIcons";
 import { layoutOrder } from "@/lib/layoutRegistry";
@@ -100,6 +100,40 @@ export function HomePage() {
     setLogOpen(true);
   };
 
+  const openDateBoundCategory = (cat?: string) => {
+    setEpisodeEdit(null);
+    setQuickCat(cat);
+    setEditPain(undefined);
+    setEditEntry(undefined);
+    setLogOpen(true);
+  };
+
+  const pastQuickTagCategory = (key: string): string | undefined => {
+    if (key.startsWith("pain-")) return "pain";
+    if (key === "tet-episode") return "tetany";
+    if (key === "panic") return "panic";
+    if (key === "sex") return "sex";
+    if (key === "hist-flare") return "food";
+    if (key === "period") return "period";
+    return undefined;
+  };
+
+  const interceptPastQuickLog = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (selected === todayKey()) return;
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const button = target.closest<HTMLButtonElement>("button[data-bixbo-quick-tag]");
+    if (!button) return;
+
+    // QuickTags' one-tap implementation intentionally targets today. On a past
+    // selected calendar day, stop that write and open the date-bound detailed
+    // logger instead. Unknown/custom shortcuts fall back to the selected-day
+    // logger menu so they can never silently write into today.
+    event.preventDefault();
+    event.stopPropagation();
+    openDateBoundCategory(pastQuickTagCategory(button.dataset.bixboQuickTag ?? ""));
+  };
+
   useEffect(() => {
     setMonthAnchor(new Date());
     setSelected(todayKey());
@@ -174,23 +208,18 @@ export function HomePage() {
         {!cycleTrackingHidden && <NextPeriodHomeCard data={view} />}
 
         <div className="mt-3 grid grid-cols-5 gap-2 px-5 lg:grid-cols-4 lg:px-1" style={{ order: layoutOrder(view, "home", "vitals", 60) }}>
-          <div className="col-span-2 lg:col-span-1"><MedsProgress data={view} onClick={() => { setQuickCat("meds"); setEditPain(undefined); setEditEntry(undefined); setLogOpen(true); }} /></div>
-          <VitalTile emoji="😴" label="Sleep" value={view.dayLogs[selected]?.sleepHours != null ? String(view.dayLogs[selected]!.sleepHours) : "—"} onClick={() => {
-            setQuickCat("temp");
-            setEditPain(undefined);
-            setEditEntry(undefined);
-            setLogOpen(true);
-          }} />
-          <VitalTile emoji="🌡️" label="Temp" value={view.dayLogs[selected]?.temperature != null ? String(view.dayLogs[selected]!.temperature) : "—"} onClick={() => setVitalTrendOpen("temperature")} />
-          <VitalTile emoji="⚖️" label="Weight" value={view.dayLogs[selected]?.weight != null ? String(view.dayLogs[selected]!.weight) : "—"} onClick={() => setVitalTrendOpen("weight")} />
+          <div className="col-span-2 lg:col-span-1"><MedsProgress data={view} onClick={() => openDateBoundCategory("meds")} /></div>
+          <VitalTile emoji="😴" label="Sleep" value={view.dayLogs[selected]?.sleepHours != null ? String(view.dayLogs[selected]!.sleepHours) : "—"} onClick={() => openDateBoundCategory("temp")} />
+          <VitalTile emoji="🌡️" label="Temp" value={view.dayLogs[selected]?.temperature != null ? String(view.dayLogs[selected]!.temperature) : "—"} onClick={() => openDateBoundCategory("temp")} />
+          <VitalTile emoji="⚖️" label="Weight" value={view.dayLogs[selected]?.weight != null ? String(view.dayLogs[selected]!.weight) : "—"} onClick={() => openDateBoundCategory("temp")} />
         </div>
 
-        <div style={{ order: layoutOrder(view, "home", "quickLog", 70) }} className="px-5 lg:mt-2 lg:px-1 [&_p.text-\[11px\].uppercase]:min-w-0 [&_p.text-\[11px\].uppercase]:flex-1 [&_p.text-\[11px\].uppercase]:truncate [&_p.text-\[11px\].uppercase]:text-[10px] [&_.mt-1.flex.flex-wrap.gap-1]:hidden">
+        <div onPointerUpCapture={interceptPastQuickLog} style={{ order: layoutOrder(view, "home", "quickLog", 70) }} className="px-5 lg:mt-2 lg:px-1 [&_p.text-\[11px\].uppercase]:min-w-0 [&_p.text-\[11px\].uppercase]:flex-1 [&_p.text-\[11px\].uppercase]:truncate [&_p.text-\[11px\].uppercase]:text-[10px] [&_.mt-1.flex.flex-wrap.gap-1]:hidden">
           <QuickTags data={view} update={update} onLongPress={(cat: string) => {
             const map: Record<string, string | undefined> = { pain: "pain", tetany: "tetany", panic: "panic", sex: "sex", food: "food", period: "period", meds: "meds", workout: "workout", bowel: "bowel", thermo: "heat", headache: "pain", hotFlashes: "pain", sleep: "temp" };
             const target = map[cat];
             if (!target) return;
-            setQuickCat(target); setEditPain(undefined); setEditEntry(undefined); setLogOpen(true);
+            openDateBoundCategory(target);
           }} />
         </div>
       </div>
