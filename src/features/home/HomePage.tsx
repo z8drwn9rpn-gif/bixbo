@@ -1,5 +1,4 @@
 import { Link } from "@tanstack/react-router";
-import { createPortal } from "react-dom";
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import { ChevronLeft, ChevronRight, Ico } from "@/components/icons/BixboExtraIcons";
 import { BixboConnectIcon } from "@/components/icons/BixboIcons";
@@ -22,7 +21,6 @@ import {
   type PanicAttack,
   type TetanyEpisode,
 } from "@/lib/storage";
-import { VitalTrendPopup, type VitalTrendMetric } from "@/components/home/vitalTrends";
 import { VitalTile, MedsProgress } from "@/components/home/HomeTiles";
 import { BirthControlSummaryCard, BirthControlOverlay } from "@/components/home/BirthControlCard";
 import { DayPreview } from "@/components/home/DayOverview";
@@ -66,7 +64,6 @@ export function HomePage() {
   const [todayOpen, setTodayOpen] = useState(false);
   const [summaryMode, setSummaryMode] = useState<"today" | "month">("today");
   const [summaryMonth, setSummaryMonth] = useState<Date | null>(null);
-  const [vitalTrendOpen, setVitalTrendOpen] = useState<VitalTrendMetric | null>(null);
   const [quickCat, setQuickCat] = useState<string | undefined>();
   const [editPain, setEditPain] = useState<import("@/lib/storage").PainEntry | undefined>();
   const [editEntry, setEditEntry] = useState<unknown>(undefined);
@@ -233,7 +230,6 @@ export function HomePage() {
       </aside>
     </div>
 
-    {vitalTrendOpen && typeof document !== "undefined" ? createPortal(<VitalTrendPopup metric={vitalTrendOpen} data={view} anchorKey={selected} onClose={() => setVitalTrendOpen(null)} />, document.body) : null}
     {todayOpen && <HomeSummaryOverlay data={view} initialMode={summaryMode} initialMonth={summaryMonth ?? undefined} onClose={() => setTodayOpen(false)} onOpenCalendar={(dateKey) => { setSelected(dateKey); setMonthAnchor(fromKey(dateKey)); }} />}
     {!maleMode && isAdminOwnerAccount() && hakOpen && hakAnchor && <BirthControlOverlay data={view} anchor={hakAnchor} onAnchorChange={setHakAnchor} onClose={() => setHakOpen(false)} />}
     <EpisodePainEditSheet open={!!episodeEdit} onOpenChange={(open) => { if (!open) setEpisodeEdit(null); }} date={selected} data={view} update={update} target={episodeEdit} />

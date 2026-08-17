@@ -16,11 +16,13 @@ import {
   type VitalTrendMetric,
   type VitalTrendPoint,
 } from "@/components/home/vitalTrends";
-import { DashboardPeriodControl, MetricCards } from "./InsightDashboardPrimitives";
+import { DashboardPeriodControl, QuickInsights } from "./InsightDashboardPrimitives";
 import { type Period } from "./shared";
 
 const WEIGHT_COLOR = "#7B9140";
 const TEMPERATURE_COLOR = "#E15C4A";
+
+type RecoveryMetric = "sleep" | "weight" | "temperature";
 
 function pointsForMetric(
   metric: VitalTrendMetric,
@@ -86,6 +88,7 @@ function SleepChart({ points }: { points: VitalTrendPoint[] }) {
 
   return (
     <div data-bixbo-insight-chart-card="pain" className="mt-3 rounded-2xl bg-background/45 px-3 pb-3 pt-3 ring-1 ring-border/45">
+      <div className="mb-1 text-[10px] font-medium text-muted-foreground">Hours</div>
       <div className="flex gap-2">
         <div className="flex h-[154px] w-5 flex-col justify-between text-right text-[10px] tabular-nums text-muted-foreground">
           {yLabels.map((value) => <span key={value} className="leading-none">{value}</span>)}
@@ -207,23 +210,16 @@ function LineChart({
   );
 }
 
-function MetricHeader({ icon, title, subtitle, color }: { icon: string; title: string; subtitle: string; color: string }) {
-  return (
-    <div className="flex items-start gap-2.5">
-      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-background/80 shadow-sm ring-1 ring-border/55">
-        <Ico e={icon} size={28} />
-      </span>
-      <div className="min-w-0 flex-1">
-        <h3 className="text-sm font-semibold leading-tight" style={{ color }}>{title}</h3>
-        <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">{subtitle}</p>
-      </div>
-    </div>
-  );
+function trendText(value: number | null, unit: string) {
+  if (value == null) return "No previous-period comparison yet";
+  if (Math.abs(value) < 0.05) return `Stable vs previous period`;
+  return `${Math.abs(value).toFixed(1)} ${unit} ${value < 0 ? "lower" : "higher"} than previous period`;
 }
 
 export function DayPatternsInsightsCard({ data }: { data: BixboData }) {
   const { t, language } = useI18n();
   const locale = language === "sk" ? "sk-SK" : "en-GB";
+  const [metric, setMetric] = useState<RecoveryMetric>("sleep");
   const [period, setPeriod] = useState<Period>("M");
   const [anchor, setAnchor] = useState<Date>(() => new Date());
 
@@ -244,64 +240,99 @@ export function DayPatternsInsightsCard({ data }: { data: BixboData }) {
   const weightDelta = weightAverage != null && previousWeight != null ? weightAverage - previousWeight : null;
   const temperatureDelta = temperatureAverage != null && previousTemperature != null ? temperatureAverage - previousTemperature : null;
 
+  const tabs: Array<{ key: RecoveryMetric; label: string }> = [
+    { key: "sleep", label: t("Sleep") },
+    { key: "weight", label: t("Weight") },
+    { key: "temperature", label: t("Body temperature") },
+  ];
+
   return (
     <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-border/80">
-      <div className="flex items-center gap-2.5">
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/10 ring-1 ring-primary/15"><Ico e="📊" size={28} /></span>
-        <div className="min-w-0">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground" style={{ fontWeight: 700 }}>{t("Day patterns")}</p>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">{t("Sleep, weight and body temperature over time")}</p>
+      <div className="flex items-start gap-2.5">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/10 ring-1 ring-primary/15">
+          <Ico e="🌳" size={29} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-sm font-semibold leading-tight text-foreground">{t("Recover & body")}</h2>
+          <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">{t("Sleep, weight and body temperature over time")}</p>
         </div>
       </div>
 
-      <DashboardPeriodControl value={period} onChange={setPeriod} anchor={anchor} onShift={(delta) => setAnchor((current) => shiftTrendAnchor(current, period, delta))} ariaLabel="Day patterns period" />
+      <div className="mt-3 grid h-9 w-full grid-cols-3 rounded-xl bg-tint p-0.5 ring-1 ring-border/60" role="tablist" aria-label="Recover and body metric">
+        {tabs.map((tab) => {
+          const selected = metric === tab.key;
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              role="tab"
+              aria-selected={selected}
+              onClick={() => setMetric(tab.key)}
+              className={`min-w-0 rounded-[10px] px-1.5 py-1 text-[10px] font-semibold transition active:scale-[.98] ${selected ? "bg-background text-foreground shadow-sm ring-1 ring-border/50" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              <span className="block truncate">{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <DashboardPeriodControl value={period} onChange={setPeriod} anchor={anchor} onShift={(delta) => setAnchor((current) => shiftTrendAnchor(current, period, delta))} ariaLabel="Recover and body period" />
 
       <article className="mt-3 rounded-2xl bg-tint/42 p-3 ring-1 ring-border/45">
-        <MetricHeader icon="🌙" title={t("Sleep")} subtitle={t("Hours logged each day")} color={CHART_COLORS.sleep} />
-        <SleepChart points={sleepPoints} />
-        <MetricCards items={[
-          { label: t("Average"), value: sleepAverage == null ? "—" : `${sleepAverage.toFixed(1)}h`, kind: "moon", color: CHART_COLORS.sleep },
-          { label: t("Above 8h"), value: `${aboveEight}`, sub: t("logged points"), kind: "bars", color: "#72C64A" },
-          { label: t("Longest streak"), value: `${streak}`, sub: t("points"), kind: "flame", color: "#F97316" },
-        ]} />
-      </article>
+        {metric === "sleep" ? (
+          <>
+            <SleepChart points={sleepPoints} />
+            <QuickInsights items={[
+              { kind: "moon", color: CHART_COLORS.sleep, text: sleepAverage == null ? "No sleep average yet" : `Average sleep: ${sleepAverage.toFixed(1)}h` },
+              { kind: "bars", color: "#72C64A", text: `${aboveEight} ${aboveEight === 1 ? "day" : "days"} above 8h` },
+              { kind: "flame", color: "#F97316", text: `Longest >8h streak: ${streak} ${streak === 1 ? "day" : "days"}` },
+            ]} />
+          </>
+        ) : null}
 
-      <article className="mt-3 rounded-2xl bg-tint/42 p-3 ring-1 ring-border/45">
-        <MetricHeader icon="⚖️" title={t("Weight")} subtitle={t("Logged body weight")} color={WEIGHT_COLOR} />
-        <div className="mt-3 grid grid-cols-[82px_minmax(0,1fr)] items-center gap-2">
-          <div className="min-w-0">
-            <p className="text-[22px] font-bold leading-none tabular-nums text-foreground">{weightAverage == null ? "—" : weightAverage.toFixed(1)}</p>
-            <p className="mt-1 text-[10px] text-muted-foreground">kg · {t("average")}</p>
-            <p className={`mt-2 text-[11px] font-semibold ${weightDelta == null ? "text-muted-foreground" : weightDelta <= 0 ? "text-emerald-600 dark:text-emerald-300" : "text-rose-600 dark:text-rose-300"}`}>
-              {weightDelta == null ? "—" : `${weightDelta > 0 ? "+" : ""}${weightDelta.toFixed(1)} kg`}
-            </p>
-            <p className="mt-0.5 text-[9px] text-muted-foreground">{t("vs previous period")}</p>
-          </div>
-          <LineChart metric="weight" points={weightPoints} color={WEIGHT_COLOR} />
-        </div>
-        <div className="mt-2 flex items-center justify-between text-[10px] text-muted-foreground">
-          <span>{t("Min")} {weightValues.length ? `${Math.min(...weightValues).toFixed(1)} kg` : "—"}</span>
-          <span>{t("Max")} {weightValues.length ? `${Math.max(...weightValues).toFixed(1)} kg` : "—"}</span>
-        </div>
-      </article>
+        {metric === "weight" ? (
+          <>
+            <div className="grid grid-cols-[82px_minmax(0,1fr)] items-center gap-2">
+              <div className="min-w-0">
+                <div className="mb-2 flex items-center gap-1.5"><Ico e="⚖️" size={22} /><span className="text-[11px] font-semibold text-muted-foreground">{t("Weight")}</span></div>
+                <p className="text-[22px] font-bold leading-none tabular-nums text-foreground">{weightAverage == null ? "—" : weightAverage.toFixed(1)}</p>
+                <p className="mt-1 text-[10px] text-muted-foreground">kg · {t("average")}</p>
+                <p className={`mt-2 text-[11px] font-semibold ${weightDelta == null ? "text-muted-foreground" : weightDelta <= 0 ? "text-emerald-600 dark:text-emerald-300" : "text-rose-600 dark:text-rose-300"}`}>
+                  {weightDelta == null ? "—" : `${weightDelta > 0 ? "+" : ""}${weightDelta.toFixed(1)} kg`}
+                </p>
+                <p className="mt-0.5 text-[9px] text-muted-foreground">vs previous period</p>
+              </div>
+              <LineChart metric="weight" points={weightPoints} color={WEIGHT_COLOR} />
+            </div>
+            <QuickInsights items={[
+              { kind: "target", color: WEIGHT_COLOR, text: weightAverage == null ? "No weight average yet" : `Average weight: ${weightAverage.toFixed(1)} kg` },
+              { kind: "bars", color: "#93A95A", text: weightValues.length ? `Range: ${Math.min(...weightValues).toFixed(1)}–${Math.max(...weightValues).toFixed(1)} kg` : "No weight range yet" },
+              { kind: "trend", color: weightDelta != null && weightDelta <= 0 ? "#76AA3E" : "#E15C4A", text: trendText(weightDelta, "kg") },
+            ]} />
+          </>
+        ) : null}
 
-      <article className="mt-3 rounded-2xl bg-tint/42 p-3 ring-1 ring-border/45">
-        <MetricHeader icon="🌡️" title={t("Body temperature")} subtitle={t("Logged temperature trend")} color={TEMPERATURE_COLOR} />
-        <div className="mt-3 grid grid-cols-[82px_minmax(0,1fr)] items-center gap-2">
-          <div className="min-w-0">
-            <p className="text-[22px] font-bold leading-none tabular-nums text-foreground">{temperatureAverage == null ? "—" : temperatureAverage.toFixed(1)}</p>
-            <p className="mt-1 text-[10px] text-muted-foreground">°C · {t("average")}</p>
-            <p className={`mt-2 text-[11px] font-semibold ${temperatureDelta == null ? "text-muted-foreground" : Math.abs(temperatureDelta) < 0.05 ? "text-muted-foreground" : temperatureDelta < 0 ? "text-sky-600 dark:text-sky-300" : "text-rose-600 dark:text-rose-300"}`}>
-              {temperatureDelta == null ? "—" : `${temperatureDelta > 0 ? "+" : ""}${temperatureDelta.toFixed(1)} °C`}
-            </p>
-            <p className="mt-0.5 text-[9px] text-muted-foreground">{t("vs previous period")}</p>
-          </div>
-          <LineChart metric="temperature" points={temperaturePoints} color={TEMPERATURE_COLOR} />
-        </div>
-        <div className="mt-2 flex items-center justify-between text-[10px] text-muted-foreground">
-          <span>{t("Low")} {temperatureValues.length ? `${Math.min(...temperatureValues).toFixed(1)} °C` : "—"}</span>
-          <span>{t("High")} {temperatureValues.length ? `${Math.max(...temperatureValues).toFixed(1)} °C` : "—"}</span>
-        </div>
+        {metric === "temperature" ? (
+          <>
+            <div className="grid grid-cols-[82px_minmax(0,1fr)] items-center gap-2">
+              <div className="min-w-0">
+                <div className="mb-2 flex items-center gap-1.5"><Ico e="🌡️" size={22} /><span className="text-[11px] font-semibold text-muted-foreground">{t("Body temperature")}</span></div>
+                <p className="text-[22px] font-bold leading-none tabular-nums text-foreground">{temperatureAverage == null ? "—" : temperatureAverage.toFixed(1)}</p>
+                <p className="mt-1 text-[10px] text-muted-foreground">°C · {t("average")}</p>
+                <p className={`mt-2 text-[11px] font-semibold ${temperatureDelta == null ? "text-muted-foreground" : Math.abs(temperatureDelta) < 0.05 ? "text-muted-foreground" : temperatureDelta < 0 ? "text-sky-600 dark:text-sky-300" : "text-rose-600 dark:text-rose-300"}`}>
+                  {temperatureDelta == null ? "—" : `${temperatureDelta > 0 ? "+" : ""}${temperatureDelta.toFixed(1)} °C`}
+                </p>
+                <p className="mt-0.5 text-[9px] text-muted-foreground">vs previous period</p>
+              </div>
+              <LineChart metric="temperature" points={temperaturePoints} color={TEMPERATURE_COLOR} />
+            </div>
+            <QuickInsights items={[
+              { kind: "target", color: TEMPERATURE_COLOR, text: temperatureAverage == null ? "No temperature average yet" : `Average temperature: ${temperatureAverage.toFixed(1)} °C` },
+              { kind: "bars", color: "#F07C23", text: temperatureValues.length ? `Range: ${Math.min(...temperatureValues).toFixed(1)}–${Math.max(...temperatureValues).toFixed(1)} °C` : "No temperature range yet" },
+              { kind: "trend", color: temperatureDelta != null && temperatureDelta <= 0 ? "#5B9BD5" : "#E15C4A", text: trendText(temperatureDelta, "°C") },
+            ]} />
+          </>
+        ) : null}
       </article>
     </section>
   );

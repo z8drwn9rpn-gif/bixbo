@@ -113,7 +113,7 @@ function InsightsPage() {
       <div data-bixbo-jump-label={t("Time of day")} style={{ order: layoutOrder(view, "insights", "timeOfDay", 50) }}>
         <DiagnosticProfiler id="TimeOfDayInsightsCard"><TimeOfDayInsightsCard data={view} days={timeOfDayDays} period={timeOfDayPeriod} anchor={timeOfDayAnchor} onPeriodChange={setTimeOfDayPeriod} onPeriodShift={(delta) => setTimeOfDayAnchor((current) => shiftInsightPeriodAnchor(current, timeOfDayPeriod, delta))} /></DiagnosticProfiler>
       </div>
-      <div data-bixbo-jump-label={t("Day patterns")} style={{ order: 55 }}>
+      <div data-bixbo-jump-label={t("Recover & body")} style={{ order: 55 }}>
         <DiagnosticProfiler id="DayPatternsInsightsCard"><DayPatternsInsightsCard data={view} /></DiagnosticProfiler>
       </div>
       <div data-bixbo-jump-label={t("Meds")} style={{ order: layoutOrder(view, "insights", "meds", 60) }}>
