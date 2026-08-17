@@ -92,7 +92,13 @@ const BLUEBERRY_UI_NAMES: Record<string, string> = {
   "period / cycle": "blueberry / cycle",
 };
 
+/** Explicit regression sentinels for ordinary time-window use of the word period. */
+const NON_BLUEBERRY_PERIOD_COPY = new Set([
+  "Typical range this period",
+]);
+
 function blueberryUiName(key: string): string | null {
+  if (NON_BLUEBERRY_PERIOD_COPY.has(key)) return null;
   return BLUEBERRY_UI_NAMES[key] ?? null;
 }
 
