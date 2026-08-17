@@ -9,8 +9,8 @@ export function LogSheet(props: LogSheetProps) {
   const [targetDate, setTargetDate] = useState(props.date);
 
   // Every fresh open starts on the date selected in the calendar. The user can
-  // then override it explicitly inside the logger, which makes backfilling any
-  // category independent from iOS calendar-selection quirks.
+  // then override it explicitly inside a concrete logger, which makes
+  // backfilling independent from iOS calendar-selection quirks.
   useEffect(() => {
     if (props.open) setTargetDate(props.date);
   }, [props.date, props.open]);
@@ -31,11 +31,12 @@ export function LogSheet(props: LogSheetProps) {
   }
 
   const formKey = `${targetDate}:${props.initial ?? "menu"}:${props.open ? "open" : "closed"}`;
+  const showDateControl = props.open && Boolean(props.initial);
 
   return (
     <>
       <LogSheetRoot key={formKey} {...props} date={targetDate} />
-      {props.open ? (
+      {showDateControl ? (
         <div className="fixed left-1/2 top-[calc(env(safe-area-inset-top)+71px)] z-[260] -translate-x-1/2 rounded-xl border border-border/70 bg-background/95 px-2 py-1 shadow-sm backdrop-blur">
           <label className="flex items-center gap-1.5 text-[9px] font-bold leading-none text-muted-foreground">
             <span className="whitespace-nowrap">Date</span>
