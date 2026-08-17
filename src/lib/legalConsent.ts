@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 export const TERMS_VERSION = "2026-08-16";
 export const PRIVACY_VERSION = "2026-08-16";
 export const HEALTH_CONSENT_VERSION = "2026-08-16";
+export const CLOUD_HEALTH_CONSENT_CHANGED_EVENT = "bixbo:cloud-health-consent-changed";
 
 const PENDING_KEY = "bixbo:pending-legal-consent:v1";
 const ONBOARDING_KEY = "bixbo:onboarding-completed:v1";
@@ -26,6 +27,11 @@ type LegalWriteResult = { ok?: boolean; error?: string } & Record<string, unknow
 
 function browserStorage(): Storage | null {
   return typeof window === "undefined" ? null : window.localStorage;
+}
+
+function notifyCloudHealthConsentChanged(): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(CLOUD_HEALTH_CONSENT_CHANGED_EVENT));
 }
 
 async function invokeLegalWrite(action: LegalWriteAction, extra: Record<string, unknown> = {}): Promise<void> {
@@ -69,10 +75,12 @@ export function localCloudHealthConsentWithdrawn(): boolean {
 
 export function markLocalCloudHealthConsentWithdrawn(): void {
   browserStorage()?.setItem(CLOUD_CONSENT_WITHDRAWN_KEY, "true");
+  notifyCloudHealthConsentChanged();
 }
 
 export function clearLocalCloudHealthConsentWithdrawn(): void {
   browserStorage()?.removeItem(CLOUD_CONSENT_WITHDRAWN_KEY);
+  notifyCloudHealthConsentChanged();
 }
 
 export async function markOnboardingCompleted(): Promise<void> {
