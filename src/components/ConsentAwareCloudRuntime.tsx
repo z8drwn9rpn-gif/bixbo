@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
+import { MedicationNotificationActionBridge } from "@/components/MedicationNotificationActionBridge";
 import { useCloudSync } from "@/lib/cloudSync";
 import {
   CLOUD_HEALTH_CONSENT_CHANGED_EVENT,
@@ -116,7 +117,10 @@ export function ConsentAwareCloudRuntime() {
     if (consentState !== "active") setPartner(undefined);
   }, [consentState]);
 
-  return consentState === "active"
-    ? <ActiveCloudHealthRuntime />
-    : <LocalOnlyNotificationRuntime />;
+  return (
+    <>
+      <MedicationNotificationActionBridge />
+      {consentState === "active" ? <ActiveCloudHealthRuntime /> : <LocalOnlyNotificationRuntime />}
+    </>
+  );
 }
