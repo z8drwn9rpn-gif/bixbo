@@ -7,6 +7,7 @@ const RELOAD_LOOP_WINDOW_MS = 60_000;
 const RELOAD_LOOP_THRESHOLD = 5;
 const RELOAD_ALERT_COOLDOWN_MS = 60_000;
 const FAST_LIFECYCLE_ABORT_MS = 1_500;
+const POST_RESUME_SANITIZE_MS = 1_000;
 
 type StoredIssue = {
   at?: unknown;
@@ -15,6 +16,7 @@ type StoredIssue = {
   durationMs?: unknown;
   context?: unknown;
   timeline?: unknown;
+  traceId?: unknown;
   occurrenceCount?: unknown;
   [key: string]: unknown;
 };
@@ -74,6 +76,38 @@ function isFastLifecycleFetchAbort(issue: StoredIssue): boolean {
   return hiddenOrLeaving || reloadOrLegacyPoll;
 }
 
+/**
+ * WebKit may suspend a standalone PWA while a fetch is in flight. Wall-clock
+ * request duration then includes time when JavaScript/network delivery was
+ * paused in the background, which is not foreground network latency. Keep real
+ * foreground failures, but remove incidents whose own traced request clearly
+ * spans hidden -> visible. Cloud sync preserves failed writes as pending and
+ * retries them when the app becomes visible again.
+ */
+function isBackgroundSuspendedNetworkIssue(issue: StoredIssue): boolean {
+  if (String(issue.kind ?? "") !== "network" || !Array.isArray(issue.timeline)) return false;
+
+  const message = String(issue.message ?? "");
+  const lifecycleSensitive =
+    /\btook \d+ ms\.?$/i.test(message) ||
+    /failed:.*(?:TypeError: Load failed|Failed to fetch|NetworkError|network connection was lost)/i.test(message);
+  if (!lifecycleSensitive) return false;
+
+  const traceId = typeof issue.traceId === "string" ? issue.traceId : "";
+  const timeline = issue.timeline.filter((item): item is string => typeof item === "string");
+  const requestIndex = timeline.findIndex((item) => {
+    if (!/· request ·/i.test(item)) return false;
+    return !traceId || item.includes(traceId);
+  });
+  if (requestIndex < 0) return false;
+
+  const hiddenIndex = timeline.findIndex((item, index) => index > requestIndex && /· visibility · hidden\b/i.test(item));
+  if (hiddenIndex < 0) return false;
+
+  const visibleIndex = timeline.findIndex((item, index) => index > hiddenIndex && /· visibility · visible\b/i.test(item));
+  return visibleIndex > hiddenIndex;
+}
+
 function isLegacyNavigationTapIssue(issue: StoredIssue): boolean {
   const message = String(issue.message ?? "");
   const kind = String(issue.kind ?? "");
@@ -103,6 +137,7 @@ function sanitizeStoredForensicIssues(installedAt: number): void {
     const issue = raw as StoredIssue;
     const remove =
       isFastLifecycleFetchAbort(issue) ||
+      isBackgroundSuspendedNetworkIssue(issue) ||
       isLegacyNavigationTapIssue(issue) ||
       isUnreliableIosAbruptSessionSignal(issue) ||
       isLegacyReloadLoopIssue(issue, installedAt);
@@ -178,9 +213,13 @@ export function installForensicLifecycleGuard(): void {
   prepareReloadLoopHistory(state, now);
 
   const sanitizeWhenVisible = () => {
-    if (document.visibilityState === "visible") sanitizeStoredForensicIssues(state.installedAt);
+    if (document.visibilityState !== "visible") return;
+    sanitizeStoredForensicIssues(state.installedAt);
+    // Fetch promises suspended by iOS often settle immediately after the
+    // visibility event. Run once more after those completion handlers record.
+    window.setTimeout(() => sanitizeStoredForensicIssues(state.installedAt), POST_RESUME_SANITIZE_MS);
   };
-  window.addEventListener("pageshow", () => sanitizeStoredForensicIssues(state.installedAt));
+  window.addEventListener("pageshow", sanitizeWhenVisible);
   window.addEventListener("focus", sanitizeWhenVisible);
   document.addEventListener("visibilitychange", sanitizeWhenVisible);
 }
