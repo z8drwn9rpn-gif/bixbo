@@ -600,14 +600,18 @@ function recentRuntimeCheck(issues: RuntimeDiagnosticIssue[]): DiagnosticResult 
 
 function recentNetworkCheck(issues: RuntimeDiagnosticIssue[]): DiagnosticResult {
   const cutoff = Date.now() - RECENT_RUNTIME_WINDOW_MS;
-  const recent = issues.filter((issue) => issue.at >= cutoff && issue.kind === "network");
-  if (!recent.length) return result("runtime-network", "Browser", "ok", "Recent connectivity drops", "No offline transition was recorded in the last 6 hours.");
+  const recentOffline = issues.filter(
+    (issue) => issue.at >= cutoff
+      && issue.kind === "network"
+      && issue.message === "Device went offline while BIXBO was open.",
+  );
+  if (!recentOffline.length) return result("runtime-network", "Browser", "ok", "Recent connectivity drops", "No offline transition was recorded in the last 6 hours.");
   return result(
     "runtime-network",
     "Browser",
     "warning",
     "Recent connectivity drops",
-    `${recent.length} offline transition${recent.length === 1 ? " was" : "s were"} recorded while BIXBO was open. Network loss can interrupt cloud actions but should not freeze local screens.`,
+    `${recentOffline.length} offline transition${recentOffline.length === 1 ? " was" : "s were"} recorded while BIXBO was open. Network loss can interrupt cloud actions but should not freeze local screens.`,
   );
 }
 
