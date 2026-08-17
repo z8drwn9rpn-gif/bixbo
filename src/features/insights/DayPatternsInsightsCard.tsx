@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useDismissTapTooltip } from "@/components/charts";
 import { Ico } from "@/components/icons/BixboExtraIcons";
 import { CHART_COLORS } from "@/components/ui/chart";
 import { useI18n } from "@/hooks/useI18n";
@@ -17,7 +18,7 @@ import {
   type VitalTrendPoint,
 } from "@/components/home/vitalTrends";
 import { DashboardPeriodControl, QuickInsights } from "./InsightDashboardPrimitives";
-import { type Period } from "./shared";
+import { InsightFloatingTooltip, type InsightTooltipDetails, type Period } from "./shared";
 
 const WEIGHT_COLOR = "#7B9140";
 const TEMPERATURE_COLOR = "#E15C4A";
@@ -81,10 +82,24 @@ function longestAboveEight(points: VitalTrendPoint[]) {
 }
 
 function SleepChart({ points }: { points: VitalTrendPoint[] }) {
+  const [activeKey, setActiveKey] = useState<string | null>(null);
+  useDismissTapTooltip(() => setActiveKey(null));
+
   const yLabels = [12, 10, 8, 6, 4, 2, 0];
   const visibleIndexes = new Set<number>();
   if (points.length <= 12) points.forEach((_, index) => visibleIndexes.add(index));
   else points.forEach((_, index) => { if (index === 0 || index === points.length - 1 || index % 2 === 0) visibleIndexes.add(index); });
+
+  const activeIndex = activeKey == null ? -1 : points.findIndex((point) => point.key === activeKey);
+  const activePoint = activeIndex >= 0 ? points[activeIndex] : null;
+  const activeDetails: InsightTooltipDetails | null = activePoint?.value != null ? {
+    owner: "You",
+    heading: activePoint.heading,
+    value: `${activePoint.value.toFixed(1)} h sleep`,
+    description: `${activePoint.recordCount} ${activePoint.recordCount === 1 ? "sleep record" : "sleep records"}`,
+    color: sleepTrendColor(activePoint.value),
+    summary: `${activePoint.heading} · ${activePoint.value.toFixed(1)} h sleep`,
+  } : null;
 
   return (
     <div data-bixbo-insight-chart-card="pain" className="mt-3 rounded-2xl bg-background/45 px-3 pb-3 pt-3 ring-1 ring-border/45">
@@ -102,11 +117,17 @@ function SleepChart({ points }: { points: VitalTrendPoint[] }) {
             style={{ gridTemplateColumns: `repeat(${Math.max(1, points.length)}, minmax(0, 1fr))` }}
           >
             {points.map((point) => point.value != null ? (
-              <span
+              <button
                 key={point.key}
+                type="button"
                 data-bixbo-chart-mark="bar"
                 aria-label={`${point.heading} · ${point.value.toFixed(1)} h`}
-                className="min-w-0 rounded-t-[6px]"
+                aria-pressed={activeKey === point.key}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setActiveKey((current) => current === point.key ? null : point.key);
+                }}
+                className={`min-w-0 rounded-t-[6px] border-0 p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${activeKey === point.key ? "ring-2 ring-foreground/60" : ""}`}
                 style={{
                   height: `${Math.max(5, (Math.min(12, point.value) / 12) * 100)}%`,
                   background: sleepTrendColor(point.value),
@@ -114,6 +135,9 @@ function SleepChart({ points }: { points: VitalTrendPoint[] }) {
                 }}
               />
             ) : <span key={point.key} className="h-[2px] self-end rounded bg-border/55" />)}
+            {activeDetails && activeIndex >= 0 ? (
+              <InsightFloatingTooltip leftPct={((activeIndex + 0.5) / Math.max(1, points.length)) * 100} details={activeDetails} top={0} />
+            ) : null}
           </div>
         </div>
       </div>
@@ -138,6 +162,9 @@ function LineChart({
   points: VitalTrendPoint[];
   color: string;
 }) {
+  const [activeKey, setActiveKey] = useState<string | null>(null);
+  useDismissTapTooltip(() => setActiveKey(null));
+
   const values = points.map((point) => point.value).filter((value): value is number => value != null && Number.isFinite(value));
   if (!values.length) return <div className="mt-3 grid min-h-36 place-items-center rounded-2xl bg-background/45 text-xs text-muted-foreground ring-1 ring-border/45">No data in this period</div>;
 
@@ -173,10 +200,21 @@ function LineChart({
   const upper = sorted[Math.floor((sorted.length - 1) * 0.75)];
   const bandTop = metric === "temperature" && sorted.length >= 4 ? yFor(upper) : null;
   const bandBottom = metric === "temperature" && sorted.length >= 4 ? yFor(lower) : null;
+  const activeItem = activeKey == null ? null : plotted.find((item) => item.point.key === activeKey) ?? null;
+  const unit = metric === "weight" ? "kg" : "°C";
+  const metricLabel = metric === "weight" ? "Weight" : "Body temperature";
+  const activeDetails: InsightTooltipDetails | null = activeItem?.point.value != null ? {
+    owner: "You",
+    heading: activeItem.point.heading,
+    value: `${activeItem.point.value.toFixed(1)} ${unit}`,
+    description: `${activeItem.point.recordCount} ${activeItem.point.recordCount === 1 ? "record" : "records"} · ${metricLabel}`,
+    color,
+    summary: `${activeItem.point.heading} · ${metricLabel} ${activeItem.point.value.toFixed(1)} ${unit}`,
+  } : null;
 
   return (
-    <div className="mt-3 rounded-2xl bg-background/45 p-2 ring-1 ring-border/45">
-      <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="h-auto w-full overflow-visible" role="img">
+    <div className="relative mt-3 rounded-2xl bg-background/45 p-2 ring-1 ring-border/45">
+      <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="h-auto w-full overflow-visible" role="group" aria-label={`${metricLabel} trend chart`}>
         {bandTop != null && bandBottom != null ? (
           <rect x={left} y={bandTop} width={chartW} height={Math.max(3, bandBottom - bandTop)} rx="5" fill="rgba(123,145,64,.10)" stroke="rgba(123,145,64,.18)" />
         ) : null}
@@ -194,9 +232,31 @@ function LineChart({
         <path d={path} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ filter: "saturate(1.45) drop-shadow(0 1.5px 1.5px rgba(45,52,35,.22))" }} />
         {plotted.map((item, plottedIndex) => {
           const latest = plottedIndex === plotted.length - 1;
+          const selected = activeKey === item.point.key;
+          const label = `${item.point.heading} · ${metricLabel} ${item.point.value?.toFixed(1)} ${unit}`;
           return (
-            <g key={item.point.key}>
+            <g
+              key={item.point.key}
+              data-bixbo-chart-mark="point"
+              role="button"
+              tabIndex={0}
+              aria-label={label}
+              aria-pressed={selected}
+              onClick={(event) => {
+                event.stopPropagation();
+                setActiveKey((current) => current === item.point.key ? null : item.point.key);
+              }}
+              onKeyDown={(event) => {
+                if (event.key !== "Enter" && event.key !== " ") return;
+                event.preventDefault();
+                event.stopPropagation();
+                setActiveKey((current) => current === item.point.key ? null : item.point.key);
+              }}
+              style={{ cursor: "pointer" }}
+            >
+              <circle cx={item.x} cy={item.y} r="10" fill="transparent" pointerEvents="all" />
               {latest ? <circle cx={item.x} cy={item.y} r="7.2" fill={color} opacity=".16" /> : null}
+              {selected ? <circle cx={item.x} cy={item.y} r="8.4" fill="none" stroke="var(--foreground)" strokeWidth="1.4" opacity=".55" /> : null}
               <circle cx={item.x} cy={item.y} r={latest ? 5.1 : 4} fill="var(--surface)" stroke={color} strokeWidth={latest ? 2.8 : 2.2} style={{ filter: "drop-shadow(0 1.5px 1.5px rgba(45,52,35,.20))" }} />
               <circle cx={item.x - 1.2} cy={item.y - 1.2} r="1" fill="rgba(255,255,255,.9)" />
             </g>
@@ -206,6 +266,9 @@ function LineChart({
           <text key={`label-${point.key}`} x={xFor(index)} y={chartHeight - 5} textAnchor="middle" fontSize="7.5" fill="var(--muted-foreground)">{point.label}</text>
         ) : null)}
       </svg>
+      {activeDetails && activeItem ? (
+        <InsightFloatingTooltip leftPct={(activeItem.x / chartWidth) * 100} details={activeDetails} top={0} />
+      ) : null}
     </div>
   );
 }
