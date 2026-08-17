@@ -58,6 +58,7 @@ describe("UI layout architecture regressions", () => {
     const home = readFileSync("src/features/home/HomePage.tsx", "utf8");
     const css = readFileSync("src/calendar-system.css", "utf8");
     const root = readFileSync("src/routes/__root.tsx", "utf8");
+    const appShell = readFileSync("src/app-shell.css", "utf8");
 
     expect(calendar).toContain("data-bixbo-calendar-day");
     expect(calendar).toContain("bixbo-calendar-day-disc");
@@ -68,7 +69,8 @@ describe("UI layout architecture regressions", () => {
     expect(css).not.toContain("nth-child");
     expect(css).not.toContain('[style*=');
     expect(css).not.toContain("> div > div");
-    expect(root).toContain('import calendarSystemCss from "../calendar-system.css?url";');
+    expect(root).toContain('import appCss from "../app-shell.css?url";');
+    expect(appShell).toContain('@import "./calendar-system.css";');
     expect(root).not.toContain("calendar-3d.css");
     expect(root).not.toContain("calendar-period-fix.css");
   });
@@ -78,6 +80,7 @@ describe("UI layout architecture regressions", () => {
     const styles = readFileSync("src/styles.css", "utf8");
     const theme = readFileSync("src/theme-system.css", "utf8");
     const root = readFileSync("src/routes/__root.tsx", "utf8");
+    const appShell = readFileSync("src/app-shell.css", "utf8");
     const runtimeTheme = readFileSync("src/lib/theme.ts", "utf8");
 
     expect(styles).not.toContain("Final BIXBO Moss Green light palette");
@@ -94,7 +97,8 @@ describe("UI layout architecture regressions", () => {
     expect(theme).toContain("--destructive:");
     expect(theme).toContain("--period-veryheavy:");
     expect(theme).toContain("--pain-10: #c81746;");
-    expect(root).toContain('import themeSystemCss from "../theme-system.css?url";');
+    expect(root).toContain('import appCss from "../app-shell.css?url";');
+    expect(appShell).toContain('@import "./theme-system.css";');
     expect(root).not.toContain("white-green-theme.css");
     expect(root).not.toContain("dark-theme.css");
     expect(runtimeTheme).toContain('const LIGHT_THEME_COLOR = "#FBF7F3";');

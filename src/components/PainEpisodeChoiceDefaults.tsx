@@ -6,10 +6,14 @@ function normalizeLabel(value: string | null | undefined) {
   return (value ?? "").trim().toLocaleLowerCase();
 }
 
-function markPainEpisodeNoButtons() {
-  const headings = Array.from(document.querySelectorAll("h2"));
+function headingsWithin(root: ParentNode): HTMLHeadingElement[] {
+  const headings = Array.from(root.querySelectorAll<HTMLHeadingElement>("h2"));
+  if (root instanceof HTMLHeadingElement && root.tagName === "H2") headings.unshift(root);
+  return headings;
+}
 
-  for (const heading of headings) {
+function markPainEpisodeNoButtons(root: ParentNode = document) {
+  for (const heading of headingsWithin(root)) {
     const section = heading.parentElement?.parentElement;
     if (!section) continue;
 
@@ -37,7 +41,27 @@ export function PainEpisodeChoiceDefaults() {
   useEffect(() => {
     markPainEpisodeNoButtons();
 
-    const observer = new MutationObserver(() => markPainEpisodeNoButtons());
+    const pendingRoots = new Set<Element>();
+    let scanFrame = 0;
+    const flushPendingRoots = () => {
+      scanFrame = 0;
+      for (const root of pendingRoots) markPainEpisodeNoButtons(root);
+      pendingRoots.clear();
+    };
+    const scheduleScan = () => {
+      if (scanFrame !== 0) return;
+      scanFrame = window.requestAnimationFrame(flushPendingRoots);
+    };
+
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        for (const node of mutation.addedNodes) {
+          if (node instanceof Element) pendingRoots.add(node);
+          else if (node.parentElement) pendingRoots.add(node.parentElement);
+        }
+      }
+      if (pendingRoots.size > 0) scheduleScan();
+    });
     observer.observe(document.body, { childList: true, subtree: true });
 
     const onPointerDown = (event: PointerEvent) => {
@@ -48,6 +72,8 @@ export function PainEpisodeChoiceDefaults() {
     document.addEventListener("pointerdown", onPointerDown, true);
     return () => {
       observer.disconnect();
+      if (scanFrame !== 0) window.cancelAnimationFrame(scanFrame);
+      pendingRoots.clear();
       document.removeEventListener("pointerdown", onPointerDown, true);
     };
   }, []);
