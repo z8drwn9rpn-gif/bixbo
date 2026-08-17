@@ -30,8 +30,10 @@ function BixboIrritationIcon(p: ExtraIconProps) { return <Base {...p}><Shadow/><
 function BixboSparklesIcon(p: ExtraIconProps) { return <Base {...p}><Shadow/><path d="m31 8 3.5 10.5L45 22l-10.5 3.5L31 36l-3.5-10.5L17 22l10.5-3.5L31 8Z" fill="#dbc56d" stroke="#a98f35" strokeWidth="2"/><path d="m48 33 2 6 6 2-6 2-2 6-2-6-6-2 6-2 2-6Z" fill="#eadb96"/><path d="m15 34 1.7 5.3L22 41l-5.3 1.7L15 48l-1.7-5.3L8 41l5.3-1.7L15 34Z" fill="#c9b45d"/></Base>; }
 function BixboMoonIcon(p: ExtraIconProps) { return <Base {...p}><Shadow/><path d="M43 12c-10 2-17 10-17 20 0 9 6 16 15 19-4 2-8 3-12 2-12-2-20-13-18-25 2-13 14-21 27-18 2 0 4 1 5 2Z" fill="#8f80d7" stroke="#6657a8" strokeWidth="2"/><circle cx="43" cy="19" r="3" fill="#efe8ff"/><circle cx="49" cy="27" r="2" fill="#efe8ff"/></Base>; }
 function BixboSunIcon(p: ExtraIconProps) { return <Base {...p}><Shadow/><circle cx="32" cy="31" r="13" fill="#f2c958" stroke="#c69d32" strokeWidth="2"/><g stroke="#d2a83b" strokeWidth="4" strokeLinecap="round"><path d="M32 7v7M32 48v7M8 31h7M49 31h7M15 14l5 5M44 43l5 5M49 14l-5 5M20 43l-5 5"/></g></Base>; }
+function BixboSunflowerIcon(p: ExtraIconProps) { return <Base {...p}><Shadow/><g fill="#f5c842" stroke="#d49d23" strokeWidth="1.4"><ellipse cx="32" cy="14" rx="6" ry="11"/><ellipse cx="32" cy="46" rx="6" ry="11"/><ellipse cx="16" cy="30" rx="11" ry="6"/><ellipse cx="48" cy="30" rx="11" ry="6"/><ellipse cx="21" cy="19" rx="6" ry="10" transform="rotate(-45 21 19)"/><ellipse cx="43" cy="19" rx="6" ry="10" transform="rotate(45 43 19)"/><ellipse cx="21" cy="41" rx="6" ry="10" transform="rotate(45 21 41)"/><ellipse cx="43" cy="41" rx="6" ry="10" transform="rotate(-45 43 41)"/></g><circle cx="32" cy="30" r="12" fill="#7b4f25" stroke="#5e3a1d" strokeWidth="2"/><circle cx="27" cy="26" r="2" fill="#b47b35"/><circle cx="36" cy="27" r="2" fill="#b47b35"/><circle cx="31" cy="34" r="2" fill="#b47b35"/><ellipse cx="24" cy="16" rx="5" ry="2.5" transform="rotate(-30 24 16)" fill="#fff" opacity="0.35"/></Base>; }
 function BixboBrainIcon(p: ExtraIconProps) { return <Base {...p}><Shadow/><path d="M25 13c-7 0-12 5-12 11 0 3 1 5 3 7-3 2-4 5-3 8 1 5 5 8 10 8 2 5 8 7 13 4 5 3 11 1 13-4 5 0 9-3 10-8 1-3 0-6-3-8 2-2 3-4 3-7 0-6-5-11-12-11-3-4-8-5-12-2-4-3-9-2-10 2Z" fill="#a9b97c" stroke="#71804f" strokeWidth="2"/><path d="M31 16v33M22 21c4 2 5 5 3 9M42 20c-4 2-5 5-3 9M21 38c4-3 8-2 10 1M43 37c-4-3-8-2-10 1" stroke="#71804f" strokeWidth="2.5" strokeLinecap="round"/></Base>; }
 function BixboDropIcon(p: ExtraIconProps) { return <Base {...p}><Shadow/><path d="M32 9c10 13 16 22 16 31a16 16 0 0 1-32 0c0-9 6-18 16-31Z" fill="#74add9" stroke="#4f82ad" strokeWidth="2"/><path d="M24 40c2 5 7 7 12 5" stroke="#dff3ff" strokeWidth="3" strokeLinecap="round"/></Base>; }
+function BixboBloodDropIcon(p: ExtraIconProps) { return <Base {...p}><Shadow/><path d="M32 9c10 13 16 22 16 31a16 16 0 0 1-32 0c0-9 6-18 16-31Z" fill="#d94b55" stroke="#a72a35" strokeWidth="2"/><path d="M24 40c2 5 7 7 12 5" stroke="#ffd9dc" strokeWidth="3" strokeLinecap="round"/></Base>; }
 function BixboFoodIcon(p: ExtraIconProps) { return <Base {...p}><Shadow/><path d="M11 32h42c-1 12-9 19-21 19S12 44 11 32Z" fill="#f3f1e5" stroke="#87916d" strokeWidth="2"/><path d="M17 31c3-10 8-15 15-15s12 5 15 15" fill="#9fbe6f"/><circle cx="24" cy="27" r="6" fill="#efb55b"/><circle cx="34" cy="24" r="6" fill="#d97872"/><circle cx="41" cy="29" r="5" fill="#78a96b"/></Base>; }
 function BixboWorkoutIcon(p: ExtraIconProps) { return <Base {...p}><Shadow/><path d="M12 38h40" stroke="#607aab" strokeWidth="5" strokeLinecap="round"/><rect x="18" y="25" width="8" height="25" rx="4" fill="#91a9d6"/><rect x="38" y="25" width="8" height="25" rx="4" fill="#91a9d6"/><rect x="9" y="29" width="8" height="17" rx="4" fill="#6c86b8"/><rect x="47" y="29" width="8" height="17" rx="4" fill="#6c86b8"/></Base>; }
 function BixboShoeIcon(p: ExtraIconProps) { return <Base {...p}><Shadow/><path d="M13 34c4-1 8-4 11-10l3-6 8 9c4 4 8 6 14 8l6 2c3 1 5 4 4 7-1 4-5 7-10 7H18c-7 0-11-3-11-8 0-4 2-7 6-9Z" fill="#9fb45f" stroke="#66793a" strokeWidth="2" strokeLinejoin="round"/><path d="M9 43h48c0 5-4 8-10 8H19c-6 0-10-3-10-8Z" fill="#f1edd7" stroke="#8b916f" strokeWidth="2"/><path d="M27 27l9 8M23 31l9 8" stroke="#f7f4e8" strokeWidth="3" strokeLinecap="round"/><path d="M16 37c5-1 9-3 12-6" stroke="#dce6ae" strokeWidth="3" strokeLinecap="round"/><ellipse cx="24" cy="23" rx="4" ry="2.2" transform="rotate(-28 24 23)" fill="#fff" opacity="0.35"/></Base>; }
@@ -66,6 +68,7 @@ const EXTRA_SYMBOL_ICONS: Record<string, ExtraIconComponent> = {
   ["◯"]: BixboRingIcon,
   ["🌸"]: BixboPetalIcon,
   ["◌"]: BixboIrritationIcon,
+  ["💢"]: BixboIrritationIcon,
   ["🫧"]: BixboBubbleIcon,
   ["🔋"]: BixboBatteryIcon,
   ["🌀"]: BixboSpiralIcon,
@@ -80,9 +83,11 @@ const EXTRA_SYMBOL_ICONS: Record<string, ExtraIconComponent> = {
   ["🌜"]: BixboMoonIcon,
   ["☀️"]: BixboSunIcon,
   ["☀"]: BixboSunIcon,
+  ["🔅"]: BixboSunIcon,
+  ["🌻"]: BixboSunflowerIcon,
   ["🧠"]: BixboBrainIcon,
   ["💧"]: BixboDropIcon,
-  ["🩸"]: BixboDropIcon,
+  ["🩸"]: BixboBloodDropIcon,
   ["🥗"]: BixboFoodIcon,
   ["🥣"]: BixboFoodIcon,
   ["🏋️"]: BixboWorkoutIcon,
