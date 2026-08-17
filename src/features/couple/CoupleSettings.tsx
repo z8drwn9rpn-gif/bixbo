@@ -8,6 +8,59 @@ import { ensureProfile, fetchPartner, linkPartnerByCode, unlinkPartner, updatePr
 import { setPartner, useBixbo } from "@/lib/storage";
 import { useI18n } from "@/hooks/useI18n";
 
+type ErrorLike = {
+  code?: unknown;
+  message?: unknown;
+  details?: unknown;
+  hint?: unknown;
+};
+
+function readableError(cause: unknown, fallback: string): { code: string; message: string } {
+  if (cause instanceof Error && cause.message.trim()) {
+    return { code: "", message: cause.message.trim() };
+  }
+
+  if (cause && typeof cause === "object") {
+    const raw = cause as ErrorLike;
+    const code = typeof raw.code === "string" ? raw.code.trim() : "";
+    for (const candidate of [raw.message, raw.details, raw.hint]) {
+      if (typeof candidate === "string" && candidate.trim()) {
+        return { code, message: candidate.trim() };
+      }
+    }
+    return { code, message: fallback };
+  }
+
+  if (typeof cause === "string" && cause.trim()) {
+    return { code: "", message: cause.trim() };
+  }
+
+  return { code: "", message: fallback };
+}
+
+function coupleErrorMessage(cause: unknown, t: (value: string) => string): string {
+  const parsed = readableError(cause, t("Couple request failed. Please try again."));
+  const normalized = parsed.message.toLowerCase();
+
+  if (parsed.code === "P0002" || normalized.includes("partner is not available for pairing")) {
+    return t("Partner sharing is unavailable right now. Make sure both accounts have accepted the current health-data consent. If you were already linked, your connection is still saved and will resume when consent is current on both accounts.");
+  }
+
+  if (parsed.code === "42501" || normalized.includes("current health-data consent is required")) {
+    return t("Accept the current health-data consent in this BIXBO account before using Couple.");
+  }
+
+  if (normalized.includes("cannot link to yourself")) {
+    return t("You cannot connect your account to its own pairing code.");
+  }
+
+  if (normalized.includes("code required")) {
+    return t("Enter your partner's BIXBO pairing code.");
+  }
+
+  return parsed.message;
+}
+
 export function CoupleSettings({ onBack }: { onBack: () => void }) {
   const { t } = useI18n();
   const { data, update } = useBixbo();
@@ -33,9 +86,9 @@ export function CoupleSettings({ onBack }: { onBack: () => void }) {
         setProfile(nextProfile);
         setCoupleName(nextProfile?.display_name?.trim() || preferredName || "");
       })
-      .catch((cause) => { if (!cancelled) setError(cause instanceof Error ? cause.message : String(cause)); });
+      .catch((cause) => { if (!cancelled) setError(coupleErrorMessage(cause, t)); });
     return () => { cancelled = true; };
-  }, [data.profile?.name, data.profile?.nickname, data.settings.userName, ready, session]);
+  }, [data.profile?.name, data.profile?.nickname, data.settings.userName, ready, session, t]);
 
   const saveCoupleName = async () => {
     const nextName = coupleName.trim();
@@ -53,7 +106,7 @@ export function CoupleSettings({ onBack }: { onBack: () => void }) {
       setCoupleName(nextName);
       setMessage(t("Couple name saved."));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(coupleErrorMessage(cause, t));
     } finally {
       setSavingName(false);
     }
@@ -72,7 +125,7 @@ export function CoupleSettings({ onBack }: { onBack: () => void }) {
       setPartnerCode("");
       setMessage(`${t("Connected to")} ${linked.display_name || t("Partner")}.`);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(coupleErrorMessage(cause, t));
     } finally {
       setBusy(false);
     }
@@ -87,7 +140,7 @@ export function CoupleSettings({ onBack }: { onBack: () => void }) {
       setPartner(undefined);
       setMessage(t("Partner disconnected."));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(coupleErrorMessage(cause, t));
     } finally {
       setBusy(false);
     }
@@ -146,7 +199,18 @@ export function CoupleSettings({ onBack }: { onBack: () => void }) {
               ) : (
                 <>
                   <p className="mt-1 text-xs text-muted-foreground">{t("Enter your partner's BIXBO pairing code.")}</p>
-                  <Input value={partnerCode} onChange={(event) => setPartnerCode(event.target.value.toUpperCase())} placeholder={t("Partner code")} autoCapitalize="characters" autoCorrect="off" className="mt-3 h-11 font-mono uppercase tracking-wider" />
+                  <Input
+                    value={partnerCode}
+                    onChange={(event) => {
+                      setPartnerCode(event.target.value.toUpperCase());
+                      if (error) setError(null);
+                    }}
+                    placeholder={t("Partner code")}
+                    autoCapitalize="characters"
+                    autoCorrect="off"
+                    maxLength={6}
+                    className="mt-3 h-11 font-mono uppercase tracking-wider"
+                  />
                   <Button type="button" disabled={busy || !partnerCode.trim()} onClick={() => void connect()} className="mt-3 w-full">
                     {busy ? t("Connecting…") : t("Connect")}
                   </Button>
@@ -157,7 +221,7 @@ export function CoupleSettings({ onBack }: { onBack: () => void }) {
         )}
 
         {message && <p className="rounded-2xl bg-primary/10 px-3 py-2 text-xs text-foreground">{message}</p>}
-        {error && <p className="rounded-2xl bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>}
+        {error && <p role="alert" aria-live="polite" className="rounded-2xl bg-destructive/10 px-3 py-2 text-xs leading-relaxed text-destructive">{error}</p>}
       </div>
     </AppShell>
   );
