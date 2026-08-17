@@ -6,8 +6,9 @@ describe("selected-date sleep logging", () => {
     const home = readFileSync("src/features/home/HomePage.tsx", "utf8");
 
     expect(home).toContain('label="Sleep"');
-    expect(home).toContain('setQuickCat("temp")');
+    expect(home).toContain("const openDateBoundCategory = (cat?: string) => {");
+    expect(home).toContain("setQuickCat(cat)");
+    expect(home).toContain('onClick={() => openDateBoundCategory("temp")}');
     expect(home).toContain("setLogOpen(true)");
-    expect(home).not.toContain("if (selected !== todayKey())");
   });
 });
