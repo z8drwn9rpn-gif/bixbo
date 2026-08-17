@@ -34,6 +34,11 @@ function safeElementLabel(node: Node | null | undefined): string {
     .join(" ");
 }
 
+function isNavigationActivation(node: Node | null | undefined): boolean {
+  if (!(node instanceof Element)) return false;
+  return Boolean(node.closest("a[href]"));
+}
+
 function rectDelta(source: LayoutShiftSource): string {
   const before = source.previousRect;
   const after = source.currentRect;
@@ -86,8 +91,20 @@ function installTapToPaintForensics(): void {
   window.addEventListener("click", (event) => {
     if (window.location.pathname.startsWith("/diagnostics") || document.visibilityState !== "visible") return;
     const target = event.target ?? lastPointerTarget;
+    const targetNode = target instanceof Node ? target : null;
+
+    // Router Links and ordinary anchors intentionally start a navigation. Their
+    // pointer-down-to-paint duration spans route transition work and is already
+    // measured by the route-settled probes, so treating it as a sluggish local
+    // control double-counts normal navigation and produced false warnings.
+    if (isNavigationActivation(targetNode)) {
+      lastPointerAt = 0;
+      lastPointerTarget = null;
+      return;
+    }
+
     const pointerAt = lastPointerAt || performance.now();
-    const label = safeElementLabel(target instanceof Node ? target : null);
+    const label = safeElementLabel(targetNode);
 
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
