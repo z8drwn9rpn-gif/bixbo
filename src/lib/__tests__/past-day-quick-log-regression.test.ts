@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const home = readFileSync("src/features/home/HomePage.tsx", "utf8");
+const quickVital = readFileSync("src/components/home/QuickVitalSheet.tsx", "utf8");
 
 describe("past-day logging safety", () => {
   it("intercepts one-tap quick logs when a past calendar day is selected", () => {
@@ -11,10 +12,16 @@ describe("past-day logging safety", () => {
     expect(home).toContain("openDateBoundCategory(pastQuickTagCategory");
   });
 
-  it("opens Sleep, temperature and weight through the date-bound logger", () => {
+  it("opens Sleep, temperature and weight in date-bound compact vital editors", () => {
     expect(home).toContain('label="Sleep"');
     expect(home).toContain('label="Temp"');
     expect(home).toContain('label="Weight"');
-    expect(home.match(/onClick=\{\(\) => openDateBoundCategory\("temp"\)\}/g)?.length).toBeGreaterThanOrEqual(3);
+    expect(home).toContain('onClick={() => openQuickVital("sleep")}');
+    expect(home).toContain('onClick={() => openQuickVital("temperature")}');
+    expect(home).toContain('onClick={() => openQuickVital("weight")}');
+    expect(home).toContain("<QuickVitalSheet");
+    expect(home).toContain("date={selected}");
+    expect(quickVital).toContain("const [targetDate, setTargetDate] = useState(date)");
+    expect(quickVital).toContain("updateDayLog(update, targetDate");
   });
 });
