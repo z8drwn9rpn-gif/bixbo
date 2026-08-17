@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   countRecordedPrnUses,
+  firstRecordedScheduledMedicationDate,
   hasMeaningfulReportDay,
+  paginateReportDays,
   reportPeriodLevel,
   summarizeReportDay,
 } from "../healthReport";
@@ -106,5 +108,33 @@ describe("PDF health report calculations", () => {
     };
 
     expect(countRecordedPrnUses(med, dates, dayLogs, medLog)).toBe(3);
+  });
+
+  it("starts long-range medication adherence at the first historical scheduled record", () => {
+    const med: Med = { id: "daily", name: "Daily med", times: ["09:00"] };
+    const medLog = {
+      "2026-04-21": { "daily@09:00": true },
+      "2026-04-22": {},
+    };
+    const medLogItems = {
+      "2026-08-13": { "daily@09:00": ["Daily med"] },
+    };
+
+    expect(firstRecordedScheduledMedicationDate(med, medLog, medLogItems)).toBe("2026-04-21");
+    expect(firstRecordedScheduledMedicationDate({ ...med, id: "unknown" }, medLog, medLogItems)).toBeUndefined();
+  });
+
+  it("paginates long-range Pain by day data without dropping days", () => {
+    const ninety = Array.from({ length: 90 }, (_, index) => index);
+    const year = Array.from({ length: 365 }, (_, index) => index);
+
+    const ninetyPages = paginateReportDays(ninety, 30);
+    const yearPages = paginateReportDays(year, 30);
+
+    expect(ninetyPages).toHaveLength(3);
+    expect(ninetyPages.flat()).toEqual(ninety);
+    expect(yearPages).toHaveLength(13);
+    expect(yearPages.flat()).toEqual(year);
+    expect(yearPages.every((page) => page.length <= 30)).toBe(true);
   });
 });
