@@ -89,22 +89,44 @@ const APPLE_PWA_LAUNCH_SPLASH_CSS = `
     filter: drop-shadow(0 10px 18px rgba(57, 70, 43, 0.16));
   }
 
-  /* iOS Home Screen web apps use a different compositor path from a normal
-     Safari tab. Keep the Home title out of the standalone sticky/filter layer:
-     WebKit can otherwise rasterize the wordmark and greeting as a soft bitmap. */
+  /* iOS Home Screen web apps use a different rendering path from a normal
+     Safari tab. Keep the Home wordmark on integer line geometry and out of
+     independent clipping/stacking layers so WebKit never has to reuse a
+     fractional-position text bitmap. */
+  html[data-bixbo-pwa-mode="standalone"] [data-bixbo-app-frame] {
+    overflow-x: clip !important;
+    filter: none !important;
+    transform: none !important;
+    perspective: none !important;
+    contain: none !important;
+    isolation: auto !important;
+    will-change: auto !important;
+  }
   html[data-bixbo-pwa-mode="standalone"] header[data-bixbo-app-header][data-bixbo-home-header="true"] {
-    position: relative !important;
+    position: static !important;
     top: auto !important;
+    z-index: auto !important;
+    overflow: visible !important;
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
     filter: none !important;
     transform: none !important;
     perspective: none !important;
+    contain: none !important;
+    isolation: auto !important;
+    mix-blend-mode: normal !important;
+    -webkit-backface-visibility: visible !important;
+    backface-visibility: visible !important;
     will-change: auto !important;
   }
   html[data-bixbo-pwa-mode="standalone"] header[data-bixbo-app-header][data-bixbo-home-header="true"] img {
     filter: none !important;
     transform: none !important;
+  }
+  html[data-bixbo-pwa-mode="standalone"] header[data-bixbo-app-header][data-bixbo-home-header="true"] h1 {
+    overflow: visible !important;
+    white-space: normal !important;
+    text-overflow: clip !important;
   }
   html[data-bixbo-pwa-mode="standalone"] header[data-bixbo-app-header][data-bixbo-home-header="true"] h1,
   html[data-bixbo-pwa-mode="standalone"] header[data-bixbo-app-header][data-bixbo-home-header="true"] h1 * {
@@ -113,7 +135,24 @@ const APPLE_PWA_LAUNCH_SPLASH_CSS = `
     filter: none !important;
     transform: none !important;
     opacity: 1 !important;
-    -webkit-font-smoothing: auto !important;
+    font-synthesis: none !important;
+    text-rendering: auto !important;
+    -webkit-font-smoothing: antialiased !important;
+  }
+  html[data-bixbo-pwa-mode="standalone"] header[data-bixbo-app-header][data-bixbo-home-header="true"] [data-bixbo-display-title] {
+    line-height: 36px !important;
+    letter-spacing: -1px !important;
+    font-kerning: none !important;
+  }
+  html[data-bixbo-pwa-mode="standalone"] header[data-bixbo-app-header][data-bixbo-home-header="true"] [data-bixbo-display-title] + a {
+    line-height: 16px !important;
+    letter-spacing: 0 !important;
+    font-kerning: none !important;
+  }
+  @media (min-width: 640px) {
+    html[data-bixbo-pwa-mode="standalone"] header[data-bixbo-app-header][data-bixbo-home-header="true"] [data-bixbo-display-title] {
+      line-height: 40px !important;
+    }
   }
 `;
 
