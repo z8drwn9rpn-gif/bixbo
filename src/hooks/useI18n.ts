@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { useBixbo } from "@/lib/storage";
 import { normalizeLanguage, translate, type AppLanguage } from "@/lib/i18n";
+import { painScaleUiCopy } from "@/lib/painScale";
 
 /**
  * Repetitive helper/subtitle copy intentionally hidden from the visible UI.
@@ -116,6 +117,8 @@ export function useI18n() {
       if (HIDDEN_HELPER_COPY.has(key)) return "";
       const blueberryName = blueberryUiName(key);
       if (blueberryName) return blueberryName;
+      const functionalPainCopy = painScaleUiCopy(key, language);
+      if (functionalPainCopy) return functionalPainCopy;
       if (key === "missed (tap if taken)") return language === "sk" ? "vynechané" : "missed";
       if (key === "Hidden — tap to restore:") return language === "sk" ? "Skryté:" : "Hidden:";
       if (key === "No medications yet. Tap Add." || key === 'No medications yet. Tap "Add".') {
