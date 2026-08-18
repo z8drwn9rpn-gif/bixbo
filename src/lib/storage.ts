@@ -3,4 +3,5 @@ export * from "./storage/defaults";
 export * from "./storage/migrations";
 export * from "./storage/runtime";
 export * from "./storage/utilities";
+export { PAIN_DESCRIPTIONS } from "./painScale";
 export { predictPeriodsForDisplay as predictPeriods } from "./domain/cyclePredictions";
