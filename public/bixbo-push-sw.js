@@ -2,7 +2,7 @@
    Push + notification handling only. It intentionally has NO fetch handler and
    caches nothing, so it cannot serve stale HTML or interfere with app updates. */
 
-const BIXBO_PUSH_SW_VERSION = "2026.08.17.2";
+const BIXBO_PUSH_SW_VERSION = "2026.08.18.1";
 const MED_ACTION_DB = "bixbo-notification-actions";
 const MED_ACTION_STORE = "pending-med-actions";
 
@@ -247,11 +247,17 @@ self.addEventListener("notificationclick", (event) => {
       for (const client of clientList) {
         if (!("focus" in client)) continue;
 
+        // iOS installed PWAs can focus an existing app window while silently
+        // leaving it on the old route. Send the destination to the live app as
+        // a second navigation path; the client bridge performs a same-origin
+        // location.assign if WindowClient.navigate does not take effect.
+        client.postMessage({ type: "BIXBO_NOTIFICATION_OPEN", url });
+
         if ("navigate" in client) {
           try {
             await client.navigate(target);
           } catch {
-            // Focus the existing BIXBO window if navigation fails.
+            // The client-side message above remains the fallback.
           }
         }
 
