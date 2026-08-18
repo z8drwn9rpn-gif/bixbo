@@ -46,6 +46,7 @@ describe("yearly PDF monthly reporting", () => {
     expect(page).toContain("const months = yearly ? aggregateReportMonths(days");
     expect(page).toContain("<YearlyPainTrend months={months} locale={locale} />");
     expect(page).toContain("Pain by month");
+    expect(page).toContain("monthly average of daily pain averages");
     expect(page).toContain("recordedMonths.length / Math.max(1, months.length)");
     expect(page).toContain("<YearlyTimelineTable months={pageMonths}");
     expect(page).toContain("buildYearlyHealthDetailPages(months, units, locale)");
