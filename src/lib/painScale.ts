@@ -19,11 +19,24 @@ type LocalizedCopy = Record<PainScaleLanguage, string>;
 const copy = (en: string, sk: string): LocalizedCopy => ({ en, sk });
 
 /**
- * Compatibility map for the legacy Mankoski-style strings that are still used
- * as translation keys by older UI surfaces. The displayed wording is now
- * functional and does not depend on taking analgesics.
+ * Functional pain-scale copy plus compatibility mappings for the legacy
+ * Mankoski-style strings still used as translation keys by older UI surfaces.
+ * Displayed severity is based on perceived pain and functional impact, not on
+ * whether analgesics were taken or effective.
  */
-const LEGACY_PAIN_SCALE_COPY: Record<string, LocalizedCopy> = {
+const PAIN_SCALE_UI_COPY: Record<string, LocalizedCopy> = {
+  "Pain free": copy("Pain free", "Bez bolesti"),
+  "Barely noticeable": copy("Barely noticeable", "Sotva badateľná"),
+  Mild: copy("Mild", "Mierna"),
+  "Distracting at times": copy("Distracting at times", "Občas rušivá"),
+  Distracting: copy("Distracting", "Rušivá"),
+  Interrupting: copy("Interrupting", "Narušujúca"),
+  "Hard to ignore": copy("Hard to ignore", "Ťažko ignorovateľná"),
+  "Difficult to function": copy("Difficult to function", "Sťažuje fungovanie"),
+  "Severely limiting": copy("Severely limiting", "Výrazne obmedzujúca"),
+  Overwhelming: copy("Overwhelming", "Drvivá"),
+  "Worst imaginable": copy("Worst imaginable", "Najhoršia predstaviteľná"),
+
   "Very minor annoyance": copy("Barely noticeable", "Sotva badateľná"),
   "Minor annoyance": copy("Mild", "Mierna"),
   "Annoying, distracting": copy("Distracting at times", "Občas rušivá"),
@@ -57,5 +70,5 @@ const LEGACY_PAIN_SCALE_COPY: Record<string, LocalizedCopy> = {
 };
 
 export function painScaleUiCopy(key: string, language: PainScaleLanguage): string | undefined {
-  return LEGACY_PAIN_SCALE_COPY[key]?.[language];
+  return PAIN_SCALE_UI_COPY[key]?.[language];
 }
