@@ -2,7 +2,7 @@
    Push + notification handling only. It intentionally has NO fetch handler and
    caches nothing, so it cannot serve stale HTML or interfere with app updates. */
 
-const BIXBO_PUSH_SW_VERSION = "2026.08.18.1";
+const BIXBO_PUSH_SW_VERSION = "2026.08.18.2";
 const MED_ACTION_DB = "bixbo-notification-actions";
 const MED_ACTION_STORE = "pending-med-actions";
 
@@ -24,6 +24,32 @@ function safeUrl(value) {
   } catch {
     return "/";
   }
+}
+
+function notificationUrl(data) {
+  const explicit = safeUrl(data?.url);
+  const category = typeof data?.category === "string" ? data.category : "";
+  const tag = typeof data?.tag === "string" ? data.tag : "";
+
+  // Calendar-event payloads historically used `/` because the editor lives on
+  // Home rather than a standalone route. Recover the event id from the stable
+  // notification tag and hand Home a one-shot deep link that opens that editor.
+  if (category === "appointments" && tag.startsWith("event-event:")) {
+    let eventId = tag.slice("event-event:".length);
+    for (const suffix of ["-day-before", "-tomorrow", "-start"]) {
+      if (eventId.endsWith(suffix)) {
+        eventId = eventId.slice(0, -suffix.length);
+        break;
+      }
+    }
+    if (eventId) return `/?event=${encodeURIComponent(eventId)}`;
+  }
+
+  // Remote medication pushes predate the dedicated Meds route and still carry
+  // `/`; keep local and remote tap behavior consistent.
+  if (category === "meds" && explicit === "/") return "/meds";
+
+  return explicit;
 }
 
 function validMedicationAction(value) {
@@ -233,7 +259,7 @@ self.addEventListener("notificationclick", (event) => {
     return;
   }
 
-  const url = safeUrl(data.url);
+  const url = notificationUrl(data);
 
   event.waitUntil(
     (async () => {
