@@ -106,8 +106,8 @@ export function BottomNav() {
     <nav
       data-bixbo-bottom-nav
       aria-label="Primary navigation"
-      className="fixed inset-x-0 bottom-0 z-40 w-full border-t border-border/55 bg-background/96 pb-[max(8px,env(safe-area-inset-bottom))] backdrop-blur-xl supports-[backdrop-filter]:bg-background/92 lg:hidden dark:border-border/65"
-      style={{ boxShadow: BIXBO_BOTTOM_NAV_SHADOW }}
+      className="fixed inset-x-0 bottom-0 z-40 w-full border-t border-border/55 bg-background pb-[max(8px,env(safe-area-inset-bottom))] lg:hidden dark:border-border/65"
+      style={{ boxShadow: BIXBO_BOTTOM_NAV_SHADOW, contain: "layout paint" }}
     >
       <ul className="mx-auto flex min-h-[88px] w-full max-w-[430px] items-end justify-around gap-0 px-2 pb-1.5 pt-1 sm:px-4 landscape:min-h-[76px] landscape:py-1">
         {items.map((item) => {
@@ -123,6 +123,8 @@ export function BottomNav() {
                   onPointerCancel={clearLongPress}
                   onPointerLeave={clearLongPress}
                   onContextMenu={(event) => event.preventDefault()}
+                  data-bixbo-nav-id={item.id}
+                  data-bixbo-nav-target="log-sheet"
                   className="flex min-h-[72px] w-full flex-col items-center justify-end gap-0 px-1 pb-0.5 text-[11px] font-semibold text-primary transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] dark:text-foreground landscape:min-h-[62px]"
                   aria-label={`${t(label)} · ${t("hold for shortcuts")}`}
                 >
@@ -144,7 +146,9 @@ export function BottomNav() {
             <li key={item.id} className="flex min-w-0 flex-1 justify-center">
               <Link
                 to={to as never}
-                preload="intent"
+                preload={false}
+                data-bixbo-nav-id={item.id}
+                data-bixbo-nav-target={to}
                 aria-current={active ? "page" : undefined}
                 className={`relative flex min-h-[72px] w-full flex-col items-center justify-end gap-0 px-1 pb-0.5 text-[11px] font-semibold transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] landscape:min-h-[62px] ${active ? "text-primary dark:text-foreground" : "text-muted-foreground hover:text-foreground"}`}
               >
