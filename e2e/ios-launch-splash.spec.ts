@@ -31,7 +31,7 @@ test("standalone Home header stays out of the WebKit blur compositor path", asyn
 
   const header = page.locator("header[data-bixbo-app-header]:has([data-bixbo-display-title])");
   const title = header.locator("[data-bixbo-display-title]");
-  const greeting = title.locator("+ a");
+  const greeting = header.locator("h1[data-bixbo-app-title] [data-bixbo-display-title] + a");
   const mascot = header.locator("img").first();
 
   await expect(header).toBeVisible();
