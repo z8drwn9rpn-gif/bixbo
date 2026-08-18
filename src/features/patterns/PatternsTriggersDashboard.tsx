@@ -81,7 +81,7 @@ function iconForAssociation(label: string) {
   if (value.includes("tetany")) return "⚡";
   if (value.includes("panic")) return "✨";
   if (value.includes("energy")) return "⚡";
-  if (value.includes("period") || value.includes("bleed") || value.includes("flow")) return "🫐";
+  if (value.includes("period") || value.includes("bleed") || value.includes("flow")) return "🩸";
   if (value.includes("hot flash")) return "🌡️";
   if (value.includes("headache")) return "🧠";
   if (value.includes("pressure")) return "💢";
@@ -99,7 +99,7 @@ function iconForTrigger(label: string) {
   if (value.includes("pain")) return "🔥";
   if (value.includes("tetany")) return "⚡";
   if (value.includes("panic")) return "✨";
-  if (value.includes("period") || value.includes("bleed") || value.includes("flow")) return "🫐";
+  if (value.includes("period") || value.includes("bleed") || value.includes("flow")) return "🩸";
   if (value.includes("hot flash")) return "🌡️";
   if (value.includes("headache")) return "🧠";
   if (value.includes("pressure")) return "💢";
@@ -144,8 +144,9 @@ function TriggerGauge({ label, detail, percentage, color }: { label: string; det
   const pct = percentage == null ? 0 : clampPercent(percentage);
   const headline = percentage == null ? "—" : `${percentage.toFixed(0)}%`;
   const bottomDisplay = `${pct.toFixed(0)}%`;
-  const fillHeight = pct === 0 ? 4 : Math.max(8, pct);
-  return <div className="rounded-2xl bg-tint/48 px-2.5 py-2.5 text-center ring-1 ring-border/45"><p className="text-[11px] font-semibold" style={{ color }}>{label}</p><p className="mt-0.5 text-[22px] font-bold tabular-nums text-foreground">{headline}</p><div className="relative mx-auto mt-1.5 h-24 w-[64px]"><div className="absolute inset-x-1.5 bottom-1 top-1 overflow-hidden rounded-[28px] border border-border/55 bg-gradient-to-r from-background/65 via-white/90 to-background/55 shadow-[inset_3px_0_7px_rgba(80,75,55,.08),inset_-3px_0_7px_rgba(80,75,55,.08),0_4px_9px_rgba(45,52,35,.10)]"><span data-bixbo-chart-mark="bar" title={`${label}: ${bottomDisplay}`} className="absolute inset-x-[5px] bottom-[5px] z-10 rounded-b-[22px]" style={{ height: pct === 0 ? "4px" : `${fillHeight}%`, background: `linear-gradient(90deg, ${color}, ${color})`, filter: "saturate(1.85) contrast(1.12)", boxShadow: "inset 4px 0 6px rgba(255,255,255,.26), inset -4px 0 6px rgba(40,35,20,.20), 0 2px 6px rgba(45,52,35,.18)" }}><span className="absolute -top-1 left-0 right-0 h-3 rounded-[50%]" style={{ background: color, boxShadow: "inset 0 2px 2px rgba(255,255,255,.50), 0 1px 2px rgba(40,35,20,.24)" }} /></span><span className="absolute inset-x-1 top-1 z-20 h-3 rounded-[50%] border border-border/45 bg-white/72" /><span className="absolute inset-x-1 bottom-1 z-20 h-3 rounded-[50%] border border-border/40 bg-background/18" /></div></div><p className="mt-0.5 text-[10px] font-semibold tabular-nums" style={{ color }}>{bottomDisplay}</p><p className="mt-0.5 text-[9px] text-muted-foreground">{detail}</p></div>;
+  const liquidHeight = pct === 0 ? 3 : Math.max(6, 76 * (pct / 100));
+  const liquidTop = 92 - liquidHeight;
+  return <div className="rounded-2xl bg-tint/48 px-2.5 py-2.5 text-center ring-1 ring-border/45"><p className="text-[11px] font-semibold" style={{ color }}>{label}</p><p className="mt-0.5 text-[22px] font-bold tabular-nums text-foreground">{headline}</p><div className="mx-auto mt-1.5 h-24 w-[64px]"><svg viewBox="0 0 72 108" className="h-full w-full overflow-visible" aria-hidden="true"><ellipse cx="36" cy="101" rx="23" ry="5" fill="#263318" opacity="0.10" /><rect x="13" y="11" width="46" height="84" rx="23" fill="rgba(255,255,255,.58)" stroke="rgba(115,120,96,.28)" strokeWidth="1.5" /><g data-bixbo-chart-mark="bar"><title>{`${label}: ${bottomDisplay}`}</title><rect x="16" y={liquidTop} width="40" height={liquidHeight} rx={pct >= 95 ? 18 : 8} fill={color} opacity="0.96" /><ellipse cx="36" cy={liquidTop} rx="20" ry="5.5" fill={color} /><path d={`M19 ${liquidTop + 3} C24 ${liquidTop - 1}, 29 ${liquidTop - 1}, 34 ${liquidTop + 1}`} stroke="rgba(255,255,255,.55)" strokeWidth="2" strokeLinecap="round" fill="none" /></g><ellipse cx="36" cy="16" rx="19" ry="5" fill="rgba(255,255,255,.62)" stroke="rgba(115,120,96,.20)" /><ellipse cx="36" cy="91" rx="19" ry="4.5" fill="rgba(255,255,255,.10)" stroke="rgba(115,120,96,.14)" /></svg></div><p className="mt-0.5 text-[10px] font-semibold tabular-nums" style={{ color }}>{bottomDisplay}</p><p className="mt-0.5 text-[9px] text-muted-foreground">{detail}</p></div>;
 }
 
 function SummaryItem({ icon, star, label, value, tone = "neutral" }: { icon?: string; star?: boolean; label: string; value: string; tone?: Tone }) {

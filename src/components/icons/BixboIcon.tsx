@@ -63,6 +63,17 @@ function WorkoutShoeIcon({ size = 20, className, ...rest }: IconProps) {
   );
 }
 
+function ExtraPatternIcon({ emoji, size = 20, className }: { emoji: string; size?: number; className?: string }) {
+  return <Ico e={emoji} size={size} className={className} />;
+}
+function HeadacheBrainIcon({ size = 20, className }: IconProps) { return <ExtraPatternIcon emoji="🧠" size={size} className={className} />; }
+function PressureBurstIcon({ size = 20, className }: IconProps) { return <ExtraPatternIcon emoji="💢" size={size} className={className} />; }
+function PeriodBloodDropIcon({ size = 20, className }: IconProps) { return <ExtraPatternIcon emoji="🩸" size={size} className={className} />; }
+function HotFlashThermometerIcon({ size = 20, className }: IconProps) { return <ExtraPatternIcon emoji="🌡️" size={size} className={className} />; }
+function SymptomsSunIcon({ size = 20, className }: IconProps) { return <ExtraPatternIcon emoji="🔅" size={size} className={className} />; }
+function PcosSunflowerIcon({ size = 20, className }: IconProps) { return <ExtraPatternIcon emoji="🌻" size={size} className={className} />; }
+function TetanyLightningIcon({ size = 20, className }: IconProps) { return <ExtraPatternIcon emoji="⚡" size={size} className={className} />; }
+
 const ORIGINAL_3D_ICONS = new Set<IconComponent>([
   ChiliIcon,
   PoopIcon,
@@ -84,16 +95,23 @@ export function resolveBixboIcon(input: { emoji?: string; label?: string; fallba
   if (emoji) {
     const normalized = normalizeBixboEmoji(emoji);
 
-    // Exact original BIXBO identity icons always win over generic/picker fallbacks.
+    // Exact BIXBO health/pattern icons always win over generic/picker fallbacks.
     if (normalized === "🌶") return ChiliIcon;
     if (normalized === "💩") return PoopIcon;
     if (normalized === "🫐") return BlueberryIcon;
+    if (normalized === "🩸") return PeriodBloodDropIcon;
     if (normalized === "🔥") return FlameIcon;
     if (normalized === "🌙") return SleepIcon;
     if (normalized === "😈") return DevilIcon;
     if (normalized === "❤" || normalized === "💗") return HeartIcon;
     if (normalized === "✨") return SparkleIcon;
     if (normalized === "👟") return WorkoutShoeIcon;
+    if (normalized === "🧠") return HeadacheBrainIcon;
+    if (normalized === "💢") return PressureBurstIcon;
+    if (normalized === "🌡") return HotFlashThermometerIcon;
+    if (normalized === "🔅") return SymptomsSunIcon;
+    if (normalized === "🌻") return PcosSunflowerIcon;
+    if (normalized === "⚡") return TetanyLightningIcon;
 
     const foodLabel = FOOD_EMOJI_LABELS[normalized];
     if (foodLabel) {
@@ -115,6 +133,18 @@ export function resolveBixboIcon(input: { emoji?: string; label?: string; fallba
   }
 
   if (label) {
+    const normalizedLabel = label.trim().toLowerCase();
+    if (normalizedLabel.includes("headache")) return HeadacheBrainIcon;
+    if (normalizedLabel.includes("pressure")) return PressureBurstIcon;
+    if (normalizedLabel.includes("period") || normalizedLabel.includes("flow") || normalizedLabel.includes("bleed")) return PeriodBloodDropIcon;
+    if (normalizedLabel.includes("hot flash")) return HotFlashThermometerIcon;
+    if (normalizedLabel === "symptoms" || normalizedLabel.includes("symptom summary")) return SymptomsSunIcon;
+    if (normalizedLabel.includes("pcos")) return PcosSunflowerIcon;
+    if (normalizedLabel.includes("tetany")) return TetanyLightningIcon;
+    if (normalizedLabel.includes("panic")) return SparkleIcon;
+    if (normalizedLabel.includes("workout") || normalizedLabel.includes("exercise")) return WorkoutShoeIcon;
+    if (normalizedLabel.includes("histamine")) return ChiliIcon;
+
     const semantic = semanticIconForLabel(label);
     if (semantic) return semantic;
   }
