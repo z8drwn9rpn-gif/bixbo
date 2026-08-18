@@ -92,7 +92,7 @@ const APPLE_PWA_LAUNCH_SPLASH_CSS = `
   /* iOS Home Screen web apps use a different compositor path from a normal
      Safari tab. Keep the Home title out of the standalone sticky/filter layer:
      WebKit can otherwise rasterize the wordmark and greeting as a soft bitmap. */
-  html[data-bixbo-pwa-mode="standalone"] header[data-bixbo-app-header]:has(h1[data-bixbo-app-title] [data-bixbo-display-title]) {
+  html[data-bixbo-pwa-mode="standalone"] header[data-bixbo-app-header][data-bixbo-home-header="true"] {
     position: relative !important;
     top: auto !important;
     -webkit-backdrop-filter: none !important;
@@ -102,12 +102,12 @@ const APPLE_PWA_LAUNCH_SPLASH_CSS = `
     perspective: none !important;
     will-change: auto !important;
   }
-  html[data-bixbo-pwa-mode="standalone"] header[data-bixbo-app-header]:has(h1[data-bixbo-app-title] [data-bixbo-display-title]) img {
+  html[data-bixbo-pwa-mode="standalone"] header[data-bixbo-app-header][data-bixbo-home-header="true"] img {
     filter: none !important;
     transform: none !important;
   }
-  html[data-bixbo-pwa-mode="standalone"] header[data-bixbo-app-header]:has(h1[data-bixbo-app-title] [data-bixbo-display-title]) h1,
-  html[data-bixbo-pwa-mode="standalone"] header[data-bixbo-app-header]:has(h1[data-bixbo-app-title] [data-bixbo-display-title]) h1 * {
+  html[data-bixbo-pwa-mode="standalone"] header[data-bixbo-app-header][data-bixbo-home-header="true"] h1,
+  html[data-bixbo-pwa-mode="standalone"] header[data-bixbo-app-header][data-bixbo-home-header="true"] h1 * {
     -webkit-text-stroke: 0 !important;
     text-shadow: none !important;
     filter: none !important;
