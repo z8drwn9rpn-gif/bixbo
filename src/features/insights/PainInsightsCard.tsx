@@ -36,7 +36,7 @@ function periodBars(period: Period, days: string[], series: (number | undefined)
   if (period === "M") {
     return days.map((key, index) => ({
       value: series[index],
-      label: fromKey(key).getDate() % 2 === 1 ? String(fromKey(key).getDate()) : "",
+      label: String(fromKey(key).getDate()),
       key,
     }));
   }
@@ -176,7 +176,7 @@ export function PainInsightsCard({
             <div className="pointer-events-none absolute inset-0 flex flex-col justify-between">
               {[10, 8, 6, 4, 2, 0].map((value) => <div key={value} className="border-t border-dashed" style={{ borderColor: CHART_GRID }} />)}
             </div>
-            <div className="relative grid h-[150px] items-end gap-[3px]" style={{ gridTemplateColumns: `repeat(${Math.max(1, bars.length)}, minmax(0, 1fr))` }}>
+            <div className={`relative grid h-[150px] items-end ${period === "M" ? "gap-[1px]" : "gap-[3px]"}`} style={{ gridTemplateColumns: `repeat(${Math.max(1, bars.length)}, minmax(0, 1fr))` }}>
               {bars.map((bar, index) => bar.value != null ? (
                 <button key={index} type="button" aria-label={`Pain ${bar.value.toFixed(1)}`} aria-pressed={active === index} data-bixbo-chart-mark="bar"
                   onClick={(event) => { event.stopPropagation(); setActive((current) => current === index ? null : index); }}
@@ -187,8 +187,8 @@ export function PainInsightsCard({
             </div>
           </div>
         </div>
-        <div className="mt-1.5 grid gap-[3px] pl-7 text-center text-[10px] text-muted-foreground" style={{ gridTemplateColumns: `repeat(${Math.max(1, bars.length)}, minmax(0, 1fr))` }}>
-          {bars.map((bar, index) => <span key={index} className="truncate">{bar.label}</span>)}
+        <div className={`mt-1.5 grid pl-7 text-center text-muted-foreground ${period === "M" ? "gap-0 text-[7px] tracking-[-0.08em]" : "gap-[3px] text-[10px]"}`} style={{ gridTemplateColumns: `repeat(${Math.max(1, bars.length)}, minmax(0, 1fr))` }}>
+          {bars.map((bar, index) => <span key={index} className={period === "M" ? "overflow-visible whitespace-nowrap tabular-nums" : "truncate"}>{bar.label}</span>)}
         </div>
         <p className="mt-1 text-right text-[10px] text-muted-foreground">{period === "Y" ? "Month" : period === "M" ? "Day of month" : "Day"}</p>
       </div>
