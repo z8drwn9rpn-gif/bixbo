@@ -51,6 +51,8 @@ describe("yearly PDF monthly reporting", () => {
     expect(page).toContain("buildYearlyHealthDetailPages(months, units, locale)");
     expect(yearlyParts).toContain('className="timeline"');
     expect(yearlyParts).toContain('className="chart"');
+    expect(yearlyParts).toContain("months.map((month, index) => <text");
+    expect(yearlyParts).toContain("Pain monthly average");
   });
 
   it("retains the existing daily 7/30/90 report paths unchanged", () => {
