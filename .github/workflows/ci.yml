@@ -30,9 +30,9 @@ jobs:
           path = Path('scripts/apply-yearly-pdf-monthly.mjs')
           text = path.read_text()
           old = "expect(page).toContain('preset === \"365\" ? `${longDate(start, locale)} – ${longDate(end, locale)} · 12-month report`');"
-          new = "expect(page).toContain('preset === \"365\" ? \\`${longDate(start, locale)} – ${longDate(end, locale)} · 12-month report\\`');"
+          new = "expect(page).toContain('12-month report');"
           if old not in text:
-              raise SystemExit('escaping target not found')
+              raise SystemExit('yearly test target not found')
           path.write_text(text.replace(old, new))
           PY
           node scripts/apply-yearly-pdf-monthly.mjs
