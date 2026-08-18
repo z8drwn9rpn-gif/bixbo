@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 
-import { supabase } from "@/integrations/supabase/client";
 import {
   fetchPartner,
   pullMyData,
@@ -153,9 +152,10 @@ export function useNetworkEfficientCloudSync(): void {
           });
           const reconciled = { ...merged, partner: currentLocal.partner };
           const reconciledKey = privateSnapshotKey(reconciled);
+          const currentLocalKey = privateSnapshotKey(currentLocal);
 
           lastCloudSnapshotKey = remoteKey;
-          if (reconciledKey !== privateSnapshotKey(currentLocal)) {
+          if (reconciledKey !== currentLocalKey) {
             replaceBixbo(reconciled, "remote");
           }
           if (reconciledKey !== remoteKey) schedulePush(reconciled);
@@ -238,7 +238,14 @@ export function useNetworkEfficientNotificationRuntime(): void {
       // Reserve the cadence before awaiting the network call so multiple
       // lifecycle/store events cannot launch parallel syncs.
       lastServerSyncAt = Date.now();
-      await syncPushState().catch((error) => logCloudError("notification server sync", error));
+      try {
+        await syncPushState();
+      } catch (error) {
+        // A failed sync must remain retryable instead of suppressing attempts
+        // for the entire five-minute success cadence.
+        lastServerSyncAt = 0;
+        logCloudError("notification server sync", error);
+      }
     };
 
     const scheduleServerSync = (delay: number): void => {
@@ -286,7 +293,3 @@ export function useNetworkEfficientNotificationRuntime(): void {
     };
   }, []);
 }
-
-// Keep the Supabase import anchored in this module so bundlers do not create a
-// second client instance when the runtime is split into a lazy chunk.
-void supabase;
