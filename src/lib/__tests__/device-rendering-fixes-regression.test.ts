@@ -33,4 +33,12 @@ describe("cross-device rendering fixes", () => {
     expect(css).toContain("#f5a20b");
     expect(css).toContain("#ef4444");
   });
+
+  it("keeps the Home BIXBO title and profile greeting sharp on WebKit", () => {
+    expect(css).toContain('h1[data-bixbo-app-title] [data-bixbo-display-title]');
+    expect(css).toContain('h1[data-bixbo-app-title] [data-bixbo-display-title] + a');
+    expect(css).toContain("text-shadow: none !important");
+    expect(css).toContain("-webkit-text-stroke: 0 !important");
+    expect(css).toContain("filter: none !important");
+  });
 });
