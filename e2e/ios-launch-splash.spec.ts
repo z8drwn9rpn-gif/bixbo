@@ -29,7 +29,7 @@ test("standalone Home header stays out of the WebKit blur compositor path", asyn
   await page.goto("/");
   await expect(page.locator("html")).toHaveAttribute("data-bixbo-pwa-mode", "standalone");
 
-  const header = page.locator("header[data-bixbo-app-header]:has([data-bixbo-display-title])");
+  const header = page.locator('header[data-bixbo-app-header][data-bixbo-home-header="true"]');
   const title = header.locator("[data-bixbo-display-title]");
   const greeting = header.locator("h1[data-bixbo-app-title] [data-bixbo-display-title] + a");
   const mascot = header.locator("img").first();
@@ -43,8 +43,8 @@ test("standalone Home header stays out of the WebKit blur compositor path", asyn
     return {
       position: style.position,
       top: style.top,
-      backdropFilter: style.backdropFilter,
-      webkitBackdropFilter: style.getPropertyValue("-webkit-backdrop-filter"),
+      backdropFilter: style.backdropFilter || "none",
+      webkitBackdropFilter: style.getPropertyValue("-webkit-backdrop-filter") || "none",
       filter: style.filter,
       transform: style.transform,
       willChange: style.willChange,
@@ -53,7 +53,7 @@ test("standalone Home header stays out of the WebKit blur compositor path", asyn
   expect(headerStyle.position).toBe("relative");
   expect(headerStyle.top).toBe("auto");
   expect(headerStyle.backdropFilter).toBe("none");
-  expect(headerStyle.webkitBackdropFilter || "none").toBe("none");
+  expect(headerStyle.webkitBackdropFilter).toBe("none");
   expect(headerStyle.filter).toBe("none");
   expect(headerStyle.transform).toBe("none");
   expect(headerStyle.willChange).toBe("auto");
