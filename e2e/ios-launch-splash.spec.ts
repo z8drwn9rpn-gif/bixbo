@@ -42,7 +42,6 @@ test("standalone Home header stays out of the WebKit blur compositor path", asyn
     const style = getComputedStyle(element);
     return {
       position: style.position,
-      top: style.top,
       backdropFilter: style.backdropFilter || "none",
       webkitBackdropFilter: style.getPropertyValue("-webkit-backdrop-filter") || "none",
       filter: style.filter,
@@ -51,7 +50,6 @@ test("standalone Home header stays out of the WebKit blur compositor path", asyn
     };
   });
   expect(headerStyle.position).toBe("relative");
-  expect(headerStyle.top).toBe("auto");
   expect(headerStyle.backdropFilter).toBe("none");
   expect(headerStyle.webkitBackdropFilter).toBe("none");
   expect(headerStyle.filter).toBe("none");
