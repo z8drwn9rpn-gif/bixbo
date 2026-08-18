@@ -48,7 +48,10 @@ describe("cross-device rendering fixes", () => {
 
   it("keeps the Home header out of the standalone iOS PWA compositor path", () => {
     expect(root).toContain('root.dataset.bixboPwaMode = standalone ? "standalone" : "browser"');
-    expect(root).toContain('html[data-bixbo-pwa-mode="standalone"] header[data-bixbo-app-header]:has(h1[data-bixbo-app-title] [data-bixbo-display-title])');
+    expect(appShellComponent).toContain('const isHomeHeader = pathname === "/" && title !== undefined');
+    expect(appShellComponent).toContain('data-bixbo-home-header={isHomeHeader ? "true" : undefined}');
+    expect(root).toContain('html[data-bixbo-pwa-mode="standalone"] header[data-bixbo-app-header][data-bixbo-home-header="true"]');
+    expect(root).not.toContain(':has(h1[data-bixbo-app-title] [data-bixbo-display-title])');
     expect(root).toContain("position: relative !important");
     expect(root).toContain("-webkit-backdrop-filter: none !important");
     expect(root).toContain("will-change: auto !important");
