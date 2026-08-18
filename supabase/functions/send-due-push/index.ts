@@ -59,7 +59,13 @@ type Snapshot = {
   hasLogToday?: boolean;
   nextPeriodStart?: string | null;
   showCyclePredictions?: boolean;
-  appointments?: { id: string; title: string; startsAt: string }[];
+  appointments?: {
+    id: string;
+    title: string;
+    startsAt: string;
+    eventDate?: string;
+    eventTime?: string;
+  }[];
 };
 
 type Reminder = {
@@ -315,10 +321,50 @@ function planReminders(userId: string, snapshot: Snapshot, now: Date): Reminder[
 
   if (prefs.appointments !== false) {
     for (const appointment of snapshot.appointments ?? []) {
+      const isCalendarEvent = appointment.id.startsWith("event:");
+
+      if (isCalendarEvent && appointment.eventDate) {
+        if (addDays(local.date, 1) === appointment.eventDate && isDue(local.minutes, 9 * 60)) {
+          reminders.push({
+            dedupeKey: key(["event", appointment.id, "day-before", appointment.eventDate]),
+            category: "appointments",
+            payload: {
+              title: "Event tomorrow",
+              body: appointment.title || "Event",
+              url: "/",
+              tag: `event-${appointment.id}-tomorrow`,
+              category: "appointments",
+            },
+          });
+        }
+
+        const eventMinutes = toMinutes(appointment.eventTime, -1);
+        if (
+          appointment.eventTime &&
+          local.date === appointment.eventDate &&
+          isDue(local.minutes, eventMinutes)
+        ) {
+          reminders.push({
+            dedupeKey: key(["event", appointment.id, "start", appointment.eventDate, appointment.eventTime]),
+            category: "appointments",
+            payload: {
+              title: "Event now",
+              body: appointment.title || "Event",
+              url: "/",
+              tag: `event-${appointment.id}-start`,
+              category: "appointments",
+            },
+          });
+        }
+        continue;
+      }
+
+      // Legacy event snapshots still carry only the synthetic 09:00 startsAt.
+      // Keep their existing day-before reminder until the client syncs the new
+      // eventDate/eventTime fields. Appointment behavior is unchanged.
       const startsAt = Date.parse(appointment.startsAt);
       if (!Number.isFinite(startsAt)) continue;
       const minutesUntil = Math.round((startsAt - now.getTime()) / 60000);
-      const isCalendarEvent = appointment.id.startsWith("event:");
       const leads = isCalendarEvent ? [24 * 60] : [24 * 60, 120];
 
       for (const lead of leads) {
