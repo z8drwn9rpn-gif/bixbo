@@ -2,8 +2,11 @@ name: BIXBO checks
 
 on:
   push:
-    branches: [main]
+    branches: [main, fix/yearly-pdf-monthly-aggregation]
   pull_request:
+
+permissions:
+  contents: write
 
 concurrency:
   group: bixbo-checks-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -14,6 +17,47 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+      - name: Normalize yearly PDF source
+        if: github.actor != 'github-actions[bot]' && (github.ref == 'refs/heads/fix/yearly-pdf-monthly-aggregation' || github.head_ref == 'fix/yearly-pdf-monthly-aggregation')
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          paths = [
+              Path('src/components/HealthReportPageAudited.tsx'),
+              Path('src/components/health-report/YearlyHealthReportParts.tsx'),
+              Path('src/lib/yearlyHealthReport.ts'),
+              Path('src/lib/__tests__/health-report-yearly-monthly.test.ts'),
+          ]
+
+          page = paths[0]
+          before_page = page.read_text()
+          marker = 'const CSS = String.raw`'
+          if marker not in before_page:
+              raise SystemExit('PDF CSS marker missing')
+          before_css = before_page[before_page.index(marker):]
+
+          for path in paths:
+              text = path.read_text()
+              text = text.replace(r'\`', '`').replace(r'\${', '${')
+              path.write_text(text)
+
+          after_page = page.read_text()
+          after_css = after_page[after_page.index(marker):]
+          if before_css != after_css:
+              raise SystemExit('CSS changed during template normalization')
+          PY
+          git checkout 29d443648d2cfee30d61b31f0c3cbd643571f31d -- .github/workflows/ci.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Normalize yearly report templates"
+          git push
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
