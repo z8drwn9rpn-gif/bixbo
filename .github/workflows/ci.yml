@@ -2,11 +2,8 @@ name: BIXBO checks
 
 on:
   push:
-    branches: [main, fix/yearly-pdf-monthly-aggregation]
+    branches: [main]
   pull_request:
-
-permissions:
-  contents: write
 
 concurrency:
   group: bixbo-checks-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -17,32 +14,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.1
-        with:
-          fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
-      - name: Apply yearly PDF monthly patch
-        if: github.actor != 'github-actions[bot]' && (github.ref == 'refs/heads/fix/yearly-pdf-monthly-aggregation' || github.head_ref == 'fix/yearly-pdf-monthly-aggregation')
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-          path = Path('scripts/apply-yearly-pdf-monthly.mjs')
-          text = path.read_text()
-          old = "expect(page).toContain('preset === \"365\" ? `${longDate(start, locale)} – ${longDate(end, locale)} · 12-month report`');"
-          new = "expect(page).toContain('12-month report');"
-          if old not in text:
-              raise SystemExit('yearly test target not found')
-          path.write_text(text.replace(old, new))
-          PY
-          node scripts/apply-yearly-pdf-monthly.mjs
-          rm -f scripts/apply-yearly-pdf-monthly.mjs .github/workflows/apply-yearly-pdf-monthly.yml
-          git checkout 29d443648d2cfee30d61b31f0c3cbd643571f31d -- .github/workflows/ci.yml
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "Make yearly health report month-based"
-          git push
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
