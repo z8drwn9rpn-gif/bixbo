@@ -1,0 +1,108 @@
+name: Apply functional pain scale
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/apply-functional-pain-scale.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Replace medication-linked pain scale
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          utilities = Path("src/lib/storage/utilities.ts")
+          text = utilities.read_text()
+          old = '''export const PAIN_DESCRIPTIONS: Record<number, string> = {
+            0: "Pain free",
+            1: "Very minor annoyance",
+            2: "Minor annoyance",
+            3: "Annoying, distracting",
+            4: "Bearable if involved in work",
+            5: "Can't be ignored > 30 min",
+            6: "Can't be ignored for long",
+            7: "Hard to concentrate",
+            8: "Physical activity limited",
+            9: "Unable to speak, crying out",
+            10: "Unconscious — passes out",
+          };'''.replace("          ", "")
+          new = '''export const PAIN_DESCRIPTIONS: Record<number, string> = {
+            0: "Pain free",
+            1: "Barely noticeable",
+            2: "Mild",
+            3: "Distracting at times",
+            4: "Distracting",
+            5: "Interrupting",
+            6: "Hard to ignore",
+            7: "Difficult to function",
+            8: "Severely limiting",
+            9: "Overwhelming",
+            10: "Worst imaginable",
+          };'''.replace("          ", "")
+          if text.count(old) != 1:
+              raise SystemExit(f"Expected exactly one PAIN_DESCRIPTIONS block, found {text.count(old)}")
+          utilities.write_text(text.replace(old, new, 1))
+
+          wizard = Path("src/features/logging/PainWizard.tsx")
+          text = wizard.read_text()
+          old = '''                  {[
+                    [0, "Pain free", "You've been okay for the past 24 hours."],
+                    [1, "Very minor annoyance", "Occasional minor twinges. No medication needed."],
+                    [2, "Minor annoyance", "Occasional strong twinges. No medication needed."],
+                    [3, "Annoying enough to be distracting", "Mild painkillers are effective (aspirin, ibuprofen)."],
+                    [4, "Can be ignored if you are really involved in your work", "But still distracting. Mild painkillers relieve pain for 3–4 hours."],
+                    [5, "Can't be ignored for more than 30 minutes", "Mild painkillers reduce pain for 3–4 hours."],
+                    [6, "Can't be ignored for any length of time", "But you can still go to work and participate in social activities. Stronger painkillers (codeine) reduce pain for 3–4 hours."],
+                    [7, "Makes it difficult to concentrate, interferes with sleep", "You can still function with effort. Stronger painkillers are only partially effective. Strongest painkillers relieve pain."],
+                    [8, "Physical activity severely limited", "You can read and converse with effort. Nausea and dizziness are common. Strongest painkillers reduce pain for 3–4 hours."],
+                    [9, "Unable to speak", "Crying out or moaning uncontrollably — near delirium. Strongest painkillers are only partially effective."],
+                    [10, "Unconscious", "Pain makes you pass out. Strongest painkillers are only partially effective."],
+                  ].map(([n, label, description]) => {'''
+          new = '''                  {[
+                    [0, "Pain free", "No pain at all."],
+                    [1, "Barely noticeable", "I notice it only occasionally."],
+                    [2, "Mild", "I notice it, but it doesn't affect what I'm doing."],
+                    [3, "Distracting at times", "It occasionally pulls my attention away."],
+                    [4, "Distracting", "I feel it often, but I can continue my usual activities."],
+                    [5, "Interrupting", "It makes some activities harder or slower."],
+                    [6, "Hard to ignore", "I avoid or modify some activities because of it."],
+                    [7, "Difficult to function", "Concentrating, sleeping, or normal activities are difficult."],
+                    [8, "Severely limiting", "Most normal activities are very difficult."],
+                    [9, "Overwhelming", "I can barely function or do normal activities."],
+                    [10, "Worst imaginable", "The pain completely dominates everything."],
+                  ].map(([n, label, description]) => {'''
+          if text.count(old) != 1:
+              raise SystemExit(f"Expected exactly one pain scale modal block, found {text.count(old)}")
+          wizard.write_text(text.replace(old, new, 1))
+          PY
+
+      - name: Validate patch and commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q '10: "Worst imaginable"' src/lib/storage/utilities.ts
+          grep -q 'The pain completely dominates everything.' src/features/logging/PainWizard.tsx
+          if grep -nE 'Mild painkillers|Stronger painkillers|Strongest painkillers|No medication needed' src/features/logging/PainWizard.tsx; then
+            echo "Medication-linked wording still present in PainWizard.tsx"
+            exit 1
+          fi
+          git diff --check
+          rm .github/workflows/apply-functional-pain-scale.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/lib/storage/utilities.ts src/features/logging/PainWizard.tsx .github/workflows/apply-functional-pain-scale.yml
+          git commit -m "Replace pain scale with functional anchors"
+          git push origin main
