@@ -1,4 +1,5 @@
 import "@/lib/appVisualForensics";
+import "@/lib/legacyDeploymentRefreshCleanup";
 
 import { type ReactNode } from "react";
 import { useRouterState } from "@tanstack/react-router";
@@ -11,7 +12,6 @@ import { GlobalQuickLogActions } from "./GlobalQuickLogActions";
 import { CalendarTargetBridge } from "./CalendarTargetBridge";
 import { DiagnosticProfiler } from "./DiagnosticProfiler";
 import { ProductAnalyticsRuntime } from "./ProductAnalyticsRuntime";
-import { useDeploymentFreshness } from "@/lib/deploymentFreshness";
 import {
   BIXBO_MASCOT_FILTER,
   BIXBO_ROUNDED_DISPLAY_FONT,
@@ -25,7 +25,6 @@ export function AppShell({ children, title, right, big = false, stickyHeader = t
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const showBixboIconKeyboard = !pathname.startsWith("/notes");
   const isHomeHeader = pathname === "/" && title !== undefined;
-  useDeploymentFreshness();
 
   return (
     <div className="min-h-dvh overflow-x-hidden bg-background text-foreground" style={{ overscrollBehaviorX: "none" }}>
