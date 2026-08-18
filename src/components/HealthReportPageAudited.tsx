@@ -236,7 +236,7 @@ function ReportDocument({ days, data, range, locale, units, yearly = false }: { 
         })}</div>
         <div className="miniMetrics one"><Metric label="No bowel movement" value={String(noMovement)} note="Recorded explicitly as no movement" /></div>
       </> : null}
-    </Sheet>))}
+    </Sheet>)}
 
     <Sheet number={medicationPage} title="Medication" subtitle={range}>
       <h2>Scheduled medication adherence <small>granular grouped-dose logic</small></h2>
