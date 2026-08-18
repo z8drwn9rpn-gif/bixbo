@@ -106,10 +106,13 @@ export function BottomNav() {
     <nav
       data-bixbo-bottom-nav
       aria-label="Primary navigation"
-      className="fixed inset-x-0 bottom-0 z-40 w-full border-t border-border/55 bg-background pb-[max(8px,env(safe-area-inset-bottom))] lg:hidden dark:border-border/65"
-      style={{ boxShadow: BIXBO_BOTTOM_NAV_SHADOW, contain: "layout paint" }}
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3 pb-[max(10px,env(safe-area-inset-bottom))] sm:px-4 lg:hidden"
+      style={{ contain: "layout paint" }}
     >
-      <ul className="mx-auto flex min-h-[88px] w-full max-w-[430px] items-end justify-around gap-0 px-2 pb-1.5 pt-1 sm:px-4 landscape:min-h-[76px] landscape:py-1">
+      <ul
+        className="pointer-events-auto mx-auto flex min-h-[92px] w-full max-w-[420px] items-end justify-around gap-0 rounded-[30px] border border-border/55 bg-background/95 px-2 pb-2 pt-1.5 shadow-xl backdrop-blur-xl supports-[backdrop-filter]:bg-background/90 sm:px-4 landscape:min-h-[80px] landscape:py-1 dark:border-border/65 dark:bg-background/95"
+        style={{ boxShadow: BIXBO_BOTTOM_NAV_SHADOW }}
+      >
         {items.map((item) => {
           const label = item.label ?? BIXBO_NAVIGATION.find((candidate) => candidate.id === item.id)?.label ?? item.id;
           if (item.action === "log") {
@@ -125,7 +128,7 @@ export function BottomNav() {
                   onContextMenu={(event) => event.preventDefault()}
                   data-bixbo-nav-id={item.id}
                   data-bixbo-nav-target="log-sheet"
-                  className="flex min-h-[72px] w-full flex-col items-center justify-end gap-0 px-1 pb-0.5 text-[11px] font-semibold text-primary transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] dark:text-foreground landscape:min-h-[62px]"
+                  className="flex min-h-[76px] w-full flex-col items-center justify-end gap-0 px-1 pb-0.5 text-[11px] font-semibold text-primary transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] dark:text-foreground landscape:min-h-[64px]"
                   aria-label={`${t(label)} · ${t("hold for shortcuts")}`}
                 >
                   <NavArtworkSafe id={item.id} size={64} className="-mb-1 h-[64px] w-[64px] shrink-0 object-contain landscape:h-[54px] landscape:w-[54px]" style={{ filter: BIXBO_NAV_LOG_ARTWORK_FILTER }} />
@@ -150,11 +153,11 @@ export function BottomNav() {
                 data-bixbo-nav-id={item.id}
                 data-bixbo-nav-target={to}
                 aria-current={active ? "page" : undefined}
-                className={`relative flex min-h-[72px] w-full flex-col items-center justify-end gap-0 px-1 pb-0.5 text-[11px] font-semibold transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] landscape:min-h-[62px] ${active ? "text-primary dark:text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                className={`relative flex min-h-[76px] w-full flex-col items-center justify-end gap-0 px-1 pb-0.5 text-[11px] font-semibold transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] landscape:min-h-[64px] ${active ? "text-primary dark:text-foreground" : "text-muted-foreground hover:text-foreground"}`}
               >
-                <NavArtworkSafe id={item.id} size={54} className={`mb-0 h-[54px] w-[54px] shrink-0 object-contain transition-transform landscape:h-[46px] landscape:w-[46px] ${active ? "scale-[1.04]" : ""}`} style={{ filter: BIXBO_NAV_ARTWORK_FILTER }} />
+                <NavArtworkSafe id={item.id} size={54} className={`mb-0 h-[54px] w-[54px] shrink-0 object-contain transition-transform landscape:h-[46px] landscape:w-[46px] ${active ? "scale-[1.05]" : ""}`} style={{ filter: BIXBO_NAV_ARTWORK_FILTER }} />
                 <span className="max-w-full truncate text-center leading-none">{t(label)}</span>
-                {active ? <span aria-hidden="true" className="absolute bottom-[-3px] h-1 w-5 rounded-full bg-current opacity-70" /> : null}
+                {active ? <span aria-hidden="true" className="absolute bottom-[-4px] h-1 w-7 rounded-full bg-current opacity-80" /> : null}
               </Link>
             </li>
           );
