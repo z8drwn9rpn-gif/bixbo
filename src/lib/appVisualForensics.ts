@@ -29,30 +29,49 @@ function compact(value: string, limit = 120): string {
   return value.replace(/\s+/g, " ").trim().slice(0, limit);
 }
 
+function actionableElement(node: Node | null | undefined): Element | null {
+  if (!(node instanceof Element)) return null;
+  return node.closest("a[href],button,[data-bixbo-nav-id],[role='button']") ?? node;
+}
+
 function safeElementLabel(node: Node | null | undefined): string {
-  if (!(node instanceof Element)) return "unknown element";
-  const tag = node.tagName.toLowerCase();
-  const id = node.id ? `#${compact(node.id, 40)}` : "";
-  const testId = node.getAttribute("data-testid");
-  const role = node.getAttribute("role");
-  const aria = node.getAttribute("aria-label");
-  const title = node.getAttribute("title");
+  const element = actionableElement(node);
+  if (!element) return "unknown element";
+  const tag = element.tagName.toLowerCase();
+  const id = element.id ? `#${compact(element.id, 40)}` : "";
+  const testId = element.getAttribute("data-testid");
+  const role = element.getAttribute("role");
+  const aria = element.getAttribute("aria-label");
+  const title = element.getAttribute("title");
+  const navId = element.getAttribute("data-bixbo-nav-id");
+  const navTarget = element.getAttribute("data-bixbo-nav-target");
   const safeName = testId || aria || title;
-  return [tag, id, role ? `role=${compact(role, 30)}` : "", safeName ? `label=${compact(safeName, 60)}` : ""]
+  return [
+    tag,
+    id,
+    role ? `role=${compact(role, 30)}` : "",
+    navId ? `nav=${compact(navId, 30)}` : "",
+    navTarget ? `target=${compact(navTarget, 60)}` : "",
+    safeName ? `label=${compact(safeName, 60)}` : "",
+  ]
     .filter(Boolean)
     .join(" ");
 }
 
 function sameOriginNavigationDestination(node: Node | null | undefined): string | null {
-  if (!(node instanceof Element)) return null;
-  const anchor = node.closest<HTMLAnchorElement>("a[href]");
-  if (!anchor) return null;
+  const element = actionableElement(node);
+  if (!element) return null;
+  const explicitTarget = element.getAttribute("data-bixbo-nav-target");
+  const anchor = element.matches("a[href]") ? element as HTMLAnchorElement : element.closest<HTMLAnchorElement>("a[href]");
+  if (!anchor) {
+    return explicitTarget?.startsWith("/") ? explicitTarget : null;
+  }
   try {
     const url = new URL(anchor.href, window.location.href);
     if (url.origin !== window.location.origin) return null;
     return `${url.pathname}${url.search}${url.hash}`;
   } catch {
-    return null;
+    return explicitTarget?.startsWith("/") ? explicitTarget : null;
   }
 }
 
@@ -114,16 +133,20 @@ function measureNavigationTap(pointerAt: number, label: string, destination: str
     if (document.visibilityState !== "visible" || window.location.pathname.startsWith("/diagnostics")) return;
     const current = currentNavigationLocation();
     if (current !== source) {
+      const routeChangedAt = performance.now();
       afterTwoAnimationFrames(() => {
-        const latency = performance.now() - pointerAt;
+        const paintedAt = performance.now();
+        const latency = paintedAt - pointerAt;
         if (latency < SLOW_NAVIGATION_TAP_MS) return;
+        const routeChangeMs = routeChangedAt - pointerAt;
+        const paintAfterRouteMs = paintedAt - routeChangedAt;
         recordRuntimeDiagnosticIssue(
           "interaction",
           `Navigation tap-to-paint latency was about ${Math.round(latency)} ms after ${label}.`,
           {
             durationMs: latency,
             severity: latency >= CRITICAL_TAP_MS ? "error" : "warning",
-            context: `Interaction source: ${label}. Route response measured from pointer-down on ${source} through route change to the second painted frame on ${current}.`,
+            context: `Interaction source: ${label}. Expected destination ${destination}. Route ${source} → ${current}. Pointer-to-route-change ${Math.round(routeChangeMs)} ms · route-change-to-second-paint ${Math.round(paintAfterRouteMs)} ms.`,
           },
         );
       });
