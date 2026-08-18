@@ -140,7 +140,7 @@ export const BIXBO_LOG_FIELDS: Partial<Record<RegistryFeatureId, RegistryFieldDe
   ],
   period: [
     { id: "flow", label: "Flow", kind: "chips", order: 10, options: ["Spotting", "Light", "Medium", "Heavy", "Very heavy"] },
-    { id: "cramps", label: "Cramp pain", kind: "scale", order: 20, scale: { min: 1, max: 10, step: 1 } },
+    { id: "cramps", label: "Cramp pain", kind: "scale", order: 20, scale: { min: 0, max: 10, step: 1 } },
     { id: "discharge", label: "Discharge (optional)", kind: "chips", order: 30 },
     { id: "dischargeNote", label: "Discharge note (optional)", kind: "text", order: 40 },
     { id: "note", label: "Day note (optional)", kind: "text", order: 50 },

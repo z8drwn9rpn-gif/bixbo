@@ -34,6 +34,7 @@ export function PeriodForm({ date, data, update, onDone }: { date: string; data:
   const [dNote, setDNote] = useState<string>(cur?.dischargeNote ?? "");
   const [periodSymptoms, setPeriodSymptoms] = useState<string[]>(cur?.symptoms ?? []);
   const [clots, setClots] = useState<"none" | "small" | "medium" | "large" | "">(cur?.clots ?? "");
+  const [cramps, setCramps] = useState<number | undefined>(cur?.cramps);
   const [note, setNote] = useState<string>(cur?.note ?? "");
 
   const save = () => {
@@ -47,7 +48,7 @@ export function PeriodForm({ date, data, update, onDone }: { date: string; data:
         symptoms: periodSymptoms.length ? periodSymptoms : undefined,
         clots: clots || undefined,
         note: note.trim() || undefined,
-        cramps: cur?.cramps,
+        cramps,
       },
     }));
     onDone();
@@ -91,6 +92,22 @@ export function PeriodForm({ date, data, update, onDone }: { date: string; data:
             );
           })}
         </div>
+      </section>
+
+      <div className="border-t border-border/60" />
+
+      <section>
+        <p className={sectionLabel}>{t("Cramp pain")}</p>
+        <IntensityScale
+          value={cramps ?? -1}
+          onChange={(n) => setCramps(cramps === n ? undefined : n)}
+          max={10}
+          from={0}
+          step={1}
+          descriptions={getScaleDesc(data, "pain")}
+          legendTitle="Cramp pain scale"
+          compactSingleRow
+        />
       </section>
 
       <div className="border-t border-border/60" />

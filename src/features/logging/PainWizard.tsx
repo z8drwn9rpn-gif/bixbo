@@ -987,7 +987,7 @@ export function PainWizard({
                   value={stress ?? -1}
                   onChange={(n) => setStress(stress === n ? undefined : n)}
                   max={10}
-                  from={1}
+                  from={0}
                   step={1}
                   descriptions={STRESS_DESC}
                   legendTitle="Stress scale"
