@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 const css = readFileSync("src/device-rendering-fixes.css", "utf8");
 const root = readFileSync("src/routes/__root.tsx", "utf8");
 const appShell = readFileSync("src/app-shell.css", "utf8");
+const appShellComponent = readFileSync("src/components/AppShell.tsx", "utf8");
 const quickTags = readFileSync("src/components/QuickTags.tsx", "utf8");
 
 describe("cross-device rendering fixes", () => {
@@ -40,5 +41,8 @@ describe("cross-device rendering fixes", () => {
     expect(css).toContain("text-shadow: none !important");
     expect(css).toContain("-webkit-text-stroke: 0 !important");
     expect(css).toContain("filter: none !important");
+    expect(appShellComponent).toContain("data-bixbo-app-header");
+    expect(appShellComponent).toContain('big ? "bg-background" : "bg-background/88 backdrop-blur-xl supports-[backdrop-filter]:bg-background/82"');
+    expect(appShellComponent).toContain('textShadow: big ? "none" : BIXBO_ROUNDED_DISPLAY_SHADOW');
   });
 });
