@@ -5,6 +5,7 @@ describe("consent-aware cloud runtime", () => {
   it("keeps health cloud writes unmounted until explicit consent is active", () => {
     const root = readFileSync("src/routes/__root.tsx", "utf8");
     const runtime = readFileSync("src/components/ConsentAwareCloudRuntime.tsx", "utf8");
+    const efficientRuntime = readFileSync("src/lib/networkEfficientCloudRuntime.ts", "utf8");
     const consent = readFileSync("src/lib/legalConsent.ts", "utf8");
     const prompt = readFileSync("src/components/NotificationPrompt.tsx", "utf8");
 
@@ -13,12 +14,18 @@ describe("consent-aware cloud runtime", () => {
     expect(root).not.toContain("useNotificationRuntime();");
 
     expect(runtime).toContain('consentState === "active"');
-    expect(runtime).toContain("useCloudSync();");
-    expect(runtime).toContain("useNotificationRuntime();");
+    expect(runtime).toContain("useNetworkEfficientCloudSync();");
+    expect(runtime).toContain("useNetworkEfficientNotificationRuntime();");
     expect(runtime).toContain("LocalOnlyNotificationRuntime");
     expect(runtime).toContain("runNotificationChecks()");
     expect(runtime).not.toContain("syncPushState");
     expect(runtime).toContain('setPartner(undefined)');
+
+    expect(efficientRuntime).toContain("CLOUD_CHANGE_DEBOUNCE_MS = 5_000");
+    expect(efficientRuntime).toContain("NOTIFICATION_CHANGE_DEBOUNCE_MS = 15_000");
+    expect(efficientRuntime).toContain("NOTIFICATION_SERVER_SYNC_MS = 5 * 60_000");
+    expect(efficientRuntime).toContain("pushMyData(payload)");
+    expect(efficientRuntime).toContain("syncPushState()");
 
     expect(consent).toContain('CLOUD_HEALTH_CONSENT_CHANGED_EVENT');
     expect(consent).toContain('notifyCloudHealthConsentChanged()');
