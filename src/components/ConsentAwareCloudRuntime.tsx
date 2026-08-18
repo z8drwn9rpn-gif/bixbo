@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { MedicationNotificationActionBridge } from "@/components/MedicationNotificationActionBridge";
-import { useCloudSync } from "@/lib/cloudSync";
 import {
   CLOUD_HEALTH_CONSENT_CHANGED_EVENT,
   cloudHealthConsentState,
@@ -10,11 +9,14 @@ import {
   type CloudHealthConsentState,
 } from "@/lib/legalConsent";
 import {
+  useNetworkEfficientCloudSync,
+  useNetworkEfficientNotificationRuntime,
+} from "@/lib/networkEfficientCloudRuntime";
+import {
   ensurePushWorker,
   permissionState,
   pushSupported,
   runNotificationChecks,
-  useNotificationRuntime,
 } from "@/lib/notifications";
 import { setPartner } from "@/lib/storage";
 
@@ -60,8 +62,8 @@ function LocalOnlyNotificationRuntime() {
 }
 
 function ActiveCloudHealthRuntime() {
-  useCloudSync();
-  useNotificationRuntime();
+  useNetworkEfficientCloudSync();
+  useNetworkEfficientNotificationRuntime();
   return null;
 }
 
