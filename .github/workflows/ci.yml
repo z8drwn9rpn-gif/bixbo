@@ -25,6 +25,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/apply-yearly-pdf-monthly.mjs')
+          text = path.read_text()
+          old = "expect(page).toContain('preset === \"365\" ? `${longDate(start, locale)} – ${longDate(end, locale)} · 12-month report`');"
+          new = "expect(page).toContain('preset === \"365\" ? \\`${longDate(start, locale)} – ${longDate(end, locale)} · 12-month report\\`');"
+          if old not in text:
+              raise SystemExit('escaping target not found')
+          path.write_text(text.replace(old, new))
+          PY
           node scripts/apply-yearly-pdf-monthly.mjs
           rm -f scripts/apply-yearly-pdf-monthly.mjs .github/workflows/apply-yearly-pdf-monthly.yml
           git checkout 29d443648d2cfee30d61b31f0c3cbd643571f31d -- .github/workflows/ci.yml
