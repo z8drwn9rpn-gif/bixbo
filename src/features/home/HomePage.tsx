@@ -60,6 +60,7 @@ export function HomePage() {
   const [episodeEdit, setEpisodeEdit] = useState<EpisodeEditTarget | null>(null);
   const monthSummaryTimer = useRef<number | null>(null);
   const monthSummaryPointerStart = useRef<{ x: number; y: number } | null>(null);
+  const notificationEventOpenedRef = useRef<string | null>(null);
 
   const openEdit = (cat: string, entry: unknown) => {
     if (cat === "tetany") {
@@ -125,6 +126,30 @@ export function HomePage() {
     setMonthAnchor(new Date());
     setSelected(todayKey());
   }, []);
+
+  useEffect(() => {
+    if (!hydrated || typeof window === "undefined") return;
+
+    const currentUrl = new URL(window.location.href);
+    const eventId = currentUrl.searchParams.get("event");
+    if (!eventId || notificationEventOpenedRef.current === eventId) return;
+
+    const calendarEvent = (view.events ?? []).find((entry) => String(entry.id) === eventId);
+    if (!calendarEvent) return;
+
+    notificationEventOpenedRef.current = eventId;
+    setSelected(calendarEvent.startDate);
+    setMonthAnchor(fromKey(calendarEvent.startDate));
+    setEpisodeEdit(null);
+    setQuickCat("event");
+    setEditEntry(calendarEvent);
+    setEditPain(undefined);
+    setLogOpen(true);
+
+    currentUrl.searchParams.delete("event");
+    const cleanPath = `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`;
+    window.history.replaceState(window.history.state, "", cleanPath || "/");
+  }, [hydrated, view.events]);
 
   useEffect(() => {
     if (maleMode) {

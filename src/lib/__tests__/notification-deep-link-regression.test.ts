@@ -20,6 +20,24 @@ describe("notification deep links", () => {
 
     expect(pushSubscription).toContain('url: "/notifications"');
     expect(worker).toContain("url: safeUrl(payload.url)");
-    expect(worker).toContain("const url = safeUrl(data.url)");
+    expect(worker).toContain("const url = notificationUrl(data)");
+  });
+
+  it("opens calendar event notifications in the matching event editor", () => {
+    const worker = readFileSync("public/bixbo-push-sw.js", "utf8");
+    const home = readFileSync("src/features/home/HomePage.tsx", "utf8");
+
+    expect(worker).toContain('tag.startsWith("event-event:")');
+    expect(worker).toContain('return `/?event=${encodeURIComponent(eventId)}`');
+    expect(home).toContain('currentUrl.searchParams.get("event")');
+    expect(home).toContain('(view.events ?? []).find((entry) => String(entry.id) === eventId)');
+    expect(home).toContain('setQuickCat("event")');
+    expect(home).toContain('setEditEntry(calendarEvent)');
+    expect(home).toContain('currentUrl.searchParams.delete("event")');
+  });
+
+  it("routes legacy remote medication notifications to Meds instead of Home", () => {
+    const worker = readFileSync("public/bixbo-push-sw.js", "utf8");
+    expect(worker).toContain('if (category === "meds" && explicit === "/") return "/meds"');
   });
 });
