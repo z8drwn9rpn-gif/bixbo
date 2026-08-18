@@ -32,7 +32,7 @@ function YearlyPainHighlights({ months, locale }: { months: ReportMonthSummary[]
   const bestPainFree = [...painMonths].reverse().find((month) => month.pain === 0);
   const cardStyle: CSSProperties = { border: "1px solid #dde1cf", borderRadius: 7, padding: "6px 8px", minWidth: 0 };
   const labelStyle: CSSProperties = { display: "block", fontSize: 6, fontWeight: 700, textTransform: "uppercase" };
-  const valueStyle: CSSProperties = { display: "block", fontFamily: '\"Instrument Serif\", Georgia, serif', fontSize: 12, marginTop: 2 };
+  const valueStyle: CSSProperties = { display: "block", fontFamily: '"Instrument Serif", Georgia, serif', fontSize: 12, marginTop: 2 };
   const noteStyle: CSSProperties = { display: "block", fontSize: 5.8, color: "#707668", lineHeight: 1.2, marginTop: 2 };
   return <div style={{ marginTop: 7 }}>
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7 }}>
