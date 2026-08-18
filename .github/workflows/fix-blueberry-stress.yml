@@ -1,0 +1,83 @@
+name: Apply Blueberry cramp and stress fixes
+
+on:
+  push:
+    paths:
+      - ".github/workflows/fix-blueberry-stress.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: main
+      - name: Patch scales
+        shell: bash
+        run: |
+          set -euo pipefail
+          python <<'PY'
+          from pathlib import Path
+
+          def replace_once(text: str, old: str, new: str, label: str) -> str:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"{label}: expected exactly 1 match, found {count}")
+              return text.replace(old, new, 1)
+
+          cycle_path = Path("src/features/logging/CycleForms.tsx")
+          cycle = cycle_path.read_text()
+
+          cycle = replace_once(
+              cycle,
+              '  const [note, setNote] = useState<string>(cur?.note ?? "");\n',
+              '  const [cramps, setCramps] = useState<number | undefined>(cur?.cramps);\n  const [note, setNote] = useState<string>(cur?.note ?? "");\n',
+              "Blueberry cramp state",
+          )
+
+          cycle = replace_once(
+              cycle,
+              '        cramps: cur?.cramps,\n',
+              '        cramps,\n',
+              "Blueberry cramp save",
+          )
+
+          anchor = '''      </section>\n\n      <div className="border-t border-border/60" />\n\n      <section>\n        <p className={sectionLabel}>{t("Discharge (optional)")}</p>'''
+          cramp_section = '''      </section>\n\n      <div className="border-t border-border/60" />\n\n      <section>\n        <p className={sectionLabel}>{t("Cramp pain")}</p>\n        <IntensityScale\n          value={cramps ?? -1}\n          onChange={(n) => setCramps(cramps === n ? undefined : n)}\n          max={10}\n          from={0}\n          step={1}\n          descriptions={getScaleDesc(data, "pain")}\n          legendTitle="Cramp pain scale"\n          compactSingleRow\n        />\n      </section>\n\n      <div className="border-t border-border/60" />\n\n      <section>\n        <p className={sectionLabel}>{t("Discharge (optional)")}</p>'''
+          cycle = replace_once(cycle, anchor, cramp_section, "Blueberry cramp UI")
+          cycle_path.write_text(cycle)
+
+          registry_path = Path("src/lib/appRegistry.ts")
+          registry = registry_path.read_text()
+          registry = replace_once(
+              registry,
+              '{ id: "cramps", label: "Cramp pain", kind: "scale", order: 20, scale: { min: 1, max: 10, step: 1 } },',
+              '{ id: "cramps", label: "Cramp pain", kind: "scale", order: 20, scale: { min: 0, max: 10, step: 1 } },',
+              "Blueberry cramp registry",
+          )
+          registry_path.write_text(registry)
+
+          pain_path = Path("src/features/logging/PainWizard.tsx")
+          pain = pain_path.read_text()
+          pain = replace_once(
+              pain,
+              '''                  max={10}\n                  from={1}\n                  step={1}\n                  descriptions={STRESS_DESC}\n                  legendTitle="Stress scale"''',
+              '''                  max={10}\n                  from={0}\n                  step={1}\n                  descriptions={STRESS_DESC}\n                  legendTitle="Stress scale"''',
+              "Stress 0-10 selector",
+          )
+          pain_path.write_text(pain)
+
+          Path(".github/workflows/fix-blueberry-stress.yml").unlink()
+          PY
+      - name: Commit fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "BIXBO automation"
+          git config user.email "actions@users.noreply.github.com"
+          git add src/features/logging/CycleForms.tsx src/features/logging/PainWizard.tsx src/lib/appRegistry.ts .github/workflows/fix-blueberry-stress.yml
+          git commit -m "Fix Blueberry cramps and stress scales"
+          git push origin HEAD:main
